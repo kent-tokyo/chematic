@@ -8,9 +8,9 @@ counted as wins. Dated raw records are indexed in
 ## Current status
 
 The current release line is **v1.0.19**. The newest public-package performance
-record is the 2026-09-16 isolated browser comparison against
-`@rdkit/rdkit@2026.03.6`. Older similarity, streaming, and operation timing
-records remain pinned to their recorded source/release versions.
+record is the 2026-09-22 browser/3D comparison against RDKit 2026.03.6. Older
+similarity, streaming, and operation timing records remain pinned to their
+recorded source/release versions.
 
 The current records cover four separate evidence types:
 
@@ -29,9 +29,14 @@ Chromium, Firefox, and WebKit, the paired 95% lower speedup bounds are **3.11x,
 supported rows; one Fe(II) coordination structure remains an explicit typed
 refusal. A separate ChEMBL 5k Chromium gate is 5,000/5,000 exact.
 
-This is merged-source evidence, not a v1.0.19 package measurement. It excludes
-download/startup, memory, prepared-object reuse, search, and unsupported
-chemistry. See the complete [2026-09-20 record](../benchmarks/2026-09-20-parse-morgan-rdkitjs.md).
+The published v1.0.19 npm package was subsequently measured on the same fixed
+10k corpus. Its parse-inclusive compatible-Morgan lane is 2.658x faster
+geometrically (95% lower bound 2.617x), while its old prepared lane is only
+0.687x and therefore loses. A local source candidate with explicit immutable
+preparation passes both lanes: 1.397x parse-inclusive (lower bound 1.333x) and
+3.551x prepared (lower bound 3.384x), with 9,999/9,999 supported rows exact.
+That candidate is not yet a published-package claim. See the complete
+[2026-09-22 record](../benchmarks/2026-09-22-public-package-fingerprint-3d.md).
 
 ## Published-source timing summary
 
@@ -101,6 +106,7 @@ commands are in the [isolated browser comparison](../benchmarks/2026-09-16-offic
 | Accuracy vs RDKit | `pip install chematic rdkit`; `python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json /tmp/bench5k.json`; `python scripts/gen_validation_report.py /tmp/bench5k.json` |
 | Similarity search | [`2026-09-11-similarity-search-v1.0.12.md`](../benchmarks/2026-09-11-similarity-search-v1.0.12.md) |
 | Parse + compatible Morgan vs official RDKit.js | [`2026-09-20-parse-morgan-rdkitjs.md`](../benchmarks/2026-09-20-parse-morgan-rdkitjs.md) |
+| Published-package fingerprint and 3D comparison | [`2026-09-22-public-package-fingerprint-3d.md`](../benchmarks/2026-09-22-public-package-fingerprint-3d.md) |
 | A3 similarity search rerun | [`2026-09-12-similarity-search-a3-v1.0.13.md`](../benchmarks/2026-09-12-similarity-search-a3-v1.0.13.md) |
 | Hot-path A/B | [`2026-09-05-hotpath-110.md`](../benchmarks/2026-09-05-hotpath-110.md) |
 | File streaming | [`2026-09-04-streaming-formats.md`](../benchmarks/2026-09-04-streaming-formats.md) |

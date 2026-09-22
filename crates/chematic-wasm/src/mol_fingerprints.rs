@@ -916,6 +916,35 @@ pub fn rdkit_ecfp4_bitvec(mol: &MolHandle) -> Result<Vec<u8>, JsValue> {
     Ok(fingerprint.to_le_bytes().to_vec())
 }
 
+/// Immutable RDKit-compatible ECFP4 preprocessing cache.
+///
+/// Create it with [`prepare_rdkit_ecfp4`], then call [`bitvec`](Self::bitvec)
+/// repeatedly without repeating aromaticity and ring perception.
+#[wasm_bindgen]
+pub struct PreparedRdkitEcfp4Handle {
+    inner: chematic_fp::PreparedRdkitMorganEcfp4,
+}
+
+#[wasm_bindgen]
+impl PreparedRdkitEcfp4Handle {
+    /// Compute the cached radius-2, 2048-bit fingerprint as 256 packed bytes.
+    pub fn bitvec(&self) -> Vec<u8> {
+        self.inner.bitvec().to_le_bytes().to_vec()
+    }
+}
+
+/// Perform RDKit-compatible aromaticity/ring preprocessing once.
+///
+/// This is the prepared-molecule counterpart to RDKit's sanitized molecule
+/// object. Preparation errors remain typed JS errors and are never replaced by
+/// a non-compatible fallback fingerprint.
+#[wasm_bindgen]
+pub fn prepare_rdkit_ecfp4(mol: &MolHandle) -> Result<PreparedRdkitEcfp4Handle, JsValue> {
+    let inner = chematic_fp::prepare_rdkit_morgan_ecfp4(&mol.inner)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(PreparedRdkitEcfp4Handle { inner })
+}
+
 /// Same fingerprint as `rdkit_ecfp4_bitvec`, plus the raw (unfolded) data behind it, as
 /// JSON: `{"fingerprint":[u8,...],"sparseCounts":{"rawId":count,...},
 /// "rawBitInfo":{"rawId":[[atomIdx,radius],...],...},

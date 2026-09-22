@@ -1,0 +1,218 @@
+{
+  "arm_pairs": {
+    "best_of_10_plus_uff": {
+      "arms": {
+        "chematic": "chematic_pipeline_v2_uff_best_of_10",
+        "rdkit": "rdkit_etkdgv3_best_of_n"
+      },
+      "quality": {
+        "chematic": {
+          "independently_sound": 265,
+          "scored_successes": 265,
+          "stereo_clean": 265,
+          "usable": 265,
+          "usable_over_all_inputs": 1.0
+        },
+        "rdkit": {
+          "independently_sound": 264,
+          "scored_successes": 264,
+          "stereo_clean": 264,
+          "usable": 264,
+          "usable_over_all_inputs": 0.9962264150943396
+        }
+      },
+      "timing": {
+        "chematic": {
+          "all_rows": {
+            "p50_ms": 94.872375,
+            "p95_ms": 554.1525915999998,
+            "total_ms": 50425.95195
+          },
+          "rows": 265,
+          "status_counts": {
+            "success": 265
+          },
+          "successful_rows": {
+            "count": 265,
+            "p50_ms": 94.872375,
+            "p95_ms": 554.1525915999998
+          }
+        },
+        "paired": {
+          "chematic_faster_gate": true,
+          "common_successes": 264,
+          "geometric_mean_rdkit_over_chematic": 2.3267041965715918,
+          "lower_95_rdkit_over_chematic": 2.1676369934747486,
+          "median_rdkit_over_chematic": 2.3152946463090434,
+          "minimum_rdkit_over_chematic": 0.5935611298748853
+        },
+        "rdkit": {
+          "all_rows": {
+            "p50_ms": 252.379917,
+            "p95_ms": 1310.1810661999996,
+            "total_ms": 109881.587836
+          },
+          "rows": 265,
+          "status_counts": {
+            "internal_error": 1,
+            "success": 264
+          },
+          "successful_rows": {
+            "count": 264,
+            "p50_ms": 252.671646,
+            "p95_ms": 1311.5470598999998
+          }
+        }
+      }
+    },
+    "embedding_plus_uff": {
+      "arms": {
+        "chematic": "chematic_pipeline_v2_uff_only",
+        "rdkit": "rdkit_etkdgv3_uff"
+      },
+      "quality": {
+        "chematic": {
+          "independently_sound": 263,
+          "scored_successes": 263,
+          "stereo_clean": 263,
+          "usable": 263,
+          "usable_over_all_inputs": 0.9924528301886792
+        },
+        "rdkit": {
+          "independently_sound": 264,
+          "scored_successes": 264,
+          "stereo_clean": 264,
+          "usable": 264,
+          "usable_over_all_inputs": 0.9962264150943396
+        }
+      },
+      "timing": {
+        "chematic": {
+          "all_rows": {
+            "p50_ms": 8.569333,
+            "p95_ms": 49.958124599999984,
+            "total_ms": 4797.56591
+          },
+          "rows": 265,
+          "status_counts": {
+            "success": 263,
+            "typed_failure": 2
+          },
+          "successful_rows": {
+            "count": 263,
+            "p50_ms": 8.569333,
+            "p95_ms": 50.03345779999998
+          }
+        },
+        "paired": {
+          "chematic_faster_gate": true,
+          "common_successes": 262,
+          "geometric_mean_rdkit_over_chematic": 3.1957528811052263,
+          "lower_95_rdkit_over_chematic": 2.93869964134737,
+          "median_rdkit_over_chematic": 3.095384408472615,
+          "minimum_rdkit_over_chematic": 0.622897666229909
+        },
+        "rdkit": {
+          "all_rows": {
+            "p50_ms": 26.121333,
+            "p95_ms": 153.31644959999997,
+            "total_ms": 12456.178536
+          },
+          "rows": 265,
+          "status_counts": {
+            "internal_error": 1,
+            "success": 264
+          },
+          "successful_rows": {
+            "count": 264,
+            "p50_ms": 26.2750205,
+            "p95_ms": 153.3958267
+          }
+        }
+      }
+    },
+    "embedding_plus_uff_stereo_safe": {
+      "arms": {
+        "chematic": "chematic_pipeline_v2_uff_only_stereo_safe",
+        "rdkit": "rdkit_etkdgv3_uff"
+      },
+      "quality": {
+        "chematic": {
+          "independently_sound": 262,
+          "scored_successes": 262,
+          "stereo_clean": 262,
+          "usable": 262,
+          "usable_over_all_inputs": 0.9886792452830189
+        },
+        "rdkit": {
+          "independently_sound": 264,
+          "scored_successes": 264,
+          "stereo_clean": 264,
+          "usable": 264,
+          "usable_over_all_inputs": 0.9962264150943396
+        }
+      },
+      "timing": {
+        "chematic": {
+          "all_rows": {
+            "p50_ms": 9.831875,
+            "p95_ms": 79.52474999999993,
+            "total_ms": 7091.910168
+          },
+          "rows": 265,
+          "status_counts": {
+            "success": 262,
+            "typed_failure": 3
+          },
+          "successful_rows": {
+            "count": 262,
+            "p50_ms": 9.613770500000001,
+            "p95_ms": 80.11574999999995
+          }
+        },
+        "paired": {
+          "chematic_faster_gate": true,
+          "common_successes": 261,
+          "geometric_mean_rdkit_over_chematic": 2.5448057429508384,
+          "lower_95_rdkit_over_chematic": 2.3175887254630285,
+          "median_rdkit_over_chematic": 2.531201660709441,
+          "minimum_rdkit_over_chematic": 0.3395199079493744
+        },
+        "rdkit": {
+          "all_rows": {
+            "p50_ms": 26.121333,
+            "p95_ms": 153.31644959999997,
+            "total_ms": 12456.178536
+          },
+          "rows": 265,
+          "status_counts": {
+            "internal_error": 1,
+            "success": 264
+          },
+          "successful_rows": {
+            "count": 264,
+            "p50_ms": 26.2750205,
+            "p95_ms": 153.3958267
+          }
+        }
+      }
+    }
+  },
+  "benchmark": "public-package-3d-vs-rdkit-summary",
+  "boundary": "Speed is paired only over common successful molecules. Quality uses the same external geometry/stereo scorer for both engines and retains every failure in the all-input denominator. A lane passes speed only when the paired 95% lower bound exceeds 1.0; this does not by itself establish quality non-inferiority.",
+  "inputs": {
+    "chematic": {
+      "path": "validation/results/source-candidate-3d-chematic-uff-2026-09-22.jsonl",
+      "sha256": "41554f5830859f791f3f9738b678ba5b02b132387e40c9320cf5f04215b34c33"
+    },
+    "rdkit": {
+      "path": "validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl",
+      "sha256": "edff4ba9a3b9c9413e20d568d5cae45afb90a8851ccf25bb98c8f9a1311a9c09"
+    },
+    "scored": {
+      "path": "validation/results/source-candidate-3d-common-scored-uff-vs-rdkit-2026.3.6-2026-09-22.jsonl",
+      "sha256": "db2eeea2946a75217c6296da94c55184c3a0d25810fc31a07428d56b0bc585d7"
+    }
+  },
+  "schema_version": 1
+}

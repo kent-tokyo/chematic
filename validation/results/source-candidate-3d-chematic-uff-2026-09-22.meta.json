@@ -1,0 +1,58 @@
+{
+  "benchmark": "source-candidate-3d-vs-rdkit",
+  "boundary": "Locally built source candidate; not a registry release. Parsing is outside per-arm timing. Comparable arms use stereo_policy=ignore and treat the identical external scorer as authoritative. Explicit *_stereo_safe diagnostic arms use the package's bundled repair_and_verify + chirality + explicit-H configuration. All arms keep ring_torsion_policy=diagnostic_only and retain coordinates and failures for the external scorer.",
+  "collected_at_utc": "2026-09-22T12:40:38.436424+00:00",
+  "configuration": {
+    "arms": [
+      "chematic_pipeline_v2_uff_only",
+      "chematic_pipeline_v2_uff_only_stereo_safe",
+      "chematic_pipeline_v2_uff_best_of_10"
+    ],
+    "best_of_n": 10,
+    "enforce_chirality": false,
+    "expand_implicit_h_through_pipeline": false,
+    "force_field_max_iterations": 200,
+    "max_attempts": 8,
+    "random_seed": 20260801,
+    "requested_count": null,
+    "ring_torsion_policy": "diagnostic_only",
+    "start": 0,
+    "stereo_policy": {
+      "comparable_arms": "ignore_external_common_scorer_is_authoritative",
+      "stereo_safe_arms": "repair_and_verify_with_chirality_and_explicit_h"
+    },
+    "tiers": "AB",
+    "total_timeout_ms": 20000,
+    "wall_budget_seconds": 3300.0
+  },
+  "engine": "chematic_source_candidate_python",
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "python_executable": "/private/tmp/chematic-candidate-venv/bin/python"
+  },
+  "package": {
+    "distribution_version": "1.0.19",
+    "kind": "source_candidate",
+    "module_path": "/private/tmp/chematic-candidate-venv/lib/python3.13/site-packages/chematic/__init__.py",
+    "name": "chematic",
+    "runtime_version": "1.0.19",
+    "source_diff_sha256": "fb8f35ed390a156c677179d9ebcd6e412edaada23e2c6469b2d11124aacb3a0e",
+    "source_revision": "63f66d9c53fee7bbe6d920444587648bad31749e",
+    "wheel": {
+      "bytes": 5093544,
+      "path": "/private/tmp/chematic-candidate-wheel/chematic-1.0.19-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "0db5ee6613f6fe8f3958ab626e19da313913592496a69aaee4d893c4c31bb981"
+    }
+  },
+  "result": {
+    "elapsed_seconds": 62.40257066601771,
+    "emitted_rows": 795,
+    "output": "validation/results/source-candidate-3d-chematic-uff-2026-09-22.jsonl",
+    "output_sha256": "41554f5830859f791f3f9738b678ba5b02b132387e40c9320cf5f04215b34c33",
+    "selected_molecules": 265,
+    "termination": "completed"
+  },
+  "schema_version": 1
+}

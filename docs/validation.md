@@ -9,7 +9,7 @@ upgraded to the current source revision.
 | Area | Evidence | Boundary |
 |---|---|---|
 | Release channels | `validation/results/release-channel-verification-v1.0.15.json` | GitHub, crates.io, docs.rs, PyPI, npm, Pages; platform smoke uses the actually published wheels |
-| RDKit.js browser comparison | `benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md` | Fixed exposed 10k corpus and local no-store assets; not internet/CDN latency |
+| RDKit.js browser comparison | `benchmarks/2026-09-22-public-package-fingerprint-3d.md` | Published v1.0.19 baseline and a separately identified source candidate on the fixed exposed 10k corpus; not internet/CDN latency |
 | Parser security | `validation/parser_security_corpus_v1.json` plus hosted Linux gate | Fixed five-format corpus with process/time/memory boundaries |
 | V3000 interchange | `validation/results/v3000-*-v1.0.15.json` | Ordinary structures and declared SGROUP/stereo contracts; no coordination/haptic/polymer semantic claim |
 | Stereo development | `validation/results/stereo-*-v1.0.15-2026-09-16.json` | 300 development structures and 5,115 spelling variants; not independent gold |
@@ -54,11 +54,14 @@ is not a compatibility percentage.
 
 ## Browser comparison summary
 
-The published-package Chromium local no-store download-to-ready p95 is 51.62 ms
-for chematic and 98.495 ms for RDKit.js in the recorded environment. chematic's
-raw/gzip WASM assets are smaller and its parse/write lane is faster there;
-RDKit.js is faster for the parse-inclusive fingerprint operation. One Fe(II)
-coordination input is a typed fingerprint refusal, leaving 9,999 supported rows.
+The 2026-09-22 published v1.0.19 Chromium record passes the parse-inclusive
+compatible-Morgan speed gate at 2.658x geometrically (95% lower bound 2.617x),
+but its prepared fingerprint path is slower than RDKit.js at 0.687x. A separate
+local source candidate adds immutable RDKit-compatible preparation and passes
+both lanes: 1.397x parse-inclusive and 3.551x prepared, with 95% lower bounds
+1.333x and 3.384x. It is not yet a registry-package claim. Both paths preserve
+9,999/9,999 configured-bit agreement; one Fe(II) coordination input remains a
+typed refusal.
 
 These numbers do not establish internet download latency, unique process memory,
 all-browser performance superiority, or unmeasured fingerprint configurations.

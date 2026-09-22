@@ -25,12 +25,14 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def page_html(smiles: list[str]) -> str:
+def page_html(smiles: list[str], schematic_operation: str) -> str:
     data = json.dumps(smiles).replace("<", "\\u003c")
+    operation = json.dumps(schematic_operation)
     return f"""<!doctype html><meta charset=\"utf-8\">
 <script src=\"/rdkit/RDKit_minimal.js\"></script><pre id=\"result\">running</pre>
 <script type=\"module\">
 const smiles = {data};
+const schematicOperation = {operation};
 const yieldToBrowser = () => new Promise((resolve) => setTimeout(resolve, 0));
 const run = async () => {{
   const chematic = await import('/schematic/chematic_wasm.js');
@@ -46,7 +48,12 @@ const run = async () => {{
     const left = chematic.parse_smiles(value);
     let leftBits;
     try {{
-      leftBits = chematic.rdkit_ecfp4_bitvec(left);
+      if (schematicOperation === "prepared") {{
+        const prepared = chematic.prepare_rdkit_ecfp4(left);
+        try {{ leftBits = prepared.bitvec(); }} finally {{ prepared.free(); }}
+      }} else {{
+        leftBits = chematic.rdkit_ecfp4_bitvec(left);
+      }}
     }} catch (error) {{
       left.free();
       const right = rdkit.get_mol(value);
@@ -158,7 +165,17 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--corpus", type=Path, default=ROOT / "scripts" / "descriptor_census_corpus.smi")
     parser.add_argument("--schematic-dir", type=Path, default=ROOT / "demo" / "pkg")
+    parser.add_argument(
+        "--schematic-package-kind",
+        choices=("published", "source_candidate"),
+        default="published",
+    )
+    parser.add_argument("--schematic-source-revision")
+    parser.add_argument("--schematic-source-diff-sha256")
     parser.add_argument("--rows", type=int, default=1000)
+    parser.add_argument(
+        "--schematic-operation", choices=("direct", "prepared"), default="direct"
+    )
     parser.add_argument(
         "--allow-unsupported",
         action="store_true",
@@ -169,6 +186,13 @@ def main() -> int:
         raise SystemExit("--rows must be positive")
     if args.engine == "chromium" and args.browser is None:
         parser.error("--browser is required with --engine chromium")
+    if args.schematic_package_kind == "source_candidate" and (
+        not args.schematic_source_revision or not args.schematic_source_diff_sha256
+    ):
+        parser.error(
+            "source candidates require --schematic-source-revision and "
+            "--schematic-source-diff-sha256"
+        )
 
     corpus_bytes = args.corpus.read_bytes()
     smiles = [line.strip() for line in corpus_bytes.decode().splitlines() if line.strip()][:args.rows]
@@ -184,7 +208,7 @@ def main() -> int:
     missing = [str(path) for path in Handler.files.values() if not path.is_file()]
     if missing:
         raise SystemExit(f"missing benchmark artifacts: {missing}")
-    Handler.html = page_html(smiles).encode()
+    Handler.html = page_html(smiles, args.schematic_operation).encode()
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -218,12 +242,18 @@ def main() -> int:
         "configuration": {
             "engine": args.engine, "browser": str(args.browser) if args.browser else None, "rows": args.rows,
             "allow_unsupported": args.allow_unsupported,
+            "schematic_operation": args.schematic_operation,
             "operation": "chematic rdkit_ecfp4_bitvec vs RDKit.js Morgan radius=2, 2048 bits",
             "comparison": "same browser page; direct packed-bit comparison; yields every 100 rows",
         },
         "corpus": {"path": str(args.corpus), "sha256": hashlib.sha256(corpus_bytes).hexdigest(), "rows": args.rows},
         "artifacts": {
-            "schematic_wasm": artifact(Handler.files["/schematic/chematic_wasm_bg.wasm"]),
+            "schematic_wasm": {
+                **artifact(Handler.files["/schematic/chematic_wasm_bg.wasm"]),
+                "kind": args.schematic_package_kind,
+                "source_revision": args.schematic_source_revision,
+                "source_diff_sha256": args.schematic_source_diff_sha256,
+            },
             "rdkit_wasm": artifact(Handler.files["/rdkit/RDKit_minimal.wasm"]),
             "rdkit_package": {
                 "version": package_json.get("version"),
@@ -232,7 +262,12 @@ def main() -> int:
             },
         },
         "result": result,
-        "boundary": "This confirms an explicitly configured fingerprint bit-vector only for successfully evaluated rows. Typed refusals are separately counted and are not parity claims. It is not a general SMILES, stereo, canonicalization, search-ranking, memory, or performance claim.",
+        "boundary": (
+            "Published package artifact. "
+            if args.schematic_package_kind == "published"
+            else "Locally built source candidate; not a registry release. "
+        )
+        + "This confirms an explicitly configured fingerprint bit-vector only for successfully evaluated rows. Typed refusals are separately counted and are not parity claims. It is not a general SMILES, stereo, canonicalization, search-ranking, memory, or performance claim.",
     }
     args.output.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(document["result"], indent=2))

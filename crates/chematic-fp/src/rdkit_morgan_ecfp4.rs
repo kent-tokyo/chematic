@@ -156,6 +156,74 @@ pub fn rdkit_morgan_ecfp4_bitvec(mol: &Molecule) -> Result<BitVec2048, RdkitMorg
     Ok(fingerprint)
 }
 
+/// RDKit-compatible Morgan preprocessing cached for repeated fingerprinting.
+///
+/// Construct this outside a hot search/fingerprint loop with
+/// [`prepare_rdkit_morgan_ecfp4`]. The cached molecule, ring flags, and bond
+/// invariants are immutable, so every subsequent bit-vector calculation has
+/// the same chemistry as [`rdkit_morgan_ecfp4_bitvec`] without repeating
+/// sanitization-compatible aromaticity and ring perception.
+#[derive(Clone)]
+pub struct PreparedRdkitMorganEcfp4 {
+    molecule: Molecule,
+    ring_atoms: Vec<bool>,
+    bond_invariants: Vec<u32>,
+}
+
+impl PreparedRdkitMorganEcfp4 {
+    /// Compute the radius-2, 2048-bit fingerprint from cached preprocessing.
+    pub fn bitvec(&self) -> BitVec2048 {
+        let mut fingerprint = BitVec2048::new();
+        self.for_each_emission(|_, _, raw_id| {
+            fingerprint.set((raw_id as usize) % ECFP4_FP_SIZE);
+        });
+        fingerprint
+    }
+
+    fn for_each_emission<F>(&self, emit: F)
+    where
+        F: FnMut(u32, u32, u32),
+    {
+        if self.molecule.atom_count() == 0 {
+            return;
+        }
+        expand_one_pass_with_chirality_into(
+            &self.molecule,
+            &self.ring_atoms,
+            &self.bond_invariants,
+            ECFP4_RADIUS,
+            true,
+            None,
+            emit,
+        );
+    }
+}
+
+/// Perform the RDKit-compatible sanitization/aromaticity/ring preprocessing
+/// once and return an immutable handle suitable for repeated fingerprinting.
+pub fn prepare_rdkit_morgan_ecfp4(
+    mol: &Molecule,
+) -> Result<PreparedRdkitMorganEcfp4, RdkitMorganError> {
+    let normalized = normalize_rdkit_hypervalent_halogen_oxoacids(mol);
+    let rdkit_input = normalized.as_ref().unwrap_or(mol);
+    reject_known_rdkit_coordination_sanitization_gap(rdkit_input)?;
+    let molecule = chematic_perception::apply_aromaticity_rdkit_parity_experimental(rdkit_input)?;
+    let ring_atoms = chematic_perception::ring_atom_flags(&molecule);
+    let mut bond_invariants = Vec::with_capacity(molecule.bond_count());
+    for b in 0..molecule.bond_count() {
+        let bond_idx = BondIdx(b as u32);
+        let order = molecule.bond(bond_idx).order;
+        let invariant = checked_bond_invariant(order)
+            .ok_or(RdkitMorganError::UnsupportedBondOrder { bond_idx, order })?;
+        bond_invariants.push(invariant);
+    }
+    Ok(PreparedRdkitMorganEcfp4 {
+        molecule,
+        ring_atoms,
+        bond_invariants,
+    })
+}
+
 /// Execute the shared RDKit-compatible preprocessing and Morgan expansion once.
 ///
 /// Keeping this below the public result views prevents bit-only and detailed paths
@@ -170,35 +238,7 @@ where
     // SMILES model intentionally preserves the user spelling, so apply this
     // narrow, profile-specific graph normalization only here: Morgan atom and
     // bond invariants must observe the same graph RDKit fingerprints observe.
-    let normalized = normalize_rdkit_hypervalent_halogen_oxoacids(mol);
-    let rdkit_input = normalized.as_ref().unwrap_or(mol);
-    reject_known_rdkit_coordination_sanitization_gap(rdkit_input)?;
-    let aromatized = chematic_perception::apply_aromaticity_rdkit_parity_experimental(rdkit_input)?;
-
-    if aromatized.atom_count() == 0 {
-        return Ok(());
-    }
-
-    let ring_atoms = chematic_perception::ring_atom_flags(&aromatized);
-    let bond_count = aromatized.bond_count();
-    let mut bond_invariants = Vec::with_capacity(bond_count);
-    for b in 0..bond_count {
-        let bond_idx = BondIdx(b as u32);
-        let order = aromatized.bond(bond_idx).order;
-        let invariant = checked_bond_invariant(order)
-            .ok_or(RdkitMorganError::UnsupportedBondOrder { bond_idx, order })?;
-        bond_invariants.push(invariant);
-    }
-
-    expand_one_pass_with_chirality_into(
-        &aromatized,
-        &ring_atoms,
-        &bond_invariants,
-        ECFP4_RADIUS,
-        true,
-        None,
-        emit,
-    );
+    prepare_rdkit_morgan_ecfp4(mol)?.for_each_emission(emit);
     Ok(())
 }
 
@@ -494,6 +534,26 @@ mod tests {
             rdkit_morgan_ecfp4_bitvec(&unsupported),
             rdkit_morgan_ecfp4_experimental(&unsupported).map(|result| result.fingerprint)
         );
+    }
+
+    #[test]
+    fn prepared_bitvec_matches_direct_bitvec() {
+        for smi in [
+            "C",
+            "c1ccccc1",
+            "O=C1NNC(=O)N1",
+            "C[C@H](N)C(=O)O",
+            "OCl(=O)(=O)=O",
+        ] {
+            let mol = parse(smi).unwrap();
+            let prepared = prepare_rdkit_morgan_ecfp4(&mol).unwrap();
+            assert_eq!(
+                prepared.bitvec(),
+                rdkit_morgan_ecfp4_bitvec(&mol).unwrap(),
+                "prepared result diverged for {smi}"
+            );
+            assert_eq!(prepared.bitvec(), prepared.bitvec());
+        }
     }
 
     /// `BondOrder::Query*` has no real RDKit `Bond::BondType` counterpart (see

@@ -1,0 +1,53 @@
+{
+  "benchmark": "public-package-3d-vs-rdkit",
+  "boundary": "Published wheel only. Parsing is outside per-arm timing. AddHs is inside RDKit operation timing. Coordinates and failures are retained for the identical external scorer.",
+  "collected_at_utc": "2026-09-22T12:06:22.805119+00:00",
+  "configuration": {
+    "add_hs_inside_timed_operation": true,
+    "arms": [
+      "rdkit_etkdgv3_raw",
+      "rdkit_etkdgv3_uff",
+      "rdkit_etkdgv3_mmff94",
+      "rdkit_etkdgv3_best_of_n"
+    ],
+    "best_of_n": 10,
+    "enforce_chirality": true,
+    "force_field_max_iterations": 200,
+    "max_attempts": 8,
+    "random_seed": 20260801,
+    "requested_count": null,
+    "start": 0,
+    "tiers": "AB",
+    "use_macrocycle_14_bounds": true,
+    "use_macrocycle_torsions": true,
+    "use_small_ring_torsions": true,
+    "wall_budget_seconds": 3300.0
+  },
+  "engine": "rdkit_public_python",
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "python_executable": "/private/tmp/chematic-a66-venv/bin/python"
+  },
+  "package": {
+    "distribution_version": "2026.3.6",
+    "module_path": "/private/tmp/chematic-a66-venv/lib/python3.13/site-packages/rdkit/__init__.py",
+    "name": "rdkit",
+    "runtime_version": "2026.03.6",
+    "wheel": {
+      "bytes": 30280927,
+      "path": "/private/tmp/chematic-a66-wheels/rdkit-2026.3.6-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "e16c467cb254a223e59a0cf81358c6b39da15a99d2909170d693e95778fddb41"
+    }
+  },
+  "result": {
+    "elapsed_seconds": 158.96560187501018,
+    "emitted_rows": 1060,
+    "output": "validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl",
+    "output_sha256": "edff4ba9a3b9c9413e20d568d5cae45afb90a8851ccf25bb98c8f9a1311a9c09",
+    "selected_molecules": 265,
+    "termination": "completed"
+  },
+  "schema_version": 1
+}
