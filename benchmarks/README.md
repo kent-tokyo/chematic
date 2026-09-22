@@ -13,6 +13,7 @@ accuracy, or compatibility claims.
 | Review current public-package fingerprint and 3D evidence | [`2026-09-22-public-package-fingerprint-3d.md`](2026-09-22-public-package-fingerprint-3d.md) |
 | Review current-source MMFF94 same-coordinate energy evidence | [`2026-09-23-mmff94-current-source-energy.md`](2026-09-23-mmff94-current-source-energy.md) |
 | Review the analytic MMFF94 source speed/convergence candidate | [`2026-09-23-a6-analytic-mmff94-source-candidate.md`](2026-09-23-a6-analytic-mmff94-source-candidate.md) |
+| Review the MMFF94 stereo-safe source quality candidate | [`2026-09-23-a6-mmff94-stereo-safe-quality.md`](2026-09-23-a6-mmff94-stereo-safe-quality.md) |
 | Review current Parse + compatible Morgan evidence | [`2026-09-20-parse-morgan-rdkitjs.md`](2026-09-20-parse-morgan-rdkitjs.md) |
 | Compare current similarity search with RDKit | [`2026-09-12-similarity-search-a3-v1.0.13.md`](2026-09-12-similarity-search-a3-v1.0.13.md) |
 | Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |
@@ -37,6 +38,7 @@ measurement was rerun.
 |---|---|
 | [`2026-09-22-public-package-fingerprint-3d.md`](2026-09-22-public-package-fingerprint-3d.md) | Published v1.0.19 baseline plus PR #630 source prepared-Morgan and UFF 3D results; registry and source claims remain separate |
 | [`2026-09-23-a6-analytic-mmff94-source-candidate.md`](2026-09-23-a6-analytic-mmff94-source-candidate.md) | Source `af7c0c44` analytic MMFF94/300-iteration packet against the published RDKit 2026.3.6 wheel; speed and quality boundaries remain separate |
+| [`2026-09-23-a6-mmff94-stereo-safe-quality.md`](2026-09-23-a6-mmff94-stereo-safe-quality.md) | Source `dd7fe3e9` closes the 12-failure/four-clash MMFF94 cohort at 265/265; the quality lane is slower than RDKit and still awaits a registry-package rerun |
 | [`2026-09-20-parse-morgan-rdkitjs.md`](2026-09-20-parse-morgan-rdkitjs.md) | Merged source candidate, equivalent-output Parse + compatible Morgan comparison with official RDKit.js: exact supported-domain bits, local four-lane records, and three-browser GitHub-hosted paired-CI gate; not a published-package claim |
 | [`2026-09-09-similarity-search-v1.0.9.md`](2026-09-09-similarity-search-v1.0.9.md) | 4,500-entry library / 500-query exact top-k comparison with RDKit; latency and ranking overlap are separate axes |
 | [`2026-09-09-similarity-search-v1.0.9.json`](2026-09-09-similarity-search-v1.0.9.json) | Machine-readable similarity-search measurements and ranking checks |

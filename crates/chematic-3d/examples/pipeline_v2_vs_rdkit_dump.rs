@@ -194,6 +194,19 @@ const PIPELINE_ARMS: &[Arm] = &[
         gate_torsion_oop: false,
         enforce_chirality: false,
     },
+    // Production stereo-safe MMFF94 lane. Unlike the historical `*_repair`
+    // diagnostics above, this composes all three settings required by
+    // `PipelineV2Config::stereo_safe`: chiral embedding, implicit-H expansion
+    // through minimization, and fail-closed repair/re-verification. Keep the
+    // older arms unchanged so historical packets remain reproducible.
+    Arm {
+        name: "chematic_pipeline_v2_mmff94_strict_stereo_safe",
+        force_field: ForceFieldPolicy::Mmff94BondAngleStrict,
+        stereo_policy: StereoPolicy::RepairAndVerify,
+        gate_stretch_bend: false,
+        gate_torsion_oop: false,
+        enforce_chirality: true,
+    },
     // New arms for Priority 2 / Stage 1B (issue #227): "complete_term_strict_gate"
     // side of the legacy-vs-complete-term comparison -- identical to
     // chematic_pipeline_v2_mmff94_strict/..._with_uff_fallback (same
@@ -326,7 +339,11 @@ fn base_config(
         // to let the whole benchmark hang indefinitely (which would silently
         // omit that row forever, worse than reporting it as a timeout).
         total_timeout_ms: Some(20_000),
-        expand_implicit_h_through_pipeline: false,
+        // The production stereo-safe contract requires this together with
+        // chiral embedding and RepairAndVerify. Other historical arms remain
+        // byte-for-byte on their former configuration.
+        expand_implicit_h_through_pipeline: enforce_chirality
+            && stereo_policy == StereoPolicy::RepairAndVerify,
     }
 }
 
@@ -826,8 +843,13 @@ fn main() {
             (
                 arm.name,
                 json!(format!(
-                    "ff={:?} stereo={:?} gate_stretch_bend={} gate_torsion_oop={}",
-                    arm.force_field, arm.stereo_policy, arm.gate_stretch_bend, arm.gate_torsion_oop
+                    "ff={:?} stereo={:?} gate_stretch_bend={} gate_torsion_oop={} enforce_chirality={} expand_implicit_h={}",
+                    arm.force_field,
+                    arm.stereo_policy,
+                    arm.gate_stretch_bend,
+                    arm.gate_torsion_oop,
+                    arm.enforce_chirality,
+                    arm.enforce_chirality && arm.stereo_policy == StereoPolicy::RepairAndVerify,
                 )),
             )
         })
