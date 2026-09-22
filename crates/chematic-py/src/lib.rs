@@ -19,6 +19,7 @@ type RdkitMorganDetail = (
 
 mod crystal;
 mod ensemble_v2;
+mod fingerprint_similarity;
 mod formats;
 mod lammps;
 mod misc;
