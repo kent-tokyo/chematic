@@ -171,6 +171,11 @@ def write_post_freeze_attestation(
     return {key: str(item) for key, item in value.items()} | {"sha256": sha256(path)}
 
 
+def cohort_sealing_state(attestation: dict[str, str] | None) -> tuple[bool, str]:
+    sealed = attestation is not None
+    return sealed, "sealed" if sealed else "prepared_not_sealed"
+
+
 def read_unused_attestation(path: Path, source_sha256: str) -> dict[str, str]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -285,7 +290,7 @@ def main() -> int:
     sealed_path = output / "sealed_holdout.smi"
     write_lines(development_path, development)
     write_lines(sealed_path, sealed)
-    status = "sealed" if attestation is not None else "prepared_not_sealed"
+    cohort_sealed, status = cohort_sealing_state(attestation)
     if args.attest_post_freeze_acquisition:
         reason = "candidate freeze predates independently recorded source acquisition"
     elif args.attest_unused:
@@ -296,7 +301,7 @@ def main() -> int:
         "schema_version": 1,
         "protocol": "rdkit-accuracy-sealed-cohort-v1",
         "status": status,
-        "sealed": args.attest_unused,
+        "sealed": cohort_sealed,
         "reason": reason,
         "prepared_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "source": {**metadata, "path": str(source), "observed_sha256": sha256(source), "input_rows": len(source_rows)},

@@ -217,6 +217,7 @@ def main() -> int:
         },
         "provenance": {
             "candidate_binary_sha256": sha256(binary),
+            "evaluator_script_sha256": sha256(Path(__file__).resolve()),
             "unused_data_attestation_sha256": attestation.get("sha256"),
             "raw_result_sha256": sha256(raw_path),
         },
