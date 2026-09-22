@@ -8,6 +8,9 @@
     "cip_difference": 120,
     "cip_exact": 9880,
     "completed": 10000,
+    "difference_class_chematic_regression": 18,
+    "difference_class_contract_difference": 9919,
+    "difference_class_unresolved": 3484,
     "difference_rows": 9936,
     "exact_rows": 64,
     "morgan_difference": 1,
@@ -694,7 +697,7 @@
   },
   "rows": {
     "path": "/private/tmp/rdkit-rebaseline-2026.03.6/python-chemistry-rows.jsonl",
-    "sha256": "83f21ec616e90b00c9143e75d4dfc77ecdc0b610e37869cb26f4c57991e6e374"
+    "sha256": "3a25b5845fb534a61c37ae41889a67e71ec2ff5ae31019a98fb119081ed13f9d"
   },
   "schema_version": 1,
   "sealed_accuracy_cohort_reused": false

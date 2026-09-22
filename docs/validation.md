@@ -10,7 +10,7 @@ upgraded to the current source revision.
 |---|---|---|
 | Release channels | `validation/results/release-channel-verification-v1.0.15.json` | GitHub, crates.io, docs.rs, PyPI, npm, Pages; platform smoke uses the actually published wheels |
 | RDKit.js browser comparison | `benchmarks/2026-09-22-public-package-fingerprint-3d.md` | Published v1.0.19 baseline and separately identified PR #630 source evidence on the fixed exposed 10k corpus; not a registry rerun or internet/CDN latency |
-| RDKit 2026.03.6 rebaseline | `validation/results/rdkit-rebaseline-*-v1.0.19-vs-2026.03.6-2026-09-22.*` | Exact Python/npm artifacts and 10,000 complete exposed rows; historical compatibility diagnostics, not oracle adoption |
+| RDKit 2026.03.6 rebaseline | `validation/results/rdkit-rebaseline-*-v1.0.19-vs-2026.03.6-2026-09-22.*` | Exact Python/npm artifacts and 10,000 complete exposed rows; 18 classified SMILES stereo-writer regressions, one typed Morgan contract difference, and unresolved CIP/SMARTS residuals; historical diagnostics, not oracle adoption |
 | Parser security | `validation/parser_security_corpus_v1.json` plus hosted Linux gate | Fixed five-format corpus with process/time/memory boundaries |
 | V3000 interchange | `validation/results/v3000-*-v1.0.15.json` | Ordinary structures and declared SGROUP/stereo contracts; no coordination/haptic/polymer semantic claim |
 | Stereo development | `validation/results/stereo-*-v1.0.15-2026-09-16.json` | 300 development structures and 5,115 spelling variants; not independent gold |

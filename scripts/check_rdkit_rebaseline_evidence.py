@@ -7,6 +7,7 @@ import gzip
 import hashlib
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 
@@ -38,8 +39,12 @@ def first_lane(document: dict, name: str, errors: list[str]) -> dict:
     return lanes[0]
 
 
-def validate_rows(path: Path, expected_sha256: str, errors: list[str]) -> int:
+def validate_rows(
+    path: Path, expected_sha256: str, errors: list[str]
+) -> tuple[int, Counter[str], Counter[tuple[str, str]]]:
     digest = hashlib.sha256()
+    classes: Counter[str] = Counter()
+    operation_classes: Counter[tuple[str, str]] = Counter()
     count = 0
     with gzip.open(path, "rb") as handle:
         for expected_index, line in enumerate(handle):
@@ -55,18 +60,23 @@ def validate_rows(path: Path, expected_sha256: str, errors: list[str]) -> int:
                 errors,
             )
             for difference in row.get("differences", []):
+                classification = difference.get("classification")
+                operation = difference.get("operation")
                 require(
-                    difference.get("classification") in ALLOWED_CLASSES,
+                    classification in ALLOWED_CLASSES,
                     f"rows line {expected_index + 1}: invalid difference classification",
                     errors,
                 )
+                if classification in ALLOWED_CLASSES and isinstance(operation, str):
+                    classes[classification] += 1
+                    operation_classes[(operation, classification)] += 1
             count += 1
     require(
         digest.hexdigest() == expected_sha256,
         "uncompressed rows SHA-256 changed",
         errors,
     )
-    return count
+    return count, classes, operation_classes
 
 
 def main() -> int:
@@ -123,6 +133,9 @@ def main() -> int:
         "smiles_semantic_difference": 18,
         "smarts_cells": 310000,
         "smarts_differences": 14306,
+        "difference_class_chematic_regression": 18,
+        "difference_class_contract_difference": 9919,
+        "difference_class_unresolved": 3484,
     }
     for key, expected in expected_counts.items():
         require(
@@ -132,8 +145,40 @@ def main() -> int:
         )
 
     rows_path = RESULTS / f"rdkit-rebaseline-python-chemistry-rows-{PREFIX}.jsonl.gz"
-    row_count = validate_rows(rows_path, summary["rows"]["sha256"], errors)
+    row_count, classes, operation_classes = validate_rows(
+        rows_path, summary["rows"]["sha256"], errors
+    )
     require(row_count == 10000, f"expected 10000 raw rows, found {row_count}", errors)
+    require(
+        classes
+        == {
+            "chematic_regression": 18,
+            "contract_difference": 9919,
+            "unresolved": 3484,
+        },
+        f"raw-row classification counts changed: {dict(classes)}",
+        errors,
+    )
+    require(
+        operation_classes[("smiles_parse_write", "chematic_regression")] == 18,
+        "expected 18 classified SMILES stereo regressions",
+        errors,
+    )
+    require(
+        operation_classes[("morgan", "contract_difference")] == 1,
+        "expected one classified Morgan contract difference",
+        errors,
+    )
+    require(
+        operation_classes[("cip", "unresolved")] == 120,
+        "expected 120 unresolved CIP rows",
+        errors,
+    )
+    require(
+        operation_classes[("smarts", "unresolved")] == 3364,
+        "expected 3,364 unresolved SMARTS rows",
+        errors,
+    )
 
     python_lane = first_lane(python_provenance, "Python", errors)
     require(python_lane.get("availability") == "measured", "Python provenance lane unavailable", errors)
@@ -171,7 +216,8 @@ def main() -> int:
         return 1
     print(
         "RDKit rebaseline evidence OK: 10,000 complete rows; "
-        "Morgan 9,999 exact; CIP 9,880 exact; SMARTS 14,306/310,000 differences"
+        "18 SMILES stereo regressions; one typed Morgan contract difference; "
+        "120 CIP and 3,364 SMARTS rows unresolved"
     )
     return 0
 
