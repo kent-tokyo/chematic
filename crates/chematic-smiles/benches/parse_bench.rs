@@ -1,6 +1,7 @@
 use chematic_smiles::{canonical_smiles, parse};
 use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
+use std::time::Instant;
 
 const BENCH_SMILES: &[&str] = &[
     "c1ccccc1",
@@ -18,8 +19,18 @@ const BENCH_SMILES: &[&str] = &[
 fn bench_parse(c: &mut Criterion) {
     c.bench_function("parse_smiles_10mol", |b| {
         b.iter(|| {
+            let started = Instant::now();
             for s in BENCH_SMILES {
                 let _ = black_box(parse(black_box(s)));
+            }
+            // Issue #70 hosted calibration only. This branch is deliberately
+            // never merged: pad each measured iteration by 5% of its own
+            // parse time so the final Stage-1/Stage-2 design can measure its
+            // hosted detection rate on a portable regression signal.
+            let target = started.elapsed() / 20;
+            let pad_started = Instant::now();
+            while pad_started.elapsed() < target {
+                black_box(0u64);
             }
         })
     });
