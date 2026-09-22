@@ -3756,16 +3756,12 @@ mod policy_bridge_tests {
     // work (`uff_energy_breakdown`/`minimize_uff_with_trace`/etc., unrelated
     // to this fix).
 
-    /// #188 flexible-chain case: hexane's `UffOnly` + `generate_coords`
-    /// minimization is measured to blow its worst bond length past 3 Å at
-    /// the default 200-step budget (same shape as naphthalene's
-    /// `mmff94_with_uff_fallback_reports_typed_failure_when_fallback_itself_is_unsound`
-    /// above) -- but, per the #185/#188 fix, `run_uff_bridge` retries once
-    /// from `embed_distance_geometry_v2`'s geometry on exactly this failure
-    /// class, and that retry succeeds. Pins the now-fixed behavior: `Ok`,
-    /// with `starting_geometry` disclosing that the rescue fired.
+    /// The bounded UFF proposal introduced by the public-package performance
+    /// pass lets the original `generate_coords` hexane geometry recover at
+    /// the default budget. Pin that improvement: the bridge must return the
+    /// sound first trajectory and must not claim that the DG-v2 rescue ran.
     #[test]
-    fn uff_only_succeeds_for_hexane_from_generate_coords_via_distance_geometry_v2_rescue() {
+    fn uff_only_recovers_hexane_from_generate_coords_without_rescue() {
         let mol = parse("CCCCCC").expect("hexane");
         let coords = generate_coords(&mol);
         let config = MinimizeConfig::default();
@@ -3782,8 +3778,8 @@ mod policy_bridge_tests {
         assert_eq!(result.actual_force_field_used, ForceFieldPolicy::UffOnly);
         assert_eq!(
             result.starting_geometry,
-            Some(UffStartingGeometry::ReplacedWithDistanceGeometryV2),
-            "expected the rescue to have fired and to be disclosed, not silent"
+            Some(UffStartingGeometry::AsProvided),
+            "the bounded first trajectory should now succeed without a rescue"
         );
         let worst = worst_bond_length_vec(&mol, &coords_to_vec(&result.coords, mol.atom_count()));
         assert!(
@@ -3842,21 +3838,14 @@ mod policy_bridge_tests {
         }
     }
 
-    /// The energy-semantics regression this test exists to catch: on a successful
-    /// rescue, `energy_before`/`energy_after` must both describe the SAME
-    /// trajectory (the `embed_distance_geometry_v2` geometry, before and after
-    /// minimizing it) -- never the caller's abandoned original geometry paired
-    /// with the retry's outcome. Hexane's `generate_coords` energy (~1.5e7
-    /// kcal/mol, per `docs/rfcs/uff_robustness_diagnosis_185_188.md`) and its
-    /// `embed_distance_geometry_v2` energy (~3.78 kcal/mol) differ by roughly 6
-    /// orders of magnitude -- exactly the fixture needed to make a
-    /// caller-geometry/retry-outcome mismatch impossible to miss. A buggy
-    /// implementation that reused the caller's `energy_before` would report
-    /// something around 1.5e7 here; this asserts the ACTUAL value instead,
-    /// independently recomputed from `embed_distance_geometry_v2`'s own
-    /// deterministic output (`EmbedParameters::default()`'s `random_seed` is a
-    /// fixed constant, so this reproduces the exact geometry the rescue itself
-    /// used).
+    /// The energy-semantics regression this test exists to catch: on a
+    /// successful rescue, `energy_before`/`energy_after` must both describe
+    /// the SAME trajectory (the `embed_distance_geometry_v2` geometry, before
+    /// and after minimizing it) -- never the caller's abandoned original
+    /// geometry paired with the retry's outcome. The bounded-proposal
+    /// minimizer now recovers the former finite-clash hexane fixture directly,
+    /// so make the caller trajectory explicitly non-finite to exercise the
+    /// same public rescue contract deterministically.
     #[test]
     fn uff_only_rescue_energy_before_reflects_dg_v2_geometry_not_caller() {
         use crate::distance_geometry_v2::{EmbedParameters, embed_distance_geometry_v2};
@@ -3865,12 +3854,13 @@ mod policy_bridge_tests {
         let n = mol.atom_count();
         let types = assign_uff_types(&mol);
 
-        let caller_coords = generate_coords(&mol);
+        let mut caller_coords = generate_coords(&mol);
+        let first = caller_coords.get(AtomIdx(0));
+        caller_coords.set(AtomIdx(0), Point3::new(f64::NAN, first.y, first.z));
         let caller_energy = uff_total_energy(&mol, &types, &coords_to_vec(&caller_coords, n));
         assert!(
-            caller_energy > 1.0e6,
-            "expected hexane's generate_coords energy to be the measured ~1.5e7-scale \
-             catastrophic-clash value, got {caller_energy}"
+            !caller_energy.is_finite(),
+            "fixture must force the typed non-finite rescue path"
         );
 
         let v2_coords = embed_distance_geometry_v2(&mol, &EmbedParameters::default())
