@@ -4,6 +4,11 @@ This packet evaluates source candidate `af7c0c44` against the already-pinned
 published RDKit `2026.3.6` wheel. It is current-source evidence, not a claim
 about published CheMatic `1.0.19` and not yet a release result.
 
+> **Follow-up:** candidate `dd7fe3e9` closes this packet's 12 typed MMFF94
+> failures and four gross-clash rows in the production stereo-safe lane. See
+> [`2026-09-23-a6-mmff94-stereo-safe-quality.md`](2026-09-23-a6-mmff94-stereo-safe-quality.md).
+> The lighter speed lane below remains historical and is not quality-equivalent.
+
 ## Protocol
 
 - Corpus: the fixed A/B 3D manifests, 265 molecules, seed `20260801`.
