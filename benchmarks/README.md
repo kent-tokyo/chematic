@@ -11,6 +11,7 @@ accuracy, or compatibility claims.
 |---|---|
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
 | Review current public-package fingerprint and 3D evidence | [`2026-09-22-public-package-fingerprint-3d.md`](2026-09-22-public-package-fingerprint-3d.md) |
+| Review current-source MMFF94 same-coordinate energy evidence | [`2026-09-23-mmff94-current-source-energy.md`](2026-09-23-mmff94-current-source-energy.md) |
 | Review current Parse + compatible Morgan evidence | [`2026-09-20-parse-morgan-rdkitjs.md`](2026-09-20-parse-morgan-rdkitjs.md) |
 | Compare current similarity search with RDKit | [`2026-09-12-similarity-search-a3-v1.0.13.md`](2026-09-12-similarity-search-a3-v1.0.13.md) |
 | Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |

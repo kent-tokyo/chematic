@@ -52,6 +52,8 @@ jobs:
           diff -u docs/compatibility-dashboard.md /tmp/compatibility-dashboard.md
       - name: Release channel verification record
         run: python3 scripts/check_release_channel_evidence.py
+      - name: MMFF94 current-source same-coordinate evidence
+        run: python3 scripts/check_mmff94_current_energy_evidence.py
 
   v3000-rdkit-semantic:
     name: V3000 RDKit semantic round trip
