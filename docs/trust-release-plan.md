@@ -664,7 +664,7 @@ local-only制御、再現可能な比較packetを差別化の受入条件にす�
 | [COSMolKit #1](https://github.com/cosmol-studio/COSMolKit/issues/1) | 0.3.0の利用者報告と現sourceのskipped accessor不足。issue自身も公開packageでの独立再現は未実施と明記 | T3.7の自己完結した件数/失敗契約に反映。競合packageの検証済み欠陥とは宣伝しない |
 | [RDKit #9625](https://github.com/rdkit/rdkit/pull/9625) / [#9626](https://github.com/rdkit/rdkit/pull/9626) | protected-atom tautomer / MMFF initial embeddingはいずれもopen PR | T6で監視。今回のTrust RCへ新機能を追加する根拠にはしない |
 
-### 1. T1.6 / A0 — 不採用評価の保全と次freezeの準備（P0、1–3実働日＋評価時間）
+### 1. T1.6 / A0 — core-eight採用完了、履歴保全（完了）
 
 - [x] `trust-eval-candidate-20260916`、`trust-eval-candidate-20260920`、
   `trust-eval-candidate-20260920c` を、
@@ -703,16 +703,22 @@ local-only制御、再現可能な比較packetを差別化の受入条件にす�
   one-time sealed 8,000-rowはTPSA 8,000/8,000 strict、最大絶対誤差0.0だった。
   集計とprovenanceは
   `validation/results/sealed-tpsa-evaluation-trust-eval-candidate-20260921-20260922.json`
-  に保存する。これはTPSA residualの解決証拠であり、他のdescriptorを同じ新規holdoutで
-  再評価していないためmulti-field A0全体の採用完了とはしない。
-- [ ] 次の採用判断が必要になった時点で、別source・別抽出・重複除外・source hash・
-  attestation・annotated tagを新規に固定する。新しいcohortを作るだけでは合格とせず、
-  candidate buildとfixed oracleで一度だけ実行する。
-- [ ] A0 packetの成立とA1–A4各指標の合否を別判定にする。失敗時は結果を固定し、
-  A5独立gold/reviewを代替条件にしない。
+  に保存する。これはTPSA residualの解決証拠であり、当時は他のdescriptorを同じ新規holdoutで
+  再評価していなかったためmulti-field A0全体の採用完了とはしなかった。
+- [x] その後、候補`5e9211a6`をannotated tag
+  `trust-eval-candidate-a0-multifield-r3-20260922`で固定し、候補凍結後に取得した別sourceを、
+  過去の全露出sourceに対してcanonical/parent/Murcko scaffold監査した。2,000-row developmentと
+  one-time sealed 8,000-rowの双方で、分子量、HBA、HBD、TPSA、LogP、MR、Fsp3、芳香族環数が
+  全件strict一致し、parse failure、unsupported、mismatchはいずれも0だった。commit-safe集計は
+  `validation/results/a0-core-eight-sealed-acceptance-20260922.json`、機械検証は
+  `scripts/check_a0_core_eight_sealed.py`に固定した。
+- [x] A0 packetとA1–A4の残指標を別判定にした。A0 core-eight完了は、potential center、
+  stereo、fingerprint/retrieval、workflow/interchange、独立gold、3Dの合格を意味しない。
+- [x] 次の採用判断でも、別source・重複除外・source hash・attestation・annotated tagを
+  新規に固定し、candidate buildとfixed oracleで一度だけ実行する手順を実証した。
 
-出口: 両不採用結果の追跡可能な保全、次freeze前の非sealed開発証拠、将来の候補ごとに
-独立した未使用data手順。次のRDKit公開をこの準備の待ち条件にしない。
+出口: 不採用履歴を保全したまま、独立した未使用data手順とcore-eight採用を完了した。
+oracle/profile変更時は新しい採用packetとして再実行し、既存rawを再利用しない。
 
 ### 2. T1.5 / T3.4 — 次期RDKit rebaseline（P0準備、2–4実働日＋公開待ち）
 

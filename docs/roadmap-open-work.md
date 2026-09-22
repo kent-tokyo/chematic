@@ -32,7 +32,7 @@ none completes an entire A package:
 | Area | Completed slice | Remaining disposition |
 |---|---|---|
 | T0 / A4 | Independent baseline/candidate packet; 12 → 21 residuals, candidate rejected | `local-open`: classify residuals and evaluate a replacement; do not repeat the withdrawn 12 → 3 claim |
-| T1.6 / A0 | The three earlier candidates remain rejected, most recently because TPSA was 7,977/8,000 strict (23 mismatches; max error 25.3). Candidate `bac7ae44`, frozen first as annotated tag `trust-eval-candidate-20260921`, replaces TPSA functional-group exceptions with the complete RDKit 2025.09.3 Ertl N/O/S/P environment table and shares one total/per-atom contribution path. Public evidence is 63/63 atom-type and 10,000/10,000 corpus strict. A separately acquired 14,764-row ChEMBL source was audited against 20,000 exposed rows, leaving 12,345 eligible rows; its 2,000 development rows passed 2,000/2,000 and its one-time sealed holdout passed TPSA 8,000/8,000 at `1e-6`, with maximum absolute error 0.0. | `TPSA closed; multi-field A0 open`: `validation/results/sealed-tpsa-evaluation-trust-eval-candidate-20260921-20260922.json` closes the known 23-row TPSA residual. Raw input/output are local-only and now exposed, so this holdout cannot validate later candidates. Other descriptor fields were not measured in this one-time run; do not promote the result to complete A0 adoption. |
+| T1.6 / A0 | Historical rejected and TPSA-only candidates remain preserved. Candidate `5e9211a6`, frozen as annotated tag `trust-eval-candidate-a0-multifield-r3-20260922` before a third source acquisition, uses the bounded RDKit-parity descriptor aromaticity path and preserves authoritative zero-aromatic results. The new source was canonical/parent/scaffold-audited against every exposed source. Development passed 2,000/2,000 and the one-time sealed holdout passed all eight declared fields at 8,000/8,000, with zero mismatches, parse failures, or unsupported values. | `complete`: `validation/results/a0-core-eight-sealed-acceptance-20260922.json` is validated by `scripts/check_a0_core_eight_sealed.py`. Raw input/output remain local-only and exposed; A0 completion does not complete A1–A6. |
 | T1.7 / A4 | Ordinary V3000, external RDKit/Indigo readers and SGROUP/COLLECTION baseline (PR #544) | `local-open`: typed chemistry/edit semantics and declared refusal boundaries; general CX label retention does not complete T1.8 attachment identity/collapse |
 | T1.8 / A4 | September 19: complete positive `_AP<n>` syntax parser and degree-one-wildcard identity API, with invalid/non-dummy/multi-degree rejection. September 21: RDKit 2025.09.3 gate requires 8/8 RDKit → CheMatic CLI → RDKit label/map/topology and degree-one-wildcard identity results; canonical mapped wildcard output retains `[*:n]`. | `local-open`: bond/stereo-bearing CX cases and any collapse semantics; identity is deliberately not collapse eligibility |
 | T3.4 / A3/A4 | Public 1.0.15 vs official RDKit npm 10k, three browsers, 20 repetitions; separate three-run RSS diagnostic | `local-open` / `toolchain-open`: public 1.0.17 and candidate lanes, equivalent output/search, resource definitions; unavailable remote host/measurement stays explicit |
@@ -53,7 +53,7 @@ The sealed accuracy cohort must not be used for performance tuning.
 
 ## Accuracy follow-up (A0–A6)
 
-All seven packages retain open exit work. The 2026-09-12 plan audit preserves
+Six packages retain open exit work; A0 core-eight is complete. The 2026-09-12 plan audit preserves
 passing local results but reopens A0 and A3 against their full original scope:
 the initial 12-row holdout checked MW only, but the subsequent all-field run
 passes 96/96. Neither run is the planned 8,000-row sealed evaluation.
@@ -80,6 +80,12 @@ new type mismatches in each of `chembl_tier_b_0029` and `_0030`. The production
 condition was restored and the full 230-test `chematic-ff` suite passed.
 Evidence: `validation/results/mmff94-macrocycle-boundary-experiment-a6-2026-09-13.json`.
 
+> **2026-09-22 disposition override:** A0 is complete on the core-eight frozen
+> profile. The retained long-form A0 row below is historical context; the
+> authoritative current evidence is
+> `validation/results/a0-core-eight-sealed-acceptance-20260922.json` and its
+> fail-closed checker. A1–A6 remain independently open.
+
 | Work package | Remaining work | Dependency class and current evidence |
 |---|---|---|
 | A0 / P0 | A0.1–A0.5: all-field strict holdout, raw-result accounting, pinned source/binary provenance, adversarial gate tests, separately built baseline/candidate | `local-open`. Source-built Python with RDKit 2025.09.3 passes all 40,000 field checks strictly; the 12-row all-field holdout passes 96/96. The 5,000-row ECFP4 binding gate passes 5,000/5,000 on all three bindings and records Python extension and Node/WASM hashes. The 8-field descriptor binding gate now passes 5,000/5,000 and 7,737/7,737 exposed rows across Rust/Python/Node/WASM; this is binding parity, not an RDKit oracle. Negative coverage rejects bool counts, empty successes, extra fields, missing provenance, duplicate IDs, and non-finite values. On main, the RDKit descriptor profile now looks up every one of the 3,111 isotope masses recognized by the pinned public periodic table; generated-table lookup and a source-built Python carbon-11 check are development evidence only. The September 20 candidate had fresh provenance, an annotated tag, unused-data attestation, and 8,000/8,000 parsed rows, but was rejected at 7,998/8,000 strict molecular-weight agreement; its input/result are exposed/local-only. A later adoption decision requires a new freeze, genuinely unused cohort, provenance/overlap checks, and full scorecard automation. |
@@ -95,8 +101,8 @@ The original dependency chain is T0 evidence/budget repair → T1 Compatibility 
 independent review, maintenance and existing 3D gaps. The
 [Trust Release plan](trust-release-plan.md) defines subtasks and review dates;
 the active roadmap now orders work by the remaining exits, not completed stages.
-All A0–A6 exits remain open where stated; A0 unused-data work and A5 local
-preparation start in parallel. No new 3D feature race is required, but known
+All A1–A6 exits remain open where stated; A0 is complete and A5 local
+preparation continues in parallel. No new 3D feature race is required, but known
 3D incorrectness is not waived.
 A confirmed silent-corruption regression takes precedence in any area.
 

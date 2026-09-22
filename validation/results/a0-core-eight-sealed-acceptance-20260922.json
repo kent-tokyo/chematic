@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_core_eight_frozen_candidate_evaluation_v1",
+  "status": "accepted",
+  "scope": "One-time sealed eight-field descriptor evaluation; raw input and per-row output remain local-only and exposed.",
+  "evaluated_at": "2026-09-22T00:48:21+00:00",
+  "candidate": {
+    "commit": "5e9211a686d8e8c1d16c7d2d1ddb271008ba3f20",
+    "tag": "trust-eval-candidate-a0-multifield-r3-20260922"
+  },
+  "oracle": {
+    "engine": "RDKit",
+    "version": "2025.09.3",
+    "profile": "rdkit_compat_v2"
+  },
+  "cohort": {
+    "split": "sealed_holdout",
+    "rows": 8000,
+    "sha256": "69dbd5879af309817a435919705543f3aa1ee100c8f388c9c22147580c4fa48a",
+    "manifest_sha256": "a2cf034ed651660dc1758303882d9c7599ab2b1b7795b70e15969d81342ea8a4",
+    "source_sha256": "6899fa12e20c03be2e46e6ed159b700e350192a040784295cbeea24e07f5f015"
+  },
+  "provenance": {
+    "candidate_binary_sha256": "0e9f68378ef6c2644af6463c8352da0522ecf2810402c11650576317028953ca",
+    "evaluator_script_sha256": "474af6279495ba83f0366451dfaaed8980c5d89cdc144744624fc99eca8963e7",
+    "unused_data_attestation_sha256": "3f72e90b9e6fe2e2ec7ad1896311ba74b02ac140db65adc95d7b1ae57b7e223c",
+    "raw_result_sha256": "31b64e512710b9dc5036de41166d77994ce7fb7b010eedb7f7c5e1dab2b747d9"
+  },
+  "accounting": {
+    "rows": 8000,
+    "parsed": 8000,
+    "candidate_parse_failures": 0,
+    "oracle_parse_failures": 0,
+    "all_rows_accounted": true
+  },
+  "strict_tolerances": {
+    "molecular_weight": 1e-06,
+    "hba": 0.0,
+    "hbd": 0.0,
+    "tpsa": 1e-06,
+    "logp": 1e-06,
+    "molar_refractivity": 1e-06,
+    "fsp3": 1e-06,
+    "aromatic_ring_count": 0.0
+  },
+  "fields": {
+    "molecular_weight": {
+      "strict_matches": 8000,
+      "mismatches": 0,
+      "unsupported": 0,
+      "max_abs_error": 0.0
+    },
+    "hba": {
+      "strict_matches": 8000,
+      "mismatches": 0,
+      "unsupported": 0,
+      "max_abs_error": 0.0
+    },
+    "hbd": {
+      "strict_matches": 8000,
+      "mismatches": 0,
+      "unsupported": 0,
+      "max_abs_error": 0.0
+    },
+    "tpsa": {
+      "strict_matches": 8000,
+      "mismatches": 0,
+      "unsupported": 0,
+      "max_abs_error": 0.0
+    },
+    "logp": {
+      "strict_matches": 8000,
+      "mismatches": 0,
+      "unsupported": 0,
+      "max_abs_error": 4.796163466380676e-14
+    },
+    "molar_refractivity": {
+      "strict_matches": 8000,
+      "mismatches": 0,
+      "unsupported": 0,
+      "max_abs_error": 2.0463630789890885e-12
+    },
+    "fsp3": {
+      "strict_matches": 8000,
+      "mismatches": 0,
+      "unsupported": 0,
+      "max_abs_error": 0.0
+    },
+    "aromatic_ring_count": {
+      "strict_matches": 8000,
+      "mismatches": 0,
+      "unsupported": 0,
+      "max_abs_error": 0.0
+    }
+  },
+  "decision": {
+    "accepted": true,
+    "requirement": "every declared field must strictly match on every row with no parse failure or unsupported value"
+  }
+}

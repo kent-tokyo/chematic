@@ -33,17 +33,22 @@ DEPENDENCY_CLASSES = (
 def main() -> int:
     roadmap = ROADMAP.read_text(encoding="utf-8")
     disposition = DISPOSITION.read_text(encoding="utf-8")
-    unchecked = [line for line in roadmap.splitlines() if re.match(r"^- \[ \]", line)]
+    package_lines = [line for line in roadmap.splitlines() if re.match(r"^- \[[ x]\]", line)]
     errors: list[str] = []
 
     for package, title in ACCURACY_PACKAGES.items():
         marker = f"**{package} — {title}:**"
-        if not any(marker in line for line in unchecked):
-            errors.append(f"{package}: unchecked roadmap package is missing")
+        matching = [line for line in package_lines if marker in line]
+        if len(matching) != 1:
+            errors.append(f"{package}: roadmap package must appear exactly once")
+        elif package == "A0" and not matching[0].startswith("- [x]"):
+            errors.append("A0: completed roadmap package must stay checked")
+        elif package != "A0" and not matching[0].startswith("- [ ]"):
+            errors.append(f"{package}: open roadmap package must stay unchecked")
 
     package_ids = {
         match.group(1)
-        for line in unchecked
+        for line in package_lines
         if (match := re.search(r"\*\*(A[0-6]) —", line))
     }
     if package_ids != set(ACCURACY_PACKAGES):
@@ -63,7 +68,7 @@ def main() -> int:
         return 1
 
     print(
-        f"Roadmap disposition OK: {len(package_ids)} accuracy packages and "
+        f"Roadmap disposition OK: {len(package_ids)} accuracy packages (A0 complete) and "
         f"{len(DEPENDENCY_CLASSES)} dependency classes are explicit"
     )
     return 0
