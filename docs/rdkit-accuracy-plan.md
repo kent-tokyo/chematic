@@ -50,15 +50,17 @@ difficult rows cannot improve the compatibility score.
 
 ## A0 — Evidence integrity
 
-Completed foundations include schema validation, raw-row accounting, pinned
-oracle metadata, negative tests, and a post-freeze sealed split.
+Complete for the RDKit 2025.09.3 core-eight profile. Candidate `5e9211a6` was
+frozen before source acquisition, and its overlap-audited split passed
+2,000/2,000 development plus 8,000/8,000 one-time sealed rows for molecular
+weight, HBA, HBD, TPSA, LogP, molar refractivity, Fsp3, and aromatic-ring count.
+All rows were accounted for; mismatches, parse failures, and unsupported values
+were zero. Source, split, binary, evaluator, attestation, and raw-result hashes
+are preserved in `validation/results/a0-core-eight-sealed-acceptance-20260922.json`.
 
-Remaining exit:
-
-- execute the sealed holdout from the frozen candidate;
-- preserve immutable raw output and complete denominators;
-- regenerate the report from raw data in a clean environment;
-- verify baseline/candidate independence and reject incomplete artifacts.
+Reopen A0 only when the oracle, profile, field set, or tolerance changes. A new
+adoption must use a new annotated freeze, post-freeze/unused source, overlap
+audit, immutable raw result, and one-time sealed evaluation.
 
 ## A1 — Perception and descriptors
 
@@ -68,7 +70,8 @@ count retains known residuals and must not be generalized from the exposed set.
 
 Remaining exit:
 
-- run all core fields on unused rows;
+- retain the completed core-eight unused result and run unused rows only for
+  newly declared descriptor/perception families;
 - retain native-profile behavior while testing the opt-in compatibility profile;
 - classify every mismatch by perception, normalization, formula, or unsupported
   chemistry;

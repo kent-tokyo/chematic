@@ -1,9 +1,9 @@
 # chematic roadmap
 
-> Updated 2026-09-22. Released: **v1.0.18**. Next candidate: **v1.0.19**.
-> **Current P0 focus: close the remaining multi-field A0 acceptance work.** The
-> replacement one-time TPSA holdout passed; preserve its exposed evidence and
-> do not reuse it to tune or validate later candidates.
+> Updated 2026-09-22. Released: **v1.0.19**. Next candidate: **v1.0.20**.
+> **A0 core-eight multi-field acceptance is complete.** Preserve every exposed
+> cohort and move the active correctness focus to A2 stereo/identity and the
+> next version-pinned RDKit rebaseline.
 > The merged Parse + Morgan browser win moves to maintenance and package verification.
 
 > The September 20 competitor-watch intake confirms the direction rather than
@@ -15,11 +15,13 @@
 
 ## Current status
 
-- The v1.0.19 candidate aligns TPSA atom typing with RDKit 2025.09.3 and closes
-  the known 23-row TPSA residual with a separately sourced one-time sealed
-  holdout. v1.0.18 remains the latest published release until all channels are
-  independently verified. Release history belongs in `CHANGELOG.md`;
-  publication does not complete the remaining multi-field A0 gate.
+- The post-v1.0.19 candidate `5e9211a6`, frozen as annotated tag
+  `trust-eval-candidate-a0-multifield-r3-20260922`, completes the A0 core-eight
+  gate against RDKit 2025.09.3. A separately acquired source was overlap-audited
+  against every previously exposed source; development passed 2,000/2,000 and
+  the one-time sealed holdout passed all eight fields at 8,000/8,000 with zero
+  mismatches, parse failures, or unsupported values. The commit-safe result is
+  `validation/results/a0-core-eight-sealed-acceptance-20260922.json`.
 - The published-package browser scorecard is now in `main` via
   [PR #541](https://github.com/kent-tokyo/chematic/pull/541) (`8ce8026`). It
   compares `@kent-tokyo/chematic@1.0.15` with official
@@ -45,21 +47,18 @@
   public 5k corpora are 10,000/10,000 strict for TPSA. These are non-sealed
   development regressions; they neither reuse nor rehabilitate any rejected
   8k candidate.
-- The replacement TPSA candidate was frozen at commit `bac7ae44` by the annotated
-  tag `trust-eval-candidate-20260921` before replacement-source acquisition. A
-  separately acquired 14,764-row ChEMBL source was canonical/parent/scaffold
-  audited against 20,000 exposed rows, then split into 2,000 development and
-  8,000 sealed rows. TPSA passed 2,000/2,000 development and 8,000/8,000 sealed
-  at `1e-6` tolerance with maximum absolute error `0.0`. The raw sealed rows and
-  per-row output are local-only and exposed; they cannot validate later candidates.
-  This closes the TPSA residual, not the complete multi-field A0 adoption gate.
+- The earlier TPSA-only pass remains historical. The completed multi-field run
+  additionally exposed and fixed bounded RDKit-parity aromaticity boundaries
+  for fused sulfur/nitrogen systems, a zero-aromatic fused ring system, and one
+  fused cyclic-ether Crippen type. Its raw rows and per-row output are local-only
+  and now exposed; no later candidate may reuse them as an unused holdout.
 - The bounded V3000 E/Z query gate preserves RDKit's four-query/four-target
   `HasSubstructMatch(..., useChirality=True)` table through a CheMatic round
   trip.  Indigo 1.46.0 matches both targets for both queries in that fixture;
   record that observed behavior as an external semantic loss, not as CheMatic
   query compatibility or an Indigo correctness verdict.
-- All **seven accuracy packages A0–A6 still have open acceptance work**.
-  Publication does not complete the planned Trust RC or independent accuracy gates.
+- **A0 is complete; A1–A6 retain open acceptance work.** This does not complete
+  the broader Trust RC, independent gold evaluation, or 3D accuracy program.
 - The three T1.6 sealed candidates are historical, exposed evaluation inputs:
   `trust-eval-candidate-20260916` was rejected for molecular-weight/TPSA
   failures, and `trust-eval-candidate-20260920` was rejected at 7,998/8,000
@@ -72,7 +71,7 @@
   It is a different candidate from the September 16 accuracy freeze. Published
   package timing, the original multi-session protocol, and broader runtime
   resource acceptance still require their own evidence.
-- This index tracks **18 open areas**: seven accuracy packages and eleven
+- This index tracks **17 open areas**: six accuracy packages and eleven
   cross-cutting follow-ups. They overlap; they are not 18 sequential phases.
   The abandoned 1.10x speed stretch is historical and excluded from that count.
 
@@ -114,7 +113,7 @@ into fresh validation evidence.
 
 | Stage | Work | Completion evidence | Explicit boundary |
 |---|---|---|---|
-| 0 | Preserve the three rejected A0 candidates and finish the acceptance-packet inventory | Candidate provenance, declared support domain, failures, affected bindings, and an exposure record are linked from the ledger | PR #606 (`fa61eaaa`) established the packet. The current packet checks the three safe rejection summaries, 52-row descriptor classification, 63-row TPSA atom-type probe, and 7,737-row Rust/Python/Node-WASM impact. No descriptor, stereo, or upstream-regression tuning may use the exposed 8k rows as an unused holdout; a new freeze remains required for adoption. |
+| 0 | Preserve rejected A0 candidates and close the core-eight acceptance packet | Candidate provenance, declared support domain, failures, affected bindings, and the accepted one-time result are linked from the ledger | Complete. Candidate `5e9211a6` passed all eight fields on 8,000/8,000 sealed rows after a new freeze, post-freeze acquisition, and overlap audit. `scripts/check_a0_core_eight_sealed.py` validates the commit-safe summary; all raw cohorts are exposed and prohibited from reuse. |
 | 1 | Prepare the RDKit rebaseline lanes before a new stable artifact is selected | Version-pinned Python/native/npm inputs, nanobind-wrapper backend and typed-error probes, fixed operation settings, and reproducible commands | Run and publish a comparison only against an actually released artifact; 2026.03.6 remains historical rather than being relabelled current |
 | 2 | Import verified upstream failure modes as CheMatic regressions | Identity-renumber stereo, selected-atom/bond CIP, and V3000 E/Z query-round-trip truth tables pass, or a typed unsupported outcome is documented | A competitor failure is a regression source, not proof that CheMatic is more correct; do not import a report before confirming its reproducer and affected versions |
 | 3 | Close A2/#503's canonical E/Z work before new 3D breadth | Remaining components converge under atom-order and spelling permutations, reparse preserves stereo, and stable-key stops only where ambiguity remains real | Implemented for the three audited aromatic-stash residual families: a bounded complete-slot planner includes raw directional carriers, reparses every candidate against a non-recursive E/Z signature, and selects the lexicographic minimum without raw atom/bond-index tie-breaks. The 256-seed relabeling gate now converges and stable keys are admitted only for this proven aromatic-stash path; other coupled systems remain fail-closed. |
@@ -134,7 +133,7 @@ stop conditions explicit.
 
 | Order | Work package | Concrete next output | Acceptance / stop condition |
 |---:|---|---|---|
-| 1 | **A0 evidence recovery** | Keep the merged development packet current when a declared non-sealed regression or binding surface changes | The three exposed cohorts remain historical. Do not create an allegedly fresh holdout without a new source, overlap audit, attestation, annotated tag, and one-time protocol. |
+| 1 | **A0 evidence maintenance** | Keep the accepted core-eight packet and historical rejection ledger immutable | Reopen A0 only when the declared field/profile/oracle changes; any new adoption still requires a new source, overlap audit, annotated freeze, attestation, and one-time protocol. |
 | 2 | **T1.5 RDKit rebaseline preparation** | Maintain runnable Python/native/npm lanes with artifact, backend, API-contract, corpus, toolchain, and command provenance | Do not run or label a “next RDKit” comparison until an official released artifact is verified. Historical 2025.09.3/2026.03.6 lanes stay visible. |
 | 3 | **T5.7/T1.9 semantic regressions** | Add source-pinned reproductions for identity-renumber stereo and V3000 E/Z query round trips; include selected atom/bond CIP only after its source fixture is verified | Each fixture must compare atom/bond correspondence and semantic truth tables, or return a typed unsupported result. A competitor defect is never evidence of CheMatic superiority. |
 | 4 | **T3.7 controlled batch runtime** | Specify a versioned unknown-stream envelope for Rust, Python, Node, WASM, Worker, and MCP adapters | Known-length accounting remains exact; unknown streams expose processed prefix, observed-but-unprocessed data, unread range/unknown, terminal reason, and cancellation state. Zero `failed` must not imply success. |
@@ -145,11 +144,10 @@ stop conditions explicit.
 
 | Order | Priority | Delivery and next output | Product Phase / accuracy |
 |---|---|---|---|
-| 1 | P0 | **A0 recovery after frozen 8k rejection**: preserve the failed candidate's evidence; on non-sealed data, classify every declared descriptor scope and binding impact; only then prepare a genuinely new freeze/unused cohort for a later one-time adoption decision | P0/P2; A0–A4 |
-| 2 | P0 preparation; external execution | **T1.5 rebaseline**: make old/new RDKit lanes executable now; run only for actually published stable Python/native/npm artifacts. Record wrapper backend, typing/exception behavior, and operation configuration—not just version strings. Re-measure Python call overhead separately from kernel work after a binding change | P0/P2/P3; A1–A4 |
-| 3 | P1 | **A2 and semantic interchange closure**: retain the deployed #503 aromatic-stash planner and expand its acceptance only with new bounded, semantic-reparse evidence; do not generalize from the three audited families to all coupled E/Z. Resolve remaining #503 components and phosphorus adjudication before new 3D breadth. Retain the completed T5.7 identity-renumber gate and T1.9 V3000 E/Z query truth table; after primary-source verification add selected-atom/bond CIP and identity-renumber stereo cases, keep T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries, then add typed semantics before making compatibility claims | P1/P2/P4; A2/A5 |
-| 4 | P1 | **T3.7 controlled runtime**: retain the merged Explorer unknown-length CSV cancellation adapter, then extend the completed row-accounting contract through Worker/stream/cancel/export/limits on 10k inputs. Every binding must report original index, stage, success/failed/refused/skipped terminal outcome, unprocessed cancellation range, and an all-inputs-succeeded predicate; publish typed install examples and a generated package scorecard only after that contract and its resource evidence exist. T3.6 maintains its scoped speed win; it does not substitute for runtime controls | P0/P3/P6; A3/A4 |
-| 5 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: prepare independent gold/review and close existing 3D typing, charge, gradient, convergence, timeout, and stereo gaps. Do not add embedding breadth before fail-closed correctness evidence | P5/P6; A5/A6 |
+| 1 | P0 preparation; external execution | **T1.5 rebaseline**: make old/new RDKit lanes executable now; run only for actually published stable Python/native/npm artifacts. Record wrapper backend, typing/exception behavior, and operation configuration—not just version strings. Re-measure Python call overhead separately from kernel work after a binding change | P0/P2/P3; A1–A4 |
+| 2 | P1 | **A2 and semantic interchange closure**: retain the deployed #503 aromatic-stash planner and expand its acceptance only with new bounded, semantic-reparse evidence; do not generalize from the three audited families to all coupled E/Z. Resolve remaining #503 components and phosphorus adjudication before new 3D breadth. Retain the completed T5.7 identity-renumber gate and T1.9 V3000 E/Z query truth table; after primary-source verification add selected-atom/bond CIP and identity-renumber stereo cases, keep T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries, then add typed semantics before making compatibility claims | P1/P2/P4; A2/A5 |
+| 3 | P1 | **T3.7 controlled runtime**: retain the merged Explorer unknown-length CSV cancellation adapter, then extend the completed row-accounting contract through Worker/stream/cancel/export/limits on 10k inputs. Every binding must report original index, stage, success/failed/refused/skipped terminal outcome, unprocessed cancellation range, and an all-inputs-succeeded predicate; publish typed install examples and a generated package scorecard only after that contract and its resource evidence exist. T3.6 maintains its scoped speed win; it does not substitute for runtime controls | P0/P3/P6; A3/A4 |
+| 4 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: prepare independent gold/review and close existing 3D typing, charge, gradient, convergence, timeout, and stereo gaps. Do not add embedding breadth before fail-closed correctness evidence | P5/P6; A5/A6 |
 
 T3/T4/T5 can proceed in parallel once their dependencies pass. Public-channel
 inventory and A5 gold preparation continue alongside frozen-packet verification.
@@ -212,8 +210,8 @@ These are remaining exits, not a list of all work already implemented.
 See the [accuracy plan](docs/rdkit-accuracy-plan.md) for subtask acceptance and
 the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencies.
 
-- [ ] **A0 — Evaluation contract:** the September 16 frozen candidate was evaluated and rejected; prepare a new candidate freeze, unused cohort, and complete acceptance packet for any later adoption decision. The 96/96 all-field holdout and exposed-corpus validators are narrower completed slices.
-- [ ] **A1 — Perception and descriptors:** complete unused core-eight-field and potential-center evaluation, plus affected workflow/binding acceptance. The opt-in profile has passing exposed-corpus evidence; additional families have separate gates.
+- [x] **A0 — Evaluation contract:** candidate `5e9211a6` passed the frozen RDKit 2025.09.3 core-eight profile on 2,000/2,000 development and 8,000/8,000 one-time sealed rows, with full row accounting, pinned binary/evaluator/source/attestation hashes, and zero mismatches or unsupported values.
+- [ ] **A1 — Perception and descriptors:** core-eight unused evaluation is complete through A0; finish potential-center evaluation and affected workflow/binding acceptance. Additional descriptor families retain separate gates.
 - [ ] **A2 — Stereo and identity:** the bounded #503 aromatic-stash planner passes the three audited families, semantic reparse, idempotency, and 256-seed permutation exits; retain its scope, resolve remaining #503 components and phosphorus CIP adjudication, then meet the broader false-merge exits.
 - [ ] **A3 — Fingerprints and retrieval:** retain raw/provenance evidence for the new aromaticity lane, rerun affected bindings/search after adoption, and pass unused-input evaluation. Existing k=1/10/100 and threshold evidence remains valid for its recorded builds.
 - [ ] **A4 — Workflows and interchange:** finish T0 residual classification and adoption, then verify mapped SMARTS embeddings, standardization, reaction products, and typed V3000 semantics across engines.

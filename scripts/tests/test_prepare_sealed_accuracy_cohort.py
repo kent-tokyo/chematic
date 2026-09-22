@@ -36,6 +36,7 @@ def test_preparation_excludes_all_reference_identity_forms_and_never_seals_by_de
     assert result.returncode == 0, result.stderr
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["status"] == "prepared_not_sealed"
+    assert manifest["sealed"] is False
     assert manifest["splits"]["development"]["rows"] == 1
     assert manifest["splits"]["sealed_holdout"]["rows"] == 1
     assert manifest["deduplication"]["excluded_rows"] == {"duplicate_canonical": 0, "reference_canonical": 1, "reference_parent": 1, "reference_scaffold": 1}
@@ -97,3 +98,37 @@ def test_attestation_must_follow_the_annotated_candidate_tag():
         raise AssertionError("an attestation before candidate freeze must not be accepted")
 
     MODULE.verify_attestation_timing(freeze, "2026-09-13T18:09:19+09:00")
+
+
+def test_post_freeze_acquisition_requires_source_to_be_strictly_newer():
+    freeze = {
+        "candidate_commit": "0" * 40,
+        "candidate_tag": "candidate",
+        "candidate_tagged_at": "2026-09-13T09:09:19Z",
+    }
+    MODULE.verify_post_freeze_acquisition(freeze, {"acquired_at": "2026-09-13T09:09:20Z"})
+    try:
+        MODULE.verify_post_freeze_acquisition(freeze, {"acquired_at": "2026-09-13T09:09:19Z"})
+    except ValueError as error:
+        assert "must be later" in str(error)
+    else:
+        raise AssertionError("a source acquired at the freeze time must not be accepted")
+
+
+def test_post_freeze_attestation_is_a_sealing_condition(tmp_path):
+    freeze = {
+        "candidate_commit": "0" * 40,
+        "candidate_tag": "candidate",
+        "candidate_tagged_at": "2026-09-13T09:09:19Z",
+    }
+    metadata = {
+        "acquired_at": "2026-09-13T09:09:20Z",
+        "source_sha256": "1" * 64,
+    }
+    attestation = MODULE.write_post_freeze_attestation(
+        tmp_path / "post-freeze-attestation.json", freeze, metadata
+    )
+    assert attestation["kind"] == "post_freeze_acquisition"
+    assert attestation["candidate_commit"] == freeze["candidate_commit"]
+    assert MODULE.cohort_sealing_state(attestation) == (True, "sealed")
+    assert MODULE.cohort_sealing_state(None) == (False, "prepared_not_sealed")

@@ -954,6 +954,17 @@ pub fn aromatic_ring_list(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
     } else {
         mol
     };
+    aromatic_ring_list_preperceived(mol)
+}
+
+/// Return aromatic rings from a molecule whose aromaticity flags are already
+/// authoritative, without running another perception model.
+///
+/// This is used by compatibility profiles that deliberately apply a narrower
+/// aromaticity model which can validly produce zero aromatic atoms. Calling
+/// [`aromatic_ring_list`] in that case would otherwise interpret the absence
+/// of flags as "not perceived yet" and replace the chosen model.
+pub fn aromatic_ring_list_preperceived(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
     let mut rings = all_ring_list_inner(mol);
     append_small_chordless_aromatic_cycles(mol, &mut rings);
     rings

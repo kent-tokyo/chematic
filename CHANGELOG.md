@@ -9,6 +9,16 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Completed the RDKit 2025.09.3 A0 core-eight descriptor gate: a frozen
+  candidate passed 2,000/2,000 development rows and a separately sourced,
+  overlap-audited one-time sealed holdout at 8,000/8,000 for molecular weight,
+  HBA, HBD, TPSA, LogP, molar refractivity, Fsp3, and aromatic-ring count.
+- Replaced broad descriptor aromaticity promotion with the bounded RDKit-parity
+  model, preserved authoritative zero-aromatic results, and removed a
+  shape-based cyclic-ether Crippen shortcut that misclassified one fused system.
+- Added post-freeze acquisition attestation, strict eight-field evaluation,
+  commit-safe provenance summaries, and a fail-closed checked-in A0 validator.
+
 ## [1.0.19] - 2026-09-22
 
 - Replaced ad hoc TPSA functional-group exceptions with the complete RDKit

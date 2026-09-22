@@ -62,38 +62,6 @@ fn is_atom_in_ring(mol: &Molecule, idx: AtomIdx) -> bool {
     false
 }
 
-/// True if `idx` (O atom) is an aromatic oxide bridge: a neutral O in a
-/// five-membered ring with two carbon neighbors, either both aromatic or with
-/// one aromatic neighbor and a vinylic carbon partner.  The ring-size and
-/// partner checks avoid promoting ordinary six-membered cyclic ethers merely
-/// because one neighbor is aromatic. Used for TPSA and Crippen terms.
-fn is_aromatic_oxide_bridge(mol: &Molecule, idx: AtomIdx) -> bool {
-    let neighbors: Vec<_> = mol.neighbors(idx).collect();
-    if neighbors.len() != 2
-        || neighbors.iter().any(|(nb, bidx)| {
-            mol.bond(*bidx).order == BondOrder::Double || mol.atom(*nb).element.atomic_number() != 6
-        })
-    {
-        return false;
-    }
-    let aromatic_neighbors = neighbors
-        .iter()
-        .filter(|(nb, _)| mol.atom(*nb).aromatic)
-        .count();
-    let sp2_carbon_neighbor = neighbors.iter().any(|(nb, _)| {
-        mol.neighbors(*nb).any(|(other, bidx)| {
-            other != idx
-                && mol.bond(bidx).order == BondOrder::Double
-                && mol.atom(other).element.atomic_number() == 6
-        })
-    });
-    (aromatic_neighbors == 2 || (aromatic_neighbors == 1 && sp2_carbon_neighbor))
-        && find_sssr(mol)
-            .rings()
-            .iter()
-            .any(|ring| ring.len() == 5 && ring.contains(&idx))
-}
-
 // --- Element Detection Helpers ---
 // Consolidate atomic number matching to eliminate 50+ hardcoded checks throughout the file.
 
@@ -1147,8 +1115,21 @@ fn use_perceived_nitrogen_environment(mol: &Molecule, mol_arom: &Molecule, idx: 
     carbonyl_neighbors == 1 || (carbonyl_neighbors == 0 && mol.degree(idx) == 2)
 }
 
+/// Aromaticity representation used by RDKit-compatible descriptor typing.
+///
+/// The general-purpose perception engine intentionally accepts a wider set of
+/// conjugated ring systems. Descriptor atom types need RDKit's narrower
+/// aromaticity boundary, especially for neutral divalent sulfur in fused
+/// heterocycles. Keep the operation fail-safe for unusual inputs: a parity
+/// perception failure falls back to the stable general model rather than
+/// making descriptor evaluation fallible.
+fn descriptor_aromaticity(mol: &Molecule) -> Molecule {
+    chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
+        .unwrap_or_else(|_| chematic_perception::apply_aromaticity(mol))
+}
+
 fn tpsa_contributions(mol: &Molecule) -> Vec<f64> {
-    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let mol_arom = descriptor_aromaticity(mol);
     let mut contributions = vec![0.0; mol.atom_count()];
     for (idx, original_atom) in mol.atoms() {
         let atomic_number = original_atom.element.atomic_number();
@@ -1392,7 +1373,7 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
     // RDKit assigns Crippen atom types after aromaticity perception. Match on
     // that representation so an equivalent Kekulé spelling receives the same
     // aromatic SMARTS type; contributions stay indexed to the caller's graph.
-    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let mol_arom = descriptor_aromaticity(mol);
     // Pre-compute once per molecule: for each pattern, which atoms satisfy query-atom-0?
     // Previously O(n_atoms × n_patterns × VF2); now O(n_patterns × VF2 + n_atoms × n_patterns).
     let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
@@ -1417,23 +1398,12 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
                 .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
                 .count() as u8;
             let h_count = h_count_impl + h_count_expl;
-            // Aromatic oxide bridge: use the bounded five-membered-ring rule
-            // above rather than promoting an ordinary cyclic ether.
-            // RDKit perceives this as [o] type (logp=0.1552); plain SMARTS gives [O](a) (-0.4195).
-            let heavy = if atom.element.atomic_number() == 8
-                && h_count == 0
-                && atom.charge == 0
-                && is_aromatic_oxide_bridge(mol, idx)
-            {
-                0.1552
-            } else {
-                anchor_sets
-                    .iter()
-                    .zip(queries.iter())
-                    .find(|(set, _)| set.contains(&idx))
-                    .map(|(_, (_, logp, _))| *logp)
-                    .unwrap_or(0.0)
-            };
+            let heavy = anchor_sets
+                .iter()
+                .zip(queries.iter())
+                .find(|(set, _)| set.contains(&idx))
+                .map(|(_, (_, logp, _))| *logp)
+                .unwrap_or(0.0);
             let h_contrib = if h_count == 0 {
                 0.0
             } else {
@@ -1587,7 +1557,10 @@ pub fn aromatic_ring_count(mol: &Molecule) -> usize {
 /// Count aromatic rings after applying the opt-in RDKit aromaticity model.
 /// Native aromatic flags and native ring counts are left untouched.
 pub fn rdkit_aromatic_ring_count(mol: &Molecule) -> usize {
-    chematic_perception::aromatic_ring_list(mol).len()
+    match chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol) {
+        Ok(perceived) => chematic_perception::aromatic_ring_list_preperceived(&perceived).len(),
+        Err(_) => chematic_perception::aromatic_ring_list(mol).len(),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1649,7 +1622,7 @@ fn h_mr_for_parent(
 /// H contributions are folded into the attached heavy atom. Index matches mol.atoms().
 pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
     let queries = get_crippen_queries();
-    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let mol_arom = descriptor_aromaticity(mol);
     let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
 
     let h_fallback = CRIPPEN_SMARTS
@@ -1669,21 +1642,12 @@ pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
                 .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
                 .count() as u8;
             let h_count = h_count_impl + h_count_expl;
-            let heavy = if atom.element.atomic_number() == 8
-                && !atom.aromatic
-                && h_count == 0
-                && atom.charge == 0
-                && is_aromatic_oxide_bridge(mol, idx)
-            {
-                1.080 // Crippen MR for [o] (aromatic oxide bridge)
-            } else {
-                anchor_sets
-                    .iter()
-                    .zip(queries.iter())
-                    .find(|(set, _)| set.contains(&idx))
-                    .map(|(_, (_, _, mr))| *mr)
-                    .unwrap_or(0.0)
-            };
+            let heavy = anchor_sets
+                .iter()
+                .zip(queries.iter())
+                .find(|(set, _)| set.contains(&idx))
+                .map(|(_, (_, _, mr))| *mr)
+                .unwrap_or(0.0);
             let h_contrib = if h_count == 0 {
                 0.0
             } else {
@@ -1715,7 +1679,7 @@ pub fn molar_refractivity(mol: &Molecule) -> f64 {
 /// computation), making it roughly 2× faster when both values are needed.
 pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
     let queries = get_crippen_queries();
-    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let mol_arom = descriptor_aromaticity(mol);
     let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
 
     let h_logp_fallback = CRIPPEN_SMARTS
@@ -1739,21 +1703,12 @@ pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
         let h_count = implicit_hcount(mol, idx);
 
         // LogP heavy-atom contribution
-        let logp_heavy = if atom.element.atomic_number() == 8
-            && !atom.aromatic
-            && h_count == 0
-            && atom.charge == 0
-            && is_aromatic_oxide_bridge(mol, idx)
-        {
-            0.1552
-        } else {
-            anchor_sets
-                .iter()
-                .zip(queries.iter())
-                .find(|(set, _)| set.contains(&idx))
-                .map(|(_, (_, lp, _))| *lp)
-                .unwrap_or(0.0)
-        };
+        let logp_heavy = anchor_sets
+            .iter()
+            .zip(queries.iter())
+            .find(|(set, _)| set.contains(&idx))
+            .map(|(_, (_, lp, _))| *lp)
+            .unwrap_or(0.0);
 
         // MR heavy-atom contribution
         let mr_heavy = anchor_sets
@@ -4007,6 +3962,12 @@ mod tests {
     }
 
     #[test]
+    fn rdkit_aromatic_ring_profile_does_not_reperceive_zero_aromatic_result() {
+        let fused_thiohydantoin = mol("S=C1N2CCN=C2SC2=NCCN12");
+        assert_eq!(rdkit_aromatic_ring_count(&fused_thiohydantoin), 0);
+    }
+
+    #[test]
     fn unspecified_stereocenters_require_distinct_substituents() {
         assert_eq!(num_unspecified_stereocenters(&mol("C")), 0);
         assert_eq!(num_unspecified_stereocenters(&mol("CC")), 0);
@@ -4290,6 +4251,77 @@ mod tests {
         assert!(approx(tpsa(&bridged), 63.22, 1e-12));
         assert!(approx(logp_crippen(&bridged), 4.0074, 1e-12));
         assert!(approx(molar_refractivity(&bridged), 105.7645, 1e-12));
+    }
+
+    #[test]
+    fn fused_heterocycles_keep_rdkit_descriptor_aromaticity_boundary() {
+        // Development-only A0 residuals. The broad aromaticity model promoted
+        // neutral divalent sulfur (and adjacent nitrogens) in these fused
+        // systems even though RDKit keeps their Kekule atom types. All three
+        // descriptors share the same bounded parity representation.
+        let cases = [
+            (
+                "O=C(Nc1ccccc1Cc1ccccc1)c1ccc2c(c1)SC1=NS(=O)(=O)CCN12",
+                112.52,
+                4.1412,
+                124.5100,
+            ),
+            (
+                r#"CCOc1cc(/C=C2\C(=N)N3N=C(CC(=O)N4CCCCC4)SC3=NC2=O)ccc1O"#,
+                143.95,
+                2.81267,
+                119.3345,
+            ),
+            (
+                "N=C1/C(=C/c2ccc(Br)o2)C(=O)N=C2SC(CC(=O)N3CCCC3)=NN12",
+                127.63,
+                2.67377,
+                101.8497,
+            ),
+            (
+                "N=C1/C(=C/c2cccn2CCOc2ccccc2)C(=O)N=C2SC=C(c3ccccc3)N12",
+                95.98,
+                4.87137,
+                128.3637,
+            ),
+            (
+                "COc1cc2c(cc1OC)N1C(=NC(N)=NC1c1ccccc1)NC2=O",
+                101.54,
+                1.6367,
+                97.7316,
+            ),
+            (
+                "COC(=O)C1=C(C)N=C2SC(C#N)=C(N)N2C1c1cccc(OC)c1",
+                126.24,
+                2.25308,
+                94.1424,
+            ),
+        ];
+
+        for (smiles, expected_tpsa, expected_logp, expected_mr) in cases {
+            let molecule = mol(smiles);
+            assert!(approx(tpsa(&molecule), expected_tpsa, 1e-12), "{smiles}");
+            assert!(
+                approx(logp_crippen(&molecule), expected_logp, 1e-12),
+                "{smiles}"
+            );
+            assert!(
+                approx(molar_refractivity(&molecule), expected_mr, 1e-12),
+                "{smiles}"
+            );
+        }
+    }
+
+    #[test]
+    fn fused_cyclic_ether_uses_rdkit_crippen_oxygen_type() {
+        // This five-membered cyclic ether has an aromatic neighbour and a
+        // vinylic neighbour, but RDKit keeps the oxygen non-aromatic. A former
+        // shape-based shortcut incorrectly forced the [o] Crippen type.
+        let molecule = mol("CC(=O)c1c(O)c(C)c(O)c2c1OC1=Cc3c(c(C)nn3C)C(=O)C12C");
+        assert!(approx(logp_crippen(&molecule), 2.53824, 1e-12));
+        assert!(approx(molar_refractivity(&molecule), 92.7456, 1e-12));
+        assert!(approx(logp_and_mr(&molecule).0, 2.53824, 1e-12));
+        assert!(approx(logp_and_mr(&molecule).1, 92.7456, 1e-12));
     }
 
     // -- Test 18: aspirin Lipinski -------------------------------------------
