@@ -27,20 +27,23 @@ def main() -> int:
     except (OSError, json.JSONDecodeError) as error:
         return fail(f"cannot read manifest or workflow: {error}")
 
-    if manifest.get("schema_version") != 1:
-        return fail("schema_version must be 1")
+    if manifest.get("schema_version") != 2:
+        return fail("schema_version must be 2")
     thresholds = manifest.get("thresholds")
     if thresholds != {
         "stage1_route_ratio": 1.04,
         "stage2_fail_ratio": 1.04,
+        "null_contamination_ratio": 1.04,
         "stage1_blocks": 3,
         "stage2_blocks": 10,
+        "null_blocks": 10,
     }:
         return fail("threshold or block contract changed")
     cases = manifest.get("cases")
     expected_ids = {
         "plus5", "plus10", "plus6", "clean_noop", "stage2_build_noise",
         "stage2_real_effect", "stage2_contaminated",
+        "null_small_build_noise", "null_one_sided_contamination",
     }
     if not isinstance(cases, list) or len(cases) != len(expected_ids) or {case.get("id") for case in cases} != expected_ids:
         return fail("calibration case set is incomplete")
@@ -61,10 +64,17 @@ def main() -> int:
         return fail("contaminated case must be explicitly marked")
     if by_id["stage2_real_effect"].get("environment_contaminated") is not False:
         return fail("real-effect case must be uncontaminated")
+    if by_id["null_small_build_noise"].get("expected_environment_contaminated") is not False:
+        return fail("small null build noise must remain clean")
+    if by_id["null_one_sided_contamination"].get("expected_environment_contaminated") is not True:
+        return fail("material one-sided null bias must mark contamination")
 
     required_fragments = (
         "STAGE1_ROUTE_THRESHOLD=1.04",
         "STAGE2_FAIL_THRESHOLD=1.04",
+        "NULL_CONTAMINATION_THRESHOLD=1.04",
+        "NULL_CONTROL_BLOCKS=10",
+        "contamination-check",
         "if [ \"$environment_contaminated\" -eq 1 ]; then",
         "not blocking.",
         "any_fail=1",
@@ -75,7 +85,7 @@ def main() -> int:
     if re.search(r'if \[ "\$environment_contaminated" \] -eq 1; then[\s\S]{0,700}any_fail=1', workflow):
         return fail("workflow can set any_fail inside contaminated branch")
 
-    print("Criterion calibration contract OK: 7 cases, threshold 1.04, contaminated runs remain non-blocking")
+    print("Criterion calibration contract OK: 9 cases, threshold 1.04, contaminated runs remain non-blocking")
     return 0
 
 

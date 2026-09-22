@@ -33,6 +33,8 @@
 #   criterion_gate.sh route-check <blocks_jsonl> <expected_count> <threshold>
 #   criterion_gate.sh ratio-summary <blocks_jsonl> <expected_count>
 #   criterion_gate.sh check-threshold <threshold>
+#   criterion_gate.sh contamination-check <verdict-code> <blocks_jsonl> \
+#       <expected-count> <threshold>
 #
 # Stage-1 routing screen -- see cmd_route_check below for why Stage 1 can't
 # use veridict's sign-test verdict directly. ratio-summary/check-threshold
@@ -226,6 +228,28 @@ cmd_route_check() {
     'if $m >= $t then "route" else "no-route" end'
 }
 
+# Combine the null control's directional sign-test verdict with the same kind
+# of practical-effect floor used by Stage 2. A unanimous sign split from tiny
+# independent-build/codegen variance is not evidence that the hosted runner is
+# contaminated; a fail-sized split must also clear <threshold>. The caller
+# supplies the `veridict compare` exit code (1/3 are fail/invalid-fail in the
+# existing workflow contract) and receives one explicit token.
+cmd_contamination_check() {
+  local verdict_code="$1" jsonl="$2" expected_count="$3" threshold="$4"
+  case "$verdict_code" in
+    0|1|2|3) ;;
+    *)
+      echo "contamination-check: unsupported verdict code '$verdict_code'" >&2
+      return 1
+      ;;
+  esac
+  cmd_check_threshold "$threshold" || return 1
+  local median
+  median=$(cmd_ratio_summary "$jsonl" "$expected_count") || return 1
+  jq -rn --argjson code "$verdict_code" --argjson m "$median" --argjson t "$threshold" \
+    'if (($code == 1 or $code == 3) and $m >= $t) then "contaminated" else "clean" end'
+}
+
 case "${1:-}" in
   run-blocks)
     shift
@@ -238,6 +262,10 @@ case "${1:-}" in
   route-check)
     shift
     cmd_route_check "$@"
+    ;;
+  contamination-check)
+    shift
+    cmd_contamination_check "$@"
     ;;
   ratio-summary)
     shift
@@ -253,6 +281,7 @@ case "${1:-}" in
     echo "       $0 route-check <blocks_jsonl> <expected_count> <threshold>" >&2
     echo "       $0 ratio-summary <blocks_jsonl> <expected_count>" >&2
     echo "       $0 check-threshold <threshold>" >&2
+    echo "       $0 contamination-check <verdict-code> <blocks_jsonl> <expected-count> <threshold>" >&2
     exit 64
     ;;
 esac
