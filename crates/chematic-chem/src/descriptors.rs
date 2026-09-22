@@ -62,38 +62,6 @@ fn is_atom_in_ring(mol: &Molecule, idx: AtomIdx) -> bool {
     false
 }
 
-/// True if `idx` (O atom) is an aromatic oxide bridge: a neutral O in a
-/// five-membered ring with two carbon neighbors, either both aromatic or with
-/// one aromatic neighbor and a vinylic carbon partner.  The ring-size and
-/// partner checks avoid promoting ordinary six-membered cyclic ethers merely
-/// because one neighbor is aromatic. Used for TPSA and Crippen terms.
-fn is_aromatic_oxide_bridge(mol: &Molecule, idx: AtomIdx) -> bool {
-    let neighbors: Vec<_> = mol.neighbors(idx).collect();
-    if neighbors.len() != 2
-        || neighbors.iter().any(|(nb, bidx)| {
-            mol.bond(*bidx).order == BondOrder::Double || mol.atom(*nb).element.atomic_number() != 6
-        })
-    {
-        return false;
-    }
-    let aromatic_neighbors = neighbors
-        .iter()
-        .filter(|(nb, _)| mol.atom(*nb).aromatic)
-        .count();
-    let sp2_carbon_neighbor = neighbors.iter().any(|(nb, _)| {
-        mol.neighbors(*nb).any(|(other, bidx)| {
-            other != idx
-                && mol.bond(bidx).order == BondOrder::Double
-                && mol.atom(other).element.atomic_number() == 6
-        })
-    });
-    (aromatic_neighbors == 2 || (aromatic_neighbors == 1 && sp2_carbon_neighbor))
-        && find_sssr(mol)
-            .rings()
-            .iter()
-            .any(|ring| ring.len() == 5 && ring.contains(&idx))
-}
-
 // --- Element Detection Helpers ---
 // Consolidate atomic number matching to eliminate 50+ hardcoded checks throughout the file.
 
@@ -1430,23 +1398,12 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
                 .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
                 .count() as u8;
             let h_count = h_count_impl + h_count_expl;
-            // Aromatic oxide bridge: use the bounded five-membered-ring rule
-            // above rather than promoting an ordinary cyclic ether.
-            // RDKit perceives this as [o] type (logp=0.1552); plain SMARTS gives [O](a) (-0.4195).
-            let heavy = if atom.element.atomic_number() == 8
-                && h_count == 0
-                && atom.charge == 0
-                && is_aromatic_oxide_bridge(mol, idx)
-            {
-                0.1552
-            } else {
-                anchor_sets
-                    .iter()
-                    .zip(queries.iter())
-                    .find(|(set, _)| set.contains(&idx))
-                    .map(|(_, (_, logp, _))| *logp)
-                    .unwrap_or(0.0)
-            };
+            let heavy = anchor_sets
+                .iter()
+                .zip(queries.iter())
+                .find(|(set, _)| set.contains(&idx))
+                .map(|(_, (_, logp, _))| *logp)
+                .unwrap_or(0.0);
             let h_contrib = if h_count == 0 {
                 0.0
             } else {
@@ -1685,21 +1642,12 @@ pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
                 .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
                 .count() as u8;
             let h_count = h_count_impl + h_count_expl;
-            let heavy = if atom.element.atomic_number() == 8
-                && !atom.aromatic
-                && h_count == 0
-                && atom.charge == 0
-                && is_aromatic_oxide_bridge(mol, idx)
-            {
-                1.080 // Crippen MR for [o] (aromatic oxide bridge)
-            } else {
-                anchor_sets
-                    .iter()
-                    .zip(queries.iter())
-                    .find(|(set, _)| set.contains(&idx))
-                    .map(|(_, (_, _, mr))| *mr)
-                    .unwrap_or(0.0)
-            };
+            let heavy = anchor_sets
+                .iter()
+                .zip(queries.iter())
+                .find(|(set, _)| set.contains(&idx))
+                .map(|(_, (_, _, mr))| *mr)
+                .unwrap_or(0.0);
             let h_contrib = if h_count == 0 {
                 0.0
             } else {
@@ -1731,7 +1679,7 @@ pub fn molar_refractivity(mol: &Molecule) -> f64 {
 /// computation), making it roughly 2× faster when both values are needed.
 pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
     let queries = get_crippen_queries();
-    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let mol_arom = descriptor_aromaticity(mol);
     let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
 
     let h_logp_fallback = CRIPPEN_SMARTS
@@ -1755,21 +1703,12 @@ pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
         let h_count = implicit_hcount(mol, idx);
 
         // LogP heavy-atom contribution
-        let logp_heavy = if atom.element.atomic_number() == 8
-            && !atom.aromatic
-            && h_count == 0
-            && atom.charge == 0
-            && is_aromatic_oxide_bridge(mol, idx)
-        {
-            0.1552
-        } else {
-            anchor_sets
-                .iter()
-                .zip(queries.iter())
-                .find(|(set, _)| set.contains(&idx))
-                .map(|(_, (_, lp, _))| *lp)
-                .unwrap_or(0.0)
-        };
+        let logp_heavy = anchor_sets
+            .iter()
+            .zip(queries.iter())
+            .find(|(set, _)| set.contains(&idx))
+            .map(|(_, (_, lp, _))| *lp)
+            .unwrap_or(0.0);
 
         // MR heavy-atom contribution
         let mr_heavy = anchor_sets
@@ -4371,6 +4310,18 @@ mod tests {
                 "{smiles}"
             );
         }
+    }
+
+    #[test]
+    fn fused_cyclic_ether_uses_rdkit_crippen_oxygen_type() {
+        // This five-membered cyclic ether has an aromatic neighbour and a
+        // vinylic neighbour, but RDKit keeps the oxygen non-aromatic. A former
+        // shape-based shortcut incorrectly forced the [o] Crippen type.
+        let molecule = mol("CC(=O)c1c(O)c(C)c(O)c2c1OC1=Cc3c(c(C)nn3C)C(=O)C12C");
+        assert!(approx(logp_crippen(&molecule), 2.53824, 1e-12));
+        assert!(approx(molar_refractivity(&molecule), 92.7456, 1e-12));
+        assert!(approx(logp_and_mr(&molecule).0, 2.53824, 1e-12));
+        assert!(approx(logp_and_mr(&molecule).1, 92.7456, 1e-12));
     }
 
     // -- Test 18: aspirin Lipinski -------------------------------------------
