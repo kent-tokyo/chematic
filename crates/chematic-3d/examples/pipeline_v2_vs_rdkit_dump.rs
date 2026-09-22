@@ -296,13 +296,13 @@ fn base_config(
         fail_on_unevaluable_stereo: false,
         force_field_policy: force_field,
         // Diagnostic-only override for convergence triage. Production callers
-        // still use PipelineV2Config::minimal's 200-step default; keeping the
+        // still use PipelineV2Config::minimal's 300-step default; keeping the
         // override in this external benchmark runner lets us distinguish an
         // exhausted iteration budget from a genuine stationary-point problem.
         force_field_max_iterations: std::env::var("SCHEMATIC_MMFF94_MAX_ITERATIONS")
             .ok()
             .and_then(|value| value.parse().ok())
-            .unwrap_or(200),
+            .unwrap_or(300),
         gate_mmff94_torsion_oop: gate_torsion_oop,
         gate_mmff94_stretch_bend: gate_stretch_bend,
         // DiagnosticOnly, not FailClosed: with use_small_ring_torsions/
@@ -842,11 +842,11 @@ fn main() {
          disabled, for parity with RDKit's no-dedup best-of-N selection)"
     );
     eprintln!(
-        "config_snapshot mmff94_max_iterations={} (override via SCHEMATIC_MMFF94_MAX_ITERATIONS; production default remains 200)",
+        "config_snapshot mmff94_max_iterations={} (override via SCHEMATIC_MMFF94_MAX_ITERATIONS; production default remains 300)",
         std::env::var("SCHEMATIC_MMFF94_MAX_ITERATIONS")
             .ok()
             .and_then(|value| value.parse::<usize>().ok())
-            .unwrap_or(200)
+            .unwrap_or(300)
     );
 
     for (tier, manifest) in &manifests {

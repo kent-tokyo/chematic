@@ -312,7 +312,7 @@ impl PipelineV2Config {
             stereo_policy: StereoPolicy::Ignore,
             fail_on_unevaluable_stereo: false,
             force_field_policy,
-            force_field_max_iterations: 200,
+            force_field_max_iterations: 300,
             gate_mmff94_torsion_oop: false,
             gate_mmff94_stretch_bend: false,
             ring_torsion_policy: RingTorsionApplicationPolicy::FailClosed,

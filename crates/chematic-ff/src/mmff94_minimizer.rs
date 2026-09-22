@@ -294,9 +294,9 @@ impl Mmff94EnergyModel {
 
     /// Combine the currently soundness-gated analytic term gradients.
     ///
-    /// The prepared neighbor pairs are intentionally fixed for this bounded
-    /// evaluator. The public minimizer still uses finite differences until a
-    /// coordinate-dependent neighbor-list and full integration gate exists.
+    /// The prepared non-bonded pair set is intentionally fixed for this
+    /// no-cutoff evaluator, matching [`Self::energy`]. The 3D pipeline uses
+    /// this exact energy/gradient pair; the cutoff variant remains opt-in.
     pub fn bounded_analytic_gradient(&self, coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
         self.bounded_analytic_gradient_with_nonbonded(false, coords)
     }
@@ -349,11 +349,12 @@ impl Mmff94EnergyModel {
         minimize_mmff94_lbfgs_prepared(self, coords, max_iter)
     }
 
-    /// Experimental L-BFGS path using the bounded prepared analytic gradient.
+    /// L-BFGS path using the bounded prepared analytic gradient.
     ///
-    /// This is opt-in because prepared non-bonded pairs are fixed and
-    /// singular geometries fail closed. The established finite-difference
-    /// [`Self::minimize_lbfgs`] path remains the compatibility default.
+    /// Singular derivative geometries fail closed. The finite-difference
+    /// [`Self::minimize_lbfgs`] method remains available as a reference path;
+    /// the 3D MMFF94 bridge uses this analytic path after its corpus-level
+    /// gradient, geometry, convergence, and timeout gates.
     pub fn minimize_lbfgs_bounded_analytic(
         &self,
         coords: &mut [[f64; 3]],
@@ -627,7 +628,11 @@ fn minimize_mmff94_lbfgs_prepared_with_mode(
     use_analytic_gradient: bool,
     use_cutoff_nonbonded: bool,
 ) -> Result<MinimizeResult, MinimizerError> {
-    const M: usize = 5; // L-BFGS history size
+    // The 265-molecule A6 gate shows that retaining 80 correction pairs reaches
+    // substantially more stationary points than the historical five-pair
+    // window without a measurable throughput penalty. Keep this bounded: each
+    // entry stores two coordinate-sized vectors and is discarded at run end.
+    const M: usize = 80;
     const DELTA: f64 = 1e-4; // finite-difference step (Å)
     const CONVERGENCE: f64 = 1e-4; // max |gradient| threshold
     const C_ARMIJO: f64 = 1e-4; // Armijo sufficient-decrease constant
