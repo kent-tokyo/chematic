@@ -104,6 +104,13 @@ def difference(
     }
 
 
+def count_difference_classes(
+    differences: list[dict[str, str]], counts: Counter[str]
+) -> None:
+    for item in differences:
+        counts[f"difference_class_{item['classification']}"] += 1
+
+
 def example_record(row: dict[str, object]) -> dict[str, object]:
     return {
         "input_index": row["input_index"],
@@ -169,6 +176,7 @@ def main() -> int:
                 )
                 differences.append(difference("smiles_parse_write", "parse outcome differs or both failed"))
                 counts["parse_failure"] += 1
+                count_difference_classes(differences, counts)
                 rows_handle.write(json.dumps(row, sort_keys=True) + "\n")
                 if len(examples) < 50:
                     examples.append(example_record(row))
@@ -184,11 +192,19 @@ def main() -> int:
             )
             smiles_exact = candidate_smiles == oracle_smiles
             smiles_semantic = semantic_smiles == oracle_smiles
+            nonisomeric_roundtrip = (
+                candidate_roundtrip is not None
+                and Chem.MolToSmiles(rd_mol, canonical=True, isomericSmiles=False)
+                == Chem.MolToSmiles(
+                    candidate_roundtrip, canonical=True, isomericSmiles=False
+                )
+            )
             row["smiles_parse_write"] = {
                 "rdkit_canonical": oracle_smiles,
                 "chematic_canonical": candidate_smiles,
                 "exact_spelling": smiles_exact,
                 "semantic_roundtrip": smiles_semantic,
+                "nonisomeric_roundtrip": nonisomeric_roundtrip,
             }
             counts["smiles_exact" if smiles_exact else "smiles_spelling_difference"] += 1
             if not smiles_exact and smiles_semantic:
@@ -200,7 +216,21 @@ def main() -> int:
                     )
                 )
             if not smiles_semantic:
-                differences.append(difference("smiles_parse_write", "canonical output changes RDKit semantic identity"))
+                if nonisomeric_roundtrip:
+                    differences.append(
+                        difference(
+                            "smiles_parse_write",
+                            "stereo identity is lost or altered while non-isomeric graph identity is preserved",
+                            "chematic_regression",
+                        )
+                    )
+                else:
+                    differences.append(
+                        difference(
+                            "smiles_parse_write",
+                            "canonical output changes RDKit graph or semantic identity",
+                        )
+                    )
                 counts["smiles_semantic_difference"] += 1
 
             oracle_atoms, oracle_bonds = rdkit_cip(Chem, rdCIPLabeler, rd_mol)
@@ -236,7 +266,21 @@ def main() -> int:
             }
             counts["morgan_exact" if morgan_exact else "morgan_difference"] += 1
             if not morgan_exact:
-                differences.append(difference("morgan", "packed radius-2/2048 fingerprint differs or was refused"))
+                if morgan_error is not None and "unsupported" in morgan_error.lower():
+                    differences.append(
+                        difference(
+                            "morgan",
+                            "typed unsupported outcome; no packed fingerprint was produced",
+                            "contract_difference",
+                        )
+                    )
+                else:
+                    differences.append(
+                        difference(
+                            "morgan",
+                            "packed radius-2/2048 fingerprint differs or failed without a typed unsupported outcome",
+                        )
+                    )
 
             smarts_differences: list[dict[str, object]] = []
             for query in queries:
@@ -271,6 +315,7 @@ def main() -> int:
                 differences.append(difference("smarts", "one or more target-atom-set cells differ"))
             counts["completed"] += 1
             counts["difference_rows" if differences else "exact_rows"] += 1
+            count_difference_classes(differences, counts)
             rows_handle.write(json.dumps(row, sort_keys=True) + "\n")
             if differences and len(examples) < 50:
                 examples.append(example_record(row))

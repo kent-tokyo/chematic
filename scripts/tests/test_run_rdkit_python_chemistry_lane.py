@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from scripts.run_rdkit_python_chemistry_lane import (
+    count_difference_classes,
     difference,
     example_record,
     load_queries,
@@ -42,6 +43,24 @@ def test_difference_defaults_to_unresolved_but_accepts_adjudication():
         ]
         == "contract_difference"
     )
+
+
+def test_difference_class_counts_count_each_operation_result():
+    from collections import Counter
+
+    counts: Counter[str] = Counter()
+    count_difference_classes(
+        [
+            difference("smiles_parse_write", "spelling", "contract_difference"),
+            difference("cip", "labels"),
+            difference("smarts", "query cells"),
+        ],
+        counts,
+    )
+    assert counts == {
+        "difference_class_contract_difference": 1,
+        "difference_class_unresolved": 2,
+    }
 
 
 def test_summary_examples_do_not_duplicate_full_operation_payloads():

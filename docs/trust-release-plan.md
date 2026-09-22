@@ -752,7 +752,9 @@ oracle/profile変更時は新しい採用packetとして再実行し、既存raw
   Boost/nanobindは配布物の実体を特定し、別backendの結果を統合しない。
   2026.03.6 Boost.Python laneは10,000/10,000行を保存し、Morgan 9,999 exact、
   CIP 9,880 exact、SMILES semantic 9,982 exact、SMARTS 14,306/310,000 cells差を記録した。
-  これは次版old/new比較や残差adjudicationの完了ではない。
+  18件のSMILES semantic差は非isomeric graphを保存したまま立体同一性を失う
+  CheMatic writer regression、Morgan 1件は配位構造に対するtyped unsupported contractと
+  裁定した。CIP 120行とSMARTS 3,364行は未解決であり、次版old/new比較も未完了。
 - [ ] browserは同じpacked output契約で3 enginesを比較し、parse単独、prepared FP、
   parse+FP、search、startup、memoryを個別に記録する。API意味論が揃わないlaneは
   速度順位の対象から外す。sealed精度8kはこの回帰・性能集合へ流用しない。
@@ -762,8 +764,9 @@ oracle/profile変更時は新しい採用packetとして再実行し、既存raw
 - [~] 差分を自社退行/oracle変更/契約差/未解決へ分類し、goldが必要ならA5へ送る。
   新oracleへ自動追従して既存出力を変更しない。公開dashboardは測定済みの新旧版を併記し、
   移行後も旧raw/再現コマンドをhistoricalとして保存する。
-  意味同一のSMILES綴り差は`contract_difference`、未裁定のCIP/SMARTS/Morgan/意味差は
-  `unresolved`で保存済み。次は残差群の狭い原因分類と、次版公開後の`oracle_change`判定を行う。
+  意味同一のSMILES綴り差は`contract_difference`、18件の立体意味差は
+  `chematic_regression`、typed Morgan拒否1件は`contract_difference`で保存済み。
+  次は未裁定のCIP/SMARTS残差群の狭い原因分類と、次版公開後の`oracle_change`判定を行う。
 
 出口: 利用可能なlaneの全行差分、失敗/拒否、速度区間、API変更の移行表。
 再比較先の公開遅延は、現行pinでのTrust RC候補監査を停止させない。
