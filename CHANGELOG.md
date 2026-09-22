@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   produce identical output; the exact witness drops from 24 search leaves to
   1 and measured 4.86x faster by the five-run paired median on the recorded
   local release build.
+- Closed the measured canonical E/Z shared-carrier residual from issue #149.
+  A clean-main audit now passes all 28 coupled components across 1,024 seeded
+  atom relabelings each with zero divergent outputs or correspondence failures;
+  all four historical residuals are permanent equivalent-spelling regressions.
+  Unmeasured coupled shapes keep the conservative stable-key refusal boundary.
 
 - Preserved real carbon, generic `*`, unnumbered `R`, and numbered
   `R1..R9999` atom identities across MOL V2000, MOL V3000, SDF, and CDXML

@@ -2,126 +2,95 @@
 
 ## Scope
 
-This note records the bounded implementation boundary for canonical SMILES
-Issue #503 and its coupled E/Z predecessor, #149. It does not claim that
-canonical identity is complete. The three audited aromatic direction-stash
-families now have a semantic complete-slot planner and may obtain stable keys;
-other coupled E/Z structures remain fail-closed until separately proven.
+This note records the bounded canonical-SMILES implementation for Issue #503
+and its coupled E/Z predecessor, #149. It does not claim that canonical
+identity is complete. The semantic complete-slot planner resolves the four
+formerly divergent corpus components and admits stable keys for the proven
+aromatic direction-stash path. Other multi-E/Z structures remain fail-closed
+until separately proven.
 
 ## Established evidence
 
-The source-provenance-pinned 1,024-relabeling audit has four divergent coupled
-components out of 28, with no cross-correspondence failure.  Three current
-aromatic-stash families remain intentionally fail-closed.  Their input
-spellings and geometry-preservation tests live in
-`crates/chematic-smiles/src/canonical.rs`.
+The historical source-provenance-pinned 1,024-relabeling audit had four
+divergent coupled components out of 28, with no cross-correspondence failure.
+After the complete-slot planner was adopted, a clean-main rerun at commit
+`2fe0cdd7` passes all 28 components across 1,024 seeded relabelings each, with
+zero divergent outputs and zero cross-correspondence failures. Evidence:
 
-Two bounded writer searches are now rejected:
+- `validation/results/ez_shared_carrier_coupling_mechanism_audit_1024_2026-09-22.jsonl`
+- `validation/results/ez_shared_carrier_coupling_mechanism_audit_summary_1024_2026-09-22.json`
 
-1. PR #597 exhausts every candidate-bond DFS-priority assignment for the
-   coupled component, reparses every candidate, and retains only candidates
-   that preserve the input E/Z geometry.  The equivalent spellings share no
+The former 4/28 baseline and rejected 7/28 close-side experiment remain
+preserved as historical evidence. The current gate does not reuse those
+results as proof of the adopted implementation.
+
+Earlier bounded searches established why a broader representation was needed:
+
+1. PR #597 exhausted candidate-bond DFS priorities, reparsed every candidate,
+   and found no common geometry-preserving output for the historical residuals.
+2. PR #599 added every candidate ring-marker side and still found no common
    output.
-2. PR #599 additionally exhausts every candidate ring-marker-side assignment
-   together with every such DFS priority.  Their geometry-preserving output
-   sets still have an empty intersection.
-3. The current branch additionally fixes the canonical DFS skeleton and
-   exhausts every component candidate bond **and every raw directional
-   carrier** as plain, `/`, or `\\`, together with both legal occurrences of
-   every ring token.  Semantic reparse leaves a non-empty common output set
-   for all three residual families.
-4. Each geometry-preserving candidate from that complete slot space is then
-   reparsed and sent through a fresh rank search.  The common output set
-   remains non-empty.  The earlier component-only probe was incomplete: it
-   omitted an aromatic-stash carrier present in canonical output.
+3. The complete-slot probe fixed the canonical DFS skeleton and included every
+   raw directional carrier as plain, `/`, or `\`, plus both legal occurrences
+   of every ring token. This produced a common semantic output.
+4. Re-ranking every geometry-preserving candidate retained that common output.
 
-These results rule out selecting a raw atom index, a raw bond index, a local
-DFS preference or one ring-marker-side rule as the canonical tie-breaker.  A
-complete slot universe does have semantic solutions; its membership must not
-be limited to candidate bonds discovered through a coupling component. The
-implemented selector chooses a lexicographic semantic minimum, never raw atom
-or bond indices.
+These results rule out raw atom indices, raw bond indices, local DFS preference,
+or one ring-marker-side rule as canonical tie-breakers. The adopted selector
+uses the lexicographic minimum of semantically valid serializations.
 
-## Current implementation stage
+## Current implementation
 
-`CanonicalWriter` now captures rank-fixed E/Z geometry facts before marker
-carrier resolution.  When a complete two-ended fact exists, the existing
-component solver consumes that extracted relation rather than re-reading a raw
-marker from the candidate it is considering.  The spelling-invariance gate
-proves this extraction agrees across the three current residual families.
+`CanonicalWriter` captures rank-fixed E/Z geometry facts before marker-carrier
+resolution. When a complete two-ended fact exists, the component solver uses
+that relation rather than re-reading a raw marker from each candidate.
 
-This is only the first stage.  It does not yet construct output slots, solve a
-whole component, or make the residual stable key admissible.  Incomplete or
-unspecified E/Z inputs retain the previous read path so this refactor does not
-silently alter their output contract.
+The production planner constructs the canonical output-slot universe, searches
+at most eight slots and 65,536 candidates, reparses every candidate, checks a
+non-recursive Morgan-rank E/Z signature, and selects the lexicographic minimum.
+It is restricted to aromatic direction-stash input. Over-budget, empty, or
+semantically invalid candidate sets retain the previous fail-closed path.
 
-A test-only canonical-DFS inventory now also shows that the three residual
-families expose the same eligible tree and ring-token output slots across
-their equivalent spellings.  A full rank-keyed tree/ring signature and the
-canonical text with only `/` and `\\` removed are also invariant.  When raw
-directional carriers are included, complete-slot enumeration finds common
-semantic output; its re-ranked subset does too.  Independently choosing the
-lexicographically smallest semantic candidate yields the same output for every
-spelling in all three families. The production planner now uses that bounded
-complete-slot search (at most eight slots and 65,536 candidates), validates
-each candidate by a non-recursive Morgan-rank E/Z signature after reparse, and
-returns the lexicographic minimum valid serialization. It is restricted to
-aromatic direction-stash input; over-budget, empty, or semantically invalid
-candidate sets retain the prior fail-closed path.
+The permanent regression suite includes all four components that diverged in
+the historical 1,024-relabeling audit. Existing shared-carrier, automorphism,
+ring-closure, E/Z semantic-reparse, and tetrahedral-preservation tests remain
+mandatory. The bounded corpus result closes Issue #149's measured residual; it
+does not remove the conservative refusal boundary for unmeasured coupled shapes.
 
 ## Required architecture
 
-The implementation must separate chemical geometry from its SMILES spelling.
+The implementation keeps chemical geometry separate from its SMILES spelling:
 
-1. **Extract geometry facts.** For each specified stereogenic double bond,
-   create a representation-independent fact before canonical traversal.  It
-   identifies rank-stable reference substituents at both ends and their
-   same-side/opposite-side relation.  Aromatic direction stashes and literal
-   directional bonds are input encodings of that fact, not canonical output
-   locations.
-2. **Build the canonical skeleton.** Determine the canonical atom order, DFS
-   tree, branches, ring edges, and ring-digit occurrences without consuming
-   directional markers.  Each eligible directional token position is an
-   explicit output slot with its canonical traversal orientation.
-3. **Solve one component plan.** Build the complete slot universe from all
-   coupled substituent candidates plus every raw directional carrier.  Choose
-   slots and `/`/`\` polarity for the full coupled component simultaneously.
-   Enumerate bounded polarity and legal ring-side choices, then retain only
-   candidates that preserve every fact and SMILES ring-token syntax. Selection
-   is the lexicographic minimum valid serialization; it must never use a
-   parse-time atom or bond index as a tie-breaker.
-4. **Validate before adoption.** Reparse every candidate plan and compare the
-   extracted geometry facts, not merely text stability.  Choose the
-   lexicographically minimal valid canonical serialization only after this
-   semantic check.  An empty, over-budget, or genuinely tied solution set is a
-   typed/observable fail-closed outcome for stable-key callers.
+1. **Extract geometry facts.** Identify rank-stable reference substituents and
+   their same-side/opposite-side relation before canonical traversal.
+2. **Build the canonical skeleton.** Determine atom order, DFS tree, branches,
+   ring edges, and explicit output slots without consuming input markers.
+3. **Solve one component plan.** Search coupled substituent candidates and raw
+   directional carriers together, never using parse-time indices as a winner.
+4. **Validate before adoption.** Reparse each candidate and compare geometry
+   facts before selecting the lexicographic minimum.
 
-The plan may use a bounded component solver, but its cap must be measured and
-documented.  A cap must reject the whole component; it must never apply a
-partial marker plan.
+The component cap rejects the whole component. It must never apply a partial
+marker plan.
 
 ## Non-goals
 
-- Do not use a CIP label as a substitute for the lower-level E/Z geometry
-  fact.  CIP priority remains a separate correctness and adjudication scope.
-- Do not expand this proven aromatic-stash scope merely to make a diagnostic
-  pass. The stable-key fail-closed boundary remains safer than an unproven
-  output for other coupled E/Z systems.
-- Do not expand 3D embedding breadth before this canonical/stereo boundary is
-  closed.
+- Do not use a CIP label as a substitute for the lower-level E/Z geometry fact.
+- Do not expand the proven aromatic-stash scope merely to make a diagnostic pass.
+- Do not expand 3D feature breadth before the remaining stereo/identity exits.
 
 ## Acceptance criteria
 
-The production implementation closes this item only when all of the following
-are demonstrated:
+The bounded Issue #149 item is complete when:
 
-- all four audited components converge across atom-order and equivalent SMILES
-  spelling permutations;
-- canonicalize → reparse preserves every extracted E/Z fact and existing
-  tetrahedral stereo facts;
-- canonicalization is idempotent and the stable-key API accepts only converged
-  inputs;
-- existing shared-carrier, automorphism, aromatic-stash, and ring-closure
-  regressions pass; and
-- Rust, Python, Node, and WASM binding contracts expose the same result and
-  refusal boundary.
+- all 28 measured coupled components, including the four historical residuals,
+  converge across 1,024 atom-order relabelings;
+- the four historical residuals also retain explicit equivalent-spelling tests;
+- canonicalize → reparse preserves E/Z and tetrahedral stereo facts;
+- canonicalization is idempotent and stable keys admit only proven paths;
+- shared-carrier, automorphism, aromatic-stash, and ring-closure regressions pass;
+  and
+- binding contracts preserve the same result or refusal boundary.
+
+Broader A2 work, including phosphorus CIP adjudication and independent gold
+evaluation, remains separate from Issue #149.

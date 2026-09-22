@@ -51,6 +51,13 @@ fn aromatic_stash_residuals_converge_to_stable_keys() {
                 r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
             ],
         ),
+        (
+            r"O=C(Nc1ccc(C[C@H](/N=c2\c(O)c(O)\c2=N/CCCC(F)(F)F)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+            [
+                r"c3c(c(c(Cl)cn3)C(=O)Nc2ccc(cc2)C[C@H](/N=c1/c(=N/CCCC(F)(F)F)c(O)c1O)C(O)=O)Cl",
+                r"c3c(c(c(Cl)cn3)C(=O)Nc2ccc(cc2)C[C@H](/N=c\1c(=N/CCCC(F)(F)F)/c(O)c1O)C(O)=O)Cl",
+            ],
+        ),
     ];
 
     for (input, spelling_variants) in fixtures {

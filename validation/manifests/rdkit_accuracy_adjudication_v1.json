@@ -56,10 +56,10 @@
       "id": "canonical_ez_residual",
       "input_ref": "validation/manifests/canonical_issue149_aromatic_stash_residual.json#families",
       "atom_mapping": {"correspondence": "canonical_cross_engine_probe"},
-      "expected": {"semantic_structure_preserved": true, "stable_key_on_residual": "fail_closed"},
-      "rationale": "Cosmetic canonical spelling differences must not be promoted to distinct identity keys.",
+      "expected": {"semantic_structure_preserved": true, "stable_key_on_residual": "converged_after_semantic_reparse"},
+      "rationale": "The complete-slot planner must converge the historical cosmetic spellings without changing their E/Z meaning.",
       "reviewer": null,
-      "unresolved_reason": "Issue #149 family still contains a documented residual."
+      "unresolved_reason": null
     },
     {
       "id": "v3000_sgroup_roundtrip",
