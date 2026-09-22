@@ -1,0 +1,37 @@
+{
+  "argv": [
+    "python3",
+    "scripts/collect_rdkit_rebaseline_provenance.py",
+    "--npm-package",
+    "/private/tmp/chematic-pf6-npm/node_modules/@rdkit/rdkit",
+    "--npm-artifact",
+    "/private/tmp/rdkit-rebaseline-2026.03.6/rdkit-rdkit-2026.3.6.tgz",
+    "--npm-runtime-version",
+    "2026.03.6",
+    "--corpus",
+    "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "--operation-config",
+    "validation/rdkit_rebaseline_execution.json",
+    "--output",
+    "/private/tmp/rdkit-rebaseline-2026.03.6/npm-provenance.json"
+  ],
+  "command": "npm-provenance",
+  "covers": [
+    "provenance"
+  ],
+  "elapsed_ns": 1064009333,
+  "lane": "npm-2026.3.6-browser",
+  "returncode": 0,
+  "schema_version": 1,
+  "started_at_utc": "2026-09-22T14:36:54.352448+00:00",
+  "stderr": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tail": ""
+  },
+  "stdout": {
+    "bytes": 60,
+    "sha256": "a4afeda60ff5e7597b6447c7db30e26cd628359ec51566109314869a23faba36",
+    "tail": "/private/tmp/rdkit-rebaseline-2026.03.6/npm-provenance.json\n"
+  }
+}

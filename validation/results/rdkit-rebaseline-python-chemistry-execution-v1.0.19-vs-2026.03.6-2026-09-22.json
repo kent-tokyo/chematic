@@ -1,0 +1,38 @@
+{
+  "argv": [
+    "/private/tmp/chematic-a66-venv/bin/python",
+    "scripts/run_rdkit_python_chemistry_lane.py",
+    "--corpus",
+    "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "--queries",
+    "validation/rdkit_rebaseline_smarts_queries.json",
+    "--output",
+    "/private/tmp/rdkit-rebaseline-2026.03.6/python-chemistry-summary.json",
+    "--rows-output",
+    "/private/tmp/rdkit-rebaseline-2026.03.6/python-chemistry-rows.jsonl",
+    "--expected-rdkit",
+    "2026.03.6"
+  ],
+  "command": "python-chemistry-all",
+  "covers": [
+    "smiles_parse_write",
+    "cip",
+    "smarts",
+    "morgan"
+  ],
+  "elapsed_ns": 44158550292,
+  "lane": "python-2026.03.6-distributed",
+  "returncode": 0,
+  "schema_version": 1,
+  "started_at_utc": "2026-09-22T14:34:18.955710+00:00",
+  "stderr": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tail": ""
+  },
+  "stdout": {
+    "bytes": 22033,
+    "sha256": "8db23504007d66755b29b637b5a37eef0abf05c93b4df7cd6f2f7f9dddba64c4",
+    "tail": "tion\": \"smiles_parse_write\"\n        }\n      ],\n      \"input_index\": 42,\n      \"smiles\": \"COc1cc2nc(N3CCN(C(=O)/C=C/c4ccccc4)CC3)nc(N)c2cc1OC\",\n      \"status\": \"completed\"\n    },\n    {\n      \"differences\": [\n        {\n          \"classification\": \"contract_difference\",\n          \"detail\": \"canonical spelling differs while RDKit semantic identity is preserved\",\n          \"operation\": \"smiles_parse_write\"\n        }\n      ],\n      \"input_index\": 43,\n      \"smiles\": \"COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(F)cc4)CC3)nc(N)c2cc1OC\",\n      \"status\": \"completed\"\n    },\n    {\n      \"differences\": [\n        {\n          \"classification\": \"contract_difference\",\n          \"detail\": \"canonical spelling differs while RDKit semantic identity is preserved\",\n          \"operation\": \"smiles_parse_write\"\n        }\n      ],\n      \"input_index\": 44,\n      \"smiles\": \"COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(Cl)cc4)CC3)nc(N)c2cc1OC\",\n      \"status\": \"completed\"\n    },\n    {\n      \"differences\": [\n        {\n          \"classification\": \"contract_difference\",\n          \"detail\": \"canonical spelling differs while RDKit semantic identity is preserved\",\n          \"operation\": \"smiles_parse_write\"\n        },\n        {\n          \"classification\": \"unresolved\",\n          \"detail\": \"atom or bond label map differs\",\n          \"operation\": \"cip\"\n        }\n      ],\n      \"input_index\": 45,\n      \"smiles\": \"COc1cc2nc(N3CCN(C(=O)/C(F)=C/c4ccccc4)CC3)nc(N)c2cc1OC\",\n      \"status\": \"completed\"\n    },\n    {\n      \"differences\": [\n        {\n          \"classification\": \"contract_difference\",\n          \"detail\": \"canonical spelling differs while RDKit semantic identity is preserved\",\n          \"operation\": \"smiles_parse_write\"\n        }\n      ],\n      \"input_index\": 46,\n      \"smiles\": \"COc1cc2nc(N3CCN(C(=O)Nc4ccccc4)CC3)nc(N)c2cc1OC\",\n      \"status\": \"completed\"\n    },\n    {\n      \"differences\": [\n        {\n          \"classification\": \"contract_difference\",\n          \"detail\": \"canonical spelling differs while RDKit semantic identity is preserved\",\n          \"operation\": \"smiles_parse_write\"\n        }\n      ],\n      \"input_index\": 47,\n      \"smiles\": \"COC(=O)/C=C/C(=O)Nc1ccc(/C=C/C(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1\",\n      \"status\": \"completed\"\n    },\n    {\n      \"differences\": [\n        {\n          \"classification\": \"contract_difference\",\n          \"detail\": \"canonical spelling differs while RDKit semantic identity is preserved\",\n          \"operation\": \"smiles_parse_write\"\n        },\n        {\n          \"classification\": \"unresolved\",\n          \"detail\": \"atom or bond label map differs\",\n          \"operation\": \"cip\"\n        }\n      ],\n      \"input_index\": 48,\n      \"smiles\": \"COc1cc2nc(N3CCN(/C(S)=N/C4CCCCC4)CC3)nc(N)c2cc1OC\",\n      \"status\": \"completed\"\n    },\n    {\n      \"differences\": [\n        {\n          \"classification\": \"contract_difference\",\n          \"detail\": \"canonical spelling differs while RDKit semantic identity is preserved\",\n          \"operation\": \"smiles_parse_write\"\n        },\n        {\n          \"classification\": \"unresolved\",\n          \"detail\": \"one or more target-atom-set cells differ\",\n          \"operation\": \"smarts\"\n        }\n      ],\n      \"input_index\": 49,\n      \"smiles\": \"COc1cc2nc(N3CCN(C(=O)C4=CC5C=CC4CC5)CC3)nc(N)c2cc1OC\",\n      \"status\": \"completed\"\n    }\n  ],\n  \"gate\": {\n    \"row_accounting_complete\": true,\n    \"rows_hash_recorded\": true,\n    \"runtime_matches\": true\n  },\n  \"gate_passed\": true,\n  \"profile\": \"rdkit_python_chemistry_rebaseline_v1\",\n  \"queries\": {\n    \"count\": 31,\n    \"path\": \"/private/tmp/chematic-t15-runnable/validation/rdkit_rebaseline_smarts_queries.json\",\n    \"sha256\": \"250a241a8905d013eb58fff0ccfb1e0dbe3e97c08ff56e021828fbfec957b341\"\n  },\n  \"rdkit_version\": \"2026.03.6\",\n  \"row_accounting\": {\n    \"completed_count\": 10000,\n    \"input_count\": 10000,\n    \"parse_failure_count\": 0\n  },\n  \"rows\": {\n    \"path\": \"/private/tmp/rdkit-rebaseline-2026.03.6/python-chemistry-rows.jsonl\",\n    \"sha256\": \"83f21ec616e90b00c9143e75d4dfc77ecdc0b610e37869cb26f4c57991e6e374\"\n  },\n  \"schema_version\": 1,\n  \"sealed_accuracy_cohort_reused\": false\n}\n"
+  }
+}

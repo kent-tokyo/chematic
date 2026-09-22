@@ -1,0 +1,288 @@
+{
+  "contract": {
+    "bytes": {
+      "outcome": "returned",
+      "value": true
+    },
+    "invalid_smiles": {
+      "outcome": "returned",
+      "value": null
+    },
+    "invalid_type": {
+      "exception_type": "builtins.TypeError",
+      "message": "No registered converter was able to produce a C++ rvalue of type std::__1::basic_string<wchar_t, std::__1::char_traits<wchar_t>, std::__1::allocator<wchar_t>> from this Python object of type int",
+      "outcome": "raised"
+    },
+    "keyword": {
+      "outcome": "returned",
+      "value": true
+    },
+    "morgan_iterable": {
+      "generator": {
+        "exception_type": "builtins.TypeError",
+        "message": "object of type 'generator' has no len()",
+        "outcome": "raised"
+      },
+      "list": {
+        "outcome": "returned",
+        "value": {
+          "length": 10000,
+          "type": "tuple"
+        }
+      },
+      "tuple": {
+        "outcome": "returned",
+        "value": {
+          "length": 10000,
+          "type": "tuple"
+        }
+      }
+    },
+    "path_like": {
+      "outcome": "returned",
+      "value": 1
+    },
+    "str": {
+      "outcome": "returned",
+      "value": true
+    }
+  },
+  "corpus": {
+    "bytes": 429750,
+    "path": "/private/tmp/chematic-t15-runnable/validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+  },
+  "expected_rdkit": "2026.03.6",
+  "gate": {
+    "row_accounting_complete": true,
+    "runtime_matches": true
+  },
+  "gate_passed": true,
+  "package": {
+    "artifact": {
+      "bytes": 30280927,
+      "path": "/private/tmp/chematic-a66-wheels/rdkit-2026.3.6-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "e16c467cb254a223e59a0cf81358c6b39da15a99d2909170d693e95778fddb41"
+    },
+    "name": "rdkit",
+    "version": "2026.3.6"
+  },
+  "profile": "rdkit_python_binding_contract_v1",
+  "row_accounting": {
+    "failed_count": 0,
+    "failures": [],
+    "input_count": 10000,
+    "success_count": 10000
+  },
+  "runtime": {
+    "backend": {
+      "evidence": "runtime callable type=Boost.Python.function",
+      "value": "boost_python"
+    },
+    "executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python_implementation": "CPython",
+    "python_version": "3.13.6",
+    "rdkit_version": "2026.03.6"
+  },
+  "schema_version": 1,
+  "timing": {
+    "batch_morgan": {
+      "median_ns": 139472500,
+      "p95_ns": 140292083,
+      "repetitions": 7,
+      "result_count": 10000,
+      "samples_ns": [
+        139472500,
+        139711500,
+        138652625,
+        139040750,
+        139484500,
+        139278083,
+        140292083
+      ]
+    },
+    "classification": "python_binding_end_to_end; not chemistry_kernel_timing",
+    "empty_batch_boundary": {
+      "median_ns": 250.0,
+      "p95_ns": 291,
+      "repetitions": 140,
+      "result_count": 0,
+      "samples_ns": [
+        917,
+        375,
+        291,
+        291,
+        250,
+        292,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        208,
+        208,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        208,
+        209,
+        250,
+        250,
+        250,
+        250,
+        208,
+        291,
+        250,
+        208,
+        250,
+        208,
+        209,
+        250,
+        250,
+        292,
+        250,
+        208,
+        250,
+        250,
+        250,
+        208,
+        250,
+        291,
+        250,
+        250,
+        250,
+        250,
+        208,
+        208,
+        250,
+        208,
+        250,
+        250,
+        250,
+        208,
+        250,
+        250,
+        250,
+        250,
+        208,
+        208,
+        250,
+        208,
+        250,
+        208,
+        208,
+        250,
+        208,
+        209,
+        208,
+        250,
+        250,
+        250,
+        208,
+        250,
+        209,
+        208,
+        250,
+        250,
+        208,
+        250,
+        250,
+        250,
+        250,
+        208,
+        250,
+        250,
+        208,
+        250,
+        250,
+        209,
+        250,
+        250,
+        250,
+        208,
+        250,
+        250,
+        250,
+        209,
+        250,
+        208,
+        208,
+        250,
+        250,
+        208,
+        250,
+        250,
+        250,
+        250,
+        208,
+        250,
+        208,
+        209,
+        208,
+        250,
+        208,
+        250,
+        208,
+        250,
+        208,
+        250,
+        208,
+        250,
+        250,
+        250,
+        250,
+        250,
+        250
+      ]
+    },
+    "parse_batch_api": {
+      "availability": "unavailable"
+    },
+    "scalar_morgan": {
+      "median_ns": 141401500,
+      "p95_ns": 142639917,
+      "repetitions": 7,
+      "result_count": 10000,
+      "samples_ns": [
+        140548458,
+        141902958,
+        141718458,
+        138764084,
+        141401500,
+        140898833,
+        142639917
+      ]
+    },
+    "scalar_parse": {
+      "median_ns": 366945417,
+      "p95_ns": 371813625,
+      "repetitions": 7,
+      "result_count": 10000,
+      "samples_ns": [
+        364108417,
+        369229334,
+        366428667,
+        366945417,
+        371813625,
+        368153875,
+        366483166
+      ]
+    }
+  }
+}

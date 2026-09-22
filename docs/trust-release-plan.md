@@ -178,7 +178,7 @@ candidateは残差21（いずれも155,651セル、RDKit parse error10,042、整
 T1.1–T1.4は`validation/compatibility_profiles.json`と
 `scripts/check_compatibility_profiles.py`で実装し、生成dashboardへ反映済み。
 未測定は`not_measured`、既存結果が限定的な領域は`partial`として残す。
-- [ ] T1.5 2025.09.3の回帰laneを保存し、2026.03.6を別laneで固定する。
+- [~] T1.5 2025.09.3の回帰laneを保存し、2026.03.6を別laneで固定する。
   差分分類と全対象操作の再測定後にだけ主要oracle版を変更する。
   RDKit.jsはnpm版と同梱RDKit版を別々に記録する。
 
@@ -186,8 +186,10 @@ SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 la
 2026-09-13に追加した。2025.09.3 laneの10,042 oracle parse-error cellsは2026.03.6で
 発生せず、残差は21から22になった。結果は
 `validation/results/rdkit-smarts-oracle-lanes-v1.0.14.json`へ分離して保存し、
-2025.09.3を既定regression oracleのまま維持する。全対象操作の再測定・RDKit.jsの
-同梱版記録は未完了なので、T1.5全体は未完了。
+2025.09.3を既定regression oracleのまま維持する。2026-09-22に公開1.0.19と
+RDKit 2026.03.6の露出済み10kを追加し、Python wheel/npm tarball、Boost.Python実体、
+SMILES/CIP/SMARTS/Morgan、全行raw、実行commandを固定した。次版とのold/new分類、
+native lane、browser/resource全条件は未完了なので、T1.5全体は未完了。
 - [x] T1.6 新規10,000件の取得版・ライセンス・出自を固定し、
   開発2,000/封印評価8,000へ分割。既存の開発・回帰全群との
   parent/scaffold/同一構造重複を監査し、重複は開発側へ移す。
@@ -724,14 +726,15 @@ oracle/profile変更時は新しい採用packetとして再実行し、既存raw
 
 - [x] 既存oracle 2025.09.3/2026.03.6と次のstableを別laneに固定する
   `validation/rdkit_rebaseline_manifest.json` と検証scriptを追加した。
-- [ ] source/package/runtime/wrapper backend、設定、corpus hash、toolchain/OSを
+- [~] source/package/runtime/wrapper backend、設定、corpus hash、toolchain/OSを
   実測laneごとにmanifestへ記録する。
   Python/native/npmは個別に入手確認。欠測laneはunavailableとして待機し、先に出た
   Python packageの版から公式RDKit.js公開を推測しない。
-  `scripts/collect_rdkit_rebaseline_provenance.py` は、そのためのoffline収集を開始した。
+  `scripts/collect_rdkit_rebaseline_provenance.py` は、そのためのoffline収集を行う。
   installed metadata/RECORDと元wheel hash、npm package versionと実行時versionを
   別項目にし、取得できないarchive/backend/runtimeは欠測のまま保持する。このCLIの
-  追加だけでは実測lane完了や次stableの利用可能性を意味しない。
+  2026.03.6 Python/npm laneでは元wheel/tarballまで実測済み。nativeと次stableは
+  artifact公開までunavailableのままとし、この記録を次版の利用可能性へ外挿しない。
 
   ```bash
   python3 scripts/collect_rdkit_rebaseline_provenance.py \
@@ -744,18 +747,23 @@ oracle/profile変更時は新しい採用packetとして再実行し、既存raw
   npm/WASM laneは、展開済みの公式package directoryを`--npm-package`へ渡す。
   `--npm-runtime-version`には実際に`rdkit.version()`を実行して得た値だけを指定し、
   `package.json`の版をruntime版として代用しない。
-- [ ] 同一の露出済みcorpusでSMILES/CIP/SMARTS/Morganとbindingを比較する。
+- [~] 同一の露出済みcorpusでSMILES/CIP/SMARTS/Morganとbindingを比較する。
   Pythonではscalar/batch、入力型・例外・keywordとcall overheadを同じAPI境界で測る。
   Boost/nanobindは配布物の実体を特定し、別backendの結果を統合しない。
+  2026.03.6 Boost.Python laneは10,000/10,000行を保存し、Morgan 9,999 exact、
+  CIP 9,880 exact、SMILES semantic 9,982 exact、SMARTS 14,306/310,000 cells差を記録した。
+  これは次版old/new比較や残差adjudicationの完了ではない。
 - [ ] browserは同じpacked output契約で3 enginesを比較し、parse単独、prepared FP、
   parse+FP、search、startup、memoryを個別に記録する。API意味論が揃わないlaneは
   速度順位の対象から外す。sealed精度8kはこの回帰・性能集合へ流用しない。
 - [ ] RDKitの型stub/nanobind移行は、公開artifactで確認できた場合だけ Python laneへ
   追加する。型注釈の量ではなく、`str | bytes`、path-like、iterable、例外、keyword、
   scalar/batchの実行時契約をCheMaticのtyped binding contractと並べて記録する。
-- [ ] 差分を自社退行/oracle変更/契約差/未解決へ分類し、goldが必要ならA5へ送る。
+- [~] 差分を自社退行/oracle変更/契約差/未解決へ分類し、goldが必要ならA5へ送る。
   新oracleへ自動追従して既存出力を変更しない。公開dashboardは測定済みの新旧版を併記し、
   移行後も旧raw/再現コマンドをhistoricalとして保存する。
+  意味同一のSMILES綴り差は`contract_difference`、未裁定のCIP/SMARTS/Morgan/意味差は
+  `unresolved`で保存済み。次は残差群の狭い原因分類と、次版公開後の`oracle_change`判定を行う。
 
 出口: 利用可能なlaneの全行差分、失敗/拒否、速度区間、API変更の移行表。
 再比較先の公開遅延は、現行pinでのTrust RC候補監査を停止させない。

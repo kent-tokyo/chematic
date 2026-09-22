@@ -1,0 +1,38 @@
+{
+  "argv": [
+    "/private/tmp/chematic-a66-venv/bin/python",
+    "scripts/collect_rdkit_rebaseline_provenance.py",
+    "--python",
+    "--python-wrapper-backend",
+    "boost_python",
+    "--python-backend-evidence",
+    "runtime callable type=Boost.Python.function",
+    "--python-artifact",
+    "/private/tmp/chematic-a66-wheels/rdkit-2026.3.6-cp313-cp313-macosx_11_0_arm64.whl",
+    "--corpus",
+    "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "--operation-config",
+    "validation/rdkit_rebaseline_execution.json",
+    "--output",
+    "/private/tmp/rdkit-rebaseline-2026.03.6/python-provenance.json"
+  ],
+  "command": "python-provenance",
+  "covers": [
+    "provenance"
+  ],
+  "elapsed_ns": 1205647125,
+  "lane": "python-2026.03.6-distributed",
+  "returncode": 0,
+  "schema_version": 1,
+  "started_at_utc": "2026-09-22T14:35:24.796421+00:00",
+  "stderr": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tail": ""
+  },
+  "stdout": {
+    "bytes": 63,
+    "sha256": "d4ad94c5ebc15b649e8df6c9f9224e956624dd83b18e47ec322b63ae3ba98d36",
+    "tail": "/private/tmp/rdkit-rebaseline-2026.03.6/python-provenance.json\n"
+  }
+}

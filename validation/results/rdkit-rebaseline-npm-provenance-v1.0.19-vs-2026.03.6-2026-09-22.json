@@ -1,0 +1,97 @@
+{
+  "collected_at_utc": "2026-09-22T14:36:54.391451+00:00",
+  "host": {
+    "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+    "machine": "arm64",
+    "node": "v24.5.0",
+    "npm": "11.5.1",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "python_executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+  },
+  "inputs": {
+    "corpora": [
+      {
+        "bytes": 429750,
+        "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+      }
+    ],
+    "operation_configurations": [
+      {
+        "bytes": 5217,
+        "path": "validation/rdkit_rebaseline_execution.json",
+        "sha256": "f204f07c411c354684c5a161f59c445f1981ada425e20cd606c7031a94996d2e"
+      }
+    ],
+    "sealed_accuracy_cohort_reused": false
+  },
+  "lanes": [
+    {
+      "availability": "measured",
+      "channel": "npm_wasm",
+      "missing_dimensions": [],
+      "package": {
+        "artifact": {
+          "bytes": 2425188,
+          "path": "/private/tmp/rdkit-rebaseline-2026.03.6/rdkit-rdkit-2026.3.6.tgz",
+          "sha256": "3b86b72775394ae997fb96ca854c6e7c5840927d3e899c1ef117d42bca573c87"
+        },
+        "artifact_archive_sha256": "3b86b72775394ae997fb96ca854c6e7c5840927d3e899c1ef117d42bca573c87",
+        "assets": [
+          {
+            "bytes": 9528,
+            "path": "dist/RDKit_minimal.d.ts",
+            "sha256": "47ae3b158c36cbee6c69ac240a086d4a9b3bc96fd32a631454ae18108b224c1b"
+          },
+          {
+            "bytes": 105843,
+            "path": "dist/RDKit_minimal.js",
+            "sha256": "25ea1529b8eeb106ac1f3acb7c5d338a90533248c6223614574fefd14fee772f"
+          },
+          {
+            "bytes": 7333095,
+            "path": "dist/RDKit_minimal.wasm",
+            "sha256": "f5981af4cf5bdcef861ffdf7410330bf9887f1195e39fbf9901b3a2f134ace2e"
+          }
+        ],
+        "name": "@rdkit/rdkit",
+        "package_json": {
+          "bytes": 718,
+          "path": "package.json",
+          "sha256": "bb938eb6b28bf39baa9778f56aefcdea746d28060fe2c542209f877a71468fed"
+        },
+        "registry": {
+          "integrity": "sha512-JkMi2PfVjRFuy3ZCDAoTUJeTGyNsgtmq4hDUduLnnbobxsOfSydfpa6lhZGYYaisfMSEAgE1iAT95W4ZsUCMrA==",
+          "path": "/private/tmp/chematic-pf6-npm/node_modules/.package-lock.json",
+          "resolved": "https://registry.npmjs.org/@rdkit/rdkit/-/rdkit-2026.3.6.tgz",
+          "sha256": "3fa5f5b533a730400d5758f241a7ddf95f9a29cee78e5190b9b386cc36d39166",
+          "status": "recorded"
+        },
+        "version": "2026.03.6"
+      },
+      "runtime": {
+        "status": "measured",
+        "version": "2026.03.6"
+      },
+      "wrapper_backend": {
+        "status": "package_identity",
+        "value": "official_rdkit_js"
+      }
+    }
+  ],
+  "profile": "rdkit_rebaseline_provenance_v1",
+  "schema_version": 1,
+  "source": {
+    "dirty_worktree": true,
+    "lockfile_sha256": "39697714823fecacc7235aa7abccbd4e06dd8a23c5651e92be2d13854a31f073",
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python_executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+    "source_commit": "6a41f2ecffdec984346c27eb9001547176063546",
+    "tracked_diff_sha256": "fbb4add7ff239affe81a22853efc2a6215a5574a743f6e14eeea38183b5b758c",
+    "untracked_source_files": 7,
+    "untracked_source_sha256": "4a059b6f728b8caae7047225c91902f8ab2a88f2b965f2b95ca4232fbee06251"
+  }
+}

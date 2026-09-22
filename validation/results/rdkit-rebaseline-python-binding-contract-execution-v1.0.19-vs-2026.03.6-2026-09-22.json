@@ -1,0 +1,37 @@
+{
+  "argv": [
+    "/private/tmp/chematic-a66-venv/bin/python",
+    "scripts/probe_rdkit_python_contract.py",
+    "--corpus",
+    "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "--output",
+    "/private/tmp/rdkit-rebaseline-2026.03.6/python-binding-contract.json",
+    "--expected-rdkit",
+    "2026.03.6",
+    "--artifact",
+    "/private/tmp/chematic-a66-wheels/rdkit-2026.3.6-cp313-cp313-macosx_11_0_arm64.whl",
+    "--rows",
+    "10000",
+    "--repetitions",
+    "7"
+  ],
+  "command": "python-binding-contract",
+  "covers": [
+    "binding_contract"
+  ],
+  "elapsed_ns": 6385011958,
+  "lane": "python-2026.03.6-distributed",
+  "returncode": 0,
+  "schema_version": 1,
+  "started_at_utc": "2026-09-22T14:37:46.351098+00:00",
+  "stderr": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tail": ""
+  },
+  "stdout": {
+    "bytes": 5480,
+    "sha256": "70de20aa5628a1b3a1a30cf9dba4b91ae9f8b44be5d4c905d424766a87121cc9",
+    "tail": "28b595340feee95f\"\n  },\n  \"expected_rdkit\": \"2026.03.6\",\n  \"gate\": {\n    \"row_accounting_complete\": true,\n    \"runtime_matches\": true\n  },\n  \"gate_passed\": true,\n  \"package\": {\n    \"artifact\": {\n      \"bytes\": 30280927,\n      \"path\": \"/private/tmp/chematic-a66-wheels/rdkit-2026.3.6-cp313-cp313-macosx_11_0_arm64.whl\",\n      \"sha256\": \"e16c467cb254a223e59a0cf81358c6b39da15a99d2909170d693e95778fddb41\"\n    },\n    \"name\": \"rdkit\",\n    \"version\": \"2026.3.6\"\n  },\n  \"profile\": \"rdkit_python_binding_contract_v1\",\n  \"row_accounting\": {\n    \"failed_count\": 0,\n    \"failures\": [],\n    \"input_count\": 10000,\n    \"success_count\": 10000\n  },\n  \"runtime\": {\n    \"backend\": {\n      \"evidence\": \"runtime callable type=Boost.Python.function\",\n      \"value\": \"boost_python\"\n    },\n    \"executable\": \"/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13\",\n    \"platform\": \"macOS-26.5.2-arm64-arm-64bit-Mach-O\",\n    \"python_implementation\": \"CPython\",\n    \"python_version\": \"3.13.6\",\n    \"rdkit_version\": \"2026.03.6\"\n  },\n  \"schema_version\": 1,\n  \"timing\": {\n    \"batch_morgan\": {\n      \"median_ns\": 139472500,\n      \"p95_ns\": 140292083,\n      \"repetitions\": 7,\n      \"result_count\": 10000,\n      \"samples_ns\": [\n        139472500,\n        139711500,\n        138652625,\n        139040750,\n        139484500,\n        139278083,\n        140292083\n      ]\n    },\n    \"classification\": \"python_binding_end_to_end; not chemistry_kernel_timing\",\n    \"empty_batch_boundary\": {\n      \"median_ns\": 250.0,\n      \"p95_ns\": 291,\n      \"repetitions\": 140,\n      \"result_count\": 0,\n      \"samples_ns\": [\n        917,\n        375,\n        291,\n        291,\n        250,\n        292,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        208,\n        208,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250,\n        208,\n        209,\n        250,\n        250,\n        250,\n        250,\n        208,\n        291,\n        250,\n        208,\n        250,\n        208,\n        209,\n        250,\n        250,\n        292,\n        250,\n        208,\n        250,\n        250,\n        250,\n        208,\n        250,\n        291,\n        250,\n        250,\n        250,\n        250,\n        208,\n        208,\n        250,\n        208,\n        250,\n        250,\n        250,\n        208,\n        250,\n        250,\n        250,\n        250,\n        208,\n        208,\n        250,\n        208,\n        250,\n        208,\n        208,\n        250,\n        208,\n        209,\n        208,\n        250,\n        250,\n        250,\n        208,\n        250,\n        209,\n        208,\n        250,\n        250,\n        208,\n        250,\n        250,\n        250,\n        250,\n        208,\n        250,\n        250,\n        208,\n        250,\n        250,\n        209,\n        250,\n        250,\n        250,\n        208,\n        250,\n        250,\n        250,\n        209,\n        250,\n        208,\n        208,\n        250,\n        250,\n        208,\n        250,\n        250,\n        250,\n        250,\n        208,\n        250,\n        208,\n        209,\n        208,\n        250,\n        208,\n        250,\n        208,\n        250,\n        208,\n        250,\n        208,\n        250,\n        250,\n        250,\n        250,\n        250,\n        250\n      ]\n    },\n    \"parse_batch_api\": {\n      \"availability\": \"unavailable\"\n    },\n    \"scalar_morgan\": {\n      \"median_ns\": 141401500,\n      \"p95_ns\": 142639917,\n      \"repetitions\": 7,\n      \"result_count\": 10000,\n      \"samples_ns\": [\n        140548458,\n        141902958,\n        141718458,\n        138764084,\n        141401500,\n        140898833,\n        142639917\n      ]\n    },\n    \"scalar_parse\": {\n      \"median_ns\": 366945417,\n      \"p95_ns\": 371813625,\n      \"repetitions\": 7,\n      \"result_count\": 10000,\n      \"samples_ns\": [\n        364108417,\n        369229334,\n        366428667,\n        366945417,\n        371813625,\n        368153875,\n        366483166\n      ]\n    }\n  }\n}\n"
+  }
+}
