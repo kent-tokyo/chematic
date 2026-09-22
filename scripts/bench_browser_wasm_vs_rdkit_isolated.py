@@ -32,9 +32,11 @@ ROOT = Path(__file__).resolve().parents[1]
 # bonds, which chematic intentionally rejects with a typed compatibility error.
 # Keep the input in the corpus and record this exclusion in every performance
 # result; do not silently remove it from the corpus or infer a wider metal rule.
-FINGERPRINT_TYPED_UNSUPPORTED_SMILES = frozenset({
-    "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10",
-})
+FINGERPRINT_TYPED_UNSUPPORTED_SMILES = frozenset(
+    {
+        "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10",
+    }
+)
 
 
 def sha256(path: Path) -> str:
@@ -43,7 +45,12 @@ def sha256(path: Path) -> str:
 
 def artifact(path: Path) -> dict[str, object]:
     body = path.read_bytes()
-    return {"path": str(path), "raw_bytes": len(body), "gzip9_bytes": len(gzip.compress(body, 9)), "sha256": hashlib.sha256(body).hexdigest()}
+    return {
+        "path": str(path),
+        "raw_bytes": len(body),
+        "gzip9_bytes": len(gzip.compress(body, 9)),
+        "sha256": hashlib.sha256(body).hexdigest(),
+    }
 
 
 def npm_package_provenance(
@@ -57,7 +64,10 @@ def npm_package_provenance(
     unusable as a benchmark input.
     """
     record: dict[str, object] = {"sha256": sha256(package_json)}
-    node_modules = next((parent for parent in package_dir.parents if parent.name == "node_modules"), None)
+    node_modules = next(
+        (parent for parent in package_dir.parents if parent.name == "node_modules"),
+        None,
+    )
     if node_modules is None:
         record["lock_status"] = "not_found"
         return record
@@ -74,23 +84,34 @@ def npm_package_provenance(
     if not isinstance(entry, dict):
         record["lock_status"] = "entry_not_found"
         return record
-    record.update({
-        "lock_status": "recorded",
-        "lock_sha256": sha256(lock_path),
-        "resolved": entry.get("resolved"),
-        "integrity": entry.get("integrity"),
-    })
+    record.update(
+        {
+            "lock_status": "recorded",
+            "lock_sha256": sha256(lock_path),
+            "resolved": entry.get("resolved"),
+            "integrity": entry.get("integrity"),
+        }
+    )
     return record
 
 
 def summary(values: list[float]) -> dict[str, float | int]:
     ordered = sorted(values)
+
     def pct(fraction: float) -> float:
         position = (len(ordered) - 1) * fraction
         low = int(position)
         high = min(low + 1, len(ordered) - 1)
-        return round(ordered[low] + (ordered[high] - ordered[low]) * (position - low), 6)
-    return {"count": len(values), "p50_ms": pct(0.5), "p95_ms": pct(0.95), "mean_ms": round(statistics.fmean(values), 6)}
+        return round(
+            ordered[low] + (ordered[high] - ordered[low]) * (position - low), 6
+        )
+
+    return {
+        "count": len(values),
+        "p50_ms": pct(0.5),
+        "p95_ms": pct(0.95),
+        "mean_ms": round(statistics.fmean(values), 6),
+    }
 
 
 def free_local_port() -> int:
@@ -108,8 +129,11 @@ def process_tree_rss_bytes(root_pid: int) -> tuple[int, int]:
     unique-resident-memory measurement.
     """
     output = subprocess.run(
-        ["ps", "-axo", "pid=,ppid=,rss="], check=True, text=True,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        ["ps", "-axo", "pid=,ppid=,rss="],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     ).stdout
     children: dict[int, list[int]] = {}
     rss_kib: dict[int, int] = {}
@@ -175,23 +199,32 @@ class ProcessTreeRssMonitor:
             }
 
 
-def launch_chromium_with_rss(playwright: object, executable: Path) -> tuple[object, subprocess.Popen[bytes], tempfile.TemporaryDirectory[str]]:
+def launch_chromium_with_rss(
+    playwright: object, executable: Path
+) -> tuple[object, subprocess.Popen[bytes], tempfile.TemporaryDirectory[str]]:
     """Launch Chromium under our PID so its process tree can be measured."""
     temp_profile = tempfile.TemporaryDirectory(prefix="chematic-browser-rss-")
     port = free_local_port()
     process = subprocess.Popen(
         [
-            str(executable), "--headless=new", "--no-first-run", "--no-default-browser-check",
-            f"--remote-debugging-port={port}", f"--user-data-dir={temp_profile.name}",
+            str(executable),
+            "--headless=new",
+            "--no-first-run",
+            "--no-default-browser-check",
+            f"--remote-debugging-port={port}",
+            f"--user-data-dir={temp_profile.name}",
         ],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     endpoint = f"http://127.0.0.1:{port}"
     deadline = time.monotonic() + 20
     while time.monotonic() < deadline:
         if process.poll() is not None:
             temp_profile.cleanup()
-            raise RuntimeError(f"Chromium exited before CDP connection (exit {process.returncode})")
+            raise RuntimeError(
+                f"Chromium exited before CDP connection (exit {process.returncode})"
+            )
         try:
             with urlopen(f"{endpoint}/json/version", timeout=0.5):
                 browser = playwright.chromium.connect_over_cdp(endpoint)
@@ -204,9 +237,23 @@ def launch_chromium_with_rss(playwright: object, executable: Path) -> tuple[obje
     raise RuntimeError("Chromium CDP endpoint did not become ready")
 
 
-def page_html(arm: str, smiles: list[str], warmup: int, fingerprint_excluded_smiles: frozenset[str]) -> str:
-    config = json.dumps({"arm": arm, "smiles": smiles, "warmup": warmup, "fingerprint_excluded_smiles": sorted(fingerprint_excluded_smiles)}).replace("<", "\\u003c")
-    rdkit_script = '<script src="/rdkit/RDKit_minimal.js"></script>' if arm == "rdkit" else ""
+def page_html(
+    arm: str,
+    smiles: list[str],
+    warmup: int,
+    fingerprint_excluded_smiles: frozenset[str],
+) -> str:
+    config = json.dumps(
+        {
+            "arm": arm,
+            "smiles": smiles,
+            "warmup": warmup,
+            "fingerprint_excluded_smiles": sorted(fingerprint_excluded_smiles),
+        }
+    ).replace("<", "\\u003c")
+    rdkit_script = (
+        '<script src="/rdkit/RDKit_minimal.js"></script>' if arm == "rdkit" else ""
+    )
     return f"""<!doctype html><meta charset="utf-8">{rdkit_script}<pre id="result">running</pre>
 <script type="module">
 const config = {config};
@@ -278,8 +325,23 @@ const run = async () => {{
     const linearMemoryAfterInit = hasLinearMemoryMetric ? mod.wasm_linear_memory_bytes() : null;
     const parse = time((value) => {{ const mol = mod.parse_smiles(value); mol.free(); }});
     const parse_write = time((value) => {{ const mol = mod.parse_smiles(value); mol.canonical_smiles(); mol.free(); }});
-    const parse_fp = timeFingerprint((value) => {{ const mol = mod.parse_smiles(value); try {{ return mod.rdkit_ecfp4_bitvec(mol); }} finally {{ mol.free(); }} }}, fingerprintRows);
-    document.querySelector("#result").textContent = JSON.stringify({{arm: config.arm, init_ms, download_to_ready_ms, operations: {{parse, parse_write, parse_fp}}, memory: {{before_load: before, after_workload: memory()}}, wasm_linear_memory: hasLinearMemoryMetric ? {{status: "measured", after_init_bytes: linearMemoryAfterInit, after_workload_bytes: mod.wasm_linear_memory_bytes()}} : {{status: "unavailable", reason: "the selected chematic artifact does not export wasm_linear_memory_bytes"}}, accepted_rows: config.smiles.length}});
+    const parse_fp = timeFingerprint((value) => {{
+      const mol = mod.parse_smiles(value);
+      let prepared;
+      try {{ prepared = mod.prepare_rdkit_ecfp4(mol); return prepared.bitvec(); }}
+      finally {{ if (prepared) prepared.free(); mol.free(); }}
+    }}, fingerprintRows);
+    const preparedMols = fingerprintRows.map((value) => {{
+      const mol = mod.parse_smiles(value);
+      try {{ return mod.prepare_rdkit_ecfp4(mol); }} finally {{ mol.free(); }}
+    }});
+    let prepared_fp;
+    try {{
+      prepared_fp = timeFingerprint((mol) => mol.bitvec(), preparedMols);
+    }} finally {{
+      for (const mol of preparedMols) mol.free();
+    }}
+    document.querySelector("#result").textContent = JSON.stringify({{arm: config.arm, init_ms, download_to_ready_ms, operations: {{parse, parse_write, parse_fp, prepared_fp}}, memory: {{before_load: before, after_workload: memory()}}, wasm_linear_memory: hasLinearMemoryMetric ? {{status: "measured", after_init_bytes: linearMemoryAfterInit, after_workload_bytes: mod.wasm_linear_memory_bytes()}} : {{status: "unavailable", reason: "the selected chematic artifact does not export wasm_linear_memory_bytes"}}, accepted_rows: config.smiles.length}});
     return;
   }}
   const initialized = performance.now();
@@ -290,7 +352,14 @@ const run = async () => {{
   const parse = time((value) => getMol(value).delete());
   const parse_write = time((value) => {{ const mol = getMol(value); mol.get_smiles(); mol.delete(); }});
   const parse_fp = timeFingerprint((value) => {{ const mol = getMol(value); try {{ return rdkitBitsToPacked(mol.get_morgan_fp(MORGAN_OPTIONS)); }} finally {{ mol.delete(); }} }}, fingerprintRows);
-  document.querySelector("#result").textContent = JSON.stringify({{arm: config.arm, rdkit_version: rdkit.version(), init_ms, download_to_ready_ms, operations: {{parse, parse_write, parse_fp}}, memory: {{before_load: before, after_workload: memory()}}, wasm_linear_memory: {{status: "unavailable", reason: "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"}}, accepted_rows: config.smiles.length}});
+  const preparedMols = fingerprintRows.map((value) => getMol(value));
+  let prepared_fp;
+  try {{
+    prepared_fp = timeFingerprint((mol) => rdkitBitsToPacked(mol.get_morgan_fp(MORGAN_OPTIONS)), preparedMols);
+  }} finally {{
+    for (const mol of preparedMols) mol.delete();
+  }}
+  document.querySelector("#result").textContent = JSON.stringify({{arm: config.arm, rdkit_version: rdkit.version(), init_ms, download_to_ready_ms, operations: {{parse, parse_write, parse_fp, prepared_fp}}, memory: {{before_load: before, after_workload: memory()}}, wasm_linear_memory: {{status: "unavailable", reason: "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"}}, accepted_rows: config.smiles.length}});
 }};
 run().catch((error) => {{ document.querySelector("#result").textContent = JSON.stringify({{error: String(error), stack: error.stack}}); }});
 </script>"""
@@ -309,11 +378,17 @@ class Handler(BaseHTTPRequestHandler):
             if arm not in {"chematic", "rdkit"}:
                 self.send_error(400, "arm must be chematic or rdkit")
                 return
-            body = page_html(arm, self.smiles, self.warmup, self.fingerprint_excluded_smiles).encode()
+            body = page_html(
+                arm, self.smiles, self.warmup, self.fingerprint_excluded_smiles
+            ).encode()
             content_type = "text/html"
         elif parsed.path in self.files:
             body = self.files[parsed.path].read_bytes()
-            content_type = "application/wasm" if parsed.path.endswith(".wasm") else "text/javascript"
+            content_type = (
+                "application/wasm"
+                if parsed.path.endswith(".wasm")
+                else "text/javascript"
+            )
         else:
             self.send_error(404)
             return
@@ -331,8 +406,14 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rdkit-package", type=Path, required=True)
-    parser.add_argument("--engine", choices=("chromium", "firefox", "webkit"), default="chromium")
-    parser.add_argument("--browser", type=Path, help="explicit Chromium executable; required only with --engine chromium")
+    parser.add_argument(
+        "--engine", choices=("chromium", "firefox", "webkit"), default="chromium"
+    )
+    parser.add_argument(
+        "--browser",
+        type=Path,
+        help="explicit Chromium executable; required only with --engine chromium",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--schematic-dir", type=Path, default=ROOT / "demo" / "pkg")
     parser.add_argument(
@@ -340,12 +421,23 @@ def main() -> int:
         type=Path,
         help="optional npm tarball whose extracted package is --schematic-dir; records SHA-256 without inferring registry provenance",
     )
-    parser.add_argument("--corpus", type=Path, default=ROOT / "scripts" / "descriptor_census_corpus.smi")
+    parser.add_argument(
+        "--schematic-package-kind",
+        choices=("published", "source_candidate"),
+        default="published",
+        help="classify the chematic artifact without inferring publication from package metadata",
+    )
+    parser.add_argument("--schematic-source-revision")
+    parser.add_argument("--schematic-source-diff-sha256")
+    parser.add_argument(
+        "--corpus", type=Path, default=ROOT / "scripts" / "descriptor_census_corpus.smi"
+    )
     parser.add_argument("--rows", type=int, default=1000)
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--repetitions", type=int, default=5)
     parser.add_argument(
-        "--measure-process-rss", action="store_true",
+        "--measure-process-rss",
+        action="store_true",
         help="launch Chromium through CDP and sample its process-tree RSS; unsupported for Firefox/WebKit",
     )
     args = parser.parse_args()
@@ -357,13 +449,16 @@ def main() -> int:
         parser.error("--measure-process-rss is supported only with --engine chromium")
 
     corpus_bytes = args.corpus.read_bytes()
-    smiles = [line.strip() for line in corpus_bytes.decode().splitlines() if line.strip()][: args.rows]
+    smiles = [
+        line.strip() for line in corpus_bytes.decode().splitlines() if line.strip()
+    ][: args.rows]
     if len(smiles) != args.rows:
         raise SystemExit(f"corpus has {len(smiles)} usable rows, expected {args.rows}")
     rdkit_dist = args.rdkit_package / "dist"
     Handler.files = {
         "/schematic/chematic_wasm.js": args.schematic_dir / "chematic_wasm.js",
-        "/schematic/chematic_wasm_bg.wasm": args.schematic_dir / "chematic_wasm_bg.wasm",
+        "/schematic/chematic_wasm_bg.wasm": args.schematic_dir
+        / "chematic_wasm_bg.wasm",
         "/rdkit/RDKit_minimal.js": rdkit_dist / "RDKit_minimal.js",
         "/rdkit/RDKit_minimal.wasm": rdkit_dist / "RDKit_minimal.wasm",
     }
@@ -371,7 +466,9 @@ def main() -> int:
     if missing:
         raise SystemExit(f"missing benchmark artifacts: {missing}")
     Handler.smiles, Handler.warmup = smiles, args.warmup
-    Handler.fingerprint_excluded_smiles = FINGERPRINT_TYPED_UNSUPPORTED_SMILES.intersection(smiles)
+    Handler.fingerprint_excluded_smiles = (
+        FINGERPRINT_TYPED_UNSUPPORTED_SMILES.intersection(smiles)
+    )
     package_json = args.rdkit_package / "package.json"
     package = json.loads(package_json.read_text(encoding="utf-8"))
     schematic_package_json = args.schematic_dir / "package.json"
@@ -382,6 +479,13 @@ def main() -> int:
     )
     if args.schematic_tarball is not None and not args.schematic_tarball.is_file():
         raise SystemExit(f"schematic tarball does not exist: {args.schematic_tarball}")
+    if args.schematic_package_kind == "source_candidate" and (
+        not args.schematic_source_revision or not args.schematic_source_diff_sha256
+    ):
+        parser.error(
+            "source candidates require --schematic-source-revision and "
+            "--schematic-source-diff-sha256"
+        )
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -395,30 +499,49 @@ def main() -> int:
     try:
         with sync_playwright() as playwright:
             for repetition in range(args.repetitions):
-                for arm in ("chematic", "rdkit") if repetition % 2 == 0 else ("rdkit", "chematic"):
+                for arm in (
+                    ("chematic", "rdkit")
+                    if repetition % 2 == 0
+                    else ("rdkit", "chematic")
+                ):
                     launched_process = None
                     temp_profile = None
                     monitor = None
                     if args.measure_process_rss:
-                        browser, launched_process, temp_profile = launch_chromium_with_rss(playwright, args.browser)
+                        browser, launched_process, temp_profile = (
+                            launch_chromium_with_rss(playwright, args.browser)
+                        )
                         monitor = ProcessTreeRssMonitor(launched_process.pid)
                         monitor.start()
                     else:
                         launch_options = {"headless": True}
                         if args.browser is not None:
                             launch_options["executable_path"] = str(args.browser)
-                        browser = getattr(playwright, args.engine).launch(**launch_options)
+                        browser = getattr(playwright, args.engine).launch(
+                            **launch_options
+                        )
                     try:
                         page = browser.new_page()
-                        page.goto(f"http://127.0.0.1:{port}/?arm={arm}", wait_until="domcontentloaded")
-                        page.wait_for_function('document.querySelector("#result").textContent !== "running"', timeout=60_000)
-                        result = json.loads(page.locator("#result").text_content() or "{}")
+                        page.goto(
+                            f"http://127.0.0.1:{port}/?arm={arm}",
+                            wait_until="domcontentloaded",
+                        )
+                        page.wait_for_function(
+                            'document.querySelector("#result").textContent !== "running"',
+                            timeout=60_000,
+                        )
+                        result = json.loads(
+                            page.locator("#result").text_content() or "{}"
+                        )
                         if result.get("error") or result.get("arm") != arm:
                             raise RuntimeError(f"{arm} browser run failed: {result}")
                         result["process_tree_rss"] = (
                             monitor.finish()
                             if monitor is not None
-                            else {"status": "not_measured", "reason": "--measure-process-rss not requested"}
+                            else {
+                                "status": "not_measured",
+                                "reason": "--measure-process-rss not requested",
+                            }
                         )
                         result["repetition"] = repetition
                         results[arm].append(result)
@@ -452,71 +575,116 @@ def main() -> int:
         right = by_repetition["rdkit"].get(repetition)
         if left is None or right is None:
             raise RuntimeError(f"missing arm result for repetition {repetition}")
-        left_output = left["operations"]["parse_fp"]["output"]
-        right_output = right["operations"]["parse_fp"]["output"]
-        if left_output != right_output:
-            raise RuntimeError(
-                "fingerprint output contract failed for repetition "
-                f"{repetition}: chematic={left_output}, rdkit={right_output}; "
-                "run the row-level browser parity gate for diagnostics"
-            )
+        for operation in ("parse_fp", "prepared_fp"):
+            left_output = left["operations"][operation]["output"]
+            right_output = right["operations"][operation]["output"]
+            if left_output != right_output:
+                raise RuntimeError(
+                    "fingerprint output contract failed for repetition "
+                    f"{repetition}, operation {operation}: "
+                    f"chematic={left_output}, rdkit={right_output}; "
+                    "run the row-level browser parity gate for diagnostics"
+                )
 
     def aggregate(arm: str) -> dict[str, object]:
         runs = results[arm]
         return {
             "runs": len(runs),
-            "download_to_ready_ms": summary([float(run["download_to_ready_ms"]) for run in runs]),
+            "download_to_ready_ms": summary(
+                [float(run["download_to_ready_ms"]) for run in runs]
+            ),
             "init_ms": summary([float(run["init_ms"]) for run in runs]),
-            "parse_mean_ms": summary([float(run["operations"]["parse"]["mean_ms"]) for run in runs]),
-            "parse_write_mean_ms": summary([float(run["operations"]["parse_write"]["mean_ms"]) for run in runs]),
-            "parse_fp_mean_ms": summary([float(run["operations"]["parse_fp"]["mean_ms"]) for run in runs]),
+            "parse_mean_ms": summary(
+                [float(run["operations"]["parse"]["mean_ms"]) for run in runs]
+            ),
+            "parse_write_mean_ms": summary(
+                [float(run["operations"]["parse_write"]["mean_ms"]) for run in runs]
+            ),
+            "parse_fp_mean_ms": summary(
+                [float(run["operations"]["parse_fp"]["mean_ms"]) for run in runs]
+            ),
+            "prepared_fp_mean_ms": summary(
+                [float(run["operations"]["prepared_fp"]["mean_ms"]) for run in runs]
+            ),
         }
 
     document = {
         "schema_version": 2,
         "gate": "wasm-vs-official-rdkit-browser-isolated",
         "configuration": {
-            "engine": args.engine, "browser": str(args.browser) if args.browser else None, "rows": args.rows, "warmup_rows": args.warmup,
+            "engine": args.engine,
+            "browser": str(args.browser) if args.browser else None,
+            "rows": args.rows,
+            "warmup_rows": args.warmup,
             "repetitions": args.repetitions,
             "timing": "fresh browser process per arm/repetition; no-store local routes",
             "download_to_ready_contract": "navigation start through JavaScript module/script fetch and WebAssembly initialization; excludes the subsequent parse/write/fingerprint workload",
-            "process_rss": "summed fresh Chromium process-tree RSS sampled every 50 ms" if args.measure_process_rss else "not_measured",
-            "operation_contract": "parse; parse+canonical-SMILES write; parse+radius-2/2048-bit fingerprint. This is not prepared-object timing.",
+            "process_rss": (
+                "summed fresh Chromium process-tree RSS sampled every 50 ms"
+                if args.measure_process_rss
+                else "not_measured"
+            ),
+            "operation_contract": "parse; parse+canonical-SMILES write; parse+RDKit-compatible preparation+radius-2/2048-bit fingerprint; prepared-molecule radius-2/2048-bit fingerprint. Both arms perform sanitization-compatible preparation outside prepared_fp timing.",
             "fingerprint_output_contract": "both arms produce and consume a 256-byte LSB-first packed radius-2/2048-bit fingerprint; RDKit's bit string is packed inside the timed operation; a per-run FNV-1a checksum and total set-bit count are retained",
-            "fingerprint_typed_unsupported_rows": len(Handler.fingerprint_excluded_smiles),
-            "fingerprint_typed_unsupported_smiles": sorted(Handler.fingerprint_excluded_smiles),
+            "fingerprint_typed_unsupported_rows": len(
+                Handler.fingerprint_excluded_smiles
+            ),
+            "fingerprint_typed_unsupported_smiles": sorted(
+                Handler.fingerprint_excluded_smiles
+            ),
         },
-        "corpus": {"path": str(args.corpus), "sha256": hashlib.sha256(corpus_bytes).hexdigest(), "rows": args.rows},
+        "corpus": {
+            "path": str(args.corpus),
+            "sha256": hashlib.sha256(corpus_bytes).hexdigest(),
+            "rows": args.rows,
+        },
         "artifacts": {
-            "schematic_wasm": artifact(Handler.files["/schematic/chematic_wasm_bg.wasm"]),
+            "schematic_wasm": artifact(
+                Handler.files["/schematic/chematic_wasm_bg.wasm"]
+            ),
             "schematic_js": artifact(Handler.files["/schematic/chematic_wasm.js"]),
             "schematic_package": (
                 {
                     "name": schematic_package.get("name"),
                     "version": schematic_package.get("version"),
+                    "kind": args.schematic_package_kind,
+                    "source_revision": args.schematic_source_revision,
+                    "source_diff_sha256": args.schematic_source_diff_sha256,
                     **npm_package_provenance(
                         args.schematic_dir,
                         schematic_package_json,
                         str(schematic_package.get("name", "")),
                     ),
-                    "tarball": artifact(args.schematic_tarball)
-                    if args.schematic_tarball is not None
-                    else {"status": "not_supplied"},
+                    "tarball": (
+                        artifact(args.schematic_tarball)
+                        if args.schematic_tarball is not None
+                        else {"status": "not_supplied"}
+                    ),
                 }
                 if schematic_package is not None
-                else {"status": "not_packaged", "detail": "--schematic-dir has no package.json; source artifact only"}
+                else {
+                    "status": "not_packaged",
+                    "detail": "--schematic-dir has no package.json; source artifact only",
+                }
             ),
             "rdkit_wasm": artifact(Handler.files["/rdkit/RDKit_minimal.wasm"]),
             "rdkit_js": artifact(Handler.files["/rdkit/RDKit_minimal.js"]),
             "rdkit_package": {
                 "name": package.get("name"),
                 "version": package.get("version"),
-                **npm_package_provenance(args.rdkit_package, package_json, str(package.get("name", ""))),
+                **npm_package_provenance(
+                    args.rdkit_package, package_json, str(package.get("name", ""))
+                ),
             },
         },
         "raw_runs": results,
         "aggregate": {"chematic": aggregate("chematic"), "rdkit": aggregate("rdkit")},
-        "boundary": "Both arms receive the same valid SMILES rows for parse and write. The fingerprint operation excludes only its separately recorded typed RDKit coordination-sanitization refusal from both arms, so its timing denominator is explicit rather than silently filtered. Both timed fingerprint paths materialize and consume the same packed-byte representation, but this artifact alone does not establish bit-identical chemistry; use the separate fingerprint compatibility gate for that claim. JS heap is browser-exposed only. chematic linear memory is measured from the active Wasm memory page count; RDKit.js does not expose that object. When requested on Chromium, RSS is sampled as summed process-tree RSS and may double-count shared pages; otherwise it is not measured.",
+        "boundary": (
+            "Published package artifact. "
+            if args.schematic_package_kind == "published"
+            else "Locally built source candidate; not a registry release. "
+        )
+        + "Both arms receive the same valid SMILES rows for parse and write. The fingerprint operation excludes only its separately recorded typed RDKit coordination-sanitization refusal from both arms, so its timing denominator is explicit rather than silently filtered. Both timed fingerprint paths materialize and consume the same packed-byte representation, but this artifact alone does not establish bit-identical chemistry; use the separate fingerprint compatibility gate for that claim. JS heap is browser-exposed only. chematic linear memory is measured from the active Wasm memory page count; RDKit.js does not expose that object. When requested on Chromium, RSS is sampled as summed process-tree RSS and may double-count shared pages; otherwise it is not measured.",
     }
     args.output.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(document["aggregate"], indent=2))

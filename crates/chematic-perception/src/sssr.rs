@@ -270,9 +270,16 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
 /// The DFS is iterative so a malformed or deliberately very long acyclic
 /// graph cannot exhaust the Rust call stack merely while determining that it
 /// has no ring atoms.
-pub fn ring_atom_flags(mol: &Molecule) -> Vec<bool> {
+/// Return an index-aligned flag for every bond that belongs to at least one
+/// cycle in the ring-eligible molecular graph.
+///
+/// This is a linear-time bridge computation, not an SSSR construction.  A
+/// ring-eligible edge is cyclic exactly when it is not a bridge, so callers
+/// that only need ring membership can avoid the substantially heavier cycle
+/// basis machinery.
+pub fn ring_bond_flags(mol: &Molecule) -> Vec<bool> {
     let atom_count = mol.atom_count();
-    let mut flags = vec![false; atom_count];
+    let mut flags = vec![false; mol.bond_count()];
     if atom_count == 0 {
         return flags;
     }
@@ -337,6 +344,19 @@ pub fn ring_atom_flags(mol: &Molecule) -> Vec<bool> {
 
     for (bond_idx, bond) in mol.bonds() {
         if is_ring_eligible(bond.order) && !bridges[bond_idx.0 as usize] {
+            flags[bond_idx.0 as usize] = true;
+        }
+    }
+    flags
+}
+
+/// Return an index-aligned flag for every atom that belongs to at least one
+/// cycle. Uses [`ring_bond_flags`] so this remains linear in graph size.
+pub fn ring_atom_flags(mol: &Molecule) -> Vec<bool> {
+    let ring_bonds = ring_bond_flags(mol);
+    let mut flags = vec![false; mol.atom_count()];
+    for (bond_idx, bond) in mol.bonds() {
+        if ring_bonds[bond_idx.0 as usize] {
             flags[bond.atom1.0 as usize] = true;
             flags[bond.atom2.0 as usize] = true;
         }
@@ -1674,6 +1694,19 @@ mod tests {
                 .map(|idx| find_sssr(&mol).contains_atom(AtomIdx(idx as u32)))
                 .collect();
             assert_eq!(ring_atom_flags(&mol), expected);
+        }
+    }
+
+    #[test]
+    fn ring_bond_flags_exclude_bridges_between_cyclic_components() {
+        let mol = chematic_smiles::parse("C1CCCCC1CC2CCCCC2").expect("linked rings");
+        let flags = ring_bond_flags(&mol);
+        assert_eq!(flags.len(), mol.bond_count());
+        assert_eq!(flags.iter().filter(|&&is_ring| is_ring).count(), 12);
+        for (bond_idx, bond) in mol.bonds() {
+            if !flags[bond_idx.0 as usize] {
+                assert_eq!(bond.order, BondOrder::Single);
+            }
         }
     }
 

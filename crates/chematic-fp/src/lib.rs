@@ -98,7 +98,8 @@ pub use rdkit_morgan_config::{
     rdkit_morgan_fingerprint,
 };
 pub use rdkit_morgan_ecfp4::{
-    RdkitMorganEcfp4, RdkitMorganError, rdkit_morgan_ecfp4_bitvec, rdkit_morgan_ecfp4_experimental,
+    PreparedRdkitMorganEcfp4, RdkitMorganEcfp4, RdkitMorganError, prepare_rdkit_morgan_ecfp4,
+    rdkit_morgan_ecfp4_bitvec, rdkit_morgan_ecfp4_experimental,
 };
 pub use reaction_fp::{
     ReactionFingerprint, ReactionFpConfig, reaction_fp, reaction_fp_ecfp4, reaction_fp_with_config,

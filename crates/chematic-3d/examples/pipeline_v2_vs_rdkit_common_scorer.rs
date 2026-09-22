@@ -49,6 +49,7 @@ use chematic_3d::stereo_constraints::verify_stereo;
 use chematic_core::{AtomIdx, Molecule};
 use serde_json::{Value, json};
 use std::collections::HashMap;
+use std::io::{BufWriter, Write};
 
 const CLASH_THRESHOLD_ANGSTROM: f64 = 1.2;
 const SOUND_MAX_BOND_RATIO: f64 = 3.0;
@@ -231,6 +232,7 @@ fn score_rows(
     rows: &[Value],
     engine: &str,
     smiles_by_name: &HashMap<String, HashMap<String, String>>,
+    writer: &mut dyn Write,
 ) {
     for row in rows {
         if row["status"].as_str() != Some("success") {
@@ -243,13 +245,15 @@ fn score_rows(
         let smiles = match smiles_by_name.get(&tier).and_then(|m| m.get(&name)) {
             Some(s) => s.clone(),
             None => {
-                println!(
+                writeln!(
+                    writer,
                     "{}",
                     json!({
                         "tier": tier, "name": name, "arm": arm, "engine": engine,
                         "status": "integrity_error", "reason": "smiles_not_found_in_manifest",
                     })
-                );
+                )
+                .unwrap();
                 continue;
             }
         };
@@ -257,39 +261,45 @@ fn score_rows(
         let mol = match chematic_smiles::parse(&smiles) {
             Ok(m) => m,
             Err(e) => {
-                println!(
+                writeln!(
+                    writer,
                     "{}",
                     json!({
                         "tier": tier, "name": name, "arm": arm, "engine": engine,
                         "status": "integrity_error", "reason": format!("reparse_failed: {e}"),
                     })
-                );
+                )
+                .unwrap();
                 continue;
             }
         };
 
         let coords_json = &row["coords"];
         if coords_json.is_null() {
-            println!(
+            writeln!(
+                writer,
                 "{}",
                 json!({
                     "tier": tier, "name": name, "arm": arm, "engine": engine,
                     "status": "integrity_error", "reason": "success_row_missing_coords",
                 })
-            );
+            )
+            .unwrap();
             continue;
         }
 
         let coords = match coords_from_json(coords_json, mol.atom_count()) {
             Some(c) => c,
             None => {
-                println!(
+                writeln!(
+                    writer,
                     "{}",
                     json!({
                         "tier": tier, "name": name, "arm": arm, "engine": engine,
                         "status": "integrity_error", "reason": "coords_count_mismatch_or_malformed",
                     })
-                );
+                )
+                .unwrap();
                 continue;
             }
         };
@@ -297,7 +307,8 @@ fn score_rows(
         let geom = independent_geometry_check(&mol, &coords);
         let stereo = verify_stereo(&mol, &coords);
 
-        println!(
+        writeln!(
+            writer,
             "{}",
             json!({
                 "tier": tier,
@@ -317,7 +328,8 @@ fn score_rows(
                 "independently_sound": geom.independently_sound,
                 "stereo": stereo_to_json(&stereo),
             })
-        );
+        )
+        .unwrap();
     }
 }
 
@@ -349,6 +361,7 @@ fn emit_paired_rmsd(
     smiles_by_name: &HashMap<String, HashMap<String, String>>,
     chematic_arm: &str,
     rdkit_arm: &str,
+    writer: &mut dyn Write,
 ) {
     let chematic_coords = coords_by_key(chematic_rows, chematic_arm);
     let rdkit_coords = coords_by_key(rdkit_rows, rdkit_arm);
@@ -364,24 +377,28 @@ fn emit_paired_rmsd(
         let smiles = match smiles_by_name.get(tier).and_then(|m| m.get(name)) {
             Some(s) => s.clone(),
             None => {
-                println!(
+                writeln!(
+                    writer,
                     "{}",
                     json!({"tier": tier, "name": name, "chematic_arm": chematic_arm,
                            "rdkit_arm": rdkit_arm, "status": "integrity_error",
                            "reason": "smiles_not_found_in_manifest"})
-                );
+                )
+                .unwrap();
                 continue;
             }
         };
         let mol = match chematic_smiles::parse(&smiles) {
             Ok(m) => m,
             Err(e) => {
-                println!(
+                writeln!(
+                    writer,
                     "{}",
                     json!({"tier": tier, "name": name, "chematic_arm": chematic_arm,
                            "rdkit_arm": rdkit_arm, "status": "integrity_error",
                            "reason": format!("reparse_failed: {e}")})
-                );
+                )
+                .unwrap();
                 continue;
             }
         };
@@ -390,17 +407,20 @@ fn emit_paired_rmsd(
             coords_from_json(ch_coords_json, n),
             coords_from_json(rd_coords_json, n),
         ) else {
-            println!(
+            writeln!(
+                writer,
                 "{}",
                 json!({"tier": tier, "name": name, "chematic_arm": chematic_arm,
                        "rdkit_arm": rdkit_arm, "status": "integrity_error",
                        "reason": "coords_count_mismatch_or_malformed"})
-            );
+            )
+            .unwrap();
             continue;
         };
 
         let rmsd = rmsd_symmetric(&mol, &ch_coords, &rd_coords);
-        println!(
+        writeln!(
+            writer,
             "{}",
             json!({
                 "tier": tier,
@@ -410,7 +430,8 @@ fn emit_paired_rmsd(
                 "status": "paired_rmsd",
                 "rmsd_symmetric_angstrom": rmsd,
             })
-        );
+        )
+        .unwrap();
     }
 }
 
@@ -420,6 +441,7 @@ fn main() {
         "validation/results/pipeline_v2_vs_rdkit_chematic_rows.jsonl".to_string();
     let mut rdkit_path = "validation/results/pipeline_v2_vs_rdkit_rdkit_rows.jsonl".to_string();
     let mut pair: Option<(String, String)> = None;
+    let mut output_path: Option<String> = None;
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -435,6 +457,10 @@ fn main() {
                 pair = Some((args[i + 1].clone(), args[i + 2].clone()));
                 i += 3;
             }
+            "--output" if i + 1 < args.len() => {
+                output_path = Some(args[i + 1].clone());
+                i += 2;
+            }
             other => panic!("unrecognized/malformed argument: {other}"),
         }
     }
@@ -449,9 +475,15 @@ fn main() {
 
     let chematic_rows = load_jsonl(&chematic_path);
     let rdkit_rows = load_jsonl(&rdkit_path);
+    let mut writer: Box<dyn Write> = match output_path {
+        Some(path) => Box::new(BufWriter::new(
+            std::fs::File::create(&path).unwrap_or_else(|e| panic!("failed to create {path}: {e}")),
+        )),
+        None => Box::new(BufWriter::new(std::io::stdout())),
+    };
 
-    score_rows(&chematic_rows, "chematic", &smiles_by_name);
-    score_rows(&rdkit_rows, "rdkit", &smiles_by_name);
+    score_rows(&chematic_rows, "chematic", &smiles_by_name, writer.as_mut());
+    score_rows(&rdkit_rows, "rdkit", &smiles_by_name, writer.as_mut());
 
     if let Some((chematic_arm, rdkit_arm)) = pair {
         emit_paired_rmsd(
@@ -460,6 +492,8 @@ fn main() {
             &smiles_by_name,
             &chematic_arm,
             &rdkit_arm,
+            writer.as_mut(),
         );
     }
+    writer.flush().expect("failed to flush scorer output");
 }

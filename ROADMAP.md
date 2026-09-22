@@ -4,7 +4,8 @@
 > **A0 core-eight multi-field acceptance is complete.** Preserve every exposed
 > cohort and move the active correctness focus to A2 stereo/identity and the
 > next version-pinned RDKit rebaseline.
-> The merged Parse + Morgan browser win moves to maintenance and package verification.
+> Published v1.0.19 Parse + Morgan is verified; the prepared-Morgan and 3D UFF
+> improvements remain source candidates pending merge and registry reruns.
 
 > The September 20 competitor-watch intake confirms the direction rather than
 > starting a feature race: complete the Trust Release packet; stage the next
@@ -177,10 +178,12 @@ profiling hypotheses, six steps **PF0 → PF1 → PF2 → PF3 → PF4 → PF5**,
 PF IDs are subtasks, not new P7+ product phases. This is a new explicit performance
 goal; the abandoned additional 1.10x SMILES stretch stays abandoned.
 
-Historical public v1.0.15 Chromium Parse + FP took **0.315347 vs 0.134228 ms/mol**
-(CheMatic vs RDKit; medians of process means). That is about **2.35x the time**,
-not a current v1.0.17 measurement. The adopted runner records its equivalent
-packed output separately from the historical operation boundary.
+The 2026-09-22 public v1.0.19 Chromium run passes parse-inclusive compatible
+Morgan at **2.658x** geometric speedup (95% lower bound **2.617x**) but loses the
+old prepared lane at **0.687x**. The current source candidate passes both the
+parse-inclusive (**1.397x**, lower bound **1.333x**) and correctly prepared
+(**3.551x**, lower bound **3.384x**) lanes with 9,999/9,999 supported rows exact.
+It remains candidate evidence until merge and registry-package rerun.
 
 Retained acceptance target: fixed radius-2/2048-bit compatible Morgan, same input/output,
 full supported-domain bit agreement and no new refusals; paired speedup 95% CI
@@ -233,13 +236,13 @@ the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencie
 - [ ] **A3 — Fingerprints and retrieval:** retain raw/provenance evidence for the new aromaticity lane, rerun affected bindings/search after adoption, and pass unused-input evaluation. Existing k=1/10/100 and threshold evidence remains valid for its recorded builds.
 - [ ] **A4 — Workflows and interchange:** finish T0 residual classification and adoption, then verify mapped SMARTS embeddings, standardization, reaction products, and typed V3000 semantics across engines.
 - [ ] **A5 — Independent adjudication:** obtain absolute gold labels and unused inputs, secure non-maintainer review, and run the implemented paired evaluator against the frozen protocol.
-- [ ] **A6 — 3D and force fields:** issue #337's six MMFF94 pyridinium/macrocycle typing and charge residuals are resolved on the pinned 265-molecule gate (zero aromatic atom/bond mismatches and exact comparable type/charge rows). Resolve the remaining MMFF94/UFF term, gradient, convergence, timeout, stereo, and conformer-quality gaps; this bounded result does not complete A6.
+- [ ] **A6 — 3D and force fields:** issue #337's six MMFF94 pyridinium/macrocycle typing and charge residuals are resolved on the pinned 265-molecule gate. Published v1.0.19 UFF is faster but has lower usable coverage; the source-candidate best-of-10 UFF lane is 265/265 usable versus RDKit 264/265 and 2.327x faster geometrically (95% lower bound 2.168x). Merge and package-rerun that bounded fix, then resolve single-conformer UFF residuals and MMFF94 term, gradient, convergence, timeout, stereo, quality, and speed gaps. This does not complete A6.
 
 ### Cross-cutting follow-ups
 
 These extend the same product areas; they do not introduce new Phase numbers.
 
-- [ ] T3.6/T1.5: maintain the merged browser Parse + Morgan win, audit remaining statistical/resource conditions, verify the published package and rebaseline the next available RDKit artifacts; retain separate native ECFP and T3.4 search lanes.
+- [ ] T3.6/T1.5: merge the exact prepared-Morgan candidate, rerun both lanes from the next published npm package, then complete multi-browser/host, resource, and next-RDKit rebaseline evidence. Keep native ECFP and T3.4 search separate.
 - [ ] Make the BatchResult contract the cross-binding batch product boundary: known-length input accounting remains exact, and the public Rust/Python/WASM/Node stream schema distinguishes normal EOF from typed cancellation/time/resource/producer/consumer stops, observed-but-unprocessed rows, and an unread unknown suffix. Add retry, Worker/MCP adapters, export, clean-install, and resource proof without manufacturing success or skipped rows.
 - [ ] Exact canonical-SMILES and cross-engine V3000 parity: expand semantic-identity and RDKit/Indigo fixtures beyond the completed T5.7 identity-renumber and T1.9 query-semantics gates; retain unsupported representation boundaries.
 - [ ] Replace remaining MD/UFF/MMFF94 finite-difference production paths after same-domain analytic energy, gradient, and stereo soundness gates.

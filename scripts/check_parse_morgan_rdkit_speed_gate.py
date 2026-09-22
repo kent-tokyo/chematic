@@ -53,17 +53,21 @@ def critical_value(degrees_of_freedom: int) -> float:
     return 1.960
 
 
-def parse_fp_mean(run: dict[str, object]) -> float:
+def operation_mean(run: dict[str, object], operation: str) -> float:
     try:
-        value = run["operations"]["parse_fp"]["mean_ms"]  # type: ignore[index]
+        value = run["operations"][operation]["mean_ms"]  # type: ignore[index]
     except (KeyError, TypeError) as error:
-        raise ValueError("missing raw_runs.*.operations.parse_fp.mean_ms") from error
+        raise ValueError(
+            f"missing raw_runs.*.operations.{operation}.mean_ms"
+        ) from error
     if not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
-        raise ValueError(f"invalid parse_fp mean: {value!r}")
+        raise ValueError(f"invalid {operation} mean: {value!r}")
     return float(value)
 
 
-def paired_summary(document: dict[str, object]) -> dict[str, float | int]:
+def paired_summary(
+    document: dict[str, object], operation: str = "parse_fp"
+) -> dict[str, float | int | str]:
     if document.get("schema_version") != 2:
         raise ValueError("expected benchmark schema_version 2")
     raw = document.get("raw_runs")
@@ -77,13 +81,14 @@ def paired_summary(document: dict[str, object]) -> dict[str, float | int]:
         raise ValueError("need at least two paired chematic/RDKit repetitions")
 
     log_speedups = [
-        math.log(parse_fp_mean(right) / parse_fp_mean(left))
+        math.log(operation_mean(right, operation) / operation_mean(left, operation))
         for left, right in zip(chematic, rdkit, strict=True)
     ]
     mean_log = statistics.fmean(log_speedups)
     standard_error = statistics.stdev(log_speedups) / math.sqrt(len(log_speedups))
     lower = math.exp(mean_log - critical_value(len(log_speedups) - 1) * standard_error)
     return {
+        "operation": operation,
         "pairs": len(log_speedups),
         "geometric_mean_speedup": math.exp(mean_log),
         "lower_95_speedup": lower,
@@ -94,6 +99,9 @@ def paired_summary(document: dict[str, object]) -> dict[str, float | int]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument(
+        "--operation", choices=("parse_fp", "prepared_fp"), default="parse_fp"
+    )
     parser.add_argument("--min-lower-speedup", type=float, default=1.0)
     args = parser.parse_args()
     if not math.isfinite(args.min_lower_speedup) or args.min_lower_speedup <= 0:
@@ -101,7 +109,7 @@ def main() -> int:
 
     try:
         document = json.loads(args.input.read_text(encoding="utf-8"))
-        summary = paired_summary(document)
+        summary = paired_summary(document, args.operation)
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print(f"Parse + Morgan speed gate invalid: {error}", file=sys.stderr)
         return 2

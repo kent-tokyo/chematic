@@ -1,8 +1,9 @@
 # Parse + ECFP4/Morgan performance plan
 
-更新: 2026-09-20。状態: **source最適化と複数browser/hostの速度gateは統合済み。
-当初の全統計/資源条件の照合と公開package再測定は未完了**。
-対象: v1.0.17を基準に、RDKitより速いParse＋fingerprint経路を作る。
+更新: 2026-09-22。状態: **公開v1.0.19 baselineを測定済み。source candidateは
+parse-inclusiveとpreparedの両方でChromium速度gateを通過。公開package再測定、
+複数browser/host、当初の全統計/資源条件は未完了**。
+対象: v1.0.19を基準に、RDKitより速いParse＋fingerprint経路を作る。
 既存T3.4の測定契約を使う **T3.6** の詳細計画であり、新しい製品Phaseではない。
 [ROADMAP](../ROADMAP.md) が優先順、[A3](rdkit-accuracy-plan.md) が互換性の出口を持つ。
 
@@ -131,6 +132,22 @@ native ECFPはPF1から同時計測するが、別定義の高速nativeへのfal
 公開packageを作る場合だけは、publish後のtarballで同じgateを再実行して初めてrelease固有の
 優位主張に更新する。
 
+### 2026-09-22 public baseline and prepared candidate
+
+- 公開`@kent-tokyo/chematic@1.0.19`をregistryから取得し、固定10k・Chromium・
+  fresh process 20反復で測定した。parse-inclusive互換Morganは幾何平均**2.658x**
+  （95%下限**2.617x**）で通過したが、旧prepared laneは**0.687x**
+  （下限**0.671x**）でRDKit.jsより遅い。
+- source candidateはRDKit互換芳香族性・ring・bond invariantを一度だけ保持する
+  immutable prepared handleを追加した。prepared構築は両armとも計時外、
+  parse-inclusive laneでは構築を計時内とする同一契約で、幾何平均はそれぞれ
+  **3.551x**（95%下限**3.384x**）と**1.397x**（下限**1.333x**）。
+- prepared APIは対応9,999/9,999行でRDKit.jsとbit完全一致。1件のFe(II) typed refusalは
+  不変。candidateはregistry releaseではなく、公開後の再測定までrelease claimにしない。
+- 詳細は
+  [`2026-09-22-public-package-fingerprint-3d.md`](../benchmarks/2026-09-22-public-package-fingerprint-3d.md)
+  と対応する`validation/results/competitive-browser-rdkitjs-*2026-09-22.json`を参照する。
+
 ### 最適化前の仮説（履歴、現行ソースの説明ではない）
 
 - `crates/chematic-wasm/src/mol_fingerprints.rs::rdkit_ecfp4_bitvec` は
@@ -191,7 +208,7 @@ recordをartifactとして保持し、speedupの点推定ではなくpaired log-
 | 対応範囲の同一bit/拒否とsource速度 | 固定10kの対応9,999件、独立ChEMBL 5k、3browserのlocal/hosted run | 変更時のbit/検索/binding回帰 |
 | 統計 | local 10–20対、hosted 10対。checkerはpaired log-speedupのt区間 | 当初20対×3セッションの層別bootstrapとprocess-mean p95。既存t区間と区別して保存 |
 | 初期化/資源/クラス別退行 | 旧版の別記録があり、現candidateの全条件達成は未確認 | 同candidate/baselineでraw/gzip/startup/測定可能memory、クラス別p95、native/detail回帰 |
-| 配布物 | PR #555のsource統合 | 公開tarballのhash/設定を固定した再測定。公開されるまではsource claimを維持 |
+| 配布物 | 公開v1.0.19 npm baselineをhash/設定付きで再測定。parse-inclusiveは通過、旧preparedは未達 | prepared candidateを公開後、registry tarballで同じ2 laneを再測定。公開まではcandidate claimを維持 |
 
 チェック済み部分の効果は維持する。追加測定前にprotocol・反復数・欠測時の判定を凍結し、
 後から短いrunを強い計画条件の達成へ読み替えない。共有CIの成功はそのhost/runに限る。

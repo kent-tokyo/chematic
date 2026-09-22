@@ -931,6 +931,18 @@ fn uff_gradient(prepared: &PreparedUffEnergy, coords: &[[f64; 3]]) -> Vec<[f64; 
 /// constant, not an independently chosen one; keep the two in sync).
 const MAX_SANE_UFF_BOND_LENGTH: f64 = 3.0;
 
+/// Trust radius for one UFF steepest-descent proposal (Å per atom).
+///
+/// A close non-bonded contact can produce a perfectly finite UFF vdW
+/// gradient above 1e12 kcal/mol/Å. Multiplying that directly by the nominal
+/// line-search step sends the first proposal many orders of magnitude beyond
+/// molecular scale; repeatedly halving the nominal step then reaches the
+/// `1e-8` floor before a physically local proposal is ever tried. Limiting
+/// the largest atomic displacement keeps the proposal local without clipping
+/// the energy or gradient, and the existing energy-decrease, geometry, and
+/// caller-constraint gates still decide whether it is accepted.
+const MAX_UFF_PROPOSAL_DISPLACEMENT: f64 = 0.1;
+
 fn worst_uff_bond_length(mol: &Molecule, coords: &[[f64; 3]]) -> f64 {
     if coords
         .iter()
@@ -1035,6 +1047,7 @@ where
     let prepared = PreparedUffEnergy::new(mol, types);
     let mut coords = initial_coords;
     let mut step = 0.05_f64;
+    let mut trust_radius = MAX_UFF_PROPOSAL_DISPLACEMENT;
     let mut prev_energy = f64::MAX;
     let mut rejected_unsound_step = false;
 
@@ -1068,10 +1081,25 @@ where
         }
 
         // Line search: accept step only if energy decreases
+        let max_gradient_norm = grad
+            .iter()
+            .map(|g| g[0].hypot(g[1]).hypot(g[2]))
+            .fold(0.0_f64, f64::max);
+        let proposal_step = if max_gradient_norm.is_finite() && max_gradient_norm > 0.0 {
+            step.min(trust_radius / max_gradient_norm)
+        } else {
+            step
+        };
         let new_coords: Vec<[f64; 3]> = coords
             .iter()
             .zip(&grad)
-            .map(|(c, g)| [c[0] - step * g[0], c[1] - step * g[1], c[2] - step * g[2]])
+            .map(|(c, g)| {
+                [
+                    c[0] - proposal_step * g[0],
+                    c[1] - proposal_step * g[1],
+                    c[2] - proposal_step * g[2],
+                ]
+            })
             .collect();
 
         let new_energy = prepared.energy(&new_coords);
@@ -1089,13 +1117,15 @@ where
             if energy - new_energy < prev_energy * 1e-7 {
                 step *= 1.2;
             }
+            trust_radius = (trust_radius * 1.2).min(MAX_UFF_PROPOSAL_DISPLACEMENT);
             prev_energy = energy;
         } else {
             if new_energy < energy && !geometry_sound {
                 rejected_unsound_step = true;
             }
             step *= 0.5;
-            if step < 1e-8 {
+            trust_radius *= 0.5;
+            if step < 1e-8 || trust_radius < 1e-8 {
                 let sound = is_sound_uff_geometry(mol, &coords);
                 let worst_bond_length = worst_uff_bond_length(mol, &coords);
                 return UffMinimizeResult {
@@ -1453,6 +1483,52 @@ mod tests {
         assert!(
             e_close > e_far,
             "genuine 1-4 pair must still repel at short range: close={e_close} far={e_far}"
+        );
+    }
+
+    #[test]
+    fn uff_minimizer_uses_local_proposals_for_extreme_finite_vdw_gradients() {
+        // Regression for the public 265-molecule 3D benchmark: three inputs
+        // entered the UFF minimizer with a finite 1-4 contact just above the
+        // 0.5 Å soft floor. The old raw `step * gradient` proposal jumped far
+        // outside molecular scale, then exhausted the line-search floor
+        // without ever trying a local move. This compact butane geometry
+        // reproduces that gradient class without depending on the external
+        // benchmark manifest.
+        use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
+        let mut builder = MoleculeBuilder::new();
+        let c0 = builder.add_atom(Atom::new(Element::C));
+        let c1 = builder.add_atom(Atom::new(Element::C));
+        let c2 = builder.add_atom(Atom::new(Element::C));
+        let c3 = builder.add_atom(Atom::new(Element::C));
+        builder.add_bond(c0, c1, BondOrder::Single).unwrap();
+        builder.add_bond(c1, c2, BondOrder::Single).unwrap();
+        builder.add_bond(c2, c3, BondOrder::Single).unwrap();
+        let mol = builder.build();
+        let types = assign_uff_types(&mol);
+        let initial = vec![
+            [0.0, 0.0, 0.0],
+            [1.5, 0.0, 0.0],
+            [3.0, 0.0, 0.0],
+            [0.51, 0.02, 0.0],
+        ];
+        let initial_energy = uff_total_energy(&mol, &types, &initial);
+        assert!(
+            initial_energy > 1.0e8,
+            "fixture must exercise the extreme-gradient basin"
+        );
+
+        let result = minimize_uff(&mol, &types, initial, 200);
+        assert!(
+            result.sound,
+            "bounded proposals must retain a sound covalent geometry"
+        );
+        assert!(result.energy.is_finite());
+        assert!(
+            result.energy < initial_energy * 1.0e-4,
+            "the local trust radius must escape the finite vdW clash: {} -> {}",
+            initial_energy,
+            result.energy
         );
     }
 

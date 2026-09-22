@@ -1,0 +1,53 @@
+{
+  "benchmark": "public-package-3d-vs-rdkit",
+  "boundary": "Published wheel only. Parsing is outside per-arm timing. This established comparable lane uses stereo_policy=ignore and ring_torsion_policy=diagnostic_only; coordinates and failures are retained for an identical external scorer, which is authoritative instead of chematic's internal final_validation.",
+  "collected_at_utc": "2026-09-22T12:15:28.763503+00:00",
+  "configuration": {
+    "arms": [
+      "chematic_pipeline_v2_no_ff",
+      "chematic_pipeline_v2_uff_only",
+      "chematic_pipeline_v2_mmff94_strict",
+      "chematic_pipeline_v2_uff_best_of_10"
+    ],
+    "best_of_n": 10,
+    "enforce_chirality": false,
+    "expand_implicit_h_through_pipeline": false,
+    "force_field_max_iterations": 200,
+    "max_attempts": 8,
+    "random_seed": 20260801,
+    "requested_count": null,
+    "ring_torsion_policy": "diagnostic_only",
+    "start": 0,
+    "stereo_policy": "ignore_external_common_scorer_is_authoritative",
+    "tiers": "AB",
+    "total_timeout_ms": 20000,
+    "wall_budget_seconds": 3300.0
+  },
+  "engine": "chematic_public_python",
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "python_executable": "/private/tmp/chematic-a66-venv/bin/python"
+  },
+  "package": {
+    "distribution_version": "1.0.19",
+    "module_path": "/private/tmp/chematic-a66-venv/lib/python3.13/site-packages/chematic/__init__.py",
+    "name": "chematic",
+    "runtime_version": "1.0.19",
+    "wheel": {
+      "bytes": 5083052,
+      "path": "/private/tmp/chematic-a66-wheels/chematic-1.0.19-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "af30b614d7a899ad817d6e407ed063c81ed0829ca62f8b4ed702d7c6630e7489"
+    }
+  },
+  "result": {
+    "elapsed_seconds": 180.2988475409802,
+    "emitted_rows": 1060,
+    "output": "validation/results/public-package-3d-chematic-comparable-v1.0.19-2026-09-22.jsonl",
+    "output_sha256": "ad765ff697aa6627837af89b010bd36650f1e2d5c6f53aa5eb9a2339c55f073b",
+    "selected_molecules": 265,
+    "termination": "completed"
+  },
+  "schema_version": 1
+}
