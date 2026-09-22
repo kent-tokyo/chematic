@@ -49,6 +49,7 @@ measurement was rerun.
 | [`descriptor-stereocenter-rdkit-parity-v1.0.13.json`](../validation/results/descriptor-stereocenter-rdkit-parity-v1.0.13.json) | A1 diagnostic potential-stereocenter gate: 5,000/5,000 compared, 4,995 exact; five bridged/ring-tied residuals remain unadopted |
 | [`rdkit-search-cross-binding-parity-v1.0.13.json`](../validation/results/rdkit-search-cross-binding-parity-v1.0.13.json) | Full chunked 500-query/4,500-entry RDKit-compatible top-k search contract across Rust/Python/Node/WASM; independent RDKit oracle is separate |
 | [`descriptor-cross-binding-parity-5000-v1.0.13.json`](../validation/results/descriptor-cross-binding-parity-5000-v1.0.13.json) | Five-field descriptor binding contract: 5,000/5,000 |
+| [`2026-09-22-canonical-orbit-perf-v1.0.19.md`](2026-09-22-canonical-orbit-perf-v1.0.19.md) | Exact RENKIN target 2 canonical-search differential: 24 leaves to 1, 4.86x paired-median local measurement, zero output mismatches |
 | [`2026-09-11-canonical-orbit-perf-v1.0.13.md`](2026-09-11-canonical-orbit-perf-v1.0.13.md) | Current exact canonical-search/orbit-pruning differential and instrumentation for issue #372 |
 | [`2026-09-09-wasm-rdkit-gate.md`](2026-09-09-wasm-rdkit-gate.md) | Same-corpus Node/WASM comparison with the installed official RDKit.js package |
 | [`2026-09-09-wasm-rdkit-gate.json`](2026-09-09-wasm-rdkit-gate.json) | Machine-readable WASM comparison output and exact fingerprint parity count |

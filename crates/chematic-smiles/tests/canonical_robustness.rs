@@ -15,6 +15,8 @@
 
 use chematic_smiles::{canonical_smiles, parse};
 
+const RENKIN_ISSUE_128_TARGET_2: &str = "[CH3]c1[cH][cH]c(S(=O)(=O)O[C@@H]2[CH2]N(C(=O)OC([CH3])([CH3])[CH3])[C@H]3[C@@H]2O[CH2][C@@H]3[OH])[cH][cH]1";
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 /// Returns Ok if the canonical SMILES for `smi` is roundtrip-stable, Err otherwise.
@@ -157,6 +159,27 @@ fn stability_amino_acids() {
         "N[C@@H](Cc1ccccc1)C(=O)O", // L-phenylalanine
     ];
     assert_all_stable(&cases);
+}
+
+/// Exact downstream witness for issue #372, sourced from line 5 ("target
+/// 2") of RENKIN's `data/uspto50k_test.smi`. Keep both the current-vs-
+/// exhaustive differential and round-trip stability in CI: the performance
+/// fixture must never become a shortcut that changes canonical spelling.
+#[test]
+fn renkin_issue_128_exact_target_preserves_canonical_output() {
+    use chematic_smiles::canonical::legacy_canonical_smiles_for_benchmark;
+
+    let mol = parse(RENKIN_ISSUE_128_TARGET_2).expect("exact RENKIN witness parses");
+    let current = canonical_smiles(&mol);
+    let exhaustive = legacy_canonical_smiles_for_benchmark(&mol);
+
+    assert!(!current.is_empty(), "canonical output must not be empty");
+    assert_eq!(
+        current, exhaustive,
+        "local-twin/orbit pruning must preserve the exhaustive canonical output"
+    );
+    check_canonical_stable(RENKIN_ISSUE_128_TARGET_2)
+        .expect("exact RENKIN witness must remain round-trip stable");
 }
 
 // ── Test 2: Platform independence (topology only) ────────────────────────────
