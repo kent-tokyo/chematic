@@ -44,10 +44,37 @@ set -euo pipefail
 
 run_point_estimate() {
   local bin="$1" bench_name="$2" warm_up="$3" measurement="$4" sample_size="$5"
+  local side="${6:-a}"
   local sample_json="target/criterion/${bench_name}/new/sample.json"
-  "$bin" --bench "$bench_name" \
+
+  # Issue #70 hosted calibration only. Contend with side B on one CPU so the
+  # candidate and independent main-null comparison both see the same material
+  # one-sided bias. This throwaway calibration branch must never be merged.
+  local -a runner=()
+  local burner_pid=""
+  if [ "${CRITERION_GATE_CALIBRATE_CONTAMINATION:-0}" = "1" ] && [ "$side" = "b" ]; then
+    local allowed_cpus first_cpu
+    allowed_cpus=$(awk '/^Cpus_allowed_list:/ {print $2}' /proc/self/status)
+    first_cpu=${allowed_cpus%%,*}
+    first_cpu=${first_cpu%%-*}
+    taskset -c "$first_cpu" bash -c 'while :; do :; done' >/dev/null 2>&1 &
+    burner_pid=$!
+    runner=(taskset -c "$first_cpu")
+  fi
+
+  set +e
+  "${runner[@]}" "$bin" --bench "$bench_name" \
     --warm-up-time "$warm_up" --measurement-time "$measurement" \
     --sample-size "$sample_size" --noplot >/dev/null 2>&1
+  local run_status=$?
+  set -e
+  if [ -n "$burner_pid" ]; then
+    kill "$burner_pid" 2>/dev/null || true
+    wait "$burner_pid" 2>/dev/null || true
+  fi
+  if [ "$run_status" -ne 0 ]; then
+    return "$run_status"
+  fi
   jq '
     [ .times, .iters ] as $ti
     | [range(0; ($ti[0] | length))] | map($ti[0][.] / $ti[1][.]) | sort
@@ -85,15 +112,15 @@ cmd_run_blocks() {
     fi
     local a1 b1 b2 a2
     if [ "$order" = "baab" ]; then
-      b1=$(run_point_estimate "$bin_b" "$bench_name" "$warm_up" "$measurement" "$sample_size")
-      a1=$(run_point_estimate "$bin_a" "$bench_name" "$warm_up" "$measurement" "$sample_size")
-      a2=$(run_point_estimate "$bin_a" "$bench_name" "$warm_up" "$measurement" "$sample_size")
-      b2=$(run_point_estimate "$bin_b" "$bench_name" "$warm_up" "$measurement" "$sample_size")
+      b1=$(run_point_estimate "$bin_b" "$bench_name" "$warm_up" "$measurement" "$sample_size" b)
+      a1=$(run_point_estimate "$bin_a" "$bench_name" "$warm_up" "$measurement" "$sample_size" a)
+      a2=$(run_point_estimate "$bin_a" "$bench_name" "$warm_up" "$measurement" "$sample_size" a)
+      b2=$(run_point_estimate "$bin_b" "$bench_name" "$warm_up" "$measurement" "$sample_size" b)
     else
-      a1=$(run_point_estimate "$bin_a" "$bench_name" "$warm_up" "$measurement" "$sample_size")
-      b1=$(run_point_estimate "$bin_b" "$bench_name" "$warm_up" "$measurement" "$sample_size")
-      b2=$(run_point_estimate "$bin_b" "$bench_name" "$warm_up" "$measurement" "$sample_size")
-      a2=$(run_point_estimate "$bin_a" "$bench_name" "$warm_up" "$measurement" "$sample_size")
+      a1=$(run_point_estimate "$bin_a" "$bench_name" "$warm_up" "$measurement" "$sample_size" a)
+      b1=$(run_point_estimate "$bin_b" "$bench_name" "$warm_up" "$measurement" "$sample_size" b)
+      b2=$(run_point_estimate "$bin_b" "$bench_name" "$warm_up" "$measurement" "$sample_size" b)
+      a2=$(run_point_estimate "$bin_a" "$bench_name" "$warm_up" "$measurement" "$sample_size" a)
     fi
     # Negate: veridict's mean-diff/sign-test treat a larger candidate-baseline
     # as an improvement, but for latency lower is better.

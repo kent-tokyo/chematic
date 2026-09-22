@@ -302,6 +302,7 @@ jobs:
       - name: "Run process-level Criterion gate (issue #70 redesign)"
         run: |
           set +e
+          export CRITERION_GATE_CALIBRATE_CONTAMINATION=1
           chmod +x pr/scripts/criterion_gate.sh
 
           bin_path() { pr/scripts/criterion_gate.sh bin-path "$1" "$2" "$3"; }
@@ -326,22 +327,10 @@ jobs:
           }
 
           BENCHES=(
-            "smarts_compile_5pat:chematic-smarts:smarts_bench"
-            "smarts_match_nocache_10mol:chematic-smarts:smarts_bench"
-            "smarts_match_cached_10mol:chematic-smarts:smarts_bench"
-            "smarts_recursive_10mol:chematic-smarts:smarts_bench"
+            # Calibration-only subset: one real candidate is sufficient to
+            # prove the null-control downgrade without spending Stage 2 on
+            # every deliberately contaminated benchmark. Never merge.
             "parse_smiles_10mol:chematic-smiles:parse_bench"
-            "canonical_smiles_10mol:chematic-smiles:parse_bench"
-            "ecfp4_10mol:chematic-fp:ecfp_bench"
-            "tanimoto_ecfp4_pairs:chematic-fp:ecfp_bench"
-            "descriptors_5x10mol:chematic-chem:descriptor_bench"
-            "qed_10mol:chematic-chem:descriptor_bench"
-            "pka_predict_10mol:chematic-chem:descriptor_bench"
-            "pka_acid_base_10mol:chematic-chem:descriptor_bench"
-            "admet_profile_10mol:chematic-chem:descriptor_bench"
-            "find_sssr_10mol:chematic-perception:sssr_bench"
-            "find_sssr_polycyclic_5mol:chematic-perception:sssr_bench"
-            "count_aromatic_rings_10mol:chematic-perception:sssr_bench"
           )
 
           mkdir -p artifacts
