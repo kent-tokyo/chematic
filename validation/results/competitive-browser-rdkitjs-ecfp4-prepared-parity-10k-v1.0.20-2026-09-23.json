@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "gate": "browser-rdkit-ecfp4-bit-parity",
+  "configuration": {
+    "engine": "chromium",
+    "browser": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "rows": 10000,
+    "allow_unsupported": true,
+    "schematic_operation": "prepared",
+    "operation": "chematic rdkit_ecfp4_bitvec vs RDKit.js Morgan radius=2, 2048 bits",
+    "comparison": "same browser page; direct packed-bit comparison; yields every 100 rows"
+  },
+  "corpus": {
+    "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "rows": 10000
+  },
+  "artifacts": {
+    "schematic_wasm": {
+      "path": "/private/tmp/chematic-v1020-npm/node_modules/@kent-tokyo/chematic/chematic_wasm_bg.wasm",
+      "raw_bytes": 4210700,
+      "gzip9_bytes": 1542710,
+      "sha256": "0f477fdbe8a2e9378c47829dfbf19c63320522061c50e2bbf8b2528e7d3b4c15",
+      "kind": "published",
+      "source_revision": null,
+      "source_diff_sha256": null
+    },
+    "rdkit_wasm": {
+      "path": "/private/tmp/chematic-v1020-npm/node_modules/@rdkit/rdkit/dist/RDKit_minimal.wasm",
+      "raw_bytes": 7333095,
+      "gzip9_bytes": 2379975,
+      "sha256": "f5981af4cf5bdcef861ffdf7410330bf9887f1195e39fbf9901b3a2f134ace2e"
+    },
+    "rdkit_package": {
+      "version": "2026.03.6",
+      "package_json_sha256": "bb938eb6b28bf39baa9778f56aefcdea746d28060fe2c542209f877a71468fed",
+      "lock_status": "recorded",
+      "lock_sha256": "614dc89645f417d3d9203cd20661b50680523f8b951e50da73e34f5758788220",
+      "resolved": "https://registry.npmjs.org/@rdkit/rdkit/-/rdkit-2026.3.6.tgz",
+      "integrity": "sha512-JkMi2PfVjRFuy3ZCDAoTUJeTGyNsgtmq4hDUduLnnbobxsOfSydfpa6lhZGYYaisfMSEAgE1iAT95W4ZsUCMrA=="
+    }
+  },
+  "result": {
+    "rdkit_version": "2026.03.6",
+    "compared_rows": 10000,
+    "exact_matches": 9999,
+    "supported_rows": 9999,
+    "unsupported_rows": 1,
+    "unsupported_sample": [
+      {
+        "index": 8341,
+        "smiles": "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10",
+        "error": "rdkit-exact ecfp4: unsupported RDKit coordination sanitization at AtomIdx(9) (Z=26, degree=10)"
+      }
+    ],
+    "first_mismatch": null,
+    "mismatch_sample": []
+  },
+  "boundary": "Published package artifact. This confirms an explicitly configured fingerprint bit-vector only for successfully evaluated rows. Typed refusals are separately counted and are not parity claims. It is not a general SMILES, stereo, canonicalization, search-ranking, memory, or performance claim."
+}

@@ -1,9 +1,9 @@
 # Parse + ECFP4/Morgan performance plan
 
-更新: 2026-09-22。状態: **公開v1.0.19 baselineを測定済み。PR #630でsource実装を
-統合し、parse-inclusiveとpreparedの両方でChromium速度gateを通過。公開package再測定、
-複数browser/host、当初の全統計/資源条件は未完了**。
-対象: v1.0.19を基準に、RDKitより速いParse＋fingerprint経路を作る。
+更新: 2026-09-23。状態: **公開v1.0.20で固定10k・20反復の再測定完了。
+parse-inclusiveとpreparedの両方でChromium速度gateを通過。複数browser/host、
+当初の全統計/資源条件は未完了**。
+対象: v1.0.20の公開証跡を基準に、RDKitより速いParse＋fingerprint経路を維持する。
 既存T3.4の測定契約を使う **T3.6** の詳細計画であり、新しい製品Phaseではない。
 [ROADMAP](../ROADMAP.md) が優先順、[A3](rdkit-accuracy-plan.md) が互換性の出口を持つ。
 
@@ -208,7 +208,7 @@ recordをartifactとして保持し、speedupの点推定ではなくpaired log-
 | 対応範囲の同一bit/拒否とsource速度 | 固定10kの対応9,999件、独立ChEMBL 5k、3browserのlocal/hosted run | 変更時のbit/検索/binding回帰 |
 | 統計 | local 10–20対、hosted 10対。checkerはpaired log-speedupのt区間 | 当初20対×3セッションの層別bootstrapとprocess-mean p95。既存t区間と区別して保存 |
 | 初期化/資源/クラス別退行 | 旧版の別記録があり、現candidateの全条件達成は未確認 | 同candidate/baselineでraw/gzip/startup/測定可能memory、クラス別p95、native/detail回帰 |
-| 配布物 | 公開v1.0.19 npm baselineをhash/設定付きで再測定。parse-inclusiveは通過、旧preparedは未達 | prepared candidateを公開後、registry tarballで同じ2 laneを再測定。公開まではcandidate claimを維持 |
+| 配布物 | 公開v1.0.20 npmをhash/設定付きで再測定。parse-inclusive 1.398x、prepared 3.511x、95%下限はいずれも1.0超 | 完了。次回はRDKitまたはCheMatic公開版変更時に同じ2 laneを再測定 |
 
 チェック済み部分の効果は維持する。追加測定前にprotocol・反復数・欠測時の判定を凍結し、
 後から短いrunを強い計画条件の達成へ読み替えない。共有CIの成功はそのhost/runに限る。

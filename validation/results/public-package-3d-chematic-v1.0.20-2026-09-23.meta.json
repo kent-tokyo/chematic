@@ -1,0 +1,61 @@
+{
+  "benchmark": "public-package-3d-vs-rdkit",
+  "boundary": "Published registry wheel only. Parsing is outside per-arm timing. Comparable arms use stereo_policy=ignore and treat the identical external scorer as authoritative. Explicit *_stereo_safe diagnostic arms use the package's bundled repair_and_verify + chirality + explicit-H configuration. All arms keep ring_torsion_policy=diagnostic_only and retain coordinates and failures for the external scorer.",
+  "collected_at_utc": "2026-09-22T22:22:29.431859+00:00",
+  "configuration": {
+    "arms": [
+      "chematic_pipeline_v2_no_ff",
+      "chematic_pipeline_v2_uff_only",
+      "chematic_pipeline_v2_mmff94_strict",
+      "chematic_pipeline_v2_uff_best_of_10",
+      "chematic_pipeline_v2_uff_only_stereo_safe",
+      "chematic_pipeline_v2_mmff94_strict_stereo_safe"
+    ],
+    "best_of_n": 10,
+    "enforce_chirality": false,
+    "expand_implicit_h_through_pipeline": false,
+    "force_field_max_iterations": 200,
+    "max_attempts": 8,
+    "random_seed": 20260801,
+    "requested_count": null,
+    "ring_torsion_policy": "diagnostic_only",
+    "start": 0,
+    "stereo_policy": {
+      "comparable_arms": "ignore_external_common_scorer_is_authoritative",
+      "stereo_safe_arms": "repair_and_verify_with_chirality_and_explicit_h"
+    },
+    "tiers": "AB",
+    "total_timeout_ms": 20000,
+    "wall_budget_seconds": 3300.0
+  },
+  "engine": "chematic_public_python",
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "python_executable": "/private/tmp/chematic-v1020-venv/bin/python"
+  },
+  "package": {
+    "distribution_version": "1.0.20",
+    "kind": "published",
+    "module_path": "/private/tmp/chematic-v1020-venv/lib/python3.13/site-packages/chematic/__init__.py",
+    "name": "chematic",
+    "runtime_version": "1.0.20",
+    "source_diff_sha256": null,
+    "source_revision": null,
+    "wheel": {
+      "bytes": 5095674,
+      "path": "/private/tmp/chematic-v1020-wheels/chematic-1.0.20-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "7eacc40e9eb76e2253add9b318b2291c490c53cfbcae59070a1e409cd65f646b"
+    }
+  },
+  "result": {
+    "elapsed_seconds": 87.29473729198799,
+    "emitted_rows": 1590,
+    "output": "validation/results/public-package-3d-chematic-v1.0.20-2026-09-23.jsonl",
+    "output_sha256": "eeab803841f23a84296b613ea9b9c6319016de91d5524a36ede36a22d9663532",
+    "selected_molecules": 265,
+    "termination": "completed"
+  },
+  "schema_version": 1
+}

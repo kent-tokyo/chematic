@@ -1,0 +1,413 @@
+{
+  "arm_pairs": {
+    "mmff94": {
+      "arms": {
+        "chematic": "chematic_pipeline_v2_mmff94_strict",
+        "rdkit": "rdkit_etkdgv3_mmff94"
+      },
+      "quality": {
+        "chematic": {
+          "independently_sound": 265,
+          "scored_successes": 265,
+          "stereo_clean": 211,
+          "usable": 211,
+          "usable_over_all_inputs": 0.7962264150943397
+        },
+        "rdkit": {
+          "independently_sound": 264,
+          "scored_successes": 264,
+          "stereo_clean": 264,
+          "usable": 264,
+          "usable_over_all_inputs": 0.9962264150943396
+        }
+      },
+      "timing": {
+        "chematic": {
+          "all_rows": {
+            "p50_ms": 23.847084,
+            "p95_ms": 84.5718672,
+            "total_ms": 7974.622177
+          },
+          "rows": 265,
+          "status_counts": {
+            "success": 265
+          },
+          "successful_rows": {
+            "count": 265,
+            "p50_ms": 23.847084,
+            "p95_ms": 84.5718672
+          }
+        },
+        "paired": {
+          "chematic_faster_gate": true,
+          "common_successes": 264,
+          "geometric_mean_rdkit_over_chematic": 1.5138938115656424,
+          "lower_95_rdkit_over_chematic": 1.4107465894813835,
+          "median_rdkit_over_chematic": 1.4184305695277404,
+          "minimum_rdkit_over_chematic": 0.4261511362190917
+        },
+        "rdkit": {
+          "all_rows": {
+            "p50_ms": 28.0855,
+            "p95_ms": 162.0837077999999,
+            "total_ms": 13327.818663
+          },
+          "rows": 265,
+          "status_counts": {
+            "internal_error": 1,
+            "success": 264
+          },
+          "successful_rows": {
+            "count": 264,
+            "p50_ms": 28.732416999999998,
+            "p95_ms": 162.37457234999997
+          }
+        }
+      }
+    },
+    "mmff94_stereo_safe": {
+      "arms": {
+        "chematic": "chematic_pipeline_v2_mmff94_strict_stereo_safe",
+        "rdkit": "rdkit_etkdgv3_mmff94"
+      },
+      "quality": {
+        "chematic": {
+          "independently_sound": 265,
+          "scored_successes": 265,
+          "stereo_clean": 265,
+          "usable": 265,
+          "usable_over_all_inputs": 1.0
+        },
+        "rdkit": {
+          "independently_sound": 264,
+          "scored_successes": 264,
+          "stereo_clean": 264,
+          "usable": 264,
+          "usable_over_all_inputs": 0.9962264150943396
+        }
+      },
+      "timing": {
+        "chematic": {
+          "all_rows": {
+            "p50_ms": 32.613041,
+            "p95_ms": 182.06004959999999,
+            "total_ms": 15235.499992
+          },
+          "rows": 265,
+          "status_counts": {
+            "success": 265
+          },
+          "successful_rows": {
+            "count": 265,
+            "p50_ms": 32.613041,
+            "p95_ms": 182.06004959999999
+          }
+        },
+        "paired": {
+          "chematic_faster_gate": false,
+          "common_successes": 264,
+          "geometric_mean_rdkit_over_chematic": 0.9439483687179362,
+          "lower_95_rdkit_over_chematic": 0.8614846675107444,
+          "median_rdkit_over_chematic": 0.982184873315698,
+          "minimum_rdkit_over_chematic": 0.16797190232868686
+        },
+        "rdkit": {
+          "all_rows": {
+            "p50_ms": 28.0855,
+            "p95_ms": 162.0837077999999,
+            "total_ms": 13327.818663
+          },
+          "rows": 265,
+          "status_counts": {
+            "internal_error": 1,
+            "success": 264
+          },
+          "successful_rows": {
+            "count": 264,
+            "p50_ms": 28.732416999999998,
+            "p95_ms": 162.37457234999997
+          }
+        }
+      }
+    },
+    "raw_embedding": {
+      "arms": {
+        "chematic": "chematic_pipeline_v2_no_ff",
+        "rdkit": "rdkit_etkdgv3_raw"
+      },
+      "quality": {
+        "chematic": {
+          "independently_sound": 265,
+          "scored_successes": 265,
+          "stereo_clean": 212,
+          "usable": 212,
+          "usable_over_all_inputs": 0.8
+        },
+        "rdkit": {
+          "independently_sound": 264,
+          "scored_successes": 264,
+          "stereo_clean": 264,
+          "usable": 264,
+          "usable_over_all_inputs": 0.9962264150943396
+        }
+      },
+      "timing": {
+        "chematic": {
+          "all_rows": {
+            "p50_ms": 4.766125,
+            "p95_ms": 24.251183599999997,
+            "total_ms": 2068.787753
+          },
+          "rows": 265,
+          "status_counts": {
+            "success": 265
+          },
+          "successful_rows": {
+            "count": 265,
+            "p50_ms": 4.766125,
+            "p95_ms": 24.251183599999997
+          }
+        },
+        "paired": {
+          "chematic_faster_gate": true,
+          "common_successes": 264,
+          "geometric_mean_rdkit_over_chematic": 3.968456636292335,
+          "lower_95_rdkit_over_chematic": 3.59861283402369,
+          "median_rdkit_over_chematic": 3.0355449645544805,
+          "minimum_rdkit_over_chematic": 1.0826638619823366
+        },
+        "rdkit": {
+          "all_rows": {
+            "p50_ms": 13.233916,
+            "p95_ms": 105.02759979999989,
+            "total_ms": 7949.119001
+          },
+          "rows": 265,
+          "status_counts": {
+            "internal_error": 1,
+            "success": 264
+          },
+          "successful_rows": {
+            "count": 264,
+            "p50_ms": 13.259708,
+            "p95_ms": 105.34303309999996
+          }
+        }
+      }
+    },
+    "uff": {
+      "arms": {
+        "chematic": "chematic_pipeline_v2_uff_only",
+        "rdkit": "rdkit_etkdgv3_uff"
+      },
+      "quality": {
+        "chematic": {
+          "independently_sound": 263,
+          "scored_successes": 263,
+          "stereo_clean": 263,
+          "usable": 263,
+          "usable_over_all_inputs": 0.9924528301886792
+        },
+        "rdkit": {
+          "independently_sound": 264,
+          "scored_successes": 264,
+          "stereo_clean": 264,
+          "usable": 264,
+          "usable_over_all_inputs": 0.9962264150943396
+        }
+      },
+      "timing": {
+        "chematic": {
+          "all_rows": {
+            "p50_ms": 8.382833,
+            "p95_ms": 49.106592,
+            "total_ms": 4734.438008
+          },
+          "rows": 265,
+          "status_counts": {
+            "success": 263,
+            "typed_failure": 2
+          },
+          "successful_rows": {
+            "count": 263,
+            "p50_ms": 8.382833,
+            "p95_ms": 48.70762529999993
+          }
+        },
+        "paired": {
+          "chematic_faster_gate": true,
+          "common_successes": 262,
+          "geometric_mean_rdkit_over_chematic": 3.2916104915234166,
+          "lower_95_rdkit_over_chematic": 3.023236167329194,
+          "median_rdkit_over_chematic": 3.1648726476428894,
+          "minimum_rdkit_over_chematic": 0.6482544637804091
+        },
+        "rdkit": {
+          "all_rows": {
+            "p50_ms": 26.121333,
+            "p95_ms": 153.31644959999997,
+            "total_ms": 12456.178536
+          },
+          "rows": 265,
+          "status_counts": {
+            "internal_error": 1,
+            "success": 264
+          },
+          "successful_rows": {
+            "count": 264,
+            "p50_ms": 26.2750205,
+            "p95_ms": 153.3958267
+          }
+        }
+      }
+    },
+    "uff_best_of_10": {
+      "arms": {
+        "chematic": "chematic_pipeline_v2_uff_best_of_10",
+        "rdkit": "rdkit_etkdgv3_best_of_n"
+      },
+      "quality": {
+        "chematic": {
+          "independently_sound": 265,
+          "scored_successes": 265,
+          "stereo_clean": 265,
+          "usable": 265,
+          "usable_over_all_inputs": 1.0
+        },
+        "rdkit": {
+          "independently_sound": 264,
+          "scored_successes": 264,
+          "stereo_clean": 264,
+          "usable": 264,
+          "usable_over_all_inputs": 0.9962264150943396
+        }
+      },
+      "timing": {
+        "chematic": {
+          "all_rows": {
+            "p50_ms": 95.523459,
+            "p95_ms": 530.3197421999996,
+            "total_ms": 50035.23429
+          },
+          "rows": 265,
+          "status_counts": {
+            "success": 265
+          },
+          "successful_rows": {
+            "count": 265,
+            "p50_ms": 95.523459,
+            "p95_ms": 530.3197421999996
+          }
+        },
+        "paired": {
+          "chematic_faster_gate": true,
+          "common_successes": 264,
+          "geometric_mean_rdkit_over_chematic": 2.35893292176527,
+          "lower_95_rdkit_over_chematic": 2.198213331842797,
+          "median_rdkit_over_chematic": 2.3350013731778203,
+          "minimum_rdkit_over_chematic": 0.6179211262725404
+        },
+        "rdkit": {
+          "all_rows": {
+            "p50_ms": 252.379917,
+            "p95_ms": 1310.1810661999996,
+            "total_ms": 109881.587836
+          },
+          "rows": 265,
+          "status_counts": {
+            "internal_error": 1,
+            "success": 264
+          },
+          "successful_rows": {
+            "count": 264,
+            "p50_ms": 252.671646,
+            "p95_ms": 1311.5470598999998
+          }
+        }
+      }
+    },
+    "uff_stereo_safe": {
+      "arms": {
+        "chematic": "chematic_pipeline_v2_uff_only_stereo_safe",
+        "rdkit": "rdkit_etkdgv3_uff"
+      },
+      "quality": {
+        "chematic": {
+          "independently_sound": 262,
+          "scored_successes": 262,
+          "stereo_clean": 262,
+          "usable": 262,
+          "usable_over_all_inputs": 0.9886792452830189
+        },
+        "rdkit": {
+          "independently_sound": 264,
+          "scored_successes": 264,
+          "stereo_clean": 264,
+          "usable": 264,
+          "usable_over_all_inputs": 0.9962264150943396
+        }
+      },
+      "timing": {
+        "chematic": {
+          "all_rows": {
+            "p50_ms": 10.056292,
+            "p95_ms": 78.48417499999994,
+            "total_ms": 7032.228453
+          },
+          "rows": 265,
+          "status_counts": {
+            "success": 262,
+            "typed_failure": 3
+          },
+          "successful_rows": {
+            "count": 262,
+            "p50_ms": 10.009791499999999,
+            "p95_ms": 79.01204374999996
+          }
+        },
+        "paired": {
+          "chematic_faster_gate": true,
+          "common_successes": 261,
+          "geometric_mean_rdkit_over_chematic": 2.5894591777028477,
+          "lower_95_rdkit_over_chematic": 2.358055480451286,
+          "median_rdkit_over_chematic": 2.518417723461544,
+          "minimum_rdkit_over_chematic": 0.35372362950954034
+        },
+        "rdkit": {
+          "all_rows": {
+            "p50_ms": 26.121333,
+            "p95_ms": 153.31644959999997,
+            "total_ms": 12456.178536
+          },
+          "rows": 265,
+          "status_counts": {
+            "internal_error": 1,
+            "success": 264
+          },
+          "successful_rows": {
+            "count": 264,
+            "p50_ms": 26.2750205,
+            "p95_ms": 153.3958267
+          }
+        }
+      }
+    }
+  },
+  "benchmark": "public-package-3d-vs-rdkit-summary",
+  "boundary": "Speed is paired only over common successful molecules. Quality uses the same external geometry/stereo scorer for both engines and retains every failure in the all-input denominator. A lane passes speed only when the paired 95% lower bound exceeds 1.0; this does not by itself establish quality non-inferiority.",
+  "inputs": {
+    "chematic": {
+      "path": "validation/results/public-package-3d-chematic-v1.0.20-2026-09-23.jsonl",
+      "sha256": "eeab803841f23a84296b613ea9b9c6319016de91d5524a36ede36a22d9663532"
+    },
+    "rdkit": {
+      "path": "validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl",
+      "sha256": "edff4ba9a3b9c9413e20d568d5cae45afb90a8851ccf25bb98c8f9a1311a9c09"
+    },
+    "scored": {
+      "path": "validation/results/public-package-3d-common-scored-v1.0.20-vs-rdkit-2026.3.6-2026-09-23.jsonl",
+      "sha256": "d6b2aa44e81fe23de456b21de5c86231036fa62118d61035d67a761e8002eda0"
+    }
+  },
+  "schema_version": 1
+}
