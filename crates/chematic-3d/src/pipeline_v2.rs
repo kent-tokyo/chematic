@@ -169,7 +169,7 @@ use crate::etkdg_knowledge::{
 };
 use crate::minimize::{
     ForceFieldBridgeError, ForceFieldPolicy, MAX_SANE_BOND_LENGTH, MinimizeConfig,
-    PolicyMinimizeResult, minimize_with_policy_gated,
+    PolicyMinimizeResult, minimize_with_policy_gated, minimize_with_policy_gated_with_constraint,
 };
 use crate::stereo_constraints::{
     RepairRejectionReason, RepairedElement, StereoElement, StereoVerification, repair_stereo,
@@ -1061,15 +1061,57 @@ pub fn embed_pipeline_v2(
         max_steps: config.force_field_max_iterations,
         ..MinimizeConfig::default()
     };
-    let t0 = Instant::now();
-    let force_field = match minimize_with_policy_gated(
+    let authoritative_before_force_field = verify_authoritative_final_stereo(
+        orig_mol,
         mol,
-        coords,
-        config.force_field_policy,
-        &ff_config,
-        config.gate_mmff94_torsion_oop,
-        config.gate_mmff94_stretch_bend,
-    ) {
+        &coords,
+        use_expanded_geometry,
+        original_atom_count,
+    );
+    let reconcile_expanded_and_returned_stereo = use_expanded_geometry
+        && config.stereo_policy != StereoPolicy::Ignore
+        && stereo_after_repair.is_fully_satisfied()
+        && authoritative_before_force_field.n_violations() > 0;
+    let preserves_declared_stereo = |candidate: &Coords3D| {
+        let authoritative = verify_authoritative_final_stereo(
+            orig_mol,
+            mol,
+            candidate,
+            use_expanded_geometry,
+            original_atom_count,
+        );
+        verify_stereo(mol, candidate).is_fully_satisfied()
+            // The expanded working molecule can contain a real H whose
+            // direction disagrees with the heavy-only verifier's estimated
+            // phantom H before relaxation. Permit that pre-existing
+            // violation to relax, but never accept a step that makes any
+            // returned stereocenter geometrically unevaluable.
+            && authoritative.n_unevaluable() == 0
+    };
+    let minimize_force_field = |coords: Coords3D| {
+        if !reconcile_expanded_and_returned_stereo {
+            minimize_with_policy_gated(
+                mol,
+                coords,
+                config.force_field_policy,
+                &ff_config,
+                config.gate_mmff94_torsion_oop,
+                config.gate_mmff94_stretch_bend,
+            )
+        } else {
+            minimize_with_policy_gated_with_constraint(
+                mol,
+                coords,
+                config.force_field_policy,
+                &ff_config,
+                config.gate_mmff94_torsion_oop,
+                config.gate_mmff94_stretch_bend,
+                &preserves_declared_stereo,
+            )
+        }
+    };
+    let t0 = Instant::now();
+    let force_field = match minimize_force_field(coords) {
         Ok(r) => r,
         Err(e) => {
             timings.force_field_ms = t0.elapsed().as_millis() as u64;
@@ -1168,14 +1210,7 @@ pub fn embed_pipeline_v2(
                     // `authoritative_final_stereo`.
                     let mut repaired_coords = outcome.coords;
                     if use_expanded_geometry
-                        && let Ok(relaxed) = minimize_with_policy_gated(
-                            mol,
-                            repaired_coords.clone(),
-                            config.force_field_policy,
-                            &ff_config,
-                            config.gate_mmff94_torsion_oop,
-                            config.gate_mmff94_stretch_bend,
-                        )
+                        && let Ok(relaxed) = minimize_force_field(repaired_coords.clone())
                         && verify_stereo(mol, &relaxed.coords).n_violations() == 0
                     {
                         repaired_coords = relaxed.coords;
@@ -1706,6 +1741,27 @@ mod tests {
                 assert_eq!(perceived_code, code);
             }
         }
+    }
+
+    #[test]
+    fn stereo_safe_mmff94_keeps_fused_ring_stereo_evaluable_during_minimization() {
+        // A6 regression: unconstrained MMFF94 minimization crossed atom 16's
+        // fused-ring chiral boundary, while rejecting every crossing proposal
+        // also rejected an initial heavy-only phantom-H mismatch at atom 10.
+        // The stereo-safe line search must preserve the expanded assignment,
+        // allow that pre-existing violation to relax, and forbid a transition
+        // through unevaluable returned geometry.
+        let mol = parse("C[C@]12CCC3C(CC=C4C[C@@H](O)[C@H]5COC[C@]43C5)C1CC[C@@H]2OC1CC1").unwrap();
+        let mut config = PipelineV2Config::stereo_safe(ForceFieldPolicy::Mmff94BondAngleStrict);
+        config.embed.random_seed = 20_260_801;
+        config.force_field_max_iterations = 300;
+        config.ring_torsion_policy = RingTorsionApplicationPolicy::DiagnosticOnly;
+
+        let result = embed_pipeline_v2(&mol, &config)
+            .expect("stereo-safe MMFF94 must retain this fused-ring molecule");
+        assert!(result.final_stereo.is_fully_satisfied());
+        assert_eq!(result.final_validation.gross_clash_count, 0);
+        assert!(result.final_validation.sound);
     }
 
     #[test]

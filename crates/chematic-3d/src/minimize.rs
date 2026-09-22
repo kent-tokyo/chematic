@@ -1947,6 +1947,7 @@ fn run_mmff94_bridge(
     max_iter: usize,
     include_torsion_oop_in_gate: bool,
     include_stretch_bend_in_gate: bool,
+    accept_geometry: Option<&dyn Fn(&Coords3D) -> bool>,
 ) -> Result<Mmff94BridgeRun, ForceFieldBridgeError> {
     let n = mol.atom_count();
     // Must use the same MMFF-specific re-perceived bond orders chematic-ff's
@@ -1965,7 +1966,18 @@ fn run_mmff94_bridge(
     let energy_before = energy_model.energy_breakdown(&coord_vec);
 
     let mut work = coord_vec.clone();
-    let result = energy_model.minimize_lbfgs_bounded_analytic(&mut work, max_iter)?;
+    let result = if let Some(accept_geometry) = accept_geometry {
+        energy_model.minimize_lbfgs_bounded_analytic_with_constraint(
+            &mut work,
+            max_iter,
+            |candidate| {
+                let candidate = vec_to_coords(candidate);
+                accept_geometry(&candidate)
+            },
+        )?
+    } else {
+        energy_model.minimize_lbfgs_bounded_analytic(&mut work, max_iter)?
+    };
 
     let energy_after = energy_model.energy_breakdown(&work);
     let max_residual_force = fd_max_gradient(&work, |c| energy_model.energy(c), 1e-4);
@@ -2359,13 +2371,14 @@ fn finish_uff(
 /// [`minimize_with_policy`] passes `false`, matching its existing
 /// `include_torsion_oop_in_gate = false` default — no existing caller's
 /// behavior changes.
-pub fn minimize_with_policy_gated(
+fn minimize_with_policy_gated_impl(
     mol: &Molecule,
     coords: Coords3D,
     policy: ForceFieldPolicy,
     config: &MinimizeConfig,
     include_torsion_oop_in_gate: bool,
     include_stretch_bend_in_gate: bool,
+    accept_geometry: Option<&dyn Fn(&Coords3D) -> bool>,
 ) -> Result<PolicyMinimizeResult, ForceFieldBridgeError> {
     if mol.atom_count() <= 1 {
         return Ok(trivial_result(coords, policy));
@@ -2426,6 +2439,7 @@ pub fn minimize_with_policy_gated(
                 config.max_steps,
                 include_torsion_oop_in_gate,
                 include_stretch_bend_in_gate,
+                accept_geometry,
             )?;
             Ok(finish_mmff94(
                 r,
@@ -2442,6 +2456,7 @@ pub fn minimize_with_policy_gated(
                 config.max_steps,
                 include_torsion_oop_in_gate,
                 include_stretch_bend_in_gate,
+                accept_geometry,
             ) {
                 Ok(r) => Ok(finish_mmff94(
                     r,
@@ -2480,6 +2495,54 @@ pub fn minimize_with_policy_gated(
             }
         }
     }
+}
+
+/// Run the selected force field with optional MMFF94 parameter-coverage
+/// gates. This low-level API preserves its historical unconstrained MMFF94
+/// line search; the stereo-aware pipeline uses an internal constrained path.
+pub fn minimize_with_policy_gated(
+    mol: &Molecule,
+    coords: Coords3D,
+    policy: ForceFieldPolicy,
+    config: &MinimizeConfig,
+    include_torsion_oop_in_gate: bool,
+    include_stretch_bend_in_gate: bool,
+) -> Result<PolicyMinimizeResult, ForceFieldBridgeError> {
+    minimize_with_policy_gated_impl(
+        mol,
+        coords,
+        policy,
+        config,
+        include_torsion_oop_in_gate,
+        include_stretch_bend_in_gate,
+        None,
+    )
+}
+
+/// Pipeline-only force-field dispatch with a caller-owned MMFF94 line-search
+/// acceptance predicate. Public low-level callers retain the historical
+/// unconstrained minimizer through [`minimize_with_policy_gated`].
+pub(crate) fn minimize_with_policy_gated_with_constraint<F>(
+    mol: &Molecule,
+    coords: Coords3D,
+    policy: ForceFieldPolicy,
+    config: &MinimizeConfig,
+    include_torsion_oop_in_gate: bool,
+    include_stretch_bend_in_gate: bool,
+    accept_geometry: &F,
+) -> Result<PolicyMinimizeResult, ForceFieldBridgeError>
+where
+    F: Fn(&Coords3D) -> bool,
+{
+    minimize_with_policy_gated_impl(
+        mol,
+        coords,
+        policy,
+        config,
+        include_torsion_oop_in_gate,
+        include_stretch_bend_in_gate,
+        Some(accept_geometry),
+    )
 }
 
 /// Convenience wrapper over [`minimize_with_policy_gated`] with
