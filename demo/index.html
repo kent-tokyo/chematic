@@ -2519,7 +2519,7 @@ let groupColorMap = {};
 // Keep the shipped WASM assets cache-busted when the binary changes. Without
 // this, a browser can retain an older wasm-bindgen JS/wasm pair after a Pages
 // deployment and display stale chemistry results until its cache expires.
-const WASM_ASSET_VERSION = '1.0.9';
+const WASM_ASSET_VERSION = '1.0.20';
 
 // Formats a byte count as a human-readable "X.X MB" / "XXX KB" string.
 function formatBytes(n) {
@@ -3963,7 +3963,19 @@ const FORMATS_MODES = {
   },
 };
 
+function formatsExampleMatches(value, mode) {
+  return value.trim() === (FORMATS_EXAMPLES[mode] || '').trim();
+}
+
 function setFormatsMode(mode) {
+  const input = document.getElementById('formats-input');
+  const previousMode = formatsMode;
+  // Keep an uploaded or hand-written document intact. The only safe automatic
+  // replacement is the built-in example from the mode the user just left.
+  // Otherwise switching the parser would make the visible example invalid.
+  if (!input.value.trim() || formatsExampleMatches(input.value, previousMode)) {
+    input.value = FORMATS_EXAMPLES[mode] || '';
+  }
   formatsMode = mode;
   document.querySelectorAll('.format-mode-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === mode);

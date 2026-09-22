@@ -19,21 +19,38 @@ const ETHANE_MOL_BLOCK = `ethane
   1  2  1  0
 M  END`;
 
-const browser = await browsers[browserName].launch({ headless: true });
+  const browser = await browsers[browserName].launch({ headless: true });
 try {
   const page = await browser.newPage();
   // Keep assertions deterministic across hosts whose navigator language differs.
   await page.addInitScript(() => localStorage.setItem("chematic-lang", "en"));
   const errors = [];
+  const dialogs = [];
+  const wasmAssetVersions = [];
   page.on("pageerror", (error) => errors.push(String(error)));
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
+  });
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.endsWith("/pkg/chematic_wasm.js") || url.pathname.endsWith("/pkg/chematic_wasm_bg.wasm")) {
+      wasmAssetVersions.push(url.searchParams.get("v"));
+    }
+  });
+  page.on("dialog", (dialog) => {
+    dialogs.push(dialog.message());
+    void dialog.dismiss();
   });
   await page.goto("http://127.0.0.1:8765/index.html?browser-smoke=0.89", {
     waitUntil: "networkidle",
   });
   await page.locator("#version-badge").waitFor({ state: "visible" });
   assert.equal(await page.locator("#version-badge").innerText(), expectedVersionBadge);
+  assert.ok(wasmAssetVersions.length >= 2, "page must request both WASM assets");
+  assert.ok(
+    wasmAssetVersions.every((version) => version === workspaceVersion),
+    `WASM asset cache version must match Cargo.toml: ${wasmAssetVersions}`,
+  );
   await page.locator("#smiles-input").fill("Cn1cnc2c1c(=O)n(c(=O)n2C)C");
   await page.locator("#btn-calc").click();
   const hba = page.locator("#desc-tbody tr").filter({ hasText: "HBA" }).locator("td").nth(1);
@@ -148,6 +165,19 @@ try {
   await page.locator("#error-sim").waitFor({ state: "hidden" });
   await page.locator("#sim-svgs").waitFor({ state: "visible" });
   await page.locator("#tc-structure").click();
+  await page.locator("#tb-2d").click();
+  await page.locator("#smiles-input").fill("CCCC");
+  await page.locator("#btn-calc").click();
+  await page.locator("#error-desc").waitFor({ state: "hidden" });
+  await page.locator("#tc-labs").click();
+  await page.locator("#tb-dynamics").waitFor({ state: "visible" });
+  await page.locator("#tb-dynamics").click();
+  await page.locator("#btn-torsion-scan").click();
+  await page.locator("#torsion-scan-result").waitFor({ state: "visible" });
+  assert.ok(Number.isFinite(Number(await page.locator("#scan-min").innerText())));
+  assert.ok(Number.isFinite(Number(await page.locator("#scan-max").innerText())));
+  assert.deepEqual(dialogs, []);
+  await page.locator("#tc-structure").click();
   await page.locator("#tb-2d").waitFor({ state: "visible" });
   await page.locator("#tb-2d").click();
   const sdfInput = page.locator("#sdf-input");
@@ -231,14 +261,36 @@ try {
   const formatInput = page.locator("#formats-input");
   const formatError = page.locator("#error-formats");
   const formatOutput = page.locator("#formats-output");
+  const loadExample = page.getByRole("button", { name: "Load Example", exact: true });
+  const parseFormat = page.getByRole("button", { name: "Parse", exact: true });
+
+  // Switching away from a built-in example must replace it with a valid example
+  // for the selected parser. Previously the Cube text stayed in the textarea,
+  // so ORCA, QCSchema, and LAMMPS parsing failed immediately after a tab click.
+  await page.getByRole("button", { name: "Gaussian Cube", exact: true }).click();
+  await loadExample.click();
+  for (const formatName of formatCases.slice(1)) {
+    await page.getByRole("button", { name: formatName, exact: true }).click();
+    assert.notEqual(await formatInput.inputValue(), "");
+    await parseFormat.click();
+    await formatOutput.waitFor({ state: "visible" });
+    await formatError.waitFor({ state: "hidden" });
+  }
+
+  // A hand-written document must not be replaced merely because the parser
+  // selection changes; the user can intentionally choose another parser.
+  await formatInput.fill("user supplied input");
+  await page.getByRole("button", { name: "Gaussian Cube", exact: true }).click();
+  assert.equal(await formatInput.inputValue(), "user supplied input");
+
   for (const formatName of formatCases) {
     await page.getByRole("button", { name: formatName, exact: true }).click();
-    await page.getByRole("button", { name: "Load Example", exact: true }).click();
-    await page.getByRole("button", { name: "Parse", exact: true }).click();
+    await loadExample.click();
+    await parseFormat.click();
     await formatOutput.waitFor({ state: "visible" });
     await formatError.waitFor({ state: "hidden" });
     await formatInput.fill("malformed input");
-    await page.getByRole("button", { name: "Parse", exact: true }).click();
+    await parseFormat.click();
     if (formatName === "ORCA Output") {
       const orcaResult = JSON.parse(await page.locator("#formats-raw-json").textContent());
       assert.equal(orcaResult.termination.kind, "incomplete");
@@ -249,8 +301,8 @@ try {
         /invalid|malformed|parse|unexpected|expected|found|no /i,
       );
     }
-    await page.getByRole("button", { name: "Load Example", exact: true }).click();
-    await page.getByRole("button", { name: "Parse", exact: true }).click();
+    await loadExample.click();
+    await parseFormat.click();
     await formatOutput.waitFor({ state: "visible" });
     await formatError.waitFor({ state: "hidden" });
   }
