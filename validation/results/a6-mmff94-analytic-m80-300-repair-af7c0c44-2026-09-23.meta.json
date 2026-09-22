@@ -1,0 +1,47 @@
+{
+  "arm": "chematic_pipeline_v2_mmff94_strict_repair",
+  "binary": {
+    "path": "/private/tmp/chematic-a6-current-energy/target/release/examples/pipeline_v2_vs_rdkit_dump",
+    "sha256": "c9af36540a830abb598ad0280e8a621c0fecfaa1a38d22046d3905bf3cb83e01"
+  },
+  "command": {
+    "arm": "chematic_pipeline_v2_mmff94_strict_repair",
+    "binary": "target/release/examples/pipeline_v2_vs_rdkit_dump",
+    "tiers": [
+      "A",
+      "B"
+    ],
+    "timeout_s": 25.0
+  },
+  "environment": {
+    "SCHEMATIC_MMFF94_MAX_ITERATIONS": "300"
+  },
+  "external_timeout_s": 25.0,
+  "generated_at_utc": "2026-09-22T17:26:08.233194+00:00",
+  "manifests": {
+    "A": {
+      "path": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json",
+      "row_count": 65,
+      "sha256": "6a478ea0f5d4ef067a4d1739e77a7209e8f76ecaa837e3f487c723dd6f465d6b"
+    },
+    "B": {
+      "path": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
+      "row_count": 200,
+      "sha256": "ec93ac160aa91c3c4416d57d3000d6e344e0b75cdf5c122211364c7495dce239"
+    }
+  },
+  "runtime": {
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+  },
+  "schema_version": 1,
+  "source_dirty": false,
+  "source_dirty_paths": [],
+  "source_revision": "af7c0c44426104093cd6b56f268b40752f4ad710",
+  "tiers": [
+    "A",
+    "B"
+  ]
+}

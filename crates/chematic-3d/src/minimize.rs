@@ -1,8 +1,9 @@
 //! Simplified force-field geometry minimization for molecular structures.
 //!
-//! Uses gradient descent with finite differences over energy terms:
-//! bond stretching, angle bending, VDW repulsion, and (for MMFF94) electrostatic interactions.
-//! Bond lengths and angles use element-specific parameters; charges use 3D geometry.
+//! Uses bounded force-field minimizers over bond, angle, torsion, out-of-plane,
+//! van der Waals, and electrostatic terms. The production MMFF94 bridge uses
+//! the prepared analytic energy/gradient pair; reference and legacy paths
+//! retain finite-difference or gradient-descent implementations.
 
 use std::collections::HashSet;
 
@@ -1964,7 +1965,7 @@ fn run_mmff94_bridge(
     let energy_before = energy_model.energy_breakdown(&coord_vec);
 
     let mut work = coord_vec.clone();
-    let result = energy_model.minimize_lbfgs(&mut work, max_iter)?;
+    let result = energy_model.minimize_lbfgs_bounded_analytic(&mut work, max_iter)?;
 
     let energy_after = energy_model.energy_breakdown(&work);
     let max_residual_force = fd_max_gradient(&work, |c| energy_model.energy(c), 1e-4);
