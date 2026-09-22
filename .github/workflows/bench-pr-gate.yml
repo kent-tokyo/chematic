@@ -298,6 +298,10 @@ jobs:
       - name: "Run process-level Criterion gate (issue #70 redesign)"
         run: |
           set +e
+          # Issue #70 hosted calibration only: intentionally contaminate side
+          # B in both the candidate and independent null-control comparisons.
+          # This throwaway branch must never be merged.
+          export CRITERION_GATE_CALIBRATE_CONTAMINATION=1
           chmod +x pr/scripts/criterion_gate.sh
 
           bin_path() { pr/scripts/criterion_gate.sh bin-path "$1" "$2" "$3"; }
