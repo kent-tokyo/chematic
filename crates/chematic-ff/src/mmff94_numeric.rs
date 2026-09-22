@@ -775,13 +775,11 @@ pub fn assign_mmff94_numeric_types_with_view(
 ) -> Result<(Vec<u8>, Molecule), NumericTypeError> {
     let n = mol.atom_count();
     let mut types = vec![0u8; n];
-    // MMFF94's aromaticity loop follows the ring set available to RDKit's
-    // `setMMFFAromaticity`, not the full relevant-cycle family used by the
-    // diagnostic selector. In particular, RDKit's parsed RingInfo contains
-    // only the small fused rings for the charged #337 macrocycle topologies;
-    // retaining their >20-member relevant-cycle representatives changes the
-    // fixed-point/type result. Keep those representatives out of this
-    // MMFF-specific view while leaving the general perception APIs unchanged.
+    // MMFF94's aromaticity loop follows RDKit's ordered RingInfo semantics,
+    // including the large-cycle representatives that control when charged
+    // fused rings become resolved. `compute_mmff94_aromatic_view` restores
+    // the compatibility-specific processing order without changing the
+    // general perception API's canonical ring ordering.
     let rings = chematic_perception::find_symmetrized_sssr(mol)
         .rings()
         .to_vec();
@@ -1111,15 +1109,19 @@ pub fn compute_mmff94_aromatic_view(
             })
         })
         .count();
-    let rings = if has_charged_large_ring {
-        rings
-            .iter()
-            .filter(|ring| ring.len() < 20)
-            .cloned()
-            .collect::<Vec<_>>()
-    } else {
-        rings.to_vec()
-    };
+    // RDKit's MMFF pass consumes RingInfo in size/insertion order. The
+    // symmetrized SSSR canonicalizes its public ring list, so restore the
+    // equivalent compatibility order here: smaller rings first and, within
+    // one size, the earliest atom encountered by the input graph. This is
+    // deliberately local to the RDKit-compatibility layer; general ring
+    // perception remains atom-order independent.
+    let mut rings = rings.to_vec();
+    rings.sort_by_key(|ring| {
+        (
+            ring.len(),
+            ring.iter().map(|atom| atom.0).min().unwrap_or(u32::MAX),
+        )
+    });
     let kmol = match chematic_core::kekulize(mol) {
         Ok(kek) if kek.is_empty() => mol.clone(),
         Ok(kek) => chematic_core::apply_kekule(mol, &kek),
@@ -1195,7 +1197,10 @@ pub fn compute_mmff94_aromatic_view(
                     if ring.contains(&nb.neighbor) {
                         continue; // looking for exocyclic neighbors only
                     }
-                    if nb.order == BondOrder::Single {
+                    if matches!(
+                        nb.order,
+                        BondOrder::Single | BondOrder::Up | BondOrder::Down
+                    ) {
                         continue;
                     }
                     if atom_in_any_ring(nb.neighbor) && !resolved[nb.neighbor.0 as usize] {
@@ -2770,11 +2775,11 @@ mod tests {
     }
 
     #[test]
-    fn charged_macrocycle_mmff_view_excludes_relevant_cycle_only_ring() {
-        // RDKit's parsed RingInfo does not expose the >20-member relevant
-        // cycle for this #337 topology. Feeding that cycle into MMFF
-        // aromaticity changes the fused six-membered ring classification;
-        // the bounded view must retain the six aromatic carbons at 2..=7.
+    fn charged_macrocycle_directional_single_does_not_block_mmff_ring_resolution() {
+        // Issue #337: `/` and `\` are directional *single* bonds, not a
+        // distinct bond order. Treating atom 2's `\` bond as non-single made
+        // the 2..=7 ring wait on a false exocyclic dependency and left it
+        // Kekule after the macrocycle pass resolved every ring atom.
         let m =
             mol("C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2");
         let types = assign_mmff94_numeric_types(&m).unwrap();
@@ -2793,20 +2798,50 @@ mod tests {
         // pyridinium regression above.
         for (smiles, expected) in [
             (
+                "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2",
+                &[
+                    (13, 54),
+                    (14, 3),
+                    (15, 2),
+                    (16, 2),
+                    (35, 2),
+                    (36, 2),
+                    (37, 3),
+                    (38, 54),
+                ][..],
+            ),
+            (
                 "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
-                [(24, 54), (25, 3), (26, 2), (27, 2)],
+                &[(24, 54), (25, 3), (26, 2), (27, 2)][..],
             ),
             (
                 "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
-                [(9, 54), (10, 3), (11, 2), (12, 2)],
+                &[
+                    (9, 54),
+                    (10, 3),
+                    (11, 2),
+                    (12, 2),
+                    (31, 2),
+                    (32, 2),
+                    (33, 3),
+                    (34, 54),
+                ][..],
+            ),
+            (
+                "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+                &[(26, 54), (27, 3), (28, 2), (29, 2)][..],
+            ),
+            (
+                "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+                &[(25, 54), (26, 3), (27, 2), (28, 2)][..],
             ),
             (
                 "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
-                [(25, 54), (26, 3), (27, 2), (28, 2)],
+                &[(25, 54), (26, 3), (27, 2), (28, 2)][..],
             ),
         ] {
             let types = assign_mmff94_numeric_types(&mol(smiles)).unwrap();
-            for (idx, expected_type) in expected {
+            for &(idx, expected_type) in expected {
                 assert_eq!(
                     types[idx], expected_type,
                     "unexpected MMFF type at atom {idx} in charged macrocycle"
@@ -4829,13 +4864,10 @@ mod tests {
     // `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f`, lines ~954-960) is simply
     // `getTotalDegree() == 2`, unconditional on which elements the two bonds
     // go to -- see `assign_c_type`'s doc comment for the full citation.
-    // These tests pin the 2/8 issue #337 molecules this fix resolves (the
-    // other 6/8, the pyridinium-conjugated-exocyclic-amine sub-bug, are an
-    // RDKit Kekulization/aromaticity-perception artifact, not an
-    // atom-typing rule -- left as an honestly-disclosed residual, see
-    // `scripts/mmff94_provenance/PROVENANCE.md`), plus isolated synthetic
-    // fixtures pinning the exact discriminating condition independent of
-    // the corpus molecules' other complexity.
+    // These tests pin the 2/8 issue #337 molecules this rule resolves. The
+    // other 6/8 pyridinium/macrocycle cases are covered by
+    // `charged_macrocycle_pyridinium_boundary_matches_rdkit_type_family`
+    // above, plus the corpus-wide aromaticity/type/charge parity gates.
 
     #[test]
     fn propyne_alkyne_carbons_still_type_csp_after_degree_based_fix() {

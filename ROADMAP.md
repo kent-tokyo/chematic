@@ -221,7 +221,7 @@ the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencie
 - [ ] **A3 — Fingerprints and retrieval:** retain raw/provenance evidence for the new aromaticity lane, rerun affected bindings/search after adoption, and pass unused-input evaluation. Existing k=1/10/100 and threshold evidence remains valid for its recorded builds.
 - [ ] **A4 — Workflows and interchange:** finish T0 residual classification and adoption, then verify mapped SMARTS embeddings, standardization, reaction products, and typed V3000 semantics across engines.
 - [ ] **A5 — Independent adjudication:** obtain absolute gold labels and unused inputs, secure non-maintainer review, and run the implemented paired evaluator against the frozen protocol.
-- [ ] **A6 — 3D and force fields:** resolve remaining MMFF94/UFF term, charge, gradient, convergence, timeout, stereo, and conformer-quality gaps. Bounded typing or energy matches do not complete this package.
+- [ ] **A6 — 3D and force fields:** issue #337's six MMFF94 pyridinium/macrocycle typing and charge residuals are resolved on the pinned 265-molecule gate (zero aromatic atom/bond mismatches and exact comparable type/charge rows). Resolve the remaining MMFF94/UFF term, gradient, convergence, timeout, stereo, and conformer-quality gaps; this bounded result does not complete A6.
 
 ### Cross-cutting follow-ups
 
