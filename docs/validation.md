@@ -8,11 +8,11 @@ upgraded to the current source revision.
 
 | Area | Evidence | Boundary |
 |---|---|---|
-| Release channels | `validation/results/release-channel-verification-v1.0.15.json` | GitHub, crates.io, docs.rs, PyPI, npm, Pages; platform smoke uses the actually published wheels |
-| RDKit.js browser comparison | `benchmarks/2026-09-22-public-package-fingerprint-3d.md` | Published v1.0.19 baseline and separately identified PR #630 source evidence on the fixed exposed 10k corpus; not a registry rerun or internet/CDN latency |
+| Release channels | `validation/results/release-channel-verification-v1.0.20.json` | GitHub, crates.io, docs.rs, PyPI, npm, and Pages all verified for v1.0.20 |
+| RDKit.js browser comparison | `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md` | Registry-installed v1.0.20 on the fixed exposed 10k corpus; both compatible-Morgan lanes pass and all 9,999 supported rows are bit-exact; not internet/CDN latency |
 | MMFF94 same-coordinate energy | `benchmarks/2026-09-23-mmff94-current-source-energy.md` | Current-source 265-row packet against pinned RDKit 2026.03.6: 262 comparable, p90 absolute delta 1.144679 kcal/mol, two residuals above 5 kcal/mol; not conformer quality, convergence, stereo, speed, or a published-package claim |
-| A6 source speed/convergence candidate | `benchmarks/2026-09-23-a6-analytic-mmff94-source-candidate.md` | Historical candidate `af7c0c44` versus published RDKit 2026.3.6: lightweight MMFF94 and UFF pass paired source speed gates, but only UFF has equal common-judge usable coverage in this packet. The MMFF94 cohort is closed by the separate stereo-safe quality candidate below; a package rerun remains open. |
-| A6 MMFF94 stereo-safe quality | `benchmarks/2026-09-23-a6-mmff94-stereo-safe-quality.md` | Candidate `dd7fe3e9` closes the prior 12 typed failures and four gross-clash rows at 265/265 independently sound, stereo-clean successes. Its paired speed is 0.798x with a 0.730x lower bound, so this is a source quality result, not an MMFF94 speed win or published-package claim. |
+| A6 source speed/convergence candidate | `benchmarks/2026-09-23-a6-analytic-mmff94-source-candidate.md` | Historical source packet; use the v1.0.20 public-package record for current package claims |
+| A6 MMFF94 stereo-safe quality | `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md` | Public v1.0.20 closes the prior 12 typed failures and four gross-clash rows at 265/265 independently sound, stereo-clean, clash-free successes. Paired speed is 0.944x with a 0.861x lower bound, so this is not an MMFF94 speed win. |
 | RDKit 2026.03.6 rebaseline | `validation/results/rdkit-rebaseline-*-v1.0.19-vs-2026.03.6-2026-09-22.*` plus the 2026-09-23 native-availability record | Exact Python/npm artifacts and 10,000 complete exposed rows; correspondence-correct CIP is 9,770/10,000 (the older 9,880 engine-local-index result is withdrawn), with 18 classified SMILES stereo-writer regressions, one typed Morgan contract difference, and unresolved CIP/SMARTS residuals. The independent native/C++ lane remains explicitly unavailable; historical diagnostics, not oracle adoption |
 | Parser security | `validation/parser_security_corpus_v1.json` plus hosted Linux gate | Fixed five-format corpus with process/time/memory boundaries |
 | V3000 interchange | `validation/results/v3000-*-v1.0.15.json` | Ordinary structures and declared SGROUP/stereo contracts; no coordination/haptic/polymer semantic claim |
@@ -58,14 +58,10 @@ is not a compatibility percentage.
 
 ## Browser comparison summary
 
-The 2026-09-22 published v1.0.19 Chromium record passes the parse-inclusive
-compatible-Morgan speed gate at 2.658x geometrically (95% lower bound 2.617x),
-but its prepared fingerprint path is slower than RDKit.js at 0.687x. PR #630's
-merged source adds immutable RDKit-compatible preparation and passes
-both lanes: 1.397x parse-inclusive and 3.551x prepared, with 95% lower bounds
-1.333x and 3.384x. It is not yet a registry-package claim. Both paths preserve
-9,999/9,999 configured-bit agreement; one Fe(II) coordination input remains a
-typed refusal.
+The 2026-09-23 registry-installed v1.0.20 Chromium record passes both compatible-
+Morgan speed gates: 1.398x parse-inclusive and 3.511x prepared, with 95% lower
+bounds 1.363x and 3.407x. Both paths preserve 9,999/9,999 configured-bit
+agreement; one Fe(II) coordination input remains a typed refusal.
 
 These numbers do not establish internet download latency, unique process memory,
 all-browser performance superiority, or unmeasured fingerprint configurations.

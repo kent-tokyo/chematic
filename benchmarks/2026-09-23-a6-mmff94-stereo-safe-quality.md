@@ -5,6 +5,10 @@ This packet evaluates source candidate `dd7fe3e9` against the pinned published
 failures and four gross-clash rows on the fixed 265-molecule A/B corpus. It is
 source-candidate evidence, not a result from a published CheMatic package.
 
+> **Published confirmation:** the registry-installed v1.0.20 rerun preserves
+> the 265/265 stereo-safe, independently sound and clash-free result. See
+> [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](2026-09-23-public-package-fingerprint-3d-v1.0.20.md).
+
 ## Change under test
 
 The benchmark now exposes the production `PipelineV2Config::stereo_safe`

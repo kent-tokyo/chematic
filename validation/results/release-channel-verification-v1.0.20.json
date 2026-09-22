@@ -3,46 +3,52 @@
   "release": {
     "version": "1.0.20",
     "tag": "v1.0.20",
-    "commit": null
+    "commit": "dcc27f083fce680bd10ba08db7d1561206fa7858"
   },
-  "checked_at": "2026-09-23T00:00:00Z",
-  "release_ready": false,
+  "checked_at": "2026-09-22T22:25:16Z",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.20",
-      "detail": "Pre-release record. Verify the published GitHub Release and attached metadata after the v1.0.20 tag workflow completes."
+      "detail": "Published GitHub Release is non-draft and non-prerelease; the attached release metadata asset has SHA-256 8f9a833bf0d598ebbecee65a207d8b73411756f6d068ee547c900c8c3456c015.",
+      "observed_version": "1.0.20"
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic",
-      "detail": "Pre-release record. Verify @kent-tokyo/chematic@1.0.20 after the tag-triggered npm publication completes."
+      "detail": "Registry metadata exposes @kent-tokyo/chematic@1.0.20 with integrity sha512-HhzFqZwKnCdDGbbyqiaGRfhYooSt6R7Cr06hC+qJD2lGYw0GiPRlJ4huWli6T5Y3ErkMqWbA89vkE5RwKT82Dw==.",
+      "observed_version": "1.0.20"
     },
     {
       "id": "pypi",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://pypi.org/pypi/chematic/1.0.20/json",
-      "detail": "Pre-release record. Verify the v1.0.20 wheels and source distribution after the tag-triggered PyPI publication completes."
+      "detail": "PyPI JSON reports version 1.0.20 and the published macOS arm64 CPython 3.13 wheel was downloaded and measured.",
+      "observed_version": "1.0.20"
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://crates.io/crates/chematic/1.0.20",
-      "detail": "Pre-release record. Verify the root crate and workspace publication graph after the tag-triggered crates.io publication completes."
+      "detail": "crates.io API reports chematic 1.0.20, not yanked, checksum 27c6d60efb7a68188b65d538f569494413c80f494ebe993f4a8ef47cab88e4ad.",
+      "observed_version": "1.0.20"
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://docs.rs/chematic/1.0.20/chematic/",
-      "detail": "Pre-release record. Verify version-pinned docs.rs availability after crates.io indexing completes."
+      "detail": "Version-pinned docs.rs URL returned HTTP 200.",
+      "observed_version": "1.0.20"
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "Pre-release record. Verify the Pages deployment displays v1.0.20 after the release commit reaches main."
+      "detail": "GitHub Pages returned HTTP 200 and displayed v1.0.20.",
+      "observed_version": "1.0.20"
     }
   ]
 }

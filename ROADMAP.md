@@ -1,11 +1,13 @@
 # chematic roadmap
 
-> Updated 2026-09-22. Released: **v1.0.19**. Next candidate: **v1.0.20**.
+> Updated 2026-09-23. Released: **v1.0.20**. Next candidate: **v1.0.21**.
 > **A0 core-eight multi-field acceptance is complete.** Preserve every exposed
 > cohort and move the active correctness focus to A2 stereo/identity and the
 > next version-pinned RDKit rebaseline.
-> Published v1.0.19 Parse + Morgan is verified. PR #630 merged the prepared-Morgan
-> and bounded 3D UFF improvements into `main`; registry-package reruns remain.
+> Published v1.0.20 Parse + Morgan is verified from npm: 1.398x parse-inclusive
+> and 3.511x prepared, with 9,999/9,999 supported rows exact. Its PyPI wheel
+> also confirms the MMFF94 stereo-safe 265/265 quality result; the remaining
+> A6 exits are energy/term, timeout, conformer quality, and MMFF94 speed.
 
 > The September 20 competitor-watch intake confirms the direction rather than
 > starting a feature race: complete the Trust Release packet; stage the next
@@ -170,7 +172,7 @@ stop conditions explicit.
 | 3 | **T5.7/T1.9 semantic regressions** | Add source-pinned reproductions for identity-renumber stereo and V3000 E/Z query round trips; include selected atom/bond CIP only after its source fixture is verified | Each fixture must compare atom/bond correspondence and semantic truth tables, or return a typed unsupported result. A competitor defect is never evidence of CheMatic superiority. |
 | 4 | **T3.7 controlled batch runtime** | Specify a versioned unknown-stream envelope for Rust, Python, Node, WASM, Worker, and MCP adapters | Known-length accounting remains exact; unknown streams expose processed prefix, observed-but-unprocessed data, unread range/unknown, terminal reason, and cancellation state. Zero `failed` must not imply success. |
 | 5 | **Browser proof and performance maintenance** | Measure the declared Worker/stream/cancel/export path and rerun the package scorecard only with equivalent operation contracts | Keep parse/write, compatible Morgan, native ECFP, startup, and memory as separate lanes. A local browser result is not a cross-host, CDN, or unique-memory claim. |
-| 6 | **A6 correctness, not 3D breadth** | Close existing energy, term, timeout, and conformer-quality gaps, then rerun the exact lanes from a published package | Source candidate `dd7fe3e9` adds the production stereo-safe arm and closes the prior 12 typed failures plus four gross-clash rows: 265/265 independently sound, stereo-clean successes versus RDKit's 264/265. This quality lane is slower at 0.798x paired geometric speed (0.730x 95% lower bound), so it does not replace `af7c0c44`'s separate 1.315x lightweight MMFF94 speed result. UFF retains equal 264/265 usable coverage at 3.002x. Do not add embedding breadth or promote a complete 3D win before the remaining numerical/quality exits and published-package rerun close. |
+| 6 | **A6 correctness, not 3D breadth** | Close existing energy, term, timeout, and conformer-quality gaps | Public v1.0.20 confirms 265/265 independently sound, stereo-clean and clash-free MMFF94 stereo-safe outputs versus RDKit's 264/265. This quality lane remains slower at 0.944x paired geometric speed (0.861x 95% lower bound). Public UFF best-of-10 is 265/265 usable and 2.359x faster (lower 2.198x). Do not add embedding breadth or promote a complete 3D win before the remaining numerical and quality exits close. |
 
 ## Priority order
 
@@ -179,7 +181,7 @@ stop conditions explicit.
 | 1 | P0 preparation; external execution | **T1.5 rebaseline**: preserve the completed 2026.03.6 Python/npm execution packet. The 18 SMILES-semantic residuals are classified as CheMatic stereo-writer regressions tracked by #632 and the one Morgan residual as a typed unsupported contract. CIP now compares proven atom order plus bond endpoints rather than engine-local bond indices, yielding 9,770/10,000 exact and 230 unresolved rows. The independent native/C++ lane is explicitly unavailable with release evidence. Product adjudication continues separately in #634/#635; prepare the same commands for the next published stable artifacts and re-measure Python boundary overhead after an actual backend change | P0/P2/P3; A1–A4 |
 | 2 | P1 | **A2 and semantic interchange closure**: retain the deployed #503 aromatic-stash planner and the completed #149 28-component × 1,024-relabeling gate; expand acceptance only with new bounded semantic-reparse evidence. Resolve phosphorus adjudication before new 3D breadth. Retain the completed T5.7 identity-renumber gate and T1.9 V3000 E/Z query truth table; after primary-source verification add selected-atom/bond CIP and identity-renumber stereo cases, keep T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries, then add typed semantics before making compatibility claims | P1/P2/P4; A2/A5 |
 | 3 | P1 | **T3.7 controlled runtime**: retain the merged Explorer unknown-length CSV cancellation adapter, then extend the completed row-accounting contract through Worker/stream/cancel/export/limits on 10k inputs. Every binding must report original index, stage, success/failed/refused/skipped terminal outcome, unprocessed cancellation range, and an all-inputs-succeeded predicate; publish typed install examples and a generated package scorecard only after that contract and its resource evidence exist. T3.6 maintains its scoped speed win; it does not substitute for runtime controls | P0/P3/P6; A3/A4 |
-| 4 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: retain `af7c0c44`'s lightweight speed/convergence gain and `dd7fe3e9`'s 265/265 stereo-safe quality result. Resolve the two same-coordinate energy residuals, term-level adjudication, timeout, and conformer-quality exits, then re-run the exact lanes from the next published package. Do not collapse speed and quality lanes into one claim | P5/P6; A5/A6 |
+| 4 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: retain the v1.0.20 public-package 265/265 stereo-safe quality result. Resolve the two same-coordinate energy residuals, term-level adjudication, timeout, conformer-quality exits, and MMFF94 quality-lane speed deficit. Do not collapse lightweight speed and stereo-safe quality lanes into one claim | P5/P6; A5/A6 |
 
 T3/T4/T5 can proceed in parallel once their dependencies pass. Public-channel
 inventory and A5 gold preparation continue alongside frozen-packet verification.
@@ -192,12 +194,11 @@ profiling hypotheses, six steps **PF0 → PF1 → PF2 → PF3 → PF4 → PF5**,
 PF IDs are subtasks, not new P7+ product phases. This is a new explicit performance
 goal; the abandoned additional 1.10x SMILES stretch stays abandoned.
 
-The 2026-09-22 public v1.0.19 Chromium run passes parse-inclusive compatible
-Morgan at **2.658x** geometric speedup (95% lower bound **2.617x**) but loses the
-old prepared lane at **0.687x**. PR #630's merged source passes both the
-parse-inclusive (**1.397x**, lower bound **1.333x**) and correctly prepared
-(**3.551x**, lower bound **3.384x**) lanes with 9,999/9,999 supported rows exact.
-It remains source evidence—not a published-package result—until a later registry rerun.
+The 2026-09-23 registry-installed v1.0.20 Chromium run passes both compatible-
+Morgan lanes: parse-inclusive **1.398x** geometric speedup (95% lower bound
+**1.363x**) and prepared **3.511x** (lower bound **3.407x**), with
+9,999/9,999 supported rows exact. The earlier v1.0.19/source measurements remain
+historical rather than being relabelled.
 
 Retained acceptance target: fixed radius-2/2048-bit compatible Morgan, same input/output,
 full supported-domain bit agreement and no new refusals; paired speedup 95% CI
@@ -250,13 +251,13 @@ the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencie
 - [ ] **A3 — Fingerprints and retrieval:** retain raw/provenance evidence for the new aromaticity lane, rerun affected bindings/search after adoption, and pass unused-input evaluation. Existing k=1/10/100 and threshold evidence remains valid for its recorded builds.
 - [ ] **A4 — Workflows and interchange:** finish T0 residual classification and adoption, then verify mapped SMARTS embeddings, standardization, reaction products, and typed V3000 semantics across engines.
 - [ ] **A5 — Independent adjudication:** obtain absolute gold labels and unused inputs, secure non-maintainer review, and run the implemented paired evaluator against the frozen protocol.
-- [ ] **A6 — 3D and force fields:** issue #337's six MMFF94 pyridinium/macrocycle typing and charge residuals are resolved on the pinned 265-molecule gate. The current-source same-coordinate rerun keeps all 265 terminal rows and 262 comparable rows; p90 absolute total-energy delta is 1.144679 kcal/mol and two rows remain above 5 kcal/mol. Candidate `af7c0c44` provides the separate lightweight MMFF94 speed result at 1.315x (95% lower 1.227x) and UFF reaches equal 264/265 usable coverage at 3.002x (lower 2.771x). Candidate `dd7fe3e9` closes the prior 12 typed failures and four gross-clash rows through the production stereo-safe contract: 265/265 independently sound and stereo-clean, with zero gross clashes, versus RDKit's 264/265. That quality lane is slower at 0.798x (lower 0.730x), so no quality-equivalent MMFF94 speed win is claimed. Resolve the two remaining energy residuals, term-level adjudication, timeout and conformer-quality exits, then rerun from a published package.
+- [ ] **A6 — 3D and force fields:** issue #337's six MMFF94 pyridinium/macrocycle typing and charge residuals are resolved on the pinned 265-molecule gate. Public v1.0.20 confirms that the production stereo-safe MMFF94 lane closes the prior 12 typed failures and four gross-clash rows: 265/265 independently sound, stereo-clean and clash-free, versus RDKit's 264/265. Its paired speed is 0.944x (95% lower 0.861x), so no quality-equivalent MMFF94 speed win is claimed. Public UFF best-of-10 reaches 265/265 usable versus RDKit's 264/265 at 2.359x (lower 2.198x). Resolve the two same-coordinate energy residuals, term-level adjudication, timeout and broader conformer-quality exits.
 
 ### Cross-cutting follow-ups
 
 These extend the same product areas; they do not introduce new Phase numbers.
 
-- [~] T3.6/T1.5: PR #630 merged the exact prepared-Morgan and bounded UFF source candidates. Rerun both lanes from the next published npm package, then complete multi-browser/host, resource, native-lane, residual-classification, and next-RDKit evidence. Keep native ECFP and T3.4 search separate.
+- [~] T3.6/T1.5: the v1.0.20 registry rerun closes the fixed-corpus npm/PyPI package step for prepared Morgan and bounded UFF. Complete multi-browser/host, resource, native-lane, residual-classification, and next-RDKit evidence. Keep native ECFP and T3.4 search separate.
 - [ ] Make the BatchResult contract the cross-binding batch product boundary: known-length input accounting remains exact, and the public Rust/Python/WASM/Node stream schema distinguishes normal EOF from typed cancellation/time/resource/producer/consumer stops, observed-but-unprocessed rows, and an unread unknown suffix. Add retry, Worker/MCP adapters, export, clean-install, and resource proof without manufacturing success or skipped rows.
 - [ ] Exact canonical-SMILES and cross-engine V3000 parity: expand semantic-identity and RDKit/Indigo fixtures beyond the completed T5.7 identity-renumber and T1.9 query-semantics gates; retain unsupported representation boundaries.
 - [ ] Replace remaining MD/UFF/MMFF94 finite-difference production paths after same-domain analytic energy, gradient, and stereo soundness gates.

@@ -1,5 +1,9 @@
 # Public-package fingerprint and 3D comparison — 2026-09-22
 
+> Historical v1.0.19/source-candidate record. The registry-installed v1.0.20
+> rerun is recorded in
+> [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](2026-09-23-public-package-fingerprint-3d-v1.0.20.md).
+
 This record separates released artifacts from local source candidates. It does
 not establish that chematic is universally faster than RDKit.
 
