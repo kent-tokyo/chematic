@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.19",
+  "measured_at": "2026-09-22",
+  "source_base": "ab1b7176c255c690a8ef36092bb3b3ae55b66d7e",
+  "command": "CANONICAL_ORBIT_PERF_VERBOSE=1 cargo run --release -p chematic-smiles --features canonical-search-instrumentation --example canonical_orbit_perf",
+  "scope": "Local canonicalization microbenchmark against the retained exhaustive implementation; not an end-to-end RENKIN search measurement",
+  "exact_renkin_target_2": {
+    "source": "kent-tokyo/renkin data/uspto50k_test.smi line 5",
+    "repetitions": 5,
+    "correctness_mismatches": 0,
+    "empty_outputs": 0,
+    "old_elapsed_us": [102, 101, 100, 108, 108],
+    "new_elapsed_us": [21, 23, 23, 18, 21],
+    "old_median_us": 102,
+    "new_median_us": 21,
+    "paired_median_ratio": 4.86,
+    "old_leaves": 24,
+    "new_leaves": 1,
+    "new_nodes_visited": 5,
+    "new_automorphism_tests": 1,
+    "new_children_pruned": 5
+  },
+  "tier_a": {
+    "fixtures": 15,
+    "correctness_mismatches": 0,
+    "parse_failures": 0,
+    "empty_outputs": 0,
+    "budget_exhaustions": 0,
+    "old_leaves": 6216,
+    "new_leaves": 15,
+    "new_nodes_visited": 70,
+    "new_orbit_tests": 47,
+    "observed_geomean_speedup_range": [6.77, 6.95]
+  },
+  "tier_b": {
+    "fixtures": 6,
+    "correctness_mismatches": 0,
+    "parse_failures": 0,
+    "empty_outputs": 0,
+    "budget_exhaustions": 0,
+    "observed_geomean_speedup_range": [1.08, 1.25]
+  }
+}

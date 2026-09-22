@@ -136,6 +136,16 @@ fn tier_a_high_symmetry() -> Vec<(&'static str, String)> {
             "multi-pivaloyl intermediate",
             "CC(C)(C)C(=O)NCC(CCNC(=O)C(C)(C)C)CNC(=O)C(C)(C)C".to_string(),
         ),
+        // Exact RENKIN issue #128 target 2 (line 5 of
+        // `data/uspto50k_test.smi`), which motivated chematic issue #372.
+        // Keep this alongside the minimized proxy below so the benchmark
+        // cannot accidentally substitute a structurally similar molecule
+        // for the downstream production witness again.
+        (
+            "RENKIN exact target 2",
+            "[CH3]c1[cH][cH]c(S(=O)(=O)O[C@@H]2[CH2]N(C(=O)OC([CH3])([CH3])[CH3])[C@H]3[C@@H]2O[CH2][C@@H]3[OH])[cH][cH]1"
+                .to_string(),
+        ),
         // Minimized RENKIN/#372 witness shape: a Boc carbamate with the
         // locally symmetric tert-butyl group retained, but without the
         // downstream reaction-scaffold context. Keep this separate from the
@@ -464,8 +474,13 @@ fn run_tier(name: &'static str, fixtures: &[(String, String)], run_legacy: bool)
                 } else {
                     0
                 };
+                let old_us = old_stats
+                    .durations
+                    .last()
+                    .map(Duration::as_micros)
+                    .unwrap_or(0);
                 println!(
-                    "    [{label}] new_us={} old_leaves={old_leaves} new_leaves={} nodes={} orbit_tests={} \
+                    "    [{label}] old_us={old_us} new_us={} old_leaves={old_leaves} new_leaves={} nodes={} orbit_tests={} \
                      children_pruned={}",
                     new_stats.durations.last().unwrap().as_micros(),
                     per_fixture.leaves_written,
@@ -499,8 +514,13 @@ fn run_tier(name: &'static str, fixtures: &[(String, String)], run_legacy: bool)
                 } else {
                     0
                 };
+                let old_us = old_stats
+                    .durations
+                    .last()
+                    .map(Duration::as_micros)
+                    .unwrap_or(0);
                 println!(
-                    "    [{label}] new_us={} old_leaves={old_leaves} new_leaves={} nodes={} orbit_tests={} \
+                    "    [{label}] old_us={old_us} new_us={} old_leaves={old_leaves} new_leaves={} nodes={} orbit_tests={} \
                      children_pruned={}",
                     new_stats.durations.last().unwrap().as_micros(),
                     per_fixture.leaves_written,
