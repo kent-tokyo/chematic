@@ -751,10 +751,12 @@ oracle/profile変更時は新しい採用packetとして再実行し、既存raw
   Pythonではscalar/batch、入力型・例外・keywordとcall overheadを同じAPI境界で測る。
   Boost/nanobindは配布物の実体を特定し、別backendの結果を統合しない。
   2026.03.6 Boost.Python laneは10,000/10,000行を保存し、Morgan 9,999 exact、
-  CIP 9,880 exact、SMILES semantic 9,982 exact、SMARTS 14,306/310,000 cells差を記録した。
+  CIP 9,770 exact、SMILES semantic 9,982 exact、SMARTS 14,306/310,000 cells差を記録した。
+  CIPは10,000行すべてで原子順と結合端点対応を確認して比較する。旧9,880 exactは
+  engine-local bond indexを比較していたため撤回する。
   18件のSMILES semantic差は非isomeric graphを保存したまま立体同一性を失う
   CheMatic writer regression、Morgan 1件は配位構造に対するtyped unsupported contractと
-  裁定した。CIP 120行とSMARTS 3,364行は未解決であり、次版old/new比較も未完了。
+  裁定した。CIP 230行とSMARTS 3,364行は未解決であり、次版old/new比較も未完了。
 - [ ] browserは同じpacked output契約で3 enginesを比較し、parse単独、prepared FP、
   parse+FP、search、startup、memoryを個別に記録する。API意味論が揃わないlaneは
   速度順位の対象から外す。sealed精度8kはこの回帰・性能集合へ流用しない。

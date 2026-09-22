@@ -1,16 +1,16 @@
 {
   "chematic_version": "1.0.19",
   "corpus": {
-    "path": "/private/tmp/chematic-t15-runnable/validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "path": "/private/tmp/chematic-t15-native-residuals/validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
     "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
   },
   "counts": {
-    "cip_difference": 120,
-    "cip_exact": 9880,
+    "cip_difference": 230,
+    "cip_exact": 9770,
     "completed": 10000,
     "difference_class_chematic_regression": 18,
     "difference_class_contract_difference": 9919,
-    "difference_class_unresolved": 3484,
+    "difference_class_unresolved": 3594,
     "difference_rows": 9936,
     "exact_rows": 64,
     "morgan_difference": 1,
@@ -610,7 +610,7 @@
         },
         {
           "classification": "unresolved",
-          "detail": "atom or bond label map differs",
+          "detail": "atom or bond-endpoint label map differs",
           "operation": "cip"
         }
       ],
@@ -651,7 +651,7 @@
         },
         {
           "classification": "unresolved",
-          "detail": "atom or bond label map differs",
+          "detail": "atom or bond-endpoint label map differs",
           "operation": "cip"
         }
       ],
@@ -686,7 +686,7 @@
   "profile": "rdkit_python_chemistry_rebaseline_v1",
   "queries": {
     "count": 31,
-    "path": "/private/tmp/chematic-t15-runnable/validation/rdkit_rebaseline_smarts_queries.json",
+    "path": "/private/tmp/chematic-t15-native-residuals/validation/rdkit_rebaseline_smarts_queries.json",
     "sha256": "250a241a8905d013eb58fff0ccfb1e0dbe3e97c08ff56e021828fbfec957b341"
   },
   "rdkit_version": "2026.03.6",
@@ -696,8 +696,8 @@
     "parse_failure_count": 0
   },
   "rows": {
-    "path": "/private/tmp/rdkit-rebaseline-2026.03.6/python-chemistry-rows.jsonl",
-    "sha256": "3a25b5845fb534a61c37ae41889a67e71ec2ff5ae31019a98fb119081ed13f9d"
+    "path": "/private/tmp/rdkit-rebaseline-cip-endpoints/python-chemistry-rows.jsonl",
+    "sha256": "3e8243866038d4d78984142ae379867c2e612f7445d6e9b818498d823c35cb50"
   },
   "schema_version": 1,
   "sealed_accuracy_cohort_reused": false
