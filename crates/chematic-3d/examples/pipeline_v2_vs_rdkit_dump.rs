@@ -469,7 +469,7 @@ fn run_pipeline_arm(mol: &Molecule, arm: &Arm) -> Value {
 fn run_pipeline_arm_with_config(mol: &Molecule, arm: &Arm, config: &PipelineV2Config) -> Value {
     let start = Instant::now();
     let result = panic::catch_unwind(AssertUnwindSafe(|| pv2::embed_pipeline_v2(mol, config)));
-    let elapsed_ms = start.elapsed().as_millis() as u64;
+    let elapsed_ms = start.elapsed().as_secs_f64() * 1_000.0;
 
     match result {
         Err(_panic) => json!({
@@ -580,7 +580,7 @@ fn run_pipeline_arm_with_config(mol: &Molecule, arm: &Arm, config: &PipelineV2Co
 fn run_legacy_arm(mol: &Molecule) -> Value {
     let start = Instant::now();
     let result = panic::catch_unwind(AssertUnwindSafe(|| generate_coords_etkdg(mol)));
-    let elapsed_ms = start.elapsed().as_millis() as u64;
+    let elapsed_ms = start.elapsed().as_secs_f64() * 1_000.0;
 
     match result {
         Err(_panic) => json!({
@@ -645,7 +645,7 @@ fn run_best_of_n_arm(mol: &Molecule) -> Value {
 
     let start = Instant::now();
     let result = panic::catch_unwind(AssertUnwindSafe(|| embed_ensemble_v2(mol, &config)));
-    let elapsed_ms = start.elapsed().as_millis() as u64;
+    let elapsed_ms = start.elapsed().as_secs_f64() * 1_000.0;
 
     let r = match result {
         Err(_panic) => {
