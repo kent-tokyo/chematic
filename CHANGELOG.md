@@ -9,6 +9,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.20] - 2026-09-23
+
 - Completed the process-level Criterion gate calibration from issue #70. A
   hosted +10% regression was blocked, and a +5% regression was detected in
   8/10 independent hosted runs without weakening the predeclared sign test.
@@ -54,6 +56,24 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   The 265-molecule gate now has zero aromatic atom/bond mismatches; MMFF types
   and charges are exact on every comparable row, with only the separately
   declared unsupported probe remaining outside parity.
+- Fixed Python similarity-search result indices so filtered inputs retain their
+  original positions, and aligned scalar and indexed Tanimoto handling for
+  unequal fingerprint lengths.
+- Added reproducible RDKit 2026.03.6 Python/npm comparison packets with exact
+  artifact provenance and complete 10,000-row accounting. Residual SMILES,
+  CIP, SMARTS, and unsupported Morgan cases remain explicitly classified.
+- Added immutable prepared RDKit-compatible Morgan fingerprints and retained a
+  separate native ECFP profile, avoiding repeated preparation without changing
+  configured-bit output on the supported 9,999-row comparison domain.
+- Promoted the gated analytic MMFF94 gradient to the production 3D pipeline,
+  increased L-BFGS history and iteration budget, and retained typed convergence
+  diagnostics.
+- Added a production stereo-safe MMFF94 benchmark arm and constrained line
+  search for the bounded expanded-H/heavy-only stereo mismatch. The fixed
+  265-molecule source gate now has 265/265 independently sound, stereo-clean
+  outputs with zero gross clashes, closing the prior 12 typed failures and four
+  clash rows. This quality lane is slower than RDKit in the recorded source
+  packet; no quality-equivalent MMFF94 speed win is claimed.
 
 ## [1.0.19] - 2026-09-22
 

@@ -7,7 +7,7 @@ counted as wins. Dated raw records are indexed in
 
 ## Current status
 
-The current release line is **v1.0.19**. The newest public-package performance
+The current release line is **v1.0.20**. The newest completed public-package performance
 record is the 2026-09-22 browser/3D comparison against RDKit 2026.03.6. Older
 similarity, streaming, and operation timing records remain pinned to their
 recorded source/release versions.
@@ -35,7 +35,8 @@ geometrically (95% lower bound 2.617x), while its old prepared lane is only
 0.687x and therefore loses. PR #630's merged source with explicit immutable
 preparation passes both lanes: 1.397x parse-inclusive (lower bound 1.333x) and
 3.551x prepared (lower bound 3.384x), with 9,999/9,999 supported rows exact.
-That result is still not a published-package claim. See the complete
+That source result is included in v1.0.20, but its registry-package rerun is
+tracked separately. See the complete
 [2026-09-22 record](../benchmarks/2026-09-22-public-package-fingerprint-3d.md).
 
 ## Published-source timing summary

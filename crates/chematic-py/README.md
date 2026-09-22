@@ -2,10 +2,10 @@
 
 Pure-Rust cheminformatics library for Python — SMILES parsing, 190+ descriptor values (71 functions), fingerprints, pKa prediction, ADMET profiling, and template-based retrosynthesis.
 
-The current 1.0.19 release line aligns TPSA atom typing with RDKit 2025.09.3.
-Public development evidence passes 10,000/10,000 rows, and a separately
-sourced one-time holdout passes 8,000/8,000 at `1e-6` tolerance. This result is
-TPSA-specific and does not complete the multi-field A0 gate.
+The current 1.0.20 release line completes the frozen RDKit 2025.09.3 core-eight
+descriptor gate and strengthens original-index search accounting, prepared
+compatible Morgan fingerprints, and the experimental stereo-safe 3D path.
+Compatibility and performance claims remain operation- and corpus-scoped.
 
 ## Installation
 

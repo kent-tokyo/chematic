@@ -405,6 +405,25 @@ export class MolHandle {
         return ret >>> 0;
     }
     /**
+     * Index-aligned pseudoatom labels as stable JSON.
+     *
+     * Real atoms are `null`; wildcard entries are objects with `kind`,
+     * `label`, and nullable `r_group_number` fields.
+     * @returns {string}
+     */
+    atom_pseudo_labels_json() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.molhandle_atom_pseudo_labels_json(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
      * Returns true when TPSA < 90 Å², MW < 400, HBD ≤ 3.
      * @returns {boolean}
      */
@@ -1088,6 +1107,42 @@ export class MolHandle {
     }
 }
 if (Symbol.dispose) MolHandle.prototype[Symbol.dispose] = MolHandle.prototype.free;
+
+/**
+ * Immutable RDKit-compatible ECFP4 preprocessing cache.
+ *
+ * Create it with [`prepare_rdkit_ecfp4`], then call [`bitvec`](Self::bitvec)
+ * repeatedly without repeating aromaticity and ring perception.
+ */
+export class PreparedRdkitEcfp4Handle {
+    static __wrap(ptr) {
+        const obj = Object.create(PreparedRdkitEcfp4Handle.prototype);
+        obj.__wbg_ptr = ptr;
+        PreparedRdkitEcfp4HandleFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        PreparedRdkitEcfp4HandleFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_preparedrdkitecfp4handle_free(ptr, 0);
+    }
+    /**
+     * Compute the cached radius-2, 2048-bit fingerprint as 256 packed bytes.
+     * @returns {Uint8Array}
+     */
+    bitvec() {
+        const ret = wasm.preparedrdkitecfp4handle_bitvec(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
+    }
+}
+if (Symbol.dispose) PreparedRdkitEcfp4Handle.prototype[Symbol.dispose] = PreparedRdkitEcfp4Handle.prototype.free;
 
 /**
  * Reusable prepared index for the RDKit-compatible Morgan profile.
@@ -3392,9 +3447,10 @@ export function inchikey_from_smiles(smiles) {
 }
 
 /**
- * Invert the stereochemistry of a tetrahedral stereocenter (U/D wedge bonds).
+ * Invert a tetrahedral stereocenter and synchronize incident U/D wedge bonds.
  *
- * If the atom has no wedge/dash bonds, returns an unchanged copy.
+ * Recorded chirality is inverted even without a wedge; when a wedge/hash is
+ * present its depiction marker is inverted too.
  * Returns error if atom_idx is invalid.
  * @param {MolHandle} mol
  * @param {number} atom_idx
@@ -4778,6 +4834,24 @@ export function mol_with_atom_element(mol, idx, element_symbol) {
 }
 
 /**
+ * Return a molecule with atom `idx` changed to `*`, `R`, or `R<n>`.
+ * @param {MolHandle} mol
+ * @param {number} idx
+ * @param {string} label
+ * @returns {MolHandle}
+ */
+export function mol_with_atom_pseudo_label(mol, idx, label) {
+    _assertClass(mol, MolHandle);
+    const ptr0 = passStringToWasm0(label, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.mol_with_atom_pseudo_label(mol.__wbg_ptr, idx, ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
  * Return a new `MolHandle` with atom `idx` and all its bonds removed.
  *
  * Atom indices above `idx` shift down by 1.  Returns a JS error if `idx`
@@ -5570,6 +5644,24 @@ export function preflight_smiles_json(smiles, width, height) {
     } finally {
         wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
+}
+
+/**
+ * Perform RDKit-compatible aromaticity/ring preprocessing once.
+ *
+ * This is the prepared-molecule counterpart to RDKit's sanitized molecule
+ * object. Preparation errors remain typed JS errors and are never replaced by
+ * a non-compatible fallback fingerprint.
+ * @param {MolHandle} mol
+ * @returns {PreparedRdkitEcfp4Handle}
+ */
+export function prepare_rdkit_ecfp4(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.prepare_rdkit_ecfp4(mol.__wbg_ptr);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return PreparedRdkitEcfp4Handle.__wrap(ret[0]);
 }
 
 /**
@@ -8021,6 +8113,9 @@ const MhfpLshHandleFinalization = (typeof FinalizationRegistry === 'undefined')
 const MolHandleFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_molhandle_free(ptr, 1));
+const PreparedRdkitEcfp4HandleFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_preparedrdkitecfp4handle_free(ptr, 1));
 const RdkitSearchIndexFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_rdkitsearchindex_free(ptr, 1));

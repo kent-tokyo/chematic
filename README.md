@@ -21,14 +21,14 @@ npm install @kent-tokyo/chematic
 
 Python needs no C/C++ compiler. Rust and WebAssembly builds use the same core.
 
-### v1.0.19 release boundary
+### v1.0.20 release boundary
 
-This release aligns TPSA atom typing with RDKit 2025.09.3 using the complete
-Ertl N/O/S/P environment table and one shared total/per-atom contribution path.
-Public development evidence passes 63/63 atom-type cases and 10,000/10,000
-corpus rows. A separately sourced, overlap-audited one-time holdout passes
-8,000/8,000 at `1e-6` tolerance with maximum absolute error `0.0`. This closes
-the TPSA residual only; the multi-field A0 gate remains open. Compatibility is
+This release completes the frozen RDKit 2025.09.3 core-eight descriptor gate,
+preserves R-group identities across interchange formats, strengthens prepared
+compatible-Morgan and search contracts, and adopts analytic MMFF94 minimization
+with a stereo-safe quality path. The fixed source 3D gate is 265/265 sound and
+stereo-clean with zero gross clashes, but that quality lane is not faster than
+RDKit and the registry-package rerun remains separate. Compatibility is
 operation- and corpus-scoped; see the [validation report](docs/validation.md),
 [compatibility scope](docs/compatibility-scope.md), and [CHANGELOG](CHANGELOG.md).
 
