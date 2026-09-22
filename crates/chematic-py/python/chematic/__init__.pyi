@@ -1042,6 +1042,20 @@ class Mol:
         """
         ...
 
+    def mmff94_bounded_analytic_gradient(
+        self, coords: list[list[float]]
+    ) -> list[list[float]]:
+        """Return the experimental analytic MMFF94 gradient.
+
+        This validation API differentiates the same prepared objective as
+        :meth:`mmff94_energy_breakdown`. The default production minimizer still
+        uses finite differences until the full A6 gates pass.
+
+        Raises:
+            ValueError: for coordinate-count mismatch or unsupported MMFF94 typing.
+        """
+        ...
+
     def embed_pipeline_v2(self, config: "PipelineV2Config") -> dict[str, object]:
         """Run the opt-in v2 embedding pipeline.
 

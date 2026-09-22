@@ -334,6 +334,25 @@ def test_mmff94_charges_length():
     assert len(charges) == m.heavy_atoms
 
 
+def test_mmff94_bounded_analytic_gradient_matches_energy_difference():
+    """The Python validation surface must differentiate its documented energy."""
+    m = chematic.from_smiles("CCCC").add_hydrogens()
+    coords = m.generate_3d()
+    gradient = m.mmff94_bounded_analytic_gradient(coords)
+    assert len(gradient) == len(coords)
+
+    delta = 1e-5
+    plus = [point.copy() for point in coords]
+    minus = [point.copy() for point in coords]
+    plus[0][0] += delta
+    minus[0][0] -= delta
+    expected = (
+        m.mmff94_energy_breakdown(plus)["total"]
+        - m.mmff94_energy_breakdown(minus)["total"]
+    ) / (2.0 * delta)
+    assert abs(gradient[0][0] - expected) < 4e-5 * (1.0 + abs(expected))
+
+
 def test_balaban_j_positive():
     """Balaban J should be positive for non-trivial graphs."""
     m = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")

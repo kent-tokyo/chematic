@@ -2880,6 +2880,25 @@ impl Mol {
         Ok(d)
     }
 
+    /// Experimental analytic MMFF94 gradient for given 3D coordinates.
+    ///
+    /// This is the gradient of the same prepared objective used by
+    /// :meth:`mmff94_energy_breakdown`. It is exposed for numerical validation;
+    /// the default production minimizer continues to use finite differences
+    /// until the full A6 gradient and neighbor-list gates are complete.
+    fn mmff94_bounded_analytic_gradient(&self, coords: Vec<[f64; 3]>) -> PyResult<Vec<[f64; 3]>> {
+        if coords.len() != self.inner.atom_count() {
+            return Err(PyValueError::new_err(format!(
+                "coordinate count mismatch: expected {}, got {}",
+                self.inner.atom_count(),
+                coords.len()
+            )));
+        }
+        let model = chematic_ff::Mmff94EnergyModel::new(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(model.bounded_analytic_gradient(&coords))
+    }
+
     /// Run the opt-in v2 embedding pipeline (torsion-knowledge-aware distance
     /// geometry + stereo verification/repair + policy-gated force field).
     ///
