@@ -51,6 +51,22 @@ mid-edit RDKit-style atom/bond proxy iteration, conformer/query/reaction
 editing, sanitization flags, and full exception/return-value parity are not
 supported. Unsupported options fail explicitly.
 
+## Atom-level wildcards and R-group labels
+
+The ordinary molecule interchange path distinguishes real carbon, generic
+`*`, unnumbered `R`, and numbered `R1..R9999`. MOL V2000 uses `R#` plus
+`M  RGP` for numbered labels; V3000 uses `R#` plus `RGROUPS`; SDF inherits its
+MOL record contract; and CDXML uses bounded `GenericNickname` nodes. These
+forms round-trip through the core molecule sidecar without presenting the
+label as a periodic-table element.
+
+Arbitrary pseudoatom text and R-group numbers outside `1..=9999` are not part
+of this contract and fail parsing instead of becoming carbon. SMILES has no
+matching R-group-label side channel: all supported wildcard/R-group atoms are
+written as `*`, so use MOL/SDF/CDXML or the Rust/WASM label API when identity
+must survive editing. This atom-level contract does not implement Markush
+alternative selection or polymer semantics.
+
 ## CDXML
 
 Supported: bounded molecular parsing with coordinates; loss-preserving,
@@ -61,8 +77,9 @@ attributes, unknown objects, and untouched XML across pages and bindings.
 
 This is not a complete ChemDraw editor/writer. Arbitrary semantic editing of
 every nested CDXML object, regeneration from an edited molecular graph, and
-full templates, reactions, Markush/R-group, polymer, query, and presentation
-semantics/rendering are not supported. Presentation objects are preserved and
+full templates, reactions, Markush alternatives, polymer, query, and presentation
+semantics/rendering are not supported. The bounded atom-level `*`/`R`/`R<n>`
+identity described above is supported. Presentation objects are preserved and
 can be edited as opaque XML, but chematic does not claim to interpret every
 ChemDraw presentation semantic.
 

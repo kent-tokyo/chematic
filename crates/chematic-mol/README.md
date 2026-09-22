@@ -8,6 +8,8 @@ Pure Rust molecular file format reader/writer — **SDF, MOL V2000/V3000, CML, C
 - **V2000 Parser/Writer**: bounded core CTAB support with `parse_mol` / `write_mol`
 - **V2000 with Coords**: 2D coordinates preserved via `parse_mol_with_coords` / `write_mol_with_coords`
 - **V3000 Parser/Writer**: Extended blocks (CTAB, ATOM, BOND, COLLECTION)
+- **Pseudoatoms**: real carbon, `*`, `R`, and `R1..R9999` remain distinct
+  through V2000/V3000 and SDF round trips; unsupported labels fail closed
 - **V3000 with Coords** (NEW in v0.1.32): 2D coordinates now recovered via `parse_mol_v3000_with_coords`
   - Previously: coordinates discarded ❌
   - Now: coordinates preserved in Vec<(f64, f64)> ✅
@@ -29,6 +31,8 @@ Pure Rust molecular file format reader/writer — **SDF, MOL V2000/V3000, CML, C
 ### CDXML (ChemDraw XML)
 - **Parser/Writer**: molecular read/write plus a loss-preserving, bounded
   document API. This is not a complete ChemDraw object model.
+- **Pseudoatoms**: bounded `GenericNickname` values `*`, `R`, and
+  `R1..R9999`; arbitrary nicknames return `UnsupportedPseudoatomLabel`
 - **Y-Coordinate System** (DOCUMENTED in v0.1.32):
   - CDXML uses **ChemDraw Y-down** (Y increases downward, SVG-compatible)
   - No Y-axis conversion needed for SVG rendering
@@ -140,11 +144,11 @@ println!("{}", mol_str);  // V2000 format
 
 | Format | Read | Write | Coords | Notes |
 |--------|------|-------|--------|-------|
-| MOL V2000 | ✅ | ✅ | — | Charged atoms, isotopes, stereo |
-| MOL V3000 | ✅ | ✅ | — | Extended atoms, COLLECTION |
-| SDF (multi) | ✅ | ✅ | ✅ | Per-record properties |
+| MOL V2000 | ✅ | ✅ | — | Charged atoms, isotopes, stereo, `*`/`R`/`R1..R9999` |
+| MOL V3000 | ✅ | ✅ | — | Extended atoms, COLLECTION, `*`/`R`/`R1..R9999` |
+| SDF (multi) | ✅ | ✅ | ✅ | Per-record properties and MOL pseudoatom contract |
 | CML | ✅ | ✅ | ✅ | Y-up convention (documented) |
-| CDXML | ✅ | ✅ | ✅ | Molecular writer plus bounded loss-preserving document edits; not complete ChemDraw parity |
+| CDXML | ✅ | ✅ | ✅ | Molecular writer, bounded `GenericNickname` pseudoatoms, and loss-preserving document edits; not complete ChemDraw parity |
 | MDL RXN | ✅ | ✅ | — | V2000 reactants/products |
 | ChemicalJSON (.cjson) | ✅ | ✅ | ✅ (3D) | Avogadro 2, MolSSI Open Chemistry |
 

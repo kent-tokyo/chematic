@@ -929,6 +929,19 @@ fn mol_with_atom_element_changes_element() {
     assert_eq!(atom.element.symbol(), "N", "element should be N");
 }
 
+#[test]
+fn pseudoatom_labels_are_editable_and_index_aligned_json() {
+    let mol = parse("CC");
+    let mol = mol_with_atom_pseudo_label(&mol, 0, "*").unwrap();
+    let mol = mol_with_atom_pseudo_label(&mol, 1, "R2").unwrap();
+    let labels: serde_json::Value = serde_json::from_str(&mol.atom_pseudo_labels_json()).unwrap();
+    assert_eq!(labels[0]["kind"], "wildcard");
+    assert_eq!(labels[0]["label"], "*");
+    assert_eq!(labels[1]["kind"], "r_group");
+    assert_eq!(labels[1]["label"], "R2");
+    assert_eq!(labels[1]["r_group_number"], 2);
+}
+
 // SDF parse with coords
 #[test]
 fn mol_block_coords_json_ethanol() {

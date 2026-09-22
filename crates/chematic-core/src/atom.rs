@@ -82,6 +82,38 @@ pub enum CipCode {
     LowerS,
 }
 
+/// Display/interchange label for an atom-level R-group placeholder.
+///
+/// An R-group is still a wildcard for chemistry algorithms; this value only
+/// preserves whether the source document spelled that wildcard as `R` or as a
+/// numbered label such as `R1`. The number is in `1..=9999`, the range that
+/// can be emitted losslessly by both V2000's fixed-width `M  RGP` record and
+/// the less constrained supported formats.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct RGroupLabel(Option<core::num::NonZeroU16>);
+
+impl RGroupLabel {
+    /// An unnumbered `R` placeholder.
+    pub const fn unnumbered() -> Self {
+        Self(None)
+    }
+
+    /// A numbered `R<n>` placeholder. Returns `None` outside `1..=9999`.
+    pub fn numbered(number: u16) -> Option<Self> {
+        core::num::NonZeroU16::new(number)
+            .filter(|number| number.get() <= 9999)
+            .map(|number| Self(Some(number)))
+    }
+
+    /// The positive R-group number, or `None` for an unnumbered `R`.
+    pub const fn number(self) -> Option<u16> {
+        match self.0 {
+            Some(number) => Some(number.get()),
+            None => None,
+        }
+    }
+}
+
 /// A single atom in a molecular graph.
 ///
 /// - `isotope`: mass number (e.g. 13 for ¹³C). `None` = natural isotope abundance.
@@ -221,5 +253,13 @@ mod tests {
         let a = Atom::wildcard();
         assert!(a.wildcard);
         assert_eq!(format!("{a}"), "*");
+    }
+
+    #[test]
+    fn r_group_label_rejects_zero() {
+        assert!(RGroupLabel::numbered(0).is_none());
+        assert!(RGroupLabel::numbered(10_000).is_none());
+        assert_eq!(RGroupLabel::numbered(2).unwrap().number(), Some(2));
+        assert_eq!(RGroupLabel::unnumbered().number(), None);
     }
 }

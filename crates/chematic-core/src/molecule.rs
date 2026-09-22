@@ -1,6 +1,6 @@
 //! Molecule graph: atoms, bonds, and adjacency list.
 
-use crate::atom::Atom;
+use crate::atom::{Atom, RGroupLabel};
 use crate::bond::{BondEntry, BondOrder};
 use crate::element::Element;
 use crate::stereo_group::StereoGroup;
@@ -48,6 +48,10 @@ pub struct Molecule {
     bonds: Vec<BondEntry>,
     /// adjacency[atom_idx] = list of (neighbor_atom_idx, bond_idx)
     adjacency: Vec<Vec<(AtomIdx, BondIdx)>>,
+    /// Lossless display/interchange identity for `R`/`R<n>` wildcard atoms.
+    /// Kept outside [`Atom`] so chemistry primitives and the public atom
+    /// struct remain stable and element-focused.
+    r_groups: std::collections::HashMap<u32, RGroupLabel>,
     /// Enhanced stereo groups (ChemDraw V3000 Absolute / Or / And).
     stereo_groups: Vec<StereoGroup>,
     /// SMILES-text-order neighbor sequence for chiral atoms.
@@ -104,6 +108,11 @@ impl Molecule {
         } else {
             None
         }
+    }
+
+    /// R-group label attached to `idx`, if this wildcard came from `R`/`R<n>`.
+    pub fn r_group_label(&self, idx: AtomIdx) -> Option<RGroupLabel> {
+        self.r_groups.get(&idx.0).copied()
     }
 
     /// Borrow bond by index.
@@ -303,6 +312,7 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         builder.copy_stereo_from(self);
+        builder.copy_r_groups_from(self);
         builder.copy_bond_directions_from(self);
         builder.build()
     }
@@ -321,6 +331,7 @@ impl Molecule {
                 a.chirality = crate::atom::Chirality::None;
                 a.hydrogen_count = None;
                 a.aromatic = false;
+                a.wildcard = false;
             }
             builder.add_atom(a);
         }
@@ -328,6 +339,8 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         builder.copy_stereo_from(self);
+        builder.copy_r_groups_from(self);
+        builder.clear_r_group(idx);
         builder.copy_bond_directions_from(self);
         // Chirality was cleared for the changed atom; remove its stereo order too.
         builder.clear_stereo_neighbor_order(idx);
@@ -405,6 +418,11 @@ impl Molecule {
         for (old_bidx, direction) in &self.bond_directions {
             if let Some(Some(new_bidx)) = bond_remap.get(*old_bidx as usize) {
                 builder.set_bond_direction(*new_bidx, *direction);
+            }
+        }
+        for (old_atom, label) in &self.r_groups {
+            if let Some(Some(new_atom)) = remap.get(*old_atom as usize) {
+                builder.set_r_group(*new_atom, *label);
             }
         }
         (builder.build(), remap)
@@ -495,6 +513,7 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         builder.copy_stereo_from(self);
+        builder.copy_r_groups_from(self);
         builder.copy_bond_directions_from(self);
         builder.build()
     }
@@ -510,6 +529,7 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, o);
         }
         builder.copy_stereo_from(self);
+        builder.copy_r_groups_from(self);
         builder.copy_bond_directions_from(self);
         builder.build()
     }
@@ -537,6 +557,7 @@ impl Molecule {
             }
         }
         builder.copy_stereo_from(self);
+        builder.copy_r_groups_from(self);
         builder.build()
     }
 }
@@ -653,6 +674,13 @@ impl Molecule {
             }
         }
 
+        let old_r_groups = std::mem::take(&mut self.r_groups);
+        for (old_key, label) in old_r_groups {
+            if let Some(Some(new_atom)) = remap.get(old_key as usize) {
+                self.r_groups.insert(new_atom.0, label);
+            }
+        }
+
         remap
     }
 
@@ -746,6 +774,28 @@ impl Molecule {
         self.atoms[idx.0 as usize].isotope = isotope;
     }
 
+    /// Mark an atom as an R-group wildcard while preserving its atom index.
+    pub fn set_r_group(&mut self, idx: AtomIdx, label: crate::atom::RGroupLabel) {
+        let atom = &mut self.atoms[idx.0 as usize];
+        atom.element = Element::C;
+        atom.wildcard = true;
+        atom.hydrogen_count = Some(0);
+        atom.aromatic = false;
+        atom.chirality = crate::atom::Chirality::None;
+        self.r_groups.insert(idx.0, label);
+    }
+
+    /// Mark an atom as a generic `*` wildcard while preserving its atom index.
+    pub fn set_wildcard(&mut self, idx: AtomIdx) {
+        let atom = &mut self.atoms[idx.0 as usize];
+        atom.element = Element::C;
+        atom.wildcard = true;
+        atom.hydrogen_count = Some(0);
+        atom.aromatic = false;
+        atom.chirality = crate::atom::Chirality::None;
+        self.r_groups.remove(&idx.0);
+    }
+
     /// Set the element of atom `idx` in-place.
     ///
     /// Chirality and hydrogen count are reset (element-specific properties).
@@ -755,6 +805,8 @@ impl Molecule {
         a.chirality = crate::atom::Chirality::None;
         a.hydrogen_count = None;
         a.aromatic = false;
+        a.wildcard = false;
+        self.r_groups.remove(&idx.0);
     }
 
     /// Set the CIP stereo code of atom `idx` in-place.
@@ -916,6 +968,9 @@ impl Molecule {
                 for (aidx, atom) in self.atoms() {
                     if component[aidx.0 as usize] == cid {
                         let new_idx = builder.add_atom(atom.clone());
+                        if let Some(label) = self.r_group_label(aidx) {
+                            builder.set_r_group(new_idx, label);
+                        }
                         old_to_new.insert(aidx, new_idx);
                     }
                 }
@@ -940,6 +995,7 @@ pub struct MoleculeBuilder {
     atoms: Vec<Atom>,
     bonds: Vec<BondEntry>,
     adjacency: Vec<Vec<(AtomIdx, BondIdx)>>,
+    r_groups: std::collections::HashMap<u32, RGroupLabel>,
     stereo_groups: Vec<StereoGroup>,
     stereo_neighbor_order: std::collections::HashMap<u32, Vec<u32>>,
     bond_directions: std::collections::HashMap<u32, BondOrder>,
@@ -961,6 +1017,7 @@ impl MoleculeBuilder {
             atoms: Vec::with_capacity(atom_count),
             bonds: Vec::with_capacity(bond_count),
             adjacency: Vec::with_capacity(atom_count),
+            r_groups: std::collections::HashMap::new(),
             stereo_groups: Vec::new(),
             stereo_neighbor_order: std::collections::HashMap::new(),
             bond_directions: std::collections::HashMap::new(),
@@ -981,6 +1038,7 @@ impl MoleculeBuilder {
             let _ = b.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         b.stereo_groups = mol.stereo_groups.clone();
+        b.r_groups = mol.r_groups.clone();
         b.stereo_neighbor_order = mol.stereo_neighbor_order.clone();
         b.bond_directions = mol.bond_directions.clone();
         b.bond_direction_anchors = mol.bond_direction_anchors.clone();
@@ -995,6 +1053,26 @@ impl MoleculeBuilder {
     /// Remove the stereo neighbor order entry for atom `idx`.
     pub fn clear_stereo_neighbor_order(&mut self, idx: AtomIdx) {
         self.stereo_neighbor_order.remove(&idx.0);
+    }
+
+    /// Attach an R-group label to an already-added wildcard atom.
+    pub fn set_r_group(&mut self, idx: AtomIdx, label: RGroupLabel) {
+        let atom = &mut self.atoms[idx.0 as usize];
+        atom.element = Element::C;
+        atom.wildcard = true;
+        atom.hydrogen_count = Some(0);
+        atom.aromatic = false;
+        self.r_groups.insert(idx.0, label);
+    }
+
+    /// Remove an R-group sidecar while leaving the atom itself in place.
+    pub fn clear_r_group(&mut self, idx: AtomIdx) {
+        self.r_groups.remove(&idx.0);
+    }
+
+    /// Copy R-group sidecars when atom indices are unchanged.
+    pub fn copy_r_groups_from(&mut self, mol: &Molecule) {
+        self.r_groups = mol.r_groups.clone();
     }
 
     /// Append a stereo group to this builder.
@@ -1111,6 +1189,7 @@ impl MoleculeBuilder {
             atoms: self.atoms,
             bonds: self.bonds,
             adjacency: self.adjacency,
+            r_groups: self.r_groups,
             stereo_groups: self.stereo_groups,
             stereo_neighbor_order: self.stereo_neighbor_order,
             bond_directions: self.bond_directions,
@@ -1374,6 +1453,52 @@ mod tests {
         let mol2 = b.build();
         assert_eq!(mol2.atom_count(), 3);
         assert_eq!(mol2.bond_count(), 1); // original bond preserved
+    }
+
+    #[test]
+    fn r_group_sidecars_survive_index_preserving_and_remapping_edits() {
+        let mut builder = MoleculeBuilder::new();
+        let carbon = builder.add_atom(Atom::new(Element::C));
+        let r1 = builder.add_atom(Atom::wildcard());
+        builder.set_r_group(r1, RGroupLabel::numbered(1).unwrap());
+        let r2 = builder.add_atom(Atom::wildcard());
+        builder.set_r_group(r2, RGroupLabel::numbered(2).unwrap());
+        builder.add_bond(carbon, r1, BondOrder::Single).unwrap();
+        let mol = builder.build();
+
+        let charged = mol.with_atom_charge(carbon, 1);
+        assert_eq!(charged.r_group_label(r1).unwrap().number(), Some(1));
+        assert_eq!(charged.r_group_label(r2).unwrap().number(), Some(2));
+
+        let changed = charged.with_atom_element(r1, Element::N);
+        assert_eq!(changed.r_group_label(r1), None);
+        assert!(!changed.atom(r1).wildcard);
+        assert_eq!(changed.r_group_label(r2).unwrap().number(), Some(2));
+
+        let (removed, remap) = mol.with_atom_removed(carbon);
+        let remapped_r1 = remap[r1.0 as usize].unwrap();
+        let remapped_r2 = remap[r2.0 as usize].unwrap();
+        assert_eq!(
+            removed.r_group_label(remapped_r1).unwrap().number(),
+            Some(1)
+        );
+        assert_eq!(
+            removed.r_group_label(remapped_r2).unwrap().number(),
+            Some(2)
+        );
+
+        let fragments = mol.fragments();
+        assert_eq!(fragments.len(), 2);
+        assert!(fragments.iter().any(|fragment| {
+            fragment
+                .r_group_label(AtomIdx(1))
+                .is_some_and(|label| label.number() == Some(1))
+        }));
+        assert!(fragments.iter().any(|fragment| {
+            fragment
+                .r_group_label(AtomIdx(0))
+                .is_some_and(|label| label.number() == Some(2))
+        }));
     }
 
     // --- safe Option-returning variants ---

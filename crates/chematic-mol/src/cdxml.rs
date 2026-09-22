@@ -7,7 +7,8 @@
 //! # Supported elements / attributes
 //!
 //! `<n>` (atom): `id`, `Element` (atomic number), `p` ("x y" 2D coords),
-//!               `NumHydrogens`, `Charge`, `Isotope`
+//!               `NumHydrogens`, `Charge`, `Isotope`, and bounded
+//!               `GenericNickname` pseudoatoms (`*`, `R`, `R<n>`)
 //!
 //! `<b>` (bond): `B` (begin atom id), `E` (end atom id), `Order` (1/2/3,
 //!               defaults to 1)
@@ -45,7 +46,7 @@
 
 use std::collections::HashMap;
 
-use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
+use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder, RGroupLabel};
 use chematic_perception::{apply_local_parity_from_wedges, assign_ez_from_2d};
 
 use crate::cml::parse_xml_attrs;
@@ -95,6 +96,8 @@ pub enum CdxmlError {
     MissingBondEndpoint,
     /// The `p` coordinate attribute could not be parsed.
     InvalidCoords(String),
+    /// A generic nickname is outside the lossless `*`/`R`/`R<n>` contract.
+    UnsupportedPseudoatomLabel(String),
     /// The document contains more atoms than the parser's safety limit.
     TooManyAtoms(usize),
     /// The document exceeded a configured resource limit.
@@ -114,6 +117,9 @@ impl std::fmt::Display for CdxmlError {
             CdxmlError::AmbiguousPageId(s) => write!(f, "ambiguous page id: {s}"),
             CdxmlError::MissingBondEndpoint => write!(f, "bond missing B or E attribute"),
             CdxmlError::InvalidCoords(s) => write!(f, "invalid p coords: {s}"),
+            CdxmlError::UnsupportedPseudoatomLabel(label) => {
+                write!(f, "unsupported CDXML pseudoatom label: {label}")
+            }
             CdxmlError::TooManyAtoms(n) => write!(f, "CDXML document exceeds atom limit ({n})"),
             CdxmlError::ResourceLimit {
                 resource,
@@ -259,6 +265,8 @@ struct FragAccum {
     atom_charges: Vec<i8>,
     atom_isotopes: Vec<Option<u16>>,
     atom_h: Vec<Option<u8>>,
+    atom_wildcards: Vec<bool>,
+    atom_rgroups: Vec<Option<RGroupLabel>>,
     atom_xs: Vec<f64>,
     atom_ys: Vec<f64>,
     bond_bs: Vec<String>,
@@ -315,10 +323,14 @@ impl FragAccum {
 
         for i in 0..self.atom_ids.len() {
             let mut a = Atom::new(self.atom_elems[i]);
+            a.wildcard = self.atom_wildcards[i];
             a.charge = self.atom_charges[i];
             a.isotope = self.atom_isotopes[i];
-            a.hydrogen_count = self.atom_h[i];
+            a.hydrogen_count = if a.wildcard { Some(0) } else { self.atom_h[i] };
             let new_idx = builder.add_atom(a);
+            if let Some(label) = self.atom_rgroups[i] {
+                builder.set_r_group(new_idx, label);
+            }
             idx_map.insert(i, new_idx);
             coords.push((self.atom_xs[i], self.atom_ys[i]));
         }
@@ -529,15 +541,43 @@ pub fn parse_cdxml_all_with_options_and_limits(
                 Some(s) => s.clone(),
                 None => continue,
             };
-            let element_num: u32 = attrs
-                .get("Element")
-                .and_then(|s| s.trim().parse().ok())
-                .unwrap_or(6);
-            if element_num > 255 {
-                return Err(CdxmlError::UnknownAtomicNumber(element_num));
-            }
-            let element = Element::from_atomic_number(element_num as u8)
-                .ok_or(CdxmlError::UnknownAtomicNumber(element_num))?;
+            let pseudo_label =
+                if attrs.get("NodeType").map(String::as_str) == Some("GenericNickname") {
+                    Some(attrs.get("GenericNickname").cloned().ok_or_else(|| {
+                        CdxmlError::UnsupportedPseudoatomLabel(
+                            "missing GenericNickname attribute".to_string(),
+                        )
+                    })?)
+                } else {
+                    None
+                };
+            let (element, wildcard, r_group) = match pseudo_label.as_deref() {
+                Some("*") => (Element::C, true, None),
+                Some("R") => (Element::C, true, Some(RGroupLabel::unnumbered())),
+                Some(label) if label.starts_with('R') => {
+                    let number = label[1..]
+                        .parse::<u16>()
+                        .ok()
+                        .and_then(RGroupLabel::numbered)
+                        .ok_or_else(|| CdxmlError::UnsupportedPseudoatomLabel(label.to_string()))?;
+                    (Element::C, true, Some(number))
+                }
+                Some(label) => {
+                    return Err(CdxmlError::UnsupportedPseudoatomLabel(label.to_string()));
+                }
+                None => {
+                    let element_num: u32 = attrs
+                        .get("Element")
+                        .and_then(|s| s.trim().parse().ok())
+                        .unwrap_or(6);
+                    if element_num > 255 {
+                        return Err(CdxmlError::UnknownAtomicNumber(element_num));
+                    }
+                    let element = Element::from_atomic_number(element_num as u8)
+                        .ok_or(CdxmlError::UnknownAtomicNumber(element_num))?;
+                    (element, false, None)
+                }
+            };
             let charge = attrs
                 .get("Charge")
                 .and_then(|s| s.trim().parse().ok())
@@ -573,6 +613,8 @@ pub fn parse_cdxml_all_with_options_and_limits(
             acc.atom_charges.push(charge);
             acc.atom_isotopes.push(isotope);
             acc.atom_h.push(hcount);
+            acc.atom_wildcards.push(wildcard);
+            acc.atom_rgroups.push(r_group);
             acc.atom_xs.push(x);
             acc.atom_ys.push(y);
             continue;
@@ -678,11 +720,18 @@ pub fn write_cdxml(mol: &Molecule, coords: &[(f64, f64)]) -> String {
     for (i, (idx, atom)) in mol.atoms().enumerate() {
         let id = idx.0 + 1;
         let (x, y) = coords.get(i).copied().unwrap_or((0.0, 0.0));
-        let mut parts = vec![
-            format!("id=\"{id}\""),
-            format!("p=\"{x} {y}\""),
-            format!("Element=\"{}\"", atom.element.atomic_number()),
-        ];
+        let mut parts = vec![format!("id=\"{id}\""), format!("p=\"{x} {y}\"")];
+        if atom.wildcard {
+            let label = match mol.r_group_label(idx).and_then(|label| label.number()) {
+                Some(number) => format!("R{number}"),
+                None if mol.r_group_label(idx).is_some() => "R".to_string(),
+                None => "*".to_string(),
+            };
+            parts.push("NodeType=\"GenericNickname\"".to_string());
+            parts.push(format!("GenericNickname=\"{label}\""));
+        } else {
+            parts.push(format!("Element=\"{}\"", atom.element.atomic_number()));
+        }
         if let Some(h) = atom.hydrogen_count {
             parts.push(format!("NumHydrogens=\"{h}\""));
         }

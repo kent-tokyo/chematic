@@ -15,6 +15,11 @@
 
 ## Current status
 
+- Issue #618 is complete for the bounded atom-level pseudoatom contract:
+  MOL V2000/V3000, SDF, and CDXML preserve real carbon, `*`, `R`, and
+  `R1..R9999`; unsupported labels reject instead of becoming placeholder
+  carbon, and WASM exposes index-aligned inspection plus immutable edits.
+  This is interchange metadata, not full Markush expansion semantics.
 - The post-v1.0.19 candidate `5e9211a6`, frozen as annotated tag
   `trust-eval-candidate-a0-multifield-r3-20260922`, completes the A0 core-eight
   gate against RDKit 2025.09.3. A separately acquired source was overlap-audited

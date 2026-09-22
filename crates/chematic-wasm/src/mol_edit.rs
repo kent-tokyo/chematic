@@ -18,6 +18,40 @@ pub fn mol_with_atom_added(mol: &MolHandle, element_symbol: &str) -> Result<MolH
     })
 }
 
+/// Return a molecule with atom `idx` changed to `*`, `R`, or `R<n>`.
+#[wasm_bindgen]
+pub fn mol_with_atom_pseudo_label(
+    mol: &MolHandle,
+    idx: u32,
+    label: &str,
+) -> Result<MolHandle, JsValue> {
+    let atom_idx = chematic_core::AtomIdx(idx);
+    if mol.inner.atom_opt(atom_idx).is_none() {
+        return Err(JsValue::from_str("atom index out of range"));
+    }
+    let mut result = (*mol.inner).clone();
+    match label {
+        "*" => result.set_wildcard(atom_idx),
+        "R" => result.set_r_group(atom_idx, chematic_core::RGroupLabel::unnumbered()),
+        value if value.starts_with('R') => {
+            let number = value[1..]
+                .parse::<u16>()
+                .ok()
+                .and_then(chematic_core::RGroupLabel::numbered)
+                .ok_or_else(|| JsValue::from_str("pseudoatom label must be *, R, or R1..R9999"))?;
+            result.set_r_group(atom_idx, number);
+        }
+        _ => {
+            return Err(JsValue::from_str(
+                "pseudoatom label must be *, R, or R1..R9999",
+            ));
+        }
+    }
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(result),
+    })
+}
+
 /// Return the index that would be assigned to an atom appended to `mol`.
 #[wasm_bindgen]
 pub fn mol_next_atom_idx(mol: &MolHandle) -> u32 {
