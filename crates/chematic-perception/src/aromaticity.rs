@@ -656,6 +656,7 @@ fn finish_molecule_with_flags(
     // none skipped, so indices line up 1:1 — safe to copy side-channel
     // metadata wholesale. (This rebuild previously dropped stereo_groups and
     // stereo_neighbor_order silently; closing that here too.)
+    builder.copy_r_groups_from(mol);
     builder.copy_stereo_groups_from(mol);
     builder.copy_stereo_from(mol);
     builder.copy_bond_directions_from(mol);
