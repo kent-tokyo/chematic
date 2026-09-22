@@ -2714,6 +2714,61 @@ fn test_mmff94_energy_breakdown_from_coords_json_varies_with_geometry() {
     );
 }
 
+#[test]
+fn torsion_scan_json_returns_a_finite_energy_curve() {
+    let mol = parse("CCCC");
+    let points: Vec<serde_json::Value> =
+        serde_json::from_str(&torsion_scan_json(&mol, 0, 1, 2, 3, 12))
+            .expect("torsion scan should return a JSON array");
+
+    assert_eq!(points.len(), 12);
+    assert_eq!(points[0]["angle"].as_f64(), Some(0.0));
+    assert!(
+        points
+            .iter()
+            .all(|point| point["angle"].is_number() && point["energy"].is_number()),
+        "each point must expose finite JSON number fields: {points:?}"
+    );
+    let energies: std::collections::HashSet<_> = points
+        .iter()
+        .map(|point| point["energy"].to_string())
+        .collect();
+    assert!(
+        energies.len() > 1,
+        "butane torsion scan must vary with the dihedral angle: {points:?}"
+    );
+}
+
+#[test]
+fn torsion_scan_json_rejects_invalid_scan_parameters_without_panicking() {
+    let mol = parse("CCCC");
+    for (args, expected_error) in [
+        ((0, 1, 2, 4, 12), "atom index out of range"),
+        ((0, 1, 1, 3, 12), "must be distinct"),
+        ((0, 1, 2, 3, 1), "steps must be between 2 and 360"),
+    ] {
+        let (i, j, k, l, steps) = args;
+        let result: serde_json::Value =
+            serde_json::from_str(&torsion_scan_json(&mol, i, j, k, l, steps))
+                .expect("invalid input must still return valid JSON");
+        assert!(
+            result["error"]
+                .as_str()
+                .is_some_and(|message| message.contains(expected_error)),
+            "expected error containing {expected_error:?}, got {result}"
+        );
+    }
+
+    let disconnected = parse("CC.CC");
+    let result: serde_json::Value =
+        serde_json::from_str(&torsion_scan_json(&disconnected, 0, 1, 2, 3, 12))
+            .expect("invalid connectivity must still return valid JSON");
+    assert_eq!(
+        result["error"].as_str(),
+        Some("torsion atoms must form a bonded i-j-k-l sequence")
+    );
+}
+
 /// One row of the Python-oracle fixture table below: `mol.mmff94_energy_breakdown(coords)`
 /// from `.venv`'s chematic Python binding, for `CCCC` at `dihedral_deg`
 /// (atoms 0,1,2,3), on the IDENTICAL (mol, coords) pair this Rust test
