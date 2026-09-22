@@ -1600,7 +1600,10 @@ pub fn aromatic_ring_count(mol: &Molecule) -> usize {
 /// Count aromatic rings after applying the opt-in RDKit aromaticity model.
 /// Native aromatic flags and native ring counts are left untouched.
 pub fn rdkit_aromatic_ring_count(mol: &Molecule) -> usize {
-    chematic_perception::aromatic_ring_list(mol).len()
+    match chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol) {
+        Ok(perceived) => chematic_perception::aromatic_ring_list_preperceived(&perceived).len(),
+        Err(_) => chematic_perception::aromatic_ring_list(mol).len(),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -4017,6 +4020,12 @@ mod tests {
             "COCCOCCOCCN1CC23C4=C5C6=C7c8c9c%10c%11c%12c%13c%14c(c2c2c%15c%16c%17c%18c%19c(c5c5c%20c%21c%22c%23c(c8C%22C65)c%10c5c%11c6c%13c8c(c%15%14)c%16c%10c%18c%11c(c%20%19)c%21c%13c%23c5c5c%13c%11c%10c8c65)C%17C42)C%12C9C73C1COCCOCCOC",
         );
         assert_eq!(rdkit_aromatic_ring_count(&cage), 19);
+    }
+
+    #[test]
+    fn rdkit_aromatic_ring_profile_does_not_reperceive_zero_aromatic_result() {
+        let fused_thiohydantoin = mol("S=C1N2CCN=C2SC2=NCCN12");
+        assert_eq!(rdkit_aromatic_ring_count(&fused_thiohydantoin), 0);
     }
 
     #[test]
