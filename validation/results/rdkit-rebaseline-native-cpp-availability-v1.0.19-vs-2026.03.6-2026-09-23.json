@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_native_cpp_availability_v1",
+  "observed_at_utc": "2026-09-22T15:36:21Z",
+  "query": "GET /repos/rdkit/rdkit/releases/tags/Release_2026_03_6",
+  "release": {
+    "repository": "rdkit/rdkit",
+    "release_id": 378318432,
+    "tag": "Release_2026_03_6",
+    "name": "2026_03_6 (Q1 2026) Release",
+    "target_commitish": "Release_2026_03",
+    "created_at": "2026-08-28T02:56:41Z",
+    "published_at": "2026-08-28T07:20:53Z",
+    "url": "https://github.com/rdkit/rdkit/releases/tag/Release_2026_03_6",
+    "draft": false,
+    "prerelease": false,
+    "github_release_assets": []
+  },
+  "lane": {
+    "id": "native-cpp-2026.03.6-unavailable",
+    "channel": "native_cpp",
+    "rdkit_version": "2026.03.6",
+    "availability": "unavailable",
+    "reason": "No independently captured, version-pinned RDKit C++ binary or exact source-build/toolchain packet is available for this rebaseline. The official GitHub release record has no attached assets; Python wheel and npm/WASM evidence remain separate lanes.",
+    "missing_dimensions": [
+      "artifact",
+      "artifact_sha256",
+      "runtime",
+      "compiler_toolchain",
+      "build_configuration",
+      "operation_commands",
+      "timing",
+      "resource_measurement"
+    ],
+    "operations": [
+      "provenance",
+      "binding_contract",
+      "smiles_parse_write",
+      "cip",
+      "smarts",
+      "morgan",
+      "browser_runtime"
+    ]
+  },
+  "boundaries": {
+    "does_not_assert_no_native_distribution_exists_elsewhere": true,
+    "does_not_reuse_python_wheel_as_cpp_lane": true,
+    "does_not_reuse_npm_wasm_as_cpp_lane": true,
+    "does_not_rank_unmeasured_performance": true,
+    "sealed_accuracy_cohort_reused": false
+  }
+}

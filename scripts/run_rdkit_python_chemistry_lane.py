@@ -21,7 +21,9 @@ def sha256(path: Path) -> str:
 
 def load_smiles(path: Path, limit: int | None) -> list[str]:
     rows: list[str] = []
-    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    for line_number, line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(), 1
+    ):
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
@@ -45,8 +47,10 @@ def load_smiles(path: Path, limit: int | None) -> list[str]:
 def load_queries(path: Path) -> list[str]:
     document = json.loads(path.read_text(encoding="utf-8"))
     queries = document.get("queries")
-    if not isinstance(queries, list) or not queries or not all(
-        isinstance(item, str) and item for item in queries
+    if (
+        not isinstance(queries, list)
+        or not queries
+        or not all(isinstance(item, str) and item for item in queries)
     ):
         raise ValueError(f"{path}: queries must be a non-empty string array")
     if len(queries) != len(set(queries)):
@@ -54,32 +58,43 @@ def load_queries(path: Path) -> list[str]:
     return queries
 
 
-def rdkit_cip(Chem, rdCIPLabeler, molecule) -> tuple[dict[int, str], dict[int, str]]:
+def bond_endpoint_key(atom1: int, atom2: int) -> str:
+    left, right = sorted((atom1, atom2))
+    return f"{left}-{right}"
+
+
+def rdkit_cip(Chem, rdCIPLabeler, molecule) -> tuple[dict[int, str], dict[str, str]]:
     rdCIPLabeler.AssignCIPLabels(molecule)
     atoms = {
         atom.GetIdx(): atom.GetProp("_CIPCode")
         for atom in molecule.GetAtoms()
         if atom.HasProp("_CIPCode")
     }
-    bonds: dict[int, str] = {}
+    bonds: dict[str, str] = {}
     for bond in molecule.GetBonds():
+        endpoint = bond_endpoint_key(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
         if bond.GetStereo() == Chem.BondStereo.STEREOTRANS:
-            bonds[bond.GetIdx()] = "E"
+            bonds[endpoint] = "E"
         elif bond.GetStereo() == Chem.BondStereo.STEREOCIS:
-            bonds[bond.GetIdx()] = "Z"
+            bonds[endpoint] = "Z"
     return atoms, bonds
 
 
-def chematic_cip(molecule) -> tuple[dict[int, str], dict[int, str], dict[int, str]]:
+def chematic_cip(molecule) -> tuple[dict[int, str], dict[str, str], dict[int, str]]:
     atoms: dict[int, str] = {}
-    bonds: dict[int, str] = {}
+    bonds: dict[str, str] = {}
+    bond_table = molecule.bond_table
     for item in molecule.cip_stereo(mode="accurate"):
         index = int(item["atom_idx"])
         descriptor = str(item["descriptor"])
         if descriptor in {"R", "S", "r", "s"}:
             atoms[index] = descriptor
         elif descriptor in {"E", "Z"}:
-            bonds[index] = descriptor
+            if index >= len(bond_table):
+                bonds[f"invalid-bond-index-{index}"] = descriptor
+            else:
+                atom1, atom2, _bond_type, _is_aromatic = bond_table[index]
+                bonds[bond_endpoint_key(int(atom1), int(atom2))] = descriptor
     unresolved = {
         int(item["atom_idx"]): str(item["reason"])
         for item in molecule.cip_stereo_unresolved()
@@ -87,8 +102,27 @@ def chematic_cip(molecule) -> tuple[dict[int, str], dict[int, str], dict[int, st
     return atoms, bonds, unresolved
 
 
+def index_correspondence(rdkit_molecule, chematic_molecule) -> dict[str, bool]:
+    rdkit_atoms = [atom.GetAtomicNum() for atom in rdkit_molecule.GetAtoms()]
+    chematic_atoms = [int(row[1]) for row in chematic_molecule.atom_table]
+    rdkit_bonds = {
+        bond_endpoint_key(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
+        for bond in rdkit_molecule.GetBonds()
+    }
+    chematic_bonds = {
+        bond_endpoint_key(int(row[0]), int(row[1]))
+        for row in chematic_molecule.bond_table
+    }
+    return {
+        "atom_order": rdkit_atoms == chematic_atoms,
+        "bond_endpoints": rdkit_bonds == chematic_bonds,
+    }
+
+
 def normalized_match_sets(matches) -> list[list[int]]:
-    normalized = sorted({tuple(sorted(int(index) for index in match)) for match in matches})
+    normalized = sorted(
+        {tuple(sorted(int(index) for index in match)) for match in matches}
+    )
     return [list(match) for match in normalized]
 
 
@@ -174,7 +208,11 @@ def main() -> int:
                 row["chematic_parse"] = (
                     "success" if candidate is not None else {"error": candidate_error}
                 )
-                differences.append(difference("smiles_parse_write", "parse outcome differs or both failed"))
+                differences.append(
+                    difference(
+                        "smiles_parse_write", "parse outcome differs or both failed"
+                    )
+                )
                 counts["parse_failure"] += 1
                 count_difference_classes(differences, counts)
                 rows_handle.write(json.dumps(row, sort_keys=True) + "\n")
@@ -182,11 +220,15 @@ def main() -> int:
                     examples.append(example_record(row))
                 continue
 
-            oracle_smiles = Chem.MolToSmiles(rd_mol, canonical=True, isomericSmiles=True)
+            oracle_smiles = Chem.MolToSmiles(
+                rd_mol, canonical=True, isomericSmiles=True
+            )
             candidate_smiles = candidate.smiles
             candidate_roundtrip = Chem.MolFromSmiles(candidate_smiles)
             semantic_smiles = (
-                Chem.MolToSmiles(candidate_roundtrip, canonical=True, isomericSmiles=True)
+                Chem.MolToSmiles(
+                    candidate_roundtrip, canonical=True, isomericSmiles=True
+                )
                 if candidate_roundtrip is not None
                 else None
             )
@@ -206,7 +248,9 @@ def main() -> int:
                 "semantic_roundtrip": smiles_semantic,
                 "nonisomeric_roundtrip": nonisomeric_roundtrip,
             }
-            counts["smiles_exact" if smiles_exact else "smiles_spelling_difference"] += 1
+            counts[
+                "smiles_exact" if smiles_exact else "smiles_spelling_difference"
+            ] += 1
             if not smiles_exact and smiles_semantic:
                 differences.append(
                     difference(
@@ -235,20 +279,33 @@ def main() -> int:
 
             oracle_atoms, oracle_bonds = rdkit_cip(Chem, rdCIPLabeler, rd_mol)
             candidate_atoms, candidate_bonds, unresolved = chematic_cip(candidate)
-            cip_exact = oracle_atoms == candidate_atoms and oracle_bonds == candidate_bonds
+            correspondence = index_correspondence(rd_mol, candidate)
+            cip_exact = (
+                all(correspondence.values())
+                and oracle_atoms == candidate_atoms
+                and oracle_bonds == candidate_bonds
+            )
             row["cip"] = {
                 "rdkit_atoms": oracle_atoms,
                 "chematic_atoms": candidate_atoms,
                 "rdkit_bonds": oracle_bonds,
                 "chematic_bonds": candidate_bonds,
                 "chematic_unresolved": unresolved,
+                "index_correspondence": correspondence,
                 "exact": cip_exact,
             }
             counts["cip_exact" if cip_exact else "cip_difference"] += 1
             if not cip_exact:
-                differences.append(difference("cip", "atom or bond label map differs"))
+                detail = (
+                    "atom-index correspondence or bond-endpoint topology differs"
+                    if not all(correspondence.values())
+                    else "atom or bond-endpoint label map differs"
+                )
+                differences.append(difference("cip", detail))
 
-            oracle_fp = DataStructs.BitVectToBinaryText(generator.GetFingerprint(rd_mol))
+            oracle_fp = DataStructs.BitVectToBinaryText(
+                generator.GetFingerprint(rd_mol)
+            )
             try:
                 candidate_fp = bytes(candidate.rdkit_ecfp4())
                 morgan_error = None
@@ -260,7 +317,9 @@ def main() -> int:
                 "exact": morgan_exact,
                 "rdkit_sha256": hashlib.sha256(oracle_fp).hexdigest(),
                 "chematic_sha256": (
-                    hashlib.sha256(candidate_fp).hexdigest() if candidate_fp is not None else None
+                    hashlib.sha256(candidate_fp).hexdigest()
+                    if candidate_fp is not None
+                    else None
                 ),
                 "chematic_error": morgan_error,
             }
@@ -288,9 +347,13 @@ def main() -> int:
                 if rd_query is None:
                     rd_matches = None
                 else:
-                    rd_matches = normalized_match_sets(rd_mol.GetSubstructMatches(rd_query, uniquify=True))
+                    rd_matches = normalized_match_sets(
+                        rd_mol.GetSubstructMatches(rd_query, uniquify=True)
+                    )
                 try:
-                    candidate_matches = normalized_match_sets(chematic.smarts_find(query, candidate))
+                    candidate_matches = normalized_match_sets(
+                        chematic.smarts_find(query, candidate)
+                    )
                     candidate_query_error = None
                 except Exception as exc:
                     candidate_matches = None
@@ -312,7 +375,9 @@ def main() -> int:
             counts["smarts_cells"] += len(queries)
             counts["smarts_differences"] += len(smarts_differences)
             if smarts_differences:
-                differences.append(difference("smarts", "one or more target-atom-set cells differ"))
+                differences.append(
+                    difference("smarts", "one or more target-atom-set cells differ")
+                )
             counts["completed"] += 1
             counts["difference_rows" if differences else "exact_rows"] += 1
             count_difference_classes(differences, counts)
@@ -326,8 +391,15 @@ def main() -> int:
         "rdkit_version": rdBase.rdkitVersion,
         "chematic_version": getattr(chematic, "__version__", None),
         "corpus": {"path": str(args.corpus.resolve()), "sha256": sha256(args.corpus)},
-        "queries": {"path": str(args.queries.resolve()), "sha256": sha256(args.queries), "count": len(queries)},
-        "rows": {"path": str(args.rows_output.resolve()), "sha256": sha256(args.rows_output)},
+        "queries": {
+            "path": str(args.queries.resolve()),
+            "sha256": sha256(args.queries),
+            "count": len(queries),
+        },
+        "rows": {
+            "path": str(args.rows_output.resolve()),
+            "sha256": sha256(args.rows_output),
+        },
         "row_accounting": {
             "input_count": len(smiles_rows),
             "completed_count": counts["completed"],
@@ -335,7 +407,12 @@ def main() -> int:
         },
         "counts": dict(sorted(counts.items())),
         "difference_classification": {
-            "allowed": ["chematic_regression", "oracle_change", "contract_difference", "unresolved"],
+            "allowed": [
+                "chematic_regression",
+                "oracle_change",
+                "contract_difference",
+                "unresolved",
+            ],
             "default_for_unadjudicated_rows": "unresolved",
         },
         "difference_examples": examples,
@@ -349,7 +426,9 @@ def main() -> int:
     }
     summary["gate_passed"] = all(summary["gate"].values())
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0 if summary["gate_passed"] else 2
 

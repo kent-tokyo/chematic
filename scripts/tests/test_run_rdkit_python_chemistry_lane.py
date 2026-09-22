@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 
 from scripts.run_rdkit_python_chemistry_lane import (
+    bond_endpoint_key,
+    chematic_cip,
     count_difference_classes,
     difference,
     example_record,
@@ -61,6 +63,34 @@ def test_difference_class_counts_count_each_operation_result():
         "difference_class_contract_difference": 1,
         "difference_class_unresolved": 2,
     }
+
+
+def test_bond_endpoint_key_is_independent_of_bond_index_and_direction():
+    assert bond_endpoint_key(7, 2) == "2-7"
+    assert bond_endpoint_key(2, 7) == "2-7"
+
+
+def test_chematic_cip_translates_ez_bond_indices_to_atom_endpoints():
+    class FakeMolecule:
+        bond_table = [
+            (0, 1, "SINGLE", False),
+            (4, 2, "DOUBLE", False),
+        ]
+
+        def cip_stereo(self, mode):
+            assert mode == "accurate"
+            return [
+                {"atom_idx": 3, "descriptor": "R"},
+                {"atom_idx": 1, "descriptor": "E"},
+            ]
+
+        def cip_stereo_unresolved(self):
+            return []
+
+    atoms, bonds, unresolved = chematic_cip(FakeMolecule())
+    assert atoms == {3: "R"}
+    assert bonds == {"2-4": "E"}
+    assert unresolved == {}
 
 
 def test_summary_examples_do_not_duplicate_full_operation_payloads():

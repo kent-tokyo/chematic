@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "policy": {
     "baseline_lanes_are_immutable": true,
     "next_stable_lane": "unavailable_until_artifact_metadata_is_verified",
@@ -36,7 +36,8 @@
         "smarts": ["validation/results/rdkit-smarts-direct-chembl-5000-footer-verified-v1.0.13.json"],
         "morgan": ["validation/results/ecfp-rdkit-raw-identifier-parity-aromaticity-variant-2025.09.3-5000.json"],
         "browser_runtime": []
-      }
+      },
+      "availability_evidence": []
     },
     {
       "id": "python-2026.03.6-separate-smarts",
@@ -61,7 +62,8 @@
         "smarts": ["validation/results/rdkit-smarts-oracle-lanes-v1.0.14.json"],
         "morgan": [],
         "browser_runtime": []
-      }
+      },
+      "availability_evidence": []
     },
     {
       "id": "npm-2026.3.6-browser",
@@ -86,7 +88,34 @@
         "smarts": [],
         "morgan": ["validation/results/competitive-browser-rdkitjs-ecfp4-parity-10k-v1.0.15-2026-09-16.json"],
         "browser_runtime": ["validation/results/competitive-browser-rdkitjs-published-npm-10k-chromium-20rep-v1.0.15-2026-09-16.json", "validation/results/competitive-browser-rdkitjs-published-npm-10k-chromium-rss-v1.0.15-2026-09-16.json"]
-      }
+      },
+      "availability_evidence": []
+    },
+    {
+      "id": "native-cpp-2026.03.6-unavailable",
+      "channel": "native_cpp",
+      "availability": "unavailable",
+      "rdkit_version": "2026.03.6",
+      "wrapper_backend": null,
+      "corpus_policy": "no_corpus_run_without_a_version-pinned_native_artifact_and_exact_build_packet",
+      "artifact_provenance": {
+        "status": "unavailable",
+        "artifact": null,
+        "runtime": null,
+        "backend": null,
+        "configuration": null,
+        "corpus": null,
+        "toolchain": null,
+        "missing_dimensions": ["artifact", "runtime", "backend", "configuration", "corpus", "toolchain"]
+      },
+      "operation_evidence": {
+        "smiles_parse_write": [],
+        "cip": [],
+        "smarts": [],
+        "morgan": [],
+        "browser_runtime": []
+      },
+      "availability_evidence": ["validation/results/rdkit-rebaseline-native-cpp-availability-v1.0.19-vs-2026.03.6-2026-09-23.json"]
     },
     {
       "id": "next-stable-pending",
@@ -111,7 +140,8 @@
         "smarts": [],
         "morgan": [],
         "browser_runtime": []
-      }
+      },
+      "availability_evidence": []
     }
   ]
 }
