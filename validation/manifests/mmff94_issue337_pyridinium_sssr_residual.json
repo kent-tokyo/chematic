@@ -1,12 +1,13 @@
 {
   "schema_version": 1,
   "issue": 337,
-  "purpose": "Pinned local residual contract for the MMFF94 pyridinium/macrocycle SSSR boundary.",
-  "status": "open",
+  "purpose": "Pinned regression contract for the resolved MMFF94 pyridinium/macrocycle SSSR boundary.",
+  "status": "resolved",
   "interpretation": {
-    "root_cause": "The six molecules require a global minimum-cycle-basis tie-break before MMFF94 aromaticity re-perception can reproduce the RDKit oracle.",
+    "root_cause": "The MMFF compatibility pass discarded large-cycle representatives and consumed the remaining canonical ring list in an order different from RDKit RingInfo. Directional Up/Down single bonds were also treated as non-single dependencies.",
     "not_a_local_typing_rule": true,
-    "do_not_apply_heuristic_atom_type_override": true
+    "do_not_apply_heuristic_atom_type_override": true,
+    "resolution": "Retain the complete symmetrized SSSR family, restore RDKit-compatible size/insertion processing locally to MMFF re-perception, and normalize Up/Down as single bonds. No per-atom type override is used."
   },
   "expected": {
     "molecule_count": 6,
@@ -24,6 +25,7 @@
     {"name": "chembl_tier_b_0034", "macrocycle_ring_size": 29, "residual_atoms": [25, 26, 27, 28]}
   ],
   "evidence": {
+    "resolution": "validation/results/mmff94-issue337-resolution-v1.0.19.json",
     "type_parity": "validation/results/mmff94_type_parity_227_postfix.json",
     "bucket_rows": "validation/results/mmff94_atom_type_bucket_evidence_227.jsonl",
     "aromaticity_parity": "validation/results/mmff94_aromaticity_corpus_parity_227_summary.json"

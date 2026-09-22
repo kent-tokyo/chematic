@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.19",
+  "issue": 337,
+  "measured_at": "2026-09-22",
+  "oracle": {
+    "engine": "RDKit",
+    "aromaticity_input": "validation/results/mmff94_aromaticity_corpus_parity_227_rdkit.jsonl",
+    "type_input": "validation/results/mmff94_rdkit_type_oracle.jsonl",
+    "charge_input": "validation/results/mmff94_bci_charges_227_rdkit_oracle.jsonl"
+  },
+  "corpus": {
+    "molecules": 265,
+    "atoms_compared": 6698,
+    "declared_unsupported_probe": "force_field_unsupported_probe"
+  },
+  "before": {
+    "aromatic_atom_mismatches": 32,
+    "aromatic_bond_mismatches": 40,
+    "affected_issue337_molecules": 6
+  },
+  "after": {
+    "aromatic_atom_mismatches": 0,
+    "aromatic_bond_mismatches": 0,
+    "mmff_type_exact": 6697,
+    "mmff_type_mismatches": 1,
+    "mmff_charge_exact": 6693,
+    "mmff_charge_mismatches": 5,
+    "remaining_mismatch_molecules": ["force_field_unsupported_probe"],
+    "issue337_comparable_type_exact": "6697/6697",
+    "issue337_comparable_charge_exact": "6693/6693"
+  },
+  "interpretation": "All six issue #337 pyridinium/macrocycle residuals are resolved. The only remaining type and charge differences belong to the separately declared unsupported probe; this result does not close the broader A6 force-field package."
+}

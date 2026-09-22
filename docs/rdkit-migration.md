@@ -227,18 +227,13 @@ API (distinct from the `embed_pipeline_v2` path measured above).
 | UFF | `AllChem.UFFOptimizeMolecule(mol)` | `mol.minimize_uff(coords)` — per its own docstring, UFF covers all elements including metals, unlike chematic's MMFF94, which is limited |
 | DREIDING (not in RDKit core) | — | `mol.minimize_dreiding(coords)` |
 
-Known residual: MMFF94 atom-typing issue #337 — in the archived v0.18.0
-development record,
-one sub-bug (aryl isothiocyanate cumulated-double-bond CSP carbon) is
-fixed; 6 of the original 8 affected molecules remain an honestly-disclosed
-residual, root-caused to a genuine RDKit Kekulization/MMFF-aromaticity-
-perception artifact for a specific fused, macrocyclic ring topology (a
-pyridinium-conjugated exocyclic-amine scaffold) rather than a locally-
-statable atom-typing rule gap — 32/6,693 type-mismatched and 56/6,693
-charge-mismatched atoms remain on the 264-molecule reference corpus. See
-the [archived roadmap and audit notes](archive/README.md)
-and the public force-field documentation
-for the full writeup; this page does not re-derive it.
+MMFF94 atom-typing issue #337 is resolved on its pinned 265-molecule gate.
+The six pyridinium/macrocycle residuals now match RDKit at aromatic atom,
+aromatic bond, comparable numeric-type, and comparable partial-charge level.
+One separately declared unsupported probe remains different, and the broader
+energy, convergence, gradient, stereo, and conformer-quality gates remain
+open; this is not a claim of complete MMFF94 parity. Evidence is recorded in
+`validation/results/mmff94-issue337-resolution-v1.0.19.json`.
 
 The MMFF94 implementation contains all seven energy-term families, but this
 describes implemented terms, not complete chemical coverage. Missing typing or
@@ -391,7 +386,7 @@ ranking on the application’s own held-out inputs before switching production.
   OpenDX/LAMMPS I/O), it is stated as exactly that — narrow and specific —
   not generalized.
 - Known residuals (canonical-SMILES E/Z direction-normalization gap,
-  aromaticity `aromatic_context` gap, MMFF94 issue #337 residual, InChI
+  aromaticity `aromatic_context` gap, broader MMFF94/A6 gaps, InChI
   approximation without `native-inchi`) are stated here, not hidden, and
   are sourced from README.md's "Known Limitations" section and
   CHANGELOG.md rather than invented for this page.

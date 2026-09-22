@@ -35,6 +35,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   aromatic partition of large fused cages or unrelated cyclic ethers.
 - Added post-freeze acquisition attestation, strict eight-field evaluation,
   commit-safe provenance summaries, and a fail-closed checked-in A0 validator.
+- Resolved MMFF94 issue #337's six pyridinium/macrocycle residuals by retaining
+  the complete symmetrized ring family, restoring RDKit-compatible MMFF ring
+  processing order, and treating `/`/`\` markers as directional single bonds.
+  The 265-molecule gate now has zero aromatic atom/bond mismatches; MMFF types
+  and charges are exact on every comparable row, with only the separately
+  declared unsupported probe remaining outside parity.
 
 ## [1.0.19] - 2026-09-22
 
