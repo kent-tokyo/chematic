@@ -728,6 +728,22 @@ oracle/profile変更時は新しい採用packetとして再実行し、既存raw
   実測laneごとにmanifestへ記録する。
   Python/native/npmは個別に入手確認。欠測laneはunavailableとして待機し、先に出た
   Python packageの版から公式RDKit.js公開を推測しない。
+  `scripts/collect_rdkit_rebaseline_provenance.py` は、そのためのoffline収集を開始した。
+  installed metadata/RECORDと元wheel hash、npm package versionと実行時versionを
+  別項目にし、取得できないarchive/backend/runtimeは欠測のまま保持する。このCLIの
+  追加だけでは実測lane完了や次stableの利用可能性を意味しない。
+
+  ```bash
+  python3 scripts/collect_rdkit_rebaseline_provenance.py \
+    --python \
+    --corpus scripts/descriptor_census_corpus.smi \
+    --operation-config validation/rdkit_rebaseline_manifest.json \
+    --output /tmp/rdkit-rebaseline-provenance.json
+  ```
+
+  npm/WASM laneは、展開済みの公式package directoryを`--npm-package`へ渡す。
+  `--npm-runtime-version`には実際に`rdkit.version()`を実行して得た値だけを指定し、
+  `package.json`の版をruntime版として代用しない。
 - [ ] 同一の露出済みcorpusでSMILES/CIP/SMARTS/Morganとbindingを比較する。
   Pythonではscalar/batch、入力型・例外・keywordとcall overheadを同じAPI境界で測る。
   Boost/nanobindは配布物の実体を特定し、別backendの結果を統合しない。
