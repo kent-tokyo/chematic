@@ -15,6 +15,12 @@ ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation" / "results"
 SUMMARY = RESULTS / "mmff94-same-explicit-h-energy-current-main-v1.0.19-2026-09-23.json"
 ROWS = RESULTS / "mmff94-same-explicit-h-energy-current-main-v1.0.19-2026-09-23.jsonl"
+GRADIENT_SUMMARY = (
+    RESULTS / "mmff94-same-explicit-h-gradient-current-main-v1.0.19-2026-09-23.json"
+)
+GRADIENT_ROWS = (
+    RESULTS / "mmff94-same-explicit-h-gradient-current-main-v1.0.19-2026-09-23.jsonl"
+)
 TERMS = {"bond", "angle", "stretch_bend", "torsion", "oop", "vdw", "electrostatic"}
 
 
@@ -159,13 +165,62 @@ def main() -> int:
         over_five == [166, 231], f">5 kcal/mol residuals changed: {over_five}", errors
     )
 
+    try:
+        gradient_summary = json.loads(GRADIENT_SUMMARY.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        errors.append(f"gradient packet unreadable: {exc}")
+        gradient_summary = {}
+    require(
+        gradient_summary.get("source", {}).get("git_revision")
+        == "a6540d1a09f41191c97274957453c4c8d05c1c8e",
+        "gradient source revision changed",
+        errors,
+    )
+    require(
+        gradient_summary.get("artifacts", {}).get("schematic", {}).get("sha256")
+        == "b51ce7c7d9790efd145b2194556b655d57ee8cfd5e70ae01a1afe8eef657162a",
+        "gradient CheMatic extension hash changed",
+        errors,
+    )
+    gradient_measurement = gradient_summary.get("measurements", {}).get(
+        "gradient_diagnostic", {}
+    )
+    require(
+        gradient_measurement.get("input_indices") == [166, 231]
+        and gradient_measurement.get("rows") == 2,
+        "gradient residual cohort changed",
+        errors,
+    )
+    require(
+        0.0 <= gradient_measurement.get("max_scaled_error", math.inf) < 1e-6,
+        "gradient scaled error exceeded 1e-6",
+        errors,
+    )
+    require(
+        hashlib.sha256(GRADIENT_ROWS.read_bytes()).hexdigest()
+        == gradient_summary.get("rows_artifact", {}).get("sha256"),
+        "gradient rows artifact hash changed",
+        errors,
+    )
+    gradient_rows = [
+        json.loads(line) for line in GRADIENT_ROWS.read_text().splitlines()
+    ]
+    require(len(gradient_rows) == 265, "gradient packet row count changed", errors)
+    require(
+        [row["input_index"] for row in gradient_rows if "gradient_diagnostic" in row]
+        == [166, 231],
+        "raw gradient rows changed",
+        errors,
+    )
+
     if errors:
         print("MMFF94 current-energy evidence invalid:", file=sys.stderr)
         print("\n".join(f"- {error}" for error in errors), file=sys.stderr)
         return 1
     print(
         "MMFF94 current-energy evidence OK: 265 terminal rows; 262 comparable; "
-        "p90 1.144679 kcal/mol; two >5 kcal/mol residuals"
+        "p90 1.144679 kcal/mol; two >5 kcal/mol residuals; residual-gradient "
+        "max scaled error <1e-6"
     )
     return 0
 

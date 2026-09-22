@@ -92,7 +92,44 @@ def terminal(row: dict, input_index: int, status: str, **details: object) -> dic
     return {"input_index": input_index, **row, "status": status, **details}
 
 
-def evaluate(row: dict, input_index: int, seed: int) -> dict:
+def gradient_diagnostic(mol: object, coords: list[list[float]], delta: float) -> dict:
+    analytic = mol.mmff94_bounded_analytic_gradient(coords)
+    absolute_errors: list[float] = []
+    scaled_errors: list[float] = []
+    for atom_index, point in enumerate(coords):
+        for axis in range(3):
+            plus = [candidate.copy() for candidate in coords]
+            minus = [candidate.copy() for candidate in coords]
+            plus[atom_index][axis] += delta
+            minus[atom_index][axis] -= delta
+            finite_difference = (
+                mol.mmff94_energy_breakdown(plus)["total"]
+                - mol.mmff94_energy_breakdown(minus)["total"]
+            ) / (2.0 * delta)
+            error = abs(float(analytic[atom_index][axis]) - finite_difference)
+            absolute_errors.append(error)
+            scaled_errors.append(error / (1.0 + abs(finite_difference)))
+    return {
+        "components": len(absolute_errors),
+        "central_difference_delta_angstrom": delta,
+        "max_abs_error_kcal_mol_angstrom": max(absolute_errors, default=0.0),
+        "max_scaled_error": max(scaled_errors, default=0.0),
+        "rms_abs_error_kcal_mol_angstrom": (
+            (sum(error * error for error in absolute_errors) / len(absolute_errors))
+            ** 0.5
+            if absolute_errors
+            else 0.0
+        ),
+    }
+
+
+def evaluate(
+    row: dict,
+    input_index: int,
+    seed: int,
+    gradient_indices: set[int],
+    gradient_delta: float,
+) -> dict:
     smiles = row["smiles"]
     if row.get("primary_category") == "force_field_unsupported":
         return terminal(row, input_index, "declared_unsupported")
@@ -153,6 +190,11 @@ def evaluate(row: dict, input_index: int, seed: int) -> dict:
     rdkit_energy = float(force_field.CalcEnergy())
     delta = schematic_energy - rdkit_energy
     coordinate_payload = json.dumps(coords, separators=(",", ":")).encode("utf-8")
+    gradient = (
+        gradient_diagnostic(schematic_mol, coords, gradient_delta)
+        if input_index in gradient_indices
+        else None
+    )
     return terminal(
         row,
         input_index,
@@ -164,6 +206,7 @@ def evaluate(row: dict, input_index: int, seed: int) -> dict:
         rdkit_energy_kcal_mol=rdkit_energy,
         delta_kcal_mol=delta,
         abs_delta_kcal_mol=abs(delta),
+        **({"gradient_diagnostic": gradient} if gradient is not None else {}),
     )
 
 
@@ -185,6 +228,7 @@ def summarize(results: list[dict]) -> dict:
         by_category[result.get("primary_category", "unknown")].append(
             result["abs_delta_kcal_mol"]
         )
+    gradient_rows = [result for result in ok if "gradient_diagnostic" in result]
     return {
         "row_accounting": {
             "input_count": len(results),
@@ -199,6 +243,24 @@ def summarize(results: list[dict]) -> dict:
         "max_abs_delta_kcal_mol": max(deltas) if deltas else None,
         "within_1_kcal_mol": sum(delta <= 1.0 for delta in deltas),
         "within_5_kcal_mol": sum(delta <= 5.0 for delta in deltas),
+        "gradient_diagnostic": {
+            "rows": len(gradient_rows),
+            "input_indices": [row["input_index"] for row in gradient_rows],
+            "max_abs_error_kcal_mol_angstrom": max(
+                (
+                    row["gradient_diagnostic"]["max_abs_error_kcal_mol_angstrom"]
+                    for row in gradient_rows
+                ),
+                default=None,
+            ),
+            "max_scaled_error": max(
+                (
+                    row["gradient_diagnostic"]["max_scaled_error"]
+                    for row in gradient_rows
+                ),
+                default=None,
+            ),
+        },
         "by_primary_category": {
             category: {
                 "rows": len(values),
@@ -222,9 +284,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--schematic-build-command")
     parser.add_argument("--expected-rdkit")
     parser.add_argument("--expected-schematic")
+    parser.add_argument("--gradient-input-index", type=int, action="append", default=[])
+    parser.add_argument("--gradient-delta", type=float, default=1e-5)
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be positive")
+    if any(index < 0 for index in args.gradient_input_index):
+        parser.error("--gradient-input-index must be non-negative")
+    if args.gradient_delta <= 0:
+        parser.error("--gradient-delta must be positive")
     return args
 
 
@@ -246,12 +314,24 @@ def main() -> int:
         )
     if args.limit is not None:
         rows = rows[: args.limit]
+    gradient_indices = set(args.gradient_input_index)
+    missing_gradient_indices = gradient_indices.difference(range(len(rows)))
+    if missing_gradient_indices:
+        raise ValueError(
+            f"gradient input indices outside selected rows: {sorted(missing_gradient_indices)}"
+        )
 
     results: list[dict] = []
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as handle:
         for index, row in enumerate(rows):
-            result = evaluate(row, index, args.seed + index)
+            result = evaluate(
+                row,
+                index,
+                args.seed + index,
+                gradient_indices,
+                args.gradient_delta,
+            )
             results.append(result)
             handle.write(json.dumps(result, sort_keys=True) + "\n")
 
@@ -295,6 +375,8 @@ def main() -> int:
                     "RDKit_per_term_energy_parity",
                 ],
                 "seed": args.seed,
+                "gradient_input_indices": sorted(gradient_indices),
+                "gradient_central_difference_delta_angstrom": args.gradient_delta,
             },
             "versions": {
                 "chematic": importlib.metadata.version("chematic"),
