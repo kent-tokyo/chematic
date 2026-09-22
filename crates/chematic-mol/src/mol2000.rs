@@ -11,7 +11,7 @@
 
 use chematic_core::{
     Atom, AtomIdx, BondIdx, BondOrder, Chirality, Coords3D, Element, Molecule, MoleculeBuilder,
-    Point3, STEREO_H_SENTINEL, SquarePlanarPermutation, StereoGeometry,
+    Point3, RGroupLabel, STEREO_H_SENTINEL, SquarePlanarPermutation, StereoGeometry,
 };
 use chematic_perception::{
     EzDirectionDiagnostic, StereoDiagnostic, apply_ctab_local_parity_from_wedges_with_diagnostics,
@@ -893,22 +893,43 @@ fn read_mol_internal(
             )
         })?;
 
-        let element = match sym {
-            "C  " => Some(Element::C),
-            "N  " => Some(Element::N),
-            "O  " => Some(Element::O),
-            "H  " => Some(Element::H),
-            "S  " => Some(Element::S),
-            "P  " => Some(Element::P),
-            "F  " => Some(Element::F),
-            "Cl " => Some(Element::CL),
-            "Br " => Some(Element::BR),
-            _ => Element::from_symbol(sym.trim()),
-        }
-        .ok_or_else(|| MolParseError::UnknownElement {
-            symbol: sym.trim().to_string(),
-            line: raw_lineno,
-        })?;
+        let trimmed_sym = sym.trim();
+        let (mut atom, r_group) = if trimmed_sym == "*" {
+            (Atom::wildcard(), None)
+        } else if trimmed_sym == "R" || trimmed_sym == "R#" {
+            (Atom::wildcard(), Some(RGroupLabel::unnumbered()))
+        } else if let Some(number) = trimmed_sym.strip_prefix('R')
+            && !number.is_empty()
+            && number.bytes().all(|byte| byte.is_ascii_digit())
+        {
+            let label = number
+                .parse::<u16>()
+                .ok()
+                .and_then(RGroupLabel::numbered)
+                .ok_or_else(|| MolParseError::UnknownElement {
+                    symbol: trimmed_sym.to_string(),
+                    line: raw_lineno,
+                })?;
+            (Atom::wildcard(), Some(label))
+        } else {
+            let element = match sym {
+                "C  " => Some(Element::C),
+                "N  " => Some(Element::N),
+                "O  " => Some(Element::O),
+                "H  " => Some(Element::H),
+                "S  " => Some(Element::S),
+                "P  " => Some(Element::P),
+                "F  " => Some(Element::F),
+                "Cl " => Some(Element::CL),
+                "Br " => Some(Element::BR),
+                _ => Element::from_symbol(trimmed_sym),
+            }
+            .ok_or_else(|| MolParseError::UnknownElement {
+                symbol: trimmed_sym.to_string(),
+                line: raw_lineno,
+            })?;
+            (Atom::new(element), None)
+        };
 
         // Charge code: bytes 36–38 (3 chars).
         let charge = atom_line
@@ -927,7 +948,7 @@ fn read_mol_internal(
         // V2000 mass difference: bytes 34–35 (two-character signed field).
         let isotope = atom_line
             .get(34..36)
-            .and_then(|field| decode_mass_difference(element, field));
+            .and_then(|field| decode_mass_difference(atom.element, field));
         // V2000 atom-atom mapping number (columns 61-63, zero-based
         // 60..63). Zero means that the atom is not mapped.
         let atom_map = atom_line
@@ -936,11 +957,13 @@ fn read_mol_internal(
             .and_then(|value| u16::try_from(value).ok())
             .filter(|&value| value != 0);
 
-        let mut atom = Atom::new(element);
         atom.charge = charge;
         atom.isotope = isotope;
         atom.atom_map = atom_map;
-        builder.add_atom(atom);
+        let idx = builder.add_atom(atom);
+        if let Some(label) = r_group {
+            builder.set_r_group(idx, label);
+        }
     }
 
     // -- Bond block ---------------------------------------------------------
@@ -1037,6 +1060,7 @@ fn read_mol_internal(
     // supplier must consume `M  CHG`: RDKit uses it for valid formal charges
     // that are not encoded in V2000's fixed-width atom charge field.
     let mut property_charges = Vec::new();
+    let mut property_rgroups = Vec::new();
     for (line_number, line) in lines.by_ref() {
         let fields: Vec<&str> = line.split_whitespace().collect();
         if fields.len() >= 2 && fields[0] == "M" && fields[1] == "CHG" {
@@ -1082,6 +1106,42 @@ fn read_mol_internal(
                         })?;
                 property_charges.push((AtomIdx((atom_id - 1) as u32), charge));
             }
+        } else if fields.len() >= 2 && fields[0] == "M" && fields[1] == "RGP" {
+            let count = fields
+                .get(2)
+                .and_then(|value| value.parse::<usize>().ok())
+                .ok_or_else(|| MolParseError::InvalidPropertyLine {
+                    line: line_number,
+                    detail: "M RGP lacks a valid entry count".to_string(),
+                })?;
+            if fields.len() != 3 + count.saturating_mul(2) {
+                return Err(MolParseError::InvalidPropertyLine {
+                    line: line_number,
+                    detail: format!(
+                        "M RGP declares {count} entries but has {} values",
+                        fields.len().saturating_sub(3)
+                    ),
+                });
+            }
+            for pair in fields[3..].chunks(2) {
+                let atom_id = pair[0]
+                    .parse::<usize>()
+                    .ok()
+                    .filter(|id| *id > 0 && *id <= natoms)
+                    .ok_or_else(|| MolParseError::InvalidPropertyLine {
+                        line: line_number,
+                        detail: format!("M RGP atom id '{}' is outside 1..={natoms}", pair[0]),
+                    })?;
+                let number = pair[1]
+                    .parse::<u16>()
+                    .ok()
+                    .and_then(chematic_core::RGroupLabel::numbered)
+                    .ok_or_else(|| MolParseError::InvalidPropertyLine {
+                        line: line_number,
+                        detail: format!("M RGP number '{}' must be in 1..=9999", pair[1]),
+                    })?;
+                property_rgroups.push((AtomIdx((atom_id - 1) as u32), number));
+            }
         }
         if line.trim_start().starts_with("M  END") {
             break;
@@ -1091,6 +1151,9 @@ fn read_mol_internal(
     let mut mol = builder.build();
     for (atom, charge) in property_charges {
         mol.set_charge(atom, charge);
+    }
+    for (atom, label) in property_rgroups {
+        mol.set_r_group(atom, label);
     }
 
     if !include_diagnostics {
@@ -1295,6 +1358,40 @@ pub fn write_mol_with_coords(
     out
 }
 
+/// Standard CTfile atom symbol for real atoms and the bounded pseudoatom
+/// contract supported by this crate.
+fn mdl_atom_symbol(mol: &Molecule, idx: AtomIdx, atom: &Atom) -> &'static str {
+    if !atom.wildcard {
+        return atom.element.symbol();
+    }
+    match mol.r_group_label(idx).and_then(|label| label.number()) {
+        Some(_) => "R#",
+        None if mol.r_group_label(idx).is_some() => "R",
+        None => "*",
+    }
+}
+
+fn write_v2000_rgroups(out: &mut String, mol: &Molecule) {
+    use std::fmt::Write as _;
+
+    let entries = mol
+        .atoms()
+        .filter_map(|(idx, _)| {
+            mol.r_group_label(idx)
+                .and_then(|label| label.number())
+                .map(|number| (idx.0 + 1, number))
+        })
+        .collect::<Vec<_>>();
+    // CTfile property records conventionally carry at most eight pairs.
+    for chunk in entries.chunks(8) {
+        write!(out, "M  RGP{:>3}", chunk.len()).expect("writing to String cannot fail");
+        for &(atom_id, number) in chunk {
+            write!(out, "{:>4}{:>4}", atom_id, number).expect("writing to String cannot fail");
+        }
+        out.push('\n');
+    }
+}
+
 #[inline]
 fn push_right_aligned_u32(out: &mut String, mut value: u32, width: usize) {
     // V2000 counts and bond fields are almost always three columns wide.
@@ -1412,7 +1509,7 @@ pub fn write_mol_with_coords_into(
 
     // Atom block
     for (idx, atom) in mol.atoms() {
-        let sym = atom.element.symbol();
+        let sym = mdl_atom_symbol(mol, idx, atom);
         let charge_code = encode_charge(atom.charge);
         let mass_difference = encode_mass_difference(atom.element, atom.isotope).unwrap_or(0);
         let atom_map = atom.atom_map.unwrap_or(0);
@@ -1475,6 +1572,8 @@ pub fn write_mol_with_coords_into(
         out.push('\n');
     }
 
+    write_v2000_rgroups(out, mol);
+
     // Terminator
     out.push_str("M  END\n");
 }
@@ -1525,7 +1624,7 @@ pub fn write_mol_with_conformer(
     ));
 
     for (idx, atom) in mol.atoms() {
-        let sym = atom.element.symbol();
+        let sym = mdl_atom_symbol(mol, idx, atom);
         let charge_code = encode_charge(atom.charge);
         let mass_difference = encode_mass_difference(atom.element, atom.isotope).unwrap_or(0);
         let atom_map = atom.atom_map.unwrap_or(0);
@@ -1558,6 +1657,7 @@ pub fn write_mol_with_conformer(
         out.push_str(&format!("{:>3}{:>3}{:>3}{:>3}\n", a1, a2, btype, 0));
     }
 
+    write_v2000_rgroups(&mut out, mol);
     out.push_str("M  END\n");
     out
 }

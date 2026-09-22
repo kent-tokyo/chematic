@@ -711,6 +711,7 @@ fn clear_aromatic_flags(mol: &Molecule) -> Molecule {
     for (_, bond) in mol.bonds() {
         let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
     }
+    builder.copy_r_groups_from(mol);
     builder.copy_stereo_groups_from(mol);
     builder.copy_stereo_from(mol);
     builder.copy_bond_directions_from(mol);
@@ -1130,6 +1131,21 @@ mod tests {
                 .all(|(_, atom)| !atom.aromatic),
             "RDKit keeps every oxygen in this fused cyclic ether non-aromatic"
         );
+    }
+
+    #[test]
+    fn production_api_preserves_r_group_sidecar() {
+        use chematic_core::{MoleculeBuilder, RGroupLabel};
+
+        let parsed = chematic_smiles::parse("c1ccccc1.[*]").expect("valid disconnected SMILES");
+        let mut builder = MoleculeBuilder::from_molecule(&parsed);
+        let r1 = AtomIdx(6);
+        builder.set_r_group(r1, RGroupLabel::numbered(1).unwrap());
+        let mol = builder.build();
+
+        let applied = apply_aromaticity_rdkit_parity_experimental(&mol)
+            .expect("aromaticity perception preserves pseudoatom metadata");
+        assert_eq!(applied.r_group_label(r1), mol.r_group_label(r1));
     }
 
     #[test]

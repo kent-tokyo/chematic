@@ -9,6 +9,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Preserved real carbon, generic `*`, unnumbered `R`, and numbered
+  `R1..R9999` atom identities across MOL V2000, MOL V3000, SDF, and CDXML
+  round trips instead of serializing wildcard-backed atoms as carbon.
+- Added a private molecule sidecar plus stable Rust/WASM inspection and edit
+  APIs for R-group labels. Unsupported CDXML labels and out-of-range R-group
+  numbers fail closed; real Ru, Rh, Re, and Rn atoms remain elements.
 - Completed the RDKit 2025.09.3 A0 core-eight descriptor gate: a frozen
   candidate passed 2,000/2,000 development rows and a separately sourced,
   overlap-audited one-time sealed holdout at 8,000/8,000 for molecular weight,

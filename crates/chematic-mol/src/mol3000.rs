@@ -8,7 +8,7 @@
 
 use chematic_core::{
     Atom, AtomIdx, BondIdx, BondOrder, Coords3D, Element, Molecule, MoleculeBuilder, Point3,
-    StereoGroup, StereoGroupKind,
+    RGroupLabel, StereoGroup, StereoGroupKind,
 };
 use chematic_perception::{
     apply_ctab_local_parity_from_wedges_with_diagnostics, apply_ez_directions_from_2d_ex,
@@ -122,6 +122,52 @@ fn parse_kv(tokens: &[&str], key: &str) -> Option<String> {
     None
 }
 
+fn parse_rgroup_number(tokens: &[&str]) -> Result<Option<u16>, String> {
+    let joined = tokens.join(" ");
+    let Some(rest) = joined.split("RGROUPS=(").nth(1) else {
+        return Ok(None);
+    };
+    let Some(body) = rest.split(')').next() else {
+        return Err("RGROUPS property is missing ')'".to_string());
+    };
+    let values = body.split_whitespace().collect::<Vec<_>>();
+    let count = values
+        .first()
+        .and_then(|value| value.parse::<usize>().ok())
+        .ok_or_else(|| "RGROUPS property lacks a valid count".to_string())?;
+    if count != 1 || values.len() != 2 {
+        return Err("chematic supports exactly one R-group number per atom".to_string());
+    }
+    let number = values[1]
+        .parse::<u16>()
+        .ok()
+        .filter(|number| (1..=9999).contains(number))
+        .ok_or_else(|| "R-group number must be in 1..=9999".to_string())?;
+    Ok(Some(number))
+}
+
+fn opaque_atom_properties(tokens: &[&str]) -> String {
+    let mut opaque = Vec::new();
+    let mut skipping_rgroups = false;
+    for token in tokens {
+        if skipping_rgroups {
+            if token.ends_with(')') {
+                skipping_rgroups = false;
+            }
+            continue;
+        }
+        if token.starts_with("RGROUPS=(") {
+            skipping_rgroups = !token.ends_with(')');
+            continue;
+        }
+        if token.starts_with("CHG=") || token.starts_with("MASS=") || token.starts_with("HCOUNT=") {
+            continue;
+        }
+        opaque.push(*token);
+    }
+    opaque.join(" ")
+}
+
 /// Parse one V3000 atom record and append it to the parser's parallel state.
 fn parse_v3000_atom_line(
     tokens: &[&str],
@@ -152,16 +198,14 @@ fn parse_v3000_atom_line(
 
     // Strip bracket notation e.g. "[OH]" -> "OH".
     let sym = tokens[1].trim_start_matches('[').trim_end_matches(']');
+    let kv_tokens = tokens.get(6..).unwrap_or(&[]);
+    let rgroup_number = parse_rgroup_number(kv_tokens)
+        .map_err(|detail| MolParseError::InvalidAtomLine { line, detail })?;
     // V3000 writers, including Indigo, may spell deuterium as `D` rather
     // than hydrogen with `MASS=2`. Internally retain the standard element
     // representation plus its isotope so the record is usable everywhere.
     let deuterium = sym == "D";
     let element_symbol = if deuterium { "H" } else { sym };
-    let element =
-        Element::from_symbol(element_symbol).ok_or_else(|| MolParseError::UnknownElement {
-            symbol: sym.to_string(),
-            line,
-        })?;
 
     // Coordinates are part of the serialized graph: malformed or non-finite
     // values must not silently turn into a different structure.
@@ -200,7 +244,6 @@ fn parse_v3000_atom_line(
 
     let aamap_raw = tokens[5].parse::<u16>().unwrap_or(0);
     let atom_map = (aamap_raw != 0).then_some(aamap_raw);
-    let kv_tokens = tokens.get(6..).unwrap_or(&[]);
     let charge: i8 = parse_kv(kv_tokens, "CHG")
         .and_then(|v| v.parse::<i8>().ok())
         .unwrap_or(0);
@@ -212,13 +255,53 @@ fn parse_v3000_atom_line(
         if n < 0 { None } else { Some(n as u8) }
     });
 
-    let mut atom = Atom::new(element);
+    let (mut atom, r_group) = if sym == "*" {
+        (Atom::wildcard(), None)
+    } else if sym == "R" {
+        (Atom::wildcard(), Some(RGroupLabel::unnumbered()))
+    } else if sym == "R#" {
+        match rgroup_number {
+            Some(number) => (
+                Atom::wildcard(),
+                Some(RGroupLabel::numbered(number).expect("validated non-zero number")),
+            ),
+            None => (Atom::wildcard(), Some(RGroupLabel::unnumbered())),
+        }
+    } else if let Some(number) = sym.strip_prefix('R')
+        && !number.is_empty()
+        && number.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        let label = number
+            .parse::<u16>()
+            .ok()
+            .and_then(RGroupLabel::numbered)
+            .ok_or_else(|| MolParseError::UnknownElement {
+                symbol: sym.to_string(),
+                line,
+            })?;
+        (Atom::wildcard(), Some(label))
+    } else if let Some(number) = rgroup_number {
+        (
+            Atom::wildcard(),
+            Some(RGroupLabel::numbered(number).expect("validated non-zero number")),
+        )
+    } else {
+        let element =
+            Element::from_symbol(element_symbol).ok_or_else(|| MolParseError::UnknownElement {
+                symbol: sym.to_string(),
+                line,
+            })?;
+        (Atom::new(element), None)
+    };
     atom.charge = charge;
     atom.isotope = isotope;
     atom.hydrogen_count = hydrogen_count;
     atom.atom_map = atom_map;
 
     let builder_idx = builder.add_atom(atom);
+    if let Some(label) = r_group {
+        builder.set_r_group(builder_idx, label);
+    }
     atom_idx_map.push((v3k_idx, builder_idx));
     coords.push((x, y));
     raw_z.push(z);
@@ -227,16 +310,7 @@ fn parse_v3000_atom_line(
     // survive a V3000 -> V3000 round trip.  Conversion to a format that has no
     // matching query contract is rejected by the caller rather than silently
     // treating such constraints as an ordinary molecule.
-    let opaque_properties = kv_tokens
-        .iter()
-        .filter(|token| {
-            !token.starts_with("CHG=")
-                && !token.starts_with("MASS=")
-                && !token.starts_with("HCOUNT=")
-        })
-        .copied()
-        .collect::<Vec<_>>()
-        .join(" ");
+    let opaque_properties = opaque_atom_properties(kv_tokens);
     if !opaque_properties.is_empty() {
         // Writers emit atoms in builder order. Retain attributes under that
         // output id so a valid non-contiguous source id cannot make them
@@ -1552,6 +1626,23 @@ M  END
 /// `Chirality::SquarePlanar`, use
 /// [`write_mol_v3000_with_conformer_checked`] instead, which fails closed
 /// with a typed error rather than silently discarding the tag.
+fn v3000_atom_symbol(mol: &Molecule, idx: AtomIdx, atom: &Atom) -> &'static str {
+    if !atom.wildcard {
+        return atom.element.symbol();
+    }
+    match mol.r_group_label(idx).and_then(|label| label.number()) {
+        Some(_) => "R#",
+        None if mol.r_group_label(idx).is_some() => "R",
+        None => "*",
+    }
+}
+
+fn append_v3000_rgroup_property(line: &mut String, mol: &Molecule, idx: AtomIdx) {
+    if let Some(number) = mol.r_group_label(idx).and_then(|label| label.number()) {
+        line.push_str(&format!(" RGROUPS=(1 {number})"));
+    }
+}
+
 pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f64)]) -> String {
     let natoms = mol.atom_count();
     let nbonds = mol.bond_count();
@@ -1578,7 +1669,7 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
     out.push_str("M  V30 BEGIN ATOM\n");
     for (idx, atom) in mol.atoms() {
         let (x, y) = coords.get(idx.0 as usize).copied().unwrap_or((0.0, 0.0));
-        let sym = atom.element.symbol();
+        let sym = v3000_atom_symbol(mol, idx, atom);
         let atom_map = atom.atom_map.unwrap_or(0);
         let i = idx.0 + 1; // 1-based
 
@@ -1592,6 +1683,7 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
         if let Some(h) = atom.hydrogen_count {
             line.push_str(&format!(" HCOUNT={h}"));
         }
+        append_v3000_rgroup_property(&mut line, mol, idx);
         if let Some((_, properties)) = metadata
             .v3000_atom_properties
             .iter()
@@ -1742,7 +1834,7 @@ pub fn write_mol_v3000_with_conformer(
             .get(idx.0 as usize)
             .copied()
             .unwrap_or(Point3::zero());
-        let sym = atom.element.symbol();
+        let sym = v3000_atom_symbol(mol, idx, atom);
         let atom_map = atom.atom_map.unwrap_or(0);
         let i = idx.0 + 1;
 
@@ -1759,6 +1851,7 @@ pub fn write_mol_v3000_with_conformer(
         if let Some(h) = atom.hydrogen_count {
             line.push_str(&format!(" HCOUNT={h}"));
         }
+        append_v3000_rgroup_property(&mut line, mol, idx);
         if let Some((_, properties)) = metadata
             .v3000_atom_properties
             .iter()

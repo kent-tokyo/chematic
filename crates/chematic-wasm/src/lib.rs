@@ -103,6 +103,44 @@ impl MolHandle {
         self.inner.bond_count()
     }
 
+    /// Index-aligned pseudoatom labels as stable JSON.
+    ///
+    /// Real atoms are `null`; wildcard entries are objects with `kind`,
+    /// `label`, and nullable `r_group_number` fields.
+    pub fn atom_pseudo_labels_json(&self) -> String {
+        let labels = self
+            .inner
+            .atoms()
+            .map(|(idx, atom)| {
+                if !atom.wildcard {
+                    return serde_json::Value::Null;
+                }
+                match self
+                    .inner
+                    .r_group_label(idx)
+                    .and_then(|label| label.number())
+                {
+                    Some(number) => serde_json::json!({
+                        "kind": "r_group",
+                        "label": format!("R{number}"),
+                        "r_group_number": number,
+                    }),
+                    None if self.inner.r_group_label(idx).is_some() => serde_json::json!({
+                        "kind": "r_group",
+                        "label": "R",
+                        "r_group_number": null,
+                    }),
+                    None => serde_json::json!({
+                        "kind": "wildcard",
+                        "label": "*",
+                        "r_group_number": null,
+                    }),
+                }
+            })
+            .collect::<Vec<_>>();
+        serde_json::to_string(&labels).expect("pseudoatom label JSON is serializable")
+    }
+
     /// Molecular formula string (Hill notation: C first, H second, then alphabetical).
     pub fn formula(&self) -> String {
         molecular_formula(&self.inner)
