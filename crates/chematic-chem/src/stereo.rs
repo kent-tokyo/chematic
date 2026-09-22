@@ -15,16 +15,13 @@ use chematic_core::{
 ///
 /// If the atom has CIP code R, it becomes S (and vice versa).
 ///
-/// Primary path: if `idx` has `@`/`@@` chirality recorded (the common case
-/// for SMILES-parsed input), flips the `Chirality` enum directly against the
-/// unchanged `stereo_neighbor_order` reference frame. This is correct
-/// independent of atom numbering or neighbor iteration order — the
-/// three-point ordering the `@`/`@@` symbol is defined relative to never
-/// moves, only the handedness does.
-///
-/// Fallback path (kept for API compatibility, e.g. molecules built directly
-/// from 2D wedge bonds with no `chirality` set): inverts wedge/dash bonds
-/// (Up ↔ Down) attached to the stereocenter instead.
+/// If `idx` has `@`/`@@` chirality recorded (the common case for SMILES or
+/// perceived 2D input), flips the `Chirality` enum directly against the
+/// unchanged `stereo_neighbor_order` reference frame. Any incident 2D
+/// wedge/dash markers are flipped at the same time so a bond-oriented editor
+/// serializes the same inverted center that the chemical metadata describes.
+/// Molecules built directly from wedge bonds without recorded chirality keep
+/// the historical wedge-only fallback.
 ///
 /// Atoms with neither `@`/`@@` chirality nor a wedge bond are unchanged.
 /// Returned molecule preserves all other properties, including every other
@@ -32,47 +29,40 @@ use chematic_core::{
 /// `bond_directions`).
 pub fn invert_stereocenter(mol: &Molecule, idx: AtomIdx) -> Molecule {
     let mut builder = MoleculeBuilder::new();
+    let original_chirality = mol.atom(idx).chirality;
+    let invert_wedges = matches!(
+        original_chirality,
+        Chirality::None | Chirality::Clockwise | Chirality::CounterClockwise
+    );
 
-    if mol.atom(idx).chirality != Chirality::None {
-        for (i, atom) in mol.atoms() {
-            let mut atom = atom.clone();
-            if i == idx {
-                atom.chirality = match atom.chirality {
-                    Chirality::Clockwise => Chirality::CounterClockwise,
-                    Chirality::CounterClockwise => Chirality::Clockwise,
-                    Chirality::None => Chirality::None,
-                    // cis/trans relabeling is a constitutional change, not a chiral
-                    // (mirror-image) inversion -- leave square-planar tags untouched.
-                    sp @ Chirality::SquarePlanar(_) => sp,
-                };
-            }
-            builder.add_atom(atom);
-        }
-        for (_, bond) in mol.bonds() {
-            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
-        }
-    } else {
-        let has_wedge = mol
-            .neighbors(idx)
-            .any(|(_, bidx)| matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down));
-
-        for (_, atom) in mol.atoms() {
-            builder.add_atom(atom.clone());
-        }
-        for (_, bond) in mol.bonds() {
-            let new_order = if has_wedge && (bond.atom1 == idx || bond.atom2 == idx) {
-                match bond.order {
-                    BondOrder::Up => BondOrder::Down,
-                    BondOrder::Down => BondOrder::Up,
-                    other => other,
-                }
-            } else {
-                bond.order
+    for (i, atom) in mol.atoms() {
+        let mut atom = atom.clone();
+        if i == idx {
+            atom.chirality = match atom.chirality {
+                Chirality::Clockwise => Chirality::CounterClockwise,
+                Chirality::CounterClockwise => Chirality::Clockwise,
+                Chirality::None => Chirality::None,
+                // cis/trans relabeling is a constitutional change, not a chiral
+                // (mirror-image) inversion -- leave square-planar tags untouched.
+                sp @ Chirality::SquarePlanar(_) => sp,
             };
-            let _ = builder.add_bond(bond.atom1, bond.atom2, new_order);
         }
+        builder.add_atom(atom);
+    }
+    for (_, bond) in mol.bonds() {
+        let new_order = if invert_wedges && (bond.atom1 == idx || bond.atom2 == idx) {
+            match bond.order {
+                BondOrder::Up => BondOrder::Down,
+                BondOrder::Down => BondOrder::Up,
+                other => other,
+            }
+        } else {
+            bond.order
+        };
+        let _ = builder.add_bond(bond.atom1, bond.atom2, new_order);
     }
 
+    builder.copy_r_groups_from(mol);
     builder.copy_stereo_groups_from(mol);
     builder.copy_stereo_from(mol);
     builder.copy_bond_directions_from(mol);
@@ -259,6 +249,73 @@ mod tests {
             ),
             "inversion must flip the CIP label, not just add an @ character"
         );
+    }
+
+    #[test]
+    fn invert_stereocenter_keeps_2d_depiction_and_chirality_synchronized() {
+        let mut builder = MoleculeBuilder::new();
+        let center = builder.add_atom(Atom::new(chematic_core::Element::C));
+        let f = builder.add_atom(Atom::new(chematic_core::Element::F));
+        let cl = builder.add_atom(Atom::new(chematic_core::Element::CL));
+        let br = builder.add_atom(Atom::new(chematic_core::Element::BR));
+        let i = builder.add_atom(Atom::new(chematic_core::Element::I));
+        let wedge = builder.add_bond(center, f, BondOrder::Up).unwrap();
+        builder.add_bond(center, cl, BondOrder::Single).unwrap();
+        builder.add_bond(center, br, BondOrder::Single).unwrap();
+        builder.add_bond(center, i, BondOrder::Single).unwrap();
+
+        // An unrelated depiction marker must not be touched.
+        let n = builder.add_atom(Atom::new(chematic_core::Element::N));
+        let o = builder.add_atom(Atom::new(chematic_core::Element::O));
+        let unrelated_wedge = builder.add_bond(n, o, BondOrder::Down).unwrap();
+        let coords = vec![
+            (0.0, 0.0),
+            (-1.0, 0.4),
+            (0.9, 0.7),
+            (-0.5, -1.1),
+            (0.8, -0.6),
+            (3.0, 0.0),
+            (4.0, 0.0),
+        ];
+        let mut molecule = builder.build();
+        chematic_perception::apply_local_parity_from_wedges(&mut molecule, &coords);
+
+        let before_chirality = molecule.atom(center).chirality;
+        let before_cip = crate::assign_cip(&molecule).get(center);
+        assert_ne!(before_chirality, Chirality::None, "fixture must be chiral");
+        assert!(before_cip.is_some(), "fixture must have an R/S assignment");
+        let expected_inverted_cip = match before_cip {
+            Some(chematic_core::CipCode::R) => Some(chematic_core::CipCode::S),
+            Some(chematic_core::CipCode::S) => Some(chematic_core::CipCode::R),
+            other => panic!("fixture must have an R/S assignment, got {other:?}"),
+        };
+
+        let inverted = invert_stereocenter(&molecule, center);
+        assert_eq!(inverted.bond(wedge).order, BondOrder::Down);
+        assert_eq!(inverted.bond(unrelated_wedge).order, BondOrder::Down);
+        assert_ne!(inverted.atom(center).chirality, before_chirality);
+        assert_eq!(
+            crate::assign_cip(&inverted).get(center),
+            expected_inverted_cip
+        );
+
+        let mut reperceived = inverted.clone();
+        chematic_perception::apply_local_parity_from_wedges(&mut reperceived, &coords);
+        assert_eq!(
+            reperceived.atom(center).chirality,
+            inverted.atom(center).chirality,
+            "2D perception must agree with the synchronized depiction"
+        );
+        assert_eq!(
+            crate::assign_cip(&reperceived).get(center),
+            crate::assign_cip(&inverted).get(center)
+        );
+
+        let restored = invert_stereocenter(&inverted, center);
+        assert_eq!(restored.atom(center).chirality, before_chirality);
+        assert_eq!(restored.bond(wedge).order, BondOrder::Up);
+        assert_eq!(restored.bond(unrelated_wedge).order, BondOrder::Down);
+        assert_eq!(crate::assign_cip(&restored).get(center), before_cip);
     }
 
     // -----------------------------------------------------------------

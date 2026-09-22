@@ -9,6 +9,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Kept tetrahedral chirality and 2D wedge/hash depiction synchronized when
+  `invert_stereocenter` is called, including the existing WASM-facing API.
 - Preserved real carbon, generic `*`, unnumbered `R`, and numbered
   `R1..R9999` atom identities across MOL V2000, MOL V3000, SDF, and CDXML
   round trips instead of serializing wildcard-backed atoms as carbon.

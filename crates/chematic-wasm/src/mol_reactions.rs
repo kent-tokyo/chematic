@@ -1616,9 +1616,10 @@ pub fn stoichiometry_report_json(document_json: &str) -> String {
 // Nearest-neighbour similarity search
 // ---------------------------------------------------------------------------
 
-/// Invert the stereochemistry of a tetrahedral stereocenter (U/D wedge bonds).
+/// Invert a tetrahedral stereocenter and synchronize incident U/D wedge bonds.
 ///
-/// If the atom has no wedge/dash bonds, returns an unchanged copy.
+/// Recorded chirality is inverted even without a wedge; when a wedge/hash is
+/// present its depiction marker is inverted too.
 /// Returns error if atom_idx is invalid.
 #[wasm_bindgen]
 pub fn invert_stereocenter_at(mol: &MolHandle, atom_idx: u32) -> Result<MolHandle, JsValue> {
@@ -1633,6 +1634,39 @@ pub fn invert_stereocenter_at(mol: &MolHandle, atom_idx: u32) -> Result<MolHandl
     Ok(MolHandle {
         inner: std::rc::Rc::new(new_mol),
     })
+}
+
+#[cfg(test)]
+mod invert_stereocenter_tests {
+    use super::*;
+    use chematic_core::{Atom, AtomIdx, BondOrder, Chirality, Element, MoleculeBuilder};
+
+    #[test]
+    fn wasm_api_synchronizes_chirality_and_wedge() {
+        let mut builder = MoleculeBuilder::new();
+        let center = builder.add_atom(Atom::new(Element::C));
+        let f = builder.add_atom(Atom::new(Element::F));
+        let cl = builder.add_atom(Atom::new(Element::CL));
+        let br = builder.add_atom(Atom::new(Element::BR));
+        let i = builder.add_atom(Atom::new(Element::I));
+        let wedge = builder.add_bond(center, f, BondOrder::Up).unwrap();
+        builder.add_bond(center, cl, BondOrder::Single).unwrap();
+        builder.add_bond(center, br, BondOrder::Single).unwrap();
+        builder.add_bond(center, i, BondOrder::Single).unwrap();
+        builder.set_stereo_neighbor_order(center, vec![f.0, cl.0, br.0, i.0]);
+        let mut molecule = builder.build();
+        molecule.set_chirality(center, Chirality::Clockwise);
+        let handle = MolHandle {
+            inner: std::rc::Rc::new(molecule),
+        };
+
+        let inverted = invert_stereocenter_at(&handle, center.0).unwrap();
+        assert_eq!(
+            inverted.inner.atom(AtomIdx(center.0)).chirality,
+            Chirality::CounterClockwise
+        );
+        assert_eq!(inverted.inner.bond(wedge).order, BondOrder::Down);
+    }
 }
 
 // ---------------------------------------------------------------------------
