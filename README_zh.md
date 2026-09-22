@@ -23,13 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python 版本无需 C/C++ 编译器。
 
-### v1.0.19 范围
+### v1.0.20 范围
 
-本版本按照 RDKit 2025.09.3 的完整 Ertl N/O/S/P 环境表更新 TPSA 原子类型，
-并让总值与逐原子贡献共用同一计算路径。公开开发验证通过 63/63 个原子类型用例和
-10,000/10,000 条语料；另行获取并完成重叠审计的一次性 sealed holdout 在 `1e-6`
-容差下通过 8,000/8,000 条，最大绝对误差为 `0.0`。本次仅关闭 TPSA 残差，
-多描述符 A0 gate 仍未完成。详见[验证报告](docs/validation.md)、
+本版本完成冻结的 RDKit 2025.09.3 core-eight 描述符 gate，并加强格式转换中的
+R-group 标识、prepared compatible-Morgan 与搜索契约、解析式 MMFF94 最小化和
+stereo-safe 3D 路径。固定 source 3D gate 中 265/265 条均为 sound、stereo-clean，
+gross clash 为 0；但该质量优先 lane 并不快于 RDKit，公开包复测仍单独记录。
+详见[验证报告](docs/validation.md)、
 [兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## Python

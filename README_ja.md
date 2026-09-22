@@ -23,13 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
-### v1.0.19 の対応範囲
+### v1.0.20 の対応範囲
 
-このリリースでは、RDKit 2025.09.3のErtl N/O/S/P環境表に合わせてTPSA原子型付けを
-更新し、合計値と原子別寄与を同じ計算経路へ統一しました。公開development検証は
-原子型63/63件とコーパス10,000/10,000件、新規sourceを重複監査したone-time sealed
-holdoutは`1e-6`許容差で8,000/8,000件、最大絶対誤差`0.0`です。完了したのはTPSA残差
-のみで、複数descriptorを対象とするA0全体は未完了です。詳細は
+このリリースでは、固定したRDKit 2025.09.3 core-eight descriptor gateを完了し、
+形式変換でのR-group識別、prepared compatible-Morganと検索契約、解析的MMFF94最小化、
+stereo-safe 3D経路を強化しました。固定source 3D gateは265/265件がsoundかつ
+stereo-cleanでgross clashは0件ですが、この品質優先laneはRDKitより高速ではなく、
+公開packageの再測定も別の証拠として扱います。詳細は
 [検証報告](docs/validation.md)、[互換性範囲](docs/compatibility-scope.md)、
 [CHANGELOG](CHANGELOG.md)を参照してください。
 
