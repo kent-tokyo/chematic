@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
-"""Compare MMFF94 on one shared explicit-H coordinate set.
+"""Compare MMFF94 energies on one shared explicit-H coordinate set.
 
-RDKit generates the conformer once, then both RDKit and schematic evaluate
-that same atom-ordered coordinate array.  This intentionally excludes
-conformer-generation and minimisation quality from the numerical comparison.
-Rows with different explicit-H atom ordering or unsupported MMFF typing are
-retained with an explicit status instead of being silently dropped.
+RDKit generates each conformer once, then RDKit and CheMatic evaluate the same
+atom-ordered coordinates. This isolates force-field energy agreement from
+conformer generation, minimization, stereo preservation, and runtime speed.
+Every input row is retained with one terminal status.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import importlib.metadata
 import json
+import platform
 import statistics
+import subprocess
+import sys
 from collections import Counter, defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 
-from rdkit import Chem
+from rdkit import Chem, rdBase
 from rdkit.Chem import AllChem
 
 import chematic
@@ -27,122 +32,311 @@ DEFAULT_MANIFESTS = (
     ROOT / "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json",
     ROOT / "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
 )
+TERMINAL_STATUSES = {
+    "ok",
+    "declared_unsupported",
+    "parse_failure",
+    "atom_order_mismatch",
+    "embed_failure",
+    "rdkit_unsupported",
+    "rdkit_force_field_failure",
+    "schematic_unsupported",
+}
+
+
+def sha256_bytes(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def command_output(command: list[str]) -> str | None:
+    try:
+        return subprocess.run(
+            command,
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def artifact_record(path: Path | None) -> dict | None:
+    if path is None:
+        return None
+    resolved = path.resolve()
+    if not resolved.is_file():
+        raise ValueError(f"artifact not found: {resolved}")
+    return {
+        "path": str(resolved),
+        "bytes": resolved.stat().st_size,
+        "sha256": sha256_file(resolved),
+    }
 
 
 def explicit_symbols(mol: Chem.Mol) -> list[str]:
     return [atom.GetSymbol() for atom in mol.GetAtoms()]
 
 
-def evaluate(row: dict, seed: int) -> dict:
+def terminal(row: dict, input_index: int, status: str, **details: object) -> dict:
+    if status not in TERMINAL_STATUSES:
+        raise ValueError(f"unknown terminal status: {status}")
+    return {"input_index": input_index, **row, "status": status, **details}
+
+
+def evaluate(row: dict, input_index: int, seed: int) -> dict:
     smiles = row["smiles"]
     if row.get("primary_category") == "force_field_unsupported":
-        return {**row, "status": "declared_unsupported"}
+        return terminal(row, input_index, "declared_unsupported")
     rdkit_base = Chem.MolFromSmiles(smiles)
     if rdkit_base is None:
-        return {**row, "status": "parse_failure"}
+        return terminal(row, input_index, "parse_failure", engine="rdkit")
+    try:
+        schematic_mol = chematic.from_smiles(smiles).add_hydrogens()
+    except (RuntimeError, ValueError) as exc:
+        return terminal(
+            row,
+            input_index,
+            "parse_failure",
+            engine="chematic",
+            error={"type": type(exc).__name__, "message": str(exc)},
+        )
     rdkit_mol = Chem.AddHs(rdkit_base)
-    schematic_mol = chematic.from_smiles(smiles).add_hydrogens()
     rdkit_symbols = explicit_symbols(rdkit_mol)
-    schematic_symbols = [atom["element"] for atom in schematic_mol.depict_data()["atoms"]]
+    schematic_symbols = [
+        atom["element"] for atom in schematic_mol.depict_data()["atoms"]
+    ]
     if rdkit_symbols != schematic_symbols:
-        return {
-            **row,
-            "status": "atom_order_mismatch",
-            "rdkit_atom_symbols": rdkit_symbols,
-            "schematic_atom_symbols": schematic_symbols,
-        }
+        return terminal(
+            row,
+            input_index,
+            "atom_order_mismatch",
+            rdkit_atom_symbols=rdkit_symbols,
+            schematic_atom_symbols=schematic_symbols,
+        )
     if AllChem.EmbedMolecule(rdkit_mol, randomSeed=seed) != 0:
-        return {**row, "status": "embed_failure"}
+        return terminal(row, input_index, "embed_failure")
     properties = AllChem.MMFFGetMoleculeProperties(rdkit_mol, mmffVariant="MMFF94")
     if properties is None:
-        return {**row, "status": "rdkit_unsupported"}
-    force_field = AllChem.MMFFGetMoleculeForceField(
-        rdkit_mol, properties, confId=0
-    )
+        return terminal(row, input_index, "rdkit_unsupported")
+    force_field = AllChem.MMFFGetMoleculeForceField(rdkit_mol, properties, confId=0)
     if force_field is None:
-        return {**row, "status": "rdkit_force_field_failure"}
+        return terminal(row, input_index, "rdkit_force_field_failure")
     conformer = rdkit_mol.GetConformer()
     coords = [
         [position.x, position.y, position.z]
-        for position in (conformer.GetAtomPosition(i) for i in range(rdkit_mol.GetNumAtoms()))
+        for position in (
+            conformer.GetAtomPosition(i) for i in range(rdkit_mol.GetNumAtoms())
+        )
     ]
     try:
-        schematic_energy = float(
-            schematic_mol.mmff94_energy_breakdown(coords)["total"]
+        breakdown = {
+            key: float(value)
+            for key, value in schematic_mol.mmff94_energy_breakdown(coords).items()
+        }
+    except (RuntimeError, ValueError) as exc:
+        return terminal(
+            row,
+            input_index,
+            "schematic_unsupported",
+            error={"type": type(exc).__name__, "message": str(exc)},
         )
-    except (RuntimeError, ValueError):
-        return {**row, "status": "schematic_unsupported"}
+    schematic_energy = breakdown["total"]
     rdkit_energy = float(force_field.CalcEnergy())
+    delta = schematic_energy - rdkit_energy
+    coordinate_payload = json.dumps(coords, separators=(",", ":")).encode("utf-8")
+    return terminal(
+        row,
+        input_index,
+        "ok",
+        atom_count=len(coords),
+        coordinate_sha256=sha256_bytes(coordinate_payload),
+        schematic_energy_breakdown_kcal_mol=breakdown,
+        schematic_energy_kcal_mol=schematic_energy,
+        rdkit_energy_kcal_mol=rdkit_energy,
+        delta_kcal_mol=delta,
+        abs_delta_kcal_mol=abs(delta),
+    )
+
+
+def percentile_nearest_rank(
+    values: list[float], numerator: int, denominator: int
+) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    rank = (len(ordered) * numerator + denominator - 1) // denominator
+    return ordered[max(0, rank - 1)]
+
+
+def summarize(results: list[dict]) -> dict:
+    ok = [result for result in results if result["status"] == "ok"]
+    deltas = [result["abs_delta_kcal_mol"] for result in ok]
+    by_category: dict[str, list[float]] = defaultdict(list)
+    for result in ok:
+        by_category[result.get("primary_category", "unknown")].append(
+            result["abs_delta_kcal_mol"]
+        )
     return {
-        **row,
-        "status": "ok",
-        "atom_count": len(coords),
-        "schematic_energy_kcal_mol": schematic_energy,
-        "rdkit_energy_kcal_mol": rdkit_energy,
-        "delta_kcal_mol": schematic_energy - rdkit_energy,
-        "abs_delta_kcal_mol": abs(schematic_energy - rdkit_energy),
+        "row_accounting": {
+            "input_count": len(results),
+            "terminal_count": sum(
+                result.get("status") in TERMINAL_STATUSES for result in results
+            ),
+            "status_counts": dict(Counter(result["status"] for result in results)),
+        },
+        "comparable_rows": len(ok),
+        "median_abs_delta_kcal_mol": statistics.median(deltas) if deltas else None,
+        "p90_abs_delta_kcal_mol": percentile_nearest_rank(deltas, 9, 10),
+        "max_abs_delta_kcal_mol": max(deltas) if deltas else None,
+        "within_1_kcal_mol": sum(delta <= 1.0 for delta in deltas),
+        "within_5_kcal_mol": sum(delta <= 5.0 for delta in deltas),
+        "by_primary_category": {
+            category: {
+                "rows": len(values),
+                "median_abs_delta_kcal_mol": statistics.median(values),
+                "max_abs_delta_kcal_mol": max(values),
+            }
+            for category, values in sorted(by_category.items())
+        },
     }
 
 
-def main() -> int:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, action="append", default=[])
     parser.add_argument("--limit", type=int)
     parser.add_argument("--seed", type=int, default=20260913)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--summary", type=Path)
+    parser.add_argument("--rdkit-artifact", type=Path)
+    parser.add_argument("--schematic-artifact", type=Path)
+    parser.add_argument("--schematic-build-command")
+    parser.add_argument("--expected-rdkit")
+    parser.add_argument("--expected-schematic")
     args = parser.parse_args()
+    if args.limit is not None and args.limit < 1:
+        parser.error("--limit must be positive")
+    return args
+
+
+def main() -> int:
+    args = parse_args()
     manifests = args.manifest or list(DEFAULT_MANIFESTS)
     rows: list[dict] = []
+    manifest_records: list[dict] = []
     for manifest in manifests:
-        rows.extend(json.loads(manifest.read_text(encoding="utf-8"))["molecules"])
+        document = json.loads(manifest.read_text(encoding="utf-8"))
+        molecules = document["molecules"]
+        rows.extend(molecules)
+        manifest_records.append(
+            {
+                "path": str(manifest.resolve()),
+                "sha256": sha256_file(manifest),
+                "rows": len(molecules),
+            }
+        )
     if args.limit is not None:
         rows = rows[: args.limit]
+
     results: list[dict] = []
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as handle:
         for index, row in enumerate(rows):
-            result = evaluate(row, args.seed + index)
+            result = evaluate(row, index, args.seed + index)
             results.append(result)
             handle.write(json.dumps(result, sort_keys=True) + "\n")
+
     if args.summary:
-        ok = [result for result in results if result["status"] == "ok"]
-        deltas = sorted(result["abs_delta_kcal_mol"] for result in ok)
-        by_category: dict[str, list[float]] = defaultdict(list)
-        for result in ok:
-            by_category[result.get("primary_category", "unknown")].append(
-                result["abs_delta_kcal_mol"]
-            )
-        args.summary.write_text(
-            json.dumps(
-                {
-                    "status": "candidate_diagnostic_not_release_gate",
-                    "protocol": "mmff94-same-explicit-h-coordinates",
-                    "comparator": "RDKit MMFF94",
-                    "seed": args.seed,
-                    "rows": len(results),
-                    "status_counts": dict(Counter(result["status"] for result in results)),
-                    "comparable_rows": len(ok),
-                    "median_abs_delta_kcal_mol": statistics.median(deltas) if deltas else None,
-                    "p90_abs_delta_kcal_mol": deltas[max(0, (len(deltas) * 9 + 9) // 10 - 1)] if deltas else None,
-                    "max_abs_delta_kcal_mol": max(deltas) if deltas else None,
-                    "within_1_kcal_mol": sum(delta <= 1.0 for delta in deltas),
-                    "within_5_kcal_mol": sum(delta <= 5.0 for delta in deltas),
-                    "by_primary_category": {
-                        category: {
-                            "rows": len(values),
-                            "median_abs_delta_kcal_mol": statistics.median(values),
-                            "max_abs_delta_kcal_mol": max(values),
-                        }
-                        for category, values in sorted(by_category.items())
-                    },
-                    "caveat": "RDKit generated the shared explicit-H coordinates; this measures force-field energy parity, not conformer quality or minimization convergence.",
-                },
-                indent=2,
-                sort_keys=True,
-            )
-            + "\n",
-            encoding="utf-8",
+        missing_dimensions = []
+        if args.rdkit_artifact is None:
+            missing_dimensions.append("rdkit_artifact")
+        if args.schematic_artifact is None:
+            missing_dimensions.append("schematic_artifact")
+        if not args.schematic_build_command:
+            missing_dimensions.append("schematic_build_command")
+        git_status = command_output(
+            ["git", "status", "--porcelain", "--untracked-files=no"]
         )
+        measurements = summarize(results)
+        gate = {
+            "row_accounting_complete": measurements["row_accounting"]["terminal_count"]
+            == len(results),
+            "input_indices_contiguous": [row["input_index"] for row in results]
+            == list(range(len(results))),
+            "rdkit_version_matches": args.expected_rdkit is None
+            or rdBase.rdkitVersion == args.expected_rdkit,
+            "schematic_version_matches": args.expected_schematic is None
+            or importlib.metadata.version("chematic") == args.expected_schematic,
+            "provenance_complete": not missing_dimensions,
+            "source_tree_clean": git_status == "",
+        }
+        summary = {
+            "schema_version": 2,
+            "profile": "mmff94_same_explicit_h_current_source_v2",
+            "status": "current_source_diagnostic_not_release_gate",
+            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+            "protocol": {
+                "comparison": "RDKit and CheMatic MMFF94 total energy on the same RDKit-generated explicit-H coordinates",
+                "coordinate_producer": "RDKit EmbedMolecule default parameters with per-row fixed random seed",
+                "excludes": [
+                    "conformer_quality",
+                    "minimization_convergence",
+                    "stereo_preservation",
+                    "runtime_speed",
+                    "RDKit_per_term_energy_parity",
+                ],
+                "seed": args.seed,
+            },
+            "versions": {
+                "chematic": importlib.metadata.version("chematic"),
+                "rdkit_distribution": importlib.metadata.version("rdkit"),
+                "rdkit_runtime": rdBase.rdkitVersion,
+                "python": platform.python_version(),
+            },
+            "source": {
+                "git_revision": command_output(["git", "rev-parse", "HEAD"]),
+                "tracked_tree_dirty": git_status != "",
+                "rustc": command_output(["rustc", "-Vv"]),
+                "maturin": command_output(["maturin", "--version"]),
+                "build_command": args.schematic_build_command,
+            },
+            "host": {
+                "platform": platform.platform(),
+                "machine": platform.machine(),
+                "processor": platform.processor(),
+            },
+            "artifacts": {
+                "rdkit": artifact_record(args.rdkit_artifact),
+                "schematic": artifact_record(args.schematic_artifact),
+            },
+            "manifests": manifest_records,
+            "command": [sys.executable, *sys.argv],
+            "rows_artifact": {
+                "path": str(args.output.resolve()),
+                "bytes": args.output.stat().st_size,
+                "sha256": sha256_file(args.output),
+            },
+            "missing_dimensions": missing_dimensions,
+            "measurements": measurements,
+            "gate": gate,
+            "gate_passed": all(gate.values()),
+            "caveat": "RDKit generated the shared explicit-H coordinates. This measures total force-field energy agreement, not per-term RDKit parity, conformer quality, minimization convergence, stereo preservation, or speed.",
+        }
+        args.summary.parent.mkdir(parents=True, exist_ok=True)
+        args.summary.write_text(
+            json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        print(json.dumps(summary, indent=2, sort_keys=True))
+        return 0 if summary["gate_passed"] else 2
     return 0
 
 
