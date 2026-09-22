@@ -97,3 +97,18 @@ def test_attestation_must_follow_the_annotated_candidate_tag():
         raise AssertionError("an attestation before candidate freeze must not be accepted")
 
     MODULE.verify_attestation_timing(freeze, "2026-09-13T18:09:19+09:00")
+
+
+def test_post_freeze_acquisition_requires_source_to_be_strictly_newer():
+    freeze = {
+        "candidate_commit": "0" * 40,
+        "candidate_tag": "candidate",
+        "candidate_tagged_at": "2026-09-13T09:09:19Z",
+    }
+    MODULE.verify_post_freeze_acquisition(freeze, {"acquired_at": "2026-09-13T09:09:20Z"})
+    try:
+        MODULE.verify_post_freeze_acquisition(freeze, {"acquired_at": "2026-09-13T09:09:19Z"})
+    except ValueError as error:
+        assert "must be later" in str(error)
+    else:
+        raise AssertionError("a source acquired at the freeze time must not be accepted")

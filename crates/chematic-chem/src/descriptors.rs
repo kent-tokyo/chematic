@@ -1147,8 +1147,21 @@ fn use_perceived_nitrogen_environment(mol: &Molecule, mol_arom: &Molecule, idx: 
     carbonyl_neighbors == 1 || (carbonyl_neighbors == 0 && mol.degree(idx) == 2)
 }
 
+/// Aromaticity representation used by RDKit-compatible descriptor typing.
+///
+/// The general-purpose perception engine intentionally accepts a wider set of
+/// conjugated ring systems. Descriptor atom types need RDKit's narrower
+/// aromaticity boundary, especially for neutral divalent sulfur in fused
+/// heterocycles. Keep the operation fail-safe for unusual inputs: a parity
+/// perception failure falls back to the stable general model rather than
+/// making descriptor evaluation fallible.
+fn descriptor_aromaticity(mol: &Molecule) -> Molecule {
+    chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
+        .unwrap_or_else(|_| chematic_perception::apply_aromaticity(mol))
+}
+
 fn tpsa_contributions(mol: &Molecule) -> Vec<f64> {
-    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let mol_arom = descriptor_aromaticity(mol);
     let mut contributions = vec![0.0; mol.atom_count()];
     for (idx, original_atom) in mol.atoms() {
         let atomic_number = original_atom.element.atomic_number();
@@ -1392,7 +1405,7 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
     // RDKit assigns Crippen atom types after aromaticity perception. Match on
     // that representation so an equivalent Kekulé spelling receives the same
     // aromatic SMARTS type; contributions stay indexed to the caller's graph.
-    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let mol_arom = descriptor_aromaticity(mol);
     // Pre-compute once per molecule: for each pattern, which atoms satisfy query-atom-0?
     // Previously O(n_atoms × n_patterns × VF2); now O(n_patterns × VF2 + n_atoms × n_patterns).
     let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
@@ -1649,7 +1662,7 @@ fn h_mr_for_parent(
 /// H contributions are folded into the attached heavy atom. Index matches mol.atoms().
 pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
     let queries = get_crippen_queries();
-    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let mol_arom = descriptor_aromaticity(mol);
     let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
 
     let h_fallback = CRIPPEN_SMARTS
@@ -4290,6 +4303,65 @@ mod tests {
         assert!(approx(tpsa(&bridged), 63.22, 1e-12));
         assert!(approx(logp_crippen(&bridged), 4.0074, 1e-12));
         assert!(approx(molar_refractivity(&bridged), 105.7645, 1e-12));
+    }
+
+    #[test]
+    fn fused_heterocycles_keep_rdkit_descriptor_aromaticity_boundary() {
+        // Development-only A0 residuals. The broad aromaticity model promoted
+        // neutral divalent sulfur (and adjacent nitrogens) in these fused
+        // systems even though RDKit keeps their Kekule atom types. All three
+        // descriptors share the same bounded parity representation.
+        let cases = [
+            (
+                "O=C(Nc1ccccc1Cc1ccccc1)c1ccc2c(c1)SC1=NS(=O)(=O)CCN12",
+                112.52,
+                4.1412,
+                124.5100,
+            ),
+            (
+                r#"CCOc1cc(/C=C2\C(=N)N3N=C(CC(=O)N4CCCCC4)SC3=NC2=O)ccc1O"#,
+                143.95,
+                2.81267,
+                119.3345,
+            ),
+            (
+                "N=C1/C(=C/c2ccc(Br)o2)C(=O)N=C2SC(CC(=O)N3CCCC3)=NN12",
+                127.63,
+                2.67377,
+                101.8497,
+            ),
+            (
+                "N=C1/C(=C/c2cccn2CCOc2ccccc2)C(=O)N=C2SC=C(c3ccccc3)N12",
+                95.98,
+                4.87137,
+                128.3637,
+            ),
+            (
+                "COc1cc2c(cc1OC)N1C(=NC(N)=NC1c1ccccc1)NC2=O",
+                101.54,
+                1.6367,
+                97.7316,
+            ),
+            (
+                "COC(=O)C1=C(C)N=C2SC(C#N)=C(N)N2C1c1cccc(OC)c1",
+                126.24,
+                2.25308,
+                94.1424,
+            ),
+        ];
+
+        for (smiles, expected_tpsa, expected_logp, expected_mr) in cases {
+            let molecule = mol(smiles);
+            assert!(approx(tpsa(&molecule), expected_tpsa, 1e-12), "{smiles}");
+            assert!(
+                approx(logp_crippen(&molecule), expected_logp, 1e-12),
+                "{smiles}"
+            );
+            assert!(
+                approx(molar_refractivity(&molecule), expected_mr, 1e-12),
+                "{smiles}"
+            );
+        }
     }
 
     // -- Test 18: aspirin Lipinski -------------------------------------------
