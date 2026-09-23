@@ -80,6 +80,15 @@ pub fn canonical_atom_order(mol: &Molecule) -> Vec<usize> {
 /// output. `CanonicalizationError::SearchBudgetExceeded` cannot occur here
 /// since `unbounded()` never checks either budget.
 fn winning_individualized_ranks(mol: &Molecule) -> (Vec<u64>, String) {
+    // Memoized on `mol`: canonical SMILES, canonical atom order and every
+    // InChI layer derive from this same (deterministic) search.
+    let shared = mol.derived(chematic_core::DerivedSlot::CanonicalRanks, || {
+        winning_individualized_ranks_uncached(mol)
+    });
+    (shared.0.clone(), shared.1.clone())
+}
+
+fn winning_individualized_ranks_uncached(mol: &Molecule) -> (Vec<u64>, String) {
     let mut best = winning_individualized_ranks_single(mol);
     for alternate in alternate_ez_carrier_spellings(mol) {
         let candidate = winning_individualized_ranks_single(&alternate);

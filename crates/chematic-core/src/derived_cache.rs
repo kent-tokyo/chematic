@@ -32,8 +32,8 @@ pub enum DerivedSlot {
     DescriptorAromatic = 2,
     /// Wildman–Crippen atom-type index per atom (on the descriptor aromatic view).
     CrippenTypes = 3,
-    /// Reserved for future perception products.
-    Reserved4 = 4,
+    /// Winning canonical ranks and canonical SMILES string.
+    CanonicalRanks = 4,
     /// Reserved for future perception products.
     Reserved5 = 5,
 }
