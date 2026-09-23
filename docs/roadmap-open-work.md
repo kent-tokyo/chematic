@@ -1,7 +1,7 @@
 # Roadmap open-work ledger
 
-Updated 2026-09-23. This is a compact dependency and evidence ledger for work
-that remains open after v1.0.21. It does not repeat completed implementation
+Updated 2026-09-24. This is a compact dependency and evidence ledger for work
+that remains open after v1.0.22. It does not repeat completed implementation
 history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 ## Immediate queue
@@ -59,10 +59,13 @@ complete merely because a local packet exists.
 
 ## Evidence boundaries
 
-- **Published release:** v1.0.21 channel verification is recorded in
-  `validation/results/release-channel-verification-v1.0.21.json`; v1.0.20 is
-  the last fully verified historical channel record until each v1.0.21 channel
+- **Published release:** v1.0.22 channel verification is prepared in
+  `validation/results/release-channel-verification-v1.0.22.json`; v1.0.21 is
+  the latest fully verified historical channel record until each v1.0.22 channel
   is observed.
+- **Source operation matrix:**
+  `benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md` records
+  strict output-comparable outcomes; it is not a published-package result.
 - **Browser performance:** the current published-package record is
   `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md`.
 - **A0 acceptance:** the commit-safe summary is

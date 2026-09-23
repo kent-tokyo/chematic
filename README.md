@@ -21,14 +21,14 @@ npm install @kent-tokyo/chematic
 
 Python needs no C/C++ compiler. Rust and WebAssembly builds use the same core.
 
-### v1.0.21 release boundary
+### v1.0.22 release boundary
 
-v1.0.21 fixes canonical SMILES for measured coupled E/Z aromatic-stash cases.
-The pinned RDKit 2026.03.6 exposed 10k diagnostic moves from 18 semantic
-differences to zero with graph, CIP, Morgan, and SMARTS counts unchanged. The
-long permutation audit remains incomplete, so this release does not claim its
-completion or a new published-package performance measurement. Compatibility
-remains operation- and corpus-scoped; see [validation](docs/validation.md),
+v1.0.22 optimizes cached perception, SSSR, SMARTS matching, MACCS, and selected
+Python paths without changing the checked source outputs. Its versioned
+RDKit 2026.03.6 operation matrix reports 21 exact-output, faster-median paths
+(18 faster in every repeat) out of 43 comparable operations. This is a shared
+2-vCPU source record, not a published-package, WASM, or cross-platform claim.
+Compatibility remains operation- and corpus-scoped; see [validation](docs/validation.md),
 [compatibility scope](docs/compatibility-scope.md), and the
 [CHANGELOG](CHANGELOG.md).
 

@@ -5,20 +5,20 @@
     "Kentaro Tanabe (kent-tokyo) <kent-tokyo@users.noreply.github.com>"
   ],
   "description": "WebAssembly bindings for chematic — use chematic from JavaScript/TypeScript",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/kent-tokyo/chematic"
   },
   "files": [
-    "chematic_wasm_bg.wasm",
-    "chematic_wasm.js",
-    "chematic_wasm.d.ts"
+    "schematic_wasm_bg.wasm",
+    "schematic_wasm.js",
+    "schematic_wasm.d.ts"
   ],
-  "main": "chematic_wasm.js",
+  "main": "schematic_wasm.js",
   "homepage": "https://kent-tokyo.github.io/chematic/",
-  "types": "chematic_wasm.d.ts",
+  "types": "schematic_wasm.d.ts",
   "sideEffects": [
     "./snippets/*"
   ],

@@ -23,12 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
-### v1.0.21 の対応範囲
+### v1.0.22 の対応範囲
 
-v1.0.21は、測定済みのcoupled E/Z aromatic-stash系におけるcanonical SMILESを
-修正します。固定したRDKit 2026.03.6の10k診断でsemantic差は18件から0件となり、
-graph、CIP、Morgan、SMARTSの件数は不変です。長時間permutation監査は未完了のため、
-その完了や新しい公開package性能を主張しません。詳細は[検証報告](docs/validation.md)、
+v1.0.22は、perception、SSSR、SMARTS照合、MACCS、Pythonの一部経路をキャッシュで
+高速化し、検査済みsource出力を変えていません。RDKit 2026.03.6との操作別記録では、
+比較可能な43操作中21操作が出力完全一致かつ中央値で高速、18操作が全反復で高速です。
+これは共有2 vCPUのsource記録であり、公開package、WASM、他環境での性能主張ではありません。
+詳細は[検証報告](docs/validation.md)、
 [互換性範囲](docs/compatibility-scope.md)、[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## Python
