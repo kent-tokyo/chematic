@@ -22,12 +22,12 @@ impl std::fmt::Display for FingerprintLengthMismatch {
 }
 
 pub(crate) fn popcount(fp: &[u8]) -> u64 {
-    let mut chunks = fp.chunks_exact(8);
-    let mut total: u64 = (&mut chunks)
-        .map(|c| u64::from(u64::from_le_bytes(c.try_into().unwrap()).count_ones()))
+    let (chunks, remainder) = fp.as_chunks::<8>();
+    let mut total: u64 = chunks
+        .iter()
+        .map(|c| u64::from(u64::from_le_bytes(*c).count_ones()))
         .sum();
-    total += chunks
-        .remainder()
+    total += remainder
         .iter()
         .map(|byte| u64::from(byte.count_ones()))
         .sum::<u64>();
@@ -35,20 +35,20 @@ pub(crate) fn popcount(fp: &[u8]) -> u64 {
 }
 
 fn intersection_count(left: &[u8], right: &[u8]) -> u64 {
-    let mut lc = left.chunks_exact(8);
-    let mut rc = right.chunks_exact(8);
-    let mut total: u64 = (&mut lc)
-        .zip(&mut rc)
+    let (left_chunks, left_remainder) = left.as_chunks::<8>();
+    let (right_chunks, right_remainder) = right.as_chunks::<8>();
+    let mut total: u64 = left_chunks
+        .iter()
+        .zip(right_chunks)
         .map(|(a, b)| {
-            let a = u64::from_le_bytes(a.try_into().unwrap());
-            let b = u64::from_le_bytes(b.try_into().unwrap());
+            let a = u64::from_le_bytes(*a);
+            let b = u64::from_le_bytes(*b);
             u64::from((a & b).count_ones())
         })
         .sum();
-    total += lc
-        .remainder()
+    total += left_remainder
         .iter()
-        .zip(rc.remainder())
+        .zip(right_remainder)
         .map(|(a, b)| u64::from((a & b).count_ones()))
         .sum::<u64>();
     total
