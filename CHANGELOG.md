@@ -9,6 +9,21 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.22] - 2026-09-24
+
+- Optimized hot paths without changing the checked source outputs: molecule-local
+  derived caches, lazy SSSR materialization, cached RDKit-parity aromaticity and
+  canonical ranks, a smaller SMARTS/VF2 search state, and reusable MACCS/Crippen
+  preparation. The accompanying differential digest record covers 1,074,928
+  operation rows across 46,736 molecules with zero main-to-optimized differences.
+- Added a versioned Python operation matrix against RDKit 2026.03.6, including
+  raw repetitions, corpus/wheel hashes, and streamed line-by-line output digests.
+  Of 43 output-comparable operations, 21 have exact output agreement and a faster
+  median; 18 are faster in every recorded repetition. This is a source-level,
+  shared 2-vCPU x86 record, not an Apple-silicon, WASM, or published-package claim.
+- Corrected the earlier aggregate speed wording: non-equivalent operations and
+  the non-standard `Mol.inchi` representation are not counted as RDKit wins.
+
 ## [1.0.21] - 2026-09-23
 
 - Fixed canonical SMILES for aromatic-stash E/Z systems so two directional

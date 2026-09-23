@@ -2,11 +2,10 @@
 
 Pure-Rust cheminformatics library for Python — SMILES parsing, 190+ descriptor values (71 functions), fingerprints, pKa prediction, ADMET profiling, and template-based retrosynthesis.
 
-The current 1.0.21 release line includes the coupled E/Z canonical-SMILES fix;
-the frozen RDKit 2025.09.3 core-eight
-descriptor gate and strengthens original-index search accounting, prepared
-compatible Morgan fingerprints, and the experimental stereo-safe 3D path.
-Compatibility and performance claims remain operation- and corpus-scoped.
+The current 1.0.22 release line adds checked-output-preserving cache and matcher
+optimizations plus a recorded RDKit 2026.03.6 Python operation matrix. It does
+not turn that shared-VM source record into a published-wheel or universal speed
+claim. Compatibility and performance claims remain operation- and corpus-scoped.
 
 ## Installation
 

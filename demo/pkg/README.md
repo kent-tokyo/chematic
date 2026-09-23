@@ -4,7 +4,7 @@ WebAssembly bindings for [chematic](https://github.com/kent-tokyo/chematic), a p
 
 Published to npm as [`@kent-tokyo/chematic`](https://www.npmjs.com/package/@kent-tokyo/chematic).
 
-The current workspace line is 1.0.21. The binding keeps bounded parsing,
+The current workspace line is 1.0.22. The binding keeps bounded parsing,
 typed failures, and opt-in `embed_pipeline_v2_json`; 3D/MMFF94 behavior remains
 Experimental and is not a claim of full RDKit parity.
 

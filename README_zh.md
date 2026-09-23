@@ -23,12 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python 版本无需 C/C++ 编译器。
 
-### v1.0.21 范围
+### v1.0.22 范围
 
-v1.0.21 修复了已测 coupled E/Z aromatic-stash 体系的 canonical SMILES。固定的
-RDKit 2026.03.6 10k 诊断中，semantic 差异从 18 条降至 0 条，graph、CIP、Morgan
-和 SMARTS 计数不变。长时间 permutation 审计尚未完成，因此本版本不声称该审计已
-完成，也不声称有新的公开 package 性能结果。详见[验证报告](docs/validation.md)、
+v1.0.22 通过缓存优化了 perception、SSSR、SMARTS 匹配、MACCS 和部分 Python 路径，
+且未改变已检查的 source 输出。与 RDKit 2026.03.6 的逐操作记录中，43 个可比操作有
+21 个输出完全一致且中位数更快，其中 18 个在所有重复中更快。这是共享 2 vCPU 的
+source 记录，不是已发布 package、WASM 或跨平台性能声明。详见[验证报告](docs/validation.md)、
 [兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## Python

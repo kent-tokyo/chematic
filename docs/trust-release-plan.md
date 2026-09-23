@@ -1,7 +1,7 @@
 # chematic 1.x Trust Release 実行計画
 
-更新日: 2026-09-23。公開版は **v1.0.21**、次の開発候補は
-**v1.0.22** です。
+更新日: 2026-09-24。公開版は **v1.0.22**、次の開発候補は
+**v1.0.23** です。
 
 この文書は実行順と合格条件だけを定義します。機能別の優先順位は
 [`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)、未完了項目と依存関係は
@@ -32,6 +32,9 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
 - v1.0.21に含まれる#632修正は、RDKit 2026.03.6比較のSMILES semantic差を
   18/10,000から0/10,000へ減らしました。長時間permutation gateは中断済みで、
   その完了や公開package再測定の成果としては扱いません。
+- v1.0.22はperception/SSSR/SMARTS/Python hot pathを最適化しました。43比較可能操作の
+  source matrixは21 exact-output faster-median、18 all-repeat fasterですが、共有2 vCPU
+  実行であり公開packageまたはWASMの性能証拠ではありません。
 - 残る主要差分はCIP #634、SMARTS #635、A6のenergy/term・timeout・
   conformer qualityです。
 
