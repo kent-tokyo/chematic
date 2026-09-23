@@ -34,8 +34,8 @@ pub enum DerivedSlot {
     CrippenTypes = 3,
     /// Winning canonical ranks and canonical SMILES string.
     CanonicalRanks = 4,
-    /// Reserved for future perception products.
-    Reserved5 = 5,
+    /// Result of the RDKit-parity aromaticity perception.
+    RdkitParityAromatic = 5,
 }
 
 const SLOT_COUNT: usize = 6;
