@@ -22,8 +22,8 @@ every browser, fingerprint setting, native ECFP4, or similarity-search workload.
 
 Evidence:
 
-- [v1.0.20 public-package fingerprint and 3D record](../benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md)
-- [source optimization and multi-browser record](../benchmarks/2026-09-20-parse-morgan-rdkitjs.md)
+- [v1.0.20 public-package fingerprint and 3D record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md)
+- [source optimization and multi-browser record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-20-parse-morgan-rdkitjs.md)
 - [benchmark methodology](benchmark.md)
 
 ## Profiles must remain separate
@@ -110,7 +110,7 @@ Parse + compatible Morgan advantage, not to optimize indefinitely.
 - bit parity: `scripts/check_browser_rdkit_ecfp4_parity.py`
 - cross-binding parity: `scripts/rdkit_ecfp4_cross_binding_parity.py`
 - hosted workflow: `.github/workflows/parse-morgan-rdkitjs-gate.yml`
-- dated records: [`benchmarks/README.md`](../benchmarks/README.md)
+- dated records: [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
 
 The hosted performance workflow is an environment-specific gate. A successful
 run proves only its recorded browser, host, packages, corpus, and operation.

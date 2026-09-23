@@ -61,8 +61,8 @@ the current source-built v2 descriptor run matches RDKit for MW and HBA on
 uses RDKit-compatible nuclide masses where available and, for an unlisted but
 syntactically valid isotope label, RDKit's mass-number fallback. The full per-field
 distribution and 12-case structural holdout are recorded in
-[`descriptor-rdkit-diagnostics-v1.0.13.json`](../validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
-and [`descriptor-rdkit-holdout-v1.0.13.json`](../validation/results/descriptor-rdkit-holdout-v1.0.13.json).
+[`descriptor-rdkit-diagnostics-v1.0.13.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
+and [`descriptor-rdkit-holdout-v1.0.13.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/descriptor-rdkit-holdout-v1.0.13.json).
 
 The historical 4,999-molecule descriptor snapshot reports:
 
@@ -106,7 +106,7 @@ The v1.0.15 published-package scorecard measures chematic at **4,005,280 bytes
 raw / 1,460,499 bytes gzip** and `@rdkit/rdkit@2026.03.6` at **7,333,095 /
 2,379,975 bytes**. The packages have different feature surfaces, so size is a
 deployment observation rather than a feature-normalized benchmark. See the
-[published-package scorecard](../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
+[published-package scorecard](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
 
 ## Interpretation rule
 

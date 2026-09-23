@@ -4,10 +4,10 @@
 **v1.0.21** です。
 
 この文書は実行順と合格条件だけを定義します。機能別の優先順位は
-[`ROADMAP.md`](../ROADMAP.md)、未完了項目と依存関係は
+[`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)、未完了項目と依存関係は
 [`roadmap-open-work.md`](roadmap-open-work.md)、実測値は
 [`validation.md`](validation.md) と
-[`benchmarks/README.md`](../benchmarks/README.md) を参照してください。
+[benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks) を参照してください。
 
 ## 目的
 
@@ -142,13 +142,13 @@ macrocycle/atrop、競合で確認された再現可能な不具合を収録し�
 
 ## 記録先
 
-- 現在の優先順位: [`ROADMAP.md`](../ROADMAP.md)
+- 現在の優先順位: [`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)
 - 未完了と依存関係: [`roadmap-open-work.md`](roadmap-open-work.md)
 - 互換性境界: [`compatibility-scope.md`](compatibility-scope.md)
 - 検証概要: [`validation.md`](validation.md)
 - benchmark方法: [`benchmark.md`](benchmark.md)
-- 日付付き実測: [`benchmarks/`](../benchmarks/README.md)
-- 完了した利用者向け変更: [`CHANGELOG.md`](../CHANGELOG.md)
+- 日付付き実測: [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
+- 完了した利用者向け変更: [`CHANGELOG.md`](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md)
 
 過去の長い計画本文はGit historyに残します。完了した実装経緯をこの文書へ追記し
 続けず、必要な場合だけ日付付きevidenceへリンクします。

@@ -335,7 +335,7 @@ Python bindings. In the v1.0.15 published-package scorecard, chematic's WASM
 asset is **4,005,280 bytes raw / 1,460,499 bytes gzip**, versus
 **7,333,095 / 2,379,975 bytes** for `@rdkit/rdkit@2026.03.6` under the same
 local file-compression method. See the
-[scorecard](../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
+[scorecard](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
 See [`format-capabilities.md`](format-capabilities.md)
 for exactly which formats are and are not exposed at the WASM layer (plain
 CIF, notably, is not).

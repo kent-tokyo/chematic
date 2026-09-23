@@ -17,6 +17,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   open-work ledger around current priorities and acceptance gates; refreshed
   the English, Japanese, and Chinese READMEs plus validation and benchmark
   indexes without relabeling historical measurements as current results.
+- Added pinned MkDocs build dependencies, a contributor-facing strict-build
+  command, and a strict Pages build. Repository artifacts referenced from the
+  documentation now use explicit GitHub links so the published site validates
+  without suppressing link warnings.
 
 ## [1.0.20] - 2026-09-23
 

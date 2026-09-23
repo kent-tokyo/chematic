@@ -102,4 +102,5 @@ pinned metadata.
 
 See [compatibility scope](compatibility-scope.md),
 [RDKit migration](rdkit-migration.md), [accuracy plan](rdkit-accuracy-plan.md),
-and the [benchmark index](../benchmarks/README.md) for exact boundaries.
+and the [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
+for exact boundaries.

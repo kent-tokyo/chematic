@@ -119,5 +119,5 @@ and force-field workflows, or APIs that chematic marks unsupported.
 - [Format support](format-capabilities.md)
 - [API reference](api/chematic.md)
 - [Errors and resource limits](error-and-limits.md)
-- [Benchmark records](../benchmarks/README.md)
+- [Benchmark records](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
 - [GitHub](https://github.com/kent-tokyo/chematic)
