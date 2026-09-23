@@ -13,7 +13,7 @@ use chematic_core::{
 use chematic_perception::{
     all_ring_list, aromatic_ring_list, find_ring_families, find_sssr, ring_bonds_all_aromatic,
 };
-use chematic_smarts::{MatchConfig, find_matches_with_rings_and_config, parse_smarts};
+use chematic_smarts::parse_smarts;
 
 /// True if `idx` has a double bond to any neighbor whose atomic number equals `target_an`.
 fn has_double_bond_to(mol: &Molecule, idx: AtomIdx, target_an: u8) -> bool {
@@ -1123,9 +1123,13 @@ fn use_perceived_nitrogen_environment(mol: &Molecule, mol_arom: &Molecule, idx: 
 /// heterocycles. Keep the operation fail-safe for unusual inputs: a parity
 /// perception failure falls back to the stable general model rather than
 /// making descriptor evaluation fallible.
-fn descriptor_aromaticity(mol: &Molecule) -> Molecule {
-    chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
-        .unwrap_or_else(|_| chematic_perception::apply_aromaticity(mol))
+fn descriptor_aromaticity(mol: &Molecule) -> std::sync::Arc<Molecule> {
+    // Memoized on `mol`: TPSA, Crippen LogP/MR, HBA and friends all start from
+    // the same perceived copy, and that copy carries its own SSSR cache.
+    mol.derived(chematic_core::DerivedSlot::DescriptorAromatic, || {
+        chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
+            .unwrap_or_else(|_| chematic_perception::apply_aromaticity(mol))
+    })
 }
 
 fn tpsa_contributions(mol: &Molecule) -> Vec<f64> {
@@ -1339,26 +1343,22 @@ fn get_crippen_queries() -> &'static CrippenQueries {
 /// Pre-compute for each SMARTS pattern which target atoms satisfy query-atom-0.
 /// Amortizes VF2 cost from O(n_atoms × n_patterns) → O(n_patterns) per molecule.
 /// SSSR is computed once and shared across all 117 Crippen patterns.
-fn crippen_anchor_sets(mol: &Molecule, queries: &CrippenQueries) -> Vec<FxHashSet<AtomIdx>> {
-    let rings = find_sssr(mol);
-    // uniquify=false: symmetric bonds (e.g. internal C≡C) must yield both orientations
-    // so that each endpoint can appear as query-atom-0 and receive its Crippen contribution.
-    let config = MatchConfig {
-        uniquify: false,
-        ..MatchConfig::default()
-    };
-    queries
-        .iter()
-        .map(|(q_opt, _, _)| {
-            let Some(q) = q_opt else {
-                return FxHashSet::default();
-            };
-            find_matches_with_rings_and_config(q, mol, &rings, &config)
-                .into_iter()
-                .filter_map(|m| m.get(&0).copied())
-                .collect()
-        })
-        .collect()
+fn crippen_anchor_types(
+    mol: &Molecule,
+    queries: &CrippenQueries,
+) -> std::sync::Arc<Vec<Option<usize>>> {
+    // For each atom, the first Crippen pattern (table order) with an embedding
+    // anchored at that atom as query atom 0. Equivalent to the historical
+    // "collect every non-uniquified match of every pattern, then take the
+    // first pattern whose anchor set contains the atom", but stops at the
+    // first embedding. Memoized on the (already memoized) aromatic view, so
+    // LogP and MR share one typing pass.
+    mol.derived(chematic_core::DerivedSlot::CrippenTypes, || {
+        let rings = chematic_perception::find_sssr_shared(mol);
+        let refs: Vec<Option<&chematic_smarts::QueryMolecule>> =
+            queries.iter().map(|(q, _, _)| q.as_ref()).collect();
+        chematic_smarts::first_anchored_match_per_atom(&refs, mol, &rings)
+    })
 }
 
 /// Wildman-Crippen LogP per-atom contributions (RDKit-compatible SMARTS dispatch).
@@ -1376,7 +1376,7 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
     let mol_arom = descriptor_aromaticity(mol);
     // Pre-compute once per molecule: for each pattern, which atoms satisfy query-atom-0?
     // Previously O(n_atoms × n_patterns × VF2); now O(n_patterns × VF2 + n_atoms × n_patterns).
-    let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
+    let anchor_types = crippen_anchor_types(&mol_arom, queries);
 
     let h_fallback = CRIPPEN_SMARTS
         .iter()
@@ -1398,11 +1398,8 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
                 .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
                 .count() as u8;
             let h_count = h_count_impl + h_count_expl;
-            let heavy = anchor_sets
-                .iter()
-                .zip(queries.iter())
-                .find(|(set, _)| set.contains(&idx))
-                .map(|(_, (_, logp, _))| *logp)
+            let heavy = anchor_types[idx.0 as usize]
+                .map(|t| queries[t].1)
                 .unwrap_or(0.0);
             let h_contrib = if h_count == 0 {
                 0.0
@@ -1623,7 +1620,7 @@ fn h_mr_for_parent(
 pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
     let queries = get_crippen_queries();
     let mol_arom = descriptor_aromaticity(mol);
-    let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
+    let anchor_types = crippen_anchor_types(&mol_arom, queries);
 
     let h_fallback = CRIPPEN_SMARTS
         .iter()
@@ -1642,11 +1639,8 @@ pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
                 .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
                 .count() as u8;
             let h_count = h_count_impl + h_count_expl;
-            let heavy = anchor_sets
-                .iter()
-                .zip(queries.iter())
-                .find(|(set, _)| set.contains(&idx))
-                .map(|(_, (_, _, mr))| *mr)
+            let heavy = anchor_types[idx.0 as usize]
+                .map(|t| queries[t].2)
                 .unwrap_or(0.0);
             let h_contrib = if h_count == 0 {
                 0.0
@@ -1680,7 +1674,7 @@ pub fn molar_refractivity(mol: &Molecule) -> f64 {
 pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
     let queries = get_crippen_queries();
     let mol_arom = descriptor_aromaticity(mol);
-    let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
+    let anchor_types = crippen_anchor_types(&mol_arom, queries);
 
     let h_logp_fallback = CRIPPEN_SMARTS
         .iter()
@@ -1703,19 +1697,13 @@ pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
         let h_count = implicit_hcount(mol, idx);
 
         // LogP heavy-atom contribution
-        let logp_heavy = anchor_sets
-            .iter()
-            .zip(queries.iter())
-            .find(|(set, _)| set.contains(&idx))
-            .map(|(_, (_, lp, _))| *lp)
+        let logp_heavy = anchor_types[idx.0 as usize]
+            .map(|t| queries[t].1)
             .unwrap_or(0.0);
 
         // MR heavy-atom contribution
-        let mr_heavy = anchor_sets
-            .iter()
-            .zip(queries.iter())
-            .find(|(set, _)| set.contains(&idx))
-            .map(|(_, (_, _, mr))| *mr)
+        let mr_heavy = anchor_types[idx.0 as usize]
+            .map(|t| queries[t].2)
             .unwrap_or(0.0);
 
         logp_sum += logp_heavy;

@@ -22,7 +22,7 @@ pub use cx::{CxQueryAtomProp, CxSmarts, parse_cxsmarts};
 pub use match_vf2::{
     MatchConfig, MatchOutcome, find_matches, find_matches_with_config, find_matches_with_rings,
     find_matches_with_rings_and_config, find_matches_with_rings_and_config_checked,
-    has_match_bounded,
+    first_anchored_match_per_atom, has_match_bounded,
 };
 pub use mcs::{
     AtomCompare, BondCompare, McsConfig, McsOutcome, find_mcs, find_mcs_with_config,

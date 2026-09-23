@@ -51,7 +51,7 @@ pub mod diagnostics {
 pub use sssr::{
     RingSet, SymmetrizedSssrResult, SymmetrizedSssrStatus, find_smallest_rings_bfs,
     find_smallest_rings_bfs_with_blocked_bonds, find_smallest_rings_bfs_with_rdkit_tree,
-    find_smallest_rings_bfs_with_trimmed_bonds, find_sssr, find_symmetrized_sssr,
+    find_smallest_rings_bfs_with_trimmed_bonds, find_sssr, find_sssr_shared, find_symmetrized_sssr,
     find_symmetrized_sssr_with_diagnostics, find_symmetrized_sssr_with_diagnostics_bounded,
     ring_atom_flags, ring_bond_flags, select_rdkit_d2_roots, trim_ring_bonds,
 };
