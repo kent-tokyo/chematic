@@ -34,6 +34,11 @@ struct EvalCtx<'a> {
     /// see the same `find_sssr` result, so this is purely an optimization.
     rings_given: Option<&'a RingSet>,
     rings_lazy: std::cell::OnceCell<std::sync::Arc<RingSet>>,
+    /// Lazily computed cyclic-atom flags, used for `[R]`/`[!R]` only when the
+    /// rings are self-derived (`rings_given == None`). An atom belongs to some
+    /// SSSR ring exactly when it lies on a cycle, so this avoids building the
+    /// SSSR for ring-membership-only queries without changing results.
+    ring_atoms_lazy: std::cell::OnceCell<Vec<bool>>,
     config: &'a MatchConfig,
     /// Remaining visit budget shared across all recursive calls (including nested
     /// recursive-SMARTS `$(...)`).  Decremented on every `match_recursive` /
@@ -60,6 +65,18 @@ struct EvalCtx<'a> {
 }
 
 impl EvalCtx<'_> {
+    fn in_any_ring(&self, idx: AtomIdx) -> bool {
+        match self.rings_given {
+            Some(r) => r.contains_atom(idx),
+            None => self
+                .ring_atoms_lazy
+                .get_or_init(|| chematic_perception::ring_atom_flags(self.mol))
+                .get(idx.0 as usize)
+                .copied()
+                .unwrap_or(false),
+        }
+    }
+
     fn rings(&self) -> &RingSet {
         match self.rings_given {
             Some(r) => r,
@@ -338,6 +355,7 @@ pub fn first_anchored_match_per_atom(
         mol,
         rings_given: Some(rings),
         rings_lazy: std::cell::OnceCell::new(),
+        ring_atoms_lazy: std::cell::OnceCell::new(),
         config: &config,
         visit_budget: std::cell::Cell::new(u64::MAX),
         budget_exhausted: std::cell::Cell::new(false),
@@ -367,6 +385,7 @@ fn run_match_recursive(
         mol,
         rings_given: rings,
         rings_lazy: std::cell::OnceCell::new(),
+        ring_atoms_lazy: std::cell::OnceCell::new(),
         config,
         visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
         budget_exhausted: std::cell::Cell::new(false),
@@ -643,7 +662,7 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         AtomPrimitive::HCount(h) => eval_hcount(idx, ctx, *h),
         AtomPrimitive::ImplicitHCount(h) => implicit_hcount(ctx.mol, idx) == *h,
         AtomPrimitive::Degree(d) => ctx.mol.neighbors(idx).count() as u8 == *d,
-        AtomPrimitive::RingMembership(r) => ctx.rings().contains_atom(idx) == *r,
+        AtomPrimitive::RingMembership(r) => ctx.in_any_ring(idx) == *r,
         AtomPrimitive::RingSize(n) => ctx
             .rings()
             .rings()

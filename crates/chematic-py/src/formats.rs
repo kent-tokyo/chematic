@@ -1384,12 +1384,14 @@ fn to_rxn_document_json(document_json: &str) -> PyResult<String> {
 #[pyo3(signature = (query_fp, db_fps, k = 10))]
 fn nearest_neighbors_from_fp(
     query_fp: &[u8],
-    db_fps: Vec<Vec<u8>>,
+    db_fps: Vec<Bound<'_, PyAny>>,
     k: usize,
 ) -> PyResult<Vec<(usize, f64)>> {
     if k == 0 || db_fps.is_empty() {
         return Ok(Vec::new());
     }
+    let db_fps = crate::fingerprint_similarity::fp_list(db_fps, "db_fps")?;
+    let db_fps: Vec<&[u8]> = db_fps.iter().map(|f| f.as_slice()).collect();
 
     let query_popcount = crate::fingerprint_similarity::popcount(query_fp);
     let mut scores: Vec<(usize, f64)> = db_fps

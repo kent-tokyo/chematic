@@ -1826,7 +1826,7 @@ impl Mol {
     ///
     /// Raises ``ValueError`` for invalid SMARTS.
     fn has_substructure(&self, smarts: &str) -> PyResult<bool> {
-        let query = chematic_smarts::parse_smarts(smarts)
+        let query = crate::misc::cached_smarts(smarts)
             .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
         // Stop at the first embedding instead of enumerating every match — an
         // existence check doesn't need the full match set or the dedup pass.
@@ -1848,7 +1848,7 @@ impl Mol {
     /// Returns an empty list when there are no matches.
     /// Raises ``ValueError`` for invalid SMARTS.
     fn find_matches(&self, smarts: &str) -> PyResult<Vec<Vec<usize>>> {
-        let query = chematic_smarts::parse_smarts(smarts)
+        let query = crate::misc::cached_smarts(smarts)
             .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
         Ok(chematic_smarts::find_matches(&query, &self.inner)
             .into_iter()

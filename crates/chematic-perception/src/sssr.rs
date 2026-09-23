@@ -596,6 +596,14 @@ pub fn find_sssr_horton_reference(mol: &Molecule) -> RingSet {
 /// that only need ring membership can avoid the substantially heavier cycle
 /// basis machinery.
 pub fn ring_bond_flags(mol: &Molecule) -> Vec<bool> {
+    // Memoized on `mol`; see `chematic_core::DerivedSlot`.
+    (*mol.derived(chematic_core::DerivedSlot::RingBondFlags, || {
+        ring_bond_flags_uncached(mol)
+    }))
+    .clone()
+}
+
+fn ring_bond_flags_uncached(mol: &Molecule) -> Vec<bool> {
     let atom_count = mol.atom_count();
     let mut flags = vec![false; mol.bond_count()];
     if atom_count == 0 {

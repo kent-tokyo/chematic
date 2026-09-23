@@ -6,14 +6,40 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::sync::Arc;
 
+/// Parse `smarts`, memoizing successful parses process-wide.
+///
+/// Python callers typically pass the same pattern string for every molecule
+/// in a loop; re-parsing it each time dominated cheap existence checks.
+/// Parse errors are never cached, so error values/messages are unchanged.
+pub(crate) fn cached_smarts(
+    smarts: &str,
+) -> Result<Arc<chematic_smarts::QueryMolecule>, chematic_smarts::SmartsError> {
+    use std::collections::HashMap;
+    use std::sync::{Mutex, OnceLock};
+    const CAPACITY: usize = 4096;
+    static CACHE: OnceLock<Mutex<HashMap<String, Arc<chematic_smarts::QueryMolecule>>>> =
+        OnceLock::new();
+    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    if let Some(q) = cache.lock().ok().and_then(|c| c.get(smarts).cloned()) {
+        return Ok(q);
+    }
+    let query = Arc::new(chematic_smarts::parse_smarts(smarts)?);
+    if let Ok(mut c) = cache.lock() {
+        if c.len() >= CAPACITY {
+            c.clear();
+        }
+        c.insert(smarts.to_owned(), Arc::clone(&query));
+    }
+    Ok(query)
+}
+
 /// Test whether a SMARTS pattern matches a molecule.
 ///
 ///     if chematic.smarts_match("[OH]", mol):
 ///         print("has hydroxyl")
 #[pyfunction]
 fn smarts_match(smarts: &str, mol: &Mol) -> PyResult<bool> {
-    let query =
-        chematic_smarts::parse_smarts(smarts).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let query = cached_smarts(smarts).map_err(|e| PyValueError::new_err(e.to_string()))?;
     // Stop at the first embedding instead of enumerating every match — an
     // existence check doesn't need the full match set or the dedup pass.
     let config = chematic_smarts::MatchConfig {
@@ -33,8 +59,7 @@ fn smarts_match(smarts: &str, mol: &Mol) -> PyResult<bool> {
 ///     # → [[3], [7], ...]   (one list per match; each element is a mol atom index)
 #[pyfunction]
 fn smarts_find(smarts: &str, mol: &Mol) -> PyResult<Vec<Vec<usize>>> {
-    let query =
-        chematic_smarts::parse_smarts(smarts).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let query = cached_smarts(smarts).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let n = query.atom_count();
     Ok(chematic_smarts::find_matches(&query, &mol.inner)
         .into_iter()

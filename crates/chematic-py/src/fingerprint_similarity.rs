@@ -22,7 +22,76 @@ impl std::fmt::Display for FingerprintLengthMismatch {
 }
 
 pub(crate) fn popcount(fp: &[u8]) -> u64 {
-    fp.iter().map(|byte| u64::from(byte.count_ones())).sum()
+    let mut chunks = fp.chunks_exact(8);
+    let mut total: u64 = (&mut chunks)
+        .map(|c| u64::from(u64::from_le_bytes(c.try_into().unwrap()).count_ones()))
+        .sum();
+    total += chunks
+        .remainder()
+        .iter()
+        .map(|byte| u64::from(byte.count_ones()))
+        .sum::<u64>();
+    total
+}
+
+fn intersection_count(left: &[u8], right: &[u8]) -> u64 {
+    let mut lc = left.chunks_exact(8);
+    let mut rc = right.chunks_exact(8);
+    let mut total: u64 = (&mut lc)
+        .zip(&mut rc)
+        .map(|(a, b)| {
+            let a = u64::from_le_bytes(a.try_into().unwrap());
+            let b = u64::from_le_bytes(b.try_into().unwrap());
+            u64::from((a & b).count_ones())
+        })
+        .sum();
+    total += lc
+        .remainder()
+        .iter()
+        .zip(rc.remainder())
+        .map(|(a, b)| u64::from((a & b).count_ones()))
+        .sum::<u64>();
+    total
+}
+
+/// A Python fingerprint argument: `bytes` objects are borrowed without
+/// copying; any other object goes through the historical `Vec<u8>`
+/// extraction (same accepted inputs and errors as before).
+pub(crate) enum FpArg<'py> {
+    Borrowed(pyo3::Bound<'py, pyo3::types::PyBytes>),
+    Owned(Vec<u8>),
+}
+
+impl FpArg<'_> {
+    pub(crate) fn as_slice(&self) -> &[u8] {
+        use pyo3::types::PyBytesMethods;
+        match self {
+            FpArg::Borrowed(b) => b.as_bytes(),
+            FpArg::Owned(v) => v,
+        }
+    }
+}
+
+/// Convert a list of fingerprint objects, borrowing `bytes` zero-copy.
+/// `arg_name` reproduces PyO3's argument-extraction error prefix.
+pub(crate) fn fp_list<'py>(
+    items: Vec<pyo3::Bound<'py, pyo3::PyAny>>,
+    arg_name: &str,
+) -> pyo3::PyResult<Vec<FpArg<'py>>> {
+    use pyo3::prelude::*;
+    items
+        .into_iter()
+        .map(|item| match item.cast_into::<pyo3::types::PyBytes>() {
+            Ok(bytes) => Ok(FpArg::Borrowed(bytes)),
+            Err(err) => err
+                .into_inner()
+                .extract::<Vec<u8>>()
+                .map(FpArg::Owned)
+                .map_err(|e| {
+                    pyo3::exceptions::PyTypeError::new_err(format!("argument '{arg_name}': {e}"))
+                }),
+        })
+        .collect()
 }
 
 pub(crate) fn tanimoto_bytes(left: &[u8], right: &[u8]) -> Result<f64, FingerprintLengthMismatch> {
@@ -42,11 +111,7 @@ pub(crate) fn tanimoto_bytes_with_counts(
         });
     }
 
-    let intersection: u64 = left
-        .iter()
-        .zip(right)
-        .map(|(a, b)| u64::from((a & b).count_ones()))
-        .sum();
+    let intersection = intersection_count(left, right);
     let union = left_popcount + right_popcount - intersection;
     Ok(if union == 0 {
         // Match BitVec2048 and RDKit: two empty sets are identical.
