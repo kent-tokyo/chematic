@@ -11,6 +11,7 @@ accuracy, or compatibility claims.
 |---|---|
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
 | Review current public-package fingerprint and 3D evidence | [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](2026-09-23-public-package-fingerprint-3d-v1.0.20.md) |
+| Review the post-freeze MMFF94 stereo-safe source speed gate | [`2026-09-23-mmff94-stereo-safe-performance.md`](2026-09-23-mmff94-stereo-safe-performance.md) |
 | Review current-source MMFF94 same-coordinate energy evidence | [`2026-09-23-mmff94-current-source-energy.md`](2026-09-23-mmff94-current-source-energy.md) |
 | Review the analytic MMFF94 source speed/convergence candidate | [`2026-09-23-a6-analytic-mmff94-source-candidate.md`](2026-09-23-a6-analytic-mmff94-source-candidate.md) |
 | Review the MMFF94 stereo-safe source quality candidate | [`2026-09-23-a6-mmff94-stereo-safe-quality.md`](2026-09-23-a6-mmff94-stereo-safe-quality.md) |
@@ -36,6 +37,7 @@ measurement was rerun.
 
 | Record | Scope |
 |---|---|
+| [`2026-09-23-mmff94-stereo-safe-performance.md`](2026-09-23-mmff94-stereo-safe-performance.md) | Source `e9f178fa`: fixed-265 and post-freeze 100-row MMFF94 stereo-safe quality/speed gates; both pass, but publication and remaining A6 numerical exits stay separate |
 | [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](2026-09-23-public-package-fingerprint-3d-v1.0.20.md) | Registry-installed v1.0.20: exact supported-domain compatible Morgan speed wins, UFF best-of-10 speed/coverage win, and 265/265 clash-free MMFF94 stereo-safe quality with a remaining speed deficit |
 | [`2026-09-22-public-package-fingerprint-3d.md`](2026-09-22-public-package-fingerprint-3d.md) | Historical published v1.0.19 baseline and source-candidate evidence |
 | [`2026-09-23-a6-analytic-mmff94-source-candidate.md`](2026-09-23-a6-analytic-mmff94-source-candidate.md) | Source `af7c0c44` analytic MMFF94/300-iteration packet against the published RDKit 2026.3.6 wheel; speed and quality boundaries remain separate |
