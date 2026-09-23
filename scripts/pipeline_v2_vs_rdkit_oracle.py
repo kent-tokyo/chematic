@@ -33,6 +33,7 @@ Run: `.venv/bin/python scripts/pipeline_v2_vs_rdkit_oracle.py
   > validation/results/pipeline_v2_vs_rdkit_rdkit_rows.jsonl`
 """
 
+import argparse
 import json
 import sys
 import time
@@ -231,8 +232,24 @@ ARMS = {
 }
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--manifest",
+        type=Path,
+        help="run one frozen manifest instead of the default Tier A+B manifests",
+    )
+    parser.add_argument(
+        "--only-arm",
+        choices=sorted(ARMS),
+        help="emit only one oracle arm",
+    )
+    return parser.parse_args()
+
+
 def main():
     global Chem
+    args = parse_args()
     try:
         from rdkit import Chem as _Chem
         from rdkit.Chem import AllChem as _AllChem
@@ -250,11 +267,20 @@ def main():
         f"force_field_max_iterations={FORCE_FIELD_MAX_ITERATIONS}"
     )
 
-    for tier, path in [
-        ("A", "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json"),
-        ("B", "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json"),
-    ]:
-        manifest = load_manifest(path)
+    if args.manifest:
+        path = args.manifest if args.manifest.is_absolute() else ROOT / args.manifest
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        manifests = [(manifest["tier"], manifest)]
+    else:
+        manifests = [
+            ("A", load_manifest("validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json")),
+            ("B", load_manifest("validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json")),
+        ]
+
+    selected_arms = (
+        {args.only_arm: ARMS[args.only_arm]} if args.only_arm else ARMS
+    )
+    for tier, manifest in manifests:
         for m in manifest["molecules"]:
             name = m["name"]
             smiles = m["smiles"]
@@ -276,7 +302,7 @@ def main():
             n_heavy = mol.GetNumAtoms()
             elements = heavy_atom_elements(mol)
 
-            for arm_name, fn in ARMS.items():
+            for arm_name, fn in selected_arms.items():
                 try:
                     result = fn(mol, n_heavy)
                 except Exception as e:  # never let one molecule/arm crash the whole run

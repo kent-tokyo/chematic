@@ -1497,11 +1497,9 @@ fn vec_to_coords(v: &[[f64; 3]]) -> Coords3D {
 }
 
 /// Central-difference max |gradient component| over an arbitrary black-box
-/// energy function. Used both to report `max_residual_force` in production
-/// and, in tests, as an independent bridge-plumbing check (see module tests
-/// — chematic-ff exposes no analytic gradient anywhere, so this is a
-/// finite-difference-vs-finite-difference cross-check across two independent
-/// code paths, not an analytic-vs-FD check; see test doc comment for why).
+/// energy function. Production MMFF94 uses the matching prepared analytic
+/// gradient; this remains as an independent reference for tests and for force
+/// fields that do not yet expose a validated analytic residual gradient.
 fn fd_max_gradient<F: Fn(&[[f64; 3]]) -> f64>(
     coords: &[[f64; 3]],
     energy_fn: F,
@@ -1523,6 +1521,14 @@ fn fd_max_gradient<F: Fn(&[[f64; 3]]) -> f64>(
         }
     }
     max_g
+}
+
+fn max_gradient_component(gradient: &[[f64; 3]]) -> f64 {
+    gradient
+        .iter()
+        .flat_map(|v| v.iter())
+        .map(|value| value.abs())
+        .fold(0.0_f64, f64::max)
 }
 
 // --- Geometric/energetic soundness gate -------------------------------------
@@ -1980,7 +1986,15 @@ fn run_mmff94_bridge(
     };
 
     let energy_after = energy_model.energy_breakdown(&work);
-    let max_residual_force = fd_max_gradient(&work, |c| energy_model.energy(c), 1e-4);
+    // The minimizer and the reported energy use this exact prepared MMFF94
+    // objective. Re-running a central-difference gradient here cost 6N full
+    // energy evaluations after every minimization and disproportionately
+    // penalized the stereo-safe explicit-H lane. The analytic gradient is
+    // already the production minimizer gradient and is checked against the
+    // same total energy in chematic-ff; one final analytic evaluation preserves
+    // the residual-force soundness gate without the redundant O(N) objective
+    // sweep.
+    let max_residual_force = max_gradient_component(&energy_model.bounded_analytic_gradient(&work));
 
     check_minimization_soundness(
         mol,
@@ -3015,24 +3029,10 @@ mod policy_bridge_tests {
         }
     }
 
-    /// Per the RFC's "analytic-vs-finite-difference gradient self-check"
-    /// request: chematic-ff (verified by reading `mmff94_minimizer.rs` and
-    /// `uff.rs`) exposes NO analytic/closed-form gradient anywhere — both
-    /// `compute_gradient` and `uff_gradient` are private and finite-
-    /// difference-based internally. There is therefore no analytic gradient
-    /// to compare against; a literal analytic-vs-FD test is unsatisfiable
-    /// with the current chematic-ff surface (flagged in the PR body).
-    ///
-    /// What *is* a meaningful correctness check on the bridge itself is
-    /// whether this bridge's `Coords3D` <-> `Vec<[f64; 3]>` conversion
-    /// preserves atom correspondence into the FD gradient computation: this
-    /// test perturbs the SAME atom/axis via two independent routes — (a)
-    /// through `Coords3D::get`/`set` (mimicking how a caller holding a
-    /// `Coords3D` would use this bridge) and (b) directly on a raw
-    /// `Vec<[f64; 3]>` with no `Coords3D` involved at all — and confirms
-    /// both report the same gradient, localized on the atom that was
-    /// actually perturbed. A transposition/off-by-one bug in the bridge's
-    /// index handling would make these disagree.
+    /// The production bridge reports the prepared analytic MMFF94 residual
+    /// gradient. Keep an independent central-difference calculation here to
+    /// verify both the analytic value and the bridge's `Coords3D` <- > raw
+    /// coordinate mapping on a deliberately high-gradient geometry.
     #[test]
     fn bridge_fd_gradient_matches_raw_chematic_ff_call() {
         let mol = parse("CCO").expect("ethanol topology (heavy atoms only)");
@@ -3075,6 +3075,15 @@ mod policy_bridge_tests {
         assert!(
             grad_a > 10.0,
             "expected a large residual force from a 3 Å-stretched C-O bond, got {grad_a}"
+        );
+
+        let model = Mmff94EnergyModel::new(&mol).expect("prepared MMFF94 model");
+        let analytic = max_gradient_component(&model.bounded_analytic_gradient(&via_bridge));
+        let relative_delta = (analytic - grad_a).abs() / grad_a.max(1.0);
+        assert!(
+            relative_delta < 1e-5,
+            "prepared analytic residual force ({analytic}) disagrees with FD reference \
+             ({grad_a}); relative delta={relative_delta}"
         );
     }
 

@@ -107,7 +107,7 @@ pub use genotox::{
     GenotoxReactivityReport, genotox_reactivity,
 };
 pub use hash::{are_identical, mol_hash, stable_are_identical};
-pub use hydrogen::{add_hydrogens, remove_hydrogens};
+pub use hydrogen::{add_hydrogens, add_stereocenter_hydrogens, remove_hydrogens};
 pub use ifg::{FunctionalGroup, identify_functional_groups};
 pub use isotope_distribution::isotope_distribution;
 pub use logd::{logd_from_logp, logd_profile, logd_simple};

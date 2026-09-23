@@ -1,0 +1,86 @@
+{
+  "arm_pairs": {
+    "mmff94-stereo-safe": {
+      "arms": {
+        "chematic": "chematic_pipeline_v2_mmff94_strict_stereo_safe",
+        "rdkit": "rdkit_etkdgv3_mmff94"
+      },
+      "quality": {
+        "chematic": {
+          "independently_sound": 265,
+          "scored_successes": 265,
+          "stereo_clean": 265,
+          "usable": 265,
+          "usable_over_all_inputs": 1.0
+        },
+        "rdkit": {
+          "independently_sound": 264,
+          "scored_successes": 264,
+          "stereo_clean": 264,
+          "usable": 264,
+          "usable_over_all_inputs": 0.9962264150943396
+        }
+      },
+      "timing": {
+        "chematic": {
+          "all_rows": {
+            "p50_ms": 10.557166,
+            "p95_ms": 39.43071639999998,
+            "total_ms": 3901.083337
+          },
+          "rows": 265,
+          "status_counts": {
+            "success": 265
+          },
+          "successful_rows": {
+            "count": 265,
+            "p50_ms": 10.557166,
+            "p95_ms": 39.43071639999998
+          }
+        },
+        "paired": {
+          "chematic_faster_gate": true,
+          "common_successes": 264,
+          "geometric_mean_rdkit_over_chematic": 3.706756931734715,
+          "lower_95_rdkit_over_chematic": 3.402195761846198,
+          "median_rdkit_over_chematic": 3.259296980134424,
+          "minimum_rdkit_over_chematic": 0.40098598532135704
+        },
+        "rdkit": {
+          "all_rows": {
+            "p50_ms": 28.0855,
+            "p95_ms": 162.0837077999999,
+            "total_ms": 13327.818663
+          },
+          "rows": 265,
+          "status_counts": {
+            "internal_error": 1,
+            "success": 264
+          },
+          "successful_rows": {
+            "count": 264,
+            "p50_ms": 28.732416999999998,
+            "p95_ms": 162.37457234999997
+          }
+        }
+      }
+    }
+  },
+  "benchmark": "public-package-3d-vs-rdkit-summary",
+  "boundary": "Speed is paired only over common successful molecules. Quality uses the same external geometry/stereo scorer for both engines and retains every failure in the all-input denominator. A lane passes speed only when the paired 95% lower bound exceeds 1.0; this does not by itself establish quality non-inferiority.",
+  "inputs": {
+    "chematic": {
+      "path": "validation/results/a6-mmff94-stereo-safe-e9f178fa-fixed-265-r1-2026-09-23.jsonl",
+      "sha256": "501f2daee2dd1c286c9637531e586c50b58f76958f8929e5b2d46b5e2d327f68"
+    },
+    "rdkit": {
+      "path": "validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl",
+      "sha256": "edff4ba9a3b9c9413e20d568d5cae45afb90a8851ccf25bb98c8f9a1311a9c09"
+    },
+    "scored": {
+      "path": "validation/results/a6-mmff94-stereo-safe-e9f178fa-fixed-265-common-scored-r1-2026-09-23.jsonl",
+      "sha256": "fae9f4f2bf28d8e72af164926b6c906fd6f0bdef824f5a63de769716b10c2119"
+    }
+  },
+  "schema_version": 1
+}

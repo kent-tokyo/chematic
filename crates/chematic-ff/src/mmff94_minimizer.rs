@@ -29,8 +29,14 @@ use crate::mmff94_numeric::{
 
 type CoordVec = Vec<[f64; 3]>;
 type LbfgsHistory = VecDeque<(CoordVec, CoordVec, f64)>;
+const LBFGS_HISTORY_SIZE: usize = 80;
 type VdwPairs = Vec<PreparedVdwPair>;
 type ElectrostaticPairs = Vec<PreparedElectrostaticPair>;
+
+/// Below this size a linear pass over prepared vdW pairs is faster than
+/// rebuilding spatial hash bins for every line-search energy/gradient probe.
+/// The cutoff and pair set are identical; only candidate enumeration changes.
+const DIRECT_VDW_ATOM_THRESHOLD: usize = 64;
 
 #[derive(Clone, Copy)]
 struct PreparedBond {
@@ -655,7 +661,6 @@ where
     // substantially more stationary points than the historical five-pair
     // window without a measurable throughput penalty. Keep this bounded: each
     // entry stores two coordinate-sized vectors and is discarded at run end.
-    const M: usize = 80;
     const DELTA: f64 = 1e-4; // finite-difference step (Å)
     const CONVERGENCE: f64 = 1e-4; // max |gradient| threshold
     const C_ARMIJO: f64 = 1e-4; // Armijo sufficient-decrease constant
@@ -803,7 +808,7 @@ where
 
         // Only store if curvature condition holds
         if ys > 1e-10 {
-            if history.len() >= M {
+            if history.len() >= LBFGS_HISTORY_SIZE {
                 history.pop_front();
             }
             history.push_back((s, y, 1.0 / ys));
@@ -846,7 +851,7 @@ fn lbfgs_direction(g: &[[f64; 3]], history: &LbfgsHistory) -> Vec<[f64; 3]> {
     }
 
     let mut q: Vec<[f64; 3]> = g.to_vec();
-    let mut alphas = vec![0.0_f64; m];
+    let mut alphas = [0.0_f64; LBFGS_HISTORY_SIZE];
 
     // First loop (backward)
     for i in (0..m).rev() {
@@ -889,8 +894,15 @@ fn lbfgs_direction(g: &[[f64; 3]], history: &LbfgsHistory) -> Vec<[f64; 3]> {
         }
     }
 
-    // p = -H_k g = -q
-    q.iter().map(|qi| [-qi[0], -qi[1], -qi[2]]).collect()
+    // p = -H_k g = -q. Reuse q's allocation; this runs once per optimizer
+    // iteration and avoids allocating/copying a second coordinate-sized
+    // direction buffer without changing operation order.
+    for qi in &mut q {
+        qi[0] = -qi[0];
+        qi[1] = -qi[1];
+        qi[2] = -qi[2];
+    }
+    q
 }
 
 /// Compute finite-difference gradient: ∂E/∂x_i via central differences.
@@ -1450,13 +1462,22 @@ fn prepared_vdw_neighbor_list<'a>(
 
 fn vdw_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedVdwPair]) -> f64 {
     let mut energy = 0.0;
-    for pair in prepared_vdw_neighbor_list(coords, pairs) {
+    let mut add_pair = |pair: &PreparedVdwPair| {
         let r = dist(coords[pair.i], coords[pair.j]);
         if r > 10.0 {
-            continue;
+            return;
         }
         if r > 0.01 {
             energy += mmff94_vdw_energy_value(r, pair.r_star, pair.epsilon);
+        }
+    };
+    if coords.len() <= DIRECT_VDW_ATOM_THRESHOLD {
+        for pair in pairs {
+            add_pair(pair);
+        }
+    } else {
+        for pair in prepared_vdw_neighbor_list(coords, pairs) {
+            add_pair(pair);
         }
     }
     energy
@@ -1613,7 +1634,7 @@ fn prepared_nonbonded_gradient(
                 gradient[j][axis] -= value[axis];
             }
         };
-    for pair in prepared_vdw_neighbor_list(coords, vdw_pairs) {
+    let mut add_vdw = |pair: &PreparedVdwPair| {
         let delta = [
             coords[pair.i][0] - coords[pair.j][0],
             coords[pair.i][1] - coords[pair.j][1],
@@ -1623,6 +1644,15 @@ fn prepared_nonbonded_gradient(
         if r > 0.01 && r <= 10.0 {
             let radial = mmff94_vdw_radial_derivative(r, pair.r_star, pair.epsilon);
             add_pair(&mut gradient, pair.i, pair.j, radial, delta, r);
+        }
+    };
+    if coords.len() <= DIRECT_VDW_ATOM_THRESHOLD {
+        for pair in vdw_pairs {
+            add_vdw(pair);
+        }
+    } else {
+        for pair in prepared_vdw_neighbor_list(coords, vdw_pairs) {
+            add_vdw(pair);
         }
     }
     for pair in electrostatic_pairs {

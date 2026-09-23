@@ -20,7 +20,11 @@
 //!
 //! For bounded/restartable corpus runs, pass `--tier A|B`, `--start N`, and
 //! `--count N`. `--only-arm NAME` restricts execution to one pipeline arm.
-//! The default remains the complete A+B corpus.
+//! `--manifest PATH` runs one independently frozen manifest (its top-level
+//! `tier` value is used in emitted rows). The default remains the complete A+B
+//! corpus.
+
+#![recursion_limit = "256"]
 
 use std::collections::HashMap;
 use std::panic::{self, AssertUnwindSafe};
@@ -557,6 +561,18 @@ fn run_pipeline_arm_with_config(mol: &Molecule, arm: &Arm, config: &PipelineV2Co
                     .filter(|p| p.applied_to_geometry)
                     .count(),
                 "ring_torsion_diagnostic_only": r.ring_torsion_evidence.diagnostic_only,
+                "stage_timings_ms": {
+                    "distance_geometry": r.elapsed_ms_by_stage.distance_geometry_ms,
+                    "torsion_optimization": r.elapsed_ms_by_stage.torsion_optimization_ms,
+                    "force_field": r.elapsed_ms_by_stage.force_field_ms,
+                    "stereo_total": r.elapsed_ms_by_stage.stereo_verify_before_ms
+                        + r.elapsed_ms_by_stage.stereo_repair_ms
+                        + r.elapsed_ms_by_stage.stereo_verify_after_repair_ms
+                        + r.elapsed_ms_by_stage.final_stereo_verify_ms
+                        + r.elapsed_ms_by_stage.post_min_stereo_repair_ms,
+                    "final_validation": r.elapsed_ms_by_stage.final_validation_ms,
+                    "total": r.elapsed_ms_by_stage.total_ms,
+                },
             })
         }
         Ok(Err(f)) => {
@@ -765,6 +781,7 @@ fn load_manifest(path: &str) -> Value {
 
 fn main() {
     let mut tier_filter: Option<String> = None;
+    let mut manifest_path: Option<String> = None;
     let mut start = 0usize;
     let mut count = usize::MAX;
     let mut only_arm: Option<String> = None;
@@ -797,16 +814,24 @@ fn main() {
                         .unwrap_or_else(|| panic!("--only-arm requires an arm name")),
                 );
             }
+            "--manifest" => {
+                manifest_path = Some(
+                    args.next()
+                        .unwrap_or_else(|| panic!("--manifest requires a path")),
+                );
+            }
             "--help" | "-h" => {
                 eprintln!(
-                    "usage: pipeline_v2_vs_rdkit_dump [--tier A|B] [--start N] [--count N] [--only-arm NAME]"
+                    "usage: pipeline_v2_vs_rdkit_dump [--manifest PATH] [--tier A|B] [--start N] [--count N] [--only-arm NAME]"
                 );
                 return;
             }
             other => panic!("unknown argument {other:?}"),
         }
     }
-    if let Some(tier) = &tier_filter {
+    if manifest_path.is_none()
+        && let Some(tier) = &tier_filter
+    {
         assert!(matches!(tier.as_str(), "A" | "B"), "--tier must be A or B");
     }
     let selected_arms: Vec<&Arm> = PIPELINE_ARMS
@@ -823,19 +848,27 @@ fn main() {
             "unknown --only-arm value {wanted:?}"
         );
     }
-    let mut manifests: Vec<(String, Value)> = Vec::new();
-    for (tier, path) in [
-        (
-            "A",
-            "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json",
-        ),
-        (
-            "B",
-            "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
-        ),
-    ] {
-        manifests.push((tier.to_string(), load_manifest(path)));
-    }
+    let manifests: Vec<(String, Value)> = if let Some(path) = &manifest_path {
+        let manifest = load_manifest(path);
+        let tier = manifest["tier"]
+            .as_str()
+            .unwrap_or_else(|| panic!("custom manifest {path} must contain a string `tier`"));
+        vec![(tier.to_string(), manifest)]
+    } else {
+        [
+            (
+                "A",
+                "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json",
+            ),
+            (
+                "B",
+                "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
+            ),
+        ]
+        .into_iter()
+        .map(|(tier, path)| (tier.to_string(), load_manifest(path)))
+        .collect()
+    };
 
     let config_snapshot: HashMap<&str, Value> = PIPELINE_ARMS
         .iter()
