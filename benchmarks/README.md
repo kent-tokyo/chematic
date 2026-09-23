@@ -93,6 +93,9 @@ measurement was rerun.
 
 | Record | Scope |
 |---|---|
+| [`2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md`](2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md) | Source branch `8cc01365` vs base `01a86b62` vs RDKit 2026.03.6: 62 Python operations with equivalence classes and row-level output agreement; 21 checked operations faster with full agreement (base: 6); base-vs-branch outputs byte-identical. 2-vCPU cloud VM, not a package claim |
+| [`2026-09-24-python-op-matrix-vs-rdkit-base-01a86b62.json`](2026-09-24-python-op-matrix-vs-rdkit-base-01a86b62.json) | Raw per-repeat timings and agreement for the base run of the record above |
+| [`2026-09-24-python-op-matrix-vs-rdkit-branch-8cc01365.json`](2026-09-24-python-op-matrix-vs-rdkit-branch-8cc01365.json) | Raw per-repeat timings and agreement for the branch run of the record above |
 | [`2026-09-04-canonical-fast-path.md`](2026-09-04-canonical-fast-path.md) | Canonical SMILES on two 5,000-molecule corpora |
 | [`2026-09-04-sdf-fast-path.md`](2026-09-04-sdf-fast-path.md) | SDF graph/property read and serialization-only write |
 | [`2026-09-04-rdkit-openbabel.md`](2026-09-04-rdkit-openbabel.md) | Earlier RDKit/Open Babel comparison with explicit operation boundaries |
