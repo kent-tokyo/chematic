@@ -9,6 +9,7 @@ accuracy, or compatibility claims.
 
 | Need | Start with |
 |---|---|
+| Review the M4 source-candidate SSSR/cache/VF2 browser rerun | [`2026-09-24-rdkitjs-m4-sssr-cache.md`](2026-09-24-rdkitjs-m4-sssr-cache.md) |
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
 | Review current public-package fingerprint and 3D evidence | [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](2026-09-23-public-package-fingerprint-3d-v1.0.20.md) |
 | Review the post-freeze MMFF94 stereo-safe source speed gate | [`2026-09-23-mmff94-stereo-safe-performance.md`](2026-09-23-mmff94-stereo-safe-performance.md) |
@@ -37,6 +38,7 @@ measurement was rerun.
 
 | Record | Scope |
 |---|---|
+| [`2026-09-24-rdkitjs-m4-sssr-cache.md`](2026-09-24-rdkitjs-m4-sssr-cache.md) | Apple-silicon Chrome source-candidate rerun: exact packed-output contract across 5,000 rows; parse-inclusive compatible Morgan 4.535x geometric speedup (95% lower bound 4.411x) and prepared lane 3.411x (lower bound 3.321x); not a registry-package or native-Python-matrix claim |
 | [`2026-09-23-mmff94-stereo-safe-performance.md`](2026-09-23-mmff94-stereo-safe-performance.md) | Source `e9f178fa`: fixed-265 and post-freeze 100-row MMFF94 stereo-safe quality/speed gates; both pass, but publication and remaining A6 numerical exits stay separate |
 | [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](2026-09-23-public-package-fingerprint-3d-v1.0.20.md) | Registry-installed v1.0.20: exact supported-domain compatible Morgan speed wins, UFF best-of-10 speed/coverage win, and 265/265 clash-free MMFF94 stereo-safe quality with a remaining speed deficit |
 | [`2026-09-22-public-package-fingerprint-3d.md`](2026-09-22-public-package-fingerprint-3d.md) | Historical published v1.0.19 baseline and source-candidate evidence |

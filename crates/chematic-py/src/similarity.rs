@@ -1,7 +1,9 @@
 //! Similarity/fingerprint comparison bindings (Tanimoto/Dice/Tversky variants, clustering, alignment).
 
 use crate::Mol;
-use crate::fingerprint_similarity::{popcount, tanimoto_bytes, tanimoto_bytes_with_counts};
+use crate::fingerprint_similarity::{
+    fp_list, popcount, tanimoto_bytes, tanimoto_bytes_with_counts,
+};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -348,7 +350,14 @@ fn tanimoto_erg(mol1: &Mol, mol2: &Mol) -> f64 {
 ///     )
 ///     # matrix[i][j] = similarity of query i against library compound j
 #[pyfunction]
-fn tanimoto_matrix(fps_a: Vec<Vec<u8>>, fps_b: Vec<Vec<u8>>) -> PyResult<Vec<Vec<f32>>> {
+fn tanimoto_matrix<'py>(
+    fps_a: Vec<Bound<'py, PyAny>>,
+    fps_b: Vec<Bound<'py, PyAny>>,
+) -> PyResult<Vec<Vec<f32>>> {
+    let fps_a = fp_list(fps_a, "fps_a")?;
+    let fps_b = fp_list(fps_b, "fps_b")?;
+    let fps_a: Vec<&[u8]> = fps_a.iter().map(|f| f.as_slice()).collect();
+    let fps_b: Vec<&[u8]> = fps_b.iter().map(|f| f.as_slice()).collect();
     let db_counts: Vec<u64> = fps_b.iter().map(|fp| popcount(fp)).collect();
     fps_a
         .iter()
@@ -384,9 +393,11 @@ fn tanimoto_matrix(fps_a: Vec<Vec<u8>>, fps_b: Vec<Vec<u8>>) -> PyResult<Vec<Vec
 ///     scores = chematic.tanimoto_slice(query.ecfp4(), db_fps)
 ///     top = sorted(enumerate(scores), key=lambda x: -x[1])[:10]
 #[pyfunction]
-fn tanimoto_slice(query: &[u8], db: Vec<Vec<u8>>) -> PyResult<Vec<f32>> {
+fn tanimoto_slice<'py>(query: &[u8], db: Vec<Bound<'py, PyAny>>) -> PyResult<Vec<f32>> {
+    let db = fp_list(db, "db")?;
     let query_popcount = popcount(query);
     db.iter()
+        .map(|fp| fp.as_slice())
         .enumerate()
         .map(|(db_index, fp)| {
             tanimoto_bytes_with_counts(query, fp, query_popcount, popcount(fp))

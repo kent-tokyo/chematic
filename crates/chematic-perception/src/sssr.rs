@@ -158,7 +158,20 @@ impl SymmetrizedSssrResult {
 ///
 /// Returns a [`RingSet`] whose ring count equals the cycle rank r = E - V + C.
 /// For acyclic molecules (r = 0) the returned set is empty.
+///
+/// The result is memoized on `mol` (see [`find_sssr_shared`]); repeated calls
+/// on an unmodified molecule are a cheap clone.
 pub fn find_sssr(mol: &Molecule) -> RingSet {
+    (*find_sssr_shared(mol)).clone()
+}
+
+/// Shared, memoized [`find_sssr`] result. Prefer this in hot paths to avoid
+/// cloning the ring vectors.
+pub fn find_sssr_shared(mol: &Molecule) -> std::sync::Arc<RingSet> {
+    mol.derived(chematic_core::DerivedSlot::Sssr, || find_sssr_uncached(mol))
+}
+
+fn find_sssr_uncached(mol: &Molecule) -> RingSet {
     let v = mol.atom_count();
     // Count only ring-eligible bonds for the cycle rank (E - V + C).
     // Zero-order and Dative bonds are excluded (RDKit PR #9118).
@@ -189,37 +202,20 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
         return single_cycle_sssr(mol);
     }
 
-    let ring_bonds: Vec<(BondIdx, AtomIdx, AtomIdx)> = mol
-        .bonds()
-        .filter(|(_, b)| is_ring_eligible(b.order))
-        .map(|(bidx, b)| (bidx, b.atom1, b.atom2))
-        .collect();
-
-    // Horton candidate generation: BFS from every vertex, then for every
-    // ring-eligible edge form the candidate SP(root,x)+edge(x,y)+SP(y,root).
-    // O(V*E) candidates total — enough redundancy to guarantee a
-    // minimum-weight basis is representable in the pool (see module doc).
-    let mut candidates: Vec<(Vec<BondIdx>, Vec<AtomIdx>)> = Vec::new();
-    for root_idx in 0..v {
-        let root = AtomIdx(root_idx as u32);
-        let (dist, parent) = bfs_tree(mol, root);
-        for &(bidx, x, y) in &ring_bonds {
-            if x == root || y == root {
-                continue; // degenerate: edge touches the root itself
-            }
-            if dist[x.0 as usize] == usize::MAX || dist[y.0 as usize] == usize::MAX {
-                continue; // x or y unreachable from this root (different component)
-            }
-            if let Some(candidate) = horton_candidate(mol, root, x, y, bidx, &parent) {
-                candidates.push(candidate);
-            }
-        }
-    }
+    let candidates = horton_candidates_fast(mol);
 
     // Deterministic ordering: shortest first, then a canonical (input-order-
     // independent) tie-break so ring *selection* doesn't depend on how the
     // molecule happened to be numbered by the parser.
+    //
+    // `horton_candidates_fast` already collapsed geometric duplicates to their
+    // first generation-order occurrence. Duplicates share an identical sort
+    // key (both keys are rotation/reflection invariant), and
+    // `sort_by_cached_key` is stable, so the relative order of first
+    // occurrences — the only thing the GF(2) selection below can observe —
+    // is exactly the order the historical sort+adjacent-dedup produced.
     let ranks = canonical_atom_ranks(mol);
+    let mut candidates = candidates;
     candidates.sort_by_cached_key(|c| {
         (
             c.0.len(),
@@ -227,9 +223,6 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
             canonical_cycle_key(&c.1, &ranks),
         )
     });
-    // The same geometric cycle can be generated from multiple roots; collapse
-    // duplicates (bond_set is already sorted, so identical cycles are equal).
-    candidates.dedup_by(|a, b| a.0 == b.0);
 
     // Gaussian elimination over GF(2) to select r linearly independent cycles.
     // The basis maps a pivot BondIdx to the full bond-set of that basis row.
@@ -257,6 +250,331 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
     RingSet::from_rings(selected_atoms, v)
 }
 
+/// Horton candidate pool, restricted to the cyclic subgraph and collapsed to
+/// the first generation-order occurrence of each geometric cycle.
+///
+/// This is an allocation-light, output-identical replacement for the
+/// historical "BFS from every atom over every ring-eligible bond" loop kept in
+/// [`find_sssr_horton_reference`]. The restriction is exact:
+///
+/// * An atom that lies on no cycle can never be the root of a *simple*
+///   candidate cycle (a simple cycle through the root would make it a ring
+///   atom), so non-ring roots contribute nothing.
+/// * A bridge bond can never lie on a simple cycle, so only cyclic
+///   (non-bridge) bonds can close a candidate.
+/// * Every shortest path between two atoms of the same cyclic component stays
+///   inside the cyclic subgraph, and restricting the adjacency lists (in their
+///   original order) preserves BFS discovery order among those atoms, hence the
+///   same parent tree. Atoms in a different cyclic component are only
+///   reachable through a shared bridge path, which the simplicity check always
+///   rejected; here they are simply unreachable.
+fn horton_candidates_fast(mol: &Molecule) -> Vec<(Vec<BondIdx>, Vec<AtomIdx>)> {
+    let n = mol.atom_count();
+    let cyclic_bond = ring_bond_flags(mol);
+
+    // Restricted adjacency, preserving the original neighbor order.
+    let mut adj_start = vec![0u32; n + 1];
+    let mut adj: Vec<(u32, BondIdx)> = Vec::with_capacity(2 * mol.bond_count());
+    let mut ring_atom = vec![false; n];
+    for i in 0..n {
+        adj_start[i] = adj.len() as u32;
+        for (nb, bidx) in mol.neighbors(AtomIdx(i as u32)) {
+            if cyclic_bond[bidx.0 as usize] {
+                adj.push((nb.0, bidx));
+                ring_atom[i] = true;
+            }
+        }
+    }
+    adj_start[n] = adj.len() as u32;
+
+    let ring_bonds: Vec<(BondIdx, u32, u32)> = mol
+        .bonds()
+        .filter(|(bidx, _)| cyclic_bond[bidx.0 as usize])
+        .map(|(bidx, b)| (bidx, b.atom1.0, b.atom2.0))
+        .collect();
+
+    const UNSEEN: u32 = u32::MAX;
+    let mut dist = vec![UNSEEN; n];
+    let mut parent = vec![UNSEEN; n];
+    let mut parent_bond = vec![BondIdx(0); n];
+    let mut queue: Vec<u32> = Vec::with_capacity(n);
+    let mut mark = vec![0u32; n];
+    let mut stamp = 0u32;
+
+    let mut seen: FxHashSet<Vec<BondIdx>> = FxHashSet::default();
+    let mut candidates: Vec<(Vec<BondIdx>, Vec<AtomIdx>)> = Vec::new();
+
+    for root in 0..n {
+        if !ring_atom[root] {
+            continue;
+        }
+        // BFS over the cyclic subgraph.
+        for &a in &queue {
+            dist[a as usize] = UNSEEN;
+            parent[a as usize] = UNSEEN;
+        }
+        queue.clear();
+        dist[root] = 0;
+        queue.push(root as u32);
+        let mut head = 0;
+        while head < queue.len() {
+            let cur = queue[head] as usize;
+            head += 1;
+            let d = dist[cur] + 1;
+            for &(nb, bidx) in &adj[adj_start[cur] as usize..adj_start[cur + 1] as usize] {
+                let ni = nb as usize;
+                if dist[ni] == UNSEEN {
+                    dist[ni] = d;
+                    parent[ni] = cur as u32;
+                    parent_bond[ni] = bidx;
+                    queue.push(nb);
+                }
+            }
+        }
+
+        let root_u = root as u32;
+        for &(bidx, x, y) in &ring_bonds {
+            if x == root_u || y == root_u {
+                continue;
+            }
+            if dist[x as usize] == UNSEEN || dist[y as usize] == UNSEEN {
+                continue;
+            }
+            // Simplicity: the two tree paths may share only the root.
+            stamp = stamp.wrapping_add(1);
+            if stamp == 0 {
+                mark.iter_mut().for_each(|m| *m = 0);
+                stamp = 1;
+            }
+            let mut a = x;
+            while a != root_u {
+                mark[a as usize] = stamp;
+                a = parent[a as usize];
+            }
+            let mut b = y;
+            let mut simple = true;
+            while b != root_u {
+                if mark[b as usize] == stamp {
+                    simple = false;
+                    break;
+                }
+                b = parent[b as usize];
+            }
+            if !simple {
+                continue;
+            }
+
+            let len = (dist[x as usize] + dist[y as usize] + 1) as usize;
+            let mut bond_set: Vec<BondIdx> = Vec::with_capacity(len);
+            let mut a = x;
+            while a != root_u {
+                bond_set.push(parent_bond[a as usize]);
+                a = parent[a as usize];
+            }
+            let mut b = y;
+            while b != root_u {
+                bond_set.push(parent_bond[b as usize]);
+                b = parent[b as usize];
+            }
+            bond_set.push(bidx);
+            bond_set.sort_unstable();
+            if seen.contains(&bond_set) {
+                continue;
+            }
+
+            // Ordered ring atoms: x ... root ... y (edge y-x closes the ring).
+            let mut ring_atoms: Vec<AtomIdx> = Vec::with_capacity(len);
+            let mut a = x;
+            loop {
+                ring_atoms.push(AtomIdx(a));
+                if a == root_u {
+                    break;
+                }
+                a = parent[a as usize];
+            }
+            let tail = ring_atoms.len();
+            let mut b = y;
+            while b != root_u {
+                ring_atoms.push(AtomIdx(b));
+                b = parent[b as usize];
+            }
+            ring_atoms[tail..].reverse();
+
+            seen.insert(bond_set.clone());
+            candidates.push((bond_set, ring_atoms));
+        }
+    }
+    candidates
+}
+
+/// Unoptimized reference for [`canonical_atom_ranks`] (differential oracle).
+#[doc(hidden)]
+pub fn canonical_atom_ranks_reference(mol: &Molecule) -> Vec<u64> {
+    let n = mol.atom_count();
+    let mut keys: Vec<u64> = (0..n)
+        .map(|i| {
+            let idx = AtomIdx(i as u32);
+            let atom = mol.atom(idx);
+            let z = atom.element.atomic_number() as u64;
+            // SSSR selection is a property of the cyclic heavy-atom graph.
+            // Non-ring-eligible attachments (most importantly explicit H)
+            // must not change ranks, otherwise adding/removing explicit H can
+            // select a different fused-ring basis for the same heavy graph.
+            let degree = mol
+                .neighbors(idx)
+                .filter(|(_, bond)| is_ring_eligible(mol.bond(*bond).order))
+                .count() as u64;
+            let charge = (atom.charge as i64 + 8) as u64; // shift to non-negative
+            let aromatic = u64::from(atom.aromatic);
+            (z << 24) | (degree << 16) | (charge << 8) | aromatic
+        })
+        .collect();
+
+    const ROUNDS: usize = 8;
+    for _ in 0..ROUNDS {
+        let mut next = Vec::with_capacity(n);
+        for i in 0..n {
+            let mut neighbor_keys: Vec<u64> = mol
+                .neighbors(AtomIdx(i as u32))
+                .filter(|(_, bidx)| is_ring_eligible(mol.bond(*bidx).order))
+                .map(|(nb, bidx)| {
+                    keys[nb.0 as usize]
+                        .wrapping_mul(257)
+                        .wrapping_add(mol.bond(bidx).order.order_int() as u64)
+                })
+                .collect();
+            neighbor_keys.sort_unstable();
+            let mut h = keys[i];
+            for nk in neighbor_keys {
+                h = h.wrapping_mul(1_000_003).wrapping_add(nk);
+            }
+            next.push(h);
+        }
+        keys = next;
+    }
+    keys
+}
+
+/// Unoptimized reference for [`canonical_cycle_order_key`] (differential oracle).
+#[doc(hidden)]
+pub fn canonical_cycle_order_key_reference(
+    mol: &Molecule,
+    atom_seq: &[AtomIdx],
+    ranks: &[u64],
+) -> Vec<(u64, u8)> {
+    if atom_seq.is_empty() {
+        return Vec::new();
+    }
+    let n = atom_seq.len();
+    let mut sequence = Vec::with_capacity(n);
+    for i in 0..n {
+        let current = atom_seq[i];
+        let next = atom_seq[(i + 1) % n];
+        let order = mol
+            .bond_between(current, next)
+            .map(|(_, bond)| bond.order.order_int())
+            .unwrap_or_default();
+        sequence.push((ranks[current.0 as usize], order));
+    }
+
+    let mut best: Option<Vec<(u64, u8)>> = None;
+    for reversed in [false, true] {
+        for offset in 0..n {
+            let candidate = (0..n)
+                .map(|step| {
+                    let index = if reversed {
+                        (offset + n - (step % n)) % n
+                    } else {
+                        (offset + step) % n
+                    };
+                    if reversed {
+                        // Reverse traversal uses the bond entering the atom,
+                        // so preserve the same pair semantics as forward.
+                        let previous = (index + n - 1) % n;
+                        (ranks[atom_seq[index].0 as usize], sequence[previous].1)
+                    } else {
+                        sequence[index]
+                    }
+                })
+                .collect::<Vec<_>>();
+            if best.as_ref().is_none_or(|current| candidate < *current) {
+                best = Some(candidate);
+            }
+        }
+    }
+    best.expect("non-empty ring has a canonical traversal")
+}
+
+/// The historical, unoptimized Horton SSSR implementation.
+///
+/// Retained verbatim as the differential-testing oracle for [`find_sssr`];
+/// not intended for production use.
+#[doc(hidden)]
+pub fn find_sssr_horton_reference(mol: &Molecule) -> RingSet {
+    let v = mol.atom_count();
+    let e = mol
+        .bonds()
+        .filter(|(_, b)| is_ring_eligible(b.order))
+        .count();
+    if v == 0 || e == 0 {
+        return RingSet::empty();
+    }
+    let (components, _) = bfs_spanning_forest(mol);
+    let r = (e as isize) - (v as isize) + (components as isize);
+    if r <= 0 {
+        return RingSet::empty();
+    }
+    let r = r as usize;
+    if r == 1 {
+        return single_cycle_sssr(mol);
+    }
+    let ring_bonds: Vec<(BondIdx, AtomIdx, AtomIdx)> = mol
+        .bonds()
+        .filter(|(_, b)| is_ring_eligible(b.order))
+        .map(|(bidx, b)| (bidx, b.atom1, b.atom2))
+        .collect();
+    let mut candidates: Vec<(Vec<BondIdx>, Vec<AtomIdx>)> = Vec::new();
+    for root_idx in 0..v {
+        let root = AtomIdx(root_idx as u32);
+        let (dist, parent) = bfs_tree(mol, root);
+        for &(bidx, x, y) in &ring_bonds {
+            if x == root || y == root {
+                continue;
+            }
+            if dist[x.0 as usize] == usize::MAX || dist[y.0 as usize] == usize::MAX {
+                continue;
+            }
+            if let Some(candidate) = horton_candidate(mol, root, x, y, bidx, &parent) {
+                candidates.push(candidate);
+            }
+        }
+    }
+    let ranks = canonical_atom_ranks_reference(mol);
+    candidates.sort_by_cached_key(|c| {
+        (
+            c.0.len(),
+            canonical_cycle_order_key_reference(mol, &c.1, &ranks),
+            canonical_cycle_key(&c.1, &ranks),
+        )
+    });
+    candidates.dedup_by(|a, b| a.0 == b.0);
+    let mut basis: FxHashMap<BondIdx, Vec<BondIdx>> = FxHashMap::default();
+    let mut selected_atoms: Vec<Vec<AtomIdx>> = Vec::new();
+    for (bond_set, atom_seq) in candidates {
+        let reduced = gf2_reduce(&bond_set, &basis);
+        if !reduced.is_empty() {
+            let pivot = *reduced.iter().min().unwrap();
+            basis.insert(pivot, reduced);
+            selected_atoms.push(atom_seq);
+            if selected_atoms.len() == r {
+                break;
+            }
+        }
+    }
+    selected_atoms.sort_by_key(|ring| ring.len());
+    RingSet::from_rings(selected_atoms, v)
+}
+
 /// Return one flag per atom indicating whether it belongs to any eligible
 /// cycle, without constructing an SSSR.
 ///
@@ -278,6 +596,14 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
 /// that only need ring membership can avoid the substantially heavier cycle
 /// basis machinery.
 pub fn ring_bond_flags(mol: &Molecule) -> Vec<bool> {
+    // Memoized on `mol`; see `chematic_core::DerivedSlot`.
+    (*mol.derived(chematic_core::DerivedSlot::RingBondFlags, || {
+        ring_bond_flags_uncached(mol)
+    }))
+    .clone()
+}
+
+fn ring_bond_flags_uncached(mol: &Molecule) -> Vec<bool> {
     let atom_count = mol.atom_count();
     let mut flags = vec![false; mol.bond_count()];
     if atom_count == 0 {
@@ -1482,47 +1808,50 @@ fn path_to_root(start: AtomIdx, parent: &[Option<AtomIdx>]) -> Vec<AtomIdx> {
 /// among genuinely symmetric atoms are expected and fine; the point is
 /// input-order-independence, not maximal refinement).
 fn canonical_atom_ranks(mol: &Molecule) -> Vec<u64> {
+    // Same refinement as `canonical_atom_ranks_reference`, with the eligible
+    // adjacency flattened once and scratch buffers reused across rounds.
     let n = mol.atom_count();
+    let mut start = Vec::with_capacity(n + 1);
+    let mut nbrs: Vec<(u32, u64)> = Vec::with_capacity(2 * mol.bond_count());
+    for i in 0..n {
+        start.push(nbrs.len());
+        for (nb, bidx) in mol.neighbors(AtomIdx(i as u32)) {
+            let order = mol.bond(bidx).order;
+            if is_ring_eligible(order) {
+                nbrs.push((nb.0, order.order_int() as u64));
+            }
+        }
+    }
+    start.push(nbrs.len());
     let mut keys: Vec<u64> = (0..n)
         .map(|i| {
-            let idx = AtomIdx(i as u32);
-            let atom = mol.atom(idx);
+            let atom = mol.atom(AtomIdx(i as u32));
             let z = atom.element.atomic_number() as u64;
-            // SSSR selection is a property of the cyclic heavy-atom graph.
-            // Non-ring-eligible attachments (most importantly explicit H)
-            // must not change ranks, otherwise adding/removing explicit H can
-            // select a different fused-ring basis for the same heavy graph.
-            let degree = mol
-                .neighbors(idx)
-                .filter(|(_, bond)| is_ring_eligible(mol.bond(*bond).order))
-                .count() as u64;
-            let charge = (atom.charge as i64 + 8) as u64; // shift to non-negative
+            let degree = (start[i + 1] - start[i]) as u64;
+            let charge = (atom.charge as i64 + 8) as u64;
             let aromatic = u64::from(atom.aromatic);
             (z << 24) | (degree << 16) | (charge << 8) | aromatic
         })
         .collect();
-
+    let mut next = vec![0u64; n];
+    let mut scratch: Vec<u64> = Vec::new();
     const ROUNDS: usize = 8;
     for _ in 0..ROUNDS {
-        let mut next = Vec::with_capacity(n);
         for i in 0..n {
-            let mut neighbor_keys: Vec<u64> = mol
-                .neighbors(AtomIdx(i as u32))
-                .filter(|(_, bidx)| is_ring_eligible(mol.bond(*bidx).order))
-                .map(|(nb, bidx)| {
-                    keys[nb.0 as usize]
-                        .wrapping_mul(257)
-                        .wrapping_add(mol.bond(bidx).order.order_int() as u64)
-                })
-                .collect();
-            neighbor_keys.sort_unstable();
+            scratch.clear();
+            scratch.extend(
+                nbrs[start[i]..start[i + 1]]
+                    .iter()
+                    .map(|&(nb, ord)| keys[nb as usize].wrapping_mul(257).wrapping_add(ord)),
+            );
+            scratch.sort_unstable();
             let mut h = keys[i];
-            for nk in neighbor_keys {
+            for &nk in &scratch {
                 h = h.wrapping_mul(1_000_003).wrapping_add(nk);
             }
-            next.push(h);
+            next[i] = h;
         }
-        keys = next;
+        std::mem::swap(&mut keys, &mut next);
     }
     keys
 }
@@ -1555,11 +1884,14 @@ fn canonical_cycle_order_key(
     atom_seq: &[AtomIdx],
     ranks: &[u64],
 ) -> Vec<(u64, u8)> {
+    // Output-identical to `canonical_cycle_order_key_reference`: the
+    // lexicographically smallest of the 2n traversals, found by comparing
+    // traversals lazily instead of materializing each one.
     if atom_seq.is_empty() {
         return Vec::new();
     }
     let n = atom_seq.len();
-    let mut sequence = Vec::with_capacity(n);
+    let mut sequence: Vec<(u64, u8)> = Vec::with_capacity(n);
     for i in 0..n {
         let current = atom_seq[i];
         let next = atom_seq[(i + 1) % n];
@@ -1569,33 +1901,36 @@ fn canonical_cycle_order_key(
             .unwrap_or_default();
         sequence.push((ranks[current.0 as usize], order));
     }
-
-    let mut best: Option<Vec<(u64, u8)>> = None;
+    let elem = |reversed: bool, offset: usize, step: usize| -> (u64, u8) {
+        if reversed {
+            let index = (offset + n - (step % n)) % n;
+            let previous = (index + n - 1) % n;
+            (sequence[index].0, sequence[previous].1)
+        } else {
+            sequence[(offset + step) % n]
+        }
+    };
+    let mut best = (false, 0usize);
     for reversed in [false, true] {
         for offset in 0..n {
-            let candidate = (0..n)
-                .map(|step| {
-                    let index = if reversed {
-                        (offset + n - (step % n)) % n
-                    } else {
-                        (offset + step) % n
-                    };
-                    if reversed {
-                        // Reverse traversal uses the bond entering the atom,
-                        // so preserve the same pair semantics as forward.
-                        let previous = (index + n - 1) % n;
-                        (ranks[atom_seq[index].0 as usize], sequence[previous].1)
-                    } else {
-                        sequence[index]
-                    }
-                })
-                .collect::<Vec<_>>();
-            if best.as_ref().is_none_or(|current| candidate < *current) {
-                best = Some(candidate);
+            if (reversed, offset) == (false, 0) {
+                continue;
+            }
+            let mut less = false;
+            for step in 0..n {
+                let c = elem(reversed, offset, step);
+                let b = elem(best.0, best.1, step);
+                if c != b {
+                    less = c < b;
+                    break;
+                }
+            }
+            if less {
+                best = (reversed, offset);
             }
         }
     }
-    best.expect("non-empty ring has a canonical traversal")
+    (0..n).map(|step| elem(best.0, best.1, step)).collect()
 }
 
 // ---------------------------------------------------------------------------

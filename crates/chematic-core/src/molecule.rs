@@ -73,9 +73,33 @@ pub struct Molecule {
     /// aromatic bond. This preserves which endpoint introduced the marker
     /// when atom/bond indices are rebuilt during canonical search.
     bond_direction_anchors: std::collections::HashMap<u32, AtomIdx>,
+    /// Memoized derived perception data (SSSR, aromatic view, ...). Cleared
+    /// by every mutation and empty after `clone()`.
+    derived: crate::derived_cache::DerivedCache,
 }
 
 impl Molecule {
+    /// Return the memoized value for `slot`, computing it with `compute` on
+    /// first use. Intended for perception crates in this workspace; the slot
+    /// set and its types are not a stable public API.
+    #[doc(hidden)]
+    pub fn derived<T, F>(
+        &self,
+        slot: crate::derived_cache::DerivedSlot,
+        compute: F,
+    ) -> std::sync::Arc<T>
+    where
+        T: std::any::Any + Send + Sync + std::panic::RefUnwindSafe + std::panic::UnwindSafe,
+        F: FnOnce() -> T,
+    {
+        self.derived.get_or_compute(slot, compute)
+    }
+
+    #[inline]
+    fn invalidate_derived(&mut self) {
+        self.derived = crate::derived_cache::DerivedCache::default();
+    }
+
     /// Number of heavy atoms (does not count implicit H).
     pub fn atom_count(&self) -> usize {
         self.atoms.len()
@@ -569,6 +593,7 @@ impl Molecule {
 impl Molecule {
     /// Append a new atom and return its index.
     pub fn add_atom(&mut self, atom: Atom) -> AtomIdx {
+        self.invalidate_derived();
         let idx = AtomIdx(self.atoms.len() as u32);
         self.atoms.push(atom);
         self.adjacency.push(vec![]);
@@ -581,6 +606,7 @@ impl Molecule {
     /// for surviving atoms, or `None` for the removed atom.  Atom indices
     /// of atoms after the removed slot shift down by 1.
     pub fn remove_atom(&mut self, idx: AtomIdx) -> Vec<Option<AtomIdx>> {
+        self.invalidate_derived();
         let n = self.atoms.len();
         let removed = idx.0 as usize;
 
@@ -693,6 +719,7 @@ impl Molecule {
         b: AtomIdx,
         order: BondOrder,
     ) -> Result<BondIdx, MolError> {
+        self.invalidate_derived();
         let n = self.atoms.len() as u32;
         if a.0 >= n {
             return Err(MolError::InvalidAtomIdx(a));
@@ -717,6 +744,7 @@ impl Molecule {
     /// Remove bond `idx`.  Atom indices are unchanged; bond indices of
     /// surviving bonds shift down past the removed slot.
     pub fn remove_bond(&mut self, idx: BondIdx) {
+        self.invalidate_derived();
         let removed = idx.0 as usize;
         if removed >= self.bonds.len() {
             return;
@@ -765,17 +793,20 @@ impl Molecule {
 
     /// Set the formal charge of atom `idx` in-place.
     pub fn set_charge(&mut self, idx: AtomIdx, charge: i8) {
+        self.invalidate_derived();
         self.atoms[idx.0 as usize].charge = charge;
     }
 
     /// Set the isotope label of atom `idx` in-place. `None` = natural
     /// isotope abundance (no label).
     pub fn set_isotope(&mut self, idx: AtomIdx, isotope: Option<u16>) {
+        self.invalidate_derived();
         self.atoms[idx.0 as usize].isotope = isotope;
     }
 
     /// Mark an atom as an R-group wildcard while preserving its atom index.
     pub fn set_r_group(&mut self, idx: AtomIdx, label: crate::atom::RGroupLabel) {
+        self.invalidate_derived();
         let atom = &mut self.atoms[idx.0 as usize];
         atom.element = Element::C;
         atom.wildcard = true;
@@ -787,6 +818,7 @@ impl Molecule {
 
     /// Mark an atom as a generic `*` wildcard while preserving its atom index.
     pub fn set_wildcard(&mut self, idx: AtomIdx) {
+        self.invalidate_derived();
         let atom = &mut self.atoms[idx.0 as usize];
         atom.element = Element::C;
         atom.wildcard = true;
@@ -800,6 +832,7 @@ impl Molecule {
     ///
     /// Chirality and hydrogen count are reset (element-specific properties).
     pub fn set_element(&mut self, idx: AtomIdx, el: Element) {
+        self.invalidate_derived();
         let a = &mut self.atoms[idx.0 as usize];
         a.element = el;
         a.chirality = crate::atom::Chirality::None;
@@ -811,11 +844,13 @@ impl Molecule {
 
     /// Set the CIP stereo code of atom `idx` in-place.
     pub fn set_cip_code(&mut self, idx: AtomIdx, code: Option<crate::atom::CipCode>) {
+        self.invalidate_derived();
         self.atoms[idx.0 as usize].cip_code = code;
     }
 
     /// Set the tetrahedral chirality (`@`/`@@`) of atom `idx` in-place.
     pub fn set_chirality(&mut self, idx: AtomIdx, chirality: crate::atom::Chirality) {
+        self.invalidate_derived();
         self.atoms[idx.0 as usize].chirality = chirality;
     }
 
@@ -827,6 +862,7 @@ impl Molecule {
     /// order to pick an "apex" neighbor -- a remove+re-add would silently
     /// change which neighbor that is).
     pub fn set_bond_order(&mut self, idx: BondIdx, order: BondOrder) {
+        self.invalidate_derived();
         self.bonds[idx.0 as usize].order = order;
     }
 
@@ -837,11 +873,13 @@ impl Molecule {
 
     /// Replace the stereo group list in-place.
     pub fn set_stereo_groups(&mut self, groups: Vec<StereoGroup>) {
+        self.invalidate_derived();
         self.stereo_groups = groups;
     }
 
     /// Add a single stereo group in-place.
     pub fn add_stereo_group(&mut self, group: StereoGroup) {
+        self.invalidate_derived();
         self.stereo_groups.push(group);
     }
 
@@ -874,6 +912,7 @@ impl Molecule {
 
     /// Set the SMILES stereo neighbor order for atom `idx`.
     pub fn set_stereo_neighbor_order(&mut self, idx: AtomIdx, order: Vec<u32>) {
+        self.invalidate_derived();
         self.stereo_neighbor_order.insert(idx.0, order);
     }
 
@@ -892,11 +931,13 @@ impl Molecule {
 
     /// Stash a directional marker for bond `idx` (see [`Self::bond_direction`]).
     pub fn set_bond_direction(&mut self, idx: BondIdx, direction: BondOrder) {
+        self.invalidate_derived();
         self.bond_directions.insert(idx.0, direction);
     }
 
     /// Set the endpoint that anchored a parser-side aromatic direction stash.
     pub fn set_bond_direction_anchor(&mut self, idx: BondIdx, atom: AtomIdx) {
+        self.invalidate_derived();
         self.bond_direction_anchors.insert(idx.0, atom);
     }
 }
@@ -1194,6 +1235,7 @@ impl MoleculeBuilder {
             stereo_neighbor_order: self.stereo_neighbor_order,
             bond_directions: self.bond_directions,
             bond_direction_anchors: self.bond_direction_anchors,
+            derived: Default::default(),
         }
     }
 }
@@ -1201,6 +1243,15 @@ impl MoleculeBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn molecule_keeps_auto_traits() {
+        fn assert_traits<
+            T: Send + Sync + std::panic::RefUnwindSafe + std::panic::UnwindSafe + Clone,
+        >() {
+        }
+        assert_traits::<Molecule>();
+    }
     use crate::atom::Atom;
     use crate::element::Element;
 

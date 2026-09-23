@@ -16,6 +16,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
 use chematic_perception::RingSet;
+#[cfg(test)]
 use chematic_perception::find_sssr;
 
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
@@ -30,7 +31,16 @@ use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMole
 /// pattern matches (e.g. the 117 Crippen patterns or 480 PAINS patterns).
 struct EvalCtx<'a> {
     mol: &'a Molecule,
-    rings: &'a RingSet,
+    /// Caller-supplied rings, or `None` to derive them lazily (memoized SSSR)
+    /// only if a ring-dependent primitive is actually evaluated. Both paths
+    /// see the same `find_sssr` result, so this is purely an optimization.
+    rings_given: Option<&'a RingSet>,
+    rings_lazy: std::cell::OnceCell<std::sync::Arc<RingSet>>,
+    /// Lazily computed cyclic-atom flags, used for `[R]`/`[!R]` only when the
+    /// rings are self-derived (`rings_given == None`). An atom belongs to some
+    /// SSSR ring exactly when it lies on a cycle, so this avoids building the
+    /// SSSR for ring-membership-only queries without changing results.
+    ring_atoms_lazy: std::cell::OnceCell<Vec<bool>>,
     config: &'a MatchConfig,
     /// Remaining visit budget shared across all recursive calls (including nested
     /// recursive-SMARTS `$(...)`).  Decremented on every `match_recursive` /
@@ -57,13 +67,34 @@ struct EvalCtx<'a> {
 }
 
 impl EvalCtx<'_> {
+    fn in_any_ring(&self, idx: AtomIdx) -> bool {
+        match self.rings_given {
+            Some(r) => r.contains_atom(idx),
+            None => self
+                .ring_atoms_lazy
+                .get_or_init(|| chematic_perception::ring_atom_flags(self.mol))
+                .get(idx.0 as usize)
+                .copied()
+                .unwrap_or(false),
+        }
+    }
+
+    fn rings(&self) -> &RingSet {
+        match self.rings_given {
+            Some(r) => r,
+            None => self
+                .rings_lazy
+                .get_or_init(|| chematic_perception::find_sssr_shared(self.mol)),
+        }
+    }
+
     /// The smallest SSSR ring size containing `idx`, or `None` if `idx` isn't in any
     /// ring. Computes and caches the whole per-atom table on first call.
     fn min_ring_size(&self, idx: AtomIdx) -> Option<u8> {
         let mut cache = self.min_ring_size_by_atom.borrow_mut();
         let table = cache.get_or_insert_with(|| {
             let mut table = vec![None; self.mol.atom_count()];
-            for ring in self.rings.rings() {
+            for ring in self.rings().rings() {
                 let size = ring.len() as u8;
                 for &atom in ring {
                     let slot = &mut table[atom.0 as usize];
@@ -162,8 +193,8 @@ pub fn find_matches_with_config(
     if query.atoms.len() > mol.atom_count() {
         return vec![];
     }
-    let rings = find_sssr(mol);
-    find_matches_with_rings_and_config(query, mol, &rings, config)
+    // Rings are derived lazily: most queries never evaluate a ring primitive.
+    find_matches_impl(query, mol, None, config).0
 }
 
 /// Like [`find_matches`] but reuses a pre-computed [`RingSet`].
@@ -218,6 +249,15 @@ pub fn find_matches_with_rings_and_config_checked(
     query: &QueryMolecule,
     mol: &Molecule,
     rings: &RingSet,
+    config: &MatchConfig,
+) -> (Vec<FxHashMap<usize, AtomIdx>>, bool) {
+    find_matches_impl(query, mol, Some(rings), config)
+}
+
+fn find_matches_impl(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    rings: Option<&RingSet>,
     config: &MatchConfig,
 ) -> (Vec<FxHashMap<usize, AtomIdx>>, bool) {
     if query.atoms.is_empty() {
@@ -285,7 +325,7 @@ pub fn has_match_bounded(
     if query.atoms.len() > mol.atom_count() {
         return MatchOutcome::NotFound;
     }
-    let (results, budget_exhausted) = run_match_recursive(query, mol, rings, config, Some(1));
+    let (results, budget_exhausted) = run_match_recursive(query, mol, Some(rings), config, Some(1));
     if !results.is_empty() {
         MatchOutcome::Found
     } else if budget_exhausted {
@@ -295,19 +335,59 @@ pub fn has_match_bounded(
     }
 }
 
+/// For every target atom, the index of the first query (in slice order) that
+/// has at least one embedding with query atom 0 mapped to that atom.
+///
+/// This is the "first matching atom-type pattern wins" primitive used by
+/// atom-typing schemes such as Wildman–Crippen. It is equivalent to running
+/// an unbounded, non-uniquified [`find_matches`] for every query and taking
+/// the first query whose match set contains the atom as query atom 0, but it
+/// stops at the first embedding per (atom, query) pair and skips queries whose
+/// first atom cannot match. `None` entries in `queries` never match.
+pub fn first_anchored_match_per_atom(
+    queries: &[Option<&QueryMolecule>],
+    mol: &Molecule,
+    rings: &RingSet,
+) -> Vec<Option<usize>> {
+    let config = MatchConfig {
+        uniquify: false,
+        ..MatchConfig::default()
+    };
+    let ctx = EvalCtx {
+        mol,
+        rings_given: Some(rings),
+        rings_lazy: std::cell::OnceCell::new(),
+        ring_atoms_lazy: std::cell::OnceCell::new(),
+        config: &config,
+        visit_budget: std::cell::Cell::new(u64::MAX),
+        budget_exhausted: std::cell::Cell::new(false),
+        min_ring_size_by_atom: std::cell::RefCell::new(None),
+    };
+    (0..mol.atom_count())
+        .map(|a| {
+            let anchor = AtomIdx(a as u32);
+            queries
+                .iter()
+                .position(|q| q.is_some_and(|q| has_match_anchored(q, anchor, &ctx)))
+        })
+        .collect()
+}
+
 /// Shared driver behind [`find_matches_with_rings_and_config_checked`] and
 /// [`has_match_bounded`]: builds the per-call [`EvalCtx`], runs
 /// [`match_recursive`], and reports whether the visit budget was exhausted.
 fn run_match_recursive(
     query: &QueryMolecule,
     mol: &Molecule,
-    rings: &RingSet,
+    rings: Option<&RingSet>,
     config: &MatchConfig,
     max: Option<usize>,
 ) -> (Vec<FxHashMap<usize, AtomIdx>>, bool) {
     let ctx = EvalCtx {
         mol,
-        rings,
+        rings_given: rings,
+        rings_lazy: std::cell::OnceCell::new(),
+        ring_atoms_lazy: std::cell::OnceCell::new(),
         config,
         visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
         budget_exhausted: std::cell::Cell::new(false),
@@ -316,7 +396,8 @@ fn run_match_recursive(
     let mut mapping: FxHashMap<usize, AtomIdx> = FxHashMap::default();
     let mut results: Vec<FxHashMap<usize, AtomIdx>> = Vec::new();
 
-    match_recursive(query, &ctx, &mut mapping, &mut results, max);
+    let mut st = MapState::new(query, mol.atom_count(), None);
+    match_recursive(query, &ctx, &mut mapping, &mut st, &mut results, max);
 
     (results, ctx.budget_exhausted.get())
 }
@@ -333,13 +414,13 @@ fn run_match_recursive(
 /// degree.  The final tie-break is the lowest index, so traversal remains
 /// deterministic.  This is only an ordering change: every candidate is still
 /// enumerated and the returned mappings retain their original query indices.
-fn next_unmapped(mapping: &FxHashMap<usize, AtomIdx>, query: &QueryMolecule) -> usize {
+fn next_unmapped_by(mapped: &[bool], query: &QueryMolecule) -> usize {
     (0..query.atoms.len())
-        .filter(|i| !mapping.contains_key(i))
+        .filter(|&i| !mapped[i])
         .max_by_key(|&i| {
             let mapped_neighbors = query.adj[i]
                 .iter()
-                .filter(|&&(_, neighbor)| mapping.contains_key(&neighbor))
+                .filter(|&&(_, neighbor)| mapped[neighbor])
                 .count();
             // Reverse the index tie-break without requiring a second sort.
             (mapped_neighbors, query.adj[i].len(), usize::MAX - i)
@@ -351,6 +432,7 @@ fn match_recursive(
     query: &QueryMolecule,
     ctx: &EvalCtx<'_>,
     mapping: &mut FxHashMap<usize, AtomIdx>,
+    st: &mut MapState,
     results: &mut Vec<FxHashMap<usize, AtomIdx>>,
     max: Option<usize>,
 ) {
@@ -374,21 +456,19 @@ fn match_recursive(
     }
 
     // Pick the most constrained unmapped query atom.
-    let q_next = next_unmapped(mapping, query);
+    let q_next = st.plan[st.count];
 
-    // Collect the set of target atoms already used in this mapping so we can
-    // enforce injectivity.
-    let used_targets: FxHashSet<AtomIdx> = mapping.values().copied().collect();
-
-    // Try each target atom as a candidate for q_next.
-    for t in 0..ctx.mol.atom_count() {
+    // Try each target atom as a candidate for q_next (ascending index order;
+    // see `Candidates` for the adjacency restriction).
+    let candidates = Candidates::new(q_next, st, query, ctx);
+    for t in candidates.iter() {
         if max.is_some_and(|m| results.len() >= m) {
             break;
         }
-        let t_idx = AtomIdx(t as u32);
+        let t_idx = AtomIdx(t);
 
         // 1. Injectivity: target atom must not already be mapped.
-        if used_targets.contains(&t_idx) {
+        if st.used[t as usize] {
             continue;
         }
 
@@ -398,14 +478,135 @@ fn match_recursive(
         }
 
         // 3. Bond constraints from already-mapped neighbours of q_next.
-        if !bonds_compatible(q_next, t_idx, mapping, query, ctx) {
+        if !bonds_compatible(q_next, t_idx, st, query, ctx) {
             continue;
         }
 
         // Extend the mapping and recurse.
         mapping.insert(q_next, t_idx);
-        match_recursive(query, ctx, mapping, results, max);
+        st.set(q_next, t_idx);
+        match_recursive(query, ctx, mapping, st, results, max);
+        st.unset(q_next, t_idx);
         mapping.remove(&q_next);
+    }
+}
+
+/// Candidate target atoms for query atom `q`, in ascending index order.
+///
+/// Historically every target atom was tried and non-adjacent ones were
+/// rejected by [`bonds_compatible`] (the target must be bonded to the image of
+/// each mapped query neighbour). When `q` already has a mapped neighbour, only
+/// the neighbours of that neighbour's image can pass, so enumerating exactly
+/// those — sorted ascending — yields the same accepted candidates in the same
+/// order, and therefore identical mappings, result order and map histories.
+///
+/// With a configured `max_visit_budget` the historical full scan is kept:
+/// atom predicates containing recursive SMARTS consume budget, and skipping
+/// them would change where a bounded search is cut off.
+/// Array mirror of the partial mapping used for O(1) lookups during the
+/// search. The `FxHashMap` mapping is still updated with exactly the same
+/// insert/remove sequence (its clones are the public results), so result
+/// contents *and* map iteration order are unchanged.
+struct MapState {
+    q2t: Vec<u32>,
+    used: Vec<bool>,
+    count: usize,
+    /// `plan[d]` is the query atom extended at depth `d`. `next_unmapped`
+    /// depends only on *which* query atoms are mapped — never on their
+    /// targets — so the visiting order is a fixed sequence per search and can
+    /// be computed once instead of at every search state.
+    plan: Vec<usize>,
+    /// For `plan[d]`, the first already-mapped query neighbour in adjacency
+    /// order (the adjacency anchor used by `Candidates`), if any.
+    plan_anchor: Vec<Option<usize>>,
+}
+
+const UNMAPPED: u32 = u32::MAX;
+
+impl MapState {
+    fn new(query: &QueryMolecule, target_len: usize, seed: Option<usize>) -> Self {
+        let n = query.atoms.len();
+        let mut st = Self {
+            q2t: vec![UNMAPPED; n],
+            used: vec![false; target_len],
+            count: 0,
+            plan: Vec::with_capacity(n),
+            plan_anchor: Vec::with_capacity(n),
+        };
+        // Simulate the dynamic selection on a scratch "mapped" mask.
+        let mut mapped = vec![false; n];
+        if let Some(q0) = seed {
+            mapped[q0] = true;
+            st.plan.push(q0);
+            st.plan_anchor.push(None);
+        }
+        while st.plan.len() < n {
+            let q = next_unmapped_by(&mapped, query);
+            st.plan_anchor.push(
+                query.adj[q]
+                    .iter()
+                    .find(|&&(_, q_nb)| mapped[q_nb])
+                    .map(|&(_, q_nb)| q_nb),
+            );
+            st.plan.push(q);
+            mapped[q] = true;
+        }
+        st
+    }
+    #[inline]
+    fn get(&self, q: usize) -> Option<AtomIdx> {
+        let t = self.q2t[q];
+        (t != UNMAPPED).then_some(AtomIdx(t))
+    }
+    #[inline]
+    fn set(&mut self, q: usize, t: AtomIdx) {
+        self.q2t[q] = t.0;
+        self.used[t.0 as usize] = true;
+        self.count += 1;
+    }
+    #[inline]
+    fn unset(&mut self, q: usize, t: AtomIdx) {
+        self.q2t[q] = UNMAPPED;
+        self.used[t.0 as usize] = false;
+        self.count -= 1;
+    }
+}
+
+enum Candidates {
+    All(u32),
+    Few { buf: [u32; 12], len: usize },
+}
+
+impl Candidates {
+    fn new(q: usize, st: &MapState, query: &QueryMolecule, ctx: &EvalCtx<'_>) -> Self {
+        let all = Candidates::All(ctx.mol.atom_count() as u32);
+        if ctx.config.max_visit_budget.is_some() {
+            return all;
+        }
+        debug_assert_eq!(st.plan[st.count], q);
+        let _ = query;
+        let Some(anchor) = st.plan_anchor[st.count].and_then(|q_nb| st.get(q_nb)) else {
+            return all;
+        };
+        let mut buf = [0u32; 12];
+        let mut len = 0usize;
+        for (nb, _) in ctx.mol.neighbors(anchor) {
+            if len == buf.len() {
+                return all; // unusually high degree: fall back, still correct
+            }
+            buf[len] = nb.0;
+            len += 1;
+        }
+        buf[..len].sort_unstable();
+        Candidates::Few { buf, len }
+    }
+
+    fn iter(&self) -> impl Iterator<Item = u32> + '_ {
+        let (range, slice): (std::ops::Range<u32>, &[u32]) = match self {
+            Candidates::All(n) => (0..*n, &[]),
+            Candidates::Few { buf, len } => (0..0, &buf[..*len]),
+        };
+        range.chain(slice.iter().copied())
     }
 }
 
@@ -418,13 +619,13 @@ fn match_recursive(
 fn bonds_compatible(
     q: usize,
     t: AtomIdx,
-    mapping: &FxHashMap<usize, AtomIdx>,
+    st: &MapState,
     query: &QueryMolecule,
     ctx: &EvalCtx<'_>,
 ) -> bool {
     for &(bond_idx, q_nb) in &query.adj[q] {
         // Only check neighbours that are already mapped.
-        if let Some(&t_nb) = mapping.get(&q_nb) {
+        if let Some(t_nb) = st.get(q_nb) {
             // The target must have a bond between t and t_nb.
             match ctx.mol.bond_between(t, t_nb) {
                 None => return false,
@@ -463,9 +664,9 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         AtomPrimitive::HCount(h) => eval_hcount(idx, ctx, *h),
         AtomPrimitive::ImplicitHCount(h) => implicit_hcount(ctx.mol, idx) == *h,
         AtomPrimitive::Degree(d) => ctx.mol.neighbors(idx).count() as u8 == *d,
-        AtomPrimitive::RingMembership(r) => ctx.rings.contains_atom(idx) == *r,
+        AtomPrimitive::RingMembership(r) => ctx.in_any_ring(idx) == *r,
         AtomPrimitive::RingSize(n) => ctx
-            .rings
+            .rings()
             .rings()
             .iter()
             .any(|ring| ring.len() == *n as usize && ring.contains(&idx)),
@@ -478,7 +679,7 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
             ctx.mol.neighbors(idx).count() as u8 + implicit_hcount(ctx.mol, idx) == *x
         }
         AtomPrimitive::RingCount(n) => {
-            ctx.rings
+            ctx.rings()
                 .rings()
                 .iter()
                 .filter(|r| r.contains(&idx))
@@ -519,7 +720,7 @@ fn eval_ring_bond_count(idx: AtomIdx, ctx: &EvalCtx<'_>, x: u8) -> bool {
         .mol
         .neighbors(idx)
         .filter(|(nb, _)| {
-            ctx.rings
+            ctx.rings()
                 .rings()
                 .iter()
                 .any(|ring| ring.contains(&idx) && ring.contains(nb))
@@ -599,22 +800,18 @@ fn has_match_anchored(query: &QueryMolecule, anchor: AtomIdx, ctx: &EvalCtx<'_>)
         return false;
     }
     // Seed the mapping with query atom 0 → anchor.
-    let mut mapping = FxHashMap::default();
-    mapping.insert(0usize, anchor);
     // Single-atom query — the anchor already satisfies it.
     if query.atoms.len() == 1 {
         return true;
     }
-    has_match_recursive(query, ctx, &mut mapping)
+    let mut st = MapState::new(query, ctx.mol.atom_count(), Some(0));
+    st.set(0, anchor);
+    has_match_recursive(query, ctx, &mut st)
 }
 
 /// Depth-first search for a complete embedding, starting from a partial
 /// `mapping`.  Returns as soon as the first complete match is found.
-fn has_match_recursive(
-    query: &QueryMolecule,
-    ctx: &EvalCtx<'_>,
-    mapping: &mut FxHashMap<usize, AtomIdx>,
-) -> bool {
+fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, st: &mut MapState) -> bool {
     // Decrement shared visit budget; stop if exhausted (may produce false negatives
     // — only enabled when max_visit_budget is explicitly set).
     let remaining = ctx.visit_budget.get();
@@ -625,32 +822,31 @@ fn has_match_recursive(
     ctx.visit_budget.set(remaining - 1);
 
     // Base case: all query atoms mapped.
-    if mapping.len() == query.atoms.len() {
+    if st.count == query.atoms.len() {
         return true;
     }
 
     // Pick the most constrained unmapped query atom.
-    let q_next = next_unmapped(mapping, query);
+    let q_next = st.plan[st.count];
 
-    let used_targets: FxHashSet<AtomIdx> = mapping.values().copied().collect();
-
-    for t in 0..ctx.mol.atom_count() {
-        let t_idx = AtomIdx(t as u32);
-        if used_targets.contains(&t_idx) {
+    let candidates = Candidates::new(q_next, st, query, ctx);
+    for t in candidates.iter() {
+        let t_idx = AtomIdx(t);
+        if st.used[t as usize] {
             continue;
         }
         if !eval_atom_query(&query.atoms[q_next].query, t_idx, ctx) {
             continue;
         }
-        if !bonds_compatible(q_next, t_idx, mapping, query, ctx) {
+        if !bonds_compatible(q_next, t_idx, st, query, ctx) {
             continue;
         }
-        mapping.insert(q_next, t_idx);
-        if has_match_recursive(query, ctx, mapping) {
-            mapping.remove(&q_next);
+        st.set(q_next, t_idx);
+        if has_match_recursive(query, ctx, st) {
+            st.unset(q_next, t_idx);
             return true;
         }
-        mapping.remove(&q_next);
+        st.unset(q_next, t_idx);
     }
     false
 }
@@ -734,7 +930,7 @@ fn eval_bond_primitive(
         BondPrimitive::Any => true,
         BondPrimitive::Ring => {
             // A bond is a "ring bond" if both its endpoints share at least one common ring.
-            ctx.rings
+            ctx.rings()
                 .rings()
                 .iter()
                 .any(|ring| ring.contains(&a) && ring.contains(&b))

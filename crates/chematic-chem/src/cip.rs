@@ -313,6 +313,10 @@ struct ExpandState {
 ///    partner into *both* atoms' substituent lists, not just the arrival side above.
 /// 3. **Ring revisit phantom**: if an already-visited atom is encountered,
 ///    add a phantom for it but don't expand further.
+///
+/// Eager reference implementation; production code uses the lazy
+/// [`SphereGen`]. Kept as the differential-test oracle.
+#[cfg_attr(not(test), allow(dead_code))]
 fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<SphereLayer> {
     let mut layers: HashMap<usize, Vec<(u8, Option<u16>, f64)>> = HashMap::new();
     // Distinguish remote substituents on long ring/chain paths.  Eight
@@ -395,6 +399,109 @@ fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<Sp
     result
 }
 
+/// Lazy, layer-at-a-time equivalent of [`cip_branch_spheres`].
+///
+/// The sphere expansion is a FIFO walk whose states are dequeued in
+/// nondecreasing depth, so layer `d + 1` is complete once every depth-`d`
+/// state has been processed. Producing layers on demand lets a comparison
+/// stop at the first differing sphere instead of enumerating every path to
+/// depth 16 for both branches. Each produced layer (after sorting) is
+/// identical to the corresponding entry of `cip_branch_spheres`, and the
+/// generator is exhausted exactly where that vector ends. The visited set is
+/// the path itself (at most 17 atoms), kept as a small vector.
+struct SphereGen<'a> {
+    mol: &'a Molecule,
+    center: AtomIdx,
+    queue: VecDeque<(AtomIdx, AtomIdx, usize, Vec<AtomIdx>)>,
+    first: Option<(u8, Option<u16>, f64)>,
+    depth: usize,
+}
+
+impl<'a> SphereGen<'a> {
+    const MAX_DEPTH: usize = 16;
+
+    fn new(mol: &'a Molecule, center: AtomIdx, start: AtomIdx) -> Self {
+        let mut queue = VecDeque::new();
+        queue.push_back((start, center, 1usize, vec![center, start]));
+        Self {
+            mol,
+            center,
+            queue,
+            first: Some(atom_key(mol, start)),
+            depth: 1,
+        }
+    }
+
+    /// Next sphere layer (sorted descending), or `None` once exhausted.
+    fn next_layer(&mut self) -> Option<SphereLayer> {
+        if let Some(first) = self.first.take() {
+            return Some(vec![first]);
+        }
+        let d = self.depth;
+        let mut layer: SphereLayer = Vec::new();
+        let mol = self.mol;
+        while self.queue.front().is_some_and(|s| s.2 == d) {
+            let (node, parent, depth, visited) = self.queue.pop_front().unwrap();
+            if depth >= Self::MAX_DEPTH {
+                continue;
+            }
+            let child_depth = depth + 1;
+            if let Some((_, bond_to_parent)) = mol.bond_between(node, parent)
+                && bond_to_parent.order == BondOrder::Double
+            {
+                layer.push(atom_key(mol, parent));
+            }
+            for (nb, _) in mol.neighbors(node) {
+                if nb == parent || nb == self.center {
+                    continue;
+                }
+                let child_key = atom_key(mol, nb);
+                let is_double = mol
+                    .bond_between(node, nb)
+                    .is_some_and(|(_, b)| b.order == BondOrder::Double);
+                if is_double {
+                    layer.push(child_key);
+                }
+                layer.push(child_key);
+                if !visited.contains(&nb) {
+                    let mut child_visited = visited.clone();
+                    child_visited.push(nb);
+                    self.queue.push_back((nb, node, child_depth, child_visited));
+                }
+            }
+        }
+        self.depth += 1;
+        if layer.is_empty() {
+            // No entries at this depth means no states at this depth either,
+            // so every deeper layer is empty too.
+            self.queue.clear();
+            return None;
+        }
+        layer.sort_by(|a, b| cmp_key(*b, *a)); // descending
+        Some(layer)
+    }
+}
+
+/// Lazy equality of two branches' sphere sequences (same result as
+/// `cip_branch_spheres(a) == cip_branch_spheres(b)`).
+fn sphere_sequences_equal(
+    mol: &Molecule,
+    center_a: AtomIdx,
+    start_a: AtomIdx,
+    center_b: AtomIdx,
+    start_b: AtomIdx,
+) -> bool {
+    let mut ga = SphereGen::new(mol, center_a, start_a);
+    let mut gb = SphereGen::new(mol, center_b, start_b);
+    loop {
+        match (ga.next_layer(), gb.next_layer()) {
+            (None, None) => return true,
+            (Some(la), Some(lb)) if la == lb => {}
+            _ => return false,
+        }
+    }
+}
+
 /// Compare two branches from `center` starting at `a` and `b`.
 ///
 /// Returns `Ordering::Greater` if branch `a` has higher CIP priority than `b`.
@@ -409,14 +516,17 @@ fn compare_branches(mol: &Molecule, center: AtomIdx, a: AtomIdx, b: AtomIdx) -> 
         other => return other,
     }
 
-    // Sphere-by-sphere comparison.
-    let a_spheres = cip_branch_spheres(mol, center, a);
-    let b_spheres = cip_branch_spheres(mol, center, b);
-
-    let max_depth = a_spheres.len().max(b_spheres.len());
-    for d in 0..max_depth {
-        let a_layer = a_spheres.get(d).map(|v| v.as_slice()).unwrap_or(&[]);
-        let b_layer = b_spheres.get(d).map(|v| v.as_slice()).unwrap_or(&[]);
+    // Sphere-by-sphere comparison, generated lazily (see `SphereGen`).
+    let mut a_gen = SphereGen::new(mol, center, a);
+    let mut b_gen = SphereGen::new(mol, center, b);
+    loop {
+        let a_spheres = a_gen.next_layer();
+        let b_spheres = b_gen.next_layer();
+        if a_spheres.is_none() && b_spheres.is_none() {
+            break;
+        }
+        let a_layer = a_spheres.as_deref().unwrap_or(&[]);
+        let b_layer = b_spheres.as_deref().unwrap_or(&[]);
 
         let min_len = a_layer.len().min(b_layer.len());
         for i in 0..min_len {
@@ -643,30 +753,39 @@ pub(crate) fn is_potential_stereocenter_rule5(
     // AtomIdx(u32::MAX) is the virtual H sentinel (bracket-H or lone pair).
     // It is always unique (h>1 is filtered above) so we skip sphere expansion
     // for it — atom_key alone distinguishes it from all heavy-atom substituents.
-    let sigs: Vec<_> = neighbors
-        .iter()
-        .map(|&nb| {
-            let is_sentinel = nb.0 == u32::MAX;
-            (
-                atom_key(mol, nb),
-                if is_sentinel {
-                    vec![]
-                } else {
-                    cip_branch_spheres(mol, idx, nb)
-                },
-                if is_sentinel {
-                    vec![]
-                } else {
-                    cip_branch_stereo_spheres(mol, idx, nb, provisional)
-                },
-            )
-        })
+    //
+    // Signatures are compared lazily — atom key, then graph spheres (layer by
+    // layer, see `SphereGen`), then stereo spheres (computed only when
+    // needed) — which is equivalent to comparing the eager
+    // `(atom_key, cip_branch_spheres, cip_branch_stereo_spheres)` tuples.
+    let keys: Vec<_> = neighbors.iter().map(|&nb| atom_key(mol, nb)).collect();
+    let stereo: Vec<std::cell::OnceCell<_>> = (0..neighbors.len())
+        .map(|_| std::cell::OnceCell::new())
         .collect();
+    let stereo_of = |k: usize| {
+        stereo[k].get_or_init(|| {
+            let nb = neighbors[k];
+            if nb.0 == u32::MAX {
+                vec![]
+            } else {
+                cip_branch_stereo_spheres(mol, idx, nb, provisional)
+            }
+        })
+    };
+    let spheres_equal = |a: AtomIdx, b: AtomIdx| match (a.0 == u32::MAX, b.0 == u32::MAX) {
+        (true, true) => true,
+        // A sentinel has no spheres; a heavy branch always has layer 1.
+        (true, false) | (false, true) => false,
+        (false, false) => sphere_sequences_equal(mol, idx, a, idx, b),
+    };
 
     // All 6 pairwise pairs must be unequal for 4 distinct substituents.
     for i in 0..4 {
         for j in (i + 1)..4 {
-            if sigs[i] == sigs[j] {
+            if keys[i] == keys[j]
+                && spheres_equal(neighbors[i], neighbors[j])
+                && stereo_of(i) == stereo_of(j)
+            {
                 return false;
             }
         }
@@ -1163,6 +1282,33 @@ pub fn ez_completeness(mol: &Molecule) -> EzCompleteness {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn lazy_sphere_generator_matches_eager_reference() {
+        for smi in [
+            "C[C@H](N)C(=O)O",
+            "CC12CCC3C(C1CCC2O)CCC4=CC(=O)CCC34C",
+            "C1CC2CCC1C2",
+            "OC(=O)C1=CC=CC=C1C(C)(Cl)Br",
+            "C12C3C4C1C5C2C3C45",
+            "N#CC(C=C)C(=O)C=O",
+            "[2H]C(Cl)(F)C1CC1",
+        ] {
+            let mol = chematic_smiles::parse(smi).unwrap();
+            for c in 0..mol.atom_count() {
+                let center = AtomIdx(c as u32);
+                for (nb, _) in mol.neighbors(center) {
+                    let eager = cip_branch_spheres(&mol, center, nb);
+                    let mut lazy = Vec::new();
+                    let mut sphere_gen = SphereGen::new(&mol, center, nb);
+                    while let Some(layer) = sphere_gen.next_layer() {
+                        lazy.push(layer);
+                    }
+                    assert_eq!(eager, lazy, "{smi} center {c} start {}", nb.0);
+                }
+            }
+        }
+    }
+
     use super::*;
     use chematic_smiles::parse;
 

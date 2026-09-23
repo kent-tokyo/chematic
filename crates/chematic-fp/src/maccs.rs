@@ -13,7 +13,15 @@
 
 use chematic_core::Molecule;
 use chematic_perception::find_sssr;
-use chematic_smarts::{find_matches, parse_smarts};
+use chematic_smarts::{MatchConfig, find_matches, find_matches_with_config, parse_smarts};
+
+const FIRST_EMBEDDING: MatchConfig = MatchConfig {
+    max_matches: Some(1),
+    use_chirality: false,
+    use_isotopes: false,
+    uniquify: false,
+    max_visit_budget: None,
+};
 
 use crate::bitvec::BitVec2048;
 
@@ -217,19 +225,41 @@ fn count_aromatic_rings(mol: &Molecule) -> usize {
 /// use code-only logic; all other keys use SMARTS matching.
 /// For count-based keys (14 total), the bit is set only when the match count
 /// exceeds the threshold stored in `MACCS_SMARTS`.
+/// MACCS SMARTS parsed once per process (`None` for placeholders and
+/// patterns that fail to parse), index-aligned with `MACCS_SMARTS`.
+fn maccs_queries() -> &'static [Option<chematic_smarts::QueryMolecule>] {
+    static QUERIES: std::sync::OnceLock<Vec<Option<chematic_smarts::QueryMolecule>>> =
+        std::sync::OnceLock::new();
+    QUERIES.get_or_init(|| {
+        MACCS_SMARTS
+            .iter()
+            .map(|&(pattern, _)| {
+                if pattern == "?" || pattern.is_empty() {
+                    None
+                } else {
+                    parse_smarts(pattern).ok()
+                }
+            })
+            .collect()
+    })
+}
+
 pub fn maccs(mol: &Molecule) -> BitVec2048 {
     let mut fp = BitVec2048::new();
 
-    for (i, &(pattern, min_count)) in MACCS_SMARTS.iter().enumerate() {
-        if pattern == "?" || pattern.is_empty() {
-            continue;
-        }
-        if let Ok(query) = parse_smarts(pattern)
-            && find_matches(&query, mol).len() > min_count
-        {
+    for (i, (query, &(_, min_count))) in maccs_queries().iter().zip(MACCS_SMARTS).enumerate() {
+        // Placeholder ("?"/empty) and unparsable patterns leave the bit unset.
+        let Some(query) = query else { continue };
+        // Uniquified matches are non-empty exactly when any embedding
+        // exists, so "count > 0" only needs the first embedding.
+        let hit = if min_count == 0 {
+            !find_matches_with_config(query, mol, &FIRST_EMBEDDING).is_empty()
+        } else {
+            find_matches(query, mol).len() > min_count
+        };
+        if hit {
             fp.set(i);
         }
-        // Patterns that fail to parse silently leave the bit unset.
     }
 
     // Key 1 (index 0): isotope — any atom carrying an explicit mass label

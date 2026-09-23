@@ -1019,6 +1019,15 @@ pub fn assign_aromaticity_rdkit_parity_experimental(
 pub fn apply_aromaticity_rdkit_parity_experimental(
     mol: &Molecule,
 ) -> Result<Molecule, AromaticityError> {
+    // Memoized on `mol`: descriptors and the RDKit-compatible fingerprints
+    // all start from this perceived copy.
+    (*mol.derived(chematic_core::DerivedSlot::RdkitParityAromatic, || {
+        apply_aromaticity_rdkit_parity_uncached(mol)
+    }))
+    .clone()
+}
+
+fn apply_aromaticity_rdkit_parity_uncached(mol: &Molecule) -> Result<Molecule, AromaticityError> {
     if let Some(preperceived) = complete_preperceived_aromaticity(mol) {
         return Ok(preperceived);
     }
