@@ -313,6 +313,7 @@ struct ExpandState {
 ///    partner into *both* atoms' substituent lists, not just the arrival side above.
 /// 3. **Ring revisit phantom**: if an already-visited atom is encountered,
 ///    add a phantom for it but don't expand further.
+///
 /// Eager reference implementation; production code uses the lazy
 /// [`SphereGen`]. Kept as the differential-test oracle.
 #[cfg_attr(not(test), allow(dead_code))]
