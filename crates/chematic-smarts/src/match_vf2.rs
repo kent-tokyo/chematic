@@ -16,6 +16,8 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
 use chematic_perception::RingSet;
+#[cfg(test)]
+use chematic_perception::find_sssr;
 
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
 
