@@ -721,6 +721,43 @@ struct EzGeometryEnd {
 /// through the writer while the bounded planner is already serializing.
 type EzSemanticSignature = Vec<((u64, u64), (u64, u64), bool)>;
 
+/// Return whether every doubly-marked alkene end carries one marker on each
+/// side of the double-bond axis.
+///
+/// SMILES permits either substituent bond at an alkene end to carry the
+/// directional token.  When both substituent bonds are marked, however, the
+/// two tokens must describe opposite sides.  Keeping two same-side markers
+/// is internally self-consistent if a reader simply picks one of them, but
+/// independent readers such as RDKit correctly treat it as a conflicting
+/// specification and discard the affected E/Z assignment.  The complete
+/// aromatic planner enumerates explicit token placements, so reject that
+/// syntax before considering a candidate semantically admissible.
+fn ez_direction_assignments_consistent(mol: &Molecule) -> bool {
+    mol.bonds()
+        .filter(|(_, bond)| bond.order == BondOrder::Double)
+        .all(|(_, bond)| {
+            [bond.atom1, bond.atom2].into_iter().all(|end| {
+                let marked_sides: Vec<bool> = mol
+                    .neighbors(end)
+                    .filter(|(_, adjacent)| mol.bond(*adjacent).order != BondOrder::Double)
+                    .filter_map(|(_, adjacent)| {
+                        crate::writer::raw_bond_direction(mol, adjacent).map(|direction| {
+                            let anchor = mol
+                                .bond_direction_anchor(adjacent)
+                                .unwrap_or(mol.bond(adjacent).atom1);
+                            CanonicalWriter::direction_is_up(direction, anchor, end)
+                        })
+                    })
+                    .collect();
+                match marked_sides.as_slice() {
+                    [] | [_] => true,
+                    [first, second] => first != second,
+                    _ => false,
+                }
+            })
+        })
+}
+
 fn ez_semantic_signature(mol: &Molecule) -> EzSemanticSignature {
     let ranks = morgan_ranks(mol);
     let writer = CanonicalWriter::new(mol, &ranks);
@@ -1458,6 +1495,9 @@ impl<'a> CanonicalWriter<'a> {
                 let Ok(reparsed) = parse(&output) else {
                     continue;
                 };
+                if !ez_direction_assignments_consistent(&reparsed) {
+                    continue;
+                }
                 if ez_semantic_signature(&reparsed) != expected {
                     continue;
                 }
@@ -4032,6 +4072,39 @@ mod tests {
             out.contains('/') || out.contains('\\'),
             "genuine exocyclic-double-bond-adjacent aromatic stash must \
              still emit a directional token: got '{out}'"
+        );
+    }
+
+    #[test]
+    fn canonical_rejects_same_side_ring_carriers_on_fused_imine() {
+        let input = r"CCOC(=O)c1cc2ccccn2/c(=N/c2ccc(Br)cc2)n1";
+        let old_conflicting = r"N(/c3ccc(Br)cc3)=c/1/n2ccccc2cc(n1)C(=O)OCC";
+        assert!(
+            !ez_direction_assignments_consistent(&parse(old_conflicting).unwrap()),
+            "the historical spelling has two same-side carriers at one alkene end"
+        );
+
+        let output = canonical_smiles(&parse(input).unwrap());
+        assert!(
+            ez_direction_assignments_consistent(&parse(&output).unwrap()),
+            "canonical output must not contain a conflicting E/Z specification: {output}"
+        );
+    }
+
+    #[test]
+    fn canonical_rejects_same_side_carriers_on_coupled_bis_imine() {
+        let input = r"CC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O";
+        let old_conflicting =
+            r"c/3(c(/c(/c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O";
+        assert!(
+            !ez_direction_assignments_consistent(&parse(old_conflicting).unwrap()),
+            "the historical spelling has two same-side carriers at one alkene end"
+        );
+
+        let output = canonical_smiles(&parse(input).unwrap());
+        assert!(
+            ez_direction_assignments_consistent(&parse(&output).unwrap()),
+            "canonical output must not contain a conflicting E/Z specification: {output}"
         );
     }
 

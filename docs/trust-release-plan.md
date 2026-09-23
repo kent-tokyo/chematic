@@ -755,8 +755,10 @@ oracle/profile変更時は新しい採用packetとして再実行し、既存raw
   CIPは10,000行すべてで原子順と結合端点対応を確認して比較する。旧9,880 exactは
   engine-local bond indexを比較していたため撤回する。
   18件のSMILES semantic差は非isomeric graphを保存したまま立体同一性を失う
-  CheMatic writer regression、Morgan 1件は配位構造に対するtyped unsupported contractと
-  裁定した。CIP 230行とSMARTS 3,364行は未解決であり、次版old/new比較も未完了。
+  CheMatic writer regressionと裁定した。#632 source candidateは同一corpusでこれを0件にし、
+  graph差0、CIP 9,770、Morgan 9,999、SMARTS差14,306を維持した。公開packageでは未測定。
+  Morgan 1件は配位構造に対するtyped unsupported contract、CIP 230行とSMARTS 3,364行は
+  未解決であり、次版old/new比較も未完了。
 - [ ] browserは同じpacked output契約で3 enginesを比較し、parse単独、prepared FP、
   parse+FP、search、startup、memoryを個別に記録する。API意味論が揃わないlaneは
   速度順位の対象から外す。sealed精度8kはこの回帰・性能集合へ流用しない。
@@ -766,9 +768,10 @@ oracle/profile変更時は新しい採用packetとして再実行し、既存raw
 - [~] 差分を自社退行/oracle変更/契約差/未解決へ分類し、goldが必要ならA5へ送る。
   新oracleへ自動追従して既存出力を変更しない。公開dashboardは測定済みの新旧版を併記し、
   移行後も旧raw/再現コマンドをhistoricalとして保存する。
-  意味同一のSMILES綴り差は`contract_difference`、18件の立体意味差は
+  意味同一のSMILES綴り差は`contract_difference`、historical 18件の立体意味差は
   `chematic_regression`、typed Morgan拒否1件は`contract_difference`で保存済み。
-  次は未裁定のCIP/SMARTS残差群の狭い原因分類と、次版公開後の`oracle_change`判定を行う。
+  #632 candidateでは18件すべてが意味保存する綴り差へ移行した。次は未裁定の
+  CIP/SMARTS残差群の狭い原因分類と、次版公開後の`oracle_change`判定を行う。
 
 出口: 利用可能なlaneの全行差分、失敗/拒否、速度区間、API変更の移行表。
 再比較先の公開遅延は、現行pinでのTrust RC候補監査を停止させない。

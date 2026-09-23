@@ -42,11 +42,14 @@
   backend, binding behavior, commands, host/toolchain, and all 10,000 exposed
   rows are retained. Public CheMatic 1.0.19 is Morgan-exact on 9,999/10,000,
   CIP-exact on 9,770/10,000 after endpoint-correspondence correction, and has
-  14,306 differing SMARTS cells out of 310,000. Residual adjudication identifies
-  all 18 SMILES semantic differences
-  as CheMatic stereo-writer regressions ([#632](https://github.com/kent-tokyo/chematic/issues/632)) with non-isomeric graph identity
-  preserved, and the one Morgan difference as a typed unsupported coordination
-  contract. The 230 CIP rows and 3,364 SMARTS rows remain unresolved and are
+  14,306 differing SMARTS cells out of 310,000. The source candidate for
+  [#632](https://github.com/kent-tokyo/chematic/issues/632) rejects conflicting
+  same-side E/Z carrier assignments and reduces the 18 SMILES semantic
+  differences to zero on the same exposed lane. Non-isomeric graph differences
+  remain zero; CIP, Morgan, and SMARTS counts are unchanged. This is a
+  source-candidate result, not a published-package claim. The one Morgan
+  difference remains a typed unsupported coordination contract, while the 230
+  CIP rows and 3,364 SMARTS rows remain unresolved and are
   tracked by [#634](https://github.com/kent-tokyo/chematic/issues/634) and
   [#635](https://github.com/kent-tokyo/chematic/issues/635). The older
   9,880 CIP figure compared engine-local bond indices and is withdrawn. These are
@@ -188,7 +191,7 @@ stop conditions explicit.
 
 | Order | Priority | Delivery and next output | Product Phase / accuracy |
 |---|---|---|---|
-| 1 | P0 preparation; external execution | **T1.5 rebaseline**: preserve the completed 2026.03.6 Python/npm execution packet. The 18 SMILES-semantic residuals are classified as CheMatic stereo-writer regressions tracked by #632 and the one Morgan residual as a typed unsupported contract. CIP now compares proven atom order plus bond endpoints rather than engine-local bond indices, yielding 9,770/10,000 exact and 230 unresolved rows. The independent native/C++ lane is explicitly unavailable with release evidence. Product adjudication continues separately in #634/#635; prepare the same commands for the next published stable artifacts and re-measure Python boundary overhead after an actual backend change | P0/P2/P3; A1–A4 |
+| 1 | P0 preparation; external execution | **T1.5 rebaseline**: preserve the completed 2026.03.6 Python/npm execution packet and the #632 source-candidate rerun that reduces SMILES-semantic residuals from 18 to zero without worsening graph, CIP, Morgan, or SMARTS results. The one Morgan residual remains a typed unsupported contract. CIP compares proven atom order plus bond endpoints, yielding 9,770/10,000 exact and 230 unresolved rows. The independent native/C++ lane is explicitly unavailable with release evidence. Product adjudication continues in #634/#635; prepare the same commands for the next published stable artifacts and re-measure Python boundary overhead after an actual backend change | P0/P2/P3; A1–A4 |
 | 2 | P1 | **A2 and semantic interchange closure**: retain the deployed #503 aromatic-stash planner and the completed #149 28-component × 1,024-relabeling gate; expand acceptance only with new bounded semantic-reparse evidence. Resolve phosphorus adjudication before new 3D breadth. Retain the completed T5.7 identity-renumber gate and T1.9 V3000 E/Z query truth table; after primary-source verification add selected-atom/bond CIP and identity-renumber stereo cases, keep T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries, then add typed semantics before making compatibility claims | P1/P2/P4; A2/A5 |
 | 3 | P1 | **T3.7 controlled runtime**: retain the merged Explorer unknown-length CSV cancellation adapter, then extend the completed row-accounting contract through Worker/stream/cancel/export/limits on 10k inputs. Every binding must report original index, stage, success/failed/refused/skipped terminal outcome, unprocessed cancellation range, and an all-inputs-succeeded predicate; publish typed install examples and a generated package scorecard only after that contract and its resource evidence exist. T3.6 maintains its scoped speed win; it does not substitute for runtime controls | P0/P3/P6; A3/A4 |
 | 4 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: retain the v1.0.20 public-package 265/265 stereo-safe quality result and source `e9f178fa` post-freeze speed gate. Resolve the two same-coordinate energy residuals, term-level adjudication, timeout, and conformer-quality exits; rerun the speed gate from the next published package. Do not collapse source-candidate, package, lightweight, and stereo-safe claims | P5/P6; A5/A6 |

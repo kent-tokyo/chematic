@@ -14,6 +14,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation" / "results"
 PREFIX = "v1.0.19-vs-2026.03.6-2026-09-22"
+ISSUE632_SUMMARY = RESULTS / (
+    "smiles-ez-semantic-issue632-v1.0.20-candidate-vs-rdkit-2026.03.6-2026-09-23.json"
+)
 ALLOWED_CLASSES = {
     "chematic_regression",
     "oracle_change",
@@ -85,6 +88,113 @@ def validate_rows(
         errors,
     )
     return count, classes, operation_classes, correspondence_rows
+
+
+def validate_issue632_candidate(baseline_rows_path: Path, errors: list[str]) -> None:
+    evidence = json.loads(ISSUE632_SUMMARY.read_text(encoding="utf-8"))
+    require(evidence.get("gate_passed") is True, "Issue #632 gate failed", errors)
+    require(
+        evidence.get("oracle") == {"name": "RDKit Python", "version": "2026.03.6"},
+        "Issue #632 oracle changed",
+        errors,
+    )
+    require(
+        evidence.get("row_accounting")
+        == {"input_count": 10000, "completed_count": 10000, "parse_failure_count": 0},
+        "Issue #632 row accounting changed",
+        errors,
+    )
+
+    baseline_affected: list[int] = []
+    with gzip.open(baseline_rows_path, "rt", encoding="utf-8") as handle:
+        for line in handle:
+            row = json.loads(line)
+            if any(
+                item.get("operation") == "smiles_parse_write"
+                and item.get("classification") == "chematic_regression"
+                for item in row.get("differences", [])
+            ):
+                baseline_affected.append(row["input_index"])
+    require(
+        evidence.get("affected_input_indices") == baseline_affected,
+        "Issue #632 affected-row inventory changed",
+        errors,
+    )
+
+    raw = evidence.get("raw_rows", {})
+    rows_path = ROOT / str(raw.get("path", ""))
+    try:
+        compressed = rows_path.read_bytes()
+    except OSError as exc:
+        errors.append(f"Issue #632 rows unavailable: {exc}")
+        return
+    require(
+        hashlib.sha256(compressed).hexdigest() == raw.get("compressed_sha256"),
+        "Issue #632 compressed rows SHA-256 changed",
+        errors,
+    )
+
+    uncompressed_digest = hashlib.sha256()
+    row_count = 0
+    semantic_differences = 0
+    graph_differences = 0
+    cip_exact = 0
+    morgan_exact = 0
+    smarts_differences = 0
+    repaired_affected: list[int] = []
+    with gzip.open(rows_path, "rb") as handle:
+        for expected_index, line in enumerate(handle):
+            uncompressed_digest.update(line)
+            row = json.loads(line)
+            require(
+                row.get("input_index") == expected_index,
+                f"Issue #632 row {expected_index + 1}: non-contiguous input_index",
+                errors,
+            )
+            smiles = row.get("smiles_parse_write", {})
+            if smiles.get("semantic_roundtrip") is not True:
+                semantic_differences += 1
+            if smiles.get("nonisomeric_roundtrip") is not True:
+                graph_differences += 1
+            if row.get("cip", {}).get("exact") is True:
+                cip_exact += 1
+            if row.get("morgan", {}).get("exact") is True:
+                morgan_exact += 1
+            smarts_differences += int(row.get("smarts", {}).get("difference_count", 0))
+            if expected_index in baseline_affected and smiles.get("semantic_roundtrip") is True:
+                repaired_affected.append(expected_index)
+            row_count += 1
+
+    require(
+        uncompressed_digest.hexdigest() == raw.get("uncompressed_sha256"),
+        "Issue #632 uncompressed rows SHA-256 changed",
+        errors,
+    )
+    observed_after = {
+        "smiles_semantic_difference": semantic_differences,
+        "smiles_graph_difference": graph_differences,
+        "cip_exact": cip_exact,
+        "morgan_exact": morgan_exact,
+        "smarts_differences": smarts_differences,
+    }
+    expected_after = evidence.get("after", {})
+    for key, value in observed_after.items():
+        require(
+            expected_after.get(key) == value,
+            f"Issue #632 {key} changed: expected {expected_after.get(key)!r}, found {value}",
+            errors,
+        )
+    require(row_count == 10000, f"Issue #632 expected 10,000 rows, found {row_count}", errors)
+    require(
+        repaired_affected == baseline_affected,
+        "Issue #632 did not repair every historical affected row",
+        errors,
+    )
+    require(
+        (cip_exact, morgan_exact, smarts_differences) == (9770, 9999, 14306),
+        "Issue #632 candidate worsened CIP, Morgan, or SMARTS counts",
+        errors,
+    )
 
 
 def main() -> int:
@@ -191,6 +301,8 @@ def main() -> int:
         "expected 230 unresolved CIP rows",
         errors,
     )
+
+    validate_issue632_candidate(rows_path, errors)
     require(
         operation_classes[("smarts", "unresolved")] == 3364,
         "expected 3,364 unresolved SMARTS rows",
@@ -292,7 +404,8 @@ def main() -> int:
         return 1
     print(
         "RDKit rebaseline evidence OK: 10,000 complete rows; "
-        "18 SMILES stereo regressions; one typed Morgan contract difference; "
+        "Issue #632 reduces 18 SMILES stereo regressions to zero; "
+        "one typed Morgan contract difference; "
         "230 CIP and 3,364 SMARTS rows unresolved"
     )
     return 0

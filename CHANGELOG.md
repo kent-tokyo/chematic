@@ -9,6 +9,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Fixed canonical SMILES for aromatic-stash E/Z systems so two directional
+  carriers at one alkene end cannot encode the same side. The RDKit 2026.03.6
+  exposed 10,000-row semantic lane improves from 18 stereo-identity losses to
+  zero, while graph identity, CIP, Morgan, and SMARTS counts remain unchanged.
+
 ## [1.0.20] - 2026-09-23
 
 - Completed the process-level Criterion gate calibration from issue #70. A

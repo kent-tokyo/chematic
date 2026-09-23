@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "profile": "issue632_smiles_ez_semantic_regression_v1",
+  "gate_passed": true,
+  "candidate": {
+    "version": "1.0.20",
+    "base_commit": "ad88654b7756ac7f0c6f308dca24ae39d37aeee5",
+    "canonical_rs_diff_sha256": "d9cba366e64a9c46e077c8c32bf1da67570466efdb464e6c26db1065977cfe3a",
+    "status": "source candidate; not a published-package measurement"
+  },
+  "oracle": {
+    "name": "RDKit Python",
+    "version": "2026.03.6"
+  },
+  "corpus": {
+    "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "sealed_accuracy_cohort_reused": false
+  },
+  "row_accounting": {
+    "input_count": 10000,
+    "completed_count": 10000,
+    "parse_failure_count": 0
+  },
+  "before": {
+    "source": "validation/results/rdkit-rebaseline-python-chemistry-summary-v1.0.19-vs-2026.03.6-2026-09-22.json",
+    "smiles_semantic_difference": 18,
+    "smiles_graph_difference": 0,
+    "cip_exact": 9770,
+    "morgan_exact": 9999,
+    "smarts_differences": 14306
+  },
+  "after": {
+    "smiles_semantic_difference": 0,
+    "smiles_graph_difference": 0,
+    "smiles_exact_spelling": 64,
+    "smiles_spelling_difference": 9936,
+    "cip_exact": 9770,
+    "cip_difference": 230,
+    "morgan_exact": 9999,
+    "morgan_difference": 1,
+    "smarts_cells": 310000,
+    "smarts_differences": 14306
+  },
+  "affected_input_indices": [
+    1214,
+    1370,
+    2981,
+    3000,
+    4550,
+    4557,
+    4583,
+    4587,
+    4648,
+    4655,
+    4687,
+    4701,
+    4707,
+    4715,
+    4720,
+    4775,
+    4782,
+    4903
+  ],
+  "affected_rows_preserving_isomeric_identity": 18,
+  "raw_rows": {
+    "path": "validation/results/rdkit-rebaseline-python-chemistry-rows-v1.0.20-candidate-issue632-vs-2026.03.6-2026-09-23.jsonl.gz",
+    "compression": "gzip -n",
+    "compressed_sha256": "a8f0bd6b31f61d73ed458768439ad64bd525cdd4c27c4822906b3ff030f9d5ed",
+    "uncompressed_sha256": "5030c39636c7ff7d2a20c1c714b27c558d08c5b492e2fe7e5b385dc50b9c7ea2"
+  },
+  "commands": [
+    "VIRTUAL_ENV=<venv> maturin develop --release -m crates/chematic-py/Cargo.toml",
+    "<venv>/bin/python scripts/run_rdkit_python_chemistry_lane.py --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --queries validation/rdkit_rebaseline_smarts_queries.json --output <summary.json> --rows-output <rows.jsonl> --expected-rdkit 2026.03.6"
+  ],
+  "boundary": "Canonical spelling equality is not required. This gate proves source-candidate isomeric semantic preservation on the fixed exposed corpus and records unchanged CIP, Morgan, and SMARTS counts; it does not claim complete canonical-SMILES or RDKit compatibility."
+}
