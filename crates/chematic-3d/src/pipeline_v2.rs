@@ -158,8 +158,7 @@ use crate::coords::Coords3D;
 use crate::dg_fft::ideal_bond_length;
 use crate::distance_geometry_v2::{
     self, BoundsConformance, DistanceBoundAdjustment, EmbedFailureCause, EmbedParameters,
-    EmbedStats, EmbedWithAdjustmentsFailure, bounds_conformance, mol_has_declared_stereo,
-    truncate_coords,
+    EmbedStats, EmbedWithAdjustmentsFailure, bounds_conformance, truncate_coords,
 };
 use crate::etkdg_knowledge::{
     PairBoundAdjustment, TorsionKnowledgeConfig, TorsionKnowledgeError, TorsionKnowledgeReport,
@@ -292,9 +291,11 @@ pub struct PipelineV2Config {
     ///
     /// Requires `embed.enforce_chirality: true` (`InvalidConfiguration` otherwise
     /// -- same precedent as every other flag here that only makes sense combined
-    /// with it). A no-op, byte-identical to `false`, for any molecule with no
-    /// declared stereo at all. See `ROADMAP.md`'s `#291` entry ("Phase 0.5") for
-    /// the measurement this design is based on. Default `false`.
+    /// with it). Expansion is activated only when a declared tetrahedral center
+    /// has an implicit H; E/Z-only molecules and tetrahedral centers without an
+    /// implicit H stay on the original heavy-atom path. See
+    /// `ROADMAP.md`'s `#291` entry ("Phase 0.5") for the measurement this design is
+    /// based on. Default `false`.
     pub expand_implicit_h_through_pipeline: bool,
 }
 
@@ -845,7 +846,7 @@ pub fn embed_pipeline_v2(
     let orig_mol: &Molecule = mol;
     let original_atom_count = orig_mol.atom_count();
     let use_expanded_geometry =
-        config.expand_implicit_h_through_pipeline && mol_has_declared_stereo(orig_mol);
+        config.expand_implicit_h_through_pipeline && mol_needs_expanded_stereo_geometry(orig_mol);
     let expanded_mol_storage: Molecule;
     let mol: &Molecule = if use_expanded_geometry {
         expanded_mol_storage = chematic_chem::add_hydrogens(orig_mol);
@@ -1349,6 +1350,20 @@ fn pipeline_config_is_invalid(config: &PipelineV2Config) -> bool {
         || (config.expand_implicit_h_through_pipeline && !config.embed.enforce_chirality)
 }
 
+/// True only when a declared tetrahedral center uses an implicit H. E/Z
+/// declarations do not need hydrogen coordinates, so keeping E/Z-only
+/// molecules on the heavy-atom path avoids the all-H distance-geometry/MMFF94
+/// cost without weakening tetrahedral geometry. A narrower ring-only rule was
+/// measured and rejected because four ordinary implicit-H centers developed
+/// gross clashes on the 265-molecule gate.
+fn mol_needs_expanded_stereo_geometry(mol: &Molecule) -> bool {
+    (0..mol.atom_count()).any(|i| {
+        let center = AtomIdx(i as u32);
+        let atom = mol.atom(center);
+        atom.chirality.is_tetrahedral() && mol.implicit_hydrogen_count(center) > 0
+    })
+}
+
 /// Whether a torsion-knowledge potential can be applied to the molecule's
 /// actual geometry. Keep this predicate shared by the evidence report and
 /// the fail-closed policy gate so they cannot drift apart.
@@ -1670,6 +1685,21 @@ mod tests {
         let result = embed_pipeline_v2(&mol, &config)
             .expect("2-butanol must still succeed with the flag on");
         assert!(result.final_stereo.is_fully_satisfied());
+        assert!(result.force_field.coords.atom_count() > mol.atom_count());
+    }
+
+    #[test]
+    fn expand_implicit_h_through_pipeline_is_noop_for_ez_only_molecule() {
+        let mol = parse("C/C=C\\C").unwrap();
+        let mut config = PipelineV2Config::stereo_safe(ForceFieldPolicy::Mmff94BondAngleStrict);
+        config.embed.random_seed = 0;
+        let result = embed_pipeline_v2(&mol, &config).expect("declared E/Z must remain supported");
+        assert!(result.final_stereo.is_fully_satisfied());
+        assert_eq!(
+            result.force_field.coords.atom_count(),
+            mol.atom_count(),
+            "E/Z-only molecules do not need explicit-H expansion"
+        );
     }
 
     #[test]
