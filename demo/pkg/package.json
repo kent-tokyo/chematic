@@ -12,13 +12,13 @@
     "url": "https://github.com/kent-tokyo/chematic"
   },
   "files": [
-    "schematic_wasm_bg.wasm",
-    "schematic_wasm.js",
-    "schematic_wasm.d.ts"
+    "chematic_wasm_bg.wasm",
+    "chematic_wasm.js",
+    "chematic_wasm.d.ts"
   ],
-  "main": "schematic_wasm.js",
+  "main": "chematic_wasm.js",
   "homepage": "https://kent-tokyo.github.io/chematic/",
-  "types": "schematic_wasm.d.ts",
+  "types": "chematic_wasm.d.ts",
   "sideEffects": [
     "./snippets/*"
   ],
