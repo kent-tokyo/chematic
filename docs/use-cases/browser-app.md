@@ -9,7 +9,7 @@ You want to ship a chemistry tool to users who won't install anything — a web 
 The published v1.0.15 npm WASM asset is **4,005,280 bytes raw / 1,460,499 bytes
 gzip**, versus **7,333,095 / 2,379,975 bytes** for
 `@rdkit/rdkit@2026.03.6` under the same file-compression method. See the
-[published-package scorecard](../../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
+[published-package scorecard](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
 No server is required: descriptor calculation, fingerprint
 generation, and similarity search run entirely in the browser, offline-capable after first load.
 

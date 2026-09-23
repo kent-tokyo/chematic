@@ -23,15 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
-### v1.0.20 の対応範囲
+### v1.0.21 の対応範囲
 
-このリリースでは、固定したRDKit 2025.09.3 core-eight descriptor gateを完了し、
-形式変換でのR-group識別、prepared compatible-Morganと検索契約、解析的MMFF94最小化、
-stereo-safe 3D経路を強化しました。固定source 3D gateは265/265件がsoundかつ
-stereo-cleanでgross clashは0件ですが、この品質優先laneはRDKitより高速ではなく、
-公開packageの再測定も別の証拠として扱います。詳細は
-[検証報告](docs/validation.md)、[互換性範囲](docs/compatibility-scope.md)、
-[CHANGELOG](CHANGELOG.md)を参照してください。
+v1.0.21は、測定済みのcoupled E/Z aromatic-stash系におけるcanonical SMILESを
+修正します。固定したRDKit 2026.03.6の10k診断でsemantic差は18件から0件となり、
+graph、CIP、Morgan、SMARTSの件数は不変です。長時間permutation監査は未完了のため、
+その完了や新しい公開package性能を主張しません。詳細は[検証報告](docs/validation.md)、
+[互換性範囲](docs/compatibility-scope.md)、[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## Python
 
@@ -64,9 +62,8 @@ print(Descriptors.MolWt(mol))
 ```rust
 use chematic::smiles::parse;
 
-let mol = parse("c1ccccc1")?;
+let mol = parse("c1ccccc1").expect("valid SMILES");
 println!("{}", mol.atom_count());
-# Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 SMILES/SMARTS、記述子、フィンガープリント、反応、SDF/MOL/CDXML、2D/3D、

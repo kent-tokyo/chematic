@@ -47,9 +47,18 @@ that relation rather than re-reading a raw marker from each candidate.
 
 The production planner constructs the canonical output-slot universe, searches
 at most eight slots and 65,536 candidates, reparses every candidate, checks a
-non-recursive Morgan-rank E/Z signature, and selects the lexicographic minimum.
-It is restricted to aromatic direction-stash input. Over-budget, empty, or
-semantically invalid candidate sets retain the previous fail-closed path.
+non-recursive Morgan-rank E/Z signature, rejects any candidate whose two
+directional carriers at one alkene end encode the same side, and selects the
+lexicographic minimum. The extra syntax check is required because a permissive
+internal reparse can otherwise retain one of two contradictory markers while
+RDKit correctly discards the E/Z assignment. It is restricted to aromatic
+direction-stash input. Over-budget, empty, or semantically invalid candidate
+sets retain the previous fail-closed path.
+
+The Issue #632 source-candidate rerun against RDKit 2026.03.6 preserves
+isomeric identity for 10,000/10,000 exposed rows, improving the historical
+9,982/10,000 result without changing the measured CIP, Morgan, or SMARTS
+counts. This is source-candidate evidence, not a published-package claim.
 
 The permanent regression suite includes all four components that diverged in
 the historical 1,024-relabeling audit. Existing shared-carrier, automorphism,

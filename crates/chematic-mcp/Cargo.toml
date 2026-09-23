@@ -18,15 +18,15 @@ path = "src/main.rs"
 [dependencies]
 serde_json = "1.0"
 ureq = "3"
-chematic-core       = { path = "../chematic-core",       version = "1.0.20" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.20" }
-chematic-chem       = { path = "../chematic-chem",       version = "1.0.20", features = ["serde"] }
-chematic-fp         = { path = "../chematic-fp",         version = "1.0.20" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.20" }
-chematic-3d         = { path = "../chematic-3d",         version = "1.0.20" }
-chematic-inchi      = { path = "../chematic-inchi",      version = "1.0.20" }
-chematic-mol        = { path = "../chematic-mol",        version = "1.0.20" }
-chematic-perception = { path = "../chematic-perception", version = "1.0.20" }
+chematic-core       = { path = "../chematic-core",       version = "1.0.21" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.21" }
+chematic-chem       = { path = "../chematic-chem",       version = "1.0.21", features = ["serde"] }
+chematic-fp         = { path = "../chematic-fp",         version = "1.0.21" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.21" }
+chematic-3d         = { path = "../chematic-3d",         version = "1.0.21" }
+chematic-inchi      = { path = "../chematic-inchi",      version = "1.0.21" }
+chematic-mol        = { path = "../chematic-mol",        version = "1.0.21" }
+chematic-perception = { path = "../chematic-perception", version = "1.0.21" }
 
 [dev-dependencies]
 # Real JSON Schema 2020-12 validator, used only in tests to independently

@@ -21,16 +21,16 @@ npm install @kent-tokyo/chematic
 
 Python needs no C/C++ compiler. Rust and WebAssembly builds use the same core.
 
-### v1.0.20 release boundary
+### v1.0.21 release boundary
 
-This release completes the frozen RDKit 2025.09.3 core-eight descriptor gate,
-preserves R-group identities across interchange formats, strengthens prepared
-compatible-Morgan and search contracts, and adopts analytic MMFF94 minimization
-with a stereo-safe quality path. The fixed source 3D gate is 265/265 sound and
-stereo-clean with zero gross clashes, but that quality lane is not faster than
-RDKit and the registry-package rerun remains separate. Compatibility is
-operation- and corpus-scoped; see the [validation report](docs/validation.md),
-[compatibility scope](docs/compatibility-scope.md), and [CHANGELOG](CHANGELOG.md).
+v1.0.21 fixes canonical SMILES for measured coupled E/Z aromatic-stash cases.
+The pinned RDKit 2026.03.6 exposed 10k diagnostic moves from 18 semantic
+differences to zero with graph, CIP, Morgan, and SMARTS counts unchanged. The
+long permutation audit remains incomplete, so this release does not claim its
+completion or a new published-package performance measurement. Compatibility
+remains operation- and corpus-scoped; see [validation](docs/validation.md),
+[compatibility scope](docs/compatibility-scope.md), and the
+[CHANGELOG](CHANGELOG.md).
 
 ## Python
 
@@ -63,9 +63,8 @@ This is not a full RDKit clone. Unsupported options fail explicitly; see the
 ```rust
 use chematic::smiles::parse;
 
-let mol = parse("c1ccccc1")?;
+let mol = parse("c1ccccc1").expect("valid SMILES");
 println!("{}", mol.atom_count());
-# Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 The workspace also contains focused crates for SMILES/SMARTS, descriptors,

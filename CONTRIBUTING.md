@@ -13,6 +13,20 @@ cargo clippy --workspace -- -D warnings
 
 No C compiler, no Python, no external tools required for the core crates.
 
+## Documentation build
+
+The documentation site uses a pinned MkDocs environment so local verification
+matches the Pages workflow. With `uv` installed:
+
+```bash
+UV_CACHE_DIR=/tmp/chematic-uv-cache uv venv .venv-docs
+UV_CACHE_DIR=/tmp/chematic-uv-cache uv pip install --python .venv-docs/bin/python -r requirements-docs.txt
+.venv-docs/bin/mkdocs build --strict --site-dir /tmp/chematic-mkdocs-site
+```
+
+The generated site and `.venv-docs` are local artifacts. `--strict` is required
+for changes to the documentation site or its links.
+
 ## Stable extension points and validation corpus
 
 Ecosystem integrations should implement `chematic_core::MoleculeExtension` and

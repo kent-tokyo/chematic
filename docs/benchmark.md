@@ -3,12 +3,13 @@
 Benchmark claims in chematic are operation-, corpus-, version-, and machine-
 specific. Unsupported operations, failures, and non-equivalent APIs are never
 counted as wins. Dated raw records are indexed in
-[`benchmarks/README.md`](../benchmarks/README.md).
+[benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks).
 
 ## Current status
 
-The current release line is **v1.0.20**. The newest completed public-package performance
-record is the 2026-09-23 browser/3D comparison against RDKit 2026.03.6. Older
+The current release line is **v1.0.21**. The newest completed public-package performance
+record remains the 2026-09-23 v1.0.20 browser/3D comparison against RDKit 2026.03.6;
+v1.0.21 has no new package-performance remeasurement. Older
 similarity, streaming, and operation timing records remain pinned to their
 recorded source/release versions.
 
@@ -35,7 +36,7 @@ bound 3.407x), with 9,999/9,999 supported rows bit-exact. The same release's
 PyPI wheel reaches 265/265 independently sound, stereo-clean and clash-free
 MMFF94 stereo-safe outputs, but that quality-equivalent lane is only 0.944x
 RDKit speed (lower bound 0.861x). See the complete
-[v1.0.20 public-package record](../benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md).
+[v1.0.20 public-package record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md).
 
 ## Published-source timing summary
 
@@ -68,7 +69,7 @@ the current release summary.
 
 ## Similarity search
 
-The [2026-09-11 similarity-search record](../benchmarks/2026-09-11-similarity-search-v1.0.12.md)
+The [2026-09-11 similarity-search record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-similarity-search-v1.0.12.md)
 is the current three-lane gate using a fixed 4,500-entry library and 500-query
 split. Native/native, RDKit-compatible/RDKit, and cross-profile overlap are
 reported separately; failures are excluded from the valid-input scope and
@@ -86,8 +87,8 @@ separate contracts in [`compatibility-scope.md`](compatibility-scope.md).
 Streaming records primarily measure record accounting, failure behavior, and
 boundary semantics. The ten-format Rust and cross-engine matrices, including
 plain/gzip stages, are indexed under
-[`Streaming and cross-engine contracts`](../benchmarks/README.md#streaming-and-cross-engine-contracts).
-Use [`scripts/validate_streaming_cross_engine_matrix.py`](../scripts/validate_streaming_cross_engine_matrix.py)
+[Streaming and cross-engine contracts](https://github.com/kent-tokyo/chematic/tree/main/benchmarks).
+Use [`scripts/validate_streaming_cross_engine_matrix.py`](https://github.com/kent-tokyo/chematic/blob/main/scripts/validate_streaming_cross_engine_matrix.py)
 for the fail-closed matrix check.
 
 ## Artifact size
@@ -96,23 +97,23 @@ The published v1.0.15 npm WASM asset is **4,005,280 bytes raw / 1,460,499
 bytes gzip**. Official RDKit.js 2026.03.6 is **7,333,095 / 2,379,975 bytes**
 under the same local file-compression method. This is an artifact measurement,
 not an internet-transfer or full application-size claim. Exact hashes and
-commands are in the [isolated browser comparison](../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
+commands are in the [isolated browser comparison](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
 
 ## Reproduction entry points
 
 | Purpose | Entry point |
 |---|---|
 | Accuracy vs RDKit | `pip install chematic rdkit`; `python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json /tmp/bench5k.json`; `python scripts/gen_validation_report.py /tmp/bench5k.json` |
-| Similarity search | [`2026-09-11-similarity-search-v1.0.12.md`](../benchmarks/2026-09-11-similarity-search-v1.0.12.md) |
-| Parse + compatible Morgan vs official RDKit.js | [`2026-09-20-parse-morgan-rdkitjs.md`](../benchmarks/2026-09-20-parse-morgan-rdkitjs.md) |
-| Published-package fingerprint and 3D comparison | [`2026-09-22-public-package-fingerprint-3d.md`](../benchmarks/2026-09-22-public-package-fingerprint-3d.md) |
-| A3 similarity search rerun | [`2026-09-12-similarity-search-a3-v1.0.13.md`](../benchmarks/2026-09-12-similarity-search-a3-v1.0.13.md) |
-| Hot-path A/B | [`2026-09-05-hotpath-110.md`](../benchmarks/2026-09-05-hotpath-110.md) |
-| File streaming | [`2026-09-04-streaming-formats.md`](../benchmarks/2026-09-04-streaming-formats.md) |
-| Cross-engine contracts | [`benchmarks/README.md`](../benchmarks/README.md#streaming-and-cross-engine-contracts) |
-| WASM artifact and official RDKit.js gate | [`2026-09-11-official-rdkit-js-v1.0.12.md`](../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md) |
-| Official RDKit.js browser gate | [`2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md`](../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md) |
-| Full inventory | [`benchmarks/README.md`](../benchmarks/README.md) |
+| Similarity search | [v1.0.12 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-similarity-search-v1.0.12.md) |
+| Parse + compatible Morgan vs official RDKit.js | [2026-09-20 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-20-parse-morgan-rdkitjs.md) |
+| Published-package fingerprint and 3D comparison | [v1.0.20 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md) |
+| A3 similarity search rerun | [v1.0.13 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-12-similarity-search-a3-v1.0.13.md) |
+| Hot-path A/B | [2026-09-05 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-05-hotpath-110.md) |
+| File streaming | [2026-09-04 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-streaming-formats.md) |
+| Cross-engine contracts | [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks) |
+| WASM artifact and official RDKit.js gate | [v1.0.12 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md) |
+| Official RDKit.js browser gate | [v1.0.15 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md) |
+| Full inventory | [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks) |
 
 ## Hardware and interpretation
 
@@ -148,6 +149,6 @@ resource-limit failures are recorded as `ResourceLimit`. This field is
 diagnostic coverage evidence, not a claim of exhaustive parser-state coverage
 or cross-engine error taxonomy parity.
 The 120-case bounded taxonomy result is stored in
-[`validation/results/streaming-failure-taxonomy-v1.0.10.json`](../validation/results/streaming-failure-taxonomy-v1.0.10.json)
+[`validation/results/streaming-failure-taxonomy-v1.0.10.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/streaming-failure-taxonomy-v1.0.10.json)
 and can be regenerated with `python3 scripts/check_streaming_failure_taxonomy.py`
 after building the streaming example.

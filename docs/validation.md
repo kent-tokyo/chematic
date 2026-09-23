@@ -1,6 +1,6 @@
 # Validation report
 
-Updated 2026-09-23. The current release is **v1.0.20**. Each result keeps its
+Updated 2026-09-23. The current release is **v1.0.21**. Each result keeps its
 recorded version, comparator, corpus, and operation; no result is silently
 upgraded to the current source revision.
 
@@ -8,12 +8,13 @@ upgraded to the current source revision.
 
 | Area | Evidence | Boundary |
 |---|---|---|
-| Release channels | `validation/results/release-channel-verification-v1.0.20.json` | GitHub, crates.io, docs.rs, PyPI, npm, and Pages all verified for v1.0.20 |
+| Release channels | `validation/results/release-channel-verification-v1.0.21.json` | Publication verification is recorded separately; v1.0.20 remains the last fully verified historical channel record until v1.0.21 channels are observed |
 | RDKit.js browser comparison | `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md` | Registry-installed v1.0.20 on the fixed exposed 10k corpus; both compatible-Morgan lanes pass and all 9,999 supported rows are bit-exact; not internet/CDN latency |
 | MMFF94 same-coordinate energy | `benchmarks/2026-09-23-mmff94-current-source-energy.md` | Current-source 265-row packet against pinned RDKit 2026.03.6: 262 comparable, p90 absolute delta 1.144679 kcal/mol, two residuals above 5 kcal/mol; not conformer quality, convergence, stereo, speed, or a published-package claim |
 | A6 source speed/convergence candidate | `benchmarks/2026-09-23-a6-analytic-mmff94-source-candidate.md` | Historical source packet; use the v1.0.20 public-package record for current package claims |
 | A6 MMFF94 stereo-safe quality | `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md` | Public v1.0.20 closes the prior 12 typed failures and four gross-clash rows at 265/265 independently sound, stereo-clean, clash-free successes. Paired speed is 0.944x with a 0.861x lower bound, so this is not an MMFF94 speed win. |
 | RDKit 2026.03.6 rebaseline | `validation/results/rdkit-rebaseline-*-v1.0.19-vs-2026.03.6-2026-09-22.*` plus the 2026-09-23 native-availability record | Exact Python/npm artifacts and 10,000 complete exposed rows; correspondence-correct CIP is 9,770/10,000 (the older 9,880 engine-local-index result is withdrawn), with 18 classified SMILES stereo-writer regressions, one typed Morgan contract difference, and unresolved CIP/SMARTS residuals. The independent native/C++ lane remains explicitly unavailable; historical diagnostics, not oracle adoption |
+| Issue #632 SMILES release-source diagnostic | `validation/results/smiles-ez-semantic-issue632-v1.0.20-candidate-vs-rdkit-2026.03.6-2026-09-23.json` | v1.0.21 contains source `9808f54f`, which reduces the same exposed 10k lane from 18 semantic differences to zero with zero graph differences; CIP, Morgan, and SMARTS counts are unchanged. The long 28 x 1,024 relabel audit was interrupted, so this is not a completed long-audit or published-package remeasurement claim. |
 | Parser security | `validation/parser_security_corpus_v1.json` plus hosted Linux gate | Fixed five-format corpus with process/time/memory boundaries |
 | V3000 interchange | `validation/results/v3000-*-v1.0.15.json` | Ordinary structures and declared SGROUP/stereo contracts; no coordination/haptic/polymer semantic claim |
 | Stereo development | `validation/results/stereo-*-v1.0.15-2026-09-16.json` | 300 development structures and 5,115 spelling variants; not independent gold |
@@ -101,4 +102,5 @@ pinned metadata.
 
 See [compatibility scope](compatibility-scope.md),
 [RDKit migration](rdkit-migration.md), [accuracy plan](rdkit-accuracy-plan.md),
-and the [benchmark index](../benchmarks/README.md) for exact boundaries.
+and the [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
+for exact boundaries.

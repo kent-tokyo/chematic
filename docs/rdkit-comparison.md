@@ -40,6 +40,18 @@ for every input, but the two libraries need not choose the same valid spelling.
 Exact versions, corpus hashes, commands, and follow-up source A/B results are in
 the [benchmark guide](benchmark.md).
 
+## Current compatibility diagnostic
+
+The pinned RDKit 2026.03.6 exposed 10,000-row packet keeps the major surfaces
+separate. Public v1.0.19 records 9,770/10,000 correspondence-correct CIP labels,
+9,999/10,000 compatible-Morgan rows with one typed Fe(II) refusal, and 14,306
+differing SMARTS cells out of 310,000. v1.0.21 contains the issue #632
+release-source fix, which reduces the 18 SMILES semantic differences to zero
+while preserving zero non-isomeric graph differences; the long permutation audit
+was interrupted, so it is not a completed long-audit or published-package
+remeasurement claim. See [validation](validation.md)
+for the evidence files and remaining #634/#635 work.
+
 ## Accuracy and parity
 
 The opt-in `Mol.rdkit_mw`, `Mol.rdkit_hba`, and
@@ -50,10 +62,10 @@ the current source-built v2 descriptor run matches RDKit for MW and HBA on
 uses RDKit-compatible nuclide masses where available and, for an unlisted but
 syntactically valid isotope label, RDKit's mass-number fallback. The full per-field
 distribution and 12-case structural holdout are recorded in
-[`descriptor-rdkit-diagnostics-v1.0.13.json`](../validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
-and [`descriptor-rdkit-holdout-v1.0.13.json`](../validation/results/descriptor-rdkit-holdout-v1.0.13.json).
+[`descriptor-rdkit-diagnostics-v1.0.13.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
+and [`descriptor-rdkit-holdout-v1.0.13.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/descriptor-rdkit-holdout-v1.0.13.json).
 
-The 4,999-molecule descriptor snapshot reports:
+The historical 4,999-molecule descriptor snapshot reports:
 
 - molecular weight: 99.82% within ±0.01 Da;
 - HBA, HBD, TPSA, LogP, molar refractivity, Fsp3, and the documented ring
@@ -95,7 +107,7 @@ The v1.0.15 published-package scorecard measures chematic at **4,005,280 bytes
 raw / 1,460,499 bytes gzip** and `@rdkit/rdkit@2026.03.6` at **7,333,095 /
 2,379,975 bytes**. The packages have different feature surfaces, so size is a
 deployment observation rather than a feature-normalized benchmark. See the
-[published-package scorecard](../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
+[published-package scorecard](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
 
 ## Interpretation rule
 
