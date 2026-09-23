@@ -3,46 +3,52 @@
   "release": {
     "version": "1.0.21",
     "tag": "v1.0.21",
-    "commit": null
+    "commit": "6314e48ad93920d23ceb8302c0b60186354c765c"
   },
-  "checked_at": "2026-09-23T00:00:00Z",
-  "release_ready": false,
+  "checked_at": "2026-09-23T03:19:00Z",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.21",
-      "detail": "Pending tag-triggered GitHub Release publication; source preparation is not channel verification."
+      "detail": "Published GitHub Release is non-draft and non-prerelease; the attached release metadata asset has SHA-256 757744d57dccdb5ebe286bf5abeceebeaaab5425f9e357b116fd7e6b67cc9beb.",
+      "observed_version": "1.0.21"
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic",
-      "detail": "Pending tag-triggered npm publication; source preparation is not registry verification."
+      "detail": "npm registry reports @kent-tokyo/chematic@1.0.21 with integrity sha512-+jCDMxpvj1kBe/VBt6cuyQ3kKLc4xttFZn5qyH6vJfdiCZR6FWgyjJqLdqtRhU3x9nt2OEBFzSZHq4C0/m4vpw==.",
+      "observed_version": "1.0.21"
     },
     {
       "id": "pypi",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://pypi.org/pypi/chematic/1.0.21/json",
-      "detail": "Pending tag-triggered PyPI publication; source preparation is not registry verification."
+      "detail": "PyPI JSON reports version 1.0.21 with Linux, macOS, and Windows wheels for CPython 3.9 through 3.13 plus an sdist.",
+      "observed_version": "1.0.21"
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://crates.io/crates/chematic/1.0.21",
-      "detail": "Pending tag-triggered crates.io publication; source preparation is not registry verification."
+      "detail": "crates.io API reports chematic 1.0.21, not yanked, checksum 61631e544c39143a4bc74390454fc38b97aa469c86b8f49da45a6e09deff9579.",
+      "observed_version": "1.0.21"
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://docs.rs/chematic/1.0.21/chematic/",
-      "detail": "Pending crates.io indexing and docs.rs build; source preparation is not documentation verification."
+      "detail": "Version-pinned docs.rs URL returned HTTP 200 and displayed chematic 1.0.21.",
+      "observed_version": "1.0.21"
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "Pending main-branch Pages deployment and visible release-marker verification."
+      "detail": "GitHub Pages returned HTTP 200 and displayed Current release: v1.0.21.",
+      "observed_version": "1.0.21"
     }
   ]
 }
