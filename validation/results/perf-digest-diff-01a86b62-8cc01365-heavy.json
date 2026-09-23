@@ -1,0 +1,38 @@
+{
+ "schema": "chematic-perf-digest-diff/v1",
+ "base_revision": "01a86b621f401d22fc9a0e90f85e4c85b6dd49fe",
+ "head_revision": "e1cfa3d8b2ba15188dafaec4d4ea30e430a8b4ab",
+ "head_crates_dirty_files": 0,
+ "only": "qed,maccs,standardize",
+ "corpora": [
+  {
+   "path": "scripts/chembl_accuracy_corpus_4999.smi",
+   "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  {
+   "path": "scripts/nci_first_5k_smiles_only.smi",
+   "sha256": "1d9fa413f33c4d2e2f2da9742cdbd7ce8f39d33b0b9fd78ce012a0b7f24e031d"
+  }
+ ],
+ "digest_sha256": {
+  "base": "010736294928fd696b0ea730a8a45e89b9b57f263d47aa939f24956b6c60fe27",
+  "head": "010736294928fd696b0ea730a8a45e89b9b57f263d47aa939f24956b6c60fe27"
+ },
+ "ops": {
+  "maccs": {
+   "rows": 9999,
+   "diffs": 0
+  },
+  "qed": {
+   "rows": 9999,
+   "diffs": 0
+  },
+  "standardize": {
+   "rows": 9999,
+   "diffs": 0
+  }
+ },
+ "total_rows": 29997,
+ "total_diffs": 0,
+ "first_diff_examples": {}
+}
