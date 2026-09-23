@@ -5,10 +5,11 @@
 # and against the current working tree — runs `digest` over the given corpora
 # and compares every (corpus, row, op) output byte-for-byte. Writes a compact
 # JSON summary (per-op row/diff counts, corpus and digest SHA-256, revisions);
-# the multi-megabyte raw digests stay in the scratch directory.
+# the raw digests (up to gigabytes) are deleted unless KEEP_DIGESTS=1.
 #
 # usage: scripts/perf_digest_diff.sh BASE_REV OUT.json CORPUS.smi [CORPUS.smi...]
 #        ONLY=op1,op2 restricts the op set (default: all ops present in both).
+#        KEEP_DIGESTS=1 keeps the raw base/head digests in the scratch directory.
 set -euo pipefail
 
 if [ "$#" -lt 3 ]; then
@@ -22,7 +23,11 @@ BASE_SHA=$(git -C "$ROOT" rev-parse "$BASE_REV")
 HEAD_SHA=$(git -C "$ROOT" rev-parse HEAD)
 DIRTY=$(git -C "$ROOT" status --porcelain --untracked-files=no -- crates | wc -l | tr -d ' ')
 
-cleanup() { git -C "$ROOT" worktree remove --force "$SCRATCH/base-tree" >/dev/null 2>&1 || true; }
+cleanup() {
+  git -C "$ROOT" worktree remove --force "$SCRATCH/base-tree" >/dev/null 2>&1 || true
+  # Raw digests can be gigabytes; keep them only on request.
+  [ -n "${KEEP_DIGESTS:-}" ] || rm -f "$SCRATCH/base.tsv" "$SCRATCH/head.tsv"
+}
 trap cleanup EXIT
 
 git -C "$ROOT" worktree add --detach -q "$SCRATCH/base-tree" "$BASE_SHA"
@@ -53,19 +58,16 @@ def sha(p):
         for b in iter(lambda: f.read(1 << 20), b""):
             h.update(b)
     return h.hexdigest()
-base = open(os.path.join(scratch, "base.tsv"), encoding="utf-8").read().split("\n")
-head = open(os.path.join(scratch, "head.tsv"), encoding="utf-8").read().split("\n")
 rows = collections.Counter(); diffs = collections.Counter(); first = {}
-if len(base) != len(head):
-    raise SystemExit(f"row count mismatch: base {len(base)} vs head {len(head)}")
-for a, b in zip(base, head):
-    if not a:
-        continue
-    op = a.split("\t")[2]
-    rows[op] += 1
-    if a != b:
-        diffs[op] += 1
-        first.setdefault(op, {"base": a[:400], "head": b[:400]})
+# Stream both digests: they can be gigabytes (full SMARTS match maps).
+with open(os.path.join(scratch, "base.tsv"), encoding="utf-8") as fa, \
+     open(os.path.join(scratch, "head.tsv"), encoding="utf-8") as fb:
+    for a, b in zip(fa, fb, strict=True):
+        op = a.split("\t", 3)[2]
+        rows[op] += 1
+        if a != b:
+            diffs[op] += 1
+            first.setdefault(op, {"base": a[:400], "head": b[:400]})
 summary = {
     "schema": "chematic-perf-digest-diff/v1",
     "base_revision": base_sha,

@@ -244,17 +244,20 @@ fn main() {
         }
         "digest" => {
             // Each op computed on a fresh clone so no cache leaks between ops.
-            let mut out = String::new();
+            // Streamed to disk: full SMARTS match maps make digests large.
+            use std::io::Write as _;
+            let file = std::fs::File::create(&args[2]).unwrap();
+            let mut out = std::io::BufWriter::new(file);
             for path in &args[3..] {
                 let mols = load(path);
                 for (i, m) in mols.iter().enumerate() {
                     for (name, f) in &sel {
                         let fresh = m.clone();
-                        let _ = writeln!(out, "{path}\t{i}\t{name}\t{}", f(&fresh));
+                        writeln!(out, "{path}\t{i}\t{name}\t{}", f(&fresh)).unwrap();
                     }
                 }
             }
-            std::fs::write(&args[2], out).unwrap();
+            out.flush().unwrap();
         }
         "patterns" => {
             let mols = load(&args[3]);
