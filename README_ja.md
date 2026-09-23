@@ -23,17 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
-### v1.0.20 の対応範囲
+### v1.0.21 の対応範囲
 
-このリリースでは、固定したRDKit 2025.09.3 core-eight descriptor gateを完了し、
-形式変換でのR-group識別、prepared compatible-Morganと検索契約、stereo-safe
-MMFF94経路を強化しました。公開packageは固定3D品質gateを265/265件で通過しましたが、
-このlaneの速度はRDKit比0.944xです。詳細は[検証報告](docs/validation.md)、
+v1.0.21は、測定済みのcoupled E/Z aromatic-stash系におけるcanonical SMILESを
+修正します。固定したRDKit 2026.03.6の10k診断でsemantic差は18件から0件となり、
+graph、CIP、Morgan、SMARTSの件数は不変です。長時間permutation監査は未完了のため、
+その完了や新しい公開package性能を主張しません。詳細は[検証報告](docs/validation.md)、
 [互換性範囲](docs/compatibility-scope.md)、[CHANGELOG](CHANGELOG.md)を参照してください。
-
-v1.0.20以降の開発には、coupled E/Z SMILES semanticsのv1.0.21 source候補が
-含まれます。固定したRDKit 2026.03.6の10k診断では18件のsemantic差を0件に
-しましたが、まだ公開packageの結果ではありません。
 
 ## Python
 

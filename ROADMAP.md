@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Updated 2026-09-23. Published release: **v1.0.20**. Development target:
-> **v1.0.21**. Published-package results and current-source candidates are
+> Updated 2026-09-23. Published release: **v1.0.21**. Development target:
+> **v1.0.22**. Published-package results and current-source candidates are
 > reported separately.
 
 CheMatic's priority is a safe, typed, local-first chemistry kernel for Rust,
@@ -25,11 +25,12 @@ Babel, CDK, or other Rust chemistry libraries.
   clash-free outputs at 0.944x RDKit speed. Current source `e9f178fa` closes
   that measured speed gap on the fixed set and a post-freeze 100-row holdout;
   publication and the remaining A6 numerical gates are separate.
-- **Issue #632 has a source candidate.** Commit `9808f54f` reduces the pinned
+- **Issue #632 is released with a bounded source diagnostic.** Commit `9808f54f`
+  reduces the pinned
   RDKit 2026.03.6 SMILES semantic differences from 18/10,000 to 0/10,000 while
   preserving zero graph differences. CIP, Morgan, and SMARTS counts are
   unchanged. The long 28-component x 1,024-relabel audit was interrupted, so
-  this is not yet merged or published evidence.
+  this is not a completed long-audit or published-package remeasurement claim.
 - **The next RDKit residuals are classified, not hidden.** CIP has 230/10,000
   correspondence-correct differences and SMARTS has 3,364 affected rows
   (14,306/310,000 cells). They are tracked by #634 and #635. The one Morgan
@@ -42,9 +43,9 @@ history and `docs/archive/`.
 
 ## Priority order
 
-1. **Close and merge #632 safely.** Run the focused SMILES suites, roadmap and
-   evidence checks, then rerun the long permutation audit when practical.
-   Preserve fail-closed behavior outside the measured coupled-E/Z domain.
+1. **Finish #632 verification.** Rerun the long permutation audit when
+   practical and preserve fail-closed behavior outside the measured coupled-E/Z
+   domain. Its release-source 10k diagnostic is not a substitute for that gate.
 2. **Resolve #634 CIP residuals.** Classify representation, oracle,
    unsupported, and implementation differences before changing labels. Never
    turn an unresolved center into a guessed result.
@@ -55,7 +56,7 @@ history and `docs/archive/`.
    adding new 3D breadth.
 5. **Prepare the next RDKit rebaseline.** Keep 2026.03.6 historical and run a
    new packet only against an official, version-pinned artifact.
-6. **Complete release evidence for v1.0.21.** Cross-binding checks,
+6. **Complete release evidence for v1.0.22.** Cross-binding checks,
    documentation consistency, package builds, security gates, and public
    package reruns remain distinct acceptance steps.
 
@@ -92,7 +93,7 @@ exit passes.
 | ID | Workstream | Remaining release-relevant exit |
 |---|---|---|
 | T0 | Evidence discipline | Keep source, package, public, and sealed claims distinct; retain every failure and unsupported row |
-| T1 | Compatibility contract | Close #632/#634/#635 and publish operation-specific profiles against pinned oracles |
+| T1 | Compatibility contract | Finish #632's long audit, close #634/#635, and publish operation-specific profiles against pinned oracles |
 | T2 | Release and documentation | Synchronize versions, CHANGELOG, READMEs, validation, package metadata, migration notes, and public channels |
 | T3 | Browser and agent runtime | Worker/cancellation limits, deterministic batch accounting, typed errors, and reproducible browser comparisons |
 | T4 | Parser security | Fixed malformed-input corpus, bounded time/memory, process isolation, and explicit refusal reasons |
@@ -108,7 +109,7 @@ and release gates, not for a second backlog.
 |---|---|---|
 | P0 | Core chemistry and reproducible comparison | Stable core; version-pinned rebaseline remains recurring work |
 | P1 | Safe parsing and files | Stable bounded paths; exhaustive malformed-state coverage remains open |
-| P2 | Stereo, identity, and canonicalization | Active; #632 is the immediate merge candidate, #634 follows |
+| P2 | Stereo, identity, and canonicalization | Active; #632 long-audit verification and #634 follow |
 | P3 | Browser, Node, Python, and agent delivery | Stable selected surface; runtime controls and broader parity remain open |
 | P4 | Reactions, SMARTS, and medicinal chemistry | Bounded implementation; #635 and quality reports remain open |
 | P5 | 3D, force fields, and materials | Experimental; A6 correctness gates remain open |
@@ -118,12 +119,12 @@ Phase numbers describe product areas, not a promise to finish strictly in
 numeric order. Current priority is driven by correctness risk and evidence
 readiness.
 
-## Release gate for v1.0.21
+## Release gate for v1.0.22
 
-A v1.0.21 candidate may be proposed when:
+A v1.0.22 candidate may be proposed when:
 
-- #632 is merged with focused and long-running regression evidence, or its
-  remaining unrun gate is explicitly deferred and not claimed;
+- #632's long-running regression is complete or is explicitly deferred and not
+  claimed;
 - every changed chemistry path has a deterministic regression and binding
   boundary where exposed;
 - workspace tests, clippy, documentation/evidence checks, parser-security

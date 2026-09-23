@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.20</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.21</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,7 +80,7 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-The current published release is v1.0.20.
+The current published release is v1.0.21.
 
 - Its registry-installed browser package records 1.398x parse-inclusive and
   3.511x prepared compatible-Morgan speedups against official
@@ -92,9 +92,10 @@ The current published release is v1.0.20.
   same local compression method. Feature surfaces differ.
 
 These are scoped measurements, not general claims that chematic is always
-faster, smaller, or more accurate. Development after v1.0.20 includes a source
-candidate that removes the 18 coupled-E/Z SMILES semantic differences in the
-pinned RDKit 10k diagnostic; it is not yet a published-package result.
+faster, smaller, or more accurate. v1.0.21 includes a release-source fix that
+removes the 18 coupled-E/Z SMILES semantic differences in the pinned RDKit 10k
+diagnostic. It does not relabel the v1.0.20 package performance record, and its
+long permutation audit remains incomplete.
 
 See [validation](validation.md), [benchmark methodology](benchmark.md), and
 [compatibility scope](compatibility-scope.md) for exact conditions.

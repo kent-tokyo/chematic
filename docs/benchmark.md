@@ -7,8 +7,9 @@ counted as wins. Dated raw records are indexed in
 
 ## Current status
 
-The current release line is **v1.0.20**. The newest completed public-package performance
-record is the 2026-09-23 browser/3D comparison against RDKit 2026.03.6. Older
+The current release line is **v1.0.21**. The newest completed public-package performance
+record remains the 2026-09-23 v1.0.20 browser/3D comparison against RDKit 2026.03.6;
+v1.0.21 has no new package-performance remeasurement. Older
 similarity, streaming, and operation timing records remain pinned to their
 recorded source/release versions.
 

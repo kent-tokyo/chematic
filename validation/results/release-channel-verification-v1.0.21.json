@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "release": {
+    "version": "1.0.21",
+    "tag": "v1.0.21",
+    "commit": null
+  },
+  "checked_at": "2026-09-23T00:00:00Z",
+  "release_ready": false,
+  "channels": [
+    {
+      "id": "github_release",
+      "status": "not_measured",
+      "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.21",
+      "detail": "Pending tag-triggered GitHub Release publication; source preparation is not channel verification."
+    },
+    {
+      "id": "npm",
+      "status": "not_measured",
+      "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic",
+      "detail": "Pending tag-triggered npm publication; source preparation is not registry verification."
+    },
+    {
+      "id": "pypi",
+      "status": "not_measured",
+      "url": "https://pypi.org/pypi/chematic/1.0.21/json",
+      "detail": "Pending tag-triggered PyPI publication; source preparation is not registry verification."
+    },
+    {
+      "id": "crates_io",
+      "status": "not_measured",
+      "url": "https://crates.io/crates/chematic/1.0.21",
+      "detail": "Pending tag-triggered crates.io publication; source preparation is not registry verification."
+    },
+    {
+      "id": "docs_rs",
+      "status": "not_measured",
+      "url": "https://docs.rs/chematic/1.0.21/chematic/",
+      "detail": "Pending crates.io indexing and docs.rs build; source preparation is not documentation verification."
+    },
+    {
+      "id": "site",
+      "status": "not_measured",
+      "url": "https://kent-tokyo.github.io/chematic/",
+      "detail": "Pending main-branch Pages deployment and visible release-marker verification."
+    }
+  ]
+}

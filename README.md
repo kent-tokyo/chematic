@@ -21,19 +21,16 @@ npm install @kent-tokyo/chematic
 
 Python needs no C/C++ compiler. Rust and WebAssembly builds use the same core.
 
-### v1.0.20 release boundary
+### v1.0.21 release boundary
 
-This release completes the frozen RDKit 2025.09.3 core-eight descriptor gate,
-preserves R-group identities across interchange formats, strengthens prepared
-compatible-Morgan and search contracts, and adds a stereo-safe MMFF94 path.
-The published package passes the fixed 265/265 3D quality lane, but measures
-0.944x RDKit speed there. Compatibility remains operation- and corpus-scoped;
-see [validation](docs/validation.md), [compatibility scope](docs/compatibility-scope.md),
-and the [CHANGELOG](CHANGELOG.md).
-
-Development after v1.0.20 includes a v1.0.21 source candidate for coupled E/Z
-SMILES semantics. It removes the 18 semantic differences in the pinned RDKit
-2026.03.6 10k diagnostic, but is not yet a published-package result.
+v1.0.21 fixes canonical SMILES for measured coupled E/Z aromatic-stash cases.
+The pinned RDKit 2026.03.6 exposed 10k diagnostic moves from 18 semantic
+differences to zero with graph, CIP, Morgan, and SMARTS counts unchanged. The
+long permutation audit remains incomplete, so this release does not claim its
+completion or a new published-package performance measurement. Compatibility
+remains operation- and corpus-scoped; see [validation](docs/validation.md),
+[compatibility scope](docs/compatibility-scope.md), and the
+[CHANGELOG](CHANGELOG.md).
 
 ## Python
 

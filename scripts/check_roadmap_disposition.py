@@ -11,6 +11,13 @@ ROOT = Path(__file__).resolve().parents[1]
 ROADMAP = ROOT / "ROADMAP.md"
 DISPOSITION = ROOT / "docs" / "roadmap-open-work.md"
 
+
+def roadmap_target(roadmap: str) -> str:
+    match = re.search(r"Development target:\s*\n?> \*\*v([^*]+)\*\*", roadmap)
+    if match is None:
+        raise ValueError("roadmap development target is missing")
+    return match.group(1)
+
 ACCURACY_PACKAGES = {
     "A0": "Evaluation contract",
     "A1": "Perception and descriptors",
@@ -33,6 +40,7 @@ DEPENDENCY_CLASSES = (
 def main() -> int:
     roadmap = ROADMAP.read_text(encoding="utf-8")
     disposition = DISPOSITION.read_text(encoding="utf-8")
+    target = roadmap_target(roadmap)
     package_lines = [line for line in roadmap.splitlines() if re.match(r"^- \[[ x]\]", line)]
     errors: list[str] = []
 
@@ -62,7 +70,7 @@ def main() -> int:
         "## Priority order",
         "## Accuracy packages",
         "## Product phases",
-        "## Release gate for v1.0.21",
+        f"## Release gate for v{target}",
     ):
         if required_heading not in roadmap:
             errors.append(f"roadmap heading is missing: {required_heading}")

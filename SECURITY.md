@@ -4,7 +4,7 @@
 
 | Version | Supported | Status |
 |---|---|---|
-| v1.0.20 | Yes | Current release |
+| v1.0.21 | Yes | Current release |
 | v1.0.8 | Security fixes only | Upgrade to v1.0.20 is recommended |
 | v1.0.7 | Security fixes only | Upgrade to v1.0.20 is recommended |
 | v1.0.0-v1.0.6 | Security fixes only | Upgrade to v1.0.20 is recommended |

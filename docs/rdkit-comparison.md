@@ -45,10 +45,11 @@ the [benchmark guide](benchmark.md).
 The pinned RDKit 2026.03.6 exposed 10,000-row packet keeps the major surfaces
 separate. Public v1.0.19 records 9,770/10,000 correspondence-correct CIP labels,
 9,999/10,000 compatible-Morgan rows with one typed Fe(II) refusal, and 14,306
-differing SMARTS cells out of 310,000. A post-v1.0.20 source candidate for
-issue #632 reduces the 18 SMILES semantic differences to zero while preserving
-zero non-isomeric graph differences; the long permutation audit was interrupted,
-so it is not a merged or published-package claim. See [validation](validation.md)
+differing SMARTS cells out of 310,000. v1.0.21 contains the issue #632
+release-source fix, which reduces the 18 SMILES semantic differences to zero
+while preserving zero non-isomeric graph differences; the long permutation audit
+was interrupted, so it is not a completed long-audit or published-package
+remeasurement claim. See [validation](validation.md)
 for the evidence files and remaining #634/#635 work.
 
 ## Accuracy and parity

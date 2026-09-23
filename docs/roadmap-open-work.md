@@ -1,14 +1,14 @@
 # Roadmap open-work ledger
 
 Updated 2026-09-23. This is a compact dependency and evidence ledger for work
-that remains open after v1.0.20. It does not repeat completed implementation
+that remains open after v1.0.21. It does not repeat completed implementation
 history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 ## Immediate queue
 
 | Order | Work | Current evidence | Exit |
 |---:|---|---|---|
-| 1 | #632 SMILES E/Z semantics | Source `9808f54f`: RDKit 2026.03.6 fixed 10k lane moves from 18 semantic differences to 0; graph differences remain 0 | Focused suites and the 28 x 1,024 relabel audit pass, then merge without widening the stable-key contract |
+| 1 | #632 SMILES E/Z semantics | Released source `9808f54f`: RDKit 2026.03.6 fixed 10k lane moves from 18 semantic differences to 0; graph differences remain 0 | Complete the 28 x 1,024 relabel audit without widening the stable-key contract; do not count the interrupted audit as passed |
 | 2 | #634 CIP residuals | 9,770/10,000 correspondence-correct exact labels; 230 classified rows remain | Each row is fixed, explicitly unsupported, or justified as an oracle/representation boundary; order invariance remains intact |
 | 3 | #635 SMARTS residuals | 14,306 differing cells across 310,000; 3,364 rows affected | Differences are grouped by semantic family with truth-table regressions and explicit unsupported boundaries |
 | 4 | A6 MMFF94 | Public v1.0.20 passes 265/265 stereo/clash quality but measures 0.944x RDKit speed; current source has a separate speed candidate | Energy/term residuals, timeout/convergence accounting, broader conformer quality, and a published-package rerun pass separately |
@@ -59,18 +59,19 @@ complete merely because a local packet exists.
 
 ## Evidence boundaries
 
-- **Published release:** v1.0.20 is verified across GitHub, crates.io, docs.rs,
-  PyPI, npm, and Pages by
-  `validation/results/release-channel-verification-v1.0.20.json`.
+- **Published release:** v1.0.21 channel verification is recorded in
+  `validation/results/release-channel-verification-v1.0.21.json`; v1.0.20 is
+  the last fully verified historical channel record until each v1.0.21 channel
+  is observed.
 - **Browser performance:** the current published-package record is
   `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md`.
 - **A0 acceptance:** the commit-safe summary is
   `validation/results/a0-core-eight-sealed-acceptance-20260922.json`.
 - **RDKit rebaseline:** the pinned 2026.03.6 artifacts and complete exposed
   rows are under `validation/results/rdkit-rebaseline-*`.
-- **#632 candidate:**
+- **#632 release-source diagnostic:**
   `validation/results/smiles-ez-semantic-issue632-v1.0.20-candidate-vs-rdkit-2026.03.6-2026-09-23.json`
-  is source-candidate evidence only.
+  is a bounded source diagnostic; the interrupted long audit remains open.
 - **A6 source candidate:**
   `benchmarks/2026-09-23-mmff94-stereo-safe-performance.md` is not a
   registry-package result.

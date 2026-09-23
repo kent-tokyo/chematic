@@ -23,17 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python 版本无需 C/C++ 编译器。
 
-### v1.0.20 范围
+### v1.0.21 范围
 
-本版本完成冻结的 RDKit 2025.09.3 core-eight 描述符 gate，并加强格式转换中的
-R-group 标识、prepared compatible-Morgan 与搜索契约，以及 stereo-safe MMFF94
-路径。公开包在固定 3D 质量 gate 中达到 265/265，但该 lane 的速度为 RDKit 的
-0.944x。详见[验证报告](docs/validation.md)、[兼容性范围](docs/compatibility-scope.md)
-和[CHANGELOG](CHANGELOG.md)。
-
-v1.0.20 之后的开发包含 coupled E/Z SMILES semantics 的 v1.0.21 source 候选。
-在固定的 RDKit 2026.03.6 10k 诊断中，semantic 差异从 18 条降至 0 条；这仍不是
-已发布 package 的结果。
+v1.0.21 修复了已测 coupled E/Z aromatic-stash 体系的 canonical SMILES。固定的
+RDKit 2026.03.6 10k 诊断中，semantic 差异从 18 条降至 0 条，graph、CIP、Morgan
+和 SMARTS 计数不变。长时间 permutation 审计尚未完成，因此本版本不声称该审计已
+完成，也不声称有新的公开 package 性能结果。详见[验证报告](docs/validation.md)、
+[兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## Python
 

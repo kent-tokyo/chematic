@@ -1,7 +1,7 @@
 # chematic 1.x Trust Release 実行計画
 
-更新日: 2026-09-23。公開版は **v1.0.20**、次の開発候補は
-**v1.0.21** です。
+更新日: 2026-09-23。公開版は **v1.0.21**、次の開発候補は
+**v1.0.22** です。
 
 この文書は実行順と合格条件だけを定義します。機能別の優先順位は
 [`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)、未完了項目と依存関係は
@@ -29,9 +29,9 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
   RDKit.jsより高速かつ、対応9,999件でbit-exactです。
 - 公開v1.0.20のMMFF94 stereo-safe laneは265/265件で品質条件を満たしますが、
   RDKitより高速ではありません。current sourceの高速化候補は別証拠です。
-- #632のsource候補は、RDKit 2026.03.6比較のSMILES semantic差を
+- v1.0.21に含まれる#632修正は、RDKit 2026.03.6比較のSMILES semantic差を
   18/10,000から0/10,000へ減らしました。長時間permutation gateは中断済みで、
-  merge・公開済みの成果としては扱いません。
+  その完了や公開package再測定の成果としては扱いません。
 - 残る主要差分はCIP #634、SMARTS #635、A6のenergy/term・timeout・
   conformer qualityです。
 
@@ -119,7 +119,7 @@ atom-order permutation、SMILES spelling、file round-trip、selected-center lab
 macrocycle/atrop、競合で確認された再現可能な不具合を収録します。競合の不具合を
 取り込む目的は優越宣言ではなく、同種の退行を防ぐことです。
 
-## v1.0.21候補の合格条件
+## v1.0.22候補の合格条件
 
 - roadmapで今回対象にしたissueが、回帰・証拠・境界説明付きでclose可能である。
 - workspace test、clippy、binding contract、documentation/evidence consistency、
