@@ -17,6 +17,7 @@
 pub mod atom;
 pub mod bond;
 pub mod coords3d;
+pub mod derived_cache;
 pub mod element;
 pub mod extension;
 pub mod kekulization;
@@ -29,6 +30,7 @@ pub mod valence;
 pub use atom::{Atom, Chirality, CipCode, RGroupLabel, SquarePlanarPermutation};
 pub use bond::{BondEntry, BondOrder};
 pub use coords3d::{Coords3D, Point3};
+pub use derived_cache::DerivedSlot;
 pub use element::Element;
 pub use extension::{ExtensionError, ExtensionRegistry, ExtensionValue, MoleculeExtension};
 pub use kekulization::{KekuleError, KekuleResult, apply_kekule, kekulize};

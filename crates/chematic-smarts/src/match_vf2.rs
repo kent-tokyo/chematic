@@ -295,6 +295,42 @@ pub fn has_match_bounded(
     }
 }
 
+/// For every target atom, the index of the first query (in slice order) that
+/// has at least one embedding with query atom 0 mapped to that atom.
+///
+/// This is the "first matching atom-type pattern wins" primitive used by
+/// atom-typing schemes such as Wildman–Crippen. It is equivalent to running
+/// an unbounded, non-uniquified [`find_matches`] for every query and taking
+/// the first query whose match set contains the atom as query atom 0, but it
+/// stops at the first embedding per (atom, query) pair and skips queries whose
+/// first atom cannot match. `None` entries in `queries` never match.
+pub fn first_anchored_match_per_atom(
+    queries: &[Option<&QueryMolecule>],
+    mol: &Molecule,
+    rings: &RingSet,
+) -> Vec<Option<usize>> {
+    let config = MatchConfig {
+        uniquify: false,
+        ..MatchConfig::default()
+    };
+    let ctx = EvalCtx {
+        mol,
+        rings,
+        config: &config,
+        visit_budget: std::cell::Cell::new(u64::MAX),
+        budget_exhausted: std::cell::Cell::new(false),
+        min_ring_size_by_atom: std::cell::RefCell::new(None),
+    };
+    (0..mol.atom_count())
+        .map(|a| {
+            let anchor = AtomIdx(a as u32);
+            queries
+                .iter()
+                .position(|q| q.is_some_and(|q| has_match_anchored(q, anchor, &ctx)))
+        })
+        .collect()
+}
+
 /// Shared driver behind [`find_matches_with_rings_and_config_checked`] and
 /// [`has_match_bounded`]: builds the per-call [`EvalCtx`], runs
 /// [`match_recursive`], and reports whether the visit budget was exhausted.
@@ -376,19 +412,17 @@ fn match_recursive(
     // Pick the most constrained unmapped query atom.
     let q_next = next_unmapped(mapping, query);
 
-    // Collect the set of target atoms already used in this mapping so we can
-    // enforce injectivity.
-    let used_targets: FxHashSet<AtomIdx> = mapping.values().copied().collect();
-
-    // Try each target atom as a candidate for q_next.
-    for t in 0..ctx.mol.atom_count() {
+    // Try each target atom as a candidate for q_next (ascending index order;
+    // see `Candidates` for the adjacency restriction).
+    let candidates = Candidates::new(q_next, mapping, query, ctx);
+    for t in candidates.iter() {
         if max.is_some_and(|m| results.len() >= m) {
             break;
         }
-        let t_idx = AtomIdx(t as u32);
+        let t_idx = AtomIdx(t);
 
         // 1. Injectivity: target atom must not already be mapped.
-        if used_targets.contains(&t_idx) {
+        if mapping.values().any(|&used| used == t_idx) {
             continue;
         }
 
@@ -406,6 +440,62 @@ fn match_recursive(
         mapping.insert(q_next, t_idx);
         match_recursive(query, ctx, mapping, results, max);
         mapping.remove(&q_next);
+    }
+}
+
+/// Candidate target atoms for query atom `q`, in ascending index order.
+///
+/// Historically every target atom was tried and non-adjacent ones were
+/// rejected by [`bonds_compatible`] (the target must be bonded to the image of
+/// each mapped query neighbour). When `q` already has a mapped neighbour, only
+/// the neighbours of that neighbour's image can pass, so enumerating exactly
+/// those — sorted ascending — yields the same accepted candidates in the same
+/// order, and therefore identical mappings, result order and map histories.
+///
+/// With a configured `max_visit_budget` the historical full scan is kept:
+/// atom predicates containing recursive SMARTS consume budget, and skipping
+/// them would change where a bounded search is cut off.
+enum Candidates {
+    All(u32),
+    Few { buf: [u32; 12], len: usize },
+}
+
+impl Candidates {
+    fn new(
+        q: usize,
+        mapping: &FxHashMap<usize, AtomIdx>,
+        query: &QueryMolecule,
+        ctx: &EvalCtx<'_>,
+    ) -> Self {
+        let all = Candidates::All(ctx.mol.atom_count() as u32);
+        if ctx.config.max_visit_budget.is_some() {
+            return all;
+        }
+        let Some(anchor) = query.adj[q]
+            .iter()
+            .find_map(|&(_, q_nb)| mapping.get(&q_nb).copied())
+        else {
+            return all;
+        };
+        let mut buf = [0u32; 12];
+        let mut len = 0usize;
+        for (nb, _) in ctx.mol.neighbors(anchor) {
+            if len == buf.len() {
+                return all; // unusually high degree: fall back, still correct
+            }
+            buf[len] = nb.0;
+            len += 1;
+        }
+        buf[..len].sort_unstable();
+        Candidates::Few { buf, len }
+    }
+
+    fn iter(&self) -> impl Iterator<Item = u32> + '_ {
+        let (range, slice): (std::ops::Range<u32>, &[u32]) = match self {
+            Candidates::All(n) => (0..*n, &[]),
+            Candidates::Few { buf, len } => (0..0, &buf[..*len]),
+        };
+        range.chain(slice.iter().copied())
     }
 }
 
@@ -632,11 +722,10 @@ fn has_match_recursive(
     // Pick the most constrained unmapped query atom.
     let q_next = next_unmapped(mapping, query);
 
-    let used_targets: FxHashSet<AtomIdx> = mapping.values().copied().collect();
-
-    for t in 0..ctx.mol.atom_count() {
-        let t_idx = AtomIdx(t as u32);
-        if used_targets.contains(&t_idx) {
+    let candidates = Candidates::new(q_next, mapping, query, ctx);
+    for t in candidates.iter() {
+        let t_idx = AtomIdx(t);
+        if mapping.values().any(|&used| used == t_idx) {
             continue;
         }
         if !eval_atom_query(&query.atoms[q_next].query, t_idx, ctx) {
