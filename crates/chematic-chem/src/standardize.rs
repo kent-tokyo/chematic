@@ -225,7 +225,68 @@ fn is_salt_fragment(frag: &Molecule) -> bool {
 /// fragment by the same policy's ranking (never panics, never drops the
 /// input to nothing).
 pub fn remove_salts(mol: &Molecule) -> Molecule {
-    select_fragment(mol, &FragmentPolicy::default()).0
+    select_fragment_molecule(mol, &FragmentPolicy::default())
+}
+
+/// The molecule [`select_fragment`] would return, without building the
+/// audit record.
+///
+/// `select_fragment` canonicalizes every fragment and snapshots the input and
+/// output for its [`TransformationRecord`]; callers that only want the kept
+/// fragment paid for all of that. Here canonical SMILES are computed only for
+/// fragments that tie on `(rank_size, has_carbon)`, which is the only place
+/// the canonical-string tie-break can matter. Selection (including
+/// `max_by_key`'s last-of-equals rule) is identical.
+fn select_fragment_molecule(mol: &Molecule, policy: &FragmentPolicy) -> Molecule {
+    if mol.atom_count() == 0 {
+        return MoleculeBuilder::new().build();
+    }
+    let components = connected_components(mol);
+    if components.len() == 1 {
+        return extract_fragment(mol, &components[0]);
+    }
+    let frags: Vec<Molecule> = components
+        .iter()
+        .map(|c| extract_fragment(mol, c))
+        .collect();
+    let primary: Vec<(usize, bool)> = frags
+        .iter()
+        .map(|f| {
+            let rank_size = if policy.count_heavy_atoms_only {
+                heavy_atom_count(f)
+            } else {
+                f.atom_count()
+            };
+            (rank_size, policy.prefer_organic && fragment_has_carbon(f))
+        })
+        .collect();
+    let kept: Vec<usize> = (0..frags.len())
+        .filter(|&i| classify_fragment(&frags[i], policy) == FragmentClass::Kept)
+        .collect();
+    let candidates: Vec<usize> = if kept.is_empty() {
+        (0..frags.len()).collect()
+    } else {
+        kept
+    };
+    let best = candidates.iter().map(|&i| primary[i]).max().unwrap();
+    let tied: Vec<usize> = candidates
+        .into_iter()
+        .filter(|&i| primary[i] == best)
+        .collect();
+    let winner = if tied.len() == 1 {
+        tied[0]
+    } else {
+        let canon: Vec<(usize, String)> = tied
+            .iter()
+            .map(|&i| (i, chematic_smiles::canonical_smiles(&frags[i])))
+            .collect();
+        canon
+            .iter()
+            .max_by_key(|(_, c)| std::cmp::Reverse(c.clone()))
+            .unwrap()
+            .0
+    };
+    frags.into_iter().nth(winner).unwrap()
 }
 
 /// Remove salts using a custom catalog.
@@ -1648,6 +1709,36 @@ impl StandardizationPipeline {
         )
     }
 
+    /// The molecule [`Self::run`] returns, without the audit report.
+    ///
+    /// `run` snapshots the molecule (a canonical-SMILES hash) before and after
+    /// every stage and validates valences for warnings; none of that feeds
+    /// back into the structure. This applies the identical stage sequence —
+    /// including the `clone_molecule` pass-through for disabled stages — and
+    /// skips the bookkeeping.
+    pub fn run_output_only(&self, mol: &Molecule) -> Molecule {
+        let stage = |current: Molecule, enabled: bool, f: fn(&Molecule) -> Molecule| {
+            if enabled {
+                f(&current)
+            } else {
+                clone_molecule(&current)
+            }
+        };
+        let mut current = clone_molecule(mol);
+        let has_metals = current.atoms().any(|(_, a)| is_metal(a.element));
+        current = stage(current, has_metals, disconnect_metals);
+        current = stage(current, self.options.neutralize_charges, neutralize_charges);
+        current = stage(
+            current,
+            self.options.largest_fragment_only,
+            largest_fragment,
+        );
+        let zwitterion_enabled = self.options.zwitterion_handling == ZwitterionHandling::Normalize;
+        current = stage(current, zwitterion_enabled, normalize_zwitterion);
+        current = stage(current, self.options.remove_explicit_h, remove_hydrogens);
+        stage(current, self.options.canonical_tautomer, canonical_tautomer)
+    }
+
     fn apply_stage(
         &self,
         current: Molecule,
@@ -1833,7 +1924,7 @@ fn is_metal(element: Element) -> bool {
 /// own doc comment (issue #402) before treating a pre- vs. post-standardize
 /// CIP-label difference as a bug on its own.
 pub fn standardize(mol: &Molecule, opts: &StandardizeOptions) -> Molecule {
-    StandardizationPipeline::new(opts.clone()).run(mol).0
+    StandardizationPipeline::new(opts.clone()).run_output_only(mol)
 }
 
 #[cfg(test)]
