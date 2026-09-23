@@ -1,0 +1,298 @@
+//! Output-digest and cold-timing harness for chematic performance work.
+//!
+//! * `digest <out.tsv> <corpus.smi>...` — one line per (corpus row, op) with the
+//!   op's full output; every op runs on a fresh clone so no memoized state
+//!   leaks between ops. Two revisions' digests must be byte-identical for an
+//!   output-preserving change (see `scripts/perf_digest_diff.sh`).
+//! * `time <corpus.smi>` — cold µs/mol per op (fresh clones every repeat;
+//!   `REPS`, default 3, best-of), plus a shared-molecule session total.
+//! * `patterns <smarts.txt> <corpus.smi>` — per-SMARTS existence-search cost.
+//!
+//! `ONLY=a,b,c` restricts the op set.
+use chematic_core::Molecule;
+use std::fmt::Write as _;
+use std::time::Instant;
+
+fn load(path: &str) -> Vec<Molecule> {
+    std::fs::read_to_string(path)
+        .unwrap()
+        .lines()
+        .filter_map(|l| l.split_whitespace().next())
+        .filter_map(|s| chematic_smiles::parse(s).ok())
+        .collect()
+}
+
+fn smarts_queries() -> &'static Vec<chematic_smarts::QueryMolecule> {
+    static Q: std::sync::OnceLock<Vec<chematic_smarts::QueryMolecule>> = std::sync::OnceLock::new();
+    Q.get_or_init(|| {
+        [
+            "c1ccccc1",
+            "[OH]",
+            "C(=O)N",
+            "[#7;R]",
+            "c1ccc2ccccc2c1",
+            "[CX3](=O)[OX2H1]",
+            "[NX3;H2,H1;!$(NC=O)]",
+            "*~*~*~*~*~*",
+            "[#6]~[#7]",
+            "[R2]",
+            "[r5]",
+            "[$(C=O)]O",
+            "[!#6;!#1]~*~[!#6;!#1]",
+            "c:c-[CH3]",
+            "[C;X4;!R]-[N;R]",
+        ]
+        .iter()
+        .map(|s| chematic_smarts::parse_smarts(s).unwrap())
+        .collect()
+    })
+}
+
+type Op = (&'static str, fn(&Molecule) -> String);
+
+fn ops() -> Vec<Op> {
+    #[allow(unused_mut)]
+    let mut ops: Vec<Op> = vec![
+        ("sssr", |m| {
+            format!("{:?}", chematic_perception::find_sssr(m).rings())
+        }),
+        ("ring_count", |m| chematic_chem::ring_count(m).to_string()),
+        ("aromatic_ring_count", |m| {
+            chematic_chem::aromatic_ring_count(m).to_string()
+        }),
+        ("logp", |m| {
+            format!("{:.12}", chematic_chem::logp_crippen(m))
+        }),
+        ("mr", |m| {
+            format!("{:.12}", chematic_chem::molar_refractivity(m))
+        }),
+        ("tpsa", |m| format!("{:.12}", chematic_chem::tpsa(m))),
+        ("hba", |m| chematic_chem::hba_count(m).to_string()),
+        ("hbd", |m| chematic_chem::hbd_count(m).to_string()),
+        ("rotb", |m| {
+            chematic_chem::rotatable_bond_count(m).to_string()
+        }),
+        ("ring_bundle", |m| {
+            let b = chematic_chem::ring_bundle(m);
+            format!(
+                "{} {} {} {}",
+                b.ring_count, b.aromatic_ring_count, b.hba_count, b.rotatable_bond_count
+            )
+        }),
+        ("qed", |m| format!("{:.12}", chematic_chem::qed(m))),
+        ("ecfp4", |m| format!("{:?}", chematic_fp::ecfp4(m))),
+        (
+            "rdkit_ecfp4",
+            |m| match chematic_fp::rdkit_morgan_ecfp4_experimental(m) {
+                Ok(r) => format!("{:?}", r.fingerprint),
+                Err(e) => format!("ERR {e}"),
+            },
+        ),
+        ("canonical", |m| chematic_smiles::canonical_smiles(m)),
+        ("stereocenters", |m| {
+            chematic_chem::num_stereocenters(m).to_string()
+        }),
+        ("inchi", |m| chematic_inchi::inchi(m)),
+        ("smarts_matches", |m| {
+            let mut out = String::new();
+            for q in smarts_queries() {
+                let _ = write!(out, "{:?};", chematic_smarts::find_matches(q, m));
+            }
+            out
+        }),
+        ("smarts_nouniq", |m| {
+            let cfg = chematic_smarts::MatchConfig {
+                uniquify: false,
+                ..Default::default()
+            };
+            let mut out = String::new();
+            for q in smarts_queries() {
+                let _ = write!(
+                    out,
+                    "{:?};",
+                    chematic_smarts::find_matches_with_config(q, m, &cfg)
+                );
+            }
+            out
+        }),
+        ("has_sub", |m| {
+            smarts_queries()
+                .iter()
+                .map(|q| {
+                    if chematic_smarts::has_match_bounded(
+                        q,
+                        m,
+                        &chematic_perception::find_sssr(m),
+                        &Default::default(),
+                    ) == chematic_smarts::MatchOutcome::Found
+                    {
+                        '1'
+                    } else {
+                        '0'
+                    }
+                })
+                .collect()
+        }),
+        ("largest_frag", |m| {
+            let f = chematic_chem::largest_fragment(m);
+            let atoms: String = f
+                .atoms()
+                .map(|(_, a)| format!("{}{}{},", a.element.symbol(), a.charge, a.aromatic as u8))
+                .collect();
+            let bonds: String = f
+                .bonds()
+                .map(|(_, b)| format!("{}-{}:{:?},", b.atom1.0, b.atom2.0, b.order))
+                .collect();
+            format!(
+                "{} | {} | {}",
+                chematic_smiles::canonical_smiles(&f),
+                atoms,
+                bonds
+            )
+        }),
+        ("standardize", |m| {
+            let f = chematic_chem::standardize(m, &chematic_chem::StandardizeOptions::default());
+            let atoms: String = f
+                .atoms()
+                .map(|(_, a)| {
+                    format!(
+                        "{}{}{}{}{:?},",
+                        a.element.symbol(),
+                        a.charge,
+                        a.aromatic as u8,
+                        a.isotope.unwrap_or(0),
+                        a.chirality
+                    )
+                })
+                .collect();
+            let bonds: String = f
+                .bonds()
+                .map(|(_, b)| format!("{}-{}:{:?},", b.atom1.0, b.atom2.0, b.order))
+                .collect();
+            format!(
+                "{} | {} | {}",
+                chematic_smiles::canonical_smiles(&f),
+                atoms,
+                bonds
+            )
+        }),
+        ("cip", |m| {
+            format!("{:?}", chematic_chem::assign_cip(m).assignments)
+        }),
+        ("stereo_idx", |m| {
+            format!("{:?}", chematic_chem::potential_stereocenter_indices(m))
+        }),
+        ("maccs", |m| format!("{:?}", chematic_fp::maccs::maccs(m))),
+        ("pains", |m| chematic_chem::pains_passes(m).to_string()),
+        ("brenk", |m| chematic_chem::brenk_passes(m).to_string()),
+    ];
+    #[cfg(feature = "reference-oracles")]
+    ops.push(("sssr_ref", |m| {
+        format!(
+            "{:?}",
+            chematic_perception::sssr::find_sssr_horton_reference(m).rings()
+        )
+    }));
+    ops
+}
+
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    let mode = args[1].as_str();
+    let only = std::env::var("ONLY").ok();
+    let sel: Vec<Op> = ops()
+        .into_iter()
+        .filter(|(n, _)| only.as_ref().is_none_or(|o| o.split(',').any(|x| x == *n)))
+        .collect();
+    match mode {
+        "time" => {
+            let mols = load(&args[2]);
+            let reps: usize = std::env::var("REPS")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(3);
+            for (name, f) in &sel {
+                let mut best = f64::MAX;
+                for _ in 0..reps {
+                    let fresh = mols.clone(); // cold: empty derived caches
+                    let t = Instant::now();
+                    for m in &fresh {
+                        std::hint::black_box(f(m));
+                    }
+                    best = best.min(t.elapsed().as_secs_f64());
+                }
+                println!(
+                    "{:22} {:10.2} µs/mol (cold)",
+                    name,
+                    best / mols.len() as f64 * 1e6
+                );
+            }
+            if sel.len() > 1 {
+                let fresh = mols.clone();
+                let t = Instant::now();
+                for m in &fresh {
+                    for (_, f) in &sel {
+                        std::hint::black_box(f(m));
+                    }
+                }
+                println!(
+                    "{:22} {:10.2} µs/mol (all selected ops, shared mol)",
+                    "SESSION",
+                    t.elapsed().as_secs_f64() / mols.len() as f64 * 1e6
+                );
+            }
+        }
+        "digest" => {
+            // Each op computed on a fresh clone so no cache leaks between ops.
+            let mut out = String::new();
+            for path in &args[3..] {
+                let mols = load(path);
+                for (i, m) in mols.iter().enumerate() {
+                    for (name, f) in &sel {
+                        let fresh = m.clone();
+                        let _ = writeln!(out, "{path}\t{i}\t{name}\t{}", f(&fresh));
+                    }
+                }
+            }
+            std::fs::write(&args[2], out).unwrap();
+        }
+        "patterns" => {
+            let mols = load(&args[3]);
+            let cfg = chematic_smarts::MatchConfig {
+                max_matches: Some(1),
+                ..Default::default()
+            };
+            let mut rows = vec![];
+            for p in std::fs::read_to_string(&args[2]).unwrap().lines() {
+                let Ok(q) = chematic_smarts::parse_smarts(p) else {
+                    continue;
+                };
+                let rings: Vec<_> = mols
+                    .iter()
+                    .map(|m| chematic_perception::find_sssr(m))
+                    .collect();
+                let t = Instant::now();
+                let mut hits = 0;
+                for (m, r) in mols.iter().zip(&rings) {
+                    if !chematic_smarts::find_matches_with_rings_and_config(&q, m, r, &cfg)
+                        .is_empty()
+                    {
+                        hits += 1;
+                    }
+                }
+                rows.push((
+                    t.elapsed().as_secs_f64() / mols.len() as f64 * 1e6,
+                    p.to_string(),
+                    hits,
+                ));
+            }
+            rows.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
+            let total: f64 = rows.iter().map(|r| r.0).sum();
+            println!("total {total:.1} µs/mol over {} patterns", rows.len());
+            for (t, p, h) in rows.iter().take(25) {
+                println!("{t:8.2} µs  hits={h:5}  {p}");
+            }
+        }
+        _ => panic!("mode"),
+    }
+}

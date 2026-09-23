@@ -1,0 +1,28 @@
+# Standalone (non-workspace) harness: `scripts/perf_digest_diff.sh` rewrites
+# the `../../crates/` paths to build the same harness against two revisions.
+[package]
+name = "chematic-perf-digest"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Output-digest and cold-timing harness for chematic performance changes"
+
+[features]
+# Ops that call oracle functions only present on the candidate revision.
+reference-oracles = []
+
+[dependencies]
+chematic-core = { path = "../../crates/chematic-core" }
+chematic-smiles = { path = "../../crates/chematic-smiles" }
+chematic-perception = { path = "../../crates/chematic-perception" }
+chematic-chem = { path = "../../crates/chematic-chem" }
+chematic-fp = { path = "../../crates/chematic-fp" }
+chematic-smarts = { path = "../../crates/chematic-smarts" }
+chematic-inchi = { path = "../../crates/chematic-inchi" }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 16
+
+[workspace]
