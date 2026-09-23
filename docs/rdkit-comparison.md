@@ -40,6 +40,17 @@ for every input, but the two libraries need not choose the same valid spelling.
 Exact versions, corpus hashes, commands, and follow-up source A/B results are in
 the [benchmark guide](benchmark.md).
 
+## Current compatibility diagnostic
+
+The pinned RDKit 2026.03.6 exposed 10,000-row packet keeps the major surfaces
+separate. Public v1.0.19 records 9,770/10,000 correspondence-correct CIP labels,
+9,999/10,000 compatible-Morgan rows with one typed Fe(II) refusal, and 14,306
+differing SMARTS cells out of 310,000. A post-v1.0.20 source candidate for
+issue #632 reduces the 18 SMILES semantic differences to zero while preserving
+zero non-isomeric graph differences; the long permutation audit was interrupted,
+so it is not a merged or published-package claim. See [validation](validation.md)
+for the evidence files and remaining #634/#635 work.
+
 ## Accuracy and parity
 
 The opt-in `Mol.rdkit_mw`, `Mol.rdkit_hba`, and
@@ -53,7 +64,7 @@ distribution and 12-case structural holdout are recorded in
 [`descriptor-rdkit-diagnostics-v1.0.13.json`](../validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
 and [`descriptor-rdkit-holdout-v1.0.13.json`](../validation/results/descriptor-rdkit-holdout-v1.0.13.json).
 
-The 4,999-molecule descriptor snapshot reports:
+The historical 4,999-molecule descriptor snapshot reports:
 
 - molecular weight: 99.82% within ±0.01 Da;
 - HBA, HBD, TPSA, LogP, molar refractivity, Fsp3, and the documented ring

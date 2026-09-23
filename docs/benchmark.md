@@ -105,7 +105,7 @@ commands are in the [isolated browser comparison](../benchmarks/2026-09-16-offic
 | Accuracy vs RDKit | `pip install chematic rdkit`; `python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json /tmp/bench5k.json`; `python scripts/gen_validation_report.py /tmp/bench5k.json` |
 | Similarity search | [`2026-09-11-similarity-search-v1.0.12.md`](../benchmarks/2026-09-11-similarity-search-v1.0.12.md) |
 | Parse + compatible Morgan vs official RDKit.js | [`2026-09-20-parse-morgan-rdkitjs.md`](../benchmarks/2026-09-20-parse-morgan-rdkitjs.md) |
-| Published-package fingerprint and 3D comparison | [`2026-09-22-public-package-fingerprint-3d.md`](../benchmarks/2026-09-22-public-package-fingerprint-3d.md) |
+| Published-package fingerprint and 3D comparison | [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](../benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md) |
 | A3 similarity search rerun | [`2026-09-12-similarity-search-a3-v1.0.13.md`](../benchmarks/2026-09-12-similarity-search-a3-v1.0.13.md) |
 | Hot-path A/B | [`2026-09-05-hotpath-110.md`](../benchmarks/2026-09-05-hotpath-110.md) |
 | File streaming | [`2026-09-04-streaming-formats.md`](../benchmarks/2026-09-04-streaming-formats.md) |

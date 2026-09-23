@@ -26,12 +26,14 @@ Python版はC/C++コンパイラなしで導入できます。
 ### v1.0.20 の対応範囲
 
 このリリースでは、固定したRDKit 2025.09.3 core-eight descriptor gateを完了し、
-形式変換でのR-group識別、prepared compatible-Morganと検索契約、解析的MMFF94最小化、
-stereo-safe 3D経路を強化しました。固定source 3D gateは265/265件がsoundかつ
-stereo-cleanでgross clashは0件ですが、この品質優先laneはRDKitより高速ではなく、
-公開packageの再測定も別の証拠として扱います。詳細は
-[検証報告](docs/validation.md)、[互換性範囲](docs/compatibility-scope.md)、
-[CHANGELOG](CHANGELOG.md)を参照してください。
+形式変換でのR-group識別、prepared compatible-Morganと検索契約、stereo-safe
+MMFF94経路を強化しました。公開packageは固定3D品質gateを265/265件で通過しましたが、
+このlaneの速度はRDKit比0.944xです。詳細は[検証報告](docs/validation.md)、
+[互換性範囲](docs/compatibility-scope.md)、[CHANGELOG](CHANGELOG.md)を参照してください。
+
+v1.0.20以降の開発には、coupled E/Z SMILES semanticsのv1.0.21 source候補が
+含まれます。固定したRDKit 2026.03.6の10k診断では18件のsemantic差を0件に
+しましたが、まだ公開packageの結果ではありません。
 
 ## Python
 
@@ -64,9 +66,8 @@ print(Descriptors.MolWt(mol))
 ```rust
 use chematic::smiles::parse;
 
-let mol = parse("c1ccccc1")?;
+let mol = parse("c1ccccc1").expect("valid SMILES");
 println!("{}", mol.atom_count());
-# Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 SMILES/SMARTS、記述子、フィンガープリント、反応、SDF/MOL/CDXML、2D/3D、

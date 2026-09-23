@@ -58,7 +58,12 @@ def main() -> int:
         if dependency_class not in disposition:
             errors.append(f"dependency class {dependency_class} is missing")
 
-    for required_heading in ("## Priority order", "## Product phases", "## v1.0.16 candidate boundary"):
+    for required_heading in (
+        "## Priority order",
+        "## Accuracy packages",
+        "## Product phases",
+        "## Release gate for v1.0.21",
+    ):
         if required_heading not in roadmap:
             errors.append(f"roadmap heading is missing: {required_heading}")
 

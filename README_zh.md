@@ -26,11 +26,14 @@ Python 版本无需 C/C++ 编译器。
 ### v1.0.20 范围
 
 本版本完成冻结的 RDKit 2025.09.3 core-eight 描述符 gate，并加强格式转换中的
-R-group 标识、prepared compatible-Morgan 与搜索契约、解析式 MMFF94 最小化和
-stereo-safe 3D 路径。固定 source 3D gate 中 265/265 条均为 sound、stereo-clean，
-gross clash 为 0；但该质量优先 lane 并不快于 RDKit，公开包复测仍单独记录。
-详见[验证报告](docs/validation.md)、
-[兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
+R-group 标识、prepared compatible-Morgan 与搜索契约，以及 stereo-safe MMFF94
+路径。公开包在固定 3D 质量 gate 中达到 265/265，但该 lane 的速度为 RDKit 的
+0.944x。详见[验证报告](docs/validation.md)、[兼容性范围](docs/compatibility-scope.md)
+和[CHANGELOG](CHANGELOG.md)。
+
+v1.0.20 之后的开发包含 coupled E/Z SMILES semantics 的 v1.0.21 source 候选。
+在固定的 RDKit 2026.03.6 10k 诊断中，semantic 差异从 18 条降至 0 条；这仍不是
+已发布 package 的结果。
 
 ## Python
 
@@ -63,9 +66,8 @@ print(Descriptors.MolWt(mol))
 ```rust
 use chematic::smiles::parse;
 
-let mol = parse("c1ccccc1")?;
+let mol = parse("c1ccccc1").expect("valid SMILES");
 println!("{}", mol.atom_count());
-# Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 SMILES/SMARTS、描述符、指纹、反应、SDF/MOL/CDXML、2D/3D及晶体格式等功能均提供为

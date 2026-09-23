@@ -25,3 +25,8 @@ presented as current-release evidence without a fresh run.
 The former `detailed-development-history.md` was removed on 2026-09-06. Its
 release facts are covered by `CHANGELOG.md`; its completed roadmap and audit
 material remain in the archive files listed above and in Git history.
+
+On 2026-09-23, the active Trust Release plan and open-work ledger were reduced
+to current sequencing, dependencies, and acceptance rules. Their prior
+long-form revisions remain in Git history instead of being copied into another
+active document.

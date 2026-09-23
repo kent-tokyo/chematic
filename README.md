@@ -25,12 +25,15 @@ Python needs no C/C++ compiler. Rust and WebAssembly builds use the same core.
 
 This release completes the frozen RDKit 2025.09.3 core-eight descriptor gate,
 preserves R-group identities across interchange formats, strengthens prepared
-compatible-Morgan and search contracts, and adopts analytic MMFF94 minimization
-with a stereo-safe quality path. The fixed source 3D gate is 265/265 sound and
-stereo-clean with zero gross clashes, but that quality lane is not faster than
-RDKit and the registry-package rerun remains separate. Compatibility is
-operation- and corpus-scoped; see the [validation report](docs/validation.md),
-[compatibility scope](docs/compatibility-scope.md), and [CHANGELOG](CHANGELOG.md).
+compatible-Morgan and search contracts, and adds a stereo-safe MMFF94 path.
+The published package passes the fixed 265/265 3D quality lane, but measures
+0.944x RDKit speed there. Compatibility remains operation- and corpus-scoped;
+see [validation](docs/validation.md), [compatibility scope](docs/compatibility-scope.md),
+and the [CHANGELOG](CHANGELOG.md).
+
+Development after v1.0.20 includes a v1.0.21 source candidate for coupled E/Z
+SMILES semantics. It removes the 18 semantic differences in the pinned RDKit
+2026.03.6 10k diagnostic, but is not yet a published-package result.
 
 ## Python
 
@@ -63,9 +66,8 @@ This is not a full RDKit clone. Unsupported options fail explicitly; see the
 ```rust
 use chematic::smiles::parse;
 
-let mol = parse("c1ccccc1")?;
+let mol = parse("c1ccccc1").expect("valid SMILES");
 println!("{}", mol.atom_count());
-# Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 The workspace also contains focused crates for SMILES/SMARTS, descriptors,

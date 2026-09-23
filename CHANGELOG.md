@@ -13,6 +13,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   carriers at one alkene end cannot encode the same side. The RDKit 2026.03.6
   exposed 10,000-row semantic lane improves from 18 stereo-identity losses to
   zero, while graph identity, CIP, Morgan, and SMARTS counts remain unchanged.
+- Condensed the active roadmap, Trust Release plan, performance plan, and
+  open-work ledger around current priorities and acceptance gates; refreshed
+  the English, Japanese, and Chinese READMEs plus validation and benchmark
+  indexes without relabeling historical measurements as current results.
 
 ## [1.0.20] - 2026-09-23
 
