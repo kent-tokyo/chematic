@@ -849,7 +849,11 @@ pub fn embed_pipeline_v2(
         config.expand_implicit_h_through_pipeline && mol_needs_expanded_stereo_geometry(orig_mol);
     let expanded_mol_storage: Molecule;
     let mol: &Molecule = if use_expanded_geometry {
-        expanded_mol_storage = chematic_chem::add_hydrogens(orig_mol);
+        expanded_mol_storage = if mol_needs_full_hydrogen_expansion(orig_mol) {
+            chematic_chem::add_hydrogens(orig_mol)
+        } else {
+            chematic_chem::add_stereocenter_hydrogens(orig_mol)
+        };
         &expanded_mol_storage
     } else {
         orig_mol
@@ -1364,6 +1368,28 @@ fn mol_needs_expanded_stereo_geometry(mol: &Molecule) -> bool {
     })
 }
 
+/// Multi-ring junction stereocenters retain the full explicit-H treatment.
+/// Their coupled ring geometry is the class for which materializing only the
+/// stereocenter H can leave heavy-only final verification inconsistent with
+/// the minimized internal graph. Ordinary implicit-H centers use the much
+/// smaller selective expansion.
+fn mol_needs_full_hydrogen_expansion(mol: &Molecule) -> bool {
+    let rings = chematic_perception::find_sssr(mol);
+    (0..mol.atom_count()).any(|i| {
+        let center = AtomIdx(i as u32);
+        let atom = mol.atom(center);
+        atom.chirality.is_tetrahedral()
+            && mol.implicit_hydrogen_count(center) > 0
+            && rings
+                .rings()
+                .iter()
+                .filter(|ring| ring.contains(&center))
+                .take(2)
+                .count()
+                >= 2
+    })
+}
+
 /// Whether a torsion-knowledge potential can be applied to the molecule's
 /// actual geometry. Keep this predicate shared by the evidence report and
 /// the fail-closed policy gate so they cannot drift apart.
@@ -1685,7 +1711,21 @@ mod tests {
         let result = embed_pipeline_v2(&mol, &config)
             .expect("2-butanol must still succeed with the flag on");
         assert!(result.final_stereo.is_fully_satisfied());
-        assert!(result.force_field.coords.atom_count() > mol.atom_count());
+        assert_eq!(
+            result.force_field.coords.atom_count(),
+            mol.atom_count() + 1,
+            "ordinary stereocenters should materialize only their declared implicit H"
+        );
+    }
+
+    #[test]
+    fn multi_ring_implicit_h_center_keeps_full_hydrogen_expansion() {
+        let fused = parse("CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C=O)[C@H]2S1(=O)=O")
+            .expect("fused stereocenter fixture");
+        let ordinary = parse("C[C@H](O)CC").expect("ordinary stereocenter fixture");
+
+        assert!(mol_needs_full_hydrogen_expansion(&fused));
+        assert!(!mol_needs_full_hydrogen_expansion(&ordinary));
     }
 
     #[test]

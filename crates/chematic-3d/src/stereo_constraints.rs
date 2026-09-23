@@ -513,15 +513,18 @@ fn tetrahedral_positions(
     order: &[u32],
 ) -> Result<[Point3; 4], StereoRejectionReason> {
     let center = coords.get(center_idx);
-    let real_positions: Vec<Point3> = order
-        .iter()
-        .filter(|&&n| n != STEREO_H_SENTINEL)
-        .map(|&n| coords.get(AtomIdx(n)))
-        .collect();
+    let mut real_positions = [Point3::new(0.0, 0.0, 0.0); 4];
+    let mut real_count = 0usize;
+    for &neighbor in order {
+        if neighbor != STEREO_H_SENTINEL {
+            real_positions[real_count] = coords.get(AtomIdx(neighbor));
+            real_count += 1;
+        }
+    }
     let mut out = [Point3::new(0.0, 0.0, 0.0); 4];
     for (i, &n) in order.iter().enumerate() {
         out[i] = if n == STEREO_H_SENTINEL {
-            phantom_neighbor_position(center, &real_positions)?
+            phantom_neighbor_position(center, &real_positions[..real_count])?
         } else {
             coords.get(AtomIdx(n))
         };
@@ -600,7 +603,14 @@ fn verify_tetrahedral_center(mol: &Molecule, coords: &Coords3D, idx: AtomIdx) ->
         Err(reason) => return StereoStatus::Unevaluable(reason),
     };
 
-    let positions = match tetrahedral_positions(coords, idx, &constraint.order) {
+    verify_tetrahedral_constraint(coords, &constraint)
+}
+
+fn verify_tetrahedral_constraint(
+    coords: &Coords3D,
+    constraint: &TetrahedralConstraint,
+) -> StereoStatus {
+    let positions = match tetrahedral_positions(coords, constraint.atom, &constraint.order) {
         Ok(p) => p,
         Err(reason) => return StereoStatus::Unevaluable(reason),
     };
@@ -756,23 +766,28 @@ fn verify_double_bond(
         Err(reason) => return Some(StereoStatus::Unevaluable(reason)),
     };
 
+    Some(verify_double_bond_constraint(coords, &constraint))
+}
+
+fn verify_double_bond_constraint(
+    coords: &Coords3D,
+    constraint: &DoubleBondConstraint,
+) -> StereoStatus {
     let Some(angle) = crate::stereo3d::dihedral(
         coords.get(constraint.end1),
         coords.get(constraint.end2),
         coords.get(constraint.sub1),
         coords.get(constraint.sub2),
     ) else {
-        return Some(StereoStatus::Unevaluable(
-            StereoRejectionReason::DegenerateGeometry,
-        ));
+        return StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry);
     };
     let actual_same_side = angle.abs() < std::f64::consts::FRAC_PI_2;
 
-    Some(if actual_same_side == constraint.same_side {
+    if actual_same_side == constraint.same_side {
         StereoStatus::Satisfied
     } else {
         StereoStatus::Violated
-    })
+    }
 }
 
 /// Diagnostic-only detail for one declared E/Z double bond: everything

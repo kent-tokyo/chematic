@@ -135,6 +135,61 @@ pub fn add_hydrogens(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
+/// Return a copy with only implicit hydrogens on declared tetrahedral centers
+/// materialized as atom nodes.
+///
+/// This is the minimal graph expansion needed by 3D stereo enforcement. It
+/// avoids turning every ordinary C-H/N-H/O-H bond into a force-field degree
+/// of freedom while preserving the real hydrogen direction at each declared
+/// stereocenter. Original atom and bond indices remain unchanged; new H atoms
+/// and bonds are appended.
+pub fn add_stereocenter_hydrogens(mol: &Molecule) -> Molecule {
+    let mut builder = MoleculeBuilder::new();
+
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(idx).clone();
+        if atom.chirality.is_tetrahedral() && implicit_hcount(mol, idx) == 1 {
+            atom.hydrogen_count = Some(0);
+        }
+        let new_idx = builder.add_atom(atom);
+        debug_assert_eq!(new_idx, idx);
+    }
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(BondIdx(i as u32));
+        let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
+    }
+    builder.copy_stereo_from(mol);
+    builder.copy_r_groups_from(mol);
+    builder.copy_bond_directions_from(mol);
+    builder.copy_stereo_groups_from(mol);
+
+    for i in 0..mol.atom_count() {
+        let center = AtomIdx(i as u32);
+        let atom = mol.atom(center);
+        if !atom.chirality.is_tetrahedral() || implicit_hcount(mol, center) != 1 {
+            continue;
+        }
+        let hydrogen = builder.add_atom(Atom::new(Element::H));
+        let _ = builder.add_bond(center, hydrogen, BondOrder::Single);
+        if let Some(order) = declared_neighbor_order(mol, center) {
+            let remapped = order
+                .into_iter()
+                .map(|neighbor| {
+                    if neighbor == STEREO_H_SENTINEL {
+                        hydrogen.0
+                    } else {
+                        neighbor
+                    }
+                })
+                .collect();
+            builder.set_stereo_neighbor_order(center, remapped);
+        }
+    }
+
+    builder.build()
+}
+
 /// Whether atom `a` is a *removable* explicit hydrogen: element `H` with no
 /// isotope specified. An isotope-labeled hydrogen (`[2H]` deuterium, `[3H]`
 /// tritium, ...) is real, distinguishing chemical information -- akin to
@@ -324,6 +379,45 @@ mod tests {
 
     fn mol(s: &str) -> Molecule {
         parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"))
+    }
+
+    #[test]
+    fn stereocenter_hydrogen_expansion_adds_only_declared_center_hydrogen() {
+        let original = mol("CC[C@H](F)Cl");
+        let expanded = add_stereocenter_hydrogens(&original);
+
+        assert_eq!(expanded.atom_count(), original.atom_count() + 1);
+        assert_eq!(expanded.bond_count(), original.bond_count() + 1);
+        assert_eq!(
+            expanded
+                .atoms()
+                .filter(|(_, atom)| atom.element == Element::H)
+                .count(),
+            1
+        );
+        let center = AtomIdx(2);
+        assert_eq!(expanded.implicit_hydrogen_count(center), 0);
+        let order = expanded
+            .stereo_neighbor_order(center)
+            .expect("declared stereo order must be retained");
+        assert!(!order.contains(&STEREO_H_SENTINEL));
+        assert!(
+            order
+                .iter()
+                .any(|&idx| idx as usize >= original.atom_count())
+        );
+        assert!(
+            expanded.implicit_hydrogen_count(AtomIdx(0)) > 0,
+            "ordinary methyl hydrogens must remain implicit"
+        );
+    }
+
+    #[test]
+    fn stereocenter_hydrogen_expansion_is_graph_noop_without_implicit_h_center() {
+        let original = mol("C/C=C/C");
+        let expanded = add_stereocenter_hydrogens(&original);
+        assert_eq!(expanded.atom_count(), original.atom_count());
+        assert_eq!(expanded.bond_count(), original.bond_count());
     }
 
     // ─── Isotopic-hydrogen preservation ────────────────────────────────────

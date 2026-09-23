@@ -442,6 +442,7 @@ fn main() {
     let mut rdkit_path = "validation/results/pipeline_v2_vs_rdkit_rdkit_rows.jsonl".to_string();
     let mut pair: Option<(String, String)> = None;
     let mut output_path: Option<String> = None;
+    let mut manifest_path: Option<String> = None;
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -461,17 +462,34 @@ fn main() {
                 output_path = Some(args[i + 1].clone());
                 i += 2;
             }
+            "--manifest" if i + 1 < args.len() => {
+                manifest_path = Some(args[i + 1].clone());
+                i += 2;
+            }
             other => panic!("unrecognized/malformed argument: {other}"),
         }
     }
 
-    let tier_a_smiles =
-        load_manifest_smiles("validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json");
-    let tier_b_smiles =
-        load_manifest_smiles("validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json");
     let mut smiles_by_name: HashMap<String, HashMap<String, String>> = HashMap::new();
-    smiles_by_name.insert("A".to_string(), tier_a_smiles);
-    smiles_by_name.insert("B".to_string(), tier_b_smiles);
+    if let Some(path) = manifest_path {
+        let manifest = load_manifest_smiles(&path);
+        let value: Value = serde_json::from_str(
+            &std::fs::read_to_string(&path)
+                .unwrap_or_else(|e| panic!("failed to read {path}: {e}")),
+        )
+        .unwrap_or_else(|e| panic!("failed to parse {path}: {e}"));
+        let tier = value["tier"]
+            .as_str()
+            .unwrap_or_else(|| panic!("custom manifest {path} must contain a string `tier`"));
+        smiles_by_name.insert(tier.to_string(), manifest);
+    } else {
+        let tier_a_smiles =
+            load_manifest_smiles("validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json");
+        let tier_b_smiles =
+            load_manifest_smiles("validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json");
+        smiles_by_name.insert("A".to_string(), tier_a_smiles);
+        smiles_by_name.insert("B".to_string(), tier_b_smiles);
+    }
 
     let chematic_rows = load_jsonl(&chematic_path);
     let rdkit_rows = load_jsonl(&rdkit_path);
