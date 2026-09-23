@@ -89,7 +89,7 @@ impl Molecule {
         compute: F,
     ) -> std::sync::Arc<T>
     where
-        T: std::any::Any + Send + Sync,
+        T: std::any::Any + Send + Sync + std::panic::RefUnwindSafe + std::panic::UnwindSafe,
         F: FnOnce() -> T,
     {
         self.derived.get_or_compute(slot, compute)
@@ -1243,6 +1243,15 @@ impl MoleculeBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn molecule_keeps_auto_traits() {
+        fn assert_traits<
+            T: Send + Sync + std::panic::RefUnwindSafe + std::panic::UnwindSafe + Clone,
+        >() {
+        }
+        assert_traits::<Molecule>();
+    }
     use crate::atom::Atom;
     use crate::element::Element;
 

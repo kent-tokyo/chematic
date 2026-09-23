@@ -16,6 +16,7 @@
 //!   computation may itself consult other slots of the same molecule.
 
 use std::any::Any;
+use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::{Arc, OnceLock};
 
 /// Well-known derived-data slots. Each slot stores exactly one Rust type,
@@ -40,7 +41,12 @@ pub enum DerivedSlot {
 
 const SLOT_COUNT: usize = 6;
 
-type Slot = OnceLock<Arc<dyn Any + Send + Sync>>;
+/// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
+/// the unwind-safety traits so `Molecule` stays usable across
+/// `std::panic::catch_unwind` (as it was before the cache existed).
+type Erased = dyn Any + Send + Sync + RefUnwindSafe + UnwindSafe;
+
+type Slot = OnceLock<Arc<Erased>>;
 
 pub(crate) struct DerivedCache {
     slots: [Slot; SLOT_COUNT],
@@ -64,12 +70,13 @@ impl Clone for DerivedCache {
 impl DerivedCache {
     pub(crate) fn get_or_compute<T, F>(&self, slot: DerivedSlot, compute: F) -> Arc<T>
     where
-        T: Any + Send + Sync,
+        T: Any + Send + Sync + RefUnwindSafe + UnwindSafe,
         F: FnOnce() -> T,
     {
         let cell = &self.slots[slot as usize];
         if let Some(existing) = cell.get() {
-            if let Ok(value) = Arc::clone(existing).downcast::<T>() {
+            let any: Arc<dyn Any + Send + Sync> = Arc::<Erased>::clone(existing);
+            if let Ok(value) = any.downcast::<T>() {
                 return value;
             }
             // A slot is owned by exactly one type; a mismatch is a
@@ -78,7 +85,7 @@ impl DerivedCache {
             return Arc::new(compute());
         }
         let value = Arc::new(compute());
-        let erased: Arc<dyn Any + Send + Sync> = value.clone();
+        let erased: Arc<Erased> = value.clone();
         // A concurrent writer may have won; either value is identical.
         let _ = cell.set(erased);
         value
