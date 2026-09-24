@@ -1,7 +1,7 @@
 # Roadmap open-work ledger
 
 Updated 2026-09-24. This is a compact dependency and evidence ledger for work
-that remains open after v1.0.22. It does not repeat completed implementation
+that remains open after v1.0.23. It does not repeat completed implementation
 history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 ## Immediate queue
@@ -59,9 +59,14 @@ complete merely because a local packet exists.
 
 ## Evidence boundaries
 
-- **Published release:** v1.0.22 channel verification is complete in
-  `validation/results/release-channel-verification-v1.0.22.json`: GitHub
-  Release, npm, PyPI, crates.io, docs.rs, and Pages were observed independently.
+- **Release preparation:** v1.0.23 uses
+  `validation/results/release-channel-verification-v1.0.23.json`. It is not
+  release-ready until GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages
+  have each been observed independently after publication.
+- **RDKit agreement:**
+  `benchmarks/2026-09-24-rdkit-agreement-accuracy-branch.md` records the
+  v1.0.23 source comparison and its operation-specific residuals; it is not a
+  published-package or universal-parity claim.
 - **Source operation matrix:**
   `benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md` records
   strict output-comparable outcomes; it is not a published-package result.
