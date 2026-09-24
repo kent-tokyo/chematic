@@ -1,0 +1,145 @@
+{
+ "schema": "chematic-rdkit-output-agreement/v1",
+ "created_utc": "2026-09-24T05:00:05.453746Z",
+ "chematic": {
+  "version": "1.0.22",
+  "revision": "ea967d476fa787bde64d001e752eb5cca0705b14",
+  "artifact": "chematic-1.0.22-cp311-cp311-manylinux_2_35_x86_64.whl",
+  "artifact_sha256": "1bded9be5336ece65cab019558602b1e92823f1946814de7afd0815f3d7c03c5"
+ },
+ "rdkit": {
+  "version": "2026.03.6"
+ },
+ "python": "3.11.15",
+ "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+ "operations": {
+  "morgan_r2_2048(rdkit-compatible)": {
+   "note": "bit-identical",
+   "available": true
+  },
+  "atom_pair(rdkit-compatible)": {
+   "note": "bit-identical",
+   "available": true
+  },
+  "torsion(rdkit-compatible)": {
+   "note": "bit-identical",
+   "available": true
+  },
+  "maccs": {
+   "note": "all 166 keys identical",
+   "available": true
+  },
+  "logp": {
+   "note": "|diff| <= 1e-6",
+   "available": true
+  },
+  "mr": {
+   "note": "|diff| <= 0.01",
+   "available": true
+  },
+  "rdkit_tpsa": {
+   "note": "|diff| <= 0.1; N/O-only TPSA",
+   "available": true
+  },
+  "tpsa(S/P included)": {
+   "note": "|diff| <= 0.1 vs includeSandP=True",
+   "available": true
+  },
+  "qed": {
+   "note": "|diff| <= 1e-3",
+   "available": true
+  },
+  "rdkit_mw": {
+   "note": "|diff| <= 1e-3",
+   "available": true
+  },
+  "hbd": {
+   "note": "exact",
+   "available": true
+  },
+  "rotatable_bonds": {
+   "note": "exact",
+   "available": true
+  },
+  "murcko_scaffold": {
+   "note": "same RDKit canonical SMILES",
+   "available": true
+  },
+  "pains_passes": {
+   "note": "vs RDKit PAINS FilterCatalog",
+   "available": true
+  },
+  "brenk_passes": {
+   "note": "vs RDKit BRENK FilterCatalog (chematic uses its own alert list)",
+   "available": true
+  }
+ },
+ "corpora": [
+  {
+   "path": "scripts/chembl_accuracy_corpus_4999.smi",
+   "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+   "rows_compared": 5000,
+   "agree": {
+    "morgan_r2_2048(rdkit-compatible)": 5000,
+    "atom_pair(rdkit-compatible)": 5000,
+    "torsion(rdkit-compatible)": 4999,
+    "maccs": 4995,
+    "logp": 5000,
+    "mr": 5000,
+    "rdkit_tpsa": 5000,
+    "tpsa(S/P included)": 5000,
+    "qed": 4962,
+    "rdkit_mw": 5000,
+    "hbd": 5000,
+    "rotatable_bonds": 5000,
+    "murcko_scaffold": 4998,
+    "pains_passes": 5000,
+    "brenk_passes": 2565
+   }
+  },
+  {
+   "path": "scripts/nci_first_5k_smiles_only.smi",
+   "sha256": "1d9fa413f33c4d2e2f2da9742cdbd7ce8f39d33b0b9fd78ce012a0b7f24e031d",
+   "rows_compared": 4991,
+   "agree": {
+    "morgan_r2_2048(rdkit-compatible)": 4990,
+    "atom_pair(rdkit-compatible)": 4990,
+    "torsion(rdkit-compatible)": 4991,
+    "maccs": 4989,
+    "logp": 4986,
+    "mr": 4986,
+    "rdkit_tpsa": 4990,
+    "tpsa(S/P included)": 4990,
+    "qed": 4842,
+    "rdkit_mw": 4991,
+    "hbd": 4984,
+    "rotatable_bonds": 4894,
+    "murcko_scaffold": 4923,
+    "pains_passes": 4802,
+    "brenk_passes": 3182
+   }
+  },
+  {
+   "path": "scripts/descriptor_census_corpus.smi",
+   "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+   "rows_compared": 5000,
+   "agree": {
+    "morgan_r2_2048(rdkit-compatible)": 5000,
+    "atom_pair(rdkit-compatible)": 5000,
+    "torsion(rdkit-compatible)": 4999,
+    "maccs": 5000,
+    "logp": 5000,
+    "mr": 5000,
+    "rdkit_tpsa": 5000,
+    "tpsa(S/P included)": 5000,
+    "qed": 4988,
+    "rdkit_mw": 5000,
+    "hbd": 5000,
+    "rotatable_bonds": 4999,
+    "murcko_scaffold": 4998,
+    "pains_passes": 4990,
+    "brenk_passes": 2626
+   }
+  }
+ ]
+}

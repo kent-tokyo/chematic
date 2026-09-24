@@ -9,6 +9,25 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Raised RDKit 2026.03.6 output agreement for RDKit-defined operations
+  (row-level, versioned record in `benchmarks/`): RDKit-compatible atom-pair
+  and torsion fingerprints (hypervalent S/P/Se pi-electron gate and
+  RDKit-perceived aromatic input), MACCS (verbatim key 26, RDKit ring info for
+  key 125, key 1 unset like RDKit), QED (every property per
+  `rdkit.Chem.QED.properties`), Bemis–Murcko scaffolds (linkers of any length,
+  exocyclic double bonds, preserved stereo), and Kekulé-input Crippen hydrogen
+  and TPSA nitrogen typing. ChEMBL 5k: atom pair 4,249 -> 5,000, MACCS
+  4,714 -> 4,995, QED 3,201 -> 4,962, Murcko 1,591 -> 4,998.
+- SMARTS follows Daylight/RDKit semantics more closely: an unspecified bond
+  matches single or aromatic bonds (not any bond), full bond-expression
+  precedence (`=@`, `=;@`, `-&@`, `=@,-`), `.`-separated components, bare `r`
+  and multi-digit `rN`. Queries that relied on an implicit bond matching
+  double/triple bonds must now write `~` or the explicit bond.
+- Added `rdkit_tpsa` (Rust and Python): RDKit-default TPSA (N and O only);
+  `tpsa` keeps including S and P.
+- SSSR candidate selection deduplicates with a bond bitmask and computes
+  tie-break keys per ring length; the selected rings are unchanged.
+
 ## [1.0.22] - 2026-09-24
 
 - Optimized hot paths without changing the checked source outputs: molecule-local

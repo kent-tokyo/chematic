@@ -256,6 +256,9 @@ def main() -> int:
     op("mr", lambda m: m.molar_refractivity, Crippen.MolMR, eq="checked", compare=tol(1e-2))
     op("tpsa", lambda m: m.tpsa, rdMolDescriptors.CalcTPSA, eq="checked", compare=tol(0.1),
        note="chematic default includes S/P (RDKit includeSandP=False default); agreement shows the gap")
+    if hasattr(CM[0], "rdkit_tpsa"):
+        op("rdkit_tpsa", lambda m: m.rdkit_tpsa, rdMolDescriptors.CalcTPSA, eq="checked", compare=tol(0.1),
+           note="N/O-only TPSA (RDKit default); present from the post-1.0.22 accuracy branch")
     op("hbd", lambda m: m.hbd, rdMolDescriptors.CalcNumHBD, eq="checked", compare=eq_int)
     op("hba", lambda m: m.rdkit_hba, rdMolDescriptors.CalcNumHBA, eq="checked", compare=eq_int)
     op("rotatable_bonds", lambda m: m.rotatable_bonds, rdMolDescriptors.CalcNumRotatableBonds,
