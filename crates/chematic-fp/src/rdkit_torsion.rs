@@ -197,8 +197,7 @@ fn rdkit_perceives_sp3(mol: &Molecule, idx: AtomIdx) -> bool {
     if total_degree > 3 {
         return true;
     }
-    let never_conjugated = z > 10 && (n_outer == 5 || n_outer == 6) && mol.degree(idx) >= 2;
-    never_conjugated
+    z > 10 && (n_outer == 5 || n_outer == 6) && mol.degree(idx) >= 2
 }
 
 /// `AtomPairs::getAtomCode`: packs `[type:4][pi:2][branch:3]` (LSB-first) into
