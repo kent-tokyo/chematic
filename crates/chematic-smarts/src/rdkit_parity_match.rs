@@ -523,7 +523,15 @@ fn eval_bond_query(
             eval_bond_query(x, order, a, b, ctx) || eval_bond_query(y, order, a, b, ctx)
         }
         BondQuery::Not(x) => !eval_bond_query(x, order, a, b, ctx),
-        BondQuery::Any => true,
+        // Unspecified SMARTS bond: single or aromatic (RDKit semantics).
+        BondQuery::Any => matches!(
+            order,
+            BondOrder::Single
+                | BondOrder::Up
+                | BondOrder::Down
+                | BondOrder::Aromatic
+                | BondOrder::QuerySingleOrAromatic
+        ),
     }
 }
 

@@ -27,50 +27,83 @@ pub struct ScaffoldNetwork {
     pub parents: Vec<Option<usize>>,
 }
 
-/// Extract the Murcko scaffold from `mol`.
+/// Extract the Bemis–Murcko scaffold from `mol`, following RDKit's
+/// `MurckoDecompose` (`MurckoScaffold.GetScaffoldForMol`):
 ///
-/// The scaffold consists of:
-/// - All ring atoms (atoms participating in at least one ring).
-/// - Linker atoms: a non-ring atom is included iff it has >=2 heavy-atom
-///   neighbors that are already in the scaffold. The expansion repeats until
-///   no new linkers are added.
+/// - all ring atoms are kept;
+/// - linker atoms — every non-ring atom on a path between two ring atoms, of
+///   any length — are kept (found by repeatedly pruning non-ring atoms with at
+///   most one remaining neighbour, which leaves exactly those paths);
+/// - a removed atom that is double-bonded to a kept atom is kept (exocyclic
+///   `C=O`, `C=C` and the like), without its own substituents;
+/// - a kept bracket atom or aromatic heteroatom that loses a neighbour gains
+///   one explicit hydrogen per removed bond, so e.g. an N-substituted pyrrole
+///   becomes `[nH]` rather than an invalid bare `n`.
 ///
 /// Returns an empty `Molecule` if `mol` contains no rings.
 pub fn murcko_scaffold(mol: &Molecule) -> Molecule {
-    let rings = find_sssr(mol);
-    if rings.ring_count() == 0 {
+    let n = mol.atom_count();
+    let ring_atom = chematic_perception::ring_atom_flags(mol);
+    if !ring_atom.iter().any(|&r| r) {
         return MoleculeBuilder::new().build();
     }
 
-    let mut scaffold_atoms: HashSet<AtomIdx> = rings
-        .rings()
-        .iter()
-        .flat_map(|r| r.iter().copied())
+    // Prune non-ring leaves until only ring atoms and linkers remain.
+    let mut alive = vec![true; n];
+    let mut degree: Vec<usize> = (0..n).map(|i| mol.degree(AtomIdx(i as u32))).collect();
+    let mut stack: Vec<usize> = (0..n)
+        .filter(|&i| !ring_atom[i] && degree[i] <= 1)
         .collect();
-
-    // Iteratively pull in linker atoms until stable.
-    loop {
-        let mut changed = false;
-        for i in 0..mol.atom_count() {
-            let idx = AtomIdx(i as u32);
-            if scaffold_atoms.contains(&idx) {
-                continue;
-            }
-            let scaffold_neighbors = mol
-                .neighbors(idx)
-                .filter(|(nb, _)| scaffold_atoms.contains(nb))
-                .count();
-            if scaffold_neighbors >= 2 {
-                scaffold_atoms.insert(idx);
-                changed = true;
+    while let Some(i) = stack.pop() {
+        if !alive[i] {
+            continue;
+        }
+        alive[i] = false;
+        for (nb, _) in mol.neighbors(AtomIdx(i as u32)) {
+            let j = nb.0 as usize;
+            if alive[j] {
+                degree[j] -= 1;
+                if !ring_atom[j] && degree[j] <= 1 {
+                    stack.push(j);
+                }
             }
         }
-        if !changed {
-            break;
+    }
+    let core = alive.clone();
+
+    // Keep removed atoms double-bonded to a core atom.
+    let mut keep = core.clone();
+    for i in 0..n {
+        if core[i] {
+            continue;
+        }
+        let idx = AtomIdx(i as u32);
+        if mol
+            .neighbors(idx)
+            .any(|(nb, b)| core[nb.0 as usize] && mol.bond(b).order == BondOrder::Double)
+        {
+            keep[i] = true;
         }
     }
 
-    build_subgraph(mol, &scaffold_atoms)
+    let atom_set: HashSet<AtomIdx> = (0..n)
+        .filter(|&i| keep[i])
+        .map(|i| AtomIdx(i as u32))
+        .collect();
+    let mut scaffold_atoms_h: HashMap<AtomIdx, u8> = HashMap::new();
+    for &idx in &atom_set {
+        let atom = mol.atom(idx);
+        let lost = mol
+            .neighbors(idx)
+            .filter(|(nb, _)| !atom_set.contains(nb))
+            .count() as u8;
+        let heteroaromatic = atom.aromatic && atom.element.atomic_number() != 6;
+        if lost > 0 && (atom.hydrogen_count.is_some() || heteroaromatic) {
+            let h = chematic_core::implicit_hcount(mol, idx);
+            scaffold_atoms_h.insert(idx, h.saturating_add(lost));
+        }
+    }
+    build_subgraph_with_h(mol, &atom_set, &scaffold_atoms_h)
 }
 
 /// Generic Murcko scaffold: every atom becomes C and every bond becomes Single.
@@ -92,6 +125,34 @@ pub fn generic_murcko_scaffold(mol: &Molecule) -> Molecule {
         let bond = scaffold.bond(BondIdx(i as u32));
         if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
             let _ = builder.add_bond(new_a, new_b, BondOrder::Single);
+        }
+    }
+    builder.build()
+}
+
+/// [`build_subgraph`] with explicit hydrogen counts for selected atoms.
+fn build_subgraph_with_h(
+    mol: &Molecule,
+    atom_set: &HashSet<AtomIdx>,
+    hydrogens: &HashMap<AtomIdx, u8>,
+) -> Molecule {
+    let mut builder = MoleculeBuilder::new();
+    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+    for i in 0..mol.atom_count() {
+        let old_idx = AtomIdx(i as u32);
+        if atom_set.contains(&old_idx) {
+            let mut atom = mol.atom(old_idx).clone();
+            if let Some(&h) = hydrogens.get(&old_idx) {
+                atom.hydrogen_count = Some(h);
+            }
+            let new_idx = builder.add_atom(atom);
+            remap.insert(old_idx, new_idx);
+        }
+    }
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(BondIdx(i as u32));
+        if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
+            let _ = builder.add_bond(new_a, new_b, bond.order);
         }
     }
     builder.build()

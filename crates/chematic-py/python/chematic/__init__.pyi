@@ -271,6 +271,11 @@ class Mol:
         ...
 
     @property
+    def rdkit_tpsa(self) -> float:
+        """RDKit-default TPSA (Å²): N and O only, like ``rdMolDescriptors.CalcTPSA``."""
+        ...
+
+    @property
     def qed(self) -> float:
         """Quantitative Estimate of Drug-likeness [0, 1]."""
         ...

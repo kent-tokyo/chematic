@@ -1179,6 +1179,17 @@ pub fn tpsa(mol: &Molecule) -> f64 {
     tpsa_contributions(mol).into_iter().sum()
 }
 
+/// RDKit-default TPSA: `rdMolDescriptors.CalcTPSA(mol)` / `Descriptors.TPSA(mol)`
+/// with `includeSandP=False`, i.e. the N and O contributions of [`tpsa`] only.
+pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
+    tpsa_contributions(mol)
+        .into_iter()
+        .zip(mol.atoms())
+        .filter(|(_, (_, atom))| matches!(atom.element.atomic_number(), 7 | 8))
+        .map(|(contribution, _)| contribution)
+        .sum()
+}
+
 // ---------------------------------------------------------------------------
 // 8. LogP (Wildman-Crippen, calibrated)
 // ---------------------------------------------------------------------------
@@ -5640,12 +5651,13 @@ mod tests {
     }
 
     #[test]
-    fn test_mcf_ibuprofen_fails_brenk_acetal_ketal() {
-        // Ibuprofen's carboxylic acid group matches the broad Brenk "acetal_ketal"
-        // SMARTS [#8][#6]([#8])-[#6], which also captures C(=O)OH.
-        // This is a known over-match in the Brenk filter set, but MCF correctly
-        // reflects the current Brenk implementation.
-        assert!(!mcf_passes(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")));
+    fn test_mcf_ibuprofen_passes_without_acetal_overmatch() {
+        // Brenk "acetal_ketal" is `[#8][#6]([#8])-[#6]`: the unspecified bonds
+        // are single-or-aromatic (Daylight/RDKit), so the C=O of a carboxylic
+        // acid does not match. RDKit 2026.03.6's BRENK FilterCatalog reports
+        // no match for ibuprofen; it previously over-matched here.
+        assert!(crate::brenk_passes(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")));
+        assert!(mcf_passes(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")));
     }
 
     #[test]

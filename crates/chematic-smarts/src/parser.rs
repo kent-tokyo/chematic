@@ -35,7 +35,8 @@
 //! - Lowercase letter → `And(Symbol("X"), Aromatic(true))`  (aromatic)
 //! - `*` outside brackets → `Wildcard`
 //!
-//! Implicit bond between two adjacent atoms = `BondQuery::Any` (`~`).
+//! Implicit bond between two adjacent atoms = `BondQuery::Any`, which matches a
+//! single or aromatic bond (Daylight/RDKit semantics; `~` is the explicit any-bond).
 
 use std::collections::HashMap;
 use std::fmt;
@@ -179,6 +180,16 @@ impl<'a> Parser<'a> {
         let mut open_rings: HashMap<u8, (usize, Option<BondQuery>)> = HashMap::new();
 
         self.parse_chain(&mut mol, None, None, &mut open_rings)?;
+        // `.` separates disconnected components (e.g. RDKit QED alert
+        // `F.F.F.F`): each component matches independently, atoms distinct.
+        while self.peek() == Some(b'.') {
+            self.advance(); // consume '.'
+            let before = mol.atoms.len();
+            self.parse_chain(&mut mol, None, None, &mut open_rings)?;
+            if mol.atoms.len() == before {
+                return Err(SmartsError::UnexpectedEnd);
+            }
+        }
 
         // Any remaining open ring closures are errors.
         if let Some((&num, _)) = open_rings.iter().next() {
@@ -244,8 +255,8 @@ impl<'a> Parser<'a> {
                     self.handle_ring_closure(mol, current, ring_num, ring_bond, open_rings)?;
                 }
 
-                // End of this chain: `)`, end-of-input, or other stop character.
-                None | Some(b')') => break,
+                // End of this chain: `)`, `.`, end-of-input, or other stop character.
+                None | Some(b')') | Some(b'.') => break,
 
                 // Explicit bond or next atom.
                 _ => {
@@ -381,6 +392,33 @@ impl<'a> Parser<'a> {
     /// bond_token := '-' | '=' | '#' | ':' | '~' | '@'
     /// ```
     fn try_parse_bond(&mut self) -> Option<BondQuery> {
+        // Full Daylight precedence: `!` > implicit/`&` AND > `,` OR > `;` AND.
+        let first = self.try_parse_bond_or()?;
+        Some(self.parse_bond_low_and_tail(first))
+    }
+
+    /// `true` when the byte after the current operator starts a bond factor.
+    fn next_starts_bond_factor(&self) -> bool {
+        self.src
+            .get(self.pos + 1)
+            .copied()
+            .is_some_and(|c| Self::is_bond_token(c) || c == b'!')
+    }
+
+    /// `bond_or (';' bond_or)*` — low-precedence AND.
+    fn parse_bond_low_and_tail(&mut self, mut left: BondQuery) -> BondQuery {
+        while self.peek() == Some(b';') && self.next_starts_bond_factor() {
+            self.advance(); // consume ';'
+            match self.try_parse_bond_or() {
+                Some(right) => left = BondQuery::And(Box::new(left), Box::new(right)),
+                None => break,
+            }
+        }
+        left
+    }
+
+    /// `bond_and (',' bond_and)*`.
+    fn try_parse_bond_or(&mut self) -> Option<BondQuery> {
         let first = self.try_parse_bond_factor()?;
         Some(self.parse_bond_or_tail(first))
     }
@@ -389,17 +427,11 @@ impl<'a> Parser<'a> {
     fn try_parse_bond_factor(&mut self) -> Option<BondQuery> {
         match self.peek()? {
             b'!' => {
-                // Only treat `!` as bond negation when the next char is a bond token.
-                if self
-                    .src
-                    .get(self.pos + 1)
-                    .copied()
-                    .map(Self::is_bond_token)
-                    .unwrap_or(false)
-                {
+                // Only treat `!` as bond negation when a bond factor follows.
+                if self.next_starts_bond_factor() {
                     self.advance(); // consume '!'
-                    let prim = self.consume_bond_prim().unwrap();
-                    Some(BondQuery::Not(Box::new(BondQuery::Primitive(prim))))
+                    let inner = self.try_parse_bond_factor()?;
+                    Some(BondQuery::Not(Box::new(inner)))
                 } else {
                     None
                 }
@@ -436,19 +468,18 @@ impl<'a> Parser<'a> {
 
     /// Continue parsing bond OR after the first factor.
     fn parse_bond_or_tail(&mut self, left: BondQuery) -> BondQuery {
+        // AND binds tighter than ',' (so `=@,-` is `(= & @) , -`).
+        let mut acc = self.parse_bond_and_tail(left);
         // ',' → OR (only when followed by a bond token or '!')
-        if self.peek() == Some(b',') {
-            let next = self.src.get(self.pos + 1).copied();
-            if next.map(Self::is_bond_token).unwrap_or(false) || next == Some(b'!') {
-                self.advance(); // consume ','
-                if let Some(right) = self.try_parse_bond_factor() {
-                    let right = self.parse_bond_and_tail(right);
-                    let or_expr = BondQuery::Or(Box::new(left), Box::new(right));
-                    return self.parse_bond_or_tail(or_expr);
-                }
-            }
+        while self.peek() == Some(b',') && self.next_starts_bond_factor() {
+            self.advance(); // consume ','
+            let Some(right) = self.try_parse_bond_factor() else {
+                break;
+            };
+            let right = self.parse_bond_and_tail(right);
+            acc = BondQuery::Or(Box::new(acc), Box::new(right));
         }
-        self.parse_bond_and_tail(left)
+        acc
     }
 
     /// Continue parsing implicit AND after the first factor.
@@ -457,20 +488,25 @@ impl<'a> Parser<'a> {
     /// factor as a high-precedence AND. A trailing `&` with no operand is
     /// silently consumed (caller treats the result the same as `left`).
     fn parse_bond_and_tail(&mut self, left: BondQuery) -> BondQuery {
-        if self.peek() == Some(b'&') {
+        // `&factor` or a directly juxtaposed factor (`=@`, `-!@`, ...) is a
+        // high-precedence AND.
+        let explicit = self.peek() == Some(b'&') && self.next_starts_bond_factor();
+        if explicit {
             self.advance(); // consume '&'
+        } else if self.peek() == Some(b'&') {
+            // A trailing `&` with no operand is silently consumed.
+            self.advance();
+            return left;
         }
-
-        if self.peek() == Some(b'!') {
-            let next = self.src.get(self.pos + 1).copied();
-            if next.map(Self::is_bond_token).unwrap_or(false)
-                && let Some(right) = self.try_parse_bond_factor()
-            {
-                let and_expr = BondQuery::And(Box::new(left), Box::new(right));
-                return self.parse_bond_and_tail(and_expr);
-            }
+        let juxtaposed = self.peek().is_some_and(|c| {
+            Self::is_bond_token(c) || (c == b'!' && self.next_starts_bond_factor())
+        });
+        if (explicit || juxtaposed)
+            && let Some(right) = self.try_parse_bond_factor()
+        {
+            let and_expr = BondQuery::And(Box::new(left), Box::new(right));
+            return self.parse_bond_and_tail(and_expr);
         }
-
         left
     }
 
@@ -847,10 +883,12 @@ impl<'a> Parser<'a> {
             // same `RingSize` primitive as `[kN]`.
             Some(b'r') => {
                 self.advance(); // consume 'r'
-                let n = self
-                    .parse_single_digit()
-                    .ok_or(SmartsError::UnexpectedEnd)?;
-                Ok(AtomQuery::Primitive(AtomPrimitive::MinRingSize(n)))
+                // Bare `r` (Daylight/RDKit): "in a ring", same predicate as `R`.
+                // `rN` accepts multi-digit sizes (`[r12]`), as RDKit does.
+                match self.parse_ring_size_number() {
+                    Some(n) => Ok(AtomQuery::Primitive(AtomPrimitive::MinRingSize(n))),
+                    None => Ok(AtomQuery::Primitive(AtomPrimitive::RingMembership(true))),
+                }
             }
 
             // Any-ring size `[kN]` — RDKit PR #9172. Means "this atom belongs to *some*
@@ -1012,6 +1050,23 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a single ASCII digit, if present. Returns the digit value 0–9.
+    /// Parse a 1-3 digit ring size after `r`, or `None` if no digit follows.
+    fn parse_ring_size_number(&mut self) -> Option<u8> {
+        let mut value: u32 = 0;
+        let mut digits = 0;
+        while digits < 3 {
+            match self.peek() {
+                Some(c @ b'0'..=b'9') => {
+                    value = value * 10 + u32::from(c - b'0');
+                    self.advance();
+                    digits += 1;
+                }
+                _ => break,
+            }
+        }
+        (digits > 0).then(|| value.min(u32::from(u8::MAX)) as u8)
+    }
+
     fn parse_single_digit(&mut self) -> Option<u8> {
         match self.peek() {
             Some(d) if d.is_ascii_digit() => {
@@ -1031,6 +1086,28 @@ impl<'a> Parser<'a> {
 mod tests {
     use super::*;
     use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery};
+
+    #[test]
+    fn compound_bond_expressions_follow_daylight_precedence() {
+        use BondPrimitive::*;
+        let p = |x| BondQuery::Primitive(x);
+        let and = |a, b| BondQuery::And(Box::new(a), Box::new(b));
+        let or = |a, b| BondQuery::Or(Box::new(a), Box::new(b));
+        let not = |a| BondQuery::Not(Box::new(a));
+        let bond = |smarts: &str| parse_smarts(smarts).unwrap().bonds[0].query.clone();
+        // Historical forms keep their exact trees.
+        assert_eq!(bond("C=,:C"), or(p(Double), p(Aromatic)));
+        assert_eq!(bond("C=!@C"), and(p(Double), not(p(Ring))));
+        // Newly accepted forms (previously parse errors or truncated).
+        assert_eq!(bond("C=@C"), and(p(Double), p(Ring)));
+        assert_eq!(bond("C=;@C"), and(p(Double), p(Ring)));
+        assert_eq!(bond("C-&@C"), and(p(Single), p(Ring)));
+        assert_eq!(bond("C=@,-C"), or(and(p(Double), p(Ring)), p(Single)));
+        assert_eq!(bond("C-,=;@C"), and(or(p(Single), p(Double)), p(Ring)));
+        assert_eq!(bond("C!!@C"), not(not(p(Ring))));
+        // MACCS key 26 as written in RDKit's MACCSkeys.py.
+        assert!(parse_smarts("[#6]=;@[#6](@*)@*").is_ok());
+    }
 
     #[test]
     fn test_parse_aliphatic_c() {
