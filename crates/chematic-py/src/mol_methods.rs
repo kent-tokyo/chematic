@@ -450,6 +450,14 @@ impl Mol {
         chematic_chem::tpsa(&self.inner)
     }
 
+    /// RDKit-default TPSA (Å²): N and O contributions only, matching
+    /// ``rdMolDescriptors.CalcTPSA(mol)`` / ``Descriptors.TPSA(mol)``
+    /// (``includeSandP=False``). :attr:`tpsa` also includes S and P.
+    #[getter]
+    fn rdkit_tpsa(&self) -> f64 {
+        chematic_chem::rdkit_tpsa(&self.inner)
+    }
+
     /// Quantitative Estimate of Drug-likeness [0, 1].
     #[getter]
     fn qed(&self) -> f64 {

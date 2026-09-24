@@ -26,6 +26,8 @@ use std::collections::VecDeque;
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 
+type CycleCandidate = (Vec<BondIdx>, Vec<AtomIdx>);
+
 /// Returns `true` if the bond order is eligible for ring perception.
 ///
 /// Zero-order and Dative bonds are coordinate/non-valence connections that must
@@ -214,33 +216,68 @@ fn find_sssr_uncached(mol: &Molecule) -> RingSet {
     // `sort_by_cached_key` is stable, so the relative order of first
     // occurrences — the only thing the GF(2) selection below can observe —
     // is exactly the order the historical sort+adjacent-dedup produced.
+    //
+    // Candidates are processed one ring length at a time: the global sort key
+    // is (length, order key, multiset key), so sorting each length bucket by
+    // the two canonical keys (stably, in generation order) visits exactly the
+    // same sequence, while the canonical keys of lengths beyond the point
+    // where `r` independent cycles are found are never computed.
     let ranks = canonical_atom_ranks(mol);
-    let mut candidates = candidates;
-    candidates.sort_by_cached_key(|c| {
-        (
-            c.0.len(),
-            canonical_cycle_order_key(mol, &c.1, &ranks),
-            canonical_cycle_key(&c.1, &ranks),
-        )
-    });
+    let mut buckets: std::collections::BTreeMap<usize, Vec<CycleCandidate>> =
+        std::collections::BTreeMap::new();
+    for candidate in candidates {
+        buckets
+            .entry(candidate.0.len())
+            .or_default()
+            .push(candidate);
+    }
 
     // Gaussian elimination over GF(2) to select r linearly independent cycles.
-    // The basis maps a pivot BondIdx to the full bond-set of that basis row.
+    // Rows are bitsets over bond indices when they fit in 128 bits (the pivot
+    // is the lowest set bit == the minimum BondIdx, as in the Vec form).
+    let use_bits = mol.bond_count() <= 128;
     let mut basis: FxHashMap<BondIdx, Vec<BondIdx>> = FxHashMap::default();
+    let mut basis_bits: FxHashMap<u32, u128> = FxHashMap::default();
     let mut selected_atoms: Vec<Vec<AtomIdx>> = Vec::new();
 
-    for (bond_set, atom_seq) in candidates {
-        // Reduce this cycle against the current basis.
-        let reduced = gf2_reduce(&bond_set, &basis);
-
-        if !reduced.is_empty() {
-            // This cycle is independent — add it to the basis.
-            let pivot = *reduced.iter().min().unwrap();
-            basis.insert(pivot, reduced);
-            selected_atoms.push(atom_seq);
-
-            if selected_atoms.len() == r {
-                break;
+    'lengths: for (_, mut bucket) in buckets {
+        bucket.sort_by_cached_key(|c| {
+            (
+                canonical_cycle_order_key(mol, &c.1, &ranks),
+                canonical_cycle_key(&c.1, &ranks),
+            )
+        });
+        for (bond_set, atom_seq) in bucket {
+            let independent = if use_bits {
+                let mut row: u128 = bond_set.iter().fold(0, |acc, b| acc | (1u128 << b.0));
+                loop {
+                    if row == 0 {
+                        break false;
+                    }
+                    let pivot = row.trailing_zeros();
+                    match basis_bits.get(&pivot) {
+                        Some(existing) => row ^= existing,
+                        None => {
+                            basis_bits.insert(pivot, row);
+                            break true;
+                        }
+                    }
+                }
+            } else {
+                let reduced = gf2_reduce(&bond_set, &basis);
+                if reduced.is_empty() {
+                    false
+                } else {
+                    let pivot = *reduced.iter().min().unwrap();
+                    basis.insert(pivot, reduced);
+                    true
+                }
+            };
+            if independent {
+                selected_atoms.push(atom_seq);
+                if selected_atoms.len() == r {
+                    break 'lengths;
+                }
             }
         }
     }
@@ -302,6 +339,8 @@ fn horton_candidates_fast(mol: &Molecule) -> Vec<(Vec<BondIdx>, Vec<AtomIdx>)> {
     let mut stamp = 0u32;
 
     let mut seen: FxHashSet<Vec<BondIdx>> = FxHashSet::default();
+    let use_mask = mol.bond_count() <= 128;
+    let mut seen_masks: FxHashSet<u128> = FxHashSet::default();
     let mut candidates: Vec<(Vec<BondIdx>, Vec<AtomIdx>)> = Vec::new();
 
     for root in 0..n {
@@ -365,6 +404,24 @@ fn horton_candidates_fast(mol: &Molecule) -> Vec<(Vec<BondIdx>, Vec<AtomIdx>)> {
             }
 
             let len = (dist[x as usize] + dist[y as usize] + 1) as usize;
+            // Cheap duplicate check first: most candidates are re-discoveries
+            // of a cycle already produced from an earlier root.
+            if use_mask {
+                let mut mask: u128 = 1u128 << bidx.0;
+                let mut a = x;
+                while a != root_u {
+                    mask |= 1u128 << parent_bond[a as usize].0;
+                    a = parent[a as usize];
+                }
+                let mut b = y;
+                while b != root_u {
+                    mask |= 1u128 << parent_bond[b as usize].0;
+                    b = parent[b as usize];
+                }
+                if !seen_masks.insert(mask) {
+                    continue;
+                }
+            }
             let mut bond_set: Vec<BondIdx> = Vec::with_capacity(len);
             let mut a = x;
             while a != root_u {
@@ -378,7 +435,7 @@ fn horton_candidates_fast(mol: &Molecule) -> Vec<(Vec<BondIdx>, Vec<AtomIdx>)> {
             }
             bond_set.push(bidx);
             bond_set.sort_unstable();
-            if seen.contains(&bond_set) {
+            if !use_mask && seen.contains(&bond_set) {
                 continue;
             }
 
@@ -400,7 +457,9 @@ fn horton_candidates_fast(mol: &Molecule) -> Vec<(Vec<BondIdx>, Vec<AtomIdx>)> {
             }
             ring_atoms[tail..].reverse();
 
-            seen.insert(bond_set.clone());
+            if !use_mask {
+                seen.insert(bond_set.clone());
+            }
             candidates.push((bond_set, ring_atoms));
         }
     }

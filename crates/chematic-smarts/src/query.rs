@@ -98,7 +98,8 @@ pub enum BondQuery {
     And(Box<BondQuery>, Box<BondQuery>),
     Or(Box<BondQuery>, Box<BondQuery>),
     Not(Box<BondQuery>),
-    /// Implicit bond: no bond specification between two atoms in SMARTS — matches any bond (`~`).
+    /// Implicit bond: no bond specification between two atoms in SMARTS. Matches a
+    /// single or aromatic bond (Daylight/RDKit semantics); use `~` for any bond.
     Any,
 }
 

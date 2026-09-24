@@ -93,6 +93,10 @@ measurement was rerun.
 
 | Record | Scope |
 |---|---|
+| [`2026-09-24-rdkit-agreement-accuracy-branch.md`](2026-09-24-rdkit-agreement-accuracy-branch.md) | v1.0.22 `297fec4d` vs accuracy branch `ea967d47`: row-level RDKit 2026.03.6 agreement for 15 RDKit-defined operations on three 5k corpora (atom pair/torsion/MACCS/QED/Murcko/Kekulé descriptors), plus a branch timing re-run; 2-vCPU VM, not a package claim |
+| [`2026-09-24-rdkit-agreement-v1.0.22-297fec4d.json`](2026-09-24-rdkit-agreement-v1.0.22-297fec4d.json) | Raw agreement counts for v1.0.22 in the record above |
+| [`2026-09-24-rdkit-agreement-branch-ea967d47.json`](2026-09-24-rdkit-agreement-branch-ea967d47.json) | Raw agreement counts for the branch in the record above |
+| [`2026-09-24-python-op-matrix-vs-rdkit-branch-ea967d47.json`](2026-09-24-python-op-matrix-vs-rdkit-branch-ea967d47.json) | Raw per-repeat timing and agreement for the branch timing re-run |
 | [`2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md`](2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md) | Source branch `8cc01365` vs base `01a86b62` vs RDKit 2026.03.6: 62 Python operations with equivalence classes and row-level output agreement; 21 checked operations faster with full agreement (base: 6); base-vs-branch outputs byte-identical. 2-vCPU cloud VM, not a package claim |
 | [`2026-09-24-python-op-matrix-vs-rdkit-base-01a86b62.json`](2026-09-24-python-op-matrix-vs-rdkit-base-01a86b62.json) | Raw per-repeat timings and agreement for the base run of the record above |
 | [`2026-09-24-python-op-matrix-vs-rdkit-branch-8cc01365.json`](2026-09-24-python-op-matrix-vs-rdkit-branch-8cc01365.json) | Raw per-repeat timings and agreement for the branch run of the record above |

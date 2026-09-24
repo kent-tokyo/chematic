@@ -16,14 +16,13 @@
 
 use std::sync::OnceLock;
 
-use chematic_core::Molecule;
-use chematic_perception::{RingSet, find_sssr};
+use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_smarts::{
-    MatchConfig, QueryMolecule, find_matches_with_rings_and_config, parse_smarts,
+    MatchConfig, QueryMolecule, find_matches, find_matches_with_config, parse_smarts,
 };
 
 use crate::descriptors::{
-    RingBundle, hbd_count, logp_crippen, molecular_weight, ring_bundle, tpsa,
+    RingBundle, hbd_count, logp_crippen, rdkit_molecular_weight, rdkit_tpsa, rotatable_bond_count,
 };
 
 /// ADS (Asymmetric Double Sigmoidal) desirability function from Bickerton 2012.
@@ -124,6 +123,7 @@ const WEIGHTS_MEAN: [f64; 8] = [0.66, 0.46, 0.05, 0.61, 0.06, 0.65, 0.48, 0.95];
 // are silently skipped at init time via filter_map.
 
 static STRUCTURAL_ALERT_SMARTS: &[&str] = &[
+    // Verbatim `rdkit.Chem.QED.StructuralAlertSmarts` (RDKit 2026.03.6), in order.
     "*1[O,S,N]*1",
     "[S,C](=[O,S])[F,Br,Cl,I]",
     "[CX4][Cl,Br,I]",
@@ -215,7 +215,7 @@ static STRUCTURAL_ALERT_SMARTS: &[&str] = &[
     "C=[C!r]O",
     "[NX2+0]=[O+0]",
     "[OR0,NR0][OR0,NR0]",
-    // disconnected: "C(=O)O[C,H1].C(=O)O[C,H1].C(=O)O[C,H1]" — skipped
+    "C(=O)O[C,H1].C(=O)O[C,H1].C(=O)O[C,H1]",
     "[CX2R0][NX3R0]",
     "c1ccccc1[C;!R]=[C;!R]c2ccccc2",
     "[NX3R0,NX4R0,OR0,SX2R0][CX4][NX3R0,NX4R0,OR0,SX2R0]",
@@ -224,10 +224,10 @@ static STRUCTURAL_ALERT_SMARTS: &[&str] = &[
     "[*]=[N+]=[*]",
     "[SX3](=O)[O-,OH]",
     "N#N",
-    // disconnected: "F.F.F.F" — skipped
+    "F.F.F.F",
     "[R0;D2][R0;D2][R0;D2][R0;D2]",
     "[cR,CR]~C(=O)NC(=O)~[cR,CR]",
-    // unsupported !@ bond: "C=!@CC=[O,S]" — skipped
+    "C=!@CC=[O,S]",
     "[#6,#8,#16][#6](=O)O[#6]",
     "c[C;R0](=[O,S])[#6]",
     "c[SX2][C;!R]",
@@ -236,10 +236,29 @@ static STRUCTURAL_ALERT_SMARTS: &[&str] = &[
     "c1ncnc([F,Cl,Br,I,S])c1",
     "c1nc(c2c(n1)nc(n2)[F,Cl,Br,I])",
     "[#6]S(=O)(=O)c1ccc(cc1)F",
-    // isotope patterns — skipped by parser: "[15N]","[13C]","[18O]","[34S]"
+    "[15N]",
+    "[13C]",
+    "[18O]",
+    "[34S]",
+];
+
+/// Verbatim `rdkit.Chem.QED.AcceptorSmarts` (RDKit 2026.03.6), in order.
+static ACCEPTOR_SMARTS: &[&str] = &[
+    "[oH0;X2]",
+    "[OH1;X2;v2]",
+    "[OH0;X2;v2]",
+    "[OH0;X1;v2]",
+    "[O-;X1]",
+    "[SH0;X2;v2]",
+    "[SH0;X1;v2]",
+    "[S-;X1]",
+    "[nH0;X2]",
+    "[NH0;X1;v3]",
+    "[$([N;+0;X3;v3]);!$(N[C,S]=O)]",
 ];
 
 static ALERT_QUERIES: OnceLock<Vec<QueryMolecule>> = OnceLock::new();
+static ACCEPTOR_QUERIES: OnceLock<Vec<QueryMolecule>> = OnceLock::new();
 
 fn alert_queries() -> &'static [QueryMolecule] {
     ALERT_QUERIES.get_or_init(|| {
@@ -250,15 +269,98 @@ fn alert_queries() -> &'static [QueryMolecule] {
     })
 }
 
-fn structural_alert_count_with_rings(mol: &Molecule, rings: &RingSet) -> usize {
+fn acceptor_queries() -> &'static [QueryMolecule] {
+    ACCEPTOR_QUERIES.get_or_init(|| {
+        ACCEPTOR_SMARTS
+            .iter()
+            .filter_map(|s| parse_smarts(s).ok())
+            .collect()
+    })
+}
+
+/// `sum(1 for alert in StructuralAlerts if mol.HasSubstructMatch(alert))`.
+/// RDKit SMARTS always honour isotope labels (`[15N]` only matches ¹⁵N), so
+/// the isotope alerts are matched with isotopes enforced.
+fn structural_alert_count(view: &Molecule) -> usize {
     let config = MatchConfig {
         max_matches: Some(1),
+        uniquify: false,
+        use_isotopes: true,
         ..Default::default()
     };
     alert_queries()
         .iter()
-        .filter(|q| !find_matches_with_rings_and_config(q, mol, rings, &config).is_empty())
+        .filter(|q| !find_matches_with_config(q, view, &config).is_empty())
         .count()
+}
+
+/// `sum(len(mol.GetSubstructMatches(p)) for p in Acceptors if mol.HasSubstructMatch(p))`
+/// (uniquified matches, as `GetSubstructMatches` defaults).
+fn qed_acceptor_count(view: &Molecule) -> usize {
+    acceptor_queries()
+        .iter()
+        .map(|q| find_matches(q, view).len())
+        .sum()
+}
+
+/// `len(Chem.GetSSSR(Chem.DeleteSubstructs(mol, AliphaticRings)))` with
+/// `AliphaticRings = '[$([A;R][!a])]'`: delete every non-aromatic ring atom
+/// that has a non-aromatic neighbour, then count SSSR rings of what remains
+/// (the cycle rank, E - V + C over ring-eligible bonds).
+fn qed_aromatic_ring_count(view: &Molecule) -> usize {
+    let n = view.atom_count();
+    let ring_atom = chematic_perception::ring_atom_flags(view);
+    let deleted: Vec<bool> = (0..n)
+        .map(|i| {
+            let idx = AtomIdx(i as u32);
+            ring_atom[i]
+                && !view.atom(idx).aromatic
+                && view.neighbors(idx).any(|(nb, _)| !view.atom(nb).aromatic)
+        })
+        .collect();
+    let mut parent: Vec<usize> = (0..n).collect();
+    fn find(parent: &mut [usize], mut x: usize) -> usize {
+        while parent[x] != x {
+            parent[x] = parent[parent[x]];
+            x = parent[x];
+        }
+        x
+    }
+    let mut edges = 0usize;
+    for (_, bond) in view.bonds() {
+        if matches!(bond.order, BondOrder::Zero | BondOrder::Dative) {
+            continue;
+        }
+        let (a, b) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
+        if deleted[a] || deleted[b] {
+            continue;
+        }
+        edges += 1;
+        let (ra, rb) = (find(&mut parent, a), find(&mut parent, b));
+        if ra != rb {
+            parent[ra] = rb;
+        }
+    }
+    let kept: Vec<usize> = (0..n).filter(|&i| !deleted[i]).collect();
+    let components = kept.iter().filter(|&&i| find(&mut parent, i) == i).count();
+    (edges + components).saturating_sub(kept.len())
+}
+
+/// The eight QED properties exactly as `rdkit.Chem.QED.properties` defines
+/// them, computed on the RDKit-perceived aromatic view of `mol`.
+fn qed_properties(mol: &Molecule) -> [f64; 8] {
+    let perceived = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).ok();
+    let view = perceived.as_ref().unwrap_or(mol);
+    [
+        rdkit_molecular_weight(mol),
+        logp_crippen(mol),
+        qed_acceptor_count(view) as f64,
+        hbd_count(mol) as f64,
+        rdkit_tpsa(mol),
+        rotatable_bond_count(mol) as f64,
+        qed_aromatic_ring_count(view) as f64,
+        structural_alert_count(view) as f64,
+    ]
 }
 
 fn qed_compute(props: [f64; 8]) -> f64 {
@@ -287,23 +389,14 @@ fn qed_compute(props: [f64; 8]) -> f64 {
 /// assert!(score > 0.4 && score < 0.7, "aspirin QED={score:.3}");
 /// ```
 pub fn qed(mol: &Molecule) -> f64 {
-    qed_with_bundle(mol, &ring_bundle(mol))
+    qed_compute(qed_properties(mol))
 }
 
-/// QED with pre-computed ring values from [`ring_bundle`] — avoids redundant `find_sssr` calls.
-pub fn qed_with_bundle(mol: &Molecule, rb: &RingBundle) -> f64 {
-    // Compute SSSR once; share it across the 113 structural-alert patterns.
-    let rings = find_sssr(mol);
-    qed_compute([
-        molecular_weight(mol),
-        logp_crippen(mol),
-        rb.hba_count as f64,
-        hbd_count(mol) as f64,
-        tpsa(mol),
-        rb.rotatable_bond_count as f64,
-        rb.aromatic_ring_count as f64,
-        structural_alert_count_with_rings(mol, &rings) as f64,
-    ])
+/// Same value as [`qed`]. The ring bundle is no longer needed: every QED
+/// property now follows `rdkit.Chem.QED.properties` directly. Kept for API
+/// compatibility with callers that already hold a [`RingBundle`].
+pub fn qed_with_bundle(mol: &Molecule, _rb: &RingBundle) -> f64 {
+    qed(mol)
 }
 
 #[cfg(test)]
@@ -391,18 +484,18 @@ mod tests {
         // Aspirin has structural alerts: phenyl ester (c1ccccc1OC(=O)[#6])
         // and generic ester ([#6,#8,#16][#6](=O)O[#6]) — consistent with RDKit.
         let m = mol("CC(=O)Oc1ccccc1C(=O)O");
-        let rings = find_sssr(&m);
-        let n = structural_alert_count_with_rings(&m, &rings);
-        assert!(n >= 1, "aspirin should have >= 1 structural alert, got {n}");
+        // RDKit 2026.03.6: QED.properties(aspirin) -> ALERTS=2, AROM=1, HBA=4.
+        assert_eq!(structural_alert_count(&m), 2);
+        assert_eq!(qed_aromatic_ring_count(&m), 1);
+        assert_eq!(qed_acceptor_count(&m), 4);
     }
 
     #[test]
     fn test_structural_alert_nitro_compound() {
         // Nitrobenzene: [N+](=O)[O-] matches pattern 30
         let m = mol("c1ccc([N+](=O)[O-])cc1");
-        let rings = find_sssr(&m);
-        let n = structural_alert_count_with_rings(&m, &rings);
-        assert!(n >= 1, "nitrobenzene should have >= 1 alert, got {n}");
+        // RDKit 2026.03.6: QED.properties(nitrobenzene).ALERTS == 2.
+        assert_eq!(structural_alert_count(&m), 2);
     }
 
     #[test]

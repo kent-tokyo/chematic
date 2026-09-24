@@ -799,6 +799,12 @@ impl Molecule {
 
     /// Set the isotope label of atom `idx` in-place. `None` = natural
     /// isotope abundance (no label).
+    /// Set (or clear) the explicit hydrogen count of atom `idx`.
+    pub fn set_hydrogen_count(&mut self, idx: AtomIdx, hydrogens: Option<u8>) {
+        self.invalidate_derived();
+        self.atoms[idx.0 as usize].hydrogen_count = hydrogens;
+    }
+
     pub fn set_isotope(&mut self, idx: AtomIdx, isotope: Option<u16>) {
         self.invalidate_derived();
         self.atoms[idx.0 as usize].isotope = isotope;

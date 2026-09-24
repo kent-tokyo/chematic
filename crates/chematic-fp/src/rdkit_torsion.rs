@@ -93,6 +93,9 @@ pub(crate) fn num_pi_electrons(mol: &Molecule, idx: AtomIdx) -> u32 {
     if atom.aromatic {
         return 1;
     }
+    if rdkit_perceives_sp3(mol, idx) {
+        return 0;
+    }
     let mut total: i32 = 0;
     for (_, bidx) in mol.neighbors(idx) {
         let contribution = match mol.bond(bidx).order {
@@ -112,6 +115,89 @@ pub(crate) fn num_pi_electrons(mol: &Molecule, idx: AtomIdx) -> u32 {
         total += contribution - 1;
     }
     total.max(0) as u32
+}
+
+/// Outer-shell electron count (`PeriodicTable::getNouterElecs`) for the
+/// main-group elements; `None` elsewhere (transition metals etc. keep the
+/// historical behaviour).
+fn main_group_outer_electrons(z: u8) -> Option<i32> {
+    Some(match z {
+        1 => 1,
+        2 => 2,
+        3..=10 => i32::from(z) - 2,
+        11..=18 => i32::from(z) - 10,
+        19 | 37 | 55 => 1,
+        20 | 38 | 56 => 2,
+        31..=36 => i32::from(z) - 28,
+        49..=54 => i32::from(z) - 46,
+        81..=86 => i32::from(z) - 78,
+        _ => return None,
+    })
+}
+
+/// Whether RDKit's `setHybridization` (ConjugHybrid.cpp) assigns `SP3` to a
+/// non-aromatic atom, for the cases this module can decide exactly.
+///
+/// RDKit computes `norbs = totalDegree + lonePairs`, with
+/// `lonePairs = (nOuter - (totalValence + charge)) / 2` at or above an octet,
+/// and assigns `SP3` for `norbs == 4` unless the atom has at most three
+/// neighbours (including H) *and* a conjugated bond. For a non-aromatic P/S/Se
+/// style atom (`nOuter` 5 or 6, beyond the first row, degree >= 2)
+/// `isAtomConjugCand` is false and its multiple bonds lead to terminal atoms,
+/// so none of its bonds can be marked conjugated. Anything this function
+/// cannot decide exactly (dative bonds, below-octet radical bookkeeping,
+/// unknown outer shells, possibly conjugated first-row atoms) returns
+/// `false`, i.e. the historical bond-order sum is used.
+///
+/// This closes the documented hypervalent-S/P residual: sulfonyl/sulfinyl,
+/// phosphoryl and seleninyl centres are `SP3` in RDKit and therefore carry
+/// zero pi electrons in the atom-pair/torsion atom code.
+fn rdkit_perceives_sp3(mol: &Molecule, idx: AtomIdx) -> bool {
+    let atom = mol.atom(idx);
+    let z = atom.element.atomic_number();
+    let Some(n_outer) = main_group_outer_electrons(z) else {
+        return false;
+    };
+    let mut bond_valence = 0i32;
+    let mut has_multiple = false;
+    for (_, bidx) in mol.neighbors(idx) {
+        bond_valence += match mol.bond(bidx).order {
+            BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
+            BondOrder::Double => {
+                has_multiple = true;
+                2
+            }
+            BondOrder::Triple => {
+                has_multiple = true;
+                3
+            }
+            BondOrder::Quadruple => {
+                has_multiple = true;
+                4
+            }
+            // Aromatic bonds on a non-aromatic atom, dative/zero-order and
+            // query bonds: not decided here.
+            _ => return false,
+        };
+    }
+    if !has_multiple {
+        return false; // num_pi_electrons is 0 either way
+    }
+    let hydrogens = i32::from(chematic_core::implicit_hcount(mol, idx));
+    let total_valence = bond_valence + hydrogens;
+    let charge = i32::from(atom.charge);
+    if total_valence + n_outer - charge < 8 {
+        return false; // below an octet: radical bookkeeping not modelled
+    }
+    let total_degree = mol.degree(idx) as i32 + hydrogens;
+    let lone_pairs = (n_outer - (total_valence + charge)) / 2; // C++ truncation
+    if total_degree + lone_pairs != 4 {
+        return false;
+    }
+    if total_degree > 3 {
+        return true;
+    }
+    z > 10 && (n_outer == 5 || n_outer == 6) && mol.degree(idx) >= 2
 }
 
 /// `AtomPairs::getAtomCode`: packs `[type:4][pi:2][branch:3]` (LSB-first) into
@@ -303,6 +389,15 @@ fn torsion_hash(atom_invariants: &[u32], path: &[AtomIdx; 4]) -> u32 {
 /// on a 200-molecule general corpus sample, with essentially all remaining
 /// misses confined to this one narrow structural class.
 pub fn rdkit_torsion_fp(mol: &Molecule) -> BitVec2048 {
+    // RDKit fingerprints sanitized molecules, i.e. after aromaticity
+    // perception; Kekule input must not see a different graph than the
+    // equivalent aromatic spelling. The perceived view is memoized on `mol`.
+    let perceived = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).ok();
+    rdkit_torsion_fp_prepared(perceived.as_ref().unwrap_or(mol))
+}
+
+/// [`rdkit_torsion_fp`] on a molecule whose aromaticity is already RDKit-perceived.
+fn rdkit_torsion_fp_prepared(mol: &Molecule) -> BitVec2048 {
     let n = mol.atom_count();
     // `AtomPairAtomInvGenerator::getAtomInvariants()`'s
     // `topologicalTorsionCorrection`: every atom invariant used for torsion

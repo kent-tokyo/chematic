@@ -102,6 +102,15 @@ fn all_pairs_dist(mol: &Molecule) -> Vec<Vec<Option<u32>>> {
 /// this module's own doc comment for the corpus measurement confirming it's
 /// the *only* remaining gap here.
 pub fn rdkit_atom_pair_fp(mol: &Molecule) -> BitVec2048 {
+    // RDKit fingerprints sanitized molecules, i.e. after aromaticity
+    // perception; Kekule input must not see a different graph than the
+    // equivalent aromatic spelling. The perceived view is memoized on `mol`.
+    let perceived = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).ok();
+    rdkit_atom_pair_fp_prepared(perceived.as_ref().unwrap_or(mol))
+}
+
+/// [`rdkit_atom_pair_fp`] on a molecule whose aromaticity is already RDKit-perceived.
+fn rdkit_atom_pair_fp_prepared(mol: &Molecule) -> BitVec2048 {
     let n = mol.atom_count();
     let code_limit = (1u32 << CODE_SIZE) - 1;
     let codes: Vec<u32> = (0..n)

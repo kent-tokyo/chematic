@@ -871,8 +871,16 @@ fn eval_bond_query(
             eval_bond_query(x, order, a, b, ctx) || eval_bond_query(y, order, a, b, ctx)
         }
         BondQuery::Not(x) => !eval_bond_query(x, order, a, b, ctx),
-        // Implicit "any bond" — matches any bond order.
-        BondQuery::Any => true,
+        // Unspecified bond (`CC` in SMARTS): Daylight/RDKit semantics are
+        // "single or aromatic", not "any" — `C#C` or `N=N` must not match `CC`/`NN`.
+        BondQuery::Any => matches!(
+            order,
+            BondOrder::Single
+                | BondOrder::Up
+                | BondOrder::Down
+                | BondOrder::Aromatic
+                | BondOrder::QuerySingleOrAromatic
+        ),
     }
 }
 

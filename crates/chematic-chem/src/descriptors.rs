@@ -1097,22 +1097,17 @@ fn tpsa_sulfur(environment: TpsaEnvironment) -> f64 {
     }
 }
 
-/// Select perceived aromatic bonds for a Kekulé nitrogen unless perception
-/// promoted an imide nitrogen between two carbonyls. RDKit sanitization makes
-/// pyridine/pyridone-like nitrogens aromatic, while phthalimide retains the
-/// non-aromatic amide atom type.
+/// Use the perceived (RDKit-parity) environment for a nitrogen that the input
+/// spelled as non-aromatic but perception made aromatic. Imide nitrogens such
+/// as phthalimide's are not aromatic under RDKit-parity perception, so they
+/// keep the amide atom type without a special case.
 fn use_perceived_nitrogen_environment(mol: &Molecule, mol_arom: &Molecule, idx: AtomIdx) -> bool {
-    if mol.atom(idx).aromatic || !mol_arom.atom(idx).aromatic {
-        return false;
-    }
-    let carbonyl_neighbors = mol
-        .neighbors(idx)
-        .filter(|(neighbor, _)| {
-            mol.atom(*neighbor).element.atomic_number() == 6
-                && has_double_bond_to(mol, *neighbor, 8)
-        })
-        .count();
-    carbonyl_neighbors == 1 || (carbonyl_neighbors == 0 && mol.degree(idx) == 2)
+    // RDKit types every nitrogen on the sanitized (aromaticity-perceived)
+    // molecule. The earlier carbonyl/degree-2 restriction left Kekule inputs
+    // such as N-alkyl carbazoles and pyridinium typed as aliphatic N; the
+    // perceived environment matches RDKit on both aromatic and Kekule
+    // spellings (ChEMBL 5k unchanged at 5000/5000, NCI 5k 4697 -> 4990).
+    !mol.atom(idx).aromatic && mol_arom.atom(idx).aromatic
 }
 
 /// Aromaticity representation used by RDKit-compatible descriptor typing.
@@ -1177,6 +1172,17 @@ fn tpsa_contributions(mol: &Molecule) -> Vec<f64> {
 /// containing these elements.
 pub fn tpsa(mol: &Molecule) -> f64 {
     tpsa_contributions(mol).into_iter().sum()
+}
+
+/// RDKit-default TPSA: `rdMolDescriptors.CalcTPSA(mol)` / `Descriptors.TPSA(mol)`
+/// with `includeSandP=False`, i.e. the N and O contributions of [`tpsa`] only.
+pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
+    tpsa_contributions(mol)
+        .into_iter()
+        .zip(mol.atoms())
+        .filter(|(_, (_, atom))| matches!(atom.element.atomic_number(), 7 | 8))
+        .map(|(contribution, _)| contribution)
+        .sum()
 }
 
 // ---------------------------------------------------------------------------
@@ -1405,10 +1411,12 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
                 0.0
             } else {
                 h_logp_for_parent(
-                    mol,
+                    &mol_arom,
                     idx,
                     atom.element.atomic_number(),
-                    atom.aromatic,
+                    // Hydrogen typing sees the RDKit-perceived environment, like
+                    // the heavy-atom SMARTS typing (Kekule phenol OH is H2, not H4).
+                    mol_arom.atom(idx).aromatic,
                     h_fallback,
                 ) * h_count as f64
             };
@@ -1646,10 +1654,12 @@ pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
                 0.0
             } else {
                 h_mr_for_parent(
-                    mol,
+                    &mol_arom,
                     idx,
                     atom.element.atomic_number(),
-                    atom.aromatic,
+                    // Hydrogen typing sees the RDKit-perceived environment, like
+                    // the heavy-atom SMARTS typing (Kekule phenol OH is H2, not H4).
+                    mol_arom.atom(idx).aromatic,
                     h_fallback,
                 ) * h_count as f64
             };
@@ -1711,17 +1721,21 @@ pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
 
         if h_count > 0 {
             logp_sum += h_logp_for_parent(
-                mol,
+                &mol_arom,
                 idx,
                 atom.element.atomic_number(),
-                atom.aromatic,
+                // Hydrogen typing sees the RDKit-perceived environment, like
+                // the heavy-atom SMARTS typing (Kekule phenol OH is H2, not H4).
+                mol_arom.atom(idx).aromatic,
                 h_logp_fallback,
             ) * h_count as f64;
             mr_sum += h_mr_for_parent(
-                mol,
+                &mol_arom,
                 idx,
                 atom.element.atomic_number(),
-                atom.aromatic,
+                // Hydrogen typing sees the RDKit-perceived environment, like
+                // the heavy-atom SMARTS typing (Kekule phenol OH is H2, not H4).
+                mol_arom.atom(idx).aromatic,
                 h_mr_fallback,
             ) * h_count as f64;
         }
@@ -5640,12 +5654,13 @@ mod tests {
     }
 
     #[test]
-    fn test_mcf_ibuprofen_fails_brenk_acetal_ketal() {
-        // Ibuprofen's carboxylic acid group matches the broad Brenk "acetal_ketal"
-        // SMARTS [#8][#6]([#8])-[#6], which also captures C(=O)OH.
-        // This is a known over-match in the Brenk filter set, but MCF correctly
-        // reflects the current Brenk implementation.
-        assert!(!mcf_passes(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")));
+    fn test_mcf_ibuprofen_passes_without_acetal_overmatch() {
+        // Brenk "acetal_ketal" is `[#8][#6]([#8])-[#6]`: the unspecified bonds
+        // are single-or-aromatic (Daylight/RDKit), so the C=O of a carboxylic
+        // acid does not match. RDKit 2026.03.6's BRENK FilterCatalog reports
+        // no match for ibuprofen; it previously over-matched here.
+        assert!(crate::brenk_passes(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")));
+        assert!(mcf_passes(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")));
     }
 
     #[test]
