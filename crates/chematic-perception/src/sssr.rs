@@ -26,6 +26,8 @@ use std::collections::VecDeque;
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 
+type CycleCandidate = (Vec<BondIdx>, Vec<AtomIdx>);
+
 /// Returns `true` if the bond order is eligible for ring perception.
 ///
 /// Zero-order and Dative bonds are coordinate/non-valence connections that must
@@ -221,7 +223,7 @@ fn find_sssr_uncached(mol: &Molecule) -> RingSet {
     // same sequence, while the canonical keys of lengths beyond the point
     // where `r` independent cycles are found are never computed.
     let ranks = canonical_atom_ranks(mol);
-    let mut buckets: std::collections::BTreeMap<usize, Vec<(Vec<BondIdx>, Vec<AtomIdx>)>> =
+    let mut buckets: std::collections::BTreeMap<usize, Vec<CycleCandidate>> =
         std::collections::BTreeMap::new();
     for candidate in candidates {
         buckets
