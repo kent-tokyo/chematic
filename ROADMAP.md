@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Updated 2026-09-23. Published release: **v1.0.21**. Development target:
-> **v1.0.22**. Published-package results and current-source candidates are
+> Updated 2026-09-24. Published release: **v1.0.23**. Development target:
+> **v1.0.24**. Published-package results and current-source candidates are
 > reported separately.
 
 CheMatic's priority is a safe, typed, local-first chemistry kernel for Rust,
@@ -35,6 +35,11 @@ Babel, CDK, or other Rust chemistry libraries.
   correspondence-correct differences and SMARTS has 3,364 affected rows
   (14,306/310,000 cells). They are tracked by #634 and #635. The one Morgan
   difference is a typed unsupported Fe(II) coordination case.
+- **v1.0.23 improves several RDKit-defined output lanes without collapsing
+  their boundaries.** The dated source record documents atom-pair, torsion,
+  MACCS, QED, TPSA, and Murcko improvements on three versioned 5,000-row
+  lanes. It remains shared-VM source evidence, rather than a package or
+  universal-parity claim.
 
 Detailed evidence lives in [validation](docs/validation.md), the
 [benchmark index](benchmarks/README.md), and the compact
@@ -56,7 +61,7 @@ history and `docs/archive/`.
    adding new 3D breadth.
 5. **Prepare the next RDKit rebaseline.** Keep 2026.03.6 historical and run a
    new packet only against an official, version-pinned artifact.
-6. **Complete release evidence for v1.0.22.** Cross-binding checks,
+6. **Complete release evidence for v1.0.23.** Cross-binding checks,
    documentation consistency, package builds, security gates, and public
    package reruns remain distinct acceptance steps.
 
@@ -119,9 +124,9 @@ Phase numbers describe product areas, not a promise to finish strictly in
 numeric order. Current priority is driven by correctness risk and evidence
 readiness.
 
-## Release gate for v1.0.22
+## Release gate for v1.0.24
 
-A v1.0.22 candidate may be proposed when:
+A v1.0.24 candidate may be proposed when:
 
 - #632's long-running regression is complete or is explicitly deferred and not
   claimed;

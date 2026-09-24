@@ -21,13 +21,15 @@ npm install @kent-tokyo/chematic
 
 Python needs no C/C++ compiler. Rust and WebAssembly builds use the same core.
 
-### v1.0.22 release boundary
+### v1.0.23 release boundary
 
-v1.0.22 optimizes cached perception, SSSR, SMARTS matching, MACCS, and selected
-Python paths without changing the checked source outputs. Its versioned
-RDKit 2026.03.6 operation matrix reports 21 exact-output, faster-median paths
-(18 faster in every repeat) out of 43 comparable operations. This is a shared
-2-vCPU source record, not a published-package, WASM, or cross-platform claim.
+v1.0.23 improves RDKit-defined output agreement for compatible atom-pair and
+torsion fingerprints, MACCS, QED, N/O-only TPSA, and Bemis–Murcko scaffolds.
+The versioned RDKit 2026.03.6 record covers three 5,000-row source lanes; for
+example, ChEMBL agreement rises to 5,000/5,000 for atom-pair and 4,995/5,000
+for MACCS. It is a shared-2-vCPU source record, not a published-package, WASM,
+or cross-platform claim. Unspecified SMARTS bonds now mean single-or-aromatic
+as in Daylight/RDKit; use `~` for any-bond matching.
 Compatibility remains operation- and corpus-scoped; see [validation](docs/validation.md),
 [compatibility scope](docs/compatibility-scope.md), and the
 [CHANGELOG](CHANGELOG.md).

@@ -1,6 +1,6 @@
 # Validation report
 
-Updated 2026-09-24. The current release is **v1.0.22**. Each result keeps its
+Updated 2026-09-24. The current release is **v1.0.23**. Each result keeps its
 recorded version, comparator, corpus, and operation; no result is silently
 upgraded to the current source revision.
 
@@ -8,7 +8,8 @@ upgraded to the current source revision.
 
 | Area | Evidence | Boundary |
 |---|---|---|
-| Release channels | `validation/results/release-channel-verification-v1.0.22.json` | GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages were independently observed after publication |
+| Release channels | `validation/results/release-channel-verification-v1.0.23.json` | Prepared release-channel record; GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages must each be observed after publication before it is release-ready |
+| RDKit output agreement | `benchmarks/2026-09-24-rdkit-agreement-accuracy-branch.md` | RDKit 2026.03.6; three source lanes of up to 5,000 rows. Operation-specific agreement and residuals only; shared 2-vCPU VM, not a package/WASM/cross-platform result. |
 | Source operation matrix | `benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md` | RDKit 2026.03.6, 5,000 molecules, 43 comparable operations; 21 exact-output faster medians and 18 all-repeat wins. Shared 2-vCPU source run only; not a package, WASM, or cross-platform claim. |
 | RDKit.js browser comparison | `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md` | Registry-installed v1.0.20 on the fixed exposed 10k corpus; both compatible-Morgan lanes pass and all 9,999 supported rows are bit-exact; not internet/CDN latency |
 | MMFF94 same-coordinate energy | `benchmarks/2026-09-23-mmff94-current-source-energy.md` | Current-source 265-row packet against pinned RDKit 2026.03.6: 262 comparable, p90 absolute delta 1.144679 kcal/mol, two residuals above 5 kcal/mol; not conformer quality, convergence, stereo, speed, or a published-package claim |

@@ -9,6 +9,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.23] - 2026-09-24
+
 - Raised RDKit 2026.03.6 output agreement for RDKit-defined operations
   (row-level, versioned record in `benchmarks/`): RDKit-compatible atom-pair
   and torsion fingerprints (hypervalent S/P/Se pi-electron gate and
