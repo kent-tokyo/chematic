@@ -1,7 +1,7 @@
 # chematic 1.x Trust Release 実行計画
 
-更新日: 2026-09-24。公開版は **v1.0.23**、次の開発候補は
-**v1.0.24** です。
+更新日: 2026-09-24。公開版は **v1.0.24**、次の開発候補は
+**v1.0.25** です。
 
 この文書は実行順と合格条件だけを定義します。機能別の優先順位は
 [`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)、未完了項目と依存関係は
@@ -35,6 +35,9 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
 - v1.0.23はRDKit-defined atom-pair/torsion、MACCS、QED、TPSA、Murckoの一致を
   改善しました。3本の5,000行source laneと43/44操作のmatrixは共有2 vCPU実行であり、
   公開packageまたはWASMの性能・完全互換性の証拠ではありません。
+- v1.0.24はその出力を保持したままperceptionとSMARTS存在判定のhot pathを短縮しました。
+  v1.0.23との差分は7コーパス・1,402,080出力行で0件です。計時は共有2 vCPUの
+  source実行だけであり、公開package、WASM、全環境の性能主張ではありません。
 - 残る主要差分はCIP #634、SMARTS #635、A6のenergy/term・timeout・
   conformer qualityです。
 

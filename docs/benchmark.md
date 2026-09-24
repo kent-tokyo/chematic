@@ -7,9 +7,9 @@ counted as wins. Dated raw records are indexed in
 
 ## Current status
 
-The current release line is **v1.0.23**. The newest completed public-package performance
+The current release line is **v1.0.24**. The newest completed public-package performance
 record remains the 2026-09-23 v1.0.20 browser/3D comparison against RDKit 2026.03.6.
-v1.0.23 adds a separately recorded shared-VM RDKit-output-agreement and operation
+v1.0.24 adds a separately recorded shared-VM output-identical speed
 matrix record, not a published-package remeasurement. Older
 similarity, streaming, and operation timing records remain pinned to their
 recorded source/release versions.
@@ -19,6 +19,9 @@ The 2026-09-24 Python matrix compares 43 output-comparable operations on a
 paths with a faster median and 18 that are faster in every repetition. Its raw
 values, hashes, non-equivalent classifications, and shared 2-vCPU x86 limit are
 in the [operation matrix record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md).
+
+The v1.0.24 source record compares 1,402,080 outputs against v1.0.23 with zero
+differences and reports paired timing; see the [speed-3 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-24-perf-speed3-output-identical.md).
 
 The v1.0.23 accuracy record separately compares RDKit-defined outputs on three
 versioned 5,000-row lanes. It records operation-specific agreement and residuals;

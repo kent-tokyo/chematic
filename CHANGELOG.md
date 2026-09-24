@@ -9,6 +9,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.24] - 2026-09-24
+
+- Improved perception and SMARTS-existence hot paths without changing the
+  checked outputs. The versioned v1.0.23 differential covers 1,402,080 rows
+  across seven corpora with zero differences; the source-only paired record
+  reports faster SSSR, ring/HBA/rotatable-bond counts, RDKit-parity aromatic
+  views, TPSA, MACCS, QED, and selected compatible fingerprints.
+
 - Faster ring perception with byte-identical output: SSSR candidate
   generation tests path simplicity with per-root bond masks, skips redundant
   roots of single-cycle ring systems and computes its canonical tie-break

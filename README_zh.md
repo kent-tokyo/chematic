@@ -23,13 +23,11 @@ npm install @kent-tokyo/chematic
 
 Python 版本无需 C/C++ 编译器。
 
-### v1.0.23 范围
+### v1.0.24 范围
 
-v1.0.23 提高了 RDKit 兼容 atom-pair/torsion fingerprint、MACCS、QED、仅 N/O 的 TPSA
-以及 Bemis–Murcko 骨架的定义一致性。版本化的 RDKit 2026.03.6 记录覆盖三个 5,000 行
-source lane；例如 ChEMBL 的 atom-pair 达到 5,000/5,000，MACCS 达到 4,995/5,000。
-这是共享 2 vCPU 的 source 记录，不是已发布 package、WASM 或跨平台性能声明。未写出的
-SMARTS 键现在与 Daylight/RDKit 一样表示单键或芳香键；任意键请使用 `~`。详见[验证报告](docs/validation.md)、
+v1.0.24 加速 perception 和 SMARTS 存在性检查，同时保持与 v1.0.23 完全相同的检查输出。
+版本化比较覆盖 7 个 corpus、1,402,080 个输出行，差异为 0。这是共享 2 vCPU 的 source
+记录，不是已发布 package、WASM 或跨平台性能声明。详见[验证报告](docs/validation.md)、
 [兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## Python
