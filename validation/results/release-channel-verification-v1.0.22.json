@@ -3,46 +3,52 @@
   "release": {
     "version": "1.0.22",
     "tag": "v1.0.22",
-    "commit": null
+    "commit": "77554210f1f49865bac521fc06e9fc1149cba67d"
   },
-  "checked_at": "2026-09-24T00:00:00Z",
-  "release_ready": false,
+  "checked_at": "2026-09-24T00:02:53Z",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.22",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.22",
-      "detail": "Pending tag-triggered GitHub Release publication; source preparation is not channel verification."
+      "detail": "Published 2026-09-23T23:44:31Z with asset chematic-release-metadata-1.0.22.json (SHA-256 a19d52cdbd5c910db1e12c78e236967ce8ef9fa4eaa07cf8be1fc2e9d4dd3add)."
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.22",
       "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic",
-      "detail": "Pending tag-triggered npm publication; source preparation is not registry verification."
+      "detail": "Registry returns @kent-tokyo/chematic@1.0.22 with integrity sha512-cl2k/HaLQQesLLWRoq3uw6N20sSyNQMdGfsJPxCDtsWUjP4lzfXyC9F1Pj84kIMnNfSQHVLnG/c4S1gnEkU0+Q==."
     },
     {
       "id": "pypi",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.22",
       "url": "https://pypi.org/pypi/chematic/1.0.22/json",
-      "detail": "Pending tag-triggered PyPI publication; source preparation is not registry verification."
+      "detail": "PyPI JSON returns version 1.0.22 with 18 distribution files; sdist SHA-256 3e35050f2ef8c601cfb4f80c9b7f7e39b324094551764467c127ab27b69e367a."
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.22",
       "url": "https://crates.io/crates/chematic/1.0.22",
-      "detail": "Pending tag-triggered crates.io publication; source preparation is not registry verification."
+      "detail": "crates.io returns chematic 1.0.22, yanked=false, checksum ef78484e764d51677e96a8cf56dc3b3eeb0ca20b3441d2e14f660ccad7814662."
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.22",
       "url": "https://docs.rs/chematic/1.0.22/chematic/",
-      "detail": "Pending crates.io indexing and docs.rs build; source preparation is not documentation verification."
+      "detail": "Versioned docs.rs URL returned HTTP 200."
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.22",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "Pending main-branch Pages deployment and visible release-marker verification."
+      "detail": "Pages deployment succeeded and the public page visibly reports Current release: v1.0.22."
     }
   ]
 }

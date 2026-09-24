@@ -59,10 +59,9 @@ complete merely because a local packet exists.
 
 ## Evidence boundaries
 
-- **Published release:** v1.0.22 channel verification is prepared in
-  `validation/results/release-channel-verification-v1.0.22.json`; v1.0.21 is
-  the latest fully verified historical channel record until each v1.0.22 channel
-  is observed.
+- **Published release:** v1.0.22 channel verification is complete in
+  `validation/results/release-channel-verification-v1.0.22.json`: GitHub
+  Release, npm, PyPI, crates.io, docs.rs, and Pages were observed independently.
 - **Source operation matrix:**
   `benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md` records
   strict output-comparable outcomes; it is not a published-package result.
