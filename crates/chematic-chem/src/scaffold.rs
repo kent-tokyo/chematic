@@ -38,7 +38,10 @@ pub struct ScaffoldNetwork {
 ///   `C=O`, `C=C` and the like), without its own substituents;
 /// - a kept bracket atom or aromatic heteroatom that loses a neighbour gains
 ///   one explicit hydrogen per removed bond, so e.g. an N-substituted pyrrole
-///   becomes `[nH]` rather than an invalid bare `n`.
+///   becomes `[nH]` rather than an invalid bare `n`;
+/// - such an atom's tetrahedral tag is cleared, as RDKit does; untouched
+///   stereocentres keep their configuration (atoms are removed in place, so
+///   the neighbour order that defines parity is preserved).
 ///
 /// Returns an empty `Molecule` if `mol` contains no rings.
 pub fn murcko_scaffold(mol: &Molecule) -> Molecule {
@@ -86,24 +89,40 @@ pub fn murcko_scaffold(mol: &Molecule) -> Molecule {
         }
     }
 
-    let atom_set: HashSet<AtomIdx> = (0..n)
-        .filter(|&i| keep[i])
-        .map(|i| AtomIdx(i as u32))
-        .collect();
-    let mut scaffold_atoms_h: HashMap<AtomIdx, u8> = HashMap::new();
-    for &idx in &atom_set {
+    // Edit a clone in place (`remove_atom` keeps stereo bookkeeping aligned)
+    // instead of rebuilding, which would reinterpret tetrahedral parity
+    // against a different neighbour order.
+    let mut result = mol.clone();
+    for i in 0..n {
+        if !keep[i] {
+            continue;
+        }
+        let idx = AtomIdx(i as u32);
         let atom = mol.atom(idx);
         let lost = mol
             .neighbors(idx)
-            .filter(|(nb, _)| !atom_set.contains(nb))
+            .filter(|(nb, _)| !keep[nb.0 as usize])
             .count() as u8;
+        if lost == 0 {
+            continue;
+        }
+        // RDKit's MurckoDecompose clears the tetrahedral tag of an atom that
+        // loses a substituent (the centre is re-perceived, not inherited).
+        if atom.chirality != chematic_core::Chirality::None {
+            result.set_chirality(idx, chematic_core::Chirality::None);
+        }
         let heteroaromatic = atom.aromatic && atom.element.atomic_number() != 6;
-        if lost > 0 && (atom.hydrogen_count.is_some() || heteroaromatic) {
+        if atom.hydrogen_count.is_some() || heteroaromatic {
             let h = chematic_core::implicit_hcount(mol, idx);
-            scaffold_atoms_h.insert(idx, h.saturating_add(lost));
+            result.set_hydrogen_count(idx, Some(h.saturating_add(lost)));
         }
     }
-    build_subgraph_with_h(mol, &atom_set, &scaffold_atoms_h)
+    for i in (0..n).rev() {
+        if !keep[i] {
+            result.remove_atom(AtomIdx(i as u32));
+        }
+    }
+    result
 }
 
 /// Generic Murcko scaffold: every atom becomes C and every bond becomes Single.
@@ -125,34 +144,6 @@ pub fn generic_murcko_scaffold(mol: &Molecule) -> Molecule {
         let bond = scaffold.bond(BondIdx(i as u32));
         if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
             let _ = builder.add_bond(new_a, new_b, BondOrder::Single);
-        }
-    }
-    builder.build()
-}
-
-/// [`build_subgraph`] with explicit hydrogen counts for selected atoms.
-fn build_subgraph_with_h(
-    mol: &Molecule,
-    atom_set: &HashSet<AtomIdx>,
-    hydrogens: &HashMap<AtomIdx, u8>,
-) -> Molecule {
-    let mut builder = MoleculeBuilder::new();
-    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
-    for i in 0..mol.atom_count() {
-        let old_idx = AtomIdx(i as u32);
-        if atom_set.contains(&old_idx) {
-            let mut atom = mol.atom(old_idx).clone();
-            if let Some(&h) = hydrogens.get(&old_idx) {
-                atom.hydrogen_count = Some(h);
-            }
-            let new_idx = builder.add_atom(atom);
-            remap.insert(old_idx, new_idx);
-        }
-    }
-    for i in 0..mol.bond_count() {
-        let bond = mol.bond(BondIdx(i as u32));
-        if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
-            let _ = builder.add_bond(new_a, new_b, bond.order);
         }
     }
     builder.build()
