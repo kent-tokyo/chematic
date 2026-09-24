@@ -53,7 +53,8 @@ pub use sssr::{
     find_smallest_rings_bfs_with_blocked_bonds, find_smallest_rings_bfs_with_rdkit_tree,
     find_smallest_rings_bfs_with_trimmed_bonds, find_sssr, find_sssr_shared, find_symmetrized_sssr,
     find_symmetrized_sssr_with_diagnostics, find_symmetrized_sssr_with_diagnostics_bounded,
-    ring_atom_flags, ring_bond_flags, select_rdkit_d2_roots, trim_ring_bonds,
+    ring_atom_flags, ring_bond_flags, ring_bond_flags_shared, select_rdkit_d2_roots,
+    sssr_ring_count, trim_ring_bonds,
 };
 pub use stereo_validation::{
     StereoCompleteness, StereoError, StereoErrorKind, stereo_centers, stereo_completeness,

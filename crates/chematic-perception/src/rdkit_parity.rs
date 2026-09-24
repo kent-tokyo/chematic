@@ -58,7 +58,6 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 
 use crate::aromaticity::AromaticityModel;
-use crate::sssr::find_sssr;
 
 // ---------------------------------------------------------------------------
 // Electron donor type (ported from RDKit's `ElectronDonorType`)
@@ -572,7 +571,7 @@ pub(crate) fn rdkit_parity_aromaticity_ex(
     mol: &Molecule,
     max_num_fused_rings: usize,
 ) -> (FxHashSet<AtomIdx>, FxHashSet<BondIdx>) {
-    let sssr = find_sssr(mol);
+    let sssr = crate::sssr::find_sssr_shared(mol);
     let srings = sssr.rings();
 
     let all_ring_bonds: FxHashSet<BondIdx> = srings
@@ -724,25 +723,20 @@ fn clear_aromatic_flags(mol: &Molecule) -> Molecule {
 /// model; discarding that representation would reject a valid RDKit input.
 /// This path is deliberately limited to the literal aromatic bond/endpoint
 /// annotation and never invents aromaticity for an aliphatic graph.
-fn preserve_explicit_aromaticity(mol: &Molecule) -> Option<Molecule> {
-    let aromatic_bonds: FxHashSet<BondIdx> = mol
-        .bonds()
-        .filter_map(|(idx, bond)| (bond.order == BondOrder::Aromatic).then_some(idx))
-        .collect();
-    if aromatic_bonds.is_empty() {
-        return None;
+/// The representation is preserved (cloned) exactly when this holds: the
+/// molecule has at least one aromatic bond and every aromatic bond's
+/// endpoints are flagged aromatic. Allocation-free.
+fn explicit_aromaticity_is_consistent(mol: &Molecule) -> bool {
+    let mut any = false;
+    for (_, bond) in mol.bonds() {
+        if bond.order == BondOrder::Aromatic {
+            any = true;
+            if !mol.atom(bond.atom1).aromatic || !mol.atom(bond.atom2).aromatic {
+                return false;
+            }
+        }
     }
-    let aromatic_atoms: FxHashSet<AtomIdx> = mol
-        .atoms()
-        .filter_map(|(idx, atom)| atom.aromatic.then_some(idx))
-        .collect();
-    if aromatic_bonds.iter().any(|&idx| {
-        let bond = mol.bond(idx);
-        !aromatic_atoms.contains(&bond.atom1) || !aromatic_atoms.contains(&bond.atom2)
-    }) {
-        return None;
-    }
-    Some(mol.clone())
+    any
 }
 
 fn model_from_explicit_aromaticity(mol: &Molecule) -> AromaticityModel {
@@ -766,15 +760,15 @@ fn model_from_explicit_aromaticity(mol: &Molecule) -> AromaticityModel {
 /// take the full RDKit-parity perception path; this is deliberately a
 /// conservative fast path, not a new aromaticity heuristic.
 fn complete_preperceived_aromaticity(mol: &Molecule) -> Option<Molecule> {
-    let explicit = preserve_explicit_aromaticity(mol);
+    let explicit = explicit_aromaticity_is_consistent(mol);
     let has_aromatic_bond = mol
         .bonds()
         .any(|(_, bond)| bond.order == BondOrder::Aromatic);
-    if has_aromatic_bond && explicit.is_none() {
+    if has_aromatic_bond && !explicit {
         return None;
     }
 
-    let ring_bonds = crate::sssr::ring_bond_flags(mol);
+    let ring_bonds = crate::sssr::ring_bond_flags_shared(mol);
     let mut ring_adjacency: Vec<Vec<(AtomIdx, BondIdx)>> = vec![Vec::new(); mol.atom_count()];
     for (bond_idx, bond) in mol.bonds() {
         if !ring_bonds[bond_idx.0 as usize] {
@@ -888,14 +882,130 @@ fn complete_preperceived_aromaticity(mol: &Molecule) -> Option<Molecule> {
         }
     }
 
-    if let Some(explicit) = explicit {
-        Some(explicit)
+    if explicit {
+        Some(mol.clone())
     } else if mol.atoms().any(|(_, atom)| atom.aromatic) {
         Some(clear_aromatic_flags(mol))
     } else {
         Some(mol.clone())
     }
 }
+
+/// Whether `rdkit_parity_aromaticity(kekulized)` could mark any atom or bond
+/// that the explicit representation `mol` does not already mark aromatic.
+///
+/// That verdict only marks atoms and bonds of SSSR rings made entirely of
+/// aromaticity candidates (donor/candidate rules evaluated on `kekulized`
+/// against the global ring-bond set, which equals the cyclic bonds). Every
+/// such ring is a cycle of the subgraph induced by candidate atoms over cyclic
+/// bonds, so each bond it marks is a non-bridge edge of that subgraph. If all
+/// of those edges are already explicit aromatic bonds between flagged atoms,
+/// the verdict is a subset of the explicit sets and cannot strictly extend
+/// them — decided without an SSSR. `kekulized` must be index-aligned with
+/// `mol` (same atoms and bonds).
+fn re_perception_can_extend(mol: &Molecule, kekulized: &Molecule) -> bool {
+    let n = mol.atom_count();
+    let cyclic = crate::sssr::ring_bond_flags_shared(mol);
+    let mut ring_atom = vec![false; n];
+    for (idx, bond) in mol.bonds() {
+        if cyclic[idx.0 as usize] {
+            ring_atom[bond.atom1.0 as usize] = true;
+            ring_atom[bond.atom2.0 as usize] = true;
+        }
+    }
+    let ring_bond_set: FxHashSet<BondIdx> = cyclic
+        .iter()
+        .enumerate()
+        .filter_map(|(i, &c)| c.then_some(BondIdx(i as u32)))
+        .collect();
+    let mut candidate = vec![false; n];
+    for i in 0..n {
+        if ring_atom[i] {
+            let idx = AtomIdx(i as u32);
+            let donor = get_atom_electron_donor_type(kekulized, idx, &ring_bond_set);
+            candidate[i] = is_atom_candidate_for_aromaticity(kekulized, idx, donor);
+        }
+    }
+    // Candidate-induced subgraph over cyclic bonds (CSR), then bridges.
+    let mut start = vec![0usize; n + 1];
+    let edges: Vec<(BondIdx, usize, usize)> = mol
+        .bonds()
+        .filter(|(idx, b)| {
+            cyclic[idx.0 as usize] && candidate[b.atom1.0 as usize] && candidate[b.atom2.0 as usize]
+        })
+        .map(|(idx, b)| (idx, b.atom1.0 as usize, b.atom2.0 as usize))
+        .collect();
+    if edges.is_empty() {
+        return false;
+    }
+    for &(_, u, v) in &edges {
+        start[u + 1] += 1;
+        start[v + 1] += 1;
+    }
+    for i in 0..n {
+        start[i + 1] += start[i];
+    }
+    let mut fill = start.clone();
+    let mut adj = vec![(0usize, 0usize); 2 * edges.len()];
+    for (e, &(_, u, v)) in edges.iter().enumerate() {
+        adj[fill[u]] = (v, e);
+        fill[u] += 1;
+        adj[fill[v]] = (u, e);
+        fill[v] += 1;
+    }
+    const UNSEEN: usize = usize::MAX;
+    let mut disc = vec![UNSEEN; n];
+    let mut low = vec![0usize; n];
+    let mut on_cycle = vec![false; edges.len()];
+    let mut time = 0usize;
+    let mut stack: Vec<(usize, usize, usize)> = Vec::new();
+    for root in 0..n {
+        if disc[root] != UNSEEN || start[root] == start[root + 1] {
+            continue;
+        }
+        disc[root] = time;
+        low[root] = time;
+        time += 1;
+        stack.push((root, usize::MAX, start[root]));
+        while let Some(&mut (a, parent_edge, ref mut next)) = stack.last_mut() {
+            if *next < start[a + 1] {
+                let (b, e) = adj[*next];
+                *next += 1;
+                if e == parent_edge {
+                    continue;
+                }
+                if disc[b] == UNSEEN {
+                    disc[b] = time;
+                    low[b] = time;
+                    time += 1;
+                    stack.push((b, e, start[b]));
+                } else {
+                    low[a] = low[a].min(disc[b]);
+                    on_cycle[e] = true; // back edge
+                }
+                continue;
+            }
+            stack.pop();
+            if let Some(&(parent, _, _)) = stack.last()
+                && parent_edge != usize::MAX
+            {
+                low[parent] = low[parent].min(low[a]);
+                if low[a] <= disc[parent] {
+                    on_cycle[parent_edge] = true;
+                }
+            }
+        }
+    }
+    edges.iter().zip(&on_cycle).any(|(&(idx, u, v), &cyc)| {
+        cyc && (mol.bond(idx).order != BondOrder::Aromatic
+            || !mol.atom(AtomIdx(u as u32)).aromatic
+            || !mol.atom(AtomIdx(v as u32)).aromatic)
+    })
+}
+
+/// The aromatic atom/bond sets `rdkit_parity_aromaticity` computes on a
+/// kekulized molecule.
+type AromaticVerdict = (FxHashSet<AtomIdx>, FxHashSet<BondIdx>);
 
 /// Normalize `mol` for RDKit-parity aromaticity. A mixed aromatic/Kekulé
 /// input can contain additional atoms that RDKit's sanitizer promotes into
@@ -905,38 +1015,57 @@ fn complete_preperceived_aromaticity(mol: &Molecule) -> Option<Molecule> {
 /// large fused cages where a valid alternate Kekulé assignment can change
 /// the aromatic partition. A non-representable graph without an explicit
 /// fallback returns an error; no partial rewrite is exposed.
-fn kekulize_for_rdkit_parity(mol: &Molecule) -> Result<Molecule, AromaticityError> {
-    let explicit_fallback = preserve_explicit_aromaticity(mol);
+///
+/// When the re-perception is accepted, its verdict on the returned Kekulé
+/// molecule is returned too, so callers need not compute it a second time.
+fn kekulize_for_rdkit_parity_with_verdict(
+    mol: &Molecule,
+) -> Result<(Molecule, Option<AromaticVerdict>), AromaticityError> {
+    let explicit_ok = explicit_aromaticity_is_consistent(mol);
     let cleared = clear_aromatic_flags(mol);
     match chematic_core::kekulize(&cleared) {
         Ok(k) => {
             let kekulized = chematic_core::apply_kekule(&cleared, &k);
-            let Some(explicit) = explicit_fallback else {
-                return Ok(kekulized);
-            };
+            if !explicit_ok {
+                return Ok((kekulized, None));
+            }
+            if !re_perception_can_extend(mol, &kekulized) {
+                // The verdict could only be a subset of the explicit sets, so
+                // the explicit representation is kept (see below).
+                return Ok((mol.clone(), None));
+            }
 
-            let explicit_atoms: FxHashSet<AtomIdx> = explicit
-                .atoms()
-                .filter_map(|(idx, atom)| atom.aromatic.then_some(idx))
-                .collect();
-            let explicit_bonds: FxHashSet<BondIdx> = explicit
-                .bonds()
-                .filter_map(|(idx, bond)| (bond.order == BondOrder::Aromatic).then_some(idx))
-                .collect();
             let (candidate_atoms, candidate_bonds) = rdkit_parity_aromaticity(&kekulized);
-            let preserves_explicit = candidate_atoms.is_superset(&explicit_atoms)
-                && candidate_bonds.is_superset(&explicit_bonds);
-            let strictly_extends = candidate_atoms.len() > explicit_atoms.len()
-                || candidate_bonds.len() > explicit_bonds.len();
+            let mut explicit_atoms = 0usize;
+            let mut preserves_explicit = true;
+            for (idx, atom) in mol.atoms() {
+                if atom.aromatic {
+                    explicit_atoms += 1;
+                    preserves_explicit &= candidate_atoms.contains(&idx);
+                }
+            }
+            let mut explicit_bonds = 0usize;
+            for (idx, bond) in mol.bonds() {
+                if bond.order == BondOrder::Aromatic {
+                    explicit_bonds += 1;
+                    preserves_explicit &= candidate_bonds.contains(&idx);
+                }
+            }
+            let strictly_extends =
+                candidate_atoms.len() > explicit_atoms || candidate_bonds.len() > explicit_bonds;
 
             if preserves_explicit && strictly_extends {
-                Ok(kekulized)
+                Ok((kekulized, Some((candidate_atoms, candidate_bonds))))
             } else {
-                Ok(explicit)
+                Ok((mol.clone(), None))
             }
         }
         Err(e) => {
-            explicit_fallback.ok_or(AromaticityError::KekulizationFailed { reason: e.detail })
+            if explicit_ok {
+                Ok((mol.clone(), None))
+            } else {
+                Err(AromaticityError::KekulizationFailed { reason: e.detail })
+            }
         }
     }
 }
@@ -966,7 +1095,13 @@ fn validate_aromaticity_invariants(
 }
 
 fn assign_from_kekulized(kekulized: &Molecule) -> Result<AromaticityModel, AromaticityError> {
-    let (atoms, bonds) = rdkit_parity_aromaticity(kekulized);
+    assign_from_verdict(kekulized, rdkit_parity_aromaticity(kekulized))
+}
+
+fn assign_from_verdict(
+    kekulized: &Molecule,
+    (atoms, bonds): AromaticVerdict,
+) -> Result<AromaticityModel, AromaticityError> {
     validate_aromaticity_invariants(kekulized, &atoms, &bonds)?;
     Ok(AromaticityModel::from_atom_bond_sets(atoms, bonds))
 }
@@ -999,14 +1134,17 @@ pub fn assign_aromaticity_rdkit_parity_experimental(
     if let Some(preperceived) = complete_preperceived_aromaticity(mol) {
         return Ok(model_from_explicit_aromaticity(&preperceived));
     }
-    let kekulized = kekulize_for_rdkit_parity(mol)?;
+    let (kekulized, verdict) = kekulize_for_rdkit_parity_with_verdict(mol)?;
     if kekulized
         .bonds()
         .any(|(_, bond)| bond.order == BondOrder::Aromatic)
     {
         return Ok(model_from_explicit_aromaticity(&kekulized));
     }
-    assign_from_kekulized(&kekulized)
+    match verdict {
+        Some(v) => assign_from_verdict(&kekulized, v),
+        None => assign_from_kekulized(&kekulized),
+    }
 }
 
 /// Apply aromaticity using the RDKit-parity reference engine, returning a
@@ -1031,14 +1169,17 @@ fn apply_aromaticity_rdkit_parity_uncached(mol: &Molecule) -> Result<Molecule, A
     if let Some(preperceived) = complete_preperceived_aromaticity(mol) {
         return Ok(preperceived);
     }
-    let kekulized = kekulize_for_rdkit_parity(mol)?;
+    let (kekulized, verdict) = kekulize_for_rdkit_parity_with_verdict(mol)?;
     if kekulized
         .bonds()
         .any(|(_, bond)| bond.order == BondOrder::Aromatic)
     {
         return Ok(kekulized);
     }
-    let model = assign_from_kekulized(&kekulized)?;
+    let model = match verdict {
+        Some(v) => assign_from_verdict(&kekulized, v)?,
+        None => assign_from_kekulized(&kekulized)?,
+    };
     Ok(crate::aromaticity::build_molecule_from_model(
         &kekulized, &model,
     ))
@@ -1051,6 +1192,44 @@ fn apply_aromaticity_rdkit_parity_uncached(mol: &Molecule) -> Result<Molecule, A
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn re_perception_shortcut_only_skips_non_extending_verdicts() {
+        for smi in [
+            "c1ccc2c(c1)CCC2",
+            "O=C1NCCc2ccccc21",
+            "c1ccc2c(c1)-c1ccccc1-2",
+            "O=c1[nH]c2ccccc2c2ccccc12",
+            "C1=Cc2ccccc2C1",
+            "O=C1C=CC(=O)c2ccccc21",
+            "c1ccc2c(c1)[nH]c1ccccc12",
+            "O=C1c2ccccc2C(=O)N1C",
+        ] {
+            let mol = chematic_smiles::parse(smi).unwrap();
+            if !explicit_aromaticity_is_consistent(&mol) {
+                continue;
+            }
+            let cleared = clear_aromatic_flags(&mol);
+            let Ok(k) = chematic_core::kekulize(&cleared) else {
+                continue;
+            };
+            let kekulized = chematic_core::apply_kekule(&cleared, &k);
+            if re_perception_can_extend(&mol, &kekulized) {
+                continue;
+            }
+            let (atoms, bonds) = rdkit_parity_aromaticity(&kekulized);
+            for a in &atoms {
+                assert!(mol.atom(*a).aromatic, "{smi}: new aromatic atom {a:?}");
+            }
+            for b in &bonds {
+                assert_eq!(
+                    mol.bond(*b).order,
+                    BondOrder::Aromatic,
+                    "{smi}: new aromatic bond {b:?}"
+                );
+            }
+        }
+    }
 
     fn mol_kekulized(smiles: &str) -> Molecule {
         let mol = chematic_smiles::parse(smiles).expect("valid SMILES");

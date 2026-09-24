@@ -132,13 +132,12 @@ impl SmartsCache {
     /// `uniquify: false`) instead of enumerating every match and checking
     /// emptiness — existence doesn't need the full match set or dedup pass.
     pub fn has_match(&mut self, smarts: &str, mol: &Molecule) -> Result<bool, SmartsError> {
-        let config = MatchConfig {
-            max_matches: Some(1),
-            uniquify: false,
-            ..MatchConfig::default()
-        };
-        let matches = self.find_matches_with_config(smarts, mol, &config)?;
-        Ok(!matches.is_empty())
+        let qmol = self.compile(smarts)?;
+        Ok(crate::match_vf2::has_match_with_config(
+            qmol,
+            mol,
+            &MatchConfig::default(),
+        ))
     }
 
     /// Number of patterns currently in the cache.

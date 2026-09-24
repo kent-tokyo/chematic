@@ -9,6 +9,25 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Faster ring perception with byte-identical output: SSSR candidate
+  generation tests path simplicity with per-root bond masks, skips redundant
+  roots of single-cycle ring systems and computes its canonical tie-break
+  ranks only when a same-length candidate group must be sorted. `ring_count`
+  now uses the cycle rank, and HBA / rotatable-bond counting read ring bonds
+  from the linear bridge pass instead of building the SSSR. Added
+  `sssr_ring_count` and `ring_bond_flags_shared` to `chematic-perception`.
+- The RDKit-parity aromatic view avoids redundant molecule copies and the
+  duplicate re-perception pass, and skips the Kekulé-form SSSR entirely when a
+  bridge test proves re-perception cannot extend the explicit aromatic input
+  (TPSA, RDKit-compatible fingerprints, MACCS and QED all start from it).
+- SMARTS: new `has_match_with_config` existence search that does not build
+  result maps (now used by `has_match_bounded`, `SmartsCache::has_match`,
+  MACCS, QED alerts, salt stripping and the Python substructure screens);
+  recursive `$(...)` queries reuse per-search plans and buffers; exact pruning
+  of acyclic targets for ring query atoms and an element-count screen when no
+  visit budget is set. Outputs are unchanged; see the differential record in
+  `benchmarks/`.
+
 ## [1.0.23] - 2026-09-24
 
 - Raised RDKit 2026.03.6 output agreement for RDKit-defined operations

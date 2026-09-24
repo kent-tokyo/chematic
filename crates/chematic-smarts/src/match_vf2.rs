@@ -64,9 +64,83 @@ struct EvalCtx<'a> {
     /// which needs no such cache -- it's a direct scan of `rings` per query, same as
     /// before this variant existed.
     min_ring_size_by_atom: std::cell::RefCell<Option<Vec<Option<u8>>>>,
+    /// Target atoms lying on a cycle of the full molecular graph, or `None`
+    /// when that cannot be derived exactly from the ring-eligible bond flags
+    /// (the molecule has zero-order/dative/query bonds, which a `~` query bond
+    /// may traverse). Lazily computed; used only for exact pruning.
+    cycle_atoms: std::cell::OnceCell<Option<Vec<bool>>>,
+    /// Ring-atom candidate checks done before `cycle_atoms` is computed.
+    prune_warmup: std::cell::Cell<u32>,
+    /// Search plans keyed by (query address, seeded), see [`PlanInfo`].
+    plans: std::cell::RefCell<FxHashMap<(usize, bool), std::rc::Rc<PlanInfo>>>,
+    /// Reusable `MapState` buffers.
+    scratch: std::cell::RefCell<Vec<(Vec<u32>, Vec<bool>)>>,
 }
 
 impl EvalCtx<'_> {
+    fn plan_info(&self, query: &QueryMolecule, seed: Option<usize>) -> std::rc::Rc<PlanInfo> {
+        debug_assert!(seed.is_none() || seed == Some(0));
+        let key = (query as *const QueryMolecule as usize, seed.is_some());
+        if let Some(info) = self.plans.borrow().get(&key) {
+            return info.clone();
+        }
+        let info = std::rc::Rc::new(PlanInfo::build(query, seed));
+        self.plans.borrow_mut().insert(key, info.clone());
+        info
+    }
+
+    /// `true` when query atom `q` (on a query cycle) cannot map onto target
+    /// atom `t` because `t` lies on no cycle of the molecule. Exact: never
+    /// rejects a candidate that could complete an embedding. Disabled under a
+    /// visit budget (skipping work would move the cut-off point).
+    #[inline]
+    fn prunes_acyclic_target(
+        &self,
+        query: &QueryMolecule,
+        st: &MapState,
+        q: usize,
+        t: AtomIdx,
+    ) -> bool {
+        if self.config.max_visit_budget.is_some() {
+            return false;
+        }
+        // The cycle flags cost a linear pass over the molecule. Searches that
+        // finish within a few hundred candidate checks (most existence
+        // queries on drug-sized molecules) are cheaper without the pruning,
+        // so it is only switched on once a search has done that much work.
+        // Pruning never changes results, only the work done.
+        if self.cycle_atoms.get().is_none() {
+            let seen = self.prune_warmup.get();
+            if seen < PRUNE_WARMUP_CHECKS {
+                self.prune_warmup.set(seen + 1);
+                return false;
+            }
+        }
+        let q_cyclic = st.info.q_cyclic.get_or_init(|| query_cyclic_atoms(query));
+        if q_cyclic.is_empty() || !q_cyclic[q] {
+            return false;
+        }
+        let flags = self.cycle_atoms.get_or_init(|| {
+            let all_eligible = self.mol.bonds().all(|(_, b)| {
+                matches!(
+                    b.order,
+                    BondOrder::Single
+                        | BondOrder::Double
+                        | BondOrder::Triple
+                        | BondOrder::Quadruple
+                        | BondOrder::Aromatic
+                        | BondOrder::Up
+                        | BondOrder::Down
+                )
+            });
+            all_eligible.then(|| chematic_perception::ring_atom_flags(self.mol))
+        });
+        match flags {
+            Some(f) => !f[t.0 as usize],
+            None => false,
+        }
+    }
+
     fn in_any_ring(&self, idx: AtomIdx) -> bool {
         match self.rings_given {
             Some(r) => r.contains_atom(idx),
@@ -268,6 +342,11 @@ fn find_matches_impl(
         return (vec![], false);
     }
 
+    // Exact element screen (no embedding can exist); skipped under a visit
+    // budget, whose exhaustion flag a real search could have set.
+    if config.max_visit_budget.is_none() && !element_counts_allow_match(query, mol) {
+        return (vec![], false);
+    }
     let (mut results, budget_exhausted) =
         run_match_recursive(query, mol, rings, config, config.max_matches);
 
@@ -282,6 +361,99 @@ fn find_matches_impl(
     }
 
     (results, budget_exhausted)
+}
+
+/// Atomic number every target atom matching `q` must have, when `q` pins one
+/// down (an element primitive at the top of an `And` chain, or both arms of an
+/// `Or` pinning the same element). `None` means "no single element implied".
+fn implied_atomic_number(q: &AtomQuery) -> Option<u8> {
+    match q {
+        AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => Some(*n),
+        AtomQuery::Primitive(AtomPrimitive::Symbol(sym)) => {
+            chematic_core::Element::from_symbol(sym)
+                .filter(|e| e.symbol() == sym.as_str())
+                .map(|e| e.atomic_number())
+        }
+        AtomQuery::And(a, b) => implied_atomic_number(a).or_else(|| implied_atomic_number(b)),
+        AtomQuery::Or(a, b) => match (implied_atomic_number(a), implied_atomic_number(b)) {
+            (Some(x), Some(y)) if x == y => Some(x),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// Necessary condition for any embedding: the target has at least as many
+/// atoms of each element as the query has atoms pinned to that element
+/// (embeddings are injective). `false` proves there is no match.
+fn element_counts_allow_match(query: &QueryMolecule, mol: &Molecule) -> bool {
+    let mut need = [0u16; 128];
+    let mut any = false;
+    for atom in &query.atoms {
+        if let Some(z) = implied_atomic_number(&atom.query)
+            && (z as usize) < need.len()
+        {
+            need[z as usize] += 1;
+            any = true;
+        }
+    }
+    if !any {
+        return true;
+    }
+    for (_, atom) in mol.atoms() {
+        let z = atom.element.atomic_number() as usize;
+        if z < need.len() && need[z] > 0 {
+            need[z] -= 1;
+        }
+    }
+    need.iter().all(|&n| n == 0)
+}
+
+/// Whether `query` has at least one embedding in `mol`.
+///
+/// Equivalent to `!find_matches_with_config(query, mol, &c).is_empty()` for
+/// `c` = `config` with `max_matches: Some(1)` (so `max_matches` and
+/// `uniquify` are ignored), but runs the existence-only search, which does
+/// not materialize mappings. With a `max_visit_budget`, a search cut off by
+/// the budget returns `false` exactly like the `find_matches` form.
+pub fn has_match_with_config(query: &QueryMolecule, mol: &Molecule, config: &MatchConfig) -> bool {
+    if query.atoms.is_empty() || query.atoms.len() > mol.atom_count() {
+        return false;
+    }
+    // The element screen skips work a budgeted search would have counted, so
+    // it is only used when no visit budget is configured.
+    if config.max_visit_budget.is_none() && !element_counts_allow_match(query, mol) {
+        return false;
+    }
+    exists_match(query, mol, None, config).0
+}
+
+/// Existence-only counterpart of [`run_match_recursive`] with `max = Some(1)`:
+/// the same visiting order, pruning and visit-budget accounting, without the
+/// result mappings. Returns `(found, budget_exhausted)`.
+fn exists_match(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    rings: Option<&RingSet>,
+    config: &MatchConfig,
+) -> (bool, bool) {
+    let ctx = EvalCtx {
+        mol,
+        rings_given: rings,
+        rings_lazy: std::cell::OnceCell::new(),
+        ring_atoms_lazy: std::cell::OnceCell::new(),
+        config,
+        visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
+        budget_exhausted: std::cell::Cell::new(false),
+        min_ring_size_by_atom: std::cell::RefCell::new(None),
+        cycle_atoms: std::cell::OnceCell::new(),
+        prune_warmup: std::cell::Cell::new(0),
+        plans: std::cell::RefCell::new(FxHashMap::default()),
+        scratch: std::cell::RefCell::new(Vec::new()),
+    };
+    let mut st = MapState::new(query, mol.atom_count(), None, &ctx);
+    let found = has_match_recursive(query, &ctx, &mut st);
+    (found, ctx.budget_exhausted.get())
 }
 
 /// Outcome of an existence-only VF2 search bounded by
@@ -325,8 +497,8 @@ pub fn has_match_bounded(
     if query.atoms.len() > mol.atom_count() {
         return MatchOutcome::NotFound;
     }
-    let (results, budget_exhausted) = run_match_recursive(query, mol, Some(rings), config, Some(1));
-    if !results.is_empty() {
+    let (found, budget_exhausted) = exists_match(query, mol, Some(rings), config);
+    if found {
         MatchOutcome::Found
     } else if budget_exhausted {
         MatchOutcome::BudgetExhausted
@@ -362,6 +534,10 @@ pub fn first_anchored_match_per_atom(
         visit_budget: std::cell::Cell::new(u64::MAX),
         budget_exhausted: std::cell::Cell::new(false),
         min_ring_size_by_atom: std::cell::RefCell::new(None),
+        cycle_atoms: std::cell::OnceCell::new(),
+        prune_warmup: std::cell::Cell::new(0),
+        plans: std::cell::RefCell::new(FxHashMap::default()),
+        scratch: std::cell::RefCell::new(Vec::new()),
     };
     (0..mol.atom_count())
         .map(|a| {
@@ -392,11 +568,15 @@ fn run_match_recursive(
         visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
         budget_exhausted: std::cell::Cell::new(false),
         min_ring_size_by_atom: std::cell::RefCell::new(None),
+        cycle_atoms: std::cell::OnceCell::new(),
+        prune_warmup: std::cell::Cell::new(0),
+        plans: std::cell::RefCell::new(FxHashMap::default()),
+        scratch: std::cell::RefCell::new(Vec::new()),
     };
     let mut mapping: FxHashMap<usize, AtomIdx> = FxHashMap::default();
     let mut results: Vec<FxHashMap<usize, AtomIdx>> = Vec::new();
 
-    let mut st = MapState::new(query, mol.atom_count(), None);
+    let mut st = MapState::new(query, mol.atom_count(), None, &ctx);
     match_recursive(query, &ctx, &mut mapping, &mut st, &mut results, max);
 
     (results, ctx.budget_exhausted.get())
@@ -456,7 +636,7 @@ fn match_recursive(
     }
 
     // Pick the most constrained unmapped query atom.
-    let q_next = st.plan[st.count];
+    let q_next = st.info.plan[st.count];
 
     // Try each target atom as a candidate for q_next (ascending index order;
     // see `Candidates` for the adjacency restriction).
@@ -469,6 +649,15 @@ fn match_recursive(
 
         // 1. Injectivity: target atom must not already be mapped.
         if st.used[t as usize] {
+            continue;
+        }
+        // Exact cycle pruning. Restricted to queries of at most 7 atoms: the
+        // result maps are clones of `mapping`, whose layout must not depend
+        // on which dead branches were explored. With at most 7 keys the table
+        // never exceeds 8 buckets, so a removal always leaves an EMPTY slot
+        // (never a tombstone) on every hashbrown group width, and the layout
+        // is a function of the (fixed) key insertion sequence alone.
+        if query.atoms.len() <= 7 && ctx.prunes_acyclic_target(query, st, q_next, t_idx) {
             continue;
         }
 
@@ -511,6 +700,13 @@ struct MapState {
     q2t: Vec<u32>,
     used: Vec<bool>,
     count: usize,
+    info: std::rc::Rc<PlanInfo>,
+}
+
+/// Per-(query, seed) search plan; depends only on the query, so it is built
+/// once per [`EvalCtx`] and shared by every search of that query (recursive
+/// SMARTS sub-queries are searched once per anchor atom).
+struct PlanInfo {
     /// `plan[d]` is the query atom extended at depth `d`. `next_unmapped`
     /// depends only on *which* query atoms are mapped — never on their
     /// targets — so the visiting order is a fixed sequence per search and can
@@ -519,39 +715,130 @@ struct MapState {
     /// For `plan[d]`, the first already-mapped query neighbour in adjacency
     /// order (the adjacency anchor used by `Candidates`), if any.
     plan_anchor: Vec<Option<usize>>,
+    /// Query atoms lying on a cycle of the query graph (empty when the query
+    /// is acyclic). Such an atom can only map onto a target atom that lies on
+    /// a cycle, since an embedding maps query cycles onto target cycles.
+    q_cyclic: std::cell::OnceCell<Vec<bool>>,
 }
 
-const UNMAPPED: u32 = u32::MAX;
-
-impl MapState {
-    fn new(query: &QueryMolecule, target_len: usize, seed: Option<usize>) -> Self {
+impl PlanInfo {
+    fn build(query: &QueryMolecule, seed: Option<usize>) -> Self {
         let n = query.atoms.len();
-        let mut st = Self {
-            q2t: vec![UNMAPPED; n],
-            used: vec![false; target_len],
-            count: 0,
-            plan: Vec::with_capacity(n),
-            plan_anchor: Vec::with_capacity(n),
-        };
+        let mut plan = Vec::with_capacity(n);
+        let mut plan_anchor = Vec::with_capacity(n);
         // Simulate the dynamic selection on a scratch "mapped" mask.
         let mut mapped = vec![false; n];
         if let Some(q0) = seed {
             mapped[q0] = true;
-            st.plan.push(q0);
-            st.plan_anchor.push(None);
+            plan.push(q0);
+            plan_anchor.push(None);
         }
-        while st.plan.len() < n {
+        while plan.len() < n {
             let q = next_unmapped_by(&mapped, query);
-            st.plan_anchor.push(
+            plan_anchor.push(
                 query.adj[q]
                     .iter()
                     .find(|&&(_, q_nb)| mapped[q_nb])
                     .map(|&(_, q_nb)| q_nb),
             );
-            st.plan.push(q);
+            plan.push(q);
             mapped[q] = true;
         }
+        PlanInfo {
+            plan,
+            plan_anchor,
+            q_cyclic: std::cell::OnceCell::new(),
+        }
+    }
+}
+
+const UNMAPPED: u32 = u32::MAX;
+
+/// Ring-atom candidate checks a search performs before it computes the
+/// target's cycle flags for exact pruning (see `prunes_acyclic_target`).
+const PRUNE_WARMUP_CHECKS: u32 = 256;
+
+/// Flags for query atoms that lie on a cycle of the query graph (an endpoint
+/// of a non-bridge bond); empty for acyclic queries. Linear-time bridge
+/// search (Tarjan low-link, iterative).
+fn query_cyclic_atoms(query: &QueryMolecule) -> Vec<bool> {
+    let n = query.atoms.len();
+    const UNSEEN: usize = usize::MAX;
+    let mut disc = vec![UNSEEN; n];
+    let mut low = vec![0usize; n];
+    let mut cyclic = vec![false; n];
+    let mut any = false;
+    let mut time = 0usize;
+    // (atom, parent bond, next adjacency offset)
+    let mut stack: Vec<(usize, usize, usize)> = Vec::new();
+    for root in 0..n {
+        if disc[root] != UNSEEN {
+            continue;
+        }
+        disc[root] = time;
+        low[root] = time;
+        time += 1;
+        stack.push((root, usize::MAX, 0));
+        while let Some(&mut (a, parent_bond, ref mut next)) = stack.last_mut() {
+            if let Some(&(b_idx, b)) = query.adj[a].get(*next) {
+                *next += 1;
+                if b_idx == parent_bond {
+                    continue;
+                }
+                if disc[b] == UNSEEN {
+                    disc[b] = time;
+                    low[b] = time;
+                    time += 1;
+                    stack.push((b, b_idx, 0));
+                } else {
+                    low[a] = low[a].min(disc[b]);
+                    // A back edge closes a cycle through both endpoints.
+                    cyclic[a] = true;
+                    cyclic[b] = true;
+                    any = true;
+                }
+                continue;
+            }
+            stack.pop();
+            if let Some(&(parent, _, _)) = stack.last() {
+                low[parent] = low[parent].min(low[a]);
+                if low[a] <= disc[parent] {
+                    // Tree edge parent-a is not a bridge.
+                    cyclic[parent] = true;
+                    cyclic[a] = true;
+                    any = true;
+                }
+            }
+        }
+    }
+    if any { cyclic } else { Vec::new() }
+}
+
+impl MapState {
+    fn new(
+        query: &QueryMolecule,
+        target_len: usize,
+        seed: Option<usize>,
+        ctx: &EvalCtx<'_>,
+    ) -> Self {
+        let n = query.atoms.len();
+        let (q2t, used) = ctx.scratch.borrow_mut().pop().unwrap_or_default();
+        let mut st = Self {
+            q2t,
+            used,
+            count: 0,
+            info: ctx.plan_info(query, seed),
+        };
+        st.q2t.clear();
+        st.q2t.resize(n, UNMAPPED);
+        st.used.clear();
+        st.used.resize(target_len, false);
         st
+    }
+
+    /// Return the scratch buffers to `ctx` for reuse by later searches.
+    fn recycle(self, ctx: &EvalCtx<'_>) {
+        ctx.scratch.borrow_mut().push((self.q2t, self.used));
     }
     #[inline]
     fn get(&self, q: usize) -> Option<AtomIdx> {
@@ -583,9 +870,9 @@ impl Candidates {
         if ctx.config.max_visit_budget.is_some() {
             return all;
         }
-        debug_assert_eq!(st.plan[st.count], q);
+        debug_assert_eq!(st.info.plan[st.count], q);
         let _ = query;
-        let Some(anchor) = st.plan_anchor[st.count].and_then(|q_nb| st.get(q_nb)) else {
+        let Some(anchor) = st.info.plan_anchor[st.count].and_then(|q_nb| st.get(q_nb)) else {
             return all;
         };
         let mut buf = [0u32; 12];
@@ -804,9 +1091,15 @@ fn has_match_anchored(query: &QueryMolecule, anchor: AtomIdx, ctx: &EvalCtx<'_>)
     if query.atoms.len() == 1 {
         return true;
     }
-    let mut st = MapState::new(query, ctx.mol.atom_count(), Some(0));
+    let mut st = MapState::new(query, ctx.mol.atom_count(), Some(0), ctx);
+    if ctx.prunes_acyclic_target(query, &st, 0, anchor) {
+        st.recycle(ctx);
+        return false;
+    }
     st.set(0, anchor);
-    has_match_recursive(query, ctx, &mut st)
+    let found = has_match_recursive(query, ctx, &mut st);
+    st.recycle(ctx);
+    found
 }
 
 /// Depth-first search for a complete embedding, starting from a partial
@@ -827,12 +1120,15 @@ fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, st: &mut MapSta
     }
 
     // Pick the most constrained unmapped query atom.
-    let q_next = st.plan[st.count];
+    let q_next = st.info.plan[st.count];
 
     let candidates = Candidates::new(q_next, st, query, ctx);
     for t in candidates.iter() {
         let t_idx = AtomIdx(t);
         if st.used[t as usize] {
+            continue;
+        }
+        if ctx.prunes_acyclic_target(query, st, q_next, t_idx) {
             continue;
         }
         if !eval_atom_query(&query.atoms[q_next].query, t_idx, ctx) {
@@ -957,6 +1253,57 @@ mod tests {
     use super::*;
     use crate::{find_matches, find_matches_with_config, parse_smarts};
     use chematic_smiles::parse;
+
+    #[test]
+    fn existence_search_agrees_with_first_embedding_search() {
+        let patterns = [
+            "*1~*~*~*~*~*~*~1",
+            "*1~*~*~1",
+            "[#7]~*~*~*~[#8]",
+            "[$(*~[CH2]~[CH2]~*),$(*1~[CH2]~[CH2]1)]",
+            "c1ccc2ccccc2c1",
+            "[#16]",
+            "[Cl,Br]",
+            "C(=O)N.c1ccccc1",
+            "[R2]",
+            "*@*!@*@*",
+        ];
+        let targets = [
+            "CCO",
+            "c1ccccc1CCN",
+            "C1CCCCCC1",
+            "c1ccc2ccccc2c1O",
+            "CC(=O)Nc1ccccc1",
+            "C1CC1C1CCC1",
+            "C[Co]1(Cl)CCCCC1",
+            "OCCCCO",
+        ];
+        let first = MatchConfig {
+            max_matches: Some(1),
+            uniquify: false,
+            ..MatchConfig::default()
+        };
+        for p in patterns {
+            let q = parse_smarts(p).unwrap();
+            for t in targets {
+                let mol = parse(t).unwrap();
+                assert_eq!(
+                    has_match_with_config(&q, &mol, &first),
+                    !find_matches_with_config(&q, &mol, &first).is_empty(),
+                    "{p} in {t}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn query_cycle_flags() {
+        let q = parse_smarts("*1~*~*~1-C").unwrap();
+        assert_eq!(query_cyclic_atoms(&q), vec![true, true, true, false]);
+        assert!(query_cyclic_atoms(&parse_smarts("CCO").unwrap()).is_empty());
+        let spiro = parse_smarts("C1CC12CC2").unwrap();
+        assert!(query_cyclic_atoms(&spiro).iter().all(|&c| c));
+    }
 
     // -- Isotope matching -----------------------------------------------------
 

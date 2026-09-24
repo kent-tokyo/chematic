@@ -17,9 +17,7 @@
 use std::sync::OnceLock;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
-use chematic_smarts::{
-    MatchConfig, QueryMolecule, find_matches, find_matches_with_config, parse_smarts,
-};
+use chematic_smarts::{MatchConfig, QueryMolecule, find_matches, parse_smarts};
 
 use crate::descriptors::{
     RingBundle, hbd_count, logp_crippen, rdkit_molecular_weight, rdkit_tpsa, rotatable_bond_count,
@@ -290,7 +288,7 @@ fn structural_alert_count(view: &Molecule) -> usize {
     };
     alert_queries()
         .iter()
-        .filter(|q| !find_matches_with_config(q, view, &config).is_empty())
+        .filter(|q| chematic_smarts::has_match_with_config(q, view, &config))
         .count()
 }
 

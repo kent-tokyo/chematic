@@ -9,6 +9,7 @@ accuracy, or compatibility claims.
 
 | Need | Start with |
 |---|---|
+| Review the post-v1.0.23 output-identical speed branch | [`2026-09-24-perf-speed3-output-identical.md`](2026-09-24-perf-speed3-output-identical.md) |
 | Review the M4 source-candidate SSSR/cache/VF2 browser rerun | [`2026-09-24-rdkitjs-m4-sssr-cache.md`](2026-09-24-rdkitjs-m4-sssr-cache.md) |
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
 | Review current public-package fingerprint and 3D evidence | [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](2026-09-23-public-package-fingerprint-3d-v1.0.20.md) |
@@ -93,6 +94,14 @@ measurement was rerun.
 
 | Record | Scope |
 |---|---|
+| [`2026-09-24-perf-speed3-output-identical.md`](2026-09-24-perf-speed3-output-identical.md) | v1.0.23 `6f8645ef` vs perf branch `6bd3fae0`: byte-identical outputs (29 operations x 46,736 molecules, 0 differing rows), paired Rust cold timing, and the Python matrix vs RDKit 2026.03.6 re-run on both revisions; RDKit agreement unchanged. 2-vCPU VM, not a package claim |
+| [`2026-09-24-perf-digest-diff-v1.0.23-20b2cbc3.json`](2026-09-24-perf-digest-diff-v1.0.23-20b2cbc3.json) | Output-identity digest summary (all operations) for the record above |
+| [`2026-09-24-perf-digest-diff-v1.0.23-6bd3fae0-smarts.json`](2026-09-24-perf-digest-diff-v1.0.23-6bd3fae0-smarts.json) | Output-identity digest summary (SMARTS-affected operations) after the warm-up fix |
+| [`2026-09-24-perf-digest-time-pair-v1.0.23-6bd3fae0.json`](2026-09-24-perf-digest-time-pair-v1.0.23-6bd3fae0.json) | Paired Rust cold timings for the record above |
+| [`2026-09-24-python-op-matrix-vs-rdkit-v1.0.23-6f8645ef.json`](2026-09-24-python-op-matrix-vs-rdkit-v1.0.23-6f8645ef.json) | Python matrix, v1.0.23 wheel |
+| [`2026-09-24-python-op-matrix-vs-rdkit-branch-20b2cbc3.json`](2026-09-24-python-op-matrix-vs-rdkit-branch-20b2cbc3.json) | Python matrix, superseded branch wheel `20b2cbc3` (single-query `has_substructure` regression, fixed in `6bd3fae0`) |
+| [`2026-09-24-python-op-matrix-vs-rdkit-branch-6bd3fae0.json`](2026-09-24-python-op-matrix-vs-rdkit-branch-6bd3fae0.json) | Python matrix, branch wheel `6bd3fae0` |
+| [`2026-09-24-rdkit-agreement-branch-6bd3fae0.json`](2026-09-24-rdkit-agreement-branch-6bd3fae0.json) | RDKit agreement counts for `6bd3fae0` (identical to the accuracy-branch record) |
 | [`2026-09-24-rdkit-agreement-accuracy-branch.md`](2026-09-24-rdkit-agreement-accuracy-branch.md) | v1.0.22 `297fec4d` vs accuracy branch `ea967d47`: row-level RDKit 2026.03.6 agreement for 15 RDKit-defined operations on three 5k corpora (atom pair/torsion/MACCS/QED/Murcko/Kekulé descriptors), plus a branch timing re-run; 2-vCPU VM, not a package claim |
 | [`2026-09-24-rdkit-agreement-v1.0.22-297fec4d.json`](2026-09-24-rdkit-agreement-v1.0.22-297fec4d.json) | Raw agreement counts for v1.0.22 in the record above |
 | [`2026-09-24-rdkit-agreement-branch-ea967d47.json`](2026-09-24-rdkit-agreement-branch-ea967d47.json) | Raw agreement counts for the branch in the record above |

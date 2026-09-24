@@ -1,0 +1,1634 @@
+{
+ "schema": "chematic-python-op-matrix-vs-rdkit/v1",
+ "created_utc": "2026-09-24T11:52:11.228964Z",
+ "chematic": {
+  "version": "1.0.23",
+  "revision": "6bd3fae022902aaf4e042855f8143549de8e62d5",
+  "artifact": "chematic-1.0.23-cp311-cp311-manylinux_2_35_x86_64.whl",
+  "artifact_sha256": "f50fa8a3828af6983134265d48b8a31d1bdd8b0ad7b3527288739fee7b065510"
+ },
+ "rdkit": {
+  "version": "2026.03.6"
+ },
+ "environment": {
+  "python": "3.11.15",
+  "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cpu_count": 2,
+  "threads": "single-threaded calls in one process"
+ },
+ "corpus": {
+  "path": "scripts/chembl_accuracy_corpus_4999.smi",
+  "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+  "rows_read": 5000,
+  "common_valid_rows": 5000,
+  "chematic_parse_failures": 0,
+  "rdkit_parse_failures_after_chematic_success": 0
+ },
+ "protocol": {
+  "repeats": 3,
+  "aggregation": "median over repeats of total wall time / rows (perf_counter)",
+  "cold_inputs": "inputs rebuilt before every repeat (untimed): chematic re-parses SMILES, RDKit re-parses with MolFromSmiles",
+  "order": "per operation: all chematic repeats, then all RDKit repeats",
+  "exceptions": "counted per repeat as failures, never timed as wins",
+  "ratio": "rdkit_us / chematic_us (>1 means chematic faster)"
+ },
+ "operations": [
+  {
+   "op": "parse_smiles",
+   "equivalence": "same-task",
+   "note": "RDKit sanitizes (rings/aromaticity) at parse; chematic defers perception",
+   "rows": 5000,
+   "chematic_us_per_row": 3.6938463999831583,
+   "rdkit_us_per_row": 106.98356959983357,
+   "ratio": 28.962647066299603,
+   "chematic_repeats_us": [
+    3.885586600154056,
+    3.682702800142579,
+    3.6938463999831583
+   ],
+   "rdkit_repeats_us": [
+    110.37880439980654,
+    106.98356959983357,
+    106.78725040015706
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "canonical_smiles(prepared)",
+   "equivalence": "same-task",
+   "note": "different canonical spelling",
+   "rows": 5000,
+   "chematic_us_per_row": 46.409451399813406,
+   "rdkit_us_per_row": 73.26114839997899,
+   "ratio": 1.5785825126188315,
+   "chematic_repeats_us": [
+    46.825508599795285,
+    46.409451399813406,
+    45.580945600158884
+   ],
+   "rdkit_repeats_us": [
+    73.26114839997899,
+    96.84668600020814,
+    69.60049139997864
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "parse+canonical_smiles",
+   "equivalence": "same-task",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 50.708588199995575,
+   "rdkit_us_per_row": 174.803872800112,
+   "ratio": 3.4472242080706805,
+   "chematic_repeats_us": [
+    50.708588199995575,
+    72.4741066002025,
+    48.24899020022713
+   ],
+   "rdkit_repeats_us": [
+    178.65592800008017,
+    174.80256340022606,
+    174.803872800112
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "mol_block_write",
+   "equivalence": "not-equivalent",
+   "note": "RDKit computes 2D coordinates; chematic writes without layout",
+   "rows": 2000,
+   "chematic_us_per_row": 1.8011564998232643,
+   "rdkit_us_per_row": 490.21910049941647,
+   "ratio": 272.16907611721604,
+   "chematic_repeats_us": [
+    1.7792855005609454,
+    1.8011564998232643,
+    2.5992870005211444
+   ],
+   "rdkit_repeats_us": [
+    448.9195180003662,
+    490.21910049941647,
+    506.97831150046113
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "mol_block_read",
+   "equivalence": "same-task",
+   "note": "each library reads its own writer's block",
+   "rows": 2000,
+   "chematic_us_per_row": 37.01785449993622,
+   "rdkit_us_per_row": 144.07439949991385,
+   "ratio": 3.8920245769554818,
+   "chematic_repeats_us": [
+    37.01785449993622,
+    40.01689750020887,
+    33.03444849916559
+   ],
+   "rdkit_repeats_us": [
+    162.73476549940824,
+    138.81514900003822,
+    144.07439949991385
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "inchi",
+   "equivalence": "not-equivalent",
+   "note": "chematic default Mol.inchi is its own non-standard layering, not IUPAC Standard InChI (standard_inchi needs the native-inchi build); agreement is recorded, never counted",
+   "rows": 1000,
+   "chematic_us_per_row": 135.40008099880652,
+   "rdkit_us_per_row": 413.10620500007644,
+   "ratio": 3.051004120180089,
+   "chematic_repeats_us": [
+    145.48621500034642,
+    132.52078700134007,
+    135.40008099880652
+   ],
+   "rdkit_repeats_us": [
+    413.10620500007644,
+    433.82490200019674,
+    387.11787200008985
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 1000,
+    "agree": 0
+   },
+   "counted": false
+  },
+  {
+   "op": "inchikey",
+   "equivalence": "not-equivalent",
+   "note": "see inchi",
+   "rows": 1000,
+   "chematic_us_per_row": 141.66518099955283,
+   "rdkit_us_per_row": 324.42872499996156,
+   "ratio": 2.2901091341632185,
+   "chematic_repeats_us": [
+    142.56930699957593,
+    139.0448740003194,
+    141.66518099955283
+   ],
+   "rdkit_repeats_us": [
+    307.11322499882954,
+    368.6722429993097,
+    324.42872499996156
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 1000,
+    "agree": 0
+   },
+   "counted": false
+  },
+  {
+   "op": "mw",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 1.3478349999786587,
+   "rdkit_us_per_row": 2.2479818002466345,
+   "ratio": 1.6678464354184515,
+   "chematic_repeats_us": [
+    1.3361504003114533,
+    1.3854341999831377,
+    1.3478349999786587
+   ],
+   "rdkit_repeats_us": [
+    2.336698999715736,
+    2.2479818002466345,
+    2.247146599984262
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true
+  },
+  {
+   "op": "exact_mass",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 1.8510671998228645,
+   "rdkit_us_per_row": 2.082155999960378,
+   "ratio": 1.1248408486518626,
+   "chematic_repeats_us": [
+    1.8287052000232507,
+    1.8510671998228645,
+    1.854361599907861
+   ],
+   "rdkit_repeats_us": [
+    2.082155999960378,
+    2.024484600042342,
+    2.199387200016645
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true
+  },
+  {
+   "op": "logp",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 68.54382380006427,
+   "rdkit_us_per_row": 293.1315012003324,
+   "ratio": 4.276556003869419,
+   "chematic_repeats_us": [
+    67.30248380008561,
+    76.8551416000264,
+    68.54382380006427
+   ],
+   "rdkit_repeats_us": [
+    267.2455838001042,
+    293.1315012003324,
+    315.8502141999634
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true
+  },
+  {
+   "op": "mr",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 68.23209039976064,
+   "rdkit_us_per_row": 301.3314026000444,
+   "ratio": 4.416271007301595,
+   "chematic_repeats_us": [
+    68.37138640003104,
+    67.82840599989868,
+    68.23209039976064
+   ],
+   "rdkit_repeats_us": [
+    272.0178202001989,
+    303.4862649998104,
+    301.3314026000444
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true
+  },
+  {
+   "op": "tpsa",
+   "equivalence": "checked",
+   "note": "chematic default includes S/P (RDKit includeSandP=False default); agreement shows the gap",
+   "rows": 5000,
+   "chematic_us_per_row": 15.276638000068488,
+   "rdkit_us_per_row": 31.943310000133355,
+   "ratio": 2.090990831882653,
+   "chematic_repeats_us": [
+    14.871079599834047,
+    15.276638000068488,
+    15.8285089997662
+   ],
+   "rdkit_repeats_us": [
+    6.831401800081949,
+    31.943310000133355,
+    32.67245000024559
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 3659
+   },
+   "counted": true
+  },
+  {
+   "op": "rdkit_tpsa",
+   "equivalence": "checked",
+   "note": "N/O-only TPSA (RDKit default); present from the post-1.0.22 accuracy branch",
+   "rows": 5000,
+   "chematic_us_per_row": 15.627964200029966,
+   "rdkit_us_per_row": 31.929878200025996,
+   "ratio": 2.0431246060804753,
+   "chematic_repeats_us": [
+    15.627964200029966,
+    14.510457399956067,
+    18.80943180003669
+   ],
+   "rdkit_repeats_us": [
+    6.312633199922857,
+    31.929878200025996,
+    33.94976880008471
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true
+  },
+  {
+   "op": "hbd",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 1.0911064000538317,
+   "rdkit_us_per_row": 23.214633599855006,
+   "ratio": 21.27623263754082,
+   "chematic_repeats_us": [
+    1.0911064000538317,
+    1.1480695997306611,
+    0.9880484001769219
+   ],
+   "rdkit_repeats_us": [
+    7.108130200140295,
+    26.70152560021961,
+    23.214633599855006
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true
+  },
+  {
+   "op": "hba",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 3.1835887999477563,
+   "rdkit_us_per_row": 79.74222720004036,
+   "ratio": 25.04790417699326,
+   "chematic_repeats_us": [
+    3.1160821999947075,
+    3.1835887999477563,
+    7.086024399905
+   ],
+   "rdkit_repeats_us": [
+    35.61007919997792,
+    83.36231140019663,
+    79.74222720004036
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 3641
+   },
+   "counted": true
+  },
+  {
+   "op": "rotatable_bonds",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 3.515856400190387,
+   "rdkit_us_per_row": 98.98986980006157,
+   "ratio": 28.155265327304374,
+   "chematic_repeats_us": [
+    3.225396599736996,
+    3.515856400190387,
+    5.365043799974956
+   ],
+   "rdkit_repeats_us": [
+    86.25205839998671,
+    98.98986980006157,
+    105.34961319972354
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true
+  },
+  {
+   "op": "fsp3",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 1.2259372000698932,
+   "rdkit_us_per_row": 2.3133414000767516,
+   "ratio": 1.8869982899163704,
+   "chematic_repeats_us": [
+    1.238538599864114,
+    1.1639415999525227,
+    1.2259372000698932
+   ],
+   "rdkit_repeats_us": [
+    2.3133414000767516,
+    2.2071851999498904,
+    2.7050090000557248
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true
+  },
+  {
+   "op": "ring_count",
+   "equivalence": "checked",
+   "note": "RDKit ring info is computed inside MolFromSmiles (untimed here)",
+   "rows": 5000,
+   "chematic_us_per_row": 2.236502799860318,
+   "rdkit_us_per_row": 0.7591432000481291,
+   "ratio": 0.3394331543405811,
+   "chematic_repeats_us": [
+    2.236502799860318,
+    2.219332199820201,
+    4.176469800222549
+   ],
+   "rdkit_repeats_us": [
+    0.7711066002229927,
+    0.7591432000481291,
+    0.739457800227683
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4946
+   },
+   "counted": true
+  },
+  {
+   "op": "aromatic_ring_count",
+   "equivalence": "checked",
+   "note": "RDKit aromaticity is computed inside MolFromSmiles (untimed here)",
+   "rows": 5000,
+   "chematic_us_per_row": 17.86375699994096,
+   "rdkit_us_per_row": 4.593840999950771,
+   "ratio": 0.25715984604839587,
+   "chematic_repeats_us": [
+    17.84823640009563,
+    17.86375699994096,
+    22.151818400016055
+   ],
+   "rdkit_repeats_us": [
+    4.681602799973916,
+    4.387828800099669,
+    4.593840999950771
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4940
+   },
+   "counted": true
+  },
+  {
+   "op": "qed",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 421.3187972000014,
+   "rdkit_us_per_row": 1191.012182200211,
+   "ratio": 2.8268669475832424,
+   "chematic_repeats_us": [
+    421.3187972000014,
+    421.80451759995776,
+    415.22839780009235
+   ],
+   "rdkit_repeats_us": [
+    1156.557629800227,
+    1291.2266380000801,
+    1191.012182200211
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4962
+   },
+   "counted": true
+  },
+  {
+   "op": "kappa2",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 3.430135400049039,
+   "rdkit_us_per_row": 74.3681034000474,
+   "ratio": 21.68080694394285,
+   "chematic_repeats_us": [
+    3.430135400049039,
+    3.3894698000949575,
+    5.401069599975017
+   ],
+   "rdkit_repeats_us": [
+    52.80531799980963,
+    74.3681034000474,
+    81.2576235999586
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 7
+   },
+   "counted": true
+  },
+  {
+   "op": "chi1v",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 5.57882300017809,
+   "rdkit_us_per_row": 4.8605542000586865,
+   "ratio": 0.8712508355084083,
+   "chematic_repeats_us": [
+    4.985954600124387,
+    5.57882300017809,
+    6.7749371999525465
+   ],
+   "rdkit_repeats_us": [
+    4.234732799886842,
+    4.8605542000586865,
+    25.10598820008454
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 3380
+   },
+   "counted": true
+  },
+  {
+   "op": "bertz_ct",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 1.3063821999821812,
+   "rdkit_us_per_row": 345.5591175999871,
+   "ratio": 264.5160946043971,
+   "chematic_repeats_us": [
+    1.6772859999036882,
+    1.3063821999821812,
+    1.300194199939142
+   ],
+   "rdkit_repeats_us": [
+    341.56145920023846,
+    345.5591175999871,
+    346.6211091999867
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 0
+   },
+   "counted": true
+  },
+  {
+   "op": "formula",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 2.373361599893542,
+   "rdkit_us_per_row": 4.405250199852162,
+   "ratio": 1.8561226405827755,
+   "chematic_repeats_us": [
+    2.3984987998119323,
+    2.373361599893542,
+    2.2399797999241855
+   ],
+   "rdkit_repeats_us": [
+    4.339331399751245,
+    4.823759800274274,
+    4.405250199852162
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4992
+   },
+   "counted": true
+  },
+  {
+   "op": "num_stereocenters",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 38.4590315999958,
+   "rdkit_us_per_row": 255.15597720004735,
+   "ratio": 6.634487832503698,
+   "chematic_repeats_us": [
+    35.98436140018748,
+    39.87209280021489,
+    38.4590315999958
+   ],
+   "rdkit_repeats_us": [
+    193.3476073998463,
+    255.15597720004735,
+    256.9487848002609
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4932
+   },
+   "counted": true
+  },
+  {
+   "op": "lipinski_bundle(mw,logp,hbd,hba)",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 69.30741959986335,
+   "rdkit_us_per_row": 386.82959959987784,
+   "ratio": 5.58135913634044,
+   "chematic_repeats_us": [
+    69.30741959986335,
+    70.2185311998619,
+    68.94433519992162
+   ],
+   "rdkit_repeats_us": [
+    313.0638179998641,
+    395.5989555997803,
+    386.82959959987784
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 3641
+   },
+   "counted": true
+  },
+  {
+   "op": "parse+logp",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 71.49044280013186,
+   "rdkit_us_per_row": 399.29552280009375,
+   "ratio": 5.5852993373732085,
+   "chematic_repeats_us": [
+    71.79520559984667,
+    71.47694139966916,
+    71.49044280013186
+   ],
+   "rdkit_repeats_us": [
+    402.5121750000835,
+    398.98011420009425,
+    399.29552280009375
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true
+  },
+  {
+   "op": "parse+tpsa",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 17.90652140007296,
+   "rdkit_us_per_row": 124.40257460002614,
+   "ratio": 6.947333422309442,
+   "chematic_repeats_us": [
+    17.595993199938675,
+    18.177193399969838,
+    17.90652140007296
+   ],
+   "rdkit_repeats_us": [
+    114.5006407998153,
+    133.5604127998522,
+    124.40257460002614
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 3659
+   },
+   "counted": true
+  },
+  {
+   "op": "parse+ring_count",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 5.420505800066167,
+   "rdkit_us_per_row": 116.29597959981766,
+   "ratio": 21.45482061810506,
+   "chematic_repeats_us": [
+    5.413822199989227,
+    5.420505800066167,
+    5.620187399836141
+   ],
+   "rdkit_repeats_us": [
+    116.29597959981766,
+    127.49419300016598,
+    113.08479020008235
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4946
+   },
+   "counted": true
+  },
+  {
+   "op": "parse+aromatic_ring_count",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 19.389913199847797,
+   "rdkit_us_per_row": 120.16360880006687,
+   "ratio": 6.1972226260925245,
+   "chematic_repeats_us": [
+    19.38113100004557,
+    19.427623199953814,
+    19.389913199847797
+   ],
+   "rdkit_repeats_us": [
+    119.097394200071,
+    120.16360880006687,
+    120.62357400027395
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4940
+   },
+   "counted": true
+  },
+  {
+   "op": "morgan_r2_2048(native ecfp4)",
+   "equivalence": "not-equivalent",
+   "note": "chematic native hash differs from RDKit Morgan",
+   "rows": 5000,
+   "chematic_us_per_row": 18.161656400116044,
+   "rdkit_us_per_row": 56.86906079972687,
+   "ratio": 3.1312706036748663,
+   "chematic_repeats_us": [
+    18.161656400116044,
+    17.056986600073287,
+    18.628177599748597
+   ],
+   "rdkit_repeats_us": [
+    39.32513559993822,
+    56.86906079972687,
+    57.61150260004797
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "morgan_r2_2048(rdkit-compatible)",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 40.993014800187666,
+   "rdkit_us_per_row": 54.19405499997083,
+   "ratio": 1.322031454971756,
+   "chematic_repeats_us": [
+    40.993014800187666,
+    39.71446959985769,
+    41.45100179994188
+   ],
+   "rdkit_repeats_us": [
+    43.6450330002117,
+    54.89068679999036,
+    54.19405499997083
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true
+  },
+  {
+   "op": "maccs",
+   "equivalence": "checked",
+   "note": "agreement = all 166 keys identical (chematic bit k-1 <-> RDKit bit k)",
+   "rows": 5000,
+   "chematic_us_per_row": 540.8750181999494,
+   "rdkit_us_per_row": 770.4061513999477,
+   "ratio": 1.4243700031920234,
+   "chematic_repeats_us": [
+    540.8750181999494,
+    561.8635937997169,
+    531.7863688000216
+   ],
+   "rdkit_repeats_us": [
+    770.4061513999477,
+    789.7077614001319,
+    750.4306512000767
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4995
+   },
+   "counted": true
+  },
+  {
+   "op": "atom_pair(rdkit-compatible)",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 33.2381312000507,
+   "rdkit_us_per_row": 125.65585279990046,
+   "ratio": 3.7804728564194603,
+   "chematic_repeats_us": [
+    34.772127399992314,
+    32.80616699994425,
+    33.2381312000507
+   ],
+   "rdkit_repeats_us": [
+    124.48837460033246,
+    131.0037398001441,
+    125.65585279990046
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true
+  },
+  {
+   "op": "torsion(rdkit-compatible)",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 19.21475939998345,
+   "rdkit_us_per_row": 120.53711359985755,
+   "ratio": 6.273152376810993,
+   "chematic_repeats_us": [
+    19.21475939998345,
+    18.907544399917242,
+    21.584519599855412
+   ],
+   "rdkit_repeats_us": [
+    99.48632839987113,
+    120.53711359985755,
+    128.49765739993018
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4999
+   },
+   "counted": true
+  },
+  {
+   "op": "rdkit_fp(rdkit-compatible)",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 2000,
+   "chematic_us_per_row": 1277.5210250001692,
+   "rdkit_us_per_row": 1437.8941355007555,
+   "ratio": 1.1255346153700798,
+   "chematic_repeats_us": [
+    1277.5210250001692,
+    1277.6817815001777,
+    1266.3237070000832
+   ],
+   "rdkit_repeats_us": [
+    1421.4053800005786,
+    1535.855969500517,
+    1437.8941355007555
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "pattern_fp(rdkit-compatible)",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 2000,
+   "chematic_us_per_row": 264.9919760006014,
+   "rdkit_us_per_row": 301.2848034995841,
+   "ratio": 1.1369582130249116,
+   "chematic_repeats_us": [
+    258.9979565000249,
+    265.55396799994924,
+    264.9919760006014
+   ],
+   "rdkit_repeats_us": [
+    301.2848034995841,
+    300.9945140001946,
+    304.931492999458
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "tanimoto_1xN(per target, compatible Morgan)",
+   "equivalence": "checked",
+   "note": "50 queries x 5000 targets; time reported per target; chematic returns f32",
+   "rows": 50,
+   "chematic_us_per_row": 0.0828280959976837,
+   "rdkit_us_per_row": 0.09713657600514125,
+   "ratio": 1.1727491117006683,
+   "chematic_repeats_us": [
+    0.0828280959976837,
+    0.08290790399769321,
+    0.0827646200050367
+   ],
+   "rdkit_repeats_us": [
+    0.09713657600514125,
+    0.10145959600049537,
+    0.0961321360009606
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 50,
+    "agree": 50
+   },
+   "counted": true
+  },
+  {
+   "op": "has_substructure c1ccccc1",
+   "equivalence": "checked",
+   "note": "chematic takes the SMARTS string (parse cached); RDKit uses a pre-parsed pattern",
+   "rows": 2000,
+   "chematic_us_per_row": 2.172731999962707,
+   "rdkit_us_per_row": 5.264315999738756,
+   "ratio": 2.4229016739428118,
+   "chematic_repeats_us": [
+    2.1802500004923786,
+    2.172731999962707,
+    2.053096500276297
+   ],
+   "rdkit_repeats_us": [
+    5.20315949961514,
+    5.264315999738756,
+    7.116583499737317
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "has_substructure [OH]",
+   "equivalence": "checked",
+   "note": "chematic takes the SMARTS string (parse cached); RDKit uses a pre-parsed pattern",
+   "rows": 2000,
+   "chematic_us_per_row": 1.6304480004691868,
+   "rdkit_us_per_row": 3.978154500146047,
+   "ratio": 2.43991497981001,
+   "chematic_repeats_us": [
+    1.8639754998730496,
+    1.6304480004691868,
+    1.4749120000487892
+   ],
+   "rdkit_repeats_us": [
+    3.978154500146047,
+    3.8936114997341065,
+    4.552414499812585
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "has_substructure C(=O)N",
+   "equivalence": "checked",
+   "note": "chematic takes the SMARTS string (parse cached); RDKit uses a pre-parsed pattern",
+   "rows": 2000,
+   "chematic_us_per_row": 1.6910329995880602,
+   "rdkit_us_per_row": 4.692425999564875,
+   "ratio": 2.7748873030319112,
+   "chematic_repeats_us": [
+    1.6910329995880602,
+    1.795708500139881,
+    1.5026154997030972
+   ],
+   "rdkit_repeats_us": [
+    4.816033499992045,
+    4.646681999474822,
+    4.692425999564875
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "has_substructure [#7;R]",
+   "equivalence": "checked",
+   "note": "chematic takes the SMARTS string (parse cached); RDKit uses a pre-parsed pattern",
+   "rows": 2000,
+   "chematic_us_per_row": 3.681249999317515,
+   "rdkit_us_per_row": 3.7489465003091027,
+   "ratio": 1.0183895418686963,
+   "chematic_repeats_us": [
+    2.4901944998418912,
+    4.104250499949558,
+    3.681249999317515
+   ],
+   "rdkit_repeats_us": [
+    3.7489465003091027,
+    3.7630039996656706,
+    3.6963449992981623
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "has_substructure c1ccc2ccccc2c1",
+   "equivalence": "checked",
+   "note": "chematic takes the SMARTS string (parse cached); RDKit uses a pre-parsed pattern",
+   "rows": 2000,
+   "chematic_us_per_row": 10.666291499546787,
+   "rdkit_us_per_row": 10.939026499727333,
+   "ratio": 1.0255698056060192,
+   "chematic_repeats_us": [
+    9.216577999723086,
+    11.617238499638916,
+    10.666291499546787
+   ],
+   "rdkit_repeats_us": [
+    10.706670499530446,
+    11.843323500215774,
+    10.939026499727333
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "has_substructure [CX3](=O)[OX2H1]",
+   "equivalence": "checked",
+   "note": "chematic takes the SMARTS string (parse cached); RDKit uses a pre-parsed pattern",
+   "rows": 2000,
+   "chematic_us_per_row": 1.9584775000112131,
+   "rdkit_us_per_row": 4.682208499616536,
+   "ratio": 2.390738979431588,
+   "chematic_repeats_us": [
+    1.9584775000112131,
+    2.0424399999683374,
+    1.6206199998123338
+   ],
+   "rdkit_repeats_us": [
+    4.682208499616536,
+    5.194401999688125,
+    4.595076500663708
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "has_substructure [NX3;H2,H1;!$(NC=O)]",
+   "equivalence": "checked",
+   "note": "chematic takes the SMARTS string (parse cached); RDKit uses a pre-parsed pattern",
+   "rows": 2000,
+   "chematic_us_per_row": 1.7190779999509687,
+   "rdkit_us_per_row": 6.400781499905861,
+   "ratio": 3.7233804982021894,
+   "chematic_repeats_us": [
+    1.7190779999509687,
+    1.7903255002238438,
+    1.646960499783745
+   ],
+   "rdkit_repeats_us": [
+    6.423253000320983,
+    6.400781499905861,
+    6.204844999956549
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "has_substructure *~*~*~*~*~*",
+   "equivalence": "checked",
+   "note": "chematic takes the SMARTS string (parse cached); RDKit uses a pre-parsed pattern",
+   "rows": 2000,
+   "chematic_us_per_row": 1.5252519997375202,
+   "rdkit_us_per_row": 3.6981559997002478,
+   "ratio": 2.4246196696261744,
+   "chematic_repeats_us": [
+    1.5252519997375202,
+    1.5554985002381727,
+    1.3802475004922599
+   ],
+   "rdkit_repeats_us": [
+    3.663580499960517,
+    3.6981559997002478,
+    3.9247035001608306
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "find_matches [#6]~[#7]",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 2000,
+   "chematic_us_per_row": 3.529258499838761,
+   "rdkit_us_per_row": 25.69203250004648,
+   "ratio": 7.27972533075156,
+   "chematic_repeats_us": [
+    3.401932999622659,
+    3.529258499838761,
+    5.015590000766679
+   ],
+   "rdkit_repeats_us": [
+    8.37272650005616,
+    28.06703850001213,
+    25.69203250004648
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "murcko_scaffold",
+   "equivalence": "checked",
+   "note": "agreement via RDKit canonical SMILES of both outputs",
+   "rows": 5000,
+   "chematic_us_per_row": 16.345227400233853,
+   "rdkit_us_per_row": 89.51346660032868,
+   "ratio": 5.4764283425661,
+   "chematic_repeats_us": [
+    16.281788400010555,
+    16.345227400233853,
+    17.529610400015372
+   ],
+   "rdkit_repeats_us": [
+    89.35723559989128,
+    89.51346660032868,
+    90.8339593999699
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4998
+   },
+   "counted": true
+  },
+  {
+   "op": "add_hydrogens",
+   "equivalence": "same-task",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 6.79654820014548,
+   "rdkit_us_per_row": 34.86826519983879,
+   "ratio": 5.130290284573047,
+   "chematic_repeats_us": [
+    7.822339800259215,
+    6.4773559999594,
+    6.79654820014548
+   ],
+   "rdkit_repeats_us": [
+    34.86826519983879,
+    34.032125000157976,
+    53.03487460005272
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "remove_hydrogens",
+   "equivalence": "same-task",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 5.296022800030187,
+   "rdkit_us_per_row": 75.96329180014436,
+   "ratio": 14.343460114958603,
+   "chematic_repeats_us": [
+    5.296022800030187,
+    4.979124999954365,
+    6.854612399911275
+   ],
+   "rdkit_repeats_us": [
+    66.19153499996173,
+    75.96329180014436,
+    101.47709419979947
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "largest_fragment",
+   "equivalence": "checked",
+   "note": "agreement via RDKit canonical SMILES of both outputs",
+   "rows": 2000,
+   "chematic_us_per_row": 3.814911499830487,
+   "rdkit_us_per_row": 80.32020599966927,
+   "ratio": 21.054277668889107,
+   "chematic_repeats_us": [
+    3.6881079995509936,
+    3.814911499830487,
+    4.943743500007258
+   ],
+   "rdkit_repeats_us": [
+    89.31325499997911,
+    75.81071050026367,
+    80.32020599966927
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "neutralize",
+   "equivalence": "checked",
+   "note": "agreement via RDKit canonical SMILES of both outputs",
+   "rows": 2000,
+   "chematic_us_per_row": 5.277111999930639,
+   "rdkit_us_per_row": 41.61262700017687,
+   "ratio": 7.885492481630827,
+   "chematic_repeats_us": [
+    5.277111999930639,
+    4.6504314996127505,
+    5.998129500767391
+   ],
+   "rdkit_repeats_us": [
+    39.34951599967462,
+    41.61262700017687,
+    65.10714199976064
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 2000,
+    "agree": 2000
+   },
+   "counted": true
+  },
+  {
+   "op": "standardize vs Cleanup",
+   "equivalence": "not-equivalent",
+   "note": "chematic default also neutralizes and canonicalizes the tautomer",
+   "rows": 300,
+   "chematic_us_per_row": 1479.9674933359106,
+   "rdkit_us_per_row": 732.8697899962814,
+   "ratio": 0.4951931669420396,
+   "chematic_repeats_us": [
+    1541.004286664247,
+    1353.3198866692449,
+    1479.9674933359106
+   ],
+   "rdkit_repeats_us": [
+    850.3186466623447,
+    732.8697899962814,
+    694.7475133286691
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "standardize vs Cleanup+Uncharge+Canonicalize",
+   "equivalence": "checked",
+   "note": "closest RDKit pipeline; agreement via RDKit canonical SMILES",
+   "rows": 300,
+   "chematic_us_per_row": 1583.232493333829,
+   "rdkit_us_per_row": 29896.111846665008,
+   "ratio": 18.882957476265823,
+   "chematic_repeats_us": [
+    1583.232493333829,
+    1606.751843331343,
+    1410.8193666652369
+   ],
+   "rdkit_repeats_us": [
+    29377.218043330988,
+    30481.47686666198,
+    29896.111846665008
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 300,
+    "agree": 241
+   },
+   "counted": true
+  },
+  {
+   "op": "canonical_tautomer",
+   "equivalence": "checked",
+   "note": "different tautomer scoring rules expected",
+   "rows": 300,
+   "chematic_us_per_row": 1393.9613166682343,
+   "rdkit_us_per_row": 31077.925683336314,
+   "ratio": 22.294683010011337,
+   "chematic_repeats_us": [
+    1385.67003667049,
+    1409.4629166659918,
+    1393.9613166682343
+   ],
+   "rdkit_repeats_us": [
+    29994.72201666625,
+    32047.26977333849,
+    31077.925683336314
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 300,
+    "agree": 241
+   },
+   "counted": true
+  },
+  {
+   "op": "brics_fragments",
+   "equivalence": "not-equivalent",
+   "note": "chematic returns fragment Mols without RDKit's dummy-labelled SMILES set",
+   "rows": 500,
+   "chematic_us_per_row": 43.75614799937466,
+   "rdkit_us_per_row": 4008.2365119997116,
+   "ratio": 91.60396184913249,
+   "chematic_repeats_us": [
+    43.75614799937466,
+    41.237812001782004,
+    49.271771997155156
+   ],
+   "rdkit_repeats_us": [
+    3862.3961539997254,
+    4008.2365119997116,
+    4094.635347999429
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "cip_labels",
+   "equivalence": "not-equivalent",
+   "note": "chematic default LegacyFast vs RDKit new CIP labeler",
+   "rows": 1000,
+   "chematic_us_per_row": 2.560114000516478,
+   "rdkit_us_per_row": 116.94021999937831,
+   "ratio": 45.67773934121167,
+   "chematic_repeats_us": [
+    2.560114000516478,
+    2.733408000494819,
+    2.528206998249516
+   ],
+   "rdkit_repeats_us": [
+    112.50640599973849,
+    116.94021999937831,
+    130.37207500019576
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "sssr_rings",
+   "equivalence": "not-equivalent",
+   "note": "SSSR vs symmetrized SSSR",
+   "rows": 5000,
+   "chematic_us_per_row": 15.539752200129442,
+   "rdkit_us_per_row": 34.05113259977952,
+   "ratio": 2.191227515165646,
+   "chematic_repeats_us": [
+    13.723074999870732,
+    15.539752200129442,
+    15.748619799705923
+   ],
+   "rdkit_repeats_us": [
+    17.35120419980376,
+    35.43459460015583,
+    34.05113259977952
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "svg_depiction",
+   "equivalence": "not-equivalent",
+   "note": "different layout and renderer",
+   "rows": 300,
+   "chematic_us_per_row": 66.82082333403135,
+   "rdkit_us_per_row": 1356.404573337689,
+   "ratio": 20.29912990681278,
+   "chematic_repeats_us": [
+    67.39140999949693,
+    66.82082333403135,
+    64.83544666480157
+   ],
+   "rdkit_repeats_us": [
+    1557.3124766645683,
+    1356.404573337689,
+    1322.7582433319185
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "2d_layout",
+   "equivalence": "not-equivalent",
+   "note": "different layout algorithms",
+   "rows": 500,
+   "chematic_us_per_row": 57.9505040004733,
+   "rdkit_us_per_row": 715.3783399990061,
+   "ratio": 12.34464397398793,
+   "chematic_repeats_us": [
+    57.9505040004733,
+    57.87751800016849,
+    58.97246200038353
+   ],
+   "rdkit_repeats_us": [
+    689.9673820007592,
+    715.3783399990061,
+    728.0531079995853
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "embed_3d",
+   "equivalence": "not-equivalent",
+   "note": "no geometry-quality check; see the dedicated 3D records",
+   "rows": 100,
+   "chematic_us_per_row": 212.11216999290627,
+   "rdkit_us_per_row": 51950.64736999484,
+   "ratio": 244.92063501934962,
+   "chematic_repeats_us": [
+    216.73262999684084,
+    212.11216999290627,
+    204.84528999077156
+   ],
+   "rdkit_repeats_us": [
+    50961.53915999821,
+    52774.5811999921,
+    51950.64736999484
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "embed+minimize_mmff94",
+   "equivalence": "not-equivalent",
+   "note": "legacy numeric-gradient chematic path; no quality check",
+   "rows": 10,
+   "chematic_us_per_row": 810239.1952999823,
+   "rdkit_us_per_row": 76888.89080000081,
+   "ratio": 0.09489653332746205,
+   "chematic_repeats_us": [
+    810239.1952999823,
+    815064.5095000073,
+    782985.7377000735
+   ],
+   "rdkit_repeats_us": [
+    76888.89080000081,
+    82596.33079997002,
+    76658.32729999238
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  },
+  {
+   "op": "mcs_pair",
+   "equivalence": "not-equivalent",
+   "note": "different defaults/timeouts; inputs not rebuilt",
+   "rows": 50,
+   "chematic_us_per_row": 68374.19331997808,
+   "rdkit_us_per_row": 142285.335580018,
+   "ratio": 2.080980098940985,
+   "chematic_repeats_us": [
+    68374.19331997808,
+    68236.0074999815,
+    69309.40646001545
+   ],
+   "rdkit_repeats_us": [
+    140925.9610799927,
+    142285.335580018,
+    142869.69830001908
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false
+  }
+ ],
+ "summary": {
+  "operations": 63,
+  "counted_operations": 44,
+  "counted_faster": 41,
+  "counted_faster_with_full_agreement": 25,
+  "same_task_operations": 6,
+  "not_equivalent_operations": 13
+ }
+}

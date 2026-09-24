@@ -13,7 +13,7 @@ use chematic_core::{
 };
 
 use crate::{hash::mol_hash, hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
-use chematic_smarts::{MatchConfig, find_matches_with_config, parse_smarts};
+use chematic_smarts::{MatchConfig, parse_smarts};
 
 /// Salt removal catalog: common salt patterns (counterions and solvates).
 ///
@@ -117,7 +117,7 @@ impl SaltCatalog {
         };
         for (_, smarts_str) in &self.patterns {
             if let Ok(query) = parse_smarts(smarts_str)
-                && !find_matches_with_config(&query, frag, &config).is_empty()
+                && chematic_smarts::has_match_with_config(&query, frag, &config)
             {
                 return true;
             }
