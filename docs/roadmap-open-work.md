@@ -1,7 +1,7 @@
 # Roadmap open-work ledger
 
 Updated 2026-09-24. This is a compact dependency and evidence ledger for work
-that remains open after v1.0.23. It does not repeat completed implementation
+that remains open after v1.0.24. It does not repeat completed implementation
 history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 ## Immediate queue
@@ -59,8 +59,8 @@ complete merely because a local packet exists.
 
 ## Evidence boundaries
 
-- **Release preparation:** v1.0.23 uses
-  `validation/results/release-channel-verification-v1.0.23.json`. It is not
+- **Release preparation:** v1.0.24 uses
+  `validation/results/release-channel-verification-v1.0.24.json`. It is not
   release-ready until GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages
   have each been observed independently after publication.
 - **RDKit agreement:**
@@ -70,6 +70,10 @@ complete merely because a local packet exists.
 - **Source operation matrix:**
   `benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md` records
   strict output-comparable outcomes; it is not a published-package result.
+- **Source output-identical speed:**
+  `benchmarks/2026-09-24-perf-speed3-output-identical.md` records the
+  v1.0.23-to-v1.0.24 source differential and paired timing; it is not a
+  published-package, WASM, or cross-platform result.
 - **Browser performance:** the current published-package record is
   `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md`.
 - **A0 acceptance:** the commit-safe summary is

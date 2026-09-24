@@ -23,14 +23,11 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
-### v1.0.23 の対応範囲
+### v1.0.24 の対応範囲
 
-v1.0.23は、RDKit互換atom-pair/torsion fingerprint、MACCS、QED、N/OのみのTPSA、
-Bemis–Murcko骨格のRDKit定義との一致を改善します。RDKit 2026.03.6との版管理済み記録は
-3本の5,000行source laneを対象とし、例えばChEMBLではatom-pairが5,000/5,000、MACCSが
-4,995/5,000に達します。これは共有2 vCPUのsource記録であり、公開package、WASM、
-他環境での性能主張ではありません。省略したSMARTS結合はDaylight/RDKitと同じく単結合または
-芳香族結合を意味します。任意結合には`~`を使用してください。
+v1.0.24は、perceptionとSMARTS存在判定を高速化しつつ、v1.0.23との差分を0件に維持します。
+7 corpus・1,402,080出力行の版管理済み比較で差分は0件です。速度記録は共有2 vCPUの
+source実行であり、公開package、WASM、他環境での性能主張ではありません。
 詳細は[検証報告](docs/validation.md)、
 [互換性範囲](docs/compatibility-scope.md)、[CHANGELOG](CHANGELOG.md)を参照してください。
 
