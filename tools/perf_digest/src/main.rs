@@ -133,6 +133,46 @@ fn ops() -> Vec<Op> {
                 })
                 .collect()
         }),
+        ("has_sub_first", |m| {
+            // First-embedding existence form used by the Python/bulk screens.
+            let cfg = chematic_smarts::MatchConfig {
+                max_matches: Some(1),
+                uniquify: false,
+                ..Default::default()
+            };
+            smarts_queries()
+                .iter()
+                .map(|q| {
+                    if chematic_smarts::find_matches_with_config(q, m, &cfg).is_empty() {
+                        '0'
+                    } else {
+                        '1'
+                    }
+                })
+                .collect()
+        }),
+        ("rdkit_parity_view", |m| {
+            match chematic_perception::apply_aromaticity_rdkit_parity_experimental(m) {
+                Ok(p) => {
+                    let atoms: String = p
+                        .atoms()
+                        .map(|(_, a)| if a.aromatic { 'a' } else { '.' })
+                        .collect();
+                    let bonds: String = p.bonds().map(|(_, b)| format!("{:?},", b.order)).collect();
+                    format!("{atoms}|{bonds}")
+                }
+                Err(e) => format!("ERR {e}"),
+            }
+        }),
+        ("rdkit_tpsa", |m| format!("{:.12}", chematic_chem::rdkit_tpsa(m))),
+        ("rdkit_ecfp4", |m| match chematic_fp::rdkit_morgan_ecfp4_experimental(m) {
+            Ok(r) => format!("{:?} {:?}", r.fingerprint, {
+                let mut v: Vec<_> = r.raw_bit_info.iter().collect();
+                v.sort();
+                v
+            }),
+            Err(e) => format!("ERR {e}"),
+        }),
         ("largest_frag", |m| {
             let f = chematic_chem::largest_fragment(m);
             let atoms: String = f

@@ -1843,7 +1843,11 @@ impl Mol {
             uniquify: false,
             ..chematic_smarts::MatchConfig::default()
         };
-        Ok(!chematic_smarts::find_matches_with_config(&query, &self.inner, &config).is_empty())
+        Ok(chematic_smarts::has_match_with_config(
+            &query,
+            &self.inner,
+            &config,
+        ))
     }
 
     /// Return atom-index lists for all SMARTS matches in this molecule.

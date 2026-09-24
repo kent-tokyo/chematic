@@ -14,7 +14,7 @@
 //! the bit is set when `matches.len() > min_count`.
 
 use chematic_core::Molecule;
-use chematic_smarts::{MatchConfig, find_matches, find_matches_with_config, parse_smarts};
+use chematic_smarts::{MatchConfig, find_matches, parse_smarts};
 
 const FIRST_EMBEDDING: MatchConfig = MatchConfig {
     max_matches: Some(1),
@@ -267,7 +267,7 @@ pub fn maccs(mol: &Molecule) -> BitVec2048 {
         // Uniquified matches are non-empty exactly when any embedding
         // exists, so "count > 0" only needs the first embedding.
         let hit = if min_count == 0 {
-            !find_matches_with_config(query, mol, &FIRST_EMBEDDING).is_empty()
+            chematic_smarts::has_match_with_config(query, mol, &FIRST_EMBEDDING)
         } else {
             find_matches(query, mol).len() > min_count
         };

@@ -1125,9 +1125,7 @@ pub fn substructure_search(smarts: &str, smiles: Vec<String>) -> PyResult<Vec<bo
         .par_iter()
         .map(|smi| {
             chematic_smiles::parse(smi)
-                .map(|mol| {
-                    !chematic_smarts::find_matches_with_config(&query, &mol, &config).is_empty()
-                })
+                .map(|mol| chematic_smarts::has_match_with_config(&query, &mol, &config))
                 .unwrap_or(false)
         })
         .collect();
@@ -1167,7 +1165,7 @@ pub fn substructure_match(smarts: &str, mols: Vec<Mol>) -> PyResult<Vec<usize>> 
         .par_iter()
         .enumerate()
         .filter_map(|(i, m)| {
-            if !chematic_smarts::find_matches_with_config(&query, &m.inner, &config).is_empty() {
+            if chematic_smarts::has_match_with_config(&query, &m.inner, &config) {
                 Some(i)
             } else {
                 None

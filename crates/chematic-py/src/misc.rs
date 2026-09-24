@@ -47,7 +47,9 @@ fn smarts_match(smarts: &str, mol: &Mol) -> PyResult<bool> {
         uniquify: false,
         ..chematic_smarts::MatchConfig::default()
     };
-    Ok(!chematic_smarts::find_matches_with_config(&query, &mol.inner, &config).is_empty())
+    Ok(chematic_smarts::has_match_with_config(
+        &query, &mol.inner, &config,
+    ))
 }
 
 /// Return all substructure matches of a SMARTS pattern in a molecule.

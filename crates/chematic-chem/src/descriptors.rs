@@ -864,8 +864,18 @@ fn ring_bond_indices_from_rings(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> FxHas
 }
 
 /// Indices of all bonds participating in at least one SSSR ring.
+///
+/// The SSSR is a cycle basis, so every cyclic (non-bridge, ring-eligible)
+/// bond lies on some selected ring and no other bond does: this equals
+/// `ring_bond_indices_from_rings(mol, find_sssr(mol).rings())`, computed from
+/// the linear-time bridge flags instead of the ring basis.
 fn ring_bond_indices(mol: &Molecule) -> FxHashSet<BondIdx> {
-    ring_bond_indices_from_rings(mol, find_sssr(mol).rings())
+    chematic_perception::ring_bond_flags_shared(mol)
+        .iter()
+        .enumerate()
+        .filter(|&(_, &cyclic)| cyclic)
+        .map(|(i, _)| BondIdx(i as u32))
+        .collect()
 }
 
 /// True if the bond between `a` and `b` is an amide-like C-N bond
@@ -1760,7 +1770,8 @@ pub fn num_heteroatoms(mol: &Molecule) -> usize {
 
 /// Total number of rings (SSSR count).
 pub fn ring_count(mol: &Molecule) -> usize {
-    find_sssr(mol).rings().len()
+    // The SSSR size is the cycle rank; no need to build the rings.
+    chematic_perception::sssr_ring_count(mol)
 }
 
 /// Number of distinct connected ring systems.
