@@ -165,7 +165,7 @@ fn ops() -> Vec<Op> {
             }
         }),
         ("rdkit_tpsa", |m| format!("{:.12}", chematic_chem::rdkit_tpsa(m))),
-        ("rdkit_ecfp4", |m| match chematic_fp::rdkit_morgan_ecfp4_experimental(m) {
+        ("rdkit_ecfp4_bitinfo", |m| match chematic_fp::rdkit_morgan_ecfp4_experimental(m) {
             Ok(r) => format!("{:?} {:?}", r.fingerprint, {
                 let mut v: Vec<_> = r.raw_bit_info.iter().collect();
                 v.sort();

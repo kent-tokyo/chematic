@@ -19,7 +19,7 @@ fi
 BASE_REV=$1; OUT=$2; shift 2
 ROOT=$(git rev-parse --show-toplevel)
 SCRATCH=$(mktemp -d "${TMPDIR:-/tmp}/perf-digest.XXXXXX")
-BASE_SHA=$(git -C "$ROOT" rev-parse "$BASE_REV")
+BASE_SHA=$(git -C "$ROOT" rev-parse "$BASE_REV^{commit}")
 HEAD_SHA=$(git -C "$ROOT" rev-parse HEAD)
 DIRTY=$(git -C "$ROOT" status --porcelain --untracked-files=no -- crates | wc -l | tr -d ' ')
 
