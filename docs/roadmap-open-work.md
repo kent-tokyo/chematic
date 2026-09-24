@@ -59,10 +59,10 @@ complete merely because a local packet exists.
 
 ## Evidence boundaries
 
-- **Release preparation:** v1.0.24 uses
-  `validation/results/release-channel-verification-v1.0.24.json`. It is not
-  release-ready until GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages
-  have each been observed independently after publication.
+- **Release channels:**
+  `validation/results/release-channel-verification-v1.0.24.json` records
+  independent post-publication observations of GitHub Release, npm, PyPI,
+  crates.io, docs.rs, and Pages.
 - **RDKit agreement:**
   `benchmarks/2026-09-24-rdkit-agreement-accuracy-branch.md` records the
   v1.0.23 source comparison and its operation-specific residuals; it is not a

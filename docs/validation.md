@@ -9,7 +9,7 @@ upgraded to the current source revision.
 | Area | Evidence | Boundary |
 |---|---|---|
 | Source performance identity | `benchmarks/2026-09-24-perf-speed3-output-identical.md` | Differential against v1.0.23 over 1,402,080 output rows; zero differences. Shared-VM source timing only, not a package or cross-platform result. |
-| Release channels | `validation/results/release-channel-verification-v1.0.24.json` | Prepared per-channel record. It becomes release evidence only after independent post-publication observations. |
+| Release channels | `validation/results/release-channel-verification-v1.0.24.json` | GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages were independently observed after publication. |
 | RDKit output agreement | `benchmarks/2026-09-24-rdkit-agreement-accuracy-branch.md` | RDKit 2026.03.6; three source lanes of up to 5,000 rows. Operation-specific agreement and residuals only; shared 2-vCPU VM, not a package/WASM/cross-platform result. |
 | Source operation matrix | `benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md` | RDKit 2026.03.6, 5,000 molecules, 43 comparable operations; 21 exact-output faster medians and 18 all-repeat wins. Shared 2-vCPU source run only; not a package, WASM, or cross-platform claim. |
 | RDKit.js browser comparison | `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md` | Registry-installed v1.0.20 on the fixed exposed 10k corpus; both compatible-Morgan lanes pass and all 9,999 supported rows are bit-exact; not internet/CDN latency |
