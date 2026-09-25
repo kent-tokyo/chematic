@@ -149,3 +149,10 @@ Rust is the reference implementation. Python and WASM expose selected,
 versioned operations; Node uses the WASM surface. Binding parity means the
 same documented result/error contract for shared fixtures, not every Rust type
 or every RDKit method.
+
+Atom-output order and connected-component source indices are exposed in Rust
+and Python, but not in the WASM/Node surface. Reaction-product provenance is
+currently Rust-only (`PreparedReaction::apply_match_traced` and
+`apply_reaction_match_traced`). These omissions are explicit API boundaries:
+callers must not infer a provenance map from product atom order or from a JSON
+serialization.

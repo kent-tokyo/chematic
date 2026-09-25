@@ -980,7 +980,23 @@ impl Molecule {
     ///
     /// Returns a `Vec` of sub-molecules, one per component.  Atoms are
     /// renumbered within each sub-molecule starting at index 0.
+    /// [`Self::fragments_with_source_atoms`] also returns, per fragment, the
+    /// original index of each renumbered atom.
     pub fn fragments(&self) -> Vec<Molecule> {
+        self.fragments_with_source_atoms()
+            .into_iter()
+            .map(|(fragment, _)| fragment)
+            .collect()
+    }
+
+    /// [`Self::fragments`], also returning for each fragment the index in
+    /// `self` of every fragment atom: `source[i]` is the original index of
+    /// fragment atom `AtomIdx(i)`.
+    ///
+    /// Fragments are ordered by their lowest original atom index and keep
+    /// the original relative atom order, so each `source` vector is strictly
+    /// increasing and the vectors together partition `0..self.atom_count()`.
+    pub fn fragments_with_source_atoms(&self) -> Vec<(Molecule, Vec<AtomIdx>)> {
         let n = self.atoms.len();
         if n == 0 {
             return vec![];
@@ -1012,6 +1028,7 @@ impl Molecule {
                 let mut builder = MoleculeBuilder::new();
                 let mut old_to_new: std::collections::HashMap<AtomIdx, AtomIdx> =
                     std::collections::HashMap::new();
+                let mut source: Vec<AtomIdx> = Vec::new();
                 for (aidx, atom) in self.atoms() {
                     if component[aidx.0 as usize] == cid {
                         let new_idx = builder.add_atom(atom.clone());
@@ -1019,6 +1036,7 @@ impl Molecule {
                             builder.set_r_group(new_idx, label);
                         }
                         old_to_new.insert(aidx, new_idx);
+                        source.push(aidx);
                     }
                 }
                 for (_, bond) in self.bonds() {
@@ -1028,7 +1046,7 @@ impl Molecule {
                         let _ = builder.add_bond(a1, a2, bond.order);
                     }
                 }
-                builder.build()
+                (builder.build(), source)
             })
             .collect()
     }
@@ -1260,6 +1278,32 @@ mod tests {
     }
     use crate::atom::Atom;
     use crate::element::Element;
+
+    #[test]
+    fn fragments_report_source_atoms() {
+        // O(0) . C(1)-C(2) . N(3) bonded to C(1) makes {1,2,3}; {0} alone.
+        let mut b = MoleculeBuilder::new();
+        let o = b.add_atom(Atom::new(Element::O));
+        let c1 = b.add_atom(Atom::new(Element::C));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        let n = b.add_atom(Atom::new(Element::N));
+        b.add_bond(c1, c2, BondOrder::Single).unwrap();
+        b.add_bond(n, c1, BondOrder::Single).unwrap();
+        let mol = b.build();
+        let frags = mol.fragments_with_source_atoms();
+        assert_eq!(frags.len(), 2);
+        assert_eq!(frags[0].1, vec![o]);
+        assert_eq!(frags[1].1, vec![c1, c2, n]);
+        for (frag, source) in &frags {
+            for (i, &src) in source.iter().enumerate() {
+                assert_eq!(frag.atom(AtomIdx(i as u32)).element, mol.atom(src).element);
+            }
+        }
+        let plain = mol.fragments();
+        assert_eq!(plain.len(), 2);
+        assert_eq!(plain[1].atom_count(), 3);
+        assert_eq!(plain[1].bond_count(), 2);
+    }
 
     fn ethane() -> Molecule {
         let mut b = MoleculeBuilder::new();

@@ -265,6 +265,43 @@ pub fn apply_reaction_match(
     PreparedReaction::new(smirks)?.apply_match(reactants, m, carry_substituents)
 }
 
+/// A reactant atom: slot `reactant` of the reactant list passed to the
+/// reaction, atom `atom` of that molecule.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ReactantAtom {
+    /// Index into the reactant slice the reaction was applied to.
+    pub reactant: usize,
+    /// Atom index within that reactant.
+    pub atom: AtomIdx,
+}
+
+/// A reaction product together with the origin of each of its atoms.
+///
+/// `atom_sources[i]` is the reactant atom that product atom `AtomIdx(i)` was
+/// copied from — an atom-mapped template atom or a carried substituent — or
+/// `None` for an atom the product template creates. The molecule is exactly
+/// the one the untraced API ([`apply_reaction_match`],
+/// [`PreparedReaction::apply_match`]) returns.
+#[derive(Clone)]
+pub struct TracedProduct {
+    /// The product molecule.
+    pub molecule: Molecule,
+    /// Per product atom, the reactant atom it came from (`None` = new atom).
+    pub atom_sources: Vec<Option<ReactantAtom>>,
+}
+
+/// [`apply_reaction_match`] with per-atom provenance: the same product set
+/// (or `Ok(None)` for a valence-rejected match), each product paired with the
+/// reactant atom every product atom was copied from (issue #650).
+pub fn apply_reaction_match_traced(
+    smirks: &str,
+    reactants: &[&Molecule],
+    m: &ReactionMatch,
+    carry_substituents: bool,
+) -> Result<Option<Vec<TracedProduct>>, TransformError> {
+    PreparedReaction::new(smirks)?.apply_match_traced(reactants, m, carry_substituents)
+}
+
 /// Immutable target-side state for repeated prepared-reaction matching.
 ///
 /// The context owns a snapshot of the target molecule and its ring index, so
@@ -741,6 +778,33 @@ impl PreparedReaction {
         }
         Ok(apply_match_impl(self, reactants, m, carry_substituents))
     }
+
+    /// [`Self::apply_match`] with per-atom provenance (see [`TracedProduct`]).
+    /// The molecules are identical to [`Self::apply_match`]'s.
+    pub fn apply_match_traced(
+        &self,
+        reactants: &[&Molecule],
+        m: &ReactionMatch,
+        carry_substituents: bool,
+    ) -> Result<Option<Vec<TracedProduct>>, TransformError> {
+        let n_templates = self.rxn.reactants.len();
+        if reactants.len() != n_templates || m.per_reactant.len() != n_templates {
+            return Err(TransformError::ReactantCountMismatch {
+                expected: n_templates,
+                got: if reactants.len() != n_templates {
+                    reactants.len()
+                } else {
+                    m.per_reactant.len()
+                },
+            });
+        }
+        Ok(apply_match_traced_impl(
+            self,
+            reactants,
+            m,
+            carry_substituents,
+        ))
+    }
 }
 
 fn aggregate_variant_reports(
@@ -931,6 +995,16 @@ fn apply_match_impl(
     m: &ReactionMatch,
     carry_substituents: bool,
 ) -> Option<Vec<Molecule>> {
+    apply_match_traced_impl(prepared, reactants, m, carry_substituents)
+        .map(|products| products.into_iter().map(|p| p.molecule).collect())
+}
+
+fn apply_match_traced_impl(
+    prepared: &PreparedReaction,
+    reactants: &[&Molecule],
+    m: &ReactionMatch,
+    carry_substituents: bool,
+) -> Option<Vec<TracedProduct>> {
     // global_map: atom_map_number → (reactant_mol_idx, matched_AtomIdx)
     let global_map = global_map_of(&m.per_reactant, &prepared.template_atom_maps);
 
@@ -944,7 +1018,7 @@ fn apply_match_impl(
         }
     }
 
-    let products: Vec<Molecule> = prepared
+    let products: Vec<TracedProduct> = prepared
         .rxn
         .products
         .iter()
@@ -957,15 +1031,18 @@ fn apply_match_impl(
                 carry_substituents,
             );
             crate::perf_counters::record_build_product_call(
-                product.atom_count(),
-                product.bond_count(),
+                product.molecule.atom_count(),
+                product.molecule.bond_count(),
             );
             product
         })
         .collect();
 
     // Skip product sets that contain any over-valenced atom.
-    if products.iter().all(|p| validate_valence(p).is_empty()) {
+    if products
+        .iter()
+        .all(|p| validate_valence(&p.molecule).is_empty())
+    {
         crate::perf_counters::record_product_set();
         Some(products)
     } else {
@@ -1587,7 +1664,7 @@ fn build_product(
     input_mols: &[&Molecule],
     all_template_atoms: &FxHashSet<(usize, AtomIdx)>,
     carry_substituents: bool,
-) -> Molecule {
+) -> TracedProduct {
     let mut builder = MoleculeBuilder::new();
 
     // template_idx_to_new[i]: new AtomIdx for product template atom i.
@@ -1729,7 +1806,18 @@ fn build_product(
 
     // Clear any Up/Down stereo markers left on bonds that are no longer adjacent
     // to a double bond (e.g. after C=C → C=O conversion via SMIRKS).
-    clear_orphaned_stereo_bonds(product)
+    let molecule = clear_orphaned_stereo_bonds(product);
+
+    // Both passes above keep atom indices, so `src_to_new` indexes the final
+    // product. Atoms absent from it were created from the product template.
+    let mut atom_sources = vec![None; molecule.atom_count()];
+    for (&(reactant, atom), &new_idx) in &src_to_new {
+        atom_sources[new_idx.0 as usize] = Some(ReactantAtom { reactant, atom });
+    }
+    TracedProduct {
+        molecule,
+        atom_sources,
+    }
 }
 
 /// Standard Cartesian product: given `sets[0], sets[1], …`, return all
@@ -3103,6 +3191,104 @@ mod tests {
                 }
             }
         }
+    }
+
+    /// Issue #650: the traced application returns the same molecules as the
+    /// untraced one, and every traced product atom is a copy of the reactant
+    /// atom it names; mapped template atoms trace to their matched atoms and
+    /// template-created atoms trace to `None`.
+    #[test]
+    fn traced_apply_match_reports_atom_sources() {
+        let cases: Vec<(&str, Vec<chematic_core::Molecule>)> = vec![
+            ("[N:1]>>[N:1]", vec![parse("NCCN").unwrap()]),
+            (
+                "[N:1].[C:2]>>[N:1][C:2]",
+                vec![parse("NCC").unwrap(), parse("CO").unwrap()],
+            ),
+            ("[C:1][C:2]>>[C:1].[C:2]", vec![parse("CCO").unwrap()]),
+            (
+                "[OH:1]-[C:2]=[O:3]>>C-[O:1]-[C:2]=[O:3]",
+                vec![parse("CC(=O)OC1=CC=CC=C1C(=O)O").unwrap()],
+            ),
+            (
+                "[C:1](=[O:2])[OH:3].[OH:4][C:5]>>[C:1](=[O:2])[O:4][C:5]",
+                vec![parse("CC(=O)O").unwrap(), parse("OCC").unwrap()],
+            ),
+        ];
+        for (smirks, mols) in &cases {
+            let reactants: Vec<&Molecule> = mols.iter().collect();
+            let prepared = PreparedReaction::new(smirks).unwrap();
+            let matches = find_reaction_matches(smirks, &reactants).unwrap();
+            assert!(!matches.is_empty(), "{smirks}: expected a match");
+            for m in &matches {
+                for carry in [true, false] {
+                    let plain = prepared.apply_match(&reactants, m, carry).unwrap();
+                    let traced = prepared.apply_match_traced(&reactants, m, carry).unwrap();
+                    let free = apply_reaction_match_traced(smirks, &reactants, m, carry).unwrap();
+                    let (Some(plain), Some(traced), Some(free)) = (plain, traced, free) else {
+                        continue;
+                    };
+                    assert_eq!(plain.len(), traced.len());
+                    assert_eq!(traced.len(), free.len());
+                    let global = m.atom_map_positions(smirks).unwrap();
+                    for (((p, t), f), template) in plain
+                        .iter()
+                        .zip(&traced)
+                        .zip(&free)
+                        .zip(&prepared.rxn.products)
+                    {
+                        assert_eq!(
+                            chematic_smiles::write(p),
+                            chematic_smiles::write(&t.molecule),
+                            "{smirks}: traced molecule differs"
+                        );
+                        assert_eq!(t.atom_sources, f.atom_sources);
+                        assert_eq!(t.atom_sources.len(), t.molecule.atom_count());
+                        for (i, src) in t.atom_sources.iter().enumerate() {
+                            if let Some(src) = src {
+                                assert_eq!(
+                                    t.molecule.atom(AtomIdx(i as u32)).element,
+                                    reactants[src.reactant].atom(src.atom).element,
+                                    "{smirks}: atom {i} element"
+                                );
+                            }
+                        }
+                        // Sources are injective.
+                        let mut seen = FxHashSet::default();
+                        for src in t.atom_sources.iter().flatten() {
+                            assert!(seen.insert(*src), "{smirks}: duplicate source {src:?}");
+                        }
+                        // Product template atom i is product atom i: a mapped
+                        // one traces to where the match put that map number,
+                        // an unmapped one is new.
+                        for i in 0..template.atom_count() {
+                            let expected = template
+                                .atom(AtomIdx(i as u32))
+                                .atom_map
+                                .and_then(|am| global.get(&am))
+                                .map(|&(reactant, atom)| ReactantAtom { reactant, atom });
+                            assert_eq!(t.atom_sources[i], expected, "{smirks}: template atom {i}");
+                        }
+                    }
+                }
+            }
+        }
+        // Template-created atom: the methyl C in the ester SMIRKS is new.
+        let mol = parse("OC(=O)c1ccccc1").unwrap();
+        let smirks = "[OH:1]-[C:2]=[O:3]>>C-[O:1]-[C:2]=[O:3]";
+        let m = &find_reaction_matches(smirks, &[&mol]).unwrap()[0];
+        let product = &apply_reaction_match_traced(smirks, &[&mol], m, true)
+            .unwrap()
+            .unwrap()[0];
+        assert_eq!(
+            product.atom_sources.iter().filter(|s| s.is_none()).count(),
+            1
+        );
+        assert_eq!(
+            product.atom_sources.iter().flatten().count(),
+            mol.atom_count(),
+            "every reactant atom is carried"
+        );
     }
 
     /// `run_reactants_strict` (carry_substituents=false) must also compose

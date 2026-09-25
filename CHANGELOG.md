@@ -9,6 +9,29 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Fixed `chematic.rdkit_compat.rdMolDescriptors.CalcNumHBA()` to use the
+  named RDKit-compatible HBA profile rather than the conservative native HBA
+  profile. This restores the RDKit result for substituted aromatic/imide
+  nitrogens (for example, caffeine: 6 rather than 3).
+
+- Atom tracking basics (issue #650):
+  - `chematic_smiles::write_with_atom_order` and
+    `canonical_smiles_with_atom_order` return the usual string together with
+    the atom output order (`order[k]` = input index of the `k`-th atom written,
+    which is also its index after re-parsing; RDKit's
+    `_smilesAtomOutputOrder`). Python: `Mol.smiles_with_atom_order()`.
+  - `Molecule::fragments_with_source_atoms` returns each connected component
+    with the original index of every fragment atom. Python:
+    `Mol.connected_components_with_atom_indices()`.
+  - `PreparedReaction::apply_match_traced` / `apply_reaction_match_traced`
+    return `TracedProduct { molecule, atom_sources }`: the untraced products
+    plus, per product atom, the `ReactantAtom { reactant, atom }` it was copied
+    from (`None` for atoms the product template creates).
+- Fixed: the plain SMILES writer (`write`) now writes a single ring-closure
+  bond between two aromatic atoms as `-` (and an aromatic ring closure to a
+  non-aromatic atom as `:`), so such molecules (e.g. biphenylene written from
+  a graph) round-trip; the canonical writer already did this since #395.
+
 ## [1.0.24] - 2026-09-24
 
 - Improved perception and SMARTS-existence hot paths without changing the

@@ -38,6 +38,11 @@ class Mol:
         """Canonical SMILES string."""
         ...
 
+    def smiles_with_atom_order(self) -> tuple[str, list[int]]:
+        """Canonical SMILES and ``order``: ``order[k]`` is the index of the
+        ``k``-th atom written (its index after re-parsing the string)."""
+        ...
+
     @property
     def formula(self) -> str:
         """Molecular formula in Hill notation (C first, H second, then alphabetical)."""
@@ -746,6 +751,10 @@ class Mol:
 
     def largest_fragment(self) -> Mol:
         """Return the largest covalently connected fragment."""
+        ...
+
+    def connected_components_with_atom_indices(self) -> list[tuple[Mol, list[int]]]:
+        """Connected components with ``source[i]`` = original index of fragment atom ``i``."""
         ...
 
     def connected_components(self) -> list[Mol]:

@@ -6,6 +6,23 @@ identical APIs — this page documents where they agree, where they diverge,
 and why, using real function names (not illustrative examples) so the
 divergences are checkable against source.
 
+## Atom provenance and output order
+
+The atom-tracking APIs deliberately expose only the mappings that each
+binding can represent without inventing a lossy JSON contract.
+
+| Capability | Rust | Python | WASM / Node |
+|---|---|---|---|
+| SMILES atom output order | `write_with_atom_order`, `canonical_smiles_with_atom_order` | `Mol.smiles_with_atom_order()` | Not exposed |
+| Connected-component source atom indices | `Molecule::fragments_with_source_atoms()` | `Mol.connected_components_with_atom_indices()` | Not exposed |
+| Reaction product atom provenance | `PreparedReaction::apply_match_traced`, `apply_reaction_match_traced` | Not exposed | Not exposed |
+
+`order[k]` is the input atom index for the `k`-th atom written in a SMILES
+string; it is also that atom's index after parsing the returned string.
+Reaction tracing returns `None` for an atom newly created by the product
+template. These are additive APIs: ordinary SMILES writing, connected
+components, and reaction application retain their existing return values.
+
 See also: [`format-capabilities.md`](format-capabilities.md) for the
 per-format read/write/streaming/limits matrix this page's examples are
 drawn from.

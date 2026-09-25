@@ -180,6 +180,23 @@ pub fn write(mol: &Molecule) -> String {
     if mol.atom_count() == 0 {
         return String::new();
     }
+    SmilesWriter::new(mol).write_all().0
+}
+
+/// Write a [`Molecule`] to SMILES and report the order in which its atoms
+/// appear in the string.
+///
+/// The string is exactly [`write`]'s. `order[k]` is the index in `mol` of the
+/// `k`-th atom written, which is also the index that atom receives when the
+/// string is parsed back with [`crate::parse`]: for every `k`,
+/// `parse(&smiles)?.atom(AtomIdx(k))` corresponds to `mol.atom(order[k])`.
+/// Every atom of `mol` is written exactly once, so `order` is a permutation
+/// of `0..mol.atom_count()`. This is the DFS visit order (RDKit's
+/// `_smilesAtomOutputOrder`), not a canonical rank.
+pub fn write_with_atom_order(mol: &Molecule) -> (String, Vec<AtomIdx>) {
+    if mol.atom_count() == 0 {
+        return (String::new(), Vec::new());
+    }
     SmilesWriter::new(mol).write_all()
 }
 
@@ -196,6 +213,8 @@ struct SmilesWriter<'a> {
     written: Vec<bool>,
     next_ring: u16,
     out: String,
+    /// Atoms in the order they were emitted.
+    order: Vec<AtomIdx>,
 }
 
 impl<'a> SmilesWriter<'a> {
@@ -208,10 +227,11 @@ impl<'a> SmilesWriter<'a> {
             written: vec![false; n],
             next_ring: 1,
             out: String::new(),
+            order: Vec::with_capacity(n),
         }
     }
 
-    fn write_all(mut self) -> String {
+    fn write_all(mut self) -> (String, Vec<AtomIdx>) {
         // Phase 1: find all back-edges and assign ring-closure numbers.
         self.find_ring_closures();
 
@@ -227,7 +247,7 @@ impl<'a> SmilesWriter<'a> {
             }
         }
 
-        self.out
+        (self.out, self.order)
     }
 
     fn find_ring_closures(&mut self) {
@@ -324,18 +344,29 @@ impl<'a> SmilesWriter<'a> {
         }
 
         // Write the atom symbol.
+        self.order.push(atom);
         self.emit_atom(atom);
 
         // Write ring-closure digits for this atom (both open and close digits).
         if let Some(rings) = self.atom_ring_nums.remove(&atom) {
             for (rn, bond_order, bidx) in rings {
-                // Write bond type unless it is implicit.
-                let atom_aromatic = self.mol.atom(atom).aromatic;
-                // For ring closures we can't know the other atom's aromaticity here,
-                // so we emit the bond type unless it is a plain aromatic ring bond.
-                if !(bond_order == BondOrder::Aromatic && atom_aromatic)
-                    && bond_order != BondOrder::Single
-                {
+                // Write bond type unless the parser would infer it from the
+                // two endpoints: a bare digit reads back as aromatic between
+                // two aromatic atoms and as single otherwise (the same rule
+                // as tree edges, and as the canonical writer since #395).
+                let bond = self.mol.bond(bidx);
+                let partner = if bond.atom1 == atom {
+                    bond.atom2
+                } else {
+                    bond.atom1
+                };
+                let both_aromatic = self.mol.atom(atom).aromatic && self.mol.atom(partner).aromatic;
+                let implicit = match bond_order {
+                    BondOrder::Single => !both_aromatic,
+                    BondOrder::Aromatic => both_aromatic,
+                    _ => false,
+                };
+                if !implicit {
                     // Oriented from the atom being written right now: the two
                     // ends of a dative ring closure print opposite arrows
                     // (`->` at the donor, `<-` at the acceptor), which is the

@@ -27,6 +27,21 @@ impl Mol {
         chematic_smiles::canonical_smiles(&self.inner)
     }
 
+    /// Canonical SMILES together with the atom output order.
+    ///
+    /// Returns ``(smiles, order)`` where ``smiles`` equals :attr:`smiles` and
+    /// ``order[k]`` is the index in this molecule of the ``k``-th atom written
+    /// in the string — also that atom's index after
+    /// ``chematic.from_smiles(smiles)``. This is the SMILES DFS visit order
+    /// (RDKit's ``_smilesAtomOutputOrder``), not a canonical rank.
+    ///
+    ///     smi, order = chematic.from_smiles("OCC").smiles_with_atom_order()
+    ///     # ("C(C)O", [1, 2, 0])
+    fn smiles_with_atom_order(&self) -> (String, Vec<usize>) {
+        let (smiles, order) = chematic_smiles::canonical_smiles_with_atom_order(&self.inner);
+        (smiles, order.into_iter().map(|a| a.0 as usize).collect())
+    }
+
     /// Molecular formula in Hill notation (C first, H second, then alphabetical).
     #[getter]
     fn formula(&self) -> String {
@@ -2187,6 +2202,28 @@ impl Mol {
     ///     # [Mol("CC"), Mol("N")]
     fn connected_components(&self) -> Vec<Mol> {
         self.inner.fragments().into_iter().map(Mol::bare).collect()
+    }
+
+    /// :meth:`connected_components` with the original atom indices.
+    ///
+    /// Returns a list of ``(fragment, source)`` pairs, where ``source[i]`` is
+    /// the index in this molecule of fragment atom ``i``. Fragments are
+    /// ordered by their lowest original atom index and keep the original
+    /// relative atom order.
+    ///
+    ///     parts = chematic.from_smiles("O.CC").connected_components_with_atom_indices()
+    ///     # [(Mol("O"), [0]), (Mol("CC"), [1, 2])]
+    fn connected_components_with_atom_indices(&self) -> Vec<(Mol, Vec<usize>)> {
+        self.inner
+            .fragments_with_source_atoms()
+            .into_iter()
+            .map(|(fragment, source)| {
+                (
+                    Mol::bare(fragment),
+                    source.into_iter().map(|a| a.0 as usize).collect(),
+                )
+            })
+            .collect()
     }
 
     /// Return ``True`` if this molecule and ``other`` represent the same chemical structure.
