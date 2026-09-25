@@ -83,7 +83,9 @@ use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 use chematic_perception::aromaticity::{
     AromaticityAlgorithm, AromaticityModel, assign_aromaticity_ex,
 };
+#[cfg(test)]
 use rustc_hash::{FxHashMap, FxHashSet};
+#[cfg(test)]
 use std::collections::BTreeMap;
 
 const FP_SIZE: u32 = 2048;
@@ -206,6 +208,7 @@ impl RdkitWeakMt19937 {
     }
 }
 
+#[cfg(test)]
 fn build_bond_adjacency(mol: &Molecule) -> FxHashMap<u32, Vec<u32>> {
     let mut nbrs: FxHashMap<u32, Vec<u32>> = FxHashMap::default();
     for (bidx, _) in mol.bonds() {
@@ -224,6 +227,7 @@ fn build_bond_adjacency(mol: &Molecule) -> FxHashMap<u32, Vec<u32>> {
     nbrs
 }
 
+#[cfg(test)]
 /// RDKit's `Subgraphs::findAllSubgraphsOfLengthsMtoN`/`recurseWalkRange`: every
 /// connected subgraph of `min_len..=max_len` bonds, each discovered exactly
 /// once (rooted at its lowest-index bond). Order within each length's `Vec` is
@@ -261,6 +265,7 @@ fn find_all_subgraphs(
     res
 }
 
+#[cfg(test)]
 fn recurse_walk_range(
     nbrs: &FxHashMap<u32, Vec<u32>>,
     spath: Vec<u32>,
@@ -303,6 +308,7 @@ fn recurse_walk_range(
     }
 }
 
+#[cfg(test)]
 fn path_bond_hashes(
     mol: &Molecule,
     invariants: &[u32],
@@ -360,6 +366,7 @@ fn path_bond_hashes(
     (bond_hashes, atoms_in_path.len() as u32)
 }
 
+#[cfg(test)]
 fn path_seed(bond_hashes: &[u32], distinct_atoms: u32) -> u32 {
     if bond_hashes.len() == 1 {
         return bond_hashes[0];
@@ -398,30 +405,214 @@ pub fn rdkit_rdk_fp(mol: &Molecule) -> BitVec2048 {
             ((an % 128) << 1) | (is_atom_aromatic(mol, aromaticity.as_ref(), idx) as u32)
         })
         .collect();
-
-    let paths = find_all_subgraphs(mol, MIN_PATH, MAX_PATH);
-    for plist in paths.values() {
-        for path in plist {
-            let (bond_hashes, distinct_atoms) =
-                path_bond_hashes(mol, &invariants, aromaticity.as_ref(), path);
-            if bond_hashes.is_empty() {
-                continue;
+    let bond_types: Vec<u32> = (0..mol.bond_count())
+        .map(|b| bond_type_for(mol, aromaticity.as_ref(), BondIdx(b as u32)))
+        .collect();
+    let ends: Vec<(u32, u32)> = mol.bonds().map(|(_, b)| (b.atom1.0, b.atom2.0)).collect();
+    // Every connected subgraph of MIN_PATH..=MAX_PATH bonds is hashed as it
+    // is discovered; only the set of subgraphs (not their order or count) is
+    // observable in the bit vector.
+    let mut walker = SubgraphWalker::new(mol);
+    walker.for_each(MIN_PATH, MAX_PATH, |path, degree, n_atoms| {
+        let seed = path_seed_small(path, &ends, &invariants, &bond_types, degree, n_atoms);
+        fp.set((seed % FP_SIZE) as usize);
+        if NUM_BITS_PER_FEATURE > 1 {
+            let mut mt = RdkitWeakMt19937::seeded(seed);
+            for _ in 1..NUM_BITS_PER_FEATURE {
+                let raw = mt.next_u32();
+                let bounded = raw / 2;
+                fp.set((bounded % FP_SIZE) as usize);
             }
-            let seed = path_seed(&bond_hashes, distinct_atoms);
-            fp.set((seed % FP_SIZE) as usize);
+        }
+    });
 
-            if NUM_BITS_PER_FEATURE > 1 {
-                let mut mt = RdkitWeakMt19937::seeded(seed);
-                for _ in 1..NUM_BITS_PER_FEATURE {
-                    let raw = mt.next_u32();
-                    let bounded = raw / 2;
-                    fp.set((bounded % FP_SIZE) as usize);
+    fp
+}
+
+/// [`path_bond_hashes`] + [`path_seed`] for one subgraph of at most
+/// `MAX_PATH` bonds, on stack buffers. `degree[a]` is atom `a`'s degree
+/// within the path and `n_atoms` the number of atoms the path touches.
+fn path_seed_small(
+    path: &[u32],
+    ends: &[(u32, u32)],
+    invariants: &[u32],
+    bond_types: &[u32],
+    degree: &[u32],
+    n_atoms: u32,
+) -> u32 {
+    debug_assert!(!path.is_empty() && path.len() <= MAX_PATH);
+    let len = path.len();
+    let mut hashes = [0u32; MAX_PATH];
+    for (i, &b) in path.iter().enumerate() {
+        let (a1, a2) = ends[b as usize];
+        let mut a1_hash = invariants[a1 as usize];
+        let mut a2_hash = invariants[a2 as usize];
+        let mut deg1 = degree[a1 as usize];
+        let mut deg2 = degree[a2 as usize];
+        // Other path bonds sharing an endpoint (no two bonds share both).
+        let bond_nbrs = deg1 + deg2 - 2;
+        if a1_hash < a2_hash {
+            std::mem::swap(&mut a1_hash, &mut a2_hash);
+            std::mem::swap(&mut deg1, &mut deg2);
+        } else if a1_hash == a2_hash && deg1 < deg2 {
+            std::mem::swap(&mut deg1, &mut deg2);
+        }
+        let mut h = bond_nbrs;
+        h = hash_combine(h, bond_types[b as usize]);
+        h = hash_combine(h, a1_hash);
+        h = hash_combine(h, deg1);
+        h = hash_combine(h, a2_hash);
+        h = hash_combine(h, deg2);
+        hashes[i] = h;
+    }
+    if len == 1 {
+        return hashes[0];
+    }
+    let sorted = &mut hashes[..len];
+    sorted.sort_unstable();
+    let mut seed = 0u32;
+    for &v in sorted.iter() {
+        seed = hash_combine(seed, v);
+    }
+    hash_combine(seed, n_atoms)
+}
+
+/// Allocation-free [`find_all_subgraphs`]: the same recursive walk, with the
+/// per-call copies of the forbidden flags replaced by an undo log and the
+/// candidate stacks kept in per-depth buffers. Visits the same set of
+/// subgraphs, each once.
+struct SubgraphWalker {
+    nbrs: Vec<Vec<u32>>,
+    ends: Vec<(u32, u32)>,
+    forbidden: Vec<bool>,
+    undo: Vec<u32>,
+    stacks: Vec<Vec<u32>>,
+    path: Vec<u32>,
+    /// Degree of every atom within the current path, and how many atoms
+    /// have a nonzero one.
+    degree: Vec<u32>,
+    n_atoms: u32,
+}
+
+impl SubgraphWalker {
+    fn new(mol: &Molecule) -> Self {
+        let n_bonds = mol.bond_count();
+        // Same lists as `build_bond_adjacency`, indexed by bond.
+        let mut nbrs: Vec<Vec<u32>> = vec![Vec::new(); n_bonds];
+        for (aidx, _) in mol.atoms() {
+            let incident = mol.neighbor_slice(aidx);
+            for &(_, b1) in incident {
+                for &(_, b2) in incident {
+                    if b1 != b2 {
+                        nbrs[b1.0 as usize].push(b2.0);
+                    }
                 }
+            }
+        }
+        Self {
+            nbrs,
+            ends: mol.bonds().map(|(_, b)| (b.atom1.0, b.atom2.0)).collect(),
+            forbidden: vec![false; n_bonds],
+            undo: Vec::new(),
+            stacks: vec![Vec::new(); MAX_PATH + 2],
+            path: Vec::with_capacity(MAX_PATH + 1),
+            degree: vec![0; mol.atom_count()],
+            n_atoms: 0,
+        }
+    }
+
+    fn push_bond(&mut self, b: u32) {
+        self.path.push(b);
+        let (a1, a2) = self.ends[b as usize];
+        for a in [a1, a2] {
+            let d = &mut self.degree[a as usize];
+            if *d == 0 {
+                self.n_atoms += 1;
+            }
+            *d += 1;
+        }
+    }
+
+    fn pop_bond(&mut self) {
+        let b = self.path.pop().expect("non-empty path");
+        let (a1, a2) = self.ends[b as usize];
+        for a in [a1, a2] {
+            let d = &mut self.degree[a as usize];
+            *d -= 1;
+            if *d == 0 {
+                self.n_atoms -= 1;
             }
         }
     }
 
-    fp
+    fn for_each(
+        &mut self,
+        min_len: usize,
+        max_len: usize,
+        mut visit: impl FnMut(&[u32], &[u32], u32),
+    ) {
+        let n_bonds = self.nbrs.len();
+        for root in 0..n_bonds as u32 {
+            if self.forbidden[root as usize] {
+                continue;
+            }
+            // Roots stay forbidden for every later root (as in the original).
+            self.forbidden[root as usize] = true;
+            self.push_bond(root);
+            let mut stack = std::mem::take(&mut self.stacks[0]);
+            stack.clear();
+            stack.extend_from_slice(&self.nbrs[root as usize]);
+            self.stacks[0] = stack;
+            self.walk(0, min_len, max_len, &mut visit);
+            self.pop_bond();
+        }
+    }
+
+    /// One `recurse_walk_range` frame; `self.stacks[depth]` holds its
+    /// candidate stack and `self.path` its subgraph.
+    fn walk(
+        &mut self,
+        depth: usize,
+        min_len: usize,
+        max_len: usize,
+        visit: &mut impl FnMut(&[u32], &[u32], u32),
+    ) {
+        let nsize = self.path.len();
+        if nsize >= min_len && nsize <= max_len {
+            visit(&self.path, &self.degree, self.n_atoms);
+        }
+        if nsize >= max_len {
+            return;
+        }
+        let undo_mark = self.undo.len();
+        while let Some(next) = self.stacks[depth].pop() {
+            if self.forbidden[next as usize] {
+                continue;
+            }
+            self.forbidden[next as usize] = true;
+            self.undo.push(next);
+            // Child stack: the remaining candidates, then `next`'s allowed
+            // neighbors.
+            let mut child = std::mem::take(&mut self.stacks[depth + 1]);
+            child.clear();
+            child.extend_from_slice(&self.stacks[depth]);
+            for &b in &self.nbrs[next as usize] {
+                if !self.forbidden[b as usize] {
+                    child.push(b);
+                }
+            }
+            self.stacks[depth + 1] = child;
+            self.push_bond(next);
+            self.walk(depth + 1, min_len, max_len, visit);
+            self.pop_bond();
+        }
+        // Forbidden marks set by this frame were local to it (the original
+        // passed each child a copy).
+        for &b in &self.undo[undo_mark..] {
+            self.forbidden[b as usize] = false;
+        }
+        self.undo.truncate(undo_mark);
+    }
 }
 
 /// Tanimoto similarity between two RDKit-compatible RDK fingerprints.
@@ -436,6 +627,57 @@ mod tests {
 
     fn mol(smiles: &str) -> Molecule {
         parse(smiles).unwrap_or_else(|e| panic!("failed to parse {smiles:?}: {e}"))
+    }
+
+    /// The original subgraph-list implementation (differential oracle).
+    fn rdkit_rdk_fp_reference(mol: &Molecule) -> BitVec2048 {
+        let mut fp = BitVec2048::new();
+        if mol.atom_count() == 0 {
+            return fp;
+        }
+        let has_literal_aromatic_bond = mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic);
+        let aromaticity = if has_literal_aromatic_bond {
+            None
+        } else {
+            Some(assign_aromaticity_ex(mol, AromaticityAlgorithm::RdkitLike))
+        };
+        let invariants: Vec<u32> = (0..mol.atom_count())
+            .map(|i| {
+                let idx = AtomIdx(i as u32);
+                let an = mol.atom(idx).element.atomic_number() as u32;
+                ((an % 128) << 1) | (is_atom_aromatic(mol, aromaticity.as_ref(), idx) as u32)
+            })
+            .collect();
+        for plist in find_all_subgraphs(mol, MIN_PATH, MAX_PATH).values() {
+            for path in plist {
+                let (bond_hashes, distinct_atoms) =
+                    path_bond_hashes(mol, &invariants, aromaticity.as_ref(), path);
+                let seed = path_seed(&bond_hashes, distinct_atoms);
+                fp.set((seed % FP_SIZE) as usize);
+                let mut mt = RdkitWeakMt19937::seeded(seed);
+                fp.set(((mt.next_u32() / 2) % FP_SIZE) as usize);
+            }
+        }
+        fp
+    }
+
+    #[test]
+    fn streaming_walk_matches_reference() {
+        for smi in [
+            "CC",
+            "CC(C)(C)C",
+            "c1ccccc1",
+            "C1=CC=CC=C1",
+            "CC(=O)Oc1ccccc1C(=O)O",
+            "c1ccc2ccccc2c1",
+            "C12C3C4C1C5C2C3C45",
+            "CN1CCC23c4c5ccc(O)c4OC2C(O)C=CC3C1C5",
+            "O=C1c2ccccc2C(=O)N1CCCCN1CCN(c2cccc3ccccc23)CC1",
+            "[Na+].[Cl-].CCO",
+        ] {
+            let m = mol(smi);
+            assert_eq!(rdkit_rdk_fp(&m), rdkit_rdk_fp_reference(&m), "{smi}");
+        }
     }
 
     #[test]

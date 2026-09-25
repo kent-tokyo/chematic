@@ -96,6 +96,42 @@ pub fn assign_cip(mol: &Molecule) -> CipAssignment {
     CipAssignment { assignments }
 }
 
+/// E/Z labels keyed by the double bond they describe.
+///
+/// [`assign_cip`] (and the E/Z part of [`assign_cip_with_mode`]) report each
+/// E/Z label under the double bond's first atom (`bond.atom1`), in bond-index
+/// order. This returns the same labels, in the same order, keyed by the bond
+/// itself, so callers need not reconstruct which bond an atom-keyed E/Z entry
+/// refers to.
+pub fn assign_ez_bonds(mol: &Molecule) -> Vec<(BondIdx, CipCode)> {
+    assign_ez_bonds_with_mode(mol, CipMode::LegacyFast)
+}
+
+/// [`assign_ez_bonds`] for the E/Z labels of [`assign_cip_with_mode`] in
+/// `mode` ([`CipMode::Accurate`] ranks substituents with the accurate engine).
+pub fn assign_ez_bonds_with_mode(mol: &Molecule, mode: CipMode) -> Vec<(BondIdx, CipCode)> {
+    match mode {
+        CipMode::LegacyFast => (0..mol.bond_count())
+            .filter_map(|j| {
+                let bidx = BondIdx(j as u32);
+                assign_ez(mol, bidx).map(|(_, code)| (bidx, code))
+            })
+            .collect(),
+        CipMode::Accurate => {
+            let ranker = chematic_cip::SubstituentRanker::new(
+                mol,
+                chematic_cip::CipBudget::default_budget(),
+            );
+            (0..mol.bond_count())
+                .filter_map(|j| {
+                    let bidx = BondIdx(j as u32);
+                    assign_ez_accurate(mol, bidx, &ranker).map(|(_, code)| (bidx, code))
+                })
+                .collect()
+        }
+    }
+}
+
 /// Which CIP engine [`assign_cip_with_mode`] uses.
 ///
 /// [`CipMode::Accurate`] only affects tetrahedral R/S -- [`assign_cip_accurate_experimental`]
@@ -212,11 +248,51 @@ pub fn assign_cip_with_mode(
             // legacy's wherever both apply; accurate's explicit ties/budget-outs are
             // dropped from `assignments` entirely (never legacy's guess) and surfaced
             // via `unresolved` instead.
-            let mut assignments: Vec<(AtomIdx, CipCode)> = legacy
-                .assignments
-                .into_iter()
-                .filter(|(idx, _)| !accurate_idx.contains(idx) && !unresolved_idx.contains(idx))
+            //
+            // Double-bond E/Z uses the accurate engine's substituent ranking too
+            // (#634): the legacy sphere comparison adds no duplicate atoms for
+            // aromatic bonds, so an aryl substituent could lose to tert-butyl.
+            // Legacy E/Z entries are replaced one-for-one (same atom1 keying,
+            // same bond order); an end the accurate ranking cannot order drops
+            // its label rather than keeping legacy's guess.
+            let legacy_ez: Vec<(AtomIdx, CipCode)> = (0..mol.bond_count())
+                .filter_map(|j| assign_ez(mol, BondIdx(j as u32)))
                 .collect();
+            let ranker = chematic_cip::SubstituentRanker::new(mol, budget);
+            let accurate_ez: Vec<(AtomIdx, CipCode)> = (0..mol.bond_count())
+                .filter_map(|j| assign_ez_accurate(mol, BondIdx(j as u32), &ranker))
+                .collect();
+            let mut legacy_ez_left = legacy_ez.len();
+            let mut assignments: Vec<(AtomIdx, CipCode)> = Vec::new();
+            for (idx, code) in legacy.assignments {
+                // assign_cip emits tetrahedral, then double-bond E/Z (in bond
+                // order), then allene entries; the E/Z block is exactly
+                // `legacy_ez`.
+                let is_ez_block = legacy_ez_left > 0
+                    && matches!(code, CipCode::E | CipCode::Z)
+                    && legacy_ez[legacy_ez.len() - legacy_ez_left] == (idx, code);
+                if is_ez_block {
+                    legacy_ez_left -= 1;
+                    if legacy_ez_left == 0 {
+                        assignments.extend(accurate_ez.iter().copied().filter(|(i, _)| {
+                            !accurate_idx.contains(i) && !unresolved_idx.contains(i)
+                        }));
+                    }
+                    continue;
+                }
+                if !accurate_idx.contains(&idx) && !unresolved_idx.contains(&idx) {
+                    assignments.push((idx, code));
+                }
+            }
+            if legacy_ez.is_empty() {
+                // No legacy E/Z block to replace; append any accurate labels.
+                assignments.extend(
+                    accurate_ez
+                        .iter()
+                        .copied()
+                        .filter(|(i, _)| !accurate_idx.contains(i) && !unresolved_idx.contains(i)),
+                );
+            }
             assignments.extend(accurate.assignments);
 
             let unresolved = accurate
@@ -1146,6 +1222,69 @@ fn highest_stereo_sub(
     None
 }
 
+/// E/Z for the double bond at `bond_idx`, ranking each end's substituents with
+/// the accurate engine's comparator ([`chematic_cip::SubstituentRanker`]:
+/// hierarchical digraph, Rules 1a/2, MANCUDE duplicates for aromatic rings)
+/// instead of the legacy sphere comparison. Same geometry reading and keying
+/// as [`assign_ez`]. `None` when the bond is not a specified stereo double
+/// bond or an end's two substituents tie (or exceed the comparison budget) —
+/// never a guess.
+fn assign_ez_accurate(
+    mol: &Molecule,
+    bond_idx: BondIdx,
+    ranker: &chematic_cip::SubstituentRanker,
+) -> Option<(AtomIdx, CipCode)> {
+    let bond = mol.bond(bond_idx);
+    if bond.order != BondOrder::Double {
+        return None;
+    }
+    let a1 = bond.atom1;
+    let a2 = bond.atom2;
+    let subs = |end: AtomIdx, other: AtomIdx| -> Vec<AtomIdx> {
+        mol.neighbors(end)
+            .filter(|&(nb, bidx)| nb != other && mol.bond(bidx).order != BondOrder::Double)
+            .map(|(nb, _)| nb)
+            .collect()
+    };
+    let subs_a1 = subs(a1, a2);
+    let subs_a2 = subs(a2, a1);
+    if subs_a1.is_empty() || subs_a2.is_empty() {
+        return None;
+    }
+    let (_, up_a1) = highest_stereo_sub_accurate(mol, a1, &subs_a1, ranker)?;
+    let (_, up_a2) = highest_stereo_sub_accurate(mol, a2, &subs_a2, ranker)?;
+    let code = if up_a1 == up_a2 {
+        CipCode::Z
+    } else {
+        CipCode::E
+    };
+    Some((a1, code))
+}
+
+/// [`highest_stereo_sub`] with the accurate comparator (at most two
+/// substituents on a double-bond end).
+fn highest_stereo_sub_accurate(
+    mol: &Molecule,
+    alkene_end: AtomIdx,
+    subs: &[AtomIdx],
+    ranker: &chematic_cip::SubstituentRanker,
+) -> Option<(AtomIdx, bool)> {
+    let (top, other) = match subs {
+        [only] => (*only, None),
+        [a, b] => match ranker.compare(mol, alkene_end, *a, *b).ok()?? {
+            std::cmp::Ordering::Greater => (*a, Some(*b)),
+            std::cmp::Ordering::Less => (*b, Some(*a)),
+            std::cmp::Ordering::Equal => return None,
+        },
+        _ => return None,
+    };
+    if let Some(up) = substituent_is_up(mol, alkene_end, top) {
+        return Some((top, up));
+    }
+    let other_up = substituent_is_up(mol, alkene_end, other?)?;
+    Some((top, !other_up))
+}
+
 // ---------------------------------------------------------------------------
 // E/Z double-bond stereo completeness
 // ---------------------------------------------------------------------------
@@ -1310,6 +1449,52 @@ mod tests {
     }
 
     use super::*;
+
+    /// Issue #634: accurate-mode E/Z ranks substituents with the hierarchical
+    /// digraph (MANCUDE duplicates for aromatic rings). The legacy sphere
+    /// comparison adds no duplicate for aromatic bonds and let tert-butyl
+    /// outrank an aryl carbon, or an sp3 ring CH outrank an aromatic carbon,
+    /// flipping these labels relative to RDKit's rdCIPLabeler.
+    #[test]
+    fn accurate_ez_ranks_aryl_above_alkyl() {
+        let cases: &[(&str, (u32, u32), CipCode)] = &[
+            (
+                "Cc1oc(-c2ccc(C(F)(F)F)cc2)nc1COc1cccc(/C(=C/Cn2oc(=O)[nH]c2=O)C(C)(C)C)c1",
+                (23, 24),
+                CipCode::E,
+            ),
+            (
+                "C=C(C)[C@H]1Cc2c(ccc3c2OC2COc4cc(OC)c(OC)cc4C2/C3=N/O)O1",
+                (26, 27),
+                CipCode::Z,
+            ),
+            (
+                "C=C(C)[C@H]1Cc2c(ccc3c2OC2COc4cc(OC)c(OC)cc4C2/C3=N/OC(C)=O)O1",
+                (26, 27),
+                CipCode::Z,
+            ),
+            // Simple controls where both comparators already agree.
+            ("F/C=C/F", (1, 2), CipCode::E),
+            ("F/C=C\\F", (1, 2), CipCode::Z),
+            ("c1ccccc1/C(C)=C/C", (6, 8), CipCode::E),
+        ];
+        for (smiles, (a, b), expected) in cases {
+            let mol = chematic_smiles::parse(smiles).unwrap();
+            let labels = assign_ez_bonds_with_mode(&mol, CipMode::Accurate);
+            let found = labels.iter().find(|(bidx, _)| {
+                let bond = mol.bond(*bidx);
+                (bond.atom1.0, bond.atom2.0) == (*a, *b) || (bond.atom1.0, bond.atom2.0) == (*b, *a)
+            });
+            assert_eq!(found.map(|(_, c)| *c), Some(*expected), "{smiles}");
+            // assign_cip_with_mode reports the same label under atom1.
+            let merged = assign_cip_with_mode(&mol, CipMode::Accurate).unwrap();
+            let atom1 = mol.bond(found.unwrap().0).atom1;
+            assert!(
+                merged.assignments.contains(&(atom1, *expected)),
+                "{smiles}: merged assignments"
+            );
+        }
+    }
     use chematic_smiles::parse;
 
     fn cip_at(smiles: &str, atom_idx: usize) -> Option<CipCode> {

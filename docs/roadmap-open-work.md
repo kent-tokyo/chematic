@@ -8,10 +8,10 @@ history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 | Order | Work | Current evidence | Exit |
 |---:|---|---|---|
-| 1 | #632 SMILES E/Z semantics | Released source `9808f54f`: RDKit 2026.03.6 fixed 10k lane moves from 18 semantic differences to 0; graph differences remain 0 | Complete the 28 x 1,024 relabel audit without widening the stable-key contract; do not count the interrupted audit as passed |
-| 2 | #634 CIP residuals | 9,770/10,000 correspondence-correct exact labels; 230 classified rows remain | Each row is fixed, explicitly unsupported, or justified as an oracle/representation boundary; order invariance remains intact |
-| 3 | #635 SMARTS residuals | 14,306 differing cells across 310,000; 3,364 rows affected | Differences are grouped by semantic family with truth-table regressions and explicit unsupported boundaries |
-| 4 | A6 MMFF94 | Public v1.0.20 passes 265/265 stereo/clash quality but measures 0.944x RDKit speed; current source has a separate speed candidate | Energy/term residuals, timeout/convergence accounting, broader conformer quality, and a published-package rerun pass separately |
+| 1 | #632 SMILES E/Z semantics | Released source `9808f54f`: RDKit 2026.03.6 fixed 10k lane moves from 18 semantic differences to 0; the 28 x 1,024 relabel audit reran on clean v1.0.25-based source `13d70a2e` with 0/28 divergent components (`validation/results/ez_shared_carrier_coupling_mechanism_audit_summary_1024_2026-09-25.json`) | Verification exit met on source; close after the branch lands. The stable-key contract is not widened |
+| 2 | #634 CIP residuals | Source candidate `11a4ea27`: 9,994/10,000 exact (was 9,770). The lane now keys E/Z by double-bond endpoints, and `CipMode.ACCURATE` E/Z uses the hierarchical-digraph ranker. The 6 remaining labels are classified: 4 phosphorus `oracle_unstable`, 1 trivalent bridgehead N (unsupported), 1 needing adjudication (row 4480, atom 3) | Land the candidate. Row 4480 needs independent adjudication before either answer is adopted |
+| 3 | #635 SMARTS residuals | Source candidate `11a4ea27`: 200 of 310,000 cells differ (was 14,306) after the Python/WASM SMARTS APIs match the perceived aromatic view. All 200 are classified ring-count semantics: 194 symmetrized-ring `[Rn]`/`[kn]` cells and 6 on one ferrocene row | Land the candidate. `[Rn]` SSSR semantics are a documented boundary; an RDKit-style ring-count option would need a separate decision |
+| 4 | A6 MMFF94 | Source candidate `13d70a2e` (#637): with RDKit per-term energies on identical coordinates, 262/262 rows are within 1 kcal/mol (max 0.32; was 9.87). Bond, electrostatic and stretch-bend terms are at parity. Public v1.0.20 passes 265/265 stereo/clash quality but measures 0.944x RDKit speed | Energy/term exit met on source. Timeout/convergence accounting, broader conformer quality, heavy-atom typing residuals (2,908 atoms on the 10k census), and a published-package rerun remain separate gates |
 | 5 | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after the next official stable artifact is pinned; retain old/new results side by side |
 
 ## Accuracy packages
@@ -82,7 +82,15 @@ complete merely because a local packet exists.
   rows are under `validation/results/rdkit-rebaseline-*`.
 - **#632 release-source diagnostic:**
   `validation/results/smiles-ez-semantic-issue632-v1.0.20-candidate-vs-rdkit-2026.03.6-2026-09-23.json`
-  is a bounded source diagnostic; the interrupted long audit remains open.
+  is a bounded source diagnostic. The long relabel audit passed on clean
+  v1.0.25-based source (2026-09-25 files under `validation/results/ez_shared_carrier_*`).
+- **#634/#635 source candidate:**
+  `validation/results/rdkit-rebaseline-issue634-635-v1.0.25-candidate-vs-rdkit-2026.03.6-2026-09-25.json`
+  with raw rows and the residual classification. `scripts/check_rdkit_rebaseline_evidence.py`
+  recounts both. It is a source measurement, not a published-package result.
+- **#637 MMFF94 per-term record:**
+  `benchmarks/2026-09-25-mmff94-per-term-energy.md`; checked by
+  `scripts/check_mmff94_current_energy_evidence.py`.
 - **A6 source candidate:**
   `benchmarks/2026-09-23-mmff94-stereo-safe-performance.md` is not a
   registry-package result.

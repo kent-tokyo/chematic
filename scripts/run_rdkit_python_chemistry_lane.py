@@ -90,11 +90,23 @@ def chematic_cip(molecule) -> tuple[dict[int, str], dict[str, str], dict[int, st
         if descriptor in {"R", "S", "r", "s"}:
             atoms[index] = descriptor
         elif descriptor in {"E", "Z"}:
-            if index >= len(bond_table):
-                bonds[f"invalid-bond-index-{index}"] = descriptor
-            else:
-                atom1, atom2, _bond_type, _is_aromatic = bond_table[index]
+            # E/Z entries are keyed by the double bond's first atom, not by a
+            # bond index; use the explicit bond endpoints when the binding
+            # reports them (#634). Older bindings only expose ``atom_idx``:
+            # resolve it to the unique double bond starting at that atom.
+            if "bond_atoms" in item:
+                atom1, atom2 = item["bond_atoms"]
                 bonds[bond_endpoint_key(int(atom1), int(atom2))] = descriptor
+            else:
+                candidates = [
+                    (int(a1), int(a2))
+                    for a1, a2, bond_type, _is_aromatic in bond_table
+                    if int(a1) == index and str(bond_type).upper() == "DOUBLE"
+                ]
+                if len(candidates) == 1:
+                    bonds[bond_endpoint_key(*candidates[0])] = descriptor
+                else:
+                    bonds[f"ambiguous-ez-atom-{index}"] = descriptor
     unresolved = {
         int(item["atom_idx"]): str(item["reason"])
         for item in molecule.cip_stereo_unresolved()

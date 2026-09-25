@@ -2389,6 +2389,13 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
 /// does not invent an angle parameter: if the resulting ladder has no angle
 /// row, lookup still fails closed.  Other types beyond 55 (65-99, etc.)
 /// remain deferred until a concrete, source-attributed use is measured.
+/// **Types beyond this table (2026-09-25, #637)** now take their ladder from
+/// the checked-in numeric type registry's `equivalence_levels` (identical to
+/// this table on every type both list). Measured need: pyridinium-type N+
+/// (58, `[58, 10, 8, 0]`) in the Tier B aminoquinolinium rows; RDKit
+/// 2026.03.6 resolves the `(0, 37, 1, 58)` angle through `(2, 1, 10)`
+/// (ka 1.160, theta0 107.963), whereas the identity fallback stopped at
+/// `(1, 1, 58)` (ka 1.179, theta0 106.327).
 static MMFF94_EQ_LEVEL: &[(u8, [u8; 4])] = &[
     (1, [1, 1, 1, 0]),
     (2, [2, 2, 1, 0]),
@@ -2456,6 +2463,11 @@ fn eq_level(atom_type: u8, stage: usize) -> u8 {
     MMFF94_EQ_LEVEL
         .binary_search_by_key(&atom_type, |&(t, _)| t)
         .map(|idx| MMFF94_EQ_LEVEL[idx].1[stage])
+        .ok()
+        .or_else(|| {
+            crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(atom_type)
+                .map(|info| info.equivalence_levels[stage])
+        })
         .unwrap_or(atom_type)
 }
 
@@ -2463,6 +2475,7 @@ fn has_eq_level_row(atom_type: u8) -> bool {
     MMFF94_EQ_LEVEL
         .binary_search_by_key(&atom_type, |&(t, _)| t)
         .is_ok()
+        || crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(atom_type).is_some()
 }
 
 /// Outcome of the full table search chain (RDKit's real eqLevel ladder plus

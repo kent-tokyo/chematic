@@ -10,6 +10,9 @@ description = "Output-digest and cold-timing harness for chematic performance ch
 [features]
 # Ops that call oracle functions only present on the candidate revision.
 reference-oracles = []
+# Ops whose candidate-revision implementation calls an API the base revision
+# lacks, while the base revision computes the same output another way.
+candidate-apis = []
 
 [dependencies]
 chematic-core = { path = "../../crates/chematic-core" }

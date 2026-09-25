@@ -47,10 +47,23 @@ separate. Public v1.0.19 records 9,770/10,000 correspondence-correct CIP labels,
 9,999/10,000 compatible-Morgan rows with one typed Fe(II) refusal, and 14,306
 differing SMARTS cells out of 310,000. v1.0.21 contains the issue #632
 release-source fix, which reduces the 18 SMILES semantic differences to zero
-while preserving zero non-isomeric graph differences; the long permutation audit
-was interrupted, so it is not a completed long-audit or published-package
-remeasurement claim. See [validation](validation.md)
-for the evidence files and remaining #634/#635 work.
+while preserving zero non-isomeric graph differences; its 28 x 1,024 relabel
+audit passed on clean v1.0.25-based source.
+
+Source commit `11a4ea27` (#634/#635, not yet released) measures
+9,994/10,000 exact CIP labels and 200 differing SMARTS cells on the same lane.
+Two changes produce most of this. First, the lane compares E/Z labels by
+double-bond endpoints. Second, `CipMode.ACCURATE` ranks E/Z substituents with
+the hierarchical digraph. Separately, the Python and WASM SMARTS APIs now
+match against the molecule's perceived aromatic view, so a Kekulé benzene
+matches `c`. Match indices still refer to the input molecule, and the Rust
+core `find_matches` is unchanged.
+
+The remaining CIP labels are four phosphorus centres whose RDKit labels are
+unstable, one trivalent bridgehead nitrogen CheMatic does not model, and one
+centre awaiting independent adjudication. The remaining SMARTS cells are
+`[Rn]`/`[kn]` ring counts: CheMatic counts SSSR rings, whereas RDKit counts its
+symmetrized ring set. See [validation](validation.md) for the evidence files.
 
 ## Accuracy and parity
 

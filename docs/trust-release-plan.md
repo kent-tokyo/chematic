@@ -30,8 +30,8 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
 - 公開v1.0.20のMMFF94 stereo-safe laneは265/265件で品質条件を満たしますが、
   RDKitより高速ではありません。current sourceの高速化候補は別証拠です。
 - v1.0.21に含まれる#632修正は、RDKit 2026.03.6比較のSMILES semantic差を
-  18/10,000から0/10,000へ減らしました。長時間permutation gateは中断済みで、
-  その完了や公開package再測定の成果としては扱いません。
+  18/10,000から0/10,000へ減らしました。28 component x 1,024 relabelの
+  長時間gateは、v1.0.25ベースのclean source（`13d70a2e`）で再実行し0/28 divergentで完走しました。
 - v1.0.23はRDKit-defined atom-pair/torsion、MACCS、QED、TPSA、Murckoの一致を
   改善しました。3本の5,000行source laneと43/44操作のmatrixは共有2 vCPU実行であり、
   公開packageまたはWASMの性能・完全互換性の証拠ではありません。
@@ -41,12 +41,20 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
 - v1.0.25はatom-output order、断片とRust反応生成物のsource-atom provenance、
   RDKit互換Python HBA profileを追加・修正しました。6操作・46,736分子の既存出力
   differentialは0件ですが、HBA profileとplain writerの意図した修正は別に扱います。
-- 残る主要差分はCIP #634、SMARTS #635、A6のenergy/term・timeout・
-  conformer qualityです。
+- source候補`11a4ea27`では、同じ固定laneでCIPが9,994/10,000一致（旧9,770）、
+  SMARTS差分が200/310,000セル（旧14,306）です。残差はすべて原因別に分類済みです
+  （#634: P oracle不安定4、三価N非対応1、要裁定1。#635: `[Rn]`/`[kn]`の
+  ring数の意味194、フェロセン6）。
+- source候補`13d70a2e`（#637）では、同一座標のMMFF94をRDKitの項別energyと
+  比べ、262/262行が1 kcal/mol以内（最大0.32、旧9.87）です。
+- 残る主要差分は、CIPの要裁定1中心、SMARTSのring数の意味、A6のheavy-atom
+  typing（Kekulé/荷電入力の芳香族性）・timeout・conformer qualityです。
 
 ## 実行順
 
 ### 1. #632 SMILES E/Zを閉じる
+
+状態: 下記の合格条件はv1.0.25ベースのsourceで満たしました（長時間gate 0/28 divergent）。
 
 合格条件:
 
@@ -57,6 +65,10 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
 - 測定外のcoupled shapeではstable-keyがfail-closedのままである。
 
 ### 2. #634 CIP差分を分類して解く
+
+状態: source候補`11a4ea27`で230→6。比較器のE/Z結合同定を二重結合の端点に修正し、
+`CipMode.ACCURATE`のE/Zを階層digraphの順位付けに切り替えました。
+残る6件は分類済みです（`validation/results/rdkit-rebaseline-residual-classification-v1.0.25-issue634-635-vs-2026.03.6-2026-09-25.json`）。
 
 差分を次の4種類に分けます。
 
@@ -71,11 +83,18 @@ atom-order permutation、full/pseudo atrop、負電荷共鳴系を回帰に含�
 
 ### 3. #635 SMARTS差分を意味単位で解く
 
+状態: source候補`11a4ea27`で14,306→200セル。Python/WASMのSMARTS APIは、
+入力の索引を保つperceived aromatic viewに対して照合します（Rust coreは不変）。
+残る200セルは、すべて`[Rn]`/`[kn]`のring数の意味（SSSRか、対称化ring集合か）の差です。
+
 差分を原子primitive、結合、芳香族性、再帰SMARTS、ring、stereo、
 logical operatorへ分割します。各修正は小さなtruth tableと、RDKit版・設定を固定した
 比較を必要とします。parse成功とmatch互換は別の契約です。
 
 ### 4. A6 MMFF94の正しさを閉じる
+
+状態: 同一座標でのenergyと各termのgateは、source候補`13d70a2e`で満たしました
+（`benchmarks/2026-09-25-mmff94-per-term-energy.md`）。それ以外のgateは未完了です。
 
 速度だけで完了にしません。次を別gateとして扱います。
 

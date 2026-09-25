@@ -4,7 +4,9 @@
 The historical files preserve the measured 4/28 residual and a rejected
 7/28 experiment. The current files prove that the adopted complete-slot
 planner resolves all 28 corpus components under the pinned 1,024-relabeling
-gate. This remains bounded evidence, not a claim about every possible E/Z
+gate. The current run was measured on v1.0.23 (after the Issue #632 canonical
+E/Z change); the 2026-09-22 run at `2fe0cdd7` predates #632 and is kept as
+history. This remains bounded evidence, not a claim about every possible E/Z
 spelling.
 """
 
@@ -19,8 +21,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 AUDIT = ROOT / "validation" / "results" / "ez_shared_carrier_coupling_mechanism_audit_1024_2026-09-11.json"
 EXPERIMENT = ROOT / "validation" / "results" / "ez_shared_carrier_coupling_mechanism_close_side_experiment_2026-09-11.json"
-CURRENT_SUMMARY = ROOT / "validation" / "results" / "ez_shared_carrier_coupling_mechanism_audit_summary_1024_2026-09-22.json"
-CURRENT_ROWS = ROOT / "validation" / "results" / "ez_shared_carrier_coupling_mechanism_audit_1024_2026-09-22.jsonl"
+CURRENT_SUMMARY = ROOT / "validation" / "results" / "ez_shared_carrier_coupling_mechanism_audit_summary_1024_2026-09-25.json"
+CURRENT_ROWS = ROOT / "validation" / "results" / "ez_shared_carrier_coupling_mechanism_audit_1024_2026-09-25.jsonl"
 
 
 def fail(message: str) -> int:

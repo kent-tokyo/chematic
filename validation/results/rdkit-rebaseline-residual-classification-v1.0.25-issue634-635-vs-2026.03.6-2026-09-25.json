@@ -1,0 +1,2682 @@
+{
+ "schema_version": 1,
+ "profile": "rdkit_rebaseline_residual_classification_v1",
+ "rows_file": {
+  "path": "validation/results/rdkit-rebaseline-python-chemistry-rows-v1.0.25-issue634-635-vs-2026.03.6-2026-09-25.jsonl.gz",
+  "sha256": "e8c0733e6fd044e0779b24dcefbde3ef8b249ee20e4071e741f8231f96626a5d"
+ },
+ "chematic_version": "1.0.25",
+ "rdkit_version": "2026.03.6",
+ "rows": 10000,
+ "smarts_cells": 310000,
+ "cip": {
+  "differing_rows": 6,
+  "differing_labels_by_family": {
+   "adjudication_required": 1,
+   "phosphorus_oracle_unstable": 4,
+   "trivalent_nitrogen_unsupported": 1
+  },
+  "unclassified_labels": 0,
+  "rows": [
+   {
+    "input_index": 2960,
+    "smiles": "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+    "labels": [
+     {
+      "kind": "atom",
+      "atom": 9,
+      "element": "N",
+      "rdkit": "S",
+      "chematic": null,
+      "chematic_unresolved": null,
+      "family": "trivalent_nitrogen_unsupported"
+     }
+    ]
+   },
+   {
+    "input_index": 4419,
+    "smiles": "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@](=O)(OC)[C@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
+    "labels": [
+     {
+      "kind": "atom",
+      "atom": 13,
+      "element": "P",
+      "rdkit": "R",
+      "chematic": null,
+      "chematic_unresolved": "oracle_unstable",
+      "family": "phosphorus_oracle_unstable"
+     }
+    ]
+   },
+   {
+    "input_index": 4439,
+    "smiles": "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@@](=O)(OC)[C@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
+    "labels": [
+     {
+      "kind": "atom",
+      "atom": 13,
+      "element": "P",
+      "rdkit": "S",
+      "chematic": null,
+      "chematic_unresolved": "oracle_unstable",
+      "family": "phosphorus_oracle_unstable"
+     }
+    ]
+   },
+   {
+    "input_index": 4480,
+    "smiles": "CO[C@@H]1[C@@H](N)[C@@H](OC)[C@@H](O)[C@H]1O",
+    "labels": [
+     {
+      "kind": "atom",
+      "atom": 3,
+      "element": "C",
+      "rdkit": "S",
+      "chematic": "R",
+      "chematic_unresolved": null,
+      "family": "adjudication_required"
+     }
+    ]
+   },
+   {
+    "input_index": 4643,
+    "smiles": "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@@](=O)(OC)[C@@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
+    "labels": [
+     {
+      "kind": "atom",
+      "atom": 13,
+      "element": "P",
+      "rdkit": "S",
+      "chematic": null,
+      "chematic_unresolved": "oracle_unstable",
+      "family": "phosphorus_oracle_unstable"
+     }
+    ]
+   },
+   {
+    "input_index": 4644,
+    "smiles": "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@](=O)(OC)[C@@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
+    "labels": [
+     {
+      "kind": "atom",
+      "atom": 13,
+      "element": "P",
+      "rdkit": "R",
+      "chematic": null,
+      "chematic_unresolved": "oracle_unstable",
+      "family": "phosphorus_oracle_unstable"
+     }
+    ]
+   }
+  ]
+ },
+ "smarts": {
+  "differing_cells": 200,
+  "differing_rows": 64,
+  "cells_by_family": {
+   "ring_semantics:organometallic": 6,
+   "ring_semantics:symmetrized_rings": 194
+  },
+  "cells_by_query": {
+   "*!@*": {
+    "ring_semantics:organometallic": 1
+   },
+   "*@*": {
+    "ring_semantics:organometallic": 1
+   },
+   "[R1]": {
+    "ring_semantics:organometallic": 1,
+    "ring_semantics:symmetrized_rings": 58
+   },
+   "[R2]": {
+    "ring_semantics:organometallic": 1,
+    "ring_semantics:symmetrized_rings": 63
+   },
+   "[R3]": {
+    "ring_semantics:symmetrized_rings": 62
+   },
+   "[k5]": {
+    "ring_semantics:symmetrized_rings": 1
+   },
+   "[k6]": {
+    "ring_semantics:symmetrized_rings": 10
+   },
+   "[x2]": {
+    "ring_semantics:organometallic": 1
+   },
+   "[x3]": {
+    "ring_semantics:organometallic": 1
+   }
+  },
+  "unclassified_cells": 0,
+  "rows": [
+   {
+    "input_index": 9,
+    "smiles": "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      28,
+      28
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      28
+     ],
+     "cycle_rank": 7,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 23,
+    "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      30,
+      30,
+      30,
+      30
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      30
+     ],
+     "cycle_rank": 7,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 28,
+    "smiles": "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      32,
+      32,
+      32
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      32
+     ],
+     "cycle_rank": 7,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 29,
+    "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      32,
+      32,
+      32,
+      32
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      32
+     ],
+     "cycle_rank": 7,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 30,
+    "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      31,
+      31,
+      31,
+      31
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      31
+     ],
+     "cycle_rank": 7,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 34,
+    "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      29,
+      29
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      29
+     ],
+     "cycle_rank": 8,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 49,
+    "smiles": "COc1cc2nc(N3CCN(C(=O)C4=CC5C=CC4CC5)CC3)nc(N)c2cc1OC",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 745,
+    "smiles": "CCO[C@H]1O[C@@H]2O[C@@]3(C)CCC4[C@H](C)CCC([C@H]1C)[C@]42OO3",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      7,
+      7
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      7
+     ],
+     "cycle_rank": 4,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 1177,
+    "smiles": "C=CC[C@H](NC(=O)[C@@H]1C[C@@H](CCCc2cccc3ccccc23)c2c(Cl)nc(NCc3cccc(OC)c3)c(=O)n21)B1OC2CC3CC(C3(C)C)[C@@]2(C)O1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      4,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      4,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 8,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[k6]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 1519,
+    "smiles": "CSCC[C@H](NC(=O)NC12CC3CC(CC(C3)C1)C2)C(=O)N[C@@H](CC(C)C)C(=O)N[C@@H](Cc1ccccc1)C(=O)O",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 4,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 1530,
+    "smiles": "CC(C)C[C@@H](NC(=O)[C@H](Cc1ccccc1)NC(=O)[C@@H](CC(C)C)NC(=O)[C@H](Cc1ccccc1)NC(=O)NC12CC3CC(CC(C3)C1)C2)C(=O)N[C@@H](Cc1ccccc1)C(=O)O",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 6,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2590,
+    "smiles": "COc1ccc2c(c1)c(C1=NCC3(CN4CCC3CC4)O1)cn2C",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2591,
+    "smiles": "Cn1cc(C2=NCC3(CN4CCC3CC4)O2)c2cc(N)ccc21",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2619,
+    "smiles": "Cn1cc(C2=NCC3(CN4CCC3CC4)O2)c2cc([N+](=O)[O-])ccc21",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2620,
+    "smiles": "Cc1ccc2c(c1)c(C1=NCC3(CN4CCC3CC4)O1)cn2C",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2655,
+    "smiles": "Cn1cc(C2=NCC3(CN4CCC3CC4)O2)c2cc(O)ccc21",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2665,
+    "smiles": "Cn1cc(C2=NCC3(CN4CCC3CC4)O2)c2cc(F)ccc21",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2669,
+    "smiles": "COc1cccc(C2=NCC3(CN4CCC3CC4)O2)c1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 4,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2680,
+    "smiles": "c1ccc2c(C3=NCC4(CN5CCC4CC5)O3)csc2c1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2694,
+    "smiles": "Cn1c(I)c(C2=NCC3(CN4CCC3CC4)O2)c2ccccc21",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2697,
+    "smiles": "c1ccc2c(C3=NCC4(CN5CCC4CC5)O3)[nH]nc2c1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2700,
+    "smiles": "CC(=O)c1c(C2=NCC3(CN4CCC3CC4)O2)c2ccccc2n1C",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2705,
+    "smiles": "Cc1cccc2c(C3=NCC4(CN5CCC4CC5)O3)cn(C)c12",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2732,
+    "smiles": "c1ccc2c(c1)c(C1=NCC3(CN4CCC3CC4)O1)cn2CC1CC1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      3,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      3,
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 6,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2756,
+    "smiles": "Cn1c([Si](C)(C)C)c(C2=NCC3(CN4CCC3CC4)O2)c2ccccc21",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2780,
+    "smiles": "Cn1cc(C2=NCC3(C[N+]4([O-])CCC3CC4)O2)c2ccccc21",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2810,
+    "smiles": "Cn1cc(C2=NCC3(CN4CCC3CC4)O2)c2ccccc21",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2912,
+    "smiles": "C=CCn1cc(C2=NCC3(CN4CCC3CC4)O2)c2ccccc21",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2921,
+    "smiles": "C#CCn1cc(C2=NCC3(CN4CCC3CC4)O2)c2ccccc21",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2922,
+    "smiles": "CCn1cc(C2=NCC3(CN4CCC3CC4)O2)c2ccccc21",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2944,
+    "smiles": "c1ccc2c(C3=NCC4(CN5CCC4CC5)O3)c[nH]c2c1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 2951,
+    "smiles": "CC1(C)[C@H]2C[C@H](NC(=O)[C@H](O)C3CCCC3)[C@@H](C/C=C\\CCCC(=O)O)[C@@H]1C2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      4,
+      5,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      4,
+      5,
+      6
+     ],
+     "cycle_rank": 3,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[k6]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 3077,
+    "smiles": "C=C1CC2(OC1=O)C1CC3CC(C1)CC2C3",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 4,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 3385,
+    "smiles": "CC[C@H](C)[C@H](NC(=O)[C@H](Cc1ccc(O)cc1)NNCC(=O)[C@@H]1CCCN1C(=O)[C@H](CCCCN)NC(=O)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3)C(=O)N[C@@H](CC(C)C)C(=O)O",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 3498,
+    "smiles": "C=C1[C@H]2Oc3cc(C(C)(C)CCCCCC)cc(O)c3[C@H]2[C@H]2C[C@@H]1C2(C)C",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      4,
+      5,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      4,
+      5,
+      6,
+      6
+     ],
+     "cycle_rank": 4,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[k6]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 3591,
+    "smiles": "CC[C@H](C)[C@H](NNCC(=O)[C@H](Cc1ccc(O)cc1)NC(=O)[C@@H]1CCCN1C(=O)[C@H](CCCCN)NC(=O)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3)C(=O)N[C@@H](CC(C)C)C(=O)O",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 3603,
+    "smiles": "CC[C@H](C)[C@H](NNCC(=O)[C@H](Cc1ccc(O)cc1)NC(=O)[C@@H]1CCCN1NCC(=O)[C@H](CCCCN)NC(=O)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3)C(=O)N[C@@H](CC(C)C)C(=O)O",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 3837,
+    "smiles": "COCCOCCOCCN1CC23C4=C5C6=C7c8c9c%10c%11c%12c%13c%14c(c2c2c%15c%16c%17c%18c%19c(c5c5c%20c%21c%22c%23c(c8C%22C65)c%10c5c%11c6c%13c8c(c%15%14)c%16c%10c%18c%11c(c%20%19)c%21c%13c%23c5c5c%13c%11c%10c8c65)C%17C42)C%12C9C73C1COCCOCCOC",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 32,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 3976,
+    "smiles": "COCCOCCOCC1N(C)CC23C4=C5C6=C7c8c9c%10c%11c%12c%13c%14c(c2c2c%15c%16c%17c%18c%19c(c5c5c%20c%21c%22c%23c(c8C%22C65)c%10c5c%11c6c%13c8c(c%15%14)c%16c%10c%18c%11c(c%20%19)c%21c%13c%23c5c5c%13c%11c%10c8c65)C%17C42)C%12C9C713",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 32,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 3995,
+    "smiles": "COC1/C=C/OC2(C)Oc3c(C)c(O)c4c(O)c(c(/C=N/N5CCN(C)CC5)c(O)c4c3C2=O)NC(=O)/C(C)=C\\C=C\\C(C)C(O)C(C)C(O)C(C)C(OC(C)=O)C1C",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      6,
+      6,
+      6,
+      24,
+      24
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      6,
+      6,
+      6,
+      24
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 4004,
+    "smiles": "COCCOCCOCCN1CC23C4=C5C6=C7c8c9c%10c%11c%12c%13c%14c(c2c2c%15c%16c%17c%18c%19c(c5c5c%20c%21c%22c%23c(c8C%22C65)c%10c5c%11c6c%13c8c(c%15%14)c%16c%10c%18c%11c(c%20%19)c%21c%13c%23c5c5c%13c%11c%10c8c65)C%17C42)C%12C9C73C1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 32,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 4629,
+    "smiles": "Cc1cc(C23CC4CC(CC(C4)C2)C3)nc2ccccc12",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 5555,
+    "smiles": "CCOC(=O)[CH]1C2CCC(CC2)[CH]1C(=O)OCC",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6
+     ],
+     "cycle_rank": 2,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 5717,
+    "smiles": "CC1(C)[CH]2CC[CH](C=NNC(N)=S)[CH]1C2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      4,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      4,
+      6
+     ],
+     "cycle_rank": 2,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[k6]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 6110,
+    "smiles": "C1C[S+]2CC[S+]1CC2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6
+     ],
+     "cycle_rank": 2,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 6264,
+    "smiles": "CC1(C)[CH]2CC=C(CCO)[CH]1C2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      4,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      4,
+      6
+     ],
+     "cycle_rank": 2,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[k6]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 6265,
+    "smiles": "CC1(C)[CH]2CC[CH](CCO)[CH]1C2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      4,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      4,
+      6
+     ],
+     "cycle_rank": 2,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[k6]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 6266,
+    "smiles": "CC(=O)OCCC1=CC[CH]2C[CH]1C2(C)C",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      4,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      4,
+      6
+     ],
+     "cycle_rank": 2,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[k6]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 6704,
+    "smiles": "CCCCCCCC[N+]12CN3CN(CN(C3)C1)C2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 3,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 7276,
+    "smiles": "CC1(C)[CH]2CC[C](C)(O)[CH]1C2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      4,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      4,
+      6
+     ],
+     "cycle_rank": 2,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[k6]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 7448,
+    "smiles": "CC1(C)[CH]2CC[CH](CCOC(=O)C3=C(O)C=CC=C3)[CH]1C2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      4,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      4,
+      6,
+      6
+     ],
+     "cycle_rank": 3,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[k6]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 7486,
+    "smiles": "CC1(C)NC(=N)SC2(C)CCC1CC2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      8,
+      8
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      8
+     ],
+     "cycle_rank": 2,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 7764,
+    "smiles": "CC1(C)[CH]2CC[CH](CC(O)=O)[CH]1C2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      4,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      4,
+      6
+     ],
+     "cycle_rank": 2,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[k6]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 7888,
+    "smiles": "CC(C)C1=C[C]23CC[CH]4[C](C)(CCC[C]4(C)C(O)=O)[CH]2C[CH]1[CH]5[CH]3C(=O)C=CC5=O",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 8132,
+    "smiles": "CNC1=NC(C)(C)C2CCC(C)(CC2)S1",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      8,
+      8
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      8
+     ],
+     "cycle_rank": 2,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 8263,
+    "smiles": "CC(=O)OC1CCC2(C)C3(C1)C=CC4(C5CCC(C(C)=O)C5(C)CC6OC246)C7C3C(=O)OC7=O",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      3,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      3,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 7,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 8264,
+    "smiles": "CC(=O)O[CH]1CC[C]2(C)C3=CC[C]4(C)[CH](CC[CH]4[C]35C=C[C]2(C1)[CH]6[CH]5C(=O)OC6=O)C(C)=O",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      5,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 6,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 8292,
+    "smiles": "O=C1C2=C(C=CC=C2)C(=O)C3=C1C4C5=C(C=CC=C5)C3C6=C4C=CC=C6",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 6,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 8341,
+    "smiles": "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      4
+     ],
+     "chematic_sssr_sizes": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
+     ],
+     "cycle_rank": 10,
+     "has_metal": true
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:organometallic"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:organometallic"
+     },
+     {
+      "query": "[x2]",
+      "family": "ring_semantics:organometallic"
+     },
+     {
+      "query": "[x3]",
+      "family": "ring_semantics:organometallic"
+     },
+     {
+      "query": "*@*",
+      "family": "ring_semantics:organometallic"
+     },
+     {
+      "query": "*!@*",
+      "family": "ring_semantics:organometallic"
+     }
+    ]
+   },
+   {
+    "input_index": 9085,
+    "smiles": "CC12CCC(CC1)C(C)(C)N=C(NN=O)S2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      8,
+      8
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      8
+     ],
+     "cycle_rank": 2,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 9108,
+    "smiles": "C1[CH]2[CH](CC3=CC=CC=C13)C4C5=C(C=CC=C5)C2C6=C4C=CC=C6",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 6,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 9411,
+    "smiles": "O=C1OC(=O)[CH]2[CH]3CC[CH](C=C3)[CH]12",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      5,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      5,
+      6,
+      6
+     ],
+     "cycle_rank": 3,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 9862,
+    "smiles": "C1=CC=C(C=C1)N2N=C3N(C2N3C4=CC=CC=C4)C5=CC=CC=C5",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      4,
+      5,
+      5,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      4,
+      5,
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 5,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[k5]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   },
+   {
+    "input_index": 9885,
+    "smiles": "C=CC[N+]12CN3CN(CN(C3)C1)C2",
+    "ring_facts": {
+     "rdkit_ring_sizes": [
+      6,
+      6,
+      6,
+      6
+     ],
+     "chematic_sssr_sizes": [
+      6,
+      6,
+      6
+     ],
+     "cycle_rank": 3,
+     "has_metal": false
+    },
+    "cells": [
+     {
+      "query": "[R1]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R2]",
+      "family": "ring_semantics:symmetrized_rings"
+     },
+     {
+      "query": "[R3]",
+      "family": "ring_semantics:symmetrized_rings"
+     }
+    ]
+   }
+  ]
+ }
+}

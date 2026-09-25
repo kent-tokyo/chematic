@@ -392,8 +392,9 @@ pub fn rdkit_torsion_fp(mol: &Molecule) -> BitVec2048 {
     // RDKit fingerprints sanitized molecules, i.e. after aromaticity
     // perception; Kekule input must not see a different graph than the
     // equivalent aromatic spelling. The perceived view is memoized on `mol`.
-    let perceived = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).ok();
-    rdkit_torsion_fp_prepared(perceived.as_ref().unwrap_or(mol))
+    chematic_perception::with_rdkit_parity_view(mol, |view| {
+        rdkit_torsion_fp_prepared(view.unwrap_or(mol))
+    })
 }
 
 /// [`rdkit_torsion_fp`] on a molecule whose aromaticity is already RDKit-perceived.

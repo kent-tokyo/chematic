@@ -1,0 +1,185 @@
+{
+ "schema": "chematic-perf-digest-time-pair/v1",
+ "created_utc": "2026-09-25T13:13:11.746424Z",
+ "base_revision": "912c4b7d",
+ "head_revision": "98f57746",
+ "corpus": {
+  "path": "scripts/chembl_accuracy_corpus_4999.smi",
+  "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+ },
+ "protocol": {
+  "rounds": 3,
+  "reps_per_call": 3,
+  "per_call": "best of REPS cold passes (fresh clones), \u00b5s/molecule",
+  "aggregate": "median over rounds; base/head alternate every round"
+ },
+ "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+ "cpu_count": 2,
+ "ops": {
+  "rdkit_parity_ok": {
+   "base_us": [
+    11.54,
+    11.64,
+    11.53
+   ],
+   "head_us": [
+    4.18,
+    3.96,
+    3.83
+   ],
+   "base_median_us": 11.54,
+   "head_median_us": 3.96,
+   "speedup": 2.914141414141414
+  },
+  "aromatic_ring_count": {
+   "base_us": [
+    16.36,
+    15.22,
+    15.93
+   ],
+   "head_us": [
+    5.99,
+    6.38,
+    6.08
+   ],
+   "base_median_us": 15.93,
+   "head_median_us": 6.08,
+   "speedup": 2.620065789473684
+  },
+  "rdkit_aromatic_ring_count": {
+   "base_us": [
+    38.04,
+    34.36,
+    34.73
+   ],
+   "head_us": [
+    21.72,
+    21.91,
+    22.21
+   ],
+   "base_median_us": 34.73,
+   "head_median_us": 21.91,
+   "speedup": 1.5851209493382017
+  },
+  "has_sub_perceived": {
+   "base_us": [
+    51.79,
+    53.61,
+    52.02
+   ],
+   "head_us": [
+    32.21,
+    34.4,
+    35.74
+   ],
+   "base_median_us": 52.02,
+   "head_median_us": 34.4,
+   "speedup": 1.5122093023255816
+  },
+  "has_sub_perceived_1": {
+   "base_us": [
+    10.21,
+    10.43,
+    13.05
+   ],
+   "head_us": [
+    2.56,
+    3.4,
+    3.29
+   ],
+   "base_median_us": 10.43,
+   "head_median_us": 3.29,
+   "speedup": 3.1702127659574466
+  },
+  "has_sub_perceived_q": {
+   "base_us": [
+    13.75,
+    13.22,
+    13.9
+   ],
+   "head_us": [
+    4.57,
+    4.67,
+    4.54
+   ],
+   "base_median_us": 13.75,
+   "head_median_us": 4.57,
+   "speedup": 3.008752735229759
+  },
+  "has_sub": {
+   "base_us": [
+    39.13,
+    37.74,
+    39.16
+   ],
+   "head_us": [
+    29.56,
+    30.69,
+    29.99
+   ],
+   "base_median_us": 39.13,
+   "head_median_us": 29.99,
+   "speedup": 1.304768256085362
+  },
+  "find_matches_perceived": {
+   "base_us": [
+    171.25,
+    166.05,
+    165.85
+   ],
+   "head_us": [
+    147.4,
+    140.26,
+    150.12
+   ],
+   "base_median_us": 166.05,
+   "head_median_us": 147.4,
+   "speedup": 1.1265264586160109
+  },
+  "rdkit_pattern_fp": {
+   "base_us": [
+    243.64,
+    254.52,
+    249.46
+   ],
+   "head_us": [
+    132.85,
+    126.96,
+    131.09
+   ],
+   "base_median_us": 249.46,
+   "head_median_us": 131.09,
+   "speedup": 1.9029674269585781
+  },
+  "maccs": {
+   "base_us": [
+    501.82,
+    535.03,
+    551.14
+   ],
+   "head_us": [
+    445.85,
+    443.08,
+    464.47
+   ],
+   "base_median_us": 535.03,
+   "head_median_us": 445.85,
+   "speedup": 1.200022429068072
+  },
+  "qed": {
+   "base_us": [
+    379.89,
+    409.83,
+    408.25
+   ],
+   "head_us": [
+    285.36,
+    297.16,
+    236.39
+   ],
+   "base_median_us": 408.25,
+   "head_median_us": 285.36,
+   "speedup": 1.4306490047659097
+  }
+ }
+}

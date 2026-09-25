@@ -31,7 +31,8 @@ pub use chematic_core::{ValenceError, validate_valence};
 pub use pharmacophore::{Feature, FeatureType, detect_features, features_to_bitvec};
 pub use rdkit_parity::{
     AromaticityError, apply_aromaticity_rdkit_parity_experimental,
-    assign_aromaticity_rdkit_parity_experimental,
+    apply_aromaticity_rdkit_parity_shared, assign_aromaticity_rdkit_parity_experimental,
+    rdkit_parity_view_is_identity, with_rdkit_parity_view,
 };
 pub use ring_family::{RingFamily, RingSystemKind, find_ring_families, find_ring_families_over};
 

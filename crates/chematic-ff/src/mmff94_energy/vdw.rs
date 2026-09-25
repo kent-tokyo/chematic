@@ -130,10 +130,18 @@ pub fn mmff94_vdw_combined(type_i: u8, type_j: u8) -> Option<(f64, f64)> {
     let r_ii = pi.a_i * pi.alpha_i.powf(0.25);
     let r_jj = pj.a_i * pj.alpha_i.powf(0.25);
 
-    // Arithmetic mean + London asymmetry correction (MMFF94 eq. 2)
+    // Arithmetic mean + asymmetry correction (MMFF94 eq. 2). MMFF (and
+    // RDKit's `calcUnscaledVdWMinimum`) omits the B(1 - exp(-beta gamma^2))
+    // term whenever either atom is a hydrogen-bond donor (DA = 'D'); applying
+    // it to polar-H pairs overestimates R* (e.g. CR/HNCO 3.530 vs 3.276 Å).
     let r_ij_unscaled = 0.5 * (r_ii + r_jj);
-    let delta = (r_ii - r_jj) / (r_ii + r_jj);
-    let r_star_ij = r_ij_unscaled * (1.0 + 0.2 * (1.0 - (-12.0 * delta * delta).exp()));
+    let asymmetry = if pi.da == 1 || pj.da == 1 {
+        0.0
+    } else {
+        let gamma = (r_ii - r_jj) / (r_ii + r_jj);
+        0.2 * (1.0 - (-12.0 * gamma * gamma).exp())
+    };
+    let r_star_ij = r_ij_unscaled * (1.0 + asymmetry);
 
     // Epsilon combining rule: Slater-Kirkwood (eq. 3)
     let eps_ij = 181.16 * pi.g_i * pj.g_i * pi.alpha_i * pj.alpha_i
@@ -148,4 +156,26 @@ pub fn mmff94_vdw_combined(type_i: u8, type_j: u8) -> Option<(f64, f64)> {
     };
 
     Some((r_star_ij, eps_ij))
+}
+
+#[cfg(test)]
+mod donor_tests {
+    use super::mmff94_vdw_combined;
+
+    /// RDKit 2026.03.6 `GetMMFFVdWParams` for N-methylacetamide pairs (#637).
+    #[test]
+    fn donor_pairs_skip_the_asymmetry_term() {
+        let cases = [
+            // (type_i, type_j, R*_ij, eps_ij) after donor/acceptor scaling
+            (1u8, 1u8, 3.9377389919289634, 0.06779699304291371),
+            (1, 28, 3.275768748270286, 0.03306703754626389),
+            (7, 28, 2.44265298442308, 0.019039914981539462),
+            (5, 28, 2.7918234927975547, 0.021139453896200932),
+        ];
+        for (ti, tj, r, eps) in cases {
+            let (r_star, e) = mmff94_vdw_combined(ti, tj).unwrap();
+            assert!((r_star - r).abs() < 1e-9, "{ti}/{tj} R* {r_star} vs {r}");
+            assert!((e - eps).abs() < 1e-9, "{ti}/{tj} eps {e} vs {eps}");
+        }
+    }
 }

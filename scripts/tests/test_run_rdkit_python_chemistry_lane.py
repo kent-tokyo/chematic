@@ -70,18 +70,22 @@ def test_bond_endpoint_key_is_independent_of_bond_index_and_direction():
     assert bond_endpoint_key(2, 7) == "2-7"
 
 
-def test_chematic_cip_translates_ez_bond_indices_to_atom_endpoints():
+def test_chematic_cip_reads_ez_bond_endpoints():
+    # E/Z entries are keyed by the double bond's first atom (#634); the
+    # explicit ``bond_atoms`` field wins when present.
     class FakeMolecule:
         bond_table = [
             (0, 1, "SINGLE", False),
             (4, 2, "DOUBLE", False),
+            (5, 6, "DOUBLE", False),
         ]
 
         def cip_stereo(self, mode):
             assert mode == "accurate"
             return [
                 {"atom_idx": 3, "descriptor": "R"},
-                {"atom_idx": 1, "descriptor": "E"},
+                {"atom_idx": 4, "descriptor": "E"},
+                {"atom_idx": 5, "descriptor": "Z", "bond_idx": 2, "bond_atoms": (5, 6)},
             ]
 
         def cip_stereo_unresolved(self):
@@ -89,8 +93,27 @@ def test_chematic_cip_translates_ez_bond_indices_to_atom_endpoints():
 
     atoms, bonds, unresolved = chematic_cip(FakeMolecule())
     assert atoms == {3: "R"}
-    assert bonds == {"2-4": "E"}
+    assert bonds == {"2-4": "E", "5-6": "Z"}
     assert unresolved == {}
+
+
+def test_chematic_cip_does_not_read_ez_atom_as_bond_index():
+    # Historical comparator bug: atom 1 used to be read as bond 1 = (4, 2).
+    class FakeMolecule:
+        bond_table = [
+            (0, 1, "SINGLE", False),
+            (4, 2, "DOUBLE", False),
+            (1, 7, "DOUBLE", False),
+        ]
+
+        def cip_stereo(self, mode):
+            return [{"atom_idx": 1, "descriptor": "E"}]
+
+        def cip_stereo_unresolved(self):
+            return []
+
+    _atoms, bonds, _unresolved = chematic_cip(FakeMolecule())
+    assert bonds == {"1-7": "E"}
 
 
 def test_summary_examples_do_not_duplicate_full_operation_payloads():

@@ -57,6 +57,12 @@ fn ops() -> Vec<Op> {
             format!("{:?}", chematic_perception::find_sssr(m).rings())
         }),
         ("ring_count", |m| chematic_chem::ring_count(m).to_string()),
+        ("sssr_n", |m| {
+            // SSSR cost without formatting the rings.
+            let r = chematic_perception::find_sssr_shared(m);
+            let sum: usize = r.rings().iter().map(|x| x.len()).sum();
+            format!("{} {}", r.ring_count(), sum)
+        }),
         ("aromatic_ring_count", |m| {
             chematic_chem::aromatic_ring_count(m).to_string()
         }),
@@ -225,6 +231,180 @@ fn ops() -> Vec<Op> {
         ("maccs", |m| format!("{:?}", chematic_fp::maccs::maccs(m))),
         ("pains", |m| chematic_chem::pains_passes(m).to_string()),
         ("brenk", |m| chematic_chem::brenk_passes(m).to_string()),
+        // Binding-surface (Python/WASM) SMARTS semantics: perceived aromatic view.
+        ("has_sub_perceived", |m| {
+            let cfg = chematic_smarts::MatchConfig {
+                max_matches: Some(1),
+                uniquify: false,
+                ..Default::default()
+            };
+            smarts_queries()
+                .iter()
+                .map(|q| {
+                    if chematic_smarts::has_match_perceived(q, m, &cfg) {
+                        '1'
+                    } else {
+                        '0'
+                    }
+                })
+                .collect()
+        }),
+        ("has_sub_perceived_1", |m| {
+            // One query per fresh molecule: the Python per-call shape.
+            let cfg = chematic_smarts::MatchConfig {
+                max_matches: Some(1),
+                uniquify: false,
+                ..Default::default()
+            };
+            chematic_smarts::has_match_perceived(&smarts_queries()[1], m, &cfg).to_string()
+        }),
+        ("has_sub_perceived_q", |m| {
+            // One query (index from `QIDX`, default 0) per fresh molecule.
+            let cfg = chematic_smarts::MatchConfig {
+                max_matches: Some(1),
+                uniquify: false,
+                ..Default::default()
+            };
+            let i: usize = std::env::var("QIDX")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(0);
+            chematic_smarts::has_match_perceived(&smarts_queries()[i], m, &cfg).to_string()
+        }),
+        ("find_matches_perceived", |m| {
+            let mut out = String::new();
+            for q in smarts_queries() {
+                let mut v: Vec<Vec<u32>> = chematic_smarts::find_matches_perceived(
+                    q,
+                    m,
+                    &chematic_smarts::MatchConfig::default(),
+                )
+                .into_iter()
+                .map(|mm| {
+                    let mut k: Vec<(usize, u32)> = mm.into_iter().map(|(a, b)| (a, b.0)).collect();
+                    k.sort_unstable();
+                    k.into_iter().map(|(_, b)| b).collect()
+                })
+                .collect();
+                v.sort();
+                let _ = write!(out, "{v:?};");
+            }
+            out
+        }),
+        ("match_atom_sets_perceived", |m| {
+            // Python `Mol.find_matches` output. The candidate build computes it
+            // with the candidate API; the base build from the maps.
+            let mut out = String::new();
+            for q in smarts_queries() {
+                let cfg = chematic_smarts::MatchConfig::default();
+                #[cfg(feature = "candidate-apis")]
+                let v = chematic_smarts::find_match_atom_sets_perceived(q, m, &cfg);
+                #[cfg(not(feature = "candidate-apis"))]
+                let v = chematic_smarts::find_matches_perceived(q, m, &cfg)
+                    .into_iter()
+                    .map(|mm| {
+                        let mut v: Vec<usize> = mm.values().map(|a| a.0 as usize).collect();
+                        v.sort_unstable();
+                        v
+                    })
+                    .collect::<Vec<_>>();
+                let _ = write!(out, "{v:?};");
+            }
+            out
+        }),
+        ("rdkit_parity_full", |m| {
+            // Every atom/bond field of the RDKit-parity view plus H counts and
+            // the canonical SMILES written from it.
+            match chematic_perception::apply_aromaticity_rdkit_parity_shared(m).as_ref() {
+                Ok(p) => {
+                    let mut out = String::new();
+                    for (i, a) in p.atoms() {
+                        let _ = write!(
+                            out,
+                            "{:?}/{}/{}/{:?}/{}/{:?}/{:?},",
+                            a.element,
+                            a.charge,
+                            a.aromatic as u8,
+                            a.hydrogen_count,
+                            chematic_core::implicit_hcount(p, i),
+                            a.chirality,
+                            p.neighbors(i).collect::<Vec<_>>()
+                        );
+                    }
+                    for (bi, b) in p.bonds() {
+                        let _ = write!(
+                            out,
+                            "{}-{}:{:?}:{:?},",
+                            b.atom1.0,
+                            b.atom2.0,
+                            b.order,
+                            p.bond_direction(bi)
+                        );
+                    }
+                    let _ = write!(out, "|{}", chematic_smiles::canonical_smiles(p));
+                    out
+                }
+                Err(e) => format!("ERR {e}"),
+            }
+        }),
+        ("rdkit_ecfp4_bits", |m| match chematic_fp::rdkit_morgan_ecfp4_bitvec(m) {
+            Ok(f) => format!("{f:?}"),
+            Err(e) => format!("ERR {e}"),
+        }),
+        ("rdkit_ecfp4_prepared", |m| match chematic_fp::prepare_rdkit_morgan_ecfp4(m) {
+            Ok(p) => format!("{:?}", p.bitvec()),
+            Err(e) => format!("ERR {e}"),
+        }),
+        ("kekulize", |m| match chematic_core::kekulize(m) {
+            Ok(k) => {
+                let mut v: Vec<_> = k.into_iter().map(|(b, o)| (b.0, o)).collect();
+                v.sort_by_key(|&(b, _)| b);
+                format!("{v:?}")
+            }
+            Err(e) => format!("ERR {e}"),
+        }),
+        ("rdkit_parity_ok", |m| {
+            match chematic_perception::apply_aromaticity_rdkit_parity_shared(m).as_ref() {
+                Ok(p) => p.atom_count().to_string(),
+                Err(e) => format!("ERR {e}"),
+            }
+        }),
+        ("rdkit_rdk_fp", |m| format!("{:?}", chematic_fp::rdkit_rdk_fp(m))),
+        ("rdkit_pattern_fp", |m| format!("{:?}", chematic_fp::rdkit_pattern_fp(m))),
+        ("rdkit_atom_pair", |m| format!("{:?}", chematic_fp::rdkit_atom_pair_fp(m))),
+        ("rdkit_torsion", |m| format!("{:?}", chematic_fp::rdkit_torsion_fp(m))),
+        ("chi_each", |m| {
+            format!(
+                "{:?}",
+                [
+                    chematic_chem::chi0(m),
+                    chematic_chem::chi1(m),
+                    chematic_chem::chi2(m),
+                    chematic_chem::chi3(m),
+                    chematic_chem::chi4(m),
+                    chematic_chem::chi0v(m),
+                    chematic_chem::chi1v(m),
+                    chematic_chem::chi2v(m),
+                    chematic_chem::chi3v(m),
+                    chematic_chem::chi4v(m),
+                ]
+            )
+        }),
+        ("chi1v", |m| format!("{:?}", chematic_chem::chi1v(m))),
+        ("chi_all", |m| format!("{:?}", chematic_chem::chi_all(m))),
+        ("kappa", |m| {
+            format!(
+                "{:?}",
+                (
+                    chematic_chem::kappa1(m),
+                    chematic_chem::kappa2(m),
+                    chematic_chem::kappa3(m)
+                )
+            )
+        }),
+        ("rdkit_aromatic_ring_count", |m| {
+            chematic_chem::rdkit_aromatic_ring_count(m).to_string()
+        }),
     ];
     #[cfg(feature = "reference-oracles")]
     ops.push(("sssr_ref", |m| {

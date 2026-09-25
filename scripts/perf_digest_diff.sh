@@ -10,6 +10,7 @@
 # usage: scripts/perf_digest_diff.sh BASE_REV OUT.json CORPUS.smi [CORPUS.smi...]
 #        ONLY=op1,op2 restricts the op set (default: all ops present in both).
 #        KEEP_DIGESTS=1 keeps the raw base/head digests in the scratch directory.
+#        HEAD_FEATURES=candidate-apis builds the head harness with that feature.
 set -euo pipefail
 
 if [ "$#" -lt 3 ]; then
@@ -40,7 +41,7 @@ make_harness() { # $1 = harness dir, $2 = crates root, $3 = extra cargo flags
   (cd "$1" && cargo build --release -q $3)
 }
 make_harness "$SCRATCH/h-base" "$SCRATCH/base-tree/crates" ""
-make_harness "$SCRATCH/h-head" "$ROOT/crates" ""
+make_harness "$SCRATCH/h-head" "$ROOT/crates" "${HEAD_FEATURES:+--features $HEAD_FEATURES}"
 
 # Absolute corpus paths so both binaries read the same files.
 CORPORA=()

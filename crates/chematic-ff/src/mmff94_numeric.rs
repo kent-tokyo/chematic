@@ -809,7 +809,9 @@ pub fn assign_mmff94_numeric_types_with_view(
             Element::CL => 12,
             Element::BR => 13,
             Element::I => 14,
-            Element::H => assign_h_type(&mmff_mol, idx)?,
+            // Hydrogens are typed from their parent's MMFF type in a second
+            // pass below (RDKit / MMFFHDEF semantics).
+            Element::H => 0,
             _ => {
                 return Err(NumericTypeError(format!(
                     "unsupported element {:?} at atom {i}",
@@ -818,6 +820,12 @@ pub fn assign_mmff94_numeric_types_with_view(
             }
         };
         *ty = t;
+    }
+    for i in 0..n {
+        let idx = AtomIdx(i as u32);
+        if mmff_mol.atom(idx).element == Element::H {
+            types[i] = assign_h_type(&mmff_mol, idx, &types)?;
+        }
     }
 
     // Construction-time semantic-compatibility invariant (issue #227,
@@ -2285,92 +2293,109 @@ fn assign_p_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 
 // ── H type assignment ────────────────────────────────────────────────────────
 
-fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
+/// MMFF94 type of an explicit hydrogen, derived from its parent atom's
+/// already-assigned MMFF type the way RDKit's typer (and MMFF's `MMFFHDEF.PAR`)
+/// does: the parent's symbolic type decides the hydrogen type, with the
+/// oxygen-bound hydrogen of a generic `OR` oxygen (type 6) refined by what
+/// the oxygen is attached to.
+fn assign_h_type(mol: &Molecule, idx: AtomIdx, types: &[u8]) -> Result<u8, NumericTypeError> {
     let nbrs = bonds_of(mol, idx);
     if nbrs.is_empty() {
         return Ok(5); // H_C fallback
     }
-    let nbr_atom = mol.atom(nbrs[0].neighbor);
+    let parent = nbrs[0].neighbor;
+    let parent_type = types[parent.0 as usize];
+    let nbr_atom = mol.atom(parent);
 
     Ok(match nbr_atom.element {
-        Element::C => 5, // HC  H on carbon
-        Element::O => assign_oxygen_bound_h_type(mol, nbrs[0].neighbor),
+        Element::C | Element::SI => 5, // HC / HSI
+        Element::O => assign_oxygen_bound_h_type(mol, parent, parent_type),
         Element::S => 71, // HS  H on sulfur
-        Element::N => {
-            // Distinguish: amide NH (type 28) vs amine NH (type 23) vs imine=NH (type 27)
-            let n_idx = nbrs[0].neighbor;
-            let n_atom = mol.atom(n_idx);
-            if n_atom.aromatic {
-                return Ok(23); // treat as HNR for aromatic NH
-            }
-            let n_is_amide = bonds_of(mol, n_idx).iter().any(|b| {
-                b.order == BondOrder::Single
-                    && mol.atom(b.neighbor).element == Element::C
-                    && bonds_of(mol, b.neighbor).iter().any(|bb| {
-                        bb.order == BondOrder::Double && mol.atom(bb.neighbor).element == Element::O
-                    })
-            });
-            if n_is_amide {
-                28 // HNCO H on amide N
-            } else if total_degree(mol, n_idx) == 3
-                && bonds_of(mol, n_idx).iter().any(|bond| {
-                    let carbon = mol.atom(bond.neighbor);
-                    carbon.element == Element::C
-                        && (carbon.aromatic
-                            || bonds_of(mol, bond.neighbor).iter().any(|neighbor_bond| {
-                                neighbor_bond.order == BondOrder::Double
-                                    && matches!(
-                                        mol.atom(neighbor_bond.neighbor).element,
-                                        Element::C | Element::N | Element::P
-                                    )
-                            }))
-                })
-            {
-                // RDKit shares the HNCO parameter row for N-H attached to
-                // a delocalized amine (numeric N type 40), including
-                // aniline/enamine environments.
-                28
-            } else if count_bond_order(mol, n_idx, BondOrder::Double) > 0 {
-                27 // HN=C H on imine N
-            } else {
-                23 // HNR  H on amine N
-            }
-        }
+        Element::P => 71, // HP  H on phosphorus
+        Element::N => match parent_type {
+            8 | 39 | 62 => 23,                 // HNR / HPYL / H on NR-
+            9 => 27,                           // HN=C / HN=N
+            10 | 40 | 43 => 28,                // HNCO, HNCS, HNCC, HNCN, HNSO
+            34 | 54 | 55 | 56 | 58 | 81 => 36, // HNR+, HN=C+, HNCN+, HGD+, HPD+, HIM+
+            _ => legacy_nitrogen_bound_h_type(mol, parent),
+        },
         _ => 5,
     })
 }
 
+/// Local-environment N-H typing used only for parent types without an
+/// `MMFFHDEF` row above (rare N-oxide and nitroso-like parents).
+fn legacy_nitrogen_bound_h_type(mol: &Molecule, n_idx: AtomIdx) -> u8 {
+    let n_atom = mol.atom(n_idx);
+    if n_atom.aromatic {
+        return 23; // treat as HNR for aromatic NH
+    }
+    let n_is_amide = bonds_of(mol, n_idx).iter().any(|b| {
+        b.order == BondOrder::Single
+            && mol.atom(b.neighbor).element == Element::C
+            && bonds_of(mol, b.neighbor).iter().any(|bb| {
+                bb.order == BondOrder::Double && mol.atom(bb.neighbor).element == Element::O
+            })
+    });
+    if n_is_amide {
+        28 // HNCO H on amide N
+    } else if count_bond_order(mol, n_idx, BondOrder::Double) > 0 {
+        27 // HN=C H on imine N
+    } else {
+        23 // HNR  H on amine N
+    }
+}
+
 /// Select the MMFF94 numeric type for an explicit hydrogen bonded to oxygen.
 ///
-/// RDKit distinguishes hydroxyl H (21), acid H (24), water H (31), and the
-/// less common N-oxide hydroxyl H (33).  Treating every O-H bond as HOCO
-/// changes both the bond charge-transfer term and the resulting electrostatic
-/// energy when callers provide an AddHs topology.  The implicit-H path never
-/// enters this function, so this is deliberately limited to explicit H.
-fn assign_oxygen_bound_h_type(mol: &Molecule, oxygen_idx: AtomIdx) -> u8 {
+/// Matches RDKit 2026.03.6 (the pinned oracle; probe table in
+/// `mmff_oxygen_h_types_follow_rdkit`):
+///
+/// * water H is HOH (31), hydroxide H is HOM (21);
+/// * oxonium parents give HO+ (50) and HO=+ (52);
+/// * on a generic `OR` oxygen the H is HOS (33) when the oxygen is bonded to
+///   sulfur, HOP (24) when bonded to phosphorus, HOCO (24) when bonded to a
+///   carbonyl carbon, HOCC (29) when bonded to an enol/imidic sp2 carbon
+///   (C=C, C=N) or an aromatic carbon, and HOR (21) otherwise — including
+///   N-OH (hydroxylamines, oximes, hydroxamic acids) and thioacid O-H.
+fn assign_oxygen_bound_h_type(mol: &Molecule, oxygen_idx: AtomIdx, oxygen_type: u8) -> u8 {
+    match oxygen_type {
+        49 => return 50, // HO+
+        51 => return 52, // HO=+
+        70 => return 31, // HOH
+        _ => {}
+    }
     let heavy_neighbors: Vec<_> = bonds_of(mol, oxygen_idx)
         .into_iter()
         .filter(|bond| mol.atom(bond.neighbor).element != Element::H)
         .collect();
 
     if heavy_neighbors.is_empty() {
-        return 31; // HOH, water
+        let hydrogens = bonds_of(mol, oxygen_idx).len();
+        return if hydrogens >= 2 { 31 } else { 21 }; // HOH water / HOM hydroxide
     }
 
     let heavy_neighbor = heavy_neighbors[0].neighbor;
     let heavy_atom = mol.atom(heavy_neighbor);
-    if heavy_atom.element == Element::N {
-        return 33; // HOX, N-oxide hydroxyl
-    }
-
-    let is_carboxylic_acid = heavy_atom.element == Element::C
-        && bonds_of(mol, heavy_neighbor).iter().any(|bond| {
-            bond.order == BondOrder::Double && mol.atom(bond.neighbor).element == Element::O
-        });
-    if is_carboxylic_acid {
-        24 // HOCO, acid hydroxyl
-    } else {
-        21 // HOR, alcohol/phenol hydroxyl
+    match heavy_atom.element {
+        Element::S => 33, // HOS
+        Element::P => 24, // HOP
+        Element::C => {
+            let carbon_bonds = bonds_of(mol, heavy_neighbor);
+            let double_to = |element: Element| {
+                carbon_bonds.iter().any(|bond| {
+                    bond.order == BondOrder::Double && mol.atom(bond.neighbor).element == element
+                })
+            };
+            if double_to(Element::O) {
+                24 // HOCO, acid hydroxyl
+            } else if heavy_atom.aromatic || double_to(Element::C) || double_to(Element::N) {
+                29 // HOCC, enol / phenol / imidic acid hydroxyl
+            } else {
+                21 // HOR
+            }
+        }
+        _ => 21, // HOR, including N-OH
     }
 }
 
@@ -4134,6 +4159,60 @@ mod tests {
             if water.atom(AtomIdx(i as u32)).element == Element::H {
                 assert_eq!(water_types[i], 31, "water H should be HOH");
             }
+        }
+    }
+
+    /// Hydrogen types derived from the parent atom's MMFF type (#637).
+    /// Expected values are RDKit 2026.03.6 `MMFFGetMMFFAtomType` on the same
+    /// explicit-H graphs.
+    #[test]
+    fn mmff_oxygen_h_types_follow_rdkit() {
+        let cases: &[(&str, &[u8])] = &[
+            ("c1ccccc1O[H]", &[29]),                // phenol HOCC
+            ("C=CO[H]", &[29]),                     // enol HOCC
+            ("[H]OC1=NC=CC=C1", &[29]),             // imidic / hydroxypyridine HOCC
+            ("CC(=O)O[H]", &[24]),                  // HOCO
+            ("[H]OP(=O)(O[H])O[H]", &[24, 24, 24]), // HOP
+            ("[H]OS(=O)(=O)c1ccccc1", &[33]),       // HOS
+            ("CS(=O)O[H]", &[33]),                  // HOS, sulfinic acid
+            ("CNO[H]", &[21]),                      // hydroxylamine HOR
+            ("CC(=O)NO[H]", &[21]),                 // hydroxamic acid O-H is HOR
+            ("CC(=S)O[H]", &[21]),                  // thioacid O-H is HOR
+            ("CCO[H]", &[21]),                      // alcohol HOR
+            ("[H]O[H]", &[31, 31]),                 // water HOH
+        ];
+        for (smiles, expected) in cases {
+            let m = mol(smiles);
+            let types = assign_mmff94_numeric_types(&m).unwrap();
+            let h: Vec<u8> = (0..m.atom_count())
+                .filter(|&i| m.atom(AtomIdx(i as u32)).element == Element::H)
+                .map(|i| types[i])
+                .collect();
+            assert_eq!(&h, expected, "{smiles}");
+        }
+    }
+
+    #[test]
+    fn mmff_nitrogen_and_phosphorus_h_types_follow_parent_type() {
+        let cases: &[(&str, &[u8])] = &[
+            ("CS(=O)(=O)N([H])[H]", &[28, 28]),             // NSO2 -> HNSO
+            ("N#CN([H])[H]", &[28, 28]),                    // NC%N -> HNSO row
+            ("[H]N([H])C(=S)N([H])[H]", &[28, 28, 28, 28]), // NC=S -> HNCS
+            ("CC(=O)N([H])[H]", &[28, 28]),                 // NC=O -> HNCO
+            ("CN([H])[H]", &[23, 23]),                      // NR -> HNR
+            ("C[N+]([H])([H])[H]", &[36, 36, 36]),          // NR+ -> HNR+
+            ("c1cc[n+]([H])cc1", &[36]),                    // NPD+ -> HPD+
+            ("C=[N+]([H])[H]", &[36, 36]),                  // N+=C -> HN=C+
+            ("CP([H])[H]", &[71, 71]),                      // HP
+        ];
+        for (smiles, expected) in cases {
+            let m = mol(smiles);
+            let types = assign_mmff94_numeric_types(&m).unwrap();
+            let h: Vec<u8> = (0..m.atom_count())
+                .filter(|&i| m.atom(AtomIdx(i as u32)).element == Element::H)
+                .map(|i| types[i])
+                .collect();
+            assert_eq!(&h, expected, "{smiles}");
         }
     }
 

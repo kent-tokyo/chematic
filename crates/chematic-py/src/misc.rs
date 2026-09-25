@@ -14,12 +14,14 @@ use std::sync::Arc;
 pub(crate) fn cached_smarts(
     smarts: &str,
 ) -> Result<Arc<chematic_smarts::QueryMolecule>, chematic_smarts::SmartsError> {
-    use std::collections::HashMap;
+    use rustc_hash::FxHashMap;
     use std::sync::{Mutex, OnceLock};
     const CAPACITY: usize = 4096;
-    static CACHE: OnceLock<Mutex<HashMap<String, Arc<chematic_smarts::QueryMolecule>>>> =
+    // Keys are pattern strings chosen by the caller; Fx hashing keeps the
+    // per-call lookup cheap (the cache is bounded, so no DoS concern).
+    static CACHE: OnceLock<Mutex<FxHashMap<String, Arc<chematic_smarts::QueryMolecule>>>> =
         OnceLock::new();
-    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    let cache = CACHE.get_or_init(|| Mutex::new(FxHashMap::default()));
     if let Some(q) = cache.lock().ok().and_then(|c| c.get(smarts).cloned()) {
         return Ok(q);
     }
@@ -47,7 +49,7 @@ fn smarts_match(smarts: &str, mol: &Mol) -> PyResult<bool> {
         uniquify: false,
         ..chematic_smarts::MatchConfig::default()
     };
-    Ok(chematic_smarts::has_match_with_config(
+    Ok(chematic_smarts::has_match_perceived(
         &query, &mol.inner, &config,
     ))
 }
@@ -63,14 +65,18 @@ fn smarts_match(smarts: &str, mol: &Mol) -> PyResult<bool> {
 fn smarts_find(smarts: &str, mol: &Mol) -> PyResult<Vec<Vec<usize>>> {
     let query = cached_smarts(smarts).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let n = query.atom_count();
-    Ok(chematic_smarts::find_matches(&query, &mol.inner)
-        .into_iter()
-        .map(|map| {
-            (0..n)
-                .filter_map(|qi| map.get(&qi).map(|a| a.0 as usize))
-                .collect()
-        })
-        .collect())
+    Ok(chematic_smarts::find_matches_perceived(
+        &query,
+        &mol.inner,
+        &chematic_smarts::MatchConfig::default(),
+    )
+    .into_iter()
+    .map(|map| {
+        (0..n)
+            .filter_map(|qi| map.get(&qi).map(|a| a.0 as usize))
+            .collect()
+    })
+    .collect())
 }
 
 /// Render a molecule SVG with atoms coloured by a weight vector.

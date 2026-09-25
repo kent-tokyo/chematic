@@ -14,11 +14,17 @@ until separately proven.
 The historical source-provenance-pinned 1,024-relabeling audit had four
 divergent coupled components out of 28, with no cross-correspondence failure.
 After the complete-slot planner was adopted, a clean-main rerun at commit
-`2fe0cdd7` passes all 28 components across 1,024 seeded relabelings each, with
-zero divergent outputs and zero cross-correspondence failures. Evidence:
+`2fe0cdd7` passed all 28 components across 1,024 seeded relabelings each, with
+zero divergent outputs and zero cross-correspondence failures
+(`validation/results/ez_shared_carrier_coupling_mechanism_audit_1024_2026-09-22.jsonl`,
+`..._summary_1024_2026-09-22.json`). That run predates the Issue #632
+canonical change, so it was repeated on a clean worktree at commit
+`13d70a2e` (v1.0.25, which contains #632, plus the #634/#635/#637 fixes):
+again 0/28 divergent components and zero cross-correspondence failures across
+1,024 relabelings each. Current evidence:
 
-- `validation/results/ez_shared_carrier_coupling_mechanism_audit_1024_2026-09-22.jsonl`
-- `validation/results/ez_shared_carrier_coupling_mechanism_audit_summary_1024_2026-09-22.json`
+- `validation/results/ez_shared_carrier_coupling_mechanism_audit_1024_2026-09-25.jsonl`
+- `validation/results/ez_shared_carrier_coupling_mechanism_audit_summary_1024_2026-09-25.json`
 
 The former 4/28 baseline and rejected 7/28 close-side experiment remain
 preserved as historical evidence. The current gate does not reuse those

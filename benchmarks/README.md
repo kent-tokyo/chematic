@@ -9,12 +9,14 @@ accuracy, or compatibility claims.
 
 | Need | Start with |
 |---|---|
-| Review the post-v1.0.23 output-identical speed branch | [`2026-09-24-perf-speed3-output-identical.md`](2026-09-24-perf-speed3-output-identical.md) |
+| Review the post-v1.0.25 output-identical speed branch (`perf/speed-4`) | [`2026-09-25-perf-speed4-output-identical.md`](2026-09-25-perf-speed4-output-identical.md): `912c4b7d` vs `5269d69f` and follow-up `98f57746`; 49 operations x 46,736 molecules with eight base-only nondeterministic error-text differences. Shared 2-vCPU VM source evidence, not a package claim. |
+| Review the previous output-identical speed branch | [`2026-09-24-perf-speed3-output-identical.md`](2026-09-24-perf-speed3-output-identical.md) |
 | Review the M4 source-candidate SSSR/cache/VF2 browser rerun | [`2026-09-24-rdkitjs-m4-sssr-cache.md`](2026-09-24-rdkitjs-m4-sssr-cache.md) |
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
 | Review current public-package fingerprint and 3D evidence | [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](2026-09-23-public-package-fingerprint-3d-v1.0.20.md) |
 | Review the post-freeze MMFF94 stereo-safe source speed gate | [`2026-09-23-mmff94-stereo-safe-performance.md`](2026-09-23-mmff94-stereo-safe-performance.md) |
-| Review current-source MMFF94 same-coordinate energy evidence | [`2026-09-23-mmff94-current-source-energy.md`](2026-09-23-mmff94-current-source-energy.md) |
+| Review MMFF94 per-term same-coordinate energy (#637) | [`2026-09-25-mmff94-per-term-energy.md`](2026-09-25-mmff94-per-term-energy.md) |
+| Historical v1.0.19-source MMFF94 same-coordinate energy | [`2026-09-23-mmff94-current-source-energy.md`](2026-09-23-mmff94-current-source-energy.md) |
 | Review the analytic MMFF94 source speed/convergence candidate | [`2026-09-23-a6-analytic-mmff94-source-candidate.md`](2026-09-23-a6-analytic-mmff94-source-candidate.md) |
 | Review the MMFF94 stereo-safe source quality candidate | [`2026-09-23-a6-mmff94-stereo-safe-quality.md`](2026-09-23-a6-mmff94-stereo-safe-quality.md) |
 | Review current Parse + compatible Morgan evidence | [`2026-09-20-parse-morgan-rdkitjs.md`](2026-09-20-parse-morgan-rdkitjs.md) |
@@ -103,6 +105,16 @@ measurement was rerun.
 | [`2026-09-24-python-op-matrix-vs-rdkit-branch-6bd3fae0.json`](2026-09-24-python-op-matrix-vs-rdkit-branch-6bd3fae0.json) | Python matrix, branch wheel `6bd3fae0` |
 | [`2026-09-24-rdkit-agreement-branch-6bd3fae0.json`](2026-09-24-rdkit-agreement-branch-6bd3fae0.json) | RDKit agreement counts for `6bd3fae0` (identical to the accuracy-branch record) |
 | [`2026-09-25-perf-digest-diff-v1.0.24-issue-650.json`](2026-09-25-perf-digest-diff-v1.0.24-issue-650.json) | Issue #650 candidate vs v1.0.24: canonical SMILES, largest fragment, standardize, InChI, CIP, and stereocenter outputs are byte-identical on seven benchmark corpora (280,416 rows, 0 differing). The new atom-order and fragment-source contracts are covered by Rust/Python tests; this digest does not measure the intentionally corrected plain-writer ring-closure spelling. |
+| [`2026-09-25-perf-digest-diff-912c4b7d-5269d69f.json`](2026-09-25-perf-digest-diff-912c4b7d-5269d69f.json) | Base-to-first speed-4 output digest |
+| [`2026-09-25-perf-digest-diff-912c4b7d-98f57746.json`](2026-09-25-perf-digest-diff-912c4b7d-98f57746.json) | Base-to-final speed-4 output digest |
+| [`2026-09-25-perf-digest-time-pair-912c4b7d-5269d69f.json`](2026-09-25-perf-digest-time-pair-912c4b7d-5269d69f.json) | Paired Rust timing for the first speed-4 candidate |
+| [`2026-09-25-perf-digest-time-pair-912c4b7d-98f57746.json`](2026-09-25-perf-digest-time-pair-912c4b7d-98f57746.json) | Paired Rust timing for the final speed-4 candidate |
+| [`2026-09-25-python-op-matrix-vs-rdkit-912c4b7d.json`](2026-09-25-python-op-matrix-vs-rdkit-912c4b7d.json) | RDKit 2026.03.6 Python operation matrix for the base |
+| [`2026-09-25-python-op-matrix-vs-rdkit-branch-5269d69f.json`](2026-09-25-python-op-matrix-vs-rdkit-branch-5269d69f.json) | RDKit 2026.03.6 Python operation matrix for the first speed-4 candidate |
+| [`2026-09-25-python-op-matrix-vs-rdkit-branch-98f57746.json`](2026-09-25-python-op-matrix-vs-rdkit-branch-98f57746.json) | RDKit 2026.03.6 Python operation matrix for the final speed-4 candidate |
+| [`2026-09-25-rdkit-agreement-912c4b7d.json`](2026-09-25-rdkit-agreement-912c4b7d.json) | RDKit agreement counts for the base |
+| [`2026-09-25-rdkit-agreement-branch-5269d69f.json`](2026-09-25-rdkit-agreement-branch-5269d69f.json) | RDKit agreement counts for the first speed-4 candidate |
+| [`2026-09-25-rdkit-agreement-branch-98f57746.json`](2026-09-25-rdkit-agreement-branch-98f57746.json) | RDKit agreement counts for the final speed-4 candidate |
 | [`2026-09-24-rdkit-agreement-accuracy-branch.md`](2026-09-24-rdkit-agreement-accuracy-branch.md) | v1.0.22 `297fec4d` vs accuracy branch `ea967d47`: row-level RDKit 2026.03.6 agreement for 15 RDKit-defined operations on three 5k corpora (atom pair/torsion/MACCS/QED/Murcko/Kekulé descriptors), plus a branch timing re-run; 2-vCPU VM, not a package claim |
 | [`2026-09-24-rdkit-agreement-v1.0.22-297fec4d.json`](2026-09-24-rdkit-agreement-v1.0.22-297fec4d.json) | Raw agreement counts for v1.0.22 in the record above |
 | [`2026-09-24-rdkit-agreement-branch-ea967d47.json`](2026-09-24-rdkit-agreement-branch-ea967d47.json) | Raw agreement counts for the branch in the record above |

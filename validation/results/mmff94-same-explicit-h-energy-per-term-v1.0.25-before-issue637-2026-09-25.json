@@ -1,0 +1,759 @@
+{
+  "artifacts": {
+    "rdkit": {
+      "bytes": 38182808,
+      "path": "/home/claude/rdwheel/rdkit-2026.3.6-cp311-cp311-manylinux_2_28_x86_64.whl",
+      "sha256": "dcf09347e1a0dc1d7e5fcc34f5da79d1f4bb0e04ecadee669449b82ae2492799"
+    },
+    "schematic": {
+      "bytes": 5801126,
+      "path": "/home/claude/whl_11a4ea27/chematic-1.0.25-cp311-cp311-manylinux_2_35_x86_64.whl",
+      "sha256": "74e68d4dddf5f959373a838a028e5beba96d1a08fc680ee9927a15ecf6778469"
+    }
+  },
+  "caveat": "RDKit generated the shared explicit-H coordinates. This measures total and per-term force-field energy agreement, not conformer quality, minimization convergence, stereo preservation, or speed.",
+  "command": [
+    "/usr/bin/python3",
+    "scripts/mmff94_same_explicit_h_energy.py",
+    "--output",
+    "/tmp/m25b.jsonl",
+    "--summary",
+    "/tmp/m25b.json",
+    "--rdkit-artifact",
+    "/home/claude/rdwheel/rdkit-2026.3.6-cp311-cp311-manylinux_2_28_x86_64.whl",
+    "--schematic-artifact",
+    "/home/claude/whl_11a4ea27/chematic-1.0.25-cp311-cp311-manylinux_2_35_x86_64.whl",
+    "--schematic-build-command",
+    "git checkout 049c12e3 && maturin build --release -i python3 -m crates/chematic-py/Cargo.toml -o <wheels> && pip install <wheels>/chematic-1.0.25-cp311-cp311-manylinux_2_35_x86_64.whl",
+    "--expected-rdkit",
+    "2026.03.6",
+    "--expected-schematic",
+    "1.0.25",
+    "--gradient-input-index",
+    "166",
+    "--gradient-input-index",
+    "231"
+  ],
+  "gate": {
+    "input_indices_contiguous": true,
+    "provenance_complete": true,
+    "rdkit_version_matches": true,
+    "row_accounting_complete": true,
+    "schematic_version_matches": true,
+    "source_tree_clean": true
+  },
+  "gate_passed": true,
+  "generated_at_utc": "2026-09-25T07:05:54.999707+00:00",
+  "host": {
+    "machine": "x86_64",
+    "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+    "processor": "x86_64"
+  },
+  "manifests": [
+    {
+      "path": "/home/claude/wt/validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json",
+      "rows": 65,
+      "sha256": "6a478ea0f5d4ef067a4d1739e77a7209e8f76ecaa837e3f487c723dd6f465d6b"
+    },
+    {
+      "path": "/home/claude/wt/validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
+      "rows": 200,
+      "sha256": "ec93ac160aa91c3c4416d57d3000d6e344e0b75cdf5c122211364c7495dce239"
+    }
+  ],
+  "measurements": {
+    "by_primary_category": {
+      "alkene_ez": {
+        "max_abs_delta_kcal_mol": 0.03052545410578489,
+        "median_abs_delta_kcal_mol": 3.099050428101435e-05,
+        "rows": 8
+      },
+      "drug_like": {
+        "max_abs_delta_kcal_mol": 9.874153054867179,
+        "median_abs_delta_kcal_mol": 0.24544215812925074,
+        "rows": 193
+      },
+      "druglike": {
+        "max_abs_delta_kcal_mol": 1.2232653819192336,
+        "median_abs_delta_kcal_mol": 0.034310390035017235,
+        "rows": 7
+      },
+      "druglike_rigid": {
+        "max_abs_delta_kcal_mol": 0.4643666947258822,
+        "median_abs_delta_kcal_mol": 0.4643666947258822,
+        "rows": 1
+      },
+      "druglike_stress": {
+        "max_abs_delta_kcal_mol": 2.1867219739951054,
+        "median_abs_delta_kcal_mol": 1.3504187732896753,
+        "rows": 2
+      },
+      "flexible_chain": {
+        "max_abs_delta_kcal_mol": 0.4302176648820222,
+        "median_abs_delta_kcal_mol": 0.0011826910788426126,
+        "rows": 6
+      },
+      "fused_aromatic": {
+        "max_abs_delta_kcal_mol": 0.4508209127610314,
+        "median_abs_delta_kcal_mol": 7.78465168451703e-05,
+        "rows": 7
+      },
+      "hindered_biaryl": {
+        "max_abs_delta_kcal_mol": 0.2682413239717576,
+        "median_abs_delta_kcal_mol": 0.2682413239717576,
+        "rows": 1
+      },
+      "known_fail_closed_case": {
+        "max_abs_delta_kcal_mol": 0.0032050342698255463,
+        "median_abs_delta_kcal_mol": 0.0032050342698255463,
+        "rows": 1
+      },
+      "macrocycle": {
+        "max_abs_delta_kcal_mol": 2.263733150149619,
+        "median_abs_delta_kcal_mol": 1.5751778759826607,
+        "rows": 9
+      },
+      "macrocycle_amide": {
+        "max_abs_delta_kcal_mol": 0.21590574337373525,
+        "median_abs_delta_kcal_mol": 0.21590574337373525,
+        "rows": 1
+      },
+      "macrocycle_boundary": {
+        "max_abs_delta_kcal_mol": 0.008450150731448502,
+        "median_abs_delta_kcal_mol": 0.008450150731448502,
+        "rows": 1
+      },
+      "rigid_ring": {
+        "max_abs_delta_kcal_mol": 0.0009149507393662049,
+        "median_abs_delta_kcal_mol": 0.00015391713938495144,
+        "rows": 8
+      },
+      "small_ring_boundary": {
+        "max_abs_delta_kcal_mol": 0.02866811300609129,
+        "median_abs_delta_kcal_mol": 0.02866811300609129,
+        "rows": 1
+      },
+      "stereocenter_implicit_h": {
+        "max_abs_delta_kcal_mol": 0.8027303455638446,
+        "median_abs_delta_kcal_mol": 0.37983364398264463,
+        "rows": 10
+      },
+      "stereocenter_quaternary": {
+        "max_abs_delta_kcal_mol": 0.34428676072904807,
+        "median_abs_delta_kcal_mol": 4.7186296175505404e-05,
+        "rows": 6
+      }
+    },
+    "comparable_rows": 262,
+    "dominant_term_counts_above_1_kcal_mol": {
+      "angle": 7,
+      "electrostatic": 1,
+      "stretch_bend": 1,
+      "torsion": 3,
+      "vdw": 20
+    },
+    "gradient_diagnostic": {
+      "input_indices": [
+        166,
+        231
+      ],
+      "max_abs_error_kcal_mol_angstrom": 1.4123425273737666e-07,
+      "max_scaled_error": 4.380301516354286e-08,
+      "rows": 2
+    },
+    "max_abs_delta_kcal_mol": 9.874153054867179,
+    "median_abs_delta_kcal_mol": 0.2156782394961052,
+    "p90_abs_delta_kcal_mol": 1.2116566399775763,
+    "per_term": {
+      "angle": {
+        "max_abs_delta_kcal_mol": 5.659650935943127,
+        "median_abs_delta_kcal_mol": 0.004624501042034268,
+        "p90_abs_delta_kcal_mol": 0.3771500886107333,
+        "rows": 262,
+        "rows_above_0_1_kcal_mol": 35,
+        "rows_above_1_kcal_mol": 22
+      },
+      "bond": {
+        "max_abs_delta_kcal_mol": 0.22502598069962687,
+        "median_abs_delta_kcal_mol": 0.0,
+        "p90_abs_delta_kcal_mol": 7.105427357601002e-15,
+        "rows": 262,
+        "rows_above_0_1_kcal_mol": 7,
+        "rows_above_1_kcal_mol": 0
+      },
+      "electrostatic": {
+        "max_abs_delta_kcal_mol": 12.068728495711989,
+        "median_abs_delta_kcal_mol": 7.105427357601002e-15,
+        "p90_abs_delta_kcal_mol": 5.773159728050814e-14,
+        "rows": 262,
+        "rows_above_0_1_kcal_mol": 18,
+        "rows_above_1_kcal_mol": 18
+      },
+      "oop": {
+        "max_abs_delta_kcal_mol": 0.17257357143586438,
+        "median_abs_delta_kcal_mol": 3.12293850843422e-05,
+        "p90_abs_delta_kcal_mol": 0.0075108779116646995,
+        "rows": 262,
+        "rows_above_0_1_kcal_mol": 1,
+        "rows_above_1_kcal_mol": 0
+      },
+      "stretch_bend": {
+        "max_abs_delta_kcal_mol": 1.7445286784451528,
+        "median_abs_delta_kcal_mol": 3.598673950833131e-06,
+        "p90_abs_delta_kcal_mol": 0.13858460070392842,
+        "rows": 262,
+        "rows_above_0_1_kcal_mol": 29,
+        "rows_above_1_kcal_mol": 13
+      },
+      "torsion": {
+        "max_abs_delta_kcal_mol": 2.714563389369271,
+        "median_abs_delta_kcal_mol": 1.2434497875801753e-14,
+        "p90_abs_delta_kcal_mol": 0.23600000000002552,
+        "rows": 262,
+        "rows_above_0_1_kcal_mol": 28,
+        "rows_above_1_kcal_mol": 12
+      },
+      "vdw": {
+        "max_abs_delta_kcal_mol": 5.583227236715601,
+        "median_abs_delta_kcal_mol": 0.13548910406056436,
+        "p90_abs_delta_kcal_mol": 0.9499016340286985,
+        "rows": 262,
+        "rows_above_0_1_kcal_mol": 138,
+        "rows_above_1_kcal_mol": 24
+      }
+    },
+    "rdkit_term_sum_vs_total_max_abs_kcal_mol": 2.2737367544323206e-12,
+    "row_accounting": {
+      "input_count": 265,
+      "status_counts": {
+        "declared_unsupported": 1,
+        "embed_failure": 2,
+        "ok": 262
+      },
+      "terminal_count": 265
+    },
+    "rows_above_1_kcal_mol": [
+      {
+        "abs_delta_kcal_mol": 9.874153054867179,
+        "dominant_term": "electrostatic",
+        "id": null,
+        "input_index": 166,
+        "term_delta_kcal_mol": {
+          "angle": -5.118937913225679,
+          "bond": -0.22502598069962687,
+          "electrostatic": 12.068728495711989,
+          "oop": -1.764337841480768e-08,
+          "stretch_bend": 0.0392803510198001,
+          "torsion": 1.1194967028605909,
+          "vdw": 1.9906114168434499
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 5.527991227895086,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 231,
+        "term_delta_kcal_mol": {
+          "angle": -1.2288950690712426,
+          "bond": 0.03477826422560781,
+          "electrostatic": 1.2227699174095434,
+          "oop": -0.001322922820262094,
+          "stretch_bend": -0.09726237280778971,
+          "torsion": 0.014696174245841576,
+          "vdw": 5.583227236715601
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 3.9058862025713097,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 194,
+        "term_delta_kcal_mol": {
+          "angle": -0.004826919767154436,
+          "bond": 0.0,
+          "electrostatic": -2.842170943040401e-14,
+          "oop": -0.0006012392432376127,
+          "stretch_bend": -9.919148153514357e-06,
+          "torsion": 1.0658141036401503e-14,
+          "vdw": 3.911324280729673
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 2.8969527918728204,
+        "dominant_term": "angle",
+        "id": null,
+        "input_index": 89,
+        "term_delta_kcal_mol": {
+          "angle": 1.1671946174332213,
+          "bond": 0.0,
+          "electrostatic": 0.0,
+          "oop": -0.003337496615723542,
+          "stretch_bend": 0.760533707505611,
+          "torsion": -4.263256414560601e-14,
+          "vdw": 0.9725619635501914
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 2.621932098684738,
+        "dominant_term": "angle",
+        "id": null,
+        "input_index": 96,
+        "term_delta_kcal_mol": {
+          "angle": 1.2944279575061515,
+          "bond": 0.0,
+          "electrostatic": -5.684341886080802e-14,
+          "oop": -0.002581946860217282,
+          "stretch_bend": 0.1993114117487611,
+          "torsion": -2.1316282072803006e-14,
+          "vdw": 1.130774676289903
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 2.4947774300221965,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 90,
+        "term_delta_kcal_mol": {
+          "angle": 1.183428498165199,
+          "bond": 0.0,
+          "electrostatic": 0.0,
+          "oop": -0.0022984500272422463,
+          "stretch_bend": -0.07532947610136276,
+          "torsion": -1.7763568394002505e-14,
+          "vdw": 1.3889768579863215
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 2.3225929973894495,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 97,
+        "term_delta_kcal_mol": {
+          "angle": 0.9336554700392057,
+          "bond": 0.0,
+          "electrostatic": -7.105427357601002e-15,
+          "oop": -0.0027216044300867204,
+          "stretch_bend": 0.1623191247022464,
+          "torsion": 7.815970093361102e-14,
+          "vdw": 1.229340007078406
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 2.263733150149619,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 95,
+        "term_delta_kcal_mol": {
+          "angle": 0.5744233337697224,
+          "bond": -3.552713678800501e-15,
+          "electrostatic": 5.684341886080802e-14,
+          "oop": -0.000354041106675426,
+          "stretch_bend": -0.02607388403737776,
+          "torsion": -3.0990779702477766e-06,
+          "vdw": 1.715740840601228
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 2.2341822069146247,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 88,
+        "term_delta_kcal_mol": {
+          "angle": 0.1830247546338768,
+          "bond": 3.552713678800501e-15,
+          "electrostatic": 0.0,
+          "oop": -0.014520631941621492,
+          "stretch_bend": 0.9606904480067399,
+          "torsion": -0.0026580918702165945,
+          "vdw": 1.1076457280857994
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 2.1867219739951054,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 56,
+        "term_delta_kcal_mol": {
+          "angle": -0.0035785702089015103,
+          "bond": -3.552713678800501e-15,
+          "electrostatic": 0.0,
+          "oop": -0.01210561576469137,
+          "stretch_bend": 0.09851977749092633,
+          "torsion": -2.842170943040401e-14,
+          "vdw": 2.1038863824774126
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 2.177679385871272,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 92,
+        "term_delta_kcal_mol": {
+          "angle": 0.4978776961547169,
+          "bond": -7.105427357601002e-15,
+          "electrostatic": -5.684341886080802e-14,
+          "oop": -0.04025511767021948,
+          "stretch_bend": 0.00040330337229299573,
+          "torsion": 2.4868995751603507e-14,
+          "vdw": 1.7196535040142749
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 2.1000894525306535,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 100,
+        "term_delta_kcal_mol": {
+          "angle": 0.9929694178804134,
+          "bond": 0.0,
+          "electrostatic": -1.2789769243681803e-13,
+          "oop": -0.003051745567925222,
+          "stretch_bend": -0.06601267710917047,
+          "torsion": -2.842170943040401e-14,
+          "vdw": 1.1761844573276363
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 2.0913866218009503,
+        "dominant_term": "angle",
+        "id": null,
+        "input_index": 91,
+        "term_delta_kcal_mol": {
+          "angle": 1.1521888115195438,
+          "bond": 0.0,
+          "electrostatic": -1.4210854715202004e-14,
+          "oop": -0.0753479855365203,
+          "stretch_bend": -0.05963568716207761,
+          "torsion": -7.105427357601002e-15,
+          "vdw": 1.0741814829806628
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.9647246842755521,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 74,
+        "term_delta_kcal_mol": {
+          "angle": -0.003498349828241487,
+          "bond": 0.0,
+          "electrostatic": 1.2789769243681803e-13,
+          "oop": -0.014039244310468352,
+          "stretch_bend": 0.8232977558283006,
+          "torsion": -0.004053768132274982,
+          "vdw": 1.1630182907180995
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.9025691196800096,
+        "dominant_term": "angle",
+        "id": null,
+        "input_index": 187,
+        "term_delta_kcal_mol": {
+          "angle": -5.4891981636069715,
+          "bond": 0.1393553589890253,
+          "electrostatic": 1.9667315516243304,
+          "oop": -5.294478089538623e-09,
+          "stretch_bend": -1.7445286784451528,
+          "torsion": 2.3530758094439648,
+          "vdw": 0.8719950076092076
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.72705024206698,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 94,
+        "term_delta_kcal_mol": {
+          "angle": 0.3771500886107333,
+          "bond": -7.105427357601002e-15,
+          "electrostatic": 2.842170943040401e-14,
+          "oop": -1.126224723606751e-05,
+          "stretch_bend": -0.0076557840506299435,
+          "torsion": -7.429182780072097e-07,
+          "vdw": 1.3575679426732563
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.5751778759826607,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 93,
+        "term_delta_kcal_mol": {
+          "angle": -0.004079790424817986,
+          "bond": -7.105427357601002e-15,
+          "electrostatic": -7.105427357601002e-15,
+          "oop": -0.011757038522355694,
+          "stretch_bend": -1.2721893746459045e-05,
+          "torsion": -0.003078983707146321,
+          "vdw": 1.594106410532106
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.48001468306785,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 232,
+        "term_delta_kcal_mol": {
+          "angle": -0.001940824636669447,
+          "bond": 0.0,
+          "electrostatic": 0.0,
+          "oop": -0.027627045447154882,
+          "stretch_bend": -1.3792321105654537e-05,
+          "torsion": 1.7763568394002505e-14,
+          "vdw": 1.5095963454728292
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.4700535494740166,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 224,
+        "term_delta_kcal_mol": {
+          "angle": -0.0026128041594510876,
+          "bond": 0.0,
+          "electrostatic": -1.7763568394002505e-15,
+          "oop": -2.4789580184549342e-05,
+          "stretch_bend": -3.158695786931176e-06,
+          "torsion": 1.509903313490213e-14,
+          "vdw": 1.472694301909506
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.4559589908046746,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 99,
+        "term_delta_kcal_mol": {
+          "angle": 0.2004121930231193,
+          "bond": 0.0,
+          "electrostatic": 1.0658141036401503e-13,
+          "oop": -0.17257357143586438,
+          "stretch_bend": 0.4453473084222712,
+          "torsion": -0.04789482369679021,
+          "vdw": 1.0306678844923738
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.4398071784287083,
+        "dominant_term": "angle",
+        "id": null,
+        "input_index": 248,
+        "term_delta_kcal_mol": {
+          "angle": -1.46823243171373,
+          "bond": 0.042622995666480534,
+          "electrostatic": 1.2642574535322382,
+          "oop": -8.854213194461063e-05,
+          "stretch_bend": -0.14416508596209876,
+          "torsion": 0.79551115500895,
+          "vdw": 0.9499016340286985
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.4354859901451107,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 221,
+        "term_delta_kcal_mol": {
+          "angle": -0.004269935126963276,
+          "bond": -3.552713678800501e-15,
+          "electrostatic": -2.842170943040401e-14,
+          "oop": -0.0019452996091789939,
+          "stretch_bend": -4.778149553352762e-06,
+          "torsion": 2.1316282072803006e-14,
+          "vdw": 1.4417060030312285
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.3682692188582735,
+        "dominant_term": "stretch_bend",
+        "id": null,
+        "input_index": 150,
+        "term_delta_kcal_mol": {
+          "angle": -0.005991874765303606,
+          "bond": 0.0,
+          "electrostatic": -1.0658141036401503e-14,
+          "oop": -5.115470560025582e-10,
+          "stretch_bend": -1.3622773435813937,
+          "torsion": -9.151734925743262e-15,
+          "vdw": 5.684341886080802e-14
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.2843845555620987,
+        "dominant_term": "torsion",
+        "id": null,
+        "input_index": 254,
+        "term_delta_kcal_mol": {
+          "angle": -0.007184430500828398,
+          "bond": 0.0,
+          "electrostatic": 0.0,
+          "oop": -1.7569390684168e-09,
+          "stretch_bend": 5.762949197712919e-08,
+          "torsion": 0.7079999999999913,
+          "vdw": 0.583568930190367
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.2615129674427976,
+        "dominant_term": "angle",
+        "id": null,
+        "input_index": 165,
+        "term_delta_kcal_mol": {
+          "angle": -3.210189253324785,
+          "bond": 0.04807511785683083,
+          "electrostatic": 1.2716455227120491,
+          "oop": -1.3235788523570025e-05,
+          "stretch_bend": -1.2785966825669677,
+          "torsion": 1.5902304493827604,
+          "vdw": 0.31733511428591044
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.2232653819192336,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 57,
+        "term_delta_kcal_mol": {
+          "angle": -0.0009526239086170563,
+          "bond": -1.7763568394002505e-15,
+          "electrostatic": -1.4210854715202004e-14,
+          "oop": -3.7691491473566176e-11,
+          "stretch_bend": -3.7167719130204446e-07,
+          "torsion": 5.329070518200751e-15,
+          "vdw": 1.2242183775426803
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.2116566399775763,
+        "dominant_term": "angle",
+        "id": null,
+        "input_index": 153,
+        "term_delta_kcal_mol": {
+          "angle": -4.399248684565627,
+          "bond": 0.14173075037305694,
+          "electrostatic": 3.703340053478449,
+          "oop": -1.846477006402824e-10,
+          "stretch_bend": -1.7084503450646067,
+          "torsion": 2.495954253947513,
+          "vdw": 0.9783306119935276
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.1421087574231592,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 112,
+        "term_delta_kcal_mol": {
+          "angle": -0.02147346303789277,
+          "bond": 0.0,
+          "electrostatic": 0.0,
+          "oop": -0.00029881420987044833,
+          "stretch_bend": -4.890407347524217e-06,
+          "torsion": 2.3092638912203256e-14,
+          "vdw": 1.1638859250785316
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.1053335998414795,
+        "dominant_term": "torsion",
+        "id": null,
+        "input_index": 142,
+        "term_delta_kcal_mol": {
+          "angle": -0.009724319404590176,
+          "bond": 3.552713678800501e-15,
+          "electrostatic": 0.0,
+          "oop": -6.437605880274116e-07,
+          "stretch_bend": -1.7511182655027824e-06,
+          "torsion": 0.6699999999999804,
+          "vdw": 0.4450603141249445
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.0590140071102496,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 213,
+        "term_delta_kcal_mol": {
+          "angle": -0.0012810412291131001,
+          "bond": 0.0,
+          "electrostatic": 1.4210854715202004e-14,
+          "oop": -0.00012828711277713107,
+          "stretch_bend": -7.469638349633101e-06,
+          "torsion": 2.1316282072803006e-14,
+          "vdw": 1.060430805090462
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.0179966328246337,
+        "dominant_term": "vdw",
+        "id": null,
+        "input_index": 208,
+        "term_delta_kcal_mol": {
+          "angle": -0.0029942319145703777,
+          "bond": 0.0,
+          "electrostatic": -3.019806626980426e-14,
+          "oop": -0.004918870363834175,
+          "stretch_bend": -4.967487434726081e-06,
+          "torsion": 7.105427357601002e-15,
+          "vdw": 1.0259147025902706
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.0076195505680445,
+        "dominant_term": "torsion",
+        "id": null,
+        "input_index": 85,
+        "term_delta_kcal_mol": {
+          "angle": -0.00615493637694442,
+          "bond": 0.0,
+          "electrostatic": 2.842170943040401e-14,
+          "oop": -0.00123533322727804,
+          "stretch_bend": 4.554235747411539e-07,
+          "torsion": 0.7079999999999771,
+          "vdw": 0.3070093647485521
+        }
+      }
+    ],
+    "within_1_kcal_mol": 230,
+    "within_5_kcal_mol": 260
+  },
+  "missing_dimensions": [],
+  "profile": "mmff94_same_explicit_h_current_source_v3",
+  "protocol": {
+    "comparison": "RDKit and CheMatic MMFF94 total energy on the same RDKit-generated explicit-H coordinates",
+    "coordinate_producer": "RDKit EmbedMolecule default parameters with per-row fixed random seed",
+    "excludes": [
+      "conformer_quality",
+      "minimization_convergence",
+      "stereo_preservation",
+      "runtime_speed"
+    ],
+    "gradient_central_difference_delta_angstrom": 1e-05,
+    "gradient_input_indices": [
+      166,
+      231
+    ],
+    "per_term_oracle": "RDKit MMFFMolProperties with exactly one term enabled per evaluation (SetMMFFBondTerm, ...)",
+    "seed": 20260913
+  },
+  "rows_artifact": {
+    "bytes": 334446,
+    "path": "/tmp/m25b.jsonl",
+    "sha256": "1b8e6d82bd43b8c3a718e0aa1ab0499ba402d074b913d838d29c23c0e4e0c30a"
+  },
+  "schema_version": 3,
+  "source": {
+    "build_command": "git checkout 049c12e3 && maturin build --release -i python3 -m crates/chematic-py/Cargo.toml -o <wheels> && pip install <wheels>/chematic-1.0.25-cp311-cp311-manylinux_2_35_x86_64.whl",
+    "git_revision": "049c12e3dfa24c6142ce145462f6a39bd69be37c",
+    "maturin": "maturin 1.15.0",
+    "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.95.0\nLLVM version: 22.1.2",
+    "tracked_tree_dirty": false
+  },
+  "status": "current_source_diagnostic_not_release_gate",
+  "versions": {
+    "chematic": "1.0.25",
+    "python": "3.11.15",
+    "rdkit_distribution": "2026.3.6",
+    "rdkit_runtime": "2026.03.6"
+  }
+}

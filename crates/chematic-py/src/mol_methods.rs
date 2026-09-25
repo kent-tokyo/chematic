@@ -1533,9 +1533,11 @@ impl Mol {
     /// engines are not bit-compatible, so a silent substitution would look successful
     /// while actually returning the wrong hash. See ``docs/rfcs/ecfp4_bitexact_api_rfc.md``.
     fn rdkit_ecfp4(&self) -> PyResult<Vec<u8>> {
-        let result = chematic_fp::rdkit_morgan_ecfp4_experimental(&self.inner)
+        // Same bits and errors as `rdkit_morgan_ecfp4_experimental`, without
+        // building the provenance maps this method never returns.
+        let fingerprint = chematic_fp::rdkit_morgan_ecfp4_bitvec(&self.inner)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
-        Ok(bitvec2048_to_bytes(&result.fingerprint))
+        Ok(bitvec2048_to_bytes(&fingerprint))
     }
 
     /// Same fingerprint as :meth:`rdkit_ecfp4`, plus the raw (unfolded) data behind it.
@@ -1858,7 +1860,7 @@ impl Mol {
             uniquify: false,
             ..chematic_smarts::MatchConfig::default()
         };
-        Ok(chematic_smarts::has_match_with_config(
+        Ok(chematic_smarts::has_match_perceived(
             &query,
             &self.inner,
             &config,
@@ -1877,14 +1879,11 @@ impl Mol {
     fn find_matches(&self, smarts: &str) -> PyResult<Vec<Vec<usize>>> {
         let query = crate::misc::cached_smarts(smarts)
             .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
-        Ok(chematic_smarts::find_matches(&query, &self.inner)
-            .into_iter()
-            .map(|m| {
-                let mut v: Vec<usize> = m.values().map(|idx| idx.0 as usize).collect();
-                v.sort_unstable();
-                v
-            })
-            .collect())
+        Ok(chematic_smarts::find_match_atom_sets_perceived(
+            &query,
+            &self.inner,
+            &chematic_smarts::MatchConfig::default(),
+        ))
     }
 
     /// 2D SVG depiction with highlighted atoms.
@@ -3216,6 +3215,9 @@ impl Mol {
     /// CIP stereochemistry assignments — list of ``{"atom_idx": int, "descriptor": str}`` dicts.
     ///
     /// ``descriptor`` is ``"R"``, ``"S"``, ``"E"``, ``"Z"``, ``"r"``, or ``"s"``.
+    /// An ``"E"``/``"Z"`` entry's ``atom_idx`` is the double bond's first atom;
+    /// such entries also carry ``"bond_idx"`` and ``"bond_atoms"`` (the
+    /// double bond's index and its two atoms).
     /// Only assigned stereocenters / double bonds are returned.
     ///
     /// ``mode`` selects the CIP engine:
@@ -3245,11 +3247,31 @@ impl Mol {
                 )));
             }
         };
+        // E/Z entries are keyed by the double bond's first atom; attach the
+        // bond itself so callers need not guess which bond is meant (#634).
+        let mut ez_bonds = chematic_chem::assign_ez_bonds_with_mode(
+            &self.inner,
+            if mode == "accurate" {
+                chematic_chem::CipMode::Accurate
+            } else {
+                chematic_chem::CipMode::LegacyFast
+            },
+        );
         assignments
             .iter()
             .map(|(idx, code)| {
                 let d = PyDict::new(py);
                 d.set_item("atom_idx", idx.0 as usize)?;
+                if matches!(code, CipCode::E | CipCode::Z)
+                    && let Some(pos) = ez_bonds
+                        .iter()
+                        .position(|&(bidx, c)| c == *code && self.inner.bond(bidx).atom1 == *idx)
+                {
+                    let (bidx, _) = ez_bonds.remove(pos);
+                    let bond = self.inner.bond(bidx);
+                    d.set_item("bond_idx", bidx.0 as usize)?;
+                    d.set_item("bond_atoms", (bond.atom1.0 as usize, bond.atom2.0 as usize))?;
+                }
                 let label = match code {
                     CipCode::R => "R",
                     CipCode::S => "S",

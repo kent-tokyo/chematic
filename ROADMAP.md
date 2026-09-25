@@ -1,7 +1,8 @@
 # chematic roadmap
 
-> Updated 2026-09-25. Current release: **v1.0.25**. Next development target:
-> **v1.0.26** (only after its declared gates pass).
+> Updated 2026-09-25. Current release: **v1.0.25**. Candidate target:
+> **v1.0.26**. Candidate-source results and published-package results are kept
+> separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
 Python, Node, WebAssembly, and agent workflows. Compatibility, explicit
@@ -14,12 +15,19 @@ boundaries, and reproducible evidence take priority over feature-count races.
 - **Browser Parse + compatible Morgan has a scoped public-package win.** The
   v1.0.20 npm record is bit-exact on 9,999 supported rows and faster on its
   declared browser lanes; it is not a general performance claim.
-- **Current RDKit residuals are visible.** #632 has a released 10k diagnostic
-  with zero remaining SMILES semantic differences, while its long relabel audit
-  remains open. #634 CIP and #635 SMARTS retain classified residuals.
-- **v1.0.25 improves provenance and HBA compatibility.** It adds atom-output
-  and source-atom APIs, corrects the named RDKit-compatible Python HBA profile,
-  and fixes plain SMILES ring-closure spelling.
+- **The v1.0.26 source candidate advances #632/#634/#635.** Its #632 long
+  relabel audit has zero divergent components. Against pinned RDKit 2026.03.6,
+  CIP reaches 9,994/10,000 exact labels and SMARTS has 200/310,000 differing
+  cells; remaining differences are classified. Python/WASM SMARTS now use the
+  perceived aromatic view, with an explicit behavior change.
+- **The v1.0.26 source candidate advances #637.** On shared coordinates,
+  262/262 comparable MMFF94 rows are within 1 kcal/mol (maximum 0.32). This is
+  same-coordinate energy/term evidence, not convergence, conformer-quality,
+  or published-package evidence.
+- **The v1.0.26 source candidate improves selected hot paths.** The dated
+  output-differential record preserves the measured output boundary while
+  reducing SMARTS, ring, and fingerprint work. Shared-VM source timing is not
+  a universal or published-package performance claim.
 
 Exact versions, corpora, and limits are in [validation](docs/validation.md) and
 the [benchmark index](benchmarks/README.md). Completed detail belongs in dated
@@ -27,17 +35,18 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
 
 ## Priority order
 
-1. **Finish #632 verification.** Complete the long permutation audit without
-   widening the stable-key contract.
-2. **Resolve #634 CIP residuals.** Classify each row as fixed, unsupported,
-   representation-boundary, or oracle-boundary; never guess a label.
-3. **Resolve #635 SMARTS residuals.** Work by semantic family, with small truth
-   tables and explicit parse-versus-match boundaries.
-4. **Finish A6 MMFF94 correctness.** Close energy/term residuals, timeout and
-   convergence accounting, and broader conformer-quality gates before new 3D
-   breadth. Quality and speed remain separate gates.
-5. **Prepare a pinned RDKit rebaseline.** Keep 2026.03.6 historical and only
-   compare a newly pinned official artifact side by side with it.
+1. **Release the v1.0.26 candidate safely.** Rebuild exposed bindings, rerun
+   committed evidence and security checks, and preserve the Python/WASM SMARTS
+   behavior change in migration documentation.
+2. **Adjudicate the remaining CIP center.** Resolve row 4480 atom 3
+   independently before adopting either engine's label; never guess a label.
+3. **Decide SMARTS ring-count semantics.** `[Rn]`/`[kn]` need an unambiguous
+   contract before an RDKit-style symmetrized-ring option is offered.
+4. **Finish remaining A6 MMFF94 gates.** Heavy-atom typing residuals,
+   timeout/convergence accounting, and broader conformer quality remain ahead
+   of new 3D breadth.
+5. **Prepare a pinned RDKit rebaseline.** Retain 2026.03.6 as historical and
+   compare any new official artifact side by side with it.
 
 A confirmed silent-corruption or security regression takes precedence.
 
@@ -47,11 +56,11 @@ A confirmed silent-corruption or security regression takes precedence.
 |---|---|---|
 | A0 Evaluation contract | Complete | Preserve frozen/exposed-cohort and failure-accounting rules |
 | A1 Perception and descriptors | Open | Descriptor families, aromaticity boundaries, potential centers, independent holdouts |
-| A2 Stereo and identity | Active | #632, #634, permutation/spelling/file round trips, stable-key scope |
+| A2 Stereo and identity | Active | #632 audit, CIP adjudication, permutation/spelling/file round trips, stable-key scope |
 | A3 Fingerprints and retrieval | Open | Compatible-Morgan options, top-k invariants, cross-binding parity |
-| A4 Workflows and interchange | Open | #635, reactions, V3000/query semantics, attachment metadata, batch accounting |
+| A4 Workflows and interchange | Open | SMARTS ring counts, reactions, V3000/query semantics, attachment metadata, batch accounting |
 | A5 Independent adjudication | External | Non-maintainer gold data and review without exposed-cohort reuse |
-| A6 3D and force fields | Active | Energy/terms, convergence, conformer quality, publication-level speed |
+| A6 3D and force fields | Active | Heavy-atom typing, convergence, conformer quality, publication-level speed |
 
 See [the accuracy plan](docs/rdkit-accuracy-plan.md) for acceptance criteria
 and [the open-work ledger](docs/roadmap-open-work.md) for the dependency state.
@@ -74,9 +83,9 @@ and [the open-work ledger](docs/roadmap-open-work.md) for the dependency state.
 |---|---|---|
 | P0 | Core chemistry and reproducible comparison | Stable; rebaseline is recurring |
 | P1 | Safe parsing and files | Stable bounded paths; malformed-state coverage continues |
-| P2 | Stereo, identity, canonicalization | Active: #632 and #634 |
+| P2 | Stereo, identity, canonicalization | Active: #632 evidence and CIP adjudication |
 | P3 | Browser, Node, Python, agents | Selected stable surface; runtime controls remain |
-| P4 | Reactions, SMARTS, medicinal chemistry | Bounded implementation; #635 remains |
+| P4 | Reactions, SMARTS, medicinal chemistry | Bounded implementation; ring-count semantics remain |
 | P5 | 3D, force fields, materials | Experimental; A6 gates remain |
 | P6 | Release operations and ecosystem trust | Partly automated; review/rebaseline recur |
 

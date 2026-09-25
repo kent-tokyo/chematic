@@ -95,6 +95,30 @@ impl Molecule {
         self.derived.get_or_compute(slot, compute)
     }
 
+    /// Seed `slot` with a value computed on another molecule. Only valid when
+    /// that value is exactly what the slot's own computation would produce on
+    /// `self` (for example ring-bond flags of an index-aligned copy with the
+    /// same graph and ring-eligible bonds).
+    #[doc(hidden)]
+    pub fn seed_derived<T>(&self, slot: crate::derived_cache::DerivedSlot, value: std::sync::Arc<T>)
+    where
+        T: std::any::Any + Send + Sync + std::panic::RefUnwindSafe + std::panic::UnwindSafe,
+    {
+        self.derived.seed(slot, value);
+    }
+
+    /// The value memoized for `slot`, if it has already been computed.
+    #[doc(hidden)]
+    pub fn derived_if_computed<T>(
+        &self,
+        slot: crate::derived_cache::DerivedSlot,
+    ) -> Option<std::sync::Arc<T>>
+    where
+        T: std::any::Any + Send + Sync + std::panic::RefUnwindSafe + std::panic::UnwindSafe,
+    {
+        self.derived.peek(slot)
+    }
+
     #[inline]
     fn invalidate_derived(&mut self) {
         self.derived = crate::derived_cache::DerivedCache::default();
@@ -177,6 +201,16 @@ impl Molecule {
             .iter()
             .enumerate()
             .map(|(i, b)| (BondIdx(i as u32), b))
+    }
+
+    /// The `(neighbor, bond)` adjacency list of atom `idx` as a slice, in the
+    /// same order as [`Self::neighbors`].
+    ///
+    /// # Panics
+    /// Panics if `idx` is out of range.
+    #[inline]
+    pub fn neighbor_slice(&self, idx: AtomIdx) -> &[(AtomIdx, BondIdx)] {
+        &self.adjacency[idx.0 as usize]
     }
 
     /// Iterate over neighbors of `idx` as `(neighbor_atom_idx, bond_idx)`.
@@ -858,6 +892,41 @@ impl Molecule {
     pub fn set_chirality(&mut self, idx: AtomIdx, chirality: crate::atom::Chirality) {
         self.invalidate_derived();
         self.atoms[idx.0 as usize].chirality = chirality;
+    }
+
+    /// Set the aromatic flag of atom `idx` in-place.
+    pub fn set_atom_aromatic(&mut self, idx: AtomIdx, aromatic: bool) {
+        self.invalidate_derived();
+        self.atoms[idx.0 as usize].aromatic = aromatic;
+    }
+
+    /// Remove every `R`/`R<n>` label (the atoms themselves are unchanged).
+    #[doc(hidden)]
+    pub fn clear_r_group_labels(&mut self) {
+        self.invalidate_derived();
+        self.r_groups.clear();
+    }
+
+    /// Whether every adjacency list is in bond-index order (atom1's entries
+    /// then atom2's, bond by bond), i.e. exactly what [`MoleculeBuilder`]
+    /// produces when the bonds are re-added in index order. A clone of such a
+    /// molecule is then indistinguishable from that rebuild.
+    #[doc(hidden)]
+    pub fn adjacency_in_bond_order(&self) -> bool {
+        let mut fill = vec![0usize; self.atoms.len()];
+        for (b, bond) in self.bonds.iter().enumerate() {
+            for (end, other) in [(bond.atom1, bond.atom2), (bond.atom2, bond.atom1)] {
+                let list = &self.adjacency[end.0 as usize];
+                let k = fill[end.0 as usize];
+                if list.get(k) != Some(&(other, BondIdx(b as u32))) {
+                    return false;
+                }
+                fill[end.0 as usize] = k + 1;
+            }
+        }
+        fill.iter()
+            .zip(&self.adjacency)
+            .all(|(&k, list)| k == list.len())
     }
 
     /// Set the bond order of bond `idx` in-place. Endpoints (`atom1`/

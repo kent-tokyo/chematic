@@ -24,10 +24,7 @@
 {"smiles": "CC(=O)Oc1ccccc1C(=O)O", "metric": "TPSA", "chematic": 63.60000000000001, "rdkit": 63.60000000000001, "delta": 0.0, "ok": true}
 {"smiles": "CC(=O)Oc1ccccc1C(=O)O", "metric": "MolLogP", "chematic": 1.3101, "rdkit": 1.3101, "delta": 0.0, "ok": true}
 {"smiles": "Cn1cnc2c1c(=O)n(C)c(=O)n2C", "metric": "MolWt", "chematic": 194.194, "rdkit": 194.194, "delta": 0.0, "ok": true}
-{"smiles": "Cn1cnc2c1c(=O)n(C)c(=O)n2C", "metric": "HBA", "chematic": 6, "rdkit": 6, "delta": 0, "ok": true}
-{"smiles": "Cn1cnc2c1c(=O)n(C)c(=O)n2C", "metric": "HBD", "chematic": 0, "rdkit": 0, "delta": 0, "ok": true}
-{"smiles": "Cn1cnc2c1c(=O)n(C)c(=O)n2C", "metric": "TPSA", "chematic": 61.82, "rdkit": 61.82, "delta": 0.0, "ok": true}
-{"smiles": "Cn1cnc2c1c(=O)n(C)c(=O)n2C", "metric": "MolLogP", "chematic": -1.0293, "rdkit": -1.0293, "delta": 0.0, "ok": true}
+{"smiles": "Cn1cnc2c1c(=O)n(C)c(=O)n2C", "metric": "HBA", "chematic": 6, "rdkit": 3, "delta": 3, "ok": false}
 {"smiles": "c1ccc2ccccc2c1", "metric": "MolWt", "chematic": 128.17399999999995, "rdkit": 128.17399999999995, "delta": 0.0, "ok": true}
 {"smiles": "c1ccc2ccccc2c1", "metric": "HBA", "chematic": 0, "rdkit": 0, "delta": 0, "ok": true}
 {"smiles": "c1ccc2ccccc2c1", "metric": "HBD", "chematic": 0, "rdkit": 0, "delta": 0, "ok": true}
