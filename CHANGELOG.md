@@ -9,6 +9,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Added `Atom.tag` / `Molecule::set_tag` for non-chemical atom identity
+  (`Option<NonZeroU16>`, two bytes) that survives clone, reaction apply, and
+  fragments, but is ignored by SMILES write and canonicalization (not emitted
+  as `:n`). Tags are `1..=u16::MAX`; `None` means untagged.
+- Added `write_with_order` and `canonical_smiles_with_order`, returning the DFS
+  atom visit permutation used to emit the string so callers can remap tags
+  across write/parse without isotopes or a sidecar.
+
 ## [1.0.24] - 2026-09-24
 
 - Improved perception and SMARTS-existence hot paths without changing the

@@ -327,6 +327,19 @@ pub fn canonical_smiles(mol: &Molecule) -> String {
     winning_string
 }
 
+/// Canonical SMILES plus the atom visit order used to emit it.
+///
+/// `order[k]` is the mol index of the `k`-th atom in the string. Visit order
+/// follows the winning rank DFS; E/Z token choice does not change it.
+pub fn canonical_smiles_with_order(mol: &Molecule) -> (String, Vec<AtomIdx>) {
+    if mol.atom_count() == 0 {
+        return (String::new(), Vec::new());
+    }
+    let (ranks, smi) = winning_individualized_ranks(mol);
+    let order = CanonicalWriter::new(mol, &ranks).dfs_visit_order();
+    (smi, order)
+}
+
 /// Return a canonical SMILES only when its representation is self-stable.
 ///
 /// Canonical E/Z carrier placement remains fail-closed for coupled systems
@@ -643,6 +656,8 @@ pub(crate) struct CanonicalWriter<'a> {
     ring_marker_on_close: HashSet<BondIdx>,
     next_ring: u32,
     out: String,
+    /// Mol indexes in emission order when collecting visit order.
+    visit_order: Vec<AtomIdx>,
     /// Union-find groups of directional (`/`/`\`) bonds that jointly encode
     /// one connected E/Z system — flipping every member preserves geometry,
     /// flipping a subset does not. Keyed/rooted by `BondIdx`.
@@ -797,6 +812,7 @@ impl<'a> CanonicalWriter<'a> {
             ring_marker_on_close: HashSet::new(),
             next_ring: 1,
             out: String::with_capacity(n.saturating_mul(4) + mol.bond_count().saturating_mul(2)),
+            visit_order: Vec::with_capacity(n),
             ez_group: HashMap::new(),
             ez_flip: HashMap::new(),
             forced_ez_flip: None,
@@ -2016,8 +2032,13 @@ impl<'a> CanonicalWriter<'a> {
         })
     }
 
-    fn serialize_prepared(mut self) -> String {
+    fn serialize_prepared(self) -> String {
+        self.serialize_prepared_with_order().0
+    }
+
+    fn serialize_prepared_with_order(mut self) -> (String, Vec<AtomIdx>) {
         // Phase 2: canonical DFS serialization.
+        self.visit_order.clear();
         let mut first = true;
         for start in self.canonical_atom_list() {
             if self.written[start.0 as usize] {
@@ -2030,7 +2051,14 @@ impl<'a> CanonicalWriter<'a> {
             self.write_chain(start, None, None);
         }
 
-        self.out
+        (self.out, self.visit_order)
+    }
+
+    /// Ring discovery + DFS visit order under these ranks (no E/Z search).
+    fn dfs_visit_order(mut self) -> Vec<AtomIdx> {
+        let starts = self.canonical_atom_list();
+        self.find_ring_closures(&starts);
+        self.serialize_prepared_with_order().1
     }
 
     /// Return all atoms sorted in canonical order: highest rank first, ties
@@ -2167,6 +2195,7 @@ impl<'a> CanonicalWriter<'a> {
         incoming_bond: Option<&'static str>,
     ) {
         self.written[atom.0 as usize] = true;
+        self.visit_order.push(atom);
 
         if let Some(token) = incoming_bond {
             self.out.push_str(token);
@@ -2652,6 +2681,23 @@ mod tests {
                 Err(crate::canonical_search::CanonicalizationError::SearchBudgetExceeded { .. })
             ),
             "new engine must fail closed, got {bounded:?}"
+        );
+    }
+
+    #[test]
+    fn canonical_smiles_with_order_returns_visit_permutation() {
+        let mol = parse("CCO").unwrap();
+        let (csmi, order) = canonical_smiles_with_order(&mol);
+        assert!(!csmi.is_empty());
+        assert_eq!(csmi, canonical_smiles(&mol));
+        assert_eq!(order.len(), mol.atom_count());
+        let mut seen = order.clone();
+        seen.sort_by_key(|a| a.0);
+        assert_eq!(
+            seen,
+            (0..mol.atom_count() as u32)
+                .map(AtomIdx)
+                .collect::<Vec<_>>()
         );
     }
 
@@ -5926,6 +5972,7 @@ mod explicit_implicit_h_invariance {
                     chirality: Chirality::None,
                     wildcard: false,
                     atom_map: None,
+                    tag: None,
                     cip_code: None,
                 })
                 .chain(std::iter::once(Atom {
@@ -5937,6 +5984,7 @@ mod explicit_implicit_h_invariance {
                     chirality: Chirality::None,
                     wildcard: false,
                     atom_map: None,
+                    tag: None,
                     cip_code: None,
                 }))
                 .collect();

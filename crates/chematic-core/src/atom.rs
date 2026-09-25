@@ -124,6 +124,9 @@ impl RGroupLabel {
 ///   or connected via `:` bonds.
 /// - `wildcard`: `true` for the SMILES `*` atom (any element, query context).
 /// - `atom_map`: atom-mapping number used in reaction SMILES.
+/// - `tag`: non-chemical caller id (`1..=u16::MAX`). Copied by clone /
+///   apply / fragments; ignored by SMILES write and canonical invariants;
+///   not emitted as `:n`. `None` means untagged (including born atoms).
 /// - `cip_code`: CIP stereodescriptor (R/S/E/Z). Populated by
 ///   `chematic_chem::assign_cip`; `None` until then.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -138,6 +141,9 @@ pub struct Atom {
     /// True for the wildcard atom `*` or `[*]`.
     pub wildcard: bool,
     pub atom_map: Option<u16>,
+    /// Non-chemical identity (`1..=u16::MAX`). Survives graph rewrite; not
+    /// written to SMILES. Stored as [`NonZeroU16`] so `Option` is two bytes.
+    pub tag: Option<core::num::NonZeroU16>,
     /// CIP stereodescriptor assigned by `chematic_chem::assign_cip`.
     /// `None` until explicitly computed.
     pub cip_code: Option<CipCode>,
@@ -155,6 +161,7 @@ impl Atom {
             chirality: Chirality::None,
             wildcard: false,
             atom_map: None,
+            tag: None,
             cip_code: None,
         }
     }
@@ -190,6 +197,7 @@ impl Atom {
             chirality,
             wildcard: false,
             atom_map,
+            tag: None,
             cip_code: None,
         }
     }

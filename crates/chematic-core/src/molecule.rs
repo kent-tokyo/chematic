@@ -810,6 +810,15 @@ impl Molecule {
         self.atoms[idx.0 as usize].isotope = isotope;
     }
 
+    /// Set a non-chemical tag on atom `idx`. Copied by clone / apply /
+    /// fragments; ignored by SMILES write and canonicalization.
+    ///
+    /// Tags are `1..=u16::MAX`. `None` clears the tag; `Some(0)` is treated
+    /// as clear (same as `None`) because zero is the niche for absence.
+    pub fn set_tag(&mut self, idx: AtomIdx, tag: Option<u16>) {
+        self.atoms[idx.0 as usize].tag = tag.and_then(core::num::NonZeroU16::new);
+    }
+
     /// Mark an atom as an R-group wildcard while preserving its atom index.
     pub fn set_r_group(&mut self, idx: AtomIdx, label: crate::atom::RGroupLabel) {
         self.invalidate_derived();
@@ -1656,5 +1665,23 @@ mod tests {
         assert_eq!(mol.degree_opt(n1), Some(1));
         assert_eq!(mol.degree_opt(n2), Some(1));
         assert_eq!(mol.degree_opt(n3), Some(1));
+    }
+
+    #[test]
+    fn set_tag_uses_nonzero_u16_niche() {
+        assert_eq!(
+            core::mem::size_of::<Option<core::num::NonZeroU16>>(),
+            2,
+            "tag Option must stay two bytes"
+        );
+        let mut mol = ethane();
+        mol.set_tag(AtomIdx(0), Some(1));
+        assert_eq!(mol.atom(AtomIdx(0)).tag.map(|t| t.get()), Some(1));
+        mol.set_tag(AtomIdx(0), Some(0)); // zero is absence
+        assert!(mol.atom(AtomIdx(0)).tag.is_none());
+        mol.set_tag(AtomIdx(1), Some(u16::MAX));
+        assert_eq!(mol.atom(AtomIdx(1)).tag.map(|t| t.get()), Some(u16::MAX));
+        mol.set_tag(AtomIdx(1), None);
+        assert!(mol.atom(AtomIdx(1)).tag.is_none());
     }
 }
