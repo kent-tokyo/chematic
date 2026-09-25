@@ -392,14 +392,14 @@ fn min_max_atom_electrons(dtype: ElectronDonorType) -> (i32, i32) {
 pub(crate) fn apply_huckel(
     mol: &Molecule,
     atoms: &[AtomIdx],
-    donor: &FxHashMap<AtomIdx, ElectronDonorType>,
+    donor: &[ElectronDonorType],
 ) -> bool {
     let _ = mol;
     let mut rlw = 0i32;
     let mut rup = 0i32;
     let mut n_any = 0u32;
     for &a in atoms {
-        let dtype = donor[&a];
+        let dtype = donor[a.0 as usize];
         if dtype == ElectronDonorType::Any {
             n_any += 1;
             if n_any > 1 {
@@ -498,7 +498,7 @@ fn combinations(n: usize, k: usize) -> Vec<Vec<usize>> {
 /// Candidate rings, bundled so `apply_huckel_to_fused` stays under clippy's
 /// too-many-arguments limit -- `atoms[i]`/`bonds[i]` describe the same ring.
 struct CandidateRings<'a> {
-    atoms: &'a [Vec<AtomIdx>],
+    atoms: &'a [&'a [AtomIdx]],
     bonds: &'a [Vec<BondIdx>],
 }
 
@@ -506,24 +506,39 @@ fn apply_huckel_to_fused(
     mol: &Molecule,
     rings: &CandidateRings<'_>,
     group: &[usize],
-    donor: &FxHashMap<AtomIdx, ElectronDonorType>,
+    donor: &[ElectronDonorType],
     max_num_fused_rings: usize,
     aromatic_atoms: &mut FxHashSet<AtomIdx>,
     aromatic_bonds: &mut FxHashSet<BondIdx>,
 ) {
     let ring_atoms = rings.atoms;
     let ring_bond_ids = rings.bonds;
+    // Per-atom / per-bond counters, reset after every use.
+    let mut atom_count = vec![0u32; mol.atom_count()];
+    let mut bond_count = vec![0u32; mol.bond_count()];
     let n_ring_bonds: usize = {
-        let mut all: FxHashSet<BondIdx> = FxHashSet::default();
+        let mut n = 0;
         for &ri in group {
-            all.extend(ring_bond_ids[ri].iter().copied());
+            for &b in &ring_bond_ids[ri] {
+                if bond_count[b.0 as usize] == 0 {
+                    bond_count[b.0 as usize] = 1;
+                    n += 1;
+                }
+            }
         }
-        all.len()
+        for &ri in group {
+            for &b in &ring_bond_ids[ri] {
+                bond_count[b.0 as usize] = 0;
+            }
+        }
+        n
     };
-    let mut done_bonds: FxHashSet<BondIdx> = FxHashSet::default();
+    let mut done = vec![false; mol.bond_count()];
+    let mut n_done = 0usize;
+    let mut union: Vec<AtomIdx> = Vec::new();
 
     for size in 1..=group.len().min(max_num_fused_rings) {
-        if done_bonds.len() >= n_ring_bonds {
+        if n_done >= n_ring_bonds {
             break;
         }
         for combo in combinations(group.len(), size) {
@@ -540,34 +555,55 @@ fn apply_huckel_to_fused(
                 }
             }
 
-            let mut membership_count: FxHashMap<AtomIdx, u32> = FxHashMap::default();
+            // Atoms in exactly 1 or 2 of the subset's rings (RDKit #2895); the
+            // Hückel count does not depend on their order.
             for &ri in &cur_rings {
-                for &a in &ring_atoms[ri] {
-                    *membership_count.entry(a).or_insert(0) += 1;
+                for &a in ring_atoms[ri] {
+                    atom_count[a.0 as usize] += 1;
                 }
             }
-            let union: Vec<AtomIdx> = membership_count
-                .iter()
-                .filter(|&(_, &c)| c == 1 || c == 2)
-                .map(|(&a, _)| a)
-                .collect();
+            union.clear();
+            for &ri in &cur_rings {
+                for &a in ring_atoms[ri] {
+                    let c = &mut atom_count[a.0 as usize];
+                    if *c == 1 || *c == 2 {
+                        union.push(a);
+                    }
+                    *c = u32::MAX; // collected (or excluded) once
+                }
+            }
+            for &ri in &cur_rings {
+                for &a in ring_atoms[ri] {
+                    atom_count[a.0 as usize] = 0;
+                }
+            }
 
             if apply_huckel(mol, &union, donor) {
                 // Mark only the outer-perimeter bonds (appear in exactly one
                 // of this subset's rings), matching `markAtomsBondsArom`.
-                let mut bond_count: FxHashMap<BondIdx, u32> = FxHashMap::default();
                 for &ri in &cur_rings {
                     for &b in &ring_bond_ids[ri] {
-                        *bond_count.entry(b).or_insert(0) += 1;
+                        bond_count[b.0 as usize] += 1;
                     }
                 }
-                for (&b, &c) in &bond_count {
-                    if c == 1 {
-                        aromatic_bonds.insert(b);
-                        let bond = mol.bond(b);
-                        aromatic_atoms.insert(bond.atom1);
-                        aromatic_atoms.insert(bond.atom2);
-                        done_bonds.insert(b);
+                for &ri in &cur_rings {
+                    for &b in &ring_bond_ids[ri] {
+                        let c = bond_count[b.0 as usize];
+                        if c == 1 {
+                            aromatic_bonds.insert(b);
+                            let bond = mol.bond(b);
+                            aromatic_atoms.insert(bond.atom1);
+                            aromatic_atoms.insert(bond.atom2);
+                            if !done[b.0 as usize] {
+                                done[b.0 as usize] = true;
+                                n_done += 1;
+                            }
+                        }
+                    }
+                }
+                for &ri in &cur_rings {
+                    for &b in &ring_bond_ids[ri] {
+                        bond_count[b.0 as usize] = 0;
                     }
                 }
             }
@@ -604,17 +640,14 @@ pub(crate) fn rdkit_parity_aromaticity_ex(
             uf.union(bond.atom1.0, bond.atom2.0);
         }
     }
-    let mut donor: FxHashMap<AtomIdx, ElectronDonorType> = FxHashMap::default();
-    let mut candidate: FxHashMap<AtomIdx, bool> = FxHashMap::default();
+    let mut donor: Vec<ElectronDonorType> = vec![ElectronDonorType::None; n];
     let mut is_candidate = vec![false; n];
     for a in 0..n {
         if ring_atom[a] {
             let idx = AtomIdx(a as u32);
             let d = get_atom_electron_donor_type(mol, idx, cyclic);
-            donor.insert(idx, d);
-            let c = is_atom_candidate_for_aromaticity(mol, idx, d);
-            candidate.insert(idx, c);
-            is_candidate[a] = c;
+            donor[a] = d;
+            is_candidate[a] = is_atom_candidate_for_aromaticity(mol, idx, d);
         }
     }
 
@@ -651,15 +684,11 @@ pub(crate) fn rdkit_parity_aromaticity_ex(
     let rings = crate::sssr::find_sssr_ring_set_in_components(mol, &keep);
     let srings: &[Vec<AtomIdx>] = &rings;
 
-    let candidate_rings: Vec<&Vec<AtomIdx>> = srings
+    let ring_atoms: Vec<&[AtomIdx]> = srings
         .iter()
-        .filter(|ring| {
-            ring.iter()
-                .all(|a| candidate.get(a).copied().unwrap_or(false))
-        })
+        .filter(|ring| ring.iter().all(|a| is_candidate[a.0 as usize]))
+        .map(|ring| ring.as_slice())
         .collect();
-
-    let ring_atoms: Vec<Vec<AtomIdx>> = candidate_rings.iter().map(|r| (*r).clone()).collect();
     let ring_bond_ids: Vec<Vec<BondIdx>> = ring_atoms
         .iter()
         .map(|ring| {
@@ -833,13 +862,14 @@ enum ParityShortcut {
 
 /// Memoized decision between the shortcuts of
 /// [`apply_aromaticity_rdkit_parity_uncached`]: the complete-preperceived
-/// test ([`preperceived_kind`]), then the pre-kekulization test that the
-/// explicit representation is kept ([`re_perception_can_extend_any_kekule`]).
+/// test ([`preperceived_kind_with`]), then the pre-kekulization test that the
+/// explicit representation is kept ([`unchanged_without_kekulization_with`]).
 fn parity_shortcut(mol: &Molecule) -> ParityShortcut {
     *mol.derived(chematic_core::DerivedSlot::RdkitParityShortcut, || {
-        match preperceived_kind(mol) {
+        let info = ComponentInfo::new(mol);
+        match preperceived_kind_with(mol, &info) {
             Some(kind) => kind,
-            None if unchanged_without_kekulization(mol) => ParityShortcut::Identity,
+            None if unchanged_without_kekulization_with(mol, &info) => ParityShortcut::Identity,
             None => ParityShortcut::Full,
         }
     })
@@ -871,82 +901,162 @@ pub fn rdkit_parity_view_is_identity(mol: &Molecule) -> bool {
 /// RDKit's donor/candidate rules must themselves contain a cycle, so a
 /// non-aromatic component with an incident multiple bond also needs the full
 /// path exactly when its candidate-induced cyclic subgraph has a cycle.
+#[cfg(test)]
 fn preperceived_kind(mol: &Molecule) -> Option<ParityShortcut> {
-    let explicit = explicit_aromaticity_is_consistent(mol);
-    let has_aromatic_bond = mol
-        .bonds()
-        .any(|(_, bond)| bond.order == BondOrder::Aromatic);
-    if has_aromatic_bond && !explicit {
+    preperceived_kind_with(mol, &ComponentInfo::new(mol))
+}
+
+/// Per cyclic component facts shared by [`preperceived_kind_with`] and
+/// [`unchanged_without_kekulization_with`], from one union-find pass.
+struct ComponentInfo {
+    cyclic: std::sync::Arc<Vec<bool>>,
+    /// Union-find root of every atom with a cyclic bond (`u32::MAX` otherwise).
+    root: Vec<u32>,
+    /// Per root: `COMP_*` bits.
+    kind: Vec<u8>,
+    /// Per root: cyclic bonds and atoms.
+    edges: Vec<u32>,
+    atoms: Vec<u32>,
+    has_aromatic_bond: bool,
+    /// Every aromatic bond joins two flagged atoms (and one exists).
+    explicit: bool,
+    non_ring_aromatic_bond: bool,
+    any_flagged: bool,
+}
+
+/// Some cyclic bond of the component is aromatic.
+const COMP_AROMATIC: u8 = 1;
+/// Some cyclic bond is not aromatic.
+const COMP_NON_AROMATIC: u8 = 2;
+/// Some cyclic bond is neither aromatic nor single (up/down included).
+const COMP_NON_AROMATIC_MULTIPLE: u8 = 4;
+/// Some atom of the component has a double, triple or quadruple bond.
+const COMP_INCIDENT_MULTIPLE: u8 = 8;
+/// Some atom of the component is flagged aromatic.
+const COMP_FLAGGED: u8 = 16;
+
+impl ComponentInfo {
+    fn new(mol: &Molecule) -> Self {
+        let n = mol.atom_count();
+        let cyclic = crate::sssr::ring_bond_flags_shared(mol);
+        let mut uf = UnionFind::new(n);
+        let mut has_aromatic_bond = false;
+        let mut consistent = true;
+        let mut non_ring_aromatic_bond = false;
+        for (bond_idx, bond) in mol.bonds() {
+            if bond.order == BondOrder::Aromatic {
+                has_aromatic_bond = true;
+                if !mol.atom(bond.atom1).aromatic || !mol.atom(bond.atom2).aromatic {
+                    consistent = false;
+                }
+            }
+            if cyclic[bond_idx.0 as usize] {
+                uf.union(bond.atom1.0, bond.atom2.0);
+            } else if bond.order == BondOrder::Aromatic {
+                non_ring_aromatic_bond = true;
+            }
+        }
+        let mut root = vec![u32::MAX; n];
+        let mut kind = vec![0u8; n];
+        let mut edges = vec![0u32; n];
+        let mut atoms = vec![0u32; n];
+        for (bond_idx, bond) in mol.bonds() {
+            if cyclic[bond_idx.0 as usize] {
+                let r = uf.find(bond.atom1.0);
+                root[bond.atom1.0 as usize] = r;
+                root[bond.atom2.0 as usize] = r;
+                let r = r as usize;
+                edges[r] += 1;
+                kind[r] |= match bond.order {
+                    BondOrder::Aromatic => COMP_AROMATIC,
+                    BondOrder::Single | BondOrder::Up | BondOrder::Down => COMP_NON_AROMATIC,
+                    _ => COMP_NON_AROMATIC | COMP_NON_AROMATIC_MULTIPLE,
+                };
+            }
+        }
+        let mut any_flagged = false;
+        for (idx, atom) in mol.atoms() {
+            any_flagged |= atom.aromatic;
+            let r = root[idx.0 as usize];
+            if r != u32::MAX {
+                atoms[r as usize] += 1;
+                if atom.aromatic {
+                    kind[r as usize] |= COMP_FLAGGED;
+                }
+            }
+        }
+        for (_, bond) in mol.bonds() {
+            if matches!(
+                bond.order,
+                BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple
+            ) {
+                for end in [bond.atom1, bond.atom2] {
+                    let r = root[end.0 as usize];
+                    if r != u32::MAX {
+                        kind[r as usize] |= COMP_INCIDENT_MULTIPLE;
+                    }
+                }
+            }
+        }
+        Self {
+            cyclic,
+            root,
+            kind,
+            edges,
+            atoms,
+            has_aromatic_bond,
+            explicit: has_aromatic_bond && consistent,
+            non_ring_aromatic_bond,
+            any_flagged,
+        }
+    }
+
+    /// Roots of the cyclic components (each once).
+    fn roots(&self) -> impl Iterator<Item = usize> + '_ {
+        self.root
+            .iter()
+            .enumerate()
+            .filter(|&(a, &r)| r as usize == a)
+            .map(|(a, _)| a)
+    }
+}
+
+fn preperceived_kind_with(mol: &Molecule, info: &ComponentInfo) -> Option<ParityShortcut> {
+    if info.has_aromatic_bond && !info.explicit {
+        return None;
+    }
+    if info.non_ring_aromatic_bond {
         return None;
     }
 
-    let n = mol.atom_count();
-    let ring_bonds = crate::sssr::ring_bond_flags_shared(mol);
-    let mut uf = UnionFind::new(n);
-    for (bond_idx, bond) in mol.bonds() {
-        if ring_bonds[bond_idx.0 as usize] {
-            uf.union(bond.atom1.0, bond.atom2.0);
-        } else if bond.order == BondOrder::Aromatic {
-            return None;
-        }
-    }
-
-    const AROMATIC: u8 = 1;
-    const NON_AROMATIC: u8 = 2;
-    const NON_AROMATIC_MULTIPLE: u8 = 4;
-    const INCIDENT_MULTIPLE: u8 = 8;
-    // Component flags, indexed by union-find root; `ring_atom` marks roots of
-    // atoms with at least one cyclic bond.
-    let mut flags = vec![0u8; n];
-    let mut ring_atom = vec![false; n];
-    for (bond_idx, bond) in mol.bonds() {
-        let multiple = matches!(
-            bond.order,
-            BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple
-        );
-        if ring_bonds[bond_idx.0 as usize] {
-            ring_atom[bond.atom1.0 as usize] = true;
-            ring_atom[bond.atom2.0 as usize] = true;
-            let root = uf.find(bond.atom1.0) as usize;
-            flags[root] |= match bond.order {
-                BondOrder::Aromatic => AROMATIC,
-                BondOrder::Single | BondOrder::Up | BondOrder::Down => NON_AROMATIC,
-                _ => NON_AROMATIC | NON_AROMATIC_MULTIPLE,
-            };
-        }
-        if multiple {
-            for end in [bond.atom1.0, bond.atom2.0] {
-                let root = uf.find(end) as usize;
-                flags[root] |= INCIDENT_MULTIPLE;
-            }
-        }
-    }
-
     let mut needs_candidate_check = false;
-    for atom in 0..n {
-        if !ring_atom[atom] || uf.find(atom as u32) as usize != atom {
-            continue;
-        }
-        let f = flags[atom];
-        let aromatic = f & AROMATIC != 0;
-        if (aromatic && f & NON_AROMATIC != 0) || (!aromatic && f & NON_AROMATIC_MULTIPLE != 0) {
+    for r in info.roots() {
+        let f = info.kind[r];
+        let aromatic = f & COMP_AROMATIC != 0;
+        if (aromatic && f & COMP_NON_AROMATIC != 0)
+            || (!aromatic && f & COMP_NON_AROMATIC_MULTIPLE != 0)
+        {
             return None;
         }
-        if !aromatic && f & INCIDENT_MULTIPLE != 0 {
+        if !aromatic && f & COMP_INCIDENT_MULTIPLE != 0 {
             needs_candidate_check = true;
         }
     }
 
     if needs_candidate_check {
-        let check = |atom: usize, uf: &mut UnionFind| -> bool {
-            let root = uf.find(atom as u32) as usize;
-            flags[root] & AROMATIC == 0 && flags[root] & INCIDENT_MULTIPLE != 0
+        let n = mol.atom_count();
+        let checked = |atom: usize| -> bool {
+            let r = info.root[atom];
+            r != u32::MAX && {
+                let f = info.kind[r as usize];
+                f & COMP_AROMATIC == 0 && f & COMP_INCIDENT_MULTIPLE != 0
+            }
         };
         let mut candidate = vec![false; n];
         for atom in 0..n {
-            if ring_atom[atom] && check(atom, &mut uf) {
+            if checked(atom) {
                 let idx = AtomIdx(atom as u32);
-                let donor = get_atom_electron_donor_type(mol, idx, ring_bonds.as_slice());
+                let donor = get_atom_electron_donor_type(mol, idx, info.cyclic.as_slice());
                 candidate[atom] = is_atom_candidate_for_aromaticity(mol, idx, donor);
             }
         }
@@ -955,7 +1065,7 @@ fn preperceived_kind(mol: &Molecule) -> Option<ParityShortcut> {
         let mut candidate_uf = UnionFind::new(n);
         for (bond_idx, bond) in mol.bonds() {
             let (a, b) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
-            if ring_bonds[bond_idx.0 as usize]
+            if info.cyclic[bond_idx.0 as usize]
                 && candidate[a]
                 && candidate[b]
                 && !candidate_uf.union(a as u32, b as u32)
@@ -965,9 +1075,9 @@ fn preperceived_kind(mol: &Molecule) -> Option<ParityShortcut> {
         }
     }
 
-    if explicit {
+    if info.explicit {
         Some(ParityShortcut::Identity)
-    } else if mol.atoms().any(|(_, atom)| atom.aromatic) {
+    } else if info.any_flagged {
         Some(ParityShortcut::ClearFlags)
     } else {
         Some(ParityShortcut::Identity)
@@ -1053,68 +1163,29 @@ fn re_perception_can_extend(mol: &Molecule, kekulized: &Molecule) -> bool {
 ///   giving a supergraph of the real candidate subgraph; an edge on a cycle
 ///   of the real subgraph lies on a cycle of the supergraph, so if no such
 ///   edge is non-explicit here, none is there.
-fn unchanged_without_kekulization(mol: &Molecule) -> bool {
-    let has_aromatic_bond = mol
-        .bonds()
-        .any(|(_, bond)| bond.order == BondOrder::Aromatic);
-    if has_aromatic_bond {
-        if !explicit_aromaticity_is_consistent(mol) {
+fn unchanged_without_kekulization_with(mol: &Molecule, info: &ComponentInfo) -> bool {
+    if info.has_aromatic_bond {
+        if !info.explicit {
             return false;
         }
-    } else if mol.atoms().any(|(_, atom)| atom.aromatic) {
+    } else if info.any_flagged {
         return false;
     }
 
     let n = mol.atom_count();
-    let cyclic = crate::sssr::ring_bond_flags_shared(mol);
-    let cyclic: &[bool] = cyclic.as_slice();
-    let mut uf = UnionFind::new(n);
-    let mut ring_atom = vec![false; n];
-    for (idx, bond) in mol.bonds() {
-        if cyclic[idx.0 as usize] {
-            uf.union(bond.atom1.0, bond.atom2.0);
-            ring_atom[bond.atom1.0 as usize] = true;
-            ring_atom[bond.atom2.0 as usize] = true;
-        }
-    }
-    // Per component (indexed by union-find root): cyclic bond / atom counts
-    // and whether any cyclic bond is aromatic / non-aromatic, any atom flagged.
-    const AROMATIC: u8 = 1;
-    const NON_AROMATIC: u8 = 2;
-    const FLAGGED: u8 = 4;
-    let mut kind = vec![0u8; n];
-    let mut edges = vec![0u32; n];
-    let mut atoms = vec![0u32; n];
-    for (idx, bond) in mol.bonds() {
-        if cyclic[idx.0 as usize] {
-            let root = uf.find(bond.atom1.0) as usize;
-            edges[root] += 1;
-            kind[root] |= if bond.order == BondOrder::Aromatic {
-                AROMATIC
-            } else {
-                NON_AROMATIC
-            };
-        }
-    }
-    for a in 0..n {
-        if ring_atom[a] {
-            let root = uf.find(a as u32) as usize;
-            atoms[root] += 1;
-            if mol.atom(AtomIdx(a as u32)).aromatic {
-                kind[root] |= FLAGGED;
-            }
-        }
-    }
+    let cyclic: &[bool] = info.cyclic.as_slice();
+    // Exact components: no aromatic cyclic bond and no flagged atom.
+    let exact = |r: u32| r != u32::MAX && info.kind[r as usize] & (COMP_AROMATIC | COMP_FLAGGED) == 0;
 
     // Candidacy: exact for atoms not flagged aromatic, assumed for flagged ones.
     let mut candidate = vec![false; n];
     let mut donor: Vec<ElectronDonorType> = vec![ElectronDonorType::None; n];
-    for a in 0..n {
-        if !ring_atom[a] {
+    for (idx, atom) in mol.atoms() {
+        let a = idx.0 as usize;
+        if info.root[a] == u32::MAX {
             continue;
         }
-        let idx = AtomIdx(a as u32);
-        if mol.atom(idx).aromatic {
+        if atom.aromatic {
             candidate[a] = true;
         } else {
             let d = get_atom_electron_donor_type(mol, idx, cyclic);
@@ -1123,8 +1194,7 @@ fn unchanged_without_kekulization(mol: &Molecule) -> bool {
         }
     }
 
-    // Non-aromatic components: find candidate cycles.
-    let exact = |k: u8| k & (AROMATIC | FLAGGED) == 0;
+    // Exact components: find candidate cycles.
     let mut candidate_uf = UnionFind::new(n);
     let mut has_candidate_cycle = vec![false; n];
     for (idx, bond) in mol.bonds() {
@@ -1132,36 +1202,31 @@ fn unchanged_without_kekulization(mol: &Molecule) -> bool {
         if !cyclic[idx.0 as usize] || !candidate[a] || !candidate[b] {
             continue;
         }
-        let root = uf.find(bond.atom1.0) as usize;
-        if exact(kind[root]) && !candidate_uf.union(a as u32, b as u32) {
-            has_candidate_cycle[root] = true;
+        let r = info.root[a];
+        if exact(r) && !candidate_uf.union(a as u32, b as u32) {
+            has_candidate_cycle[r as usize] = true;
         }
     }
-    for root in 0..n {
-        if !ring_atom[root] || uf.find(root as u32) as usize != root {
+    for r in info.roots() {
+        if !exact(r as u32) || !has_candidate_cycle[r] {
             continue;
         }
-        if !exact(kind[root]) || !has_candidate_cycle[root] {
-            continue;
-        }
-        if edges[root] != atoms[root] {
+        if info.edges[r] != info.atoms[r] {
             return false; // a candidate cycle in a fused system: full path
         }
         // A single ring made entirely of candidates.
         let members: Vec<AtomIdx> = (0..n)
-            .filter(|&a| ring_atom[a] && uf.find(a as u32) as usize == root)
+            .filter(|&a| info.root[a] as usize == r)
             .map(|a| AtomIdx(a as u32))
             .collect();
-        let donors: FxHashMap<AtomIdx, ElectronDonorType> =
-            members.iter().map(|&a| (a, donor[a.0 as usize])).collect();
-        if apply_huckel(mol, &members, &donors) {
+        if apply_huckel(mol, &members, &donor) {
             return false;
         }
     }
     // Remaining components: exact ones contribute nothing (above), so only
     // mixed components can hold a non-explicit candidate cycle edge.
     for a in 0..n {
-        if ring_atom[a] && exact(kind[uf.find(a as u32) as usize]) {
+        if exact(info.root[a]) {
             candidate[a] = false;
         }
     }
@@ -1196,81 +1261,80 @@ fn candidate_cycles_can_extend(mol: &Molecule, typing: &Molecule) -> bool {
 /// candidate-induced cyclic subgraph and is not already an explicit aromatic
 /// bond between two flagged atoms.
 fn non_explicit_candidate_cycle_edge(mol: &Molecule, cyclic: &[bool], candidate: &[bool]) -> bool {
-    let n = mol.atom_count();
-    // Candidate-induced subgraph over cyclic bonds (CSR), then bridges.
-    let mut start = vec![0usize; n + 1];
-    let edges: Vec<(BondIdx, usize, usize)> = mol
+    // An edge between two candidates can only lie on a candidate cycle if
+    // it is itself not explicit; with no such edge there is nothing to test.
+    let explicit = |b: BondIdx, u: AtomIdx, v: AtomIdx| {
+        mol.bond(b).order == BondOrder::Aromatic && mol.atom(u).aromatic && mol.atom(v).aromatic
+    };
+    let is_edge = |b: BondIdx, u: AtomIdx, v: AtomIdx| {
+        cyclic[b.0 as usize] && candidate[u.0 as usize] && candidate[v.0 as usize]
+    };
+    if !mol
         .bonds()
-        .filter(|(idx, b)| {
-            cyclic[idx.0 as usize] && candidate[b.atom1.0 as usize] && candidate[b.atom2.0 as usize]
-        })
-        .map(|(idx, b)| (idx, b.atom1.0 as usize, b.atom2.0 as usize))
-        .collect();
-    if edges.is_empty() {
+        .any(|(b, bond)| is_edge(b, bond.atom1, bond.atom2) && !explicit(b, bond.atom1, bond.atom2))
+    {
         return false;
     }
-    for &(_, u, v) in &edges {
-        start[u + 1] += 1;
-        start[v + 1] += 1;
-    }
-    for i in 0..n {
-        start[i + 1] += start[i];
-    }
-    let mut fill = start.clone();
-    let mut adj = vec![(0usize, 0usize); 2 * edges.len()];
-    for (e, &(_, u, v)) in edges.iter().enumerate() {
-        adj[fill[u]] = (v, e);
-        fill[u] += 1;
-        adj[fill[v]] = (u, e);
-        fill[v] += 1;
-    }
-    const UNSEEN: usize = usize::MAX;
-    let mut disc = vec![UNSEEN; n];
-    let mut low = vec![0usize; n];
-    let mut on_cycle = vec![false; edges.len()];
-    let mut time = 0usize;
-    let mut stack: Vec<(usize, usize, usize)> = Vec::new();
+    // Bridges of the candidate-induced cyclic subgraph (iterative low-link
+    // DFS over the molecule's adjacency, restricted to candidate edges): an
+    // edge lies on a cycle exactly when it is a back edge or a tree edge
+    // whose child subtree reaches its parent or above.
+    let n = mol.atom_count();
+    const UNSEEN: u32 = u32::MAX;
+    const NO_BOND: u32 = u32::MAX;
+    let mut dl = vec![(UNSEEN, UNSEEN); n];
+    let mut on_cycle = vec![false; mol.bond_count()];
+    let mut time = 0u32;
+    let mut stack: Vec<(u32, u32, u32)> = Vec::new();
     for root in 0..n {
-        if disc[root] != UNSEEN || start[root] == start[root + 1] {
+        if dl[root].0 != UNSEEN || !candidate[root] {
             continue;
         }
-        disc[root] = time;
-        low[root] = time;
+        dl[root] = (time, time);
         time += 1;
-        stack.push((root, usize::MAX, start[root]));
-        while let Some(&mut (a, parent_edge, ref mut next)) = stack.last_mut() {
-            if *next < start[a + 1] {
-                let (b, e) = adj[*next];
+        stack.push((root as u32, NO_BOND, 0));
+        while let Some(&mut (atom, parent_bond, ref mut next)) = stack.last_mut() {
+            let a = atom as usize;
+            let nbrs = mol.neighbor_slice(AtomIdx(atom));
+            if (*next as usize) < nbrs.len() {
+                let (nb, bond) = nbrs[*next as usize];
                 *next += 1;
-                if e == parent_edge {
+                if bond.0 == parent_bond || !is_edge(bond, AtomIdx(atom), nb) {
                     continue;
                 }
-                if disc[b] == UNSEEN {
-                    disc[b] = time;
-                    low[b] = time;
+                let b = nb.0 as usize;
+                if dl[b].0 == UNSEEN {
+                    dl[b] = (time, time);
                     time += 1;
-                    stack.push((b, e, start[b]));
+                    stack.push((nb.0, bond.0, 0));
                 } else {
-                    low[a] = low[a].min(disc[b]);
-                    on_cycle[e] = true; // back edge
+                    if dl[b].0 < dl[a].1 {
+                        dl[a].1 = dl[b].0;
+                    }
+                    on_cycle[bond.0 as usize] = true; // back edge
                 }
                 continue;
             }
             stack.pop();
-            if let Some(&(parent, _, _)) = stack.last()
-                && parent_edge != usize::MAX
-            {
-                low[parent] = low[parent].min(low[a]);
-                if low[a] <= disc[parent] {
-                    on_cycle[parent_edge] = true;
+            if parent_bond != NO_BOND {
+                let parent = stack
+                    .last()
+                    .expect("non-root DFS frame must retain its parent")
+                    .0 as usize;
+                let low_a = dl[a].1;
+                if low_a < dl[parent].1 {
+                    dl[parent].1 = low_a;
+                }
+                if low_a <= dl[parent].0 {
+                    on_cycle[parent_bond as usize] = true;
                 }
             }
         }
     }
-    edges.iter().zip(&on_cycle).any(|(&(idx, u, v), &cyc)| {
-        cyc && (mol.bond(idx).order != BondOrder::Aromatic
-            || !mol.atom(AtomIdx(u as u32)).aromatic
-            || !mol.atom(AtomIdx(v as u32)).aromatic)
+    mol.bonds().any(|(b, bond)| {
+        on_cycle[b.0 as usize]
+            && is_edge(b, bond.atom1, bond.atom2)
+            && !explicit(b, bond.atom1, bond.atom2)
     })
 }
 
