@@ -92,6 +92,39 @@ def terminal(row: dict, input_index: int, status: str, **details: object) -> dic
     return {"input_index": input_index, **row, "status": status, **details}
 
 
+# CheMatic breakdown key -> RDKit MMFFMolProperties term switch.
+RDKIT_TERMS = {
+    "bond": "SetMMFFBondTerm",
+    "angle": "SetMMFFAngleTerm",
+    "stretch_bend": "SetMMFFStretchBendTerm",
+    "oop": "SetMMFFOopTerm",
+    "torsion": "SetMMFFTorsionTerm",
+    "vdw": "SetMMFFVdWTerm",
+    "electrostatic": "SetMMFFEleTerm",
+}
+
+
+def rdkit_term_energies(rdkit_mol: Chem.Mol) -> dict[str, float] | None:
+    """RDKit's MMFF94 energy per term on the molecule's conformer 0.
+
+    Each term is evaluated with a fresh ``MMFFMolProperties`` in which only
+    that term is enabled (RDKit's documented per-term switches), so the
+    values sum to the full-force-field energy up to rounding.
+    """
+    energies: dict[str, float] = {}
+    for key, switch in RDKIT_TERMS.items():
+        properties = AllChem.MMFFGetMoleculeProperties(rdkit_mol, mmffVariant="MMFF94")
+        if properties is None:
+            return None
+        for other in RDKIT_TERMS.values():
+            getattr(properties, other)(other == switch)
+        force_field = AllChem.MMFFGetMoleculeForceField(rdkit_mol, properties, confId=0)
+        if force_field is None:
+            return None
+        energies[key] = float(force_field.CalcEnergy())
+    return energies
+
+
 def gradient_diagnostic(mol: object, coords: list[list[float]], delta: float) -> dict:
     analytic = mol.mmff94_bounded_analytic_gradient(coords)
     absolute_errors: list[float] = []
@@ -189,6 +222,17 @@ def evaluate(
     schematic_energy = breakdown["total"]
     rdkit_energy = float(force_field.CalcEnergy())
     delta = schematic_energy - rdkit_energy
+    rdkit_terms = rdkit_term_energies(rdkit_mol)
+    term_deltas = (
+        {key: breakdown[key] - value for key, value in rdkit_terms.items()}
+        if rdkit_terms is not None
+        else None
+    )
+    dominant_term = (
+        max(term_deltas, key=lambda key: abs(term_deltas[key]))
+        if term_deltas
+        else None
+    )
     coordinate_payload = json.dumps(coords, separators=(",", ":")).encode("utf-8")
     gradient = (
         gradient_diagnostic(schematic_mol, coords, gradient_delta)
@@ -204,6 +248,9 @@ def evaluate(
         schematic_energy_breakdown_kcal_mol=breakdown,
         schematic_energy_kcal_mol=schematic_energy,
         rdkit_energy_kcal_mol=rdkit_energy,
+        rdkit_term_energies_kcal_mol=rdkit_terms,
+        term_delta_kcal_mol=term_deltas,
+        dominant_term=dominant_term,
         delta_kcal_mol=delta,
         abs_delta_kcal_mol=abs(delta),
         **({"gradient_diagnostic": gradient} if gradient is not None else {}),
@@ -229,7 +276,48 @@ def summarize(results: list[dict]) -> dict:
             result["abs_delta_kcal_mol"]
         )
     gradient_rows = [result for result in ok if "gradient_diagnostic" in result]
+    term_rows = [result for result in ok if result.get("term_delta_kcal_mol")]
+    per_term = {}
+    for key in RDKIT_TERMS:
+        values = [abs(result["term_delta_kcal_mol"][key]) for result in term_rows]
+        per_term[key] = {
+            "rows": len(values),
+            "median_abs_delta_kcal_mol": statistics.median(values) if values else None,
+            "p90_abs_delta_kcal_mol": percentile_nearest_rank(values, 9, 10),
+            "max_abs_delta_kcal_mol": max(values) if values else None,
+            "rows_above_0_1_kcal_mol": sum(value > 0.1 for value in values),
+            "rows_above_1_kcal_mol": sum(value > 1.0 for value in values),
+        }
+    term_sum_residual = max(
+        (
+            abs(
+                sum(result["rdkit_term_energies_kcal_mol"].values())
+                - result["rdkit_energy_kcal_mol"]
+            )
+            for result in term_rows
+        ),
+        default=None,
+    )
+    residual_rows = sorted(
+        (result for result in ok if result["abs_delta_kcal_mol"] > 1.0),
+        key=lambda result: -result["abs_delta_kcal_mol"],
+    )
     return {
+        "per_term": per_term,
+        "rdkit_term_sum_vs_total_max_abs_kcal_mol": term_sum_residual,
+        "dominant_term_counts_above_1_kcal_mol": dict(
+            Counter(result.get("dominant_term") for result in residual_rows)
+        ),
+        "rows_above_1_kcal_mol": [
+            {
+                "input_index": result["input_index"],
+                "id": result.get("id"),
+                "abs_delta_kcal_mol": result["abs_delta_kcal_mol"],
+                "dominant_term": result.get("dominant_term"),
+                "term_delta_kcal_mol": result.get("term_delta_kcal_mol"),
+            }
+            for result in residual_rows
+        ],
         "row_accounting": {
             "input_count": len(results),
             "terminal_count": sum(
@@ -360,19 +448,19 @@ def main() -> int:
             "source_tree_clean": git_status == "",
         }
         summary = {
-            "schema_version": 2,
-            "profile": "mmff94_same_explicit_h_current_source_v2",
+            "schema_version": 3,
+            "profile": "mmff94_same_explicit_h_current_source_v3",
             "status": "current_source_diagnostic_not_release_gate",
             "generated_at_utc": datetime.now(timezone.utc).isoformat(),
             "protocol": {
                 "comparison": "RDKit and CheMatic MMFF94 total energy on the same RDKit-generated explicit-H coordinates",
                 "coordinate_producer": "RDKit EmbedMolecule default parameters with per-row fixed random seed",
+                "per_term_oracle": "RDKit MMFFMolProperties with exactly one term enabled per evaluation (SetMMFFBondTerm, ...)",
                 "excludes": [
                     "conformer_quality",
                     "minimization_convergence",
                     "stereo_preservation",
                     "runtime_speed",
-                    "RDKit_per_term_energy_parity",
                 ],
                 "seed": args.seed,
                 "gradient_input_indices": sorted(gradient_indices),
@@ -411,7 +499,7 @@ def main() -> int:
             "measurements": measurements,
             "gate": gate,
             "gate_passed": all(gate.values()),
-            "caveat": "RDKit generated the shared explicit-H coordinates. This measures total force-field energy agreement, not per-term RDKit parity, conformer quality, minimization convergence, stereo preservation, or speed.",
+            "caveat": "RDKit generated the shared explicit-H coordinates. This measures total and per-term force-field energy agreement, not conformer quality, minimization convergence, stereo preservation, or speed.",
         }
         args.summary.parent.mkdir(parents=True, exist_ok=True)
         args.summary.write_text(
