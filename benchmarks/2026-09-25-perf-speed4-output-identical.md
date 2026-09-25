@@ -13,7 +13,7 @@ published-package or release claim.
 | Item | Value |
 |---|---|
 | Base | `912c4b7d81ce7735af13b007b6289c555cde9a8f` (v1.0.25 + rebaseline evidence) |
-| Branch | `perf/speed-4` at `5269d69f5716122cf00bc310c64618927532100d` |
+| Branch | `perf/speed-4` at `5269d69f5716122cf00bc310c64618927532100d` (sections 1–4); follow-up commits up to `98f5774645fa8596160c54ff33463171d4916a12` in section 5 |
 | Wheels | `maturin build --release` of `crates/chematic-py` at each revision (SHA-256 in the JSON) |
 | RDKit | 2026.03.6 (PyPI) |
 | Python / host | 3.11.15, Linux x86_64 VM, 2 vCPU "Intel(R) Xeon(R) Processor @ 2.10GHz" |
@@ -151,6 +151,63 @@ speed work kept accuracy unchanged. (The base wheel was rebuilt for this run;
 its SHA-256 differs from the wheel of the base matrix because the build is not
 bit-reproducible, the source revision is the same.)
 
+## 5. Follow-up: `98f57746` (small-component ring bases, SMARTS degree pruning)
+
+Three further commits on the same branch:
+
+- `c8f4bf7a`: cyclic components of cycle rank 1–2 whose minimum cycle basis
+  is unique (one ring; a spiro pair; a theta graph whose shortest path is
+  strictly shortest) get their rings straight from the graph instead of the
+  Horton selection, in the ring-set helpers and in the aromatic ring count
+  (a unique minimum basis is what every SSSR selection returns). VF2 prunes
+  target atoms with fewer neighbours than the query atom has query bonds
+  (exact; not under a visit budget, and in the map-returning search only for
+  queries of at most 7 atoms, like the existing cycle pruning). Search plans
+  use incremental counts (same order), and `has_match_perceived` runs the
+  size/element screen before building the aromatic view.
+- `d41e1957`: the Python SMARTS pattern cache uses Fx hashing.
+- `98f57746`: the aromatic ring count returns 0 for acyclic Kekulé input
+  without running perception, and seeds the perceived copy's ring data.
+
+**Output identity** ([JSON](2026-09-25-perf-digest-diff-912c4b7d-98f57746.json)):
+50 operations x 46,736 molecules against `912c4b7d`, 2,336,800 rows; the only
+differing rows (9) are again `kekulize` error text on molecules that cannot be
+kekulized (the base's reported atom follows hash order, so the count moves
+between runs: 8 in section 1, 9 here). RDKit agreement on the three corpora:
+identical to the base for all 15 operations
+([JSON](2026-09-25-rdkit-agreement-branch-98f57746.json)).
+
+**Rust cold timing** (µs per molecule, ChEMBL 5k, median of 3 alternating
+rounds of best-of-3; [JSON](2026-09-25-perf-digest-time-pair-912c4b7d-98f57746.json)):
+
+| Operation | base `912c4b7d` | `5269d69f` (section 2) | `98f57746` | speedup vs base |
+|---|---:|---:|---:|---:|
+| aromatic ring count (`aromatic_ring_count`) | 15.93 | 7.62 | 6.08 | 2.62x |
+| 15 SMARTS, perceived existence (`has_sub_perceived`) | 52.02 | 37.43 | 34.40 | 1.51x |
+| 1 SMARTS `c1ccccc1`, perceived (`has_sub_perceived_q`) | 13.75 | – | 4.57 | 3.01x |
+| 1 SMARTS `[OH]`, perceived (`has_sub_perceived_1`) | 10.43 | 3.26 | 3.29 | 3.17x |
+| 15 SMARTS, `has_match_bounded` with rings (`has_sub`) | 39.13 | – | 29.99 | 1.30x |
+| RDKit pattern fingerprint (`rdkit_pattern_fp`) | 249.46 | 179.80 | 131.09 | 1.90x |
+| MACCS (`maccs`) | 535.03 | 508.87 | 445.85 | 1.20x |
+| QED (`qed`) | 408.25 | 380.05 | 285.36 | 1.43x |
+| RDKit-parity aromatic view (`rdkit_parity_ok`) | 11.54 | 3.59 | 3.96 | 2.91x |
+
+(`rdkit_parity_ok` is unchanged by these commits; 3.59 vs 3.96 is run-to-run
+noise.) By instruction count (callgrind, 2,000 ChEMBL molecules) the
+naphthalene query's matching fell from ~89k to ~31k instructions per molecule
+and the aromatic ring count from ~71k to ~57k.
+
+**Python matrix** ([JSON](2026-09-25-python-op-matrix-vs-rdkit-branch-98f57746.json);
+all 44 checked operations keep the base's row agreement). The clearest
+change is `has_substructure c1ccc2ccccc2c1`: 14.4 µs → 7.3 µs (RDKit 10.3,
+0.79x → 1.40x). The other single-query `has_substructure` rows (4–6 µs per
+call) sit at parity with RDKit and change sign between runs on this VM: in
+an A/B of the `5269d69f` and `98f57746` wheels, two alternating rounds each,
+`[OH]` measured 5.04/5.60 and 3.28/5.09 µs for the same code paths, against
+RDKit's 3.6–3.8. The Rust timings above are the per-change evidence.
+`aromatic_ring_count` on prepared input stays at about 0.45–0.57x of RDKit
+(RDKit counts rings perceived inside `MolFromSmiles`).
+
 ## What changed
 
 - **RDKit-parity aromatic view** (`chematic-perception`): the shortcut
@@ -187,12 +244,17 @@ bit-reproducible, the source revision is the same.)
 
 ## Remaining gaps and notes
 
-- `aromatic_ring_count` on prepared inputs (0.50x) and `ring_count` (1.06x)
-  compare against RDKit values computed inside `MolFromSmiles`; the
-  parse-inclusive rows are 8.6x and 32x faster.
-- `has_substructure c1ccc2ccccc2c1` (0.79x) and `[CX3](=O)[OX2H1]` (0.89x)
-  are bounded by deciding the aromatic view (~3 µs per fresh molecule in
-  Python); matching itself is faster than RDKit.
+- `aromatic_ring_count` on prepared inputs (about 0.5x) and `ring_count`
+  (parity) compare against RDKit values computed inside `MolFromSmiles`; the
+  parse-inclusive rows are about 11x and 30x faster.
+- Single-query `has_substructure` rows other than the naphthalene query are at
+  parity with RDKit (within this VM's noise) after section 5. They are
+  bounded by deciding the aromatic view, about 20k instructions (~2.5 µs) per
+  fresh molecule: shared cyclic-component facts (~8.5k), the rank-1 / bridge
+  proofs (~10k for a third of the molecules) and, for ~5% of molecules, the
+  Kekulé-form verdict (~150k, mostly the Horton SSSR of large fused
+  systems). Queries that cannot see aromaticity skip it and run 1.5–3.5x
+  faster than RDKit.
 - `tanimoto_1xN` stays at parity: the popcount kernel needs POPCNT, which the
   baseline x86-64 wheel does not enable and `#![forbid(unsafe_code)]` rules
   out runtime dispatch.

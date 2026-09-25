@@ -22,6 +22,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `has_substructure` 2.9x–12x faster than before, `rdkit_fp` 6.1x,
   RDKit-compatible Morgan 3.3x, TPSA 3.0x. `kekulize` errors now name the
   lowest-index unmatched atom (previously hash-order dependent).
+  Follow-up: rings of cycle-rank-1/2 components with a unique minimum basis
+  are read off the graph, VF2 prunes target atoms of too low degree (exact),
+  and the aromatic ring count skips perception for acyclic input
+  (naphthalene substructure query 2x, pattern fingerprint 1.9x, QED 1.4x
+  faster than the base in Rust cold timing).
 
 - **Behavior change (Python/WASM SMARTS):** `smarts_match`, `smarts_find`,
   `Mol.has_substructure`, `Mol.find_matches`, `bulk.substructure_search`,
