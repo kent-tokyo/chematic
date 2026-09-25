@@ -138,6 +138,12 @@ pub fn has_match_perceived(query: &QueryMolecule, mol: &Molecule, config: &Match
     if is_aromaticity_insensitive(query) {
         return has_match_with_config(query, mol, config);
     }
+    // The perceived view has the same atoms and elements, so the size and
+    // element screens `has_match_with_config` starts with give the same
+    // answer on `mol`; failing them here skips building the view.
+    if !crate::match_vf2::passes_size_and_element_screen(query, mol, config) {
+        return false;
+    }
     with_perceived_target(mol, |target| has_match_with_config(query, target, config))
 }
 
@@ -192,12 +198,27 @@ mod tests {
     #[test]
     fn insensitive_queries_match_the_view_like_the_molecule() {
         let cfg = MatchConfig::default();
-        for q in ["[#7;R]", "*~*~*~*~*~*", "[#6]~[#7]", "[!#6;!#1]~*~[!#6;!#1]"] {
+        for q in [
+            "[#7;R]",
+            "*~*~*~*~*~*",
+            "[#6]~[#7]",
+            "[!#6;!#1]~*~[!#6;!#1]",
+        ] {
             let query = parse_smarts(q).unwrap();
-            for smi in ["C1=CC=CC=C1N", "O=C1c2ccccc2C(=O)N1C", "C1=CNC=C1", "c1ccc2[nH]ccc2c1"] {
+            for smi in [
+                "C1=CC=CC=C1N",
+                "O=C1c2ccccc2C(=O)N1C",
+                "C1=CNC=C1",
+                "c1ccc2[nH]ccc2c1",
+            ] {
                 let mol = parse(smi).unwrap();
-                let via_view = with_perceived_target(&mol, |t| find_matches_with_config(&query, t, &cfg));
-                assert_eq!(find_matches_perceived(&query, &mol, &cfg), via_view, "{q} {smi}");
+                let via_view =
+                    with_perceived_target(&mol, |t| find_matches_with_config(&query, t, &cfg));
+                assert_eq!(
+                    find_matches_perceived(&query, &mol, &cfg),
+                    via_view,
+                    "{q} {smi}"
+                );
             }
         }
     }

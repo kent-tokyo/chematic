@@ -1197,7 +1197,10 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
         if cyclic[bidx.0 as usize] {
             ring_atom[bond.atom1.0 as usize] = true;
             ring_atom[bond.atom2.0 as usize] = true;
-            let (a, b) = (find(&mut parent, bond.atom1.0), find(&mut parent, bond.atom2.0));
+            let (a, b) = (
+                find(&mut parent, bond.atom1.0),
+                find(&mut parent, bond.atom2.0),
+            );
             if a != b {
                 parent[a as usize] = b;
             }
@@ -1222,6 +1225,8 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
     let mut count = 0usize;
     let mut keep = vec![false; n];
     let mut any_kept = false;
+    let mut root_of: Vec<u32> = Vec::new();
+    let mut small: Vec<Vec<AtomIdx>> = Vec::new();
     for root in 0..n {
         if !ring_atom[root] || find(&mut parent, root as u32) as usize != root {
             continue;
@@ -1231,6 +1236,36 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
         }
         if edges[root] == atoms[root] {
             count += usize::from(aromatic_atoms[root] == atoms[root]);
+        } else if edges[root] == atoms[root] + 1 && {
+            // Cycle rank 2: when the minimum cycle basis is unique and read
+            // off the graph, its two rings are the component's whole
+            // augmented set (their XOR is longer than both, or not a simple
+            // cycle) and neither is an envelope of the other, so the
+            // component contributes its all-aromatic rings.
+            small.clear();
+            if root_of.is_empty() {
+                root_of = (0..n as u32)
+                    .map(|a| {
+                        if ring_atom[a as usize] {
+                            find(&mut parent, a)
+                        } else {
+                            u32::MAX
+                        }
+                    })
+                    .collect();
+            }
+            crate::sssr::unique_basis_of_small_component(
+                mol,
+                &cyclic,
+                &root_of,
+                root as u32,
+                &mut small,
+            )
+        } {
+            count += small
+                .iter()
+                .filter(|ring| ring.iter().all(|&idx| mol.atom(idx).aromatic))
+                .count();
         } else {
             keep[root] = true;
             any_kept = true;

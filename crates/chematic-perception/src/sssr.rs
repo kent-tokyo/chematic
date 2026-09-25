@@ -56,9 +56,10 @@ impl CycleCandidate {
         let mut came = self.closing;
         for _ in 0..self.len {
             atoms.push(cur);
-            let Some((nb, b)) = mol.neighbors(cur).find(|&(_, b)| {
-                b != came && b.0 < 128 && self.mask & (1u128 << b.0) != 0
-            }) else {
+            let Some((nb, b)) = mol
+                .neighbors(cur)
+                .find(|&(_, b)| b != came && b.0 < 128 && self.mask & (1u128 << b.0) != 0)
+            else {
                 break;
             };
             came = b;
@@ -380,8 +381,177 @@ fn sssr_rings_in_components(
             single_cycle_sssr(mol).rings().to_vec()
         });
     }
-    let candidates = horton_candidates_fast(mol, Some(keep));
-    select_horton_basis(mol, &cyclic, candidates, r, order_needed, allow_ranks)
+    if order_needed {
+        let candidates = horton_candidates_fast(mol, Some(keep));
+        return select_horton_basis(mol, &cyclic, candidates, r, order_needed, allow_ranks);
+    }
+    // Components whose minimum cycle basis is unique and read off the graph
+    // directly (see `unique_basis_of_small_component`); the others go through
+    // the Horton selection. Components never share cycles, and per component
+    // the selected set does not depend on the other components' candidates.
+    let mut edges = vec![0u32; n];
+    let mut atoms = vec![0u32; n];
+    let mut is_ring_atom = vec![false; n];
+    for (bidx, b) in mol.bonds() {
+        if cyclic[bidx.0 as usize] && keep[b.atom1.0 as usize] {
+            edges[find(&mut parent, b.atom1.0) as usize] += 1;
+            is_ring_atom[b.atom1.0 as usize] = true;
+            is_ring_atom[b.atom2.0 as usize] = true;
+        }
+    }
+    let mut root_of = vec![u32::MAX; n];
+    for a in 0..n {
+        if is_ring_atom[a] {
+            let root = find(&mut parent, a as u32);
+            root_of[a] = root;
+            atoms[root as usize] += 1;
+        }
+    }
+    let mut rings: Vec<Vec<AtomIdx>> = Vec::new();
+    let mut general = vec![false; n];
+    let mut r_rest = 0usize;
+    for root in 0..n {
+        if root_of[root] != root as u32 {
+            continue;
+        }
+        let rank = (edges[root] + 1).saturating_sub(atoms[root]) as usize;
+        let small = rank <= 2
+            && unique_basis_of_small_component(mol, &cyclic, &root_of, root as u32, &mut rings);
+        if !small {
+            general[root] = true;
+            r_rest += rank;
+        }
+    }
+    if r_rest > 0 {
+        let keep_rest: Vec<bool> = (0..n)
+            .map(|a| is_ring_atom[a] && general[root_of[a] as usize])
+            .collect();
+        let candidates = horton_candidates_fast(mol, Some(&keep_rest));
+        let rest = select_horton_basis(mol, &cyclic, candidates, r_rest, false, allow_ranks)?;
+        rings.extend(rest);
+    }
+    Some(rings)
+}
+
+/// Appends the minimum cycle basis of the cyclic component rooted at `root`
+/// (atoms with `root_of[a] == root`) when its cycle rank is at most two and
+/// the basis is unique, returning `true`; returns `false` (appending
+/// nothing) otherwise.
+///
+/// * rank 1: the component is one simple cycle, its only cycle;
+/// * rank 2 with one atom of cyclic degree 4 (spiro): two edge-disjoint
+///   cycles through it, the only simple cycles there are;
+/// * rank 2 with two atoms of cyclic degree 3 (theta graph): three internally
+///   disjoint paths of lengths `a <= b <= c` between them, whose pairs form
+///   the only simple cycles (`a+b <= a+c <= b+c`). Any two of them are a
+///   basis, so the minimum basis is `{a+b, a+c}`, unique exactly when
+///   `a < b` (with `a == b` the cycles `a+c` and `b+c` tie).
+///
+/// A unique minimum basis is what every SSSR selection returns, whatever its
+/// tie-break, so the rings do not depend on canonical ranks.
+pub(crate) fn unique_basis_of_small_component(
+    mol: &Molecule,
+    cyclic: &[bool],
+    root_of: &[u32],
+    root: u32,
+    rings: &mut Vec<Vec<AtomIdx>>,
+) -> bool {
+    let cyclic_nbrs = |a: u32| {
+        mol.neighbor_slice(AtomIdx(a))
+            .iter()
+            .filter(|&&(_, b)| cyclic[b.0 as usize])
+            .map(|&(nb, _)| nb.0)
+    };
+    let members = || (0..root_of.len() as u32).filter(|&a| root_of[a as usize] == root);
+    let mut branch: [u32; 2] = [u32::MAX; 2];
+    let mut n_branch = 0usize;
+    let mut spiro = u32::MAX;
+    for a in members() {
+        match cyclic_nbrs(a).count() {
+            2 => {}
+            3 if n_branch < 2 => {
+                branch[n_branch] = a;
+                n_branch += 1;
+            }
+            4 if spiro == u32::MAX => spiro = a,
+            _ => return false,
+        }
+    }
+    // Walk from `start` through `first` along degree-2 atoms until an atom
+    // with `stop(atom)` is reached; returns the interior atoms and the end.
+    let walk = |start: u32, first: u32, stop: &dyn Fn(u32) -> bool| -> (Vec<AtomIdx>, u32) {
+        let mut interior = Vec::new();
+        let (mut prev, mut cur) = (start, first);
+        while !stop(cur) {
+            interior.push(AtomIdx(cur));
+            let next = cyclic_nbrs(cur)
+                .find(|&x| x != prev)
+                .expect("degree-2 cycle atom");
+            prev = cur;
+            cur = next;
+        }
+        (interior, prev)
+    };
+    match (n_branch, spiro != u32::MAX) {
+        (0, false) => {
+            // One simple cycle.
+            let Some(start) = members().next() else {
+                return false;
+            };
+            let first = cyclic_nbrs(start)
+                .next()
+                .expect("cycle atom has neighbours");
+            let (interior, _) = walk(start, first, &|x| x == start);
+            let mut ring = Vec::with_capacity(interior.len() + 1);
+            ring.push(AtomIdx(start));
+            ring.extend(interior);
+            rings.push(ring);
+            true
+        }
+        (0, true) => {
+            let mut used: Vec<u32> = Vec::with_capacity(4);
+            let nbrs: Vec<u32> = cyclic_nbrs(spiro).collect();
+            for first in nbrs {
+                if used.contains(&first) {
+                    continue;
+                }
+                let (interior, last) = walk(spiro, first, &|x| x == spiro);
+                used.push(first);
+                used.push(last);
+                let mut ring = Vec::with_capacity(interior.len() + 1);
+                ring.push(AtomIdx(spiro));
+                ring.extend(interior);
+                rings.push(ring);
+            }
+            true
+        }
+        (2, false) => {
+            let (u, v) = (branch[0], branch[1]);
+            let mut paths: Vec<Vec<AtomIdx>> = cyclic_nbrs(u)
+                .map(|first| {
+                    if first == v {
+                        Vec::new()
+                    } else {
+                        walk(u, first, &|x| x == v).0
+                    }
+                })
+                .collect();
+            paths.sort_by_key(|p| p.len()); // stable
+            if paths.len() != 3 || paths[0].len() == paths[1].len() {
+                return false;
+            }
+            for other in [&paths[1], &paths[2]] {
+                let mut ring = Vec::with_capacity(paths[0].len() + other.len() + 2);
+                ring.push(AtomIdx(u));
+                ring.extend(paths[0].iter().copied());
+                ring.push(AtomIdx(v));
+                ring.extend(other.iter().rev().copied());
+                rings.push(ring);
+            }
+            true
+        }
+        _ => false,
+    }
 }
 
 /// Greedy GF(2) selection of `r` independent candidates in canonical order,
@@ -406,7 +576,6 @@ fn select_horton_basis(
     order_needed: bool,
     allow_ranks: bool,
 ) -> Option<Vec<Vec<AtomIdx>>> {
-
     // Deterministic ordering: shortest first, then a canonical (input-order-
     // independent) tie-break so ring *selection* doesn't depend on how the
     // molecule happened to be numbered by the parser.
@@ -2717,7 +2886,11 @@ mod tests {
         for smi in samples {
             let mol = chematic_smiles::parse(smi).unwrap();
             let label = ring_components(&mol);
-            let count = label.iter().filter(|&&l| l != u32::MAX).max().map_or(0, |m| m + 1);
+            let count = label
+                .iter()
+                .filter(|&&l| l != u32::MAX)
+                .max()
+                .map_or(0, |m| m + 1);
             // Every subset of components (small molecules only).
             for subset in 0u32..(1 << count.min(6)) {
                 let keep: Vec<bool> = label
@@ -2730,7 +2903,11 @@ mod tests {
                     .filter(|r| keep[r[0].0 as usize])
                     .cloned()
                     .collect();
-                assert_eq!(find_sssr_in_components(&mol, &keep), expected, "{smi} {subset:b}");
+                assert_eq!(
+                    find_sssr_in_components(&mol, &keep),
+                    expected,
+                    "{smi} {subset:b}"
+                );
             }
         }
     }
@@ -2743,10 +2920,56 @@ mod tests {
             "C1CC2CC3CCC1C3C2",
             "c1cc2ccc3cccc4ccc(c1)c2c34",
             "C1C2CC3CC1CC(C2)C3",
+            // rank-2 components read off the graph: theta and spiro shapes,
+            // including ties that must fall back to the Horton selection
+            "C1CC2CCC1CC2",
+            "C1CC2CCC1C2",
+            "C1CCC2(C1)CCCC2",
+            "C1CC11CC1",
+            "c1ccc2[nH]ccc2c1",
+            "c1cc2cccccc2c1",
+            "C1CCCCCC2CCCCC(C1)C2",
+            "C12CC(C1)C2",
+            "C1CC2CC1C2",
+            "c1ccc2ccccc2c1CC1CC2CCC1CC2.C1CC11CC1",
+            "C1CC2CCC1CC2c1ccc2ccccc2c1C12CC3CC(CC(C3)C1)C2",
         ]);
         for smi in samples {
             let mol = chematic_smiles::parse(smi).unwrap();
             let keep = ring_atom_flags(&mol);
+            // Every returned ring is a cycle in atom order.
+            for ring in
+                find_sssr_ring_set_in_components(&chematic_smiles::parse(smi).unwrap(), &keep)
+            {
+                for (i, &a) in ring.iter().enumerate() {
+                    let b = ring[(i + 1) % ring.len()];
+                    assert!(mol.bond_between(a, b).is_some(), "{smi}: {ring:?}");
+                }
+            }
+            if let Some(unranked) = find_sssr_ring_set_in_components_unranked(
+                &chematic_smiles::parse(smi).unwrap(),
+                &keep,
+            ) {
+                let mut u: Vec<Vec<AtomIdx>> = unranked
+                    .into_iter()
+                    .map(|mut r| {
+                        r.sort();
+                        r
+                    })
+                    .collect();
+                u.sort();
+                let mut f: Vec<Vec<AtomIdx>> = find_sssr(&mol)
+                    .rings()
+                    .iter()
+                    .map(|r| {
+                        let mut r = r.clone();
+                        r.sort();
+                        r
+                    })
+                    .collect();
+                f.sort();
+                assert_eq!(u, f, "unranked {smi}");
+            }
             let key = |rings: &[Vec<AtomIdx>]| {
                 let mut v: Vec<Vec<AtomIdx>> = rings
                     .iter()
@@ -2771,7 +2994,11 @@ mod tests {
     #[test]
     fn bridge_flags_match_edge_deletion() {
         // A bond is cyclic exactly when deleting it keeps its endpoints connected.
-        for smi in RING_SAMPLES.iter().copied().chain(["C1CC1CCC1CC2CCC12", "C1CC=1"]) {
+        for smi in RING_SAMPLES
+            .iter()
+            .copied()
+            .chain(["C1CC1CCC1CC2CCC12", "C1CC=1"])
+        {
             let mol = chematic_smiles::parse(smi).unwrap();
             let flags = ring_bond_flags(&mol);
             for (bidx, bond) in mol.bonds() {
@@ -2780,7 +3007,8 @@ mod tests {
                 seen[bond.atom1.0 as usize] = true;
                 while let Some(a) = stack.pop() {
                     for (nb, b) in mol.neighbors(a) {
-                        if b != bidx && is_ring_eligible(mol.bond(b).order) && !seen[nb.0 as usize] {
+                        if b != bidx && is_ring_eligible(mol.bond(b).order) && !seen[nb.0 as usize]
+                        {
                             seen[nb.0 as usize] = true;
                             stack.push(nb);
                         }

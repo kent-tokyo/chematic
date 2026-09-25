@@ -258,6 +258,19 @@ fn ops() -> Vec<Op> {
             };
             chematic_smarts::has_match_perceived(&smarts_queries()[1], m, &cfg).to_string()
         }),
+        ("has_sub_perceived_q", |m| {
+            // One query (index from `QIDX`, default 0) per fresh molecule.
+            let cfg = chematic_smarts::MatchConfig {
+                max_matches: Some(1),
+                uniquify: false,
+                ..Default::default()
+            };
+            let i: usize = std::env::var("QIDX")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(0);
+            chematic_smarts::has_match_perceived(&smarts_queries()[i], m, &cfg).to_string()
+        }),
         ("find_matches_perceived", |m| {
             let mut out = String::new();
             for q in smarts_queries() {

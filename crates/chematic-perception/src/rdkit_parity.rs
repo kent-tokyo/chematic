@@ -206,12 +206,10 @@ fn count_atom_pi_electrons_in(
         return None; // univalent elements can't be aromatic or conjugated
     }
 
-    let implicit_h = chematic_core::implicit_hcount_with(
-        mol,
-        atom_idx,
-        view.flagged(mol, atom_idx),
-        |b| view.order(mol, b),
-    );
+    let implicit_h =
+        chematic_core::implicit_hcount_with(mol, atom_idx, view.flagged(mol, atom_idx), |b| {
+            view.order(mol, b)
+        });
     let degree = mol.degree(atom_idx) + implicit_h as usize;
     if degree > 3 {
         return None;
@@ -417,12 +415,9 @@ pub(crate) fn is_atom_candidate_for_aromaticity_in(
             .neighbors(atom_idx)
             .map(|(_, bidx)| bond_order_contrib(view.order(mol, bidx)))
             .sum::<f32>()
-            + chematic_core::implicit_hcount_with(
-                mol,
-                atom_idx,
-                view.flagged(mol, atom_idx),
-                |b| view.order(mol, b),
-            ) as f32;
+            + chematic_core::implicit_hcount_with(mol, atom_idx, view.flagged(mol, atom_idx), |b| {
+                view.order(mol, b)
+            }) as f32;
         let an_neutral = (an as i32 - atom.charge as i32).max(0) as u8;
         if let Some(dv_neutral) = default_valence(an_neutral)
             && total_valence.round() as i32 > dv_neutral as i32
@@ -442,7 +437,10 @@ pub(crate) fn is_atom_candidate_for_aromaticity_in(
         let n_mult = mol
             .neighbors(atom_idx)
             .filter(|(_, bidx)| {
-                matches!(view.order(mol, *bidx), BondOrder::Double | BondOrder::Triple)
+                matches!(
+                    view.order(mol, *bidx),
+                    BondOrder::Double | BondOrder::Triple
+                )
             })
             .count();
         if n_mult > 1 {
@@ -470,11 +468,7 @@ fn min_max_atom_electrons(dtype: ElectronDonorType) -> (i32, i32) {
 /// electron count in `[sum_of_lower_bounds, sum_of_upper_bounds]` satisfies
 /// 4n+2 -- or the `rup == 2` special case for tiny rings (e.g. cyclopropenyl
 /// cation).
-pub(crate) fn apply_huckel(
-    mol: &Molecule,
-    atoms: &[AtomIdx],
-    donor: &[ElectronDonorType],
-) -> bool {
+pub(crate) fn apply_huckel(mol: &Molecule, atoms: &[AtomIdx], donor: &[ElectronDonorType]) -> bool {
     let _ = mol;
     let mut rlw = 0i32;
     let mut rup = 0i32;
@@ -1275,7 +1269,8 @@ fn unchanged_without_kekulization_with(mol: &Molecule, info: &ComponentInfo) -> 
     let n = mol.atom_count();
     let cyclic: &[bool] = info.cyclic.as_slice();
     // Exact components: no aromatic cyclic bond and no flagged atom.
-    let exact = |r: u32| r != u32::MAX && info.kind[r as usize] & (COMP_AROMATIC | COMP_FLAGGED) == 0;
+    let exact =
+        |r: u32| r != u32::MAX && info.kind[r as usize] & (COMP_AROMATIC | COMP_FLAGGED) == 0;
 
     // Candidacy: exact for atoms not flagged aromatic, assumed for flagged ones.
     let mut candidate = vec![false; n];
@@ -2152,7 +2147,9 @@ mod tests {
             Some(v) => assign_from_verdict(&kekulized, v)?,
             None => assign_from_kekulized(&kekulized)?,
         };
-        Ok(crate::aromaticity::build_molecule_from_model(&kekulized, &model))
+        Ok(crate::aromaticity::build_molecule_from_model(
+            &kekulized, &model,
+        ))
     }
 
     fn fingerprint(mol: &Molecule) -> String {
@@ -2208,7 +2205,11 @@ mod tests {
                     b.neighbors(idx).collect::<Vec<_>>(),
                     "{smi}"
                 );
-                assert_eq!(a.stereo_neighbor_order(idx), b.stereo_neighbor_order(idx), "{smi}");
+                assert_eq!(
+                    a.stereo_neighbor_order(idx),
+                    b.stereo_neighbor_order(idx),
+                    "{smi}"
+                );
                 assert_eq!(a.r_group_label(idx), b.r_group_label(idx), "{smi}");
             }
             for bi in 0..a.bond_count() {
@@ -2256,10 +2257,18 @@ mod tests {
             match (&full, &fast) {
                 (Ok(a), Ok(b)) => assert_eq!(fingerprint(a), fingerprint(b), "{smi}"),
                 (Err(a), Err(b)) => assert_eq!(a, b, "{smi}"),
-                _ => panic!("{smi}: full ok={} vs fast ok={}", full.is_ok(), fast.is_ok()),
+                _ => panic!(
+                    "{smi}: full ok={} vs fast ok={}",
+                    full.is_ok(),
+                    fast.is_ok()
+                ),
             }
             if rdkit_parity_view_is_identity(&mol) {
-                assert_eq!(fingerprint(&mol), fingerprint(full.as_ref().unwrap()), "{smi}");
+                assert_eq!(
+                    fingerprint(&mol),
+                    fingerprint(full.as_ref().unwrap()),
+                    "{smi}"
+                );
             }
         }
     }

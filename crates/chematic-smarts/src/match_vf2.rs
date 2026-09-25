@@ -141,6 +141,15 @@ impl EvalCtx<'_> {
         }
     }
 
+    /// `true` when target atom `t` has fewer neighbours than query atom `q`
+    /// has query bonds, so no embedding can map `q` onto it. Exact; disabled
+    /// under a visit budget like every other pruning.
+    #[inline]
+    fn prunes_low_degree(&self, st: &MapState, q: usize, t: AtomIdx) -> bool {
+        self.config.max_visit_budget.is_none()
+            && (self.mol.neighbor_slice(t).len() as u32) < st.info.qdeg[q]
+    }
+
     fn in_any_ring(&self, idx: AtomIdx) -> bool {
         match self.rings_given {
             Some(r) => r.contains_atom(idx),
@@ -428,13 +437,14 @@ fn visit_recursive(
         if st.used[t as usize] {
             continue;
         }
-        if st.info.implied[q_next]
-            .is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
+        if st.info.implied[q_next].is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
         {
             continue;
         }
         // Exact pruning (dead branches only); no result-map layout to keep.
-        if ctx.prunes_acyclic_target(query, st, q_next, t_idx) {
+        if ctx.prunes_low_degree(st, q_next, t_idx)
+            || ctx.prunes_acyclic_target(query, st, q_next, t_idx)
+        {
             continue;
         }
         if !eval_atom_query(&query.atoms[q_next].query, t_idx, ctx) {
@@ -493,6 +503,18 @@ fn element_counts_allow_match(query: &QueryMolecule, mol: &Molecule) -> bool {
         }
     }
     need.iter().all(|&n| n == 0)
+}
+
+/// The screens [`has_match_with_config`] applies before searching: `false`
+/// means no match. They read only atom counts and elements.
+pub(crate) fn passes_size_and_element_screen(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    config: &MatchConfig,
+) -> bool {
+    !(query.atoms.is_empty()
+        || query.atoms.len() > mol.atom_count()
+        || (config.max_visit_budget.is_none() && !element_counts_allow_match(query, mol)))
 }
 
 /// Whether `query` has at least one embedding in `mol`.
@@ -737,8 +759,7 @@ fn match_recursive(
         if st.used[t as usize] {
             continue;
         }
-        if st.info.implied[q_next]
-            .is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
+        if st.info.implied[q_next].is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
         {
             continue;
         }
@@ -748,7 +769,10 @@ fn match_recursive(
         // never exceeds 8 buckets, so a removal always leaves an EMPTY slot
         // (never a tombstone) on every hashbrown group width, and the layout
         // is a function of the (fixed) key insertion sequence alone.
-        if query.atoms.len() <= 7 && ctx.prunes_acyclic_target(query, st, q_next, t_idx) {
+        if query.atoms.len() <= 7
+            && (ctx.prunes_low_degree(st, q_next, t_idx)
+                || ctx.prunes_acyclic_target(query, st, q_next, t_idx))
+        {
             continue;
         }
 
@@ -814,6 +838,10 @@ struct PlanInfo {
     /// ([`implied_atomic_number`]); a cheap pre-filter before the full atom
     /// query, which would reject any other element anyway.
     implied: Vec<Option<u8>>,
+    /// Query-graph degree of each query atom. An embedding maps the query
+    /// bonds of `q` onto distinct target bonds of its image, so a target atom
+    /// with fewer neighbours can never complete one (exact pruning).
+    qdeg: Vec<u32>,
 }
 
 impl PlanInfo {
@@ -828,8 +856,23 @@ impl PlanInfo {
             plan.push(q0);
             plan_anchor.push(None);
         }
+        // Mapped-neighbour counts maintained incrementally; the selection key
+        // is exactly `next_unmapped_by`'s.
+        let mut mapped_nb = vec![0usize; n];
+        if let Some(q0) = seed {
+            for &(_, nb) in &query.adj[q0] {
+                mapped_nb[nb] += 1;
+            }
+        }
         while plan.len() < n {
-            let q = next_unmapped_by(&mapped, query);
+            let q = (0..n)
+                .filter(|&i| !mapped[i])
+                .max_by_key(|&i| (mapped_nb[i], query.adj[i].len(), usize::MAX - i))
+                .expect("an unmapped query atom remains");
+            debug_assert_eq!(q, next_unmapped_by(&mapped, query));
+            for &(_, nb) in &query.adj[q] {
+                mapped_nb[nb] += 1;
+            }
             plan_anchor.push(
                 query.adj[q]
                     .iter()
@@ -848,6 +891,7 @@ impl PlanInfo {
                 .iter()
                 .map(|a| implied_atomic_number(&a.query))
                 .collect(),
+            qdeg: query.adj.iter().map(|a| a.len() as u32).collect(),
         }
     }
 }
@@ -1228,12 +1272,13 @@ fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, st: &mut MapSta
         if st.used[t as usize] {
             continue;
         }
-        if st.info.implied[q_next]
-            .is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
+        if st.info.implied[q_next].is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
         {
             continue;
         }
-        if ctx.prunes_acyclic_target(query, st, q_next, t_idx) {
+        if ctx.prunes_low_degree(st, q_next, t_idx)
+            || ctx.prunes_acyclic_target(query, st, q_next, t_idx)
+        {
             continue;
         }
         if !eval_atom_query(&query.atoms[q_next].query, t_idx, ctx) {
