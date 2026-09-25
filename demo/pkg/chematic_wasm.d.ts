@@ -2852,6 +2852,16 @@ export function topo_path_bitvec(mol: MolHandle): Uint8Array;
  */
 export function torsion_bitvec(mol: MolHandle): Uint8Array;
 
+/**
+ * Scan the MMFF94 torsion energy for a bonded i-j-k-l atom sequence.
+ *
+ * Coordinates are generated internally; `MolHandle` stores molecular
+ * topology rather than a caller-owned conformer. Returns a JSON array of
+ * `{"angle": degrees, "energy": kcal_per_mol}` points, or
+ * `{"error":"..."}` for invalid scan parameters or force-field failures.
+ */
+export function torsion_scan_json(mol: MolHandle, atom_i: number, atom_j: number, atom_k: number, atom_l: number, steps: number): string;
+
 export function v3000_sgroups_json(block: string): string;
 
 /**
@@ -3367,6 +3377,7 @@ export interface InitOutput {
     readonly to_xyz: (a: number) => [number, number];
     readonly topo_path_bitvec: (a: number) => [number, number];
     readonly torsion_bitvec: (a: number) => [number, number];
+    readonly torsion_scan_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
     readonly v3000_sgroups_json: (a: number, b: number) => [number, number, number, number];
     readonly validate_nmr_spectrum_json: (a: number, b: number) => [number, number];
     readonly virtual_screen_ecfp4_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];
