@@ -1046,7 +1046,7 @@ class rdMolDescriptors:
 
     @staticmethod
     def CalcNumHBA(mol: Mol) -> int:
-        return mol._mol.hba
+        return mol._mol.rdkit_hba
 
     @staticmethod
     def CalcNumHBD(mol: Mol) -> int:

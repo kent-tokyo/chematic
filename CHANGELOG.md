@@ -9,6 +9,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Fixed `chematic.rdkit_compat.rdMolDescriptors.CalcNumHBA()` to use the
+  named RDKit-compatible HBA profile rather than the conservative native HBA
+  profile. This restores the RDKit result for substituted aromatic/imide
+  nitrogens (for example, caffeine: 6 rather than 3).
+
 - Atom tracking basics (issue #650):
   - `chematic_smiles::write_with_atom_order` and
     `canonical_smiles_with_atom_order` return the usual string together with

@@ -40,6 +40,15 @@ def test_morgan_generator_rejects_unimplemented_modes():
         rdFingerprintGenerator.GetMorganGenerator(countSimulation=True)
 
 
+def test_calc_num_hba_uses_rdkit_compatibility_profile():
+    # Native HBA deliberately keeps a conservative aromatic-N interpretation.
+    # RDKit's CalcNumHBA counts the three substituted aromatic/imide N atoms
+    # in caffeine in addition to its three ordinary acceptors.
+    caffeine = Chem.MolFromSmiles("Cn1cnc2c1c(=O)n(C)c(=O)n2C")
+    assert caffeine._mol.hba == 3
+    assert rdMolDescriptors.CalcNumHBA(caffeine) == 6
+
+
 # ---------------------------------------------------------------------------
 # Mol property methods
 # ---------------------------------------------------------------------------
