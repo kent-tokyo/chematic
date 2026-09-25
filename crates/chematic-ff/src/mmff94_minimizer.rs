@@ -1060,7 +1060,9 @@ fn build_torsion_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedTorsion> {
                 continue;
             }
             for &l in &nbrs_k {
-                if l == j {
+                // l == i closes a 3-membered ring: there is no dihedral and
+                // RDKit adds no torsion term (#637).
+                if l == j || l == i {
                     continue;
                 }
                 let tt = torsion_type_for(mol, i, j, k, l, types[i], types[j], types[k], types[l]);
@@ -1106,6 +1108,13 @@ fn build_oop_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedOop> {
     terms
 }
 
+/// MMFF94 adds no stretch-bend term at a linear central atom (MMFFPROP
+/// `linh`; RDKit skips these angles), e.g. alkyne or nitrile carbons (#637).
+fn central_type_is_linear(atom_type: u8) -> bool {
+    crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(atom_type)
+        .is_some_and(|info| info.linear)
+}
+
 fn build_stretch_bend_terms(
     mol: &Molecule,
     types: &[u8],
@@ -1113,6 +1122,9 @@ fn build_stretch_bend_terms(
 ) -> Vec<PreparedStretchBend> {
     let mut terms = Vec::new();
     for j_idx in 0..mol.atom_count() {
+        if central_type_is_linear(types[j_idx]) {
+            continue;
+        }
         let j = AtomIdx(j_idx as u32);
         let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
         for (ii, &i) in neighbors.iter().enumerate() {
@@ -1841,7 +1853,7 @@ fn stretch_bend_energy(
     for j_idx in 0..mol.atom_count() {
         let j = AtomIdx(j_idx as u32);
         let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
-        if neighbors.len() < 2 {
+        if neighbors.len() < 2 || central_type_is_linear(types[j_idx]) {
             continue;
         }
         for (ii, &i) in neighbors.iter().enumerate() {
@@ -2033,7 +2045,9 @@ fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
                 continue;
             }
             for &l in &nbrs_k {
-                if l == j {
+                // l == i closes a 3-membered ring: there is no dihedral and
+                // RDKit adds no torsion term (#637).
+                if l == j || l == i {
                     continue;
                 }
                 let tt = torsion_type_for(mol, i, j, k, l, types[i], types[j], types[k], types[l]);
