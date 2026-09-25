@@ -105,6 +105,17 @@ def main() -> None:
         (ROOT / "demo" / "pkg" / "package.json", [
             re.compile(r'"version":\s*"' + re.escape(old) + r'"'),
         ]),
+        # Package READMEs are shipped to their respective registries. Keep their
+        # current-release prose in sync with the package metadata.
+        (ROOT / "crates" / "chematic-py" / "README.md", [
+            re.compile(r"current " + re.escape(old) + r" release"),
+        ]),
+        (ROOT / "crates" / "chematic-wasm" / "README.md", [
+            re.compile(r"current workspace line is " + re.escape(old)),
+        ]),
+        (ROOT / "demo" / "pkg" / "README.md", [
+            re.compile(r"current workspace line is " + re.escape(old)),
+        ]),
         # Cache-busting version for the browser demo's shipped WASM assets.
         # Keep this with the npm package version so browser_smoke sees the
         # workspace release rather than an older badge/asset key.
