@@ -1,8 +1,7 @@
 # chematic roadmap
 
-> Updated 2026-09-25. Current release: **v1.0.25**. Candidate target:
-> **v1.0.26**. Candidate-source results and published-package results are kept
-> separate.
+> Updated 2026-09-25. Current release: **v1.0.26**. Release-source and
+> published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
 Python, Node, WebAssembly, and agent workflows. Compatibility, explicit
@@ -15,16 +14,16 @@ boundaries, and reproducible evidence take priority over feature-count races.
 - **Browser Parse + compatible Morgan has a scoped public-package win.** The
   v1.0.20 npm record is bit-exact on 9,999 supported rows and faster on its
   declared browser lanes; it is not a general performance claim.
-- **The v1.0.26 source candidate advances #632/#634/#635.** Its #632 long
+- **v1.0.26 advances #632/#634/#635 at release source.** Its #632 long
   relabel audit has zero divergent components. Against pinned RDKit 2026.03.6,
   CIP reaches 9,994/10,000 exact labels and SMARTS has 200/310,000 differing
   cells; remaining differences are classified. Python/WASM SMARTS now use the
   perceived aromatic view, with an explicit behavior change.
-- **The v1.0.26 source candidate advances #637.** On shared coordinates,
+- **v1.0.26 advances #637 at release source.** On shared coordinates,
   262/262 comparable MMFF94 rows are within 1 kcal/mol (maximum 0.32). This is
   same-coordinate energy/term evidence, not convergence, conformer-quality,
   or published-package evidence.
-- **The v1.0.26 source candidate improves selected hot paths.** The dated
+- **v1.0.26 improves selected hot paths at release source.** The dated
   output-differential record preserves the measured output boundary while
   reducing SMARTS, ring, and fingerprint work. Shared-VM source timing is not
   a universal or published-package performance claim.
@@ -35,9 +34,9 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
 
 ## Priority order
 
-1. **Release the v1.0.26 candidate safely.** Rebuild exposed bindings, rerun
-   committed evidence and security checks, and preserve the Python/WASM SMARTS
-   behavior change in migration documentation.
+1. **Verify v1.0.26 delivery across release channels.** Record GitHub Release,
+   npm, PyPI, crates.io, docs.rs, and Pages independently; do not infer one
+   channel from another.
 2. **Adjudicate the remaining CIP center.** Resolve row 4480 atom 3
    independently before adopting either engine's label; never guess a label.
 3. **Decide SMARTS ring-count semantics.** `[Rn]`/`[kn]` need an unambiguous

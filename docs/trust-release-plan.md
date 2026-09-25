@@ -1,7 +1,7 @@
 # chematic 1.x Trust Release 実行計画
 
-更新日: 2026-09-25。公開版は **v1.0.25**、次の開発候補は
-**v1.0.26** です。
+更新日: 2026-09-25。公開版は **v1.0.26** です。次の開発では、配布channelの
+独立検証と、残るCIP・SMARTS・A6 gateを優先します。
 
 この文書は実行順と合格条件だけを定義します。機能別の優先順位は
 [`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)、未完了項目と依存関係は
@@ -41,11 +41,11 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
 - v1.0.25はatom-output order、断片とRust反応生成物のsource-atom provenance、
   RDKit互換Python HBA profileを追加・修正しました。6操作・46,736分子の既存出力
   differentialは0件ですが、HBA profileとplain writerの意図した修正は別に扱います。
-- source候補`11a4ea27`では、同じ固定laneでCIPが9,994/10,000一致（旧9,770）、
+- v1.0.26 release sourceでは、同じ固定laneでCIPが9,994/10,000一致（旧9,770）、
   SMARTS差分が200/310,000セル（旧14,306）です。残差はすべて原因別に分類済みです
   （#634: P oracle不安定4、三価N非対応1、要裁定1。#635: `[Rn]`/`[kn]`の
   ring数の意味194、フェロセン6）。
-- source候補`13d70a2e`（#637）では、同一座標のMMFF94をRDKitの項別energyと
+- v1.0.26 release source（#637）では、同一座標のMMFF94をRDKitの項別energyと
   比べ、262/262行が1 kcal/mol以内（最大0.32、旧9.87）です。
 - 残る主要差分は、CIPの要裁定1中心、SMARTSのring数の意味、A6のheavy-atom
   typing（Kekulé/荷電入力の芳香族性）・timeout・conformer qualityです。

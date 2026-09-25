@@ -10,56 +10,23 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-- Faster RDKit-compatible paths with identical output
-  ([record](benchmarks/2026-09-25-perf-speed4-output-identical.md)): the
-  RDKit-parity aromatic view proves unchanged explicit aromatic input without
-  kekulizing (memoized shortcut, shared cyclic-component facts, Kekulé-form
-  verdict computed on the explicit graph) and is borrowed instead of cloned
-  (`with_rdkit_parity_view`); aromaticity-insensitive SMARTS queries skip it;
-  streaming RDKit fingerprint, map-free pattern fingerprint, bit-only
-  RDKit-compatible Morgan, order-free SSSR ring sets for aromatic ring counts,
-  faster chi and kekulization. Python matrix vs RDKit (ChEMBL 5k):
-  `has_substructure` 2.9x–12x faster than before, `rdkit_fp` 6.1x,
-  RDKit-compatible Morgan 3.3x, TPSA 3.0x. `kekulize` errors now name the
-  lowest-index unmatched atom (previously hash-order dependent).
-  Follow-up: rings of cycle-rank-1/2 components with a unique minimum basis
-  are read off the graph, VF2 prunes target atoms of too low degree (exact),
-  and the aromatic ring count skips perception for acyclic input
-  (naphthalene substructure query 2x, pattern fingerprint 1.9x, QED 1.4x
-  faster than the base in Rust cold timing).
+## [1.0.26] - 2026-09-25
 
-- **Behavior change (Python/WASM SMARTS):** `smarts_match`, `smarts_find`,
-  `Mol.has_substructure`, `Mol.find_matches`, `bulk.substructure_search`,
-  `bulk.substructure_match`, and the WASM SMARTS highlight functions now match
-  against the molecule's perceived (RDKit-parity) aromatic view. A Kekulé
-  benzene matches `c`, and no longer matches `[#6]=[#6]`. Returned atom
-  indices still refer to the input molecule. When perception fails, matching
-  falls back to the molecule as given. The Rust `find_matches` family is
-  unchanged; `chematic_smarts::find_matches_perceived` and
-  `has_match_perceived` expose the new semantics (#635).
-- `Mol.cip_stereo()` E/Z entries now include `bond_idx` and `bond_atoms`.
-  `atom_idx` is the double bond's first atom, not a bond index. The RDKit lane
-  compares E/Z labels by bond endpoints (#634).
-- `CipMode.ACCURATE` assigns E/Z with the hierarchical-digraph substituent
-  ranker (`chematic_cip::SubstituentRanker`), for example an aryl above a
-  tert-butyl substituent. `assign_ez_bonds` and `assign_ez_bonds_with_mode`
-  return bond-keyed E/Z labels. Legacy mode is unchanged (#634).
-- MMFF94 now matches RDKit 2026.03.6 per term on shared coordinates (#637):
-  - hydrogen types come from the parent atom's MMFF type (HOCC, HOP, HOS,
-    HNSO/HNCS, HNR+ and related, HP);
-  - no vdW R* asymmetry correction applies to donor pairs;
-  - stretch-bend lookup has no stretch-bend-type-0 retry, and no term is
-    added at linear centres;
-  - OOP and angle lookups use the full equivalence-level step-down;
-  - no torsion term is added for i-j-k-i in 3-rings.
-  - Result: on the 265-row set, 262/262 comparable rows are within
-    1 kcal/mol (was 230), and the maximum delta falls from 9.87 to
-    0.32 kcal/mol. MMFF94 energies, gradients and minimized geometries change
-    accordingly.
-- Evidence: RDKit rebaseline rows, residual classification, and the #632 long
-  relabel audit on v1.0.25-based source; the RDKit per-term MMFF94 oracle
-  (`scripts/mmff94_same_explicit_h_energy.py`, schema v3) and
-  `scripts/mmff94_atom_type_census.py`.
+- Improved RDKit-compatible SMARTS matching, aromatic/ring perception, and
+  selected fingerprint hot paths. The dated source differential preserves the
+  measured output boundary; shared-VM timing is not a package or universal
+  performance claim.
+- **Behavior change (Python/WASM SMARTS):** public SMARTS APIs now match a
+  perceived RDKit-parity aromatic view. A Kekulé benzene matches `c`, and no
+  longer matches `[#6]=[#6]`; returned atom indices still refer to the input.
+  Rust's default matcher is unchanged.
+- Made accurate E/Z CIP output bond-keyed, including bond endpoints, and
+  improved same-coordinate MMFF94 per-term agreement with RDKit 2026.03.6.
+  These are scoped source-evidence improvements, not complete parity,
+  convergence, conformer-quality, or published-package claims.
+
+Detailed inputs, results, and limits are in [validation](docs/validation.md)
+and the [benchmark index](benchmarks/README.md).
 
 ## [1.0.25] - 2026-09-25
 
