@@ -14,12 +14,14 @@ use std::sync::Arc;
 pub(crate) fn cached_smarts(
     smarts: &str,
 ) -> Result<Arc<chematic_smarts::QueryMolecule>, chematic_smarts::SmartsError> {
-    use std::collections::HashMap;
+    use rustc_hash::FxHashMap;
     use std::sync::{Mutex, OnceLock};
     const CAPACITY: usize = 4096;
-    static CACHE: OnceLock<Mutex<HashMap<String, Arc<chematic_smarts::QueryMolecule>>>> =
+    // Keys are pattern strings chosen by the caller; Fx hashing keeps the
+    // per-call lookup cheap (the cache is bounded, so no DoS concern).
+    static CACHE: OnceLock<Mutex<FxHashMap<String, Arc<chematic_smarts::QueryMolecule>>>> =
         OnceLock::new();
-    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    let cache = CACHE.get_or_init(|| Mutex::new(FxHashMap::default()));
     if let Some(q) = cache.lock().ok().and_then(|c| c.get(smarts).cloned()) {
         return Ok(q);
     }
