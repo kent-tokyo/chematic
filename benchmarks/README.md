@@ -9,7 +9,9 @@ accuracy, or compatibility claims.
 
 | Need | Start with |
 |---|---|
-| Review the post-v1.0.23 output-identical speed branch | [`2026-09-24-perf-speed3-output-identical.md`](2026-09-24-perf-speed3-output-identical.md) |
+| Review the post-v1.0.25 output-identical speed branch (`perf/speed-4`) | [`2026-09-25-perf-speed4-output-identical.md`](2026-09-25-perf-speed4-output-identical.md) |
+| Review the post-v1.0.23 output-identical speed branch | [`2026-09-25-perf-speed4-output-identical.md`](2026-09-25-perf-speed4-output-identical.md) | `912c4b7d` vs `perf/speed-4` `5269d69f`: identical outputs over 49 operations x 46,736 molecules (8 differing rows, all the base's nondeterministic kekulization error text), paired Rust cold timing, Python matrix vs RDKit 2026.03.6 on both revisions (counted faster 33 -> 39), RDKit agreement identical. 2-vCPU VM, not a package claim |
+| [`2026-09-24-perf-speed3-output-identical.md`](2026-09-24-perf-speed3-output-identical.md) |
 | Review the M4 source-candidate SSSR/cache/VF2 browser rerun | [`2026-09-24-rdkitjs-m4-sssr-cache.md`](2026-09-24-rdkitjs-m4-sssr-cache.md) |
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
 | Review current public-package fingerprint and 3D evidence | [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](2026-09-23-public-package-fingerprint-3d-v1.0.20.md) |

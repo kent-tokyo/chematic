@@ -10,6 +10,19 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Faster RDKit-compatible paths with identical output
+  ([record](benchmarks/2026-09-25-perf-speed4-output-identical.md)): the
+  RDKit-parity aromatic view proves unchanged explicit aromatic input without
+  kekulizing (memoized shortcut, shared cyclic-component facts, Kekulé-form
+  verdict computed on the explicit graph) and is borrowed instead of cloned
+  (`with_rdkit_parity_view`); aromaticity-insensitive SMARTS queries skip it;
+  streaming RDKit fingerprint, map-free pattern fingerprint, bit-only
+  RDKit-compatible Morgan, order-free SSSR ring sets for aromatic ring counts,
+  faster chi and kekulization. Python matrix vs RDKit (ChEMBL 5k):
+  `has_substructure` 2.9x–12x faster than before, `rdkit_fp` 6.1x,
+  RDKit-compatible Morgan 3.3x, TPSA 3.0x. `kekulize` errors now name the
+  lowest-index unmatched atom (previously hash-order dependent).
+
 - **Behavior change (Python/WASM SMARTS):** `smarts_match`, `smarts_find`,
   `Mol.has_substructure`, `Mol.find_matches`, `bulk.substructure_search`,
   `bulk.substructure_match`, and the WASM SMARTS highlight functions now match
