@@ -8,10 +8,10 @@
 [![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic?logo=npm)](https://www.npmjs.com/package/@kent-tokyo/chematic)
 [![ライセンス](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 
-Python、Rust、ブラウザで使えるケモインフォマティクスライブラリです。
-コアはPure Rustで実装し、入力上限・型付きエラー・決定的なバッチAPIを備えています。
+Python、Rust、ブラウザ向けのPure Rustケモインフォマティクスです。ローカルで動作し、
+入力上限と型付きエラーにより、未対応の化学表現を曖昧に処理しません。
 
-[公式サイト](https://chematic.io/) · [ドキュメント](https://kent-tokyo.github.io/chematic/) · [ライブデモ](https://kent-tokyo.github.io/chematic/playground/)
+[公式サイト](https://chematic.io/) · [ドキュメント](https://kent-tokyo.github.io/chematic/) · [Playground](https://kent-tokyo.github.io/chematic/playground/)
 
 ## インストール
 
@@ -21,17 +21,16 @@ cargo add chematic --features "smiles,perception,chem,3d,fp"
 npm install @kent-tokyo/chematic
 ```
 
-Python版はC/C++コンパイラなしで導入できます。
+Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
 ### v1.0.25 の対応範囲
 
-v1.0.25は、SMILESの原子出力順と断片・Rust反応生成物の由来原子を返すAPIを追加し、
-PythonのRDKit互換HBA profileを修正します。公開`write()`は芳香族/非芳香族の環閉鎖結合を
-正しくround-tripします。既存出力の比較は46,736分子・6操作で差分0件ですが、修正対象の
-writer出力まで不変とは主張しません。詳細は[検証報告](docs/validation.md)、
-[互換性範囲](docs/compatibility-scope.md)、[CHANGELOG](CHANGELOG.md)を参照してください。
+v1.0.25はSMILESの原子出力順、断片・Rust反応生成物の由来原子APIを追加し、
+RDKit互換Python HBA profileとplain writerの環閉鎖表記を修正します。これは
+範囲を明示した互換性改善であり、完全なRDKit互換の主張ではありません。
+[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
-## Python
+## 使い方
 
 ```python
 import chematic
@@ -39,25 +38,7 @@ import chematic
 mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
 print(mol.mw, mol.logp, mol.tpsa)
 print(mol.has_substructure("[OH]"))
-
-report = chematic.report([mol], names=["aspirin"])
-report.save("report.html")
 ```
-
-RDKit互換subsetも利用できます。
-
-```python
-from chematic import rdkit_compat as Chem
-from chematic.rdkit_compat import Descriptors
-
-mol = Chem.MolFromSmiles("CCO")
-print(Descriptors.MolWt(mol))
-```
-
-完全なRDKit互換ではありません。非対応オプションは明示的にエラーになります。
-詳細は[RDKit移行ガイド](docs/rdkit-migration.md)を参照してください。
-
-## Rust
 
 ```rust
 use chematic::smiles::parse;
@@ -66,53 +47,39 @@ let mol = parse("c1ccccc1").expect("valid SMILES");
 println!("{}", mol.atom_count());
 ```
 
-SMILES/SMARTS、記述子、フィンガープリント、反応、SDF/MOL/CDXML、2D/3D、
-結晶形式などの機能を個別crateとして提供しています。
-[形式対応表](docs/format-capabilities.md)も参照してください。
-
-## JavaScript / WebAssembly
-
 ```js
 import init, { parse_smiles, get_descriptors_json } from "@kent-tokyo/chematic";
 
 await init();
-const mol = parse_smiles("CCO");
-console.log(mol.atom_count());
-console.log(JSON.parse(get_descriptors_json(mol)));
+console.log(JSON.parse(get_descriptors_json(parse_smiles("CCO"))));
 ```
 
-分子解析、記述子、フィンガープリント、反応、2D/3D処理、形式変換を利用できます。
-詳細は[WASM README](crates/chematic-wasm/README.md)を参照してください。
+`rdkit_compat`は文書化されたsubsetです。未対応オプションは近似せず明示的に失敗します。
 
-## 安定性と制限
+## 範囲
 
-安定した機能はSMILES/SMARTS、記述子、フィンガープリント、類似度・部分構造検索、
-SDF/MOL入出力、Rust/Python/Node/WASMバインディングです。
+SMILES/SMARTS、記述子、フィンガープリント、類似度・部分構造検索、主要なMOL/SDF I/O、
+文書化済みのRust/Python/Node/WASMバインディングが安定対象です。3D、pKa/ADMET、
+IUPAC、Markush/polymer、CDXML編集、RDKit型APIは実験的またはbounded subsetです。
 
-3D、pKa/ADMET、IUPAC名、Markush/polymer展開、CDXML編集、RDKit互換subsetは
-実験的またはbounded subsetです。`canonical_smiles()`は常にdedup/cache keyに
-使えるとは限らないため、必要な場合はfail-closedな
-`canonical_smiles_stable_key()`を使用してください。
+`canonical_smiles()`は汎用の同一性キーではありません。必要な場合は、文書化された範囲で
+fail-closedに動作する`canonical_smiles_stable_key()`を使用してください。
 
-正確な契約は[互換性範囲](docs/compatibility-scope.md)、[検証](docs/validation.md)、
-[エラーとリソース制限](docs/error-and-limits.md)を参照してください。
+## ガイド
 
-## MCPサーバー
-
-`chematic-mcp`はMCP対応エージェント向けのローカルstdioサーバーです。
-詳細は[chematic-mcp README](crates/chematic-mcp/README.md)を参照してください。
+- [導入とCookbook](https://kent-tokyo.github.io/chematic/)
+- [互換性範囲](docs/compatibility-scope.md)・[RDKit移行](docs/rdkit-migration.md)
+- [検証](docs/validation.md)・[ベンチマーク方法](docs/benchmark.md)
+- [形式とバインディング](docs/format-capabilities.md)
+- [MCPサーバー](crates/chematic-mcp/README.md)
 
 ## 開発
 
 ```bash
-cargo build --workspace
 cargo test --workspace --all-targets --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
 
-ベンチマークは[benchmark guide](docs/benchmark.md)、変更履歴は[CHANGELOG](CHANGELOG.md)にあります。
-
 ## ライセンス
 
-Apache License 2.0 または MIT License のいずれかで利用できます。帰属表示は
-[NOTICE](NOTICE)を参照してください。
+Apache-2.0またはMIT。帰属表示は[NOTICE](NOTICE)を参照してください。
