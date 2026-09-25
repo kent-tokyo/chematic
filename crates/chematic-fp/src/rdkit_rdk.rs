@@ -585,10 +585,7 @@ impl SubgraphWalker {
             return;
         }
         let undo_mark = self.undo.len();
-        loop {
-            let Some(next) = self.stacks[depth].pop() else {
-                break;
-            };
+        while let Some(next) = self.stacks[depth].pop() {
             if self.forbidden[next as usize] {
                 continue;
             }

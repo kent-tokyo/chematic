@@ -57,6 +57,12 @@ fn ops() -> Vec<Op> {
             format!("{:?}", chematic_perception::find_sssr(m).rings())
         }),
         ("ring_count", |m| chematic_chem::ring_count(m).to_string()),
+        ("sssr_n", |m| {
+            // SSSR cost without formatting the rings.
+            let r = chematic_perception::find_sssr_shared(m);
+            let sum: usize = r.rings().iter().map(|x| x.len()).sum();
+            format!("{} {}", r.ring_count(), sum)
+        }),
         ("aromatic_ring_count", |m| {
             chematic_chem::aromatic_ring_count(m).to_string()
         }),

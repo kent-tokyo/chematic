@@ -1210,8 +1210,8 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
             edges[find(&mut parent, bond.atom1.0) as usize] += 1;
         }
     }
-    for a in 0..n {
-        if ring_atom[a] {
+    for (a, &in_ring) in ring_atom.iter().enumerate() {
+        if in_ring {
             let root = find(&mut parent, a as u32) as usize;
             atoms[root] += 1;
             if mol.atom(AtomIdx(a as u32)).aromatic {

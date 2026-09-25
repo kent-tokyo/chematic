@@ -161,7 +161,7 @@ pub fn rdkit_morgan_fingerprint(
         return Ok(result);
     }
 
-    let ring_atoms = chematic_perception::ring_atom_flags(&aromatized);
+    let ring_atoms = chematic_perception::ring_atom_flags(aromatized);
     let bond_count = aromatized.bond_count();
     let mut bond_invariants = Vec::with_capacity(bond_count);
     for b in 0..bond_count {
@@ -174,7 +174,7 @@ pub fn rdkit_morgan_fingerprint(
 
     let cip_codes = if config.include_chirality {
         let assignment = chematic_cip::assign_cip_accurate_experimental(
-            &aromatized,
+            aromatized,
             chematic_cip::CipBudget::default_budget(),
         )
         .map_err(|e| RdkitMorganError::InternalInvariantViolation {
@@ -193,7 +193,7 @@ pub fn rdkit_morgan_fingerprint(
         None
     };
     let emitted = expand_one_pass_with_chirality(
-        &aromatized,
+        aromatized,
         &ring_atoms,
         &bond_invariants,
         config.radius.as_u32(),

@@ -149,7 +149,56 @@ fn bond_order_contrib(order: BondOrder) -> f32 {
 /// element-specific branching (RDKit's model is deliberately generic here).
 /// Returns `None` for atoms that can never be aromatic (univalent elements,
 /// degree > 3, multiple unsaturations already ruled out upstream).
-fn count_atom_pi_electrons(mol: &Molecule, atom_idx: AtomIdx) -> Option<i32> {
+/// The bond orders and aromatic flag the typing rules read for one atom:
+/// the molecule's own ([`AsIs`]), or a hypothetical Kekulé form of it
+/// ([`KekuleAtom`]). Only the typed atom's own flag and incident bonds are
+/// ever queried.
+pub(crate) trait OrderView {
+    fn order(&self, mol: &Molecule, bond: BondIdx) -> BondOrder;
+    fn flagged(&self, mol: &Molecule, atom: AtomIdx) -> bool;
+}
+
+/// The molecule as it is.
+pub(crate) struct AsIs;
+
+impl OrderView for AsIs {
+    #[inline]
+    fn order(&self, mol: &Molecule, bond: BondIdx) -> BondOrder {
+        mol.bond(bond).order
+    }
+    #[inline]
+    fn flagged(&self, mol: &Molecule, atom: AtomIdx) -> bool {
+        mol.atom(atom).aromatic
+    }
+}
+
+/// One aromatic atom as it is in a Kekulé form of the molecule: flag
+/// cleared, every aromatic bond single except `double` (the bond that
+/// received the atom's double bond, if it is matched).
+pub(crate) struct KekuleAtom {
+    double: Option<BondIdx>,
+}
+
+impl OrderView for KekuleAtom {
+    #[inline]
+    fn order(&self, mol: &Molecule, bond: BondIdx) -> BondOrder {
+        match mol.bond(bond).order {
+            BondOrder::Aromatic if Some(bond) == self.double => BondOrder::Double,
+            BondOrder::Aromatic => BondOrder::Single,
+            order => order,
+        }
+    }
+    #[inline]
+    fn flagged(&self, _mol: &Molecule, _atom: AtomIdx) -> bool {
+        false
+    }
+}
+
+fn count_atom_pi_electrons_in(
+    mol: &Molecule,
+    atom_idx: AtomIdx,
+    view: &impl OrderView,
+) -> Option<i32> {
     let atom = mol.atom(atom_idx);
     let an = atom.element.atomic_number();
     let dv = default_valence(an)?;
@@ -157,7 +206,12 @@ fn count_atom_pi_electrons(mol: &Molecule, atom_idx: AtomIdx) -> Option<i32> {
         return None; // univalent elements can't be aromatic or conjugated
     }
 
-    let implicit_h = chematic_core::implicit_hcount(mol, atom_idx);
+    let implicit_h = chematic_core::implicit_hcount_with(
+        mol,
+        atom_idx,
+        view.flagged(mol, atom_idx),
+        |b| view.order(mol, b),
+    );
     let degree = mol.degree(atom_idx) + implicit_h as usize;
     if degree > 3 {
         return None;
@@ -172,7 +226,7 @@ fn count_atom_pi_electrons(mol: &Molecule, atom_idx: AtomIdx) -> Option<i32> {
     if res > 1 {
         let explicit_valence: f32 = mol
             .neighbors(atom_idx)
-            .map(|(_, bidx)| bond_order_contrib(mol.bond(bidx).order))
+            .map(|(_, bidx)| bond_order_contrib(view.order(mol, bidx)))
             .sum();
         let n_unsaturations = explicit_valence - mol.degree(atom_idx) as f32;
         if n_unsaturations > 1.0 {
@@ -205,10 +259,11 @@ fn incident_non_cyclic_multiple_bond(
     mol: &Molecule,
     atom_idx: AtomIdx,
     ring_bonds: &(impl RingBondLookup + ?Sized),
+    view: &impl OrderView,
 ) -> Option<AtomIdx> {
     mol.neighbors(atom_idx)
         .find(|&(_, bidx)| {
-            !ring_bonds.contains(&bidx) && bond_order_contrib(mol.bond(bidx).order) >= 2.0
+            !ring_bonds.contains(&bidx) && bond_order_contrib(view.order(mol, bidx)) >= 2.0
         })
         .map(|(nb, _)| nb)
 }
@@ -217,16 +272,17 @@ fn incident_cyclic_multiple_bond(
     mol: &Molecule,
     atom_idx: AtomIdx,
     ring_bonds: &(impl RingBondLookup + ?Sized),
+    view: &impl OrderView,
 ) -> bool {
     mol.neighbors(atom_idx).any(|(_, bidx)| {
-        ring_bonds.contains(&bidx) && bond_order_contrib(mol.bond(bidx).order) >= 2.0
+        ring_bonds.contains(&bidx) && bond_order_contrib(view.order(mol, bidx)) >= 2.0
     })
 }
 
-fn incident_multiple_bond(mol: &Molecule, atom_idx: AtomIdx) -> bool {
+fn incident_multiple_bond(mol: &Molecule, atom_idx: AtomIdx, view: &impl OrderView) -> bool {
     let explicit_valence: f32 = mol
         .neighbors(atom_idx)
-        .map(|(_, bidx)| bond_order_contrib(mol.bond(bidx).order))
+        .map(|(_, bidx)| bond_order_contrib(view.order(mol, bidx)))
         .sum();
     (explicit_valence - mol.degree(atom_idx) as f32).abs() > 1e-6
 }
@@ -266,32 +322,42 @@ pub(crate) fn get_atom_electron_donor_type(
     atom_idx: AtomIdx,
     ring_bonds: &(impl RingBondLookup + ?Sized),
 ) -> ElectronDonorType {
+    get_atom_electron_donor_type_in(mol, atom_idx, ring_bonds, &AsIs)
+}
+
+/// [`get_atom_electron_donor_type`] of `atom_idx` under `view`.
+pub(crate) fn get_atom_electron_donor_type_in(
+    mol: &Molecule,
+    atom_idx: AtomIdx,
+    ring_bonds: &(impl RingBondLookup + ?Sized),
+    view: &impl OrderView,
+) -> ElectronDonorType {
     let atom = mol.atom(atom_idx);
     let an = atom.element.atomic_number();
 
-    let Some(nelec) = count_atom_pi_electrons(mol, atom_idx) else {
+    let Some(nelec) = count_atom_pi_electrons_in(mol, atom_idx, view) else {
         return ElectronDonorType::None;
     };
 
     if nelec < 0 {
         ElectronDonorType::None
     } else if nelec == 0 {
-        if let Some(_who) = incident_non_cyclic_multiple_bond(mol, atom_idx, ring_bonds) {
+        if let Some(_who) = incident_non_cyclic_multiple_bond(mol, atom_idx, ring_bonds, view) {
             ElectronDonorType::Vacant
-        } else if incident_cyclic_multiple_bond(mol, atom_idx, ring_bonds) {
+        } else if incident_cyclic_multiple_bond(mol, atom_idx, ring_bonds, view) {
             ElectronDonorType::OneElectron
         } else {
             ElectronDonorType::None
         }
     } else if nelec == 1 {
-        if let Some(who) = incident_non_cyclic_multiple_bond(mol, atom_idx, ring_bonds) {
+        if let Some(who) = incident_non_cyclic_multiple_bond(mol, atom_idx, ring_bonds, view) {
             let other_an = mol.atom(who).element.atomic_number();
             if more_electronegative(other_an, an) {
                 ElectronDonorType::Vacant
             } else {
                 ElectronDonorType::OneElectron
             }
-        } else if incident_multiple_bond(mol, atom_idx) {
+        } else if incident_multiple_bond(mol, atom_idx, view) {
             ElectronDonorType::OneElectron
         } else if atom.charge == 1 {
             // tropylium / cyclopropenyl cation
@@ -301,7 +367,7 @@ pub(crate) fn get_atom_electron_donor_type(
         }
     } else {
         let mut nelec = nelec;
-        if let Some(who) = incident_non_cyclic_multiple_bond(mol, atom_idx, ring_bonds) {
+        if let Some(who) = incident_non_cyclic_multiple_bond(mol, atom_idx, ring_bonds, view) {
             let other_an = mol.atom(who).element.atomic_number();
             if more_electronegative(other_an, an) {
                 nelec -= 1;
@@ -323,6 +389,16 @@ pub(crate) fn is_atom_candidate_for_aromaticity(
     atom_idx: AtomIdx,
     donor_type: ElectronDonorType,
 ) -> bool {
+    is_atom_candidate_for_aromaticity_in(mol, atom_idx, donor_type, &AsIs)
+}
+
+/// [`is_atom_candidate_for_aromaticity`] of `atom_idx` under `view`.
+pub(crate) fn is_atom_candidate_for_aromaticity_in(
+    mol: &Molecule,
+    atom_idx: AtomIdx,
+    donor_type: ElectronDonorType,
+    view: &impl OrderView,
+) -> bool {
     let atom = mol.atom(atom_idx);
     let an = atom.element.atomic_number();
 
@@ -339,9 +415,14 @@ pub(crate) fn is_atom_candidate_for_aromaticity(
     if let Some(dv) = default_valence(an) {
         let total_valence: f32 = mol
             .neighbors(atom_idx)
-            .map(|(_, bidx)| bond_order_contrib(mol.bond(bidx).order))
+            .map(|(_, bidx)| bond_order_contrib(view.order(mol, bidx)))
             .sum::<f32>()
-            + chematic_core::implicit_hcount(mol, atom_idx) as f32;
+            + chematic_core::implicit_hcount_with(
+                mol,
+                atom_idx,
+                view.flagged(mol, atom_idx),
+                |b| view.order(mol, b),
+            ) as f32;
         let an_neutral = (an as i32 - atom.charge as i32).max(0) as u8;
         if let Some(dv_neutral) = default_valence(an_neutral)
             && total_valence.round() as i32 > dv_neutral as i32
@@ -354,14 +435,14 @@ pub(crate) fn is_atom_candidate_for_aromaticity(
     // No more than one double/triple bond (rules out cumulated dienes like C=C=N).
     let explicit_valence: f32 = mol
         .neighbors(atom_idx)
-        .map(|(_, bidx)| bond_order_contrib(mol.bond(bidx).order))
+        .map(|(_, bidx)| bond_order_contrib(view.order(mol, bidx)))
         .sum();
     let n_unsaturations = explicit_valence - mol.degree(atom_idx) as f32;
     if n_unsaturations > 1.0 {
         let n_mult = mol
             .neighbors(atom_idx)
             .filter(|(_, bidx)| {
-                matches!(mol.bond(*bidx).order, BondOrder::Double | BondOrder::Triple)
+                matches!(view.order(mol, *bidx), BondOrder::Double | BondOrder::Triple)
             })
             .count();
         if n_mult > 1 {
@@ -625,6 +706,29 @@ pub(crate) fn rdkit_parity_aromaticity_ex(
     mol: &Molecule,
     max_num_fused_rings: usize,
 ) -> (FxHashSet<AtomIdx>, FxHashSet<BondIdx>) {
+    verdict_with_typing(
+        mol,
+        max_num_fused_rings,
+        |idx, cyclic| {
+            let d = get_atom_electron_donor_type(mol, idx, cyclic);
+            (d, is_atom_candidate_for_aromaticity(mol, idx, d))
+        },
+        true,
+    )
+    .expect("ranked ring selection always completes")
+}
+
+/// Body of [`rdkit_parity_aromaticity_ex`] with each ring atom's donor type
+/// and candidacy supplied by `typing`, so the verdict of a hypothetical
+/// Kekulé form can be computed on the explicit molecule (same graph). With
+/// `allow_ranks == false` the SSSR ring set must be decidable from the graph
+/// alone (`None` otherwise), since canonical ranks read flags and orders.
+fn verdict_with_typing(
+    mol: &Molecule,
+    max_num_fused_rings: usize,
+    typing: impl Fn(AtomIdx, &[bool]) -> (ElectronDonorType, bool),
+    allow_ranks: bool,
+) -> Option<(FxHashSet<AtomIdx>, FxHashSet<BondIdx>)> {
     // Donor types and candidacy of every ring atom. The ring-bond set RDKit
     // passes is the union of the SSSR rings' bonds, i.e. the cyclic bonds (an
     // SSSR is a cycle basis, so every cyclic bond lies on one of its rings).
@@ -644,10 +748,9 @@ pub(crate) fn rdkit_parity_aromaticity_ex(
     let mut is_candidate = vec![false; n];
     for a in 0..n {
         if ring_atom[a] {
-            let idx = AtomIdx(a as u32);
-            let d = get_atom_electron_donor_type(mol, idx, cyclic);
+            let (d, c) = typing(AtomIdx(a as u32), cyclic);
             donor[a] = d;
-            is_candidate[a] = is_atom_candidate_for_aromaticity(mol, idx, d);
+            is_candidate[a] = c;
         }
     }
 
@@ -675,13 +778,17 @@ pub(crate) fn rdkit_parity_aromaticity_ex(
         }
     }
     if !any_kept {
-        return (FxHashSet::default(), FxHashSet::default());
+        return Some((FxHashSet::default(), FxHashSet::default()));
     }
     // The verdict depends on the candidate rings only as a set: fused groups
     // are a partition by shared bonds, and every combination of each group
     // is evaluated for every subset size reached, with marks accumulated as
     // unions, so ring order never matters.
-    let rings = crate::sssr::find_sssr_ring_set_in_components(mol, &keep);
+    let rings = if allow_ranks {
+        crate::sssr::find_sssr_ring_set_in_components(mol, &keep)
+    } else {
+        crate::sssr::find_sssr_ring_set_in_components_unranked(mol, &keep)?
+    };
     let srings: &[Vec<AtomIdx>] = &rings;
 
     let ring_atoms: Vec<&[AtomIdx]> = srings
@@ -720,7 +827,7 @@ pub(crate) fn rdkit_parity_aromaticity_ex(
         );
     }
 
-    (aromatic_atoms, aromatic_bonds)
+    Some((aromatic_atoms, aromatic_bonds))
 }
 
 // ---------------------------------------------------------------------------
@@ -870,6 +977,7 @@ fn parity_shortcut(mol: &Molecule) -> ParityShortcut {
         match preperceived_kind_with(mol, &info) {
             Some(kind) => kind,
             None if unchanged_without_kekulization_with(mol, &info) => ParityShortcut::Identity,
+            None if explicit_kept_by_kekule_verdict(mol, &info) => ParityShortcut::Identity,
             None => ParityShortcut::Full,
         }
     })
@@ -1045,11 +1153,11 @@ fn preperceived_kind_with(mol: &Molecule, info: &ComponentInfo) -> Option<Parity
             }
         };
         let mut candidate = vec![false; n];
-        for atom in 0..n {
+        for (atom, slot) in candidate.iter_mut().enumerate() {
             if checked(atom) {
                 let idx = AtomIdx(atom as u32);
                 let donor = get_atom_electron_donor_type(mol, idx, info.cyclic.as_slice());
-                candidate[atom] = is_atom_candidate_for_aromaticity(mol, idx, donor);
+                *slot = is_atom_candidate_for_aromaticity(mol, idx, donor);
             }
         }
         // A cyclic bond between two candidates that joins atoms already
@@ -1217,12 +1325,116 @@ fn unchanged_without_kekulization_with(mol: &Molecule, info: &ComponentInfo) -> 
     }
     // Remaining components: exact ones contribute nothing (above), so only
     // mixed components can hold a non-explicit candidate cycle edge.
-    for a in 0..n {
-        if exact(info.root[a]) {
-            candidate[a] = false;
+    for (slot, &root) in candidate.iter_mut().zip(&info.root) {
+        if exact(root) {
+            *slot = false;
         }
     }
     !non_explicit_candidate_cycle_edge(mol, cyclic, &candidate)
+}
+
+/// Whether the full path keeps an explicit aromatic representation, decided
+/// from the RDKit-parity verdict of its Kekulé form computed without
+/// kekulizing (`false` means "not proven").
+///
+/// With consistent explicit aromaticity the full path returns `mol` unless
+/// kekulization succeeds and the verdict on the Kekulé form contains every
+/// explicit aromatic atom and bond and more. Kekulization only reassigns
+/// aromatic bonds (between flagged atoms): when it succeeds, every
+/// must-match atom (`atom_must_be_matched`) gets exactly one double bond on
+/// an aromatic bond to another must-match atom and every other bond of the
+/// molecule is single or unchanged. The one exception is the bridgehead-N
+/// fallback, which can leave a must-match N with three or more such bonds
+/// unmatched; molecules where it could apply are left to the full path.
+/// When every aromatic bond of a must-match atom is cyclic, the typing rules
+/// see the same thing whichever of them is the double one, so each flagged
+/// atom's donor type and candidacy follow from its matched status alone
+/// ([`KekuleAtom`]); unflagged atoms keep all their bonds. The SSSR ring set
+/// is used only when it is decidable from the graph alone (the Kekulé form
+/// has the same graph and adjacency). Kekulization failure keeps `mol` as
+/// well, so the conclusion "not strictly extended" holds either way.
+fn explicit_kept_by_kekule_verdict(mol: &Molecule, info: &ComponentInfo) -> bool {
+    if !info.explicit {
+        return false;
+    }
+    let n = mol.atom_count();
+    let cyclic: &[bool] = info.cyclic.as_slice();
+    // Matched status and the bond carrying the double bond, per atom.
+    let mut must = vec![false; n];
+    let mut n_flagged = 0usize;
+    for (idx, atom) in mol.atoms() {
+        if atom.aromatic {
+            n_flagged += 1;
+            must[idx.0 as usize] = chematic_core::kekulization::atom_must_be_matched(mol, idx);
+        }
+    }
+    let mut double: Vec<Option<BondIdx>> = vec![None; n];
+    for (idx, atom) in mol.atoms() {
+        if !atom.aromatic {
+            continue;
+        }
+        let a = idx.0 as usize;
+        let mut has_aromatic_bond = false;
+        let mut must_neighbors = 0usize;
+        let mut first = None;
+        for &(nb, b) in mol.neighbor_slice(idx) {
+            if mol.bond(b).order != BondOrder::Aromatic {
+                continue;
+            }
+            has_aromatic_bond = true;
+            if must[a] && !cyclic[b.0 as usize] {
+                return false; // the double bond might be exocyclic
+            }
+            if must[nb.0 as usize] {
+                must_neighbors += 1;
+                first.get_or_insert(b);
+            }
+        }
+        if !has_aromatic_bond {
+            return false; // a flag the Kekulé form types differently
+        }
+        if must[a] {
+            if must_neighbors == 0 {
+                return true; // kekulization fails: `mol` is kept
+            }
+            if atom.element.atomic_number() == 7 && must_neighbors >= 3 {
+                return false; // bridgehead-N fallback possible
+            }
+            double[a] = first;
+        }
+    }
+    let n_aromatic_bonds = mol
+        .bonds()
+        .filter(|(_, b)| b.order == BondOrder::Aromatic)
+        .count();
+
+    let Some((atoms, bonds)) = verdict_with_typing(
+        mol,
+        6,
+        |idx, cyclic| {
+            if mol.atom(idx).aromatic {
+                let view = KekuleAtom {
+                    double: double[idx.0 as usize],
+                };
+                let d = get_atom_electron_donor_type_in(mol, idx, cyclic, &view);
+                (d, is_atom_candidate_for_aromaticity_in(mol, idx, d, &view))
+            } else {
+                let d = get_atom_electron_donor_type(mol, idx, cyclic);
+                (d, is_atom_candidate_for_aromaticity(mol, idx, d))
+            }
+        },
+        false,
+    ) else {
+        return false;
+    };
+    let preserves = mol
+        .atoms()
+        .all(|(idx, a)| !a.aromatic || atoms.contains(&idx))
+        && mol
+            .bonds()
+            .all(|(idx, b)| b.order != BondOrder::Aromatic || bonds.contains(&idx));
+    let strictly_extends = atoms.len() > n_flagged || bonds.len() > n_aromatic_bonds;
+    !(preserves && strictly_extends)
 }
 
 /// Body of [`re_perception_can_extend`]: candidacy of every ring atom read
@@ -2050,6 +2262,56 @@ mod tests {
                 assert_eq!(fingerprint(&mol), fingerprint(full.as_ref().unwrap()), "{smi}");
             }
         }
+    }
+
+    #[test]
+    fn kekule_verdict_identity_is_sound() {
+        let mut proven = 0;
+        for smi in [
+            "c1ccccc1",
+            "c1ccc2[nH]ccc2c1",
+            "c1ccc2ccccc2c1",
+            "c1ccc2c(c1)ccc1ccccc12",
+            "c1cc2ccc3cccc4ccc(c1)c2c34",
+            "c1ccc2cc3ccccc3cc2c1",
+            "c1ccc-2c(c1)-c1ccccc1-2",
+            "c1cc2cccc3cccc(c1)c23",
+            "c1ccc2c(c1)c1ccccc1n2C",
+            "O=c1cccc[nH]1",
+            "O=c1ccc2ccccc2o1",
+            "Cn1cnc2c1c(=O)n(C)c(=O)n2C",
+            "c1cc[n+]cc1",
+            "c1ccn2ccnc2c1",
+            "c1cnc2nccn2c1",
+            "c1ccc2c(c1)[se]c1ccccc12",
+            "c1cc2ccc1cc2",
+            "c1cccc1",
+            "c1ccc1",
+            "c1cccccc1",
+            "c1ccccccc1",
+            "c1ccc2cccc2cc1",
+            "C1=Cc2ccccc2C1",
+            "c1ccc2c(c1)CCC2",
+            "O=C1c2ccccc2C(=O)N1CCCCN1CCN(c2cccc3ccccc23)CC1",
+            "c1ccc2c(c1)[nH]c1ccccc12",
+            "c1cc2c3c(c1)ccc1cccc(c13)cc2",
+            "B1c2ccccc2-c2ccccc12",
+            "c1ccc2c(c1)oc1ccccc12",
+            "O=c1c2ccccc2c(=O)c2ccccc12",
+            "c12c3c4c5c1c1c6c7c2c2c8c3c3c9c4c4c%10c5c5c1c1c6c6c%11c7c2c2c7c8c3c3c8c9c4c4c9c%10c5c5c1c1c6c6c%11c2c2c7c3c3c8c4c4c9c5c1c1c6c2c3c41",
+        ] {
+            let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+            let info = ComponentInfo::new(&mol);
+            if !explicit_kept_by_kekule_verdict(&mol, &info) {
+                continue;
+            }
+            proven += 1;
+            match full_path(&mol) {
+                Ok(full) => assert_eq!(fingerprint(&mol), fingerprint(&full), "{smi}"),
+                Err(e) => panic!("{smi}: full path failed: {e:?}"),
+            }
+        }
+        assert!(proven > 10, "only {proven} proven");
     }
 
     #[test]

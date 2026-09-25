@@ -70,7 +70,7 @@ fn compute_fp(mol: &Molecule, fp_type: FpType) -> Result<BitVec2048, RdkitMorgan
         FpType::TopoPath => {
             crate::topo_path::topo_path(mol, &crate::topo_path::TopoPathConfig::default())
         }
-        FpType::RdkitEcfp4 => return Ok(rdkit_morgan_ecfp4_bitvec(mol)?),
+        FpType::RdkitEcfp4 => return rdkit_morgan_ecfp4_bitvec(mol),
     };
     Ok(fingerprint)
 }

@@ -284,7 +284,9 @@ fn find_sssr_uncached(mol: &Molecule) -> RingSet {
     }
 
     let candidates = horton_candidates_fast(mol, None);
-    RingSet::from_rings(select_horton_basis(mol, &cyclic, candidates, r, true), v)
+    let rings = select_horton_basis(mol, &cyclic, candidates, r, true, true)
+        .expect("ranked selection always completes");
+    RingSet::from_rings(rings, v)
 }
 
 /// The rings [`find_sssr`] returns that lie in the cyclic-subgraph components
@@ -305,7 +307,7 @@ fn find_sssr_uncached(mol: &Molecule) -> RingSet {
 /// sort by length keeps their relative order.
 #[cfg(test)]
 pub(crate) fn find_sssr_in_components(mol: &Molecule, keep: &[bool]) -> Vec<Vec<AtomIdx>> {
-    sssr_rings_in_components(mol, keep, true)
+    sssr_rings_in_components(mol, keep, true, true).expect("ranked selection always completes")
 }
 
 /// The *set* of rings [`find_sssr_in_components`] returns, in an unspecified
@@ -320,10 +322,27 @@ pub(crate) fn find_sssr_ring_set_in_components(mol: &Molecule, keep: &[bool]) ->
             .cloned()
             .collect();
     }
-    sssr_rings_in_components(mol, keep, false)
+    sssr_rings_in_components(mol, keep, false, true).expect("ranked selection always completes")
 }
 
-fn sssr_rings_in_components(mol: &Molecule, keep: &[bool], order_needed: bool) -> Vec<Vec<AtomIdx>> {
+/// [`find_sssr_ring_set_in_components`] when it can be decided from the graph
+/// alone (no same-length tie needs the canonical atom ranks, which read
+/// aromatic flags and bond orders); `None` otherwise. The set is then the
+/// same for every molecule with this graph and adjacency order, e.g. for a
+/// Kekulé form of `mol`.
+pub(crate) fn find_sssr_ring_set_in_components_unranked(
+    mol: &Molecule,
+    keep: &[bool],
+) -> Option<Vec<Vec<AtomIdx>>> {
+    sssr_rings_in_components(mol, keep, false, false)
+}
+
+fn sssr_rings_in_components(
+    mol: &Molecule,
+    keep: &[bool],
+    order_needed: bool,
+    allow_ranks: bool,
+) -> Option<Vec<Vec<AtomIdx>>> {
     let cyclic = ring_bond_flags_shared(mol);
     // Cycle rank of the kept components: E - V + C over their cyclic bonds.
     let n = mol.atom_count();
@@ -350,15 +369,19 @@ fn sssr_rings_in_components(mol: &Molecule, keep: &[bool], order_needed: bool) -
         }
     }
     if r == 0 {
-        return Vec::new();
+        return Some(Vec::new());
     }
     if sssr_ring_count(mol) == 1 {
-        // The whole molecule takes the single-cycle path; `r == 1` here means
-        // that cycle is in a kept component.
-        return find_sssr_shared(mol).rings().to_vec();
+        // The whole molecule takes the single-cycle path (graph-only); `r ==
+        // 1` here means that cycle is in a kept component.
+        return Some(if allow_ranks {
+            find_sssr_shared(mol).rings().to_vec()
+        } else {
+            single_cycle_sssr(mol).rings().to_vec()
+        });
     }
     let candidates = horton_candidates_fast(mol, Some(keep));
-    select_horton_basis(mol, &cyclic, candidates, r, order_needed)
+    select_horton_basis(mol, &cyclic, candidates, r, order_needed, allow_ranks)
 }
 
 /// Greedy GF(2) selection of `r` independent candidates in canonical order,
@@ -370,13 +393,19 @@ fn sssr_rings_in_components(mol: &Molecule, keep: &[bool], order_needed: bool) -
 /// the canonical sort (greedy selection takes every candidate of such a group
 /// in any order), as is a group of which none is independent; any other group
 /// is sorted canonically as usual.
+///
+/// With `allow_ranks == false` (only meaningful with `order_needed ==
+/// false`), a group that would need the canonical sort makes the selection
+/// return `None` instead: the result then never depends on the canonical
+/// atom ranks, i.e. on anything but the graph.
 fn select_horton_basis(
     mol: &Molecule,
     cyclic: &[bool],
     mut candidates: Vec<CycleCandidate>,
     r: usize,
     order_needed: bool,
-) -> Vec<Vec<AtomIdx>> {
+    allow_ranks: bool,
+) -> Option<Vec<Vec<AtomIdx>>> {
 
     // Deterministic ordering: shortest first, then a canonical (input-order-
     // independent) tie-break so ring *selection* doesn't depend on how the
@@ -448,6 +477,9 @@ fn select_horton_basis(
                 basis_bits[p as usize] = 0;
             }
         }
+        if group.len() > 1 && !allow_ranks {
+            return None;
+        }
         if group.len() > 1 {
             let ranks = ranks.get_or_insert_with(|| canonical_ring_atom_ranks(mol, cyclic));
             for c in group.iter_mut() {
@@ -497,7 +529,7 @@ fn select_horton_basis(
 
     // Sort output rings by length for output consistency.
     selected_atoms.sort_by_key(|ring| ring.len());
-    selected_atoms
+    Some(selected_atoms)
 }
 
 /// Number of connected components of the ring-eligible graph (every atom,
