@@ -1169,8 +1169,18 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
     let mol_with_arom;
     let mol = if mol.atoms().any(|(_, a)| a.aromatic) {
         mol // aromatic SMILES — flags already set during parsing
+    } else if crate::sssr::sssr_ring_count(mol) == 0 {
+        // No cycle, no ring to count (perception keeps the graph).
+        return 0;
     } else {
         mol_with_arom = apply_aromaticity(mol);
+        // The copy re-adds every atom and bond in order (same graph, every
+        // bond still ring-eligible), so it has the same cyclic data.
+        if mol_with_arom.atom_count() == mol.atom_count()
+            && mol_with_arom.bond_count() == mol.bond_count()
+        {
+            crate::sssr::seed_ring_data_from(&mol_with_arom, mol);
+        }
         &mol_with_arom
     };
 
