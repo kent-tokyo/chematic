@@ -907,14 +907,14 @@ fn preperceived_kind(mol: &Molecule) -> Option<ParityShortcut> {
 }
 
 /// Per cyclic component facts shared by [`preperceived_kind_with`] and
-/// [`unchanged_without_kekulization_with`], from one union-find pass.
+/// [`unchanged_without_kekulization_with`].
 struct ComponentInfo {
     cyclic: std::sync::Arc<Vec<bool>>,
-    /// Union-find root of every atom with a cyclic bond (`u32::MAX` otherwise).
+    /// Component label of every atom with a cyclic bond (`u32::MAX` otherwise).
     root: Vec<u32>,
-    /// Per root: `COMP_*` bits.
+    /// Per label: `COMP_*` bits.
     kind: Vec<u8>,
-    /// Per root: cyclic bonds and atoms.
+    /// Per label: cyclic bonds and atoms.
     edges: Vec<u32>,
     atoms: Vec<u32>,
     has_aromatic_bond: bool,
@@ -939,7 +939,12 @@ impl ComponentInfo {
     fn new(mol: &Molecule) -> Self {
         let n = mol.atom_count();
         let cyclic = crate::sssr::ring_bond_flags_shared(mol);
-        let mut uf = UnionFind::new(n);
+        let components = crate::sssr::ring_components_shared(mol);
+        let c = components.count as usize;
+        let mut root = vec![u32::MAX; n];
+        let mut kind = vec![0u8; c];
+        let mut edges = vec![0u32; c];
+        let mut atoms = vec![0u32; c];
         let mut has_aromatic_bond = false;
         let mut consistent = true;
         let mut non_ring_aromatic_bond = false;
@@ -951,18 +956,7 @@ impl ComponentInfo {
                 }
             }
             if cyclic[bond_idx.0 as usize] {
-                uf.union(bond.atom1.0, bond.atom2.0);
-            } else if bond.order == BondOrder::Aromatic {
-                non_ring_aromatic_bond = true;
-            }
-        }
-        let mut root = vec![u32::MAX; n];
-        let mut kind = vec![0u8; n];
-        let mut edges = vec![0u32; n];
-        let mut atoms = vec![0u32; n];
-        for (bond_idx, bond) in mol.bonds() {
-            if cyclic[bond_idx.0 as usize] {
-                let r = uf.find(bond.atom1.0);
+                let r = components.label[bond.atom1.0 as usize];
                 root[bond.atom1.0 as usize] = r;
                 root[bond.atom2.0 as usize] = r;
                 let r = r as usize;
@@ -972,6 +966,8 @@ impl ComponentInfo {
                     BondOrder::Single | BondOrder::Up | BondOrder::Down => COMP_NON_AROMATIC,
                     _ => COMP_NON_AROMATIC | COMP_NON_AROMATIC_MULTIPLE,
                 };
+            } else if bond.order == BondOrder::Aromatic {
+                non_ring_aromatic_bond = true;
             }
         }
         let mut any_flagged = false;
@@ -1011,13 +1007,9 @@ impl ComponentInfo {
         }
     }
 
-    /// Roots of the cyclic components (each once).
+    /// Labels of the cyclic components (components with a cyclic bond).
     fn roots(&self) -> impl Iterator<Item = usize> + '_ {
-        self.root
-            .iter()
-            .enumerate()
-            .filter(|&(a, &r)| r as usize == a)
-            .map(|(a, _)| a)
+        (0..self.edges.len()).filter(|&c| self.edges[c] > 0)
     }
 }
 
@@ -1392,10 +1384,7 @@ fn kekulize_for_rdkit_parity_with_verdict(
             let kekulized = kekulized_copy(mol, &k);
             // Same graph; kekulization only turns aromatic bonds into single
             // or double ones, all ring-eligible, so the cyclic bonds agree.
-            kekulized.seed_derived(
-                chematic_core::DerivedSlot::RingBondFlags,
-                crate::sssr::ring_bond_flags_shared(mol),
-            );
+            crate::sssr::seed_ring_data_from(&kekulized, mol);
             if !explicit_ok {
                 return Ok((kekulized, None));
             }
@@ -1567,10 +1556,7 @@ fn apply_aromaticity_rdkit_parity_uncached(mol: &Molecule) -> Result<Molecule, A
     // Same graph with the same ring-eligible bonds (the view only changes
     // aromatic flags and turns bonds aromatic, single or double), so the
     // cyclic-bond flags carry over.
-    view.seed_derived(
-        chematic_core::DerivedSlot::RingBondFlags,
-        crate::sssr::ring_bond_flags_shared(mol),
-    );
+    crate::sssr::seed_ring_data_from(&view, mol);
     Ok(view)
 }
 

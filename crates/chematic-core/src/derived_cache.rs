@@ -39,9 +39,11 @@ pub enum DerivedSlot {
     RdkitParityAromatic = 5,
     /// Which shortcut (if any) the RDKit-parity perception can take.
     RdkitParityShortcut = 6,
+    /// Cyclic-subgraph component labels (computed with `RingBondFlags`).
+    RingComponents = 7,
 }
 
-const SLOT_COUNT: usize = 7;
+const SLOT_COUNT: usize = 8;
 
 /// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
 /// the unwind-safety traits so `Molecule` stays usable across

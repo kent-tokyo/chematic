@@ -1009,17 +1009,64 @@ pub fn ring_bond_flags(mol: &Molecule) -> Vec<bool> {
 /// Shared, memoized [`ring_bond_flags`] (no clone of the flag vector).
 pub fn ring_bond_flags_shared(mol: &Molecule) -> std::sync::Arc<Vec<bool>> {
     // Memoized on `mol`; see `chematic_core::DerivedSlot`.
-    mol.derived(chematic_core::DerivedSlot::RingBondFlags, || {
-        ring_bond_flags_uncached(mol)
-    })
+    if let Some(flags) = mol.derived_if_computed(chematic_core::DerivedSlot::RingBondFlags) {
+        return flags;
+    }
+    compute_ring_flags_and_components(mol).0
 }
 
-fn ring_bond_flags_uncached(mol: &Molecule) -> Vec<bool> {
+/// Connected components of the cyclic subgraph (the 2-edge-connected
+/// components of the ring-eligible graph).
+#[derive(Debug)]
+pub(crate) struct RingComponents {
+    /// Component label of every atom (atoms on no cycle are singletons).
+    pub label: Vec<u32>,
+    /// Number of labels.
+    pub count: u32,
+}
+
+/// Memoized [`RingComponents`] of `mol`, computed together with
+/// [`ring_bond_flags_shared`].
+pub(crate) fn ring_components_shared(mol: &Molecule) -> std::sync::Arc<RingComponents> {
+    if let Some(c) = mol.derived_if_computed(chematic_core::DerivedSlot::RingComponents) {
+        return c;
+    }
+    compute_ring_flags_and_components(mol).1
+}
+
+fn compute_ring_flags_and_components(
+    mol: &Molecule,
+) -> (std::sync::Arc<Vec<bool>>, std::sync::Arc<RingComponents>) {
+    let (flags, components) = ring_bond_flags_uncached(mol);
+    let flags = mol.derived(chematic_core::DerivedSlot::RingBondFlags, || flags);
+    let components = mol.derived(chematic_core::DerivedSlot::RingComponents, || components);
+    (flags, components)
+}
+
+/// Seed `copy`'s cyclic-bond flags and components from `mol`'s (same graph,
+/// same ring-eligible bonds).
+pub(crate) fn seed_ring_data_from(copy: &Molecule, mol: &Molecule) {
+    let (flags, components) = compute_ring_flags_and_components(mol);
+    copy.seed_derived(chematic_core::DerivedSlot::RingBondFlags, flags);
+    copy.seed_derived(chematic_core::DerivedSlot::RingComponents, components);
+}
+
+/// Bridge flags (cyclic = eligible non-bridge bonds) and 2-edge-connected
+/// component labels from one iterative low-link DFS: a vertex whose low-link
+/// equals its discovery time closes a component (the vertices above it on
+/// the visit stack), exactly when the tree edge into it is a bridge.
+fn ring_bond_flags_uncached(mol: &Molecule) -> (Vec<bool>, RingComponents) {
     let atom_count = mol.atom_count();
     let bond_count = mol.bond_count();
     let mut flags = vec![false; bond_count];
     if atom_count == 0 || bond_count == 0 {
-        return flags;
+        return (
+            flags,
+            RingComponents {
+                label: (0..atom_count as u32).collect(),
+                count: atom_count as u32,
+            },
+        );
     }
     // Bridges are a property of the graph, so the traversal order is free:
     // walk the molecule's own adjacency lists, skipping ineligible bonds.
@@ -1032,6 +1079,9 @@ fn ring_bond_flags_uncached(mol: &Molecule) -> Vec<bool> {
     let mut time = 0u32;
     // `(atom, parent edge, next neighbor offset)` frames.
     let mut stack: Vec<(u32, u32, u32)> = Vec::with_capacity(atom_count.min(64));
+    let mut visit: Vec<u32> = Vec::with_capacity(atom_count);
+    let mut label = vec![0u32; atom_count];
+    let mut count = 0u32;
     // Non-bridge eligible bonds become `true`; bridges stay `false`.
     let mut any_cycle_edge = false;
 
@@ -1041,6 +1091,7 @@ fn ring_bond_flags_uncached(mol: &Molecule) -> Vec<bool> {
         }
         dl[root] = (time, time);
         time += 1;
+        visit.push(root as u32);
         stack.push((root as u32, NO_BOND, 0));
 
         while let Some(&mut (atom, parent_bond, ref mut next)) = stack.last_mut() {
@@ -1058,6 +1109,7 @@ fn ring_bond_flags_uncached(mol: &Molecule) -> Vec<bool> {
                 if dl[nb].0 == UNSEEN {
                     dl[nb] = (time, time);
                     time += 1;
+                    visit.push(neighbor.0);
                     stack.push((neighbor.0, bond.0, 0));
                 } else {
                     // Back (or already-finished forward) edge: always on a cycle.
@@ -1070,6 +1122,16 @@ fn ring_bond_flags_uncached(mol: &Molecule) -> Vec<bool> {
                 continue;
             }
             stack.pop();
+            if dl[a].1 == dl[a].0 {
+                // `a` roots a 2-edge-connected component.
+                while let Some(v) = visit.pop() {
+                    label[v as usize] = count;
+                    if v == atom {
+                        break;
+                    }
+                }
+                count += 1;
+            }
             if parent_bond != NO_BOND {
                 // Its parent is the preceding stack frame: this DFS only
                 // pushes a child immediately after its parent frame.
@@ -1090,7 +1152,7 @@ fn ring_bond_flags_uncached(mol: &Molecule) -> Vec<bool> {
         }
     }
     let _ = any_cycle_edge;
-    flags
+    (flags, RingComponents { label, count })
 }
 
 /// Return an index-aligned flag for every atom that belongs to at least one

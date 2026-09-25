@@ -428,6 +428,11 @@ fn visit_recursive(
         if st.used[t as usize] {
             continue;
         }
+        if st.info.implied[q_next]
+            .is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
+        {
+            continue;
+        }
         // Exact pruning (dead branches only); no result-map layout to keep.
         if ctx.prunes_acyclic_target(query, st, q_next, t_idx) {
             continue;
@@ -732,6 +737,11 @@ fn match_recursive(
         if st.used[t as usize] {
             continue;
         }
+        if st.info.implied[q_next]
+            .is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
+        {
+            continue;
+        }
         // Exact cycle pruning. Restricted to queries of at most 7 atoms: the
         // result maps are clones of `mapping`, whose layout must not depend
         // on which dead branches were explored. With at most 7 keys the table
@@ -800,6 +810,10 @@ struct PlanInfo {
     /// is acyclic). Such an atom can only map onto a target atom that lies on
     /// a cycle, since an embedding maps query cycles onto target cycles.
     q_cyclic: std::cell::OnceCell<Vec<bool>>,
+    /// Atomic number every target of query atom `q` must have
+    /// ([`implied_atomic_number`]); a cheap pre-filter before the full atom
+    /// query, which would reject any other element anyway.
+    implied: Vec<Option<u8>>,
 }
 
 impl PlanInfo {
@@ -829,6 +843,11 @@ impl PlanInfo {
             plan,
             plan_anchor,
             q_cyclic: std::cell::OnceCell::new(),
+            implied: query
+                .atoms
+                .iter()
+                .map(|a| implied_atomic_number(&a.query))
+                .collect(),
         }
     }
 }
@@ -1207,6 +1226,11 @@ fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, st: &mut MapSta
     for t in candidates.iter() {
         let t_idx = AtomIdx(t);
         if st.used[t as usize] {
+            continue;
+        }
+        if st.info.implied[q_next]
+            .is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
+        {
             continue;
         }
         if ctx.prunes_acyclic_target(query, st, q_next, t_idx) {
