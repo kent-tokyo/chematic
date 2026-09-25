@@ -58,7 +58,11 @@ const server = createServer(async (request, response) => {
     }
     return send(response, 404, "text/plain; charset=utf-8", "not found");
   } catch (error) {
-    return send(response, 500, "text/plain; charset=utf-8", String(error));
+    // This is a loopback-only smoke server, but keep the HTTP response safe if
+    // the helper is ever reused outside CI. The diagnostic remains available
+    // to the local test runner without exposing a filesystem path or stack.
+    console.error("WASM package smoke asset request failed:", error);
+    return send(response, 500, "text/plain; charset=utf-8", "internal server error");
   }
 });
 
