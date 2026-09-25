@@ -37,9 +37,11 @@ pub enum DerivedSlot {
     CanonicalRanks = 4,
     /// Result of the RDKit-parity aromaticity perception.
     RdkitParityAromatic = 5,
+    /// Which shortcut (if any) the RDKit-parity perception can take.
+    RdkitParityShortcut = 6,
 }
 
-const SLOT_COUNT: usize = 6;
+const SLOT_COUNT: usize = 7;
 
 /// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
 /// the unwind-safety traits so `Molecule` stays usable across
@@ -89,5 +91,24 @@ impl DerivedCache {
         // A concurrent writer may have won; either value is identical.
         let _ = cell.set(erased);
         value
+    }
+
+    /// Publish `value` for `slot` unless the slot is already filled.
+    pub(crate) fn seed<T>(&self, slot: DerivedSlot, value: Arc<T>)
+    where
+        T: Any + Send + Sync + RefUnwindSafe + UnwindSafe,
+    {
+        let erased: Arc<Erased> = value;
+        let _ = self.slots[slot as usize].set(erased);
+    }
+
+    /// The value already memoized for `slot`, if any (never computes).
+    pub(crate) fn peek<T>(&self, slot: DerivedSlot) -> Option<Arc<T>>
+    where
+        T: Any + Send + Sync + RefUnwindSafe + UnwindSafe,
+    {
+        let existing = self.slots[slot as usize].get()?;
+        let any: Arc<dyn Any + Send + Sync> = Arc::<Erased>::clone(existing);
+        any.downcast::<T>().ok()
     }
 }

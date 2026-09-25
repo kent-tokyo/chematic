@@ -28,11 +28,45 @@ use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuil
 
 /// A Horton candidate cycle: its bond set as a bitmask (molecules with at most
 /// 128 bonds) or as a sorted bond list (larger molecules; the mask is then 0),
-/// and its ordered ring atoms. The cycle length is the atom count.
+/// its length, and its ordered ring atoms `x ... root ... y` (the bond
+/// `closing` = y-x closes the ring).
+///
+/// In mask mode the atoms are left empty at generation time and rebuilt on
+/// demand by [`CycleCandidate::materialize`]: most candidates are longer than
+/// every ring the basis needs and are never looked at again.
 struct CycleCandidate {
     mask: u128,
     bonds: Vec<BondIdx>,
     atoms: Vec<AtomIdx>,
+    len: u32,
+    x: u32,
+    closing: BondIdx,
+}
+
+impl CycleCandidate {
+    /// Fill `atoms` (mask mode). The cycle is simple, so walking it from `x`
+    /// away from the closing bond visits exactly `x ... root ... y`, the
+    /// order the BFS parent paths give.
+    fn materialize(&mut self, mol: &Molecule) {
+        if !self.atoms.is_empty() {
+            return;
+        }
+        let mut atoms = Vec::with_capacity(self.len as usize);
+        let mut cur = AtomIdx(self.x);
+        let mut came = self.closing;
+        for _ in 0..self.len {
+            atoms.push(cur);
+            let Some((nb, b)) = mol.neighbors(cur).find(|&(_, b)| {
+                b != came && b.0 < 128 && self.mask & (1u128 << b.0) != 0
+            }) else {
+                break;
+            };
+            came = b;
+            cur = nb;
+        }
+        debug_assert_eq!(atoms.len(), self.len as usize);
+        self.atoms = atoms;
+    }
 }
 
 /// Returns `true` if the bond order is eligible for ring perception.
@@ -189,15 +223,31 @@ pub fn sssr_ring_count(mol: &Molecule) -> usize {
     if v == 0 {
         return 0;
     }
-    if !ring_bond_flags_shared(mol).iter().any(|&c| c) {
-        return 0;
+    // E - V + C is zero for a forest, so no acyclicity pre-check is needed;
+    // one union-find pass counts both E and C.
+    let mut parent: Vec<u32> = (0..v as u32).collect();
+    fn find(parent: &mut [u32], mut x: u32) -> u32 {
+        while parent[x as usize] != x {
+            let p = parent[x as usize];
+            parent[x as usize] = parent[p as usize];
+            x = p;
+        }
+        x
     }
-    let e = mol
-        .bonds()
-        .filter(|(_, b)| is_ring_eligible(b.order))
-        .count();
-    let r = (e as isize) - (v as isize) + (ring_eligible_component_count(mol) as isize);
-    r.max(0) as usize
+    let mut cycles = 0usize; // edges joining atoms already connected
+    for (_, b) in mol.bonds() {
+        if !is_ring_eligible(b.order) {
+            continue;
+        }
+        let a = find(&mut parent, b.atom1.0);
+        let c = find(&mut parent, b.atom2.0);
+        if a == c {
+            cycles += 1;
+        } else {
+            parent[a as usize] = c;
+        }
+    }
+    cycles
 }
 
 fn find_sssr_uncached(mol: &Molecule) -> RingSet {
@@ -233,7 +283,72 @@ fn find_sssr_uncached(mol: &Molecule) -> RingSet {
         return single_cycle_sssr(mol);
     }
 
-    let mut candidates = horton_candidates_fast(mol);
+    let candidates = horton_candidates_fast(mol, None);
+    RingSet::from_rings(select_horton_basis(mol, &cyclic, candidates, r), v)
+}
+
+/// The rings [`find_sssr`] returns that lie in the cyclic-subgraph components
+/// selected by `keep` (one flag per atom, set for every atom of a kept
+/// component), in the same relative order, without computing the rings of
+/// the other components.
+///
+/// Horton candidates are cycles through their BFS root, and a root's BFS never
+/// leaves its cyclic component, so the candidates of a kept component are
+/// generated identically and in the same relative order with or without the
+/// other roots. Cycles of different components have disjoint bond sets, so
+/// GF(2) independence of a kept component's candidates does not depend on
+/// other components' rings; the full selection saturates every component
+/// (it stops only at the total cycle rank), and the candidates of a kept
+/// component are visited in the same relative order here (same length
+/// groups, same canonical keys from the same whole-molecule ranks, stable
+/// sorts). Hence exactly the same rings are selected, and the final stable
+/// sort by length keeps their relative order.
+pub(crate) fn find_sssr_in_components(mol: &Molecule, keep: &[bool]) -> Vec<Vec<AtomIdx>> {
+    let cyclic = ring_bond_flags_shared(mol);
+    // Cycle rank of the kept components: E - V + C over their cyclic bonds.
+    let n = mol.atom_count();
+    let mut parent: Vec<u32> = (0..n as u32).collect();
+    fn find(parent: &mut [u32], mut x: u32) -> u32 {
+        while parent[x as usize] != x {
+            let p = parent[x as usize];
+            parent[x as usize] = parent[p as usize];
+            x = p;
+        }
+        x
+    }
+    let mut r = 0usize;
+    for (bidx, b) in mol.bonds() {
+        if !cyclic[bidx.0 as usize] || !keep[b.atom1.0 as usize] {
+            continue;
+        }
+        let a = find(&mut parent, b.atom1.0);
+        let c = find(&mut parent, b.atom2.0);
+        if a == c {
+            r += 1;
+        } else {
+            parent[a as usize] = c;
+        }
+    }
+    if r == 0 {
+        return Vec::new();
+    }
+    if sssr_ring_count(mol) == 1 {
+        // The whole molecule takes the single-cycle path; `r == 1` here means
+        // that cycle is in a kept component.
+        return find_sssr_shared(mol).rings().to_vec();
+    }
+    let candidates = horton_candidates_fast(mol, Some(keep));
+    select_horton_basis(mol, &cyclic, candidates, r)
+}
+
+/// Greedy GF(2) selection of `r` independent candidates in canonical order,
+/// returned sorted by length (stable).
+fn select_horton_basis(
+    mol: &Molecule,
+    cyclic: &[bool],
+    mut candidates: Vec<CycleCandidate>,
+    r: usize,
+) -> Vec<Vec<AtomIdx>> {
 
     // Deterministic ordering: shortest first, then a canonical (input-order-
     // independent) tie-break so ring *selection* doesn't depend on how the
@@ -253,7 +368,7 @@ fn find_sssr_uncached(mol: &Molecule) -> RingSet {
     // where `r` independent cycles are found are never computed. A group with
     // a single candidate needs no keys at all, and the canonical atom ranks
     // are only computed once some group actually has to be sorted.
-    candidates.sort_by_key(|c| c.atoms.len()); // stable: keeps generation order
+    candidates.sort_by_key(|c| c.len); // stable: keeps generation order
     let mut ranks: Option<Vec<u64>> = None;
 
     // Gaussian elimination over GF(2) to select r linearly independent cycles.
@@ -266,12 +381,15 @@ fn find_sssr_uncached(mol: &Molecule) -> RingSet {
 
     let mut rest: &mut [CycleCandidate] = &mut candidates;
     'lengths: while !rest.is_empty() {
-        let len = rest[0].atoms.len();
-        let group_len = rest.iter().take_while(|c| c.atoms.len() == len).count();
+        let len = rest[0].len;
+        let group_len = rest.iter().take_while(|c| c.len == len).count();
         let (group, tail) = std::mem::take(&mut rest).split_at_mut(group_len);
         rest = tail;
         if group.len() > 1 {
-            let ranks = ranks.get_or_insert_with(|| canonical_ring_atom_ranks(mol, &cyclic));
+            let ranks = ranks.get_or_insert_with(|| canonical_ring_atom_ranks(mol, cyclic));
+            for c in group.iter_mut() {
+                c.materialize(mol);
+            }
             group.sort_by_cached_key(|c| {
                 (
                     canonical_cycle_order_key(mol, &c.atoms, ranks),
@@ -305,6 +423,7 @@ fn find_sssr_uncached(mol: &Molecule) -> RingSet {
                 }
             };
             if independent {
+                candidate.materialize(mol);
                 selected_atoms.push(std::mem::take(&mut candidate.atoms));
                 if selected_atoms.len() == r {
                     break 'lengths;
@@ -315,7 +434,7 @@ fn find_sssr_uncached(mol: &Molecule) -> RingSet {
 
     // Sort output rings by length for output consistency.
     selected_atoms.sort_by_key(|ring| ring.len());
-    RingSet::from_rings(selected_atoms, v)
+    selected_atoms
 }
 
 /// Number of connected components of the ring-eligible graph (every atom,
@@ -365,7 +484,7 @@ fn ring_eligible_component_count(mol: &Molecule) -> usize {
 ///   same parent tree. Atoms in a different cyclic component are only
 ///   reachable through a shared bridge path, which the simplicity check always
 ///   rejected; here they are simply unreachable.
-fn horton_candidates_fast(mol: &Molecule) -> Vec<CycleCandidate> {
+fn horton_candidates_fast(mol: &Molecule, keep: Option<&[bool]>) -> Vec<CycleCandidate> {
     let n = mol.atom_count();
     let cyclic_bond = ring_bond_flags_shared(mol);
 
@@ -389,6 +508,9 @@ fn horton_candidates_fast(mol: &Molecule) -> Vec<CycleCandidate> {
     // only produce that one cycle, so only its first (lowest-index) root can
     // contribute a first occurrence; the others would be deduplicated anyway.
     let mut skip_root = vec![false; n];
+    // Cyclic-subgraph component of each ring atom.
+    let mut component = vec![u32::MAX; n];
+    let mut component_count = 0u32;
     {
         let mut labelled = vec![false; n];
         let mut stack: Vec<u32> = Vec::new();
@@ -404,6 +526,7 @@ fn horton_candidates_fast(mol: &Molecule) -> Vec<CycleCandidate> {
             while let Some(cur) = stack.pop() {
                 let c = cur as usize;
                 members.push(cur);
+                component[c] = component_count;
                 if adj_start[c + 1] - adj_start[c] != 2 {
                     simple = false;
                 }
@@ -421,14 +544,35 @@ fn horton_candidates_fast(mol: &Molecule) -> Vec<CycleCandidate> {
                     }
                 }
             }
+            component_count += 1;
         }
     }
 
-    let ring_bonds: Vec<(BondIdx, u32, u32)> = mol
-        .bonds()
-        .filter(|(bidx, _)| cyclic_bond[bidx.0 as usize])
-        .map(|(bidx, b)| (bidx, b.atom1.0, b.atom2.0))
-        .collect();
+    // Cyclic bonds grouped by component, each group in bond-index order.
+    // A root's BFS only reaches its own component, so closing edges of other
+    // components are always skipped (both endpoints unseen); iterating the
+    // root's own group visits the remaining edges in the same order.
+    let mut group_start = vec![0u32; component_count as usize + 1];
+    for (bidx, b) in mol.bonds() {
+        if cyclic_bond[bidx.0 as usize] {
+            group_start[component[b.atom1.0 as usize] as usize + 1] += 1;
+        }
+    }
+    for c in 0..component_count as usize {
+        group_start[c + 1] += group_start[c];
+    }
+    let mut ring_bonds: Vec<(BondIdx, u32, u32)> =
+        vec![(BondIdx(0), 0, 0); group_start[component_count as usize] as usize];
+    {
+        let mut fill = group_start.clone();
+        for (bidx, b) in mol.bonds() {
+            if cyclic_bond[bidx.0 as usize] {
+                let c = component[b.atom1.0 as usize] as usize;
+                ring_bonds[fill[c] as usize] = (bidx, b.atom1.0, b.atom2.0);
+                fill[c] += 1;
+            }
+        }
+    }
 
     const UNSEEN: u32 = u32::MAX;
     let mut dist = vec![UNSEEN; n];
@@ -446,7 +590,7 @@ fn horton_candidates_fast(mol: &Molecule) -> Vec<CycleCandidate> {
     let mut path_mask: Vec<u128> = if use_mask { vec![0; n] } else { Vec::new() };
 
     for root in 0..n {
-        if !ring_atom[root] || skip_root[root] {
+        if !ring_atom[root] || skip_root[root] || keep.is_some_and(|k| !k[root]) {
             continue;
         }
         // BFS over the cyclic subgraph.
@@ -480,7 +624,8 @@ fn horton_candidates_fast(mol: &Molecule) -> Vec<CycleCandidate> {
         }
 
         let root_u = root as u32;
-        for &(bidx, x, y) in &ring_bonds {
+        let c = component[root] as usize;
+        for &(bidx, x, y) in &ring_bonds[group_start[c] as usize..group_start[c + 1] as usize] {
             if x == root_u || y == root_u {
                 continue;
             }
@@ -502,7 +647,10 @@ fn horton_candidates_fast(mol: &Molecule) -> Vec<CycleCandidate> {
                 candidates.push(CycleCandidate {
                     mask,
                     bonds: Vec::new(),
-                    atoms: ring_atoms_through(x, y, root_u, &parent, &dist),
+                    atoms: Vec::new(),
+                    len: dist[x as usize] + dist[y as usize] + 1,
+                    x,
+                    closing: bidx,
                 });
                 continue;
             }
@@ -593,34 +741,14 @@ fn horton_candidates_fast(mol: &Molecule) -> Vec<CycleCandidate> {
             candidates.push(CycleCandidate {
                 mask,
                 bonds: bond_set,
+                len: ring_atoms.len() as u32,
                 atoms: ring_atoms,
+                x,
+                closing: bidx,
             });
         }
     }
     candidates
-}
-
-/// Ordered ring atoms `x ... root ... y` of the candidate closed by edge
-/// `y-x`, from the BFS parent tree.
-fn ring_atoms_through(x: u32, y: u32, root: u32, parent: &[u32], dist: &[u32]) -> Vec<AtomIdx> {
-    let len = (dist[x as usize] + dist[y as usize] + 1) as usize;
-    let mut ring_atoms: Vec<AtomIdx> = Vec::with_capacity(len);
-    let mut a = x;
-    loop {
-        ring_atoms.push(AtomIdx(a));
-        if a == root {
-            break;
-        }
-        a = parent[a as usize];
-    }
-    let tail = ring_atoms.len();
-    let mut b = y;
-    while b != root {
-        ring_atoms.push(AtomIdx(b));
-        b = parent[b as usize];
-    }
-    ring_atoms[tail..].reverse();
-    ring_atoms
 }
 
 /// Unoptimized reference for [`canonical_atom_ranks`] (differential oracle).
@@ -830,69 +958,51 @@ fn ring_bond_flags_uncached(mol: &Molecule) -> Vec<bool> {
     if atom_count == 0 || bond_count == 0 {
         return flags;
     }
-
-    // Flat (CSR) ring-eligible adjacency, in the same per-atom order as the
-    // historical `Vec<Vec<_>>` build (bond order, atom1 then atom2).
-    let mut start = vec![0u32; atom_count + 1];
-    let mut eligible_bonds = 0usize;
-    for (_, bond) in mol.bonds() {
-        if is_ring_eligible(bond.order) {
-            start[bond.atom1.0 as usize + 1] += 1;
-            start[bond.atom2.0 as usize + 1] += 1;
-            eligible_bonds += 1;
-        }
-    }
-    for i in 0..atom_count {
-        start[i + 1] += start[i];
-    }
-    let mut fill = start.clone();
-    let mut adjacency: Vec<(u32, u32)> = vec![(0, 0); 2 * eligible_bonds];
-    for (bond_idx, bond) in mol.bonds() {
-        if !is_ring_eligible(bond.order) {
-            continue;
-        }
-        let left = bond.atom1.0 as usize;
-        let right = bond.atom2.0 as usize;
-        adjacency[fill[left] as usize] = (right as u32, bond_idx.0);
-        fill[left] += 1;
-        adjacency[fill[right] as usize] = (left as u32, bond_idx.0);
-        fill[right] += 1;
-    }
+    // Bridges are a property of the graph, so the traversal order is free:
+    // walk the molecule's own adjacency lists, skipping ineligible bonds.
+    let all_eligible = mol.bonds().all(|(_, b)| is_ring_eligible(b.order));
 
     const UNSEEN: u32 = u32::MAX;
     const NO_BOND: u32 = u32::MAX;
-    let mut discovery = vec![UNSEEN; atom_count];
-    let mut low = vec![UNSEEN; atom_count];
+    // discovery[i], low[i] interleaved.
+    let mut dl = vec![(UNSEEN, UNSEEN); atom_count];
     let mut time = 0u32;
-    let mut bridges = vec![false; bond_count];
-    // `(atom, parent edge, next adjacent-edge offset)` frames.
-    let mut stack: Vec<(u32, u32, u32)> = Vec::new();
+    // `(atom, parent edge, next neighbor offset)` frames.
+    let mut stack: Vec<(u32, u32, u32)> = Vec::with_capacity(atom_count.min(64));
+    // Non-bridge eligible bonds become `true`; bridges stay `false`.
+    let mut any_cycle_edge = false;
 
     for root in 0..atom_count {
-        if discovery[root] != UNSEEN {
+        if dl[root].0 != UNSEEN {
             continue;
         }
-        discovery[root] = time;
-        low[root] = time;
+        dl[root] = (time, time);
         time += 1;
-        stack.push((root as u32, NO_BOND, start[root]));
+        stack.push((root as u32, NO_BOND, 0));
 
         while let Some(&mut (atom, parent_bond, ref mut next)) = stack.last_mut() {
             let a = atom as usize;
-            if *next < start[a + 1] {
-                let (neighbor, bond_idx) = adjacency[*next as usize];
+            let nbrs = mol.neighbor_slice(AtomIdx(atom));
+            if (*next as usize) < nbrs.len() {
+                let (neighbor, bond) = nbrs[*next as usize];
                 *next += 1;
-                if bond_idx == parent_bond {
+                if bond.0 == parent_bond
+                    || (!all_eligible && !is_ring_eligible(mol.bond(bond).order))
+                {
                     continue;
                 }
-                let nb = neighbor as usize;
-                if discovery[nb] == UNSEEN {
-                    discovery[nb] = time;
-                    low[nb] = time;
+                let nb = neighbor.0 as usize;
+                if dl[nb].0 == UNSEEN {
+                    dl[nb] = (time, time);
                     time += 1;
-                    stack.push((neighbor, bond_idx, start[nb]));
+                    stack.push((neighbor.0, bond.0, 0));
                 } else {
-                    low[a] = low[a].min(discovery[nb]);
+                    // Back (or already-finished forward) edge: always on a cycle.
+                    if dl[nb].0 < dl[a].1 {
+                        dl[a].1 = dl[nb].0;
+                    }
+                    flags[bond.0 as usize] = true;
+                    any_cycle_edge = true;
                 }
                 continue;
             }
@@ -904,18 +1014,19 @@ fn ring_bond_flags_uncached(mol: &Molecule) -> Vec<bool> {
                     .last()
                     .expect("non-root DFS frame must retain its parent")
                     .0 as usize;
-                low[parent] = low[parent].min(low[a]);
-                if low[a] > discovery[parent] {
-                    bridges[parent_bond as usize] = true;
+                let low_a = dl[a].1;
+                if low_a < dl[parent].1 {
+                    dl[parent].1 = low_a;
+                }
+                // Tree edge: a bridge exactly when the child's subtree has
+                // no back edge reaching the parent or above.
+                if low_a <= dl[parent].0 {
+                    flags[parent_bond as usize] = true;
                 }
             }
         }
     }
-    for (bond_idx, bond) in mol.bonds() {
-        if is_ring_eligible(bond.order) && !bridges[bond_idx.0 as usize] {
-            flags[bond_idx.0 as usize] = true;
-        }
-    }
+    let _ = any_cycle_edge;
     flags
 }
 
@@ -2403,6 +2514,87 @@ mod tests {
             );
         }
     }
+    /// Cyclic-subgraph component label of every ring atom (`u32::MAX` elsewhere).
+    fn ring_components(mol: &chematic_core::Molecule) -> Vec<u32> {
+        let cyclic = ring_bond_flags(mol);
+        let n = mol.atom_count();
+        let mut label = vec![u32::MAX; n];
+        let mut next = 0;
+        for start in 0..n {
+            let touches = mol
+                .neighbors(AtomIdx(start as u32))
+                .any(|(_, b)| cyclic[b.0 as usize]);
+            if !touches || label[start] != u32::MAX {
+                continue;
+            }
+            let mut stack = vec![start];
+            label[start] = next;
+            while let Some(a) = stack.pop() {
+                for (nb, b) in mol.neighbors(AtomIdx(a as u32)) {
+                    if cyclic[b.0 as usize] && label[nb.0 as usize] == u32::MAX {
+                        label[nb.0 as usize] = next;
+                        stack.push(nb.0 as usize);
+                    }
+                }
+            }
+            next += 1;
+        }
+        label
+    }
+
+    #[test]
+    fn component_restricted_sssr_is_the_filtered_full_sssr() {
+        let samples = RING_SAMPLES.iter().copied().chain([
+            "O=C1c2ccccc2C(=O)N1CCCCN1CCN(c2cccc3ccccc23)CC1",
+            "C1CC1C1CCCC1C1CC2CCC1C2c1ccc2ccccc2c1",
+            "c1ccc2c(c1)C1(CCCC1)c1ccccc1-2",
+            "C1CCC2(CC1)CC1(CCCC1)C2",
+        ]);
+        for smi in samples {
+            let mol = chematic_smiles::parse(smi).unwrap();
+            let label = ring_components(&mol);
+            let count = label.iter().filter(|&&l| l != u32::MAX).max().map_or(0, |m| m + 1);
+            // Every subset of components (small molecules only).
+            for subset in 0u32..(1 << count.min(6)) {
+                let keep: Vec<bool> = label
+                    .iter()
+                    .map(|&l| l != u32::MAX && subset & (1 << l) != 0)
+                    .collect();
+                let expected: Vec<Vec<AtomIdx>> = find_sssr(&mol)
+                    .rings()
+                    .iter()
+                    .filter(|r| keep[r[0].0 as usize])
+                    .cloned()
+                    .collect();
+                assert_eq!(find_sssr_in_components(&mol, &keep), expected, "{smi} {subset:b}");
+            }
+        }
+    }
+
+    #[test]
+    fn bridge_flags_match_edge_deletion() {
+        // A bond is cyclic exactly when deleting it keeps its endpoints connected.
+        for smi in RING_SAMPLES.iter().copied().chain(["C1CC1CCC1CC2CCC12", "C1CC=1"]) {
+            let mol = chematic_smiles::parse(smi).unwrap();
+            let flags = ring_bond_flags(&mol);
+            for (bidx, bond) in mol.bonds() {
+                let mut seen = vec![false; mol.atom_count()];
+                let mut stack = vec![bond.atom1];
+                seen[bond.atom1.0 as usize] = true;
+                while let Some(a) = stack.pop() {
+                    for (nb, b) in mol.neighbors(a) {
+                        if b != bidx && is_ring_eligible(mol.bond(b).order) && !seen[nb.0 as usize] {
+                            seen[nb.0 as usize] = true;
+                            stack.push(nb);
+                        }
+                    }
+                }
+                let cyclic = is_ring_eligible(bond.order) && seen[bond.atom2.0 as usize];
+                assert_eq!(flags[bidx.0 as usize], cyclic, "{smi} bond {bidx:?}");
+            }
+        }
+    }
+
     use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder, implicit_hcount};
 
     // Build a cyclohexane molecule (6 carbons, 6 single bonds).

@@ -43,14 +43,15 @@ pub type KekuleResult = HashMap<BondIdx, BondOrder>;
 /// If the molecule has no aromatic bonds the result is empty (success, no-op).
 pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
     // Collect aromatic bonds and the atoms they touch.
+    let n = mol.atom_count();
     let mut aromatic_bonds: Vec<BondIdx> = Vec::new();
-    let mut aromatic_atoms: HashSet<AtomIdx> = HashSet::new();
+    let mut aromatic_atom = vec![false; n];
 
     for (bidx, bond) in mol.bonds() {
         if bond.order == BondOrder::Aromatic {
             aromatic_bonds.push(bidx);
-            aromatic_atoms.insert(bond.atom1);
-            aromatic_atoms.insert(bond.atom2);
+            aromatic_atom[bond.atom1.0 as usize] = true;
+            aromatic_atom[bond.atom2.0 as usize] = true;
         }
     }
 
@@ -69,11 +70,16 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
     // Practical rule used here: an atom can be *unmatched* iff it has an explicit
     // H count > 0 OR it is O or S (lone-pair donors).
     // All others must appear in the matching.
-    let must_match: HashSet<AtomIdx> = aromatic_atoms
-        .iter()
-        .copied()
-        .filter(|&idx| atom_must_be_matched(mol, idx))
-        .collect();
+    //
+    // `sorted_atoms` lists the must-match atoms in ascending index order.
+    let mut must_match = vec![false; n];
+    let mut sorted_atoms: Vec<AtomIdx> = Vec::new();
+    for i in 0..n {
+        if aromatic_atom[i] && atom_must_be_matched(mol, AtomIdx(i as u32)) {
+            must_match[i] = true;
+            sorted_atoms.push(AtomIdx(i as u32));
+        }
+    }
 
     // Build adjacency list restricted to aromatic bonds BETWEEN must-match atoms.
     //
@@ -85,26 +91,17 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
     // Only bonds where BOTH endpoints are in must_match are valid double-bond
     // candidates.  Lone-pair donors remain in aromatic_atoms (so their aromatic bonds
     // become Single in the result) but are excluded from the matching graph.
-    let mut adj: HashMap<AtomIdx, Vec<(AtomIdx, BondIdx)>> = HashMap::new();
-    for &bidx in &aromatic_bonds {
-        let bond = mol.bond(bidx);
-        if must_match.contains(&bond.atom1) && must_match.contains(&bond.atom2) {
-            adj.entry(bond.atom1).or_default().push((bond.atom2, bidx));
-            adj.entry(bond.atom2).or_default().push((bond.atom1, bidx));
-        }
-    }
+    let adj = matching_adjacency(mol, &aromatic_bonds, &must_match);
 
-    // Run maximum matching via augmenting paths.
-    let mut matching: HashMap<AtomIdx, AtomIdx> = HashMap::new(); // atom -> matched_partner
+    // Run maximum matching via augmenting paths (`mate[i]` = partner or NO_MATE).
+    let mut matcher = Matcher::new(n);
 
     // Process must-match atoms in a deterministic order (by index) for reproducibility.
     // Non-must-match atoms (lone-pair donors) are skipped — they never initiate
     // augmenting paths and are never placed in the matching.
-    let mut sorted_atoms: Vec<AtomIdx> = must_match.iter().copied().collect();
-    sorted_atoms.sort();
 
     // Pass 1: ascending order (primary).
-    run_matching_pass(&sorted_atoms, &adj, &mut matching);
+    matcher.run_pass(sorted_atoms.iter().copied(), &adj);
 
     // Pass 2 (fallback): descending order — avoids order-dependent dead-ends.
     //
@@ -112,11 +109,9 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
     // matched edge blocks an augmenting path that a different starting order would
     // find.  Reversing the order is O(V·E) overhead but resolves many such cases
     // without requiring the full Edmonds blossom algorithm.
-    if must_match.iter().any(|&idx| !matching.contains_key(&idx)) {
-        matching.clear();
-        let mut rev = sorted_atoms.clone();
-        rev.reverse();
-        run_matching_pass(&rev, &adj, &mut matching);
+    if !matcher.all_matched(&sorted_atoms) {
+        matcher.clear();
+        matcher.run_pass(sorted_atoms.iter().rev().copied(), &adj);
     }
 
     // --- Pass 3: bridgehead-N exclusion fallback ----------------------------
@@ -132,51 +127,31 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
     // remove them from the matching problem, rebuild adjacency on the remaining
     // (all-carbon) atoms, and retry.  If those atoms can all be matched, the
     // bridgehead-N atoms receive only single bonds and donate their lone pair.
-    if must_match.iter().any(|&idx| !matching.contains_key(&idx)) {
-        let bridgehead_n: HashSet<AtomIdx> = must_match
-            .iter()
-            .copied()
-            .filter(|&idx| {
-                mol.atom(idx).element.atomic_number() == 7
-                    && adj.get(&idx).map_or(0, |v| v.len()) >= 3
-            })
-            .collect();
-
-        if !bridgehead_n.is_empty() {
-            let must_match_nb: HashSet<AtomIdx> =
-                must_match.difference(&bridgehead_n).copied().collect();
-
-            let mut adj_nb: HashMap<AtomIdx, Vec<(AtomIdx, BondIdx)>> = HashMap::new();
-            for &bidx in &aromatic_bonds {
-                let bond = mol.bond(bidx);
-                if must_match_nb.contains(&bond.atom1) && must_match_nb.contains(&bond.atom2) {
-                    adj_nb
-                        .entry(bond.atom1)
-                        .or_default()
-                        .push((bond.atom2, bidx));
-                    adj_nb
-                        .entry(bond.atom2)
-                        .or_default()
-                        .push((bond.atom1, bidx));
+    if !matcher.all_matched(&sorted_atoms) {
+        let is_bridgehead_n = |idx: AtomIdx| {
+            mol.atom(idx).element.atomic_number() == 7 && adj[idx.0 as usize].len() >= 3
+        };
+        if sorted_atoms.iter().any(|&idx| is_bridgehead_n(idx)) {
+            let mut must_match_nb = must_match.clone();
+            let mut sorted_nb: Vec<AtomIdx> = Vec::with_capacity(sorted_atoms.len());
+            for &idx in &sorted_atoms {
+                if is_bridgehead_n(idx) {
+                    must_match_nb[idx.0 as usize] = false;
+                } else {
+                    sorted_nb.push(idx);
                 }
             }
+            let adj_nb = matching_adjacency(mol, &aromatic_bonds, &must_match_nb);
 
-            let mut sorted_nb: Vec<AtomIdx> = must_match_nb.iter().copied().collect();
-            sorted_nb.sort();
-
-            matching.clear();
-            run_matching_pass(&sorted_nb, &adj_nb, &mut matching);
-            if must_match_nb
-                .iter()
-                .any(|&idx| !matching.contains_key(&idx))
-            {
-                matching.clear();
-                let rev_nb: Vec<AtomIdx> = sorted_nb.iter().copied().rev().collect();
-                run_matching_pass(&rev_nb, &adj_nb, &mut matching);
+            matcher.clear();
+            matcher.run_pass(sorted_nb.iter().copied(), &adj_nb);
+            if !matcher.all_matched(&sorted_nb) {
+                matcher.clear();
+                matcher.run_pass(sorted_nb.iter().rev().copied(), &adj_nb);
             }
 
-            if must_match_nb.iter().all(|&idx| matching.contains_key(&idx)) {
-                return Ok(build_kekule_result(&aromatic_bonds, mol, &matching));
+            if matcher.all_matched(&sorted_nb) {
+                return Ok(kekule_result_from_mates(&aromatic_bonds, mol, &matcher.mate));
             }
         }
     }
@@ -189,49 +164,93 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
     // allowing the BFS to find augmenting paths through non-bipartite subgraphs.
     // This fixes molecules where the must-match C subgraph has odd cycles
     // (e.g. corannulene: 5 five-membered rings, 20 C atoms).
-    if must_match.iter().any(|&idx| !matching.contains_key(&idx)) {
-        let n = sorted_atoms.len();
-        let idx_to_int: HashMap<AtomIdx, usize> = sorted_atoms
-            .iter()
-            .enumerate()
-            .map(|(i, &a)| (a, i))
-            .collect();
+    if !matcher.all_matched(&sorted_atoms) {
+        let count = sorted_atoms.len();
+        let mut idx_to_int = vec![usize::MAX; n];
+        for (i, &a) in sorted_atoms.iter().enumerate() {
+            idx_to_int[a.0 as usize] = i;
+        }
         let int_adj: Vec<Vec<usize>> = sorted_atoms
             .iter()
             .map(|&a| {
-                adj.get(&a)
-                    .map(|nbrs| {
-                        nbrs.iter()
-                            .filter_map(|(nb, _)| idx_to_int.get(nb).copied())
-                            .collect()
+                adj[a.0 as usize]
+                    .iter()
+                    .filter_map(|(nb, _)| {
+                        let i = idx_to_int[nb.0 as usize];
+                        (i != usize::MAX).then_some(i)
                     })
-                    .unwrap_or_default()
+                    .collect()
             })
             .collect();
 
-        matching.clear();
-        let int_mate = blossom_max_matching(n, &int_adj);
+        matcher.clear();
+        let int_mate = blossom_max_matching(count, &int_adj);
         for (i, &j) in int_mate.iter().enumerate() {
             if j != usize::MAX {
-                matching.insert(sorted_atoms[i], sorted_atoms[j]);
+                matcher.mate[sorted_atoms[i].0 as usize] = sorted_atoms[j].0;
             }
         }
     }
 
-    // Verify that all must_match atoms are matched.
-    for &idx in &must_match {
-        if !matching.contains_key(&idx) {
-            return Err(KekuleError {
-                detail: format!(
-                    "atom {} ({}) cannot be assigned a double bond",
-                    idx.0,
-                    mol.atom(idx).element.symbol()
-                ),
-            });
-        }
+    // Verify that all must_match atoms are matched (report the lowest index).
+    if let Some(&idx) = sorted_atoms
+        .iter()
+        .find(|&&idx| matcher.mate[idx.0 as usize] == NO_MATE)
+    {
+        return Err(KekuleError {
+            detail: format!(
+                "atom {} ({}) cannot be assigned a double bond",
+                idx.0,
+                mol.atom(idx).element.symbol()
+            ),
+        });
     }
 
-    Ok(build_kekule_result(&aromatic_bonds, mol, &matching))
+    Ok(kekule_result_from_mates(&aromatic_bonds, mol, &matcher.mate))
+}
+
+/// Per-atom adjacency over aromatic bonds joining two `eligible` atoms, each
+/// list in aromatic-bond order (atom1's entry, then atom2's).
+fn matching_adjacency(
+    mol: &Molecule,
+    aromatic_bonds: &[BondIdx],
+    eligible: &[bool],
+) -> Vec<Vec<(AtomIdx, BondIdx)>> {
+    let mut adj: Vec<Vec<(AtomIdx, BondIdx)>> = vec![Vec::new(); mol.atom_count()];
+    for &bidx in aromatic_bonds {
+        let bond = mol.bond(bidx);
+        if eligible[bond.atom1.0 as usize] && eligible[bond.atom2.0 as usize] {
+            adj[bond.atom1.0 as usize].push((bond.atom2, bidx));
+            adj[bond.atom2.0 as usize].push((bond.atom1, bidx));
+        }
+    }
+    adj
+}
+
+/// [`build_kekule_result`] from a per-atom mate array.
+fn kekule_result_from_mates(aromatic_bonds: &[BondIdx], mol: &Molecule, mate: &[u32]) -> KekuleResult {
+    let mut double = vec![false; mol.bond_count()];
+    for (atom, &partner) in mate.iter().enumerate() {
+        if partner == NO_MATE || atom as u32 >= partner {
+            continue;
+        }
+        if let Some((bidx, _)) = mol.bond_between(AtomIdx(atom as u32), AtomIdx(partner))
+            && mol.bond(bidx).order == BondOrder::Aromatic
+        {
+            double[bidx.0 as usize] = true;
+        }
+    }
+    aromatic_bonds
+        .iter()
+        .map(|&bidx| {
+            let order = if double[bidx.0 as usize] {
+                BondOrder::Double
+            } else {
+                BondOrder::Single
+            };
+            (bidx, order)
+        })
+        .collect()
 }
 
 /// Build the KekuleResult map from the current matching.
@@ -308,84 +327,109 @@ pub fn apply_kekule(mol: &Molecule, kekule: &KekuleResult) -> Molecule {
     builder.build()
 }
 
-/// Attempt to find an augmenting path starting from `start` and update `matching`.
-///
-/// Uses iterative BFS with parent-pointer path reconstruction to avoid stack
-/// overflow on large aromatic systems (wasm32 default stack is ~1 MB).
-/// `visited` must already contain `start` (prevents root re-entry in odd cycles).
-///
-/// Returns true if an augmenting path was found and the matching was updated.
-fn augment(
-    start: AtomIdx,
-    adj: &HashMap<AtomIdx, Vec<(AtomIdx, BondIdx)>>,
-    matching: &mut HashMap<AtomIdx, AtomIdx>,
-    visited: &mut HashSet<AtomIdx>,
-) -> bool {
-    // parent[u] = v means "u was reached from v in the BFS tree"
-    let mut parent: HashMap<AtomIdx, AtomIdx> = HashMap::new();
-    let mut queue: std::collections::VecDeque<AtomIdx> = std::collections::VecDeque::new();
-    queue.push_back(start);
+/// No partner in [`Matcher::mate`].
+const NO_MATE: u32 = u32::MAX;
 
-    'bfs: while let Some(v) = queue.pop_front() {
-        let Some(neighbors) = adj.get(&v) else {
-            continue;
-        };
-        for &(u, _) in neighbors {
-            if !visited.insert(u) {
+/// Greedy augmenting-path matcher over per-atom adjacency lists.
+struct Matcher {
+    /// `mate[a]` = matched partner of atom `a`, or [`NO_MATE`].
+    mate: Vec<u32>,
+    /// BFS scratch: `seen[a] == epoch` marks atoms visited in the current search.
+    seen: Vec<u32>,
+    epoch: u32,
+    parent: Vec<u32>,
+    queue: Vec<u32>,
+}
+
+impl Matcher {
+    fn new(n: usize) -> Self {
+        Self {
+            mate: vec![NO_MATE; n],
+            seen: vec![0; n],
+            epoch: 0,
+            parent: vec![NO_MATE; n],
+            queue: Vec::new(),
+        }
+    }
+
+    fn clear(&mut self) {
+        self.mate.iter_mut().for_each(|m| *m = NO_MATE);
+    }
+
+    fn all_matched(&self, atoms: &[AtomIdx]) -> bool {
+        atoms.iter().all(|a| self.mate[a.0 as usize] != NO_MATE)
+    }
+
+    /// Run a single augmenting-path pass: for each unmatched atom (in the
+    /// given order), try to find an augmenting path from it.
+    fn run_pass(
+        &mut self,
+        atoms: impl Iterator<Item = AtomIdx>,
+        adj: &[Vec<(AtomIdx, BondIdx)>],
+    ) {
+        for start in atoms {
+            if self.mate[start.0 as usize] != NO_MATE {
                 continue;
             }
-            parent.insert(u, v);
+            self.augment(start.0, adj);
+        }
+    }
 
-            match matching.get(&u).copied() {
-                None => {
+    /// Attempt to find an augmenting path starting from `start` and update
+    /// the matching. Iterative BFS with parent-pointer path reconstruction
+    /// (no recursion: wasm32's default stack is ~1 MB). Returns whether
+    /// `start` is matched afterwards.
+    fn augment(&mut self, start: u32, adj: &[Vec<(AtomIdx, BondIdx)>]) -> bool {
+        self.epoch = self.epoch.wrapping_add(1);
+        if self.epoch == 0 {
+            self.seen.iter_mut().for_each(|s| *s = 0);
+            self.epoch = 1;
+        }
+        let epoch = self.epoch;
+        self.seen[start as usize] = epoch;
+        self.queue.clear();
+        self.queue.push(start);
+        let mut head = 0;
+
+        'bfs: while head < self.queue.len() {
+            let v = self.queue[head];
+            head += 1;
+            for &(u, _) in &adj[v as usize] {
+                let u = u.0;
+                if self.seen[u as usize] == epoch {
+                    continue;
+                }
+                self.seen[u as usize] = epoch;
+                self.parent[u as usize] = v;
+
+                let partner = self.mate[u as usize];
+                if partner == NO_MATE {
                     // Found a free vertex — trace back through parent pointers
                     // and flip every edge along the augmenting path.
                     let mut cur = u;
                     loop {
-                        let prev = parent[&cur];
-                        let prev_old_match = matching.get(&prev).copied();
-                        matching.insert(prev, cur);
-                        matching.insert(cur, prev);
-                        match prev_old_match {
-                            None | Some(_) if prev == start => break,
-                            Some(m) => cur = m,
-                            None => break,
+                        let prev = self.parent[cur as usize];
+                        let prev_old_match = self.mate[prev as usize];
+                        self.mate[prev as usize] = cur;
+                        self.mate[cur as usize] = prev;
+                        if prev == start || prev_old_match == NO_MATE {
+                            break;
                         }
+                        cur = prev_old_match;
                     }
                     break 'bfs;
                 }
-                Some(partner) => {
-                    // u is matched to partner — explore further from partner.
-                    if visited.insert(partner) {
-                        parent.insert(partner, u);
-                        queue.push_back(partner);
-                    }
+                // u is matched to partner — explore further from partner.
+                if self.seen[partner as usize] != epoch {
+                    self.seen[partner as usize] = epoch;
+                    self.parent[partner as usize] = u;
+                    self.queue.push(partner);
                 }
             }
         }
-    }
 
-    // Augmentation succeeded iff start is now matched.
-    matching.contains_key(&start)
-}
-
-/// Run a single augmenting-path pass over `atoms` and update `matching`.
-///
-/// For each unmatched atom in `atoms`, attempts to find an augmenting path using
-/// the BFS-based `augment()` function. Extracted so that `kekulize()` can try
-/// multiple orderings (ascending → descending) without code duplication.
-fn run_matching_pass(
-    atoms: &[AtomIdx],
-    adj: &HashMap<AtomIdx, Vec<(AtomIdx, BondIdx)>>,
-    matching: &mut HashMap<AtomIdx, AtomIdx>,
-) {
-    for &start in atoms {
-        if matching.contains_key(&start) {
-            continue;
-        }
-        let mut visited: HashSet<AtomIdx> = HashSet::new();
-        visited.insert(start);
-        augment(start, adj, matching, &mut visited);
+        // Augmentation succeeded iff start is now matched.
+        self.mate[start as usize] != NO_MATE
     }
 }
 

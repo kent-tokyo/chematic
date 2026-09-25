@@ -95,6 +95,30 @@ impl Molecule {
         self.derived.get_or_compute(slot, compute)
     }
 
+    /// Seed `slot` with a value computed on another molecule. Only valid when
+    /// that value is exactly what the slot's own computation would produce on
+    /// `self` (for example ring-bond flags of an index-aligned copy with the
+    /// same graph and ring-eligible bonds).
+    #[doc(hidden)]
+    pub fn seed_derived<T>(&self, slot: crate::derived_cache::DerivedSlot, value: std::sync::Arc<T>)
+    where
+        T: std::any::Any + Send + Sync + std::panic::RefUnwindSafe + std::panic::UnwindSafe,
+    {
+        self.derived.seed(slot, value);
+    }
+
+    /// The value memoized for `slot`, if it has already been computed.
+    #[doc(hidden)]
+    pub fn derived_if_computed<T>(
+        &self,
+        slot: crate::derived_cache::DerivedSlot,
+    ) -> Option<std::sync::Arc<T>>
+    where
+        T: std::any::Any + Send + Sync + std::panic::RefUnwindSafe + std::panic::UnwindSafe,
+    {
+        self.derived.peek(slot)
+    }
+
     #[inline]
     fn invalidate_derived(&mut self) {
         self.derived = crate::derived_cache::DerivedCache::default();
@@ -177,6 +201,16 @@ impl Molecule {
             .iter()
             .enumerate()
             .map(|(i, b)| (BondIdx(i as u32), b))
+    }
+
+    /// The `(neighbor, bond)` adjacency list of atom `idx` as a slice, in the
+    /// same order as [`Self::neighbors`].
+    ///
+    /// # Panics
+    /// Panics if `idx` is out of range.
+    #[inline]
+    pub fn neighbor_slice(&self, idx: AtomIdx) -> &[(AtomIdx, BondIdx)] {
+        &self.adjacency[idx.0 as usize]
     }
 
     /// Iterate over neighbors of `idx` as `(neighbor_atom_idx, bond_idx)`.

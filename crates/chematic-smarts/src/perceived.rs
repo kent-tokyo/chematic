@@ -27,6 +27,11 @@ use crate::query::QueryMolecule;
 /// Run `f` on the molecule SMARTS matching should see: the RDKit-parity
 /// aromatic view of `mol`, or `mol` itself if perception fails.
 pub fn with_perceived_target<R>(mol: &Molecule, f: impl FnOnce(&Molecule) -> R) -> R {
+    // When the view would be an exact copy of `mol`, match `mol` itself and
+    // skip building (and copying) the view.
+    if chematic_perception::rdkit_parity_view_is_identity(mol) {
+        return f(mol);
+    }
     let view = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol);
     match view.as_ref() {
         Ok(perceived) => f(perceived),
