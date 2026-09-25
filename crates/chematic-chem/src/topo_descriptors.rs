@@ -223,15 +223,7 @@ fn chi_n_with(
             continue;
         }
         visited[start] = true;
-        total += chi_dfs(
-            mol,
-            start,
-            n,
-            0,
-            d_start,
-            &mut visited,
-            &delta_of,
-        );
+        total += chi_dfs(mol, start, n, 0, d_start, &mut visited, &delta_of);
         visited[start] = false;
     }
     total / 2.0

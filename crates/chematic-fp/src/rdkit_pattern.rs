@@ -233,7 +233,8 @@ pub fn rdkit_pattern_fp(mol: &Molecule) -> BitVec2048 {
                 bit_id = hash_combine(bit_id, an);
             }
             for qb in &query.bonds {
-                let code = matched_bond_code_slice(mol, aromaticity.as_ref(), m, qb.atom1, qb.atom2);
+                let code =
+                    matched_bond_code_slice(mol, aromaticity.as_ref(), m, qb.atom1, qb.atom2);
                 bit_id = hash_combine(bit_id, code);
             }
             bit_ids.push(bit_id);

@@ -1136,10 +1136,12 @@ fn descriptor_aromaticity(mol: &Molecule) -> DescriptorView<'_> {
     }
     // Memoized on `mol`: TPSA, Crippen LogP/MR, HBA and friends all start from
     // the same perceived copy, and that copy carries its own SSSR cache.
-    DescriptorView::Perceived(mol.derived(chematic_core::DerivedSlot::DescriptorAromatic, || {
-        chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
-            .unwrap_or_else(|_| chematic_perception::apply_aromaticity(mol))
-    }))
+    DescriptorView::Perceived(
+        mol.derived(chematic_core::DerivedSlot::DescriptorAromatic, || {
+            chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
+                .unwrap_or_else(|_| chematic_perception::apply_aromaticity(mol))
+        }),
+    )
 }
 
 /// The descriptor aromatic view: `mol` itself or a perceived copy.

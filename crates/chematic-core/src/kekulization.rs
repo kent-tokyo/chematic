@@ -151,7 +151,11 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
             }
 
             if matcher.all_matched(&sorted_nb) {
-                return Ok(kekule_result_from_mates(&aromatic_bonds, mol, &matcher.mate));
+                return Ok(kekule_result_from_mates(
+                    &aromatic_bonds,
+                    mol,
+                    &matcher.mate,
+                ));
             }
         }
     }
@@ -206,7 +210,11 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
         });
     }
 
-    Ok(kekule_result_from_mates(&aromatic_bonds, mol, &matcher.mate))
+    Ok(kekule_result_from_mates(
+        &aromatic_bonds,
+        mol,
+        &matcher.mate,
+    ))
 }
 
 /// Per-atom adjacency over aromatic bonds joining two `eligible` atoms, each
@@ -228,7 +236,11 @@ fn matching_adjacency(
 }
 
 /// [`build_kekule_result`] from a per-atom mate array.
-fn kekule_result_from_mates(aromatic_bonds: &[BondIdx], mol: &Molecule, mate: &[u32]) -> KekuleResult {
+fn kekule_result_from_mates(
+    aromatic_bonds: &[BondIdx],
+    mol: &Molecule,
+    mate: &[u32],
+) -> KekuleResult {
     let mut double = vec![false; mol.bond_count()];
     for (atom, &partner) in mate.iter().enumerate() {
         if partner == NO_MATE || atom as u32 >= partner {
@@ -362,11 +374,7 @@ impl Matcher {
 
     /// Run a single augmenting-path pass: for each unmatched atom (in the
     /// given order), try to find an augmenting path from it.
-    fn run_pass(
-        &mut self,
-        atoms: impl Iterator<Item = AtomIdx>,
-        adj: &[Vec<(AtomIdx, BondIdx)>],
-    ) {
+    fn run_pass(&mut self, atoms: impl Iterator<Item = AtomIdx>, adj: &[Vec<(AtomIdx, BondIdx)>]) {
         for start in atoms {
             if self.mate[start.0 as usize] != NO_MATE {
                 continue;
