@@ -177,8 +177,16 @@ pub(crate) fn square_planar_token(p: chematic_core::SquarePlanarPermutation) -> 
 /// Disconnected fragments are joined with `.`.
 /// Aromatic atoms are written in lowercase.
 pub fn write(mol: &Molecule) -> String {
+    write_with_order(mol).0
+}
+
+/// Write SMILES and the atom visit order used to emit it.
+///
+/// `order[k]` is the mol index of the `k`-th atom written into the string.
+/// After `parse(write(mol))`, the new mol's indexes match this visit order.
+pub fn write_with_order(mol: &Molecule) -> (String, Vec<AtomIdx>) {
     if mol.atom_count() == 0 {
-        return String::new();
+        return (String::new(), Vec::new());
     }
     SmilesWriter::new(mol).write_all()
 }
@@ -196,6 +204,8 @@ struct SmilesWriter<'a> {
     written: Vec<bool>,
     next_ring: u16,
     out: String,
+    /// Mol indexes in the order atoms were emitted into `out`.
+    visit_order: Vec<AtomIdx>,
 }
 
 impl<'a> SmilesWriter<'a> {
@@ -208,10 +218,11 @@ impl<'a> SmilesWriter<'a> {
             written: vec![false; n],
             next_ring: 1,
             out: String::new(),
+            visit_order: Vec::with_capacity(n),
         }
     }
 
-    fn write_all(mut self) -> String {
+    fn write_all(mut self) -> (String, Vec<AtomIdx>) {
         // Phase 1: find all back-edges and assign ring-closure numbers.
         self.find_ring_closures();
 
@@ -227,7 +238,7 @@ impl<'a> SmilesWriter<'a> {
             }
         }
 
-        self.out
+        (self.out, self.visit_order)
     }
 
     fn find_ring_closures(&mut self) {
@@ -317,6 +328,7 @@ impl<'a> SmilesWriter<'a> {
         incoming_bond: Option<&'static str>,
     ) {
         self.written[atom.0 as usize] = true;
+        self.visit_order.push(atom);
 
         // Write the incoming bond (if explicit / non-default).
         if let Some(token) = incoming_bond {
@@ -479,7 +491,7 @@ impl<'a> SmilesWriter<'a> {
 mod tests {
     use super::*;
     use crate::parser::parse;
-    use chematic_core::{Atom, Element, MoleculeBuilder};
+    use chematic_core::{Atom, AtomIdx, Element, MoleculeBuilder};
 
     /// Parse → write → re-parse → verify atom/bond counts are preserved.
     fn roundtrip(smiles: &str) {
@@ -1016,5 +1028,35 @@ mod tests {
         let mol = b.build();
         let out = write(&mol);
         assert!(!out.contains('/') && !out.contains('\\'), "got '{out}'");
+    }
+
+    #[test]
+    fn write_with_order_matches_write_and_can_differ_from_index_order() {
+        let mol = crate::parse("CCO").unwrap();
+        let (smi, order) = write_with_order(&mol);
+        assert_eq!(smi, write(&mol));
+        assert_eq!(order.len(), mol.atom_count());
+
+        let mut b = MoleculeBuilder::new();
+        let o = b.add_atom(Atom::new(Element::O));
+        let me = b.add_atom(Atom::new(Element::C));
+        let c = b.add_atom(Atom::new(Element::C));
+        b.add_bond(c, o, BondOrder::Single).unwrap();
+        b.add_bond(c, me, BondOrder::Single).unwrap();
+        let scrambled = b.build();
+        let (_s, ord) = write_with_order(&scrambled);
+        let idxs: Vec<_> = ord.iter().map(|a| a.0).collect();
+        assert_ne!(idxs, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn write_does_not_emit_atom_tag() {
+        let mut mol = crate::parse("C").unwrap();
+        mol.set_tag(AtomIdx(0), Some(42));
+        assert_eq!(write(&mol), "C");
+        assert_eq!(
+            mol.atom(AtomIdx(0)).tag.map(core::num::NonZeroU16::get),
+            Some(42)
+        );
     }
 }

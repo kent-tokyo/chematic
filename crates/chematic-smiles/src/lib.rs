@@ -45,8 +45,8 @@ pub use batch::{
 };
 pub use canonical::are_atoms_equivalent;
 pub use canonical::{
-    canonical_atom_order, canonical_smiles, canonical_smiles_stable_key, equivalent_atom_classes,
-    morgan_ranks,
+    canonical_atom_order, canonical_smiles, canonical_smiles_stable_key,
+    canonical_smiles_with_order, equivalent_atom_classes, morgan_ranks,
 };
 pub use canonical_partition::topological_equivalence_classes;
 pub use canonical_search::{
@@ -60,4 +60,4 @@ pub use random_smiles::{random_smiles, random_smiles_vect};
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,
 };
-pub use writer::write;
+pub use writer::{write, write_with_order};

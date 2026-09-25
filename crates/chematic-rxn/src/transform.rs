@@ -3362,4 +3362,31 @@ mod tests {
             })
         ));
     }
+
+    #[test]
+    fn atom_tag_survives_apply_atom_map_does_not() {
+        let mut mol = parse("CCO").unwrap();
+        for i in 0..mol.atom_count() {
+            mol.set_tag(AtomIdx(i as u32), Some(200 + i as u16));
+        }
+        let matches = find_reaction_matches("[C:1]>>[C:1]O", &[&mol]).expect("match");
+        assert!(!matches.is_empty());
+        let products =
+            apply_reaction_match("[C:1]>>[C:1]O", &[&mol], &matches[0], true).expect("apply");
+        let product = &products.expect("valence")[0];
+        let tags: Vec<_> = product
+            .atoms()
+            .map(|(_, a)| a.tag.map(core::num::NonZeroU16::get))
+            .collect();
+        assert!(
+            tags.contains(&Some(200)) || tags.contains(&Some(201)) || tags.contains(&Some(202))
+        );
+        assert!(product.atoms().all(|(_, a)| a.atom_map.is_none()));
+        // Born oxygen has no tag.
+        assert!(
+            product
+                .atoms()
+                .any(|(_, a)| a.tag.is_none() && a.element.atomic_number() == 8)
+        );
+    }
 }
