@@ -315,7 +315,8 @@ try {
   await page.locator("#loading-overlay").waitFor({ state: "hidden" });
   await page.locator("#explorer-btn-sample").click();
   await page.locator("#explorer-status").filter({ hasText: /loaded/i }).waitFor({ state: "visible" });
-  assert.match(await page.locator("#explorer-result-count").innerText(), /^\d+ of \d+ shown$/);
+  const explorerResultCountPattern = /^(?:\d+ of \d+ shown|\d+ rendered of \d+ matching \(\d+ loaded\))$/;
+  assert.match(await page.locator("#explorer-result-count").innerText(), explorerResultCountPattern);
   await page.locator("#explorer-paste-textarea").fill("CCO\nC1CC\nCCN");
   await page.locator("#explorer-btn-parse-paste").click();
   await page.locator("#explorer-status").filter({ hasText: /failed to parse/i }).waitFor({ state: "visible" });
@@ -329,7 +330,9 @@ try {
   await page.locator("#explorer-cancel").waitFor({ state: "visible" });
   await page.locator("#explorer-cancel").click();
   await page.locator("#explorer-status").filter({ hasText: /cancelled; complete=false/i }).waitFor({ state: "visible" });
-  assert.match(await page.locator("#explorer-result-count").innerText(), /^\d+ of \d+ shown$/);
+  // Cancellation is asynchronous: Chromium can finish enough rows to hit the
+  // explorer's 250-row render cap before the cancellation boundary is observed.
+  assert.match(await page.locator("#explorer-result-count").innerText(), explorerResultCountPattern);
   await page.locator("#explorer-btn-sample").click();
   // The cancelled batch's final status also contains "loaded". Wait for the
   // deterministic 16-row sample result rather than treating that stale text
