@@ -82,13 +82,11 @@
 
 use std::sync::LazyLock;
 
-use rustc_hash::FxHashMap;
-
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_perception::aromaticity::{
     AromaticityAlgorithm, AromaticityModel, assign_aromaticity_ex,
 };
-use chematic_smarts::{MatchConfig, QueryMolecule, find_matches_with_config, parse_smarts};
+use chematic_smarts::{MatchConfig, QueryMolecule, for_each_embedding, parse_smarts};
 
 use crate::bitvec::BitVec2048;
 use crate::rdkit_morgan_hash::hash_combine;
@@ -177,15 +175,15 @@ fn rdkit_bond_type_code(order: BondOrder) -> u32 {
 ///    molecules already went through *some* aromaticity-aware writer. This
 ///    fixed the ChEMBL regression back to 100% without reintroducing the
 ///    NCI failure (verified together, not just individually).
-fn matched_bond_code(
+fn matched_bond_code_slice(
     mol: &Molecule,
     model: Option<&AromaticityModel>,
-    m: &FxHashMap<usize, AtomIdx>,
+    m: &[u32],
     a1: usize,
     a2: usize,
 ) -> u32 {
     let (bidx, bond) = mol
-        .bond_between(m[&a1], m[&a2])
+        .bond_between(AtomIdx(m[a1]), AtomIdx(m[a2]))
         .expect("a matched pattern bond must exist between its mapped target atoms");
     if bond.order == BondOrder::Aromatic {
         return 12;
@@ -222,28 +220,33 @@ pub fn rdkit_pattern_fp(mol: &Molecule) -> BitVec2048 {
         Some(assign_aromaticity_ex(mol, AromaticityAlgorithm::RdkitLike))
     };
 
+    // Only the embedding count and the set of per-embedding bit ids are
+    // observable, so embeddings are visited without building result maps.
+    let mut bit_ids: Vec<u32> = Vec::new();
     for (i, query) in COMPILED_PATTERNS.iter().enumerate() {
         let p_idx = (i + 1) as u32;
-        let matches = find_matches_with_config(query, mol, &cfg);
+        bit_ids.clear();
+        let _ = for_each_embedding(query, mol, &cfg, |m| {
+            let mut bit_id = p_idx;
+            for &t in m {
+                let an = mol.atom(AtomIdx(t)).element.atomic_number() as u32;
+                bit_id = hash_combine(bit_id, an);
+            }
+            for qb in &query.bonds {
+                let code = matched_bond_code_slice(mol, aromaticity.as_ref(), m, qb.atom1, qb.atom2);
+                bit_id = hash_combine(bit_id, code);
+            }
+            bit_ids.push(bit_id);
+        });
 
         let mut m_idx = p_idx
             .wrapping_add(query.atoms.len() as u32)
             .wrapping_add(query.bonds.len() as u32);
-        for _ in &matches {
+        for _ in 0..bit_ids.len() {
             m_idx = hash_combine(m_idx, 0xBEEF);
             fp.set((m_idx % FP_SIZE) as usize);
         }
-
-        for m in &matches {
-            let mut bit_id = p_idx;
-            for qi in 0..query.atoms.len() {
-                let an = mol.atom(m[&qi]).element.atomic_number() as u32;
-                bit_id = hash_combine(bit_id, an);
-            }
-            for qb in &query.bonds {
-                let code = matched_bond_code(mol, aromaticity.as_ref(), m, qb.atom1, qb.atom2);
-                bit_id = hash_combine(bit_id, code);
-            }
+        for &bit_id in &bit_ids {
             fp.set((bit_id % FP_SIZE) as usize);
         }
     }
