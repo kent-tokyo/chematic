@@ -1338,6 +1338,34 @@ fn non_explicit_candidate_cycle_edge(mol: &Molecule, cyclic: &[bool], candidate:
     })
 }
 
+/// `apply_kekule(&clear_aromatic_flags(mol), k)`, built as one modified copy
+/// of `mol` when that is provably the same molecule.
+///
+/// `clear_aromatic_flags` rebuilds `mol` (same atoms, bonds and side
+/// channels) with every aromatic flag cleared; `apply_kekule` returns that
+/// unchanged for an empty `k` and otherwise rebuilds it with the new orders,
+/// copying every side channel except the R-group labels. A rebuild re-adds
+/// bonds in index order, so it equals a copy exactly when `mol`'s adjacency
+/// lists are already in that order.
+fn kekulized_copy(mol: &Molecule, k: &chematic_core::KekuleResult) -> Molecule {
+    if !mol.adjacency_in_bond_order() {
+        return chematic_core::apply_kekule(&clear_aromatic_flags(mol), k);
+    }
+    let mut out = mol.clone();
+    for (idx, atom) in mol.atoms() {
+        if atom.aromatic {
+            out.set_atom_aromatic(idx, false);
+        }
+    }
+    if !k.is_empty() {
+        for (&b, &order) in k {
+            out.set_bond_order(b, order);
+        }
+        out.clear_r_group_labels();
+    }
+    out
+}
+
 /// The aromatic atom/bond sets `rdkit_parity_aromaticity` computes on a
 /// kekulized molecule.
 type AromaticVerdict = (FxHashSet<AtomIdx>, FxHashSet<BondIdx>);
@@ -1357,10 +1385,11 @@ fn kekulize_for_rdkit_parity_with_verdict(
     mol: &Molecule,
 ) -> Result<(Molecule, Option<AromaticVerdict>), AromaticityError> {
     let explicit_ok = explicit_aromaticity_is_consistent(mol);
-    let cleared = clear_aromatic_flags(mol);
-    match chematic_core::kekulize(&cleared) {
+    // Kekulization never reads aromatic flags, so kekulizing `mol` is the
+    // same as kekulizing its flag-cleared copy.
+    match chematic_core::kekulize(mol) {
         Ok(k) => {
-            let kekulized = chematic_core::apply_kekule(&cleared, &k);
+            let kekulized = kekulized_copy(mol, &k);
             // Same graph; kekulization only turns aromatic bonds into single
             // or double ones, all ring-eligible, so the cyclic bonds agree.
             kekulized.seed_derived(
@@ -1947,6 +1976,48 @@ mod tests {
             .map(|(_, b)| format!("{}-{}:{:?},", b.atom1.0, b.atom2.0, b.order))
             .collect();
         format!("{atoms}|{bonds}")
+    }
+
+    #[test]
+    fn kekulized_copy_matches_the_rebuilds() {
+        for smi in [
+            "c1ccccc1",
+            "c1ccc2[nH]ccc2c1",
+            "C/C=C/c1ccccc1",
+            "[C@H](F)(Cl)c1ccccc1",
+            "[*]c1ccccc1",
+            "[*:1]c1ccc(-c2ccccn2)cc1",
+            "CCO",
+        ] {
+            let mut mol = chematic_smiles::parse(smi).expect("valid SMILES");
+            if mol.atom(AtomIdx(0)).wildcard {
+                // An R-group label (dropped by apply_kekule's rebuild).
+                mol.set_r_group(AtomIdx(0), chematic_core::RGroupLabel::unnumbered());
+            }
+            let k = chematic_core::kekulize(&mol).expect("kekulizable");
+            let a = kekulized_copy(&mol, &k);
+            let b = chematic_core::apply_kekule(&clear_aromatic_flags(&mol), &k);
+            assert_eq!(fingerprint(&a), fingerprint(&b), "{smi}");
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&a),
+                chematic_smiles::canonical_smiles(&b),
+                "{smi}"
+            );
+            for i in 0..a.atom_count() {
+                let idx = AtomIdx(i as u32);
+                assert_eq!(
+                    a.neighbors(idx).collect::<Vec<_>>(),
+                    b.neighbors(idx).collect::<Vec<_>>(),
+                    "{smi}"
+                );
+                assert_eq!(a.stereo_neighbor_order(idx), b.stereo_neighbor_order(idx), "{smi}");
+                assert_eq!(a.r_group_label(idx), b.r_group_label(idx), "{smi}");
+            }
+            for bi in 0..a.bond_count() {
+                let bidx = BondIdx(bi as u32);
+                assert_eq!(a.bond_direction(bidx), b.bond_direction(bidx), "{smi}");
+            }
+        }
     }
 
     #[test]

@@ -894,6 +894,41 @@ impl Molecule {
         self.atoms[idx.0 as usize].chirality = chirality;
     }
 
+    /// Set the aromatic flag of atom `idx` in-place.
+    pub fn set_atom_aromatic(&mut self, idx: AtomIdx, aromatic: bool) {
+        self.invalidate_derived();
+        self.atoms[idx.0 as usize].aromatic = aromatic;
+    }
+
+    /// Remove every `R`/`R<n>` label (the atoms themselves are unchanged).
+    #[doc(hidden)]
+    pub fn clear_r_group_labels(&mut self) {
+        self.invalidate_derived();
+        self.r_groups.clear();
+    }
+
+    /// Whether every adjacency list is in bond-index order (atom1's entries
+    /// then atom2's, bond by bond), i.e. exactly what [`MoleculeBuilder`]
+    /// produces when the bonds are re-added in index order. A clone of such a
+    /// molecule is then indistinguishable from that rebuild.
+    #[doc(hidden)]
+    pub fn adjacency_in_bond_order(&self) -> bool {
+        let mut fill = vec![0usize; self.atoms.len()];
+        for (b, bond) in self.bonds.iter().enumerate() {
+            for (end, other) in [(bond.atom1, bond.atom2), (bond.atom2, bond.atom1)] {
+                let list = &self.adjacency[end.0 as usize];
+                let k = fill[end.0 as usize];
+                if list.get(k) != Some(&(other, BondIdx(b as u32))) {
+                    return false;
+                }
+                fill[end.0 as usize] = k + 1;
+            }
+        }
+        fill.iter()
+            .zip(&self.adjacency)
+            .all(|(&k, list)| k == list.len())
+    }
+
     /// Set the bond order of bond `idx` in-place. Endpoints (`atom1`/
     /// `atom2`) and adjacency are untouched -- order alone doesn't affect
     /// connectivity, so unlike [`Self::remove_bond`] + [`Self::add_bond`],
