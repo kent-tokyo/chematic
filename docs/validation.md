@@ -1,6 +1,6 @@
 # Validation report
 
-Updated 2026-09-25. The current release is **v1.0.25**. Each result keeps its
+Updated 2026-09-25. The current release is **v1.0.26**. Each result keeps its
 recorded version, comparator, corpus, and operation; no result is silently
 upgraded to the current source revision.
 
@@ -8,9 +8,9 @@ upgraded to the current source revision.
 
 | Area | Evidence | Boundary |
 |---|---|---|
-| v1.0.25 release-source identity | `benchmarks/2026-09-25-perf-digest-diff-v1.0.24-issue-650.json` | Six pre-existing-output operations across 46,736 molecules; zero differences. The HBA profile and plain writer corrections are intentional behavior changes and are outside this unchanged-output claim. |
-| Source performance identity | `benchmarks/2026-09-24-perf-speed3-output-identical.md` | Differential against v1.0.23 over 1,402,080 output rows; zero differences. Shared-VM source timing only, not a package or cross-platform result. |
-| Release channels | `validation/results/release-channel-verification-v1.0.25.json` | GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages independently observed at v1.0.25. This verifies delivery, not broader chemistry or performance claims. |
+| v1.0.26 release-source identity | `benchmarks/2026-09-25-perf-speed4-output-identical.md` | Differential against base source across 7 corpora and 50 operations; only nine pre-existing hash-order-dependent error messages differ. This is source evidence, not a package claim. |
+| v1.0.26 release-channel record | `validation/results/release-channel-verification-v1.0.26.json` | Starts as not measured before tag publication; GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages must be observed independently before it becomes release-ready. |
+| Earlier source performance identity | `benchmarks/2026-09-24-perf-speed3-output-identical.md` | Differential against v1.0.23 over 1,402,080 output rows; zero differences. Shared-VM source timing only, not a package or cross-platform result. |
 | RDKit output agreement | `benchmarks/2026-09-24-rdkit-agreement-accuracy-branch.md` | RDKit 2026.03.6; three source lanes of up to 5,000 rows. Operation-specific agreement and residuals only; shared 2-vCPU VM, not a package/WASM/cross-platform result. |
 | Source operation matrix | `benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md` | RDKit 2026.03.6, 5,000 molecules, 43 comparable operations; 21 exact-output faster medians and 18 all-repeat wins. Shared 2-vCPU source run only; not a package, WASM, or cross-platform claim. |
 | RDKit.js browser comparison | `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md` | Registry-installed v1.0.20 on the fixed exposed 10k corpus; both compatible-Morgan lanes pass and all 9,999 supported rows are bit-exact; not internet/CDN latency |

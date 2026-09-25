@@ -21,13 +21,13 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.0.25 release boundary
+### v1.0.26 release boundary
 
-v1.0.25 adds SMILES atom-output order plus fragment and Rust-reaction source
-atom provenance, corrects the named RDKit-compatible Python HBA profile, and
-fixes plain-writer ring-closure spelling. These are scoped compatibility
-changes, not a claim of complete RDKit parity. See [validation](docs/validation.md)
-and the [CHANGELOG](CHANGELOG.md).
+v1.0.26 improves RDKit-compatible SMARTS, accurate E/Z CIP reporting, MMFF94
+same-coordinate term agreement, and selected ring/fingerprint hot paths.
+Python/WASM SMARTS now use a perceived aromatic view; this is an intentional
+behavior change, not a claim of complete RDKit parity or universal speed. See
+[validation](docs/validation.md) and the [CHANGELOG](CHANGELOG.md).
 
 ## Use it
 

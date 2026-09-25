@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.25</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.26</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,13 +80,13 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-The current published release is v1.0.25.
+The current published release is v1.0.26.
 
-- It adds explicit atom-output order and source-atom provenance for fragments
-  and Rust reaction products, and fixes the Python RDKit-compatible HBA profile.
-- Its release-source differential covers six existing-output operations across
-  46,736 molecules with zero differences. The aromatic/non-aromatic ring-closure
-  writer fix is intentionally outside that unchanged-output claim.
+- It improves RDKit-compatible SMARTS, accurate E/Z CIP reporting, MMFF94
+  same-coordinate term agreement, and selected ring/fingerprint hot paths.
+- Python/WASM SMARTS now match a perceived aromatic view. This intentionally
+  changes how Kekulé benzene is interpreted for aromatic and explicit-bond
+  queries; Rust's default matcher remains unchanged.
 
 - The latest registry-installed browser benchmark (v1.0.20) records 1.398x parse-inclusive and
   3.511x prepared compatible-Morgan speedups against official
@@ -98,7 +98,7 @@ The current published release is v1.0.25.
   same local compression method. Feature surfaces differ.
 
 These are scoped measurements, not general claims that chematic is always
-faster, smaller, or more accurate. The dated v1.0.24 differential remains
+faster, smaller, or more accurate. The v1.0.26 hot-path evidence remains
 shared-VM source evidence, not a WASM or cross-platform performance claim. It
 does not relabel the v1.0.20 package performance record.
 

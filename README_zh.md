@@ -23,11 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.25 范围
+### v1.0.26 范围
 
-v1.0.25 新增 SMILES 原子输出顺序、片段和 Rust 反应产物的来源原子 API，修正
-RDKit 兼容 Python HBA profile 与 plain writer 的环闭合写法。这是有范围的兼容性改进，
-并不表示完整 RDKit 兼容。参见[验证报告](docs/validation.md)和[CHANGELOG](CHANGELOG.md)。
+v1.0.26 改进 RDKit 兼容 SMARTS、accurate E/Z CIP、MMFF94 的同坐标逐项一致性，
+以及部分环和指纹热路径。Python/WASM SMARTS 改为使用感知的芳香性视图；这是有意的
+行为变化，并不表示完整 RDKit 兼容或普遍速度领先。参见[验证报告](docs/validation.md)
+和[CHANGELOG](CHANGELOG.md)。
 
 ## 使用
 

@@ -2,7 +2,7 @@
 
 Pure-Rust cheminformatics library for Python — SMILES parsing, 190+ descriptor values (71 functions), fingerprints, pKa prediction, ADMET profiling, and template-based retrosynthesis.
 
-The current 1.0.25 release adds atom-output and source-atom provenance APIs,
+The current 1.0.26 release adds atom-output and source-atom provenance APIs,
 the corrected Python RDKit-compatible HBA profile, and a plain-SMILES
 ring-closure writer fix. Compatibility and performance claims remain
 operation- and corpus-scoped.
