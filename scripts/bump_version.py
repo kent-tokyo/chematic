@@ -105,6 +105,12 @@ def main() -> None:
         (ROOT / "demo" / "pkg" / "package.json", [
             re.compile(r'"version":\s*"' + re.escape(old) + r'"'),
         ]),
+        # Cache-busting version for the browser demo's shipped WASM assets.
+        # Keep this with the npm package version so browser_smoke sees the
+        # workspace release rather than an older badge/asset key.
+        (ROOT / "demo" / "index.html", [
+            re.compile(r"WASM_ASSET_VERSION\s*=\s*['\"]" + re.escape(old) + r"['\"]"),
+        ]),
         (ROOT / "crates" / "chematic-mcp" / "README.md", [
             re.compile(r'chematic-mcp = \{ version = "' + re.escape(old) + r'"'),
         ]),

@@ -21,13 +21,15 @@ npm install @kent-tokyo/chematic
 
 Python needs no C/C++ compiler. Rust and WebAssembly builds use the same core.
 
-### v1.0.24 release boundary
+### v1.0.25 release boundary
 
-v1.0.24 speeds up perception and SMARTS existence checks without changing the
-checked outputs. A versioned v1.0.23 differential covers 1,402,080 rows across
-seven corpora with zero differences. Paired timings are source-only on a shared
-2-vCPU VM, not a published-package, WASM, or cross-platform claim.
-Compatibility remains operation- and corpus-scoped; see [validation](docs/validation.md),
+v1.0.25 adds atom-output order and source-atom provenance APIs for fragments
+and Rust reaction products, and fixes the named RDKit-compatible Python HBA
+profile. The public `write()` path now round-trips aromatic/non-aromatic
+ring-closure bonds correctly. Existing-output differential evidence covers six
+operations across 46,736 molecules with zero differences; it does not claim
+that the corrected writer is unchanged. Compatibility remains operation- and
+corpus-scoped; see [validation](docs/validation.md),
 [compatibility scope](docs/compatibility-scope.md), and the
 [CHANGELOG](CHANGELOG.md).
 

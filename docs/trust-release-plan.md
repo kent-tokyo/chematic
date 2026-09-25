@@ -1,7 +1,7 @@
 # chematic 1.x Trust Release 実行計画
 
-更新日: 2026-09-24。公開版は **v1.0.24**、次の開発候補は
-**v1.0.25** です。
+更新日: 2026-09-25。公開版は **v1.0.25**、次の開発候補は
+**v1.0.26** です。
 
 この文書は実行順と合格条件だけを定義します。機能別の優先順位は
 [`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)、未完了項目と依存関係は
@@ -38,6 +38,9 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
 - v1.0.24はその出力を保持したままperceptionとSMARTS存在判定のhot pathを短縮しました。
   v1.0.23との差分は7コーパス・1,402,080出力行で0件です。計時は共有2 vCPUの
   source実行だけであり、公開package、WASM、全環境の性能主張ではありません。
+- v1.0.25はatom-output order、断片とRust反応生成物のsource-atom provenance、
+  RDKit互換Python HBA profileを追加・修正しました。6操作・46,736分子の既存出力
+  differentialは0件ですが、HBA profileとplain writerの意図した修正は別に扱います。
 - 残る主要差分はCIP #634、SMARTS #635、A6のenergy/term・timeout・
   conformer qualityです。
 

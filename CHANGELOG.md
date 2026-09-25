@@ -9,6 +9,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.25] - 2026-09-25
+
 - Fixed `chematic.rdkit_compat.rdMolDescriptors.CalcNumHBA()` to use the
   named RDKit-compatible HBA profile rather than the conservative native HBA
   profile. This restores the RDKit result for substituted aromatic/imide

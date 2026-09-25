@@ -23,11 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python 版本无需 C/C++ 编译器。
 
-### v1.0.24 范围
+### v1.0.25 范围
 
-v1.0.24 加速 perception 和 SMARTS 存在性检查，同时保持与 v1.0.23 完全相同的检查输出。
-版本化比较覆盖 7 个 corpus、1,402,080 个输出行，差异为 0。这是共享 2 vCPU 的 source
-记录，不是已发布 package、WASM 或跨平台性能声明。详见[验证报告](docs/validation.md)、
+v1.0.25 增加了 SMILES 原子输出顺序，以及片段和 Rust 反应产物的来源原子 API，并修复了
+Python 的 RDKit 兼容 HBA profile。公开的 `write()` 现在可正确往返芳香/非芳香环闭合键。
+既有输出比较覆盖 46,736 个分子和 6 项操作，差异为 0；这不意味着被修正的 writer 输出不变。
+详见[验证报告](docs/validation.md)、
 [兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## Python

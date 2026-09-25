@@ -42,8 +42,8 @@ tag):
 
 ```bash
 python3 scripts/generate_release_metadata.py \
-  --version 1.0.24 \
-  --commit "$(git rev-list -1 v1.0.24)" \
-  --released-at "$(git show -s --format=%cI v1.0.24)" \
+  --version <version> \
+  --commit "$(git rev-list -1 v<version>)" \
+  --released-at "$(git show -s --format=%cI v<version>)" \
   --output /tmp/chematic-release-metadata.json
 ```
