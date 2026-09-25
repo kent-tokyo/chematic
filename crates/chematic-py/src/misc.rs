@@ -47,7 +47,7 @@ fn smarts_match(smarts: &str, mol: &Mol) -> PyResult<bool> {
         uniquify: false,
         ..chematic_smarts::MatchConfig::default()
     };
-    Ok(chematic_smarts::has_match_with_config(
+    Ok(chematic_smarts::has_match_perceived(
         &query, &mol.inner, &config,
     ))
 }
@@ -63,14 +63,18 @@ fn smarts_match(smarts: &str, mol: &Mol) -> PyResult<bool> {
 fn smarts_find(smarts: &str, mol: &Mol) -> PyResult<Vec<Vec<usize>>> {
     let query = cached_smarts(smarts).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let n = query.atom_count();
-    Ok(chematic_smarts::find_matches(&query, &mol.inner)
-        .into_iter()
-        .map(|map| {
-            (0..n)
-                .filter_map(|qi| map.get(&qi).map(|a| a.0 as usize))
-                .collect()
-        })
-        .collect())
+    Ok(chematic_smarts::find_matches_perceived(
+        &query,
+        &mol.inner,
+        &chematic_smarts::MatchConfig::default(),
+    )
+    .into_iter()
+    .map(|map| {
+        (0..n)
+            .filter_map(|qi| map.get(&qi).map(|a| a.0 as usize))
+            .collect()
+    })
+    .collect())
 }
 
 /// Render a molecule SVG with atoms coloured by a weight vector.

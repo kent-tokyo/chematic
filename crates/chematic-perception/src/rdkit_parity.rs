@@ -1159,10 +1159,18 @@ pub fn apply_aromaticity_rdkit_parity_experimental(
 ) -> Result<Molecule, AromaticityError> {
     // Memoized on `mol`: descriptors and the RDKit-compatible fingerprints
     // all start from this perceived copy.
-    (*mol.derived(chematic_core::DerivedSlot::RdkitParityAromatic, || {
+    (*apply_aromaticity_rdkit_parity_shared(mol)).clone()
+}
+
+/// Shared, memoized [`apply_aromaticity_rdkit_parity_experimental`] result
+/// (no copy of the perceived molecule). The perceived molecule keeps its own
+/// derived caches (rings, ring flags) across calls.
+pub fn apply_aromaticity_rdkit_parity_shared(
+    mol: &Molecule,
+) -> std::sync::Arc<Result<Molecule, AromaticityError>> {
+    mol.derived(chematic_core::DerivedSlot::RdkitParityAromatic, || {
         apply_aromaticity_rdkit_parity_uncached(mol)
-    }))
-    .clone()
+    })
 }
 
 fn apply_aromaticity_rdkit_parity_uncached(mol: &Molecule) -> Result<Molecule, AromaticityError> {

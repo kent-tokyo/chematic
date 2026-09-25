@@ -64,7 +64,7 @@ pub fn smarts_match_atoms(smarts: &str, mol: &MolHandle) -> Result<String, JsVal
         uniquify: true,
         max_visit_budget: Some(WASM_MAX_SMARTS_VISITS),
     };
-    let matches = chematic_smarts::find_matches_with_config(&query, &mol.inner, &config);
+    let matches = chematic_smarts::find_matches_perceived(&query, &mol.inner, &config);
     let parts: Vec<String> = matches
         .into_iter()
         .map(|m| {
@@ -103,7 +103,7 @@ pub fn smarts_match_atoms_with_chirality(
         uniquify: true,
         max_visit_budget: Some(WASM_MAX_SMARTS_VISITS),
     };
-    let matches = chematic_smarts::find_matches_with_config(&query, &mol.inner, &config);
+    let matches = chematic_smarts::find_matches_perceived(&query, &mol.inner, &config);
     let parts: Vec<String> = matches
         .into_iter()
         .map(|m| {
@@ -352,7 +352,11 @@ pub fn depict_svg_grid_highlighted(smiles_block: &str, cols: usize, match_smarts
         .map(|mol| {
             let mut opts = chematic_depict::svg::RenderOptions::default();
             if let Some(q) = &query {
-                let matches = chematic_smarts::find_matches(q, mol);
+                let matches = chematic_smarts::find_matches_perceived(
+                    q,
+                    mol,
+                    &chematic_smarts::MatchConfig::default(),
+                );
                 opts.highlight_atoms = matches.into_iter().flat_map(|m| m.into_values()).collect();
             }
             opts

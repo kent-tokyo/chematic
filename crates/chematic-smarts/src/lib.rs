@@ -13,6 +13,7 @@ pub mod cx;
 pub mod match_vf2;
 pub mod mcs;
 pub mod parser;
+pub mod perceived;
 pub mod query;
 pub mod rdkit_parity_match;
 pub mod rdkit_ring_model;
@@ -29,6 +30,7 @@ pub use mcs::{
     find_mcs_with_config_checked,
 };
 pub use parser::{SmartsError, parse_smarts};
+pub use perceived::{find_matches_perceived, has_match_perceived, with_perceived_target};
 pub use query::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryAtom, QueryBond, QueryMolecule,
 };

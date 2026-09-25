@@ -43,6 +43,7 @@ pub mod node;
 pub mod rational;
 mod resolver;
 mod rule4b;
+pub mod substituent_rank;
 pub mod trace;
 
 #[cfg(test)]
@@ -64,6 +65,7 @@ pub use mancude::{
 };
 pub use node::{CipNode, CipNodeKind, NodeId};
 pub use rational::{AtomicNumberKey, RationalAtomicNumber};
+pub use substituent_rank::SubstituentRanker;
 pub use trace::{ComparisonTrace, DecisionStep};
 
 /// Errors from digraph construction/expansion.
