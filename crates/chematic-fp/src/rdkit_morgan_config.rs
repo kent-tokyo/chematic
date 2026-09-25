@@ -143,7 +143,11 @@ pub fn rdkit_morgan_fingerprint(
     config: &RdkitMorganConfig,
 ) -> Result<RdkitMorganFingerprint, RdkitMorganError> {
     reject_known_rdkit_coordination_sanitization_gap(mol)?;
-    let aromatized = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)?;
+    let view = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol);
+    let aromatized: &Molecule = match view.as_ref() {
+        Ok(m) => m,
+        Err(e) => return Err(e.clone().into()),
+    };
 
     let fp_size = config.fp_size.bits();
     let mut result = RdkitMorganFingerprint {

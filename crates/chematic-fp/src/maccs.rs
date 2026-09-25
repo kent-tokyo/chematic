@@ -215,18 +215,19 @@ static MACCS_SMARTS: &[(&str, usize)] = &[
 fn count_aromatic_rings(mol: &Molecule) -> usize {
     // RDKit key 125 counts rings of the molecule's RingInfo (symmetrized
     // SSSR) whose *bonds* are all aromatic, after RDKit aromaticity.
-    let perceived = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).ok();
-    let view = perceived.as_ref().unwrap_or(mol);
-    chematic_perception::find_symmetrized_sssr(view)
-        .rings()
-        .iter()
-        .filter(|ring| {
-            (0..ring.len()).all(|i| {
-                view.bond_between(ring[i], ring[(i + 1) % ring.len()])
-                    .is_some_and(|(_, b)| b.order == chematic_core::BondOrder::Aromatic)
+    chematic_perception::with_rdkit_parity_view(mol, |view| {
+        let view = view.unwrap_or(mol);
+        chematic_perception::find_symmetrized_sssr(view)
+            .rings()
+            .iter()
+            .filter(|ring| {
+                (0..ring.len()).all(|i| {
+                    view.bond_between(ring[i], ring[(i + 1) % ring.len()])
+                        .is_some_and(|(_, b)| b.order == chematic_core::BondOrder::Aromatic)
+                })
             })
-        })
-        .count()
+            .count()
+    })
 }
 
 /// MACCS SMARTS parsed once per process (`None` for placeholders and
@@ -257,8 +258,10 @@ fn maccs_queries() -> &'static [Option<chematic_smarts::QueryMolecule>] {
 pub fn maccs(mol: &Molecule) -> BitVec2048 {
     // Match on the RDKit-perceived aromatic view (RDKit computes MACCS on a
     // sanitized molecule), so Kekule and aromatic spellings agree.
-    let perceived = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).ok();
-    let mol = perceived.as_ref().unwrap_or(mol);
+    chematic_perception::with_rdkit_parity_view(mol, |view| maccs_on(view.unwrap_or(mol)))
+}
+
+fn maccs_on(mol: &Molecule) -> BitVec2048 {
     let mut fp = BitVec2048::new();
 
     for (i, (query, &(_, min_count))) in maccs_queries().iter().zip(MACCS_SMARTS).enumerate() {

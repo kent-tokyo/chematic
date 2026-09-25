@@ -307,6 +307,14 @@ fn ops() -> Vec<Op> {
                 Err(e) => format!("ERR {e}"),
             }
         }),
+        ("rdkit_ecfp4_bits", |m| match chematic_fp::rdkit_morgan_ecfp4_bitvec(m) {
+            Ok(f) => format!("{f:?}"),
+            Err(e) => format!("ERR {e}"),
+        }),
+        ("rdkit_ecfp4_prepared", |m| match chematic_fp::prepare_rdkit_morgan_ecfp4(m) {
+            Ok(p) => format!("{:?}", p.bitvec()),
+            Err(e) => format!("ERR {e}"),
+        }),
         ("kekulize", |m| match chematic_core::kekulize(m) {
             Ok(k) => {
                 let mut v: Vec<_> = k.into_iter().map(|(b, o)| (b.0, o)).collect();

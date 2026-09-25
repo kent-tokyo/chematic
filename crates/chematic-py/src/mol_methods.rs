@@ -1533,9 +1533,11 @@ impl Mol {
     /// engines are not bit-compatible, so a silent substitution would look successful
     /// while actually returning the wrong hash. See ``docs/rfcs/ecfp4_bitexact_api_rfc.md``.
     fn rdkit_ecfp4(&self) -> PyResult<Vec<u8>> {
-        let result = chematic_fp::rdkit_morgan_ecfp4_experimental(&self.inner)
+        // Same bits and errors as `rdkit_morgan_ecfp4_experimental`, without
+        // building the provenance maps this method never returns.
+        let fingerprint = chematic_fp::rdkit_morgan_ecfp4_bitvec(&self.inner)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
-        Ok(bitvec2048_to_bytes(&result.fingerprint))
+        Ok(bitvec2048_to_bytes(&fingerprint))
     }
 
     /// Same fingerprint as :meth:`rdkit_ecfp4`, plus the raw (unfolded) data behind it.

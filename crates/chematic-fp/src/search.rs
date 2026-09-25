@@ -11,7 +11,7 @@ use chematic_core::Molecule;
 
 use crate::bitvec::BitVec2048;
 use crate::ecfp::{EcfpConfig, ecfp};
-use crate::rdkit_morgan_ecfp4::{RdkitMorganError, rdkit_morgan_ecfp4_experimental};
+use crate::rdkit_morgan_ecfp4::{RdkitMorganError, rdkit_morgan_ecfp4_bitvec};
 
 /// Numerical slack used only when deciding whether a computed rational
 /// Tanimoto score is equal to a caller-provided floating-point threshold.
@@ -70,7 +70,7 @@ fn compute_fp(mol: &Molecule, fp_type: FpType) -> Result<BitVec2048, RdkitMorgan
         FpType::TopoPath => {
             crate::topo_path::topo_path(mol, &crate::topo_path::TopoPathConfig::default())
         }
-        FpType::RdkitEcfp4 => return Ok(rdkit_morgan_ecfp4_experimental(mol)?.fingerprint),
+        FpType::RdkitEcfp4 => return Ok(rdkit_morgan_ecfp4_bitvec(mol)?),
     };
     Ok(fingerprint)
 }

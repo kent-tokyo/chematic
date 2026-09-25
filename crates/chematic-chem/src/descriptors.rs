@@ -1128,13 +1128,34 @@ fn use_perceived_nitrogen_environment(mol: &Molecule, mol_arom: &Molecule, idx: 
 /// heterocycles. Keep the operation fail-safe for unusual inputs: a parity
 /// perception failure falls back to the stable general model rather than
 /// making descriptor evaluation fallible.
-fn descriptor_aromaticity(mol: &Molecule) -> std::sync::Arc<Molecule> {
+fn descriptor_aromaticity(mol: &Molecule) -> DescriptorView<'_> {
+    // The RDKit-parity view is often an exact copy of `mol`; use `mol` (and
+    // its caches) directly then.
+    if chematic_perception::rdkit_parity_view_is_identity(mol) {
+        return DescriptorView::Same(mol);
+    }
     // Memoized on `mol`: TPSA, Crippen LogP/MR, HBA and friends all start from
     // the same perceived copy, and that copy carries its own SSSR cache.
-    mol.derived(chematic_core::DerivedSlot::DescriptorAromatic, || {
+    DescriptorView::Perceived(mol.derived(chematic_core::DerivedSlot::DescriptorAromatic, || {
         chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
             .unwrap_or_else(|_| chematic_perception::apply_aromaticity(mol))
-    })
+    }))
+}
+
+/// The descriptor aromatic view: `mol` itself or a perceived copy.
+enum DescriptorView<'a> {
+    Same(&'a Molecule),
+    Perceived(std::sync::Arc<Molecule>),
+}
+
+impl std::ops::Deref for DescriptorView<'_> {
+    type Target = Molecule;
+    fn deref(&self) -> &Molecule {
+        match self {
+            DescriptorView::Same(m) => m,
+            DescriptorView::Perceived(m) => m,
+        }
+    }
 }
 
 fn tpsa_contributions(mol: &Molecule) -> Vec<f64> {
@@ -1572,10 +1593,10 @@ pub fn aromatic_ring_count(mol: &Molecule) -> usize {
 /// Count aromatic rings after applying the opt-in RDKit aromaticity model.
 /// Native aromatic flags and native ring counts are left untouched.
 pub fn rdkit_aromatic_ring_count(mol: &Molecule) -> usize {
-    match chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol) {
-        Ok(perceived) => chematic_perception::aromatic_ring_list_preperceived(&perceived).len(),
+    chematic_perception::with_rdkit_parity_view(mol, |view| match view {
+        Ok(perceived) => chematic_perception::aromatic_ring_list_preperceived(perceived).len(),
         Err(_) => chematic_perception::aromatic_ring_list(mol).len(),
-    }
+    })
 }
 
 // ---------------------------------------------------------------------------

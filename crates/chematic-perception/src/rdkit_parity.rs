@@ -1459,7 +1459,34 @@ pub fn apply_aromaticity_rdkit_parity_shared(
     })
 }
 
+/// Run `f` on the RDKit-parity aromatic view of `mol`
+/// ([`apply_aromaticity_rdkit_parity_shared`]) without copying it: `mol`
+/// itself when the view would be an exact copy of it
+/// ([`rdkit_parity_view_is_identity`]), the memoized view otherwise.
+pub fn with_rdkit_parity_view<R>(
+    mol: &Molecule,
+    f: impl FnOnce(Result<&Molecule, &AromaticityError>) -> R,
+) -> R {
+    if rdkit_parity_view_is_identity(mol) {
+        return f(Ok(mol));
+    }
+    let view = apply_aromaticity_rdkit_parity_shared(mol);
+    f(view.as_ref().as_ref())
+}
+
 fn apply_aromaticity_rdkit_parity_uncached(mol: &Molecule) -> Result<Molecule, AromaticityError> {
+    let view = apply_aromaticity_rdkit_parity_unseeded(mol)?;
+    // Same graph with the same ring-eligible bonds (the view only changes
+    // aromatic flags and turns bonds aromatic, single or double), so the
+    // cyclic-bond flags carry over.
+    view.seed_derived(
+        chematic_core::DerivedSlot::RingBondFlags,
+        crate::sssr::ring_bond_flags_shared(mol),
+    );
+    Ok(view)
+}
+
+fn apply_aromaticity_rdkit_parity_unseeded(mol: &Molecule) -> Result<Molecule, AromaticityError> {
     match parity_shortcut(mol) {
         ParityShortcut::Identity => return Ok(mol.clone()),
         ParityShortcut::ClearFlags => return Ok(clear_aromatic_flags(mol)),
