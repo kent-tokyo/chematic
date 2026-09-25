@@ -51,6 +51,39 @@ pub fn find_matches_perceived(
     })
 }
 
+/// The matches of [`find_matches_perceived`] as target-atom sets: each match's
+/// atom indices sorted ascending, in the same order as the matches. Built
+/// directly from the embeddings (no per-match maps) when `config` has no
+/// `max_matches`; otherwise identical to mapping [`find_matches_perceived`].
+pub fn find_match_atom_sets_perceived(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    config: &MatchConfig,
+) -> Vec<Vec<usize>> {
+    if config.max_matches.is_some() {
+        return find_matches_perceived(query, mol, config)
+            .into_iter()
+            .map(|m| {
+                let mut v: Vec<usize> = m.values().map(|idx| idx.0 as usize).collect();
+                v.sort_unstable();
+                v
+            })
+            .collect();
+    }
+    with_perceived_target(mol, |target| {
+        let mut out: Vec<Vec<usize>> = Vec::new();
+        let mut seen: rustc_hash::FxHashSet<Vec<usize>> = rustc_hash::FxHashSet::default();
+        let _ = crate::match_vf2::for_each_embedding(query, target, config, |m| {
+            let mut v: Vec<usize> = m.iter().map(|&t| t as usize).collect();
+            v.sort_unstable();
+            if !config.uniquify || seen.insert(v.clone()) {
+                out.push(v);
+            }
+        });
+        out
+    })
+}
+
 /// Whether `query` matches the perceived aromatic view of `mol` at least once.
 /// `max_matches` and `uniquify` in `config` are ignored.
 pub fn has_match_perceived(query: &QueryMolecule, mol: &Molecule, config: &MatchConfig) -> bool {

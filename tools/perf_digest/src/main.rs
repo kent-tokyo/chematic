@@ -272,6 +272,27 @@ fn ops() -> Vec<Op> {
             }
             out
         }),
+        ("match_atom_sets_perceived", |m| {
+            // Python `Mol.find_matches` output. The candidate build computes it
+            // with the candidate API; the base build from the maps.
+            let mut out = String::new();
+            for q in smarts_queries() {
+                let cfg = chematic_smarts::MatchConfig::default();
+                #[cfg(feature = "candidate-apis")]
+                let v = chematic_smarts::find_match_atom_sets_perceived(q, m, &cfg);
+                #[cfg(not(feature = "candidate-apis"))]
+                let v = chematic_smarts::find_matches_perceived(q, m, &cfg)
+                    .into_iter()
+                    .map(|mm| {
+                        let mut v: Vec<usize> = mm.values().map(|a| a.0 as usize).collect();
+                        v.sort_unstable();
+                        v
+                    })
+                    .collect::<Vec<_>>();
+                let _ = write!(out, "{v:?};");
+            }
+            out
+        }),
         ("rdkit_parity_full", |m| {
             // Every atom/bond field of the RDKit-parity view plus H counts and
             // the canonical SMILES written from it.

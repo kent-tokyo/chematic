@@ -30,7 +30,10 @@ pub use mcs::{
     find_mcs_with_config_checked,
 };
 pub use parser::{SmartsError, parse_smarts};
-pub use perceived::{find_matches_perceived, has_match_perceived, with_perceived_target};
+pub use perceived::{
+    find_match_atom_sets_perceived, find_matches_perceived, has_match_perceived,
+    with_perceived_target,
+};
 pub use query::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryAtom, QueryBond, QueryMolecule,
 };

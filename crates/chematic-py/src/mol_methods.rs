@@ -1879,18 +1879,11 @@ impl Mol {
     fn find_matches(&self, smarts: &str) -> PyResult<Vec<Vec<usize>>> {
         let query = crate::misc::cached_smarts(smarts)
             .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
-        Ok(chematic_smarts::find_matches_perceived(
+        Ok(chematic_smarts::find_match_atom_sets_perceived(
             &query,
             &self.inner,
             &chematic_smarts::MatchConfig::default(),
-        )
-        .into_iter()
-        .map(|m| {
-            let mut v: Vec<usize> = m.values().map(|idx| idx.0 as usize).collect();
-            v.sort_unstable();
-            v
-        })
-        .collect())
+        ))
     }
 
     /// 2D SVG depiction with highlighted atoms.
