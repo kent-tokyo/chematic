@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.24</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.25</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,7 +80,13 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-The current published release is v1.0.24.
+The current published release is v1.0.25.
+
+- It adds explicit atom-output order and source-atom provenance for fragments
+  and Rust reaction products, and fixes the Python RDKit-compatible HBA profile.
+- Its release-source differential covers six existing-output operations across
+  46,736 molecules with zero differences. The aromatic/non-aromatic ring-closure
+  writer fix is intentionally outside that unchanged-output claim.
 
 - Its registry-installed browser package records 1.398x parse-inclusive and
   3.511x prepared compatible-Morgan speedups against official
@@ -92,11 +98,9 @@ The current published release is v1.0.24.
   same local compression method. Feature surfaces differ.
 
 These are scoped measurements, not general claims that chematic is always
-faster, smaller, or more accurate. v1.0.24 preserves the checked v1.0.23
-outputs while shortening source-level perception and SMARTS-existence paths;
-the dated differential remains shared-VM evidence, not a WASM or
-cross-platform performance claim. It does not relabel the v1.0.20 package
-performance record.
+faster, smaller, or more accurate. The dated v1.0.24 differential remains
+shared-VM source evidence, not a WASM or cross-platform performance claim. It
+does not relabel the v1.0.20 package performance record.
 
 See [validation](validation.md), [benchmark methodology](benchmark.md), and
 [compatibility scope](compatibility-scope.md) for exact conditions.

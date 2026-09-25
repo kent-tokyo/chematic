@@ -1,7 +1,7 @@
 # Roadmap open-work ledger
 
-Updated 2026-09-24. This is a compact dependency and evidence ledger for work
-that remains open after v1.0.24. It does not repeat completed implementation
+Updated 2026-09-25. This is a compact dependency and evidence ledger for work
+that remains open after v1.0.25. It does not repeat completed implementation
 history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 ## Immediate queue

@@ -23,12 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
-### v1.0.24 の対応範囲
+### v1.0.25 の対応範囲
 
-v1.0.24は、perceptionとSMARTS存在判定を高速化しつつ、v1.0.23との差分を0件に維持します。
-7 corpus・1,402,080出力行の版管理済み比較で差分は0件です。速度記録は共有2 vCPUの
-source実行であり、公開package、WASM、他環境での性能主張ではありません。
-詳細は[検証報告](docs/validation.md)、
+v1.0.25は、SMILESの原子出力順と断片・Rust反応生成物の由来原子を返すAPIを追加し、
+PythonのRDKit互換HBA profileを修正します。公開`write()`は芳香族/非芳香族の環閉鎖結合を
+正しくround-tripします。既存出力の比較は46,736分子・6操作で差分0件ですが、修正対象の
+writer出力まで不変とは主張しません。詳細は[検証報告](docs/validation.md)、
 [互換性範囲](docs/compatibility-scope.md)、[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## Python
