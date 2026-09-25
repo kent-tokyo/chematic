@@ -7531,6 +7531,35 @@ export function torsion_bitvec(mol) {
 }
 
 /**
+ * Scan the MMFF94 torsion energy for a bonded i-j-k-l atom sequence.
+ *
+ * Coordinates are generated internally; `MolHandle` stores molecular
+ * topology rather than a caller-owned conformer. Returns a JSON array of
+ * `{"angle": degrees, "energy": kcal_per_mol}` points, or
+ * `{"error":"..."}` for invalid scan parameters or force-field failures.
+ * @param {MolHandle} mol
+ * @param {number} atom_i
+ * @param {number} atom_j
+ * @param {number} atom_k
+ * @param {number} atom_l
+ * @param {number} steps
+ * @returns {string}
+ */
+export function torsion_scan_json(mol, atom_i, atom_j, atom_k, atom_l, steps) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.torsion_scan_json(mol.__wbg_ptr, atom_i, atom_j, atom_k, atom_l, steps);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * @param {string} block
  * @returns {string}
  */

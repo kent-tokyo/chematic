@@ -3963,7 +3963,19 @@ const FORMATS_MODES = {
   },
 };
 
+function formatsExampleMatches(value, mode) {
+  return value.trim() === (FORMATS_EXAMPLES[mode] || '').trim();
+}
+
 function setFormatsMode(mode) {
+  const input = document.getElementById('formats-input');
+  const previousMode = formatsMode;
+  // Keep an uploaded or hand-written document intact. The only safe automatic
+  // replacement is the built-in example from the mode the user just left.
+  // Otherwise switching the parser would make the visible example invalid.
+  if (!input.value.trim() || formatsExampleMatches(input.value, previousMode)) {
+    input.value = FORMATS_EXAMPLES[mode] || '';
+  }
   formatsMode = mode;
   document.querySelectorAll('.format-mode-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === mode);
