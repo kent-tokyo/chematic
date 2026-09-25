@@ -1034,6 +1034,8 @@ pub(crate) fn ring_components_shared(mol: &Molecule) -> std::sync::Arc<RingCompo
     compute_ring_flags_and_components(mol).1
 }
 
+/// Compute (once) and memoize both the cyclic-bond flags and the component
+/// labels; a slot already filled keeps its value.
 fn compute_ring_flags_and_components(
     mol: &Molecule,
 ) -> (std::sync::Arc<Vec<bool>>, std::sync::Arc<RingComponents>) {
@@ -1046,9 +1048,14 @@ fn compute_ring_flags_and_components(
 /// Seed `copy`'s cyclic-bond flags and components from `mol`'s (same graph,
 /// same ring-eligible bonds).
 pub(crate) fn seed_ring_data_from(copy: &Molecule, mol: &Molecule) {
-    let (flags, components) = compute_ring_flags_and_components(mol);
-    copy.seed_derived(chematic_core::DerivedSlot::RingBondFlags, flags);
-    copy.seed_derived(chematic_core::DerivedSlot::RingComponents, components);
+    copy.seed_derived(
+        chematic_core::DerivedSlot::RingBondFlags,
+        ring_bond_flags_shared(mol),
+    );
+    copy.seed_derived(
+        chematic_core::DerivedSlot::RingComponents,
+        ring_components_shared(mol),
+    );
 }
 
 /// Bridge flags (cyclic = eligible non-bridge bonds) and 2-edge-connected
