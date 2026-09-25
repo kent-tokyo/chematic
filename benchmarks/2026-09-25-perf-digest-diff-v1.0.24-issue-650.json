@@ -1,7 +1,7 @@
 {
  "schema": "chematic-perf-digest-diff/v1",
- "base_revision": "2ab467b83d3d6c27e9d19043484e686dae7f30bc",
- "head_revision": "6cb3adce9c3b514f64bec024433917f1e8cfd4ff",
+ "base_revision": "614e7d7012a16b587793b6ce7eff67be29686b78",
+ "head_revision": "67b62650fee9d0b42a17c0f6ca2300c4d5e00fc4",
  "head_crates_dirty_files": 0,
  "only": "canonical,largest_frag,standardize,inchi,cip,stereocenters",
  "corpora": [
@@ -35,8 +35,8 @@
   }
  ],
  "digest_sha256": {
-  "base": "fadb4e87a7ed2cf8d5d7483e0758b862b0d567926fce4d4e3172541b775e2282",
-  "head": "fadb4e87a7ed2cf8d5d7483e0758b862b0d567926fce4d4e3172541b775e2282"
+  "base": "b4677638c7fa4289e39e8bcea9294f64f1b82aa27cda18dc359caad85195f3ab",
+  "head": "b4677638c7fa4289e39e8bcea9294f64f1b82aa27cda18dc359caad85195f3ab"
  },
  "ops": {
   "canonical": {

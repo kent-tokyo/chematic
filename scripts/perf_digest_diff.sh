@@ -25,8 +25,9 @@ DIRTY=$(git -C "$ROOT" status --porcelain --untracked-files=no -- crates | wc -l
 
 cleanup() {
   git -C "$ROOT" worktree remove --force "$SCRATCH/base-tree" >/dev/null 2>&1 || true
-  # Raw digests can be gigabytes; keep them only on request.
-  [ -n "${KEEP_DIGESTS:-}" ] || rm -f "$SCRATCH/base.tsv" "$SCRATCH/head.tsv"
+  # The scratch tree contains only rebuildable harnesses and digest output.
+  # Retain it only when explicitly requested for local diagnosis.
+  [ -n "${KEEP_DIGESTS:-}" ] || rm -rf "$SCRATCH"
 }
 trap cleanup EXIT
 
