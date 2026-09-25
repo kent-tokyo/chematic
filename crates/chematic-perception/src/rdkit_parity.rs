@@ -634,27 +634,22 @@ pub(crate) fn rdkit_parity_aromaticity_ex(
         }
     }
     let mut keep = vec![false; n];
-    let mut all_kept = true;
     let mut any_kept = false;
     for a in 0..n {
         if ring_atom[a] {
             keep[a] = keep_root[uf.find(a as u32) as usize];
-            all_kept &= keep[a];
             any_kept |= keep[a];
         }
     }
     if !any_kept {
         return (FxHashSet::default(), FxHashSet::default());
     }
-    let restricted;
-    let full;
-    let srings: &[Vec<AtomIdx>] = if all_kept {
-        full = crate::sssr::find_sssr_shared(mol);
-        full.rings()
-    } else {
-        restricted = crate::sssr::find_sssr_in_components(mol, &keep);
-        &restricted
-    };
+    // The verdict depends on the candidate rings only as a set: fused groups
+    // are a partition by shared bonds, and every combination of each group
+    // is evaluated for every subset size reached, with marks accumulated as
+    // unions, so ring order never matters.
+    let rings = crate::sssr::find_sssr_ring_set_in_components(mol, &keep);
+    let srings: &[Vec<AtomIdx>] = &rings;
 
     let candidate_rings: Vec<&Vec<AtomIdx>> = srings
         .iter()

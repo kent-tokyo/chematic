@@ -1174,8 +1174,81 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
         &mol_with_arom
     };
 
-    let sssr = crate::sssr::find_sssr(mol);
-    let aug = augmented_ring_set(mol, sssr.rings());
+    // Rings, augmentation and envelope stripping never mix cyclic
+    // components (augmented rings are XORs of atom-sharing rings; an envelope
+    // is the XOR of smaller rings of its own component), so the count is a
+    // sum over components. A component without aromatic atoms contributes
+    // nothing; a single-cycle component contributes its one ring when every
+    // atom is aromatic. Rings are built only for the remaining components.
+    let n = mol.atom_count();
+    let cyclic = crate::sssr::ring_bond_flags_shared(mol);
+    let mut parent: Vec<u32> = (0..n as u32).collect();
+    fn find(parent: &mut [u32], mut x: u32) -> u32 {
+        while parent[x as usize] != x {
+            let p = parent[x as usize];
+            parent[x as usize] = parent[p as usize];
+            x = p;
+        }
+        x
+    }
+    let mut ring_atom = vec![false; n];
+    let mut edges = vec![0u32; n];
+    for (bidx, bond) in mol.bonds() {
+        if cyclic[bidx.0 as usize] {
+            ring_atom[bond.atom1.0 as usize] = true;
+            ring_atom[bond.atom2.0 as usize] = true;
+            let (a, b) = (find(&mut parent, bond.atom1.0), find(&mut parent, bond.atom2.0));
+            if a != b {
+                parent[a as usize] = b;
+            }
+        }
+    }
+    let mut atoms = vec![0u32; n];
+    let mut aromatic_atoms = vec![0u32; n];
+    for (bidx, bond) in mol.bonds() {
+        if cyclic[bidx.0 as usize] {
+            edges[find(&mut parent, bond.atom1.0) as usize] += 1;
+        }
+    }
+    for a in 0..n {
+        if ring_atom[a] {
+            let root = find(&mut parent, a as u32) as usize;
+            atoms[root] += 1;
+            if mol.atom(AtomIdx(a as u32)).aromatic {
+                aromatic_atoms[root] += 1;
+            }
+        }
+    }
+    let mut count = 0usize;
+    let mut keep = vec![false; n];
+    let mut any_kept = false;
+    for root in 0..n {
+        if !ring_atom[root] || find(&mut parent, root as u32) as usize != root {
+            continue;
+        }
+        if aromatic_atoms[root] == 0 {
+            continue;
+        }
+        if edges[root] == atoms[root] {
+            count += usize::from(aromatic_atoms[root] == atoms[root]);
+        } else {
+            keep[root] = true;
+            any_kept = true;
+        }
+    }
+    if !any_kept {
+        return count;
+    }
+    for a in 0..n {
+        if ring_atom[a] {
+            let root = find(&mut parent, a as u32) as usize;
+            keep[a] = keep[root];
+        }
+    }
+    // Only the ring set matters: augmentation reaches the same closure and
+    // envelope stripping tests existence of smaller rings, whatever the order.
+    let rings = crate::sssr::find_sssr_ring_set_in_components(mol, &keep);
+    let aug = augmented_ring_set(mol, &rings);
 
     // Keep only rings where every atom carries the aromatic flag.
     let aromatic: Vec<Vec<AtomIdx>> = aug
@@ -1184,7 +1257,7 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
         .collect();
 
     if aromatic.len() <= 1 {
-        return aromatic.len();
+        return count + aromatic.len();
     }
 
     // Build sorted bond-index sets for each aromatic ring.
@@ -1201,7 +1274,7 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
     let n = aromatic.len();
     let mut is_envelope = vec![false; n];
     strip_envelope_rings(&aromatic, &bond_sets, &mut is_envelope);
-    is_envelope.iter().filter(|&&e| !e).count()
+    count + is_envelope.iter().filter(|&&e| !e).count()
 }
 
 // ---------------------------------------------------------------------------

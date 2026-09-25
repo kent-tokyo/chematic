@@ -284,7 +284,7 @@ fn find_sssr_uncached(mol: &Molecule) -> RingSet {
     }
 
     let candidates = horton_candidates_fast(mol, None);
-    RingSet::from_rings(select_horton_basis(mol, &cyclic, candidates, r), v)
+    RingSet::from_rings(select_horton_basis(mol, &cyclic, candidates, r, true), v)
 }
 
 /// The rings [`find_sssr`] returns that lie in the cyclic-subgraph components
@@ -303,7 +303,27 @@ fn find_sssr_uncached(mol: &Molecule) -> RingSet {
 /// groups, same canonical keys from the same whole-molecule ranks, stable
 /// sorts). Hence exactly the same rings are selected, and the final stable
 /// sort by length keeps their relative order.
+#[cfg(test)]
 pub(crate) fn find_sssr_in_components(mol: &Molecule, keep: &[bool]) -> Vec<Vec<AtomIdx>> {
+    sssr_rings_in_components(mol, keep, true)
+}
+
+/// The *set* of rings [`find_sssr_in_components`] returns, in an unspecified
+/// (deterministic) order; cheaper when same-length rings need no canonical
+/// ordering (see [`select_horton_basis`]). `keep` may select every component.
+pub(crate) fn find_sssr_ring_set_in_components(mol: &Molecule, keep: &[bool]) -> Vec<Vec<AtomIdx>> {
+    if let Some(full) = mol.derived_if_computed::<RingSet>(chematic_core::DerivedSlot::Sssr) {
+        return full
+            .rings()
+            .iter()
+            .filter(|ring| keep[ring[0].0 as usize])
+            .cloned()
+            .collect();
+    }
+    sssr_rings_in_components(mol, keep, false)
+}
+
+fn sssr_rings_in_components(mol: &Molecule, keep: &[bool], order_needed: bool) -> Vec<Vec<AtomIdx>> {
     let cyclic = ring_bond_flags_shared(mol);
     // Cycle rank of the kept components: E - V + C over their cyclic bonds.
     let n = mol.atom_count();
@@ -338,16 +358,24 @@ pub(crate) fn find_sssr_in_components(mol: &Molecule, keep: &[bool]) -> Vec<Vec<
         return find_sssr_shared(mol).rings().to_vec();
     }
     let candidates = horton_candidates_fast(mol, Some(keep));
-    select_horton_basis(mol, &cyclic, candidates, r)
+    select_horton_basis(mol, &cyclic, candidates, r, order_needed)
 }
 
 /// Greedy GF(2) selection of `r` independent candidates in canonical order,
 /// returned sorted by length (stable).
+///
+/// With `order_needed == false` only the returned *set* of rings is
+/// guaranteed (it is the same set). A length group whose candidates are all
+/// independent of the basis and of each other is then taken whole without
+/// the canonical sort (greedy selection takes every candidate of such a group
+/// in any order), as is a group of which none is independent; any other group
+/// is sorted canonically as usual.
 fn select_horton_basis(
     mol: &Molecule,
     cyclic: &[bool],
     mut candidates: Vec<CycleCandidate>,
     r: usize,
+    order_needed: bool,
 ) -> Vec<Vec<AtomIdx>> {
 
     // Deterministic ordering: shortest first, then a canonical (input-order-
@@ -385,6 +413,41 @@ fn select_horton_basis(
         let group_len = rest.iter().take_while(|c| c.len == len).count();
         let (group, tail) = std::mem::take(&mut rest).split_at_mut(group_len);
         rest = tail;
+        if group.len() > 1 && !order_needed && use_bits {
+            // Greedy in generation order, remembering the pivots it fills.
+            let mut filled = [0u8; 128];
+            let mut n_filled = 0usize;
+            for candidate in group.iter() {
+                let mut row: u128 = candidate.mask;
+                while row != 0 {
+                    let pivot = row.trailing_zeros() as usize;
+                    let existing = basis_bits[pivot];
+                    if existing == 0 {
+                        basis_bits[pivot] = row;
+                        filled[n_filled] = pivot as u8;
+                        n_filled += 1;
+                        break;
+                    }
+                    row ^= existing;
+                }
+            }
+            if n_filled == group.len() {
+                for candidate in group.iter_mut() {
+                    candidate.materialize(mol);
+                    selected_atoms.push(std::mem::take(&mut candidate.atoms));
+                }
+                if selected_atoms.len() == r {
+                    break 'lengths;
+                }
+                continue;
+            }
+            if n_filled == 0 {
+                continue;
+            }
+            for &p in &filled[..n_filled] {
+                basis_bits[p as usize] = 0;
+            }
+        }
         if group.len() > 1 {
             let ranks = ranks.get_or_insert_with(|| canonical_ring_atom_ranks(mol, cyclic));
             for c in group.iter_mut() {
@@ -2568,6 +2631,39 @@ mod tests {
                     .collect();
                 assert_eq!(find_sssr_in_components(&mol, &keep), expected, "{smi} {subset:b}");
             }
+        }
+    }
+
+    #[test]
+    fn unordered_ring_set_matches_the_canonical_set() {
+        let samples = RING_SAMPLES.iter().copied().chain([
+            "O=C1c2ccccc2C(=O)N1CCCCN1CCN(c2cccc3ccccc23)CC1",
+            "C12C3C4C1C5C2C3C45",
+            "C1CC2CC3CCC1C3C2",
+            "c1cc2ccc3cccc4ccc(c1)c2c34",
+            "C1C2CC3CC1CC(C2)C3",
+        ]);
+        for smi in samples {
+            let mol = chematic_smiles::parse(smi).unwrap();
+            let keep = ring_atom_flags(&mol);
+            let key = |rings: &[Vec<AtomIdx>]| {
+                let mut v: Vec<Vec<AtomIdx>> = rings
+                    .iter()
+                    .map(|r| {
+                        let mut r = r.clone();
+                        r.sort();
+                        r
+                    })
+                    .collect();
+                v.sort();
+                v
+            };
+            let fresh = chematic_smiles::parse(smi).unwrap();
+            assert_eq!(
+                key(&find_sssr_ring_set_in_components(&fresh, &keep)),
+                key(find_sssr(&mol).rings()),
+                "{smi}"
+            );
         }
     }
 
