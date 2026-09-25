@@ -1,0 +1,70 @@
+{
+ "schema": "chematic-perf-digest-diff/v1",
+ "base_revision": "2ab467b83d3d6c27e9d19043484e686dae7f30bc",
+ "head_revision": "6cb3adce9c3b514f64bec024433917f1e8cfd4ff",
+ "head_crates_dirty_files": 0,
+ "only": "canonical,largest_frag,standardize,inchi,cip,stereocenters",
+ "corpora": [
+  {
+   "path": "scripts/chembl_accuracy_corpus_4999.smi",
+   "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  {
+   "path": "scripts/nci_first_5k_smiles_only.smi",
+   "sha256": "1d9fa413f33c4d2e2f2da9742cdbd7ce8f39d33b0b9fd78ce012a0b7f24e031d"
+  },
+  {
+   "path": "scripts/descriptor_census_corpus.smi",
+   "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c"
+  },
+  {
+   "path": "validation/rdkit_accuracy_split_v2/exposed_holdout.smi",
+   "sha256": "a496eeccbe54dfaf9552c5ea91bc3578ce0f111c03ad67bab97f29fd86f75972"
+  },
+  {
+   "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+   "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+  },
+  {
+   "path": "validation/benchmark_corpora/rdkit-js-browser-candidates-v1.smi",
+   "sha256": "1bd06bd8a095c816697e84e82a857ec37bed9e93b8e01fbd06f9fa724c5dc98c"
+  },
+  {
+   "path": "validation/rdkit_accuracy_split_v2/development.smi",
+   "sha256": "bd865889d0c1af84d15a14b1f81539cdf02fad20562e4e37305e704cc7d10529"
+  }
+ ],
+ "digest_sha256": {
+  "base": "fadb4e87a7ed2cf8d5d7483e0758b862b0d567926fce4d4e3172541b775e2282",
+  "head": "fadb4e87a7ed2cf8d5d7483e0758b862b0d567926fce4d4e3172541b775e2282"
+ },
+ "ops": {
+  "canonical": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "cip": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "inchi": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "largest_frag": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "standardize": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "stereocenters": {
+   "rows": 46736,
+   "diffs": 0
+  }
+ },
+ "total_rows": 280416,
+ "total_diffs": 0,
+ "first_diff_examples": {}
+}
