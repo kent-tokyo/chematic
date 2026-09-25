@@ -60,7 +60,7 @@ complete merely because a local packet exists.
 ## Evidence boundaries
 
 - **Release channels:**
-  `validation/results/release-channel-verification-v1.0.24.json` records
+  `validation/results/release-channel-verification-v1.0.25.json` records
   independent post-publication observations of GitHub Release, npm, PyPI,
   crates.io, docs.rs, and Pages.
 - **RDKit agreement:**

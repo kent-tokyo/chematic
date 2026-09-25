@@ -88,10 +88,10 @@ The current published release is v1.0.25.
   46,736 molecules with zero differences. The aromatic/non-aromatic ring-closure
   writer fix is intentionally outside that unchanged-output claim.
 
-- Its registry-installed browser package records 1.398x parse-inclusive and
+- The latest registry-installed browser benchmark (v1.0.20) records 1.398x parse-inclusive and
   3.511x prepared compatible-Morgan speedups against official
   `@rdkit/rdkit@2026.03.6`, with 9,999/9,999 supported rows bit-exact.
-- Its fixed MMFF94 stereo-safe lane produces 265/265 sound, stereo-clean,
+- That release's fixed MMFF94 stereo-safe lane produces 265/265 sound, stereo-clean,
   clash-free outputs, but measures 0.944x RDKit speed.
 - The published v1.0.15 WASM asset is 4,005,280 bytes raw / 1,460,499 bytes
   gzip; official RDKit.js 2026.03.6 is 7,333,095 / 2,379,975 bytes under the
