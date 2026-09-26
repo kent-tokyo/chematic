@@ -112,30 +112,26 @@ fn valence_electrons(z: u8) -> u8 {
 
 /// DFS: accumulate chi contributions for paths of exactly `target_len` bonds
 /// starting from `cur`.  `running_product` is the product of delta values of
-/// atoms visited so far (including `cur`).
-#[allow(clippy::too_many_arguments)]
+/// atoms visited so far (including `cur`). `delta[i]` is atom `i`'s delta,
+/// 0 for atoms outside the heavy set, so atoms with no positive delta
+/// (including every non-heavy atom) are never entered.
 fn chi_dfs(
     mol: &Molecule,
     cur: usize,
     target_len: usize,
     cur_len: usize,
     running_product: f64,
-    visited: &mut Vec<bool>,
-    heavy_set: &FxHashSet<usize>,
-    use_valence: bool,
+    visited: &mut [bool],
+    delta: &[f64],
 ) -> f64 {
     if cur_len == target_len {
         return running_product.powf(-0.5);
     }
     let mut sum = 0.0f64;
-    for (nb, _) in mol.neighbors(AtomIdx(cur as u32)) {
+    for &(nb, _) in mol.neighbor_slice(AtomIdx(cur as u32)) {
         let ni = nb.0 as usize;
-        if heavy_set.contains(&ni) && !visited[ni] {
-            let d_nb = if use_valence {
-                delta_v(mol, AtomIdx(ni as u32))
-            } else {
-                delta(mol, AtomIdx(ni as u32), heavy_set)
-            };
+        if !visited[ni] {
+            let d_nb = delta[ni];
             if d_nb > 0.0 {
                 visited[ni] = true;
                 sum += chi_dfs(
@@ -145,8 +141,7 @@ fn chi_dfs(
                     cur_len + 1,
                     running_product * d_nb,
                     visited,
-                    heavy_set,
-                    use_valence,
+                    delta,
                 );
                 visited[ni] = false;
             }
@@ -209,35 +204,39 @@ fn chi_n_with(
     n: usize,
     use_valence: bool,
 ) -> f64 {
+    // Per-atom deltas and heavy flags, computed once; the DFS visits atoms
+    // and sums contributions in exactly the historical order.
+    let atom_count = mol.atom_count();
+    let mut delta_of = vec![0.0f64; atom_count];
+    for &h in heavy {
+        delta_of[h] = if use_valence {
+            delta_v(mol, AtomIdx(h as u32))
+        } else {
+            delta(mol, AtomIdx(h as u32), heavy_set)
+        };
+    }
+    let mut visited = vec![false; atom_count];
     let mut total = 0.0f64;
     for &start in heavy {
-        let d_start = if use_valence {
-            delta_v(mol, AtomIdx(start as u32))
-        } else {
-            delta(mol, AtomIdx(start as u32), heavy_set)
-        };
+        let d_start = delta_of[start];
         if d_start <= 0.0 {
             continue;
         }
-        let mut visited = vec![false; mol.atom_count()];
         visited[start] = true;
-        total += chi_dfs(
-            mol,
-            start,
-            n,
-            0,
-            d_start,
-            &mut visited,
-            heavy_set,
-            use_valence,
-        );
+        total += chi_dfs(mol, start, n, 0, d_start, &mut visited, &delta_of);
+        visited[start] = false;
     }
     total / 2.0
 }
 
 fn chi_n(mol: &Molecule, n: usize, use_valence: bool) -> f64 {
     let heavy = heavy_indices(mol);
-    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+    // The heavy-atom set only feeds the plain (non-valence) delta.
+    let heavy_set: FxHashSet<usize> = if use_valence {
+        FxHashSet::default()
+    } else {
+        heavy.iter().copied().collect()
+    };
     chi_n_with(mol, &heavy, &heavy_set, n, use_valence)
 }
 

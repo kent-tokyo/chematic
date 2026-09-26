@@ -427,28 +427,35 @@ pub static MMFF94_STBN: &[(u8, u8, u8, u8, f64, f64)] = &[
 ];
 
 /// Look up OOP bending parameter for central sp2 atom j with neighbors i, k, l.
-/// Wildcard matching (0) tried as fallback.
+///
+/// RDKit's `MMFFOopCollection::getMMFFOopParams` step-down: the three outer
+/// types are mapped through the MMFF equivalence ladder (levels 2, 3, 4, 5 —
+/// the registry's `equivalence_levels`), sorted, and looked up with the
+/// central type fixed; the first level with a row wins. Level 5 is the
+/// `(0, j, 0, 0)` wildcard. An earlier version jumped from the exact triple
+/// straight to that wildcard (plus non-RDKit one-sided wildcards), so e.g.
+/// an aryl amide carbonyl `(7, 3, 10, 37)` took 0.130 instead of RDKit's
+/// level-3 row `(2, 3, 7, 10)` = 0.116 (#637).
 pub fn mmff94_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
-    // Normalize: sort (i, k, l) except j stays central; try all orderings via wildcard
-    for &(ti, tk, tl) in &[
-        (type_i, type_k, type_l),
-        (type_k, type_i, type_l),
-        (type_l, type_k, type_i),
-        (type_i, type_l, type_k),
-        (type_k, type_l, type_i),
-        (type_l, type_i, type_k),
-    ] {
-        if let Some(koop) = search_oop(type_j, ti, tk, tl) {
-            return Some(koop);
-        }
-    }
-    // Wildcard fallback
-    for &(ti, tk, tl) in &[(0, 0, 0), (type_i, 0, 0), (0, type_k, 0), (0, 0, type_l)] {
-        if let Some(koop) = search_oop(type_j, ti, tk, tl) {
-            return Some(koop);
-        }
-    }
-    None
+    use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
+    let level = |t: u8, stage: usize| {
+        mmff94_numeric_type_info(t)
+            .map(|info| info.equivalence_levels[stage])
+            .unwrap_or(if stage == 3 { 0 } else { t })
+    };
+    let lookup = |mut outer: [u8; 3]| {
+        outer.sort_unstable();
+        search_oop(type_j, outer[0], outer[1], outer[2])
+    };
+    lookup([type_i, type_k, type_l]).or_else(|| {
+        (0..4).find_map(|stage| {
+            lookup([
+                level(type_i, stage),
+                level(type_k, stage),
+                level(type_l, stage),
+            ])
+        })
+    })
 }
 
 fn search_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
@@ -463,16 +470,12 @@ fn search_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
 /// Look up Stretch-Bend parameters for angle i-j-k by MMFF *type* alone —
 /// no element/periodic-row fallback (see [`mmff94_stbn`] for that).
 ///
-/// Returns (kba_ijk, kba_kji). Both orderings (i,j,k) and (k,j,i) tried at
-/// the requested `stretch_bend_type`, then — if `stretch_bend_type` isn't 0
-/// and no row exists there — the *specific* (ti,tj,tk) triple is retried at
-/// type 0 before finally falling back to the fully generic `(0, 0, type_j, 0)`
-/// wildcard. `MMFF94_STBN` is overwhelmingly type-0 (246/282 rows), so
-/// without this intermediate step, correctly classifying a term as a
-/// non-zero type that this table doesn't happen to cover would silently
-/// drop straight to the least specific fallback instead of the
-/// specific-triple type-0 row a hardcoded `stretch_bend_type=0` caller would
-/// have found.
+/// Returns (kba_ijk, kba_kji). Both orderings (i,j,k) and (k,j,i) are tried
+/// at the requested `stretch_bend_type` only. An earlier version retried the
+/// same triple at stretch-bend type 0 and then a `(0, 0, type_j, 0)`
+/// wildcard; RDKit does neither (it goes straight to the periodic-row
+/// default in [`mmff94_stbn`]), and the type-0 retry produced wrong
+/// constants for classified non-zero terms (#637).
 ///
 /// `stretch_bend_type` is RDKit's `getMMFFStretchBendType` output (0-11),
 /// computed via [`crate::mmff94_minimizer::stretch_bend_type_for`] — **not**
@@ -501,17 +504,14 @@ pub fn mmff94_stbn_type_only(
             .ok()
             .map(|idx| (MMFF94_STBN[idx].4, MMFF94_STBN[idx].5))
     };
+    // Exact (stretch-bend type, i, j, k) lookup in either orientation, as
+    // RDKit's `MMFFStbnCollection::getMMFFStbnParams` does. There is no
+    // retry at stretch-bend type 0: RDKit 2026.03.6 resolves e.g. a
+    // type-1 37-37-37 term (biaryl C-C single bond) to the periodic-row
+    // default (0.30, 0.30), not to the type-0 37-37-37 row (-0.411, -0.411)
+    // (#637).
     search(stretch_bend_type, type_i, type_j, type_k)
         .or_else(|| search(stretch_bend_type, type_k, type_j, type_i).map(|(a, b)| (b, a)))
-        .or_else(|| {
-            if stretch_bend_type != 0 {
-                search(0, type_i, type_j, type_k)
-                    .or_else(|| search(0, type_k, type_j, type_i).map(|(a, b)| (b, a)))
-            } else {
-                None
-            }
-        })
-        .or_else(|| search(0, 0, type_j, 0))
 }
 
 /// RDKit's periodic-table-row default stretch-bend constants
@@ -662,5 +662,29 @@ mod dfsb_tests {
                 "row ({row_i}, _, {row_k}) violates row_i <= row_k canonicalization"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod rdkit_step_down_tests {
+    use super::*;
+
+    /// RDKit 2026.03.6 `GetMMFFOopBendParams` / `GetMMFFStretchBendParams`
+    /// values for the lookups fixed in #637.
+    #[test]
+    fn oop_uses_the_equivalence_ladder_before_the_wildcard() {
+        // Aryl amide carbonyl C: (7, 3, 10, 37) -> level-3 row (2, 3, 7, 10).
+        assert_eq!(mmff94_oop(3, 7, 10, 37), Some(0.116));
+        assert_eq!(mmff94_oop(3, 37, 7, 10), Some(0.116));
+        // Exact rows still win.
+        assert_eq!(mmff94_oop(3, 1, 7, 10), Some(0.129));
+        assert_eq!(mmff94_oop(3, 1, 1, 7), Some(0.146)); // acetone
+    }
+
+    #[test]
+    fn stretch_bend_type_one_without_a_row_uses_the_periodic_default() {
+        assert_eq!(mmff94_stbn_type_only(1, 37, 37, 37), None);
+        assert_eq!(mmff94_stbn(1, 37, 37, 37, 6, 6, 6), Some((0.30, 0.30)));
+        assert_eq!(mmff94_stbn(0, 37, 37, 37, 6, 6, 6), Some((-0.411, -0.411)));
     }
 }

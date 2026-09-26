@@ -22,6 +22,129 @@ GRADIENT_ROWS = (
     RESULTS / "mmff94-same-explicit-h-gradient-current-main-v1.0.19-2026-09-23.jsonl"
 )
 TERMS = {"bond", "angle", "stretch_bend", "torsion", "oop", "vdw", "electrostatic"}
+ISSUE637 = "v1.0.25-issue637-2026-09-25"
+ISSUE637_BEFORE = "v1.0.25-before-issue637-2026-09-25"
+
+
+def load_packet(stem: str) -> tuple[dict, list[dict]]:
+    summary_path = RESULTS / f"{stem}.json"
+    rows_path = RESULTS / f"{stem}.jsonl"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    rows = [json.loads(line) for line in rows_path.read_text(encoding="utf-8").splitlines()]
+    if hashlib.sha256(rows_path.read_bytes()).hexdigest() != summary.get("rows_artifact", {}).get("sha256"):
+        raise ValueError(f"{rows_path.name}: rows artifact hash changed")
+    return summary, rows
+
+
+def recount(rows: list[dict]) -> dict:
+    ok = [row for row in rows if row["status"] == "ok"]
+    deltas = sorted(row["abs_delta_kcal_mol"] for row in ok)
+    per_term = {
+        term: max(abs(row["term_delta_kcal_mol"][term]) for row in ok) for term in TERMS
+    }
+    return {
+        "statuses": dict(Counter(row["status"] for row in rows)),
+        "comparable_rows": len(ok),
+        "max_abs_delta_kcal_mol": deltas[-1],
+        "p90_abs_delta_kcal_mol": deltas[math.ceil(0.9 * len(deltas)) - 1],
+        "within_1_kcal_mol": sum(value <= 1.0 for value in deltas),
+        "over_5": [row["input_index"] for row in ok if row["abs_delta_kcal_mol"] > 5.0],
+        "per_term_max": per_term,
+        "term_sum_residual": max(
+            abs(sum(row["rdkit_term_energies_kcal_mol"].values()) - row["rdkit_energy_kcal_mol"])
+            for row in ok
+        ),
+        "coordinates": [row.get("coordinate_sha256") for row in rows],
+    }
+
+
+def validate_issue637(errors: list[str]) -> None:
+    """#637: per-term RDKit oracle before/after the MMFF94 typing fixes."""
+    try:
+        before_summary, before_rows = load_packet(
+            f"mmff94-same-explicit-h-energy-per-term-{ISSUE637_BEFORE}"
+        )
+        after_summary, after_rows = load_packet(
+            f"mmff94-same-explicit-h-energy-per-term-{ISSUE637}"
+        )
+        gradient_summary, gradient_rows = load_packet(
+            f"mmff94-same-explicit-h-gradient-delta1e-6-{ISSUE637}"
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        errors.append(f"#637 packet unreadable: {exc}")
+        return
+    for name, summary, revision in (
+        ("before", before_summary, "049c12e3dfa24c6142ce145462f6a39bd69be37c"),
+        ("after", after_summary, "13d70a2e514f8db8abab3fa2c1a158405f7fc1f8"),
+        ("gradient", gradient_summary, "13d70a2e514f8db8abab3fa2c1a158405f7fc1f8"),
+    ):
+        require(summary.get("schema_version") == 3, f"#637 {name}: schema changed", errors)
+        require(summary.get("gate_passed") is True, f"#637 {name}: gate failed", errors)
+        require(
+            summary.get("source", {}).get("git_revision") == revision
+            and summary.get("source", {}).get("tracked_tree_dirty") is False,
+            f"#637 {name}: source revision changed or dirty",
+            errors,
+        )
+    before = recount(before_rows)
+    after = recount(after_rows)
+    statuses = {"ok": 262, "embed_failure": 2, "declared_unsupported": 1}
+    require(before["statuses"] == statuses and after["statuses"] == statuses, "#637 statuses changed", errors)
+    require(
+        before["coordinates"] == after["coordinates"],
+        "#637 before/after rows were not measured on identical coordinates",
+        errors,
+    )
+    require(before["over_5"] == [166, 231], "#637 baseline >5 kcal/mol rows changed", errors)
+    require(after["over_5"] == [], "#637 candidate still has >5 kcal/mol rows", errors)
+    require(after["within_1_kcal_mol"] == 262, "#637 candidate rows outside 1 kcal/mol", errors)
+    require(after["max_abs_delta_kcal_mol"] < 0.5, "#637 candidate max delta >= 0.5 kcal/mol", errors)
+    for term in ("bond", "electrostatic", "stretch_bend"):
+        require(after["per_term_max"][term] < 0.01, f"#637 {term} term not at parity", errors)
+    require(
+        max(before["term_sum_residual"], after["term_sum_residual"]) < 1e-6,
+        "#637 RDKit per-term energies do not sum to the RDKit total",
+        errors,
+    )
+    for key in ("max_abs_delta_kcal_mol", "p90_abs_delta_kcal_mol", "within_1_kcal_mol", "comparable_rows"):
+        require(
+            after_summary.get("measurements", {}).get(key) == after[key],
+            f"#637 summary {key} does not match its rows",
+            errors,
+        )
+    gradients = {
+        row["input_index"]: row["gradient_diagnostic"]
+        for row in after_rows
+        if "gradient_diagnostic" in row
+    }
+    require(sorted(gradients) == [166, 178, 231], "#637 gradient cohort changed", errors)
+    require(
+        all(gradients[i]["max_scaled_error"] < 1e-6 for i in (166, 231)),
+        "#637 residual-row gradient scaled error >= 1e-6",
+        errors,
+    )
+    fine = [row["gradient_diagnostic"] for row in gradient_rows if "gradient_diagnostic" in row]
+    require(
+        len(fine) == 1
+        and fine[0]["central_difference_delta_angstrom"] == 1e-6
+        and fine[0]["max_scaled_error"] < 1e-6,
+        "#637 row 178 fine-step gradient check changed",
+        errors,
+    )
+    census_before = json.loads(
+        (RESULTS / f"mmff94-atom-type-census-{ISSUE637_BEFORE}.json").read_text(encoding="utf-8")
+    )
+    census_after = json.loads(
+        (RESULTS / f"mmff94-atom-type-census-{ISSUE637}.json").read_text(encoding="utf-8")
+    )
+    require(
+        census_before["hydrogen"]["differing_atoms"] == 3101
+        and census_after["hydrogen"]["differing_atoms"] == 56
+        and census_after["hydrogen"]["differing_atoms_with_agreeing_parent_type"] == 0
+        and census_before["heavy"]["differing_atoms"] == census_after["heavy"]["differing_atoms"],
+        "#637 atom-type census changed",
+        errors,
+    )
 
 
 def require(condition: bool, message: str, errors: list[str]) -> None:
@@ -213,6 +336,8 @@ def main() -> int:
         errors,
     )
 
+    validate_issue637(errors)
+
     if errors:
         print("MMFF94 current-energy evidence invalid:", file=sys.stderr)
         print("\n".join(f"- {error}" for error in errors), file=sys.stderr)
@@ -220,7 +345,8 @@ def main() -> int:
     print(
         "MMFF94 current-energy evidence OK: 265 terminal rows; 262 comparable; "
         "p90 1.144679 kcal/mol; two >5 kcal/mol residuals; residual-gradient "
-        "max scaled error <1e-6"
+        "max scaled error <1e-6; #637 per-term oracle: 262/262 within 1 kcal/mol, "
+        "bond/electrostatic/stretch-bend at parity, H typing 3,101 -> 56"
     )
     return 0
 

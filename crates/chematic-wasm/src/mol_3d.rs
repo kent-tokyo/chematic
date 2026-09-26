@@ -266,7 +266,101 @@ pub fn mmff94_energy_breakdown_from_coords_json(mol: &MolHandle, coords_json: &s
     }
 }
 
-// torsion_scan_json removed to reduce WASM bundle size (force-field loop; rarely used in browser).
+/// Maximum number of points a browser torsion scan may request.
+///
+/// The playground exposes 8--360 points. Capping the WASM entry point as
+/// well prevents an untrusted JS caller from allocating an unbounded result.
+const WASM_MAX_TORSION_SCAN_STEPS: u32 = 360;
+
+/// Scan the MMFF94 torsion energy for a bonded i-j-k-l atom sequence.
+///
+/// Coordinates are generated internally; `MolHandle` stores molecular
+/// topology rather than a caller-owned conformer. Returns a JSON array of
+/// `{"angle": degrees, "energy": kcal_per_mol}` points, or
+/// `{"error":"..."}` for invalid scan parameters or force-field failures.
+#[wasm_bindgen]
+pub fn torsion_scan_json(
+    mol: &MolHandle,
+    atom_i: u32,
+    atom_j: u32,
+    atom_k: u32,
+    atom_l: u32,
+    steps: u32,
+) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
+    }
+    if !(2..=WASM_MAX_TORSION_SCAN_STEPS).contains(&steps) {
+        return format!(
+            r#"{{"error":"steps must be between 2 and {}"}}"#,
+            WASM_MAX_TORSION_SCAN_STEPS
+        );
+    }
+
+    let atom_count = mol.inner.atom_count();
+    let indices = [atom_i, atom_j, atom_k, atom_l];
+    if indices.iter().any(|&idx| idx as usize >= atom_count) {
+        return format!(
+            r#"{{"error":"atom index out of range (molecule has {} atoms)"}}"#,
+            atom_count
+        );
+    }
+    let mut distinct_indices = indices;
+    distinct_indices.sort_unstable();
+    if distinct_indices.windows(2).any(|pair| pair[0] == pair[1]) {
+        return r#"{"error":"torsion atom indices must be distinct"}"#.to_string();
+    }
+
+    let i = chematic_core::AtomIdx(atom_i);
+    let j = chematic_core::AtomIdx(atom_j);
+    let k = chematic_core::AtomIdx(atom_k);
+    let l = chematic_core::AtomIdx(atom_l);
+    if mol.inner.bond_between(i, j).is_none()
+        || mol.inner.bond_between(j, k).is_none()
+        || mol.inner.bond_between(k, l).is_none()
+    {
+        return r#"{"error":"torsion atoms must form a bonded i-j-k-l sequence"}"#.to_string();
+    }
+
+    let conformer = chematic_3d::generate_coords(&mol.inner);
+    let coords: Vec<[f64; 3]> = (0..atom_count)
+        .map(|idx| {
+            let point = conformer.get(chematic_core::AtomIdx(idx as u32));
+            [point.x, point.y, point.z]
+        })
+        .collect();
+
+    match chematic_ff::mmff94_torsion_scan(
+        &mol.inner,
+        &coords,
+        atom_i as usize,
+        atom_j as usize,
+        atom_k as usize,
+        atom_l as usize,
+        steps as usize,
+    ) {
+        Ok(scan)
+            if scan
+                .iter()
+                .all(|(angle, energy)| angle.is_finite() && energy.is_finite()) =>
+        {
+            let points = scan
+                .iter()
+                .map(|(angle, energy)| format!(r#"{{"angle":{angle},"energy":{energy}}}"#))
+                .collect::<Vec<_>>()
+                .join(",");
+            format!("[{points}]")
+        }
+        Ok(_) => r#"{"error":"torsion scan produced a non-finite energy"}"#.to_string(),
+        Err(error) => format!(
+            r#"{{"error":"{}"}}"#,
+            escape_json_string(&error.to_string())
+        ),
+    }
+}
 
 /// Compute MMFF94 partial charges using numeric atom types (Halgren 1996 eq. 15).
 /// Returns JSON: {"charges":[-0.28,0.15,...]} or {"error":"..."}.

@@ -50,3 +50,5 @@ pub use valence::total_hcount;
 pub use valence::{
     ValenceError, bond_order_sum, implicit_hcount, valence_inferred_hcount, validate_valence,
 };
+#[doc(hidden)]
+pub use valence::{implicit_hcount_with, valence_inferred_hcount_with};

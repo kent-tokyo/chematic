@@ -17,6 +17,18 @@ PREFIX = "v1.0.19-vs-2026.03.6-2026-09-22"
 ISSUE632_SUMMARY = RESULTS / (
     "smiles-ez-semantic-issue632-v1.0.20-candidate-vs-rdkit-2026.03.6-2026-09-23.json"
 )
+ISSUE634_635_SUMMARY = RESULTS / (
+    "rdkit-rebaseline-issue634-635-v1.0.25-candidate-vs-rdkit-2026.03.6-2026-09-25.json"
+)
+ISSUE634_635_CIP_FAMILIES = {
+    "phosphorus_oracle_unstable": 4,
+    "trivalent_nitrogen_unsupported": 1,
+    "adjudication_required": 1,
+}
+ISSUE634_635_SMARTS_FAMILIES = {
+    "ring_semantics:organometallic": 6,
+    "ring_semantics:symmetrized_rings": 194,
+}
 ALLOWED_CLASSES = {
     "chematic_regression",
     "oracle_change",
@@ -197,6 +209,119 @@ def validate_issue632_candidate(baseline_rows_path: Path, errors: list[str]) -> 
     )
 
 
+def validate_issue634_635_candidate(errors: list[str]) -> None:
+    """Issues #634/#635: recount the committed rows and the residual families."""
+    evidence = json.loads(ISSUE634_635_SUMMARY.read_text(encoding="utf-8"))
+    require(evidence.get("gate_passed") is True, "Issue #634/#635 gate failed", errors)
+    require(
+        evidence.get("oracle") == {"name": "RDKit Python", "version": "2026.03.6"},
+        "Issue #634/#635 oracle changed",
+        errors,
+    )
+    raw = evidence.get("raw_rows", {})
+    rows_path = ROOT / str(raw.get("path", ""))
+    try:
+        compressed = rows_path.read_bytes()
+    except OSError as exc:
+        errors.append(f"Issue #634/#635 rows unavailable: {exc}")
+        return
+    require(
+        hashlib.sha256(compressed).hexdigest() == raw.get("compressed_sha256"),
+        "Issue #634/#635 compressed rows SHA-256 changed",
+        errors,
+    )
+    uncompressed = gzip.decompress(compressed)
+    require(
+        hashlib.sha256(uncompressed).hexdigest() == raw.get("uncompressed_sha256"),
+        "Issue #634/#635 uncompressed rows SHA-256 changed",
+        errors,
+    )
+    rows = [json.loads(line) for line in uncompressed.splitlines() if line.strip()]
+    require(len(rows) == 10000, f"Issue #634/#635 expected 10,000 rows, found {len(rows)}", errors)
+    require(
+        [row.get("input_index") for row in rows] == list(range(len(rows))),
+        "Issue #634/#635 rows are not contiguous",
+        errors,
+    )
+    observed = {
+        "cip_exact": sum(row.get("cip", {}).get("exact") is True for row in rows),
+        "morgan_exact": sum(row.get("morgan", {}).get("exact") is True for row in rows),
+        "smarts_cells": sum(int(row.get("smarts", {}).get("query_count", 0)) for row in rows),
+        "smarts_differences": sum(
+            int(row.get("smarts", {}).get("difference_count", 0)) for row in rows
+        ),
+    }
+    observed["cip_difference"] = len(rows) - observed["cip_exact"]
+    after = evidence.get("after", {})
+    for key, value in observed.items():
+        require(
+            after.get(key) == value,
+            f"Issue #634/#635 {key} changed: expected {after.get(key)!r}, found {value}",
+            errors,
+        )
+    before = evidence.get("before", {})
+    issue632 = json.loads(ISSUE632_SUMMARY.read_text(encoding="utf-8"))
+    require(
+        before.get("uncompressed_rows_sha256")
+        == issue632.get("raw_rows", {}).get("uncompressed_sha256"),
+        "Issue #634/#635 baseline rows are not byte-identical to the committed Issue #632 rows",
+        errors,
+    )
+    require(
+        (before.get("cip_exact"), before.get("smarts_differences"), before.get("morgan_exact"))
+        == (9770, 14306, 9999),
+        "Issue #634/#635 baseline does not match the committed Issue #632 rows",
+        errors,
+    )
+    require(
+        observed["cip_exact"] > before.get("cip_exact", 0)
+        and observed["smarts_differences"] < before.get("smarts_differences", 0)
+        and observed["morgan_exact"] >= before.get("morgan_exact", 0),
+        "Issue #634/#635 candidate worsened CIP, SMARTS, or Morgan counts",
+        errors,
+    )
+
+    classification_path = ROOT / str(
+        evidence.get("residual_classification", {}).get("path", "")
+    )
+    try:
+        classification = json.loads(classification_path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        errors.append(f"Issue #634/#635 classification unavailable: {exc}")
+        return
+    require(
+        classification.get("rows_file", {}).get("sha256") == raw.get("compressed_sha256"),
+        "Issue #634/#635 classification was not made from the committed rows",
+        errors,
+    )
+    cip = classification.get("cip", {})
+    smarts = classification.get("smarts", {})
+    require(
+        cip.get("differing_labels_by_family") == ISSUE634_635_CIP_FAMILIES
+        and cip.get("unclassified_labels") == 0,
+        "Issue #634/#635 CIP residual families changed or include unclassified labels",
+        errors,
+    )
+    require(
+        smarts.get("cells_by_family") == ISSUE634_635_SMARTS_FAMILIES
+        and smarts.get("unclassified_cells") == 0,
+        "Issue #634/#635 SMARTS residual families changed or include unclassified cells",
+        errors,
+    )
+    require(
+        cip.get("differing_rows") == observed["cip_difference"]
+        and smarts.get("differing_cells") == observed["smarts_differences"],
+        "Issue #634/#635 classification does not cover every residual",
+        errors,
+    )
+    residual_rows = {row["input_index"] for row in rows if row.get("cip", {}).get("exact") is not True}
+    require(
+        residual_rows == {item["input_index"] for item in cip.get("rows", [])},
+        "Issue #634/#635 CIP classification rows differ from the residual rows",
+        errors,
+    )
+
+
 def main() -> int:
     errors: list[str] = []
     contract = load(f"rdkit-rebaseline-python-binding-contract-{PREFIX}.json")
@@ -303,6 +428,7 @@ def main() -> int:
     )
 
     validate_issue632_candidate(rows_path, errors)
+    validate_issue634_635_candidate(errors)
     require(
         operation_classes[("smarts", "unresolved")] == 3364,
         "expected 3,364 unresolved SMARTS rows",
@@ -406,7 +532,9 @@ def main() -> int:
         "RDKit rebaseline evidence OK: 10,000 complete rows; "
         "Issue #632 reduces 18 SMILES stereo regressions to zero; "
         "one typed Morgan contract difference; "
-        "230 CIP and 3,364 SMARTS rows unresolved"
+        "230 CIP and 3,364 SMARTS rows unresolved at v1.0.19; "
+        "Issue #634/#635 candidate: CIP 9,994/10,000 exact, SMARTS 200/310,000 "
+        "cells differ, every residual classified"
     )
     return 0
 

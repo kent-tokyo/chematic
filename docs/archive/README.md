@@ -12,6 +12,7 @@ index.
 | [`security-policy-through-v1.0.4.md`](security-policy-through-v1.0.4.md) | Detailed historical security controls and evidence notes |
 | [`benchmark-guide-through-v1.0.4.md`](benchmark-guide-through-v1.0.4.md) | Long-form benchmark narrative and historical tables |
 | [`rdkit-comparison-through-v1.0.4.md`](rdkit-comparison-through-v1.0.4.md) | Previous long-form RDKit comparison |
+| [`changelog-through-v1.0.25.md`](changelog-through-v1.0.25.md) | Detailed public release history through v1.0.25; the root changelog keeps the current summaries |
 
 Use the root [`CHANGELOG.md`](../../CHANGELOG.md), [`ROADMAP.md`](../../ROADMAP.md),
 and [`SECURITY.md`](../../SECURITY.md), plus the current

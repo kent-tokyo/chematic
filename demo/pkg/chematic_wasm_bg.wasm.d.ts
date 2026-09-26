@@ -371,6 +371,7 @@ export const to_qcschema_molecule_json: (a: number, b: number, c: number, d: num
 export const to_xyz: (a: number) => [number, number];
 export const topo_path_bitvec: (a: number) => [number, number];
 export const torsion_bitvec: (a: number) => [number, number];
+export const torsion_scan_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
 export const v3000_sgroups_json: (a: number, b: number) => [number, number, number, number];
 export const validate_nmr_spectrum_json: (a: number, b: number) => [number, number];
 export const virtual_screen_ecfp4_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];

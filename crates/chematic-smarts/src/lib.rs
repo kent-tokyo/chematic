@@ -13,6 +13,7 @@ pub mod cx;
 pub mod match_vf2;
 pub mod mcs;
 pub mod parser;
+pub mod perceived;
 pub mod query;
 pub mod rdkit_parity_match;
 pub mod rdkit_ring_model;
@@ -22,13 +23,17 @@ pub use cx::{CxQueryAtomProp, CxSmarts, parse_cxsmarts};
 pub use match_vf2::{
     MatchConfig, MatchOutcome, find_matches, find_matches_with_config, find_matches_with_rings,
     find_matches_with_rings_and_config, find_matches_with_rings_and_config_checked,
-    first_anchored_match_per_atom, has_match_bounded, has_match_with_config,
+    first_anchored_match_per_atom, for_each_embedding, has_match_bounded, has_match_with_config,
 };
 pub use mcs::{
     AtomCompare, BondCompare, McsConfig, McsOutcome, find_mcs, find_mcs_with_config,
     find_mcs_with_config_checked,
 };
 pub use parser::{SmartsError, parse_smarts};
+pub use perceived::{
+    find_match_atom_sets_perceived, find_matches_perceived, has_match_perceived,
+    with_perceived_target,
+};
 pub use query::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryAtom, QueryBond, QueryMolecule,
 };

@@ -1,0 +1,91 @@
+{
+ "schema_version": 1,
+ "profile": "issue634_635_cip_smarts_rebaseline_v1",
+ "gate_passed": true,
+ "candidate": {
+  "version": "1.0.25",
+  "base_commit": "f4b1d31c29611c6adc7c612b93dc6f6076800d99",
+  "commit": "11a4ea275c7f4125aded3d48c27cb33910cf99d1",
+  "wheel": "chematic-1.0.25-cp311-cp311-manylinux_2_35_x86_64.whl",
+  "wheel_sha256": "74e68d4dddf5f959373a838a028e5beba96d1a08fc680ee9927a15ecf6778469",
+  "status": "source candidate built from a committed tree; not a published-package measurement"
+ },
+ "oracle": {
+  "name": "RDKit Python",
+  "version": "2026.03.6"
+ },
+ "corpus": {
+  "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+  "sealed_accuracy_cohort_reused": false
+ },
+ "queries": {
+  "path": "validation/rdkit_rebaseline_smarts_queries.json",
+  "sha256": "250a241a8905d013eb58fff0ccfb1e0dbe3e97c08ff56e021828fbfec957b341",
+  "count": 31
+ },
+ "row_accounting": {
+  "input_count": 10000,
+  "completed_count": 10000,
+  "parse_failure_count": 0
+ },
+ "before": {
+  "measured_on": "v1.0.25 release source with its own lane script",
+  "wheel_sha256": "03e3ee5f11bd04a1677e71fa3b0f4544eb131b96a4e947f904189e6801720208",
+  "uncompressed_rows_sha256": "5030c39636c7ff7d2a20c1c714b27c558d08c5b492e2fe7e5b385dc50b9c7ea2",
+  "identical_committed_rows": "validation/results/rdkit-rebaseline-python-chemistry-rows-v1.0.20-candidate-issue632-vs-2026.03.6-2026-09-23.jsonl.gz",
+  "cip_exact": 9770,
+  "cip_difference": 230,
+  "smarts_cells": 310000,
+  "smarts_differences": 14306,
+  "morgan_exact": 9999
+ },
+ "after": {
+  "cip_exact": 9994,
+  "cip_difference": 6,
+  "smarts_cells": 310000,
+  "smarts_differences": 200,
+  "morgan_exact": 9999,
+  "morgan_difference": 1,
+  "smiles_exact_spelling": 64,
+  "smiles_spelling_difference": 9936
+ },
+ "changes": {
+  "issue634": [
+   "the lane keys CheMatic E/Z labels by double-bond endpoints (cip_stereo now returns bond_idx and bond_atoms); atom_idx is never read as a bond index",
+   "CipMode.ACCURATE E/Z uses the hierarchical-digraph substituent ranker (chematic-cip SubstituentRanker) instead of the legacy sphere comparison"
+  ],
+  "issue635": [
+   "Python and WASM SMARTS APIs match against the index-preserving RDKit-parity perceived aromatic view; the Rust core find_matches is unchanged"
+  ]
+ },
+ "residual_classification": {
+  "path": "validation/results/rdkit-rebaseline-residual-classification-v1.0.25-issue634-635-vs-2026.03.6-2026-09-25.json",
+  "cip_labels_by_family": {
+   "adjudication_required": 1,
+   "phosphorus_oracle_unstable": 4,
+   "trivalent_nitrogen_unsupported": 1
+  },
+  "cip_unclassified": 0,
+  "smarts_cells_by_family": {
+   "ring_semantics:organometallic": 6,
+   "ring_semantics:symmetrized_rings": 194
+  },
+  "smarts_unclassified": 0
+ },
+ "raw_rows": {
+  "path": "validation/results/rdkit-rebaseline-python-chemistry-rows-v1.0.25-issue634-635-vs-2026.03.6-2026-09-25.jsonl.gz",
+  "compression": "gzip -n -9",
+  "compressed_sha256": "e8c0733e6fd044e0779b24dcefbde3ef8b249ee20e4071e741f8231f96626a5d",
+  "uncompressed_sha256": "f7b3c3a74f858e29d77ee84e21a68174f34df5e382ed19ec9371ec8d9dc86414"
+ },
+ "commands": [
+  "git checkout 11a4ea27 && maturin build --release -i python3 -m crates/chematic-py/Cargo.toml -o <wheels>",
+  "pip install <wheels>/chematic-1.0.25-cp311-cp311-manylinux_2_35_x86_64.whl",
+  "python3 scripts/run_rdkit_python_chemistry_lane.py --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --queries validation/rdkit_rebaseline_smarts_queries.json --output <summary.json> --rows-output <rows.jsonl> --expected-rdkit 2026.03.6",
+  "gzip -n -9 -c <rows.jsonl> > validation/results/rdkit-rebaseline-python-chemistry-rows-v1.0.25-issue634-635-vs-2026.03.6-2026-09-25.jsonl.gz",
+  "python3 scripts/classify_rdkit_rebaseline_residuals.py --rows validation/results/rdkit-rebaseline-python-chemistry-rows-v1.0.25-issue634-635-vs-2026.03.6-2026-09-25.jsonl.gz --output validation/results/rdkit-rebaseline-residual-classification-v1.0.25-issue634-635-vs-2026.03.6-2026-09-25.json",
+  "before: the same lane command at tag v1.0.25 with its release wheel"
+ ],
+ "boundary": "Every remaining CIP label and SMARTS cell has a named root cause; none is unclassified. The 6 CIP labels are 4 phosphorus centres CheMatic abstains on as oracle_unstable, 1 trivalent bridgehead nitrogen CheMatic does not model, and 1 centre (row 4480, atom 3) where both engines label and disagree and which needs independent adjudication before either answer is adopted. The 200 SMARTS cells are ring-count semantics: [Rn]/[kn] count SSSR rings in CheMatic and RDKit's symmetrized ring set in RDKit (194 cells), plus 6 cells on a ferrocene row. This is not a claim of complete RDKit CIP or SMARTS compatibility."
+}

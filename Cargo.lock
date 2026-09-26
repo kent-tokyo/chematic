@@ -228,9 +228,9 @@ checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
 
 [[package]]
 name = "cc"
-version = "1.4.5"
+version = "1.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "005ec2760ca554fae18df7a11195552ec576cd665632a881bc011d5bb2fd4d80"
+checksum = "54413ede23c2daf518f35156dfde027feb2374004d63bd497f983c8db9c0e313"
 dependencies = [
  "find-msvc-tools",
  "shlex",
@@ -244,7 +244,7 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "chematic"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -263,7 +263,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-3d"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -279,7 +279,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-chem"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-cip",
  "chematic-core",
@@ -297,7 +297,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-cip"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -309,7 +309,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-cli"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -324,11 +324,11 @@ dependencies = [
 
 [[package]]
 name = "chematic-core"
-version = "1.0.24"
+version = "1.0.26"
 
 [[package]]
 name = "chematic-crystal"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-core",
  "criterion",
@@ -338,7 +338,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-depict"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -352,7 +352,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-ewald"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-3d",
  "chematic-core",
@@ -361,7 +361,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-ff"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -372,7 +372,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-fp"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-cip",
  "chematic-core",
@@ -389,7 +389,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-inchi"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "cc",
  "chematic-chem",
@@ -401,7 +401,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-iupac"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -410,7 +410,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-mcp"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -428,7 +428,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-mol"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -446,7 +446,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-perception"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-core",
  "chematic-smiles",
@@ -457,7 +457,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-py"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -477,12 +477,13 @@ dependencies = [
  "numpy",
  "pyo3",
  "rayon",
+ "rustc-hash",
  "serde_json",
 ]
 
 [[package]]
 name = "chematic-rxn"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -497,7 +498,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-smarts"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -510,7 +511,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-smiles"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-core",
  "chematic-fp",
@@ -522,7 +523,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-wasm"
-version = "1.0.24"
+version = "1.0.26"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -575,9 +576,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.6.6"
+version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "473c7e07f409a8d772161724aa8db6a765a2532a70f9667eeb7b49d3d02fbdca"
+checksum = "aa8876b300ab35ba921adea3dfd70157a46249b33f95c9084ae5709785478946"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -585,9 +586,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.6.6"
+version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b48fea5a88e9ae728a2dcbedbfc0e730f7d60da42e1cb049a83c9fb8b789889"
+checksum = "ec0797fb7aeb1406c84efac526901f7ec3ead2124f946b494e72879d4b54704d"
 dependencies = [
  "anstream",
  "anstyle",
@@ -597,9 +598,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.6.4"
+version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d012d2b9d65aca7f18f4d9878a045bc17899bba951561ba5ec3c2ba1eed9a061"
+checksum = "f9c751b79415d4e559e3d1fcf128e09e720eb673a06d26cf6f392d37d75b66e0"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -773,9 +774,9 @@ dependencies = [
 
 [[package]]
 name = "find-msvc-tools"
-version = "0.1.12"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e0f1c7c3a72c66fd80abe965175f7523475c0489a87d3ff9d6e8c87d87a9d2d"
+checksum = "ef25905e51abafe4dcea6c15fec58c57b601cdbd0ee53d22ea1d3016c587d39b"
 
 [[package]]
 name = "flate2"
@@ -1965,9 +1966,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.16.0"
+version = "1.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9be42f50aa861c555654aa3a37f52f4b1074bacf4e48fe0ef7fa584e80f1f0f"
+checksum = "ba467056f1b547ed52077911161fc86985becbc60e8e1857c8a144dab0def891"
 
 [[package]]
 name = "strength_reduce"
@@ -2239,9 +2240,9 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
 name = "ureq"
-version = "3.4.1"
+version = "3.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af5546be8f5378d5414f83733f5c9a2526f4645829edbc1c41790aeef1b38e8b"
+checksum = "9a7ac20be9b7726e0bbdbf974c059676d9acb1cd414961f570a4e8231cacd7fc"
 dependencies = [
  "base64 0.23.1",
  "flate2",

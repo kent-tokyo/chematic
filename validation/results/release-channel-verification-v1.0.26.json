@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "release": {
+    "version": "1.0.26",
+    "tag": "v1.0.26",
+    "commit": "75fc443ab45e4fe5eb28f8746a9c9c8eb2bbec11"
+  },
+  "checked_at": "2026-09-25T14:24:38Z",
+  "release_ready": true,
+  "channels": [
+    {
+      "id": "github_release",
+      "status": "verified",
+      "observed_version": "1.0.26",
+      "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.26",
+      "detail": "Non-draft, non-prerelease Release published at 2026-09-25T14:05:27Z. Metadata asset sha256:39f08d99b37e7451cf818f2c3f3bce7ccb25456315ea95bf38a537e188b07fc9."
+    },
+    {
+      "id": "npm",
+      "status": "verified",
+      "observed_version": "1.0.26",
+      "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic",
+      "detail": "Registry metadata reports @kent-tokyo/chematic@1.0.26 with integrity sha512-xFxMfhpU+q+IMhfhOoe/NvFGEw+t7s6k54B2HKea63hkwF305bqTrqClMDtgjyhtwqbUXGPcHA9AtUrrQnEw5w==."
+    },
+    {
+      "id": "pypi",
+      "status": "verified",
+      "observed_version": "1.0.26",
+      "url": "https://pypi.org/pypi/chematic/1.0.26/json",
+      "detail": "PyPI JSON lists 18 non-yanked distributions; sdist chematic-1.0.26.tar.gz sha256:95cef6e6a39da7dc358e4decebd2489513af49739e309e24e6e07996a5baa49d."
+    },
+    {
+      "id": "crates_io",
+      "status": "verified",
+      "observed_version": "1.0.26",
+      "url": "https://crates.io/crates/chematic/1.0.26",
+      "detail": "Tag workflow 36145140854 published the root crate successfully; the public cargo search index reports chematic = 1.0.26."
+    },
+    {
+      "id": "docs_rs",
+      "status": "verified",
+      "observed_version": "1.0.26",
+      "url": "https://docs.rs/chematic/1.0.26/chematic/",
+      "detail": "Version-pinned docs.rs endpoint returned HTTP 200 after crates.io publication."
+    },
+    {
+      "id": "site",
+      "status": "verified",
+      "observed_version": "1.0.26",
+      "url": "https://kent-tokyo.github.io/chematic/",
+      "detail": "Pages workflow 36145097108 completed successfully; direct homepage fetch displayed Current release: v1.0.26."
+    }
+  ]
+}

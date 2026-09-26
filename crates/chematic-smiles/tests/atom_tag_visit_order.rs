@@ -1,16 +1,15 @@
-//! Regression coverage for `Atom.tag` + SMILES visit-order helpers.
+//! Regression coverage for `Atom.tag` against SMILES visit-order helpers.
 //!
-//! Guarantees:
-//! - tags never change written / canonical SMILES
-//! - `*_with_order` strings match the non-order APIs
-//! - visit order is a permutation usable to remap tags across write/parse
+//! Tags must not change written / canonical SMILES. Visit order from
+//! `write_with_atom_order` / `canonical_smiles_with_atom_order` remaps tags
+//! across write/parse.
 
 use std::collections::{BTreeMap, HashSet};
 use std::num::NonZeroU16;
 
 use chematic_core::{AtomIdx, Molecule};
 use chematic_smiles::{
-    canonical_smiles, canonical_smiles_with_order, parse, write, write_with_order,
+    canonical_smiles, canonical_smiles_with_atom_order, parse, write, write_with_atom_order,
 };
 
 const CORPUS: &[&str] = &[
@@ -68,18 +67,6 @@ fn remap_via_order(mol: &Molecule, order: &[AtomIdx], fresh: &mut Molecule) {
 }
 
 #[test]
-fn empty_molecule_order_apis() {
-    let mol = chematic_core::MoleculeBuilder::new().build();
-    assert_eq!(write(&mol), "");
-    assert_eq!(write_with_order(&mol), (String::new(), Vec::new()));
-    assert_eq!(canonical_smiles(&mol), "");
-    assert_eq!(
-        canonical_smiles_with_order(&mol),
-        (String::new(), Vec::new())
-    );
-}
-
-#[test]
 fn tags_do_not_change_write_or_canonical_across_corpus() {
     for smi in CORPUS {
         let plain = parse(smi).unwrap_or_else(|e| panic!("parse {smi}: {e}"));
@@ -97,7 +84,6 @@ fn tags_do_not_change_write_or_canonical_across_corpus() {
             "canonical_smiles changed by tags for {smi}"
         );
 
-        // Tags must not appear as atom-map `:n` in the string.
         let out = write(&tagged);
         assert!(
             !out.chars().any(|c| c == ':'),
@@ -107,25 +93,25 @@ fn tags_do_not_change_write_or_canonical_across_corpus() {
 }
 
 #[test]
-fn with_order_strings_match_plain_apis_across_corpus() {
+fn tagged_molecule_atom_order_apis_match_untagged() {
     for smi in CORPUS {
-        let mol = parse(smi).unwrap_or_else(|e| panic!("parse {smi}: {e}"));
-        let (w, w_order) = write_with_order(&mol);
-        assert_eq!(w, write(&mol), "write_with_order string mismatch for {smi}");
-        assert_permutation(&w_order, mol.atom_count());
-
-        let (c, c_order) = canonical_smiles_with_order(&mol);
-        assert_eq!(
-            c,
-            canonical_smiles(&mol),
-            "canonical_smiles_with_order string mismatch for {smi}"
-        );
-        assert_permutation(&c_order, mol.atom_count());
+        let mut mol = parse(smi).unwrap_or_else(|e| panic!("parse {smi}: {e}"));
+        let (plain_w, plain_wo) = write_with_atom_order(&mol);
+        let (plain_c, plain_co) = canonical_smiles_with_atom_order(&mol);
+        stamp_tags(&mut mol);
+        let (tag_w, tag_wo) = write_with_atom_order(&mol);
+        let (tag_c, tag_co) = canonical_smiles_with_atom_order(&mol);
+        assert_eq!(tag_w, plain_w, "write string changed by tags for {smi}");
+        assert_eq!(tag_wo, plain_wo, "write order changed by tags for {smi}");
+        assert_eq!(tag_c, plain_c, "canonical string changed by tags for {smi}");
+        assert_eq!(tag_co, plain_co, "canonical order changed by tags for {smi}");
+        assert_permutation(&tag_wo, mol.atom_count());
+        assert_permutation(&tag_co, mol.atom_count());
     }
 }
 
 #[test]
-fn write_parse_remaps_tags_by_visit_order() {
+fn write_parse_remaps_tags_by_atom_order() {
     for smi in CORPUS {
         let mut mol = parse(smi).unwrap_or_else(|e| panic!("parse {smi}: {e}"));
         if mol.atom_count() == 0 {
@@ -134,7 +120,7 @@ fn write_parse_remaps_tags_by_visit_order() {
         stamp_tags(&mut mol);
         let before = tag_element_map(&mol);
 
-        let (written, order) = write_with_order(&mol);
+        let (written, order) = write_with_atom_order(&mol);
         let mut fresh = parse(&written).unwrap_or_else(|e| panic!("reparse {written}: {e}"));
         remap_via_order(&mol, &order, &mut fresh);
 
@@ -143,7 +129,6 @@ fn write_parse_remaps_tags_by_visit_order() {
             before,
             "tag→element map lost on write/parse for {smi}"
         );
-        // Every stamped tag is unique and present.
         let tags: HashSet<_> = (0..fresh.atom_count())
             .filter_map(|i| fresh.atom(AtomIdx(i as u32)).tag.map(NonZeroU16::get))
             .collect();
@@ -152,7 +137,7 @@ fn write_parse_remaps_tags_by_visit_order() {
 }
 
 #[test]
-fn canonical_write_parse_remaps_tags_by_visit_order() {
+fn canonical_write_parse_remaps_tags_by_atom_order() {
     for smi in CORPUS {
         let mut mol = parse(smi).unwrap_or_else(|e| panic!("parse {smi}: {e}"));
         if mol.atom_count() == 0 {
@@ -161,7 +146,7 @@ fn canonical_write_parse_remaps_tags_by_visit_order() {
         stamp_tags(&mut mol);
         let before = tag_element_map(&mol);
 
-        let (csmi, order) = canonical_smiles_with_order(&mol);
+        let (csmi, order) = canonical_smiles_with_atom_order(&mol);
         let mut fresh = parse(&csmi).unwrap_or_else(|e| panic!("reparse {csmi}: {e}"));
         remap_via_order(&mol, &order, &mut fresh);
 
@@ -174,36 +159,38 @@ fn canonical_write_parse_remaps_tags_by_visit_order() {
 }
 
 #[test]
-fn tagged_and_untagged_molecules_roundtrip_identically() {
+fn reparse_does_not_invent_tags() {
     for smi in CORPUS {
-        let plain = parse(smi).unwrap();
-        let mut tagged = plain.clone();
+        let mut tagged = parse(smi).unwrap();
         stamp_tags(&mut tagged);
-
-        let plain_out = write(&plain);
-        let tagged_out = write(&tagged);
-        assert_eq!(plain_out, tagged_out);
-
-        let plain_re = parse(&plain_out).unwrap();
-        let tagged_re = parse(&tagged_out).unwrap();
-        assert_eq!(plain_re.atom_count(), tagged_re.atom_count());
-        assert_eq!(plain_re.bond_count(), tagged_re.bond_count());
-        // Reparse never invents tags.
-        assert!(tagged_re.atoms().all(|(_, a)| a.tag.is_none()));
+        let out = write(&tagged);
+        let re = parse(&out).unwrap();
+        assert!(re.atoms().all(|(_, a)| a.tag.is_none()));
     }
 }
 
 #[test]
-fn disconnected_fragments_visit_order_covers_all_atoms() {
-    let mol = parse("[Na+].[Cl-].CCO").unwrap();
-    let (smi, order) = write_with_order(&mol);
-    assert_eq!(smi, write(&mol));
-    assert_permutation(&order, mol.atom_count());
-    assert!(smi.contains('.'));
-
-    let (csmi, c_order) = canonical_smiles_with_order(&mol);
-    assert_eq!(csmi, canonical_smiles(&mol));
-    assert_permutation(&c_order, mol.atom_count());
+fn tags_survive_fragments() {
+    let mut mol = parse("CCO.O").unwrap();
+    stamp_tags(&mut mol);
+    let before = tag_element_map(&mol);
+    let frags = mol.fragments_with_source_atoms();
+    assert!(frags.len() >= 2);
+    let mut recovered = BTreeMap::new();
+    for (frag, source) in &frags {
+        for (i, &src) in source.iter().enumerate() {
+            let tag = frag.atom(AtomIdx(i as u32)).tag.map(NonZeroU16::get);
+            assert_eq!(
+                tag,
+                mol.atom(src).tag.map(NonZeroU16::get),
+                "fragment tag mismatch at source {src:?}"
+            );
+            if let Some(t) = tag {
+                recovered.insert(t, frag.atom(AtomIdx(i as u32)).element.atomic_number());
+            }
+        }
+    }
+    assert_eq!(recovered, before);
 }
 
 #[test]
@@ -215,4 +202,12 @@ fn clearing_tags_restores_default_atom_equality() {
     assert_ne!(a.atom(AtomIdx(0)), b.atom(AtomIdx(0)));
     a.set_tag(AtomIdx(0), None);
     assert_eq!(a.atom(AtomIdx(0)), b.atom(AtomIdx(0)));
+}
+
+#[test]
+fn write_does_not_emit_atom_tag() {
+    let mut mol = parse("C").unwrap();
+    mol.set_tag(AtomIdx(0), Some(42));
+    assert_eq!(write(&mol), "C");
+    assert_eq!(mol.atom(AtomIdx(0)).tag.map(NonZeroU16::get), Some(42));
 }

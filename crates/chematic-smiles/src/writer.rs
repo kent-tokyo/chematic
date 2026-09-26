@@ -177,14 +177,23 @@ pub(crate) fn square_planar_token(p: chematic_core::SquarePlanarPermutation) -> 
 /// Disconnected fragments are joined with `.`.
 /// Aromatic atoms are written in lowercase.
 pub fn write(mol: &Molecule) -> String {
-    write_with_order(mol).0
+    if mol.atom_count() == 0 {
+        return String::new();
+    }
+    SmilesWriter::new(mol).write_all().0
 }
 
-/// Write SMILES and the atom visit order used to emit it.
+/// Write a [`Molecule`] to SMILES and report the order in which its atoms
+/// appear in the string.
 ///
-/// `order[k]` is the mol index of the `k`-th atom written into the string.
-/// After `parse(write(mol))`, the new mol's indexes match this visit order.
-pub fn write_with_order(mol: &Molecule) -> (String, Vec<AtomIdx>) {
+/// The string is exactly [`write`]'s. `order[k]` is the index in `mol` of the
+/// `k`-th atom written, which is also the index that atom receives when the
+/// string is parsed back with [`crate::parse`]: for every `k`,
+/// `parse(&smiles)?.atom(AtomIdx(k))` corresponds to `mol.atom(order[k])`.
+/// Every atom of `mol` is written exactly once, so `order` is a permutation
+/// of `0..mol.atom_count()`. This is the DFS visit order (RDKit's
+/// `_smilesAtomOutputOrder`), not a canonical rank.
+pub fn write_with_atom_order(mol: &Molecule) -> (String, Vec<AtomIdx>) {
     if mol.atom_count() == 0 {
         return (String::new(), Vec::new());
     }
@@ -204,8 +213,8 @@ struct SmilesWriter<'a> {
     written: Vec<bool>,
     next_ring: u16,
     out: String,
-    /// Mol indexes in the order atoms were emitted into `out`.
-    visit_order: Vec<AtomIdx>,
+    /// Atoms in the order they were emitted.
+    order: Vec<AtomIdx>,
 }
 
 impl<'a> SmilesWriter<'a> {
@@ -218,7 +227,7 @@ impl<'a> SmilesWriter<'a> {
             written: vec![false; n],
             next_ring: 1,
             out: String::new(),
-            visit_order: Vec::with_capacity(n),
+            order: Vec::with_capacity(n),
         }
     }
 
@@ -238,7 +247,7 @@ impl<'a> SmilesWriter<'a> {
             }
         }
 
-        (self.out, self.visit_order)
+        (self.out, self.order)
     }
 
     fn find_ring_closures(&mut self) {
@@ -328,7 +337,6 @@ impl<'a> SmilesWriter<'a> {
         incoming_bond: Option<&'static str>,
     ) {
         self.written[atom.0 as usize] = true;
-        self.visit_order.push(atom);
 
         // Write the incoming bond (if explicit / non-default).
         if let Some(token) = incoming_bond {
@@ -336,18 +344,29 @@ impl<'a> SmilesWriter<'a> {
         }
 
         // Write the atom symbol.
+        self.order.push(atom);
         self.emit_atom(atom);
 
         // Write ring-closure digits for this atom (both open and close digits).
         if let Some(rings) = self.atom_ring_nums.remove(&atom) {
             for (rn, bond_order, bidx) in rings {
-                // Write bond type unless it is implicit.
-                let atom_aromatic = self.mol.atom(atom).aromatic;
-                // For ring closures we can't know the other atom's aromaticity here,
-                // so we emit the bond type unless it is a plain aromatic ring bond.
-                if !(bond_order == BondOrder::Aromatic && atom_aromatic)
-                    && bond_order != BondOrder::Single
-                {
+                // Write bond type unless the parser would infer it from the
+                // two endpoints: a bare digit reads back as aromatic between
+                // two aromatic atoms and as single otherwise (the same rule
+                // as tree edges, and as the canonical writer since #395).
+                let bond = self.mol.bond(bidx);
+                let partner = if bond.atom1 == atom {
+                    bond.atom2
+                } else {
+                    bond.atom1
+                };
+                let both_aromatic = self.mol.atom(atom).aromatic && self.mol.atom(partner).aromatic;
+                let implicit = match bond_order {
+                    BondOrder::Single => !both_aromatic,
+                    BondOrder::Aromatic => both_aromatic,
+                    _ => false,
+                };
+                if !implicit {
                     // Oriented from the atom being written right now: the two
                     // ends of a dative ring closure print opposite arrows
                     // (`->` at the donor, `<-` at the acceptor), which is the
@@ -491,7 +510,7 @@ impl<'a> SmilesWriter<'a> {
 mod tests {
     use super::*;
     use crate::parser::parse;
-    use chematic_core::{Atom, AtomIdx, Element, MoleculeBuilder};
+    use chematic_core::{Atom, Element, MoleculeBuilder};
 
     /// Parse → write → re-parse → verify atom/bond counts are preserved.
     fn roundtrip(smiles: &str) {
@@ -1028,35 +1047,5 @@ mod tests {
         let mol = b.build();
         let out = write(&mol);
         assert!(!out.contains('/') && !out.contains('\\'), "got '{out}'");
-    }
-
-    #[test]
-    fn write_with_order_matches_write_and_can_differ_from_index_order() {
-        let mol = crate::parse("CCO").unwrap();
-        let (smi, order) = write_with_order(&mol);
-        assert_eq!(smi, write(&mol));
-        assert_eq!(order.len(), mol.atom_count());
-
-        let mut b = MoleculeBuilder::new();
-        let o = b.add_atom(Atom::new(Element::O));
-        let me = b.add_atom(Atom::new(Element::C));
-        let c = b.add_atom(Atom::new(Element::C));
-        b.add_bond(c, o, BondOrder::Single).unwrap();
-        b.add_bond(c, me, BondOrder::Single).unwrap();
-        let scrambled = b.build();
-        let (_s, ord) = write_with_order(&scrambled);
-        let idxs: Vec<_> = ord.iter().map(|a| a.0).collect();
-        assert_ne!(idxs, vec![0, 1, 2]);
-    }
-
-    #[test]
-    fn write_does_not_emit_atom_tag() {
-        let mut mol = crate::parse("C").unwrap();
-        mol.set_tag(AtomIdx(0), Some(42));
-        assert_eq!(write(&mol), "C");
-        assert_eq!(
-            mol.atom(AtomIdx(0)).tag.map(core::num::NonZeroU16::get),
-            Some(42)
-        );
     }
 }

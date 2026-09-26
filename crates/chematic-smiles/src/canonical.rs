@@ -327,17 +327,25 @@ pub fn canonical_smiles(mol: &Molecule) -> String {
     winning_string
 }
 
-/// Canonical SMILES plus the atom visit order used to emit it.
+/// [`canonical_smiles`] together with the order in which the atoms appear in
+/// the string.
 ///
-/// `order[k]` is the mol index of the `k`-th atom in the string. Visit order
-/// follows the winning rank DFS; E/Z token choice does not change it.
-pub fn canonical_smiles_with_order(mol: &Molecule) -> (String, Vec<AtomIdx>) {
+/// The string is exactly [`canonical_smiles`]'s. `order[k]` is the index in
+/// `mol` of the `k`-th atom written, which is also the index that atom
+/// receives when the string is parsed back with [`crate::parse`]. Every atom
+/// is written exactly once, so `order` is a permutation of
+/// `0..mol.atom_count()`. This is the canonical DFS visit order, which is not
+/// the same permutation as [`canonical_atom_order`] (a rank sort).
+pub fn canonical_smiles_with_atom_order(mol: &Molecule) -> (String, Vec<AtomIdx>) {
     if mol.atom_count() == 0 {
         return (String::new(), Vec::new());
     }
-    let (ranks, smi) = winning_individualized_ranks(mol);
-    let order = CanonicalWriter::new(mol, &ranks).dfs_visit_order();
-    (smi, order)
+    let (ranks, winning_string) = winning_individualized_ranks(mol);
+    // The winner may have been written from an equivalent E/Z carrier
+    // spelling of `mol` (same atoms and bonds, different directional
+    // markers); the traversal only depends on the ranks and the graph.
+    let (_, order) = CanonicalWriter::new(mol, &ranks).write_all_with_order();
+    (winning_string, order)
 }
 
 /// Return a canonical SMILES only when its representation is self-stable.
@@ -656,8 +664,8 @@ pub(crate) struct CanonicalWriter<'a> {
     ring_marker_on_close: HashSet<BondIdx>,
     next_ring: u32,
     out: String,
-    /// Mol indexes in emission order when collecting visit order.
-    visit_order: Vec<AtomIdx>,
+    /// Atoms in the order `write_chain` emitted them.
+    order: Vec<AtomIdx>,
     /// Union-find groups of directional (`/`/`\`) bonds that jointly encode
     /// one connected E/Z system — flipping every member preserves geometry,
     /// flipping a subset does not. Keyed/rooted by `BondIdx`.
@@ -812,7 +820,7 @@ impl<'a> CanonicalWriter<'a> {
             ring_marker_on_close: HashSet::new(),
             next_ring: 1,
             out: String::with_capacity(n.saturating_mul(4) + mol.bond_count().saturating_mul(2)),
-            visit_order: Vec::with_capacity(n),
+            order: Vec::with_capacity(n),
             ez_group: HashMap::new(),
             ez_flip: HashMap::new(),
             forced_ez_flip: None,
@@ -1958,7 +1966,20 @@ impl<'a> CanonicalWriter<'a> {
         })
     }
 
-    pub(crate) fn write_all(mut self) -> String {
+    pub(crate) fn write_all(self) -> String {
+        self.write_all_impl(false).0
+    }
+
+    /// [`Self::write_all`], also returning the atoms in the order they appear
+    /// in the string. The DFS visit order depends only on the ranks, the
+    /// graph and the atom properties `canonical_cmp` reads — never on which
+    /// E/Z carrier spelling is chosen — so every internal candidate spelling
+    /// shares it, and it is read from one serialization of the prepared state.
+    pub(crate) fn write_all_with_order(self) -> (String, Vec<AtomIdx>) {
+        self.write_all_impl(true)
+    }
+
+    fn write_all_impl(mut self, want_order: bool) -> (String, Vec<AtomIdx>) {
         // Ring-closure side selection is independent of E/Z carrier choice,
         // but carrier choice must know which endpoint is the suppressed close
         // side. Discover the canonical DFS back-edges first so a directional
@@ -1986,6 +2007,11 @@ impl<'a> CanonicalWriter<'a> {
         // outside the local coupled component. Search the complete bounded
         // slot universe first; a semantic reparse gate makes the selected
         // lexicographic minimum independent of input marker placement.
+        let order_probe = want_order.then(|| self.clone());
+        let order_of = |probe: Option<Self>| {
+            probe.map_or_else(Vec::new, |p| p.serialize_prepared_with_order().1)
+        };
+
         #[cfg(test)]
         let is_traversal_probe = self.traversal_bond_preference.is_some();
         #[cfg(not(test))]
@@ -1995,7 +2021,7 @@ impl<'a> CanonicalWriter<'a> {
             && self.has_aromatic_direction_stash()
             && let Some(output) = self.complete_aromatic_ez_plan()
         {
-            return output;
+            return (output, order_of(order_probe));
         }
 
         // Keep the established component-global polarity normalization as a
@@ -2019,11 +2045,12 @@ impl<'a> CanonicalWriter<'a> {
                         best = Some(output);
                     }
                 }
-                return best.unwrap_or_default();
+                return (best.unwrap_or_default(), order_of(order_probe));
             }
         }
 
-        self.serialize_prepared()
+        let (out, order) = self.serialize_prepared_with_order();
+        (out, if want_order { order } else { Vec::new() })
     }
 
     fn has_aromatic_direction_stash(&self) -> bool {
@@ -2038,7 +2065,6 @@ impl<'a> CanonicalWriter<'a> {
 
     fn serialize_prepared_with_order(mut self) -> (String, Vec<AtomIdx>) {
         // Phase 2: canonical DFS serialization.
-        self.visit_order.clear();
         let mut first = true;
         for start in self.canonical_atom_list() {
             if self.written[start.0 as usize] {
@@ -2051,14 +2077,7 @@ impl<'a> CanonicalWriter<'a> {
             self.write_chain(start, None, None);
         }
 
-        (self.out, self.visit_order)
-    }
-
-    /// Ring discovery + DFS visit order under these ranks (no E/Z search).
-    fn dfs_visit_order(mut self) -> Vec<AtomIdx> {
-        let starts = self.canonical_atom_list();
-        self.find_ring_closures(&starts);
-        self.serialize_prepared_with_order().1
+        (self.out, self.order)
     }
 
     /// Return all atoms sorted in canonical order: highest rank first, ties
@@ -2195,7 +2214,6 @@ impl<'a> CanonicalWriter<'a> {
         incoming_bond: Option<&'static str>,
     ) {
         self.written[atom.0 as usize] = true;
-        self.visit_order.push(atom);
 
         if let Some(token) = incoming_bond {
             self.out.push_str(token);
@@ -2203,6 +2221,7 @@ impl<'a> CanonicalWriter<'a> {
 
         // Compute parity-corrected chirality before ring data is consumed.
         let corrected_chirality = self.corrected_chirality(atom, from_atom);
+        self.order.push(atom);
         self.emit_atom(atom, corrected_chirality);
 
         // Ring-closure digits.
@@ -2681,23 +2700,6 @@ mod tests {
                 Err(crate::canonical_search::CanonicalizationError::SearchBudgetExceeded { .. })
             ),
             "new engine must fail closed, got {bounded:?}"
-        );
-    }
-
-    #[test]
-    fn canonical_smiles_with_order_returns_visit_permutation() {
-        let mol = parse("CCO").unwrap();
-        let (csmi, order) = canonical_smiles_with_order(&mol);
-        assert!(!csmi.is_empty());
-        assert_eq!(csmi, canonical_smiles(&mol));
-        assert_eq!(order.len(), mol.atom_count());
-        let mut seen = order.clone();
-        seen.sort_by_key(|a| a.0);
-        assert_eq!(
-            seen,
-            (0..mol.atom_count() as u32)
-                .map(AtomIdx)
-                .collect::<Vec<_>>()
         );
     }
 

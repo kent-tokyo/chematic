@@ -1,0 +1,424 @@
+{
+ "schema_version": 1,
+ "profile": "mmff94_atom_type_census_v1",
+ "corpus": {
+  "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+  "rows": 10000
+ },
+ "chematic_version": "1.0.25",
+ "rdkit_version": "2026.03.6",
+ "host": {
+  "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+  "machine": "x86_64"
+ },
+ "row_status": {
+  "chematic_error": 22,
+  "compared": 9774,
+  "rdkit_mmff_unsupported": 204
+ },
+ "atoms_compared": {
+  "heavy": 214990,
+  "hydrogen": 190737
+ },
+ "hydrogen": {
+  "differing_atoms": 3101,
+  "differing_atoms_with_agreeing_parent_type": 3045,
+  "rows_with_difference": 2079,
+  "by_key": [
+   {
+    "parent_element": "O",
+    "rdkit_parent_type": 6,
+    "chematic_parent_type": 6,
+    "rdkit_type": 29,
+    "chematic_type": 21,
+    "count": 1802,
+    "example_input_indices": [
+     84
+    ]
+   },
+   {
+    "parent_element": "N",
+    "rdkit_parent_type": 43,
+    "chematic_parent_type": 43,
+    "rdkit_type": 28,
+    "chematic_type": 23,
+    "count": 400,
+    "example_input_indices": [
+     317
+    ]
+   },
+   {
+    "parent_element": "O",
+    "rdkit_parent_type": 6,
+    "chematic_parent_type": 6,
+    "rdkit_type": 33,
+    "chematic_type": 21,
+    "count": 237,
+    "example_input_indices": [
+     1737
+    ]
+   },
+   {
+    "parent_element": "O",
+    "rdkit_parent_type": 6,
+    "chematic_parent_type": 6,
+    "rdkit_type": 24,
+    "chematic_type": 21,
+    "count": 220,
+    "example_input_indices": [
+     292
+    ]
+   },
+   {
+    "parent_element": "N",
+    "rdkit_parent_type": 10,
+    "chematic_parent_type": 10,
+    "rdkit_type": 28,
+    "chematic_type": 23,
+    "count": 219,
+    "example_input_indices": [
+     2612
+    ]
+   },
+   {
+    "parent_element": "O",
+    "rdkit_parent_type": 6,
+    "chematic_parent_type": 6,
+    "rdkit_type": 21,
+    "chematic_type": 33,
+    "count": 160,
+    "example_input_indices": [
+     102
+    ]
+   },
+   {
+    "parent_element": "N",
+    "rdkit_parent_type": 39,
+    "chematic_parent_type": 40,
+    "rdkit_type": 23,
+    "chematic_type": 28,
+    "count": 49,
+    "example_input_indices": [
+     5280
+    ]
+   },
+   {
+    "parent_element": "P",
+    "rdkit_parent_type": 25,
+    "chematic_parent_type": 25,
+    "rdkit_type": 71,
+    "chematic_type": 5,
+    "count": 7,
+    "example_input_indices": [
+     300
+    ]
+   },
+   {
+    "parent_element": "N",
+    "rdkit_parent_type": 10,
+    "chematic_parent_type": 8,
+    "rdkit_type": 28,
+    "chematic_type": 23,
+    "count": 7,
+    "example_input_indices": [
+     5042
+    ]
+   }
+  ]
+ },
+ "heavy": {
+  "differing_atoms": 2908,
+  "rows_with_difference": 686,
+  "by_key": [
+   {
+    "element": "C",
+    "rdkit_type": 37,
+    "chematic_type": 2,
+    "count": 1322,
+    "example_input_indices": [
+     3837
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 64,
+    "chematic_type": 37,
+    "count": 203,
+    "example_input_indices": [
+     5001
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 63,
+    "chematic_type": 37,
+    "count": 203,
+    "example_input_indices": [
+     5001
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 2,
+    "chematic_type": 1,
+    "count": 163,
+    "example_input_indices": [
+     550
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 39,
+    "chematic_type": 40,
+    "count": 163,
+    "example_input_indices": [
+     5280
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 65,
+    "chematic_type": 9,
+    "count": 127,
+    "example_input_indices": [
+     5739
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 64,
+    "chematic_type": 3,
+    "count": 122,
+    "example_input_indices": [
+     5750
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 37,
+    "chematic_type": 3,
+    "count": 91,
+    "example_input_indices": [
+     5020
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 38,
+    "chematic_type": 9,
+    "count": 84,
+    "example_input_indices": [
+     5020
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 30,
+    "chematic_type": 2,
+    "count": 76,
+    "example_input_indices": [
+     711
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 2,
+    "chematic_type": 37,
+    "count": 62,
+    "example_input_indices": [
+     3837
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 66,
+    "chematic_type": 9,
+    "count": 53,
+    "example_input_indices": [
+     5001
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 63,
+    "chematic_type": 3,
+    "count": 48,
+    "example_input_indices": [
+     5001
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 46,
+    "chematic_type": 9,
+    "count": 46,
+    "example_input_indices": [
+     798
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 10,
+    "chematic_type": 8,
+    "count": 29,
+    "example_input_indices": [
+     766
+    ]
+   },
+   {
+    "element": "S",
+    "rdkit_type": 44,
+    "chematic_type": 15,
+    "count": 24,
+    "example_input_indices": [
+     5001
+    ]
+   },
+   {
+    "element": "P",
+    "rdkit_type": 25,
+    "chematic_type": 26,
+    "count": 19,
+    "example_input_indices": [
+     3567
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 67,
+    "chematic_type": 34,
+    "count": 12,
+    "example_input_indices": [
+     2046
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 63,
+    "chematic_type": 2,
+    "count": 12,
+    "example_input_indices": [
+     5128
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 64,
+    "chematic_type": 2,
+    "count": 12,
+    "example_input_indices": [
+     5128
+    ]
+   },
+   {
+    "element": "O",
+    "rdkit_type": 51,
+    "chematic_type": 6,
+    "count": 9,
+    "example_input_indices": [
+     7233
+    ]
+   },
+   {
+    "element": "O",
+    "rdkit_type": 59,
+    "chematic_type": 6,
+    "count": 8,
+    "example_input_indices": [
+     6226
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 58,
+    "chematic_type": 54,
+    "count": 6,
+    "example_input_indices": [
+     7466
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 68,
+    "chematic_type": 34,
+    "count": 3,
+    "example_input_indices": [
+     212
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 48,
+    "chematic_type": 9,
+    "count": 2,
+    "example_input_indices": [
+     2314
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 62,
+    "chematic_type": 9,
+    "count": 2,
+    "example_input_indices": [
+     7573
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 2,
+    "chematic_type": 3,
+    "count": 2,
+    "example_input_indices": [
+     7573
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 53,
+    "chematic_type": 34,
+    "count": 1,
+    "example_input_indices": [
+     5733
+    ]
+   },
+   {
+    "element": "Cl",
+    "rdkit_type": 77,
+    "chematic_type": 12,
+    "count": 1,
+    "example_input_indices": [
+     5867
+    ]
+   },
+   {
+    "element": "S",
+    "rdkit_type": 15,
+    "chematic_type": 44,
+    "count": 1,
+    "example_input_indices": [
+     8015
+    ]
+   },
+   {
+    "element": "O",
+    "rdkit_type": 51,
+    "chematic_type": 7,
+    "count": 1,
+    "example_input_indices": [
+     8173
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 56,
+    "chematic_type": 40,
+    "count": 1,
+    "example_input_indices": [
+     9862
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,247 @@
+{
+ "schema": "chematic-perf-digest-diff/v1",
+ "base_revision": "912c4b7d81ce7735af13b007b6289c555cde9a8f",
+ "head_revision": "5269d69f5716122cf00bc310c64618927532100d",
+ "head_crates_dirty_files": 0,
+ "only": null,
+ "corpora": [
+  {
+   "path": "scripts/chembl_accuracy_corpus_4999.smi",
+   "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  {
+   "path": "scripts/nci_first_5k_smiles_only.smi",
+   "sha256": "1d9fa413f33c4d2e2f2da9742cdbd7ce8f39d33b0b9fd78ce012a0b7f24e031d"
+  },
+  {
+   "path": "scripts/descriptor_census_corpus.smi",
+   "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c"
+  },
+  {
+   "path": "validation/rdkit_accuracy_split_v2/exposed_holdout.smi",
+   "sha256": "a496eeccbe54dfaf9552c5ea91bc3578ce0f111c03ad67bab97f29fd86f75972"
+  },
+  {
+   "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+   "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+  },
+  {
+   "path": "validation/benchmark_corpora/rdkit-js-browser-candidates-v1.smi",
+   "sha256": "1bd06bd8a095c816697e84e82a857ec37bed9e93b8e01fbd06f9fa724c5dc98c"
+  },
+  {
+   "path": "validation/rdkit_accuracy_split_v2/development.smi",
+   "sha256": "bd865889d0c1af84d15a14b1f81539cdf02fad20562e4e37305e704cc7d10529"
+  }
+ ],
+ "digest_sha256": {
+  "base": "7149ee2b1b4883bc88a77ce5709fde2db8890bd6bb2bde2d44be02106525d692",
+  "head": "ade4bced4f7ac628e4487a6f28ad52fff25af1089f07efb58a85fb15d22893f8"
+ },
+ "ops": {
+  "aromatic_ring_count": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "brenk": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "canonical": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "chi1v": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "chi_all": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "chi_each": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "cip": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "ecfp4": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "find_matches_perceived": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "has_sub": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "has_sub_first": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "has_sub_perceived": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "has_sub_perceived_1": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "hba": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "hbd": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "inchi": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "kappa": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "kekulize": {
+   "rows": 46736,
+   "diffs": 8
+  },
+  "largest_frag": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "logp": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "maccs": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "match_atom_sets_perceived": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "mr": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "pains": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "qed": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_aromatic_ring_count": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_atom_pair": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_ecfp4": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_ecfp4_bitinfo": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_ecfp4_bits": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_ecfp4_prepared": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_parity_full": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_parity_ok": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_parity_view": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_pattern_fp": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_rdk_fp": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_torsion": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rdkit_tpsa": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "ring_bundle": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "ring_count": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "rotb": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "smarts_matches": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "smarts_nouniq": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "sssr": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "sssr_n": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "standardize": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "stereo_idx": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "stereocenters": {
+   "rows": 46736,
+   "diffs": 0
+  },
+  "tpsa": {
+   "rows": 46736,
+   "diffs": 0
+  }
+ },
+ "total_rows": 2290064,
+ "total_diffs": 8,
+ "first_diff_examples": {
+  "kekulize": {
+   "base": "scripts/descriptor_census_corpus.smi\t2018\tkekulize\tERR kekulization failed: atom 37 (N) cannot be assigned a double bond\n",
+   "head": "scripts/descriptor_census_corpus.smi\t2018\tkekulize\tERR kekulization failed: atom 34 (C) cannot be assigned a double bond\n"
+  }
+ }
+}

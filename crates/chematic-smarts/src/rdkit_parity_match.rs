@@ -81,11 +81,12 @@ pub fn find_matches_rdkit_parity(
         return Ok((vec![], false));
     }
 
-    let mol_owned;
+    let view;
     let mol_ref: &Molecule = if config.use_rdkit_parity_aromaticity {
-        mol_owned = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
-            .map_err(RdkitParityError::Aromaticity)?;
-        &mol_owned
+        view = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol);
+        view.as_ref()
+            .as_ref()
+            .map_err(|e| RdkitParityError::Aromaticity(e.clone()))?
     } else {
         mol
     };

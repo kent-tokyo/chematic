@@ -347,18 +347,19 @@ fn qed_aromatic_ring_count(view: &Molecule) -> usize {
 /// The eight QED properties exactly as `rdkit.Chem.QED.properties` defines
 /// them, computed on the RDKit-perceived aromatic view of `mol`.
 fn qed_properties(mol: &Molecule) -> [f64; 8] {
-    let perceived = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).ok();
-    let view = perceived.as_ref().unwrap_or(mol);
-    [
-        rdkit_molecular_weight(mol),
-        logp_crippen(mol),
-        qed_acceptor_count(view) as f64,
-        hbd_count(mol) as f64,
-        rdkit_tpsa(mol),
-        rotatable_bond_count(mol) as f64,
-        qed_aromatic_ring_count(view) as f64,
-        structural_alert_count(view) as f64,
-    ]
+    chematic_perception::with_rdkit_parity_view(mol, |view| {
+        let view = view.unwrap_or(mol);
+        [
+            rdkit_molecular_weight(mol),
+            logp_crippen(mol),
+            qed_acceptor_count(view) as f64,
+            hbd_count(mol) as f64,
+            rdkit_tpsa(mol),
+            rotatable_bond_count(mol) as f64,
+            qed_aromatic_ring_count(view) as f64,
+            structural_alert_count(view) as f64,
+        ]
+    })
 }
 
 fn qed_compute(props: [f64; 8]) -> f64 {

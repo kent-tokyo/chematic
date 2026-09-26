@@ -399,6 +399,113 @@ pub(crate) fn expand_one_pass_with_chirality_into<F>(
     }
 }
 
+/// Emission *set* of [`expand_one_pass_with_chirality_into`] with
+/// `suppress = true` and no CIP codes, for molecules with at most 128 bonds;
+/// `None` when the molecule is larger (use the general path).
+///
+/// Environments are 128-bit bond masks instead of `BondSet`s and each round's
+/// groups are formed by sorting instead of hashing. Which atoms emit (and
+/// which die) does not depend on the order groups are visited in: an
+/// environment is suppressed exactly when an earlier *round* produced it,
+/// and within a group the winner is the smallest `(invariant, atom)` pair.
+/// Only the emission order differs from the general path, so callers that
+/// only set bits (and never record provenance order) see identical output.
+pub(crate) fn expand_emissions_small<F>(
+    mol: &Molecule,
+    ring_atoms: &[bool],
+    bond_invariants: &[u32],
+    max_radius: u32,
+    mut emit: F,
+) -> Option<()>
+where
+    F: FnMut(u32, u32, u32),
+{
+    let n = mol.atom_count();
+    if mol.bond_count() > 128 {
+        return None;
+    }
+    if n == 0 {
+        return Some(());
+    }
+    let mut current: Vec<u32> = Vec::with_capacity(n);
+    for i in 0..n {
+        let id = connectivity_invariant(mol, AtomIdx(i as u32), ring_atoms);
+        current.push(id);
+        emit(i as u32, 0, id);
+    }
+    let mut next = vec![0u32; n];
+    let mut dead = vec![false; n];
+    let mut env = vec![0u128; n];
+    let mut next_env = vec![0u128; n];
+    let mut seen: Vec<u128> = Vec::new();
+    let mut round: Vec<(u128, u32, u32)> = Vec::with_capacity(n);
+    let mut pairs: SmallVec<[(u32, u32); 6]> = SmallVec::new();
+
+    for layer in 0..max_radius {
+        round.clear();
+        for i in 0..n {
+            // Atoms that are (or become) dead keep their environment and
+            // carry a zero invariant into the next round, as in the general
+            // path (whose next-invariant vector starts zeroed every round).
+            if dead[i] {
+                next_env[i] = env[i];
+                next[i] = 0;
+                continue;
+            }
+            let nbrs = mol.neighbor_slice(AtomIdx(i as u32));
+            if nbrs.is_empty() {
+                dead[i] = true;
+                next_env[i] = env[i];
+                next[i] = 0;
+                continue;
+            }
+            let mut bond_env = 0u128;
+            pairs.clear();
+            for &(nb, bond) in nbrs {
+                bond_env |= 1u128 << bond.0;
+                bond_env |= env[nb.0 as usize];
+                pairs.push((bond_invariants[bond.0 as usize], current[nb.0 as usize]));
+            }
+            pairs.sort_unstable();
+            let mut invar = hash_combine(layer, current[i]);
+            for &(bond_inv, nb_inv) in &pairs {
+                invar = hash_combine(invar, hash_pair(bond_inv, nb_inv));
+            }
+            next[i] = invar;
+            next_env[i] = bond_env;
+            round.push((bond_env, invar, i as u32));
+        }
+        round.sort_unstable();
+        let seen_before = seen.len();
+        let mut g = 0;
+        while g < round.len() {
+            let bond_env = round[g].0;
+            let mut end = g + 1;
+            while end < round.len() && round[end].0 == bond_env {
+                end += 1;
+            }
+            // Sorted by (env, invariant, atom): round[g] is the group winner.
+            if seen[..seen_before].binary_search(&bond_env).is_ok() {
+                for &(_, _, atom) in &round[g..end] {
+                    dead[atom as usize] = true;
+                }
+            } else {
+                let (_, winner_invariant, winner) = round[g];
+                emit(winner, layer + 1, winner_invariant);
+                seen.push(bond_env);
+                for &(_, _, atom) in &round[g + 1..end] {
+                    dead[atom as usize] = true;
+                }
+            }
+            g = end;
+        }
+        seen.sort_unstable();
+        std::mem::swap(&mut current, &mut next);
+        std::mem::swap(&mut env, &mut next_env);
+    }
+    Some(())
+}
+
 fn chiral_code(code: CipCode) -> u32 {
     match code {
         CipCode::R => 3,

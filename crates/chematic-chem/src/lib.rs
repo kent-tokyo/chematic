@@ -53,7 +53,8 @@ pub mod xlogp3;
 
 pub use cip::{
     CipAssignment, CipMode, CipModeAssignment, CipModeError, CipUnresolvedReason, EzCompleteness,
-    assign_cip, assign_cip_with_mode, ez_completeness, tetrahedral_stereo_neighbors,
+    assign_cip, assign_cip_with_mode, assign_ez_bonds, assign_ez_bonds_with_mode, ez_completeness,
+    tetrahedral_stereo_neighbors,
 };
 pub use descriptors::{
     Bcut2D, CarbonTypes, DistanceDescriptorBundle, InformationContent, RingBundle,

@@ -51,6 +51,41 @@ pub fn implicit_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
 /// "would this atom's H count survive being unbracketed" independent of
 /// whatever notation the atom happened to be parsed from.
 pub fn valence_inferred_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
+    let aromatic = mol.atom(idx).aromatic;
+    valence_inferred_hcount_with(mol, idx, aromatic, |b| mol.bond(b).order)
+}
+
+/// [`implicit_hcount`] as if atom `idx` carried the aromatic flag `aromatic`
+/// and each of its bonds `b` had order `order_of(b)` (only `idx`'s own bonds
+/// are queried). With the atom's own flag and orders this is exactly
+/// [`implicit_hcount`]; perception code uses it to type an atom of a
+/// hypothetical Kekulé form without building that molecule.
+#[doc(hidden)]
+pub fn implicit_hcount_with(
+    mol: &Molecule,
+    idx: AtomIdx,
+    aromatic: bool,
+    order_of: impl Fn(crate::molecule::BondIdx) -> BondOrder,
+) -> u8 {
+    let atom = mol.atom(idx);
+    if atom.wildcard {
+        return 0;
+    }
+    if let Some(h) = atom.hydrogen_count {
+        return h;
+    }
+    valence_inferred_hcount_with(mol, idx, aromatic, order_of)
+}
+
+/// [`valence_inferred_hcount`] under a hypothetical aromatic flag and bond
+/// orders (see [`implicit_hcount_with`]).
+#[doc(hidden)]
+pub fn valence_inferred_hcount_with(
+    mol: &Molecule,
+    idx: AtomIdx,
+    aromatic: bool,
+    order_of: impl Fn(crate::molecule::BondIdx) -> BondOrder,
+) -> u8 {
     let atom = mol.atom(idx);
 
     if atom.wildcard {
@@ -74,7 +109,7 @@ pub fn valence_inferred_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
     let mut non_aromatic_sum: i32 = 0;
     for (_, bidx) in mol.neighbors(idx) {
         let bond = mol.bond(bidx);
-        let order = bond.order;
+        let order = order_of(bidx);
         if order == BondOrder::Aromatic {
             aromatic_count += 1;
         } else if order == BondOrder::Dative && bond.atom1 == idx {
@@ -122,7 +157,7 @@ pub fn valence_inferred_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
     // Rationale: after Kekulization, a substituted aromatic N (e.g. N−CH₃ in caffeine
     // with one ring double bond) has bond_sum=4, which would select valence 5 and
     // give 1 implicit H.  Capping at the primary valence (3) returns 0 H instead.
-    let valences_to_check: &[u8] = if atom.aromatic {
+    let valences_to_check: &[u8] = if aromatic {
         &normal_valences[..1]
     } else {
         normal_valences

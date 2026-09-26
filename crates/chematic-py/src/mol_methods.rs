@@ -27,6 +27,21 @@ impl Mol {
         chematic_smiles::canonical_smiles(&self.inner)
     }
 
+    /// Canonical SMILES together with the atom output order.
+    ///
+    /// Returns ``(smiles, order)`` where ``smiles`` equals :attr:`smiles` and
+    /// ``order[k]`` is the index in this molecule of the ``k``-th atom written
+    /// in the string — also that atom's index after
+    /// ``chematic.from_smiles(smiles)``. This is the SMILES DFS visit order
+    /// (RDKit's ``_smilesAtomOutputOrder``), not a canonical rank.
+    ///
+    ///     smi, order = chematic.from_smiles("OCC").smiles_with_atom_order()
+    ///     # ("C(C)O", [1, 2, 0])
+    fn smiles_with_atom_order(&self) -> (String, Vec<usize>) {
+        let (smiles, order) = chematic_smiles::canonical_smiles_with_atom_order(&self.inner);
+        (smiles, order.into_iter().map(|a| a.0 as usize).collect())
+    }
+
     /// Molecular formula in Hill notation (C first, H second, then alphabetical).
     #[getter]
     fn formula(&self) -> String {
@@ -1518,9 +1533,11 @@ impl Mol {
     /// engines are not bit-compatible, so a silent substitution would look successful
     /// while actually returning the wrong hash. See ``docs/rfcs/ecfp4_bitexact_api_rfc.md``.
     fn rdkit_ecfp4(&self) -> PyResult<Vec<u8>> {
-        let result = chematic_fp::rdkit_morgan_ecfp4_experimental(&self.inner)
+        // Same bits and errors as `rdkit_morgan_ecfp4_experimental`, without
+        // building the provenance maps this method never returns.
+        let fingerprint = chematic_fp::rdkit_morgan_ecfp4_bitvec(&self.inner)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
-        Ok(bitvec2048_to_bytes(&result.fingerprint))
+        Ok(bitvec2048_to_bytes(&fingerprint))
     }
 
     /// Same fingerprint as :meth:`rdkit_ecfp4`, plus the raw (unfolded) data behind it.
@@ -1843,7 +1860,7 @@ impl Mol {
             uniquify: false,
             ..chematic_smarts::MatchConfig::default()
         };
-        Ok(chematic_smarts::has_match_with_config(
+        Ok(chematic_smarts::has_match_perceived(
             &query,
             &self.inner,
             &config,
@@ -1862,14 +1879,11 @@ impl Mol {
     fn find_matches(&self, smarts: &str) -> PyResult<Vec<Vec<usize>>> {
         let query = crate::misc::cached_smarts(smarts)
             .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
-        Ok(chematic_smarts::find_matches(&query, &self.inner)
-            .into_iter()
-            .map(|m| {
-                let mut v: Vec<usize> = m.values().map(|idx| idx.0 as usize).collect();
-                v.sort_unstable();
-                v
-            })
-            .collect())
+        Ok(chematic_smarts::find_match_atom_sets_perceived(
+            &query,
+            &self.inner,
+            &chematic_smarts::MatchConfig::default(),
+        ))
     }
 
     /// 2D SVG depiction with highlighted atoms.
@@ -2187,6 +2201,28 @@ impl Mol {
     ///     # [Mol("CC"), Mol("N")]
     fn connected_components(&self) -> Vec<Mol> {
         self.inner.fragments().into_iter().map(Mol::bare).collect()
+    }
+
+    /// :meth:`connected_components` with the original atom indices.
+    ///
+    /// Returns a list of ``(fragment, source)`` pairs, where ``source[i]`` is
+    /// the index in this molecule of fragment atom ``i``. Fragments are
+    /// ordered by their lowest original atom index and keep the original
+    /// relative atom order.
+    ///
+    ///     parts = chematic.from_smiles("O.CC").connected_components_with_atom_indices()
+    ///     # [(Mol("O"), [0]), (Mol("CC"), [1, 2])]
+    fn connected_components_with_atom_indices(&self) -> Vec<(Mol, Vec<usize>)> {
+        self.inner
+            .fragments_with_source_atoms()
+            .into_iter()
+            .map(|(fragment, source)| {
+                (
+                    Mol::bare(fragment),
+                    source.into_iter().map(|a| a.0 as usize).collect(),
+                )
+            })
+            .collect()
     }
 
     /// Return ``True`` if this molecule and ``other`` represent the same chemical structure.
@@ -3179,6 +3215,9 @@ impl Mol {
     /// CIP stereochemistry assignments — list of ``{"atom_idx": int, "descriptor": str}`` dicts.
     ///
     /// ``descriptor`` is ``"R"``, ``"S"``, ``"E"``, ``"Z"``, ``"r"``, or ``"s"``.
+    /// An ``"E"``/``"Z"`` entry's ``atom_idx`` is the double bond's first atom;
+    /// such entries also carry ``"bond_idx"`` and ``"bond_atoms"`` (the
+    /// double bond's index and its two atoms).
     /// Only assigned stereocenters / double bonds are returned.
     ///
     /// ``mode`` selects the CIP engine:
@@ -3208,11 +3247,31 @@ impl Mol {
                 )));
             }
         };
+        // E/Z entries are keyed by the double bond's first atom; attach the
+        // bond itself so callers need not guess which bond is meant (#634).
+        let mut ez_bonds = chematic_chem::assign_ez_bonds_with_mode(
+            &self.inner,
+            if mode == "accurate" {
+                chematic_chem::CipMode::Accurate
+            } else {
+                chematic_chem::CipMode::LegacyFast
+            },
+        );
         assignments
             .iter()
             .map(|(idx, code)| {
                 let d = PyDict::new(py);
                 d.set_item("atom_idx", idx.0 as usize)?;
+                if matches!(code, CipCode::E | CipCode::Z)
+                    && let Some(pos) = ez_bonds
+                        .iter()
+                        .position(|&(bidx, c)| c == *code && self.inner.bond(bidx).atom1 == *idx)
+                {
+                    let (bidx, _) = ez_bonds.remove(pos);
+                    let bond = self.inner.bond(bidx);
+                    d.set_item("bond_idx", bidx.0 as usize)?;
+                    d.set_item("bond_atoms", (bond.atom1.0 as usize, bond.atom2.0 as usize))?;
+                }
                 let label = match code {
                     CipCode::R => "R",
                     CipCode::S => "S",
