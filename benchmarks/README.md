@@ -14,6 +14,7 @@ accuracy, or compatibility claims.
 | Review the M4 source-candidate SSSR/cache/VF2 browser rerun | [`2026-09-24-rdkitjs-m4-sssr-cache.md`](2026-09-24-rdkitjs-m4-sssr-cache.md) |
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
 | Review current public-package fingerprint and 3D evidence | [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](2026-09-23-public-package-fingerprint-3d-v1.0.20.md) |
+| Review published v1.0.26 MMFF94 stereo-safe quality (#637) | [`2026-09-26-mmff94-public-v1.0.26.md`](2026-09-26-mmff94-public-v1.0.26.md): two fixed 265-molecule wheel runs with complete raw rows and common scoring; single-host boundary |
 | Review the post-freeze MMFF94 stereo-safe source speed gate | [`2026-09-23-mmff94-stereo-safe-performance.md`](2026-09-23-mmff94-stereo-safe-performance.md) |
 | Review MMFF94 per-term same-coordinate energy (#637) | [`2026-09-25-mmff94-per-term-energy.md`](2026-09-25-mmff94-per-term-energy.md) |
 | Historical v1.0.19-source MMFF94 same-coordinate energy | [`2026-09-23-mmff94-current-source-energy.md`](2026-09-23-mmff94-current-source-energy.md) |
