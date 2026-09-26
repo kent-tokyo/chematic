@@ -22,13 +22,23 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def valid_released_at(value: str) -> bool:
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})", value):
+        return False
+    try:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return True
+
+
 def main() -> int:
     args = parse_args()
     if not re.fullmatch(r"\d+\.\d+\.\d+", args.version):
         raise SystemExit("--version must be a semantic version such as 1.0.5")
     if not re.fullmatch(r"[0-9a-f]{40}", args.commit):
         raise SystemExit("--commit must be a 40-character lowercase git commit")
-    if not args.released_at.endswith("Z") and "+" not in args.released_at:
+    if not valid_released_at(args.released_at):
         raise SystemExit("--released-at must be RFC3339 with a timezone")
 
     document = {
