@@ -10,10 +10,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-- Added `Atom.tag` / `Molecule::set_tag` for non-chemical atom identity
-  (`Option<NonZeroU16>`, two bytes) that survives clone, reaction apply, and
-  fragments, but is ignored by SMILES write and canonicalization (not emitted
-  as `:n`). Tags are `1..=u16::MAX`; `None` means untagged.
+- Added Rust `Molecule::set_tag` / `atom_tag` for caller-managed atom labels
+  preserved by molecule clone, core graph edits, reaction apply, fragments,
+  and aromaticity perception. Private, lazily allocated tag storage preserves
+  existing `Atom` struct literals and equality. Tags do not affect SMILES or
+  canonicalization; write/parse requires explicit atom-order remapping. Labels
+  are `1..=u16::MAX`, need not be unique, and `None` / `Some(0)` clear them.
+  Tag changes invalidate cached molecular views.
 
 ## [1.0.26] - 2026-09-25
 

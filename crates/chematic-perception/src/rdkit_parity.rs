@@ -894,6 +894,7 @@ fn clear_aromatic_flags(mol: &Molecule) -> Molecule {
         let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
     }
     builder.copy_r_groups_from(mol);
+    builder.copy_atom_tags_from(mol);
     builder.copy_stereo_groups_from(mol);
     builder.copy_stereo_from(mol);
     builder.copy_bond_directions_from(mol);

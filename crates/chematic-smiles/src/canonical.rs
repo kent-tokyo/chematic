@@ -5974,7 +5974,6 @@ mod explicit_implicit_h_invariance {
                     chirality: Chirality::None,
                     wildcard: false,
                     atom_map: None,
-                    tag: None,
                     cip_code: None,
                 })
                 .chain(std::iter::once(Atom {
@@ -5986,7 +5985,6 @@ mod explicit_implicit_h_invariance {
                     chirality: Chirality::None,
                     wildcard: false,
                     atom_map: None,
-                    tag: None,
                     cip_code: None,
                 }))
                 .collect();

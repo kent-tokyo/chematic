@@ -1,4 +1,4 @@
-//! Regression coverage for `Atom.tag` against SMILES visit-order helpers.
+//! Regression coverage for molecule atom tags against SMILES visit-order helpers.
 //!
 //! Tags must not change written / canonical SMILES. Visit order from
 //! `write_with_atom_order` / `canonical_smiles_with_atom_order` remaps tags
@@ -23,10 +23,10 @@ const CORPUS: &[&str] = &[
     "C/C=C/C",
     "C/C=C\\C",
     "[NH4+].[Cl-]",
-    "CC(=O)Oc1ccccc1C(=O)O", // aspirin
+    "CC(=O)Oc1ccccc1C(=O)O",      // aspirin
     "Cn1cnc2c1c(=O)n(c(=O)n2C)C", // caffeine
     "CC(C)Cc1ccc(cc1)C(C)C(=O)O", // ibuprofen
-    "c1ccc2ccccc2c1", // naphthalene
+    "c1ccc2ccccc2c1",             // naphthalene
     "NCC(=O)O",
 ];
 
@@ -41,7 +41,7 @@ fn tag_element_map(mol: &Molecule) -> BTreeMap<u16, u8> {
     (0..mol.atom_count())
         .filter_map(|i| {
             let atom = mol.atom(AtomIdx(i as u32));
-            atom.tag
+            mol.atom_tag(AtomIdx(i as u32))
                 .map(|t| (t.get(), atom.element.atomic_number()))
         })
         .collect()
@@ -61,7 +61,7 @@ fn assert_permutation(order: &[AtomIdx], n: usize) {
 fn remap_via_order(mol: &Molecule, order: &[AtomIdx], fresh: &mut Molecule) {
     assert_eq!(fresh.atom_count(), order.len());
     for (new_i, &old_idx) in order.iter().enumerate() {
-        let tag = mol.atom(old_idx).tag.map(NonZeroU16::get);
+        let tag = mol.atom_tag(old_idx).map(NonZeroU16::get);
         fresh.set_tag(AtomIdx(new_i as u32), tag);
     }
 }
@@ -104,7 +104,10 @@ fn tagged_molecule_atom_order_apis_match_untagged() {
         assert_eq!(tag_w, plain_w, "write string changed by tags for {smi}");
         assert_eq!(tag_wo, plain_wo, "write order changed by tags for {smi}");
         assert_eq!(tag_c, plain_c, "canonical string changed by tags for {smi}");
-        assert_eq!(tag_co, plain_co, "canonical order changed by tags for {smi}");
+        assert_eq!(
+            tag_co, plain_co,
+            "canonical order changed by tags for {smi}"
+        );
         assert_permutation(&tag_wo, mol.atom_count());
         assert_permutation(&tag_co, mol.atom_count());
     }
@@ -130,7 +133,7 @@ fn write_parse_remaps_tags_by_atom_order() {
             "tag→element map lost on write/parse for {smi}"
         );
         let tags: HashSet<_> = (0..fresh.atom_count())
-            .filter_map(|i| fresh.atom(AtomIdx(i as u32)).tag.map(NonZeroU16::get))
+            .filter_map(|i| fresh.atom_tag(AtomIdx(i as u32)).map(NonZeroU16::get))
             .collect();
         assert_eq!(tags.len(), fresh.atom_count());
     }
@@ -165,7 +168,7 @@ fn reparse_does_not_invent_tags() {
         stamp_tags(&mut tagged);
         let out = write(&tagged);
         let re = parse(&out).unwrap();
-        assert!(re.atoms().all(|(_, a)| a.tag.is_none()));
+        assert!(re.atoms().all(|(i, _)| re.atom_tag(i).is_none()));
     }
 }
 
@@ -179,10 +182,10 @@ fn tags_survive_fragments() {
     let mut recovered = BTreeMap::new();
     for (frag, source) in &frags {
         for (i, &src) in source.iter().enumerate() {
-            let tag = frag.atom(AtomIdx(i as u32)).tag.map(NonZeroU16::get);
+            let tag = frag.atom_tag(AtomIdx(i as u32)).map(NonZeroU16::get);
             assert_eq!(
                 tag,
-                mol.atom(src).tag.map(NonZeroU16::get),
+                mol.atom_tag(src).map(NonZeroU16::get),
                 "fragment tag mismatch at source {src:?}"
             );
             if let Some(t) = tag {
@@ -194,12 +197,12 @@ fn tags_survive_fragments() {
 }
 
 #[test]
-fn clearing_tags_restores_default_atom_equality() {
+fn tags_do_not_change_atom_equality() {
     let mut a = parse("C").unwrap();
     let b = parse("C").unwrap();
     assert_eq!(a.atom(AtomIdx(0)), b.atom(AtomIdx(0)));
     a.set_tag(AtomIdx(0), Some(7));
-    assert_ne!(a.atom(AtomIdx(0)), b.atom(AtomIdx(0)));
+    assert_eq!(a.atom(AtomIdx(0)), b.atom(AtomIdx(0)));
     a.set_tag(AtomIdx(0), None);
     assert_eq!(a.atom(AtomIdx(0)), b.atom(AtomIdx(0)));
 }
@@ -209,5 +212,5 @@ fn write_does_not_emit_atom_tag() {
     let mut mol = parse("C").unwrap();
     mol.set_tag(AtomIdx(0), Some(42));
     assert_eq!(write(&mol), "C");
-    assert_eq!(mol.atom(AtomIdx(0)).tag.map(NonZeroU16::get), Some(42));
+    assert_eq!(mol.atom_tag(AtomIdx(0)).map(NonZeroU16::get), Some(42));
 }
