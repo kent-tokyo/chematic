@@ -23,12 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.26 范围
+### v1.0.27 范围
 
-v1.0.26 改进 RDKit 兼容 SMARTS、accurate E/Z CIP、MMFF94 的同坐标逐项一致性，
-以及部分环和指纹热路径。Python/WASM SMARTS 改为使用感知的芳香性视图；这是有意的
-行为变化，并不表示完整 RDKit 兼容或普遍速度领先。参见[验证报告](docs/validation.md)
-和[CHANGELOG](CHANGELOG.md)。
+v1.0.27 为 Rust 分子 API 增加调用者管理的原子标签；克隆、图编辑、碎片化、反应应用
+及芳香性判断会保留标签。标签不影响 SMILES 或规范化；写出后重新读取需使用原子顺序
+映射。本版还恢复 WASM torsion scan 演示 API，并加强 SMARTS 剩余差异的核验。
+这不代表完整的 RDKit 兼容，也不是 v1.0.27 的新性能测量。参见
+[验证报告](docs/validation.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## 使用
 

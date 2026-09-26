@@ -18,7 +18,10 @@ def extract_latest_block(text: str) -> tuple[str, str]:
         sys.exit("No versioned section found in CHANGELOG.md")
     start = matches[0]
     version = start.group(1)
-    body_start = start.end()
+    # Skip the entire heading line, including Keep-a-Changelog's date suffix.
+    # Starting just after `]` turns ` - YYYY-MM-DD` into a spurious first bullet.
+    heading_end = text.find("\n", start.end())
+    body_start = len(text) if heading_end == -1 else heading_end + 1
     body_end = matches[1].start() if len(matches) > 1 else len(text)
     body = text[body_start:body_end].strip()
     return version, body

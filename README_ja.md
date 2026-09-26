@@ -23,12 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.0.26 の対応範囲
+### v1.0.27 の対応範囲
 
-v1.0.26はRDKit互換SMARTS、accurate E/Z CIP、MMFF94の同一座標・項別一致、
-環・フィンガープリントの一部hot pathを改善します。Python/WASM SMARTSは知覚した
-芳香族viewを使う意図した挙動変更です。完全なRDKit互換や普遍的な速度優位の主張では
-ありません。[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
+v1.0.27では、Rustの分子APIに呼び出し側が管理する原子タグを追加し、複製・グラフ編集・
+断片化・反応適用・芳香族性判定でも保持します。タグはSMILESや正規化結果には影響せず、
+書き出しと再読込には原子順の対応表が必要です。WASMのtorsion scanデモAPIも復旧し、
+SMARTS残差の検証を強化しました。RDKitとの完全互換やv1.0.27での新たな速度測定は
+主張しません。[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方
 

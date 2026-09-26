@@ -7,10 +7,10 @@ counted as wins. Dated raw records are indexed in
 
 ## Current status
 
-The current release line is **v1.0.26**. The newest completed public-package performance
+The current release line is **v1.0.27**. The newest completed public-package performance
 record remains the 2026-09-23 v1.0.20 browser/3D comparison against RDKit 2026.03.6.
-v1.0.26 does not relabel earlier source timing as a package remeasurement; its
-atom-tracking and HBA corrections have separate compatibility evidence. Older
+v1.0.27 has no new package speed measurement and does not relabel earlier source
+timing; its Rust atom-tag contract has separate regression tests. Older
 similarity, streaming, and operation timing records remain pinned to their
 recorded source/release versions.
 

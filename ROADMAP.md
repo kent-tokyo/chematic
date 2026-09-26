@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-09-25. Current release: **v1.0.26**. Release-source and
+> Updated 2026-09-26. Release line: **v1.0.27**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -9,6 +9,10 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 ## Current position
 
+- **v1.0.27 adds Rust atom tags and release-contract checks.** Caller labels
+  survive selected in-memory transformations; SMILES does not carry them.
+  The v1.0.26 MMFF94 published-wheel and source timing records stay pinned to
+  their measured version, not promoted to v1.0.27 results.
 - **A0 core-eight descriptors is complete.** A frozen candidate passed the
   declared 2,000-row development and one-time 8,000-row sealed evaluations.
 - **Browser Parse + compatible Morgan has a scoped public-package win.** The
@@ -39,7 +43,7 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
 
 ## Priority order
 
-1. **Verify v1.0.26 delivery across release channels.** Record GitHub Release,
+1. **Verify v1.0.27 delivery across release channels.** Record GitHub Release,
    npm, PyPI, crates.io, docs.rs, and Pages independently; do not infer one
    channel from another.
 2. **Adjudicate the remaining CIP center.** Resolve row 4480 atom 3
