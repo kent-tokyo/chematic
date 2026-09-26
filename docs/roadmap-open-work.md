@@ -1,18 +1,17 @@
 # Roadmap open-work ledger
 
-Updated 2026-09-25. This is a compact dependency and evidence ledger for work
-that remains open after v1.0.26. It does not repeat completed implementation
+Updated 2026-09-26. This is a compact dependency and evidence ledger for work
+that remains open after v1.0.27. It does not repeat completed implementation
 history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 ## Immediate queue
 
 | Order | Work | Current evidence | Exit |
 |---:|---|---|---|
-| 1 | #632 SMILES E/Z semantics | Released source `9808f54f`: RDKit 2026.03.6 fixed 10k lane moves from 18 semantic differences to 0; the 28 x 1,024 relabel audit reran on clean v1.0.25-based source `13d70a2e` with 0/28 divergent components (`validation/results/ez_shared_carrier_coupling_mechanism_audit_summary_1024_2026-09-25.json`) | Verification exit met at v1.0.26 release source. The stable-key contract is not widened |
-| 2 | #634 CIP residuals | Source candidate `11a4ea27`: 9,994/10,000 exact (was 9,770). The lane now keys E/Z by double-bond endpoints, and `CipMode.ACCURATE` E/Z uses the hierarchical-digraph ranker. The 6 remaining labels are classified: 4 phosphorus `oracle_unstable`, 1 trivalent bridgehead N (unsupported), 1 needing adjudication (row 4480, atom 3) | Land the candidate. Row 4480 needs independent adjudication before either answer is adopted |
-| 3 | #635 SMARTS residual classification | Released in v1.0.26: 200 of 310,000 cells differ (was 14,306) after the Python/WASM SMARTS APIs match the perceived aromatic view. All 200 are classified: 194 symmetrized-ring `[Rn]`/`[kn]` cells and 6 on one ferrocene row. The evidence checker now matches every classified cell to its raw query and target-atom sets | Classification exit met. Native `[Rn]` SSSR semantics are a documented compatibility boundary; an opt-in RDKit-style ring-count option is separate future work, not a silent default change |
-| 4 | A6 MMFF94 (#637 evidence complete) | Source packet: 262/262 comparable same-coordinate rows within 1 kcal/mol (max 0.32), with bounded analytic-gradient checks. Two published v1.0.26 Mac wheel runs: CheMatic 265/265 and RDKit 264/265 independently sound, stereo-clean, clash-free usable rows on the named cohort; see `benchmarks/2026-09-26-mmff94-public-v1.0.26.md` | #637 evidence-regeneration exit met. Timeout/convergence accounting on broader inputs, conformer-quality non-inferiority, and 2,908 heavy-atom typing residuals remain separate A6 gates; no general speed claim |
-| 5 | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after the next official stable artifact is pinned; retain old/new results side by side |
+| 1 | #634 CIP residuals | Released v1.0.26 source: 9,994/10,000 exact (was 9,770). The 6 remaining labels are classified: 4 phosphorus `oracle_unstable`, 1 trivalent bridgehead N (unsupported), 1 needing adjudication (row 4480, atom 3) | Independently adjudicate row 4480 and rerun the 10k, mirror, and permutation gates before changing its label |
+| 2 | A6 MMFF94 | #637 evidence scope is closed: source same-coordinate packet 262/262 comparable rows within 1 kcal/mol (max 0.32), with bounded gradient checks. Two published v1.0.26 Mac wheel runs: CheMatic 265/265 and RDKit 264/265 independently sound, stereo-clean, clash-free usable rows; see `benchmarks/2026-09-26-mmff94-public-v1.0.26.md` | Timeout/convergence on broader inputs, conformer-quality non-inferiority, and 2,908 heavy-atom typing residuals remain separate A6 gates; no general speed claim |
+| 3 | Optional SMARTS ring-count profile | #635 classification is closed. The remaining 200/310,000 cells are 194 symmetrized-ring `[Rn]`/`[kn]` cells and 6 on one ferrocene row, checked against raw query/target cells | If demanded, design an explicit RDKit-style option; keep native SSSR semantics unchanged by default |
+| 4 | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after the next official stable artifact is pinned; retain old/new results side by side |
 
 ## Accuracy packages
 
@@ -20,11 +19,11 @@ history; use CHANGELOG, dated validation artifacts, and Git history for that.
 |---|---|---|
 | A0 Evaluation contract | Complete | Preserve frozen/exposed cohort rules and failure accounting for every later package |
 | A1 Perception and descriptors | Open | Additional descriptor families, aromaticity residuals, potential-center coverage, independent holdouts |
-| A2 Stereo and identity | Active | #632, #634, spelling/permutation/file round trips, stable-key scope, enhanced stereo |
+| A2 Stereo and identity | Active | #634, spelling/permutation/file round trips, stable-key scope, enhanced stereo |
 | A3 Fingerprints and retrieval | Open | Option coverage, top-k invariants, named compatible-Morgan parity, cross-binding checks |
-| A4 Workflows and interchange | Open | #635, reactions, V3000/query semantics, attachment metadata, batch accounting |
+| A4 Workflows and interchange | Open | Optional SMARTS ring counts, reactions, V3000/query semantics, attachment metadata, batch accounting |
 | A5 Independent adjudication | External/open | Independently reviewed gold data and non-maintainer assessment without exposed-cohort reuse |
-| A6 3D and force fields | Active | Energy/terms, timeout/convergence, conformer quality, publication-level speed and reproducibility |
+| A6 3D and force fields | Active | Heavy-atom typing, broader timeout/convergence, conformer quality, publication-level speed and reproducibility |
 
 An open package can include completed sub-gates. Only A0 currently satisfies
 all declared exits.

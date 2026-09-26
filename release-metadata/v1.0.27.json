@@ -1,0 +1,40 @@
+{
+  "schema_version": 2,
+  "product": "chematic",
+  "release": {
+    "version": "1.0.27",
+    "tag": "v1.0.27",
+    "commit": null,
+    "commit_source": "The attached GitHub Release asset is generated from the exact v1.0.27 tag commit.",
+    "released_at": "2026-09-26T00:00:00+09:00"
+  },
+  "evidence_context": {
+    "stable_release": {"version": "1.0.27", "tag": "v1.0.27", "commit": null},
+    "candidate": null,
+    "oracle_lanes": [
+      {"engine": "RDKit", "version": "2025.09.3", "role": "pinned_regression", "status": "active"},
+      {"engine": "RDKit", "version": "2026.03.6", "role": "separate_comparison", "status": "active"}
+    ],
+    "measurement_version_policy": "Measurements retain their recorded source, artifact, corpus, and comparator version; a new release does not relabel earlier evidence."
+  },
+  "packages": {
+    "rust": {"name": "chematic", "version": "1.0.27", "registry_url": "https://crates.io/crates/chematic/1.0.27"},
+    "python": {"name": "chematic", "version": "1.0.27", "registry_url": "https://pypi.org/project/chematic/1.0.27/"},
+    "npm": {"name": "@kent-tokyo/chematic", "version": "1.0.27", "registry_url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.0.27"}
+  },
+  "wasm": {
+    "artifact": "crates/chematic-wasm/pkg/chematic_wasm_bg.wasm",
+    "measurements": [
+      {"status": "historical", "release_or_snapshot": "v1.0.2 release candidate", "raw_bytes": 3300452, "compressed_bytes": 1213008, "command": "wasm-pack 0.13.1; wasm-opt 130 -O3; gzip -9", "runtime": "macOS arm64", "source": "benchmarks/2026-09-04-wasm-size.md"}
+    ]
+  },
+  "mcp": {"tool_count": 20, "transport": ["stdio"], "network_enabled_tools": ["pubchem_lookup"]},
+  "benchmarks": {
+    "historical": [
+      {"path": "benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md", "status": "historical", "versions": ["source 8cc01365", "RDKit 2026.03.6"], "commit": "8cc01365", "corpus": "5,000-molecule ChEMBL corpus", "hardware": "shared 2-vCPU x86 Linux VM"},
+      {"path": "benchmarks/2026-09-25-perf-speed4-output-identical.md", "status": "historical", "versions": ["source 8b292c93", "RDKit 2026.03.6"], "commit": "8b292c93", "corpus": "seven versioned corpora; 50 operations; about 2.34 million output rows", "hardware": "shared 2-vCPU x86 Linux VM"},
+      {"path": "benchmarks/2026-09-26-mmff94-public-v1.0.26.md", "status": "historical", "versions": ["published chematic 1.0.26", "RDKit 2026.3.6"], "commit": "v1.0.26", "corpus": "fixed Tier A+B 265 molecules, two run orders", "hardware": "macOS 26.5.2 arm64, CPython 3.13.6"}
+    ]
+  },
+  "generated_at": "2026-09-26T11:04:07Z"
+}

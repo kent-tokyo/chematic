@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.27] - 2026-09-26
+
 - Added Rust `Molecule::set_tag` / `atom_tag` for caller-managed atom labels
   preserved by molecule clone, core graph edits, reaction apply, fragments,
   and aromaticity perception. Private, lazily allocated tag storage preserves
@@ -17,6 +19,15 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   canonicalization; write/parse requires explicit atom-order remapping. Labels
   are `1..=u16::MAX`, need not be unique, and `None` / `Some(0)` clear them.
   Tag changes invalidate cached molecular views.
+- Restored the WASM torsion-scan demo API and added browser smoke coverage for
+  its typed response; this does not expand the supported 3D chemistry domain.
+- Strengthened the RDKit 2026.03.6 SMARTS residual checker to account for
+  every classified query/target cell. The remaining 200 of 310,000 cells are
+  documented compatibility boundaries, not exact parity.
+- Published a separately pinned v1.0.26-wheel MMFF94 quality packet with all
+  265 input rows retained and independent geometry/stereo scoring. This is
+  historical evidence for v1.0.26, not a v1.0.27 remeasurement; broader A6
+  typing, convergence, and conformer-quality gates remain open.
 
 ## [1.0.26] - 2026-09-25
 
