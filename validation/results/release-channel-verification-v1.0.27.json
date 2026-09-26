@@ -3,16 +3,52 @@
   "release": {
     "version": "1.0.27",
     "tag": "v1.0.27",
-    "commit": null
+    "commit": "f0aa1e2371392de90a0618abafda9ac11b8c8112"
   },
-  "checked_at": "2026-09-26T11:04:07Z",
-  "release_ready": false,
+  "checked_at": "2026-09-26T11:41:04Z",
+  "release_ready": true,
   "channels": [
-    {"id": "github_release", "status": "not_measured", "observed_version": null, "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.27", "detail": "Verify the non-draft, non-prerelease Release and attached tag-generated metadata after publication."},
-    {"id": "npm", "status": "not_measured", "observed_version": null, "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic", "detail": "Verify the registry version and tarball after the tag workflow completes."},
-    {"id": "pypi", "status": "not_measured", "observed_version": null, "url": "https://pypi.org/pypi/chematic/1.0.27/json", "detail": "Verify published distributions after the tag workflow completes."},
-    {"id": "crates_io", "status": "not_measured", "observed_version": null, "url": "https://crates.io/crates/chematic/1.0.27", "detail": "Verify the root crate and publish graph after the tag workflow completes."},
-    {"id": "docs_rs", "status": "not_measured", "observed_version": null, "url": "https://docs.rs/chematic/1.0.27/chematic/", "detail": "Verify version-pinned docs.rs output after crates.io publication."},
-    {"id": "site", "status": "not_measured", "observed_version": null, "url": "https://kent-tokyo.github.io/chematic/", "detail": "Verify the live homepage release marker after Pages deployment."}
+    {
+      "id": "github_release",
+      "status": "verified",
+      "observed_version": "1.0.27",
+      "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.27",
+      "detail": "Non-draft, non-prerelease Release published at 2026-09-26T11:28:35Z. Corrected metadata asset sha256:05cec2661080762634ca1a68e396713fc64becfc01fd57f9a4e3e25d9abdfb54."
+    },
+    {
+      "id": "npm",
+      "status": "verified",
+      "observed_version": "1.0.27",
+      "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.27",
+      "detail": "Registry metadata reports @kent-tokyo/chematic@1.0.27 with integrity sha512-slfNnIId0KgqYE4sTCxXQaUP/YDXXJSnBw0lc4o2oHWJMTWKyLhzv7kptx6aRl+XJ7GqhYQkdirT9T9ys9o23A==."
+    },
+    {
+      "id": "pypi",
+      "status": "verified",
+      "observed_version": "1.0.27",
+      "url": "https://pypi.org/pypi/chematic/1.0.27/json",
+      "detail": "PyPI workflow 36238891307 succeeded. PyPI JSON lists 18 non-yanked distributions; sdist chematic-1.0.27.tar.gz sha256:3622a0563788a3662681d939d42ab8108a1d04507f5b84e334edbeee985ecf35."
+    },
+    {
+      "id": "crates_io",
+      "status": "verified",
+      "observed_version": "1.0.27",
+      "url": "https://crates.io/crates/chematic/1.0.27",
+      "detail": "Tag workflow 36238891396 succeeded for the 20-crate publish graph; official sparse index lists non-yanked chematic and chematic-core 1.0.27."
+    },
+    {
+      "id": "docs_rs",
+      "status": "verified",
+      "observed_version": "1.0.27",
+      "url": "https://docs.rs/chematic/1.0.27/chematic/",
+      "detail": "Version-pinned docs.rs endpoint returned HTTP 200 after crates.io publication."
+    },
+    {
+      "id": "site",
+      "status": "verified",
+      "observed_version": "1.0.27",
+      "url": "https://kent-tokyo.github.io/chematic/",
+      "detail": "Direct homepage fetch displayed Current release: v1.0.27 after Pages deployment."
+    }
   ]
 }
