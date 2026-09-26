@@ -39,8 +39,9 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    channel from another.
 2. **Adjudicate the remaining CIP center.** Resolve row 4480 atom 3
    independently before adopting either engine's label; never guess a label.
-3. **Decide SMARTS ring-count semantics.** `[Rn]`/`[kn]` need an unambiguous
-   contract before an RDKit-style symmetrized-ring option is offered.
+3. **Decide optional RDKit-style SMARTS ring counts.** #635's 310,000-cell
+   classification is complete; `[Rn]`/`[kn]` still have a documented native
+   SSSR-versus-symmetrized-ring boundary. Any parity option must be explicit.
 4. **Finish remaining A6 MMFF94 gates.** Heavy-atom typing residuals,
    timeout/convergence accounting, and broader conformer quality remain ahead
    of new 3D breadth.
