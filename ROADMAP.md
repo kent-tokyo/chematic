@@ -23,10 +23,11 @@ boundaries, and reproducible evidence take priority over feature-count races.
   262/262 comparable MMFF94 rows are within 1 kcal/mol (maximum 0.32). This is
   same-coordinate energy/term evidence, not convergence, conformer-quality,
   or published-package evidence.
-- **#637 published-wheel follow-up:** two v1.0.26/RDKit 2026.3.6 Mac arm64
+- **#637 evidence-regeneration scope complete:** two v1.0.26/RDKit 2026.3.6 Mac arm64
   runs retain all 265 rows; independent geometry/stereo scoring finds
   265/265 versus 264/265 usable. This is a named-cohort quality result,
-  separate from the source-built energy packet and broader 3D gates.
+  separate from the source-built energy packet. Broader A6 conformer-quality,
+  timeout/convergence, and heavy-atom typing gates remain open.
 - **v1.0.26 improves selected hot paths at release source.** The dated
   output-differential record preserves the measured output boundary while
   reducing SMARTS, ring, and fingerprint work. Shared-VM source timing is not
