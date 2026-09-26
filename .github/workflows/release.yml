@@ -29,7 +29,10 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           COMMIT="$(git rev-list -1 "$GITHUB_REF_NAME")"
-          RELEASED_AT="$(git show -s --format=%cI "$GITHUB_REF_NAME")"
+          RELEASED_AT="$(git for-each-ref --format='%(taggerdate:iso-strict)' "refs/tags/${GITHUB_REF_NAME}")"
+          if [ -z "$RELEASED_AT" ]; then
+            RELEASED_AT="$(git log -1 --format=%cI "${GITHUB_REF_NAME}^{commit}")"
+          fi
           python3 scripts/generate_release_metadata.py \
             --version "$VERSION" \
             --commit "$COMMIT" \
