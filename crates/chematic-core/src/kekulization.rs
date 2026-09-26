@@ -334,6 +334,7 @@ pub fn apply_kekule(mol: &Molecule, kekule: &KekuleResult) -> Molecule {
 
     builder.copy_stereo_groups_from(mol);
     builder.copy_stereo_from(mol);
+    builder.copy_atom_tags_from(mol);
     builder.copy_bond_directions_from(mol);
 
     builder.build()

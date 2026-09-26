@@ -657,6 +657,7 @@ fn finish_molecule_with_flags(
     // metadata wholesale. (This rebuild previously dropped stereo_groups and
     // stereo_neighbor_order silently; closing that here too.)
     builder.copy_r_groups_from(mol);
+    builder.copy_atom_tags_from(mol);
     builder.copy_stereo_groups_from(mol);
     builder.copy_stereo_from(mol);
     builder.copy_bond_directions_from(mol);
@@ -693,6 +694,7 @@ fn finish_molecule_with_flags(
     }
     patched.copy_stereo_groups_from(&normalized);
     patched.copy_stereo_from(&normalized);
+    patched.copy_atom_tags_from(&normalized);
     patched.copy_bond_directions_from(&normalized);
     patched.build()
 }

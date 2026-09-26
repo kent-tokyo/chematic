@@ -116,6 +116,9 @@ impl RGroupLabel {
 
 /// A single atom in a molecular graph.
 ///
+/// Caller labels belong to [`crate::Molecule::atom_tag`], keeping this public
+/// chemical value and its equality independent of tracking metadata.
+///
 /// - `isotope`: mass number (e.g. 13 for ¹³C). `None` = natural isotope abundance.
 /// - `charge`: formal charge.
 /// - `hydrogen_count`: explicit H count from a bracket atom `[...]`.

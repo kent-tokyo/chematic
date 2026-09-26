@@ -185,6 +185,8 @@ jobs:
           - { package: chematic-mol, target: stereo_reader_integration }
           - { package: chematic-perception, target: aromaticity_edge_gate }
           - { package: chematic-smiles, target: canonical_idempotency_corpus }
+          - { package: chematic-smiles, target: atom_tag_visit_order }
+          - { package: chematic-smiles, target: atom_tag_cache }
           - { package: chematic-smiles, target: canonical_ez_residual }
           - { package: chematic-smiles, target: cross_binding_contract }
           - { package: chematic-smiles, target: canonical_robustness }

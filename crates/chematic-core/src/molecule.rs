@@ -45,6 +45,9 @@ pub const STEREO_H_SENTINEL: u32 = u32::MAX;
 #[derive(Clone)]
 pub struct Molecule {
     atoms: Vec<Atom>,
+    /// Non-chemical caller tags, indexed by atom. Empty until a tag is set.
+    /// Kept outside `Atom` to preserve its public struct and equality contract.
+    atom_tags: Vec<Option<core::num::NonZeroU16>>,
     bonds: Vec<BondEntry>,
     /// adjacency[atom_idx] = list of (neighbor_atom_idx, bond_idx)
     adjacency: Vec<Vec<(AtomIdx, BondIdx)>>,
@@ -156,6 +159,32 @@ impl Molecule {
         } else {
             None
         }
+    }
+
+    /// Non-chemical caller tag for `idx`, or `None` when untagged or out of range.
+    ///
+    /// Tags are caller-managed labels, not unique identities: duplicates are
+    /// allowed, including when combining independently tagged reactants. They
+    /// do not affect chemical equality, canonicalization, or SMILES output.
+    /// A SMILES write/parse round trip requires explicit remapping using the
+    /// writer's atom-order result. Cloning an `Atom` alone does not copy a tag.
+    /// Custom rebuilds must use [`MoleculeBuilder::set_tag`] or, when indices
+    /// are unchanged, [`MoleculeBuilder::copy_atom_tags_from`]. Tag preservation
+    /// is guaranteed for the operations listed on [`Self::set_tag`]; other
+    /// molecule-rebuilding APIs are not covered by that contract.
+    ///
+    /// ```
+    /// use chematic_core::{Atom, Element, MoleculeBuilder};
+    /// let mut builder = MoleculeBuilder::new();
+    /// let carbon = builder.add_atom(Atom::new(Element::C));
+    /// let mut mol = builder.build();
+    /// mol.set_tag(carbon, Some(42));
+    /// assert_eq!(mol.clone().atom_tag(carbon).unwrap().get(), 42);
+    /// mol.set_tag(carbon, None);
+    /// assert_eq!(mol.atom_tag(carbon), None);
+    /// ```
+    pub fn atom_tag(&self, idx: AtomIdx) -> Option<core::num::NonZeroU16> {
+        self.atom_tags.get(idx.0 as usize).copied().flatten()
     }
 
     /// R-group label attached to `idx`, if this wildcard came from `R`/`R<n>`.
@@ -370,6 +399,7 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         builder.copy_stereo_from(self);
+        builder.copy_atom_tags_from(self);
         builder.copy_r_groups_from(self);
         builder.copy_bond_directions_from(self);
         builder.build()
@@ -397,6 +427,7 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         builder.copy_stereo_from(self);
+        builder.copy_atom_tags_from(self);
         builder.copy_r_groups_from(self);
         builder.clear_r_group(idx);
         builder.copy_bond_directions_from(self);
@@ -431,7 +462,8 @@ impl Molecule {
             if aidx == idx {
                 continue;
             }
-            builder.add_atom(atom.clone());
+            let new_idx = builder.add_atom(atom.clone());
+            builder.set_tag(new_idx, self.atom_tag(aidx).map(core::num::NonZeroU16::get));
         }
         // Track old→new BOND index so `bond_directions` (keyed by bond index,
         // not atom index) can be remapped the same way `stereo_neighbor_order`
@@ -571,6 +603,7 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         builder.copy_stereo_from(self);
+        builder.copy_atom_tags_from(self);
         builder.copy_r_groups_from(self);
         builder.copy_bond_directions_from(self);
         builder.build()
@@ -587,6 +620,7 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, o);
         }
         builder.copy_stereo_from(self);
+        builder.copy_atom_tags_from(self);
         builder.copy_r_groups_from(self);
         builder.copy_bond_directions_from(self);
         builder.build()
@@ -615,6 +649,7 @@ impl Molecule {
             }
         }
         builder.copy_stereo_from(self);
+        builder.copy_atom_tags_from(self);
         builder.copy_r_groups_from(self);
         builder.build()
     }
@@ -630,6 +665,9 @@ impl Molecule {
         self.invalidate_derived();
         let idx = AtomIdx(self.atoms.len() as u32);
         self.atoms.push(atom);
+        if !self.atom_tags.is_empty() {
+            self.atom_tags.push(None);
+        }
         self.adjacency.push(vec![]);
         idx
     }
@@ -660,6 +698,9 @@ impl Molecule {
         // mutable-reference path (the analyzer models that method name as a
         // logging sink even though this is only an in-memory graph edit).
         let _ = self.atoms.drain(removed..=removed).next();
+        if !self.atom_tags.is_empty() {
+            let _ = self.atom_tags.drain(removed..=removed).next();
+        }
 
         // Keep only bonds not involving the removed atom; remap endpoints and
         // track each surviving bond's new index so `bond_directions` (keyed
@@ -842,6 +883,30 @@ impl Molecule {
     pub fn set_isotope(&mut self, idx: AtomIdx, isotope: Option<u16>) {
         self.invalidate_derived();
         self.atoms[idx.0 as usize].isotope = isotope;
+    }
+
+    /// Set a non-chemical tag on atom `idx`. Preserved by molecule clone,
+    /// core graph edits, reaction apply, fragments, and aromaticity perception.
+    /// Ignored by SMILES write and canonicalization; see [`Self::atom_tag`].
+    ///
+    /// Tags are `1..=u16::MAX`. `None` clears the tag; `Some(0)` is treated
+    /// as clear (same as `None`). Storage is allocated only when tagging.
+    ///
+    /// # Panics
+    /// Panics if `idx` is out of range.
+    pub fn set_tag(&mut self, idx: AtomIdx, tag: Option<u16>) {
+        assert!(
+            (idx.0 as usize) < self.atom_count(),
+            "atom index out of range"
+        );
+        let tag = tag.and_then(core::num::NonZeroU16::new);
+        if self.atom_tag(idx) == tag {
+            return;
+        }
+        // Cached aromatic views contain whole molecules, including tags.
+        self.invalidate_derived();
+        self.atom_tags.resize(self.atom_count(), None);
+        self.atom_tags[idx.0 as usize] = tag;
     }
 
     /// Mark an atom as an R-group wildcard while preserving its atom index.
@@ -1101,6 +1166,8 @@ impl Molecule {
                 for (aidx, atom) in self.atoms() {
                     if component[aidx.0 as usize] == cid {
                         let new_idx = builder.add_atom(atom.clone());
+                        builder
+                            .set_tag(new_idx, self.atom_tag(aidx).map(core::num::NonZeroU16::get));
                         if let Some(label) = self.r_group_label(aidx) {
                             builder.set_r_group(new_idx, label);
                         }
@@ -1127,6 +1194,7 @@ impl Molecule {
 #[derive(Default)]
 pub struct MoleculeBuilder {
     atoms: Vec<Atom>,
+    atom_tags: Vec<Option<core::num::NonZeroU16>>,
     bonds: Vec<BondEntry>,
     adjacency: Vec<Vec<(AtomIdx, BondIdx)>>,
     r_groups: std::collections::HashMap<u32, RGroupLabel>,
@@ -1149,6 +1217,7 @@ impl MoleculeBuilder {
     pub fn with_capacity(atom_count: usize, bond_count: usize) -> Self {
         Self {
             atoms: Vec::with_capacity(atom_count),
+            atom_tags: Vec::new(),
             bonds: Vec::with_capacity(bond_count),
             adjacency: Vec::with_capacity(atom_count),
             r_groups: std::collections::HashMap::new(),
@@ -1173,6 +1242,7 @@ impl MoleculeBuilder {
         }
         b.stereo_groups = mol.stereo_groups.clone();
         b.r_groups = mol.r_groups.clone();
+        b.atom_tags = mol.atom_tags.clone();
         b.stereo_neighbor_order = mol.stereo_neighbor_order.clone();
         b.bond_directions = mol.bond_directions.clone();
         b.bond_direction_anchors = mol.bond_direction_anchors.clone();
@@ -1207,6 +1277,30 @@ impl MoleculeBuilder {
     /// Copy R-group sidecars when atom indices are unchanged.
     pub fn copy_r_groups_from(&mut self, mol: &Molecule) {
         self.r_groups = mol.r_groups.clone();
+    }
+
+    /// Set a caller tag on an already-added atom. `None` and `Some(0)` clear it.
+    /// Panics if `idx` is out of range.
+    pub fn set_tag(&mut self, idx: AtomIdx, tag: Option<u16>) {
+        assert!(
+            (idx.0 as usize) < self.atom_count(),
+            "atom index out of range"
+        );
+        let tag = tag.and_then(core::num::NonZeroU16::new);
+        if tag.is_some() || !self.atom_tags.is_empty() {
+            self.atom_tags.resize(self.atom_count(), None);
+            self.atom_tags[idx.0 as usize] = tag;
+        }
+    }
+
+    /// Copy caller tags when all source atoms retain their indices. Additional
+    /// trailing atoms are untagged. Panics if this builder has fewer atoms.
+    pub fn copy_atom_tags_from(&mut self, mol: &Molecule) {
+        assert!(self.atom_count() >= mol.atom_count(), "atom count mismatch");
+        self.atom_tags.clone_from(&mol.atom_tags);
+        if !self.atom_tags.is_empty() {
+            self.atom_tags.resize(self.atom_count(), None);
+        }
     }
 
     /// Append a stereo group to this builder.
@@ -1278,6 +1372,9 @@ impl MoleculeBuilder {
     pub fn add_atom(&mut self, atom: Atom) -> AtomIdx {
         let idx = AtomIdx(self.atoms.len() as u32);
         self.atoms.push(atom);
+        if !self.atom_tags.is_empty() {
+            self.atom_tags.push(None);
+        }
         self.adjacency.push(Vec::new());
         idx
     }
@@ -1321,6 +1418,7 @@ impl MoleculeBuilder {
     pub fn build(self) -> Molecule {
         Molecule {
             atoms: self.atoms,
+            atom_tags: self.atom_tags,
             bonds: self.bonds,
             adjacency: self.adjacency,
             r_groups: self.r_groups,
@@ -1769,5 +1867,95 @@ mod tests {
         assert_eq!(mol.degree_opt(n1), Some(1));
         assert_eq!(mol.degree_opt(n2), Some(1));
         assert_eq!(mol.degree_opt(n3), Some(1));
+    }
+
+    #[test]
+    fn set_tag_uses_nonzero_u16_niche() {
+        assert_eq!(
+            core::mem::size_of::<Option<core::num::NonZeroU16>>(),
+            2,
+            "tag Option must stay two bytes"
+        );
+        let mut mol = ethane();
+        mol.set_tag(AtomIdx(0), Some(1));
+        assert_eq!(mol.atom_tag(AtomIdx(0)).map(|t| t.get()), Some(1));
+        mol.set_tag(AtomIdx(0), Some(0)); // zero is absence
+        assert!(mol.atom_tag(AtomIdx(0)).is_none());
+        mol.set_tag(AtomIdx(1), Some(u16::MAX));
+        assert_eq!(mol.atom_tag(AtomIdx(1)).map(|t| t.get()), Some(u16::MAX));
+        mol.set_tag(AtomIdx(1), None);
+        assert!(mol.atom_tag(AtomIdx(1)).is_none());
+    }
+
+    #[test]
+    fn atom_tags_survive_core_edits_without_changing_atom_api() {
+        // An exhaustive 1.x struct literal must remain source-compatible.
+        let atom = Atom {
+            element: Element::C,
+            isotope: None,
+            charge: 0,
+            hydrogen_count: None,
+            aromatic: false,
+            chirality: crate::Chirality::None,
+            wildcard: false,
+            atom_map: None,
+            cip_code: None,
+        };
+        let mut mol = ethane();
+        assert!(mol.atom_tags.is_empty());
+        mol.set_tag(AtomIdx(0), None);
+        assert!(mol.atom_tags.is_empty());
+        mol.set_tag(AtomIdx(0), Some(17));
+        mol.set_tag(AtomIdx(1), Some(23));
+        assert_eq!(mol.atom(AtomIdx(0)), &atom);
+        let expected = vec![Some(17), Some(23)];
+        for edited in [
+            mol.clone(),
+            MoleculeBuilder::from_molecule(&mol).build(),
+            mol.with_atom_charge(AtomIdx(0), 1),
+            mol.with_atom_element(AtomIdx(0), Element::N),
+            mol.with_atom_aromatic(AtomIdx(0), true),
+            mol.with_bond_order(BondIdx(0), BondOrder::Double),
+            mol.with_bond_removed(BondIdx(0)),
+        ] {
+            let actual: Vec<_> = edited
+                .atoms()
+                .map(|(i, _)| edited.atom_tag(i).map(core::num::NonZeroU16::get))
+                .collect();
+            assert_eq!(actual, expected);
+        }
+        let (mut extended, born) = mol.with_atom_added(atom);
+        assert!(extended.atom_tag(born).is_none());
+        extended.set_tag(born, Some(29));
+        let connected = extended
+            .with_bond_added(AtomIdx(1), born, BondOrder::Single)
+            .unwrap()
+            .0;
+        assert_eq!(connected.atom_tag(born).unwrap().get(), 29);
+        let (removed, remap) = extended.with_atom_removed(AtomIdx(0));
+        assert_eq!(removed.atom_tag(remap[1].unwrap()).unwrap().get(), 23);
+        assert_eq!(removed.atom_tag(remap[2].unwrap()).unwrap().get(), 29);
+        extended.remove_atom(AtomIdx(0));
+        assert_eq!(extended.atom_tag(AtomIdx(0)).unwrap().get(), 23);
+        assert_eq!(extended.atom_tag(AtomIdx(1)).unwrap().get(), 29);
+        let new = extended.add_atom(Atom::new(Element::O));
+        assert!(extended.atom_tag(new).is_none());
+        assert!(extended.atom_tag(AtomIdx(u32::MAX)).is_none());
+    }
+
+    #[test]
+    fn builder_tags_keep_new_atoms_untagged() {
+        let mut mol = ethane();
+        mol.set_tag(AtomIdx(0), Some(31));
+        let mut builder = MoleculeBuilder::from_molecule(&mol);
+        let born = builder.add_atom(Atom::new(Element::O));
+        builder.set_tag(born, Some(41));
+        builder.set_tag(born, Some(0));
+        let built = builder.build();
+        assert_eq!(built.atom_tag(AtomIdx(0)), mol.atom_tag(AtomIdx(0)));
+        assert!(built.atom_tag(born).is_none());
+        let mut larger = MoleculeBuilder::from_molecule(&built);
+        larger.copy_atom_tags_from(&mol);
+        assert!(larger.build().atom_tag(born).is_none());
     }
 }

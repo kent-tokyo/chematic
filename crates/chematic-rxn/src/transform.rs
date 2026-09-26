@@ -1023,13 +1023,23 @@ fn apply_match_traced_impl(
         .products
         .iter()
         .map(|pt| {
-            let product = build_product(
+            let mut product = build_product(
                 pt,
                 &global_map,
                 reactants,
                 &all_template_atoms,
                 carry_substituents,
             );
+            // The same provenance map serves traced and ordinary reaction
+            // APIs. Born atoms remain untagged; caller labels are not remapped
+            // or made unique across reactants.
+            for (i, source) in product.atom_sources.iter().enumerate() {
+                if let Some(source) = source
+                    && let Some(tag) = reactants[source.reactant].atom_tag(source.atom)
+                {
+                    product.molecule.set_tag(AtomIdx(i as u32), Some(tag.get()));
+                }
+            }
             crate::perf_counters::record_build_product_call(
                 product.molecule.atom_count(),
                 product.molecule.bond_count(),
@@ -3148,7 +3158,7 @@ mod tests {
     /// elsewhere in this file, not just one.
     #[test]
     fn find_and_apply_match_equals_run_reactants() {
-        let cases: Vec<(&str, Vec<chematic_core::Molecule>)> = vec![
+        let mut cases: Vec<(&str, Vec<chematic_core::Molecule>)> = vec![
             ("[N:1]>>[N:1]", vec![parse("NCCN").unwrap()]),
             (
                 "[N:1].[C:2]>>[N:1][C:2]",
@@ -3161,6 +3171,15 @@ mod tests {
             ),
         ];
 
+        for (_, mols) in &mut cases {
+            for mol in mols {
+                for i in 0..mol.atom_count() {
+                    // Intentionally reused across reactants: tags are labels,
+                    // while atom_sources disambiguates reactant identity.
+                    mol.set_tag(AtomIdx(i as u32), Some(i as u16 + 1));
+                }
+            }
+        }
         for (smirks, mols) in &cases {
             let reactants: Vec<&Molecule> = mols.iter().collect();
             let direct = run_reactants(smirks, &reactants).unwrap();
@@ -3183,6 +3202,9 @@ mod tests {
                     "{smirks}: product count per set must match"
                 );
                 for (dp, vp) in d.iter().zip(v.iter()) {
+                    for (idx, _) in dp.atoms() {
+                        assert_eq!(dp.atom_tag(idx), vp.atom_tag(idx), "{smirks}: product tags");
+                    }
                     assert_eq!(
                         chematic_smiles::canonical_smiles(dp),
                         chematic_smiles::canonical_smiles(vp),
@@ -3199,7 +3221,7 @@ mod tests {
     /// template-created atoms trace to `None`.
     #[test]
     fn traced_apply_match_reports_atom_sources() {
-        let cases: Vec<(&str, Vec<chematic_core::Molecule>)> = vec![
+        let mut cases: Vec<(&str, Vec<chematic_core::Molecule>)> = vec![
             ("[N:1]>>[N:1]", vec![parse("NCCN").unwrap()]),
             (
                 "[N:1].[C:2]>>[N:1][C:2]",
@@ -3215,6 +3237,13 @@ mod tests {
                 vec![parse("CC(=O)O").unwrap(), parse("OCC").unwrap()],
             ),
         ];
+        for (_, mols) in &mut cases {
+            for mol in mols {
+                for i in 0..mol.atom_count() {
+                    mol.set_tag(AtomIdx(i as u32), Some(i as u16 + 1));
+                }
+            }
+        }
         for (smirks, mols) in &cases {
             let reactants: Vec<&Molecule> = mols.iter().collect();
             let prepared = PreparedReaction::new(smirks).unwrap();
@@ -3245,6 +3274,15 @@ mod tests {
                         assert_eq!(t.atom_sources, f.atom_sources);
                         assert_eq!(t.atom_sources.len(), t.molecule.atom_count());
                         for (i, src) in t.atom_sources.iter().enumerate() {
+                            let expected_tag =
+                                src.and_then(|src| reactants[src.reactant].atom_tag(src.atom));
+                            for product in [p, &t.molecule, &f.molecule] {
+                                assert_eq!(
+                                    product.atom_tag(AtomIdx(i as u32)),
+                                    expected_tag,
+                                    "{smirks}: tag at product atom {i}, carry={carry}"
+                                );
+                            }
                             if let Some(src) = src {
                                 assert_eq!(
                                     t.molecule.atom(AtomIdx(i as u32)).element,
@@ -3547,5 +3585,32 @@ mod tests {
                 got: 1
             })
         ));
+    }
+
+    #[test]
+    fn atom_tag_survives_apply_atom_map_does_not() {
+        let mut mol = parse("CCO").unwrap();
+        for i in 0..mol.atom_count() {
+            mol.set_tag(AtomIdx(i as u32), Some(200 + i as u16));
+        }
+        let matches = find_reaction_matches("[C:1]>>[C:1]O", &[&mol]).expect("match");
+        assert!(!matches.is_empty());
+        let products =
+            apply_reaction_match("[C:1]>>[C:1]O", &[&mol], &matches[0], true).expect("apply");
+        let product = &products.expect("valence")[0];
+        let tags: Vec<_> = product
+            .atoms()
+            .map(|(i, _)| product.atom_tag(i).map(core::num::NonZeroU16::get))
+            .collect();
+        assert!(
+            tags.contains(&Some(200)) || tags.contains(&Some(201)) || tags.contains(&Some(202))
+        );
+        assert!(product.atoms().all(|(_, a)| a.atom_map.is_none()));
+        // Born oxygen has no tag.
+        assert!(
+            product
+                .atoms()
+                .any(|(i, a)| product.atom_tag(i).is_none() && a.element.atomic_number() == 8)
+        );
     }
 }
