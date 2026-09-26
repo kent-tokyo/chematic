@@ -10,7 +10,7 @@ history; use CHANGELOG, dated validation artifacts, and Git history for that.
 |---:|---|---|---|
 | 1 | #632 SMILES E/Z semantics | Released source `9808f54f`: RDKit 2026.03.6 fixed 10k lane moves from 18 semantic differences to 0; the 28 x 1,024 relabel audit reran on clean v1.0.25-based source `13d70a2e` with 0/28 divergent components (`validation/results/ez_shared_carrier_coupling_mechanism_audit_summary_1024_2026-09-25.json`) | Verification exit met at v1.0.26 release source. The stable-key contract is not widened |
 | 2 | #634 CIP residuals | Source candidate `11a4ea27`: 9,994/10,000 exact (was 9,770). The lane now keys E/Z by double-bond endpoints, and `CipMode.ACCURATE` E/Z uses the hierarchical-digraph ranker. The 6 remaining labels are classified: 4 phosphorus `oracle_unstable`, 1 trivalent bridgehead N (unsupported), 1 needing adjudication (row 4480, atom 3) | Land the candidate. Row 4480 needs independent adjudication before either answer is adopted |
-| 3 | #635 SMARTS residuals | Source candidate `11a4ea27`: 200 of 310,000 cells differ (was 14,306) after the Python/WASM SMARTS APIs match the perceived aromatic view. All 200 are classified ring-count semantics: 194 symmetrized-ring `[Rn]`/`[kn]` cells and 6 on one ferrocene row | Land the candidate. `[Rn]` SSSR semantics are a documented boundary; an RDKit-style ring-count option would need a separate decision |
+| 3 | #635 SMARTS residual classification | Released in v1.0.26: 200 of 310,000 cells differ (was 14,306) after the Python/WASM SMARTS APIs match the perceived aromatic view. All 200 are classified: 194 symmetrized-ring `[Rn]`/`[kn]` cells and 6 on one ferrocene row. The evidence checker now matches every classified cell to its raw query and target-atom sets | Classification exit met. Native `[Rn]` SSSR semantics are a documented compatibility boundary; an opt-in RDKit-style ring-count option is separate future work, not a silent default change |
 | 4 | A6 MMFF94 | Source candidate `13d70a2e` (#637): with RDKit per-term energies on identical coordinates, 262/262 rows are within 1 kcal/mol (max 0.32; was 9.87). Bond, electrostatic and stretch-bend terms are at parity. Public v1.0.20 passes 265/265 stereo/clash quality but measures 0.944x RDKit speed | Energy/term exit met on source. Timeout/convergence accounting, broader conformer quality, heavy-atom typing residuals (2,908 atoms on the 10k census), and a published-package rerun remain separate gates |
 | 5 | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after the next official stable artifact is pinned; retain old/new results side by side |
 
@@ -84,7 +84,7 @@ complete merely because a local packet exists.
   `validation/results/smiles-ez-semantic-issue632-v1.0.20-candidate-vs-rdkit-2026.03.6-2026-09-23.json`
   is a bounded source diagnostic. The long relabel audit passed on clean
   v1.0.25-based source (2026-09-25 files under `validation/results/ez_shared_carrier_*`).
-- **#634/#635 source candidate:**
+- **#634/#635 source evidence (released in v1.0.26):**
   `validation/results/rdkit-rebaseline-issue634-635-v1.0.25-candidate-vs-rdkit-2026.03.6-2026-09-25.json`
   with raw rows and the residual classification. `scripts/check_rdkit_rebaseline_evidence.py`
   recounts both. It is a source measurement, not a published-package result.

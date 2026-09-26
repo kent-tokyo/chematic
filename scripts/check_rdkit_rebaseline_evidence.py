@@ -320,6 +320,90 @@ def validate_issue634_635_candidate(errors: list[str]) -> None:
         "Issue #634/#635 CIP classification rows differ from the residual rows",
         errors,
     )
+    validate_smarts_cell_correspondence(rows, smarts, errors)
+
+
+def validate_smarts_cell_correspondence(
+    rows: list[dict], classification: dict, errors: list[str]
+) -> None:
+    """Check every classified SMARTS cell against the corresponding raw atom sets."""
+    classified: dict[int, dict[str, str]] = {}
+    metal_rows: set[int] = set()
+    for item in classification.get("rows", []):
+        index = item.get("input_index")
+        if not isinstance(index, int) or index in classified:
+            errors.append(f"Issue #635 duplicate or invalid classified input index: {index!r}")
+            continue
+        cells = item.get("cells", [])
+        queries = [cell.get("query") for cell in cells]
+        require(
+            len(queries) == len(set(queries)),
+            f"Issue #635 row {index}: duplicate classified query",
+            errors,
+        )
+        classified[index] = {cell.get("query"): cell.get("family") for cell in cells}
+        if item.get("ring_facts", {}).get("has_metal") is True:
+            metal_rows.add(index)
+
+    observed: set[int] = set()
+    for row in rows:
+        index = row["input_index"]
+        smarts = row.get("smarts", {})
+        differences = smarts.get("differences", [])
+        require(
+            row.get("status") == "completed"
+            and smarts.get("query_count") == 31
+            and smarts.get("difference_count") == len(differences),
+            f"Issue #635 row {index}: incomplete cell accounting",
+            errors,
+        )
+        if not differences:
+            continue
+        observed.add(index)
+        raw_queries = [item.get("query") for item in differences]
+        require(
+            len(raw_queries) == len(set(raw_queries))
+            and set(raw_queries) == set(classified.get(index, {})),
+            f"Issue #635 row {index}: classified queries differ from raw cells",
+            errors,
+        )
+        for item in differences:
+            query = item.get("query")
+            family = classified.get(index, {}).get(query)
+            if family == "ring_semantics:symmetrized_rings":
+                require(
+                    query in {"[R1]", "[R2]", "[R3]", "[k5]", "[k6]"},
+                    f"Issue #635 row {index}: non-ring query classified as symmetrized",
+                    errors,
+                )
+            elif family == "ring_semantics:organometallic":
+                require(
+                    index in metal_rows
+                    and query in {"[R1]", "[R2]", "[x2]", "[x3]", "*@*", "*!@*"},
+                    f"Issue #635 row {index}: unexpected organometallic query",
+                    errors,
+                )
+            else:
+                errors.append(f"Issue #635 row {index}: missing or unknown family for {query}")
+            left, right = item.get("chematic"), item.get("rdkit")
+            require(
+                isinstance(left, list)
+                and isinstance(right, list)
+                and left != right
+                and all(
+                    isinstance(match, list)
+                    and all(isinstance(atom, int) and atom >= 0 for atom in match)
+                    for match in left + right
+                )
+                and item.get("chematic_error") is None,
+                f"Issue #635 row {index}: missing atom-set comparison or unaccounted refusal",
+                errors,
+            )
+    require(
+        observed == set(classified),
+        "Issue #635 classified row indices differ from raw SMARTS residuals",
+        errors,
+    )
 
 
 def main() -> int:
