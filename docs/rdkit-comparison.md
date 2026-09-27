@@ -59,9 +59,13 @@ match against the molecule's perceived aromatic view, so a Kekulé benzene
 matches `c`. Match indices still refer to the input molecule, and the Rust
 core `find_matches` is unchanged.
 
-The remaining CIP labels are four phosphorus centres whose RDKit labels are
-unstable, one trivalent bridgehead nitrogen CheMatic does not model, and one
-centre awaiting independent adjudication. The remaining SMARTS cells are
+A later source commit (`9b196a4e`, #634) measures 9,995/10,000: the centre that
+awaited adjudication (row 4480, atom 3) was adjudicated by hand as S, as RDKit
+reports, after a fix to how the accurate engine ranks an embedded centre's
+back-to-root ligand. The remaining CIP labels are typed abstentions: four
+phosphorus centres whose RDKit labels are unstable (`oracle_unstable`) and one
+bridgehead amine whose fourth ligand would be a lone pair (`lone_pair_center`),
+which CheMatic does not model. The remaining SMARTS cells are
 `[Rn]`/`[kn]` ring counts: CheMatic counts SSSR rings, whereas RDKit counts its
 symmetrized ring set. See [validation](validation.md) for the evidence files.
 

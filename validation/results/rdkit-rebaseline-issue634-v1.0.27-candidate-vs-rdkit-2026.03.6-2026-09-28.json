@@ -1,0 +1,144 @@
+{
+ "schema_version": 1,
+ "profile": "issue634_cip_residuals_v2",
+ "gate_passed": true,
+ "candidate": {
+  "version": "1.0.27",
+  "base_commit": "bf364b9f35f5fb39856ae9fc3378785a1e36403b",
+  "commit": "9b196a4e5599d7f54f0e7a7efea1dda4d14cdea8",
+  "wheel": "chematic-1.0.27-cp311-cp311-manylinux_2_35_x86_64.whl",
+  "wheel_sha256": "0be638c55aafa877b97da43c03c02c7fb98758777fab9f12309fc8461e5dc847",
+  "status": "source candidate built from the fix tree (the commit differs only by rustfmt whitespace); not a published-package measurement"
+ },
+ "oracle": {
+  "name": "RDKit Python",
+  "version": "2026.03.6"
+ },
+ "corpus": {
+  "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+  "sealed_accuracy_cohort_reused": false
+ },
+ "queries": {
+  "count": 31,
+  "path": "validation/rdkit_rebaseline_smarts_queries.json",
+  "sha256": "250a241a8905d013eb58fff0ccfb1e0dbe3e97c08ff56e021828fbfec957b341"
+ },
+ "row_accounting": {
+  "input_count": 10000,
+  "completed_count": 10000,
+  "parse_failure_count": 0
+ },
+ "before": {
+  "measured_on": "v1.0.25 issue #634/#635 candidate packet",
+  "path": "validation/results/rdkit-rebaseline-issue634-635-v1.0.25-candidate-vs-rdkit-2026.03.6-2026-09-25.json",
+  "cip_exact": 9994,
+  "cip_difference": 6,
+  "cip_labels_by_family": {
+   "adjudication_required": 1,
+   "phosphorus_oracle_unstable": 4,
+   "trivalent_nitrogen_unsupported": 1
+  }
+ },
+ "after": {
+  "cip_exact": 9995,
+  "cip_difference": 5,
+  "smarts_cells": 310000,
+  "smarts_differences": 200,
+  "morgan_exact": 9999,
+  "morgan_difference": 1
+ },
+ "adjudication": [
+  {
+   "input_index": 4480,
+   "smiles": "CO[C@@H]1[C@@H](N)[C@@H](OC)[C@@H](O)[C@H]1O",
+   "atom": 3,
+   "before": {
+    "chematic": "R",
+    "rdkit": "S"
+   },
+   "verdict": "S",
+   "reasoning": [
+    "Ligands of C3: N4 > {C2, C5} > H. C2 and C5 begin constitutionally identical ring branches (C2(OMe)-C10(OH)-C8(OH)-C5(OMe) and C5(OMe)-C8(OH)-C10(OH)-C2(OMe)), so Rules 1-3 tie and Rule 4b decides.",
+    "Auxiliary descriptors in the digraph rooted at C3 (each centre's back-to-root ligand ranked by hierarchical Rule 1a): branch C2: C2 R, C10 R, C8 S, C5' S; branch C5: C5 R, C8 S, C10 R, C2' S (C5' and C2' rank their ring-closure duplicate of C3 below the path atom, so they invert).",
+    "Like/unlike sequences against each branch's first descriptor, in hierarchical order: C2 branch l,l,u,u; C5 branch l,u,l,u. The first difference (second centre) is like versus unlike; like precedes unlike, so C2 > C5.",
+    "N4 > C2 > C5 > H with the input's [C@@H] (neighbour order C2, H, N4, C5) is S."
+   ],
+   "root_cause": "the back-to-root ligand of an embedded centre was ranked by pooling each sphere into one multiset; at C10 of branch C2 that compared {N,C,C,H} with {O,C,H,H} (back ligand loses) instead of the oxygens' branches {C} with {H} first (back ligand wins), flipping C10's auxiliary descriptor to S and the sequence to l,u,u,u",
+   "fix": "crates/chematic-cip/src/auxiliary.rs compare_rule1a_only: hierarchical sphere-by-sphere comparison with per-parent ranked children",
+   "rdkit_rdCIPLabeler": "S",
+   "rdkit_legacy_AssignStereochemistry": "S",
+   "regression_test": "crates/chematic-cip/src/tests.rs issue_634_row_4480_back_ligand_is_ranked_hierarchically (7 respellings x mirror x 5 atom permutations)"
+  }
+ ],
+ "typed_abstentions": {
+  "phosphorus_oracle_unstable": {
+   "rows": [
+    4419,
+    4439,
+    4643,
+    4644
+   ],
+   "reason": "oracle_unstable",
+   "basis": "RDKit's labels for these phosphorus centres flip under neutral Kekule respellings (docs/validation.md phosphorus boundary); CheMatic emits no label until a representation-independent oracle exists"
+  },
+  "lone_pair_center": {
+   "rows": [
+    2960
+   ],
+   "reason": "lone_pair_center",
+   "basis": "a stereo-tagged three-coordinate centre whose fourth ligand would be a lone pair; CheMatic does not model lone pairs as CIP ligands and now reports the typed reason instead of skipping silently (RDKit labels it S)"
+  }
+ },
+ "invariance": {
+  "corpus_snapshot": {
+   "tool": "cargo run -p chematic-cip --release --example corpus_snapshot -- --candidate <cipcorpus.csv> <out.tsv>",
+   "molecules": "2,539 distinct stereo-tagged SMILES: the seven perf-digest corpora (validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi and others) plus validation/cip_*.jsonl and validation/cip_hanson2018_rule4b_suite.tsv",
+   "stereocentres": 8571,
+   "labels_changed_vs_origin_main_bf364b9f": 2,
+   "changes": [
+    {
+     "smiles": "CO[C@@H]1[C@@H](N)[C@@H](OC)[C@@H](O)[C@H]1O",
+     "atom": 3,
+     "main": "R",
+     "candidate": "S"
+    },
+    {
+     "smiles": "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+     "atom": 9,
+     "main": "skip:not4",
+     "candidate": "skip:lone-pair-center"
+    }
+   ]
+  },
+  "hanson2018_suite": "validation/cip_hanson2018_rule4b_suite.tsv: 262 of 295 expected labels matched before and after (the 33 others are unchanged ties/abstentions, E/Z outside the tetrahedral engine and pre-existing pseudoasymmetric cases)",
+  "permutation_and_mirror": "regression test issue_634_row_4480_back_ligand_is_ranked_hierarchically; chematic-cip's full_oracle_corpus_is_invariant_under_generated_atom_permutations and rule4b_production_parity pass"
+ },
+ "residual_classification": {
+  "path": "validation/results/rdkit-rebaseline-residual-classification-v1.0.27-issue634-vs-2026.03.6-2026-09-28.json",
+  "cip_labels_by_family": {
+   "lone_pair_center": 1,
+   "phosphorus_oracle_unstable": 4
+  },
+  "cip_unclassified": 0,
+  "smarts_cells_by_family": {
+   "ring_semantics:organometallic": 6,
+   "ring_semantics:symmetrized_rings": 194
+  },
+  "smarts_unclassified": 0
+ },
+ "raw_rows": {
+  "path": "validation/results/rdkit-rebaseline-python-chemistry-rows-v1.0.27-issue634-vs-2026.03.6-2026-09-28.jsonl.gz",
+  "compression": "gzip -n -9",
+  "compressed_sha256": "3502d82c9efb2016b668308c3db473d7e286b6923435de87a1a14e8cf1c5f001",
+  "uncompressed_sha256": "e9b8592b69a0663608ab51d0d83d3db644a515a7cbfedefe5ad5aff61780b968"
+ },
+ "summary": "validation/results/rdkit-rebaseline-python-chemistry-summary-v1.0.27-issue634-vs-2026.03.6-2026-09-28.json",
+ "commands": [
+  "maturin build --release -m crates/chematic-py/Cargo.toml -o <wheels>",
+  "pip install <wheels>/chematic-1.0.27-cp311-cp311-manylinux_2_35_x86_64.whl",
+  "python3 scripts/run_rdkit_python_chemistry_lane.py --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --queries validation/rdkit_rebaseline_smarts_queries.json --output <summary.json> --rows-output <rows.jsonl> --expected-rdkit 2026.03.6",
+  "gzip -n -9 -c <rows.jsonl> > validation/results/rdkit-rebaseline-python-chemistry-rows-v1.0.27-issue634-vs-2026.03.6-2026-09-28.jsonl.gz",
+  "python3 scripts/classify_rdkit_rebaseline_residuals.py --rows validation/results/rdkit-rebaseline-python-chemistry-rows-v1.0.27-issue634-vs-2026.03.6-2026-09-28.jsonl.gz --output validation/results/rdkit-rebaseline-residual-classification-v1.0.27-issue634-vs-2026.03.6-2026-09-28.json"
+ ]
+}
