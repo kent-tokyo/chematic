@@ -93,11 +93,11 @@ pub(crate) fn resolve_chirality(
     let mut insert_at = groups.len();
     for (gi, group) in groups.iter().enumerate() {
         let rep = group[0];
-        let back_frontier = vec![crate::auxiliary::BackItem::Ascending {
+        let back = crate::auxiliary::BackItem::Ascending {
             ancestor: parent_id,
             came_from: node_id,
-        }];
-        let ord = crate::auxiliary::compare_rule1a_only(graph, back_frontier, vec![rep])?;
+        };
+        let ord = crate::auxiliary::compare_rule1a_only(graph, back, rep, &mut ctx)?;
         if ord == Ordering::Greater {
             insert_at = gi;
             break;

@@ -814,6 +814,12 @@ fn accurate_stereo_supplement(mol: &Molecule) -> Result<Vec<(u64, CipCode)>, Ide
                 chematic_chem::CipUnresolvedReason::OracleUnstable => {
                     IdentityDiagnostic::AccurateCipOracleUnstable
                 }
+                // Before lone-pair centres were reported as unresolved, the
+                // accurate engine returned no code for them and this function
+                // failed closed as an engine error; keep that diagnostic.
+                chematic_chem::CipUnresolvedReason::LonePairCenter => {
+                    IdentityDiagnostic::AccurateCipEngineError
+                }
             });
         }
         let Some(code) = accurate.get(atom) else {

@@ -109,6 +109,7 @@ fn main() {
                 CipUnresolvedReason::Tied => "Tied",
                 CipUnresolvedReason::BudgetExceeded => "BudgetExceeded",
                 CipUnresolvedReason::OracleUnstable => "OracleUnstable",
+                CipUnresolvedReason::LonePairCenter => "LonePairCenter",
             });
 
             println!(

@@ -135,6 +135,11 @@ pub enum SkipReason {
     /// phosphorus stereocenter. The accurate engine therefore fails closed
     /// instead of emitting a plausible but unverified label.
     OracleUnstable,
+    /// The centre carries a tetrahedral stereo tag but has only three explicit
+    /// ligands (e.g. a bridgehead amine `[N@@]`, a sulfoxide `[S@](=O)`): its
+    /// fourth ligand would be a lone pair, which this engine does not model as a
+    /// phantom ligand. Reported instead of silently skipped (issue #634).
+    LonePairCenter,
 }
 
 /// Result of the experimental tetrahedral-only assignment pass.
@@ -213,6 +218,10 @@ fn assign_all(
             result.skipped.push((idx, SkipReason::NotFourSubstituents));
             continue;
         };
+        if stereo_order.len() == 3 {
+            result.skipped.push((idx, SkipReason::LonePairCenter));
+            continue;
+        }
         if stereo_order.len() != 4 {
             result.skipped.push((idx, SkipReason::NotFourSubstituents));
             continue;

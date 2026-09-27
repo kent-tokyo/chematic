@@ -493,7 +493,7 @@ fn rule1a2_slot_key(graph: &CipDigraph, slot: LevelSlot) -> (AtomicNumberKey, Op
 /// A real node's own ranked children, as plain `NodeId`s (a phantom slot's "children"
 /// are always empty -- it never gets here since [`compare_by_level`] only calls this for
 /// `LevelSlot::Node`).
-fn ranked_child_ids(
+pub(crate) fn ranked_child_ids(
     graph: &mut CipDigraph,
     node: NodeId,
     ctx: &mut CompareContext,

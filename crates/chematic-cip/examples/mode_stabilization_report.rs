@@ -98,6 +98,9 @@ fn main() {
                         }
                         CipUnresolvedReason::BudgetExceeded => atoms_budget_exceeded += 1,
                         CipUnresolvedReason::OracleUnstable => atoms_oracle_unstable += 1,
+                        // Not a stabilization failure: a lone-pair centre was
+                        // never a tetrahedral label candidate for this report.
+                        CipUnresolvedReason::LonePairCenter => {}
                     }
                 }
             }

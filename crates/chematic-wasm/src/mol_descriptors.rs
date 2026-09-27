@@ -449,6 +449,7 @@ pub fn cip_unresolved_json(mol: &MolHandle) -> String {
                         chematic_chem::CipUnresolvedReason::Tied => "tied",
                         chematic_chem::CipUnresolvedReason::BudgetExceeded => "budgetExceeded",
                         chematic_chem::CipUnresolvedReason::OracleUnstable => "oracleUnstable",
+                        chematic_chem::CipUnresolvedReason::LonePairCenter => "lonePairCenter",
                     };
                     format!("{{\"atomIdx\":{},\"reason\":\"{}\"}}", idx.0, reason_str)
                 })
