@@ -50,6 +50,7 @@ fn skip_str(r: SkipReason) -> &'static str {
         SkipReason::Tied => "skip:tied",
         SkipReason::BudgetExceeded => "skip:budget",
         SkipReason::OracleUnstable => "skip:oracle-unstable",
+        SkipReason::LonePairCenter => "skip:lone-pair-center",
     }
 }
 

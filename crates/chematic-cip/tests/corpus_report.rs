@@ -124,7 +124,9 @@ fn corpus_report_fast_vs_accurate_vs_modern_oracle() {
                 SkipReason::Tied => stats.accurate_tied += 1,
                 SkipReason::BudgetExceeded => stats.accurate_budget_exceeded += 1,
                 SkipReason::OracleUnstable => stats.accurate_oracle_unstable += 1,
-                SkipReason::NotFourSubstituents => stats.accurate_no_assignment += 1,
+                SkipReason::NotFourSubstituents | SkipReason::LonePairCenter => {
+                    stats.accurate_no_assignment += 1
+                }
             }
             if fast_matches {
                 stats.regressions.push(format!(

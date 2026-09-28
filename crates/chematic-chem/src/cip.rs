@@ -171,6 +171,10 @@ pub enum CipUnresolvedReason {
     /// The available phosphorus oracle is representation-unstable; no label is
     /// emitted until a representation-independent oracle is established.
     OracleUnstable,
+    /// A stereo-tagged centre with three explicit ligands whose fourth ligand
+    /// would be a lone pair (a bridgehead amine, a sulfoxide); lone pairs are
+    /// not modelled as CIP ligands, so no label is emitted.
+    LonePairCenter,
 }
 
 /// Result of [`assign_cip_with_mode`]. Distinct from [`CipAssignment`] -- carries an
@@ -236,6 +240,7 @@ pub fn assign_cip_with_mode(
                         chematic_cip::SkipReason::Tied
                             | chematic_cip::SkipReason::BudgetExceeded
                             | chematic_cip::SkipReason::OracleUnstable
+                            | chematic_cip::SkipReason::LonePairCenter
                     )
                 })
                 .map(|(idx, _)| *idx)
@@ -305,6 +310,9 @@ pub fn assign_cip_with_mode(
                     }
                     chematic_cip::SkipReason::OracleUnstable => {
                         Some((idx, CipUnresolvedReason::OracleUnstable))
+                    }
+                    chematic_cip::SkipReason::LonePairCenter => {
+                        Some((idx, CipUnresolvedReason::LonePairCenter))
                     }
                     chematic_cip::SkipReason::NotFourSubstituents => None,
                 })
@@ -2294,6 +2302,31 @@ mod tests {
         assert!(result.unresolved.iter().any(|(idx, reason)| {
             *idx == AtomIdx(12) && *reason == CipUnresolvedReason::OracleUnstable
         }));
+    }
+
+    #[test]
+    fn cip_mode_accurate_reports_lone_pair_centres() {
+        // Issue #634, rebaseline row 2960: a stereo-tagged bridgehead amine has
+        // three explicit ligands; its fourth would be a lone pair, which is not
+        // modelled. It is reported as unresolved (never silently dropped and
+        // never labelled), while the molecule's carbon centres keep their labels.
+        let mol = chematic_smiles::parse("Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21")
+            .expect("valid SMILES");
+        let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        assert_eq!(result.get(AtomIdx(9)), None);
+        assert!(result.unresolved.iter().any(|(idx, reason)| {
+            *idx == AtomIdx(9) && *reason == CipUnresolvedReason::LonePairCenter
+        }));
+        assert_eq!(result.get(AtomIdx(7)), Some(CipCode::R));
+        assert_eq!(result.get(AtomIdx(12)), Some(CipCode::R));
+        // Same for a sulfoxide.
+        let mol = chematic_smiles::parse("C[S@](=O)c1ccccc1").expect("valid SMILES");
+        let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        assert!(result.assignments.is_empty());
+        assert_eq!(
+            result.unresolved,
+            vec![(AtomIdx(1), CipUnresolvedReason::LonePairCenter)]
+        );
     }
 
     #[test]

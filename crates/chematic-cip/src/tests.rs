@@ -1379,3 +1379,80 @@ fn square_planar_center_is_skipped_not_assigned_a_bogus_cip_code() {
         result.assignments
     );
 }
+
+/// Issue #634, rebaseline row 4480: the embedded stereocentres' back-to-root
+/// ligands must be ranked by hierarchical (branch-by-branch) Rule 1a
+/// exploration, not by pooling each sphere. Pooled, the aminated carbon (map 4)
+/// came out R; adjudicated by hand (Rule 4b: the like/unlike sequence from its
+/// two constitutionally identical ring branches is l,l,u,u against l,u,l,u, so
+/// the C(map 3) branch precedes the C(map 6) branch) it is S, as RDKit's
+/// `rdCIPLabeler` also reports. Checked on respellings, atom permutations and
+/// the mirror image.
+#[test]
+fn issue_634_row_4480_back_ligand_is_ranked_hierarchically() {
+    use chematic_core::CipCode;
+    // map number -> label (map = RDKit atom index + 1 of the row's SMILES).
+    let expected = [(3u16, 'R'), (4, 'S'), (6, 'R'), (9, 'S'), (11, 'R')];
+    let spellings = [
+        "[CH3:1][O:2][C@@H:3]1[C@@H:4]([NH2:5])[C@@H:6]([O:7][CH3:8])[C@@H:9]([OH:10])[C@H:11]1[OH:12]",
+        "[O:7]([CH3:8])[C@@H:6]1[C@H:4]([NH2:5])[C@H:3]([C@H:11]([OH:12])[C@@H:9]1[OH:10])[O:2][CH3:1]",
+        "[C@@H:9]1([C@@H:11]([OH:12])[C@H:3]([O:2][CH3:1])[C@@H:4]([NH2:5])[C@H:6]1[O:7][CH3:8])[OH:10]",
+        "[OH:10][C@H:9]1[C@H:11]([C@H:3]([O:2][CH3:1])[C@H:4]([C@H:6]1[O:7][CH3:8])[NH2:5])[OH:12]",
+        "[C@@H:11]1([C@@H:3]([C@H:4]([C@@H:6]([O:7][CH3:8])[C@H:9]1[OH:10])[NH2:5])[O:2][CH3:1])[OH:12]",
+        "[CH3:8][O:7][C@H:6]1[C@H:9]([C@H:11]([C@H:3]([O:2][CH3:1])[C@H:4]1[NH2:5])[OH:12])[OH:10]",
+        "[C@@H:3]1([C@@H:11]([C@@H:9]([C@H:6]([O:7][CH3:8])[C@@H:4]1[NH2:5])[OH:10])[OH:12])[O:2][CH3:1]",
+    ];
+    let label = |c: CipCode| match c {
+        CipCode::R => 'R',
+        CipCode::S => 'S',
+        other => panic!("unexpected label {other:?}"),
+    };
+    let check = |mol: &Molecule, mirror: bool, what: &str| {
+        let result = assign_cip_accurate_experimental(mol, CipBudget::default_budget()).unwrap();
+        assert_eq!(
+            result.assignments.len(),
+            expected.len(),
+            "{what}: {result:?}"
+        );
+        for &(map, want) in &expected {
+            let idx = find_atom_by_map(mol, map);
+            let got = result
+                .assignments
+                .iter()
+                .find(|(i, _)| *i == idx)
+                .map(|&(_, c)| label(c))
+                .unwrap_or_else(|| panic!("{what}: map {map} unassigned"));
+            let want = match (want, mirror) {
+                ('R', true) => 'S',
+                ('S', true) => 'R',
+                (w, _) => w,
+            };
+            assert_eq!(got, want, "{what}: map {map}");
+        }
+    };
+    for smi in spellings {
+        let mirror_smi = smi
+            .replace("@@", "\u{0}")
+            .replace('@', "@@")
+            .replace('\u{0}', "@");
+        for (s, mirror) in [(smi.to_string(), false), (mirror_smi, true)] {
+            let mol = parse(&s).unwrap();
+            check(&mol, mirror, &s);
+            let n = mol.atom_count();
+            let mut perm: Vec<usize> = (0..n).rev().collect();
+            let (permuted, _) = permute_molecule(&mol, &perm);
+            check(&permuted, mirror, &format!("{s} reversed"));
+            let mut state = 0x2545_f491_u64;
+            for round in 0..4 {
+                for i in (1..n).rev() {
+                    state = state
+                        .wrapping_mul(6_364_136_223_846_793_005)
+                        .wrapping_add(1);
+                    perm.swap(i, (state >> 33) as usize % (i + 1));
+                }
+                let (permuted, _) = permute_molecule(&mol, &perm);
+                check(&permuted, mirror, &format!("{s} permutation {round}"));
+            }
+        }
+    }
+}

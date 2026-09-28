@@ -29,6 +29,13 @@ ISSUE634_635_SMARTS_FAMILIES = {
     "ring_semantics:organometallic": 6,
     "ring_semantics:symmetrized_rings": 194,
 }
+ISSUE634_V2_SUMMARY = RESULTS / (
+    "rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json"
+)
+ISSUE634_V2_CIP_FAMILIES = {
+    "lone_pair_center": 1,
+    "phosphorus_oracle_unstable": 4,
+}
 ALLOWED_CLASSES = {
     "chematic_regression",
     "oracle_change",
@@ -323,6 +330,128 @@ def validate_issue634_635_candidate(errors: list[str]) -> None:
     validate_smarts_cell_correspondence(rows, smarts, errors)
 
 
+def validate_issue634_v2_candidate(errors: list[str]) -> None:
+    """Issue #634 follow-up: row 4480 adjudicated, lone-pair centres typed."""
+    evidence = json.loads(ISSUE634_V2_SUMMARY.read_text(encoding="utf-8"))
+    previous = json.loads(ISSUE634_635_SUMMARY.read_text(encoding="utf-8"))
+    require(evidence.get("gate_passed") is True, "Issue #634 v2 gate failed", errors)
+    require(
+        evidence.get("oracle") == {"name": "RDKit Python", "version": "2026.03.6"},
+        "Issue #634 v2 oracle changed",
+        errors,
+    )
+    raw = evidence.get("raw_rows", {})
+    try:
+        compressed = (ROOT / str(raw.get("path", ""))).read_bytes()
+    except OSError as exc:
+        errors.append(f"Issue #634 v2 rows unavailable: {exc}")
+        return
+    require(
+        hashlib.sha256(compressed).hexdigest() == raw.get("compressed_sha256"),
+        "Issue #634 v2 compressed rows SHA-256 changed",
+        errors,
+    )
+    uncompressed = gzip.decompress(compressed)
+    require(
+        hashlib.sha256(uncompressed).hexdigest() == raw.get("uncompressed_sha256"),
+        "Issue #634 v2 uncompressed rows SHA-256 changed",
+        errors,
+    )
+    rows = [json.loads(line) for line in uncompressed.splitlines() if line.strip()]
+    require(
+        [row.get("input_index") for row in rows] == list(range(10000)),
+        "Issue #634 v2 rows are not the contiguous 10,000-row corpus",
+        errors,
+    )
+    observed = {
+        "cip_exact": sum(row.get("cip", {}).get("exact") is True for row in rows),
+        "morgan_exact": sum(row.get("morgan", {}).get("exact") is True for row in rows),
+        "smarts_cells": sum(int(row.get("smarts", {}).get("query_count", 0)) for row in rows),
+        "smarts_differences": sum(
+            int(row.get("smarts", {}).get("difference_count", 0)) for row in rows
+        ),
+    }
+    observed["cip_difference"] = len(rows) - observed["cip_exact"]
+    after = evidence.get("after", {})
+    for key, value in observed.items():
+        require(
+            after.get(key) == value,
+            f"Issue #634 v2 {key} changed: expected {after.get(key)!r}, found {value}",
+            errors,
+        )
+    before = evidence.get("before", {})
+    previous_after = previous.get("after", {})
+    require(
+        before.get("cip_exact") == previous_after.get("cip_exact")
+        and before.get("cip_difference") == previous_after.get("cip_difference"),
+        "Issue #634 v2 baseline does not match the committed #634/#635 packet",
+        errors,
+    )
+    require(
+        observed["cip_exact"] > before.get("cip_exact", 0)
+        and observed["smarts_differences"] == previous_after.get("smarts_differences")
+        and observed["morgan_exact"] == previous_after.get("morgan_exact"),
+        "Issue #634 v2 changed SMARTS/Morgan counts or did not improve CIP",
+        errors,
+    )
+    row4480 = rows[4480] if len(rows) > 4480 else {}
+    require(
+        row4480.get("cip", {}).get("exact") is True
+        and row4480.get("cip", {}).get("chematic_atoms", {}).get("3") == "S",
+        "Issue #634 v2 row 4480 atom 3 is not the adjudicated S",
+        errors,
+    )
+    try:
+        classification = json.loads(
+            (ROOT / str(evidence.get("residual_classification", {}).get("path", ""))).read_text(
+                encoding="utf-8"
+            )
+        )
+    except OSError as exc:
+        errors.append(f"Issue #634 v2 classification unavailable: {exc}")
+        return
+    require(
+        classification.get("rows_file", {}).get("sha256") == raw.get("compressed_sha256"),
+        "Issue #634 v2 classification was not made from the committed rows",
+        errors,
+    )
+    cip = classification.get("cip", {})
+    smarts = classification.get("smarts", {})
+    require(
+        cip.get("differing_labels_by_family") == ISSUE634_V2_CIP_FAMILIES
+        and cip.get("unclassified_labels") == 0
+        and cip.get("differing_rows") == observed["cip_difference"],
+        "Issue #634 v2 CIP residual families changed or include unclassified labels",
+        errors,
+    )
+    for item in cip.get("rows", []):
+        for label in item.get("labels", []):
+            expected_reason = {
+                "lone_pair_center": "lone_pair_center",
+                "phosphorus_oracle_unstable": "oracle_unstable",
+            }.get(label.get("family"))
+            require(
+                expected_reason is not None
+                and label.get("chematic") is None
+                and label.get("chematic_unresolved") == expected_reason,
+                f"Issue #634 v2 row {item.get('input_index')}: residual is not a typed abstention",
+                errors,
+            )
+    residual_rows = {row["input_index"] for row in rows if row.get("cip", {}).get("exact") is not True}
+    require(
+        residual_rows == {item["input_index"] for item in cip.get("rows", [])},
+        "Issue #634 v2 CIP classification rows differ from the residual rows",
+        errors,
+    )
+    require(
+        smarts.get("cells_by_family") == ISSUE634_635_SMARTS_FAMILIES
+        and smarts.get("unclassified_cells") == 0,
+        "Issue #634 v2 SMARTS residual families changed",
+        errors,
+    )
+    validate_smarts_cell_correspondence(rows, smarts, errors)
+
+
 def validate_smarts_cell_correspondence(
     rows: list[dict], classification: dict, errors: list[str]
 ) -> None:
@@ -513,6 +642,7 @@ def main() -> int:
 
     validate_issue632_candidate(rows_path, errors)
     validate_issue634_635_candidate(errors)
+    validate_issue634_v2_candidate(errors)
     require(
         operation_classes[("smarts", "unresolved")] == 3364,
         "expected 3,364 unresolved SMARTS rows",
@@ -618,7 +748,9 @@ def main() -> int:
         "one typed Morgan contract difference; "
         "230 CIP and 3,364 SMARTS rows unresolved at v1.0.19; "
         "Issue #634/#635 candidate: CIP 9,994/10,000 exact, SMARTS 200/310,000 "
-        "cells differ, every residual classified"
+        "cells differ, every residual classified; "
+        "Issue #634 v2 candidate: CIP 9,995/10,000 exact, row 4480 adjudicated, "
+        "every remaining CIP residual a typed abstention"
     )
     return 0
 

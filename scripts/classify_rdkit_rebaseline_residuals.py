@@ -13,9 +13,13 @@ CIP families (per differing label):
 * ``phosphorus_oracle_unstable`` — CheMatic abstains with the typed reason
   ``oracle_unstable`` on a phosphorus centre (RDKit's labels for these flip
   under neutral Kekulé respellings; see the P boundary in docs/validation.md).
-* ``trivalent_nitrogen_unsupported`` — RDKit labels a three-coordinate
-  nitrogen (a bridgehead amine whose inversion is locked); CheMatic does not
-  model a lone pair as a fourth ligand.
+* ``lone_pair_center`` — CheMatic abstains with the typed reason
+  ``lone_pair_center``: a stereo-tagged centre with three explicit ligands (a
+  bridgehead amine, a sulfoxide) whose fourth ligand would be a lone pair,
+  which CheMatic does not model as a CIP ligand.
+* ``trivalent_nitrogen_unsupported`` — the same situation on rows written
+  before CheMatic reported that reason (no label and no typed reason on a
+  three-coordinate nitrogen).
 * ``adjudication_required`` — both engines label the centre and disagree;
   needs independent chemical adjudication before either answer is adopted.
 * ``other`` — anything else (must be zero for a closed classification).
@@ -110,6 +114,8 @@ def cip_families(row: dict) -> list[dict[str, object]]:
         reason = cip["chematic_unresolved"].get(key)
         if reason == "oracle_unstable" and atom.GetAtomicNum() == 15:
             family = "phosphorus_oracle_unstable"
+        elif reason == "lone_pair_center" and ch_label is None and atom.GetDegree() == 3:
+            family = "lone_pair_center"
         elif ch_label is None and atom.GetAtomicNum() == 7 and atom.GetDegree() == 3:
             family = "trivalent_nitrogen_unsupported"
         elif rd_label is not None and ch_label is not None:

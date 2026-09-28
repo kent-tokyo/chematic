@@ -10,6 +10,18 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Fixed accurate-mode CIP labels decided by Rule 4b when an embedded
+  stereocentre's back-to-root ligand is ranked: that Rule 1a comparison pooled
+  each sphere into one multiset instead of exploring branch by branch. The
+  RDKit 2026.03.6 rebaseline row 4480 (`CO[C@@H]1[C@@H](N)[C@@H](OC)[C@@H](O)[C@H]1O`,
+  atom 3) is now S, adjudicated by hand (#634); no other label changed across
+  2,539 stereo-tagged test molecules.
+- Accurate-mode CIP reports stereo-tagged centres with three explicit ligands
+  (bridgehead amines, sulfoxides) as unresolved with the reason
+  `lone_pair_center` (Rust `CipUnresolvedReason::LonePairCenter`, Python
+  `"lone_pair_center"`, WASM `"lonePairCenter"`) instead of omitting them
+  silently. They still get no R/S label.
+
 ## [1.0.27] - 2026-09-26
 
 - Added Rust `Molecule::set_tag` / `atom_tag` for caller-managed atom labels
