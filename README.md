@@ -21,14 +21,13 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.0.27 release boundary
+### v1.0.28 release boundary
 
-v1.0.27 adds caller-managed atom tags to the Rust molecule API, preserving them
-through clone, graph edits, fragments, reactions, and aromaticity perception.
-Tags do not alter SMILES or canonicalization; serialization needs an explicit
-atom-order map. The release also restores the WASM torsion-scan demo API and
-adds verification for the remaining SMARTS differences. It does not claim
-complete RDKit parity or a new v1.0.27 speed measurement. See
+v1.0.28 fixes one hierarchical CIP ranking error and reports lone-pair
+stereocentres as typed abstentions instead of silently omitting them. On the
+pinned, exposed 10,000-row RDKit 2026.03.6 comparison, 9,995 rows agree
+exactly; the remaining five have explicit abstention reasons. This is a
+source-level result, not complete CIP parity or a new package speed claim. See
 [validation](docs/validation.md) and the [CHANGELOG](CHANGELOG.md).
 
 ## Use it

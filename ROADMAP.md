@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-09-26. Release line: **v1.0.27**. Release-source and
+> Updated 2026-09-28. Release line: **v1.0.28**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -9,10 +9,14 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 ## Current position
 
-- **v1.0.27 adds Rust atom tags and release-contract checks.** Caller labels
+- **v1.0.28 closes the classified #634 CIP residuals at release source.**
+  The pinned, exposed 10,000-row RDKit 2026.03.6 lane has 9,995 exact rows;
+  the remaining five are typed abstentions. Lone-pair stereocentres are not
+  yet assigned R/S labels. This is not complete CIP parity.
+- **v1.0.27 added Rust atom tags and release-contract checks.** Caller labels
   survive selected in-memory transformations; SMILES does not carry them.
   The v1.0.26 MMFF94 published-wheel and source timing records stay pinned to
-  their measured version, not promoted to v1.0.27 results.
+  their measured version, not promoted to v1.0.28 results.
 - **A0 core-eight descriptors is complete.** A frozen candidate passed the
   declared 2,000-row development and one-time 8,000-row sealed evaluations.
 - **Browser Parse + compatible Morgan has a scoped public-package win.** The
@@ -43,18 +47,15 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
 
 ## Priority order
 
-1. **Verify v1.0.27 delivery across release channels.** Record GitHub Release,
-   npm, PyPI, crates.io, docs.rs, and Pages independently; do not infer one
-   channel from another.
-2. **Adjudicate the remaining CIP center.** Resolve row 4480 atom 3
-   independently before adopting either engine's label; never guess a label.
-3. **Decide optional RDKit-style SMARTS ring counts.** #635's 310,000-cell
+1. **Verify v1.0.28 delivery across release channels.** Record GitHub Release,
+   npm, PyPI, crates.io, docs.rs, and Pages independently after publication.
+2. **Decide optional RDKit-style SMARTS ring counts.** #635's 310,000-cell
    classification is complete; `[Rn]`/`[kn]` still have a documented native
    SSSR-versus-symmetrized-ring boundary. Any parity option must be explicit.
-4. **Finish remaining A6 MMFF94 gates.** Heavy-atom typing residuals,
+3. **Finish remaining A6 MMFF94 gates.** Heavy-atom typing residuals,
    timeout/convergence accounting, and broader conformer quality remain ahead
    of new 3D breadth.
-5. **Prepare a pinned RDKit rebaseline.** Retain 2026.03.6 as historical and
+4. **Prepare a pinned RDKit rebaseline.** Retain 2026.03.6 as historical and
    compare any new official artifact side by side with it.
 
 A confirmed silent-corruption or security regression takes precedence.
