@@ -1,14 +1,14 @@
 # Roadmap open-work ledger
 
-Updated 2026-09-26. This is a compact dependency and evidence ledger for work
-that remains open after v1.0.27. It does not repeat completed implementation
+Updated 2026-09-28. This is a compact dependency and evidence ledger for work
+that remains open after v1.0.28. It does not repeat completed implementation
 history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 ## Immediate queue
 
 | Order | Work | Current evidence | Exit |
 |---:|---|---|---|
-| 1 | #634 CIP residuals | Source candidate `9b196a4e`: 9,995/10,000 exact (v1.0.26: 9,994; v1.0.19: 9,770). Row 4480 atom 3 adjudicated by hand as S (a pooled back-ligand comparison was fixed); the 5 remaining labels are typed abstentions: 4 phosphorus `oracle_unstable`, 1 bridgehead amine `lone_pair_center` | Release the fix; lone-pair (N, S, P) CIP support would need a stereo-order convention for the implicit fourth ligand and is a separate feature |
+| 1 | Lone-pair CIP support | #634's exposed 10k lane has 9,995 exact rows; four phosphorus `oracle_unstable` and one bridgehead amine `lone_pair_center` are typed abstentions | Define a stereo-order convention for an implicit lone-pair ligand before emitting R/S labels; treat as a separate feature |
 | 2 | A6 MMFF94 | #637 evidence scope is closed: source same-coordinate packet 262/262 comparable rows within 1 kcal/mol (max 0.32), with bounded gradient checks. Two published v1.0.26 Mac wheel runs: CheMatic 265/265 and RDKit 264/265 independently sound, stereo-clean, clash-free usable rows; see `benchmarks/2026-09-26-mmff94-public-v1.0.26.md` | Timeout/convergence on broader inputs, conformer-quality non-inferiority, and 2,908 heavy-atom typing residuals remain separate A6 gates; no general speed claim |
 | 3 | Optional SMARTS ring-count profile | #635 classification is closed. The remaining 200/310,000 cells are 194 symmetrized-ring `[Rn]`/`[kn]` cells and 6 on one ferrocene row, checked against raw query/target cells | If demanded, design an explicit RDKit-style option; keep native SSSR semantics unchanged by default |
 | 4 | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after the next official stable artifact is pinned; retain old/new results side by side |
@@ -19,7 +19,7 @@ history; use CHANGELOG, dated validation artifacts, and Git history for that.
 |---|---|---|
 | A0 Evaluation contract | Complete | Preserve frozen/exposed cohort rules and failure accounting for every later package |
 | A1 Perception and descriptors | Open | Additional descriptor families, aromaticity residuals, potential-center coverage, independent holdouts |
-| A2 Stereo and identity | Active | #634, spelling/permutation/file round trips, stable-key scope, enhanced stereo |
+| A2 Stereo and identity | Active | Lone-pair CIP support, spelling/permutation/file round trips, stable-key scope, enhanced stereo |
 | A3 Fingerprints and retrieval | Open | Option coverage, top-k invariants, named compatible-Morgan parity, cross-binding checks |
 | A4 Workflows and interchange | Open | Optional SMARTS ring counts, reactions, V3000/query semantics, attachment metadata, batch accounting |
 | A5 Independent adjudication | External/open | Independently reviewed gold data and non-maintainer assessment without exposed-cohort reuse |
@@ -46,7 +46,7 @@ Every open item uses one of these labels:
 
 | Class | Meaning | Current examples |
 |---|---|---|
-| `local-open` | Can be implemented and checked in this repository with available source and fixtures | #632 focused checks, #634/#635 classification, A6 numerical gates, documentation synchronization |
+| `local-open` | Can be implemented and checked in this repository with available source and fixtures | Lone-pair CIP design, optional SMARTS ring-count profile, A6 numerical gates, documentation synchronization |
 | `toolchain-open` | Repository work is defined, but a specific browser, compiler target, package, or runtime must be available | rebuilt Python/Node/WASM artifacts, browser-memory lanes, cross-platform execution |
 | `data-sealed` | Evaluation data must remain unused until a frozen candidate and overlap audit are recorded | future independent descriptor, stereo, retrieval, or conformer holdouts |
 | `external-open` | Requires publication, credentials, an official future artifact, or a non-maintainer decision | next RDKit stable rebaseline, registry release, independent review/security audit |

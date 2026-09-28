@@ -1,7 +1,7 @@
 # chematic 1.x Trust Release 実行計画
 
-更新日: 2026-09-26。リリース対象は **v1.0.27** です。次の開発では、配布channelの
-独立検証と、残るCIP・SMARTS・A6 gateを優先します。
+更新日: 2026-09-28。リリース対象は **v1.0.28** です。次の開発では、配布channelの
+独立検証と、孤立電子対を含むCIP中心・SMARTS・A6 gateを優先します。
 
 この文書は実行順と合格条件だけを定義します。機能別の優先順位は
 [`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)、未完了項目と依存関係は
@@ -45,9 +45,12 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
   SMARTS差分が200/310,000セル（旧14,306）です。残差はすべて原因別に分類済みです
   （#634: P oracle不安定4、三価N非対応1、要裁定1。#635: `[Rn]`/`[kn]`の
   ring数の意味194、フェロセン6）。
+- v1.0.28 release sourceの#634修正では、要裁定だった環内中心1件を独立にSと判定し、
+  階層的なCIP順位付けを修正しました。同じ公開済み1万行で9,995件一致、残る5件は
+  理由付きの判定保留です。完全なCIP互換は主張しません。
 - v1.0.26 release source（#637）では、同一座標のMMFF94をRDKitの項別energyと
   比べ、262/262行が1 kcal/mol以内（最大0.32、旧9.87）です。
-- 残る主要差分は、CIPの要裁定1中心、SMARTSのring数の意味、A6のheavy-atom
+- 残る主要差分は、孤立電子対中心のCIP対応、SMARTSのring数の意味、A6のheavy-atom
   typing（Kekulé/荷電入力の芳香族性）・timeout・conformer qualityです。
 
 ## 実行順
@@ -66,9 +69,11 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
 
 ### 2. #634 CIP差分を分類して解く
 
-状態: source候補`11a4ea27`で230→6。比較器のE/Z結合同定を二重結合の端点に修正し、
-`CipMode.ACCURATE`のE/Zを階層digraphの順位付けに切り替えました。
-残る6件は分類済みです（`validation/results/rdkit-rebaseline-residual-classification-v1.0.25-issue634-635-vs-2026.03.6-2026-09-25.json`）。
+状態: v1.0.28 release sourceで230件の残差を分類し、9,995/10,000件が一致しました。
+残る5件は4件の`oracle_unstable`と1件の`lone_pair_center`として理由付きで判定保留
+です。判定保留を一致件数に含めません。元の分類記録は
+`validation/results/rdkit-rebaseline-residual-classification-v1.0.25-issue634-635-vs-2026.03.6-2026-09-25.json`、
+最終候補の行単位記録は`validation/results/rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json`を参照してください。
 
 差分を次の4種類に分けます。
 

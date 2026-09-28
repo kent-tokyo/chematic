@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.27</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.28</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,14 +80,14 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-The current release line is v1.0.27.
+The current release line is v1.0.28.
 
-- Rust molecules now preserve caller-managed atom tags through documented
-  edits and reactions. Tags do not change canonicalization or survive a
-  SMILES write/parse without explicit atom-order remapping.
-- The WASM torsion-scan demo API is restored; the SMARTS residual checker now
-  accounts for every classified cell. Neither change establishes full RDKit
-  parity.
+- Hierarchical CIP ranking now resolves one independently adjudicated residual;
+  unsupported lone-pair stereocentres return a typed abstention instead of
+  disappearing silently. On the pinned exposed 10k source comparison, 9,995
+  rows agree exactly and five abstain with a reason. This is not full CIP parity.
+- Rust atom tags from v1.0.27 remain caller-managed and are not encoded in
+  SMILES without explicit atom-order remapping.
 
 - The latest registry-installed browser benchmark (v1.0.20) records 1.398x parse-inclusive and
   3.511x prepared compatible-Morgan speedups against official
@@ -101,7 +101,7 @@ The current release line is v1.0.27.
 These are scoped measurements, not general claims that chematic is always
 faster, smaller, or more accurate. The v1.0.26 hot-path evidence remains
 shared-VM source evidence, not a WASM or cross-platform performance claim. It
-does not relabel the v1.0.20 package performance record or measure v1.0.27.
+does not relabel the v1.0.20 package performance record or measure v1.0.28.
 
 See [validation](validation.md), [benchmark methodology](benchmark.md), and
 [compatibility scope](compatibility-scope.md) for exact conditions.

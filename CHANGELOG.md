@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.28] - 2026-09-28
+
 - Fixed accurate-mode CIP labels decided by Rule 4b when an embedded
   stereocentre's back-to-root ligand is ranked: that Rule 1a comparison pooled
   each sphere into one multiset instead of exploring branch by branch. The
@@ -21,6 +23,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `lone_pair_center` (Rust `CipUnresolvedReason::LonePairCenter`, Python
   `"lone_pair_center"`, WASM `"lonePairCenter"`) instead of omitting them
   silently. They still get no R/S label.
+- On the pinned, exposed 10,000-row RDKit 2026.03.6 comparison, 9,995 rows
+  agree exactly and the other five are explicit abstentions (four
+  `oracle_unstable`, one `lone_pair_center`). This is source-level, cohort-bound
+  evidence, not complete CIP parity or a published-package speed result.
 
 ## [1.0.27] - 2026-09-26
 
