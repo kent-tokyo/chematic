@@ -15,6 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RECORD = ROOT / "benchmarks/2026-10-03-v1029-v1030-rdkitjs-node-isolated-paired20.json"
+RECORD_SHA256 = "edb2b289698dc022db9791b0307f6cb001b141d961045324a524b60e0882ae37"
 RUNNER = ROOT / "scripts/bench_published_wasm_paired.mjs"
 CORPUS = ROOT / "scripts/descriptor_census_corpus.smi"
 EXPECTED = {
@@ -69,6 +70,7 @@ def bootstrap(log_ratios: list[float]) -> list[float]:
 
 
 def check() -> dict:
+    require(digest(RECORD) == RECORD_SHA256, "archived record SHA-256")
     report = json.loads(RECORD.read_text(encoding="utf-8"))
     require(report["schema"] == "published-wasm-paired-speed/v1", "schema")
     require(report["runner_sha256"] == digest(RUNNER), "runner SHA-256")
