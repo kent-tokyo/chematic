@@ -22,12 +22,14 @@ if __package__:
     from .check_published_rust_63op_outputs import build_report as build_rust_operation_report
     from .check_published_wasm_paired import check as check_published_wasm_paired
     from .check_published_browser_paired import check as check_published_browser_paired
+    from .check_v1030_published_browser_morgan_rows import check as check_browser_morgan_rows
 else:
     from check_published_python_version_outputs import compare
     from check_v1030_published_chemistry_residuals import check as check_chemistry_residuals
     from check_published_rust_63op_outputs import build_report as build_rust_operation_report
     from check_published_wasm_paired import check as check_published_wasm_paired
     from check_published_browser_paired import check as check_published_browser_paired
+    from check_v1030_published_browser_morgan_rows import check as check_browser_morgan_rows
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation/results"
@@ -44,6 +46,12 @@ BROWSER_PAIRED_RAW_SHA256 = "de0e7f1f8ba7ad208aeb906acb435b10ca210c05bf4ddc860a4
 BROWSER_PAIRED_SUMMARY_SHA256 = "3f27f1c17824aabfee7b52ae9c122974736290eb00da7249c29f5053823d2233"
 PREPARED_SPLIT_RAW_SHA256 = "feaa0a80067e18e34e82c3048ef0aed626bfbe1ae4f843b2a95f6235403e2af7"
 PREPARED_SPLIT_SUMMARY_SHA256 = "16cc70762572b0b953418826fadb90172529bb0fb2dee72a138df3d51cd33bd8"
+PUBLISHED_BROWSER_MORGAN_ROWS = {
+    (250, "direct"): "3d1428b094bdcb756566a12b27690eb369c5e6ef6a8cbdac7264ca86a02cc105",
+    (250, "prepared"): "2ffcff1c190881d45a26f62ba96d001afdc68c00c2b8549099d0bb20d09892a2",
+    (10_000, "direct"): "f7c404c1e32d5f4b136bff17c8b4a974f6e3bfd2057309ba68d2c557e2bfb2f6",
+    (10_000, "prepared"): "96f1eb2640243e6adcf71cbf330956f8fd7e4a4a40642415195475ca9df38b58",
+}
 PAIRED_63OP_SHA256 = "5448fd34190d5358227663a77e415e31dca71718cfd38c2d01e156ab539719da"
 
 
@@ -456,13 +464,20 @@ def main() -> int:
             hashlib.sha256(prepared_summary.read_bytes()).hexdigest() != PREPARED_SPLIT_SUMMARY_SHA256 or
             check_published_browser_paired(prepared_raw) != json.loads(prepared_summary.read_bytes()),
             "published Chromium prepared first-use/reused record identity")
+    for (rows, operation), digest in PUBLISHED_BROWSER_MORGAN_ROWS.items():
+        prefix = "row" if rows == 250 else "10k"
+        path = ROOT / "benchmarks" / f"2026-10-03-v1030-published-chromium-morgan-{prefix}-{operation}.json"
+        fail_if(hashlib.sha256(path.read_bytes()).hexdigest() != digest or
+                check_browser_morgan_rows(path, operation, rows)["exact"] != rows - (rows == 10_000),
+                f"published Chromium {rows}-row {operation} Morgan bit parity")
     print("v1.0.30 packet integrity OK: 3 published artifacts x 10k/310k; "
           "Python/Rust 63 operations x 210,410 rows each per version (only HBA/bundle changed); "
           "npm 59/63 output adapters (52 exact, ETKDG rounded, 3 representation lanes differ), "
           "v1.0.29 to v1.0.30 only HBA/bundle changed on the same 1,359 rows; "
           "200 SMARTS residuals and 5 CIP abstentions classified on published rows; "
           "20-block Python speed matrix, 8 output-gated Node/WASM lanes and "
-          "3 output-gated Chromium Morgan lanes with prepared first-use/reused split; "
+          "3 output-gated Chromium Morgan lanes with prepared first-use/reused split and "
+          "direct browser row-level Morgan checks (250/250 plus 9999/10000 and one typed refusal); "
           "npm reaction 74 match, 5 confident "
           "differences, 1 invalid JSON; Rust reaction origins 74/83 matched; "
           "73/83 graph-origin-map matches, 1 map-only residual; "
