@@ -1,0 +1,155 @@
+{
+  "accounting": {
+    "input": 3,
+    "outcomes": {
+      "graph_origin_map_match": 3
+    }
+  },
+  "baseline_rows_sha256": "56a3bc8deb1e7a1e6fc5e21081e25484a00bbba3c9eff4459fdeff65ebeb53dd",
+  "crate_version": "1.0.30",
+  "fixtures": {
+    "base_sha256": "65b446de1ce66b7d9c355cf8b6bbbfe61d670c955e02931e8e8b8e564c558d3b",
+    "strata_sha256": "4e4ce3ebcea4bcea5398f109554074d97e9f252293fa906493ae3a61d40725a1",
+    "supplement_sha256": "9b76b4e4a05eb53b493e344c057f9d08df765d5ff6f99dcb543da15a18f378bd"
+  },
+  "limits": [
+    "Exposed supplement, not broad SMIRKS parity",
+    "No atom maps added to ordinary product molecules",
+    "No reaction yield or selectivity claim"
+  ],
+  "rdkit_version": "2026.03.6",
+  "rows": [
+    {
+      "id": "v3_new_mapped_oxygen",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CO"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[CH3:1][OH:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "O[CH3:1]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_graph": [
+        [
+          "CO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH3:1][OH:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "O[CH3:1]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "strata": [
+        "new_product_atom",
+        "mapped",
+        "single_product"
+      ]
+    },
+    {
+      "id": "v3_new_unmapped_oxygen",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CO"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "O[CH3:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "O[CH3:1]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_graph": [
+        [
+          "CO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "O[CH3:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "O[CH3:1]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "strata": [
+        "new_product_atom",
+        "unmapped",
+        "single_product"
+      ]
+    },
+    {
+      "id": "v3_new_mapped_oxygen_second_product",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C",
+          "O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[CH4:1]",
+          "[OH2:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "O",
+          "[CH4:1]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_graph": [
+        [
+          "C",
+          "O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH4:1]",
+          "[OH2:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "O",
+          "[CH4:1]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "strata": [
+        "new_product_atom",
+        "mapped",
+        "multi_product"
+      ]
+    }
+  ],
+  "rust_rows_sha256": "daddf89c6626968da31f3c620d1427d7cd3029a032f9fd29b9d440edac15704f",
+  "rust_summary_sha256": "040ade77ca2c7f84bca1c9bbf5a7d44906074c2d1dc49dc7c1d0767f0d35d254",
+  "schema": "published-rust-reaction-new-product-maps/v1"
+}

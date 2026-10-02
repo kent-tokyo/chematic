@@ -36,6 +36,7 @@ CRATE_SHA256 = "b1a897689ab5b4983e56325dbd361e8ff0625dd752984af7fe75a10286f84a82
 NPM_REACTION_ROWS_SHA256 = "ce3d801ed55f610412553861382040356ac17a8004b0bec23223bc14ddbdee9b"
 ALL_REACTION_REPORT_SHA256 = "a43cf9eec38b04664dc8ee269aa69f51a9ae3e310fa5a781177d07f389e85785"
 REACTION_TEMPLATE_MAP_REPORT_SHA256 = "087f38ffa4ea766698ed14c7867238bdb5fc22cdfcab3bfceb4b0ae55f861ad8"
+REACTION_NEW_MAP_REPORT_SHA256 = "98b469b3d3fbb6900031313ce5bfa457285968f2df6a5b03f49d4836cb60df82"
 PAIRED_63OP_SHA256 = "5448fd34190d5358227663a77e415e31dca71718cfd38c2d01e156ab539719da"
 
 
@@ -367,6 +368,43 @@ def main() -> int:
                 for row in map_rows if row["status"] == "products"
                 for products in row["sets"] for product in products),
             "published Rust template-map outcome and row accounting")
+    supplement_path = ROOT / "validation/reaction_product_new_maps_v3.json"
+    supplement = json.loads(supplement_path.read_bytes())
+    new_rows_path = RESULTS / "v1.0.30-published-rust-reaction-86-new-map-rows.json"
+    new_summary_path = RESULTS / "v1.0.30-published-rust-reaction-86-new-map-summary.json"
+    new_report_path = RESULTS / "v1.0.30-published-rust-reaction-new-map-parity.json"
+    new_rows = json.loads(new_rows_path.read_bytes())
+    new_summary = json.loads(new_summary_path.read_bytes())
+    new_report = json.loads(new_report_path.read_bytes())
+    fail_if(hashlib.sha256(new_report_path.read_bytes()).hexdigest() != REACTION_NEW_MAP_REPORT_SHA256 or
+            supplement["schema_version"] != 3 or len(supplement["cases"]) != 3 or
+            supplement["base_fixture_sha256"] != map_summary["base_cases_sha256"] or
+            supplement["strata_fixture_sha256"] != map_summary["strata_sha256"] or
+            new_summary["schema"] != "published-rust-reaction-template-maps/v1" or
+            new_summary["crate"] != "chematic 1.0.30 from crates.io" or
+            new_summary["input_count"] != 86 or
+            new_summary["supplement_sha256"] != hashlib.sha256(supplement_path.read_bytes()).hexdigest() or
+            new_summary["rows_sha256"] != hashlib.sha256(new_rows_path.read_bytes()).hexdigest() or
+            new_rows[:83] != map_rows or
+            [row["id"] for row in new_rows[83:]] != [case["id"] for case in supplement["cases"]] or
+            new_report["schema"] != "published-rust-reaction-new-product-maps/v1" or
+            new_report["crate_version"] != "1.0.30" or
+            new_report["rdkit_version"] != "2026.03.6" or
+            new_report["rust_rows_sha256"] != new_summary["rows_sha256"] or
+            new_report["rust_summary_sha256"] != hashlib.sha256(new_summary_path.read_bytes()).hexdigest() or
+            new_report["baseline_rows_sha256"] != hashlib.sha256(map_rows_path.read_bytes()).hexdigest() or
+            new_report["fixtures"] != {
+                "base_sha256": map_summary["base_cases_sha256"],
+                "strata_sha256": map_summary["strata_sha256"],
+                "supplement_sha256": new_summary["supplement_sha256"]} or
+            new_report["accounting"] != {"input": 3, "outcomes": {"graph_origin_map_match": 3}} or
+            [row["id"] for row in new_report["rows"]] != [case["id"] for case in supplement["cases"]] or
+            any(not any(source is None and label is not None
+                        for products in row["sets"] for product in products
+                        for source, label in zip(product["atom_sources"], product["template_map_numbers"], strict=True))
+                for row, case in zip(new_rows[83:], supplement["cases"], strict=True)
+                if "mapped" in case["strata"]),
+            "published Rust new-product-map evidence identity")
     paired_path = ROOT / "benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json"
     fail_if(hashlib.sha256(paired_path.read_bytes()).hexdigest() != PAIRED_63OP_SHA256,
             "published Python paired 63-operation record digest")
@@ -389,7 +427,8 @@ def main() -> int:
           "20-block Python speed matrix and 8 output-gated Node/WASM lanes; "
           "npm reaction 74 match, 5 confident "
           "differences, 1 invalid JSON; Rust reaction origins 74/83 matched; "
-          "73/83 graph-origin-map matches, 1 map-only residual. "
+          "73/83 graph-origin-map matches, 1 map-only residual; "
+          "3/3 exposed new-product-map supplements match. "
           "P0/P1 acceptance remains OPEN.")
     return 0
 
