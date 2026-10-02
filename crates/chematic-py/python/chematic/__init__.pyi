@@ -3151,6 +3151,18 @@ def run_smirks(smirks: str, reactants: list[Mol]) -> list[list[Mol]]:
     """
     ...
 
+def run_smirks_checked(
+    smirks: str, reactants: list[Mol], rdkit_compat: bool = False
+) -> dict[str, Any]:
+    """Apply a reaction with typed status, reason, diagnostics and products.
+
+    ``rdkit_compat=True`` explicitly declines tetrahedral reactant templates
+    where RDKit 2026.03.6 and CheMatic have different semantics. Status is one
+    of ``products``, ``no_match``, ``partial_products``, ``typed_refusal`` or
+    ``typed_unsupported``. ``partial_products`` is not a parity claim.
+    """
+    ...
+
 def find_mcs(
     mols: list[Mol],
     match_bonds: bool = True,

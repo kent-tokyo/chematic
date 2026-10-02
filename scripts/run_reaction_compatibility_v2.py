@@ -38,13 +38,21 @@ def load_cases(base_path: Path, strata_path: Path) -> tuple[list[dict], dict]:
                    "strata_sha256": hashlib.sha256(strata_path.read_bytes()).hexdigest()}
 
 
-def candidate_products(chematic, case: dict) -> dict:
+def candidate_products(chematic, case: dict, *, checked_rdkit_compat: bool = False) -> dict:
     try:
         reactants = [chematic.from_smiles(value) for value in case["reactants"]]
     except ValueError as exc:
-        return {"status": "untyped_refusal", "stage": "reactant_parse", "error_type": type(exc).__name__, "detail": str(exc)}
+        return {"status": "typed_refusal" if checked_rdkit_compat else "untyped_refusal",
+                "reason": "reactant_parse" if checked_rdkit_compat else None,
+                "stage": "reactant_parse", "error_type": type(exc).__name__, "detail": str(exc)}
     try:
-        raw = chematic.run_smirks(case["smirks"], reactants)
+        if checked_rdkit_compat:
+            checked = chematic.run_smirks_checked(case["smirks"], reactants, rdkit_compat=True)
+            if checked["status"] in {"typed_refusal", "typed_unsupported", "partial_products"}:
+                return {key: value for key, value in checked.items() if key != "products"}
+            raw = checked["products"]
+        else:
+            raw = chematic.run_smirks(case["smirks"], reactants)
     except ValueError as exc:
         # The published Python binding maps all Rust TransformError variants
         # to ValueError. Message inspection cannot promote this to typed refusal.
@@ -58,18 +66,21 @@ def candidate_products(chematic, case: dict) -> dict:
                 return {"status": "invalid_product", "detail": product.smiles}
             normalized.append(Chem.MolToSmiles(mol, canonical=True))
         values.add(tuple(sorted(normalized)))
-    return {"status": "products", "sets": [list(items) for items in sorted(values)], "raw_product_sets": len(raw)}
+    result = {"status": "products", "sets": [list(items) for items in sorted(values)], "raw_product_sets": len(raw)}
+    if checked_rdkit_compat:
+        result["diagnostics"] = {key: value for key, value in checked.items() if key != "products"}
+    return result
 
 
-def classify_case(chematic, case: dict) -> dict:
-    candidate = candidate_products(chematic, case)
+def classify_case(chematic, case: dict, *, checked_rdkit_compat: bool = False) -> dict:
+    candidate = candidate_products(chematic, case, checked_rdkit_compat=checked_rdkit_compat)
     try:
         oracle_sets, oracle_raw_count = rdkit_products(case["smirks"], case["reactants"], case["id"])
         oracle = {"status": "products", "sets": oracle_sets, "raw_product_sets": oracle_raw_count}
     except ValueError as exc:
         oracle = {"status": "invalid_input_or_product", "detail": str(exc)}
     if oracle["status"] != "products":
-        outcome = "joint_invalid_input" if candidate["status"] == "untyped_refusal" else "oracle_invalid"
+        outcome = "joint_invalid_input" if candidate["status"] in {"untyped_refusal", "typed_refusal"} else "oracle_invalid"
     elif candidate["status"] == "products":
         outcome = "semantic_match" if candidate["sets"] == oracle["sets"] else "wrong_confident"
     else:
@@ -106,13 +117,15 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-rdkit", required=True)
     parser.add_argument("--rust-rows", type=Path, help="optional exact-version crates.io reaction rows")
+    parser.add_argument("--checked-rdkit-compat", action="store_true",
+                        help="source-candidate typed RDKit-compat profile; not published v1.0.30 evidence")
     args = parser.parse_args()
     if rdBase.rdkitVersion != args.expected_rdkit:
         parser.error(f"RDKit {rdBase.rdkitVersion} != {args.expected_rdkit}")
     import chematic
 
     cases, hashes = load_cases(args.base, args.strata)
-    rows = [classify_case(chematic, case) for case in cases]
+    rows = [classify_case(chematic, case, checked_rdkit_compat=args.checked_rdkit_compat) for case in cases]
     rust_counts = None
     if args.rust_rows:
         rust_rows = json.loads(args.rust_rows.read_text(encoding="utf-8"))
@@ -128,6 +141,7 @@ def main() -> int:
             by_stratum[name][row["outcome"]] += 1
     report = {
         "schema": "stratified-reaction-compatibility/v2",
+        "profile": "checked-rdkit-compat-source" if args.checked_rdkit_compat else "published-legacy",
         "artifact": {"version": importlib.metadata.version("chematic"),
                      "filename": args.artifact.name,
                      "sha256": hashlib.sha256(args.artifact.read_bytes()).hexdigest()},
@@ -139,7 +153,8 @@ def main() -> int:
         "rows": rows,
         "limits": ["No reaction yield or selectivity claim", "Product atom-map provenance was not compared with RDKit",
                    "Python result does not expose product atom provenance",
-                   "ValueError from published binding is not a typed refusal category"],
+                   "A checked source-candidate profile is not published v1.0.30 evidence" if args.checked_rdkit_compat
+                   else "ValueError from published binding is not a typed refusal category"],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

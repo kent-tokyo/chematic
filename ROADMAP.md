@@ -28,7 +28,12 @@ boundaries, and reproducible evidence take priority over feature-count races.
   and five typed abstentions; the published v1.0.30 SMARTS lane has 200
   differences in 310,000 cells. The 57 legacy reaction fixtures still match,
   but an 83-case stratified extension yields five confident published-wheel
-  differences; this does not establish general SMIRKS parity. Paired 20-block
+  differences; this does not establish general SMIRKS parity. A separate
+  **unpublished checked source profile** now classifies the same 83 rows as
+  76 semantic matches, three typed unsupported, one typed refusal, and three
+  jointly invalid, with zero wrong-confident outputs. Product map/provenance
+  parity and wider chemistry remain open; this is not a v1.0.30 artifact result.
+  Paired 20-block
   speed lanes now cover a few operations, not the 63-operation matrix or
   equivalent parse/perception/memory work. 3D/MMFF94 remains Experimental. A0's frozen
   core-eight descriptor gate is complete, but that is a separate result.
@@ -77,6 +82,11 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    **Exit:** 100% row accounting, zero wrong confident output in the declared
    supported domain, and no regression in the original 57 fixtures. This is
    transformation compatibility, not reaction yield or selectivity accuracy.
+   The checked source profile reaches zero wrong-confident rows on the exposed
+   83-case corpus by explicitly declining mismatched chiral-template semantics
+   and reporting filtered valence products. Before closing P1, compare atom-map
+   provenance and extend the supported-domain corpus; do not count an opt-in
+   refusal profile as general RDKit reaction parity.
    Recount #635's 200/310,000 SMARTS cells separately; keep native SSSR as
    default and any RDKit-style ring-count profile opt-in.
 4. **P1 — Preserve and then narrow the CIP abstention boundary.** The v1.0.28-source
