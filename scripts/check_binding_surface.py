@@ -16,14 +16,17 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-REPORT = ROOT / "validation" / "results" / "binding_surface_inventory-v1.0.16.json"
+REPORT = ROOT / "validation" / "results" / "binding_surface_inventory-current.json"
 WASM = ROOT / "crates" / "chematic-wasm" / "src"
 PY = ROOT / "crates" / "chematic-py" / "src"
 DECL_RE = re.compile(
     r"#\[wasm_bindgen\](?:\s*#\[[^\]]+\])*\s*pub fn\s+(\w+)",
     re.MULTILINE,
 )
-PY_DECL_RE = re.compile(r"#\[pyfunction\](?:\s*#\[[^\]]+\])*\s*fn\s+(\w+)", re.MULTILINE)
+PY_DECL_RE = re.compile(
+    r"#\[pyfunction(?:\([^\]]*\))?\](?:\s*#\[[^\]]+\])*\s*fn\s+(\w+)",
+    re.MULTILINE,
+)
 PY_REGISTER_RE = re.compile(r"wrap_pyfunction!\((\w+)", re.MULTILINE)
 
 
