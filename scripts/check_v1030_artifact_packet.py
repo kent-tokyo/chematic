@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Verify the exposed v1.0.30 published-artifact packet without RDKit installed.
 
-Integrity success is not P0/P1 acceptance: chemistry has documented
-unadjudicated rows, the 83-reaction extension has confident differences, and
-the binding-wide 63-operation/speed matrices remain incomplete.
+Integrity success is not P0/P1 acceptance: the 83-reaction extension has
+confident differences, and binding-wide speed/memory gates remain incomplete.
 """
 
 from __future__ import annotations
@@ -19,9 +18,11 @@ from pathlib import Path
 
 if __package__:
     from .check_published_python_version_outputs import compare
+    from .check_v1030_published_chemistry_residuals import check as check_chemistry_residuals
     from .check_published_rust_63op_outputs import build_report as build_rust_operation_report
 else:
     from check_published_python_version_outputs import compare
+    from check_v1030_published_chemistry_residuals import check as check_chemistry_residuals
     from check_published_rust_63op_outputs import build_report as build_rust_operation_report
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -336,10 +337,12 @@ def main() -> int:
             any(len(op["paired_blocks"]) != 20 for op in paired["operations"]),
             "published Python paired 63-operation matrix accounting")
     check_npm_version_diff()
+    check_chemistry_residuals()
     print("v1.0.30 packet integrity OK: 3 published artifacts x 10k/310k; "
           "Python/Rust 63 operations x 210,410 rows each per version (only HBA/bundle changed); "
           "npm 59/63 output adapters (52 exact, ETKDG rounded, 3 representation lanes differ), "
           "v1.0.29 to v1.0.30 only HBA/bundle changed on the same 1,359 rows; "
+          "200 SMARTS residuals and 5 CIP abstentions classified on published rows; "
           "20-block Python speed matrix; npm reaction 74 match, 5 confident "
           "differences, 1 invalid JSON; Rust reaction origins 74/83 matched. "
           "P0/P1 acceptance remains OPEN.")
