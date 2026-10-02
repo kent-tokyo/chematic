@@ -9,51 +9,22 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 ## Current position
 
-- **v1.0.30 corrects the named RDKit HBA profile.** Installed Linux and
-  macOS arm64 release-profile CI wheels match RDKit 2026.03.6 on all 5,000
-  exposed ChEMBL rows. The published v1.0.30 macOS arm64 CPython 3.13 wheel
-  also matches 5,000/5,000 with zero parse failures. Published v1.0.29 remains
-  3,641/5,000 on that API. Other wheel platforms and descriptors are not
-  established by this HBA-only comparison.
-- **v1.0.29 corrects #679/#680.** SMIRKS product-side atomic-number atoms
-  produce literal atoms; repeated SMARTS charge signs represent one charge.
-  The published Python wheel has now been measured on the exposed 10,000-row
-  chemistry/310,000-cell SMARTS lane, 57 reaction fixtures, and a 5,000-row
-  operation matrix. This is a *Python-only partial P0 packet*, not broad
-  reaction/SMARTS parity or a paired, quality-equivalent speed claim. The
-  named RDKit HBA profile is corrected after the wheel measurement: that
-  source candidate must not be reported as a v1.0.29 package result.
-- **v1.0.28 closes the classified #634 CIP residuals at release source.**
-  The pinned, exposed 10,000-row RDKit 2026.03.6 lane has 9,995 exact rows;
-  the remaining five are typed abstentions. Lone-pair stereocentres are not
-  yet assigned R/S labels. This is not complete CIP parity.
-- **v1.0.27 added Rust atom tags and release-contract checks.** Caller labels
-  survive selected in-memory transformations; SMILES does not carry them.
-  The v1.0.26 MMFF94 published-wheel and source timing records stay pinned to
-  their measured version, not promoted to v1.0.29 results.
-- **A0 core-eight descriptors is complete.** A frozen candidate passed the
-  declared 2,000-row development and one-time 8,000-row sealed evaluations.
-- **Browser Parse + compatible Morgan has a scoped public-package win.** The
-  v1.0.20 npm record is bit-exact on 9,999 supported rows and faster on its
-  declared browser lanes; it is not a general performance claim.
-- **v1.0.26 advances #632/#634/#635 at release source.** Its #632 long
-  relabel audit has zero divergent components. Against pinned RDKit 2026.03.6,
-  CIP reaches 9,994/10,000 exact labels and SMARTS has 200/310,000 differing
-  cells; remaining differences are classified. Python/WASM SMARTS now use the
-  perceived aromatic view, with an explicit behavior change.
-- **v1.0.26 advances #637 at release source.** On shared coordinates,
-  262/262 comparable MMFF94 rows are within 1 kcal/mol (maximum 0.32). This is
-  same-coordinate energy/term evidence, not convergence, conformer-quality,
-  or published-package evidence.
-- **#637 evidence-regeneration scope complete:** two v1.0.26/RDKit 2026.3.6 Mac arm64
-  runs retain all 265 rows; independent geometry/stereo scoring finds
-  265/265 versus 264/265 usable. This is a named-cohort quality result,
-  separate from the source-built energy packet. Broader A6 conformer-quality,
-  timeout/convergence, and heavy-atom typing gates remain open.
-- **v1.0.26 improves selected hot paths at release source.** The dated
-  output-differential record preserves the measured output boundary while
-  reducing SMARTS, ring, and fingerprint work. Shared-VM source timing is not
-  a universal or published-package performance claim.
+- **v1.0.30 has a narrow published-package HBA result.** The published macOS
+  arm64 CPython 3.13 wheel matches pinned RDKit 2026.03.6 on 5,000/5,000
+  exposed ChEMBL rows with zero parse failures; published v1.0.29 matched
+  3,641/5,000. This does not establish other descriptors, platforms, or
+  v1.0.30's full chemistry/SMARTS/reaction/operation packet.
+- **v1.0.29 has the historical partial P0 packet.** Its published Python
+  wheel was measured on exposed 10,000-row chemistry, 310,000-cell SMARTS,
+  57 reaction fixtures, and a 5,000-row/63-operation matrix. The 21
+  exact-output-and-faster operations are diagnostic: timing order was not
+  counterbalanced and uncertainty was not established. Do not transfer any
+  of these measured results to v1.0.30.
+- **Boundaries remain explicit.** The pinned CIP lane has 9,995 exact rows
+  and five typed abstentions; the v1.0.29 SMARTS lane has 200 classified
+  differences in 310,000 cells. The 57 reaction fixtures are too narrow for
+  general SMIRKS parity; 3D/MMFF94 remains Experimental. A0's frozen
+  core-eight descriptor gate is complete, but that is a separate result.
 
 Exact versions, corpora, and limits are in [validation](docs/validation.md) and
 the [benchmark index](benchmarks/README.md). Completed detail belongs in dated
@@ -61,47 +32,47 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
 
 ## Priority order and acceptance gates
 
-1. **P0 — Measure the published v1.0.29 artifacts.** Pin the PyPI wheel, npm
-   tarball, Rust crate, their hashes, RDKit 2026.03.6, preprocessing, options,
-   runtime, and hardware. Re-run the applicable *exposed* versioned 10k
-   chemistry, 310k-cell SMARTS, reaction, and 5k operation-matrix lanes; mark
-   non-applicable operations explicitly. Report exact or graph-semantic
-   agreement, every unsupported/refused/failed/timed-out row, and a paired
-   v1.0.28→v1.0.29 delta for the changed operations. Time only equivalent
-   operations with the same work included (parse-inclusive and prepared lanes
-   separately), repeated samples, raw observations, and uncertainty intervals.
-   **Exit:** reproducible raw data, hashes, complete denominators, binding-
-   specific results, and a machine-checked report; no unmeasured speed or
-   whole-library parity claim. Do not reuse an exposed cohort as sealed data.
-   **Progress (2026-10-02):** the published arm64 Python wheel and RDKit
-   2026.03.6 have a machine-checked exposed 10k/310k packet, paired
-   v1.0.28→v1.0.29 row comparison, 57/57 bounded reaction cases, and a
-   5k/63-operation diagnostic matrix. CIP is 9,995 exact + five typed
-   abstentions; Morgan is 9,999 exact + one typed refusal; SMARTS retains
-   200 classified cells. The changed #679 products pass the small fixture,
-   but the 10k lane does not test reaction equivalence. The v1.0.29 named
-   HBA profile has a measured 3,641/5,000 agreement regression against this
-   RDKit version; the native HBA profile is 5,000/5,000, and the unreleased
-   source correction now shares that rule. Installed dev-profile and Linux /
-   macOS arm64 release-profile CI wheels reach 5,000/5,000 on the named API;
-   the published macOS arm64 v1.0.30 wheel also reaches 5,000/5,000. npm/Rust artifact
-   lanes, full reaction scope, equivalence-controlled paired timing, and cross-host
-   uncertainty remain open. See the [dated record](benchmarks/2026-10-02-v1.0.29-python-accuracy.md).
-2. **P1 — Expand #679/#680 into a SMARTS/SMIRKS semantic gate.** Add repeated
-   charges, mapped/unmapped product atoms, explicit/implicit H, aromatic and
-   aliphatic reactants, atom order, stereo, and multi-reactant cases to a
-   versioned query/reaction corpus. Compare supported matches and products to
-   pinned RDKit by graph, maps, and provenance rather than SMILES spelling;
-   count duplicate or silently missing products. Recount #635's 200/310,000
-   SMARTS residual cells (194 symmetrized-ring `[Rn]`/`[kn]`, six ferrocene)
-   separately from new #679/#680 cases. Native SSSR remains the default; any
-   RDKit-style ring-count mode must be opt-in with its own contract.
-   **Exit:** no wrong result on the declared supported fixtures, no regression
-   in previously passing cells, and every remaining difference classified as
-   fixed, intentional model difference, or typed unsupported outcome. Do not
-   call this general SMIRKS/SMARTS parity.
-3. **P1 — Preserve and then narrow the CIP abstention boundary.** Re-run the
-   published v1.0.29 lane before quoting a v1.0.29 result. The v1.0.28-source
+1. **P0.1 — Re-run all applicable gates on published v1.0.30 artifacts.** Pin
+   each PyPI wheel, npm tarball, and crates.io crate graph by version and
+   hash, plus RDKit 2026.03.6, corpus hashes, options, runtime, and hardware.
+   Re-run the exposed 10,000-row chemistry, 310,000-cell SMARTS, 57-reaction,
+   and 5,000-row/63-operation suites in every binding that exposes the
+   relevant API. Record unsupported or unexposed cells explicitly; do not
+   pretend all artifacts expose identical operations. Compare each overlapping
+   v1.0.29→v1.0.30 output row, treating the named HBA correction as the only
+   *expected* change, not assuming everything else stayed unchanged.
+   **Exit:** artifact-specific raw outputs and hashes, full input/outcome
+   accounting, a machine-checked cross-version diff, and independent
+   adjudication of every non-HBA delta. Keep the published 5,000/5,000 HBA
+   result as a completed sub-gate, not a substitute for this packet. Exposed
+   inputs do not become sealed data.
+2. **P0.2 — Make speed comparisons symmetric and repeatable.** Measure both
+   v1.0.29 versus v1.0.30 and RDKit versus chematic on pinned, published
+   artifacts and equivalent work. Balance execution order (for example ABBA
+   and BAAB), use at least 20 paired blocks after warm-up, and retain every
+   observation, environment detail, and a paired confidence interval. Separate
+   parse-inclusive from pre-parsed calls, prepared from unprepared queries,
+   perception/precomputation from the timed operation, and peak memory from
+   throughput. Gate each speed claim on its stated output-equivalence scope;
+   a mismatching HBA profile cannot earn an equivalent-work win.
+   **Exit:** reproducible scripts and raw results, effect sizes and uncertainty
+   by operation/binding, and an explicit no-claim outcome where the interval
+   crosses parity or the work differs. The historical “21 operations faster”
+   remains a reference diagnostic until replaced.
+3. **P1 — Expand reaction compatibility beyond 57 fixtures.** Freeze and
+   publish a stratified exposed corpus covering atom maps, aromaticity,
+   implicit/explicit H, charges, multiple reactants/products, stereo, and
+   malformed or unsupported inputs. Compare against pinned RDKit by product
+   graph, multiplicity, maps, and provenance rather than SMILES spelling.
+   Classify each row as semantic match, typed refusal, or typed unsupported;
+   count confident mismatches, duplicate/missing products, crashes, and
+   timeouts as failures rather than hiding them in those categories.
+   **Exit:** 100% row accounting, zero wrong confident output in the declared
+   supported domain, and no regression in the original 57 fixtures. This is
+   transformation compatibility, not reaction yield or selectivity accuracy.
+   Recount #635's 200/310,000 SMARTS cells separately; keep native SSSR as
+   default and any RDKit-style ring-count profile opt-in.
+4. **P1 — Preserve and then narrow the CIP abstention boundary.** The v1.0.28-source
    9,995/10,000 exact result and five typed abstentions are historical: four
    `oracle_unstable` phosphorus cases and one `lone_pair_center`. First gate
    zero wrong confident labels and stable abstention reasons under atom-order,
@@ -110,7 +81,7 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    converting any abstention to R/S. **Exit:** complete row accounting and
    independent gold for each newly resolved case. Five safe abstentions are a
    valid bounded contract, not complete CIP compatibility.
-4. **P2 — Complete A6 before changing the Experimental 3D label.** Address
+5. **P2 — Complete A6 before changing the Experimental 3D label.** Address
    MMFF94 heavy-atom typing residuals, missing parameters, analytic gradients,
    convergence/timeouts, stereo retention, and conformer quality on matched
    seeds and coordinates. Keep the v1.0.26 262/262 same-coordinate energy and
@@ -119,7 +90,7 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    **Exit:** no silent success for untyped or nonconverged inputs, full outcome
    accounting, independent geometry/stereo scoring, and published-artifact
    replication. Do not infer ETKDG or broad MMFF94 parity from finite energy.
-5. **P2 — Keep representation limits explicit and test each separately.** For
+6. **P2 — Keep representation limits explicit and test each separately.** For
    CDXML, distinguish exact-source/opaque preservation from semantic editing;
    for Markush/polymer, require explicit bounded expansion or typed refusal;
    for Standard InChI, distinguish the optional standard implementation from
@@ -128,7 +99,7 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    string equality. **Exit:** a cross-binding capability table and round-trip
    fixtures with no silent information loss; expand the supported domain only
    after its independent gate passes.
-6. **External dependency — Rebaseline a later RDKit release only after an
+7. **External dependency — Rebaseline a later RDKit release only after an
    official artifact is pinned.** Keep 2026.03.6 and the new oracle results
    side by side; do not rewrite older evidence or tune on sealed data.
 
@@ -167,7 +138,7 @@ and [the open-work ledger](docs/roadmap-open-work.md) for the dependency state.
 
 | Phase | Area | Status |
 |---|---|---|
-| P0 | Core chemistry and reproducible comparison | Stable; rebaseline is recurring |
+| P0 | Core chemistry and reproducible comparison | Core stable; v1.0.30 artifact and paired-speed gates open |
 | P1 | Safe parsing and files | Stable bounded paths; malformed-state coverage continues |
 | P2 | Stereo, identity, canonicalization | Active: #632 evidence and CIP adjudication |
 | P3 | Browser, Node, Python, agents | Selected stable surface; runtime controls remain |

@@ -8,12 +8,13 @@ history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 | Order | Work | Current evidence | Exit |
 |---:|---|---|---|
-| 1 | Published-package evidence packet | v1.0.29 PyPI arm64 wheel vs pinned RDKit: exposed 10k/310k, 57 reaction cases, and 5k operation matrix archived. The corrected HBA API reaches 5,000/5,000 in installed Linux/macOS arm64 release-profile CI wheels and the published v1.0.30 macOS arm64 CPython 3.13 wheel; npm/Rust and paired equivalent-work speed remain open | Measure remaining bindings/platforms and paired timing without promoting HBA-only evidence to whole-library parity |
-| 2 | SMARTS/SMIRKS semantic gate | Published wheel keeps 200/310,000 classified cells (194 ring-model, six ferrocene). The expanded reaction fixture is 57/57, but still narrow | Add repeated-charge and broader mapped-product graph/provenance fixtures, missing/extra outcome gates, and no-regression checks; keep any RDKit ring profile opt-in |
-| 3 | CIP abstention gate | Published v1.0.29 wheel reproduces 9,995 exact and five typed abstentions; no wrong confident label in the pinned 10k lane | Preserve abstention stability under permutation and file round trips; adjudicate four phosphorus cases independently and define lone-pair convention before issuing R/S |
-| 4 | A6 MMFF94 | #637 source same-coordinate packet has 262/262 comparable rows within 1 kcal/mol (max 0.32); two published v1.0.26 Mac wheel runs retain 265 rows. These are historical scoped results | Broader typing (including 2,908 heavy-atom residuals), timeout/convergence, stereo and conformer-quality gates; speed only on a quality-equivalent published-package lane |
-| 5 | Bounded interchange and identity | CDXML/Markush/polymer, Standard InChI, and canonical/stable-key contracts remain narrower than full parity | Separate preservation, semantic round-trip, typed-refusal, and no-false-merge gates per format/API and binding |
-| 6 | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after another official stable artifact is pinned; retain old/new results side by side |
+| 1 (P0.1) | v1.0.30 published-artifact rebaseline | v1.0.29 has a Python-only 10k chemistry/310k SMARTS/57 reaction/5k×63 operation packet. Published v1.0.30 arm64 Python proves only named HBA 5,000/5,000 | Re-run every applicable lane from pinned PyPI, npm and crates.io artifacts; mark unexposed APIs; classify every v1.0.29→v1.0.30 non-HBA delta and retain full row accounting |
+| 2 (P0.2) | Symmetric performance packet | v1.0.29's 21 exact-and-faster operations are a non-counterbalanced diagnostic; v1.0.30 equivalent-work timing is absent | Alternate order for ≥20 paired blocks; separate parse/prepared/perception and memory; retain raw observations and paired confidence intervals; claim a win only for equivalent-output scope |
+| 3 (P1) | Reaction compatibility | The 57/57 published v1.0.29 reaction fixtures are narrow; they do not prove general SMIRKS parity | Stratify maps, aromaticity, H, charge, stereo, multi-product and failure cases; compare graphs/maps/provenance, count wrong confident or missing/extra products as failures, preserve the original 57 |
+| 4 (P1) | SMARTS residuals and CIP abstention | Published v1.0.29 wheel has 200/310,000 classified SMARTS cells, plus 9,995 exact CIP rows and five typed abstentions | Recount SMARTS separately from reactions; preserve CIP abstentions under permutation/round trip; independently adjudicate four phosphorus cases and define the lone-pair convention |
+| 5 (P2) | A6 MMFF94 | #637 source same-coordinate packet has 262/262 comparable rows within 1 kcal/mol (max 0.32); two published v1.0.26 Mac wheel runs retain 265 rows. These are historical scoped results | Broader typing (including 2,908 heavy-atom residuals), timeout/convergence, stereo and conformer-quality gates; speed only on a quality-equivalent published-package lane |
+| 6 (P2) | Bounded interchange and identity | CDXML/Markush/polymer, Standard InChI, and canonical/stable-key contracts remain narrower than full parity | Separate preservation, semantic round-trip, typed-refusal, and no-false-merge gates per format/API and binding |
+| 7 (external) | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after another official stable artifact is pinned; retain old/new results side by side |
 
 ## Accuracy packages
 
@@ -61,13 +62,14 @@ complete merely because a local packet exists.
 ## Evidence boundaries
 
 - **Release channels:**
-  `validation/results/release-channel-verification-v1.0.29.json` records
+  `validation/results/release-channel-verification-v1.0.30.json` records
   independent post-publication observations of GitHub Release, npm, PyPI,
   crates.io, docs.rs, and Pages.
 - **RDKit agreement:**
   `benchmarks/2026-10-02-v1.0.29-python-accuracy.md` is the exposed,
-  machine-checked published-wheel Python partial P0 packet. Its HBA source
-  correction is not part of the published artifact. The earlier
+  machine-checked published-wheel Python partial P0 packet; its HBA source
+  correction is not part of the v1.0.29 artifact. The v1.0.30 published-wheel
+  HBA-only result must not inherit its other measurements. The earlier
   `benchmarks/2026-09-24-rdkit-agreement-accuracy-branch.md` records the
   v1.0.23 source comparison and its operation-specific residuals; it is not a
   published-package or universal-parity claim.
