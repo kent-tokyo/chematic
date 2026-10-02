@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-02. Release line: **v1.0.30**. Release-source and
+> Updated 2026-10-03. Release line: **v1.0.30**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -23,7 +23,10 @@ boundaries, and reproducible evidence take priority over feature-count races.
   formula strings have equal composition but different element order.
   MOL write, SVG, and 2D layout have 2,520 differences on three declared
   non-equivalent representation lanes. The current source fixes formula order;
-  it is not a published v1.0.30 result. Eleven npm operation adapters and
+  it is not a published v1.0.30 result. The same 52-operation slice was rerun
+  on the published v1.0.29 tarball: only HBA and its bundle change, on the
+  same 1,359 input indices as Python; 50 operations are row-identical across
+  versions. Eleven npm operation adapters and
   the Rust operation mapping remain unfinished; pending is not unexposed.
 - **v1.0.29 has the historical partial P0 packet.** Its published Python
   wheel was measured on exposed 10,000-row chemistry, 310,000-cell SMARTS,
