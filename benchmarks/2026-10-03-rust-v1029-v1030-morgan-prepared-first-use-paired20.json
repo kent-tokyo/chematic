@@ -1,0 +1,561 @@
+{
+  "artifacts": {
+    "a": {
+      "binary_sha256": "67ce3c57e368c3e377cc25554411078a490b85cc980cadb00ce4ce3a8a7b7b90",
+      "expected_output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+      "lock_sha256": "dfa39d95c4f6fca601337ed103bfff74ea048290b1b2f1bcb27d2c633f24caf4",
+      "reference_archive_sha256": "01f6563984af9889821d94a29d1765b0539703eefa38a1efe86f9391e1bb0be8",
+      "version": "1.0.29"
+    },
+    "b": {
+      "binary_sha256": "ff0133ccb25043a9ae171275ee348600f2424acc18c3766fcf2e375a5f20227e",
+      "expected_output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+      "lock_sha256": "0cb18ae64edaac9352c9c633c918ed3d48d3d9b6b1098457dade1a78e1dd4f88",
+      "reference_archive_sha256": "1d54bb28b09d1ba4effe17264fcf7945cd508cb2500f509806948cff5b3d1037",
+      "version": "1.0.30"
+    }
+  },
+  "corpus": {
+    "limit": 5000,
+    "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  "environment": {
+    "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+  },
+  "memory_a_over_b": {
+    "bootstrap_95pct": [
+      0.9778540100250626,
+      1.0094515149735444
+    ],
+    "median_a_over_b": 0.9968551619529615,
+    "resamples": 4000,
+    "seed": 0
+  },
+  "memory_interpretation": "whole-process peak only; no per-operation allocation claim",
+  "mode": "prepared_first_use",
+  "operation": "morgan",
+  "outputs_equal_across_arms": true,
+  "pairs": [
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 65276083,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44810240,
+        "setup_ns": 24788333
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62336792,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44875776,
+        "setup_ns": 27415917
+      },
+      "block": 0,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 61633625,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46710784,
+        "setup_ns": 26557458
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62880333,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45891584,
+        "setup_ns": 27492958
+      },
+      "block": 1,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62306042,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46792704,
+        "setup_ns": 26784583
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62212250,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45809664,
+        "setup_ns": 27237584
+      },
+      "block": 2,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62866709,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46727168,
+        "setup_ns": 26813042
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 63059125,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46907392,
+        "setup_ns": 27158375
+      },
+      "block": 3,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 63001708,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44646400,
+        "setup_ns": 26498250
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62593250,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46727168,
+        "setup_ns": 26849334
+      },
+      "block": 4,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 65265792,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46743552,
+        "setup_ns": 28924500
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 65143708,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46858240,
+        "setup_ns": 26666583
+      },
+      "block": 5,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 65277458,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44679168,
+        "setup_ns": 28507583
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 67927583,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44777472,
+        "setup_ns": 27368500
+      },
+      "block": 6,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 61608125,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46776320,
+        "setup_ns": 27045542
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 73728750,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44810240,
+        "setup_ns": 29848167
+      },
+      "block": 7,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 61819875,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46874624,
+        "setup_ns": 26560791
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62462166,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44843008,
+        "setup_ns": 26480042
+      },
+      "block": 8,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62181875,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45776896,
+        "setup_ns": 26417375
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 63107625,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46694400,
+        "setup_ns": 26404791
+      },
+      "block": 9,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 63586792,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46710784,
+        "setup_ns": 30773041
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 64138750,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44793856,
+        "setup_ns": 26583708
+      },
+      "block": 10,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 63336125,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44744704,
+        "setup_ns": 26802792
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62894250,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45875200,
+        "setup_ns": 27810833
+      },
+      "block": 11,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 65742125,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46710784,
+        "setup_ns": 30278292
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 61854917,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46907392,
+        "setup_ns": 26514041
+      },
+      "block": 12,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 63081042,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46694400,
+        "setup_ns": 26132334
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62352750,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46891008,
+        "setup_ns": 27747125
+      },
+      "block": 13,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62180833,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44695552,
+        "setup_ns": 26539041
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 60276250,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45842432,
+        "setup_ns": 27472375
+      },
+      "block": 14,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62134959,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46759936,
+        "setup_ns": 25767250
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62353334,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46710784,
+        "setup_ns": 26362333
+      },
+      "block": 15,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62526667,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44630016,
+        "setup_ns": 26983292
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62330041,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46923776,
+        "setup_ns": 26005208
+      },
+      "block": 16,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 63974083,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44711936,
+        "setup_ns": 26569291
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62484959,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46841856,
+        "setup_ns": 25893250
+      },
+      "block": 17,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 61970083,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46645248,
+        "setup_ns": 27381458
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 63005375,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44859392,
+        "setup_ns": 26595292
+      },
+      "block": 18,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 63520917,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44728320,
+        "setup_ns": 27099542
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "prepared_first_use",
+        "operation": "morgan",
+        "operation_ns": 62677375,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46825472,
+        "setup_ns": 26464625
+      },
+      "block": 19,
+      "order": [
+        "b",
+        "a"
+      ]
+    }
+  ],
+  "protocol": {
+    "blocks": 20,
+    "memory": "OS whole-process peak RSS, including startup and preparation; not operation allocation",
+    "order": "AB/BA alternating fresh processes",
+    "timing": "Rust Instant around operation calls; parse only in parse_inclusive",
+    "warmup": "one discarded process per arm, plus disjoint in-process molecule"
+  },
+  "schema": "published-rust-isolated-paired-v1",
+  "speed_a_over_b": {
+    "bootstrap_95pct": [
+      0.9905557162150634,
+      1.0093529362634215
+    ],
+    "median_a_over_b": 1.001690842531851,
+    "resamples": 4000,
+    "seed": 0
+  },
+  "speed_outcome": "inconclusive_interval_crosses_parity"
+}

@@ -10,6 +10,10 @@ publish = false
 name = "operations"
 path = "../published_rust_gate/src/bin/operations.rs"
 
+[[bin]]
+name = "isolated_speed"
+path = "../published_rust_gate/src/bin/isolated_speed.rs"
+
 [dependencies]
 chematic = { version = "=1.0.29", features = ["smiles", "perception", "chem", "fp", "smarts", "rxn", "mol", "depict", "threed", "inchi"] }
 # Pin the entire published graph. The facade's ^1.0.29 subcrate requirements

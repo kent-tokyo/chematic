@@ -1,0 +1,561 @@
+{
+  "artifacts": {
+    "a": {
+      "binary_sha256": "67ce3c57e368c3e377cc25554411078a490b85cc980cadb00ce4ce3a8a7b7b90",
+      "expected_output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+      "lock_sha256": "dfa39d95c4f6fca601337ed103bfff74ea048290b1b2f1bcb27d2c633f24caf4",
+      "reference_archive_sha256": "01f6563984af9889821d94a29d1765b0539703eefa38a1efe86f9391e1bb0be8",
+      "version": "1.0.29"
+    },
+    "b": {
+      "binary_sha256": "ff0133ccb25043a9ae171275ee348600f2424acc18c3766fcf2e375a5f20227e",
+      "expected_output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+      "lock_sha256": "0cb18ae64edaac9352c9c633c918ed3d48d3d9b6b1098457dade1a78e1dd4f88",
+      "reference_archive_sha256": "1d54bb28b09d1ba4effe17264fcf7945cd508cb2500f509806948cff5b3d1037",
+      "version": "1.0.30"
+    }
+  },
+  "corpus": {
+    "limit": 5000,
+    "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  "environment": {
+    "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+  },
+  "memory_a_over_b": {
+    "bootstrap_95pct": [
+      0.9790148003586068,
+      1.0
+    ],
+    "median_a_over_b": 0.9979050269113338,
+    "resamples": 4000,
+    "seed": 0
+  },
+  "memory_interpretation": "whole-process peak only; no per-operation allocation claim",
+  "mode": "precomputed",
+  "operation": "morgan",
+  "outputs_equal_across_arms": true,
+  "pairs": [
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 34049459,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46792704,
+        "setup_ns": 87537417
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35396167,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46891008,
+        "setup_ns": 84253708
+      },
+      "block": 0,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35800542,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46825472,
+        "setup_ns": 85330833
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35596375,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45924352,
+        "setup_ns": 86124041
+      },
+      "block": 1,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 34995583,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45744128,
+        "setup_ns": 88686917
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35814875,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46891008,
+        "setup_ns": 88322084
+      },
+      "block": 2,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 32291834,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46759936,
+        "setup_ns": 89118709
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 34658458,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46923776,
+        "setup_ns": 87186917
+      },
+      "block": 3,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 33556583,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46792704,
+        "setup_ns": 87200958
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35592667,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46841856,
+        "setup_ns": 86369541
+      },
+      "block": 4,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 34084208,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46858240,
+        "setup_ns": 84670542
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 34563875,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46956544,
+        "setup_ns": 86879542
+      },
+      "block": 5,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 34617250,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45907968,
+        "setup_ns": 85451709
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35447333,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46923776,
+        "setup_ns": 86794583
+      },
+      "block": 6,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 34982042,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44744704,
+        "setup_ns": 84819291
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 32393833,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46972928,
+        "setup_ns": 87841959
+      },
+      "block": 7,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35680292,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46759936,
+        "setup_ns": 87935625
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35384208,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45907968,
+        "setup_ns": 85334333
+      },
+      "block": 8,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35489917,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45842432,
+        "setup_ns": 86634167
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35779417,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46923776,
+        "setup_ns": 84258334
+      },
+      "block": 9,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 33022125,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 44695552,
+        "setup_ns": 83934792
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35173667,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46841856,
+        "setup_ns": 85757250
+      },
+      "block": 10,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35167375,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45809664,
+        "setup_ns": 92698958
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 33595625,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46759936,
+        "setup_ns": 84618917
+      },
+      "block": 11,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 34435958,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46825472,
+        "setup_ns": 84923875
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 32981625,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45940736,
+        "setup_ns": 88356375
+      },
+      "block": 12,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 33999833,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46776320,
+        "setup_ns": 84754417
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 33229208,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46841856,
+        "setup_ns": 86099167
+      },
+      "block": 13,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 36383334,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46776320,
+        "setup_ns": 87839875
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35360292,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45924352,
+        "setup_ns": 84987125
+      },
+      "block": 14,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 33053959,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45727744,
+        "setup_ns": 83640375
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 33816625,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45989888,
+        "setup_ns": 84368833
+      },
+      "block": 15,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 33731250,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45793280,
+        "setup_ns": 87155583
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 34828625,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46891008,
+        "setup_ns": 85580833
+      },
+      "block": 16,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 33270291,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46907392,
+        "setup_ns": 86240416
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 32974375,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46907392,
+        "setup_ns": 84449417
+      },
+      "block": 17,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 34177167,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45907968,
+        "setup_ns": 87653125
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 33995083,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45907968,
+        "setup_ns": 86215375
+      },
+      "block": 18,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 34082000,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 46710784,
+        "setup_ns": 85445584
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "precomputed",
+        "operation": "morgan",
+        "operation_ns": 35431333,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 45957120,
+        "setup_ns": 87446666
+      },
+      "block": 19,
+      "order": [
+        "b",
+        "a"
+      ]
+    }
+  ],
+  "protocol": {
+    "blocks": 20,
+    "memory": "OS whole-process peak RSS, including startup and preparation; not operation allocation",
+    "order": "AB/BA alternating fresh processes",
+    "timing": "Rust Instant around operation calls; parse only in parse_inclusive",
+    "warmup": "one discarded process per arm, plus disjoint in-process molecule"
+  },
+  "schema": "published-rust-isolated-paired-v1",
+  "speed_a_over_b": {
+    "bootstrap_95pct": [
+      0.9725373957298873,
+      1.0086709038486226
+    ],
+    "median_a_over_b": 0.9890155291781928,
+    "resamples": 4000,
+    "seed": 0
+  },
+  "speed_outcome": "inconclusive_interval_crosses_parity"
+}
