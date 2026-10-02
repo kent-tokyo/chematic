@@ -63,6 +63,17 @@ def formula_composition(value: object) -> dict[str, int] | None:
     return counts if at == len(value) and at > 0 else None
 
 
+def same_rounded_coordinates(actual: object, expected: object) -> bool:
+    if not isinstance(actual, list) or not isinstance(expected, list) or len(actual) != len(expected):
+        return False
+    return all(isinstance(point, list) and isinstance(reference, list) and
+               len(point) == len(reference) == 3 and
+               all(isinstance(a, (int, float)) and isinstance(b, (int, float)) and
+                   math.isfinite(a) and math.isfinite(b) and abs(a - b) <= 0.000051
+                   for a, b in zip(point, reference, strict=True))
+               for point, reference in zip(actual, expected, strict=True))
+
+
 def npm_python_outcome(op: str, actual: dict, expected: dict) -> str:
     if actual == expected:
         return "exact"
@@ -75,6 +86,8 @@ def npm_python_outcome(op: str, actual: dict, expected: dict) -> str:
     if op == "formula" and formula_composition(av) is not None and \
             formula_composition(av) == formula_composition(ev):
         return "formula_spelling_only"
+    if op == "embed_3d" and same_rounded_coordinates(av, ev):
+        return "coordinate_roundoff"
     return "different"
 
 
@@ -86,7 +99,7 @@ def check_npm_operation_slice(version: str) -> list[dict]:
     raw_bytes = raw_path.read_bytes()
     python_bytes = python_path.read_bytes()
     expected_tarball = NPM_TARBALL_SHA256 if version == "1.0.30" else NPM_V1029_TARBALL_SHA256
-    fail_if(summary["schema"] != "published-npm-python-63op-output-slice/v1" or
+    fail_if(summary["schema"] != "published-npm-python-63op-output-slice/v2" or
             summary["npm"] != {"version": version, "tarball_sha256": expected_tarball} or
             summary["python_archive_sha256"] != hashlib.sha256(python_bytes).hexdigest() or
             summary["corpus"] != {"sha256": hashlib.sha256(corpus_path.read_bytes()).hexdigest(), "input_count": 5000} or
@@ -100,12 +113,13 @@ def check_npm_operation_slice(version: str) -> list[dict]:
     by_name = {item["op"]: item["rows"] for item in baseline}
     names = [item["op"] for item in rows]
     coverage = summary["coverage"]
-    fail_if(len(baseline) != 63 or len(by_name) != 63 or len(rows) != 52 or
-            coverage["total_operations"] != 63 or coverage["adapted"] != 52 or
-            len(coverage["pending_adapter"]) != 11 or
-            sorted(coverage["pending_reason"]) != sorted(coverage["pending_adapter"]) or
-            any(not reason for reason in coverage["pending_reason"].values()) or
-            sorted(names + coverage["pending_adapter"]) != sorted(by_name) or
+    absent = coverage["no_equivalent_public_api"]
+    fail_if(len(baseline) != 63 or len(by_name) != 63 or len(rows) != 59 or
+            coverage["total_operations"] != 63 or coverage["adapted"] != 59 or
+            sorted(absent) != sorted(("rdkit_tpsa", "atom_pair(rdkit-compatible)",
+                                     "pattern_fp(rdkit-compatible)", "embed+minimize_mmff94")) or
+            any(not reason for reason in absent.values()) or
+            sorted(names + list(absent)) != sorted(by_name) or
             names != [item["op"] for item in summary["comparison"]],
             "npm operation names or pending accounting")
     exact_operations = 0
@@ -123,13 +137,19 @@ def check_npm_operation_slice(version: str) -> list[dict]:
             if result != "exact" and len(samples) < 3:
                 samples.append({"input_index": index, "actual": actual, "expected": expected})
         fail_if(recorded["outcomes"] != {key: outcomes[key] for key in
-                ("exact", "numeric_roundoff", "formula_spelling_only", "different")} or
+                ("exact", "numeric_roundoff", "formula_spelling_only", "coordinate_roundoff", "different")} or
                 recorded["samples"] != samples or recorded["input_count"] != len(expected_rows),
                 f"npm {item['op']}: archived comparison")
         fail_if(outcomes["different"] != non_equivalent_differences.get(item["op"], 0),
                 f"npm {item['op']}: unexpected value mismatch")
+        fail_if(outcomes["coordinate_roundoff"] != (100 if item["op"] == "embed_3d" else 0),
+                f"npm {item['op']}: unexpected coordinate rounding")
+        if item["op"] == "tanimoto_1xN(per target, compatible Morgan)":
+            fail_if(len(item["rows"]) != 50 or
+                    any(len(row.get("value", [])) != 5000 for row in item["rows"]),
+                    "npm compatible-Morgan similarity 50 x 5000 accounting")
         exact_operations += outcomes["exact"] == len(expected_rows)
-    fail_if(exact_operations != 46, "npm operation exact-count regression")
+    fail_if(exact_operations != 52, "npm operation exact-count regression")
     return rows
 
 
@@ -314,7 +334,7 @@ def main() -> int:
     check_npm_version_diff()
     print("v1.0.30 packet integrity OK: 3 published artifacts x 10k/310k; "
           "Python 63 operations x 210,410 rows (only HBA/bundle changed); "
-          "npm 52/63 output adapters (46 exact, 3 representation lanes differ), "
+          "npm 59/63 output adapters (52 exact, ETKDG rounded, 3 representation lanes differ), "
           "v1.0.29 to v1.0.30 only HBA/bundle changed on the same 1,359 rows; "
           "20-block Python speed matrix; npm reaction 74 match, 5 confident "
           "differences, 1 invalid JSON; Rust reaction origins 74/83 matched. "
