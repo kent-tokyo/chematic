@@ -23,11 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.0.30 の対応範囲
+### v1.0.31 の対応範囲
 
-v1.0.30ではRDKit互換HBAを修正しました。検証済みの公開macOS arm64 wheelは、
-RDKit 2026.03.6と公開ChEMBL 5,000分子で全件一致しました（v1.0.29は3,641件）。
-HBA以外の互換性や速度を示す結果ではありません。詳しくは[検証報告](docs/validation.md)と
+v1.0.31ではWASMの分子式表記と、E/Zのバックスラッシュを含む反応生成物の
+JSONエスケープを修正しました。公開パッケージでの再検証はこれからです。
+HBAの5,000件全件一致は公開済みv1.0.30 macOS arm64 wheelの結果であり、
+v1.0.31の新たな測定ではありません。詳しくは[検証報告](docs/validation.md)と
 [CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方

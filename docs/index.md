@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.30</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.31</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,7 +80,8 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-The current release line is v1.0.30.
+The current release line is v1.0.31. WASM formula spelling and reaction
+product JSON escaping were fixed; package-level reruns remain pending.
 
 - SMIRKS product-side atomic-number atoms now build literal atoms with valence-
   derived hydrogens, and repeated SMARTS charge signs mean one formal charge.
