@@ -1,6 +1,6 @@
 # Validation report
 
-Updated 2026-10-02. The current release line is **v1.0.30**. Each result keeps its
+Updated 2026-10-03. The current release line is **v1.0.30**. Each result keeps its
 recorded version, comparator, corpus, and operation; no result is silently
 upgraded to the current source revision.
 
@@ -8,7 +8,7 @@ upgraded to the current source revision.
 
 | Area | Evidence | Boundary |
 |---|---|---|
-| v1.0.30 published-artifact rerun | `benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md` and `scripts/check_v1030_artifact_packet.py` | Python/npm/Rust 10k chemistry and 310k SMARTS pass independent artifact accounting. All 63 Rust operations reproduce the corresponding published Python wheel on 210,410 rows per version; both bindings change only HBA/bundle versus v1.0.29. Extended 83 reactions expose five published-wheel differences. Paired speed applies only to recorded operations. P0/P1 acceptance remains open. |
+| v1.0.30 published-artifact rerun | `benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md` and `scripts/check_v1030_artifact_packet.py` | Python/npm/Rust 10k chemistry and 310k SMARTS pass independent artifact accounting. All 63 Rust operations reproduce the corresponding published Python wheel on 210,410 rows per version; both bindings change only HBA/bundle versus v1.0.29. A full raw-row identity check assigns the 69 initially unresolved published-wheel classifications to 200 named SMARTS cells and five typed CIP abstentions; the differences remain. Extended 83 reactions expose five published-wheel differences. Paired speed applies only to recorded operations. P0/P1 acceptance remains open. |
 | Isolated Python timing and RSS | `benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md` and `scripts/check_published_python_isolated_paired.py` | Six output-gated 20-block fresh-process lanes split parse-inclusive, first-use and precomputed calls. The RSS axis is whole-process high-water memory, not operation allocation; remaining bindings and cross-host work keep P0.2 open. |
 | v1.0.29 published Python-wheel accuracy | `benchmarks/2026-10-02-v1.0.29-python-accuracy.md` and `scripts/check_v1029_accuracy_packet.py` | Exposed 10k chemistry/310k SMARTS, 57 reaction cases, and 5k operation matrix vs RDKit 2026.03.6. CIP 9,995 exact + five typed abstentions; Morgan 9,999 exact + one typed refusal; 200 SMARTS residual cells. Python-only partial P0, not broad reaction parity or a paired speed win. |
 | v1.0.29 #679/#680 regressions | `crates/chematic-rxn/src/transform.rs`, `crates/chematic-smarts/src/parser.rs`, `crates/chematic-py/tests/test_module_functions.py` | Deterministic SMIRKS product and SMARTS charge examples; the 10k/310k lane does not exercise these cases. The extended reaction fixture is 57/57 but still narrow. |
