@@ -1724,12 +1724,18 @@ fn build_product(
                 // Map number not in reactants — new atom from template.
                 let mut new_atom = tmpl_atom.clone();
                 new_atom.atom_map = None;
+                new_atom.hydrogen_count = tmpl_atom.hydrogen_count.filter(|&h| h > 0);
                 builder.add_atom(new_atom)
             }
         } else {
-            // No atom_map — entirely new atom from template.
+            // No atom_map — entirely new atom from template. As for core atoms,
+            // a bare bracket atom's `Some(0)` means "unspecified" in a product
+            // template (`[*:1][C](=[O])[C]` adds an acetyl group, not three
+            // radicals — issue #679); only an explicit `H<n>` with n > 0 pins
+            // the count, as in SMIRKS.
             let mut new_atom = tmpl_atom.clone();
             new_atom.atom_map = None;
+            new_atom.hydrogen_count = tmpl_atom.hydrogen_count.filter(|&h| h > 0);
             builder.add_atom(new_atom)
         };
         *slot = Some(new_idx);
@@ -1894,12 +1900,73 @@ mod tests {
     }
 
     #[test]
+    fn product_atomic_number_primitives_are_literal_atoms_with_implicit_h() {
+        // Issue #679: an unmapped product-side `[#6](=[#8])[#6]` adds an acetyl
+        // group exactly like `C(=O)C`; no aromatic-flag variants, no `[C]`
+        // radicals, one product.
+        let ethanol = parse("CCO").unwrap();
+        let canon = |m: &Molecule| chematic_smiles::canonical_smiles(m);
+        let organic = run_reactants("[O:1]>>[*:1]C(=O)C", &[&ethanol]).unwrap();
+        let atomic = run_reactants("[O:1]>>[*:1][#6](=[#8])[#6]", &[&ethanol]).unwrap();
+        assert_eq!(organic.len(), 1);
+        assert_eq!(atomic.len(), 1);
+        assert_eq!(canon(&atomic[0][0]), canon(&organic[0][0]));
+        assert_eq!(canon(&atomic[0][0]), "CC(=O)OCC");
+        // Bracket product atoms behave the same: `[C]` is an unspecified
+        // hydrogen count in a product template, as for mapped atoms (#18).
+        let bracket = run_reactants("[O:1]>>[*:1][C](=[O])[C]", &[&ethanol]).unwrap();
+        assert_eq!(canon(&bracket[0][0]), "CC(=O)OCC");
+        // `;H1` pins the count; non-organic-subset elements stay bracketed.
+        let vinyl = run_reactants("[O:1]>>[*:1][#6;H1]=[#6]", &[&ethanol]).unwrap();
+        assert_eq!(canon(&vinyl[0][0]), canon(&parse("C=COCC").unwrap()));
+        let silyl = run_reactants("[O:1]>>[*:1][#14]", &[&ethanol]).unwrap();
+        assert_eq!(silyl.len(), 1);
+        assert_eq!(
+            silyl[0][0]
+                .atoms()
+                .filter(|(_, a)| a.element.atomic_number() == 14)
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn mapped_product_atomic_number_primitive_keeps_reactant_aromaticity() {
+        // `[#7:1]` on both sides shares one spelling per variant, so an
+        // aliphatic amine gives one aliphatic product and pyridine one aromatic
+        // product (previously each gave an extra product with the flag flipped).
+        let canon = |m: &Molecule| chematic_smiles::canonical_smiles(m);
+        let amine = parse("CCN").unwrap();
+        let out = run_reactants("[#7:1]>>[#7:1]C", &[&amine]).unwrap();
+        assert_eq!(out.len(), 1);
+        assert_eq!(canon(&out[0][0]), canon(&parse("CCNC").unwrap()));
+        let pyridine = parse("c1ccncc1").unwrap();
+        let out = run_reactants("[#7:1]>>[#7:1]C", &[&pyridine]).unwrap();
+        assert_eq!(out.len(), 1);
+        assert!(
+            out[0][0]
+                .atoms()
+                .any(|(_, a)| a.aromatic && a.element.atomic_number() == 7)
+        );
+        // A product map spelled with a plain symbol on the reactant side
+        // follows that spelling.
+        let variants = crate::reaction::expand_atomic_number_primitives("[n:1]>>[#7:1]C").unwrap();
+        assert_eq!(variants, vec!["[n:1]>>[n:1]C".to_string()]);
+        let variants = crate::reaction::expand_atomic_number_primitives("[N:1]>>[#7:1]C").unwrap();
+        assert_eq!(variants, vec!["[N:1]>>[N:1]C".to_string()]);
+    }
+
+    #[test]
     fn prepared_reaction_applies_atomic_number_smirks_variants() {
         let reactant = parse("NC=O").unwrap();
         let prepared = PreparedReaction::new("[#7:1][C:2](=[O:3])>>[#7:1][C:2](=[O:3])").unwrap();
         let products = prepared.run_reactants(&[&reactant]).unwrap();
-        assert_eq!(products.len(), 2, "both normalized variants are retained");
+        // Two variants (`[N:1]`/`[n:1]` on both sides together); only the
+        // aliphatic one matches formamide, and the product keeps the reactant's
+        // aliphatic nitrogen (issue #679: no aromatic-flag duplicate).
+        assert_eq!(products.len(), 1);
         assert!(products.iter().all(|set| set.len() == 1));
+        assert!(!products[0][0].atoms().any(|(_, a)| a.aromatic));
     }
 
     #[test]
@@ -1912,14 +1979,20 @@ mod tests {
                 &ReactionTransformLimits::default(),
             )
             .unwrap();
-        assert_eq!(reports.len(), 4);
+        assert_eq!(reports.len(), 2);
         assert_eq!(reports[0].variant_index, 0);
-        assert_eq!(reports[3].variant_index, 3);
-        assert!(reports[0].normalized_smirks.contains("[N:1]"));
-        assert!(reports[3].normalized_smirks.contains("[n:1]"));
+        assert_eq!(reports[1].variant_index, 1);
+        assert_eq!(
+            reports[0].normalized_smirks,
+            "[N:1][C:2](=[O:3])>>[N:1][C:2](=[O:3])"
+        );
+        assert_eq!(
+            reports[1].normalized_smirks,
+            "[n:1][C:2](=[O:3])>>[n:1][C:2](=[O:3])"
+        );
         assert!(reports[0].diagnostics.accepted_matches > 0);
         assert!(reports[0].diagnostics.applied_products > 0);
-        assert!(reports[2].diagnostics.accepted_matches == 0);
+        assert!(reports[1].diagnostics.accepted_matches == 0);
     }
 
     #[test]
@@ -3494,7 +3567,7 @@ mod tests {
                 &ReactionTransformLimits::default(),
             )
             .unwrap();
-        assert_eq!(reports.len(), 4);
+        assert_eq!(reports.len(), 2);
         assert_eq!(reports[0].variant_index, 0);
         assert!(reports[0].diagnostics.accepted_matches > 0);
         assert_eq!(

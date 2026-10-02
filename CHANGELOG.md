@@ -10,6 +10,18 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- SMIRKS product templates treat atomic-number atoms as literals (#679):
+  an unmapped `[#6](=[#8])[#6]` now adds an acetyl group exactly like
+  `C(=O)C` (organic-subset symbols get implicit hydrogens; `[#14]` stays
+  `[Si]`; `;H1` is kept), and a mapped `[#7:1]` keeps the matched reactant
+  atom's aromaticity instead of producing an extra product with the flag
+  flipped. Bare bracket product atoms such as `[C]` likewise leave the
+  hydrogen count to valence rules, as mapped atoms already did; an explicit
+  `[CH]`/`[NH2]` still pins it. Reactant-side expansion is unchanged.
+- SMARTS bracket charges written with repeated signs (`[++]`, `[--]`,
+  `[Fe+++]`) parse as one total charge (+2, -2, +3) per Daylight/OpenSMARTS,
+  not as several ±1 primitives joined by AND (#680).
+
 ## [1.0.28] - 2026-09-28
 
 - Fixed accurate-mode CIP labels decided by Rule 4b when an embedded

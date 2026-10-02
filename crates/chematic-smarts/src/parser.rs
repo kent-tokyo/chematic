@@ -807,27 +807,22 @@ impl<'a> Parser<'a> {
                 Ok(AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)))
             }
 
-            // Charge `+N` or `+`  (charge = +N or +1; `+0` = explicit neutral)
+            // Charge `+N`, `+` or `++…` (charge = +N, +1 or the number of
+            // repeated signs; `+0` = explicit neutral). Daylight / OpenSMARTS:
+            // successive signs accumulate into one charge value (`++` is +2),
+            // never an AND of two ±1 primitives (issue #680).
             Some(b'+') => {
                 self.advance(); // consume '+'
-                // Parse digit including '0'; only default to 1 if no digit follows at all.
-                let n = if self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
-                    self.parse_single_digit().unwrap_or(1)
-                } else {
-                    1
-                };
-                Ok(AtomQuery::Primitive(AtomPrimitive::Charge(n as i8)))
+                let n = self.parse_charge_magnitude(b'+');
+                Ok(AtomQuery::Primitive(AtomPrimitive::Charge(n)))
             }
 
-            // Charge `-N` or `-`  (charge = -N or -1; `-0` = explicit neutral)
+            // Charge `-N`, `-` or `--…` (charge = -N, -1 or minus the number of
+            // repeated signs; `-0` = explicit neutral)
             Some(b'-') => {
                 self.advance(); // consume '-'
-                let n = if self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
-                    self.parse_single_digit().unwrap_or(1)
-                } else {
-                    1
-                };
-                Ok(AtomQuery::Primitive(AtomPrimitive::Charge(-(n as i8))))
+                let n = self.parse_charge_magnitude(b'-');
+                Ok(AtomQuery::Primitive(AtomPrimitive::Charge(-n)))
             }
 
             // H count `HN` or `H` (total hcount = N or 1; explicit + implicit)
@@ -1075,6 +1070,21 @@ impl<'a> Parser<'a> {
             }
             _ => None,
         }
+    }
+
+    /// Magnitude of a bracket charge whose first `sign` has just been consumed:
+    /// a following digit gives the magnitude (`+2`, `+0`), otherwise one plus
+    /// the number of immediately repeated signs (`+` = 1, `++` = 2, `+++` = 3).
+    fn parse_charge_magnitude(&mut self, sign: u8) -> i8 {
+        if self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+            return self.parse_single_digit().unwrap_or(1) as i8;
+        }
+        let mut n: i8 = 1;
+        while self.peek() == Some(sign) && n < i8::MAX {
+            self.advance();
+            n += 1;
+        }
+        n
     }
 }
 
@@ -1688,6 +1698,67 @@ mod tests {
         let mol_neg = parse_smarts("[O-1]").unwrap();
         assert_eq!(mol_pos.atoms.len(), 1);
         assert_eq!(mol_neg.atoms.len(), 1);
+    }
+
+    #[test]
+    fn repeated_charge_signs_accumulate() {
+        // Daylight / OpenSMARTS: `++` is +2, `--` is -2 (issue #680), never an
+        // AND of two unit charges; a digit still sets the magnitude directly.
+        fn charge(smarts: &str) -> AtomQuery {
+            parse_smarts(smarts).unwrap().atoms[0].query.clone()
+        }
+        assert_eq!(
+            charge("[++]"),
+            AtomQuery::Primitive(AtomPrimitive::Charge(2))
+        );
+        assert_eq!(
+            charge("[--]"),
+            AtomQuery::Primitive(AtomPrimitive::Charge(-2))
+        );
+        assert_eq!(
+            charge("[+++]"),
+            AtomQuery::Primitive(AtomPrimitive::Charge(3))
+        );
+        assert_eq!(charge("[+2]"), charge("[++]"));
+        assert_eq!(charge("[-2]"), charge("[--]"));
+        assert_eq!(
+            charge("[+]"),
+            AtomQuery::Primitive(AtomPrimitive::Charge(1))
+        );
+        assert_eq!(
+            charge("[+0]"),
+            AtomQuery::Primitive(AtomPrimitive::Charge(0))
+        );
+        // Element and other primitives around the charge still combine by AND.
+        assert_eq!(
+            charge("[Ca++]"),
+            AtomQuery::And(
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Symbol("Ca".into()))),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Charge(2))),
+            )
+        );
+        // `+-` is two primitives (+1 and -1), not a charge of zero.
+        assert_eq!(
+            charge("[+-]"),
+            AtomQuery::And(
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Charge(1))),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Charge(-1))),
+            )
+        );
+        // Matching: a dication matches `[++]` and `[+2]`, a monocation neither.
+        let dication = chematic_smiles::parse("[Ca+2]").unwrap();
+        let monocation = chematic_smiles::parse("[Na+]").unwrap();
+        for q in ["[++]", "[+2]"] {
+            let q = parse_smarts(q).unwrap();
+            assert!(
+                crate::has_match_with_config(&q, &dication, &crate::MatchConfig::default()),
+                "{q:?}"
+            );
+            assert!(
+                !crate::has_match_with_config(&q, &monocation, &crate::MatchConfig::default()),
+                "{q:?}"
+            );
+        }
     }
 
     #[test]
