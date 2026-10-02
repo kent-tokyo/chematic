@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.29] - 2026-10-02
+
 - SMIRKS product templates treat atomic-number atoms as literals (#679):
   an unmapped `[#6](=[#8])[#6]` now adds an acetyl group exactly like
   `C(=O)C` (organic-subset symbols get implicit hydrogens; `[#14]` stays

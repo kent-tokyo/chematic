@@ -21,13 +21,12 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.0.28 release boundary
+### v1.0.29 release boundary
 
-v1.0.28 fixes one hierarchical CIP ranking error and reports lone-pair
-stereocentres as typed abstentions instead of silently omitting them. On the
-pinned, exposed 10,000-row RDKit 2026.03.6 comparison, 9,995 rows agree
-exactly; the remaining five have explicit abstention reasons. This is a
-source-level result, not complete CIP parity or a new package speed claim. See
+v1.0.29 fixes product-side atomic-number atoms in SMIRKS (#679) and repeated
+charge signs in SMARTS (#680). Unmapped `[#6](=[#8])[#6]` now builds the same
+acetyl group as `C(=O)C`; `[++]` and `[--]` mean +2 and -2. This is a
+correctness release, not a new RDKit parity or performance measurement. See
 [validation](docs/validation.md) and the [CHANGELOG](CHANGELOG.md).
 
 ## Use it

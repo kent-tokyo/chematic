@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-09-28. Release line: **v1.0.28**. Release-source and
+> Updated 2026-10-02. Release line: **v1.0.29**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -9,6 +9,9 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 ## Current position
 
+- **v1.0.29 corrects #679/#680.** SMIRKS product-side atomic-number atoms
+  produce literal atoms; repeated SMARTS charge signs represent one charge.
+  Targeted regressions are not a broad reaction/SMARTS parity claim.
 - **v1.0.28 closes the classified #634 CIP residuals at release source.**
   The pinned, exposed 10,000-row RDKit 2026.03.6 lane has 9,995 exact rows;
   the remaining five are typed abstentions. Lone-pair stereocentres are not
@@ -16,7 +19,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 - **v1.0.27 added Rust atom tags and release-contract checks.** Caller labels
   survive selected in-memory transformations; SMILES does not carry them.
   The v1.0.26 MMFF94 published-wheel and source timing records stay pinned to
-  their measured version, not promoted to v1.0.28 results.
+  their measured version, not promoted to v1.0.29 results.
 - **A0 core-eight descriptors is complete.** A frozen candidate passed the
   declared 2,000-row development and one-time 8,000-row sealed evaluations.
 - **Browser Parse + compatible Morgan has a scoped public-package win.** The
@@ -47,7 +50,7 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
 
 ## Priority order
 
-1. **Verify v1.0.28 delivery across release channels.** Record GitHub Release,
+1. **Verify v1.0.29 delivery across release channels.** Record GitHub Release,
    npm, PyPI, crates.io, docs.rs, and Pages independently after publication.
 2. **Decide optional RDKit-style SMARTS ring counts.** #635's 310,000-cell
    classification is complete; `[Rn]`/`[kn]` still have a documented native

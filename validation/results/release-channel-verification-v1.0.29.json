@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "release": {"version": "1.0.29", "tag": "v1.0.29", "commit": null},
+  "checked_at": null,
+  "release_ready": false,
+  "channels": [
+    {"id": "github_release", "status": "not_measured", "observed_version": null, "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.29", "detail": "Awaiting tag and GitHub Release publication."},
+    {"id": "npm", "status": "not_measured", "observed_version": null, "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.29", "detail": "Awaiting registry publication."},
+    {"id": "pypi", "status": "not_measured", "observed_version": null, "url": "https://pypi.org/pypi/chematic/1.0.29/json", "detail": "Awaiting registry publication."},
+    {"id": "crates_io", "status": "not_measured", "observed_version": null, "url": "https://crates.io/crates/chematic/1.0.29", "detail": "Awaiting registry publication."},
+    {"id": "docs_rs", "status": "not_measured", "observed_version": null, "url": "https://docs.rs/chematic/1.0.29/chematic/", "detail": "Awaiting docs.rs build."},
+    {"id": "site", "status": "not_measured", "observed_version": null, "url": "https://kent-tokyo.github.io/chematic/", "detail": "Awaiting Pages deployment and direct version check."}
+  ]
+}

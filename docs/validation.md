@@ -1,6 +1,6 @@
 # Validation report
 
-Updated 2026-09-28. The current release line is **v1.0.28**. Each result keeps its
+Updated 2026-10-02. The current release line is **v1.0.29**. Each result keeps its
 recorded version, comparator, corpus, and operation; no result is silently
 upgraded to the current source revision.
 
@@ -8,8 +8,10 @@ upgraded to the current source revision.
 
 | Area | Evidence | Boundary |
 |---|---|---|
+| v1.0.29 #679/#680 regressions | `crates/chematic-rxn/src/transform.rs`, `crates/chematic-smarts/src/parser.rs`, `crates/chematic-py/tests/test_module_functions.py` | Deterministic SMIRKS product and SMARTS charge examples; no new full-corpus RDKit parity or speed result. |
+| v1.0.29 release-channel record | `validation/results/release-channel-verification-v1.0.29.json` | Pre-tag entries are unmeasured; verify six distribution channels independently after publication. |
 | v1.0.28 #634 CIP source rebaseline | `validation/results/rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json` and retained raw rows | On the pinned exposed 10k lane, 9,995 exact; four phosphorus and one lone-pair centre are typed abstentions. The evidence source is the pre-release candidate `9b196a4e`, not a published v1.0.28 package. No full CIP parity or speed claim. |
-| v1.0.28 release-channel record | `validation/results/release-channel-verification-v1.0.28.json` | Initially unmeasured; verify all six distribution channels independently after tag publication. |
+| v1.0.28 release-channel record | `validation/results/release-channel-verification-v1.0.28.json` | Six channels independently verified after publication; historical evidence, not v1.0.29 verification. |
 | v1.0.27 Rust atom-tag contract | `crates/chematic-smiles/tests/atom_tag_cache.rs`, `atom_tag_visit_order.rs`, and reaction tests | Caller labels survive named in-memory operations but are not encoded in SMILES; no new RDKit parity or speed claim. |
 | v1.0.27 release-channel record | `validation/results/release-channel-verification-v1.0.27.json` | GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages were independently verified for v1.0.27; this does not verify v1.0.28. |
 | v1.0.26 release-source identity | `benchmarks/2026-09-25-perf-speed4-output-identical.md` | Differential against base source across 7 corpora and 50 operations; only nine pre-existing hash-order-dependent error messages differ. This is source evidence, not a package claim. |
