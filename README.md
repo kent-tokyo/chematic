@@ -21,13 +21,13 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.0.30 release boundary
+### v1.0.31 release boundary
 
-v1.0.30 fixes the named RDKit-compatible HBA profile. Its verified published
-macOS arm64 wheel matches RDKit 2026.03.6 on 5,000/5,000 exposed ChEMBL
-molecules (v1.0.29: 3,641/5,000). This is HBA-only evidence, not general
-RDKit parity or a speed claim. See [validation](docs/validation.md) and the
-[CHANGELOG](CHANGELOG.md).
+v1.0.31 fixes WASM formula spelling and JSON escaping for reaction products
+with E/Z backslashes. The published-package comparison has not yet been
+rerun. The 5,000/5,000 RDKit-compatible HBA result belongs to the published
+v1.0.30 macOS arm64 wheel, not a new v1.0.31 measurement. See
+[validation](docs/validation.md) and the [CHANGELOG](CHANGELOG.md).
 
 ## Use it
 

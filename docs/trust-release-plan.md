@@ -1,7 +1,7 @@
 # chematic 1.x Trust Release 実行計画
 
-更新日: 2026-10-02。リリース対象は **v1.0.30** です。次の開発では、配布channelの
-独立検証と、孤立電子対を含むCIP中心・SMARTS・A6 gateを優先します。
+更新日: 2026-10-03。リリース対象は **v1.0.31** です。WASMの分子式・反応JSON修正は
+公開npmで再検証し、配布channelの独立検証と、CIP・SMARTS・A6 gateを続けます。
 
 この文書は実行順と合格条件だけを定義します。機能別の優先順位は
 [`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)、未完了項目と依存関係は

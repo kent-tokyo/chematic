@@ -23,12 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.30 范围
+### v1.0.31 范围
 
-v1.0.30 修复了 RDKit 兼容 HBA。经验证的已发布 macOS arm64 wheel 在公开的
-5,000 个 ChEMBL 分子上与 RDKit 2026.03.6 全部一致（v1.0.29 为 3,641 个）。
-这只验证 HBA，不代表整体兼容性或速度。详见[验证报告](docs/validation.md)和
-[CHANGELOG](CHANGELOG.md)。
+v1.0.31 修复了 WASM 分子式的写法，以及反应产物 SMILES 中 E/Z 反斜杠的
+JSON 转义。发布包仍需重新验证。HBA 的 5,000/5,000 一致结果属于已发布的
+v1.0.30 macOS arm64 wheel，不是 v1.0.31 的新测量。详见
+[验证报告](docs/validation.md)和 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用
 

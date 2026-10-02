@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-03. Release line: **v1.0.30**. Release-source and
+> Updated 2026-10-03. Release line: **v1.0.31**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -15,10 +15,11 @@ boundaries, and reproducible evidence take priority over feature-count races.
 | P0.2 speed | The published Python 63-operation matrix has 20 paired blocks; 20 operations pass exact-output and confidence-interval gates on one host. Published npm/WASM Morgan also has Node and Chromium lanes; Ubuntu 24.04 Chromium, Firefox and WebKit each have 250/250 bit-exact direct/prepared rows and favorable 20-block speed intervals (smallest lower bound 1.63×). | Equal-work perception and library-memory boundaries, other operations/bindings and more corpora. Process RSS is not library allocation; changed HBA output cannot earn an equivalent-output speed win. |
 | P1 reactions | Original 57 fixtures match; the exposed 83-case extension classifies products and raw matches across Python/Rust/npm. Published Rust graph+origin+template-map agrees on 73/83 rows, plus one map-only difference. An unpublished checked-source profile has 76 semantic matches, three typed unsupported, one refusal and three jointly invalid rows. | Published artifacts still have confident differences. Recheck source fixes after publication; broaden newly created mapped atoms/multiple products and gate origins in Python/npm. No general SMIRKS parity claim. |
 
-The [published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md),
+The [v1.0.30 published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md),
 [benchmark index](benchmarks/README.md), and [validation report](docs/validation.md)
-hold versions, hashes, denominators and residuals. The source-only WASM
-formula and E/Z JSON fixes are [unreleased](CHANGELOG.md). Exposed data are
+hold versions, hashes, denominators and residuals. The WASM formula and E/Z
+JSON fixes are included in v1.0.31 source but need published-package checks
+after release. Exposed data are
 not sealed evidence; A0's frozen descriptor result and Experimental 3D/MMFF94
 have separate gates.
 
