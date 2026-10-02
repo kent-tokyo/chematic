@@ -23,11 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.29 范围
+### v1.0.30 范围
 
-v1.0.29 修复了 SMIRKS 产物侧原子序数写法（#679）和 SMARTS 重复电荷符号（#680）。
-`[#6](=[#8])[#6]` 现在与 `C(=O)C` 生成相同的乙酰基；`[++]` 和 `[--]` 分别表示
-+2 和 -2。这是正确性修复，不是新的 RDKit 一致性或性能测量。参见
+v1.0.30 修复了 RDKit 兼容 HBA 模式对三邻接取代芳香氮的判定。Linux 和
+macOS arm64 的发布配置 CI wheel 在公开的 5,000 个 ChEMBL 分子上
+与 RDKit 2026.03.6 全部一致；已发布的 v1.0.29 wheel 为 3,641/5,000。
+这只验证了该 HBA 操作，不代表整体兼容性或速度。参见
 [验证报告](docs/validation.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## 使用

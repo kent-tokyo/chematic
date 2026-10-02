@@ -1,6 +1,6 @@
 # Validation report
 
-Updated 2026-10-02. The current release line is **v1.0.29**. Each result keeps its
+Updated 2026-10-02. The current release line is **v1.0.30**. Each result keeps its
 recorded version, comparator, corpus, and operation; no result is silently
 upgraded to the current source revision.
 
@@ -10,7 +10,7 @@ upgraded to the current source revision.
 |---|---|---|
 | v1.0.29 published Python-wheel accuracy | `benchmarks/2026-10-02-v1.0.29-python-accuracy.md` and `scripts/check_v1029_accuracy_packet.py` | Exposed 10k chemistry/310k SMARTS, 57 reaction cases, and 5k operation matrix vs RDKit 2026.03.6. CIP 9,995 exact + five typed abstentions; Morgan 9,999 exact + one typed refusal; 200 SMARTS residual cells. Python-only partial P0, not broad reaction parity or a paired speed win. |
 | v1.0.29 #679/#680 regressions | `crates/chematic-rxn/src/transform.rs`, `crates/chematic-smarts/src/parser.rs`, `crates/chematic-py/tests/test_module_functions.py` | Deterministic SMIRKS product and SMARTS charge examples; the 10k/310k lane does not exercise these cases. The extended reaction fixture is 57/57 but still narrow. |
-| Unreleased named HBA correction | `crates/chematic-chem/src/descriptors.rs` and `validation/results/rdkit-hba-source-dev-wheel-5k-2026-10-02.json` | The published wheel's `rdkit_hba` agrees on 3,641/5,000 rows; the importable dev-profile source wheel agrees on 5,000/5,000. Release-profile CI and a published-package rerun remain open. |
+| v1.0.30 named HBA correction | `crates/chematic-chem/src/descriptors.rs`, `validation/results/rdkit-hba-source-dev-wheel-5k-2026-10-02.json`, and [CI run 36976061905](https://github.com/kent-tokyo/chematic/actions/runs/36976061905) | Published v1.0.29 `rdkit_hba`: 3,641/5,000. Installed Linux and macOS arm64 release-profile CI wheels: 5,000/5,000 against RDKit 2026.03.6. Published-v1.0.30 replication remains open. |
 | v1.0.29 release-channel record | `validation/results/release-channel-verification-v1.0.29.json` | GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages independently verified after publication. First crates.io attempt hit sparse-index lag for `chematic-wasm`; retry succeeded. |
 | v1.0.28 #634 CIP source rebaseline | `validation/results/rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json` and retained raw rows | On the pinned exposed 10k lane, 9,995 exact; four phosphorus and one lone-pair centre are typed abstentions. The evidence source is the pre-release candidate `9b196a4e`, not a published v1.0.28 package. No full CIP parity or speed claim. |
 | v1.0.28 release-channel record | `validation/results/release-channel-verification-v1.0.28.json` | Six channels independently verified after publication; historical evidence, not v1.0.29 verification. |

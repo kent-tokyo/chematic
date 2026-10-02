@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-02. Release line: **v1.0.29**. Release-source and
+> Updated 2026-10-02. Release line: **v1.0.30**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -9,6 +9,10 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 ## Current position
 
+- **v1.0.30 corrects the named RDKit HBA profile.** Installed Linux and
+  macOS arm64 release-profile CI wheels match RDKit 2026.03.6 on all 5,000
+  exposed ChEMBL rows. Published v1.0.29 remains 3,641/5,000 on that API.
+  Replication with the published v1.0.30 wheel remains a separate gate.
 - **v1.0.29 corrects #679/#680.** SMIRKS product-side atomic-number atoms
   produce literal atoms; repeated SMARTS charge signs represent one charge.
   The published Python wheel has now been measured on the exposed 10,000-row
@@ -76,9 +80,9 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    but the 10k lane does not test reaction equivalence. The v1.0.29 named
    HBA profile has a measured 3,641/5,000 agreement regression against this
    RDKit version; the native HBA profile is 5,000/5,000, and the unreleased
-   source correction now shares that rule. An importable dev-profile source
-   wheel independently reaches 5,000/5,000 on the named API; release-profile
-   wheel CI and published-artifact replication are pending. npm/Rust artifact
+   source correction now shares that rule. Installed dev-profile and Linux /
+   macOS arm64 release-profile CI wheels reach 5,000/5,000 on the named API;
+   published-v1.0.30 artifact replication remains pending. npm/Rust artifact
    lanes, full reaction scope, equivalence-controlled paired timing, and cross-host
    uncertainty remain open. See the [dated record](benchmarks/2026-10-02-v1.0.29-python-accuracy.md).
 2. **P1 — Expand #679/#680 into a SMARTS/SMIRKS semantic gate.** Add repeated
