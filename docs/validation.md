@@ -1,127 +1,56 @@
 # Validation report
 
-Updated 2026-10-03. The current release line is **v1.0.30**. Each result keeps its
-recorded version, comparator, corpus, and operation; no result is silently
-upgraded to the current source revision.
+Updated 2026-10-03. The current public release is **v1.0.30**. Every claim
+below is limited to its pinned artifact, comparator, corpus and operation.
+Source-only changes in [Unreleased](../CHANGELOG.md) are not package results.
 
-## Current trust evidence
+## Current evidence
 
-| Area | Evidence | Boundary |
+| Gate | Result and limit | Record |
 |---|---|---|
-| v1.0.30 published-artifact rerun | `benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md`, [P0.1 adoption policy](../benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md), and `scripts/check_v1030_artifact_packet.py` | Python/npm/Rust 10k chemistry and 310k SMARTS pass independent artifact accounting. All 63 Rust operations reproduce the corresponding published Python wheel on 210,410 rows per version; both bindings change only HBA/bundle versus v1.0.29. A full raw-row identity check assigns the 69 initially unresolved published-wheel classifications to 200 named SMARTS failures and five typed CIP abstentions; the differences remain. Extended 83 reactions expose five published-wheel differences. P0.1's measurement audit is complete, not strict compatibility. P0.2/P1 acceptance remains open. |
-| Isolated Python timing and RSS | `benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md` and `scripts/check_published_python_isolated_paired.py` | Six output-gated 20-block fresh-process lanes split parse-inclusive, first-use and precomputed calls. The RSS axis is whole-process high-water memory, not operation allocation; remaining bindings and cross-host work keep P0.2 open. |
-| Isolated published-Rust timing and RSS | `benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md` and `scripts/check_published_rust_isolated_paired.py` | Pinned v1.0.29/v1.0.30 crates.io graphs, six 20-block fresh-process lanes. Compatible Morgan is near parity in all three modes; HBA output differs and receives no equivalent-output speed claim. Peak RSS is process-wide, not operation allocation. |
-| v1.0.29 published Python-wheel accuracy | `benchmarks/2026-10-02-v1.0.29-python-accuracy.md` and `scripts/check_v1029_accuracy_packet.py` | Exposed 10k chemistry/310k SMARTS, 57 reaction cases, and 5k operation matrix vs RDKit 2026.03.6. CIP 9,995 exact + five typed abstentions; Morgan 9,999 exact + one typed refusal; 200 SMARTS residual cells. Python-only partial P0, not broad reaction parity or a paired speed win. |
-| v1.0.29 #679/#680 regressions | `crates/chematic-rxn/src/transform.rs`, `crates/chematic-smarts/src/parser.rs`, `crates/chematic-py/tests/test_module_functions.py` | Deterministic SMIRKS product and SMARTS charge examples; the 10k/310k lane does not exercise these cases. The extended reaction fixture is 57/57 but still narrow. |
-| v1.0.30 named HBA correction | `crates/chematic-chem/src/descriptors.rs`, [CI run 36976061905](https://github.com/kent-tokyo/chematic/actions/runs/36976061905), and `validation/results/release-channel-verification-v1.0.30.json` | Published v1.0.29 `rdkit_hba`: 3,641/5,000. Installed Linux and macOS arm64 release-profile CI wheels and the hash-verified published v1.0.30 macOS arm64 CPython 3.13 wheel: 5,000/5,000 against RDKit 2026.03.6, with zero parse failures. This is HBA-only exposed-cohort evidence. |
-| v1.0.30 release-channel record | `validation/results/release-channel-verification-v1.0.30.json` | GitHub Release, npm, PyPI, crates.io, docs.rs and Pages independently verified after publication. docs.rs became available after an initial indexing delay. |
-| v1.0.29 release-channel record | `validation/results/release-channel-verification-v1.0.29.json` | GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages independently verified after publication. First crates.io attempt hit sparse-index lag for `chematic-wasm`; retry succeeded. |
-| v1.0.28 #634 CIP source rebaseline | `validation/results/rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json` and retained raw rows | On the pinned exposed 10k lane, 9,995 exact; four phosphorus and one lone-pair centre are typed abstentions. The evidence source is the pre-release candidate `9b196a4e`, not a published v1.0.28 package. No full CIP parity or speed claim. |
-| v1.0.28 release-channel record | `validation/results/release-channel-verification-v1.0.28.json` | Six channels independently verified after publication; historical evidence, not v1.0.29 verification. |
-| v1.0.27 Rust atom-tag contract | `crates/chematic-smiles/tests/atom_tag_cache.rs`, `atom_tag_visit_order.rs`, and reaction tests | Caller labels survive named in-memory operations but are not encoded in SMILES; no new RDKit parity or speed claim. |
-| v1.0.27 release-channel record | `validation/results/release-channel-verification-v1.0.27.json` | GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages were independently verified for v1.0.27; this does not verify v1.0.28. |
-| v1.0.26 release-source identity | `benchmarks/2026-09-25-perf-speed4-output-identical.md` | Differential against base source across 7 corpora and 50 operations; only nine pre-existing hash-order-dependent error messages differ. This is source evidence, not a package claim. |
-| v1.0.26 release-channel record | `validation/results/release-channel-verification-v1.0.26.json` | All six channels were verified independently for that release; this does not verify v1.0.27. |
-| Earlier source performance identity | `benchmarks/2026-09-24-perf-speed3-output-identical.md` | Differential against v1.0.23 over 1,402,080 output rows; zero differences. Shared-VM source timing only, not a package or cross-platform result. |
-| RDKit output agreement | `benchmarks/2026-09-24-rdkit-agreement-accuracy-branch.md` | RDKit 2026.03.6; three source lanes of up to 5,000 rows. Operation-specific agreement and residuals only; shared 2-vCPU VM, not a package/WASM/cross-platform result. |
-| Source operation matrix | `benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md` | RDKit 2026.03.6, 5,000 molecules, 43 comparable operations; 21 exact-output faster medians and 18 all-repeat wins. Shared 2-vCPU source run only; not a package, WASM, or cross-platform claim. |
-| RDKit.js browser comparison | `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md` | Registry-installed v1.0.20 on the fixed exposed 10k corpus; both compatible-Morgan lanes pass and all 9,999 supported rows are bit-exact; not internet/CDN latency |
-| MMFF94 same-coordinate energy (historical) | `benchmarks/2026-09-23-mmff94-current-source-energy.md` | Superseded by the #637 per-term record below. v1.0.19-source 265-row packet against pinned RDKit 2026.03.6: 262 comparable, p90 absolute delta 1.144679 kcal/mol, two residuals above 5 kcal/mol; not conformer quality, convergence, stereo, speed, or a published-package claim |
-| A6 source speed/convergence candidate | `benchmarks/2026-09-23-a6-analytic-mmff94-source-candidate.md` | Historical source packet; use the v1.0.20 public-package record for current package claims |
-| A6 MMFF94 stereo-safe quality | `benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md` | Public v1.0.20 closes the prior 12 typed failures and four gross-clash rows at 265/265 independently sound, stereo-clean, clash-free successes. Paired speed is 0.944x with a 0.861x lower bound, so this is not an MMFF94 speed win. |
-| RDKit 2026.03.6 rebaseline | `validation/results/rdkit-rebaseline-*-v1.0.19-vs-2026.03.6-2026-09-22.*` plus the 2026-09-23 native-availability record | Exact Python/npm artifacts and 10,000 complete exposed rows; correspondence-correct CIP is 9,770/10,000 (the older 9,880 engine-local-index result is withdrawn), with 18 classified SMILES stereo-writer regressions, one typed Morgan contract difference, and unresolved CIP/SMARTS residuals. The independent native/C++ lane remains explicitly unavailable; historical diagnostics, not oracle adoption |
-| Issue #632 SMILES release-source diagnostic | `validation/results/smiles-ez-semantic-issue632-v1.0.20-candidate-vs-rdkit-2026.03.6-2026-09-23.json` | v1.0.21 contains source `9808f54f`, which reduces the same exposed 10k lane from 18 semantic differences to zero with zero graph differences; CIP, Morgan, and SMARTS counts are unchanged. The long 28 x 1,024 relabel audit was interrupted, so this is not a completed long-audit or published-package remeasurement claim. |
-| Issue #632 long relabel audit | `validation/results/ez_shared_carrier_coupling_mechanism_audit_summary_1024_2026-09-25.json` plus rows | 28 components x 1,024 relabelings from clean v1.0.25-based source `13d70a2e`: 0/28 divergent, zero cross-correspondence failures; checked by `scripts/check_ez_residual_evidence.py`. The stable-key contract is not widened. |
-| Issues #634/#635 CIP and SMARTS source candidate | `validation/results/rdkit-rebaseline-issue634-635-v1.0.25-candidate-vs-rdkit-2026.03.6-2026-09-25.json` plus raw rows and residual classification | Source commit `11a4ea27` on the same exposed 10k lane: CIP 9,994/10,000 exact (was 9,770), SMARTS 200/310,000 cells differ (was 14,306), Morgan unchanged at 9,999. Every residual has a named family, and none is adopted from RDKit automatically. Python/WASM SMARTS APIs now match the perceived aromatic view. Source measurement only, not a published-package result. |
-| Issue #634 follow-up (row 4480 adjudicated, lone-pair centres typed) | `validation/results/rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json` plus raw rows, lane summary and residual classification | Source commit `9b196a4e` on the same exposed 10k lane: CIP 9,995/10,000 exact. Row 4480 atom 3 is S by hand adjudication (Rule 4b: like/unlike sequences l,l,u,u vs l,u,l,u); the accurate engine had ranked embedded centres' back-to-root ligands by pooling each sphere, now hierarchical. Every remaining residual is a typed abstention (4 phosphorus `oracle_unstable`, 1 bridgehead amine `lone_pair_center`). SMARTS and Morgan unchanged. Across 2,539 stereo-tagged molecules (8,571 centres) only row 4480's label and the bridgehead amine's skip reason differ from `bf364b9f`. Source measurement only. |
-| Issue #637 MMFF94 per-term energy | `benchmarks/2026-09-25-mmff94-per-term-energy.md` | Source commit `13d70a2e` against RDKit 2026.03.6 per-term energies on identical coordinates: 262/262 comparable rows within 1 kcal/mol (max 0.32; was 9.87). Bond, electrostatic, and stretch-bend terms are at parity. Not conformer quality, convergence, stereo, speed, or heavy-atom typing of Kekulé/charged inputs. |
-| Issue #637 published-wheel MMFF94 quality | `benchmarks/2026-09-26-mmff94-public-v1.0.26.md` plus complete raw rows and metadata | Two Mac arm64 runs, published v1.0.26/RDKit 2026.3.6 wheels, 265 fixed inputs: 265/265 vs 264/265 usable by the same external geometry/stereo scorer. Scoped cohort only; broader timeout/convergence, conformer-quality and typing gates remain open. |
-| Parser security | `validation/parser_security_corpus_v1.json` plus hosted Linux gate | Fixed five-format corpus with process/time/memory boundaries |
-| V3000 interchange | `validation/results/v3000-*-v1.0.15.json` | Ordinary structures and declared SGROUP/stereo contracts; no coordination/haptic/polymer semantic claim |
-| Stereo development | `validation/results/stereo-*-v1.0.15-2026-09-16.json` | 300 development structures and 5,115 spelling variants; not independent gold |
-| Sealed evaluation | `validation/results/a0-core-eight-sealed-acceptance-20260922.json` plus historical rejection/TPSA summaries | Candidate `5e9211a6` passed all eight declared fields on a separately sourced one-time 8k holdout after post-freeze acquisition and overlap audit. All raw sealed rows remain local-only and exposed/ineligible for later candidates. |
+| Published-artifact output audit (P0.1) | Python/npm/Rust reran 10,000 chemistry rows, 310,000 SMARTS cells and 57 legacy reactions. Published Python/Rust cover 63 operation outputs; only HBA and its bundle changed from v1.0.29. The audit is complete, **not** strict RDKit parity: 200 SMARTS cells fail, five CIP rows abstain and four npm operations are unexposed. | [Artifact packet](../benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md) · [adoption policy](../benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md) |
+| RDKit-compatible HBA | The hash-verified published v1.0.30 macOS arm64 wheel matches RDKit 2026.03.6 on 5,000/5,000 exposed ChEMBL rows; published v1.0.29 matched 3,641/5,000. HBA only. | [Release-channel evidence](../validation/results/release-channel-verification-v1.0.30.json) |
+| Paired speed (P0.2) | Published Python: 20 operations pass exact-output and paired-interval gates in 20 alternating blocks on one host. Isolated Python and Rust lanes split parse-inclusive, first-use and precomputed calls. Whole-process RSS is not library allocation; changed HBA output is not an equivalent-output speed win. | [Python matrix](../benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) · [isolated Python](../benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) · [Rust](../benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) |
+| Published browser Morgan | On Ubuntu 24.04, Chromium, Firefox and WebKit each have 250/250 direct and prepared bit parity and favorable 20-block speed intervals versus official RDKit.js (smallest lower bound 1.63×). A separate Chromium 10k lane has 9,999 exact and one typed Fe refusal. No universal browser or memory claim. | [Three-browser record](../benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) · [M4 Chromium](../benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md) |
+| Reactions (P1) | Legacy 57/57 fixtures match. Published Rust graph/origin/template-map identity matches RDKit on 73/83 stratified rows, plus one map-only difference. An unpublished checked-source profile has 76 matches, three typed unsupported, one refusal and three jointly invalid rows; it does not establish published or general SMIRKS parity. | [Artifact packet](../benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md) · [checked-source profile](../benchmarks/2026-10-02-reaction-checked-source-profile.md) |
+| Release channels | GitHub Release, npm, PyPI, crates.io, docs.rs and Pages were independently verified for v1.0.30. A new release needs a new check. | [Channel record](../validation/results/release-channel-verification-v1.0.30.json) |
 
-## Accuracy snapshots
+## Other bounded results
 
-The exposed 4,999/5,000-molecule ChEMBL-derived lanes report exact or
-tolerance-matched results for molecular weight, HBA/HBD, TPSA, LogP, molar
-refractivity, Fsp3, ring families, rotatable bonds, and related descriptors.
-These are regression and compatibility evidence for their recorded versions,
-not results from the sealed 8,000-row holdout.
+- **A0 core-eight:** frozen candidate `5e9211a6` passed 2,000/2,000
+  development and a one-time 8,000/8,000 sealed holdout on eight declared
+  descriptors after source and overlap checks. The raw sealed rows remain
+  local-only and cannot be reused for tuning. [Commit-safe summary](../validation/results/a0-core-eight-sealed-acceptance-20260922.json).
+- **CIP:** pinned exposed 10k comparison has 9,995 exact and five typed
+  abstentions (four `oracle_unstable`, one `lone_pair_center`). This is
+  neither a guessed label nor full CIP parity. [Source adjudication](../validation/results/rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json).
+- **Morgan:** the published M4 Chromium lane matches on 9,999/9,999
+  supported 10k inputs; one Fe(II) coordination input is a typed refusal.
+  Native ECFP4 is a different profile. [Row-level record](../benchmarks/2026-10-03-v1030-published-chromium-morgan-row-parity.md).
+- **3D/MMFF94:** Experimental. The historical v1.0.26 wheel quality packet
+  retained 265 rows; neither same-coordinate energy nor a successful
+  minimization proves broad conformer quality or speed parity.
+  [Quality record](../benchmarks/2026-09-26-mmff94-public-v1.0.26.md).
 
-For v1.0.19, the replacement candidate `bac7ae44` was frozen as
-`trust-eval-candidate-20260921` before a new 14,764-row ChEMBL source was
-acquired. Canonical/parent/scaffold overlap was audited against 20,000 exposed
-rows, leaving 12,345 eligible rows. TPSA then passed 2,000/2,000 development
-rows and the one-time sealed holdout at 8,000/8,000 with `1e-6` tolerance and
-maximum absolute error `0.0`. Only TPSA was measured in that sealed run; the
-run remains a historical TPSA-only result.
+Earlier source diagnostics and per-release channel checks remain in the
+[benchmark index](../benchmarks/README.md) and
+[versioned validation results](../validation/results/). They are not promoted
+to v1.0.30 measurements.
 
-The post-v1.0.19 candidate `5e9211a6` was frozen as
-`trust-eval-candidate-a0-multifield-r3-20260922` before a third independent
-source acquisition. After canonical/parent/scaffold overlap exclusion against
-all exposed sources, the eight-field profile passed 2,000/2,000 development
-rows and 8,000/8,000 sealed rows for every field, with parse failures,
-unsupported values, and mismatches all zero. LogP and molar-refractivity
-floating-point deltas remained below `5e-14` and `2.1e-12`, respectively, under
-the declared `1e-6` tolerance. Run `python3 scripts/check_a0_core_eight_sealed.py`
-to validate the commit-safe aggregate. This completes A0 core-eight adoption;
-additional descriptor families, potential centers, stereo, retrieval,
-interchange, independent gold, and 3D retain their separate A1–A6 gates.
-
-The modern CIP snapshot reports 4,171/4,186 resolved labels agreeing with the
-pinned RDKit labeler; 15 phosphorus rows fail closed as representation-unstable.
-Safe abstention is counted separately from a correct assignment.
-
-The RDKit-compatible Morgan/search profile has exact exposed-corpus lanes for
-configured folded bits, sparse counts, bit information, and top-k retrieval.
-Native ECFP4 uses a different definition; cross-profile recall is diagnostic and
-is not a compatibility percentage.
-
-## Browser comparison summary
-
-The 2026-09-23 registry-installed v1.0.20 Chromium record passes both compatible-
-Morgan speed gates: 1.398x parse-inclusive and 3.511x prepared, with 95% lower
-bounds 1.363x and 3.407x. Both paths preserve 9,999/9,999 configured-bit
-agreement; one Fe(II) coordination input remains a typed refusal.
-
-These numbers do not establish internet download latency, unique process memory,
-all-browser performance superiority, or unmeasured fingerprint configurations.
-
-## Reproduction entry points
+## Reproduce and interpret
 
 ```bash
-# Core workspace checks
 cargo test --workspace --all-targets --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
-
-# Documentation and evidence consistency
 python3 scripts/check_release_docs_consistency.py
 python3 scripts/check_benchmark_index.py
-python3 scripts/check_compatibility_profiles.py
-python3 scripts/check_rdkit_rebaseline_execution.py
-python3 scripts/check_rdkit_rebaseline_evidence.py
-
-# Development accuracy snapshot (requires the pinned RDKit environment)
-python3 scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi
+python3 scripts/check_v1030_artifact_packet.py
 ```
 
-Use the exact command and environment recorded by an artifact for formal
-reproduction. The commands above are entry points, not substitutes for its
-pinned metadata.
-
-## Known limits
-
-- Canonical SMILES is not always a safe identity key; use
-  `canonical_smiles_stable_key()` where fail-closed behavior is required.
-- Coupled aromatic E/Z and phosphorus-CIP cases retain explicit residuals.
-- Coordination/haptic V3000 semantics, broad polymer expansion, and full CDXML
-  editing are outside the stable contract.
-- Pure-Rust InChI is approximate; standard InChI requires the optional native
-  feature.
-- 3D/MMFF94/UFF remains experimental until the separate A6 gates pass.
-
-See [compatibility scope](compatibility-scope.md),
-[RDKit migration](rdkit-migration.md), [accuracy plan](rdkit-accuracy-plan.md),
-and the [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
-for exact boundaries.
+Formal reruns must use each record's exact versions, hashes, corpus and
+runtime. Canonical SMILES is not a universal identity key; use the bounded
+`canonical_smiles_stable_key()` when its documented domain applies. Rich
+CDXML, coordination/haptic V3000, broad Markush/polymer expansion and
+Standard InChI outside the optional native feature remain bounded. See the
+[compatibility scope](compatibility-scope.md) and
+[accuracy plan](rdkit-accuracy-plan.md).

@@ -25,11 +25,10 @@ Python wheelはC/C++コンパイラを必要とせず、各バインディング
 
 ### v1.0.30 の対応範囲
 
-v1.0.30では、RDKit互換HBAの芳香族窒素の判定を修正しました。LinuxとmacOS arm64の
-配布用CI wheelでは、RDKit 2026.03.6との公開済みChEMBL 5,000分子比較で全件一致しました。
-公開済みv1.0.29 wheelの一致は3,641件です。この結果はHBAに限られ、
-ライブラリ全体の互換性や速度を示すものではありません。
-[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
+v1.0.30ではRDKit互換HBAを修正しました。検証済みの公開macOS arm64 wheelは、
+RDKit 2026.03.6と公開ChEMBL 5,000分子で全件一致しました（v1.0.29は3,641件）。
+HBA以外の互換性や速度を示す結果ではありません。詳しくは[検証報告](docs/validation.md)と
+[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方
 
