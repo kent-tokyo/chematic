@@ -32,11 +32,18 @@ boundaries, and reproducible evidence take priority over feature-count races.
   differences; this does not establish general SMIRKS parity. A separate
   **unpublished checked source profile** now classifies the same 83 rows as
   76 semantic matches, three typed unsupported, one typed refusal, and three
-  jointly invalid, with zero wrong-confident outputs. Product map/provenance
-  parity and wider chemistry remain open; this is not a v1.0.30 artifact result.
+  jointly invalid, with zero wrong-confident outputs. Full product map/provenance
+  parity and wider chemistry remain open; the checked profile is not a
+  v1.0.30 artifact result.
   Published npm has 74/83 semantic matches, five wrong-confident products,
   three jointly invalid inputs and one invalid E/Z JSON result; the
-  serialization fix is source-only. The published Python 63-operation matrix
+  serialization fix is source-only. A published-crate provenance diagnostic
+  now finds 74/83 graph-and-atom-origin matches (68 with nonempty products),
+  four graph mismatches, one provenance-only mismatch, one diagnosed refusal,
+  and three jointly invalid inputs. The provenance-only mismatch is a
+  symmetric ether cleavage: one RDKit atom-origin outcome is missing despite
+  matching product graphs. Template map-label preservation is still untested.
+  The published Python 63-operation matrix
   now has 20 alternating paired blocks and intervals: 20 operations meet its
   full-output-agreement and interval gate on one host. This does **not** settle
   equal perception work, memory, cross-host replication or Rust/npm operation
@@ -89,10 +96,13 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    transformation compatibility, not reaction yield or selectivity accuracy.
    The checked source profile reaches zero wrong-confident rows on the exposed
    83-case corpus by explicitly declining mismatched chiral-template semantics
-   and reporting filtered valence products. Before closing P1, compare atom-map
-   provenance, verify the npm E/Z serialization fix in the next published
-   artifact and extend the supported-domain corpus; do not count an opt-in
-   refusal profile as general RDKit reaction parity.
+   and reporting filtered valence products. Current source retains both
+   symmetric ether-cleavage origin assignments in a regression test; the
+   published v1.0.30 crate does not. Before closing P1, publish and rerun
+   that provenance lane, separately gate template map labels and carried/new
+   atom origins on supported cases, verify the npm E/Z serialization fix in
+   the next published artifact, and extend the supported-domain corpus. Do
+   not count an opt-in refusal profile as general RDKit reaction parity.
    Recount #635's 200/310,000 SMARTS cells separately; keep native SSSR as
    default and any RDKit-style ring-count profile opt-in.
 4. **P1 — Preserve and then narrow the CIP abstention boundary.** The v1.0.28-source
