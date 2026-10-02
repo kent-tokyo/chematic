@@ -62,5 +62,7 @@ python3 scripts/check_published_browser_paired.py \
 ```
 
 This does not transfer to other browsers, hosts, molecule sets, canonical
-writing, all 63 operations, or matched library-memory accounting. P0.2 stays
-open pending those checks and a clean prepared first-use/reuse split.
+writing, all 63 operations, or matched library-memory accounting. The
+[separate 20-pair follow-up](2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md)
+now isolates prepared first-use and reused-object calls without changing this
+historical record. P0.2 stays open for the other checks.

@@ -243,6 +243,7 @@ def page_html(
     warmup: int,
     fingerprint_excluded_smiles: frozenset[str],
     batch_timing: bool = False,
+    prepared_mode: str = "mixed",
 ) -> str:
     config = json.dumps(
         {
@@ -251,6 +252,7 @@ def page_html(
             "warmup": warmup,
             "fingerprint_excluded_smiles": sorted(fingerprint_excluded_smiles),
             "batch_timing": batch_timing,
+            "prepared_mode": prepared_mode,
         }
     ).replace("<", "\\u003c")
     rdkit_script = (
@@ -301,8 +303,8 @@ const rdkitBitsToPacked = (bits) => {{
   }}
   return packed;
 }};
-const timeFingerprint = (fn, values) => {{
-  for (const value of values.slice(0, config.warmup)) requirePackedFp(fn(value));
+const timeFingerprint = (fn, values, warmupValues = values.slice(0, config.warmup)) => {{
+  for (const value of warmupValues) requirePackedFp(fn(value));
   let digest = 0x811c9dc5;
   let setBits = 0;
   if (config.batch_timing) {{
@@ -353,13 +355,21 @@ const run = async () => {{
       const mol = mod.parse_smiles(value);
       try {{ return mod.prepare_rdkit_ecfp4(mol); }} finally {{ mol.free(); }}
     }});
-    let prepared_fp;
+    let prepared_fp, prepared_fp_first_use, prepared_fp_reused;
     try {{
-      prepared_fp = timeFingerprint((mol) => mol.bitvec(), preparedMols);
+      if (config.prepared_mode === "split") {{
+        const warmupMols = fingerprintRows.slice(0, config.warmup).map((value) => {{
+          const mol = mod.parse_smiles(value);
+          try {{ return mod.prepare_rdkit_ecfp4(mol); }} finally {{ mol.free(); }}
+        }});
+        try {{ prepared_fp_first_use = timeFingerprint((mol) => mol.bitvec(), preparedMols, warmupMols); }}
+        finally {{ for (const mol of warmupMols) mol.free(); }}
+        prepared_fp_reused = timeFingerprint((mol) => mol.bitvec(), preparedMols);
+      }} else {{ prepared_fp = timeFingerprint((mol) => mol.bitvec(), preparedMols); }}
     }} finally {{
       for (const mol of preparedMols) mol.free();
     }}
-    document.querySelector("#result").textContent = JSON.stringify({{arm: config.arm, init_ms, download_to_ready_ms, operations: {{parse, parse_write, parse_fp, prepared_fp}}, memory: {{before_load: before, after_workload: memory()}}, wasm_linear_memory: hasLinearMemoryMetric ? {{status: "measured", after_init_bytes: linearMemoryAfterInit, after_workload_bytes: mod.wasm_linear_memory_bytes()}} : {{status: "unavailable", reason: "the selected chematic artifact does not export wasm_linear_memory_bytes"}}, accepted_rows: config.smiles.length}});
+    document.querySelector("#result").textContent = JSON.stringify({{arm: config.arm, init_ms, download_to_ready_ms, operations: config.prepared_mode === "split" ? {{parse, parse_write, parse_fp, prepared_fp_first_use, prepared_fp_reused}} : {{parse, parse_write, parse_fp, prepared_fp}}, memory: {{before_load: before, after_workload: memory()}}, wasm_linear_memory: hasLinearMemoryMetric ? {{status: "measured", after_init_bytes: linearMemoryAfterInit, after_workload_bytes: mod.wasm_linear_memory_bytes()}} : {{status: "unavailable", reason: "the selected chematic artifact does not export wasm_linear_memory_bytes"}}, accepted_rows: config.smiles.length}});
     return;
   }}
   const initialized = performance.now();
@@ -371,13 +381,18 @@ const run = async () => {{
   const parse_write = time((value) => {{ const mol = getMol(value); mol.get_smiles(); mol.delete(); }});
   const parse_fp = timeFingerprint((value) => {{ const mol = getMol(value); try {{ return rdkitBitsToPacked(mol.get_morgan_fp(MORGAN_OPTIONS)); }} finally {{ mol.delete(); }} }}, fingerprintRows);
   const preparedMols = fingerprintRows.map((value) => getMol(value));
-  let prepared_fp;
+  let prepared_fp, prepared_fp_first_use, prepared_fp_reused;
   try {{
-    prepared_fp = timeFingerprint((mol) => rdkitBitsToPacked(mol.get_morgan_fp(MORGAN_OPTIONS)), preparedMols);
+    if (config.prepared_mode === "split") {{
+      const warmupMols = fingerprintRows.slice(0, config.warmup).map((value) => getMol(value));
+      try {{ prepared_fp_first_use = timeFingerprint((mol) => rdkitBitsToPacked(mol.get_morgan_fp(MORGAN_OPTIONS)), preparedMols, warmupMols); }}
+      finally {{ for (const mol of warmupMols) mol.delete(); }}
+      prepared_fp_reused = timeFingerprint((mol) => rdkitBitsToPacked(mol.get_morgan_fp(MORGAN_OPTIONS)), preparedMols);
+    }} else {{ prepared_fp = timeFingerprint((mol) => rdkitBitsToPacked(mol.get_morgan_fp(MORGAN_OPTIONS)), preparedMols); }}
   }} finally {{
     for (const mol of preparedMols) mol.delete();
   }}
-  document.querySelector("#result").textContent = JSON.stringify({{arm: config.arm, rdkit_version: rdkit.version(), init_ms, download_to_ready_ms, operations: {{parse, parse_write, parse_fp, prepared_fp}}, memory: {{before_load: before, after_workload: memory()}}, wasm_linear_memory: {{status: "unavailable", reason: "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"}}, accepted_rows: config.smiles.length}});
+  document.querySelector("#result").textContent = JSON.stringify({{arm: config.arm, rdkit_version: rdkit.version(), init_ms, download_to_ready_ms, operations: config.prepared_mode === "split" ? {{parse, parse_write, parse_fp, prepared_fp_first_use, prepared_fp_reused}} : {{parse, parse_write, parse_fp, prepared_fp}}, memory: {{before_load: before, after_workload: memory()}}, wasm_linear_memory: {{status: "unavailable", reason: "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"}}, accepted_rows: config.smiles.length}});
 }};
 run().catch((error) => {{ document.querySelector("#result").textContent = JSON.stringify({{error: String(error), stack: error.stack}}); }});
 </script>"""
@@ -388,6 +403,7 @@ class Handler(BaseHTTPRequestHandler):
     smiles: list[str] = []
     warmup: int = 20
     batch_timing: bool = False
+    prepared_mode: str = "mixed"
     fingerprint_excluded_smiles: frozenset[str] = frozenset()
 
     def do_GET(self) -> None:  # noqa: N802
@@ -400,6 +416,7 @@ class Handler(BaseHTTPRequestHandler):
             body = page_html(
                 arm, self.smiles, self.warmup, self.fingerprint_excluded_smiles,
                 self.batch_timing,
+                self.prepared_mode,
             ).encode()
             content_type = "text/html"
         elif parsed.path in self.files:
@@ -459,6 +476,7 @@ def main() -> int:
         "--batch-timing", action="store_true",
         help="time the row loop once per fresh browser, avoiding per-row timer quantization",
     )
+    parser.add_argument("--prepared-mode", choices=("mixed", "split"), default="mixed")
     parser.add_argument(
         "--measure-process-rss",
         action="store_true",
@@ -471,6 +489,8 @@ def main() -> int:
         parser.error("--browser is required with --engine chromium")
     if args.measure_process_rss and args.engine != "chromium":
         parser.error("--measure-process-rss is supported only with --engine chromium")
+    if args.prepared_mode == "split" and not args.batch_timing:
+        parser.error("--prepared-mode split requires --batch-timing")
 
     corpus_bytes = args.corpus.read_bytes()
     smiles = [
@@ -491,6 +511,7 @@ def main() -> int:
         raise SystemExit(f"missing benchmark artifacts: {missing}")
     Handler.smiles, Handler.warmup = smiles, args.warmup
     Handler.batch_timing = args.batch_timing
+    Handler.prepared_mode = args.prepared_mode
     Handler.fingerprint_excluded_smiles = (
         FINGERPRINT_TYPED_UNSUPPORTED_SMILES.intersection(smiles)
     )
@@ -600,7 +621,8 @@ def main() -> int:
         right = by_repetition["rdkit"].get(repetition)
         if left is None or right is None:
             raise RuntimeError(f"missing arm result for repetition {repetition}")
-        for operation in ("parse_fp", "prepared_fp"):
+        fingerprint_operations = ("parse_fp", "prepared_fp") if args.prepared_mode == "mixed" else ("parse_fp", "prepared_fp_first_use", "prepared_fp_reused")
+        for operation in fingerprint_operations:
             left_output = left["operations"][operation]["output"]
             right_output = right["operations"][operation]["output"]
             if left_output != right_output:
@@ -613,7 +635,7 @@ def main() -> int:
 
     def aggregate(arm: str) -> dict[str, object]:
         runs = results[arm]
-        return {
+        result = {
             "runs": len(runs),
             "download_to_ready_ms": summary(
                 [float(run["download_to_ready_ms"]) for run in runs]
@@ -628,10 +650,10 @@ def main() -> int:
             "parse_fp_mean_ms": summary(
                 [float(run["operations"]["parse_fp"]["mean_ms"]) for run in runs]
             ),
-            "prepared_fp_mean_ms": summary(
-                [float(run["operations"]["prepared_fp"]["mean_ms"]) for run in runs]
-            ),
         }
+        for operation in (("prepared_fp",) if args.prepared_mode == "mixed" else ("prepared_fp_first_use", "prepared_fp_reused")):
+            result[f"{operation}_mean_ms"] = summary([float(run["operations"][operation]["mean_ms"]) for run in runs])
+        return result
 
     document = {
         "schema_version": 2,
@@ -643,6 +665,7 @@ def main() -> int:
             "warmup_rows": args.warmup,
             "repetitions": args.repetitions,
             "timing_method": "single_batch" if args.batch_timing else "per_row_timer",
+            **({"prepared_mode": "split"} if args.prepared_mode == "split" else {}),
             "timing": "fresh browser process per arm/repetition; no-store local routes",
             "download_to_ready_contract": "navigation start through JavaScript module/script fetch and WebAssembly initialization; excludes the subsequent parse/write/fingerprint workload",
             "process_rss": (
@@ -650,7 +673,12 @@ def main() -> int:
                 if args.measure_process_rss
                 else "not_measured"
             ),
-            "operation_contract": "parse; parse+canonical-SMILES write; parse+RDKit-compatible preparation+radius-2/2048-bit fingerprint; prepared-molecule radius-2/2048-bit fingerprint. Both arms perform sanitization-compatible preparation outside prepared_fp timing.",
+            "operation_contract": (
+                "parse; parse+canonical-SMILES write; parse+RDKit-compatible preparation+radius-2/2048-bit fingerprint; "
+                "prepared first-use on fresh objects after separate warmup objects, then reused objects; preparation excluded from both timed lanes."
+                if args.prepared_mode == "split" else
+                "parse; parse+canonical-SMILES write; parse+RDKit-compatible preparation+radius-2/2048-bit fingerprint; prepared-molecule radius-2/2048-bit fingerprint. Both arms perform sanitization-compatible preparation outside prepared_fp timing."
+            ),
             "fingerprint_output_contract": "both arms produce and consume a 256-byte LSB-first packed radius-2/2048-bit fingerprint; RDKit's bit string is packed inside the timed operation; a per-run FNV-1a checksum and total set-bit count are retained",
             "fingerprint_typed_unsupported_rows": len(
                 Handler.fingerprint_excluded_smiles
