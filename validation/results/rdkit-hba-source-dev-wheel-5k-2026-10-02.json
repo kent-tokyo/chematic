@@ -1,0 +1,28 @@
+{
+  "build_profile": "dev",
+  "chematic_module": "/private/tmp/chematic-v1029-accuracy-ld15ni/venv-source/lib/python3.13/site-packages/chematic/__init__.py",
+  "chematic_version": "1.0.29",
+  "corpus": {
+    "path": "scripts/chembl_accuracy_corpus_4999.smi",
+    "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  "counts": {
+    "compared": 5000,
+    "exact_named": 5000,
+    "exact_native": 5000,
+    "input": 5000,
+    "parse_failed": 0
+  },
+  "differences": [],
+  "gate_passed": true,
+  "not_claimed": [
+    "sealed-cohort accuracy",
+    "other descriptor parity",
+    "WASM parity"
+  ],
+  "profile": "rdkit_2026_03_6_hba_source_wheel",
+  "rdkit_version": "2026.03.6",
+  "schema_version": 1,
+  "wheel": "chematic-1.0.29-cp313-cp313-macosx_11_0_arm64.whl",
+  "wheel_sha256": "b03642d52f4312c9f55221a70bdb7403cd6373fc4b0095b87ea2df7a04dc83e1"
+}

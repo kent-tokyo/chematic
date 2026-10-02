@@ -8,10 +8,12 @@ history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 | Order | Work | Current evidence | Exit |
 |---:|---|---|---|
-| 1 | Lone-pair CIP support | #634's exposed 10k lane has 9,995 exact rows; four phosphorus `oracle_unstable` and one bridgehead amine `lone_pair_center` are typed abstentions | Define a stereo-order convention for an implicit lone-pair ligand before emitting R/S labels; treat as a separate feature |
-| 2 | A6 MMFF94 | #637 evidence scope is closed: source same-coordinate packet 262/262 comparable rows within 1 kcal/mol (max 0.32), with bounded gradient checks. Two published v1.0.26 Mac wheel runs: CheMatic 265/265 and RDKit 264/265 independently sound, stereo-clean, clash-free usable rows; see `benchmarks/2026-09-26-mmff94-public-v1.0.26.md` | Timeout/convergence on broader inputs, conformer-quality non-inferiority, and 2,908 heavy-atom typing residuals remain separate A6 gates; no general speed claim |
-| 3 | Optional SMARTS ring-count profile | #635 classification is closed. The remaining 200/310,000 cells are 194 symmetrized-ring `[Rn]`/`[kn]` cells and 6 on one ferrocene row, checked against raw query/target cells | If demanded, design an explicit RDKit-style option; keep native SSSR semantics unchanged by default |
-| 4 | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after the next official stable artifact is pinned; retain old/new results side by side |
+| 1 | Published-v1.0.29 evidence packet | PyPI arm64 wheel vs pinned RDKit: exposed 10k/310k, 57 reaction cases, and 5k operation matrix archived and checked. Named HBA fix reaches 5,000/5,000 only in a dev-profile source wheel. npm/Rust and paired equivalent-work speed remain open | Run the release-profile wheel HBA gate and later published-package replication; measure remaining bindings and paired timing without promoting source data |
+| 2 | SMARTS/SMIRKS semantic gate | Published wheel keeps 200/310,000 classified cells (194 ring-model, six ferrocene). The expanded reaction fixture is 57/57, but still narrow | Add repeated-charge and broader mapped-product graph/provenance fixtures, missing/extra outcome gates, and no-regression checks; keep any RDKit ring profile opt-in |
+| 3 | CIP abstention gate | Published v1.0.29 wheel reproduces 9,995 exact and five typed abstentions; no wrong confident label in the pinned 10k lane | Preserve abstention stability under permutation and file round trips; adjudicate four phosphorus cases independently and define lone-pair convention before issuing R/S |
+| 4 | A6 MMFF94 | #637 source same-coordinate packet has 262/262 comparable rows within 1 kcal/mol (max 0.32); two published v1.0.26 Mac wheel runs retain 265 rows. These are historical scoped results | Broader typing (including 2,908 heavy-atom residuals), timeout/convergence, stereo and conformer-quality gates; speed only on a quality-equivalent published-package lane |
+| 5 | Bounded interchange and identity | CDXML/Markush/polymer, Standard InChI, and canonical/stable-key contracts remain narrower than full parity | Separate preservation, semantic round-trip, typed-refusal, and no-false-merge gates per format/API and binding |
+| 6 | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after another official stable artifact is pinned; retain old/new results side by side |
 
 ## Accuracy packages
 
@@ -59,10 +61,13 @@ complete merely because a local packet exists.
 ## Evidence boundaries
 
 - **Release channels:**
-  `validation/results/release-channel-verification-v1.0.25.json` records
+  `validation/results/release-channel-verification-v1.0.29.json` records
   independent post-publication observations of GitHub Release, npm, PyPI,
   crates.io, docs.rs, and Pages.
 - **RDKit agreement:**
+  `benchmarks/2026-10-02-v1.0.29-python-accuracy.md` is the exposed,
+  machine-checked published-wheel Python partial P0 packet. Its HBA source
+  correction is not part of the published artifact. The earlier
   `benchmarks/2026-09-24-rdkit-agreement-accuracy-branch.md` records the
   v1.0.23 source comparison and its operation-specific residuals; it is not a
   published-package or universal-parity claim.

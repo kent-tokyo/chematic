@@ -1,6 +1,6 @@
 # RDKit accuracy plan
 
-Updated 2026-09-16. The objective is operation-level equivalence on declared
+Updated 2026-10-02. The objective is operation-level equivalence on declared
 profiles and, where an independent gold standard exists, evidence that chematic
 is equivalent to or better than the pinned comparator. RDKit agreement alone is
 not chemical truth.
@@ -28,9 +28,10 @@ consumed only after the candidate is frozen and the source is attested unused.
 Once evaluated, it becomes exposed and cannot be reused as the sole evidence for
 the next candidate.
 
-The current precondition is recorded in
-`validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json`:
-2,000 development rows and 8,000 sealed rows. No score has yet been calculated.
+The historical precondition is recorded in
+`validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json`.
+The later core-eight result is recorded separately below; those 8,000 rows
+have been consumed and are now exposed, not available as a fresh sealed lane.
 
 ## Acceptance thresholds
 

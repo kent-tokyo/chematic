@@ -10,6 +10,20 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Corrected the named `rdkit_hba`, Python `CalcNumHBA`, and WASM RDKit-profile
+  descriptor `hba` compatibility path
+  for RDKit 2026.03.6: three-neighbor substituted aromatic N is no longer
+  counted as an acceptor. Published v1.0.29 matched 3,641/5,000 ChEMBL rows
+  on this API; its existing native HBA rule matched 5,000/5,000. The fix is
+  unreleased: a dev-profile source wheel matched 5,000/5,000, while the
+  release-profile and published-package gates remain to be run.
+- Added a reproducible, exposed-cohort v1.0.29 Python-wheel accuracy packet:
+  10,000 chemistry rows, 310,000 SMARTS cells, 57 reaction fixtures, and a
+  5,000-row operation matrix. The reaction gate now rejects unsanitizable
+  oracle products and reports missing/extra product sets; it does not claim
+  broad SMIRKS equivalence. The operation timing is diagnostic, not a paired
+  speed claim.
+
 ## [1.0.29] - 2026-10-02
 
 - SMIRKS product templates treat atomic-number atoms as literals (#679):
