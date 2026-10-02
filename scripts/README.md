@@ -14,6 +14,7 @@ current issue or benchmark links to them.
 | Benchmark index | `check_benchmark_index.py` |
 | Parser security | `run_isolated_parser_security.py` |
 | Browser comparison | `bench_browser_wasm_vs_rdkit_isolated.py` |
+| Published browser replication | `check_published_browser_paired.py`, `check_v1030_published_browser_morgan_rows.py`, and `check_published_linux_browser_replication.py` validate the pinned Chromium and Ubuntu three-engine records |
 | Sealed cohort | `prepare_sealed_accuracy_cohort.py` |
 | V3000 external readers | `v3000_*_gate.py` |
 | Stereo gates | `stereo_torture_suite_gate.py`, `stereo_spelling_invariance_gate.py` |
