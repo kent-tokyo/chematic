@@ -9,7 +9,7 @@ upgraded to the current source revision.
 | Area | Evidence | Boundary |
 |---|---|---|
 | v1.0.29 #679/#680 regressions | `crates/chematic-rxn/src/transform.rs`, `crates/chematic-smarts/src/parser.rs`, `crates/chematic-py/tests/test_module_functions.py` | Deterministic SMIRKS product and SMARTS charge examples; no new full-corpus RDKit parity or speed result. |
-| v1.0.29 release-channel record | `validation/results/release-channel-verification-v1.0.29.json` | Pre-tag entries are unmeasured; verify six distribution channels independently after publication. |
+| v1.0.29 release-channel record | `validation/results/release-channel-verification-v1.0.29.json` | GitHub Release, npm, PyPI, crates.io, docs.rs, and Pages independently verified after publication. First crates.io attempt hit sparse-index lag for `chematic-wasm`; retry succeeded. |
 | v1.0.28 #634 CIP source rebaseline | `validation/results/rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json` and retained raw rows | On the pinned exposed 10k lane, 9,995 exact; four phosphorus and one lone-pair centre are typed abstentions. The evidence source is the pre-release candidate `9b196a4e`, not a published v1.0.28 package. No full CIP parity or speed claim. |
 | v1.0.28 release-channel record | `validation/results/release-channel-verification-v1.0.28.json` | Six channels independently verified after publication; historical evidence, not v1.0.29 verification. |
 | v1.0.27 Rust atom-tag contract | `crates/chematic-smiles/tests/atom_tag_cache.rs`, `atom_tag_visit_order.rs`, and reaction tests | Caller labels survive named in-memory operations but are not encoded in SMILES; no new RDKit parity or speed claim. |

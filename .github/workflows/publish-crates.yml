@@ -33,19 +33,29 @@ jobs:
           echo "$CRATES"
           for crate in $CRATES; do
             echo "=== Publishing $crate ==="
-            if OUTPUT=$(cargo publish -p "$crate" --locked 2>&1); then
-              echo "$OUTPUT"
-              echo "Published $crate"
-            elif echo "$OUTPUT" | grep -qi "already uploaded\|already exists"; then
-              echo "$OUTPUT"
-              echo "$crate already published at this version, skipping"
-            else
-              echo "$OUTPUT"
-              echo "::error::Failed to publish $crate"
-              exit 1
-            fi
-            # ponytail: fixed sleep so crates.io has indexed this crate before
-            # the next dependent tries to resolve it -- replace with a poll
-            # against the registry API if this starts flaking under load.
+            # A dependent can observe a stale sparse index even after cargo
+            # reports the previous crate as published. v1.0.29 hit this at
+            # chematic-wasm -> chematic-mol; retry only that propagation error.
+            for attempt in 1 2 3 4 5 6; do
+              if OUTPUT=$(cargo publish -p "$crate" --locked 2>&1); then
+                echo "$OUTPUT"
+                echo "Published $crate"
+                break
+              elif echo "$OUTPUT" | grep -qi "already uploaded\|already exists"; then
+                echo "$OUTPUT"
+                echo "$crate already published at this version, skipping"
+                break
+              elif [[ "$OUTPUT" == *"failed to select a version for the requirement"* && "$attempt" -lt 6 ]]; then
+                echo "$OUTPUT"
+                echo "Sparse index not yet current for $crate (attempt $attempt/6); retrying in 30s"
+                sleep 30
+              else
+                echo "$OUTPUT"
+                echo "::error::Failed to publish $crate"
+                exit 1
+              fi
+            done
+            # Give the newly published crate a head start in the sparse index;
+            # the bounded retry above handles slower-than-expected propagation.
             sleep 20
           done

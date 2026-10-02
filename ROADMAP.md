@@ -50,15 +50,13 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
 
 ## Priority order
 
-1. **Verify v1.0.29 delivery across release channels.** Record GitHub Release,
-   npm, PyPI, crates.io, docs.rs, and Pages independently after publication.
-2. **Decide optional RDKit-style SMARTS ring counts.** #635's 310,000-cell
+1. **Decide optional RDKit-style SMARTS ring counts.** #635's 310,000-cell
    classification is complete; `[Rn]`/`[kn]` still have a documented native
    SSSR-versus-symmetrized-ring boundary. Any parity option must be explicit.
-3. **Finish remaining A6 MMFF94 gates.** Heavy-atom typing residuals,
+2. **Finish remaining A6 MMFF94 gates.** Heavy-atom typing residuals,
    timeout/convergence accounting, and broader conformer quality remain ahead
    of new 3D breadth.
-4. **Prepare a pinned RDKit rebaseline.** Retain 2026.03.6 as historical and
+3. **Prepare a pinned RDKit rebaseline.** Retain 2026.03.6 as historical and
    compare any new official artifact side by side with it.
 
 A confirmed silent-corruption or security regression takes precedence.
