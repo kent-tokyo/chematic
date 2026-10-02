@@ -1,0 +1,8 @@
+{
+  "base_cases_sha256": "65b446de1ce66b7d9c355cf8b6bbbfe61d670c955e02931e8e8b8e564c558d3b",
+  "crate": "chematic 1.0.30 from crates.io",
+  "input_count": 83,
+  "rows_sha256": "56a3bc8deb1e7a1e6fc5e21081e25484a00bbba3c9eff4459fdeff65ebeb53dd",
+  "schema": "published-rust-reaction-template-maps/v1",
+  "strata_sha256": "4e4ce3ebcea4bcea5398f109554074d97e9f252293fa906493ae3a61d40725a1"
+}

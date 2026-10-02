@@ -1962,6 +1962,28 @@ mod tests {
     }
 
     #[test]
+    fn styrene_hydrogenation_keeps_both_template_map_orientations() {
+        let reactant = parse("C=Cc1ccccc1").unwrap();
+        let smirks = "[C:1]=[C:2]>>[C:1][C:2]";
+        let prepared = PreparedReaction::new(smirks).unwrap();
+        let matches = prepared.find_matches(&[&reactant]).unwrap();
+        let maps: Vec<_> = matches
+            .iter()
+            .map(|m| m.atom_map_positions(smirks).unwrap())
+            .collect();
+        assert_eq!(
+            maps.len(),
+            2,
+            "each atom-map orientation is observable: {maps:?}"
+        );
+        let orientations: std::collections::BTreeSet<_> = maps
+            .iter()
+            .map(|positions| (positions[&1].1.0, positions[&2].1.0))
+            .collect();
+        assert_eq!(orientations, [(0, 1), (1, 0)].into());
+    }
+
+    #[test]
     fn product_atomic_number_primitives_are_literal_atoms_with_implicit_h() {
         // Issue #679: an unmapped product-side `[#6](=[#8])[#6]` adds an acetyl
         // group exactly like `C(=O)C`; no aromatic-flag variants, no `[C]`

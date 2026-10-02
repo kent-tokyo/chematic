@@ -33,6 +33,7 @@ NPM_V1029_TARBALL_SHA256 = "d0af78a8d6b711a13b63985d4b36079e245441e99f1712532555
 CRATE_SHA256 = "b1a897689ab5b4983e56325dbd361e8ff0625dd752984af7fe75a10286f84a82"
 NPM_REACTION_ROWS_SHA256 = "ce3d801ed55f610412553861382040356ac17a8004b0bec23223bc14ddbdee9b"
 ALL_REACTION_REPORT_SHA256 = "a43cf9eec38b04664dc8ee269aa69f51a9ae3e310fa5a781177d07f389e85785"
+REACTION_TEMPLATE_MAP_REPORT_SHA256 = "087f38ffa4ea766698ed14c7867238bdb5fc22cdfcab3bfceb4b0ae55f861ad8"
 PAIRED_63OP_SHA256 = "5448fd34190d5358227663a77e415e31dca71718cfd38c2d01e156ab539719da"
 
 
@@ -325,6 +326,45 @@ def main() -> int:
                 "joint_invalid_input": 3, "provenance_mismatch": 1,
                 "typed_or_diagnosed_refusal": 1}},
             "published Rust provenance row accounting or untagged graph identity")
+    map_rows_path = RESULTS / "v1.0.30-published-rust-reaction-83-template-map-rows.json"
+    map_summary_path = RESULTS / "v1.0.30-published-rust-reaction-83-template-map-summary.json"
+    map_report_path = RESULTS / "v1.0.30-published-rust-reaction-83-template-map-rdkit.json"
+    map_rows = json.loads(map_rows_path.read_text(encoding="utf-8"))
+    map_summary = json.loads(map_summary_path.read_text(encoding="utf-8"))
+    map_report = json.loads(map_report_path.read_text(encoding="utf-8"))
+    fail_if(hashlib.sha256(map_report_path.read_bytes()).hexdigest() != REACTION_TEMPLATE_MAP_REPORT_SHA256 or
+            map_summary["schema"] != "published-rust-reaction-template-maps/v1" or
+            map_summary["crate"] != "chematic 1.0.30 from crates.io" or
+            map_summary["input_count"] != 83 or
+            map_summary["rows_sha256"] != hashlib.sha256(map_rows_path.read_bytes()).hexdigest() or
+            map_summary["base_cases_sha256"] != provenance_summary["base_cases_sha256"] or
+            map_summary["strata_sha256"] != provenance_summary["strata_sha256"] or
+            map_report["rdkit_version"] != "2026.03.6" or
+            map_report["crate_version"] != "1.0.30" or
+            map_report["rust_rows_sha256"] != map_summary["rows_sha256"] or
+            map_report["rust_summary_sha256"] != hashlib.sha256(map_summary_path.read_bytes()).hexdigest() or
+            map_report["baseline_rows_sha256"] != provenance_summary["rows_sha256"] or
+            map_report["fixtures"] != {
+                "base_sha256": map_summary["base_cases_sha256"],
+                "strata_sha256": map_summary["strata_sha256"]},
+            "published Rust template-map evidence identity")
+    fail_if(len(map_rows) != 83 or len(map_report["rows"]) != 83 or
+            [row["id"] for row in map_rows] != [row["id"] for row in map_report["rows"]] or
+            [row["id"] for row in map_rows] != [row["id"] for row in provenance_rows] or
+            any(row["status"] != baseline["status"]
+                for row, baseline in zip(map_rows, provenance_rows, strict=True)) or
+            dict(Counter(row["outcome"] for row in map_report["rows"])) !=
+            map_report["accounting"]["outcomes"] or
+            map_report["accounting"] != {"input": 83, "outcomes": {
+                "graph_origin_map_match": 73, "graph_mismatch": 4,
+                "map_label_mismatch": 1, "provenance_mismatch": 1,
+                "typed_or_diagnosed_refusal": 1, "joint_invalid_input": 3}} or
+            [row["id"] for row in map_report["rows"] if row["outcome"] == "map_label_mismatch"] !=
+            ["alkene_hydrogenation_styrene"] or
+            any(len(product["atom_sources"]) != len(product["template_map_numbers"])
+                for row in map_rows if row["status"] == "products"
+                for products in row["sets"] for product in products),
+            "published Rust template-map outcome and row accounting")
     paired_path = ROOT / "benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json"
     fail_if(hashlib.sha256(paired_path.read_bytes()).hexdigest() != PAIRED_63OP_SHA256,
             "published Python paired 63-operation record digest")
@@ -344,7 +384,8 @@ def main() -> int:
           "v1.0.29 to v1.0.30 only HBA/bundle changed on the same 1,359 rows; "
           "200 SMARTS residuals and 5 CIP abstentions classified on published rows; "
           "20-block Python speed matrix; npm reaction 74 match, 5 confident "
-          "differences, 1 invalid JSON; Rust reaction origins 74/83 matched. "
+          "differences, 1 invalid JSON; Rust reaction origins 74/83 matched; "
+          "73/83 graph-origin-map matches, 1 map-only residual. "
           "P0/P1 acceptance remains OPEN.")
     return 0
 

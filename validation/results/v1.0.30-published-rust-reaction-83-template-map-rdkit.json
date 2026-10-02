@@ -1,0 +1,3042 @@
+{
+  "accounting": {
+    "input": 83,
+    "outcomes": {
+      "graph_mismatch": 4,
+      "graph_origin_map_match": 73,
+      "joint_invalid_input": 3,
+      "map_label_mismatch": 1,
+      "provenance_mismatch": 1,
+      "typed_or_diagnosed_refusal": 1
+    }
+  },
+  "baseline_rows_sha256": "c8359458f2da60330004d393d246ebec717ef8a0dee0d72c5bac4ff312a2bf25",
+  "crate_version": "1.0.30",
+  "fixtures": {
+    "base_sha256": "65b446de1ce66b7d9c355cf8b6bbbfe61d670c955e02931e8e8b8e564c558d3b",
+    "strata_sha256": "4e4ce3ebcea4bcea5398f109554074d97e9f252293fa906493ae3a61d40725a1"
+  },
+  "limits": [
+    "Exposed 83-case diagnostic, not broad SMIRKS parity",
+    "Compares RDKit old_mapno with map numbers reconstructed from the accepted CheMatic match and traced product origins",
+    "Does not add atom-map numbers to ordinary CheMatic product molecules",
+    "Raw embedding counts are recorded but not required to match",
+    "Python/npm published bindings do not expose per-product map/origin metadata",
+    "No reaction yield or selectivity claim"
+  ],
+  "rdkit_version": "2026.03.6",
+  "rows": [
+    {
+      "id": "alcohol_deprotonation",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC[O-]"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC[O-:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][O-:3]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC[O-]"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC[O-:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][O-:3]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "carbonyl_reduction_shape",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCO"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[CH2:1][OH:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][OH:3]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[CH2:1][OH:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][OH:3]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "amide_formation",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC(N)=O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[C:1](=[O:2])[NH2:3]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[NH2:5]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC(N)=O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[C:1](=[O:2])[NH2:3]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[NH2:5]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "mapped_bond_cleavage",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C",
+          "N"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[CH4:2]",
+          "[NH3:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH4:1]",
+          "[NH3:2]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C",
+          "N"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH4:2]",
+          "[NH3:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH4:1]",
+          "[NH3:2]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "mapped_fragment_split",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C",
+          "O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[CH4:1]",
+          "[OH2:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH4:1]",
+          "[OH2:2]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C",
+          "O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH4:1]",
+          "[OH2:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH4:1]",
+          "[OH2:2]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "carboxylate_deprotonation",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC(=O)[O-]"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[C:1](=[O:2])[O-:3]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[O-:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC(=O)[O-]"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[C:1](=[O:2])[O-:3]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[O-:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "no_match_empty",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [],
+      "rdkit_maps": [],
+      "rdkit_origins": [],
+      "rdkit_raw_product_sets": 0,
+      "rust_accepted_matches": 0,
+      "rust_graph": [],
+      "rust_maps": [],
+      "rust_origins": [],
+      "rust_raw_product_sets": 0,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "alcohol_deprotonation_isopropanol",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC(C)[O-]"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC(C)[O-:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH:2]([CH3:3])[O-:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC(C)[O-]"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC(C)[O-:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH:2]([CH3:3])[O-:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "alcohol_deprotonation_phenol",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "[O-]c1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "c1ccc([O-:1])cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[O-:1][c:2]1[cH:3][cH:4][cH:5][cH:6][cH:7]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "[O-]c1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "c1ccc([O-:1])cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[O-:1][c:2]1[cH:3][cH:4][cH:5][cH:6][cH:7]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "alcohol_deprotonation_benzyl_alcohol",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "[O-]Cc1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "c1ccc(C[O-:1])cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[O-:1][CH2:2][c:3]1[cH:4][cH:5][cH:6][cH:7][cH:8]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "[O-]Cc1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "c1ccc(C[O-:1])cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[O-:1][CH2:2][c:3]1[cH:4][cH:5][cH:6][cH:7][cH:8]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "carbonyl_reduction_acetone",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC(C)O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[CH:1](C)[OH:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH:2]([CH3:3])[OH:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC(C)O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[CH:1](C)[OH:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH:2]([CH3:3])[OH:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "carbonyl_reduction_cyclohexanone",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "OC1CCCCC1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C1CC[CH:1]([OH:2])CC1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[OH:1][CH:2]1[CH2:3][CH2:4][CH2:5][CH2:6][CH2:7]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "OC1CCCCC1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C1CC[CH:1]([OH:2])CC1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[OH:1][CH:2]1[CH2:3][CH2:4][CH2:5][CH2:6][CH2:7]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "carbonyl_reduction_benzaldehyde",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "OCc1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "c1ccc([CH2:1][OH:2])cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[OH:1][CH2:2][c:3]1[cH:4][cH:5][cH:6][cH:7][cH:8]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "OCc1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "c1ccc([CH2:1][OH:2])cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[OH:1][CH2:2][c:3]1[cH:4][cH:5][cH:6][cH:7][cH:8]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "carbonyl_reduction_butanal",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCCCO"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CCC[CH2:1][OH:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH2:4][OH:5]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCCCO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CCC[CH2:1][OH:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH2:4][OH:5]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "carboxylate_deprotonation_butanoic_acid",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCCC(=O)[O-]"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CCC[C:1](=[O:2])[O-:3]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][CH2:3][C:4](=[O:5])[O-:6]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCCC(=O)[O-]"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CCC[C:1](=[O:2])[O-:3]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][CH2:3][C:4](=[O:5])[O-:6]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "carboxylate_deprotonation_benzoic_acid",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "O=C([O-])c1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "c1ccc([C:1](=[O:2])[O-:3])cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[O:1]=[C:2]([O-:3])[c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "O=C([O-])c1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "c1ccc([C:1](=[O:2])[O-:3])cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[O:1]=[C:2]([O-:3])[c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "carboxylate_deprotonation_glycine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "NCC(=O)[O-]"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "NC[C:1](=[O:2])[O-:3]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[NH2:1][CH2:2][C:3](=[O:4])[O-:5]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "NCC(=O)[O-]"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "NC[C:1](=[O:2])[O-:3]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[NH2:1][CH2:2][C:3](=[O:4])[O-:5]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "carboxylate_deprotonation_lactic_acid",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC(O)C(=O)[O-]"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC(O)[C:1](=[O:2])[O-:3]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH:2]([OH:3])[C:4](=[O:5])[O-:6]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC(O)C(=O)[O-]"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC(O)[C:1](=[O:2])[O-:3]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH:2]([OH:3])[C:4](=[O:5])[O-:6]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromobenzene",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "Clc1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "Cl[c:1]1ccccc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "Cl[c:2]1[cH:3][cH:4][cH:5][cH:6][cH:7]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "Clc1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "Cl[c:1]1ccccc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "Cl[c:2]1[cH:3][cH:4][cH:5][cH:6][cH:7]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromoanisole",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "COc1ccc(Cl)cc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "COc1cc[c:1](Cl)cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "Cl[c:6]1[cH:5][cH:4][c:3]([O:2][CH3:1])[cH:9][cH:8]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "COc1ccc(Cl)cc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "COc1cc[c:1](Cl)cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "Cl[c:6]1[cH:5][cH:4][c:3]([O:2][CH3:1])[cH:9][cH:8]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromopyridine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "Clc1ccccn1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "Cl[c:1]1ccccn1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "Cl[c:2]1[cH:3][cH:4][cH:5][cH:6][n:7]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "Clc1ccccn1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "Cl[c:1]1ccccn1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "Cl[c:2]1[cH:3][cH:4][cH:5][cH:6][n:7]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromonaphthalene",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "Clc1ccc2ccccc2c1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "Cl[c:1]1ccc2ccccc2c1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "Cl[c:2]1[cH:3][cH:4][c:5]2[cH:6][cH:7][cH:8][cH:9][c:10]2[cH:11]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "Clc1ccc2ccccc2c1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "Cl[c:1]1ccc2ccccc2c1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "Cl[c:2]1[cH:3][cH:4][c:5]2[cH:6][cH:7][cH:8][cH:9][c:10]2[cH:11]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "alkene_hydrogenation_2_butene",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCCC"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[CH2:1][CH2:2]C"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH3:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCCC"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[CH2:1][CH2:2]C"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH3:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "alkene_hydrogenation_cyclohexene",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C1CCCCC1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C1CC[CH2:2][CH2:1]C1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH2:1]1[CH2:2][CH2:3][CH2:4][CH2:5][CH2:6]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C1CCCCC1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C1CC[CH2:2][CH2:1]C1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH2:1]1[CH2:2][CH2:3][CH2:4][CH2:5][CH2:6]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "alkene_hydrogenation_styrene",
+      "outcome": "map_label_mismatch",
+      "rdkit_graph": [
+        [
+          "CCc1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "c1ccc([CH2:1][CH3:2])cc1"
+        ],
+        [
+          "c1ccc([CH2:2][CH3:1])cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][c:3]1[cH:4][cH:5][cH:6][cH:7][cH:8]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCc1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "c1ccc([CH2:2][CH3:1])cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][c:3]1[cH:4][cH:5][cH:6][cH:7][cH:8]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "alkene_hydrogenation_diene",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C=CCC"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C=C[CH2:1][CH3:2]"
+        ],
+        [
+          "C=C[CH2:2][CH3:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH2:1]=[CH:2][CH2:3][CH3:4]"
+        ],
+        [
+          "[CH3:1][CH2:2][CH:3]=[CH2:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 4,
+      "rust_accepted_matches": 2,
+      "rust_graph": [
+        [
+          "C=CCC"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C=C[CH2:1][CH3:2]"
+        ],
+        [
+          "C=C[CH2:2][CH3:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH2:1]=[CH:2][CH2:3][CH3:4]"
+        ],
+        [
+          "[CH3:1][CH2:2][CH:3]=[CH2:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 2,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "mapped_c_o_cleavage_methyl_ether",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C",
+          "CO"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[OH:2]",
+          "[CH4:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][OH:2]",
+          "[CH4:3]"
+        ],
+        [
+          "[CH4:1]",
+          "[OH:2][CH3:3]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 2,
+      "rust_graph": [
+        [
+          "C",
+          "CO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[OH:2]",
+          "[CH4:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][OH:2]",
+          "[CH4:3]"
+        ],
+        [
+          "[CH4:1]",
+          "[OH:2][CH3:3]"
+        ]
+      ],
+      "rust_raw_product_sets": 2,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "mapped_c_o_cleavage_ethyl_ether",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC",
+          "CCO"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC[OH:2]",
+          "C[CH3:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][OH:3]",
+          "[CH3:4][CH3:5]"
+        ],
+        [
+          "[CH3:1][CH3:2]",
+          "[OH:3][CH2:4][CH3:5]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 2,
+      "rust_graph": [
+        [
+          "CC",
+          "CCO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC[OH:2]",
+          "C[CH3:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][OH:3]",
+          "[CH3:4][CH3:5]"
+        ],
+        [
+          "[CH3:1][CH3:2]",
+          "[OH:3][CH2:4][CH3:5]"
+        ]
+      ],
+      "rust_raw_product_sets": 2,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "mapped_c_o_cleavage_phenetole",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC",
+          "Oc1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[CH3:1]",
+          "c1ccc([OH:2])cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH3:2]",
+          "[OH:3][c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC",
+          "Oc1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[CH3:1]",
+          "c1ccc([OH:2])cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH3:2]",
+          "[OH:3][c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "mapped_c_o_cleavage_allyl_ether",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C=CC",
+          "CCO"
+        ],
+        [
+          "C=CCO",
+          "CC"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C=CC[OH:2]",
+          "C[CH3:1]"
+        ],
+        [
+          "C=C[CH3:1]",
+          "CC[OH:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH2:1]=[CH:2][CH2:3][OH:4]",
+          "[CH3:5][CH3:6]"
+        ],
+        [
+          "[CH2:1]=[CH:2][CH3:3]",
+          "[OH:4][CH2:5][CH3:6]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 2,
+      "rust_graph": [
+        [
+          "C=CC",
+          "CCO"
+        ],
+        [
+          "C=CCO",
+          "CC"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C=CC[OH:2]",
+          "C[CH3:1]"
+        ],
+        [
+          "C=C[CH3:1]",
+          "CC[OH:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH2:1]=[CH:2][CH2:3][OH:4]",
+          "[CH3:5][CH3:6]"
+        ],
+        [
+          "[CH2:1]=[CH:2][CH3:3]",
+          "[OH:4][CH2:5][CH3:6]"
+        ]
+      ],
+      "rust_raw_product_sets": 2,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "mapped_c_n_cleavage_methylamine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C",
+          "N"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[CH4:2]",
+          "[NH3:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH4:1]",
+          "[NH3:2]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C",
+          "N"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH4:2]",
+          "[NH3:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH4:1]",
+          "[NH3:2]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "mapped_c_n_cleavage_diethylamine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC",
+          "CCN"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC[NH2:1]",
+          "C[CH3:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][NH2:3]",
+          "[CH3:4][CH3:5]"
+        ],
+        [
+          "[CH3:1][CH3:2]",
+          "[NH2:3][CH2:4][CH3:5]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 2,
+      "rust_graph": [
+        [
+          "CC",
+          "CCN"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC[NH2:1]",
+          "C[CH3:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][NH2:3]",
+          "[CH3:4][CH3:5]"
+        ],
+        [
+          "[CH3:1][CH3:2]",
+          "[NH2:3][CH2:4][CH3:5]"
+        ]
+      ],
+      "rust_raw_product_sets": 2,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "mapped_c_n_cleavage_aniline",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C",
+          "Nc1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[CH4:2]",
+          "c1ccc([NH2:1])cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH4:1]",
+          "[NH2:2][c:3]1[cH:4][cH:5][cH:6][cH:7][cH:8]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C",
+          "Nc1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH4:2]",
+          "c1ccc([NH2:1])cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH4:1]",
+          "[NH2:2][c:3]1[cH:4][cH:5][cH:6][cH:7][cH:8]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "mapped_c_n_cleavage_allylamine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C=CC",
+          "N"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C=C[CH3:2]",
+          "[NH3:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH2:1]=[CH:2][CH3:3]",
+          "[NH3:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C=CC",
+          "N"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C=C[CH3:2]",
+          "[NH3:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH2:1]=[CH:2][CH3:3]",
+          "[NH3:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "amide_formation_methylamine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CNC(C)=O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[C:1](=[O:2])[NH:3]C"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[NH:6][CH3:5]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CNC(C)=O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[C:1](=[O:2])[NH:3]C"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[NH:6][CH3:5]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "amide_formation_ethylamine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCNC(C)=O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC[NH:3][C:1](C)=[O:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[NH:7][CH2:6][CH3:5]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCNC(C)=O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC[NH:3][C:1](C)=[O:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[NH:7][CH2:6][CH3:5]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "amide_formation_aniline",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC(=O)Nc1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[C:1](=[O:2])[NH:3]c1ccccc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[NH:5][c:6]1[cH:7][cH:8][cH:9][cH:10][cH:11]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC(=O)Nc1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[C:1](=[O:2])[NH:3]c1ccccc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[NH:5][c:6]1[cH:7][cH:8][cH:9][cH:10][cH:11]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "amide_formation_benzoyl_methylamine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CNC(=O)c1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[NH:3][C:1](c1ccccc1)=[O:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[O:1]=[C:2]([c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1)[NH:11][CH3:10]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CNC(=O)c1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[NH:3][C:1](c1ccccc1)=[O:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[O:1]=[C:2]([c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1)[NH:11][CH3:10]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "alcohol_oxidation_ethanol",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC=O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[CH:1]=[O:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH:2]=[O:3]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC=O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[CH:1]=[O:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH:2]=[O:3]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "alcohol_oxidation_1_propanol",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCC=O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC[CH:1]=[O:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][CH:3]=[O:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCC=O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC[CH:1]=[O:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][CH:3]=[O:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "alcohol_oxidation_benzyl_alcohol",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "O=Cc1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "c1ccc([CH:1]=[O:2])cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[O:1]=[CH:2][c:3]1[cH:4][cH:5][cH:6][cH:7][cH:8]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "O=Cc1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "c1ccc([CH:1]=[O:2])cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[O:1]=[CH:2][c:3]1[cH:4][cH:5][cH:6][cH:7][cH:8]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "alcohol_oxidation_2_methyl_1_propanol",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC(C)C=O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC(C)[CH:1]=[O:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH:2]([CH3:3])[CH:4]=[O:5]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC(C)C=O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC(C)[CH:1]=[O:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH:2]([CH3:3])[CH:4]=[O:5]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "sulfonamide_formation_methylamine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CNS(C)(=O)=O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[S:1](=[O:2])(=[O:3])[NH:4]C"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][S:2](=[O:3])(=[O:4])[NH:7][CH3:6]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CNS(C)(=O)=O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[S:1](=[O:2])(=[O:3])[NH:4]C"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][S:2](=[O:3])(=[O:4])[NH:7][CH3:6]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "sulfonamide_formation_ethylamine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCNS(C)(=O)=O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC[NH:4][S:1](C)(=[O:2])=[O:3]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][S:2](=[O:3])(=[O:4])[NH:8][CH2:7][CH3:6]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCNS(C)(=O)=O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC[NH:4][S:1](C)(=[O:2])=[O:3]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][S:2](=[O:3])(=[O:4])[NH:8][CH2:7][CH3:6]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "sulfonamide_formation_aniline",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CS(=O)(=O)Nc1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[S:1](=[O:2])(=[O:3])[NH:4]c1ccccc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][S:2](=[O:3])(=[O:4])[NH:6][c:7]1[cH:8][cH:9][cH:10][cH:11][cH:12]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CS(=O)(=O)Nc1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[S:1](=[O:2])(=[O:3])[NH:4]c1ccccc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][S:2](=[O:3])(=[O:4])[NH:6][c:7]1[cH:8][cH:9][cH:10][cH:11][cH:12]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "sulfonamide_formation_benzenesulfonyl",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CNS(=O)(=O)c1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[NH:4][S:1](c1ccccc1)(=[O:2])=[O:3]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[O:1]=[S:2](=[O:3])([c:5]1[cH:6][cH:7][cH:8][cH:9][cH:10]1)[NH:12][CH3:11]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CNS(=O)(=O)c1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[NH:4][S:1](c1ccccc1)(=[O:2])=[O:3]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[O:1]=[S:2](=[O:3])([c:5]1[cH:6][cH:7][cH:8][cH:9][cH:10]1)[NH:12][CH3:11]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "no_match_carbonyl_on_alkane",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [],
+      "rdkit_maps": [],
+      "rdkit_origins": [],
+      "rdkit_raw_product_sets": 0,
+      "rust_accepted_matches": 0,
+      "rust_graph": [],
+      "rust_maps": [],
+      "rust_origins": [],
+      "rust_raw_product_sets": 0,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "no_match_aromatic_exchange_on_alkane",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [],
+      "rdkit_maps": [],
+      "rdkit_origins": [],
+      "rdkit_raw_product_sets": 0,
+      "rust_accepted_matches": 0,
+      "rust_graph": [],
+      "rust_maps": [],
+      "rust_origins": [],
+      "rust_raw_product_sets": 0,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "stereo_identity_l_alanine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C[C@H](N)C(=O)O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[C@@H:2](C(=O)O)[NH2:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "C[C@@H:2](C(=O)O)[NH2:1]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C[C@H](N)C(=O)O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[C@@H:2](C(=O)O)[NH2:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "C[C@@H:2](C(=O)O)[NH2:1]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "stereo_e_alkene",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCCC"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH3:4]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH3:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCCC"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH3:4]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH3:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "stereo_z_alkene",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCCC"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH3:4]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH3:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCCC"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH3:4]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][CH2:3][CH3:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "issue679_unmapped_atomic_number_acetyl",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCOC(C)=O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC[O:1]C(C)=O"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "CC(=O)[O:3][CH2:2][CH3:1]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCOC(C)=O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC[O:1]C(C)=O"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "CC(=O)[O:3][CH2:2][CH3:1]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "issue679_unmapped_bracket_acetyl",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCOC(C)=O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC[O:1]C(C)=O"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "CC(=O)[O:3][CH2:2][CH3:1]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCOC(C)=O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC[O:1]C(C)=O"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "CC(=O)[O:3][CH2:2][CH3:1]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "issue679_atomic_number_vinyl_explicit_h",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C=COCC"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C=C[O:1]CC"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "C=C[O:3][CH2:2][CH3:1]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C=COCC"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C=C[O:1]CC"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "C=C[O:3][CH2:2][CH3:1]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "issue679_mapped_atomic_number_amine",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCNC"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC[NH:1]C"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "C[NH:3][CH2:2][CH3:1]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCNC"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC[NH:1]C"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "C[NH:3][CH2:2][CH3:1]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "issue679_mapped_atomic_number_aromatic_n",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "c1ccncc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "c1cc[n:1]cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[cH:1]1[cH:2][cH:3][n:4][cH:5][cH:6]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "c1ccncc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "c1cc[n:1]cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[cH:1]1[cH:2][cH:3][n:4][cH:5][cH:6]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "issue679_mapped_atomic_number_no_match",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [],
+      "rdkit_maps": [],
+      "rdkit_origins": [],
+      "rdkit_raw_product_sets": 0,
+      "rust_accepted_matches": 0,
+      "rust_graph": [],
+      "rust_maps": [],
+      "rust_origins": [],
+      "rust_raw_product_sets": 0,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_charge_salicylic_deprotonation",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "O=C([O-])c1ccccc1O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "Oc1ccccc1[C:1](=[O:2])[O-:3]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[O:1]=[C:2]([O-:3])[c:4]1[cH:5][cH:6][cH:7][cH:8][c:9]1[OH:10]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "O=C([O-])c1ccccc1O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "Oc1ccccc1[C:1](=[O:2])[O-:3]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[O:1]=[C:2]([O-:3])[c:4]1[cH:5][cH:6][cH:7][cH:8][c:9]1[OH:10]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_charge_anisole_phenol_deprotonation",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "COc1ccc([O-])cc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "COc1ccc([O-:1])cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][O:2][c:3]1[cH:4][cH:5][c:6]([O-:7])[cH:8][cH:9]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "COc1ccc([O-])cc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "COc1ccc([O-:1])cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][O:2][c:3]1[cH:4][cH:5][c:6]([O-:7])[cH:8][cH:9]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_charge_methylamine_protonation",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C[NH3+]"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[NH3+:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][NH3+:2]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C[NH3+]"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[NH3+:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][NH3+:2]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_charge_ethanolamine_protonation",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "[NH3+]CCO"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "OCC[NH3+:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[NH3+:1][CH2:2][CH2:3][OH:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "[NH3+]CCO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "OCC[NH3+:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[NH3+:1][CH2:2][CH2:3][OH:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_charge_quaternary_no_match",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [],
+      "rdkit_maps": [],
+      "rdkit_origins": [],
+      "rdkit_raw_product_sets": 0,
+      "rust_accepted_matches": 0,
+      "rust_graph": [],
+      "rust_maps": [],
+      "rust_origins": [],
+      "rust_raw_product_sets": 0,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_aromatic_bromo_fluoro",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "Fc1ccc(F)cc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "Fc1cc[c:1](F)cc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "F[c:2]1[cH:3][cH:4][c:5]([F:6])[cH:7][cH:8]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "Fc1ccc(F)cc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "Fc1cc[c:1](F)cc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "F[c:2]1[cH:3][cH:4][c:5]([F:6])[cH:7][cH:8]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_aromatic_bromopyridine_fluoro",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "Fc1ccccn1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "F[c:1]1ccccn1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "F[c:2]1[n:3][cH:4][cH:5][cH:6][cH:7]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "Fc1ccccn1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "F[c:1]1ccccn1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "F[c:2]1[n:3][cH:4][cH:5][cH:6][cH:7]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_aromatic_bromothiophene_fluoro",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "Fc1ccsc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "F[c:1]1ccsc1"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "F[c:2]1[cH:3][cH:4][s:5][cH:6]1"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "Fc1ccsc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "F[c:1]1ccsc1"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "F[c:2]1[cH:3][cH:4][s:5][cH:6]1"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_map_reordered_methanol",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CO"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[OH:1][CH3:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][OH:2]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[OH:1][CH3:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][OH:2]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_map_reordered_ethanol",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCO"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[CH2:2][OH:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH2:2][OH:3]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[CH2:2][OH:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH2:2][OH:3]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_map_reordered_isopropanol",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CC(C)O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[CH:2](C)[OH:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][CH:2]([CH3:3])[OH:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC(C)O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[CH:2](C)[OH:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][CH:2]([CH3:3])[OH:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_ester_methyl_acetate",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "COC(C)=O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[C:1](=[O:2])[O:3]C"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[O:6][CH3:5]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "COC(C)=O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[C:1](=[O:2])[O:3]C"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][C:2](=[O:3])[O:6][CH3:5]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_ester_ethyl_benzoate",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "CCOC(=O)c1ccccc1"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "CC[O:3][C:1](c1ccccc1)=[O:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[O:1]=[C:2]([c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1)[O:12][CH2:11][CH3:10]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CCOC(=O)c1ccccc1"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "CC[O:3][C:1](c1ccccc1)=[O:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[O:1]=[C:2]([c:4]1[cH:5][cH:6][cH:7][cH:8][cH:9]1)[O:12][CH2:11][CH3:10]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "detail": "ChemicalParserException: Number of reactants provided does not match number of reactant templates.",
+      "id": "v2_ester_missing_second_reactant",
+      "outcome": "joint_invalid_input",
+      "rust_status": "typed_refusal"
+    },
+    {
+      "id": "v2_ether_split_methoxyethane",
+      "outcome": "graph_mismatch",
+      "rdkit_graph": [
+        [
+          "C",
+          "CCO"
+        ],
+        [
+          "CC",
+          "CO"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[CH2:1][OH:2]",
+          "[CH4:3]"
+        ],
+        [
+          "C[CH3:3]",
+          "[CH3:1][OH:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][OH:2]",
+          "[CH3:3][CH3:4]"
+        ],
+        [
+          "[CH4:1]",
+          "[OH:2][CH2:3][CH3:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CC",
+          "CO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[CH3:3]",
+          "[CH3:1][OH:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][OH:2]",
+          "[CH3:3][CH3:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_ether_split_dimethyl_ether",
+      "outcome": "provenance_mismatch",
+      "rdkit_graph": [
+        [
+          "C",
+          "CO"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[CH3:1][OH:2]",
+          "[CH4:3]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1][OH:2]",
+          "[CH4:3]"
+        ],
+        [
+          "[CH4:1]",
+          "[OH:2][CH3:3]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C",
+          "CO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH3:1][OH:2]",
+          "[CH4:3]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][OH:2]",
+          "[CH4:3]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_isotope_methanol_split",
+      "outcome": "typed_or_diagnosed_refusal",
+      "rdkit_raw_product_sets": 1,
+      "rust_status": "diagnosed_valence_refusal"
+    },
+    {
+      "id": "v2_isotope_methanol_identity",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "[13CH3]O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[13CH3:1][OH:2]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[13CH3:1][OH:2]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "[13CH3]O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[13CH3:1][OH:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[13CH3:1][OH:2]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_isotope_methanol_unlabeled_no_match",
+      "outcome": "graph_mismatch",
+      "rdkit_graph": [],
+      "rdkit_maps": [],
+      "rdkit_origins": [],
+      "rdkit_raw_product_sets": 0,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "CO"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH3:1][OH:2]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1][OH:2]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_stereo_l_alanine_identity_reordered",
+      "outcome": "graph_mismatch",
+      "rdkit_graph": [
+        [
+          "C[C@@H](N)C(=O)O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[C@H:2](C(=O)O)[NH2:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "C[C@H:2](C(=O)O)[NH2:3]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C[C@H](N)C(=O)O"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "C[C@@H:2](C(=O)O)[NH2:1]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "C[C@@H:2](C(=O)O)[NH2:3]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_stereo_d_alanine_no_match",
+      "outcome": "graph_mismatch",
+      "rdkit_graph": [
+        [
+          "C[C@@H](N)C(=O)O"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "C[C@H:2](C(=O)O)[NH2:1]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "C[C@H:2](C(=O)O)[NH2:1]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 1,
+      "rust_accepted_matches": 0,
+      "rust_graph": [],
+      "rust_maps": [],
+      "rust_origins": [],
+      "rust_raw_product_sets": 0,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_stereo_e_alkene_preserve",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C/C=C/C"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[CH3:1]/[CH:2]=[CH:3]/[CH3:4]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1]/[CH:2]=[CH:3]/[CH3:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C/C=C/C"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH3:1]/[CH:2]=[CH:3]/[CH3:4]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1]/[CH:2]=[CH:3]/[CH3:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "id": "v2_stereo_z_alkene_preserve",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [
+        [
+          "C/C=C\\C"
+        ]
+      ],
+      "rdkit_maps": [
+        [
+          "[CH3:1]/[CH:2]=[CH:3]\\[CH3:4]"
+        ]
+      ],
+      "rdkit_origins": [
+        [
+          "[CH3:1]/[CH:2]=[CH:3]\\[CH3:4]"
+        ]
+      ],
+      "rdkit_raw_product_sets": 2,
+      "rust_accepted_matches": 1,
+      "rust_graph": [
+        [
+          "C/C=C\\C"
+        ]
+      ],
+      "rust_maps": [
+        [
+          "[CH3:1]/[CH:2]=[CH:3]\\[CH3:4]"
+        ]
+      ],
+      "rust_origins": [
+        [
+          "[CH3:1]/[CH:2]=[CH:3]\\[CH3:4]"
+        ]
+      ],
+      "rust_raw_product_sets": 1,
+      "rust_valence_rejected_matches": 0
+    },
+    {
+      "detail": "RDKit cannot parse a reactant",
+      "id": "v2_invalid_unclosed_reactant",
+      "outcome": "joint_invalid_input",
+      "rust_status": "typed_refusal"
+    },
+    {
+      "detail": "ChemicalReactionParserException: Problems constructing product from SMARTS: ([O-:1]",
+      "id": "v2_invalid_smirks_branch",
+      "outcome": "joint_invalid_input",
+      "rust_status": "typed_refusal"
+    },
+    {
+      "id": "v2_no_match_halogen_on_alkane",
+      "outcome": "graph_origin_map_match",
+      "rdkit_graph": [],
+      "rdkit_maps": [],
+      "rdkit_origins": [],
+      "rdkit_raw_product_sets": 0,
+      "rust_accepted_matches": 0,
+      "rust_graph": [],
+      "rust_maps": [],
+      "rust_origins": [],
+      "rust_raw_product_sets": 0,
+      "rust_valence_rejected_matches": 0
+    }
+  ],
+  "rust_rows_sha256": "56a3bc8deb1e7a1e6fc5e21081e25484a00bbba3c9eff4459fdeff65ebeb53dd",
+  "rust_summary_sha256": "97d9002c76e019662c451b83098684d77057ca45c1f2cae808a5c5151f8727f2",
+  "schema": "published-rust-reaction-template-map-parity/v1"
+}
