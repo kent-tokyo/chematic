@@ -1,0 +1,717 @@
+{
+  "schema": "published-python-isolated-paired-v1",
+  "artifacts": {
+    "a": {
+      "python": "/private/tmp/chematic-v1030-check/bin/python",
+      "library": "rdkit",
+      "version": "2026.03.6",
+      "artifact_sha256": "e16c467cb254a223e59a0cf81358c6b39da15a99d2909170d693e95778fddb41",
+      "reference_archive_sha256": "a63bc20a8edce597904d9fa1d54cc21822af906b55282bd964b6747ce13feb9f",
+      "expected_output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913"
+    },
+    "b": {
+      "python": "/private/tmp/chematic-v1030-check/bin/python",
+      "library": "chematic",
+      "version": "1.0.30",
+      "artifact_sha256": "f6b1b22dd898cf3f100001156d9504b3753cb6b392143cbc0e6f3be78ec723d5",
+      "reference_archive_sha256": "a63bc20a8edce597904d9fa1d54cc21822af906b55282bd964b6747ce13feb9f",
+      "expected_output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913"
+    }
+  },
+  "corpus": {
+    "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+    "limit": 5000
+  },
+  "operation": "morgan",
+  "mode": "parse_inclusive",
+  "protocol": {
+    "blocks": 20,
+    "order": "AB/BA alternating fresh interpreters",
+    "timing": "only operation calls; parse included only in parse_inclusive",
+    "memory": "whole-process high-water RSS, including imports, preparation and result objects; not operation allocation",
+    "warmup": "one separate molecule per arm"
+  },
+  "outputs_equal_across_arms": true,
+  "speed_a_over_b": {
+    "median_a_over_b": 8.206417729334644,
+    "bootstrap_95pct": [
+      8.126314569241476,
+      8.307674910612976
+    ],
+    "resamples": 4000,
+    "seed": 0
+  },
+  "speed_outcome": "arm_b_faster_on_declared_lane",
+  "memory_a_over_b": {
+    "median_a_over_b": 1.9955817208128592,
+    "bootstrap_95pct": [
+      1.990200860749478,
+      1.9975375485941531
+    ],
+    "resamples": 4000,
+    "seed": 0
+  },
+  "memory_interpretation": "whole-process peak only; no per-operation allocation or cross-binding memory win",
+  "pairs": [
+    {
+      "block": 0,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 711373084,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66420736,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60047360,
+        "setup_ns": 2000,
+        "version": "2026.03.6"
+      },
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90599750,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33570816,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27492352,
+        "setup_ns": 2000,
+        "version": "1.0.30"
+      }
+    },
+    {
+      "block": 1,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 88751959,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33456128,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27377664,
+        "setup_ns": 875,
+        "version": "1.0.30"
+      },
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 737782458,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 67076096,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60833792,
+        "setup_ns": 2334,
+        "version": "2026.03.6"
+      }
+    },
+    {
+      "block": 2,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 729795708,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66502656,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60391424,
+        "setup_ns": 1375,
+        "version": "2026.03.6"
+      },
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 87563750,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33390592,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27279360,
+        "setup_ns": 875,
+        "version": "1.0.30"
+      }
+    },
+    {
+      "block": 3,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 88592417,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33308672,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27197440,
+        "setup_ns": 959,
+        "version": "1.0.30"
+      },
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 735537792,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66535424,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60375040,
+        "setup_ns": 1416,
+        "version": "2026.03.6"
+      }
+    },
+    {
+      "block": 4,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 732067292,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66912256,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60784640,
+        "setup_ns": 1542,
+        "version": "2026.03.6"
+      },
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 89205583,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33308672,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27164672,
+        "setup_ns": 958,
+        "version": "1.0.30"
+      }
+    },
+    {
+      "block": 5,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 89865167,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33357824,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27164672,
+        "setup_ns": 1000,
+        "version": "1.0.30"
+      },
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 725957875,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66191360,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60096512,
+        "setup_ns": 2042,
+        "version": "2026.03.6"
+      }
+    },
+    {
+      "block": 6,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 746255834,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66617344,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60375040,
+        "setup_ns": 3208,
+        "version": "2026.03.6"
+      },
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 89649709,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33357824,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27344896,
+        "setup_ns": 708,
+        "version": "1.0.30"
+      }
+    },
+    {
+      "block": 7,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 89866459,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33439744,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27213824,
+        "setup_ns": 833,
+        "version": "1.0.30"
+      },
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 740414500,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66732032,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60653568,
+        "setup_ns": 2542,
+        "version": "2026.03.6"
+      }
+    },
+    {
+      "block": 8,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 735584625,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66486272,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60260352,
+        "setup_ns": 1417,
+        "version": "2026.03.6"
+      },
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 88709958,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33472512,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27361280,
+        "setup_ns": 1042,
+        "version": "1.0.30"
+      }
+    },
+    {
+      "block": 9,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 89961959,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33423360,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27295744,
+        "setup_ns": 750,
+        "version": "1.0.30"
+      },
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 732237041,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66846720,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60653568,
+        "setup_ns": 2375,
+        "version": "2026.03.6"
+      }
+    },
+    {
+      "block": 10,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 734406416,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66650112,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60309504,
+        "setup_ns": 2750,
+        "version": "2026.03.6"
+      },
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90169417,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33488896,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27377664,
+        "setup_ns": 875,
+        "version": "1.0.30"
+      }
+    },
+    {
+      "block": 11,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90368584,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33292288,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27295744,
+        "setup_ns": 917,
+        "version": "1.0.30"
+      },
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 732083292,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66813952,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60637184,
+        "setup_ns": 3250,
+        "version": "2026.03.6"
+      }
+    },
+    {
+      "block": 12,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 736906041,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66879488,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60637184,
+        "setup_ns": 2500,
+        "version": "2026.03.6"
+      },
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 89797417,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33472512,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27443200,
+        "setup_ns": 750,
+        "version": "1.0.30"
+      }
+    },
+    {
+      "block": 13,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 92896500,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33472512,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27344896,
+        "setup_ns": 750,
+        "version": "1.0.30"
+      },
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 730177625,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66469888,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60260352,
+        "setup_ns": 1334,
+        "version": "2026.03.6"
+      }
+    },
+    {
+      "block": 14,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 736687917,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66781184,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60456960,
+        "setup_ns": 2417,
+        "version": "2026.03.6"
+      },
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 87490917,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33439744,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27279360,
+        "setup_ns": 833,
+        "version": "1.0.30"
+      }
+    },
+    {
+      "block": 15,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 87845583,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33374208,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27246592,
+        "setup_ns": 1958,
+        "version": "1.0.30"
+      },
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 730676000,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66371584,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60309504,
+        "setup_ns": 2042,
+        "version": "2026.03.6"
+      }
+    },
+    {
+      "block": 16,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 731978583,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66453504,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60194816,
+        "setup_ns": 2667,
+        "version": "2026.03.6"
+      },
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90220459,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33390592,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27213824,
+        "setup_ns": 875,
+        "version": "1.0.30"
+      }
+    },
+    {
+      "block": 17,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 89266792,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33308672,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27230208,
+        "setup_ns": 1125,
+        "version": "1.0.30"
+      },
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 731651166,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66469888,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60342272,
+        "setup_ns": 2208,
+        "version": "2026.03.6"
+      }
+    },
+    {
+      "block": 18,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 732920541,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66502656,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60211200,
+        "setup_ns": 1542,
+        "version": "2026.03.6"
+      },
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90358083,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33341440,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27213824,
+        "setup_ns": 958,
+        "version": "1.0.30"
+      }
+    },
+    {
+      "block": 19,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "input_count": 5000,
+        "library": "chematic",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 87770542,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 33226752,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 27164672,
+        "setup_ns": 792,
+        "version": "1.0.30"
+      },
+      "a": {
+        "input_count": 5000,
+        "library": "rdkit",
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 740840500,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 66371584,
+        "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+        "rss_after_setup_highwater_bytes": 60145664,
+        "setup_ns": 2209,
+        "version": "2026.03.6"
+      }
+    }
+  ]
+}

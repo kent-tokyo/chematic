@@ -60,8 +60,16 @@ boundaries, and reproducible evidence take priority over feature-count races.
   The published Python 63-operation matrix
   now has 20 alternating paired blocks and intervals: 20 operations meet its
   full-output-agreement and interval gate on one host. This does **not** settle
-  equal perception work, memory, cross-host replication or Rust/npm operation
-  coverage. 3D/MMFF94 remains Experimental. A0's frozen
+  equal perception work, cross-host replication or Rust/npm timing and memory
+  coverage. A six-lane isolated Python follow-up now splits parse-inclusive,
+  first-use and precomputed Morgan calls and reports whole-process peak RSS
+  separately. On the exposed 5k corpus, v1.0.30 parse+compatible-Morgan is
+  8.206x [8.126, 8.308] and parse+HBA 20.171x [19.918, 20.436] versus
+  RDKit 2026.03.6 with all outputs exact; these are bounded Python-call
+  task results, not a cross-binding or memory-allocation win. Version-paired
+  Morgan is near parity, and version-paired HBA outputs differ. P0.2 stays
+  open for the remaining operation/binding and matched-resource lanes.
+  3D/MMFF94 remains Experimental. A0's frozen
   core-eight descriptor gate is complete, but that is a separate result.
 
 Exact versions, corpora, and limits are in [validation](docs/validation.md) and
