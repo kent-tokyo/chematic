@@ -11,8 +11,10 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 - **v1.0.30 corrects the named RDKit HBA profile.** Installed Linux and
   macOS arm64 release-profile CI wheels match RDKit 2026.03.6 on all 5,000
-  exposed ChEMBL rows. Published v1.0.29 remains 3,641/5,000 on that API.
-  Replication with the published v1.0.30 wheel remains a separate gate.
+  exposed ChEMBL rows. The published v1.0.30 macOS arm64 CPython 3.13 wheel
+  also matches 5,000/5,000 with zero parse failures. Published v1.0.29 remains
+  3,641/5,000 on that API. Other wheel platforms and descriptors are not
+  established by this HBA-only comparison.
 - **v1.0.29 corrects #679/#680.** SMIRKS product-side atomic-number atoms
   produce literal atoms; repeated SMARTS charge signs represent one charge.
   The published Python wheel has now been measured on the exposed 10,000-row
@@ -82,7 +84,7 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    RDKit version; the native HBA profile is 5,000/5,000, and the unreleased
    source correction now shares that rule. Installed dev-profile and Linux /
    macOS arm64 release-profile CI wheels reach 5,000/5,000 on the named API;
-   published-v1.0.30 artifact replication remains pending. npm/Rust artifact
+   the published macOS arm64 v1.0.30 wheel also reaches 5,000/5,000. npm/Rust artifact
    lanes, full reaction scope, equivalence-controlled paired timing, and cross-host
    uncertainty remain open. See the [dated record](benchmarks/2026-10-02-v1.0.29-python-accuracy.md).
 2. **P1 — Expand #679/#680 into a SMARTS/SMIRKS semantic gate.** Add repeated

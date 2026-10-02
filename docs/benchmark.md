@@ -14,8 +14,9 @@ agreement and a faster median in three repeats. This is a single-host
 diagnostic: all chematic repeats preceded all RDKit repeats, the runs were not
 counterbalanced, and no uncertainty interval was calculated. The named HBA
 profile had only 3,641/5,000 exact agreement in that *published* wheel; an
-v1.0.30-source release-profile CI wheel reaches 5,000/5,000 but is outside
-those published timing numbers. See the
+v1.0.30-source release-profile CI wheel and the hash-verified published v1.0.30
+macOS arm64 CPython 3.13 wheel reach 5,000/5,000, but neither result changes
+those v1.0.29 timing numbers. See the
 [v1.0.29 Python accuracy record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.29-python-accuracy.md).
 
 The newest completed public-package *browser/3D* performance record remains
