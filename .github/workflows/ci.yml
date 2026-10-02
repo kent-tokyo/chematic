@@ -401,3 +401,5 @@ jobs:
       - run: python3 scripts/check_benchmark_index.py
       - name: Verify published v1.0.29 to v1.0.30 artifact packet
         run: python3 scripts/check_v1030_artifact_packet.py
+      - name: Verify isolated published-wheel timing and RSS records
+        run: python3 scripts/check_published_python_isolated_paired.py
