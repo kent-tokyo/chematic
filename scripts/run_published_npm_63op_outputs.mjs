@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** Output-only, explicit npm slice of the published Python 63-operation matrix.
  *
- * An operation without an adapter is PENDING, never silently "not exposed".
+ * An operation without an equivalent public API is accounted for explicitly.
  * This is not a timing benchmark. The per-row Python output archive is the
  * comparator, and both the npm tarball and corpus are SHA-256 pinned.
  */
@@ -31,6 +31,15 @@ function composition(formula) {
   }
   return consumed === formula.length && consumed > 0 ? [...counts].sort() : null;
 }
+function sameRoundedCoordinates(actual, expected) {
+  return Array.isArray(actual) && Array.isArray(expected) && actual.length === expected.length &&
+    actual.every((point, atom) => Array.isArray(point) && point.length === 3 &&
+      Array.isArray(expected[atom]) && expected[atom].length === 3 &&
+      point.every((coordinate, axis) => typeof coordinate === 'number' &&
+        typeof expected[atom][axis] === 'number' && Number.isFinite(coordinate) &&
+        Number.isFinite(expected[atom][axis]) &&
+        Math.abs(coordinate - expected[atom][axis]) <= 0.000051));
+}
 function sameMeaning(op, actual, expected) {
   if (same(actual, expected)) return 'exact';
   if (!('value' in actual) || !('value' in expected)) return 'different';
@@ -41,6 +50,7 @@ function sameMeaning(op, actual, expected) {
   }
   if (op === 'formula' && same(composition(actual.value), composition(expected.value)) &&
       composition(actual.value) !== null) return 'formula_spelling_only';
+  if (op === 'embed_3d' && sameRoundedCoordinates(actual.value, expected.value)) return 'coordinate_roundoff';
   return 'different';
 }
 
@@ -68,6 +78,11 @@ const smiles = corpusBytes.toString('utf8').trimEnd().split('\n').map(line => li
 const pythonBytes = fs.readFileSync(pythonFile);
 const baseline = gunzipSync(pythonBytes).toString('utf8').trimEnd().split('\n').map(JSON.parse);
 if (baseline.length !== 63) throw new Error('Python operation count is not 63');
+const pythonMolBlocks = baseline.find(op => op.op === 'mol_block_write')?.rows;
+if (!pythonMolBlocks || pythonMolBlocks.length !== 2000 ||
+    pythonMolBlocks.some((row, i) => row.input_index !== i || typeof row.value !== 'string')) {
+  throw new Error('pinned Python-writer MOL blocks are missing or invalid');
+}
 
 // The names are the published Python operation matrix's exact names. These
 // adapters use public npm APIs only. A compatibility bundle must not use the
@@ -77,6 +92,52 @@ function productSmiles(product) {
   finally { product.free(); }
 }
 function fpBytes(bytes) { return { bytes_hex: Buffer.from(bytes).toString('hex') }; }
+const popcount8 = Uint8Array.from({ length: 256 }, (_, n) => {
+  let count = 0;
+  for (; n; n &= n - 1) count++;
+  return count;
+});
+let compatibleMorganTargets;
+function compatibleMorganTanimotoRow(index) {
+  if (!compatibleMorganTargets) {
+    compatibleMorganTargets = smiles.map(smi => {
+      const mol = wasm.parse_smiles(smi);
+      try { return wasm.rdkit_ecfp4_bitvec(mol); }
+      finally { mol.free(); }
+    });
+    if (compatibleMorganTargets.some(fp => fp.length !== 256)) {
+      throw new Error('RDKit-compatible Morgan length is not 2048 bits');
+    }
+  }
+  const query = compatibleMorganTargets[index];
+  return compatibleMorganTargets.map(target => {
+    let intersection = 0;
+    let union = 0;
+    for (let i = 0; i < query.length; i++) {
+      intersection += popcount8[query[i] & target[i]];
+      union += popcount8[query[i] | target[i]];
+    }
+    return union ? Math.fround(intersection / union) : 1;
+  });
+}
+function pythonDefaultStandardize(index) {
+  const result = wasm.standardize_smiles_report_json(smiles[index], false, true, true, true);
+  if (result.startsWith('error:')) throw new Error(result);
+  return { mol_smiles: JSON.parse(result).smiles };
+}
+function pythonCipLabels(mol) {
+  const centers = JSON.parse(mol.assign_cip_json()).centers;
+  const bonds = Array.from({ length: mol.bond_count() }, (_, index) =>
+    JSON.parse(wasm.get_bond_info(mol, index)));
+  return centers.map(({ atom, code }) => {
+    if (code !== 'E' && code !== 'Z') return { atom_idx: atom, descriptor: code };
+    const matches = bonds.flatMap((bond, index) =>
+      bond.atomFrom === atom && bond.bondOrder === 2 ? [{ index, bond }] : []);
+    if (matches.length !== 1) throw new Error(`ambiguous E/Z bond for atom ${atom}`);
+    const { index, bond } = matches[0];
+    return { atom_idx: atom, bond_atoms: [bond.atomFrom, bond.atomTo], bond_idx: index, descriptor: code };
+  });
+}
 const smartsPatterns = ['c1ccccc1', '[OH]', 'C(=O)N', '[#7;R]', 'c1ccc2ccccc2c1',
   '[CX3](=O)[OX2H1]', '[NX3;H2,H1;!$(NC=O)]', '*~*~*~*~*~*'];
 const adapters = {
@@ -84,6 +145,7 @@ const adapters = {
   'canonical_smiles(prepared)': (m) => m.canonical_smiles(),
   'parse+canonical_smiles': (m) => m.canonical_smiles(),
   mol_block_write: (m) => wasm.to_mol_block(m),
+  mol_block_read: (_m, _p, index) => productSmiles(wasm.mol_from_sdf_block(pythonMolBlocks[index].value)),
   inchi: (m) => m.to_inchi(),
   inchikey: (m) => m.to_inchikey(),
   mw: (_m, p) => p.molecular_weight,
@@ -113,12 +175,15 @@ const adapters = {
   maccs: (m) => fpBytes(wasm.maccs_bitvec(m)),
   'torsion(rdkit-compatible)': (m) => fpBytes(wasm.rdkit_torsion_bitvec(m)),
   'rdkit_fp(rdkit-compatible)': (m) => fpBytes(wasm.rdkit_rdk_bitvec(m)),
+  'tanimoto_1xN(per target, compatible Morgan)': (_m, _p, index) => compatibleMorganTanimotoRow(index),
   'find_matches [#6]~[#7]': (m) => JSON.parse(wasm.smarts_match_atoms('[#6]~[#7]', m)),
   murcko_scaffold: (m) => productSmiles(wasm.murcko_scaffold(m)),
   add_hydrogens: (m) => productSmiles(wasm.add_hydrogens(m)),
   remove_hydrogens: (m) => productSmiles(wasm.remove_hydrogens(m)),
   largest_fragment: (m) => productSmiles(wasm.largest_fragment(m)),
   neutralize: (m) => productSmiles(wasm.neutralize_charges(m)),
+  'standardize vs Cleanup': (_m, _p, index) => pythonDefaultStandardize(index),
+  'standardize vs Cleanup+Uncharge+Canonicalize': (_m, _p, index) => pythonDefaultStandardize(index),
   canonical_tautomer: (m) => productSmiles(wasm.canonical_tautomer(m)),
   brics_fragments: (m) => JSON.parse(wasm.brics_fragments_json(m)).map(s => ({ mol_smiles: s })),
   sssr_rings: (m) => {
@@ -128,8 +193,14 @@ const adapters = {
     });
     return membership;
   },
+  cip_labels: (m) => pythonCipLabels(m),
   svg_depiction: (m) => m.depict_svg(),
   '2d_layout': (m) => JSON.parse(wasm.depict_data_json(m)),
+  embed_3d: (m) => JSON.parse(wasm.generate_3d_etkdg_coords_json(m)),
+  mcs_pair: (_m, _p, index) => {
+    const result = wasm.mcs_smiles_json(JSON.stringify(smiles.slice(2 * index, 2 * index + 2)));
+    return result === 'null' ? null : { mol_smiles: result };
+  },
 };
 for (const pattern of smartsPatterns) {
   adapters[`has_substructure ${pattern}`] = (m) => JSON.parse(wasm.smarts_match_atoms(pattern, m)).length > 0;
@@ -153,7 +224,7 @@ for (let index = 0; index < smiles.length; index++) {
     const profile = JSON.parse(wasm.get_rdkit_descriptors_json(mol));
     for (const [opIndex, record] of outputRows.entries()) {
       if (index >= selected[opIndex].rows.length) continue;
-      try { record.rows.push({ input_index: index, value: adapters[record.op](mol, profile) }); }
+      try { record.rows.push({ input_index: index, value: adapters[record.op](mol, profile, index) }); }
       catch (error) { record.rows.push({ input_index: index, error: { type: 'Error', message: String(error) } }); }
     }
   } catch (error) {
@@ -165,7 +236,8 @@ for (let index = 0; index < smiles.length; index++) {
 
 const comparison = outputRows.map((actual, opIndex) => {
   const expected = selected[opIndex];
-  const outcomes = { exact: 0, numeric_roundoff: 0, formula_spelling_only: 0, different: 0 };
+  const outcomes = { exact: 0, numeric_roundoff: 0, formula_spelling_only: 0,
+    coordinate_roundoff: 0, different: 0 };
   const samples = [];
   for (let i = 0; i < expected.rows.length; i++) {
     const outcome = sameMeaning(actual.op, actual.rows[i], expected.rows[i]);
@@ -178,31 +250,24 @@ const comparison = outputRows.map((actual, opIndex) => {
 });
 const rawRows = Buffer.from(outputRows.map(row => JSON.stringify(row)).join('\n') + '\n');
 fs.writeFileSync(rowsFile, gzipSync(rawRows, { level: 9, mtime: 0 }));
-const pendingReason = {
-  mol_block_read: 'mol_from_sdf_block exists, but the Python lane reads Python-writer blocks; input identity is not established',
+const noEquivalentPublicApi = {
   rdkit_tpsa: 'no exported N/O-only RDKit TPSA profile; MolHandle.tpsa and RDKit descriptor JSON use native TPSA',
   'atom_pair(rdkit-compatible)': 'atom_pair_bitvec is native, not the Python RDKit-compatible API',
   'pattern_fp(rdkit-compatible)': 'no matching exported bit-vector API in the published TypeScript surface',
-  'tanimoto_1xN(per target, compatible Morgan)': 'tanimoto_row_json uses native ECFP4, not compatible Morgan',
-  'standardize vs Cleanup': 'standardize_smiles omits the Python default tautomer step',
-  'standardize vs Cleanup+Uncharge+Canonicalize': 'standardize_smiles omits the Python default tautomer step',
-  cip_labels: 'assign_cip_json exists; Python cip_stereo output/assignment mapping not yet adjudicated',
-  embed_3d: 'ETKDG export exists; seed, geometry, and coordinate output mapping not yet adjudicated',
-  'embed+minimize_mmff94': 'MMFF export exists; combined workflow and quality-equivalent coordinates not yet mapped',
-  mcs_pair: 'mcs_smiles_json exists; timeout/defaults and result mapping not yet adjudicated',
+  'embed+minimize_mmff94': 'published MMFF API generates its own coordinates and returns an energy summary, not optimized coordinates from explicit ETKDG input',
 };
-const pendingAdapter = baseline.filter(op => !Object.hasOwn(adapters, op.op)).map(op => op.op);
-if (!same(Object.keys(pendingReason).sort(), [...pendingAdapter].sort())) {
-  throw new Error('pending-operation reason ledger drifted from adapters');
+const notExposed = baseline.filter(op => !Object.hasOwn(adapters, op.op)).map(op => op.op);
+if (!same(Object.keys(noEquivalentPublicApi).sort(), [...notExposed].sort())) {
+  throw new Error('non-equivalent public API ledger drifted from adapters');
 }
 const summary = {
-  schema: 'published-npm-python-63op-output-slice/v1',
+  schema: 'published-npm-python-63op-output-slice/v2',
   scope: 'output only; not a timing or RDKit parity claim',
   npm: { version: pkg.version, tarball_sha256: sha256(tarballBytes) },
   python_archive_sha256: sha256(pythonBytes),
   corpus: { sha256: sha256(corpusBytes), input_count: smiles.length },
   coverage: { total_operations: baseline.length, adapted: outputRows.length,
-    pending_adapter: pendingAdapter, pending_reason: pendingReason },
+    no_equivalent_public_api: noEquivalentPublicApi },
   output: { rows_sha256: sha256(rawRows), compressed_sha256: sha256(fs.readFileSync(rowsFile)) },
   comparison,
 };

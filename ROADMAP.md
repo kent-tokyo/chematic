@@ -17,17 +17,18 @@ boundaries, and reproducible evidence take priority over feature-count races.
   against pinned RDKit 2026.03.6, up from 3,641/5,000 on v1.0.29. The
   [dated packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
   retains hashes, raw rows and open gates. The published npm tarball **does**
-  expose `run_reactants`. A published-npm output slice now reruns 52/63
-  Python-matrix operations (194,600 retained rows): 46 operations match
-  byte-for-byte, QED and Chi1v have only bounded float roundoff, and 1,575
-  formula strings have equal composition but different element order.
-  MOL write, SVG, and 2D layout have 2,520 differences on three declared
+  expose `run_reactants`. A published-npm output packet reruns 59/63
+  Python-matrix operations (198,400 operation rows, including 250,000
+  compatible-Morgan similarity values): 52 operations match byte-for-byte;
+  QED/Chi1v differ only by bounded float roundoff, 1,575 formula strings
+  only by element order, and ETKDG coordinates only by four-decimal rounding.
+  MOL write, SVG, and 2D layout retain 2,520 differences on three declared
   non-equivalent representation lanes. The current source fixes formula order;
-  it is not a published v1.0.30 result. The same 52-operation slice was rerun
-  on the published v1.0.29 tarball: only HBA and its bundle change, on the
-  same 1,359 input indices as Python; 50 operations are row-identical across
-  versions. Eleven npm operation adapters and
-  the Rust operation mapping remain unfinished; pending is not unexposed.
+  it is not a published v1.0.30 result. The same 59-operation packet on the
+  published v1.0.29 tarball changes only HBA and its bundle, on the same
+  1,359 input indices as Python; 57 operations are row-identical across
+  versions. Four matrix operations have no equivalent public npm API in the
+  pinned releases. Rust's 63-operation mapping remains unfinished.
 - **v1.0.29 has the historical partial P0 packet.** Its published Python
   wheel was measured on exposed 10,000-row chemistry, 310,000-cell SMARTS,
   57 reaction fixtures, and a 5,000-row/63-operation matrix. The 21
