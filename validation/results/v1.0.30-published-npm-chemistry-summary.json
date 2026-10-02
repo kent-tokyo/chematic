@@ -1,0 +1,42 @@
+{
+  "schema": "published-npm-chemistry-v1",
+  "package": {
+    "name": "@kent-tokyo/chematic",
+    "version": "1.0.30",
+    "tarball_sha256": "fd427a161c11b14e6cca51e78e0c35ff05bbc52faf0539a2ddc2b7090e534201",
+    "wasm_sha256": "e0a505c33a282724114e279201dae199b2e5dbe68c35c0ebaa474693a6eb4ae6"
+  },
+  "oracle": {
+    "rdkit_version": "2026.03.6",
+    "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "queries_sha256": "250a241a8905d013eb58fff0ccfb1e0dbe3e97c08ff56e021828fbfec957b341",
+    "smarts_all_cells_sha256": "0cf09dd03bbd4fbbaa4ea7198bff31c64c2803f90024a7f9956f8e5927a0801f",
+    "python_reference_sha256": "95655e9159ee4d5ea59049723b5e2c352616826ade2ccb1500ceb47ab5f91012"
+  },
+  "counts": {
+    "input": 10000,
+    "completed": 10000,
+    "parse_failure": 0,
+    "canonical_cross_binding_differences": 0,
+    "cip_exact": 9995,
+    "cip_typed_refusal": 5,
+    "cip_wrong_confident": 0,
+    "morgan_exact": 9999,
+    "morgan_typed_refusal": 1,
+    "morgan_wrong_confident": 0,
+    "smarts_cells": 310000,
+    "smarts_differences": 200
+  },
+  "rows": {
+    "path": "/private/tmp/chematic-v1030-full-gate/npm-chemistry-rows.jsonl",
+    "sha256": "43aae664e8813ca83055bf06441780713ac3cc8385d6cf5305896a3af19d4bb3"
+  },
+  "reaction_transform": {
+    "status": "not_exposed",
+    "api": "run_smirks"
+  },
+  "operation_matrix": {
+    "status": "not_yet_measured",
+    "reason": "63 Python operations need an explicit npm capability mapping"
+  }
+}

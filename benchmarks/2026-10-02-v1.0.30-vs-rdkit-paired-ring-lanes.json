@@ -1,0 +1,978 @@
+{
+ "schema": "chematic-python-op-matrix-vs-rdkit/v1",
+ "created_utc": "2026-10-02T12:38:41.163986Z",
+ "chematic": {
+  "version": "1.0.30",
+  "revision": "v1.0.30",
+  "artifact": "chematic-1.0.30-cp313-cp313-macosx_11_0_arm64.whl",
+  "artifact_sha256": "f6b1b22dd898cf3f100001156d9504b3753cb6b392143cbc0e6f3be78ec723d5"
+ },
+ "rdkit": {
+  "version": "2026.03.6"
+ },
+ "environment": {
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu_model": "Apple M4",
+  "cpu_count": 10,
+  "threads": "single-threaded calls in one process"
+ },
+ "corpus": {
+  "path": "scripts/chembl_accuracy_corpus_4999.smi",
+  "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+  "rows_read": 5000,
+  "common_valid_rows": 5000,
+  "chematic_parse_failures": 0,
+  "rdkit_parse_failures_after_chematic_success": 0
+ },
+ "protocol": {
+  "repeats": 20,
+  "aggregation": "median over repeats of total wall time / rows (perf_counter)",
+  "cold_inputs": "inputs rebuilt before every repeat (untimed): chematic re-parses SMILES, RDKit re-parses with MolFromSmiles",
+  "order": "alternating chematic/RDKit and RDKit/chematic paired blocks",
+  "warmup": "one untimed call per arm before each operation",
+  "memory": "not measured by this process; use an isolated peak-RSS lane",
+  "exceptions": "counted per repeat as failures, never timed as wins",
+  "ratio": "rdkit_us / chematic_us (>1 means chematic faster)"
+ },
+ "operations": [
+  {
+   "op": "ring_count",
+   "equivalence": "checked",
+   "note": "RDKit ring info is computed inside MolFromSmiles (untimed here)",
+   "rows": 5000,
+   "chematic_us_per_row": 0.3873123991070315,
+   "rdkit_us_per_row": 0.13212080230005085,
+   "ratio": 0.3341447774879443,
+   "chematic_repeats_us": [
+    0.4258834000211209,
+    0.3697915992233902,
+    0.33783320104703307,
+    0.4356666002422571,
+    0.3917081980034709,
+    0.43670000159181654,
+    0.3795581986196339,
+    0.4521500028204173,
+    0.3700666013173759,
+    0.38291660021059215,
+    0.35960000241175294,
+    0.4384834028314799,
+    0.3723749949131161,
+    0.44067499693483114,
+    0.36849179887212813,
+    0.4464500001631677,
+    0.3662166011054069,
+    0.45140000293031335,
+    0.3751333977561444,
+    0.43879999429918826
+   ],
+   "rdkit_repeats_us": [
+    0.1381249981932342,
+    0.11578320409171283,
+    0.13250000192783773,
+    0.1303166034631431,
+    0.13473340077325702,
+    0.161500001559034,
+    0.13152500032447278,
+    0.13577500358223915,
+    0.13528339914046228,
+    0.11591659858822823,
+    0.12789180036634207,
+    0.11534999939613044,
+    0.13374999980442226,
+    0.13339160359464586,
+    0.13445839867927134,
+    0.1352249993942678,
+    0.12860000133514404,
+    0.12411680072546004,
+    0.13174160267226398,
+    0.12478340067900716
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4946
+   },
+   "counted": true,
+   "paired_blocks": [
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 0.4258834000211209,
+     "rdkit": 0.1381249981932342
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.11578320409171283,
+     "chematic": 0.3697915992233902
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 0.33783320104703307,
+     "rdkit": 0.13250000192783773
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.1303166034631431,
+     "chematic": 0.4356666002422571
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 0.3917081980034709,
+     "rdkit": 0.13473340077325702
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.161500001559034,
+     "chematic": 0.43670000159181654
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 0.3795581986196339,
+     "rdkit": 0.13152500032447278
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.13577500358223915,
+     "chematic": 0.4521500028204173
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 0.3700666013173759,
+     "rdkit": 0.13528339914046228
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.11591659858822823,
+     "chematic": 0.38291660021059215
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 0.35960000241175294,
+     "rdkit": 0.12789180036634207
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.11534999939613044,
+     "chematic": 0.4384834028314799
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 0.3723749949131161,
+     "rdkit": 0.13374999980442226
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.13339160359464586,
+     "chematic": 0.44067499693483114
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 0.36849179887212813,
+     "rdkit": 0.13445839867927134
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.1352249993942678,
+     "chematic": 0.4464500001631677
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 0.3662166011054069,
+     "rdkit": 0.12860000133514404
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.12411680072546004,
+     "chematic": 0.45140000293031335
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 0.3751333977561444,
+     "rdkit": 0.13174160267226398
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.12478340067900716,
+     "chematic": 0.43879999429918826
+    }
+   ],
+   "paired_ci": {
+    "median_ratio": 0.3341447774879443,
+    "bootstrap_95pct": [
+     0.30270929684275805,
+     0.35341808973745015
+    ],
+    "bootstrap_samples": 4000,
+    "seed": 0
+   },
+   "equivalent_output_speed_win": false
+  },
+  {
+   "op": "aromatic_ring_count",
+   "equivalence": "checked",
+   "note": "RDKit aromaticity is computed inside MolFromSmiles (untimed here)",
+   "rows": 5000,
+   "chematic_us_per_row": 5.683158300234936,
+   "rdkit_us_per_row": 0.8950332965468988,
+   "ratio": 0.15408098731567774,
+   "chematic_repeats_us": [
+    5.8814499992877245,
+    5.880016594892368,
+    5.688708397792652,
+    5.869258398888633,
+    5.526300001656637,
+    5.882583203492686,
+    5.596800002967939,
+    5.553183198207989,
+    5.5355666030664,
+    5.828575004125014,
+    5.6204333959612995,
+    5.821874999674037,
+    5.67760820267722,
+    5.838341795606539,
+    5.6152331992052495,
+    5.876666598487645,
+    5.650641804095358,
+    5.579449998913333,
+    5.495525000151247,
+    5.844700004672632
+   ],
+   "rdkit_repeats_us": [
+    0.8836832013912499,
+    0.8931415970437229,
+    0.8896665996871889,
+    0.8981332008261234,
+    0.5753499979618937,
+    0.9090667997952551,
+    0.8748750027734786,
+    0.8994084026198834,
+    0.6734833994414657,
+    0.903791596647352,
+    0.9332499990705401,
+    0.9179833985399455,
+    0.9145081974565983,
+    0.8969249960500747,
+    0.8610333956312388,
+    0.8996749995276332,
+    0.8877750020474195,
+    0.5943250027485192,
+    0.6798915972467512,
+    0.9185334027279168
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4940
+   },
+   "counted": true,
+   "paired_blocks": [
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 5.8814499992877245,
+     "rdkit": 0.8836832013912499
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.8931415970437229,
+     "chematic": 5.880016594892368
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 5.688708397792652,
+     "rdkit": 0.8896665996871889
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.8981332008261234,
+     "chematic": 5.869258398888633
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 5.526300001656637,
+     "rdkit": 0.5753499979618937
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.9090667997952551,
+     "chematic": 5.882583203492686
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 5.596800002967939,
+     "rdkit": 0.8748750027734786
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.8994084026198834,
+     "chematic": 5.553183198207989
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 5.5355666030664,
+     "rdkit": 0.6734833994414657
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.903791596647352,
+     "chematic": 5.828575004125014
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 5.6204333959612995,
+     "rdkit": 0.9332499990705401
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.9179833985399455,
+     "chematic": 5.821874999674037
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 5.67760820267722,
+     "rdkit": 0.9145081974565983
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.8969249960500747,
+     "chematic": 5.838341795606539
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 5.6152331992052495,
+     "rdkit": 0.8610333956312388
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.8996749995276332,
+     "chematic": 5.876666598487645
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 5.650641804095358,
+     "rdkit": 0.8877750020474195
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.5943250027485192,
+     "chematic": 5.579449998913333
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 5.495525000151247,
+     "rdkit": 0.6798915972467512
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 0.9185334027279168,
+     "chematic": 5.844700004672632
+    }
+   ],
+   "paired_ci": {
+    "median_ratio": 0.15408098731567774,
+    "bootstrap_95pct": [
+     0.15245884288155143,
+     0.15675107050110548
+    ],
+    "bootstrap_samples": 4000,
+    "seed": 0
+   },
+   "equivalent_output_speed_win": false
+  },
+  {
+   "op": "parse+ring_count",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 4.430487600620836,
+   "rdkit_us_per_row": 92.53991250006948,
+   "ratio": 20.896861101851286,
+   "chematic_repeats_us": [
+    4.435258399462327,
+    4.472341598011553,
+    4.429441801039502,
+    4.402924998430535,
+    4.365441802656278,
+    4.448833200149238,
+    4.405049997149035,
+    4.461750003974885,
+    4.407458403147757,
+    4.401908197905868,
+    4.352983401622623,
+    4.449058399768546,
+    4.4139834004454315,
+    4.5603417966049165,
+    4.765241598943248,
+    4.423500003758818,
+    4.435033199843019,
+    4.438199999276549,
+    4.393700003856793,
+    4.43153340020217
+   ],
+   "rdkit_repeats_us": [
+    92.53932500141673,
+    92.54049999872223,
+    92.60138340177946,
+    92.40190840209834,
+    92.39460839889944,
+    92.46662500081584,
+    93.0006000038702,
+    92.79396659694612,
+    92.77335000224411,
+    91.52946660178714,
+    92.09413320058957,
+    93.51540000061505,
+    91.6222000028938,
+    92.23585840081796,
+    93.43254180275835,
+    91.47670000093058,
+    92.79401659732684,
+    92.70441660191864,
+    92.50884160283022,
+    92.87256659590639
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4946
+   },
+   "counted": true,
+   "paired_blocks": [
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 4.435258399462327,
+     "rdkit": 92.53932500141673
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.54049999872223,
+     "chematic": 4.472341598011553
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 4.429441801039502,
+     "rdkit": 92.60138340177946
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.40190840209834,
+     "chematic": 4.402924998430535
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 4.365441802656278,
+     "rdkit": 92.39460839889944
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.46662500081584,
+     "chematic": 4.448833200149238
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 4.405049997149035,
+     "rdkit": 93.0006000038702
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.79396659694612,
+     "chematic": 4.461750003974885
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 4.407458403147757,
+     "rdkit": 92.77335000224411
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 91.52946660178714,
+     "chematic": 4.401908197905868
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 4.352983401622623,
+     "rdkit": 92.09413320058957
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 93.51540000061505,
+     "chematic": 4.449058399768546
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 4.4139834004454315,
+     "rdkit": 91.6222000028938
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.23585840081796,
+     "chematic": 4.5603417966049165
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 4.765241598943248,
+     "rdkit": 93.43254180275835
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 91.47670000093058,
+     "chematic": 4.423500003758818
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 4.435033199843019,
+     "rdkit": 92.79401659732684
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.70441660191864,
+     "chematic": 4.438199999276549
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 4.393700003856793,
+     "rdkit": 92.50884160283022
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.87256659590639,
+     "chematic": 4.43153340020217
+    }
+   ],
+   "paired_ci": {
+    "median_ratio": 20.896861101851286,
+    "bootstrap_95pct": [
+     20.788800246724513,
+     21.017827246056456
+    ],
+    "bootstrap_samples": 4000,
+    "seed": 0
+   },
+   "equivalent_output_speed_win": false
+  },
+  {
+   "op": "parse+aromatic_ring_count",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 9.676012498675846,
+   "rdkit_us_per_row": 92.44114170141984,
+   "ratio": 9.581255063686656,
+   "chematic_repeats_us": [
+    9.68485819757916,
+    9.767608402762562,
+    9.65697499923408,
+    9.682883200002834,
+    9.628624998731539,
+    9.663566597737372,
+    9.616399998776615,
+    9.737008402589709,
+    9.693241596687585,
+    9.709766600281,
+    9.770575002767146,
+    9.694391797529534,
+    9.626291604945436,
+    9.656350000295788,
+    9.675374999642372,
+    9.676649997709319,
+    9.740341798169538,
+    9.574508399236947,
+    9.506991598755121,
+    9.57850000122562
+   ],
+   "rdkit_repeats_us": [
+    92.4234668025747,
+    91.14739159704186,
+    92.53524179803208,
+    92.03409159672447,
+    92.82584159518592,
+    92.56166680133902,
+    92.89370839833282,
+    93.01622500061058,
+    93.1241333950311,
+    93.15157500095665,
+    92.36960840062238,
+    92.33206679928117,
+    92.45881660026498,
+    92.72215000237338,
+    92.6929167995695,
+    91.89405840006657,
+    92.27370839798823,
+    92.23214160301723,
+    91.96507500018924,
+    91.99711680412292
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 4940
+   },
+   "counted": true,
+   "paired_blocks": [
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 9.68485819757916,
+     "rdkit": 92.4234668025747
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 91.14739159704186,
+     "chematic": 9.767608402762562
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 9.65697499923408,
+     "rdkit": 92.53524179803208
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.03409159672447,
+     "chematic": 9.682883200002834
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 9.628624998731539,
+     "rdkit": 92.82584159518592
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.56166680133902,
+     "chematic": 9.663566597737372
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 9.616399998776615,
+     "rdkit": 92.89370839833282
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 93.01622500061058,
+     "chematic": 9.737008402589709
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 9.693241596687585,
+     "rdkit": 93.1241333950311
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 93.15157500095665,
+     "chematic": 9.709766600281
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 9.770575002767146,
+     "rdkit": 92.36960840062238
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.33206679928117,
+     "chematic": 9.694391797529534
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 9.626291604945436,
+     "rdkit": 92.45881660026498
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.72215000237338,
+     "chematic": 9.656350000295788
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 9.675374999642372,
+     "rdkit": 92.6929167995695
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 91.89405840006657,
+     "chematic": 9.676649997709319
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 9.740341798169538,
+     "rdkit": 92.27370839798823
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 92.23214160301723,
+     "chematic": 9.574508399236947
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 9.506991598755121,
+     "rdkit": 91.96507500018924
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 91.99711680412292,
+     "chematic": 9.57850000122562
+    }
+   ],
+   "paired_ci": {
+    "median_ratio": 9.581255063686656,
+    "bootstrap_95pct": [
+     9.533682847685231,
+     9.604682546219141
+    ],
+    "bootstrap_samples": 4000,
+    "seed": 0
+   },
+   "equivalent_output_speed_win": false
+  }
+ ],
+ "summary": {
+  "operations": 4,
+  "counted_operations": 4,
+  "counted_faster": 2,
+  "counted_faster_with_full_agreement": 0,
+  "same_task_operations": 0,
+  "not_equivalent_operations": 0,
+  "equivalent_output_speed_wins_with_ci": 0
+ }
+}

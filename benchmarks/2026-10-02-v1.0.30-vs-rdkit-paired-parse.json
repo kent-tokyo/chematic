@@ -1,0 +1,279 @@
+{
+ "schema": "chematic-python-op-matrix-vs-rdkit/v1",
+ "created_utc": "2026-10-02T12:13:32.723144Z",
+ "chematic": {
+  "version": "1.0.30",
+  "revision": "v1.0.30",
+  "artifact": "chematic-1.0.30-cp313-cp313-macosx_11_0_arm64.whl",
+  "artifact_sha256": "f6b1b22dd898cf3f100001156d9504b3753cb6b392143cbc0e6f3be78ec723d5"
+ },
+ "rdkit": {
+  "version": "2026.03.6"
+ },
+ "environment": {
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu_model": "Apple M4",
+  "cpu_count": 10,
+  "threads": "single-threaded calls in one process"
+ },
+ "corpus": {
+  "path": "scripts/chembl_accuracy_corpus_4999.smi",
+  "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+  "rows_read": 5000,
+  "common_valid_rows": 5000,
+  "chematic_parse_failures": 0,
+  "rdkit_parse_failures_after_chematic_success": 0
+ },
+ "protocol": {
+  "repeats": 20,
+  "aggregation": "median over repeats of total wall time / rows (perf_counter)",
+  "cold_inputs": "inputs rebuilt before every repeat (untimed): chematic re-parses SMILES, RDKit re-parses with MolFromSmiles",
+  "order": "alternating chematic/RDKit and RDKit/chematic paired blocks",
+  "warmup": "one untimed call per arm before each operation",
+  "memory": "not measured by this process; use an isolated peak-RSS lane",
+  "exceptions": "counted per repeat as failures, never timed as wins",
+  "ratio": "rdkit_us / chematic_us (>1 means chematic faster)"
+ },
+ "operations": [
+  {
+   "op": "parse_smiles",
+   "equivalence": "same-task",
+   "note": "RDKit sanitizes (rings/aromaticity) at parse; chematic defers perception",
+   "rows": 5000,
+   "chematic_us_per_row": 6.3103916007094085,
+   "rdkit_us_per_row": 131.55765009869356,
+   "ratio": 20.88353402681198,
+   "chematic_repeats_us": [
+    6.223116599721834,
+    6.308866600738838,
+    6.473783403635025,
+    6.263150001177564,
+    6.3565999967977405,
+    6.3875916006509215,
+    6.16848340141587,
+    6.251499999780208,
+    6.3570250000339,
+    6.444166600704193,
+    6.283033202635124,
+    6.331649998901412,
+    6.375616602599621,
+    6.311916600679979,
+    6.519699998898432,
+    6.427416601218283,
+    6.202233396470547,
+    6.16065000067465,
+    6.2176833976991475,
+    6.2210082018282264
+   ],
+   "rdkit_repeats_us": [
+    132.25246680085547,
+    132.34880000236444,
+    131.5250499988906,
+    131.06414999929257,
+    131.39203340397216,
+    131.29729159991257,
+    130.19464999670163,
+    130.28646659804508,
+    130.93396659824066,
+    131.5525167970918,
+    132.7507582027465,
+    131.5627834002953,
+    132.081725000171,
+    138.8831166026648,
+    131.61992499954067,
+    132.10705000092275,
+    132.30328320059925,
+    130.49326660111547,
+    131.665591604542,
+    130.95055840094574
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": null,
+   "counted": false,
+   "paired_blocks": [
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 6.223116599721834,
+     "rdkit": 132.25246680085547
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 132.34880000236444,
+     "chematic": 6.308866600738838
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 6.473783403635025,
+     "rdkit": 131.5250499988906
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 131.06414999929257,
+     "chematic": 6.263150001177564
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 6.3565999967977405,
+     "rdkit": 131.39203340397216
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 131.29729159991257,
+     "chematic": 6.3875916006509215
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 6.16848340141587,
+     "rdkit": 130.19464999670163
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 130.28646659804508,
+     "chematic": 6.251499999780208
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 6.3570250000339,
+     "rdkit": 130.93396659824066
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 131.5525167970918,
+     "chematic": 6.444166600704193
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 6.283033202635124,
+     "rdkit": 132.7507582027465
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 131.5627834002953,
+     "chematic": 6.331649998901412
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 6.375616602599621,
+     "rdkit": 132.081725000171
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 138.8831166026648,
+     "chematic": 6.311916600679979
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 6.519699998898432,
+     "rdkit": 131.61992499954067
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 132.10705000092275,
+     "chematic": 6.427416601218283
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 6.202233396470547,
+     "rdkit": 132.30328320059925
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 130.49326660111547,
+     "chematic": 6.16065000067465
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 6.2176833976991475,
+     "rdkit": 131.665591604542
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 130.95055840094574,
+     "chematic": 6.2210082018282264
+    }
+   ],
+   "paired_ci": {
+    "median_ratio": 20.88353402681198,
+    "bootstrap_95pct": [
+     20.633455499389918,
+     21.11743936077201
+    ],
+    "bootstrap_samples": 4000,
+    "seed": 0
+   },
+   "equivalent_output_speed_win": false
+  }
+ ],
+ "summary": {
+  "operations": 1,
+  "counted_operations": 0,
+  "counted_faster": 0,
+  "counted_faster_with_full_agreement": 0,
+  "same_task_operations": 1,
+  "not_equivalent_operations": 0,
+  "equivalent_output_speed_wins_with_ci": 0
+ }
+}

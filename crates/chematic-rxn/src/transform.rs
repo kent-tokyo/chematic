@@ -7,8 +7,8 @@ use chematic_core::{
 };
 use chematic_perception::RingSet;
 use chematic_smarts::{
-    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule, find_matches,
-    find_matches_with_rings,
+    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, MatchConfig, QueryMolecule,
+    find_matches_with_config, find_matches_with_rings_and_config,
 };
 
 use crate::reaction::{RxnError, parse_reaction};
@@ -912,6 +912,16 @@ fn find_matches_impl(
     }
 
     // VF2 match: for each (template_query, input_mol) pair.
+    // A substructure API may deduplicate embeddings by target atom *set*.
+    // Reactions cannot: swapping two template atoms mapped to the same set
+    // may produce distinct products (e.g. asymmetric ether cleavage).
+    let match_config = MatchConfig {
+        uniquify: false,
+        // A reaction reactant template is an exact molecular specification,
+        // unlike the general substructure API's isotope-agnostic default.
+        use_isotopes: true,
+        ..MatchConfig::default()
+    };
     let all_match_sets: Vec<Vec<FxHashMap<usize, AtomIdx>>> = prepared
         .queries
         .iter()
@@ -919,8 +929,10 @@ fn find_matches_impl(
         .enumerate()
         .map(|(index, (q, mol))| {
             let matches = match rings {
-                Some(rings) => find_matches_with_rings(q, mol, rings[index]),
-                None => find_matches(q, mol),
+                Some(rings) => {
+                    find_matches_with_rings_and_config(q, mol, rings[index], &match_config)
+                }
+                None => find_matches_with_config(q, mol, &match_config),
             };
             crate::perf_counters::record_reactant_query_match_call(matches.len());
             if matches.len() > limits.max_matches {
@@ -1305,6 +1317,13 @@ fn mol_to_query(mol: &Molecule) -> QueryMolecule {
             q = AtomQuery::And(
                 Box::new(q),
                 Box::new(AtomQuery::Primitive(AtomPrimitive::Charge(atom.charge))),
+            );
+        }
+
+        if let Some(mass) = atom.isotope {
+            q = AtomQuery::And(
+                Box::new(q),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Isotope(mass))),
             );
         }
 
@@ -1875,6 +1894,36 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].len(), 1);
         assert_eq!(results[0][0].atom_count(), 1);
+    }
+
+    #[test]
+    fn mapped_asymmetric_ether_keeps_both_embeddings_on_one_atom_set() {
+        // The C-O-C query covers the same three target atoms in both
+        // orientations, but the mapped cleavage yields two different product
+        // tuples. Target-set uniquification must not discard either one.
+        let mol = parse("COCC").unwrap();
+        let results = run_reactants("[C:1][O:2][C:3]>>[C:1][O:2].[C:3]", &[&mol]).unwrap();
+        let outcomes: std::collections::BTreeSet<Vec<String>> = results
+            .into_iter()
+            .map(|set| {
+                let mut products = canonical_set(set);
+                products.sort();
+                products
+            })
+            .collect();
+        let expected: std::collections::BTreeSet<Vec<String>> =
+            [vec!["C", "CCO"], vec!["CC", "CO"]]
+                .into_iter()
+                .map(|set| {
+                    let mut products: Vec<String> = set
+                        .into_iter()
+                        .map(|smiles| canonical(&parse(smiles).unwrap()))
+                        .collect();
+                    products.sort();
+                    products
+                })
+                .collect();
+        assert_eq!(outcomes, expected);
     }
 
     #[test]
@@ -3533,6 +3582,23 @@ mod tests {
         assert_eq!(report.diagnostics.valence_rejected_matches, 1);
         assert!(!report.diagnostics.truncated_matches);
         assert!(run_reactants(smirks, &[&ethanol]).unwrap().is_empty());
+    }
+
+    #[test]
+    fn mapped_isotope_template_matches_only_the_specified_nuclide() {
+        let labeled = parse("[13CH3]O").unwrap();
+        let unlabeled = parse("CO").unwrap();
+        let smirks = "[13CH3:1][O:2]>>[13CH3:1][O:2]";
+
+        let products = run_reactants(smirks, &[&labeled]).unwrap();
+        assert_eq!(products.len(), 1);
+        assert_eq!(products[0].len(), 1);
+        assert!(
+            products[0]
+                .iter()
+                .any(|m| m.atoms().any(|(_, a)| a.isotope == Some(13)))
+        );
+        assert!(run_reactants(smirks, &[&unlabeled]).unwrap().is_empty());
     }
 
     #[test]

@@ -1,0 +1,588 @@
+{
+  "schema": "paired-published-python-versions/v1",
+  "artifacts": {
+    "a": {
+      "version": "1.0.29",
+      "python": "/private/tmp/chematic-v1029-accuracy-ld15ni/venv/bin/python",
+      "wheel_sha256": "a9ceb3c685e6cf4abbbdb1ae1cdbaa76b9ba13c8015d53750ba617cba3f7c1d8"
+    },
+    "b": {
+      "version": "1.0.30",
+      "python": "/private/tmp/chematic-v1030-check/bin/python",
+      "wheel_sha256": "f6b1b22dd898cf3f100001156d9504b3753cb6b392143cbc0e6f3be78ec723d5"
+    }
+  },
+  "corpus": {
+    "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+    "limit": 5000,
+    "multiplier": 1
+  },
+  "operation": "ring_count",
+  "mode": "parse_inclusive",
+  "protocol": {
+    "blocks": 20,
+    "order": "AB/BA alternating, fresh process per arm",
+    "warmup": "one operation call per arm outside timer",
+    "memory": "whole-process peak RSS"
+  },
+  "paired": {
+    "median_b_over_a": 0.992298328798515,
+    "bootstrap_95pct": [
+      0.9834693129304504,
+      1.0003939463878466
+    ],
+    "bootstrap_samples": 4000,
+    "seed": 0
+  },
+  "output_sha256_sets": {
+    "a": [
+      "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60"
+    ],
+    "b": [
+      "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60"
+    ]
+  },
+  "outputs_equal_across_versions": true,
+  "pairs": [
+    {
+      "block": 0,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23019959,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27328512,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23068750,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27213824,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 1,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 24318000,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27246592,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23033583,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27148288,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 2,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23166250,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27017216,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22726875,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27082752,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 3,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22985125,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27066368,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23058750,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27394048,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 4,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23126709,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27017216,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22809458,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27312128,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 5,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23270958,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27164672,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23451792,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27197440,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 6,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23039208,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27131904,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23254584,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 26984448,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 7,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23980000,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27213824,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22730792,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27066368,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 8,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22740458,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 26935296,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23068584,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27049984,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 9,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22717167,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27148288,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23259375,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27164672,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 10,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23074375,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27181056,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23167292,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27295744,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 11,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23270000,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27394048,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23127083,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27181056,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 12,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22629209,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 26984448,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22932833,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27049984,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 13,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23228709,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27312128,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23127333,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27099136,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 14,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22737625,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27000832,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23174167,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27230208,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 15,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22750208,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27230208,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22816250,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27049984,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 16,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23101584,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27099136,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 24652417,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27033600,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 17,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22901458,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27426816,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22641750,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 26886144,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 18,
+      "order": [
+        "a",
+        "b"
+      ],
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 22407083,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 26886144,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23364375,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27328512,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    },
+    {
+      "block": 19,
+      "order": [
+        "b",
+        "a"
+      ],
+      "b": {
+        "version": "1.0.30",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23644500,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27148288,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      },
+      "a": {
+        "version": "1.0.29",
+        "operation": "ring_count",
+        "mode": "parse_inclusive",
+        "input_count": 5000,
+        "elapsed_ns": 23052000,
+        "output_sha256": "5e89d7967d7a5ca5aacd2f03815823e83d893471e3962bbcb9ba7698f0e9dd60",
+        "peak_process_rss_bytes": 27148288,
+        "runtime": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+      }
+    }
+  ]
+}

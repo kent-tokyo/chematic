@@ -1,0 +1,282 @@
+{
+ "schema": "chematic-python-op-matrix-vs-rdkit/v1",
+ "created_utc": "2026-10-02T12:12:48.008853Z",
+ "chematic": {
+  "version": "1.0.30",
+  "revision": "v1.0.30",
+  "artifact": "chematic-1.0.30-cp313-cp313-macosx_11_0_arm64.whl",
+  "artifact_sha256": "f6b1b22dd898cf3f100001156d9504b3753cb6b392143cbc0e6f3be78ec723d5"
+ },
+ "rdkit": {
+  "version": "2026.03.6"
+ },
+ "environment": {
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu_model": "Apple M4",
+  "cpu_count": 10,
+  "threads": "single-threaded calls in one process"
+ },
+ "corpus": {
+  "path": "scripts/chembl_accuracy_corpus_4999.smi",
+  "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+  "rows_read": 5000,
+  "common_valid_rows": 5000,
+  "chematic_parse_failures": 0,
+  "rdkit_parse_failures_after_chematic_success": 0
+ },
+ "protocol": {
+  "repeats": 20,
+  "aggregation": "median over repeats of total wall time / rows (perf_counter)",
+  "cold_inputs": "inputs rebuilt before every repeat (untimed): chematic re-parses SMILES, RDKit re-parses with MolFromSmiles",
+  "order": "alternating chematic/RDKit and RDKit/chematic paired blocks",
+  "warmup": "one untimed call per arm before each operation",
+  "memory": "not measured by this process; use an isolated peak-RSS lane",
+  "exceptions": "counted per repeat as failures, never timed as wins",
+  "ratio": "rdkit_us / chematic_us (>1 means chematic faster)"
+ },
+ "operations": [
+  {
+   "op": "morgan_r2_2048(rdkit-compatible)",
+   "equivalence": "checked",
+   "note": "",
+   "rows": 5000,
+   "chematic_us_per_row": 14.226587495068088,
+   "rdkit_us_per_row": 44.101454099291004,
+   "ratio": 3.0880072000881764,
+   "chematic_repeats_us": [
+    14.0926165971905,
+    14.231658395146951,
+    14.304583199555054,
+    14.221516594989225,
+    14.316408196464181,
+    14.539366599638015,
+    14.073483197716996,
+    14.110666600754485,
+    14.038466796046123,
+    14.216516603482887,
+    15.46550000202842,
+    14.355916599743068,
+    14.402325003175065,
+    14.433866797480732,
+    14.053408202016726,
+    14.197283197427168,
+    14.088108402211219,
+    15.60886660008691,
+    15.301816596183926,
+    14.183974999468774
+   ],
+   "rdkit_repeats_us": [
+    43.682499998249114,
+    44.06755000236444,
+    44.11269999691285,
+    44.09020820166916,
+    44.14410819881596,
+    44.36829159967601,
+    45.078366599045694,
+    43.63298320095055,
+    43.72465840424411,
+    44.36569180106744,
+    43.786499998532236,
+    44.00759160052985,
+    44.17788339778781,
+    44.25793340196833,
+    44.40421659965068,
+    43.990591599140316,
+    44.3003749998752,
+    44.28520000074059,
+    44.03166659758426,
+    43.61475000041537
+   ],
+   "chematic_failures": 0,
+   "rdkit_failures": 0,
+   "output_agreement": {
+    "compared": 5000,
+    "agree": 5000
+   },
+   "counted": true,
+   "paired_blocks": [
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 14.0926165971905,
+     "rdkit": 43.682499998249114
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 44.06755000236444,
+     "chematic": 14.231658395146951
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 14.304583199555054,
+     "rdkit": 44.11269999691285
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 44.09020820166916,
+     "chematic": 14.221516594989225
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 14.316408196464181,
+     "rdkit": 44.14410819881596
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 44.36829159967601,
+     "chematic": 14.539366599638015
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 14.073483197716996,
+     "rdkit": 45.078366599045694
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 43.63298320095055,
+     "chematic": 14.110666600754485
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 14.038466796046123,
+     "rdkit": 43.72465840424411
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 44.36569180106744,
+     "chematic": 14.216516603482887
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 15.46550000202842,
+     "rdkit": 43.786499998532236
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 44.00759160052985,
+     "chematic": 14.355916599743068
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 14.402325003175065,
+     "rdkit": 44.17788339778781
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 44.25793340196833,
+     "chematic": 14.433866797480732
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 14.053408202016726,
+     "rdkit": 44.40421659965068
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 43.990591599140316,
+     "chematic": 14.197283197427168
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 14.088108402211219,
+     "rdkit": 44.3003749998752
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 44.28520000074059,
+     "chematic": 15.60886660008691
+    },
+    {
+     "order": [
+      "chematic",
+      "rdkit"
+     ],
+     "chematic": 15.301816596183926,
+     "rdkit": 44.03166659758426
+    },
+    {
+     "order": [
+      "rdkit",
+      "chematic"
+     ],
+     "rdkit": 43.61475000041537,
+     "chematic": 14.183974999468774
+    }
+   ],
+   "paired_ci": {
+    "median_ratio": 3.0880072000881764,
+    "bootstrap_95pct": [
+     3.0668347491905954,
+     3.099959678171394
+    ],
+    "bootstrap_samples": 4000,
+    "seed": 0
+   },
+   "equivalent_output_speed_win": true
+  }
+ ],
+ "summary": {
+  "operations": 1,
+  "counted_operations": 1,
+  "counted_faster": 1,
+  "counted_faster_with_full_agreement": 1,
+  "same_task_operations": 0,
+  "not_equivalent_operations": 0,
+  "equivalent_output_speed_wins_with_ci": 1
+ }
+}

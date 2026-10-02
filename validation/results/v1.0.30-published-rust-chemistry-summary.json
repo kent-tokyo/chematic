@@ -1,0 +1,39 @@
+{
+  "counts": {
+    "canonical_cross_binding_differences": 0,
+    "cip_exact": 9995,
+    "cip_typed_refusal": 5,
+    "cip_wrong_confident": 0,
+    "completed": 10000,
+    "input": 10000,
+    "morgan_exact": 9999,
+    "morgan_typed_refusal": 1,
+    "morgan_wrong_confident": 0,
+    "parse_failure": 0,
+    "smarts_cells": 310000,
+    "smarts_differences": 200
+  },
+  "crate": {
+    "name": "chematic",
+    "origin": "crates.io exact dependency; verify Cargo.lock",
+    "version": "1.0.30"
+  },
+  "operation_matrix": {
+    "status": "not_yet_measured"
+  },
+  "oracle": {
+    "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "python_reference_sha256": "e9b8592b69a0663608ab51d0d83d3db644a515a7cbfedefe5ad5aff61780b968",
+    "queries_sha256": "250a241a8905d013eb58fff0ccfb1e0dbe3e97c08ff56e021828fbfec957b341",
+    "rdkit_version": "2026.03.6",
+    "smarts_all_cells_sha256": "0cf09dd03bbd4fbbaa4ea7198bff31c64c2803f90024a7f9956f8e5927a0801f"
+  },
+  "reaction_transform": {
+    "status": "not_yet_measured"
+  },
+  "rows": {
+    "path": "/private/tmp/chematic-v1030-full-gate/rust-chemistry-rows.jsonl",
+    "sha256": "b35a9f6621447c04a45619f757d52c5977ab3081e8177983635381c62e602231"
+  },
+  "schema": "published-rust-chemistry-v1"
+}

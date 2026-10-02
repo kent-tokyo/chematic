@@ -1,0 +1,12 @@
+[package]
+name = "published-chematic-gate"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+chematic = { version = "=1.0.30", features = ["smiles", "perception", "chem", "fp", "smarts", "rxn"] }
+serde_json = "1"
+sha2 = "0.10"
