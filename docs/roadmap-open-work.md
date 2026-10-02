@@ -8,10 +8,12 @@ history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 | Order | Work | Current evidence | Exit |
 |---:|---|---|---|
-| 1 | Lone-pair CIP support | #634's exposed 10k lane has 9,995 exact rows; four phosphorus `oracle_unstable` and one bridgehead amine `lone_pair_center` are typed abstentions | Define a stereo-order convention for an implicit lone-pair ligand before emitting R/S labels; treat as a separate feature |
-| 2 | A6 MMFF94 | #637 evidence scope is closed: source same-coordinate packet 262/262 comparable rows within 1 kcal/mol (max 0.32), with bounded gradient checks. Two published v1.0.26 Mac wheel runs: CheMatic 265/265 and RDKit 264/265 independently sound, stereo-clean, clash-free usable rows; see `benchmarks/2026-09-26-mmff94-public-v1.0.26.md` | Timeout/convergence on broader inputs, conformer-quality non-inferiority, and 2,908 heavy-atom typing residuals remain separate A6 gates; no general speed claim |
-| 3 | Optional SMARTS ring-count profile | #635 classification is closed. The remaining 200/310,000 cells are 194 symmetrized-ring `[Rn]`/`[kn]` cells and 6 on one ferrocene row, checked against raw query/target cells | If demanded, design an explicit RDKit-style option; keep native SSSR semantics unchanged by default |
-| 4 | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after the next official stable artifact is pinned; retain old/new results side by side |
+| 1 | Published-v1.0.29 evidence packet | #679/#680 deterministic regressions pass, but no v1.0.29 full-corpus accuracy/speed packet exists | Pin package hashes and RDKit; run applicable exposed 10k, 310k-cell, reaction, and 5k operation lanes with complete outcomes and paired equivalent-work timing |
+| 2 | SMARTS/SMIRKS semantic gate | #635 has 200/310,000 classified cells (194 ring-model, six ferrocene); #679/#680 have focused regressions only | Add versioned charge/product corpus, graph/map/product accounting, and no-regression checks; keep any RDKit ring profile opt-in |
+| 3 | CIP abstention gate | The v1.0.28-source 10k lane has 9,995 exact and five typed abstentions, not complete compatibility | Re-measure published v1.0.29; preserve zero wrong confident labels, adjudicate four phosphorus cases independently, define lone-pair convention before issuing R/S |
+| 4 | A6 MMFF94 | #637 source same-coordinate packet has 262/262 comparable rows within 1 kcal/mol (max 0.32); two published v1.0.26 Mac wheel runs retain 265 rows. These are historical scoped results | Broader typing (including 2,908 heavy-atom residuals), timeout/convergence, stereo and conformer-quality gates; speed only on a quality-equivalent published-package lane |
+| 5 | Bounded interchange and identity | CDXML/Markush/polymer, Standard InChI, and canonical/stable-key contracts remain narrower than full parity | Separate preservation, semantic round-trip, typed-refusal, and no-false-merge gates per format/API and binding |
+| 6 | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after another official stable artifact is pinned; retain old/new results side by side |
 
 ## Accuracy packages
 
@@ -59,7 +61,7 @@ complete merely because a local packet exists.
 ## Evidence boundaries
 
 - **Release channels:**
-  `validation/results/release-channel-verification-v1.0.25.json` records
+  `validation/results/release-channel-verification-v1.0.29.json` records
   independent post-publication observations of GitHub Release, npm, PyPI,
   crates.io, docs.rs, and Pages.
 - **RDKit agreement:**

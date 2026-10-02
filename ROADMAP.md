@@ -11,7 +11,8 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 - **v1.0.29 corrects #679/#680.** SMIRKS product-side atomic-number atoms
   produce literal atoms; repeated SMARTS charge signs represent one charge.
-  Targeted regressions are not a broad reaction/SMARTS parity claim.
+  Targeted regressions are not a broad reaction/SMARTS parity claim. No
+  v1.0.29-specific full-corpus accuracy or speed packet has been run.
 - **v1.0.28 closes the classified #634 CIP residuals at release source.**
   The pinned, exposed 10,000-row RDKit 2026.03.6 lane has 9,995 exact rows;
   the remaining five are typed abstentions. Lone-pair stereocentres are not
@@ -48,18 +49,68 @@ Exact versions, corpora, and limits are in [validation](docs/validation.md) and
 the [benchmark index](benchmarks/README.md). Completed detail belongs in dated
 records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
 
-## Priority order
+## Priority order and acceptance gates
 
-1. **Decide optional RDKit-style SMARTS ring counts.** #635's 310,000-cell
-   classification is complete; `[Rn]`/`[kn]` still have a documented native
-   SSSR-versus-symmetrized-ring boundary. Any parity option must be explicit.
-2. **Finish remaining A6 MMFF94 gates.** Heavy-atom typing residuals,
-   timeout/convergence accounting, and broader conformer quality remain ahead
-   of new 3D breadth.
-3. **Prepare a pinned RDKit rebaseline.** Retain 2026.03.6 as historical and
-   compare any new official artifact side by side with it.
+1. **P0 — Measure the published v1.0.29 artifacts.** Pin the PyPI wheel, npm
+   tarball, Rust crate, their hashes, RDKit 2026.03.6, preprocessing, options,
+   runtime, and hardware. Re-run the applicable *exposed* versioned 10k
+   chemistry, 310k-cell SMARTS, reaction, and 5k operation-matrix lanes; mark
+   non-applicable operations explicitly. Report exact or graph-semantic
+   agreement, every unsupported/refused/failed/timed-out row, and a paired
+   v1.0.28→v1.0.29 delta for the changed operations. Time only equivalent
+   operations with the same work included (parse-inclusive and prepared lanes
+   separately), repeated samples, raw observations, and uncertainty intervals.
+   **Exit:** reproducible raw data, hashes, complete denominators, binding-
+   specific results, and a machine-checked report; no unmeasured speed or
+   whole-library parity claim. Do not reuse an exposed cohort as sealed data.
+2. **P1 — Expand #679/#680 into a SMARTS/SMIRKS semantic gate.** Add repeated
+   charges, mapped/unmapped product atoms, explicit/implicit H, aromatic and
+   aliphatic reactants, atom order, stereo, and multi-reactant cases to a
+   versioned query/reaction corpus. Compare supported matches and products to
+   pinned RDKit by graph, maps, and provenance rather than SMILES spelling;
+   count duplicate or silently missing products. Recount #635's 200/310,000
+   SMARTS residual cells (194 symmetrized-ring `[Rn]`/`[kn]`, six ferrocene)
+   separately from new #679/#680 cases. Native SSSR remains the default; any
+   RDKit-style ring-count mode must be opt-in with its own contract.
+   **Exit:** no wrong result on the declared supported fixtures, no regression
+   in previously passing cells, and every remaining difference classified as
+   fixed, intentional model difference, or typed unsupported outcome. Do not
+   call this general SMIRKS/SMARTS parity.
+3. **P1 — Preserve and then narrow the CIP abstention boundary.** Re-run the
+   published v1.0.29 lane before quoting a v1.0.29 result. The v1.0.28-source
+   9,995/10,000 exact result and five typed abstentions are historical: four
+   `oracle_unstable` phosphorus cases and one `lone_pair_center`. First gate
+   zero wrong confident labels and stable abstention reasons under atom-order,
+   SMILES-spelling, and V2000/V3000 round trips. Independently adjudicate the
+   phosphorus cases; define an explicit lone-pair stereo convention before
+   converting any abstention to R/S. **Exit:** complete row accounting and
+   independent gold for each newly resolved case. Five safe abstentions are a
+   valid bounded contract, not complete CIP compatibility.
+4. **P2 — Complete A6 before changing the Experimental 3D label.** Address
+   MMFF94 heavy-atom typing residuals, missing parameters, analytic gradients,
+   convergence/timeouts, stereo retention, and conformer quality on matched
+   seeds and coordinates. Keep the v1.0.26 262/262 same-coordinate energy and
+   265-row wheel quality packets historical. Predeclare quality-equivalent
+   scope and non-inferiority thresholds before any speed comparison.
+   **Exit:** no silent success for untyped or nonconverged inputs, full outcome
+   accounting, independent geometry/stereo scoring, and published-artifact
+   replication. Do not infer ETKDG or broad MMFF94 parity from finite energy.
+5. **P2 — Keep representation limits explicit and test each separately.** For
+   CDXML, distinguish exact-source/opaque preservation from semantic editing;
+   for Markush/polymer, require explicit bounded expansion or typed refusal;
+   for Standard InChI, distinguish the optional standard implementation from
+   native identifiers; for canonical SMILES, test idempotency, permutation and
+   file round trips, and stable-key no-false-merge/abstention separately from
+   string equality. **Exit:** a cross-binding capability table and round-trip
+   fixtures with no silent information loss; expand the supported domain only
+   after its independent gate passes.
+6. **External dependency — Rebaseline a later RDKit release only after an
+   official artifact is pinned.** Keep 2026.03.6 and the new oracle results
+   side by side; do not rewrite older evidence or tune on sealed data.
 
-A confirmed silent-corruption or security regression takes precedence.
+A confirmed silent-corruption or security regression takes precedence. A0
+sealed results, historical source timings, and published-package measurements
+remain separate evidence classes throughout this plan.
 
 ## Accuracy packages
 
