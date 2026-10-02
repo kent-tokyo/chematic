@@ -12,11 +12,12 @@ ROADMAP = ROOT / "ROADMAP.md"
 DISPOSITION = ROOT / "docs" / "roadmap-open-work.md"
 
 
-def roadmap_target(roadmap: str) -> str:
-    match = re.search(r"Development target:\s*\n?> \*\*v([^*]+)\*\*", roadmap)
+def roadmap_release_line(roadmap: str) -> str:
+    match = re.search(r"Release line: \*\*v([^*]+)\*\*", roadmap)
     if match is None:
-        raise ValueError("roadmap development target is missing")
+        raise ValueError("roadmap release line is missing")
     return match.group(1)
+
 
 ACCURACY_PACKAGES = {
     "A0": "Evaluation contract",
@@ -40,37 +41,40 @@ DEPENDENCY_CLASSES = (
 def main() -> int:
     roadmap = ROADMAP.read_text(encoding="utf-8")
     disposition = DISPOSITION.read_text(encoding="utf-8")
-    target = roadmap_target(roadmap)
-    package_lines = [line for line in roadmap.splitlines() if re.match(r"^- \[[ x]\]", line)]
+    release_line = roadmap_release_line(roadmap)
+    cargo = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
+    workspace_version = re.search(r'^version\s*=\s*"([^"]+)"\s*$', cargo, re.MULTILINE)
     errors: list[str] = []
 
-    for package, title in ACCURACY_PACKAGES.items():
-        marker = f"**{package} — {title}:**"
-        matching = [line for line in package_lines if marker in line]
-        if len(matching) != 1:
-            errors.append(f"{package}: roadmap package must appear exactly once")
-        elif package == "A0" and not matching[0].startswith("- [x]"):
-            errors.append("A0: completed roadmap package must stay checked")
-        elif package != "A0" and not matching[0].startswith("- [ ]"):
-            errors.append(f"{package}: open roadmap package must stay unchecked")
+    if workspace_version is None or release_line != workspace_version.group(1):
+        errors.append("roadmap release line does not match Cargo workspace version")
 
-    package_ids = {
-        match.group(1)
-        for line in package_lines
-        if (match := re.search(r"\*\*(A[0-6]) —", line))
-    }
-    if package_ids != set(ACCURACY_PACKAGES):
-        errors.append(f"unexpected accuracy package set: {sorted(package_ids)}")
+    for document_name, document in (("ROADMAP", roadmap), ("open-work ledger", disposition)):
+        package_rows = [
+            match.groups()
+            for line in document.splitlines()
+            if (match := re.match(r"^\|\s*(A[0-6])\s+([^|]+?)\s*\|\s*([^|]+?)\s*\|", line))
+        ]
+        for package, title in ACCURACY_PACKAGES.items():
+            matching = [row for row in package_rows if row[0] == package]
+            if len(matching) != 1 or matching[0][1].strip() != title:
+                errors.append(f"{document_name}: {package} package/title must appear exactly once")
+                continue
+            state = matching[0][2].strip().lower()
+            if (package == "A0" and state != "complete") or (
+                package != "A0" and state.startswith("complete")
+            ):
+                errors.append(f"{document_name}: {package} completion state is incorrect")
 
     for dependency_class in DEPENDENCY_CLASSES:
         if dependency_class not in disposition:
             errors.append(f"dependency class {dependency_class} is missing")
 
     for required_heading in (
+        "## Current position",
         "## Priority order",
         "## Accuracy packages",
         "## Product phases",
-        f"## Release gate for v{target}",
     ):
         if required_heading not in roadmap:
             errors.append(f"roadmap heading is missing: {required_heading}")
@@ -81,7 +85,7 @@ def main() -> int:
         return 1
 
     print(
-        f"Roadmap disposition OK: {len(package_ids)} accuracy packages (A0 complete) and "
+        f"Roadmap disposition OK: {len(ACCURACY_PACKAGES)} accuracy packages (A0 complete) and "
         f"{len(DEPENDENCY_CLASSES)} dependency classes are explicit"
     )
     return 0
