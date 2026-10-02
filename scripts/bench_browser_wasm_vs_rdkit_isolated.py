@@ -242,6 +242,7 @@ def page_html(
     smiles: list[str],
     warmup: int,
     fingerprint_excluded_smiles: frozenset[str],
+    batch_timing: bool = False,
 ) -> str:
     config = json.dumps(
         {
@@ -249,6 +250,7 @@ def page_html(
             "smiles": smiles,
             "warmup": warmup,
             "fingerprint_excluded_smiles": sorted(fingerprint_excluded_smiles),
+            "batch_timing": batch_timing,
         }
     ).replace("<", "\\u003c")
     rdkit_script = (
@@ -265,6 +267,12 @@ const summarize = (values) => {{
 }};
 const time = (fn, values = config.smiles) => {{
   for (const value of values.slice(0, config.warmup)) fn(value);
+  if (config.batch_timing) {{
+    const start = performance.now();
+    for (const value of values) fn(value);
+    const elapsed = performance.now() - start;
+    return {{count: values.length, mean_ms: elapsed / values.length, batch_elapsed_ms: elapsed, input_rows: values.length}};
+  }}
   const samples = [];
   for (const value of values) {{ const start = performance.now(); fn(value); samples.push(performance.now() - start); }}
   return {{...summarize(samples), input_rows: values.length}};
@@ -297,6 +305,16 @@ const timeFingerprint = (fn, values) => {{
   for (const value of values.slice(0, config.warmup)) requirePackedFp(fn(value));
   let digest = 0x811c9dc5;
   let setBits = 0;
+  if (config.batch_timing) {{
+    const start = performance.now();
+    const packedRows = values.map((value) => requirePackedFp(fn(value)));
+    const elapsed = performance.now() - start;
+    for (const packed of packedRows) {{
+      digest = fnv1a32(digest, packed);
+      for (const byte of packed) setBits += byte.toString(2).split("1").length - 1;
+    }}
+    return {{count: values.length, mean_ms: elapsed / values.length, batch_elapsed_ms: elapsed, input_rows: values.length, output: {{format: "packed-lsb-first-2048-bit", bytes_per_row: FP_BYTES, fnv1a32: digest.toString(16).padStart(8, "0"), set_bits: setBits}}}};
+  }}
   const samples = [];
   for (const value of values) {{
     const start = performance.now();
@@ -369,6 +387,7 @@ class Handler(BaseHTTPRequestHandler):
     files: dict[str, Path] = {}
     smiles: list[str] = []
     warmup: int = 20
+    batch_timing: bool = False
     fingerprint_excluded_smiles: frozenset[str] = frozenset()
 
     def do_GET(self) -> None:  # noqa: N802
@@ -379,7 +398,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_error(400, "arm must be chematic or rdkit")
                 return
             body = page_html(
-                arm, self.smiles, self.warmup, self.fingerprint_excluded_smiles
+                arm, self.smiles, self.warmup, self.fingerprint_excluded_smiles,
+                self.batch_timing,
             ).encode()
             content_type = "text/html"
         elif parsed.path in self.files:
@@ -436,6 +456,10 @@ def main() -> int:
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--repetitions", type=int, default=5)
     parser.add_argument(
+        "--batch-timing", action="store_true",
+        help="time the row loop once per fresh browser, avoiding per-row timer quantization",
+    )
+    parser.add_argument(
         "--measure-process-rss",
         action="store_true",
         help="launch Chromium through CDP and sample its process-tree RSS; unsupported for Firefox/WebKit",
@@ -466,6 +490,7 @@ def main() -> int:
     if missing:
         raise SystemExit(f"missing benchmark artifacts: {missing}")
     Handler.smiles, Handler.warmup = smiles, args.warmup
+    Handler.batch_timing = args.batch_timing
     Handler.fingerprint_excluded_smiles = (
         FINGERPRINT_TYPED_UNSUPPORTED_SMILES.intersection(smiles)
     )
@@ -617,6 +642,7 @@ def main() -> int:
             "rows": args.rows,
             "warmup_rows": args.warmup,
             "repetitions": args.repetitions,
+            "timing_method": "single_batch" if args.batch_timing else "per_row_timer",
             "timing": "fresh browser process per arm/repetition; no-store local routes",
             "download_to_ready_contract": "navigation start through JavaScript module/script fetch and WebAssembly initialization; excludes the subsequent parse/write/fingerprint workload",
             "process_rss": (

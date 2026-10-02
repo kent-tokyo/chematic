@@ -21,11 +21,13 @@ if __package__:
     from .check_v1030_published_chemistry_residuals import check as check_chemistry_residuals
     from .check_published_rust_63op_outputs import build_report as build_rust_operation_report
     from .check_published_wasm_paired import check as check_published_wasm_paired
+    from .check_published_browser_paired import check as check_published_browser_paired
 else:
     from check_published_python_version_outputs import compare
     from check_v1030_published_chemistry_residuals import check as check_chemistry_residuals
     from check_published_rust_63op_outputs import build_report as build_rust_operation_report
     from check_published_wasm_paired import check as check_published_wasm_paired
+    from check_published_browser_paired import check as check_published_browser_paired
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation/results"
@@ -38,6 +40,8 @@ ALL_REACTION_REPORT_SHA256 = "a43cf9eec38b04664dc8ee269aa69f51a9ae3e310fa5a78117
 REACTION_TEMPLATE_MAP_REPORT_SHA256 = "087f38ffa4ea766698ed14c7867238bdb5fc22cdfcab3bfceb4b0ae55f861ad8"
 REACTION_NEW_MAP_REPORT_SHA256 = "98b469b3d3fbb6900031313ce5bfa457285968f2df6a5b03f49d4836cb60df82"
 REACTION_MULTIPLICITY_REPORT_SHA256 = "aecd38403e092f3518aa121167077dbfb4ef7637d16d42b763460a2542b10a3d"
+BROWSER_PAIRED_RAW_SHA256 = "de0e7f1f8ba7ad208aeb906acb435b10ca210c05bf4ddc860a4217618c99275d"
+BROWSER_PAIRED_SUMMARY_SHA256 = "3f27f1c17824aabfee7b52ae9c122974736290eb00da7249c29f5053823d2233"
 PAIRED_63OP_SHA256 = "5448fd34190d5358227663a77e415e31dca71718cfd38c2d01e156ab539719da"
 
 
@@ -438,12 +442,19 @@ def main() -> int:
     check_npm_version_diff()
     check_chemistry_residuals()
     check_published_wasm_paired()
+    browser_raw = ROOT / "benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-paired20.json"
+    browser_summary = ROOT / "benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-paired20-summary.json"
+    fail_if(hashlib.sha256(browser_raw.read_bytes()).hexdigest() != BROWSER_PAIRED_RAW_SHA256 or
+            hashlib.sha256(browser_summary.read_bytes()).hexdigest() != BROWSER_PAIRED_SUMMARY_SHA256 or
+            check_published_browser_paired(browser_raw) != json.loads(browser_summary.read_bytes()),
+            "published Chromium paired timing/output/memory record identity")
     print("v1.0.30 packet integrity OK: 3 published artifacts x 10k/310k; "
           "Python/Rust 63 operations x 210,410 rows each per version (only HBA/bundle changed); "
           "npm 59/63 output adapters (52 exact, ETKDG rounded, 3 representation lanes differ), "
           "v1.0.29 to v1.0.30 only HBA/bundle changed on the same 1,359 rows; "
           "200 SMARTS residuals and 5 CIP abstentions classified on published rows; "
-          "20-block Python speed matrix and 8 output-gated Node/WASM lanes; "
+          "20-block Python speed matrix, 8 output-gated Node/WASM lanes and "
+          "2 output-gated Chromium Morgan lanes; "
           "npm reaction 74 match, 5 confident "
           "differences, 1 invalid JSON; Rust reaction origins 74/83 matched; "
           "73/83 graph-origin-map matches, 1 map-only residual; "
