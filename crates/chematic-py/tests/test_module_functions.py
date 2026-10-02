@@ -127,6 +127,61 @@ def test_run_smirks_invalid_smirks():
         chematic.run_smirks("NOT_A_SMIRKS", [chematic.from_smiles("C")])
 
 
+def test_run_smirks_checked_reports_success_and_no_match():
+    ethanol = chematic.from_smiles("CCO")
+    success = chematic.run_smirks_checked("[OH:1]>>[O-:1]", [ethanol])
+    assert success["status"] == "products"
+    assert success["reason"] is None
+    assert success["accepted_matches"] >= 1
+    assert success["applied_products"] >= 1
+    assert success["valence_rejected_matches"] == 0
+    assert success["products"]
+    missing = chematic.run_smirks_checked("[NH2:1]>>[NH3+:1]", [ethanol])
+    assert missing["status"] == "no_match"
+    assert missing["products"] == []
+
+
+def test_run_smirks_checked_reports_typed_errors():
+    methane = chematic.from_smiles("C")
+    invalid = chematic.run_smirks_checked("NOT_A_SMIRKS", [methane])
+    assert invalid["status"] == "typed_refusal"
+    assert invalid["reason"] == "smirks_parse"
+    mismatch = chematic.run_smirks_checked("[C:1].[O:2]>>[C:1][O:2]", [methane])
+    assert mismatch["status"] == "typed_refusal"
+    assert mismatch["reason"] == "reactant_count_mismatch"
+
+
+def test_run_smirks_checked_does_not_hide_filtered_product():
+    substrate = chematic.from_smiles("[13CH3]O")
+    report = chematic.run_smirks_checked(
+        "[13CH3:1][O:2]>>[13CH3:1].[O:2]", [substrate]
+    )
+    assert report["status"] == "typed_refusal"
+    assert report["reason"] == "product_valence"
+    assert report["accepted_matches"] >= 1
+    assert report["valence_rejected_matches"] >= 1
+    assert report["products"] == []
+
+
+def test_run_smirks_checked_rdkit_profile_declines_chiral_reactants():
+    alanine = chematic.from_smiles("N[C@@H](C)C(=O)O")
+    smirks = "[N:1][C@@H:2](C)C(=O)O>>[N:1].[C@@H:2](C)C(=O)O"
+    report = chematic.run_smirks_checked(smirks, [alanine], rdkit_compat=True)
+    assert report["status"] == "typed_unsupported"
+    assert report["reason"] == "chiral_reactant_template_semantics"
+    assert report["products"] == []
+    ordinary = chematic.run_smirks_checked(smirks, [alanine])
+    assert ordinary["status"] != "typed_unsupported"
+
+
+def test_run_smirks_checked_rdkit_profile_keeps_ez_templates():
+    substrate = chematic.from_smiles("C/C=C/C")
+    report = chematic.run_smirks_checked(
+        "[C:1]=[C:2]>>[C:1]=[C:2]", [substrate], rdkit_compat=True
+    )
+    assert report["status"] == "products"
+
+
 # E/Z stereo transfer & creation in products (issue #50)
 
 def _product_ez(smirks, smis):

@@ -359,6 +359,19 @@ pub struct PreparedReaction {
 }
 
 impl PreparedReaction {
+    /// Whether the reactant pattern has tetrahedral `@`/`@@` constraints.
+    ///
+    /// This is deliberately separate from E/Z bond stereo. Callers that need
+    /// RDKit-compatible reaction semantics can refuse this profile explicitly
+    /// rather than returning a confident, differently interpreted product.
+    pub fn has_tetrahedral_reactant_stereo(&self) -> bool {
+        self.has_stereo
+            || self
+                .variants
+                .as_ref()
+                .is_some_and(|variants| variants.iter().any(|variant| variant.has_stereo))
+    }
+
     /// Parse and compile one SMIRKS template for repeated matching and
     /// application. The returned value owns all query state, is safe to share
     /// between threads, and never reparses the template during its methods.

@@ -10,6 +10,7 @@ accuracy, or compatibility claims.
 | Need | Start with |
 |---|---|
 | Review the v1.0.30 published-artifact rerun and open gates | [`2026-10-02-v1.0.30-published-artifact-gates.md`](2026-10-02-v1.0.30-published-artifact-gates.md): Python/npm/Rust 10k chemistry and 310k SMARTS, Python 63-operation output differential, 83 reaction strata, paired speed diagnostics; acceptance remains open |
+| Review the opt-in checked reaction source profile | [`2026-10-02-reaction-checked-source-profile.md`](2026-10-02-reaction-checked-source-profile.md): 83 stratified cases with typed unsupported/refusal accounting; unpublished candidate, no product-map provenance parity |
 | Review the published v1.0.29 Python accuracy packet and unreleased HBA correction | [`2026-10-02-v1.0.29-python-accuracy.md`](2026-10-02-v1.0.29-python-accuracy.md): 10k chemistry rows, 310k SMARTS cells, 57 reactions and 5k operation matrix; published and source evidence separated |
 | Review the post-v1.0.25 output-identical speed branch (`perf/speed-4`) | [`2026-09-25-perf-speed4-output-identical.md`](2026-09-25-perf-speed4-output-identical.md): `912c4b7d` vs `5269d69f` and follow-up `98f57746`; 49 operations x 46,736 molecules with eight base-only nondeterministic error-text differences. Shared 2-vCPU VM source evidence, not a package claim. |
 | Review the previous output-identical speed branch | [`2026-09-24-perf-speed3-output-identical.md`](2026-09-24-perf-speed3-output-identical.md) |
@@ -100,6 +101,7 @@ measurement was rerun.
 | Record | Scope |
 |---|---|
 | [`2026-10-02-v1.0.30-published-artifact-gates.md`](2026-10-02-v1.0.30-published-artifact-gates.md) | Published v1.0.30 Python/npm/Rust accuracy packet and bounded paired-speed diagnostics; P0/P1 still open |
+| [`2026-10-02-reaction-checked-source-profile.md`](2026-10-02-reaction-checked-source-profile.md) | Opt-in unpublished reaction profile: 76/83 semantic matches, 3 typed unsupported, 1 typed refusal, 3 jointly invalid; zero wrong-confident rows in bounded corpus |
 | [`2026-10-02-v1.0.30-python-op-matrix.json`](2026-10-02-v1.0.30-python-op-matrix.json) | Published v1.0.30 Python 5k/63-operation three-repeat diagnostic (not counterbalanced) |
 | [`2026-10-02-v1.0.29-vs-v1.0.30-paired-parse.json`](2026-10-02-v1.0.29-vs-v1.0.30-paired-parse.json), [`paired-morgan`](2026-10-02-v1.0.29-vs-v1.0.30-paired-morgan.json), [`paired-hba`](2026-10-02-v1.0.29-vs-v1.0.30-paired-hba.json) | Published-wheel version comparison, 20 alternating blocks each; HBA outputs differ |
 | [`Morgan parse-inclusive`](2026-10-02-v1.0.29-vs-v1.0.30-paired-morgan-parse-inclusive.json), [`Morgan precomputed`](2026-10-02-v1.0.29-vs-v1.0.30-paired-morgan-precomputed.json), [`ring first-use`](2026-10-02-v1.0.29-vs-v1.0.30-paired-ring-prepared.json), [`ring parse-inclusive`](2026-10-02-v1.0.29-vs-v1.0.30-paired-ring-parse-inclusive.json) | Additional 20-block published-wheel mode-separated runs; all intervals cross or approach parity |

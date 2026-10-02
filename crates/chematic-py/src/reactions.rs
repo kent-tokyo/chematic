@@ -511,6 +511,114 @@ fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Apply a SMIRKS while preserving every terminal outcome and typed reason.
+///
+/// ``rdkit_compat=True`` fails closed on tetrahedral reactant-side ``@``/``@@``
+/// templates. CheMatic's ordinary reaction API enforces those constraints;
+/// pinned RDKit 2026.03.6 does not produce the same products for the exposed
+/// alanine probes. E/Z templates and non-chiral templates remain supported.
+/// This option does not change :func:`run_smirks` semantics.
+#[pyfunction(signature = (smirks, reactants, rdkit_compat = false))]
+fn run_smirks_checked<'py>(
+    smirks: &str,
+    reactants: Vec<Mol>,
+    rdkit_compat: bool,
+    py: Python<'py>,
+) -> PyResult<Bound<'py, PyDict>> {
+    let result = PyDict::new(py);
+    let refuse = |status: &'static str, reason: &'static str, detail: String| -> PyResult<()> {
+        result.set_item("status", status)?;
+        result.set_item("reason", reason)?;
+        result.set_item("detail", detail)?;
+        result.set_item("products", Vec::<Vec<Mol>>::new())?;
+        result.set_item("accepted_matches", 0)?;
+        result.set_item("applied_products", 0)?;
+        result.set_item("valence_rejected_matches", 0)?;
+        result.set_item("truncated_matches", false)?;
+        Ok(())
+    };
+    if reactants.iter().any(|mol| mol.inner.atom_count() > 300) {
+        refuse(
+            "typed_refusal",
+            "reactant_too_large",
+            "max 300 atoms per reactant".to_string(),
+        )?;
+        return Ok(result);
+    }
+    let prepared = match chematic_rxn::PreparedReaction::new(smirks) {
+        Ok(prepared) => prepared,
+        Err(error) => {
+            refuse("typed_refusal", "smirks_parse", error.to_string())?;
+            return Ok(result);
+        }
+    };
+    if rdkit_compat && prepared.has_tetrahedral_reactant_stereo() {
+        refuse(
+            "typed_unsupported",
+            "chiral_reactant_template_semantics",
+            "RDKit 2026.03.6 reaction chirality semantics differ from strict CheMatic".to_string(),
+        )?;
+        return Ok(result);
+    }
+    let refs: Vec<&chematic_core::Molecule> = reactants.iter().map(|m| m.inner.as_ref()).collect();
+    let report = match prepared
+        .run_reactants_with_diagnostics(&refs, &chematic_rxn::ReactionTransformLimits::default())
+    {
+        Ok(report) => report,
+        Err(error) => {
+            let reason = match &error {
+                chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
+                chematic_rxn::TransformError::ReactantCountMismatch { .. } => {
+                    "reactant_count_mismatch"
+                }
+                chematic_rxn::TransformError::SmirksParse(_) => "smirks_parse",
+            };
+            refuse("typed_refusal", reason, error.to_string())?;
+            return Ok(result);
+        }
+    };
+    let diagnostics = report.diagnostics;
+    let status = if diagnostics.valence_rejected_matches > 0 || diagnostics.truncated_matches {
+        if report.products.is_empty() {
+            "typed_refusal"
+        } else {
+            "partial_products"
+        }
+    } else if report.products.is_empty() {
+        "no_match"
+    } else {
+        "products"
+    };
+    result.set_item("status", status)?;
+    result.set_item(
+        "reason",
+        if diagnostics.truncated_matches {
+            Some("truncated_matches")
+        } else if diagnostics.valence_rejected_matches > 0 {
+            Some("product_valence")
+        } else {
+            None
+        },
+    )?;
+    result.set_item("detail", Option::<String>::None)?;
+    result.set_item("accepted_matches", diagnostics.accepted_matches)?;
+    result.set_item("applied_products", diagnostics.applied_products)?;
+    result.set_item(
+        "valence_rejected_matches",
+        diagnostics.valence_rejected_matches,
+    )?;
+    result.set_item("truncated_matches", diagnostics.truncated_matches)?;
+    result.set_item(
+        "products",
+        report
+            .products
+            .into_iter()
+            .map(|set| set.into_iter().map(Mol::bare).collect::<Vec<_>>())
+            .collect::<Vec<_>>(),
+    )?;
+    Ok(result)
+}
+
 /// Apply a SMIRKS reaction template to a list of reactant molecules (strict mode).
 ///
 /// Like :func:`run_smirks` but **does not carry substituents** into products.
@@ -812,6 +920,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(reaction_svg, m)?)?;
     m.add_function(wrap_pyfunction!(scaffold_network_counts, m)?)?;
     m.add_function(wrap_pyfunction!(run_smirks, m)?)?;
+    m.add_function(wrap_pyfunction!(run_smirks_checked, m)?)?;
     m.add_function(wrap_pyfunction!(run_smirks_strict, m)?)?;
     m.add_function(wrap_pyfunction!(find_mcs, m)?)?;
     m.add_function(wrap_pyfunction!(find_mcs_checked, m)?)?;

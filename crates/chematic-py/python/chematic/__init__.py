@@ -18,6 +18,7 @@ from .chematic import (
     smarts_find,
     depict_grid,
     run_smirks,
+    run_smirks_checked,
     find_mcs,
     iter_sdf,
     iter_sdf_batched,
