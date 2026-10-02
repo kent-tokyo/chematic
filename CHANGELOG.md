@@ -10,6 +10,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Fixed WASM `MolHandle.formula()` to use the shared Hill-order molecular
+  formula implementation. The published v1.0.30 npm package orders some
+  non-C/H elements by atomic number; 1,575/5,000 exposed ChEMBL formulas
+  differ in spelling from the Python wheel despite equal element counts.
+  This source fix is not yet published.
 - Fixed WASM `run_reactants` and `enumerate_library_2way` JSON serialization
   for product SMILES containing E/Z backslashes. The published v1.0.30 npm
   artifact can return invalid JSON for such a reaction; this source fix has

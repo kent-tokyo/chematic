@@ -17,8 +17,14 @@ boundaries, and reproducible evidence take priority over feature-count races.
   against pinned RDKit 2026.03.6, up from 3,641/5,000 on v1.0.29. The
   [dated packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
   retains hashes, raw rows and open gates. The published npm tarball **does**
-  expose `run_reactants`; the 63-operation capability mapping remains unfinished
-  outside Python.
+  expose `run_reactants`. A published-npm output slice now reruns 52/63
+  Python-matrix operations (194,600 retained rows): 46 operations match
+  byte-for-byte, QED and Chi1v have only bounded float roundoff, and 1,575
+  formula strings have equal composition but different element order.
+  MOL write, SVG, and 2D layout have 2,520 differences on three declared
+  non-equivalent representation lanes. The current source fixes formula order;
+  it is not a published v1.0.30 result. Eleven npm operation adapters and
+  the Rust operation mapping remain unfinished; pending is not unexposed.
 - **v1.0.29 has the historical partial P0 packet.** Its published Python
   wheel was measured on exposed 10,000-row chemistry, 310,000-cell SMARTS,
   57 reaction fixtures, and a 5,000-row/63-operation matrix. The 21
