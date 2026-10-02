@@ -70,6 +70,16 @@ jobs:
           python3 scripts/check_published_browser_paired.py \
             --input "/tmp/published-browser-$BROWSER.json" \
             --output "/tmp/published-browser-$BROWSER-summary.json"
+          for operation in direct prepared; do
+            python3 scripts/check_browser_rdkit_ecfp4_parity.py \
+              --rdkit-package /tmp/rdkit/node_modules/@rdkit/rdkit \
+              --schematic-dir /tmp/chematic-published/package \
+              --schematic-tarball /tmp/chematic-package/kent-tokyo-chematic-1.0.30.tgz \
+              --corpus scripts/descriptor_census_corpus.smi --rows 250 \
+              --schematic-operation "$operation" \
+              --engine "$BROWSER" "${browser_arg[@]}" \
+              --output "/tmp/published-browser-$BROWSER-row-$operation.json"
+          done
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
@@ -78,3 +88,5 @@ jobs:
           path: |
             /tmp/published-browser-${{ matrix.browser }}.json
             /tmp/published-browser-${{ matrix.browser }}-summary.json
+            /tmp/published-browser-${{ matrix.browser }}-row-direct.json
+            /tmp/published-browser-${{ matrix.browser }}-row-prepared.json
