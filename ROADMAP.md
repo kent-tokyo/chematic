@@ -9,68 +9,18 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 ## Current position
 
-- **v1.0.30 published-artifact P0 rerun is partly complete.** Python, npm and
-  crates.io artifacts have independent exposed 10k chemistry/310k SMARTS
-  reruns. Python's 63-operation output differential covers 210,410 rows per
-  version: only named HBA and its bundle change (1,359 rows each); 61 other
-  operations are byte-value invariant. Published named HBA is 5,000/5,000
-  against pinned RDKit 2026.03.6, up from 3,641/5,000 on v1.0.29. The
-  [dated packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
-  retains hashes, raw rows and open gates. The published npm tarball **does**
-  expose `run_reactants`. A published-npm output packet reruns 59/63
-  Python-matrix operations (198,400 operation rows, including 250,000
-  compatible-Morgan similarity values): 52 operations match byte-for-byte;
-  QED/Chi1v differ only by bounded float roundoff, 1,575 formula strings
-  only by element order, and ETKDG coordinates only by four-decimal rounding.
-  MOL write, SVG, and 2D layout retain 2,520 differences on three declared
-  non-equivalent representation lanes. The current source fixes formula order;
-  it is not a published v1.0.30 result. The same 59-operation packet on the
-  published v1.0.29 tarball changes only HBA and its bundle, on the same
-  1,359 input indices as Python; 57 operations are row-identical across
-  versions. Four matrix operations have no equivalent public npm API in the
-  pinned releases. Published Rust crates are now mapped across all 63
-  operations: each version's 210,410 rows exactly match its published Python
-  wheel; with every subcrate version pinned, Rust v1.0.29→v1.0.30 changes
-  only HBA and its bundle on the same 1,359 indices. This closes the Rust
-  operation-output slice, not Rust timing, memory, or RDKit accuracy.
-- **v1.0.29 has the historical partial P0 packet.** Its published Python
-  wheel was measured on exposed 10,000-row chemistry, 310,000-cell SMARTS,
-  57 reaction fixtures, and a 5,000-row/63-operation matrix. The 21
-  exact-output-and-faster operations are diagnostic: timing order was not
-  counterbalanced and uncertainty was not established. Do not transfer any
-  of these measured results to v1.0.30.
-- **Boundaries remain explicit.** The pinned CIP lane has 9,995 exact rows
-  and five typed abstentions; the published v1.0.30 SMARTS lane has 200
-  differences in 310,000 cells. The 57 legacy reaction fixtures still match,
-  but an 83-case stratified extension yields five confident published-wheel
-  differences; this does not establish general SMIRKS parity. A separate
-  **unpublished checked source profile** now classifies the same 83 rows as
-  76 semantic matches, three typed unsupported, one typed refusal, and three
-  jointly invalid, with zero wrong-confident outputs. Full product map/provenance
-  parity and wider chemistry remain open; the checked profile is not a
-  v1.0.30 artifact result.
-  Published npm has 74/83 semantic matches, five wrong-confident products,
-  three jointly invalid inputs and one invalid E/Z JSON result; the
-  serialization fix is source-only. A published-crate provenance diagnostic
-  now finds 74/83 graph-and-atom-origin matches (68 with nonempty products),
-  four graph mismatches, one provenance-only mismatch, one diagnosed refusal,
-  and three jointly invalid inputs. The provenance-only mismatch is a
-  symmetric ether cleavage: one RDKit atom-origin outcome is missing despite
-  matching product graphs. Template map-label preservation is still untested.
-  The published Python 63-operation matrix
-  now has 20 alternating paired blocks and intervals: 20 operations meet its
-  full-output-agreement and interval gate on one host. This does **not** settle
-  equal perception work, cross-host replication or Rust/npm timing and memory
-  coverage. A six-lane isolated Python follow-up now splits parse-inclusive,
-  first-use and precomputed Morgan calls and reports whole-process peak RSS
-  separately. On the exposed 5k corpus, v1.0.30 parse+compatible-Morgan is
-  8.206x [8.126, 8.308] and parse+HBA 20.171x [19.918, 20.436] versus
-  RDKit 2026.03.6 with all outputs exact; these are bounded Python-call
-  task results, not a cross-binding or memory-allocation win. Version-paired
-  Morgan is near parity, and version-paired HBA outputs differ. P0.2 stays
-  open for the remaining operation/binding and matched-resource lanes.
-  3D/MMFF94 remains Experimental. A0's frozen
-  core-eight descriptor gate is complete, but that is a separate result.
+| Gate | Verified on exposed data | Still open |
+|---|---|---|
+| P0.1 published outputs | The v1.0.30 Python wheel, npm tarball, and pinned crates.io graph each rerun 10,000 chemistry inputs, 310,000 SMARTS cells, and the legacy 57 reactions. Python and Rust each cover all 63 operation outputs (210,410 rows/version); only HBA and its bundle change from v1.0.29, on the same 1,359 inputs. Published HBA agrees with RDKit on 5,000/5,000 rows. npm covers 59/63 operation APIs. | Adjudicate 69 chemistry classifications; decide the compatibility policy for the 200 classified SMARTS residual cells and representation differences. Retain four npm-unexposed APIs as explicit gaps. Do not treat the source-only formula fix as a v1.0.30 result. |
+| P0.2 paired speed | Published Python has 20 alternating blocks for the 63-operation matrix; 20 operations clear its exact-output and interval gate on one host. Six isolated follow-up lanes split parse-inclusive, first-use and precomputed calls and record whole-process peak RSS separately. | Equal-work perception boundaries, other operations and bindings, matched memory accounting, and independent-host replication. The old “21 faster” count remains historical. |
+| P1 reactions | The original 57 fixtures still match. The 83-case exposed extension covers maps, H, charges, aromaticity, products, stereo and invalid input. An unpublished checked-source profile has 76 semantic matches, three typed unsupported, one typed refusal and three jointly invalid rows, with no wrong-confident output inside that declared profile. | The published v1.0.30 artifacts still have confident differences. Recheck the source fixes in a future artifact; finish product multiplicity, map labels and atom origins in each applicable binding. Do not claim general SMIRKS parity. |
+
+The [published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
+and [isolated time/memory record](benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md)
+hold the hashes, denominators, raw outputs, intervals and exact residuals.
+An exposed corpus is not sealed evidence. The 9,995/10,000 CIP agreement with
+five typed abstentions and Experimental 3D/MMFF94 status remain separate
+boundaries; A0's frozen descriptor gate is a separate result too.
 
 Exact versions, corpora, and limits are in [validation](docs/validation.md) and
 the [benchmark index](benchmarks/README.md). Completed detail belongs in dated
