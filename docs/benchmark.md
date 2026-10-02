@@ -16,7 +16,7 @@ counterbalanced, and no uncertainty interval was calculated. The named HBA
 profile had only 3,641/5,000 exact agreement in that *published* wheel; an
 unreleased dev-profile source wheel reaches 5,000/5,000 but is outside the
 published timing numbers. See the
-[v1.0.29 Python accuracy record](../benchmarks/2026-10-02-v1.0.29-python-accuracy.md).
+[v1.0.29 Python accuracy record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.29-python-accuracy.md).
 
 The newest completed public-package *browser/3D* performance record remains
 the 2026-09-23 v1.0.20 comparison against RDKit 2026.03.6. The Python matrix
