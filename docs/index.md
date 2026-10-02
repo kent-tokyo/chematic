@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.28</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.29</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,7 +80,11 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-The current release line is v1.0.28.
+The current release line is v1.0.29.
+
+- SMIRKS product-side atomic-number atoms now build literal atoms with valence-
+  derived hydrogens, and repeated SMARTS charge signs mean one formal charge.
+  These are #679/#680 correctness fixes, not a new broad parity measurement.
 
 - Hierarchical CIP ranking now resolves one independently adjudicated residual;
   unsupported lone-pair stereocentres return a typed abstention instead of
@@ -101,7 +105,7 @@ The current release line is v1.0.28.
 These are scoped measurements, not general claims that chematic is always
 faster, smaller, or more accurate. The v1.0.26 hot-path evidence remains
 shared-VM source evidence, not a WASM or cross-platform performance claim. It
-does not relabel the v1.0.20 package performance record or measure v1.0.28.
+does not relabel the v1.0.20 package performance record or measure v1.0.29.
 
 See [validation](validation.md), [benchmark methodology](benchmark.md), and
 [compatibility scope](compatibility-scope.md) for exact conditions.
