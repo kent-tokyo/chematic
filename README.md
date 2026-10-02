@@ -23,13 +23,11 @@ Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
 ### v1.0.30 release boundary
 
-v1.0.30 corrects the named RDKit-compatible HBA profile for three-neighbor
-substituted aromatic nitrogen. Installed Linux and macOS arm64 release-profile
-CI wheels matched pinned RDKit 2026.03.6 on 5,000/5,000 exposed ChEMBL
-molecules; the published v1.0.29 wheel matched 3,641/5,000. This is an
-operation-specific source-wheel result, not whole-library parity or a new
-speed claim. See
-[validation](docs/validation.md) and the [CHANGELOG](CHANGELOG.md).
+v1.0.30 fixes the named RDKit-compatible HBA profile. Its verified published
+macOS arm64 wheel matches RDKit 2026.03.6 on 5,000/5,000 exposed ChEMBL
+molecules (v1.0.29: 3,641/5,000). This is HBA-only evidence, not general
+RDKit parity or a speed claim. See [validation](docs/validation.md) and the
+[CHANGELOG](CHANGELOG.md).
 
 ## Use it
 

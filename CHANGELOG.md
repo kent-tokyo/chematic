@@ -11,9 +11,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 - Fixed WASM `MolHandle.formula()` to use the shared Hill-order molecular
-  formula implementation. The published v1.0.30 npm package orders some
-  non-C/H elements by atomic number; 1,575/5,000 exposed ChEMBL formulas
-  differ in spelling from the Python wheel despite equal element counts.
+  formula. The published v1.0.30 npm package differs in spelling from the
+  Python wheel on 1,575/5,000 exposed ChEMBL rows (element counts agree).
   This source fix is not yet published.
 - Fixed WASM `run_reactants` and `enumerate_library_2way` JSON serialization
   for product SMILES containing E/Z backslashes. The published v1.0.30 npm
@@ -24,13 +23,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ## [1.0.30] - 2026-10-02
 
 - Corrected the named `rdkit_hba`, Python `CalcNumHBA`, and WASM RDKit-profile
-  descriptor `hba` compatibility path
-  for RDKit 2026.03.6: three-neighbor substituted aromatic N is no longer
-  counted as an acceptor. Published v1.0.29 matched 3,641/5,000 ChEMBL rows
-  on this API; its existing native HBA rule matched 5,000/5,000. The corrected
-  source matched 5,000/5,000 in an installed local dev-profile wheel and
-  Linux and macOS arm64 release-profile CI wheels against pinned RDKit
-  2026.03.6. A published-v1.0.30 package rerun is a separate gate.
+  `hba` path for substituted aromatic N. The hash-verified published macOS
+  arm64 v1.0.30 wheel matches RDKit 2026.03.6 on 5,000/5,000 exposed ChEMBL
+  rows (published v1.0.29: 3,641/5,000). This is HBA-specific evidence.
 - Added a reproducible, exposed-cohort v1.0.29 Python-wheel accuracy packet:
   10,000 chemistry rows, 310,000 SMARTS cells, 57 reaction fixtures, and a
   5,000-row operation matrix. The reaction gate now rejects unsanitizable

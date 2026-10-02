@@ -1,180 +1,59 @@
 # Benchmarks
 
-Benchmark claims in chematic are operation-, corpus-, version-, and machine-
-specific. Unsupported operations, failures, and non-equivalent APIs are never
-counted as wins. Dated raw records are indexed in
-[benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks).
+CheMatic benchmarks are specific to the package or source commit, comparator,
+corpus, host and timed operation. A speed result counts only when the stated
+outputs and work are equivalent. [The record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md)
+links the raw data and older measurements.
 
-## Current status
+## Current published-package evidence
 
-The current release line is **v1.0.30**. A 2026-10-02 v1.0.29 published-wheel Python
-operation matrix covers 5,000 ChEMBL molecules and 63 operations against
-RDKit 2026.03.6. Of 44 output-checked operations, 21 had both complete output
-agreement and a faster median in three repeats. This is a single-host
-diagnostic: all chematic repeats preceded all RDKit repeats, the runs were not
-counterbalanced, and no uncertainty interval was calculated. The named HBA
-profile had only 3,641/5,000 exact agreement in that *published* wheel; an
-v1.0.30-source release-profile CI wheel and the hash-verified published v1.0.30
-macOS arm64 CPython 3.13 wheel reach 5,000/5,000, but neither result changes
-those v1.0.29 timing numbers. See the
-[v1.0.29 Python accuracy record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.29-python-accuracy.md).
+The current release is **v1.0.30**. These results use pinned artifacts; none
+is a universal speed or compatibility claim.
 
-The newest completed public-package *browser/3D* performance record remains
-the 2026-09-23 v1.0.20 comparison against RDKit 2026.03.6. The Python matrix
-does not update its npm/WASM or 3D lanes. Older
-similarity, streaming, and operation timing records remain pinned to their
-recorded source/release versions.
+| Lane | Result | Boundary |
+|---|---|---|
+| [Python 63-operation matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | 20 operations have exact output agreement and a favorable paired confidence interval against RDKit 2026.03.6 in 20 alternating blocks. | One host and exposed corpus; other operations are not wins. |
+| [Isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) and [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) | Parse-inclusive, prepared first-use and precomputed lanes use 20 fresh-process blocks. | Process peak RSS is not per-operation allocation. Changed HBA outputs cannot support an equivalent-output v1.0.29/v1.0.30 speed claim. |
+| [Published Node/WASM](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-rdkitjs-node-isolated-paired20.md) | Compatible Morgan is bit-identical on the 250-row speed corpus, with 20 fresh-process paired blocks against official RDKit.js. | Node is not browser evidence. |
+| [Published browser replication](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) | Chromium, Firefox and WebKit on Ubuntu 24.04 each have 250/250 exact direct/prepared Morgan rows and favorable 20-block speed intervals; the smallest lower bound is 1.63×. | Browser, host and operation scoped. A separate Chromium 10k lane has 9,999 exact outputs and one typed Fe refusal. |
 
-The 2026-09-24 Python matrix compares 43 output-comparable operations on a
-5,000-molecule ChEMBL corpus against RDKit 2026.03.6. It records 21 exact-output
-paths with a faster median and 18 that are faster in every repetition. Its raw
-values, hashes, non-equivalent classifications, and shared 2-vCPU x86 limit are
-in the [operation matrix record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md).
+The [v1.0.30 artifact audit](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
+accounts for 10,000 chemistry rows, 310,000 SMARTS cells, 57 legacy reactions
+and applicable operation outputs across Python, npm and Rust. It is an output
+audit, **not** a speed or full RDKit-parity result. The
+[adoption policy](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md)
+retains 200 SMARTS failures, five typed CIP abstentions and four npm API gaps.
 
-The v1.0.24 source record compares 1,402,080 outputs against v1.0.23 with zero
-differences and reports paired timing; see the [speed-3 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-24-perf-speed3-output-identical.md).
+## Historical records
 
-The v1.0.23 accuracy record separately compares RDKit-defined outputs on three
-versioned 5,000-row lanes. It records operation-specific agreement and residuals;
-it is not a general parity score or a release-package benchmark. See the
-[RDKit output-agreement record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-24-rdkit-agreement-accuracy-branch.md).
+- The [v1.0.20 public-package fingerprint/3D record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md)
+  reports 9,999 supported exact Morgan rows and one typed refusal. Its
+  quality-equivalent MMFF94 speed ratio was 0.944× (95% lower bound 0.861×):
+  **not** an MMFF94 speed win.
+- The [v1.0.15 WASM-size record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md)
+  measured 4,005,280 raw / 1,460,499 gzip bytes versus official RDKit.js
+  7,333,095 / 2,379,975 under one local compression method. These are
+  historical assets, not current package or download sizes.
+- The [v1.0.12 similarity-search record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-similarity-search-v1.0.12.md)
+  separates native/native, RDKit-compatible/RDKit and cross-profile overlap.
+  Source A/B and older operation timings remain in the
+  [index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md); they do not update v1.0.30 claims.
 
-The current records cover four separate evidence types:
+## Reproduction and interpretation
 
-1. performance: operation timing, scaling, and source A/B comparisons;
-2. compatibility: record accounting, failure behavior, and cross-engine contracts;
-3. artifacts: WASM size, wheel installation, and other release-adjacent evidence;
-4. validation: chemistry parity and correctness, which is not interchangeable with speed.
+Run the checker named in the selected record with **its** pinned packages,
+corpus hash, configuration and host. For repository consistency checks:
 
-## Current Parse + compatible Morgan gate
+```bash
+python3 scripts/check_benchmark_index.py
+python3 scripts/check_v1030_artifact_packet.py
+python3 scripts/check_published_python_isolated_paired.py
+python3 scripts/check_published_rust_isolated_paired.py
+```
 
-Merge commit `7d98dcd3` is faster than pinned `@rdkit/rdkit@2026.3.6` for the
-declared browser operation: SMILES parse + radius-2/2048-bit compatible Morgan
-fingerprint + the same consumed 256-byte packed output. In GitHub-hosted
-Chromium, Firefox, and WebKit, the paired 95% lower speedup bounds are **3.11x,
-2.36x, and 3.67x**, respectively. The fixed corpus is exact on all 9,999
-supported rows; one Fe(II) coordination structure remains an explicit typed
-refusal. A separate ChEMBL 5k Chromium gate is 5,000/5,000 exact.
-
-The registry-installed v1.0.20 npm package passes both fixed-corpus lanes:
-1.398x parse-inclusive (95% lower bound 1.363x) and 3.511x prepared (lower
-bound 3.407x), with 9,999/9,999 supported rows bit-exact. The same release's
-PyPI wheel reaches 265/265 independently sound, stereo-clean and clash-free
-MMFF94 stereo-safe outputs, but that quality-equivalent lane is only 0.944x
-RDKit speed (lower bound 0.861x). See the complete
-[v1.0.20 public-package record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md).
-
-## Published-source timing summary
-
-| Operation | chematic | RDKit | Scope |
-|---|---:|---:|---|
-| Canonical SMILES | 24.95 µs/mol | 25.58 µs/mol | v1.0.2 code, 5,000-molecule corpus, macOS arm64 |
-| Canonical SMILES | 18.27 µs/mol | 26.82 µs/mol | Independent 5,000-entry ChEMBL-derived corpus |
-| SDF graph/property read | 9.48 µs/mol | 99.96 µs/mol | 365-record `egfr.sdf`, graph-only supplier |
-| SDF serialization-only write | 7.62 µs/mol | 79.54 µs/mol | Same corpus; automatic 2D layout excluded |
-
-These rows show a lead only for the named operation and environment. Canonical
-strings need not match RDKit's spelling, and a writer-only measurement is not a
-full depiction or export benchmark. See the dated canonical and SDF records.
-
-## Source A/B timing summary
-
-The v1.0.7 hot-path record reports alternating paired medians:
-
-| Lane | Speedup |
-|---|---:|
-| Canonical SMILES | 1.176x |
-| File-backed SDF read | 1.180x |
-| Reused-buffer SDF serialization | 1.419x |
-| SMILES parse | 1.034x; below the 1.10x target |
-
-The historical v1.0.5 follow-up reports separate canonical, SDF-read, and
-V2000-write A/B results. Rejected experiments, raw pairs, exact-output checks,
-and load caveats remain in the linked records; do not merge their numbers with
-the current release summary.
-
-## Similarity search
-
-The [2026-09-11 similarity-search record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-similarity-search-v1.0.12.md)
-is the current three-lane gate using a fixed 4,500-entry library and 500-query
-split. Native/native, RDKit-compatible/RDKit, and cross-profile overlap are
-reported separately; failures are excluded from the valid-input scope and
-counted independently. The result is not a claim that one engine is universally
-faster or more accurate.
-
-## Accuracy and compatibility
-
-Performance does not establish chemistry parity. The 4,999-molecule
-ChEMBL-derived descriptor suite reports metric-specific agreement and known
-residuals in [`validation.md`](validation.md). Canonical identity,
-aromaticity/CIP modes, fingerprint definitions, and Experimental 3D/MMFF94 have
-separate contracts in [`compatibility-scope.md`](compatibility-scope.md).
-
-Streaming records primarily measure record accounting, failure behavior, and
-boundary semantics. The ten-format Rust and cross-engine matrices, including
-plain/gzip stages, are indexed under
-[Streaming and cross-engine contracts](https://github.com/kent-tokyo/chematic/tree/main/benchmarks).
-Use [`scripts/validate_streaming_cross_engine_matrix.py`](https://github.com/kent-tokyo/chematic/blob/main/scripts/validate_streaming_cross_engine_matrix.py)
-for the fail-closed matrix check.
-
-## Artifact size
-
-The published v1.0.15 npm WASM asset is **4,005,280 bytes raw / 1,460,499
-bytes gzip**. Official RDKit.js 2026.03.6 is **7,333,095 / 2,379,975 bytes**
-under the same local file-compression method. This is an artifact measurement,
-not an internet-transfer or full application-size claim. Exact hashes and
-commands are in the [isolated browser comparison](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
-
-## Reproduction entry points
-
-| Purpose | Entry point |
-|---|---|
-| Accuracy vs RDKit | `pip install chematic rdkit`; `python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json /tmp/bench5k.json`; `python scripts/gen_validation_report.py /tmp/bench5k.json` |
-| Similarity search | [v1.0.12 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-similarity-search-v1.0.12.md) |
-| Parse + compatible Morgan vs official RDKit.js | [2026-09-20 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-20-parse-morgan-rdkitjs.md) |
-| Published-package fingerprint and 3D comparison | [v1.0.20 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md) |
-| A3 similarity search rerun | [v1.0.13 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-12-similarity-search-a3-v1.0.13.md) |
-| Hot-path A/B | [2026-09-05 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-05-hotpath-110.md) |
-| File streaming | [2026-09-04 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-streaming-formats.md) |
-| Cross-engine contracts | [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks) |
-| WASM artifact and official RDKit.js gate | [v1.0.12 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md) |
-| Official RDKit.js browser gate | [v1.0.15 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md) |
-| Full inventory | [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks) |
-
-## Hardware and interpretation
-
-Hardware varies by snapshot; read each record's header. The 2026-06 records
-used Apple M2 / macOS 14, while later records moved to Apple M4 / macOS 26.
-Rust `cargo bench` numbers are comparable to Python numbers only when the
-record says the machine, corpus, and operation boundary match.
-
-Results vary by CPU, load, corpus, and fixture choice. Treat them as scoped
-measurements, not SLA guarantees. The 2026-07 snapshot demonstrated that a
-headline throughput ratio can be fixture-sensitive.
-
-## Rules for new results
-
-Every new result must record:
-
-- source revision and package versions;
-- corpus identity and hash;
-- hardware, OS, language/runtime, and build profile;
-- exact operation boundary and configuration;
-- warm-up, repetitions, aggregation, failure policy, and raw output location;
-- correctness, ranking, or byte-equivalence checks relevant to the operation.
-
-Do not relabel source-level A/B data as a published artifact result, compare a
-streaming API with a materializing API without saying so, or generalize one
-corpus to all chemistry workloads.
-### Streaming parser failure taxonomy
-
-`streaming_benchmark` reports a deterministic `failure_kinds` object for all
-ten supported formats. For parser errors, the keys are the Rust parser error
-variant names and the values are counts accumulated across repetitions;
-resource-limit failures are recorded as `ResourceLimit`. This field is
-diagnostic coverage evidence, not a claim of exhaustive parser-state coverage
-or cross-engine error taxonomy parity.
-The 120-case bounded taxonomy result is stored in
-[`validation/results/streaming-failure-taxonomy-v1.0.10.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/streaming-failure-taxonomy-v1.0.10.json)
-and can be regenerated with `python3 scripts/check_streaming_failure_taxonomy.py`
-after building the streaming example.
+A new measurement must record artifact/source hashes; corpus and failure
+accounting; hardware, OS and runtime; timed boundary and warm-up; raw paired
+observations, aggregation and uncertainty; and an output-equivalence gate.
+Keep source candidates, published packages, sealed accuracy data, whole-process
+RSS and library allocations distinct. If outputs differ, the interval crosses
+parity or work is asymmetric, report **no equivalent-output speed win**.
