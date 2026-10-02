@@ -459,7 +459,8 @@ def main() -> int:
           "differences, 1 invalid JSON; Rust reaction origins 74/83 matched; "
           "73/83 graph-origin-map matches, 1 map-only residual; "
           "3/3 exposed new-product-map supplements match; distinct/raw reaction counts classified. "
-          "P0/P1 acceptance remains OPEN.")
+          "P0.1 output audit complete with explicit failures/gaps; "
+          "strict parity and P0.2/P1 acceptance remain OPEN.")
     return 0
 
 

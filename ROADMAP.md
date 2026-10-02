@@ -11,7 +11,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 | Gate | Verified on exposed data | Still open |
 |---|---|---|
-| P0.1 published outputs | The v1.0.30 Python wheel, npm tarball, and pinned crates.io graph each rerun 10,000 chemistry inputs, 310,000 SMARTS cells, and the legacy 57 reactions. Python and Rust each cover all 63 operation outputs (210,410 rows/version); only HBA and its bundle change from v1.0.29, on the same 1,359 inputs. Published HBA agrees with RDKit on 5,000/5,000 rows. The 69 initially unresolved chemistry classifications are now mapped to 200 SMARTS cells and five typed CIP abstentions by full published-row identity. npm covers 59/63 operation APIs. | Decide the compatibility policy for the 200 SMARTS residual cells and representation differences. Retain four npm-unexposed APIs as explicit gaps. Do not treat the source-only formula fix as a v1.0.30 result. |
+| P0.1 published outputs | **Artifact audit complete, not strict RDKit parity.** The v1.0.30 Python wheel, npm tarball, and pinned crates.io graph each rerun 10,000 chemistry inputs, 310,000 SMARTS cells, and the legacy 57 reactions. Python and Rust each cover all 63 operation outputs (210,410 rows/version); only HBA and its bundle change from v1.0.29, on the same 1,359 inputs. Published HBA agrees with RDKit on 5,000/5,000 rows. The 69 initially unresolved chemistry classifications are mapped to 200 SMARTS failures and five typed CIP abstentions by full published-row identity. npm covers 59/63 operation APIs. The [adoption policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md) freezes every denominator and representation boundary. | The 200 SMARTS cells remain parity failures under P1. Four npm APIs remain unexposed and require a future artifact. Do not treat the source-only formula fix as a v1.0.30 result. |
 | P0.2 paired speed | Published Python has 20 alternating blocks for the 63-operation matrix; 20 operations clear its exact-output and interval gate on one host. Six isolated Python lanes and six published-crate Rust v1.0.29/v1.0.30 lanes split parse-inclusive, first-use and precomputed calls. A published npm/WASM Node lane adds 20 ABBA/BAAB fresh-process blocks with 250/250 atom-count and Morgan-bit parity against official RDKit.js. A separate published-artifact Chromium lane now has 20 alternating fresh-process 250-row batch measurements; its two fingerprint lanes pass aggregate output/interval gates. Each lane records whole-process peak RSS separately. | Equal-work RDKit perception boundaries, remaining operations, browser row-level parity and independent browser/host replication, matched library memory accounting, and a clean first-use/reuse split in the browser. Changed HBA outputs cannot earn an equivalent-output speed win; the old “21 faster” count remains historical. |
 | P1 reactions | The original 57 fixtures still match. The 83-case exposed extension covers maps, H, charges, aromaticity, products, stereo and invalid input. Published Rust graph/origin/template-map identity matches RDKit on 73/83 rows; one additional row has only a map-label difference. A separate three-case supplement confirms newly created mapped/unmapped product atoms, including a second product; the original 83 rows are unchanged. Distinct-product versus raw-embedding counts are now classified for all 83 rows in Python/Rust/npm; equal distinct products can have fewer raw matches (13/13/12 rows respectively). An unpublished checked-source profile has 76 semantic matches, three typed unsupported, one typed refusal and three jointly invalid rows, with no wrong-confident output inside that declared profile. | The published v1.0.30 artifacts still have confident differences. Recheck the source fixes in a future artifact; gate map/origin evidence in Python/npm and broaden newly created mapped-atom and multi-product coverage. Do not claim general SMIRKS parity. |
 
@@ -28,24 +28,13 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
 
 ## Priority order and acceptance gates
 
-1. **P0.1 — Re-run all applicable gates on published v1.0.30 artifacts.** Pin
-   each PyPI wheel, npm tarball, and crates.io crate graph by version and
-   hash, plus RDKit 2026.03.6, corpus hashes, options, runtime, and hardware.
-   Re-run the exposed 10,000-row chemistry, 310,000-cell SMARTS, 57-reaction,
-   and 5,000-row/63-operation suites in every binding that exposes the
-   relevant API. Record unsupported or unexposed cells explicitly; do not
-   pretend all artifacts expose identical operations. Compare each overlapping
-   v1.0.29→v1.0.30 output row, treating the named HBA correction as the only
-   *expected* change, not assuming everything else stayed unchanged.
-   **Exit:** artifact-specific raw outputs and hashes, full input/outcome
-   accounting, a machine-checked cross-version diff, and independent
-   adjudication of every non-HBA delta. Keep the published 5,000/5,000 HBA
-   result as a completed sub-gate, not a substitute for this packet. Exposed
-   inputs do not become sealed data.
-   The Rust 63-operation output differential is now a completed sub-gate;
-   finish the remaining cross-binding outcome adjudication and full packet
-   before closing P0.1.
-2. **P0.2 — Make speed comparisons symmetric and repeatable.** Measure both
+**Completed P0.1 audit:** the published-artifact packet and its
+[decision rule](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md)
+pin the 10k/310k/57/63-operation inputs, all applicable package outcomes,
+v1.0.29→v1.0.30 output differences, and explicit failures/unexposed APIs.
+This closes the *rerun and accounting task*, not RDKit parity.
+
+1. **P0.2 — Make speed comparisons symmetric and repeatable.** Measure both
    v1.0.29 versus v1.0.30 and RDKit versus chematic on pinned, published
    artifacts and equivalent work. Balance execution order (for example ABBA
    and BAAB), use at least 20 paired blocks after warm-up, and retain every
@@ -58,7 +47,7 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    by operation/binding, and an explicit no-claim outcome where the interval
    crosses parity or the work differs. The historical “21 operations faster”
    remains a reference diagnostic until replaced.
-3. **P1 — Expand reaction compatibility beyond 57 fixtures.** Freeze and
+2. **P1 — Expand reaction compatibility beyond 57 fixtures.** Freeze and
    publish a stratified exposed corpus covering atom maps, aromaticity,
    implicit/explicit H, charges, multiple reactants/products, stereo, and
    malformed or unsupported inputs. Compare against pinned RDKit by product
@@ -85,7 +74,7 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    not count an opt-in refusal profile as general RDKit reaction parity.
    Recount #635's 200/310,000 SMARTS cells separately; keep native SSSR as
    default and any RDKit-style ring-count profile opt-in.
-4. **P1 — Preserve and then narrow the CIP abstention boundary.** The v1.0.28-source
+3. **P1 — Preserve and then narrow the CIP abstention boundary.** The v1.0.28-source
    9,995/10,000 exact result and five typed abstentions are historical: four
    `oracle_unstable` phosphorus cases and one `lone_pair_center`. First gate
    zero wrong confident labels and stable abstention reasons under atom-order,
@@ -94,7 +83,7 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    converting any abstention to R/S. **Exit:** complete row accounting and
    independent gold for each newly resolved case. Five safe abstentions are a
    valid bounded contract, not complete CIP compatibility.
-5. **P2 — Complete A6 before changing the Experimental 3D label.** Address
+4. **P2 — Complete A6 before changing the Experimental 3D label.** Address
    MMFF94 heavy-atom typing residuals, missing parameters, analytic gradients,
    convergence/timeouts, stereo retention, and conformer quality on matched
    seeds and coordinates. Keep the v1.0.26 262/262 same-coordinate energy and
@@ -103,7 +92,7 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    **Exit:** no silent success for untyped or nonconverged inputs, full outcome
    accounting, independent geometry/stereo scoring, and published-artifact
    replication. Do not infer ETKDG or broad MMFF94 parity from finite energy.
-6. **P2 — Keep representation limits explicit and test each separately.** For
+5. **P2 — Keep representation limits explicit and test each separately.** For
    CDXML, distinguish exact-source/opaque preservation from semantic editing;
    for Markush/polymer, require explicit bounded expansion or typed refusal;
    for Standard InChI, distinguish the optional standard implementation from
@@ -112,7 +101,7 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    string equality. **Exit:** a cross-binding capability table and round-trip
    fixtures with no silent information loss; expand the supported domain only
    after its independent gate passes.
-7. **External dependency — Rebaseline a later RDKit release only after an
+6. **External dependency — Rebaseline a later RDKit release only after an
    official artifact is pinned.** Keep 2026.03.6 and the new oracle results
    side by side; do not rewrite older evidence or tune on sealed data.
 
