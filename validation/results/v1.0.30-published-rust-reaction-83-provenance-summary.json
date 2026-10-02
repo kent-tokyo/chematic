@@ -1,0 +1,11 @@
+{
+  "base_cases_sha256": "65b446de1ce66b7d9c355cf8b6bbbfe61d670c955e02931e8e8b8e564c558d3b",
+  "crate": "chematic 1.0.30 from crates.io",
+  "diagnosed_valence_refusals": 1,
+  "input_count": 83,
+  "product_rows": 79,
+  "rows_sha256": "c8359458f2da60330004d393d246ebec717ef8a0dee0d72c5bac4ff312a2bf25",
+  "schema": "published-rust-reactions/v2",
+  "strata_sha256": "4e4ce3ebcea4bcea5398f109554074d97e9f252293fa906493ae3a61d40725a1",
+  "typed_refusals": 3
+}

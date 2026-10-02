@@ -2,7 +2,7 @@
 
 use std::fs;
 
-use chematic::{rxn, smiles};
+use chematic::{core::AtomIdx, rxn, smiles};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
@@ -49,6 +49,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             rows.push(json!({"id": case["id"], "status": "typed_refusal", "stage": "reactant_parse", "reason": "smiles_parse", "detail": detail}));
             continue;
         }
+        // Tags are non-chemical and survive reaction atom copying. Assign one
+        // unique tag per input atom so published-crate products can expose
+        // provenance without changing SMILES or reaction semantics.
+        let mut sources = Vec::new();
+        for (reactant_index, mol) in reactants.iter_mut().enumerate() {
+            for atom_index in 0..mol.atom_count() {
+                let tag = u16::try_from(sources.len() + 1)
+                    .map_err(|_| "too many input atoms for u16 provenance tags")?;
+                mol.set_tag(AtomIdx(atom_index as u32), Some(tag));
+                sources.push((reactant_index, atom_index));
+            }
+        }
         let refs: Vec<_> = reactants.iter().collect();
         let smirks = case["smirks"].as_str().ok_or("non-string SMIRKS")?;
         match rxn::run_reactants_with_diagnostics(
@@ -58,13 +70,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ) {
             Ok(report) => {
                 let raw_count = report.products.len();
+                let mut sourced_sets = Vec::new();
                 let mut sets: Vec<Vec<String>> = report
                     .products
                     .into_iter()
                     .map(|set| {
-                        let mut values: Vec<String> =
-                            set.iter().map(smiles::canonical_smiles).collect();
-                        values.sort();
+                        let mut sourced = Vec::new();
+                        for product in &set {
+                            let (spelling, order) =
+                                smiles::canonical_smiles_with_atom_order(product);
+                            let atom_sources: Vec<Value> = order
+                                .iter()
+                                .map(|&atom| match product.atom_tag(atom) {
+                                    Some(tag) => {
+                                        let (reactant, source_atom) =
+                                            sources[tag.get() as usize - 1];
+                                        json!([reactant, source_atom])
+                                    }
+                                    None => Value::Null,
+                                })
+                                .collect();
+                            sourced.push(json!({"smiles": spelling, "atom_sources": atom_sources}));
+                        }
+                        sourced
+                            .sort_by_key(|item| item["smiles"].as_str().unwrap_or("").to_owned());
+                        let values = sourced
+                            .iter()
+                            .map(|item| item["smiles"].as_str().unwrap().to_owned())
+                            .collect();
+                        sourced_sets.push(sourced);
                         values
                     })
                     .collect();
@@ -76,7 +110,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     "products"
                 };
-                rows.push(json!({"id": case["id"], "status": status, "sets": sets, "raw_product_sets": raw_count,
+                rows.push(json!({"id": case["id"], "status": status, "sets": sets,
+                    "sets_with_atom_sources": sourced_sets, "raw_product_sets": raw_count,
                     "diagnostics": {"accepted_matches": diagnostics.accepted_matches,
                         "applied_products": diagnostics.applied_products,
                         "valence_rejected_matches": diagnostics.valence_rejected_matches,
@@ -94,7 +129,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let raw = serde_json::to_vec_pretty(&rows)?;
     fs::write(&args[3], &raw)?;
-    let summary = json!({"schema": "published-rust-reactions/v1", "crate": "chematic 1.0.30 from crates.io",
+    let summary = json!({"schema": "published-rust-reactions/v2", "crate": "chematic 1.0.30 from crates.io",
         "base_cases_sha256": digest(&base_bytes), "strata_sha256": digest(&strata_bytes), "rows_sha256": digest(&raw),
         "input_count": cases.len(), "typed_refusals": rows.iter().filter(|r| r["status"] == "typed_refusal").count(),
         "diagnosed_valence_refusals": rows.iter().filter(|r| r["status"] == "diagnosed_valence_refusal").count(),

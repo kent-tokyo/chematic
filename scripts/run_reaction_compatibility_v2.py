@@ -17,7 +17,10 @@ from pathlib import Path
 
 from rdkit import Chem, RDLogger, rdBase
 
-from reaction_product_parity_gate import rdkit_products
+if __package__:
+    from .reaction_product_parity_gate import rdkit_products
+else:
+    from reaction_product_parity_gate import rdkit_products
 
 ROOT = Path(__file__).resolve().parents[1]
 RDLogger.DisableLog("rdApp.*")

@@ -158,6 +158,31 @@ def main() -> int:
         pass
     else:
         raise ValueError("published npm E/Z payload unexpectedly parses as JSON")
+    provenance_rows_path = RESULTS / "v1.0.30-published-rust-reaction-83-provenance-rows.json"
+    provenance_summary = read_json("v1.0.30-published-rust-reaction-83-provenance-summary.json")
+    provenance_report = read_json("v1.0.30-published-rust-reaction-83-provenance-rdkit.json")
+    provenance_rows = json.loads(provenance_rows_path.read_text(encoding="utf-8"))
+    old_rust_rows = read_json("v1.0.30-published-rust-reaction-83-rows.json")
+    fail_if(provenance_summary["schema"] != "published-rust-reactions/v2" or
+            provenance_summary["crate"] != "chematic 1.0.30 from crates.io" or
+            provenance_summary["rows_sha256"] != hashlib.sha256(provenance_rows_path.read_bytes()).hexdigest() or
+            provenance_report["rust_rows_sha256"] != provenance_summary["rows_sha256"] or
+            provenance_report["rdkit_version"] != "2026.03.6" or
+            provenance_report["rust_summary_sha256"] != hashlib.sha256(
+                (RESULTS / "v1.0.30-published-rust-reaction-83-provenance-summary.json").read_bytes()
+            ).hexdigest(),
+            "published Rust provenance input identity")
+    fail_if(len(provenance_rows) != 83 or len(provenance_report["rows"]) != 83 or
+            [row["id"] for row in provenance_rows] != [row["id"] for row in provenance_report["rows"]] or
+            dict(Counter(row["outcome"] for row in provenance_report["rows"])) !=
+            provenance_report["accounting"]["outcomes"] or
+            any({key: value for key, value in tagged.items() if key != "sets_with_atom_sources"} != plain
+                for tagged, plain in zip(provenance_rows, old_rust_rows, strict=True)) or
+            provenance_report["accounting"] != {"input": 83, "outcomes": {
+                "graph_and_provenance_match": 74, "graph_mismatch": 4,
+                "joint_invalid_input": 3, "provenance_mismatch": 1,
+                "typed_or_diagnosed_refusal": 1}},
+            "published Rust provenance row accounting or untagged graph identity")
     paired_path = ROOT / "benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json"
     fail_if(hashlib.sha256(paired_path.read_bytes()).hexdigest() != PAIRED_63OP_SHA256,
             "published Python paired 63-operation record digest")
@@ -172,7 +197,7 @@ def main() -> int:
     print("v1.0.30 packet integrity OK: 3 published artifacts x 10k/310k; "
           "Python 63 operations x 210,410 rows (only HBA/bundle changed); "
           "20-block Python speed matrix; npm reaction 74 match, 5 confident "
-          "differences, 1 invalid JSON. "
+          "differences, 1 invalid JSON; Rust reaction origins 74/83 matched. "
           "P0/P1 acceptance remains OPEN.")
     return 0
 

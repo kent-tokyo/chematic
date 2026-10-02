@@ -3464,6 +3464,28 @@ mod tests {
         );
     }
 
+    #[test]
+    fn symmetric_ether_cleavage_retains_both_source_assignments() {
+        let mut ether = parse("COC").unwrap();
+        for i in 0..ether.atom_count() {
+            ether.set_tag(AtomIdx(i as u32), Some(i as u16 + 1));
+        }
+        let smirks = "[C:1][O:2][C:3]>>[C:1][O:2].[C:3]";
+        let products = run_reactants(smirks, &[&ether]).unwrap();
+        let mut assignments: Vec<_> = products
+            .iter()
+            .map(|set| {
+                assert_eq!(set.len(), 2);
+                (
+                    set[0].atom_tag(AtomIdx(0)).unwrap().get(),
+                    set[1].atom_tag(AtomIdx(0)).unwrap().get(),
+                )
+            })
+            .collect();
+        assignments.sort_unstable();
+        assert_eq!(assignments, [(1, 3), (3, 1)]);
+    }
+
     /// `run_reactants_strict` (carry_substituents=false) must also compose
     /// the same way as the `carry_substituents=true` case above.
     #[test]
