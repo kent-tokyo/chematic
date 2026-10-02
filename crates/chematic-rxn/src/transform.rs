@@ -3385,6 +3385,10 @@ mod tests {
                 vec![parse("NCC").unwrap(), parse("CO").unwrap()],
             ),
             ("[C:1][C:2]>>[C:1].[C:2]", vec![parse("CCO").unwrap()]),
+            // A product-only map labels a newly created atom; it has no
+            // reactant origin, including when emitted as a second product.
+            ("[C:1]>>[C:1][O:2]", vec![parse("C").unwrap()]),
+            ("[C:1]>>[C:1].[O:2]", vec![parse("C").unwrap()]),
             (
                 "[OH:1]-[C:2]=[O:3]>>C-[O:1]-[C:2]=[O:3]",
                 vec![parse("CC(=O)OC1=CC=CC=C1C(=O)O").unwrap()],

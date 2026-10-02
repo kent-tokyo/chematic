@@ -37,6 +37,7 @@ NPM_REACTION_ROWS_SHA256 = "ce3d801ed55f610412553861382040356ac17a8004b0bec23223
 ALL_REACTION_REPORT_SHA256 = "a43cf9eec38b04664dc8ee269aa69f51a9ae3e310fa5a781177d07f389e85785"
 REACTION_TEMPLATE_MAP_REPORT_SHA256 = "087f38ffa4ea766698ed14c7867238bdb5fc22cdfcab3bfceb4b0ae55f861ad8"
 REACTION_NEW_MAP_REPORT_SHA256 = "98b469b3d3fbb6900031313ce5bfa457285968f2df6a5b03f49d4836cb60df82"
+REACTION_MULTIPLICITY_REPORT_SHA256 = "aecd38403e092f3518aa121167077dbfb4ef7637d16d42b763460a2542b10a3d"
 PAIRED_63OP_SHA256 = "5448fd34190d5358227663a77e415e31dca71718cfd38c2d01e156ab539719da"
 
 
@@ -296,6 +297,24 @@ def main() -> int:
             {"semantic_match": 74, "joint_invalid_input": 3, "wrong_confident": 5,
              "invalid_serialization": 1},
             "published npm reaction accounting")
+    multiplicity_path = RESULTS / "v1.0.30-published-reaction-83-multiplicity.json"
+    multiplicity = json.loads(multiplicity_path.read_bytes())
+    fail_if(hashlib.sha256(multiplicity_path.read_bytes()).hexdigest() != REACTION_MULTIPLICITY_REPORT_SHA256 or
+            multiplicity["schema"] != "published-reaction-distinct-vs-raw-multiplicity/v1" or
+            multiplicity["version"] != "1.0.30" or multiplicity["rdkit_version"] != "2026.03.6" or
+            multiplicity["source_sha256"] != ALL_REACTION_REPORT_SHA256 or
+            multiplicity["fixtures"] != all_reactions["fixtures"] or
+            [row["id"] for row in multiplicity["rows"]] != [row["id"] for row in all_reactions["rows"]] or
+            multiplicity["accounting"] != {"input": 83, "by_binding": {
+                "python": {"distinct_and_raw_counts_match": 62, "distinct_match_raw_count_lower": 13,
+                           "distinct_product_sets_differ": 5, "oracle_invalid_or_unavailable": 3},
+                "rust": {"candidate_refusal_or_invalid": 1, "distinct_and_raw_counts_match": 62,
+                         "distinct_match_raw_count_lower": 13, "distinct_product_sets_differ": 4,
+                         "oracle_invalid_or_unavailable": 3},
+                "npm": {"candidate_refusal_or_invalid": 1, "distinct_and_raw_counts_match": 62,
+                        "distinct_match_raw_count_lower": 12, "distinct_product_sets_differ": 5,
+                        "oracle_invalid_or_unavailable": 3}}},
+            "published reaction distinct/raw multiplicity identity")
     bad_json = next(row for row in npm_reaction["rows"] if row["id"] == "v2_stereo_e_alkene_preserve")
     fail_if(bad_json["status"] != "invalid_serialization", "published npm E/Z failure classification")
     try:
@@ -428,7 +447,7 @@ def main() -> int:
           "npm reaction 74 match, 5 confident "
           "differences, 1 invalid JSON; Rust reaction origins 74/83 matched; "
           "73/83 graph-origin-map matches, 1 map-only residual; "
-          "3/3 exposed new-product-map supplements match. "
+          "3/3 exposed new-product-map supplements match; distinct/raw reaction counts classified. "
           "P0/P1 acceptance remains OPEN.")
     return 0
 

@@ -1,0 +1,2462 @@
+{
+  "accounting": {
+    "by_binding": {
+      "npm": {
+        "candidate_refusal_or_invalid": 1,
+        "distinct_and_raw_counts_match": 62,
+        "distinct_match_raw_count_lower": 12,
+        "distinct_product_sets_differ": 5,
+        "oracle_invalid_or_unavailable": 3
+      },
+      "python": {
+        "distinct_and_raw_counts_match": 62,
+        "distinct_match_raw_count_lower": 13,
+        "distinct_product_sets_differ": 5,
+        "oracle_invalid_or_unavailable": 3
+      },
+      "rust": {
+        "candidate_refusal_or_invalid": 1,
+        "distinct_and_raw_counts_match": 62,
+        "distinct_match_raw_count_lower": 13,
+        "distinct_product_sets_differ": 4,
+        "oracle_invalid_or_unavailable": 3
+      }
+    },
+    "input": 83
+  },
+  "fixtures": {
+    "base_sha256": "65b446de1ce66b7d9c355cf8b6bbbfe61d670c955e02931e8e8b8e564c558d3b",
+    "strata_sha256": "4e4ce3ebcea4bcea5398f109554074d97e9f252293fa906493ae3a61d40725a1"
+  },
+  "limits": [
+    "Distinct-product equality is required for semantic compatibility",
+    "Raw embedding counts are diagnostic; unequal counts alone do not imply a missing distinct product",
+    "No reaction yield or selectivity claim"
+  ],
+  "rdkit_version": "2026.03.6",
+  "rows": [
+    {
+      "id": "alcohol_deprotonation",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "carbonyl_reduction_shape",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "amide_formation",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "mapped_bond_cleavage",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "mapped_fragment_split",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "carboxylate_deprotonation",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "no_match_empty",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "python": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "rust": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "alcohol_deprotonation_isopropanol",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "alcohol_deprotonation_phenol",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "alcohol_deprotonation_benzyl_alcohol",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "carbonyl_reduction_acetone",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "carbonyl_reduction_cyclohexanone",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "carbonyl_reduction_benzaldehyde",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "carbonyl_reduction_butanal",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "carboxylate_deprotonation_butanoic_acid",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "carboxylate_deprotonation_benzoic_acid",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "carboxylate_deprotonation_glycine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "carboxylate_deprotonation_lactic_acid",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromobenzene",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromoanisole",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromopyridine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromonaphthalene",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "alkene_hydrogenation_2_butene",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "alkene_hydrogenation_cyclohexene",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "alkene_hydrogenation_styrene",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "alkene_hydrogenation_diene",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 4,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 4,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 4,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "mapped_c_o_cleavage_methyl_ether",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "mapped_c_o_cleavage_ethyl_ether",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "mapped_c_o_cleavage_phenetole",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "mapped_c_o_cleavage_allyl_ether",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 2,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 2
+        },
+        "python": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 2,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 2
+        },
+        "rust": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 2,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 2
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "mapped_c_n_cleavage_methylamine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "mapped_c_n_cleavage_diethylamine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 2,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "mapped_c_n_cleavage_aniline",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "mapped_c_n_cleavage_allylamine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "amide_formation_methylamine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "amide_formation_ethylamine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "amide_formation_aniline",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "amide_formation_benzoyl_methylamine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "alcohol_oxidation_ethanol",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "alcohol_oxidation_1_propanol",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "alcohol_oxidation_benzyl_alcohol",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "alcohol_oxidation_2_methyl_1_propanol",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "sulfonamide_formation_methylamine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "sulfonamide_formation_ethylamine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "sulfonamide_formation_aniline",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "sulfonamide_formation_benzenesulfonyl",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "no_match_carbonyl_on_alkane",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "python": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "rust": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "no_match_aromatic_exchange_on_alkane",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "python": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "rust": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "stereo_identity_l_alanine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "stereo_e_alkene",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "stereo_z_alkene",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "issue679_unmapped_atomic_number_acetyl",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "issue679_unmapped_bracket_acetyl",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "issue679_atomic_number_vinyl_explicit_h",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "issue679_mapped_atomic_number_amine",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "issue679_mapped_atomic_number_aromatic_n",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "issue679_mapped_atomic_number_no_match",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "python": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "rust": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        }
+      },
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "id": "v2_charge_salicylic_deprotonation",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "charge",
+        "explicit_h",
+        "mapped",
+        "aromaticity"
+      ]
+    },
+    {
+      "id": "v2_charge_anisole_phenol_deprotonation",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "charge",
+        "aromaticity",
+        "explicit_h"
+      ]
+    },
+    {
+      "id": "v2_charge_methylamine_protonation",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "charge",
+        "explicit_h",
+        "mapped"
+      ]
+    },
+    {
+      "id": "v2_charge_ethanolamine_protonation",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "charge",
+        "explicit_h",
+        "mapped"
+      ]
+    },
+    {
+      "id": "v2_charge_quaternary_no_match",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "python": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "rust": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        }
+      },
+      "strata": [
+        "charge",
+        "no_match"
+      ]
+    },
+    {
+      "id": "v2_aromatic_bromo_fluoro",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "aromaticity",
+        "mapped",
+        "new_product_atom"
+      ]
+    },
+    {
+      "id": "v2_aromatic_bromopyridine_fluoro",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "aromaticity",
+        "heteroaromatic",
+        "new_product_atom"
+      ]
+    },
+    {
+      "id": "v2_aromatic_bromothiophene_fluoro",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "aromaticity",
+        "heteroaromatic",
+        "new_product_atom"
+      ]
+    },
+    {
+      "id": "v2_map_reordered_methanol",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "mapped",
+        "atom_order"
+      ]
+    },
+    {
+      "id": "v2_map_reordered_ethanol",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "mapped",
+        "atom_order"
+      ]
+    },
+    {
+      "id": "v2_map_reordered_isopropanol",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "mapped",
+        "atom_order"
+      ]
+    },
+    {
+      "id": "v2_ester_methyl_acetate",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "multi_reactant",
+        "new_bond",
+        "implicit_h"
+      ]
+    },
+    {
+      "id": "v2_ester_ethyl_benzoate",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "multi_reactant",
+        "new_bond",
+        "aromaticity"
+      ]
+    },
+    {
+      "id": "v2_ester_missing_second_reactant",
+      "results": {
+        "npm": {
+          "candidate_status": "untyped_refusal",
+          "outcome": "oracle_invalid_or_unavailable"
+        },
+        "python": {
+          "candidate_status": "untyped_refusal",
+          "outcome": "oracle_invalid_or_unavailable"
+        },
+        "rust": {
+          "candidate_status": "typed_refusal",
+          "outcome": "oracle_invalid_or_unavailable"
+        }
+      },
+      "strata": [
+        "multi_reactant",
+        "invalid_input"
+      ]
+    },
+    {
+      "id": "v2_ether_split_methoxyethane",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 2
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 2
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 2
+        }
+      },
+      "strata": [
+        "multi_product",
+        "mapped",
+        "bond_cleavage"
+      ]
+    },
+    {
+      "id": "v2_ether_split_dimethyl_ether",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "multi_product",
+        "symmetric_match",
+        "bond_cleavage"
+      ]
+    },
+    {
+      "id": "v2_isotope_methanol_split",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_status": "diagnosed_valence_refusal",
+          "outcome": "candidate_refusal_or_invalid",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "isotope",
+        "multi_product",
+        "mapped"
+      ]
+    },
+    {
+      "id": "v2_isotope_methanol_identity",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "isotope",
+        "mapped"
+      ]
+    },
+    {
+      "id": "v2_isotope_methanol_unlabeled_no_match",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        }
+      },
+      "strata": [
+        "isotope",
+        "no_match"
+      ]
+    },
+    {
+      "id": "v2_stereo_l_alanine_identity_reordered",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "stereo",
+        "atom_order",
+        "mapped"
+      ]
+    },
+    {
+      "id": "v2_stereo_d_alanine_no_match",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_product_sets_differ",
+          "rdkit_raw_product_sets": 1,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "stereo",
+        "no_match"
+      ]
+    },
+    {
+      "id": "v2_stereo_e_alkene_preserve",
+      "results": {
+        "npm": {
+          "candidate_status": "invalid_serialization",
+          "outcome": "candidate_refusal_or_invalid",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "stereo",
+        "bond_order",
+        "mapped"
+      ]
+    },
+    {
+      "id": "v2_stereo_z_alkene_preserve",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "python": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        },
+        "rust": {
+          "candidate_raw_product_sets": 1,
+          "candidate_unique_product_sets": 1,
+          "outcome": "distinct_match_raw_count_lower",
+          "rdkit_raw_product_sets": 2,
+          "rdkit_unique_product_sets": 1
+        }
+      },
+      "strata": [
+        "stereo",
+        "bond_order",
+        "mapped"
+      ]
+    },
+    {
+      "id": "v2_invalid_unclosed_reactant",
+      "results": {
+        "npm": {
+          "candidate_status": "untyped_refusal",
+          "outcome": "oracle_invalid_or_unavailable"
+        },
+        "python": {
+          "candidate_status": "untyped_refusal",
+          "outcome": "oracle_invalid_or_unavailable"
+        },
+        "rust": {
+          "candidate_status": "typed_refusal",
+          "outcome": "oracle_invalid_or_unavailable"
+        }
+      },
+      "strata": [
+        "invalid_input",
+        "parse_failure"
+      ]
+    },
+    {
+      "id": "v2_invalid_smirks_branch",
+      "results": {
+        "npm": {
+          "candidate_status": "untyped_refusal",
+          "outcome": "oracle_invalid_or_unavailable"
+        },
+        "python": {
+          "candidate_status": "untyped_refusal",
+          "outcome": "oracle_invalid_or_unavailable"
+        },
+        "rust": {
+          "candidate_status": "typed_refusal",
+          "outcome": "oracle_invalid_or_unavailable"
+        }
+      },
+      "strata": [
+        "invalid_input",
+        "parse_failure"
+      ]
+    },
+    {
+      "id": "v2_no_match_halogen_on_alkane",
+      "results": {
+        "npm": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "python": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        },
+        "rust": {
+          "candidate_raw_product_sets": 0,
+          "candidate_unique_product_sets": 0,
+          "outcome": "distinct_and_raw_counts_match",
+          "rdkit_raw_product_sets": 0,
+          "rdkit_unique_product_sets": 0
+        }
+      },
+      "strata": [
+        "no_match",
+        "aromaticity"
+      ]
+    }
+  ],
+  "schema": "published-reaction-distinct-vs-raw-multiplicity/v1",
+  "source_sha256": "a43cf9eec38b04664dc8ee269aa69f51a9ae3e310fa5a781177d07f389e85785",
+  "version": "1.0.30"
+}
