@@ -1,0 +1,4518 @@
+{
+  "accounting": {
+    "by_stratum": {
+      "aromaticity": {
+        "semantic_match": 7
+      },
+      "atom_order": {
+        "semantic_match": 3,
+        "wrong_confident": 1
+      },
+      "bond_cleavage": {
+        "semantic_match": 1,
+        "wrong_confident": 1
+      },
+      "bond_order": {
+        "semantic_match": 2
+      },
+      "charge": {
+        "semantic_match": 5
+      },
+      "explicit_h": {
+        "semantic_match": 4
+      },
+      "heteroaromatic": {
+        "semantic_match": 2
+      },
+      "implicit_h": {
+        "semantic_match": 1
+      },
+      "invalid_input": {
+        "joint_invalid_input": 3
+      },
+      "isotope": {
+        "semantic_match": 1,
+        "wrong_confident": 2
+      },
+      "legacy": {
+        "semantic_match": 57
+      },
+      "mapped": {
+        "semantic_match": 10,
+        "wrong_confident": 3
+      },
+      "multi_product": {
+        "semantic_match": 1,
+        "wrong_confident": 2
+      },
+      "multi_reactant": {
+        "joint_invalid_input": 1,
+        "semantic_match": 2
+      },
+      "new_bond": {
+        "semantic_match": 2
+      },
+      "new_product_atom": {
+        "semantic_match": 3
+      },
+      "no_match": {
+        "semantic_match": 2,
+        "wrong_confident": 2
+      },
+      "parse_failure": {
+        "joint_invalid_input": 2
+      },
+      "stereo": {
+        "semantic_match": 2,
+        "wrong_confident": 2
+      },
+      "symmetric_match": {
+        "semantic_match": 1
+      }
+    },
+    "input": 83,
+    "outcomes": {
+      "joint_invalid_input": 3,
+      "semantic_match": 75,
+      "wrong_confident": 5
+    },
+    "rust_outcomes": {
+      "diagnosed_valence_refusal": 1,
+      "joint_invalid_input": 3,
+      "semantic_match": 75,
+      "wrong_confident": 4
+    }
+  },
+  "artifact": {
+    "filename": "chematic-1.0.30-cp313-cp313-macosx_11_0_arm64.whl",
+    "sha256": "f6b1b22dd898cf3f100001156d9504b3753cb6b392143cbc0e6f3be78ec723d5",
+    "version": "1.0.30"
+  },
+  "fixtures": {
+    "base_sha256": "65b446de1ce66b7d9c355cf8b6bbbfe61d670c955e02931e8e8b8e564c558d3b",
+    "strata_sha256": "4e4ce3ebcea4bcea5398f109554074d97e9f252293fa906493ae3a61d40725a1"
+  },
+  "limits": [
+    "No reaction yield or selectivity claim",
+    "Product atom-map provenance was not compared with RDKit",
+    "Python result does not expose product atom provenance",
+    "ValueError from published binding is not a typed refusal category"
+  ],
+  "rdkit_version": "2026.03.6",
+  "rows": [
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alcohol_deprotonation",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alcohol_deprotonation",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(C)[O-]"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC[O-]"
+          ]
+        ]
+      },
+      "smirks": "[OH:1]>>[O-:1]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCO"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "carbonyl_reduction_shape",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCO"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC=O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "carbonyl_reduction_shape",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(C)O"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCO"
+          ]
+        ]
+      },
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(N)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "amide_formation",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(N)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC(=O)Cl",
+        "N"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "amide_formation",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "NC(=O)C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC(N)=O"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])Cl.[N:3]>>[C:1](=[O:2])[N:3]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C",
+            "N"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "mapped_bond_cleavage",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C",
+            "N"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CN"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "mapped_bond_cleavage",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C",
+              "N"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C",
+            "N"
+          ]
+        ]
+      },
+      "smirks": "[N:1][C:2]>>[N:1].[C:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C",
+            "O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "mapped_fragment_split",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C",
+            "O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "mapped_fragment_split",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C",
+              "O"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C",
+            "O"
+          ]
+        ]
+      },
+      "smirks": "[C:1]-[O:2]>>[C:1].[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(=O)[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "carboxylate_deprotonation",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(=O)[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC(=O)O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "carboxylate_deprotonation",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "CC(=O)[O-]"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC(=O)[O-]"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "id": "no_match_empty",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "reactants": [
+        "CC"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 0,
+            "applied_products": 0,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "no_match_empty",
+          "raw_product_sets": 0,
+          "sets": [],
+          "status": "products"
+        },
+        "sets": []
+      },
+      "smirks": "[OH:1]>>[O-:1]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(C)[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alcohol_deprotonation_isopropanol",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(C)[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC(C)O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alcohol_deprotonation_isopropanol",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(C)(C)[O-]"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC(C)[O-]"
+          ]
+        ]
+      },
+      "smirks": "[OH:1]>>[O-:1]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "[O-]c1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alcohol_deprotonation_phenol",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "[O-]c1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "Oc1ccccc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alcohol_deprotonation_phenol",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1cc([O-])ccc1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "[O-]c1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[OH:1]>>[O-:1]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "[O-]Cc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alcohol_deprotonation_benzyl_alcohol",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "[O-]Cc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "OCC1=CC=CC=C1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alcohol_deprotonation_benzyl_alcohol",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C1=CC(=CC=C1)C[O-]"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "[O-]Cc1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[OH:1]>>[O-:1]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(C)O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "carbonyl_reduction_acetone",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(C)O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC(C)=O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "carbonyl_reduction_acetone",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(O)(C)C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC(C)O"
+          ]
+        ]
+      },
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "OC1CCCCC1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "carbonyl_reduction_cyclohexanone",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "OC1CCCCC1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "O=C1CCCCC1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "carbonyl_reduction_cyclohexanone",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C1C(O)CCCC1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "OC1CCCCC1"
+          ]
+        ]
+      },
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "OCc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "carbonyl_reduction_benzaldehyde",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "OCc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "O=Cc1ccccc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "carbonyl_reduction_benzaldehyde",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1ccc(CO)cc1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "OCc1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCCCO"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "carbonyl_reduction_butanal",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCCCO"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCCC=O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "carbonyl_reduction_butanal",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(O)CCC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCCCO"
+          ]
+        ]
+      },
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCCC(=O)[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "carboxylate_deprotonation_butanoic_acid",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCCC(=O)[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCCC(=O)O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "carboxylate_deprotonation_butanoic_acid",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "[O-]C(CCC)=O"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCCC(=O)[O-]"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "O=C([O-])c1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "carboxylate_deprotonation_benzoic_acid",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "O=C([O-])c1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "O=C(O)c1ccccc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "carboxylate_deprotonation_benzoic_acid",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1c(C([O-])=O)cccc1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "O=C([O-])c1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "NCC(=O)[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "carboxylate_deprotonation_glycine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "NCC(=O)[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "NCC(=O)O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "carboxylate_deprotonation_glycine",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "NCC(=O)[O-]"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "NCC(=O)[O-]"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(O)C(=O)[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "carboxylate_deprotonation_lactic_acid",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(O)C(=O)[O-]"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC(O)C(=O)O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "carboxylate_deprotonation_lactic_acid",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "OC(C(=O)[O-])C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC(O)C(=O)[O-]"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Clc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "aromatic_halogen_exchange_bromobenzene",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Clc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "Brc1ccccc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "aromatic_halogen_exchange_bromobenzene",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1cc(Cl)ccc1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "Clc1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[c:1][Br]>>[c:1][Cl]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "COc1ccc(Cl)cc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "aromatic_halogen_exchange_bromoanisole",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "COc1ccc(Cl)cc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "COc1ccc(Br)cc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "aromatic_halogen_exchange_bromoanisole",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1(Cl)ccc(cc1)OC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "COc1ccc(Cl)cc1"
+          ]
+        ]
+      },
+      "smirks": "[c:1][Br]>>[c:1][Cl]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Clc1ccccn1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "aromatic_halogen_exchange_bromopyridine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Clc1ccccn1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "Brc1ccccn1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "aromatic_halogen_exchange_bromopyridine",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "Clc1ncccc1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "Clc1ccccn1"
+          ]
+        ]
+      },
+      "smirks": "[c:1][Br]>>[c:1][Cl]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Clc1ccc2ccccc2c1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "aromatic_halogen_exchange_bromonaphthalene",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Clc1ccc2ccccc2c1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "Brc1ccc2ccccc2c1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "aromatic_halogen_exchange_bromonaphthalene",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c12cc(Cl)ccc1cccc2"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "Clc1ccc2ccccc2c1"
+          ]
+        ]
+      },
+      "smirks": "[c:1][Br]>>[c:1][Cl]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCCC"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alkene_hydrogenation_2_butene",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CCCC"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC=CC"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alkene_hydrogenation_2_butene",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "CCCC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCCC"
+          ]
+        ]
+      },
+      "smirks": "[C:1]=[C:2]>>[C:1][C:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C1CCCCC1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alkene_hydrogenation_cyclohexene",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "C1CCCCC1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "C1=CCCCC1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alkene_hydrogenation_cyclohexene",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C1CCCCC1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C1CCCCC1"
+          ]
+        ]
+      },
+      "smirks": "[C:1]=[C:2]>>[C:1][C:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alkene_hydrogenation_styrene",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CCc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "C=Cc1ccccc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alkene_hydrogenation_styrene",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1ccc(cc1)CC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCc1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[C:1]=[C:2]>>[C:1][C:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "C=CCC"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alkene_hydrogenation_diene",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 4,
+        "sets": [
+          [
+            "C=CCC"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "C=CC=C"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 2,
+            "applied_products": 2,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alkene_hydrogenation_diene",
+          "raw_product_sets": 2,
+          "sets": [
+            [
+              "C(C)C=C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C=CCC"
+          ]
+        ]
+      },
+      "smirks": "[C:1]=[C:2]>>[C:1][C:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "C",
+            "CO"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "mapped_c_o_cleavage_methyl_ether",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "C",
+            "CO"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "COC"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 2,
+            "applied_products": 2,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "mapped_c_o_cleavage_methyl_ether",
+          "raw_product_sets": 2,
+          "sets": [
+            [
+              "C",
+              "OC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C",
+            "CO"
+          ]
+        ]
+      },
+      "smirks": "[C:1]-[O:2]>>[C:1].[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CC",
+            "CCO"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "mapped_c_o_cleavage_ethyl_ether",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CC",
+            "CCO"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCOCC"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 2,
+            "applied_products": 2,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "mapped_c_o_cleavage_ethyl_ether",
+          "raw_product_sets": 2,
+          "sets": [
+            [
+              "C(C)O",
+              "CC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC",
+            "CCO"
+          ]
+        ]
+      },
+      "smirks": "[C:1]-[O:2]>>[C:1].[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC",
+            "Oc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "mapped_c_o_cleavage_phenetole",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC",
+            "Oc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCOc1ccccc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "mapped_c_o_cleavage_phenetole",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "CC",
+              "c1(O)ccccc1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC",
+            "Oc1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[C:1]-[O:2]>>[C:1].[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "C=CC",
+            "CCO"
+          ],
+          [
+            "C=CCO",
+            "CC"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "mapped_c_o_cleavage_allyl_ether",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "C=CC",
+            "CCO"
+          ],
+          [
+            "C=CCO",
+            "CC"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "C=CCOCC"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 2,
+            "applied_products": 2,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "mapped_c_o_cleavage_allyl_ether",
+          "raw_product_sets": 2,
+          "sets": [
+            [
+              "C(C)O",
+              "CC=C"
+            ],
+            [
+              "C(CO)=C",
+              "CC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C=CC",
+            "CCO"
+          ],
+          [
+            "C=CCO",
+            "CC"
+          ]
+        ]
+      },
+      "smirks": "[C:1]-[O:2]>>[C:1].[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C",
+            "N"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "mapped_c_n_cleavage_methylamine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C",
+            "N"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CN"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "mapped_c_n_cleavage_methylamine",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C",
+              "N"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C",
+            "N"
+          ]
+        ]
+      },
+      "smirks": "[N:1]-[C:2]>>[N:1].[C:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CC",
+            "CCN"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "mapped_c_n_cleavage_diethylamine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CC",
+            "CCN"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCNCC"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 2,
+            "applied_products": 2,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "mapped_c_n_cleavage_diethylamine",
+          "raw_product_sets": 2,
+          "sets": [
+            [
+              "C(C)N",
+              "CC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC",
+            "CCN"
+          ]
+        ]
+      },
+      "smirks": "[N:1]-[C:2]>>[N:1].[C:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C",
+            "Nc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "mapped_c_n_cleavage_aniline",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C",
+            "Nc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CNc1ccccc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "mapped_c_n_cleavage_aniline",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C",
+              "Nc1ccccc1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C",
+            "Nc1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[N:1]-[C:2]>>[N:1].[C:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C=CC",
+            "N"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "mapped_c_n_cleavage_allylamine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C=CC",
+            "N"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "C=CCN"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "mapped_c_n_cleavage_allylamine",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "CC=C",
+              "N"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C=CC",
+            "N"
+          ]
+        ]
+      },
+      "smirks": "[N:1]-[C:2]>>[N:1].[C:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CNC(C)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "amide_formation_methylamine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CNC(C)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC(=O)Cl",
+        "CN"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "amide_formation_methylamine",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "N(C(=O)C)C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CNC(C)=O"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])Cl.[N:3]>>[C:1](=[O:2])[N:3]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCNC(C)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "amide_formation_ethylamine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCNC(C)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC(=O)Cl",
+        "CCN"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "amide_formation_ethylamine",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "N(CC)C(=O)C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCNC(C)=O"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])Cl.[N:3]>>[C:1](=[O:2])[N:3]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(=O)Nc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "amide_formation_aniline",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(=O)Nc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC(=O)Cl",
+        "Nc1ccccc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "amide_formation_aniline",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1cccc(NC(C)=O)c1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC(=O)Nc1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])Cl.[N:3]>>[C:1](=[O:2])[N:3]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CNC(=O)c1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "amide_formation_benzoyl_methylamine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CNC(=O)c1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "O=C(Cl)c1ccccc1",
+        "CN"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "amide_formation_benzoyl_methylamine",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "CNC(c1ccccc1)=O"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CNC(=O)c1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])Cl.[N:3]>>[C:1](=[O:2])[N:3]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alcohol_oxidation_ethanol",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alcohol_oxidation_ethanol",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "CC=O"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC=O"
+          ]
+        ]
+      },
+      "smirks": "[CH2:1][OH:2]>>[CH:1]=[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCC=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alcohol_oxidation_1_propanol",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCC=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCCO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alcohol_oxidation_1_propanol",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(C)C=O"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCC=O"
+          ]
+        ]
+      },
+      "smirks": "[CH2:1][OH:2]>>[CH:1]=[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "O=Cc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alcohol_oxidation_benzyl_alcohol",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "O=Cc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "OCC1=CC=CC=C1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alcohol_oxidation_benzyl_alcohol",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C=1C(=CC=CC=1)C=O"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "O=Cc1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[CH2:1][OH:2]>>[CH:1]=[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(C)C=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "alcohol_oxidation_2_methyl_1_propanol",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(C)C=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC(C)CO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "alcohol_oxidation_2_methyl_1_propanol",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(C=O)(C)C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC(C)C=O"
+          ]
+        ]
+      },
+      "smirks": "[CH2:1][OH:2]>>[CH:1]=[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CNS(C)(=O)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "sulfonamide_formation_methylamine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CNS(C)(=O)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CS(=O)(=O)Cl",
+        "CN"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "sulfonamide_formation_methylamine",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "S(=O)(=O)(C)NC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CNS(C)(=O)=O"
+          ]
+        ]
+      },
+      "smirks": "[S:1](=[O:2])(=[O:3])Cl.[N:4]>>[S:1](=[O:2])(=[O:3])[N:4]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCNS(C)(=O)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "sulfonamide_formation_ethylamine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CCNS(C)(=O)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CS(=O)(=O)Cl",
+        "CCN"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "sulfonamide_formation_ethylamine",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "S(C)(=O)(=O)NCC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCNS(C)(=O)=O"
+          ]
+        ]
+      },
+      "smirks": "[S:1](=[O:2])(=[O:3])Cl.[N:4]>>[S:1](=[O:2])(=[O:3])[N:4]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CS(=O)(=O)Nc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "sulfonamide_formation_aniline",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CS(=O)(=O)Nc1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CS(=O)(=O)Cl",
+        "Nc1ccccc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "sulfonamide_formation_aniline",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1cc(NS(=O)(C)=O)ccc1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CS(=O)(=O)Nc1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[S:1](=[O:2])(=[O:3])Cl.[N:4]>>[S:1](=[O:2])(=[O:3])[N:4]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CNS(=O)(=O)c1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "sulfonamide_formation_benzenesulfonyl",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CNS(=O)(=O)c1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "O=S(=O)(Cl)c1ccccc1",
+        "CN"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "sulfonamide_formation_benzenesulfonyl",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1cc(S(NC)(=O)=O)ccc1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CNS(=O)(=O)c1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[S:1](=[O:2])(=[O:3])Cl.[N:4]>>[S:1](=[O:2])(=[O:3])[N:4]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "id": "no_match_carbonyl_on_alkane",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "reactants": [
+        "CCCC"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 0,
+            "applied_products": 0,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "no_match_carbonyl_on_alkane",
+          "raw_product_sets": 0,
+          "sets": [],
+          "status": "products"
+        },
+        "sets": []
+      },
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "id": "no_match_aromatic_exchange_on_alkane",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "reactants": [
+        "CCBr"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 0,
+            "applied_products": 0,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "no_match_aromatic_exchange_on_alkane",
+          "raw_product_sets": 0,
+          "sets": [],
+          "status": "products"
+        },
+        "sets": []
+      },
+      "smirks": "[c:1][Br]>>[c:1][Cl]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C[C@H](N)C(=O)O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "stereo_identity_l_alanine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C[C@H](N)C(=O)O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "N[C@@H](C)C(=O)O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "stereo_identity_l_alanine",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "[C@@H](C(O)=O)(C)N"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C[C@H](N)C(=O)O"
+          ]
+        ]
+      },
+      "smirks": "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCCC"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "stereo_e_alkene",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CCCC"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "C/C=C/C"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "stereo_e_alkene",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "CCCC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCCC"
+          ]
+        ]
+      },
+      "smirks": "[C:1]/[C:2]=[C:3]/[C:4]>>[C:1][C:2][C:3][C:4]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCCC"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "stereo_z_alkene",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "CCCC"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "C/C=C\\C"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "stereo_z_alkene",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "CCCC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCCC"
+          ]
+        ]
+      },
+      "smirks": "[C:1]/[C:2]=[C:3]\\[C:4]>>[C:1][C:2][C:3][C:4]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCOC(C)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "issue679_unmapped_atomic_number_acetyl",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCOC(C)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "issue679_unmapped_atomic_number_acetyl",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "CC(=O)OCC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCOC(C)=O"
+          ]
+        ]
+      },
+      "smirks": "[O:1]>>[*:1][#6](=[#8])[#6]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCOC(C)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "issue679_unmapped_bracket_acetyl",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCOC(C)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "issue679_unmapped_bracket_acetyl",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "CC(=O)OCC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCOC(C)=O"
+          ]
+        ]
+      },
+      "smirks": "[O:1]>>[*:1][C](=[O])[C]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C=COCC"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "issue679_atomic_number_vinyl_explicit_h",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C=COCC"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "issue679_atomic_number_vinyl_explicit_h",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(C)OC=C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C=COCC"
+          ]
+        ]
+      },
+      "smirks": "[O:1]>>[*:1][#6;H1]=[#6]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCNC"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "issue679_mapped_atomic_number_amine",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCNC"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCN"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "issue679_mapped_atomic_number_amine",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "N(CC)C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCNC"
+          ]
+        ]
+      },
+      "smirks": "[#7:1]>>[#7:1]C",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "c1ccncc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "issue679_mapped_atomic_number_aromatic_n",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "c1ccncc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "c1ccncc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "issue679_mapped_atomic_number_aromatic_n",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1ccncc1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "c1ccncc1"
+          ]
+        ]
+      },
+      "smirks": "[#7:1]>>[#7:1]",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "id": "issue679_mapped_atomic_number_no_match",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "reactants": [
+        "CCO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 0,
+            "applied_products": 0,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "issue679_mapped_atomic_number_no_match",
+          "raw_product_sets": 0,
+          "sets": [],
+          "status": "products"
+        },
+        "sets": []
+      },
+      "smirks": "[#7:1]>>[#7:1]C",
+      "strata": [
+        "legacy"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "O=C([O-])c1ccccc1O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_charge_salicylic_deprotonation",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "O=C([O-])c1ccccc1O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "O=C(O)c1ccccc1O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_charge_salicylic_deprotonation",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "[O-]C(=O)c1ccccc1O"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "O=C([O-])c1ccccc1O"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]",
+      "strata": [
+        "charge",
+        "explicit_h",
+        "mapped",
+        "aromaticity"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "COc1ccc([O-])cc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_charge_anisole_phenol_deprotonation",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "COc1ccc([O-])cc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "COc1ccc(O)cc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_charge_anisole_phenol_deprotonation",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1cc([O-])ccc1OC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "COc1ccc([O-])cc1"
+          ]
+        ]
+      },
+      "smirks": "[OH:1]>>[O-:1]",
+      "strata": [
+        "charge",
+        "aromaticity",
+        "explicit_h"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C[NH3+]"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_charge_methylamine_protonation",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C[NH3+]"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CN"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_charge_methylamine_protonation",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C[NH3+]"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C[NH3+]"
+          ]
+        ]
+      },
+      "smirks": "[NH2:1]>>[NH3+:1]",
+      "strata": [
+        "charge",
+        "explicit_h",
+        "mapped"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "[NH3+]CCO"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_charge_ethanolamine_protonation",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "[NH3+]CCO"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "NCCO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_charge_ethanolamine_protonation",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(CO)[NH3+]"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "[NH3+]CCO"
+          ]
+        ]
+      },
+      "smirks": "[NH2:1]>>[NH3+:1]",
+      "strata": [
+        "charge",
+        "explicit_h",
+        "mapped"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "id": "v2_charge_quaternary_no_match",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "reactants": [
+        "C[N+](C)(C)C"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 0,
+            "applied_products": 0,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_charge_quaternary_no_match",
+          "raw_product_sets": 0,
+          "sets": [],
+          "status": "products"
+        },
+        "sets": []
+      },
+      "smirks": "[NH2:1]>>[NH3+:1]",
+      "strata": [
+        "charge",
+        "no_match"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Fc1ccc(F)cc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_aromatic_bromo_fluoro",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Fc1ccc(F)cc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "Brc1ccc(F)cc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_aromatic_bromo_fluoro",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "c1cc(F)ccc1F"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "Fc1ccc(F)cc1"
+          ]
+        ]
+      },
+      "smirks": "[c:1][Br]>>[c:1][F]",
+      "strata": [
+        "aromaticity",
+        "mapped",
+        "new_product_atom"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Fc1ccccn1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_aromatic_bromopyridine_fluoro",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Fc1ccccn1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "Brc1ncccc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_aromatic_bromopyridine_fluoro",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "n1ccccc1F"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "Fc1ccccn1"
+          ]
+        ]
+      },
+      "smirks": "[c:1][Br]>>[c:1][F]",
+      "strata": [
+        "aromaticity",
+        "heteroaromatic",
+        "new_product_atom"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Fc1ccsc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_aromatic_bromothiophene_fluoro",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "Fc1ccsc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "Brc1ccsc1"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_aromatic_bromothiophene_fluoro",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "s1cc(F)cc1"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "Fc1ccsc1"
+          ]
+        ]
+      },
+      "smirks": "[c:1][Br]>>[c:1][F]",
+      "strata": [
+        "aromaticity",
+        "heteroaromatic",
+        "new_product_atom"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CO"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_map_reordered_methanol",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CO"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_map_reordered_methanol",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "OC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CO"
+          ]
+        ]
+      },
+      "smirks": "[C:2][O:1]>>[O:1][C:2]",
+      "strata": [
+        "mapped",
+        "atom_order"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCO"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_map_reordered_ethanol",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCO"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CCO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_map_reordered_ethanol",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(C)O"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCO"
+          ]
+        ]
+      },
+      "smirks": "[C:2][O:1]>>[O:1][C:2]",
+      "strata": [
+        "mapped",
+        "atom_order"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(C)O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_map_reordered_isopropanol",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC(C)O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC(C)O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_map_reordered_isopropanol",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(O)(C)C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC(C)O"
+          ]
+        ]
+      },
+      "smirks": "[C:2][O:1]>>[O:1][C:2]",
+      "strata": [
+        "mapped",
+        "atom_order"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "COC(C)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_ester_methyl_acetate",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "COC(C)=O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "CC(=O)Cl",
+        "CO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_ester_methyl_acetate",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "O(C(=O)C)C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "COC(C)=O"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])Cl.[O:3]>>[C:1](=[O:2])[O:3]",
+      "strata": [
+        "multi_reactant",
+        "new_bond",
+        "implicit_h"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCOC(=O)c1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_ester_ethyl_benzoate",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CCOC(=O)c1ccccc1"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "O=C(Cl)c1ccccc1",
+        "CCO"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_ester_ethyl_benzoate",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(OC(c1ccccc1)=O)C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CCOC(=O)c1ccccc1"
+          ]
+        ]
+      },
+      "smirks": "[C:1](=[O:2])Cl.[O:3]>>[C:1](=[O:2])[O:3]",
+      "strata": [
+        "multi_reactant",
+        "new_bond",
+        "aromaticity"
+      ]
+    },
+    {
+      "chematic": {
+        "detail": "reactant count mismatch: expected 2, got 1",
+        "error_type": "ValueError",
+        "stage": "transform",
+        "status": "untyped_refusal"
+      },
+      "id": "v2_ester_missing_second_reactant",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "joint_invalid_input",
+      "rdkit": {
+        "detail": "ChemicalParserException: Number of reactants provided does not match number of reactant templates.",
+        "status": "invalid_input_or_product"
+      },
+      "reactants": [
+        "CC(=O)Cl"
+      ],
+      "rust": {
+        "outcome": "joint_invalid_input",
+        "raw": {
+          "detail": "reactant count mismatch: expected 2, got 1",
+          "id": "v2_ester_missing_second_reactant",
+          "reason": "reactant_count_mismatch",
+          "stage": "transform",
+          "status": "typed_refusal"
+        }
+      },
+      "smirks": "[C:1](=[O:2])Cl.[O:3]>>[C:1](=[O:2])[O:3]",
+      "strata": [
+        "multi_reactant",
+        "invalid_input"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CC",
+            "CO"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_ether_split_methoxyethane",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "wrong_confident",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "C",
+            "CCO"
+          ],
+          [
+            "CC",
+            "CO"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "COCC"
+      ],
+      "rust": {
+        "outcome": "wrong_confident",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_ether_split_methoxyethane",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "CC",
+              "OC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CC",
+            "CO"
+          ]
+        ]
+      },
+      "smirks": "[C:1][O:2][C:3]>>[C:1][O:2].[C:3]",
+      "strata": [
+        "multi_product",
+        "mapped",
+        "bond_cleavage"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C",
+            "CO"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_ether_split_dimethyl_ether",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "C",
+            "CO"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "COC"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_ether_split_dimethyl_ether",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C",
+              "OC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C",
+            "CO"
+          ]
+        ]
+      },
+      "smirks": "[C:1][O:2][C:3]>>[C:1][O:2].[C:3]",
+      "strata": [
+        "multi_product",
+        "symmetric_match",
+        "bond_cleavage"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "id": "v2_isotope_methanol_split",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "wrong_confident",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "O",
+            "[13CH3]"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "[13CH3]O"
+      ],
+      "rust": {
+        "outcome": "diagnosed_valence_refusal",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 0,
+            "truncated_matches": false,
+            "valence_rejected_matches": 1
+          },
+          "id": "v2_isotope_methanol_split",
+          "raw_product_sets": 0,
+          "sets": [],
+          "status": "diagnosed_valence_refusal"
+        }
+      },
+      "smirks": "[13CH3:1][O:2]>>[13CH3:1].[O:2]",
+      "strata": [
+        "isotope",
+        "multi_product",
+        "mapped"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "[13CH3]O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_isotope_methanol_identity",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "[13CH3]O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "[13CH3]O"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_isotope_methanol_identity",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "O[13CH3]"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "[13CH3]O"
+          ]
+        ]
+      },
+      "smirks": "[13CH3:1][O:2]>>[13CH3:1][O:2]",
+      "strata": [
+        "isotope",
+        "mapped"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "CO"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_isotope_methanol_unlabeled_no_match",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "wrong_confident",
+      "rdkit": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "reactants": [
+        "CO"
+      ],
+      "rust": {
+        "outcome": "wrong_confident",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_isotope_methanol_unlabeled_no_match",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "OC"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "CO"
+          ]
+        ]
+      },
+      "smirks": "[13CH3:1][O:2]>>[13CH3:1][O:2]",
+      "strata": [
+        "isotope",
+        "no_match"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C[C@H](N)C(=O)O"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_stereo_l_alanine_identity_reordered",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "wrong_confident",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C[C@@H](N)C(=O)O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "C[C@H](N)C(=O)O"
+      ],
+      "rust": {
+        "outcome": "wrong_confident",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_stereo_l_alanine_identity_reordered",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "[C@@H](C(O)=O)(C)N"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C[C@H](N)C(=O)O"
+          ]
+        ]
+      },
+      "smirks": "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O",
+      "strata": [
+        "stereo",
+        "atom_order",
+        "mapped"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "id": "v2_stereo_d_alanine_no_match",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "wrong_confident",
+      "rdkit": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C[C@@H](N)C(=O)O"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "N[C@H](C)C(=O)O"
+      ],
+      "rust": {
+        "outcome": "wrong_confident",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 0,
+            "applied_products": 0,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_stereo_d_alanine_no_match",
+          "raw_product_sets": 0,
+          "sets": [],
+          "status": "products"
+        },
+        "sets": []
+      },
+      "smirks": "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O",
+      "strata": [
+        "stereo",
+        "no_match"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C/C=C/C"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_stereo_e_alkene_preserve",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "C/C=C/C"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "C/C=C/C"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_stereo_e_alkene_preserve",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(=C/C)\\C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C/C=C/C"
+          ]
+        ]
+      },
+      "smirks": "[C:1]/[C:2]=[C:3]/[C:4]>>[C:1]/[C:2]=[C:3]/[C:4]",
+      "strata": [
+        "stereo",
+        "bond_order",
+        "mapped"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 1,
+        "sets": [
+          [
+            "C/C=C\\C"
+          ]
+        ],
+        "status": "products"
+      },
+      "id": "v2_stereo_z_alkene_preserve",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 2,
+        "sets": [
+          [
+            "C/C=C\\C"
+          ]
+        ],
+        "status": "products"
+      },
+      "reactants": [
+        "C/C=C\\C"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 1,
+            "applied_products": 1,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_stereo_z_alkene_preserve",
+          "raw_product_sets": 1,
+          "sets": [
+            [
+              "C(=C/C)/C"
+            ]
+          ],
+          "status": "products"
+        },
+        "sets": [
+          [
+            "C/C=C\\C"
+          ]
+        ]
+      },
+      "smirks": "[C:1]/[C:2]=[C:3]\\[C:4]>>[C:1]/[C:2]=[C:3]\\[C:4]",
+      "strata": [
+        "stereo",
+        "bond_order",
+        "mapped"
+      ]
+    },
+    {
+      "chematic": {
+        "detail": "unmatched ring closure 1 at position 4",
+        "error_type": "ValueError",
+        "stage": "reactant_parse",
+        "status": "untyped_refusal"
+      },
+      "id": "v2_invalid_unclosed_reactant",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "joint_invalid_input",
+      "rdkit": {
+        "detail": "RDKit could not parse a reactant",
+        "status": "invalid_input_or_product"
+      },
+      "reactants": [
+        "C1CC"
+      ],
+      "rust": {
+        "outcome": "joint_invalid_input",
+        "raw": {
+          "detail": "unmatched ring closure 1 at position 4",
+          "id": "v2_invalid_unclosed_reactant",
+          "reason": "smiles_parse",
+          "stage": "reactant_parse",
+          "status": "typed_refusal"
+        }
+      },
+      "smirks": "[O:1]>>[O-:1]",
+      "strata": [
+        "invalid_input",
+        "parse_failure"
+      ]
+    },
+    {
+      "chematic": {
+        "detail": "SMIRKS parse error: failed to parse SMILES '([O-:1]': unexpected character at position 0",
+        "error_type": "ValueError",
+        "stage": "transform",
+        "status": "untyped_refusal"
+      },
+      "id": "v2_invalid_smirks_branch",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "joint_invalid_input",
+      "rdkit": {
+        "detail": "ChemicalReactionParserException: Problems constructing product from SMARTS: ([O-:1]",
+        "status": "invalid_input_or_product"
+      },
+      "reactants": [
+        "CO"
+      ],
+      "rust": {
+        "outcome": "joint_invalid_input",
+        "raw": {
+          "detail": "SMIRKS parse error: failed to parse SMILES '([O-:1]': unexpected character at position 0",
+          "id": "v2_invalid_smirks_branch",
+          "reason": "smirks_parse",
+          "stage": "transform",
+          "status": "typed_refusal"
+        }
+      },
+      "smirks": "[O:1]>>([O-:1]",
+      "strata": [
+        "invalid_input",
+        "parse_failure"
+      ]
+    },
+    {
+      "chematic": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "id": "v2_no_match_halogen_on_alkane",
+      "map_provenance": "not_exposed_by_published_python_run_smirks",
+      "outcome": "semantic_match",
+      "rdkit": {
+        "raw_product_sets": 0,
+        "sets": [],
+        "status": "products"
+      },
+      "reactants": [
+        "CCBr"
+      ],
+      "rust": {
+        "outcome": "semantic_match",
+        "raw": {
+          "diagnostics": {
+            "accepted_matches": 0,
+            "applied_products": 0,
+            "truncated_matches": false,
+            "valence_rejected_matches": 0
+          },
+          "id": "v2_no_match_halogen_on_alkane",
+          "raw_product_sets": 0,
+          "sets": [],
+          "status": "products"
+        },
+        "sets": []
+      },
+      "smirks": "[c:1][Br]>>[c:1][F]",
+      "strata": [
+        "no_match",
+        "aromaticity"
+      ]
+    }
+  ],
+  "schema": "stratified-reaction-compatibility/v2"
+}

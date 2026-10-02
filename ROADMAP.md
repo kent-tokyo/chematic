@@ -9,11 +9,15 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 ## Current position
 
-- **v1.0.30 has a narrow published-package HBA result.** The published macOS
-  arm64 CPython 3.13 wheel matches pinned RDKit 2026.03.6 on 5,000/5,000
-  exposed ChEMBL rows with zero parse failures; published v1.0.29 matched
-  3,641/5,000. This does not establish other descriptors, platforms, or
-  v1.0.30's full chemistry/SMARTS/reaction/operation packet.
+- **v1.0.30 published-artifact P0 rerun is partly complete.** Python, npm and
+  crates.io artifacts have independent exposed 10k chemistry/310k SMARTS
+  reruns. Python's 63-operation output differential covers 210,410 rows per
+  version: only named HBA and its bundle change (1,359 rows each); 61 other
+  operations are byte-value invariant. Published named HBA is 5,000/5,000
+  against pinned RDKit 2026.03.6, up from 3,641/5,000 on v1.0.29. The
+  [dated packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
+  retains hashes, raw rows and open gates. npm has no reaction-transform API;
+  the 63-operation capability mapping is not finished outside Python.
 - **v1.0.29 has the historical partial P0 packet.** Its published Python
   wheel was measured on exposed 10,000-row chemistry, 310,000-cell SMARTS,
   57 reaction fixtures, and a 5,000-row/63-operation matrix. The 21
@@ -21,9 +25,12 @@ boundaries, and reproducible evidence take priority over feature-count races.
   counterbalanced and uncertainty was not established. Do not transfer any
   of these measured results to v1.0.30.
 - **Boundaries remain explicit.** The pinned CIP lane has 9,995 exact rows
-  and five typed abstentions; the v1.0.29 SMARTS lane has 200 classified
-  differences in 310,000 cells. The 57 reaction fixtures are too narrow for
-  general SMIRKS parity; 3D/MMFF94 remains Experimental. A0's frozen
+  and five typed abstentions; the published v1.0.30 SMARTS lane has 200
+  differences in 310,000 cells. The 57 legacy reaction fixtures still match,
+  but an 83-case stratified extension yields five confident published-wheel
+  differences; this does not establish general SMIRKS parity. Paired 20-block
+  speed lanes now cover a few operations, not the 63-operation matrix or
+  equivalent parse/perception/memory work. 3D/MMFF94 remains Experimental. A0's frozen
   core-eight descriptor gate is complete, but that is a separate result.
 
 Exact versions, corpora, and limits are in [validation](docs/validation.md) and

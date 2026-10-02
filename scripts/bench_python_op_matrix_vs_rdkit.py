@@ -35,6 +35,7 @@ import json
 import math
 import os
 import platform
+import random
 import statistics
 import subprocess
 import sys
@@ -101,16 +102,56 @@ def close(a: float, b: float, tol: float) -> bool:
     return abs(a - b) <= tol
 
 
+def paired_median_ci(chemist: list[float], oracle: list[float], *, seed: int = 0) -> dict:
+    """Deterministic paired bootstrap of the median RDKit/CheMatic time ratio."""
+    if len(chemist) != len(oracle) or not chemist or any(x <= 0 for x in chemist + oracle):
+        raise ValueError("paired positive timing arrays of equal length are required")
+    ratios = [r / c for c, r in zip(chemist, oracle)]
+    rng = random.Random(seed)
+    n = len(ratios)
+    medians = sorted(statistics.median(ratios[rng.randrange(n)] for _ in range(n)) for _ in range(4000))
+    return {
+        "median_ratio": statistics.median(ratios),
+        "bootstrap_95pct": [medians[99], medians[3899]],
+        "bootstrap_samples": 4000,
+        "seed": seed,
+    }
+
+
+def stable_output(value):
+    """Version-differential form; never use object addresses as evidence."""
+    if isinstance(value, chematic.Mol):
+        return {"mol_smiles": value.smiles}
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return {"bytes_hex": bytes(value).hex()}
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else {"nonfinite": str(value)}
+    if isinstance(value, (list, tuple)):
+        return [stable_output(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): stable_output(item) for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))}
+    raise TypeError(f"no stable output encoding for {type(value).__module__}.{type(value).__name__}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--corpus", required=True)
     ap.add_argument("--limit", type=int, default=5000)
     ap.add_argument("--repeats", type=int, default=3)
+    ap.add_argument("--paired", action="store_true", help="balanced AB/BA blocks and paired 95%% CI")
+    ap.add_argument("--outputs-only", action="store_true", help="emit all CheMatic results without timing")
+    ap.add_argument("--output-values-jsonl", help="per-operation/per-input version-differential output")
     ap.add_argument("--only", default=None, help="substring filter on operation names")
     ap.add_argument("--output-json", required=True)
     ap.add_argument("--chematic-revision", required=True, help="git revision the chematic wheel was built from")
     ap.add_argument("--chematic-artifact", default=None, help="path of the installed wheel, hashed into the record")
     args = ap.parse_args()
+    if args.paired and args.repeats < 20:
+        ap.error("--paired requires at least 20 blocks")
+    if args.outputs_only and not args.output_values_jsonl:
+        ap.error("--outputs-only requires --output-values-jsonl")
 
     smis = [l.split()[0] for l in open(args.corpus, encoding="utf-8") if l.strip()][: args.limit]
     pairs = []
@@ -161,12 +202,16 @@ def main() -> int:
             "repeats": args.repeats,
             "aggregation": "median over repeats of total wall time / rows (perf_counter)",
             "cold_inputs": "inputs rebuilt before every repeat (untimed): chematic re-parses SMILES, RDKit re-parses with MolFromSmiles",
-            "order": "per operation: all chematic repeats, then all RDKit repeats",
+            "order": ("alternating chematic/RDKit and RDKit/chematic paired blocks"
+                      if args.paired else "per operation: all chematic repeats, then all RDKit repeats"),
+            "warmup": "one untimed call per arm before each operation" if args.paired else "none",
+            "memory": "not measured by this process; use an isolated peak-RSS lane" if args.paired else "not measured",
             "exceptions": "counted per repeat as failures, never timed as wins",
             "ratio": "rdkit_us / chematic_us (>1 means chematic faster)",
         },
         "operations": [],
     }
+    values_handle = open(args.output_values_jsonl, "w", encoding="utf-8") if args.output_values_jsonl else None
 
     def fresh(items):
         if items and isinstance(items[0], chematic.Mol):
@@ -175,19 +220,24 @@ def main() -> int:
             return [Chem.MolFromSmiles(S[i]) for i in range(len(items))]
         return list(items)
 
+    def time_once(fn, items):
+        fails = 0
+        batch = fresh(items)
+        t0 = time.perf_counter()
+        for x in batch:
+            try:
+                fn(x)
+            except Exception:
+                fails += 1
+        return (time.perf_counter() - t0) / len(batch) * 1e6, fails
+
     def timeit(fn, items):
         per_repeat = []
         fails = 0
         for _ in range(args.repeats):
-            fails = 0
-            batch = fresh(items)
-            t0 = time.perf_counter()
-            for x in batch:
-                try:
-                    fn(x)
-                except Exception:
-                    fails += 1
-            per_repeat.append((time.perf_counter() - t0) / len(batch) * 1e6)
+            elapsed, failed = time_once(fn, items)
+            fails += failed
+            per_repeat.append(elapsed)
         return per_repeat, fails
 
     def op(name, c_fn, r_fn, *, eq, note="", c_items=None, r_items=None, sub=None,
@@ -198,6 +248,18 @@ def main() -> int:
         ri = r_items if r_items is not None else RM
         if sub:
             ci, ri = ci[:sub], ri[:sub]
+        if values_handle is not None:
+            values = []
+            for index, item in enumerate(fresh(ci)):
+                try:
+                    values.append({"input_index": index, "value": stable_output(c_fn(item))})
+                except Exception as exc:
+                    values.append({"input_index": index, "error": {"type": type(exc).__name__, "message": str(exc)}})
+            values_handle.write(json.dumps({"op": name, "rows": values}, separators=(",", ":"), sort_keys=True) + "\n")
+        if args.outputs_only:
+            record["operations"].append({"op": name, "rows": len(ci), "equivalence": eq})
+            print(f"output rows: {name}: {len(ci)}", flush=True)
+            return
         agreement = None
         if compare is not None:
             agree = compared = 0
@@ -209,12 +271,39 @@ def main() -> int:
                 compared += 1
                 agree += bool(compare(a, b))
             agreement = {"compared": compared, "agree": agree}
-        c_rep, c_f = timeit(c_fn, ci)
-        r_rep, r_f = timeit(r_fn, ri)
+        ordered_pairs = None
+        if args.paired:
+            # A new parse precedes each timed block on *both* arms. This
+            # controls execution order without granting either a warm cache.
+            time_once(c_fn, ci)
+            time_once(r_fn, ri)
+            c_rep, r_rep, c_f, r_f, ordered_pairs = [], [], 0, 0, []
+            for block in range(args.repeats):
+                order = ("chematic", "rdkit") if block % 2 == 0 else ("rdkit", "chematic")
+                elapsed = {}
+                for arm in order:
+                    fn, items = (c_fn, ci) if arm == "chematic" else (r_fn, ri)
+                    value, failed = time_once(fn, items)
+                    elapsed[arm] = value
+                    if arm == "chematic":
+                        c_f += failed
+                    else:
+                        r_f += failed
+                c_rep.append(elapsed["chematic"])
+                r_rep.append(elapsed["rdkit"])
+                ordered_pairs.append({"order": list(order), **elapsed})
+        else:
+            c_rep, c_f = timeit(c_fn, ci)
+            r_rep, r_f = timeit(r_fn, ri)
         c_rep = [t / per_item_divisor for t in c_rep]
         r_rep = [t / per_item_divisor for t in r_rep]
+        if ordered_pairs is not None:
+            for block in ordered_pairs:
+                block["chematic"] /= per_item_divisor
+                block["rdkit"] /= per_item_divisor
         ct, rt = statistics.median(c_rep), statistics.median(r_rep)
-        ratio = rt / ct if ct > 0 else math.inf
+        ci_95 = paired_median_ci(c_rep, r_rep) if args.paired else None
+        ratio = ci_95["median_ratio"] if ci_95 else (rt / ct if ct > 0 else math.inf)
         counted = eq == "checked" and agreement is not None
         row = {
             "op": name, "equivalence": eq, "note": note, "rows": len(ci),
@@ -223,6 +312,13 @@ def main() -> int:
             "chematic_failures": c_f, "rdkit_failures": r_f,
             "output_agreement": agreement, "counted": counted,
         }
+        if args.paired:
+            row["paired_blocks"] = ordered_pairs
+            row["paired_ci"] = ci_95
+            row["equivalent_output_speed_win"] = (
+                eq == "checked" and agreement == {"compared": len(ci), "agree": len(ci)}
+                and c_f == 0 and r_f == 0 and ci_95["bootstrap_95pct"][0] > 1.0
+            )
         record["operations"].append(row)
         agr = f"{agreement['agree']}/{agreement['compared']}" if agreement else "-"
         print(f"{name:44s} {eq:15s} chematic {ct:10.2f} us  rdkit {rt:10.2f} us  x{ratio:7.2f}  agree {agr}", flush=True)
@@ -403,7 +499,21 @@ def main() -> int:
     op("mcs_pair", lambda ms: chematic.find_mcs(ms, timeout_ms=2000), lambda ms: rdFMCS.FindMCS(ms, timeout=2),
        eq="not-equivalent", c_items=mcs_c, r_items=mcs_r, note="different defaults/timeouts; inputs not rebuilt")
 
+    if values_handle is not None:
+        values_handle.close()
+        record["outputs"] = {
+            "path": args.output_values_jsonl,
+            "sha256": sha256_file(args.output_values_jsonl),
+            "encoding": "per-operation JSONL; one explicit value or error per input index",
+        }
     ops = record["operations"]
+    if args.outputs_only:
+        record["summary"] = {"operations": len(ops), "rows_accounted": sum(o["rows"] for o in ops)}
+        with open(args.output_json, "w", encoding="utf-8") as fh:
+            json.dump(record, fh, indent=1)
+            fh.write("\n")
+        print(json.dumps(record["summary"]))
+        return 0
     counted = [o for o in ops if o["counted"]]
     record["summary"] = {
         "operations": len(ops),
@@ -415,6 +525,10 @@ def main() -> int:
         "same_task_operations": sum(o["equivalence"] == "same-task" for o in ops),
         "not_equivalent_operations": sum(o["equivalence"] == "not-equivalent" for o in ops),
     }
+    if args.paired:
+        record["summary"]["equivalent_output_speed_wins_with_ci"] = sum(
+            bool(o["equivalent_output_speed_win"]) for o in ops
+        )
     with open(args.output_json, "w", encoding="utf-8") as fh:
         json.dump(record, fh, indent=1)
         fh.write("\n")
