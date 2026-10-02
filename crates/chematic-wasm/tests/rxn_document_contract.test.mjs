@@ -45,6 +45,12 @@ assert.ok(products.length >= application.expected.minimum_product_sets);
 const product = wasm.parse_smiles(products[0][0]);
 assert.equal(product.atom_count(), application.expected.product_atom_count);
 product.free();
+const ezProducts = JSON.parse(wasm.run_reactants(
+  "[C:1]/[C:2]=[C:3]/[C:4]>>[C:1]/[C:2]=[C:3]/[C:4]",
+  "C/C=C/C",
+));
+assert.ok(ezProducts.flat().some(smiles => smiles.includes("\\")),
+  "E/Z SMILES backslashes must be escaped in the JSON response");
 for (const testCase of application.additional_cases) {
   const additionalProducts = JSON.parse(wasm.run_reactants(testCase.smirks, testCase.reactants.join("|")));
   if ("expected_product_sets" in testCase) {

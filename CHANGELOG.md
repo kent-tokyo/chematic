@@ -10,6 +10,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Fixed WASM `run_reactants` and `enumerate_library_2way` JSON serialization
+  for product SMILES containing E/Z backslashes. The published v1.0.30 npm
+  artifact can return invalid JSON for such a reaction; this source fix has
+  Rust and Node/WASM regression tests and requires a future publication before
+  users receive it.
+
 ## [1.0.30] - 2026-10-02
 
 - Corrected the named `rdkit_hba`, Python `CalcNumHBA`, and WASM RDKit-profile

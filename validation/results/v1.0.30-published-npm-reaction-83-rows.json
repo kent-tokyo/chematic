@@ -1,0 +1,827 @@
+{
+  "schema": "published-npm-reaction-rows/v1",
+  "package": {
+    "name": "@kent-tokyo/chematic",
+    "version": "1.0.30",
+    "tarball_sha256": "fd427a161c11b14e6cca51e78e0c35ff05bbc52faf0539a2ddc2b7090e534201"
+  },
+  "fixtures": {
+    "base_sha256": "65b446de1ce66b7d9c355cf8b6bbbfe61d670c955e02931e8e8b8e564c558d3b",
+    "strata_sha256": "4e4ce3ebcea4bcea5398f109554074d97e9f252293fa906493ae3a61d40725a1"
+  },
+  "rows": [
+    {
+      "id": "alcohol_deprotonation",
+      "status": "products",
+      "sets": [
+        [
+          "C(C)[O-]"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "carbonyl_reduction_shape",
+      "status": "products",
+      "sets": [
+        [
+          "C(C)O"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "amide_formation",
+      "status": "products",
+      "sets": [
+        [
+          "NC(=O)C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "mapped_bond_cleavage",
+      "status": "products",
+      "sets": [
+        [
+          "N",
+          "C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "mapped_fragment_split",
+      "status": "products",
+      "sets": [
+        [
+          "C",
+          "O"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "carboxylate_deprotonation",
+      "status": "products",
+      "sets": [
+        [
+          "CC(=O)[O-]"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "no_match_empty",
+      "status": "products",
+      "sets": [],
+      "raw_product_sets": 0
+    },
+    {
+      "id": "alcohol_deprotonation_isopropanol",
+      "status": "products",
+      "sets": [
+        [
+          "C(C)(C)[O-]"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "alcohol_deprotonation_phenol",
+      "status": "products",
+      "sets": [
+        [
+          "c1cc([O-])ccc1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "alcohol_deprotonation_benzyl_alcohol",
+      "status": "products",
+      "sets": [
+        [
+          "C1=CC(=CC=C1)C[O-]"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "carbonyl_reduction_acetone",
+      "status": "products",
+      "sets": [
+        [
+          "C(O)(C)C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "carbonyl_reduction_cyclohexanone",
+      "status": "products",
+      "sets": [
+        [
+          "C1C(O)CCCC1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "carbonyl_reduction_benzaldehyde",
+      "status": "products",
+      "sets": [
+        [
+          "c1ccc(CO)cc1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "carbonyl_reduction_butanal",
+      "status": "products",
+      "sets": [
+        [
+          "C(O)CCC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "carboxylate_deprotonation_butanoic_acid",
+      "status": "products",
+      "sets": [
+        [
+          "[O-]C(CCC)=O"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "carboxylate_deprotonation_benzoic_acid",
+      "status": "products",
+      "sets": [
+        [
+          "c1c(C([O-])=O)cccc1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "carboxylate_deprotonation_glycine",
+      "status": "products",
+      "sets": [
+        [
+          "NCC(=O)[O-]"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "carboxylate_deprotonation_lactic_acid",
+      "status": "products",
+      "sets": [
+        [
+          "OC(C(=O)[O-])C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromobenzene",
+      "status": "products",
+      "sets": [
+        [
+          "c1cc(Cl)ccc1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromoanisole",
+      "status": "products",
+      "sets": [
+        [
+          "c1(Cl)ccc(cc1)OC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromopyridine",
+      "status": "products",
+      "sets": [
+        [
+          "Clc1ncccc1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromonaphthalene",
+      "status": "products",
+      "sets": [
+        [
+          "c12cc(Cl)ccc1cccc2"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "alkene_hydrogenation_2_butene",
+      "status": "products",
+      "sets": [
+        [
+          "CCCC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "alkene_hydrogenation_cyclohexene",
+      "status": "products",
+      "sets": [
+        [
+          "C1CCCCC1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "alkene_hydrogenation_styrene",
+      "status": "products",
+      "sets": [
+        [
+          "c1ccc(cc1)CC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "alkene_hydrogenation_diene",
+      "status": "products",
+      "sets": [
+        [
+          "C(C)C=C"
+        ],
+        [
+          "C(C)C=C"
+        ]
+      ],
+      "raw_product_sets": 2
+    },
+    {
+      "id": "mapped_c_o_cleavage_methyl_ether",
+      "status": "products",
+      "sets": [
+        [
+          "C",
+          "OC"
+        ],
+        [
+          "C",
+          "OC"
+        ]
+      ],
+      "raw_product_sets": 2
+    },
+    {
+      "id": "mapped_c_o_cleavage_ethyl_ether",
+      "status": "products",
+      "sets": [
+        [
+          "CC",
+          "C(C)O"
+        ],
+        [
+          "CC",
+          "C(C)O"
+        ]
+      ],
+      "raw_product_sets": 2
+    },
+    {
+      "id": "mapped_c_o_cleavage_phenetole",
+      "status": "products",
+      "sets": [
+        [
+          "CC",
+          "c1(O)ccccc1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "mapped_c_o_cleavage_allyl_ether",
+      "status": "products",
+      "sets": [
+        [
+          "CC=C",
+          "C(C)O"
+        ],
+        [
+          "CC",
+          "C(CO)=C"
+        ]
+      ],
+      "raw_product_sets": 2
+    },
+    {
+      "id": "mapped_c_n_cleavage_methylamine",
+      "status": "products",
+      "sets": [
+        [
+          "N",
+          "C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "mapped_c_n_cleavage_diethylamine",
+      "status": "products",
+      "sets": [
+        [
+          "C(C)N",
+          "CC"
+        ],
+        [
+          "C(C)N",
+          "CC"
+        ]
+      ],
+      "raw_product_sets": 2
+    },
+    {
+      "id": "mapped_c_n_cleavage_aniline",
+      "status": "products",
+      "sets": [
+        [
+          "Nc1ccccc1",
+          "C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "mapped_c_n_cleavage_allylamine",
+      "status": "products",
+      "sets": [
+        [
+          "N",
+          "CC=C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "amide_formation_methylamine",
+      "status": "products",
+      "sets": [
+        [
+          "N(C(=O)C)C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "amide_formation_ethylamine",
+      "status": "products",
+      "sets": [
+        [
+          "N(CC)C(=O)C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "amide_formation_aniline",
+      "status": "products",
+      "sets": [
+        [
+          "c1cccc(NC(C)=O)c1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "amide_formation_benzoyl_methylamine",
+      "status": "products",
+      "sets": [
+        [
+          "CNC(c1ccccc1)=O"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "alcohol_oxidation_ethanol",
+      "status": "products",
+      "sets": [
+        [
+          "CC=O"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "alcohol_oxidation_1_propanol",
+      "status": "products",
+      "sets": [
+        [
+          "C(C)C=O"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "alcohol_oxidation_benzyl_alcohol",
+      "status": "products",
+      "sets": [
+        [
+          "C=1C(=CC=CC=1)C=O"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "alcohol_oxidation_2_methyl_1_propanol",
+      "status": "products",
+      "sets": [
+        [
+          "C(C=O)(C)C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "sulfonamide_formation_methylamine",
+      "status": "products",
+      "sets": [
+        [
+          "S(=O)(=O)(C)NC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "sulfonamide_formation_ethylamine",
+      "status": "products",
+      "sets": [
+        [
+          "S(C)(=O)(=O)NCC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "sulfonamide_formation_aniline",
+      "status": "products",
+      "sets": [
+        [
+          "c1cc(NS(=O)(C)=O)ccc1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "sulfonamide_formation_benzenesulfonyl",
+      "status": "products",
+      "sets": [
+        [
+          "c1cc(S(NC)(=O)=O)ccc1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "no_match_carbonyl_on_alkane",
+      "status": "products",
+      "sets": [],
+      "raw_product_sets": 0
+    },
+    {
+      "id": "no_match_aromatic_exchange_on_alkane",
+      "status": "products",
+      "sets": [],
+      "raw_product_sets": 0
+    },
+    {
+      "id": "stereo_identity_l_alanine",
+      "status": "products",
+      "sets": [
+        [
+          "[C@@H](C(O)=O)(C)N"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "stereo_e_alkene",
+      "status": "products",
+      "sets": [
+        [
+          "CCCC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "stereo_z_alkene",
+      "status": "products",
+      "sets": [
+        [
+          "CCCC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "issue679_unmapped_atomic_number_acetyl",
+      "status": "products",
+      "sets": [
+        [
+          "CC(=O)OCC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "issue679_unmapped_bracket_acetyl",
+      "status": "products",
+      "sets": [
+        [
+          "CC(=O)OCC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "issue679_atomic_number_vinyl_explicit_h",
+      "status": "products",
+      "sets": [
+        [
+          "C(C)OC=C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "issue679_mapped_atomic_number_amine",
+      "status": "products",
+      "sets": [
+        [
+          "N(CC)C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "issue679_mapped_atomic_number_aromatic_n",
+      "status": "products",
+      "sets": [
+        [
+          "c1ccncc1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "issue679_mapped_atomic_number_no_match",
+      "status": "products",
+      "sets": [],
+      "raw_product_sets": 0
+    },
+    {
+      "id": "v2_charge_salicylic_deprotonation",
+      "status": "products",
+      "sets": [
+        [
+          "[O-]C(=O)c1ccccc1O"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_charge_anisole_phenol_deprotonation",
+      "status": "products",
+      "sets": [
+        [
+          "c1cc([O-])ccc1OC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_charge_methylamine_protonation",
+      "status": "products",
+      "sets": [
+        [
+          "C[NH3+]"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_charge_ethanolamine_protonation",
+      "status": "products",
+      "sets": [
+        [
+          "C(CO)[NH3+]"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_charge_quaternary_no_match",
+      "status": "products",
+      "sets": [],
+      "raw_product_sets": 0
+    },
+    {
+      "id": "v2_aromatic_bromo_fluoro",
+      "status": "products",
+      "sets": [
+        [
+          "c1cc(F)ccc1F"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_aromatic_bromopyridine_fluoro",
+      "status": "products",
+      "sets": [
+        [
+          "n1ccccc1F"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_aromatic_bromothiophene_fluoro",
+      "status": "products",
+      "sets": [
+        [
+          "s1cc(F)cc1"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_map_reordered_methanol",
+      "status": "products",
+      "sets": [
+        [
+          "OC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_map_reordered_ethanol",
+      "status": "products",
+      "sets": [
+        [
+          "C(C)O"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_map_reordered_isopropanol",
+      "status": "products",
+      "sets": [
+        [
+          "C(O)(C)C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_ester_methyl_acetate",
+      "status": "products",
+      "sets": [
+        [
+          "O(C(=O)C)C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_ester_ethyl_benzoate",
+      "status": "products",
+      "sets": [
+        [
+          "C(OC(c1ccccc1)=O)C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_ester_missing_second_reactant",
+      "status": "untyped_refusal",
+      "error_type": "String",
+      "detail": "reactant count mismatch: expected 2, got 1"
+    },
+    {
+      "id": "v2_ether_split_methoxyethane",
+      "status": "products",
+      "sets": [
+        [
+          "OC",
+          "CC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_ether_split_dimethyl_ether",
+      "status": "products",
+      "sets": [
+        [
+          "OC",
+          "C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_isotope_methanol_split",
+      "status": "products",
+      "sets": [],
+      "raw_product_sets": 0
+    },
+    {
+      "id": "v2_isotope_methanol_identity",
+      "status": "products",
+      "sets": [
+        [
+          "O[13CH3]"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_isotope_methanol_unlabeled_no_match",
+      "status": "products",
+      "sets": [
+        [
+          "OC"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_stereo_l_alanine_identity_reordered",
+      "status": "products",
+      "sets": [
+        [
+          "[C@@H](C(O)=O)(C)N"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_stereo_d_alanine_no_match",
+      "status": "products",
+      "sets": [],
+      "raw_product_sets": 0
+    },
+    {
+      "id": "v2_stereo_e_alkene_preserve",
+      "status": "invalid_serialization",
+      "payload": "[[\"C(=C/C)\\C\"]]",
+      "detail": "SyntaxError: Bad escaped character in JSON at position 11 (line 1 column 12)"
+    },
+    {
+      "id": "v2_stereo_z_alkene_preserve",
+      "status": "products",
+      "sets": [
+        [
+          "C(=C/C)/C"
+        ]
+      ],
+      "raw_product_sets": 1
+    },
+    {
+      "id": "v2_invalid_unclosed_reactant",
+      "status": "untyped_refusal",
+      "error_type": "String",
+      "detail": "unmatched ring closure 1 at position 4"
+    },
+    {
+      "id": "v2_invalid_smirks_branch",
+      "status": "untyped_refusal",
+      "error_type": "String",
+      "detail": "SMIRKS parse error: failed to parse SMILES '([O-:1]': unexpected character at position 0"
+    },
+    {
+      "id": "v2_no_match_halogen_on_alkane",
+      "status": "products",
+      "sets": [],
+      "raw_product_sets": 0
+    }
+  ]
+}

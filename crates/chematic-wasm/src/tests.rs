@@ -380,6 +380,18 @@ fn run_reactants_esterification() {
     assert!(json.contains('['), "expected JSON array");
 }
 
+#[test]
+fn run_reactants_ez_smiles_is_valid_json() {
+    let json = run_reactants(
+        "[C:1]/[C:2]=[C:3]/[C:4]>>[C:1]/[C:2]=[C:3]/[C:4]",
+        "C/C=C/C",
+    )
+    .expect("E/Z reaction should succeed");
+    let sets: Vec<Vec<String>> = serde_json::from_str(&json).expect("SMILES must be JSON escaped");
+    assert!(!sets.is_empty());
+    assert!(sets.iter().flatten().any(|smiles| smiles.contains('\\')));
+}
+
 // Note: run_reactants error-path tests are omitted here because JsValue::from_str
 // panics outside a WASM runtime. Error coverage lives in chematic-rxn unit tests.
 

@@ -16,8 +16,9 @@ boundaries, and reproducible evidence take priority over feature-count races.
   operations are byte-value invariant. Published named HBA is 5,000/5,000
   against pinned RDKit 2026.03.6, up from 3,641/5,000 on v1.0.29. The
   [dated packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
-  retains hashes, raw rows and open gates. npm has no reaction-transform API;
-  the 63-operation capability mapping is not finished outside Python.
+  retains hashes, raw rows and open gates. The published npm tarball **does**
+  expose `run_reactants`; the 63-operation capability mapping remains unfinished
+  outside Python.
 - **v1.0.29 has the historical partial P0 packet.** Its published Python
   wheel was measured on exposed 10,000-row chemistry, 310,000-cell SMARTS,
   57 reaction fixtures, and a 5,000-row/63-operation matrix. The 21
@@ -33,9 +34,13 @@ boundaries, and reproducible evidence take priority over feature-count races.
   76 semantic matches, three typed unsupported, one typed refusal, and three
   jointly invalid, with zero wrong-confident outputs. Product map/provenance
   parity and wider chemistry remain open; this is not a v1.0.30 artifact result.
-  Paired 20-block
-  speed lanes now cover a few operations, not the 63-operation matrix or
-  equivalent parse/perception/memory work. 3D/MMFF94 remains Experimental. A0's frozen
+  Published npm has 74/83 semantic matches, five wrong-confident products,
+  three jointly invalid inputs and one invalid E/Z JSON result; the
+  serialization fix is source-only. The published Python 63-operation matrix
+  now has 20 alternating paired blocks and intervals: 20 operations meet its
+  full-output-agreement and interval gate on one host. This does **not** settle
+  equal perception work, memory, cross-host replication or Rust/npm operation
+  coverage. 3D/MMFF94 remains Experimental. A0's frozen
   core-eight descriptor gate is complete, but that is a separate result.
 
 Exact versions, corpora, and limits are in [validation](docs/validation.md) and
@@ -85,7 +90,8 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    The checked source profile reaches zero wrong-confident rows on the exposed
    83-case corpus by explicitly declining mismatched chiral-template semantics
    and reporting filtered valence products. Before closing P1, compare atom-map
-   provenance and extend the supported-domain corpus; do not count an opt-in
+   provenance, verify the npm E/Z serialization fix in the next published
+   artifact and extend the supported-domain corpus; do not count an opt-in
    refusal profile as general RDKit reaction parity.
    Recount #635's 200/310,000 SMARTS cells separately; keep native SSSR as
    default and any RDKit-style ring-count profile opt-in.

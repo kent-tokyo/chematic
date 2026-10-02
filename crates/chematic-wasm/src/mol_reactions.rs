@@ -297,17 +297,13 @@ pub fn run_reactants(smirks: &str, reactants_smiles: &str) -> Result<String, JsV
         )));
     }
 
-    let outer: Vec<String> = products
+    let outer: Vec<Vec<String>> = products
         .iter()
-        .map(|set| {
-            let inner: Vec<String> = set
-                .iter()
-                .map(|mol| format!("\"{}\"", chematic_smiles::canonical_smiles(mol)))
-                .collect();
-            format!("[{}]", inner.join(", "))
-        })
+        .map(|set| set.iter().map(chematic_smiles::canonical_smiles).collect())
         .collect();
-    bounded_json_output(format!("[{}]", outer.join(", ")))
+    bounded_json_output(
+        serde_json::to_string(&outer).map_err(|e| JsValue::from_str(&e.to_string()))?,
+    )
 }
 
 /// Enumerate a combinatorial library from a SMIRKS template and two fragment sets.
@@ -380,10 +376,12 @@ pub fn enumerate_library_2way(
 
     let smiles_list: Vec<String> = products
         .iter()
-        .map(|mol| format!("\"{}\"", chematic_smiles::canonical_smiles(mol)))
+        .map(chematic_smiles::canonical_smiles)
         .collect();
 
-    bounded_json_output(format!("[{}]", smiles_list.join(", ")))
+    bounded_json_output(
+        serde_json::to_string(&smiles_list).map_err(|e| JsValue::from_str(&e.to_string()))?,
+    )
 }
 
 /// Render a reaction SMILES string (e.g. `"CC(=O)O.CCO>>CC(=O)OCC.O"`) as a
