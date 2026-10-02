@@ -403,3 +403,5 @@ jobs:
         run: python3 scripts/check_v1030_artifact_packet.py
       - name: Verify isolated published-wheel timing and RSS records
         run: python3 scripts/check_published_python_isolated_paired.py
+      - name: Verify isolated published-Rust timing and RSS records
+        run: python3 scripts/check_published_rust_isolated_paired.py

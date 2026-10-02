@@ -1,0 +1,561 @@
+{
+  "artifacts": {
+    "a": {
+      "binary_sha256": "67ce3c57e368c3e377cc25554411078a490b85cc980cadb00ce4ce3a8a7b7b90",
+      "expected_output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+      "lock_sha256": "dfa39d95c4f6fca601337ed103bfff74ea048290b1b2f1bcb27d2c633f24caf4",
+      "reference_archive_sha256": "01f6563984af9889821d94a29d1765b0539703eefa38a1efe86f9391e1bb0be8",
+      "version": "1.0.29"
+    },
+    "b": {
+      "binary_sha256": "ff0133ccb25043a9ae171275ee348600f2424acc18c3766fcf2e375a5f20227e",
+      "expected_output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+      "lock_sha256": "0cb18ae64edaac9352c9c633c918ed3d48d3d9b6b1098457dade1a78e1dd4f88",
+      "reference_archive_sha256": "1d54bb28b09d1ba4effe17264fcf7945cd508cb2500f509806948cff5b3d1037",
+      "version": "1.0.30"
+    }
+  },
+  "corpus": {
+    "limit": 5000,
+    "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  "environment": {
+    "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+  },
+  "memory_a_over_b": {
+    "bootstrap_95pct": [
+      0.9940828402366864,
+      1.086887678078745
+    ],
+    "median_a_over_b": 0.9970414201183433,
+    "resamples": 4000,
+    "seed": 0
+  },
+  "memory_interpretation": "whole-process peak only; no per-operation allocation claim",
+  "mode": "parse_inclusive",
+  "operation": "morgan",
+  "outputs_equal_across_arms": true,
+  "pairs": [
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 87402291,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12025856,
+        "setup_ns": 83
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90978833,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11075584,
+        "setup_ns": 83
+      },
+      "block": 0,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 92484542,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12107776,
+        "setup_ns": 84
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 89888417,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11075584,
+        "setup_ns": 41
+      },
+      "block": 1,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 92675125,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11091968,
+        "setup_ns": 84
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 91371500,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12058624,
+        "setup_ns": 83
+      },
+      "block": 2,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 91081417,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12107776,
+        "setup_ns": 166
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90529417,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12091392,
+        "setup_ns": 42
+      },
+      "block": 3,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 91042166,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12107776,
+        "setup_ns": 83
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 89828125,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12173312,
+        "setup_ns": 42
+      },
+      "block": 4,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90196916,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12156928,
+        "setup_ns": 250
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90888292,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11075584,
+        "setup_ns": 208
+      },
+      "block": 5,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90522666,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11026432,
+        "setup_ns": 83
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90620667,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11091968,
+        "setup_ns": 42
+      },
+      "block": 6,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 91437625,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12025856,
+        "setup_ns": 84
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 88885375,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12173312,
+        "setup_ns": 84
+      },
+      "block": 7,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90967208,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11026432,
+        "setup_ns": 41
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 91616667,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11075584,
+        "setup_ns": 42
+      },
+      "block": 8,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90055375,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12156928,
+        "setup_ns": 41
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 93189250,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11108352,
+        "setup_ns": 42
+      },
+      "block": 9,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 92856834,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11026432,
+        "setup_ns": 125
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 93981375,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12255232,
+        "setup_ns": 83
+      },
+      "block": 10,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90876000,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11059200,
+        "setup_ns": 83
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 91893500,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11075584,
+        "setup_ns": 125
+      },
+      "block": 11,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 93430917,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 10944512,
+        "setup_ns": 125
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 95316209,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11075584,
+        "setup_ns": 84
+      },
+      "block": 12,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 92932583,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12173312,
+        "setup_ns": 84
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 92113584,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 10993664,
+        "setup_ns": 42
+      },
+      "block": 13,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 93978167,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11026432,
+        "setup_ns": 0
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 93321084,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11091968,
+        "setup_ns": 41
+      },
+      "block": 14,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 91985459,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12124160,
+        "setup_ns": 167
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 92164834,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12091392,
+        "setup_ns": 42
+      },
+      "block": 15,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 91641750,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11042816,
+        "setup_ns": 41
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 91100709,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11157504,
+        "setup_ns": 84
+      },
+      "block": 16,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 91579250,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12156928,
+        "setup_ns": 84
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 89160750,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11173888,
+        "setup_ns": 42
+      },
+      "block": 17,
+      "order": [
+        "b",
+        "a"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 92880042,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11010048,
+        "setup_ns": 42
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 92165167,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11075584,
+        "setup_ns": 83
+      },
+      "block": 18,
+      "order": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "a": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 91945334,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 12107776,
+        "setup_ns": 84
+      },
+      "b": {
+        "input_count": 5000,
+        "mode": "parse_inclusive",
+        "operation": "morgan",
+        "operation_ns": 90933625,
+        "output_sha256": "2ad08e80ccae8a609f50fe51a87e068637f31c00c3cf3dfa1c0f5cde0d12d913",
+        "peak_process_rss_bytes": 11091968,
+        "setup_ns": 42
+      },
+      "block": 19,
+      "order": [
+        "b",
+        "a"
+      ]
+    }
+  ],
+  "protocol": {
+    "blocks": 20,
+    "memory": "OS whole-process peak RSS, including startup and preparation; not operation allocation",
+    "order": "AB/BA alternating fresh processes",
+    "timing": "Rust Instant around operation calls; parse only in parse_inclusive",
+    "warmup": "one discarded process per arm, plus disjoint in-process molecule"
+  },
+  "schema": "published-rust-isolated-paired-v1",
+  "speed_a_over_b": {
+    "bootstrap_95pct": [
+      0.9926521248662636,
+      1.0106358049783595
+    ],
+    "median_a_over_b": 1.0060181992287243,
+    "resamples": 4000,
+    "seed": 0
+  },
+  "speed_outcome": "inconclusive_interval_crosses_parity"
+}
