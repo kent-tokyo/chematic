@@ -265,6 +265,19 @@ jobs:
           .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
       - name: Run pytest (chematic-py)
         run: .venv/bin/python -m pytest crates/chematic-py/tests/ -q
+      - name: RDKit 2026 HBA parity from installed source wheel
+        run: |
+          .venv/bin/pip install 'rdkit==2026.3.6' --quiet
+          .venv/bin/maturin build --release -m crates/chematic-py/Cargo.toml --interpreter .venv/bin/python --out dist/hba-wheel
+          .venv/bin/pip install --force-reinstall --no-deps dist/hba-wheel/chematic-*.whl
+          .venv/bin/python scripts/check_rdkit_hba_wheel.py --wheel dist/hba-wheel/chematic-*.whl --build-profile release --output validation/results/rdkit-hba-source-wheel-5k.json
+      - name: Retain HBA source-wheel parity result
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: rdkit-hba-source-wheel-5k
+          path: validation/results/rdkit-hba-source-wheel-5k.json
+          if-no-files-found: ignore
 
   test-wasm:
     name: Test (WASM)

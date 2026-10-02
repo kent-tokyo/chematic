@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the published-wheel v1.0.29 Python accuracy packet without RDKit.
+"""Check v1.0.29 published-wheel and later source-candidate evidence without RDKit.
 
 The archived rows are exposed data. This validates the published artifact's
 outcomes and their correspondence to the separately classified #634/#635
@@ -24,6 +24,7 @@ ROW_PATH = RESULTS / f"rdkit-python-chemistry-rows-v1.0.29-vs-{PREFIX}.jsonl.gz"
 ROW_SHA256 = "e9b8592b69a0663608ab51d0d83d3db644a515a7cbfedefe5ad5aff61780b968"
 GZIP_SHA256 = "95655e9159ee4d5ea59049723b5e2c352616826ade2ccb1500ceb47ab5f91012"
 WHEEL_SHA256 = "a9ceb3c685e6cf4abbbdb1ae1cdbaa76b9ba13c8015d53750ba617cba3f7c1d8"
+SOURCE_DEV_WHEEL_SHA256 = "b03642d52f4312c9f55221a70bdb7403cd6373fc4b0095b87ea2df7a04dc83e1"
 
 
 def read_json(path: Path) -> dict:
@@ -41,6 +42,7 @@ def main() -> int:
         previous = read_json(RESULTS / f"rdkit-python-chemistry-v1.0.28-wheel-vs-{PREFIX}.json")
         reaction = read_json(RESULTS / f"reaction-product-parity-v1.0.29-vs-{PREFIX}.json")
         matrix = read_json(ROOT / "benchmarks/2026-10-02-v1.0.29-python-op-matrix.json")
+        source_hba = read_json(RESULTS / "rdkit-hba-source-dev-wheel-5k-2026-10-02.json")
         classified = read_json(
             RESULTS / "rdkit-rebaseline-residual-classification-v1.0.27-issue634-vs-2026.03.6-2026-09-28.json"
         )
@@ -139,6 +141,17 @@ def main() -> int:
     check(matrix.get("corpus", {}).get("common_valid_rows") == 5000
           and hba.get("output_agreement") == {"compared": 5000, "agree": 3641},
           "HBA baseline", errors)
+    check(source_hba.get("build_profile") == "dev"
+          and source_hba.get("wheel_sha256") == SOURCE_DEV_WHEEL_SHA256
+          and source_hba.get("rdkit_version") == "2026.03.6"
+          and source_hba.get("corpus", {}).get("sha256")
+          == "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+          and source_hba.get("counts") == {
+              "input": 5000, "compared": 5000, "exact_named": 5000,
+              "exact_native": 5000, "parse_failed": 0}
+          and source_hba.get("differences") == []
+          and source_hba.get("gate_passed") is True,
+          "source dev-wheel HBA result", errors)
     if errors:
         print("v1.0.29 accuracy packet invalid:\n" + "\n".join(f"- {e}" for e in errors[:30])
               + (f"\n... {len(errors) - 30} more" if len(errors) > 30 else ""),
@@ -146,7 +159,7 @@ def main() -> int:
         return 1
     print("v1.0.29 accuracy packet OK: 10,000 rows; CIP 9,995 + 5 typed; "
           "Morgan 9,999 + 1 typed; SMARTS 200/310,000 classified; "
-          "reactions 57/57; HBA baseline 3,641/5,000")
+          "reactions 57/57; HBA published 3,641/5,000; source dev-wheel 5,000/5,000")
     return 0
 
 

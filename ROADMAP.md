@@ -76,8 +76,10 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    but the 10k lane does not test reaction equivalence. The v1.0.29 named
    HBA profile has a measured 3,641/5,000 agreement regression against this
    RDKit version; the native HBA profile is 5,000/5,000, and the unreleased
-   source correction now shares that rule. npm/Rust artifact lanes, full
-   reaction scope, equivalence-controlled paired timing, and cross-host
+   source correction now shares that rule. An importable dev-profile source
+   wheel independently reaches 5,000/5,000 on the named API; release-profile
+   wheel CI and published-artifact replication are pending. npm/Rust artifact
+   lanes, full reaction scope, equivalence-controlled paired timing, and cross-host
    uncertainty remain open. See the [dated record](benchmarks/2026-10-02-v1.0.29-python-accuracy.md).
 2. **P1 — Expand #679/#680 into a SMARTS/SMIRKS semantic gate.** Add repeated
    charges, mapped/unmapped product atoms, explicit/implicit H, aromatic and

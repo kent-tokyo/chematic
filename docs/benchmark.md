@@ -13,8 +13,9 @@ RDKit 2026.03.6. Of 44 output-checked operations, 21 had both complete output
 agreement and a faster median in three repeats. This is a single-host
 diagnostic: all chematic repeats preceded all RDKit repeats, the runs were not
 counterbalanced, and no uncertainty interval was calculated. The named HBA
-profile had only 3,641/5,000 exact agreement in that *published* wheel; the
-unreleased fix is outside these numbers. See the
+profile had only 3,641/5,000 exact agreement in that *published* wheel; an
+unreleased dev-profile source wheel reaches 5,000/5,000 but is outside the
+published timing numbers. See the
 [v1.0.29 Python accuracy record](../benchmarks/2026-10-02-v1.0.29-python-accuracy.md).
 
 The newest completed public-package *browser/3D* performance record remains
