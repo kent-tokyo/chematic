@@ -109,6 +109,28 @@ def classify_rust_row(rust: dict, oracle: dict) -> dict:
     raise ValueError(f"unknown Rust status: {status}")
 
 
+def classify_npm_row(npm: dict, oracle: dict) -> dict:
+    if npm["status"] == "invalid_serialization":
+        return {"outcome": "invalid_serialization", "raw": npm}
+    if npm["status"] == "untyped_refusal":
+        return {"outcome": "joint_invalid_input" if oracle["status"] != "products"
+                else "untyped_refusal", "raw": npm}
+    if npm["status"] != "products":
+        raise ValueError(f"unknown npm status: {npm['status']}")
+    normalized = set()
+    for product_set in npm["sets"]:
+        products = []
+        for spelling in product_set:
+            mol = Chem.MolFromSmiles(spelling)
+            if mol is None:
+                return {"outcome": "invalid_product", "raw": npm}
+            products.append(Chem.MolToSmiles(mol, canonical=True))
+        normalized.add(tuple(sorted(products)))
+    sets = [list(items) for items in sorted(normalized)]
+    outcome = ("semantic_match" if sets == oracle["sets"] else "wrong_confident") if oracle["status"] == "products" else "oracle_invalid"
+    return {"outcome": outcome, "sets": sets, "raw": npm}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", type=Path, default=ROOT / "validation/reaction_product_parity_cases.json")
@@ -117,6 +139,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-rdkit", required=True)
     parser.add_argument("--rust-rows", type=Path, help="optional exact-version crates.io reaction rows")
+    parser.add_argument("--npm-rows", type=Path, help="optional exact-version npm reaction rows")
     parser.add_argument("--checked-rdkit-compat", action="store_true",
                         help="source-candidate typed RDKit-compat profile; not published v1.0.30 evidence")
     args = parser.parse_args()
@@ -134,6 +157,19 @@ def main() -> int:
         for row, rust_row in zip(rows, rust_rows, strict=True):
             row["rust"] = classify_rust_row(rust_row, row["rdkit"])
         rust_counts = dict(sorted(Counter(row["rust"]["outcome"] for row in rows).items()))
+    npm_counts = None
+    npm_artifact = None
+    if args.npm_rows:
+        npm_report = json.loads(args.npm_rows.read_text(encoding="utf-8"))
+        if npm_report["schema"] != "published-npm-reaction-rows/v1" or npm_report["fixtures"] != hashes:
+            raise ValueError("npm reaction rows have a different schema or fixture digest")
+        npm_rows = npm_report["rows"]
+        if [row["id"] for row in npm_rows] != [row["id"] for row in rows]:
+            raise ValueError("npm rows and pinned fixtures differ in count or order")
+        for row, npm_row in zip(rows, npm_rows, strict=True):
+            row["npm"] = classify_npm_row(npm_row, row["rdkit"])
+        npm_counts = dict(sorted(Counter(row["npm"]["outcome"] for row in rows).items()))
+        npm_artifact = npm_report["package"]
     counts = Counter(row["outcome"] for row in rows)
     by_stratum: dict[str, Counter[str]] = defaultdict(Counter)
     for row in rows:
@@ -142,6 +178,7 @@ def main() -> int:
     report = {
         "schema": "stratified-reaction-compatibility/v2",
         "profile": "checked-rdkit-compat-source" if args.checked_rdkit_compat else "published-legacy",
+        "npm_artifact": npm_artifact,
         "artifact": {"version": importlib.metadata.version("chematic"),
                      "filename": args.artifact.name,
                      "sha256": hashlib.sha256(args.artifact.read_bytes()).hexdigest()},
@@ -150,6 +187,7 @@ def main() -> int:
         "accounting": {"input": len(cases), "outcomes": dict(sorted(counts.items())),
                        "by_stratum": {key: dict(sorted(value.items())) for key, value in sorted(by_stratum.items())},
                        "rust_outcomes": rust_counts},
+        "npm_outcomes": npm_counts,
         "rows": rows,
         "limits": ["No reaction yield or selectivity claim", "Product atom-map provenance was not compared with RDKit",
                    "Python result does not expose product atom provenance",

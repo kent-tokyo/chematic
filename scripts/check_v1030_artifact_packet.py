@@ -22,6 +22,9 @@ RESULTS = ROOT / "validation/results"
 WHEEL_SHA256 = "f6b1b22dd898cf3f100001156d9504b3753cb6b392143cbc0e6f3be78ec723d5"
 NPM_TARBALL_SHA256 = "fd427a161c11b14e6cca51e78e0c35ff05bbc52faf0539a2ddc2b7090e534201"
 CRATE_SHA256 = "b1a897689ab5b4983e56325dbd361e8ff0625dd752984af7fe75a10286f84a82"
+NPM_REACTION_ROWS_SHA256 = "ce3d801ed55f610412553861382040356ac17a8004b0bec23223bc14ddbdee9b"
+ALL_REACTION_REPORT_SHA256 = "a43cf9eec38b04664dc8ee269aa69f51a9ae3e310fa5a781177d07f389e85785"
+PAIRED_63OP_SHA256 = "5448fd34190d5358227663a77e415e31dca71718cfd38c2d01e156ab539719da"
 
 
 def read_json(name: str) -> dict:
@@ -134,9 +137,42 @@ def main() -> int:
             {"semantic_match": 75, "joint_invalid_input": 3, "wrong_confident": 5} or
             reaction["accounting"]["by_stratum"]["legacy"] != {"semantic_match": 57},
             "reaction stratification accounting")
+    npm_reaction = read_json("v1.0.30-published-npm-reaction-83-rows.json")
+    all_reactions = read_json("v1.0.30-published-reaction-83-all-bindings.json")
+    fail_if(hashlib.sha256((RESULTS / "v1.0.30-published-npm-reaction-83-rows.json").read_bytes()).hexdigest() != NPM_REACTION_ROWS_SHA256 or
+            hashlib.sha256((RESULTS / "v1.0.30-published-reaction-83-all-bindings.json").read_bytes()).hexdigest() != ALL_REACTION_REPORT_SHA256,
+            "published reaction raw record digest")
+    fail_if(npm_reaction["package"]["tarball_sha256"] != NPM_TARBALL_SHA256 or
+            all_reactions["npm_artifact"] != npm_reaction["package"] or
+            len(npm_reaction["rows"]) != 83 or
+            [row["id"] for row in npm_reaction["rows"]] != [row["id"] for row in all_reactions["rows"]] or
+            all_reactions["npm_outcomes"] !=
+            {"semantic_match": 74, "joint_invalid_input": 3, "wrong_confident": 5,
+             "invalid_serialization": 1},
+            "published npm reaction accounting")
+    bad_json = next(row for row in npm_reaction["rows"] if row["id"] == "v2_stereo_e_alkene_preserve")
+    fail_if(bad_json["status"] != "invalid_serialization", "published npm E/Z failure classification")
+    try:
+        json.loads(bad_json["payload"])
+    except json.JSONDecodeError:
+        pass
+    else:
+        raise ValueError("published npm E/Z payload unexpectedly parses as JSON")
+    paired_path = ROOT / "benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json"
+    fail_if(hashlib.sha256(paired_path.read_bytes()).hexdigest() != PAIRED_63OP_SHA256,
+            "published Python paired 63-operation record digest")
+    paired = json.loads(paired_path.read_text(encoding="utf-8"))
+    fail_if(paired["chematic"]["artifact_sha256"] != WHEEL_SHA256 or
+            paired["rdkit"]["version"] != "2026.03.6" or
+            paired["protocol"]["repeats"] != 20 or
+            paired["summary"]["operations"] != 63 or
+            paired["summary"]["equivalent_output_speed_wins_with_ci"] != 20 or
+            any(len(op["paired_blocks"]) != 20 for op in paired["operations"]),
+            "published Python paired 63-operation matrix accounting")
     print("v1.0.30 packet integrity OK: 3 published artifacts x 10k/310k; "
           "Python 63 operations x 210,410 rows (only HBA/bundle changed); "
-          "reaction extension 75 match, 3 jointly invalid, 5 confident differences. "
+          "20-block Python speed matrix; npm reaction 74 match, 5 confident "
+          "differences, 1 invalid JSON. "
           "P0/P1 acceptance remains OPEN.")
     return 0
 
