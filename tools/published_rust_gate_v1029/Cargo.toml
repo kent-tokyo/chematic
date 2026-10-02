@@ -1,0 +1,32 @@
+[package]
+name = "published-chematic-gate-v1029"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[[bin]]
+name = "operations"
+path = "../published_rust_gate/src/bin/operations.rs"
+
+[dependencies]
+chematic = { version = "=1.0.29", features = ["smiles", "perception", "chem", "fp", "smarts", "rxn", "mol", "depict", "threed", "inchi"] }
+# Pin the entire published graph. The facade's ^1.0.29 subcrate requirements
+# otherwise resolve to 1.0.30 and invalidate a cross-version comparison.
+chematic-3d = "=1.0.29"
+chematic-chem = "=1.0.29"
+chematic-cip = "=1.0.29"
+chematic-core = "=1.0.29"
+chematic-depict = "=1.0.29"
+chematic-ff = "=1.0.29"
+chematic-fp = "=1.0.29"
+chematic-inchi = "=1.0.29"
+chematic-iupac = "=1.0.29"
+chematic-mol = "=1.0.29"
+chematic-perception = "=1.0.29"
+chematic-rxn = "=1.0.29"
+chematic-smarts = "=1.0.29"
+chematic-smiles = "=1.0.29"
+serde_json = "1"
+sha2 = "0.10"
