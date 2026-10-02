@@ -97,6 +97,31 @@ def test_run_smirks_basic():
     assert isinstance(products, list)
 
 
+def test_run_smirks_product_atomic_number_primitives_match_organic_form():
+    # Issue #679: product-side [#6](=[#8])[#6] adds an acetyl group like C(=O)C.
+    mol = chematic.from_smiles("CCO")
+    organic = chematic.run_smirks("[O:1]>>[*:1]C(=O)C", [mol])
+    atomic = chematic.run_smirks("[O:1]>>[*:1][#6](=[#8])[#6]", [mol])
+    bracket = chematic.run_smirks("[O:1]>>[*:1][C](=[O])[C]", [mol])
+    canon = lambda sets: [[m.smiles for m in s] for s in sets]
+    assert canon(organic) == canon(atomic) == canon(bracket)
+    assert len(atomic) == 1
+    assert atomic[0][0].smiles == chematic.from_smiles("CCOC(C)=O").smiles
+
+
+def test_smarts_repeated_charge_signs_mean_total_charge():
+    # Issue #680: [++] is +2 and [--] is -2, as in Daylight / OpenSMARTS.
+    calcium = chematic.from_smiles("[Ca+2]")
+    sodium = chematic.from_smiles("[Na+]")
+    sulfide = chematic.from_smiles("[S-2]")
+    assert chematic.smarts_match("[++]", calcium)
+    assert chematic.smarts_match("[+2]", calcium)
+    assert not chematic.smarts_match("[++]", sodium)
+    assert chematic.smarts_match("[+]", sodium)
+    assert chematic.smarts_match("[--]", sulfide)
+    assert not chematic.smarts_match("[-]", sulfide)
+
+
 def test_run_smirks_invalid_smirks():
     with pytest.raises(ValueError):
         chematic.run_smirks("NOT_A_SMIRKS", [chematic.from_smiles("C")])
