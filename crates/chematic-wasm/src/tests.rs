@@ -2421,6 +2421,11 @@ fn get_rdkit_descriptors_json_keeps_compatibility_profile_separate() {
         assert!(value.get(key).is_some(), "missing {key}: {value}");
     }
     assert_eq!(value["aromatic_ring_count"], 1);
+
+    let caffeine = parse("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+    let caffeine_value: serde_json::Value =
+        serde_json::from_str(&get_rdkit_descriptors_json(&caffeine)).expect("valid JSON");
+    assert_eq!(caffeine_value["hba"], 3);
 }
 
 #[test]

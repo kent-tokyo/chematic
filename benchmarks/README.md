@@ -9,6 +9,7 @@ accuracy, or compatibility claims.
 
 | Need | Start with |
 |---|---|
+| Review the published v1.0.29 Python accuracy packet and unreleased HBA correction | [`2026-10-02-v1.0.29-python-accuracy.md`](2026-10-02-v1.0.29-python-accuracy.md): 10k chemistry rows, 310k SMARTS cells, 57 reactions and 5k operation matrix; published and source evidence separated |
 | Review the post-v1.0.25 output-identical speed branch (`perf/speed-4`) | [`2026-09-25-perf-speed4-output-identical.md`](2026-09-25-perf-speed4-output-identical.md): `912c4b7d` vs `5269d69f` and follow-up `98f57746`; 49 operations x 46,736 molecules with eight base-only nondeterministic error-text differences. Shared 2-vCPU VM source evidence, not a package claim. |
 | Review the previous output-identical speed branch | [`2026-09-24-perf-speed3-output-identical.md`](2026-09-24-perf-speed3-output-identical.md) |
 | Review the M4 source-candidate SSSR/cache/VF2 browser rerun | [`2026-09-24-rdkitjs-m4-sssr-cache.md`](2026-09-24-rdkitjs-m4-sssr-cache.md) |
@@ -32,7 +33,7 @@ accuracy, or compatibility claims.
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.0.20. Older records remain versioned historical
+The current release line is v1.0.29. Older records remain versioned historical
 measurements where their headers say so; a release does not imply that an older
 measurement was rerun.
 
@@ -97,6 +98,8 @@ measurement was rerun.
 
 | Record | Scope |
 |---|---|
+| [`2026-10-02-v1.0.29-python-accuracy.md`](2026-10-02-v1.0.29-python-accuracy.md) | Published Python wheel vs RDKit 2026.03.6: exposed 10k/310k chemistry packet, 57 reaction fixtures, HBA residual and source-only correction; not a cross-binding or broad speed claim |
+| [`2026-10-02-v1.0.29-python-op-matrix.json`](2026-10-02-v1.0.29-python-op-matrix.json) | Raw Apple M4 published-wheel 5k/63-operation diagnostic with per-repeat values, artifact hashes and output agreement; timing is not counterbalanced |
 | [`2026-09-24-perf-speed3-output-identical.md`](2026-09-24-perf-speed3-output-identical.md) | v1.0.23 `6f8645ef` vs perf branch `6bd3fae0`: byte-identical outputs (29 operations x 46,736 molecules, 0 differing rows), paired Rust cold timing, and the Python matrix vs RDKit 2026.03.6 re-run on both revisions; RDKit agreement unchanged. 2-vCPU VM, not a package claim |
 | [`2026-09-24-perf-digest-diff-v1.0.23-20b2cbc3.json`](2026-09-24-perf-digest-diff-v1.0.23-20b2cbc3.json) | Output-identity digest summary (all operations) for the record above |
 | [`2026-09-24-perf-digest-diff-v1.0.23-6bd3fae0-smarts.json`](2026-09-24-perf-digest-diff-v1.0.23-6bd3fae0-smarts.json) | Output-identity digest summary (SMARTS-affected operations) after the warm-up fix |

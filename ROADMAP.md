@@ -11,8 +11,12 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 - **v1.0.29 corrects #679/#680.** SMIRKS product-side atomic-number atoms
   produce literal atoms; repeated SMARTS charge signs represent one charge.
-  Targeted regressions are not a broad reaction/SMARTS parity claim. No
-  v1.0.29-specific full-corpus accuracy or speed packet has been run.
+  The published Python wheel has now been measured on the exposed 10,000-row
+  chemistry/310,000-cell SMARTS lane, 57 reaction fixtures, and a 5,000-row
+  operation matrix. This is a *Python-only partial P0 packet*, not broad
+  reaction/SMARTS parity or a paired, quality-equivalent speed claim. The
+  named RDKit HBA profile is corrected after the wheel measurement: that
+  source candidate must not be reported as a v1.0.29 package result.
 - **v1.0.28 closes the classified #634 CIP residuals at release source.**
   The pinned, exposed 10,000-row RDKit 2026.03.6 lane has 9,995 exact rows;
   the remaining five are typed abstentions. Lone-pair stereocentres are not
@@ -63,6 +67,18 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    **Exit:** reproducible raw data, hashes, complete denominators, binding-
    specific results, and a machine-checked report; no unmeasured speed or
    whole-library parity claim. Do not reuse an exposed cohort as sealed data.
+   **Progress (2026-10-02):** the published arm64 Python wheel and RDKit
+   2026.03.6 have a machine-checked exposed 10k/310k packet, paired
+   v1.0.28→v1.0.29 row comparison, 57/57 bounded reaction cases, and a
+   5k/63-operation diagnostic matrix. CIP is 9,995 exact + five typed
+   abstentions; Morgan is 9,999 exact + one typed refusal; SMARTS retains
+   200 classified cells. The changed #679 products pass the small fixture,
+   but the 10k lane does not test reaction equivalence. The v1.0.29 named
+   HBA profile has a measured 3,641/5,000 agreement regression against this
+   RDKit version; the native HBA profile is 5,000/5,000, and the unreleased
+   source correction now shares that rule. npm/Rust artifact lanes, full
+   reaction scope, equivalence-controlled paired timing, and cross-host
+   uncertainty remain open. See the [dated record](benchmarks/2026-10-02-v1.0.29-python-accuracy.md).
 2. **P1 — Expand #679/#680 into a SMARTS/SMIRKS semantic gate.** Add repeated
    charges, mapped/unmapped product atoms, explicit/implicit H, aromatic and
    aliphatic reactants, atom order, stereo, and multi-reactant cases to a

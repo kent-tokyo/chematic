@@ -253,5 +253,35 @@
     "id": "stereo_z_alkene",
     "smirks": "[C:1]/[C:2]=[C:3]\\[C:4]>>[C:1][C:2][C:3][C:4]",
     "reactants": ["C/C=C\\C"]
+  },
+  {
+    "id": "issue679_unmapped_atomic_number_acetyl",
+    "smirks": "[O:1]>>[*:1][#6](=[#8])[#6]",
+    "reactants": ["CCO"]
+  },
+  {
+    "id": "issue679_unmapped_bracket_acetyl",
+    "smirks": "[O:1]>>[*:1][C](=[O])[C]",
+    "reactants": ["CCO"]
+  },
+  {
+    "id": "issue679_atomic_number_vinyl_explicit_h",
+    "smirks": "[O:1]>>[*:1][#6;H1]=[#6]",
+    "reactants": ["CCO"]
+  },
+  {
+    "id": "issue679_mapped_atomic_number_amine",
+    "smirks": "[#7:1]>>[#7:1]C",
+    "reactants": ["CCN"]
+  },
+  {
+    "id": "issue679_mapped_atomic_number_aromatic_n",
+    "smirks": "[#7:1]>>[#7:1]",
+    "reactants": ["c1ccncc1"]
+  },
+  {
+    "id": "issue679_mapped_atomic_number_no_match",
+    "smirks": "[#7:1]>>[#7:1]C",
+    "reactants": ["CCO"]
   }
 ]

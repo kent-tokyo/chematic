@@ -82,6 +82,13 @@ distribution and 12-case structural holdout are recorded in
 [`descriptor-rdkit-diagnostics-v1.0.13.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
 and [`descriptor-rdkit-holdout-v1.0.13.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/descriptor-rdkit-holdout-v1.0.13.json).
 
+Those older HBA figures do not establish compatibility with RDKit 2026.03.6.
+On the published v1.0.29 wheel, the named `rdkit_hba` profile agrees on only
+3,641/5,000 ChEMBL molecules; native HBA agrees on 5,000/5,000. The unreleased
+source correction brings the named profile to the 2026.03 aromatic-N rule.
+See the [dated Python-wheel packet](../benchmarks/2026-10-02-v1.0.29-python-accuracy.md)
+for versions and limitations.
+
 The historical 4,999-molecule descriptor snapshot reports:
 
 - molecular weight: 99.82% within ±0.01 Da;

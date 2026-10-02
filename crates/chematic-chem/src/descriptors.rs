@@ -577,7 +577,7 @@ pub fn hbd_count(mol: &Molecule) -> usize {
 // ---------------------------------------------------------------------------
 
 /// Count hydrogen bond acceptors using the Ertl (2000) definition as implemented
-/// by RDKit's `rdMolDescriptors.CalcNumHBA`.
+/// by RDKit 2026.03.6's `rdMolDescriptors.CalcNumHBA`.
 ///
 /// Counts N, O, and divalent S atoms, with the following exclusions:
 /// - Aromatic N with H (pyrrole-type `[nH]`): lone pair participates in aromaticity.
@@ -585,11 +585,7 @@ pub fn hbd_count(mol: &Molecule) -> usize {
 /// - O with H bonded to a C=O carbon (carboxylic/ester OH).
 /// - O with H bonded to oxidized S with S=O (sulfonic/sulfonamide acid OH).
 /// - Oxidized S (degree > 2 or has S=O bonds): lone pair engaged in S=O resonance.
-fn hba_count_from_set(
-    mol: &Molecule,
-    ring_bonds: &FxHashSet<BondIdx>,
-    rdkit_aromatic_n: bool,
-) -> usize {
+fn hba_count_from_set(mol: &Molecule, ring_bonds: &FxHashSet<BondIdx>) -> usize {
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
@@ -605,18 +601,10 @@ fn hba_count_from_set(
                     //   h > 0 → [nH] pyrrole-type: lone pair participates in the
                     //           aromatic pi system.
                     // Only pyridine-like aromatic nitrogen is an acceptor.
-                    // The native profile keeps the conservative degree-2
-                    // restriction.  RDKit's Ertl SMARTS also accepts a
-                    // neutral, substituted aromatic N with no H (for example
-                    // the glycosidic N in purines), so the compatibility
-                    // profile deliberately widens this case.
-                    // Bracket/closure parsing can retain a conservative
-                    // implicit-H estimate for substituted aromatic N.  A
-                    // degree-3 aromatic N cannot carry that H in a valid
-                    // valence state, so the RDKit profile keys this case off
-                    // degree rather than the estimate.
-                    (h == 0 || (rdkit_aromatic_n && mol.degree(*idx) >= 3))
-                        && (mol.degree(*idx) == 2 || rdkit_aromatic_n)
+                    // RDKit 2026.03 restricts this branch to two-neighbor
+                    // aromatic N. Its older rule counted neutral, substituted
+                    // three-neighbor aromatic N as acceptors too (#8997).
+                    h == 0 && mol.degree(*idx) == 2
                 } else {
                     // Non-aromatic N: must have formal valence 3 ([N;v3] in SMARTS);
                     // this excludes radical N (C[N]C, valence 2) and unusual species.
@@ -691,15 +679,16 @@ fn hba_count_from_set(
 }
 
 pub fn hba_count(mol: &Molecule) -> usize {
-    hba_count_from_set(mol, &ring_bond_indices(mol), false)
+    hba_count_from_set(mol, &ring_bond_indices(mol))
 }
 
-/// Count hydrogen-bond acceptors using the pinned RDKit compatibility rule.
-/// This remains a named opt-in API even though the current rule is identical
-/// to the native Ertl implementation; the separate name preserves the profile
-/// boundary for future version-pinned changes.
+/// Count hydrogen-bond acceptors using the RDKit 2026.03.6 profile.
+///
+/// This named API now shares the native rule. Before this correction it used
+/// the pre-2026.03 aromatic-N rule and overcounted substituted aromatic N;
+/// that historical behavior is not the current RDKit compatibility contract.
 pub fn rdkit_hba_count(mol: &Molecule) -> usize {
-    hba_count_from_set(mol, &ring_bond_indices(mol), true)
+    hba_count(mol)
 }
 
 /// True if any heavy-atom neighbor of `idx` itself carries a double bond to
@@ -2079,7 +2068,7 @@ pub fn ring_bundle(mol: &Molecule) -> RingBundle {
     let aromatic_ring_count = aromatic_ring_list(mol).len();
 
     let rotatable_bond_count = rotatable_bond_count_from_set(mol, &ring_bonds);
-    let hba_count = hba_count_from_set(mol, &ring_bonds, false);
+    let hba_count = hba_count_from_set(mol, &ring_bonds);
     let hac = heavy_atom_count(mol);
     let fraction_rotatable_bonds = if hac == 0 {
         0.0
@@ -3969,17 +3958,21 @@ mod tests {
     }
 
     #[test]
-    fn rdkit_hba_profile_matches_rdkit_for_substituted_aromatic_n() {
+    fn rdkit_hba_profile_excludes_substituted_aromatic_n() {
         let caffeine = mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C");
         assert_eq!(hba_count(&caffeine), 3);
-        assert_eq!(rdkit_hba_count(&caffeine), 6);
+        assert_eq!(rdkit_hba_count(&caffeine), 3);
+        let methylpyrrole = mol("Cn1cccc1");
+        assert_eq!(rdkit_hba_count(&methylpyrrole), 0);
+        let methylpyridone = mol("O=C1C=CC=CN1C");
+        assert_eq!(rdkit_hba_count(&methylpyridone), 1);
     }
 
     #[test]
-    fn rdkit_hba_minimal_reproduction_for_corpus_difference() {
+    fn rdkit_hba_nucleoside_uses_2026_03_rule() {
         let nucleoside = mol("Nc1nc(N)c2ncn(C3CC(O)C(O)C(CO)O3)c2n1");
         assert_eq!(hba_count(&nucleoside), 9);
-        assert_eq!(rdkit_hba_count(&nucleoside), 10);
+        assert_eq!(rdkit_hba_count(&nucleoside), 9);
     }
 
     #[test]

@@ -41,12 +41,15 @@ def test_morgan_generator_rejects_unimplemented_modes():
 
 
 def test_calc_num_hba_uses_rdkit_compatibility_profile():
-    # Native HBA deliberately keeps a conservative aromatic-N interpretation.
-    # RDKit's CalcNumHBA counts the three substituted aromatic/imide N atoms
-    # in caffeine in addition to its three ordinary acceptors.
+    # RDKit 2026.03 excludes three-neighbor substituted aromatic N (#8997).
+    # The older RDKit rule counted three additional N atoms in caffeine.
     caffeine = Chem.MolFromSmiles("Cn1cnc2c1c(=O)n(C)c(=O)n2C")
     assert caffeine._mol.hba == 3
-    assert rdMolDescriptors.CalcNumHBA(caffeine) == 6
+    assert rdMolDescriptors.CalcNumHBA(caffeine) == 3
+    methylpyrrole = Chem.MolFromSmiles("Cn1cccc1")
+    assert rdMolDescriptors.CalcNumHBA(methylpyrrole) == 0
+    nucleoside = Chem.MolFromSmiles("Nc1nc(N)c2ncn(C3CC(O)C(O)C(CO)O3)c2n1")
+    assert rdMolDescriptors.CalcNumHBA(nucleoside) == 9
 
 
 # ---------------------------------------------------------------------------
