@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation/results"
 WHEEL_SHA256 = "f6b1b22dd898cf3f100001156d9504b3753cb6b392143cbc0e6f3be78ec723d5"
 NPM_TARBALL_SHA256 = "fd427a161c11b14e6cca51e78e0c35ff05bbc52faf0539a2ddc2b7090e534201"
+NPM_V1029_TARBALL_SHA256 = "d0af78a8d6b711a13b63985d4b36079e245441e99f1712532555dc69f11569fa"
 CRATE_SHA256 = "b1a897689ab5b4983e56325dbd361e8ff0625dd752984af7fe75a10286f84a82"
 NPM_REACTION_ROWS_SHA256 = "ce3d801ed55f610412553861382040356ac17a8004b0bec23223bc14ddbdee9b"
 ALL_REACTION_REPORT_SHA256 = "a43cf9eec38b04664dc8ee269aa69f51a9ae3e310fa5a781177d07f389e85785"
@@ -77,15 +78,16 @@ def npm_python_outcome(op: str, actual: dict, expected: dict) -> str:
     return "different"
 
 
-def check_npm_operation_slice() -> None:
-    summary = read_json("v1.0.30-published-npm-python-63op-slice.json")
-    raw_path = RESULTS / "v1.0.30-published-npm-python-63op-slice.jsonl.gz"
-    python_path = RESULTS / "v1.0.30-published-python-63op-outputs.jsonl.gz"
+def check_npm_operation_slice(version: str) -> list[dict]:
+    summary = read_json(f"v{version}-published-npm-python-63op-slice.json")
+    raw_path = RESULTS / f"v{version}-published-npm-python-63op-slice.jsonl.gz"
+    python_path = RESULTS / f"v{version}-published-python-63op-outputs.jsonl.gz"
     corpus_path = ROOT / "scripts/chembl_accuracy_corpus_4999.smi"
     raw_bytes = raw_path.read_bytes()
     python_bytes = python_path.read_bytes()
+    expected_tarball = NPM_TARBALL_SHA256 if version == "1.0.30" else NPM_V1029_TARBALL_SHA256
     fail_if(summary["schema"] != "published-npm-python-63op-output-slice/v1" or
-            summary["npm"] != {"version": "1.0.30", "tarball_sha256": NPM_TARBALL_SHA256} or
+            summary["npm"] != {"version": version, "tarball_sha256": expected_tarball} or
             summary["python_archive_sha256"] != hashlib.sha256(python_bytes).hexdigest() or
             summary["corpus"] != {"sha256": hashlib.sha256(corpus_path.read_bytes()).hexdigest(), "input_count": 5000} or
             summary["output"]["compressed_sha256"] != hashlib.sha256(raw_bytes).hexdigest(),
@@ -128,6 +130,35 @@ def check_npm_operation_slice() -> None:
                 f"npm {item['op']}: unexpected value mismatch")
         exact_operations += outcomes["exact"] == len(expected_rows)
     fail_if(exact_operations != 46, "npm operation exact-count regression")
+    return rows
+
+
+def check_npm_version_diff() -> None:
+    before = check_npm_operation_slice("1.0.29")
+    after = check_npm_operation_slice("1.0.30")
+    fail_if([op["op"] for op in before] != [op["op"] for op in after],
+            "npm v1.0.29/v1.0.30 operation order")
+    expected = {"hba": 1359, "lipinski_bundle(mw,logp,hbd,hba)": 1359}
+    python_paths = {
+        version: RESULTS / f"v{version}-published-python-63op-outputs.jsonl.gz"
+        for version in ("1.0.29", "1.0.30")
+    }
+    python_rows = {
+        version: {item["op"]: item["rows"] for item in
+                  (json.loads(line) for line in gzip.open(path, "rt", encoding="utf-8"))}
+        for version, path in python_paths.items()
+    }
+    observed = {}
+    for old, new in zip(before, after, strict=True):
+        name = old["op"]
+        fail_if(len(old["rows"]) != len(new["rows"]), f"npm {name}: version denominator")
+        npm_changed = [i for i, (a, b) in enumerate(zip(old["rows"], new["rows"], strict=True)) if a != b]
+        python_changed = [i for i, (a, b) in enumerate(zip(
+            python_rows["1.0.29"][name], python_rows["1.0.30"][name], strict=True)) if a != b]
+        fail_if(npm_changed != python_changed, f"npm {name}: change indices differ from Python")
+        if npm_changed:
+            observed[name] = len(npm_changed)
+    fail_if(observed != expected, f"npm cross-version operation deltas: {observed}")
 
 
 def main() -> int:
@@ -280,10 +311,11 @@ def main() -> int:
             paired["summary"]["equivalent_output_speed_wins_with_ci"] != 20 or
             any(len(op["paired_blocks"]) != 20 for op in paired["operations"]),
             "published Python paired 63-operation matrix accounting")
-    check_npm_operation_slice()
+    check_npm_version_diff()
     print("v1.0.30 packet integrity OK: 3 published artifacts x 10k/310k; "
           "Python 63 operations x 210,410 rows (only HBA/bundle changed); "
-          "npm 52/63 output adapters (46 exact, 3 representation lanes differ); "
+          "npm 52/63 output adapters (46 exact, 3 representation lanes differ), "
+          "v1.0.29 to v1.0.30 only HBA/bundle changed on the same 1,359 rows; "
           "20-block Python speed matrix; npm reaction 74 match, 5 confident "
           "differences, 1 invalid JSON; Rust reaction origins 74/83 matched. "
           "P0/P1 acceptance remains OPEN.")
