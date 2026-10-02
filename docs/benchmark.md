@@ -2,7 +2,7 @@
 
 CheMatic benchmarks are specific to the package or source commit, comparator,
 corpus, host and timed operation. A speed result counts only when the stated
-outputs and work are equivalent. [The record index](../benchmarks/README.md)
+outputs and work are equivalent. [The record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md)
 links the raw data and older measurements.
 
 ## Current published-package evidence
@@ -12,32 +12,32 @@ is a universal speed or compatibility claim.
 
 | Lane | Result | Boundary |
 |---|---|---|
-| [Python 63-operation matrix](../benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | 20 operations have exact output agreement and a favorable paired confidence interval against RDKit 2026.03.6 in 20 alternating blocks. | One host and exposed corpus; other operations are not wins. |
-| [Isolated Python](../benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) and [Rust](../benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) | Parse-inclusive, prepared first-use and precomputed lanes use 20 fresh-process blocks. | Process peak RSS is not per-operation allocation. Changed HBA outputs cannot support an equivalent-output v1.0.29/v1.0.30 speed claim. |
-| [Published Node/WASM](../benchmarks/2026-10-03-v1029-v1030-rdkitjs-node-isolated-paired20.md) | Compatible Morgan is bit-identical on the 250-row speed corpus, with 20 fresh-process paired blocks against official RDKit.js. | Node is not browser evidence. |
-| [Published browser replication](../benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) | Chromium, Firefox and WebKit on Ubuntu 24.04 each have 250/250 exact direct/prepared Morgan rows and favorable 20-block speed intervals; the smallest lower bound is 1.63×. | Browser, host and operation scoped. A separate Chromium 10k lane has 9,999 exact outputs and one typed Fe refusal. |
+| [Python 63-operation matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | 20 operations have exact output agreement and a favorable paired confidence interval against RDKit 2026.03.6 in 20 alternating blocks. | One host and exposed corpus; other operations are not wins. |
+| [Isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) and [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) | Parse-inclusive, prepared first-use and precomputed lanes use 20 fresh-process blocks. | Process peak RSS is not per-operation allocation. Changed HBA outputs cannot support an equivalent-output v1.0.29/v1.0.30 speed claim. |
+| [Published Node/WASM](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-rdkitjs-node-isolated-paired20.md) | Compatible Morgan is bit-identical on the 250-row speed corpus, with 20 fresh-process paired blocks against official RDKit.js. | Node is not browser evidence. |
+| [Published browser replication](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) | Chromium, Firefox and WebKit on Ubuntu 24.04 each have 250/250 exact direct/prepared Morgan rows and favorable 20-block speed intervals; the smallest lower bound is 1.63×. | Browser, host and operation scoped. A separate Chromium 10k lane has 9,999 exact outputs and one typed Fe refusal. |
 
-The [v1.0.30 artifact audit](../benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
+The [v1.0.30 artifact audit](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
 accounts for 10,000 chemistry rows, 310,000 SMARTS cells, 57 legacy reactions
 and applicable operation outputs across Python, npm and Rust. It is an output
 audit, **not** a speed or full RDKit-parity result. The
-[adoption policy](../benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md)
+[adoption policy](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md)
 retains 200 SMARTS failures, five typed CIP abstentions and four npm API gaps.
 
 ## Historical records
 
-- The [v1.0.20 public-package fingerprint/3D record](../benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md)
+- The [v1.0.20 public-package fingerprint/3D record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-23-public-package-fingerprint-3d-v1.0.20.md)
   reports 9,999 supported exact Morgan rows and one typed refusal. Its
   quality-equivalent MMFF94 speed ratio was 0.944× (95% lower bound 0.861×):
   **not** an MMFF94 speed win.
-- The [v1.0.15 WASM-size record](../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md)
+- The [v1.0.15 WASM-size record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md)
   measured 4,005,280 raw / 1,460,499 gzip bytes versus official RDKit.js
   7,333,095 / 2,379,975 under one local compression method. These are
   historical assets, not current package or download sizes.
-- The [v1.0.12 similarity-search record](../benchmarks/2026-09-11-similarity-search-v1.0.12.md)
+- The [v1.0.12 similarity-search record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-similarity-search-v1.0.12.md)
   separates native/native, RDKit-compatible/RDKit and cross-profile overlap.
   Source A/B and older operation timings remain in the
-  [index](../benchmarks/README.md); they do not update v1.0.30 claims.
+  [index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md); they do not update v1.0.30 claims.
 
 ## Reproduction and interpretation
 

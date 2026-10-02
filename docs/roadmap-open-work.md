@@ -1,10 +1,10 @@
 # Open-work ledger
 
 Updated 2026-10-03 for published **v1.0.30**. The
-[roadmap](../ROADMAP.md) sets priority and exit criteria; this ledger names
+[roadmap](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md) sets priority and exit criteria; this ledger names
 dependencies. Completed work and raw evidence stay in the
-[CHANGELOG](../CHANGELOG.md), [validation report](validation.md), and
-[benchmark index](../benchmarks/README.md).
+[CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md), [validation report](validation.md), and
+[benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md).
 
 ## Queue
 
@@ -18,9 +18,9 @@ dependencies. Completed work and raw evidence stay in the
 | 6 · external | A later RDKit oracle is not pinned here. | Rebaseline only against a new official artifact; preserve 2026.03.6 results separately. |
 
 P0.1's **published-artifact accounting is complete**, not strict RDKit
-parity: [the acceptance policy](../benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md)
+parity: [the acceptance policy](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md)
 retains the 200 SMARTS failures, five CIP abstentions and four npm API gaps.
-The [published-artifact packet](../benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
+The [published-artifact packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
 contains the versioned denominators and raw-row identities.
 
 ## Cross-cutting dependencies
