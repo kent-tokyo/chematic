@@ -143,7 +143,7 @@ impl MolHandle {
 
     /// Molecular formula string (Hill notation: C first, H second, then alphabetical).
     pub fn formula(&self) -> String {
-        molecular_formula(&self.inner)
+        chematic_chem::calc_mol_formula(&self.inner)
     }
 
     /// Canonical SMILES string.
@@ -718,64 +718,6 @@ fn bond_in_ring(
         }
     }
     false
-}
-
-// ---------------------------------------------------------------------------
-// Private helper: molecular formula (Hill notation)
-// ---------------------------------------------------------------------------
-
-/// Build a molecular formula string in Hill notation.
-///
-/// Hill convention: carbon first, hydrogen second, remaining elements
-/// in alphabetical order.  Implicit hydrogens (from valence model) are
-/// included in the count.
-fn molecular_formula(mol: &chematic_core::Molecule) -> String {
-    use chematic_core::{Element, implicit_hcount};
-    use std::collections::BTreeMap;
-
-    let mut counts: BTreeMap<u8, u32> = BTreeMap::new();
-
-    for (idx, atom) in mol.atoms() {
-        let an = atom.element.atomic_number();
-        if an != 1 {
-            // Count the heavy atom.
-            *counts.entry(an).or_insert(0) += 1;
-            // Add its implicit hydrogens.
-            let h = implicit_hcount(mol, idx) as u32;
-            if h > 0 {
-                *counts.entry(1).or_insert(0) += h;
-            }
-        } else {
-            // Explicit hydrogen atom.
-            *counts.entry(1).or_insert(0) += 1;
-        }
-    }
-
-    // Collect into Hill order: C (6), H (1), then remaining by atomic number.
-    let mut result = String::new();
-    let append = |symbol: &str, count: u32, out: &mut String| {
-        out.push_str(symbol);
-        if count > 1 {
-            out.push_str(&count.to_string());
-        }
-    };
-
-    if let Some(&c_count) = counts.get(&6) {
-        append("C", c_count, &mut result);
-    }
-    if let Some(&h_count) = counts.get(&1) {
-        append("H", h_count, &mut result);
-    }
-    // Remaining elements in atomic-number order (BTreeMap is sorted by key).
-    for (&an, &count) in &counts {
-        if an == 1 || an == 6 {
-            continue;
-        }
-        let elem = Element::from_atomic_number(an).unwrap();
-        append(elem.symbol(), count, &mut result);
-    }
-
-    result
 }
 
 // ---------------------------------------------------------------------------

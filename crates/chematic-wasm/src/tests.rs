@@ -17,6 +17,13 @@ fn parse_benzene_atom_count() {
 }
 
 #[test]
+fn formula_uses_the_shared_hill_order_across_bindings() {
+    let mol = parse("ClCN");
+    assert_eq!(mol.formula(), "CH4ClN");
+    assert_eq!(mol.formula(), chematic_chem::calc_mol_formula(&mol.inner));
+}
+
+#[test]
 fn canonical_batch_manifest_has_complete_outcome_accounting() {
     let manifest: serde_json::Value = serde_json::from_str(
         &workflow::canonicalize_smiles_batch_json("CCO\nC1CC\nCCN", "\n").unwrap(),

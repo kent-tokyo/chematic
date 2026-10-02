@@ -18,7 +18,7 @@ current issue or benchmark links to them.
 | V3000 external readers | `v3000_*_gate.py` |
 | Stereo gates | `stereo_torture_suite_gate.py`, `stereo_spelling_invariance_gate.py` |
 | Cross-binding Node dump | `binding_dump.mjs <mode>` |
-| Published v1.0.30 artifact packet | `check_v1030_artifact_packet.py`, `emit_rdkit_smarts_oracle.py`, `run_published_npm_chemistry_lane.mjs`, `run_reaction_compatibility_v2.py`, and the `tools/published_rust_gate` lockfile |
+| Published v1.0.30 artifact packet | `check_v1030_artifact_packet.py`, `emit_rdkit_smarts_oracle.py`, `run_published_npm_chemistry_lane.mjs`, `run_published_npm_63op_outputs.mjs`, `run_reaction_compatibility_v2.py`, and the `tools/published_rust_gate` lockfile |
 | Published-wheel output and speed comparison | `bench_python_op_matrix_vs_rdkit.py --outputs-only/--paired`, `check_published_python_version_outputs.py`, `bench_published_python_versions.py` |
 
 ## Organization rule

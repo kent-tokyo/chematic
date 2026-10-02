@@ -11,11 +11,16 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import math
+import re
 from collections import Counter
 from itertools import zip_longest
 from pathlib import Path
 
-from check_published_python_version_outputs import compare
+if __package__:
+    from .check_published_python_version_outputs import compare
+else:
+    from check_published_python_version_outputs import compare
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation/results"
@@ -42,6 +47,87 @@ def raw_digest(path: Path) -> str:
 def fail_if(condition: bool, message: str) -> None:
     if condition:
         raise ValueError(message)
+
+
+def formula_composition(value: object) -> dict[str, int] | None:
+    if not isinstance(value, str):
+        return None
+    counts: dict[str, int] = {}
+    at = 0
+    for token in re.finditer(r"([A-Z][a-z]?)(\d*)", value):
+        if token.start() != at:
+            return None
+        at = token.end()
+        counts[token.group(1)] = counts.get(token.group(1), 0) + int(token.group(2) or 1)
+    return counts if at == len(value) and at > 0 else None
+
+
+def npm_python_outcome(op: str, actual: dict, expected: dict) -> str:
+    if actual == expected:
+        return "exact"
+    if actual.get("input_index") != expected.get("input_index"):
+        return "different"
+    av, ev = actual.get("value"), expected.get("value")
+    if op in {"qed", "chi1v"} and isinstance(av, float) and isinstance(ev, float) and \
+            math.isfinite(av) and math.isfinite(ev) and math.isclose(av, ev, rel_tol=1e-12, abs_tol=1e-12):
+        return "numeric_roundoff"
+    if op == "formula" and formula_composition(av) is not None and \
+            formula_composition(av) == formula_composition(ev):
+        return "formula_spelling_only"
+    return "different"
+
+
+def check_npm_operation_slice() -> None:
+    summary = read_json("v1.0.30-published-npm-python-63op-slice.json")
+    raw_path = RESULTS / "v1.0.30-published-npm-python-63op-slice.jsonl.gz"
+    python_path = RESULTS / "v1.0.30-published-python-63op-outputs.jsonl.gz"
+    corpus_path = ROOT / "scripts/chembl_accuracy_corpus_4999.smi"
+    raw_bytes = raw_path.read_bytes()
+    python_bytes = python_path.read_bytes()
+    fail_if(summary["schema"] != "published-npm-python-63op-output-slice/v1" or
+            summary["npm"] != {"version": "1.0.30", "tarball_sha256": NPM_TARBALL_SHA256} or
+            summary["python_archive_sha256"] != hashlib.sha256(python_bytes).hexdigest() or
+            summary["corpus"] != {"sha256": hashlib.sha256(corpus_path.read_bytes()).hexdigest(), "input_count": 5000} or
+            summary["output"]["compressed_sha256"] != hashlib.sha256(raw_bytes).hexdigest(),
+            "npm operation artifact/corpus/archive digest")
+    raw = gzip.decompress(raw_bytes)
+    fail_if(summary["output"]["rows_sha256"] != hashlib.sha256(raw).hexdigest(),
+            "npm operation uncompressed digest")
+    rows = [json.loads(line) for line in raw.splitlines()]
+    baseline = [json.loads(line) for line in gzip.decompress(python_bytes).splitlines()]
+    by_name = {item["op"]: item["rows"] for item in baseline}
+    names = [item["op"] for item in rows]
+    coverage = summary["coverage"]
+    fail_if(len(baseline) != 63 or len(by_name) != 63 or len(rows) != 52 or
+            coverage["total_operations"] != 63 or coverage["adapted"] != 52 or
+            len(coverage["pending_adapter"]) != 11 or
+            sorted(coverage["pending_reason"]) != sorted(coverage["pending_adapter"]) or
+            any(not reason for reason in coverage["pending_reason"].values()) or
+            sorted(names + coverage["pending_adapter"]) != sorted(by_name) or
+            names != [item["op"] for item in summary["comparison"]],
+            "npm operation names or pending accounting")
+    exact_operations = 0
+    non_equivalent_differences = {"mol_block_write": 2000, "svg_depiction": 20, "2d_layout": 500}
+    for item, recorded in zip(rows, summary["comparison"], strict=True):
+        expected_rows = by_name[item["op"]]
+        fail_if(len(item["rows"]) != len(expected_rows) or not 0 < len(expected_rows) <= 5000,
+                f"npm {item['op']}: row denominator")
+        outcomes = Counter()
+        samples = []
+        for index, (actual, expected) in enumerate(zip(item["rows"], expected_rows, strict=True)):
+            fail_if(actual.get("input_index") != index, f"npm {item['op']}: row order {index}")
+            result = npm_python_outcome(item["op"], actual, expected)
+            outcomes[result] += 1
+            if result != "exact" and len(samples) < 3:
+                samples.append({"input_index": index, "actual": actual, "expected": expected})
+        fail_if(recorded["outcomes"] != {key: outcomes[key] for key in
+                ("exact", "numeric_roundoff", "formula_spelling_only", "different")} or
+                recorded["samples"] != samples or recorded["input_count"] != len(expected_rows),
+                f"npm {item['op']}: archived comparison")
+        fail_if(outcomes["different"] != non_equivalent_differences.get(item["op"], 0),
+                f"npm {item['op']}: unexpected value mismatch")
+        exact_operations += outcomes["exact"] == len(expected_rows)
+    fail_if(exact_operations != 46, "npm operation exact-count regression")
 
 
 def main() -> int:
@@ -194,8 +280,10 @@ def main() -> int:
             paired["summary"]["equivalent_output_speed_wins_with_ci"] != 20 or
             any(len(op["paired_blocks"]) != 20 for op in paired["operations"]),
             "published Python paired 63-operation matrix accounting")
+    check_npm_operation_slice()
     print("v1.0.30 packet integrity OK: 3 published artifacts x 10k/310k; "
           "Python 63 operations x 210,410 rows (only HBA/bundle changed); "
+          "npm 52/63 output adapters (46 exact, 3 representation lanes differ); "
           "20-block Python speed matrix; npm reaction 74 match, 5 confident "
           "differences, 1 invalid JSON; Rust reaction origins 74/83 matched. "
           "P0/P1 acceptance remains OPEN.")
