@@ -19,6 +19,9 @@ from check_published_python_version_outputs import compare
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation/results"
+WHEEL_SHA256 = "f6b1b22dd898cf3f100001156d9504b3753cb6b392143cbc0e6f3be78ec723d5"
+NPM_TARBALL_SHA256 = "fd427a161c11b14e6cca51e78e0c35ff05bbc52faf0539a2ddc2b7090e534201"
+CRATE_SHA256 = "b1a897689ab5b4983e56325dbd361e8ff0625dd752984af7fe75a10286f84a82"
 
 
 def read_json(name: str) -> dict:
@@ -61,6 +64,14 @@ def main() -> int:
                 actual = summary["row_accounting"]["parse_failure_count"]
             fail_if(actual != expected, f"{channel}: {key} = {actual}")
     fail_if(summaries["python"]["rdkit_version"] != "2026.03.6", "RDKit oracle version")
+    fail_if(summaries["python"]["chematic_version"] != "1.0.30", "Python version")
+    fail_if(summaries["npm"]["package"]["version"] != "1.0.30" or
+            summaries["npm"]["package"]["tarball_sha256"] != NPM_TARBALL_SHA256,
+            "npm artifact identity")
+    fail_if(summaries["rust"]["crate"]["version"] != "1.0.30", "Rust crate version")
+    lock = (ROOT / "tools/published_rust_gate/Cargo.lock").read_text(encoding="utf-8")
+    fail_if(f'name = "chematic"\nversion = "1.0.30"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\nchecksum = "{CRATE_SHA256}"' not in lock,
+            "crates.io lockfile checksum")
 
     differences = Counter()
     with gzip.open(paths["python"], "rt", encoding="utf-8") as py_rows, \
@@ -113,6 +124,11 @@ def main() -> int:
             {"hba": 1359, "lipinski_bundle(mw,logp,hbd,hba)": 1359}, "63-operation accounting")
 
     reaction = read_json("v1.0.30-published-reaction-83-strata.json")
+    matrix = json.loads((ROOT / "benchmarks/2026-10-02-v1.0.30-python-op-matrix.json").read_text(encoding="utf-8"))
+    fail_if(matrix["chematic"]["version"] != "1.0.30" or
+            matrix["chematic"]["artifact_sha256"] != WHEEL_SHA256 or
+            reaction["artifact"]["sha256"] != WHEEL_SHA256,
+            "published Python wheel identity")
     fail_if(reaction["accounting"]["input"] != 83 or
             reaction["accounting"]["outcomes"] !=
             {"semantic_match": 75, "joint_invalid_input": 3, "wrong_confident": 5} or
