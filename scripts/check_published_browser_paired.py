@@ -38,6 +38,13 @@ def check(source: Path) -> dict:
     document = json.loads(source.read_bytes())
     config = document["configuration"]
     artifacts = document["artifacts"]
+    prepared_mode = config.get("prepared_mode", "mixed")
+    if prepared_mode not in {"mixed", "split"}:
+        raise ValueError("unknown prepared-molecule timing mode")
+    operations = (OPERATIONS if prepared_mode == "mixed" else
+                  ("parse", "parse_write", "parse_fp", "prepared_fp_first_use", "prepared_fp_reused"))
+    fingerprint_operations = ("parse_fp", "prepared_fp") if prepared_mode == "mixed" else (
+        "parse_fp", "prepared_fp_first_use", "prepared_fp_reused")
     if (document["schema_version"] != 2
             or document["gate"] != "wasm-vs-official-rdkit-browser-isolated"
             or config["engine"] != "chromium"
@@ -75,7 +82,7 @@ def check(source: Path) -> dict:
                 raise ValueError(f"{arm}: invalid process RSS")
             if not math.isfinite(run["init_ms"]) or run["init_ms"] <= 0:
                 raise ValueError(f"{arm}: invalid initialization timing")
-            for operation in OPERATIONS:
+            for operation in operations:
                 item = run["operations"][operation]
                 if (item["input_rows"] != 250 or item["count"] != 250
                         or not math.isfinite(item["mean_ms"]) or item["mean_ms"] <= 0
@@ -87,13 +94,13 @@ def check(source: Path) -> dict:
                      "fnv1a32": "5c006dbe", "set_bits": 11307}:
         raise ValueError("250-row Morgan output digest changed")
     for repetition in range(20):
-        for operation in ("parse_fp", "prepared_fp"):
+        for operation in fingerprint_operations:
             for arm in ("chematic", "rdkit"):
                 if by_arm[arm][repetition]["operations"][operation]["output"] != reference:
                     raise ValueError(f"{arm}/{operation}/{repetition}: unequal fingerprint output")
 
     lanes = {}
-    for operation in OPERATIONS:
+    for operation in operations:
         ratios = [by_arm["rdkit"][i]["operations"][operation]["mean_ms"] /
                   by_arm["chematic"][i]["operations"][operation]["mean_ms"]
                   for i in range(20)]
@@ -102,15 +109,15 @@ def check(source: Path) -> dict:
                             "median_speed_ratio_chematic_over_rdkit": quantile(ratios, 0.5),
                             "geometric_mean_speed_ratio": math.exp(statistics.fmean(math.log(r) for r in ratios)),
                             "bootstrap_95_ci": ci,
-                            "output_gate": "browser_morgan_digest_exact" if operation in {"parse_fp", "prepared_fp"}
+                            "output_gate": "browser_morgan_digest_exact" if operation in fingerprint_operations
                                            else "node_row_preflight_only" if operation == "parse"
                                            else "canonical_write_not_equivalent",
-                            "practical_10pct_speed_win": ci[0] > 1.10 and operation in {"parse_fp", "prepared_fp"}}
+                            "practical_10pct_speed_win": ci[0] > 1.10 and operation in fingerprint_operations}
     memory = {arm: {"median_peak_process_tree_rss_bytes": quantile(
                     [run["process_tree_rss"]["peak_rss_bytes"] for run in by_arm[arm].values()], 0.5),
                     "median_init_ms": quantile([run["init_ms"] for run in by_arm[arm].values()], 0.5)}
               for arm in by_arm}
-    return {"schema": "published-browser-paired20-summary/v1",
+    result = {"schema": "published-browser-paired20-summary/v1",
             "source_sha256": sha256(source), "corpus_sha256": sha256(CORPUS),
             "artifacts": {name: artifacts[name]["sha256"] for name in EXPECTED},
             "protocol": {"engine": "chromium", "rows": 250, "paired_blocks": 20,
@@ -121,6 +128,10 @@ def check(source: Path) -> dict:
                        "Canonical-write outputs are not gated for equality and cannot earn a win",
                        "Parse atom-count/Morgan row identity is from the separate Node preflight on the same published artifacts",
                        "Process-tree RSS can double-count shared pages and is not library-allocated memory"]}
+    if prepared_mode == "split":
+        result["protocol"]["prepared_mode"] = "split: first-use on fresh prepared objects after separate warmup objects, then reused objects"
+        result["limits"].append("Prepared first-use and reused lanes time the same 250 objects in sequence; neither includes parsing/preparation")
+    return result
 
 
 def main() -> int:
