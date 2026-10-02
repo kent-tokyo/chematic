@@ -1,6 +1,6 @@
 # Roadmap open-work ledger
 
-Updated 2026-10-02. This is a compact dependency and evidence ledger for work
+Updated 2026-10-03. This is a compact dependency and evidence ledger for work
 that remains open after v1.0.30. It does not repeat completed implementation
 history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
@@ -8,10 +8,10 @@ history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 | Order | Work | Current evidence | Exit |
 |---:|---|---|---|
-| 1 (P0.1) | v1.0.30 published-artifact rebaseline | v1.0.29 has a Python-only 10k chemistry/310k SMARTS/57 reaction/5k×63 operation packet. Published v1.0.30 arm64 Python proves only named HBA 5,000/5,000 | Re-run every applicable lane from pinned PyPI, npm and crates.io artifacts; mark unexposed APIs; classify every v1.0.29→v1.0.30 non-HBA delta and retain full row accounting |
-| 2 (P0.2) | Symmetric performance packet | v1.0.29's 21 exact-and-faster operations are a non-counterbalanced diagnostic; v1.0.30 equivalent-work timing is absent | Alternate order for ≥20 paired blocks; separate parse/prepared/perception and memory; retain raw observations and paired confidence intervals; claim a win only for equivalent-output scope |
-| 3 (P1) | Reaction compatibility | The 57/57 published v1.0.29 reaction fixtures are narrow; they do not prove general SMIRKS parity | Stratify maps, aromaticity, H, charge, stereo, multi-product and failure cases; compare graphs/maps/provenance, count wrong confident or missing/extra products as failures, preserve the original 57 |
-| 4 (P1) | SMARTS residuals and CIP abstention | Published v1.0.29 wheel has 200/310,000 classified SMARTS cells, plus 9,995 exact CIP rows and five typed abstentions | Recount SMARTS separately from reactions; preserve CIP abstentions under permutation/round trip; independently adjudicate four phosphorus cases and define the lone-pair convention |
+| 1 (P0.1) | v1.0.30 published-artifact rebaseline | Published Python, npm and Rust each rerun 10k chemistry/310k SMARTS/57 reactions; Python and Rust cover 63/63 operation outputs, npm 59/63. Only HBA and its bundle change across pinned 1.0.29/1.0.30 outputs. Named HBA reaches 5,000/5,000 against RDKit. | Adjudicate 69 chemistry classifications, set the policy for 200 classified SMARTS residuals and representation differences, and retain four npm-unexposed APIs as gaps; never inherit v1.0.29 timings |
+| 2 (P0.2) | Symmetric performance packet | Published Python 63-operation matrix has 20 alternating paired blocks; 20 operations clear its exact-output/interval gate on one host. Six isolated parse/first-use/precomputed lanes record time and process peak RSS. The old 21-operation count is historical. | Extend equivalent-work, output-gated timing and matched memory to remaining operations/bindings; separate perception cost and reproduce on another host; retain raw blocks and no-claim outcomes |
+| 3 (P1) | Reaction compatibility | Legacy 57/57 fixtures still match; the exposed 83-case extension covers the requested strata. The unpublished checked-source profile has 76 semantic matches, three typed unsupported, one typed refusal and three jointly invalid; published v1.0.30 still has confident differences. | Verify the source fixes in a future published artifact; gate multiplicity, template map labels and atom origins across applicable bindings; count wrong confident or missing/extra products as failures |
+| 4 (P1) | SMARTS residuals and CIP abstention | Published v1.0.30 has 200/310,000 classified SMARTS cells, plus 9,995 exact CIP rows and five typed abstentions | Recount SMARTS separately from reactions; preserve CIP abstentions under permutation/round trip; independently adjudicate four phosphorus cases and define the lone-pair convention |
 | 5 (P2) | A6 MMFF94 | #637 source same-coordinate packet has 262/262 comparable rows within 1 kcal/mol (max 0.32); two published v1.0.26 Mac wheel runs retain 265 rows. These are historical scoped results | Broader typing (including 2,908 heavy-atom residuals), timeout/convergence, stereo and conformer-quality gates; speed only on a quality-equivalent published-package lane |
 | 6 (P2) | Bounded interchange and identity | CDXML/Markush/polymer, Standard InChI, and canonical/stable-key contracts remain narrower than full parity | Separate preservation, semantic round-trip, typed-refusal, and no-false-merge gates per format/API and binding |
 | 7 (external) | Next RDKit rebaseline | Historical 2026.03.6 Python/npm packet is reproducible | Run only after another official stable artifact is pinned; retain old/new results side by side |
@@ -66,13 +66,18 @@ complete merely because a local packet exists.
   independent post-publication observations of GitHub Release, npm, PyPI,
   crates.io, docs.rs, and Pages.
 - **RDKit agreement:**
-  `benchmarks/2026-10-02-v1.0.29-python-accuracy.md` is the exposed,
-  machine-checked published-wheel Python partial P0 packet; its HBA source
-  correction is not part of the v1.0.29 artifact. The v1.0.30 published-wheel
-  HBA-only result must not inherit its other measurements. The earlier
+  `benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md` is the current
+  exposed published-artifact packet for the pinned Python, npm and Rust
+  bindings; it retains raw output links, hashes, and unfinished accuracy gates.
+  `benchmarks/2026-10-02-v1.0.29-python-accuracy.md` remains historical and
+  its non-HBA measurements are not silently transferred to v1.0.30. The earlier
   `benchmarks/2026-09-24-rdkit-agreement-accuracy-branch.md` records the
   v1.0.23 source comparison and its operation-specific residuals; it is not a
   published-package or universal-parity claim.
+- **Published Python timing and memory:**
+  `benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md` separates
+  task timing from whole-process peak RSS on six 20-block lanes. It is not a
+  matched operation-allocation or cross-binding memory result.
 - **Source operation matrix:**
   `benchmarks/2026-09-24-python-op-matrix-vs-rdkit-perf-branch.md` records
   strict output-comparable outcomes; it is not a published-package result.
