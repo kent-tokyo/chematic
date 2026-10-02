@@ -1,0 +1,82 @@
+{
+  "artifacts": {
+    "rdkit_js": "25ea1529b8eeb106ac1f3acb7c5d338a90533248c6223614574fefd14fee772f",
+    "rdkit_wasm": "f5981af4cf5bdcef861ffdf7410330bf9887f1195e39fbf9901b3a2f134ace2e",
+    "schematic_js": "4ca57d6e9b9c8cc703d854d0265550f5ef355d52c2bf56a1a7b8bfcc09f21eb4",
+    "schematic_wasm": "e0a505c33a282724114e279201dae199b2e5dbe68c35c0ebaa474693a6eb4ae6"
+  },
+  "corpus_sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+  "lanes": {
+    "parse": {
+      "bootstrap_95_ci": [
+        19.15279630683504,
+        19.731928449221915
+      ],
+      "geometric_mean_speed_ratio": 19.40040616251354,
+      "median_speed_ratio_chematic_over_rdkit": 19.47935440023246,
+      "output_gate": "node_row_preflight_only",
+      "paired_blocks": 20,
+      "practical_10pct_speed_win": false
+    },
+    "parse_fp": {
+      "bootstrap_95_ci": [
+        7.532500177758327,
+        7.653949404116945
+      ],
+      "geometric_mean_speed_ratio": 7.59457770945032,
+      "median_speed_ratio_chematic_over_rdkit": 7.604892441183784,
+      "output_gate": "browser_morgan_digest_exact",
+      "paired_blocks": 20,
+      "practical_10pct_speed_win": true
+    },
+    "parse_write": {
+      "bootstrap_95_ci": [
+        3.275038630287766,
+        3.322575476835218
+      ],
+      "geometric_mean_speed_ratio": 3.2994804723849662,
+      "median_speed_ratio_chematic_over_rdkit": 3.3254411620377473,
+      "output_gate": "canonical_write_not_equivalent",
+      "paired_blocks": 20,
+      "practical_10pct_speed_win": false
+    },
+    "prepared_fp": {
+      "bootstrap_95_ci": [
+        6.3617627106722985,
+        6.713040810753694
+      ],
+      "geometric_mean_speed_ratio": 6.542908269022113,
+      "median_speed_ratio_chematic_over_rdkit": 6.576923089708097,
+      "output_gate": "browser_morgan_digest_exact",
+      "paired_blocks": 20,
+      "practical_10pct_speed_win": true
+    }
+  },
+  "limits": [
+    "Single-host Chromium, not a cross-browser or cross-host speed claim",
+    "Canonical-write outputs are not gated for equality and cannot earn a win",
+    "Parse atom-count/Morgan row identity is from the separate Node preflight on the same published artifacts",
+    "Process-tree RSS can double-count shared pages and is not library-allocated memory"
+  ],
+  "memory": {
+    "chematic": {
+      "median_init_ms": 17.900000005960464,
+      "median_peak_process_tree_rss_bytes": 1234886656.0
+    },
+    "rdkit": {
+      "median_init_ms": 71.74999998509884,
+      "median_peak_process_tree_rss_bytes": 1294548992.0
+    }
+  },
+  "protocol": {
+    "alternating_order": "AB then BA",
+    "engine": "chromium",
+    "paired_blocks": 20,
+    "processes_per_block": 2,
+    "rows": 250,
+    "timing_method": "single_batch",
+    "warmup_rows": 20
+  },
+  "schema": "published-browser-paired20-summary/v1",
+  "source_sha256": "de0e7f1f8ba7ad208aeb906acb435b10ca210c05bf4ddc860a4217618c99275d"
+}
