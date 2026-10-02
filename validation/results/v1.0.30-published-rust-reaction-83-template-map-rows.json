@@ -1,0 +1,3543 @@
+[
+  {
+    "accepted_matches": 1,
+    "id": "alcohol_deprotonation",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "C(C)[O-]",
+          "template_map_numbers": [
+            null,
+            null,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "carbonyl_reduction_shape",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "C(C)O",
+          "template_map_numbers": [
+            1,
+            null,
+            2
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "amide_formation",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "NC(=O)C",
+          "template_map_numbers": [
+            3,
+            1,
+            2,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "mapped_bond_cleavage",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C",
+          "template_map_numbers": [
+            2
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ]
+          ],
+          "smiles": "N",
+          "template_map_numbers": [
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "mapped_fragment_split",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C",
+          "template_map_numbers": [
+            1
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ]
+          ],
+          "smiles": "O",
+          "template_map_numbers": [
+            2
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "carboxylate_deprotonation",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "CC(=O)[O-]",
+          "template_map_numbers": [
+            null,
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 0,
+    "id": "no_match_empty",
+    "sets": [],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "alcohol_deprotonation_isopropanol",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "C(C)(C)[O-]",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "alcohol_deprotonation_phenol",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ]
+          ],
+          "smiles": "c1cc([O-])ccc1",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            1,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "alcohol_deprotonation_benzyl_alcohol",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C1=CC(=CC=C1)C[O-]",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "carbonyl_reduction_acetone",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C(O)(C)C",
+          "template_map_numbers": [
+            1,
+            2,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "carbonyl_reduction_cyclohexanone",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ]
+          ],
+          "smiles": "C1C(O)CCCC1",
+          "template_map_numbers": [
+            null,
+            1,
+            2,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "carbonyl_reduction_benzaldehyde",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              6
+            ]
+          ],
+          "smiles": "c1ccc(CO)cc1",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            null,
+            1,
+            2,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "carbonyl_reduction_butanal",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C(O)CCC",
+          "template_map_numbers": [
+            1,
+            2,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "carboxylate_deprotonation_butanoic_acid",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              4
+            ]
+          ],
+          "smiles": "[O-]C(CCC)=O",
+          "template_map_numbers": [
+            3,
+            1,
+            null,
+            null,
+            null,
+            2
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "carboxylate_deprotonation_benzoic_acid",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              8
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              7
+            ]
+          ],
+          "smiles": "c1c(C([O-])=O)cccc1",
+          "template_map_numbers": [
+            null,
+            null,
+            1,
+            3,
+            2,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "carboxylate_deprotonation_glycine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ]
+          ],
+          "smiles": "NCC(=O)[O-]",
+          "template_map_numbers": [
+            null,
+            null,
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "carboxylate_deprotonation_lactic_acid",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "OC(C(=O)[O-])C",
+          "template_map_numbers": [
+            null,
+            null,
+            1,
+            2,
+            3,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "aromatic_halogen_exchange_bromobenzene",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            null,
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              4
+            ]
+          ],
+          "smiles": "c1cc(Cl)ccc1",
+          "template_map_numbers": [
+            null,
+            null,
+            1,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "aromatic_halogen_exchange_bromoanisole",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              5
+            ],
+            null,
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              8
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "c1(Cl)ccc(cc1)OC",
+          "template_map_numbers": [
+            1,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "aromatic_halogen_exchange_bromopyridine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            null,
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "Clc1ncccc1",
+          "template_map_numbers": [
+            null,
+            1,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "aromatic_halogen_exchange_bromonaphthalene",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              9
+            ],
+            [
+              0,
+              10
+            ],
+            [
+              0,
+              1
+            ],
+            null,
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              8
+            ]
+          ],
+          "smiles": "c12cc(Cl)ccc1cccc2",
+          "template_map_numbers": [
+            null,
+            null,
+            1,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "alkene_hydrogenation_2_butene",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "CCCC",
+          "template_map_numbers": [
+            null,
+            1,
+            2,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "alkene_hydrogenation_cyclohexene",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              4
+            ]
+          ],
+          "smiles": "C1CCCCC1",
+          "template_map_numbers": [
+            null,
+            null,
+            2,
+            1,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "alkene_hydrogenation_styrene",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "c1ccc(cc1)CC",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            2,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 2,
+    "id": "alkene_hydrogenation_diene",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "C(C)C=C",
+          "template_map_numbers": [
+            2,
+            1,
+            null,
+            null
+          ]
+        }
+      ],
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C(C)C=C",
+          "template_map_numbers": [
+            1,
+            2,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 2,
+    "id": "mapped_c_o_cleavage_methyl_ether",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C",
+          "template_map_numbers": [
+            1
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "OC",
+          "template_map_numbers": [
+            2,
+            null
+          ]
+        }
+      ],
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "C",
+          "template_map_numbers": [
+            1
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "OC",
+          "template_map_numbers": [
+            2,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 2,
+    "id": "mapped_c_o_cleavage_ethyl_ether",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "C(C)O",
+          "template_map_numbers": [
+            null,
+            null,
+            2
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "smiles": "CC",
+          "template_map_numbers": [
+            null,
+            1
+          ]
+        }
+      ],
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "C(C)O",
+          "template_map_numbers": [
+            null,
+            null,
+            2
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "CC",
+          "template_map_numbers": [
+            null,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "mapped_c_o_cleavage_phenetole",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "smiles": "CC",
+          "template_map_numbers": [
+            null,
+            1
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              8
+            ]
+          ],
+          "smiles": "c1(O)ccccc1",
+          "template_map_numbers": [
+            null,
+            2,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 2,
+    "id": "mapped_c_o_cleavage_allyl_ether",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "C(C)O",
+          "template_map_numbers": [
+            null,
+            null,
+            2
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "CC=C",
+          "template_map_numbers": [
+            1,
+            null,
+            null
+          ]
+        }
+      ],
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C(CO)=C",
+          "template_map_numbers": [
+            null,
+            null,
+            2,
+            null
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              4
+            ]
+          ],
+          "smiles": "CC",
+          "template_map_numbers": [
+            null,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "mapped_c_n_cleavage_methylamine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C",
+          "template_map_numbers": [
+            2
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ]
+          ],
+          "smiles": "N",
+          "template_map_numbers": [
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 2,
+    "id": "mapped_c_n_cleavage_diethylamine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "C(C)N",
+          "template_map_numbers": [
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "smiles": "CC",
+          "template_map_numbers": [
+            null,
+            2
+          ]
+        }
+      ],
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "C(C)N",
+          "template_map_numbers": [
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "CC",
+          "template_map_numbers": [
+            null,
+            2
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "mapped_c_n_cleavage_aniline",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C",
+          "template_map_numbers": [
+            2
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "Nc1ccccc1",
+          "template_map_numbers": [
+            1,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "mapped_c_n_cleavage_allylamine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "CC=C",
+          "template_map_numbers": [
+            2,
+            null,
+            null
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "N",
+          "template_map_numbers": [
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "amide_formation_methylamine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ]
+          ],
+          "smiles": "N(C(=O)C)C",
+          "template_map_numbers": [
+            3,
+            1,
+            2,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "amide_formation_ethylamine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "N(CC)C(=O)C",
+          "template_map_numbers": [
+            3,
+            null,
+            null,
+            1,
+            2,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "amide_formation_aniline",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              1,
+              5
+            ],
+            [
+              1,
+              4
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              1,
+              6
+            ]
+          ],
+          "smiles": "c1cccc(NC(C)=O)c1",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            3,
+            1,
+            null,
+            2,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "amide_formation_benzoyl_methylamine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              8
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "CNC(c1ccccc1)=O",
+          "template_map_numbers": [
+            null,
+            3,
+            1,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            2
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "alcohol_oxidation_ethanol",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "CC=O",
+          "template_map_numbers": [
+            null,
+            1,
+            2
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "alcohol_oxidation_1_propanol",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "C(C)C=O",
+          "template_map_numbers": [
+            null,
+            null,
+            1,
+            2
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "alcohol_oxidation_benzyl_alcohol",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C=1C(=CC=CC=1)C=O",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1,
+            2
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "alcohol_oxidation_2_methyl_1_propanol",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C(C=O)(C)C",
+          "template_map_numbers": [
+            null,
+            1,
+            2,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "sulfonamide_formation_methylamine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              0
+            ]
+          ],
+          "smiles": "S(=O)(=O)(C)NC",
+          "template_map_numbers": [
+            1,
+            2,
+            3,
+            null,
+            4,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "sulfonamide_formation_ethylamine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              0
+            ]
+          ],
+          "smiles": "S(C)(=O)(=O)NCC",
+          "template_map_numbers": [
+            1,
+            null,
+            2,
+            3,
+            4,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "sulfonamide_formation_aniline",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              1,
+              3
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              1,
+              6
+            ],
+            [
+              1,
+              5
+            ],
+            [
+              1,
+              4
+            ]
+          ],
+          "smiles": "c1cc(NS(=O)(C)=O)ccc1",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            4,
+            1,
+            3,
+            null,
+            2,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "sulfonamide_formation_benzenesulfonyl",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              9
+            ],
+            [
+              0,
+              8
+            ],
+            [
+              0,
+              7
+            ]
+          ],
+          "smiles": "c1cc(S(NC)(=O)=O)ccc1",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            1,
+            4,
+            null,
+            2,
+            3,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 0,
+    "id": "no_match_carbonyl_on_alkane",
+    "sets": [],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 0,
+    "id": "no_match_aromatic_exchange_on_alkane",
+    "sets": [],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "stereo_identity_l_alanine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            null,
+            null,
+            null,
+            null,
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "[C@@H](C(O)=O)(C)N",
+          "template_map_numbers": [
+            2,
+            null,
+            null,
+            null,
+            null,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "stereo_e_alkene",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "CCCC",
+          "template_map_numbers": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "stereo_z_alkene",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "CCCC",
+          "template_map_numbers": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "issue679_unmapped_atomic_number_acetyl",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            null,
+            null,
+            null,
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "CC(=O)OCC",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            1,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "issue679_unmapped_bracket_acetyl",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            null,
+            null,
+            null,
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "CC(=O)OCC",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            1,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "issue679_atomic_number_vinyl_explicit_h",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ],
+            null,
+            null
+          ],
+          "smiles": "C(C)OC=C",
+          "template_map_numbers": [
+            null,
+            null,
+            1,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "issue679_mapped_atomic_number_amine",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            null
+          ],
+          "smiles": "N(CC)C",
+          "template_map_numbers": [
+            1,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "issue679_mapped_atomic_number_aromatic_n",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "smiles": "c1ccncc1",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            1,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 0,
+    "id": "issue679_mapped_atomic_number_no_match",
+    "sets": [],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_charge_salicylic_deprotonation",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              8
+            ],
+            [
+              0,
+              9
+            ]
+          ],
+          "smiles": "[O-]C(=O)c1ccccc1O",
+          "template_map_numbers": [
+            3,
+            1,
+            2,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_charge_anisole_phenol_deprotonation",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              8
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "c1cc([O-])ccc1OC",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            1,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_charge_methylamine_protonation",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "smiles": "C[NH3+]",
+          "template_map_numbers": [
+            null,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_charge_ethanolamine_protonation",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C(CO)[NH3+]",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 0,
+    "id": "v2_charge_quaternary_no_match",
+    "sets": [],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_aromatic_bromo_fluoro",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              1
+            ],
+            null
+          ],
+          "smiles": "c1cc(F)ccc1F",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_aromatic_bromopyridine_fluoro",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              1
+            ],
+            null
+          ],
+          "smiles": "n1ccccc1F",
+          "template_map_numbers": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            1,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_aromatic_bromothiophene_fluoro",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              1
+            ],
+            null,
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "smiles": "s1cc(F)cc1",
+          "template_map_numbers": [
+            null,
+            null,
+            1,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_map_reordered_methanol",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "OC",
+          "template_map_numbers": [
+            1,
+            2
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_map_reordered_ethanol",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "C(C)O",
+          "template_map_numbers": [
+            2,
+            null,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_map_reordered_isopropanol",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C(O)(C)C",
+          "template_map_numbers": [
+            2,
+            1,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_ester_methyl_acetate",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ]
+          ],
+          "smiles": "O(C(=O)C)C",
+          "template_map_numbers": [
+            3,
+            1,
+            2,
+            null,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_ester_ethyl_benzoate",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              8
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              6
+            ],
+            [
+              0,
+              5
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ]
+          ],
+          "smiles": "C(OC(c1ccccc1)=O)C",
+          "template_map_numbers": [
+            null,
+            3,
+            1,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            2,
+            null
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "detail": "reactant count mismatch: expected 2, got 1",
+    "id": "v2_ester_missing_second_reactant",
+    "reason": "match_error",
+    "stage": "match",
+    "status": "typed_refusal"
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_ether_split_methoxyethane",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "CC",
+          "template_map_numbers": [
+            null,
+            3
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "OC",
+          "template_map_numbers": [
+            2,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_ether_split_dimethyl_ether",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "C",
+          "template_map_numbers": [
+            3
+          ]
+        },
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "OC",
+          "template_map_numbers": [
+            2,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_isotope_methanol_split",
+    "sets": [],
+    "status": "diagnosed_valence_refusal",
+    "valence_rejected_matches": 1
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_isotope_methanol_identity",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "O[13CH3]",
+          "template_map_numbers": [
+            2,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_isotope_methanol_unlabeled_no_match",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "OC",
+          "template_map_numbers": [
+            2,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_stereo_l_alanine_identity_reordered",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            null,
+            null,
+            null,
+            null,
+            [
+              0,
+              2
+            ]
+          ],
+          "smiles": "[C@@H](C(O)=O)(C)N",
+          "template_map_numbers": [
+            2,
+            null,
+            null,
+            null,
+            null,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 0,
+    "id": "v2_stereo_d_alanine_no_match",
+    "sets": [],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_stereo_e_alkene_preserve",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C(=C/C)\\C",
+          "template_map_numbers": [
+            2,
+            3,
+            4,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "accepted_matches": 1,
+    "id": "v2_stereo_z_alkene_preserve",
+    "sets": [
+      [
+        {
+          "atom_sources": [
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "smiles": "C(=C/C)/C",
+          "template_map_numbers": [
+            2,
+            3,
+            4,
+            1
+          ]
+        }
+      ]
+    ],
+    "status": "products",
+    "valence_rejected_matches": 0
+  },
+  {
+    "detail": "unmatched ring closure 1 at position 4",
+    "id": "v2_invalid_unclosed_reactant",
+    "reason": "smiles_parse",
+    "stage": "reactant_parse",
+    "status": "typed_refusal"
+  },
+  {
+    "detail": "SMIRKS parse error: failed to parse SMILES '([O-:1]': unexpected character at position 0",
+    "id": "v2_invalid_smirks_branch",
+    "reason": "smirks_parse",
+    "stage": "smirks_parse",
+    "status": "typed_refusal"
+  },
+  {
+    "accepted_matches": 0,
+    "id": "v2_no_match_halogen_on_alkane",
+    "sets": [],
+    "status": "products",
+    "valence_rejected_matches": 0
+  }
+]

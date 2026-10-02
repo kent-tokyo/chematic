@@ -13,7 +13,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 |---|---|---|
 | P0.1 published outputs | The v1.0.30 Python wheel, npm tarball, and pinned crates.io graph each rerun 10,000 chemistry inputs, 310,000 SMARTS cells, and the legacy 57 reactions. Python and Rust each cover all 63 operation outputs (210,410 rows/version); only HBA and its bundle change from v1.0.29, on the same 1,359 inputs. Published HBA agrees with RDKit on 5,000/5,000 rows. The 69 initially unresolved chemistry classifications are now mapped to 200 SMARTS cells and five typed CIP abstentions by full published-row identity. npm covers 59/63 operation APIs. | Decide the compatibility policy for the 200 SMARTS residual cells and representation differences. Retain four npm-unexposed APIs as explicit gaps. Do not treat the source-only formula fix as a v1.0.30 result. |
 | P0.2 paired speed | Published Python has 20 alternating blocks for the 63-operation matrix; 20 operations clear its exact-output and interval gate on one host. Six isolated Python lanes and six published-crate Rust v1.0.29/v1.0.30 lanes split parse-inclusive, first-use and precomputed calls, with whole-process peak RSS separately. Rust Morgan is near parity; changed HBA outputs cannot earn an equivalent-output speed win. | Equal-work RDKit perception boundaries, other operations, npm/WASM, matched memory accounting, and independent-host replication. The old “21 faster” count remains historical. |
-| P1 reactions | The original 57 fixtures still match. The 83-case exposed extension covers maps, H, charges, aromaticity, products, stereo and invalid input. An unpublished checked-source profile has 76 semantic matches, three typed unsupported, one typed refusal and three jointly invalid rows, with no wrong-confident output inside that declared profile. | The published v1.0.30 artifacts still have confident differences. Recheck the source fixes in a future artifact; finish product multiplicity, map labels and atom origins in each applicable binding. Do not claim general SMIRKS parity. |
+| P1 reactions | The original 57 fixtures still match. The 83-case exposed extension covers maps, H, charges, aromaticity, products, stereo and invalid input. Published Rust graph/origin/template-map identity matches RDKit on 73/83 rows; one additional row has only a map-label difference. An unpublished checked-source profile has 76 semantic matches, three typed unsupported, one typed refusal and three jointly invalid rows, with no wrong-confident output inside that declared profile. | The published v1.0.30 artifacts still have confident differences. Recheck the source fixes in a future artifact; finish product multiplicity and map/origin evidence in Python/npm and newly created mapped atoms in Rust. Do not claim general SMIRKS parity. |
 
 The [published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md)
 and [isolated time/memory record](benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md)
@@ -73,9 +73,12 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    83-case corpus by explicitly declining mismatched chiral-template semantics
    and reporting filtered valence products. Current source retains both
    symmetric ether-cleavage origin assignments in a regression test; the
-   published v1.0.30 crate does not. Before closing P1, publish and rerun
-   that provenance lane, separately gate template map labels and carried/new
-   atom origins on supported cases, verify the npm E/Z serialization fix in
+   published v1.0.30 crate does not. The published Rust template-map lane now
+   finds 73/83 graph+origin+map matches and one map-only residual on styrene;
+   current source retains both styrene orientations in a regression test.
+   Before closing P1, publish and rerun the provenance and template-map lanes,
+   extend map identity to newly created mapped atoms, gate atom origins in
+   applicable Python/npm APIs, verify the npm E/Z serialization fix in
    the next published artifact, and extend the supported-domain corpus. Do
    not count an opt-in refusal profile as general RDKit reaction parity.
    Recount #635's 200/310,000 SMARTS cells separately; keep native SSSR as
