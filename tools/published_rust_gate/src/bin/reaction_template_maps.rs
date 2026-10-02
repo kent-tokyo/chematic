@@ -1,6 +1,7 @@
 //! Exposed reaction map-label diagnostic from the published v1.0.30 crate.
-//! Map numbers are recovered from each accepted template match plus traced
-//! product origins; the ordinary product molecule intentionally clears them.
+//! Map numbers are recovered from the product template's atom order. This
+//! includes newly created mapped atoms, which have no traced reactant origin.
+//! The ordinary product molecule intentionally clears map annotations.
 
 use std::collections::HashMap;
 use std::fs;
@@ -15,11 +16,12 @@ fn digest(bytes: &[u8]) -> String {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().collect();
-    if args.len() != 5 {
+    if args.len() != 5 && args.len() != 6 {
         return Err(
-            "usage: reaction_template_maps BASE_JSON STRATA_JSON ROWS_JSON SUMMARY_JSON".into(),
+            "usage: reaction_template_maps BASE_JSON STRATA_JSON [SUPPLEMENT_JSON] ROWS_JSON SUMMARY_JSON".into(),
         );
     }
+    let output_offset = usize::from(args.len() == 6);
     let base_bytes = fs::read(&args[1])?;
     let strata_bytes = fs::read(&args[2])?;
     let mut cases: Vec<Value> = serde_json::from_slice(&base_bytes)?;
@@ -37,6 +39,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .iter()
             .cloned(),
     );
+    let supplement_sha256 = if output_offset == 1 {
+        let bytes = fs::read(&args[3])?;
+        let supplement: Value = serde_json::from_slice(&bytes)?;
+        if supplement["base_fixture_sha256"] != digest(&base_bytes)
+            || supplement["strata_fixture_sha256"] != digest(&strata_bytes)
+        {
+            return Err("supplement does not pin base and strata fixture hashes".into());
+        }
+        cases.extend(
+            supplement["cases"]
+                .as_array()
+                .ok_or("missing supplement cases")?
+                .iter()
+                .cloned(),
+        );
+        Some(digest(&bytes))
+    } else {
+        None
+    };
 
     let mut rows = Vec::with_capacity(cases.len());
     'case_loop: for case in &cases {
@@ -82,6 +103,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut valence_rejected_matches = 0;
         let mut product_sets = Vec::new();
         for (variant, prepared) in variants.iter().zip(prepared_variants.iter()) {
+            let template_products = rxn::parse_reaction(variant)?.products;
             let matches = match prepared.find_matches(&refs) {
                 Ok(value) => value,
                 Err(err) => {
@@ -108,7 +130,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     continue;
                 };
                 let mut product_set = Vec::new();
-                for product in products {
+                if products.len() != template_products.len() {
+                    return Err(format!("{}: product/template count differs", case["id"]).into());
+                }
+                for (product, template) in products.into_iter().zip(&template_products) {
                     let (spelling, order) =
                         smiles::canonical_smiles_with_atom_order(&product.molecule);
                     if order.len() != product.atom_sources.len() {
@@ -120,14 +145,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let mut template_map_numbers = Vec::with_capacity(order.len());
                     for atom in order {
                         let source = product.atom_sources[atom.0 as usize];
+                        let map_number = if (atom.0 as usize) < template.atom_count() {
+                            template.atom(atom).atom_map
+                        } else {
+                            None
+                        };
+                        if let (Some(label), Some(value)) = (map_number, source)
+                            && map_by_source.get(&(value.reactant, value.atom)) != Some(&label)
+                        {
+                            return Err(
+                                format!("{}: template/source map differs", case["id"]).into()
+                            );
+                        }
                         atom_sources.push(
                             source
                                 .map(|value| json!([value.reactant, value.atom.0]))
                                 .unwrap_or(Value::Null),
                         );
-                        template_map_numbers.push(source.and_then(|value| {
-                            map_by_source.get(&(value.reactant, value.atom)).copied()
-                        }));
+                        template_map_numbers.push(map_number);
                     }
                     product_set.push(json!({"smiles": spelling, "atom_sources": atom_sources,
                         "template_map_numbers": template_map_numbers}));
@@ -148,12 +183,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
     let raw = serde_json::to_vec_pretty(&rows)?;
-    fs::write(&args[3], &raw)?;
-    let summary = json!({"schema": "published-rust-reaction-template-maps/v1",
+    fs::write(&args[3 + output_offset], &raw)?;
+    let mut summary = json!({"schema": "published-rust-reaction-template-maps/v1",
         "crate": "chematic 1.0.30 from crates.io", "input_count": cases.len(),
         "base_cases_sha256": digest(&base_bytes), "strata_sha256": digest(&strata_bytes),
         "rows_sha256": digest(&raw)});
-    fs::write(&args[4], serde_json::to_vec_pretty(&summary)?)?;
+    if let Some(hash) = supplement_sha256 {
+        summary["supplement_sha256"] = json!(hash);
+    }
+    fs::write(
+        &args[4 + output_offset],
+        serde_json::to_vec_pretty(&summary)?,
+    )?;
     println!("{summary}");
     Ok(())
 }

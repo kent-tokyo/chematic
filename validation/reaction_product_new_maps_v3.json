@@ -1,0 +1,11 @@
+{
+  "schema_version": 3,
+  "base_fixture_sha256": "65b446de1ce66b7d9c355cf8b6bbbfe61d670c955e02931e8e8b8e564c558d3b",
+  "strata_fixture_sha256": "4e4ce3ebcea4bcea5398f109554074d97e9f252293fa906493ae3a61d40725a1",
+  "description": "Exposed product-template map labels on newly created atoms; no reaction yield or selectivity claim.",
+  "cases": [
+    {"id":"v3_new_mapped_oxygen","strata":["new_product_atom","mapped","single_product"],"smirks":"[C:1]>>[C:1][O:2]","reactants":["C"]},
+    {"id":"v3_new_unmapped_oxygen","strata":["new_product_atom","unmapped","single_product"],"smirks":"[C:1]>>[C:1]O","reactants":["C"]},
+    {"id":"v3_new_mapped_oxygen_second_product","strata":["new_product_atom","mapped","multi_product"],"smirks":"[C:1]>>[C:1].[O:2]","reactants":["C"]}
+  ]
+}

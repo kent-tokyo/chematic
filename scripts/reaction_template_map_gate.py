@@ -56,8 +56,8 @@ def rdkit_map_sets(case: dict) -> tuple[list[list[str]], int]:
             Chem.SanitizeMol(checked)
             labels = []
             for atom in checked.GetAtoms():
-                if atom.HasProp("old_mapno") and not (atom.HasProp("react_idx") and atom.HasProp("react_atom_idx")):
-                    raise ValueError("RDKit mapped product atom has no reactant origin")
+                if atom.HasProp("react_idx") != atom.HasProp("react_atom_idx"):
+                    raise ValueError("RDKit product atom has incomplete reactant origin")
                 labels.append(atom.GetIntProp("old_mapno") if atom.HasProp("old_mapno") else None)
             labelled.append(map_labelled_smiles(checked, labels))
         map_sets.add(tuple(sorted(labelled)))
