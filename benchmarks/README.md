@@ -1,9 +1,9 @@
 # chematic benchmark records
 
 This directory contains dated, reproducible measurement records. Numbers are
-scoped to the source revision, package versions, corpus, hardware, runtime,
-and operation boundary written in each record. They are not universal speed,
-accuracy, or compatibility claims.
+scoped to each record's source or package, corpus, host, runtime and operation.
+The current release is **v1.0.31**; the latest published-package comparison
+packet is for **v1.0.30**. No v1.0.31 chemistry or speed rerun is implied.
 
 ## Start here
 
@@ -53,7 +53,7 @@ accuracy, or compatibility claims.
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.0.30. Older records remain versioned historical
+The current release line is v1.0.31. Older records remain versioned historical
 measurements where their headers say so; a release does not imply that an older
 measurement was rerun.
 

@@ -10,6 +10,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Simplified the RDKit comparison and migration guides, corrected the
+  format-limit matrix, and recorded v1.0.31 channel verification. No new
+  chemistry or performance claim is made by this documentation update.
+
 ## [1.0.31] - 2026-10-03
 
 - Fixed WASM `MolHandle.formula()` to use the shared Hill-order formula.

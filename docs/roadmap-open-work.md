@@ -1,7 +1,8 @@
 # Open-work ledger
 
-Updated 2026-10-03 for the **v1.0.31** release. Published-artifact results
-below are still from v1.0.30. The
+Updated 2026-10-03 for the published **v1.0.31** release. The six release
+channels are verified; chemistry/benchmark results below are still from
+v1.0.30. The
 [roadmap](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md) sets priority and exit criteria; this ledger names
 dependencies. Completed work and raw evidence stay in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md), [validation report](validation.md), and
@@ -12,7 +13,7 @@ dependencies. Completed work and raw evidence stay in the
 | Order | Open work | Next verifiable exit |
 |---:|---|---|
 | 1 · P0.2 | Extend paired performance beyond the completed Python 63-operation and Node/Chromium/Firefox/WebKit Morgan lanes. | Equal-output, equal-work ≥20-block intervals for more operations/corpora; distinguish parsing, perception, prepared reuse and library memory from process RSS. The historical “21 faster” count is not a current package gate. |
-| 2 · P1 | Published v1.0.30 reaction artifacts still have confident differences despite 57/57 legacy fixtures and the 83-case stratified audit. | Rerun the checked-source fixes on published v1.0.31 artifacts; expand mapped-new-atom/multiple-product cases; gate product graph, distinct multiplicity, maps and atom origins in applicable bindings. Verify the npm E/Z JSON fix after release. |
+| 2 · P1 | Published v1.0.30 reaction artifacts still have confident differences despite 57/57 legacy fixtures and the 83-case stratified audit. | Rerun the checked-source fixes on published v1.0.31 artifacts; expand mapped-new-atom/multiple-product cases; gate product graph, distinct multiplicity, maps and atom origins in applicable bindings. Verify the published npm E/Z JSON fix. |
 | 3 · P1 | 200/310,000 SMARTS cells differ; CIP has 9,995 exact rows and five typed abstentions on the pinned exposed 10k lane. | Keep native SSSR unchanged, make RDKit-style ring counts opt-in, test CIP abstentions under reorder/round trips, adjudicate phosphorus and define a lone-pair convention before assigning labels. |
 | 4 · P2 | MMFF94/3D remains Experimental. | Complete heavy-atom typing, bounded convergence, stereo and independent conformer-quality gates on published artifacts before performance promotion. |
 | 5 · P2 | CDXML, Markush/polymer, Standard InChI and canonical identity are bounded. | Per-format preservation, semantic round-trip, typed-refusal and no-false-merge gates across bindings. |

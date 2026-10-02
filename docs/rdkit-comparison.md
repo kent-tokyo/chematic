@@ -1,143 +1,55 @@
 # chematic and RDKit
 
-chematic is not a drop-in reimplementation of RDKit. It provides a pure-Rust
-core, Python wheels, native WASM/Node bindings, and selected RDKit-oriented
-APIs. RDKit remains the better choice when broad ecosystem compatibility,
-mature 3D workflows, or an unsupported API is required.
+CheMatic is a local-first Rust chemistry library for Rust, Python and
+WebAssembly. RDKit has a broader, more mature chemistry and Python ecosystem;
+it is the better choice when a workflow needs an unsupported API or production
+3D breadth. CheMatic is not a drop-in reimplementation.
 
-See the [migration matrix](rdkit-migration.md) for function-level coverage and
-the [compatibility contract](compatibility-scope.md) for stable boundaries.
+For individual API mappings, see [migration](rdkit-migration.md). For actual
+support and refusal boundaries, see [compatibility scope](compatibility-scope.md).
 
-## At a glance
+## Current measured boundary
 
-| Area | chematic | RDKit |
+The current release is **v1.0.31**. Release channels are verified, but the
+latest published-package chemistry and speed comparison packet is pinned to
+**v1.0.30** against RDKit 2026.03.6. The v1.0.31 WASM formula and reaction
+JSON fixes still need a package-output rerun.
+
+| Lane | Recorded result | What it does not show |
 |---|---|---|
-| Core implementation | Rust; no C/C++ toolchain on the common path | C++ with Python bindings |
-| Browser | Native `wasm32-unknown-unknown` package | Official `@rdkit/rdkit` JavaScript/WASM distribution path |
-| Python | Prebuilt `chematic` wheels and a selected RDKit-style subset | Broad, mature reference API |
-| Canonical identity | Fail-closed stable-key API; canonical spelling is not a cache-key guarantee | Mature canonicalization with its own conventions |
-| Descriptors/fingerprints | Broad native set plus named compatibility modes; parity is metric-specific | Broad reference implementations and ecosystem |
-| 3D/MMFF94 | Experimental, typed failure and provenance | Mature ETKDG and force-field workflows |
-| Formats/materials | Broad Rust format surface, including several materials/simulation documents | Strong common cheminformatics formats; wider ecosystem integrations |
-| Reactions/SMARTS | Bounded implemented subset with typed limits | Broader and more mature chemistry workflow surface |
+| Python output audit | 10,000 chemistry rows, 310,000 SMARTS cells and the original 57 reaction fixtures accounted for; 200 SMARTS cells differ and five CIP rows abstain with typed reasons. | Full SMARTS, CIP or reaction compatibility. |
+| RDKit-compatible HBA | Published v1.0.30 macOS arm64 wheel: 5,000/5,000 exposed ChEMBL rows match RDKit; v1.0.29 matched 3,641/5,000. | Other descriptors or platforms. |
+| Python timing | Of 63 operations, 20 meet exact-output and favorable paired-interval gates in 20 alternating blocks on one host. | A universal speed lead; output-mismatched operations are not wins. |
+| Browser Morgan | Published v1.0.30 npm/WASM on Ubuntu 24.04: Chromium, Firefox and WebKit each match 250/250 direct and prepared rows; 20-block speed intervals favor chematic on the measured lane. | Other browser hosts, operations or library-only memory. |
+| Reactions | Published v1.0.30 Rust graph/origin/template-map identity matches RDKit on 73/83 stratified rows, plus one map-only difference. | General SMIRKS parity, yield or selectivity prediction. |
+| 3D/MMFF94 | Experimental; a historical v1.0.26 wheel packet retains 265 quality-scored inputs. | General conformer quality or an MMFF94 speed win. |
 
-## Recorded performance
+The [validation report](validation.md) links the exact artifacts, corpus
+hashes, failure counts and operation definitions. The [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
+keeps historical results versioned; an older speed or size figure is not a
+current-package result.
 
-The following are dated macOS arm64 medians, not cross-platform guarantees:
+## Practical differences
 
-| Operation | chematic | RDKit | Source boundary |
-|---|---:|---:|---|
-| Canonical SMILES | 24.95 µs/mol | 25.58 µs/mol | v1.0.2 code, 5,000-entry descriptor corpus |
-| Canonical SMILES | 18.27 µs/mol | 26.82 µs/mol | v1.0.2 code, independent 5,000-entry corpus |
-| SDF graph/property read | 9.48 µs/mol | 99.96 µs/mol | 365 records; chematic graph-only path |
-| SDF serialization-only write | 7.62 µs/mol | 79.54 µs/mol | same corpus; 2D layout disabled |
-| ECFP4 batch | 54.7 µs/mol | 94.3 µs/mol | historical v0.18.0, 5,000 molecules |
-| Parse + compatible Morgan | 3.11–3.67x faster (95% lower bound) | baseline | merged source `7d98dcd3`, official RDKit.js, fixed 10k, GitHub-hosted Chromium/Firefox/WebKit; excludes startup and unsupported Fe(II) row |
+- **Implementation and deployment:** CheMatic's Rust core is shared by
+  Rust, Python, Node and WASM. RDKit's official JavaScript/WASM package is
+  available too, so browser availability alone is not a differentiator.
+- **Profiles:** Native ECFP4 and named RDKit-compatible Morgan are different
+  definitions. Aromaticity, CIP and canonical identity also have explicit
+  modes or fail-closed limits. Matching names do not imply identical defaults.
+- **3D:** RDKit's ETKDG and force-field workflows are more mature. CheMatic
+  exposes bounded 3D paths with typed failures but does not claim ETKDGv3
+  or full MMFF94 parity.
+- **Formats:** CheMatic has selected materials and simulation formats in
+  addition to common molecule formats. Read/write and binding coverage vary;
+  use the [format matrix](format-capabilities.md) rather than assuming every
+  format round-trips.
+- **Agent and browser workflows:** CheMatic emphasizes local execution,
+  typed errors, and input accounting. Verify cancellation, memory and
+  unsupported behavior against the specific binding you deploy.
 
-The SDF operations are intentionally narrow and do not establish a lead for
-layout-enabled writing or every supplier option. Canonical output was produced
-for every input, but the two libraries need not choose the same valid spelling.
-Exact versions, corpus hashes, commands, and follow-up source A/B results are in
-the [benchmark guide](benchmark.md).
-
-## Current compatibility diagnostic
-
-The pinned RDKit 2026.03.6 exposed 10,000-row packet keeps the major surfaces
-separate. Public v1.0.19 records 9,770/10,000 correspondence-correct CIP labels,
-9,999/10,000 compatible-Morgan rows with one typed Fe(II) refusal, and 14,306
-differing SMARTS cells out of 310,000. v1.0.21 contains the issue #632
-release-source fix, which reduces the 18 SMILES semantic differences to zero
-while preserving zero non-isomeric graph differences; its 28 x 1,024 relabel
-audit passed on clean v1.0.25-based source.
-
-Source commit `11a4ea27` (#634/#635, not yet released) measures
-9,994/10,000 exact CIP labels and 200 differing SMARTS cells on the same lane.
-Two changes produce most of this. First, the lane compares E/Z labels by
-double-bond endpoints. Second, `CipMode.ACCURATE` ranks E/Z substituents with
-the hierarchical digraph. Separately, the Python and WASM SMARTS APIs now
-match against the molecule's perceived aromatic view, so a Kekulé benzene
-matches `c`. Match indices still refer to the input molecule, and the Rust
-core `find_matches` is unchanged.
-
-A later source commit (`9b196a4e`, #634) measures 9,995/10,000: the centre that
-awaited adjudication (row 4480, atom 3) was adjudicated by hand as S, as RDKit
-reports, after a fix to how the accurate engine ranks an embedded centre's
-back-to-root ligand. The remaining CIP labels are typed abstentions: four
-phosphorus centres whose RDKit labels are unstable (`oracle_unstable`) and one
-bridgehead amine whose fourth ligand would be a lone pair (`lone_pair_center`),
-which CheMatic does not model. The remaining SMARTS cells are
-`[Rn]`/`[kn]` ring counts: CheMatic counts SSSR rings, whereas RDKit counts its
-symmetrized ring set. See [validation](validation.md) for the evidence files.
-
-## Accuracy and parity
-
-The opt-in `Mol.rdkit_mw`, `Mol.rdkit_hba`, and
-`Mol.rdkit_aromatic_ring_count` profiles use pinned RDKit conventions without
-changing the native descriptor defaults. In the v1.0.13 source-built gate,
-the current source-built v2 descriptor run matches RDKit for MW and HBA on
-5,000/5,000 rows, including the known explicit-isotope row. The current code
-uses RDKit-compatible nuclide masses where available and, for an unlisted but
-syntactically valid isotope label, RDKit's mass-number fallback. The full per-field
-distribution and 12-case structural holdout are recorded in
-[`descriptor-rdkit-diagnostics-v1.0.13.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
-and [`descriptor-rdkit-holdout-v1.0.13.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/descriptor-rdkit-holdout-v1.0.13.json).
-
-Those older HBA figures do not establish compatibility with RDKit 2026.03.6.
-On the published v1.0.29 wheel, the named `rdkit_hba` profile agrees on only
-3,641/5,000 ChEMBL molecules; native HBA agrees on 5,000/5,000. The unreleased
-source correction brings the named profile to the 2026.03 aromatic-N rule.
-Installed Linux and macOS arm64 release-profile CI wheels and the hash-verified
-published v1.0.30 macOS arm64 CPython 3.13 wheel agree on 5,000/5,000, with
-zero parse failures. This does not establish other descriptor or platform parity.
-See the [dated Python-wheel packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.29-python-accuracy.md)
-for versions and limitations.
-
-The historical 4,999-molecule descriptor snapshot reports:
-
-- molecular weight: 99.82% within ±0.01 Da;
-- HBA, HBD, TPSA, LogP, molar refractivity, Fsp3, and the documented ring
-  metrics: 100% at their stated tolerances;
-- stereocenter count: 99.96% against the legacy oracle and 98.6% against
-  `FindPotentialStereo`;
-- opt-in accurate CIP R/S/E/Z labels: 99.64% stable-oracle agreement against
-  modern `rdCIPLabeler`; 15 phosphorus rows are excluded from confident output
-  as representation-unstable.
-
-These figures cover a subset of the full descriptor surface. Kappa,
-Hall-Kier, Bertz, Balaban, BCUT2D, VSA, MQN, SA Score, and other similarly
-named values must be treated as chematic-specific unless the validation table
-states parity. See [`validation.md`](validation.md).
-
-## Where chematic is a good fit
-
-- Rust-native or browser deployments where a C++ toolchain is undesirable;
-- bounded local parsing, 2D analysis, fingerprints, reports, and selected
-  materials/simulation formats;
-- applications that need typed resource-limit and unsupported outcomes;
-- lightweight Python workflows covered by the published binding contract;
-- local MCP workflows, with network access limited to the explicit
-  PubChem-backed `name_to_smiles` tool.
-
-## Where RDKit is a better fit
-
-- broad Python API and plugin compatibility;
-- production-proven ETKDG, conformer, force-field, and advanced stereo use;
-- database, workflow-platform, and long-established ecosystem integrations;
-- workloads requiring an RDKit behavior that chematic marks partial or
-  unsupported;
-- exact matching to an RDKit fingerprint, aromaticity, canonicalization, or
-  reaction convention outside a named chematic compatibility mode.
-
-## WASM artifact size
-
-The v1.0.15 published-package scorecard measures chematic at **4,005,280 bytes
-raw / 1,460,499 bytes gzip** and `@rdkit/rdkit@2026.03.6` at **7,333,095 /
-2,379,975 bytes**. The packages have different feature surfaces, so size is a
-deployment observation rather than a feature-normalized benchmark. See the
-[published-package scorecard](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
-
-## Interpretation rule
-
-“Faster”, “more accurate”, and “compatible” apply only to the named operation,
-version, corpus, configuration, and failure policy. A missing or unsupported
-row is not a win, and a microbenchmark is not a replacement claim.
+For a production migration, pin both versions and options, rebuild persisted
+fingerprint indexes under one chosen profile, and compare semantic outputs
+plus refusals on representative held-out data. A canonical SMILES string is
+not a universal identity key; `canonical_smiles_stable_key()` is intentionally
+fail-closed.

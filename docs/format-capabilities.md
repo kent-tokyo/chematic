@@ -1,9 +1,8 @@
 # Format Capability Matrix
 
-What each of chematic's supported file formats actually does, in Rust,
-Python, and WASM — read/write coverage, streaming, coordinate
-units, connectivity handling, round-trip fidelity, lossy operations, parse
-limits, and known limitations.
+Read/write coverage and important limits for Rust, Python and WASM.
+The matrix is a starting point; per-format notes identify coordinate,
+connectivity and round-trip boundaries.
 
 See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature
 Supported/Partial/Not-supported breakdown against RDKit, and
@@ -87,16 +86,16 @@ Notes on the cells above that need qualification:
   a **different sub-format** — delimited SMILES-table files with name/property
   columns, not plain `.smi`) implements a true `BufRead`-backed streaming
   `Iterator`. It is not exposed to Python/WASM and is out of scope for the
-  "15 formats" table this page otherwise tracks; noted here only because it
+  format matrix this page otherwise tracks; noted here because it
   bears directly on any "no format in this codebase streams" claim.
 - **Streaming limits**: `TdtReaderOptions` and `SmilesReaderOptions` bound
   physical lines and retained record state; TDT also bounds tags per record.
 - **Coordinate units**: N/A — SMILES encodes graph topology and stereo parity,
   not coordinates. CXSMILES can carry optional 2D coordinates as an extension.
 - **Connectivity**: native — bonds are the primary content of the format.
-- **Round-trip**: graph-canonical, not byte-identical (whitespace/atom order
-  are not preserved). `canonical_smiles()` is **not** guaranteed to be a safe
-  dedup/cache key today — see the Known Limitations section below.
+- **Round-trip**: graph-oriented, not byte-identical (whitespace/atom order
+  are not preserved). `canonical_smiles()` is not a universal dedup/cache
+  key; see [compatibility scope](compatibility-scope.md).
 - **Lossy operations**: none inherent to the format itself.
 - **Parse limits**: `SmilesParseLimits` controls input bytes, atom count, and
   bond count; `parse` applies finite safe defaults and
@@ -107,12 +106,9 @@ Notes on the cells above that need qualification:
 - **Streaming SMILES tables**: `SmilesReaderOptions` bounds line bytes,
   yielded records, and columns per row; limit violations are typed
   `SmilesTableError` results.
-- **Known limitations**: `canonical_smiles()` has a documented residual —
-  isolated/simple E/Z double bonds can still produce two different, both-valid
-  canonical strings for the same molecule in ~1 in 18 stereo-bearing
-  molecules (measured on a 5,000-mol ChEMBL corpus; see README's "Known
-  Limitations" section for the exact figures). Do not use it as a dedup key
-  without accounting for this.
+- **Known limitation**: coupled E/Z systems can make canonical text
+  unsuitable for identity. Use the fail-closed `canonical_smiles_stable_key()`
+  within its documented domain; see [compatibility scope](compatibility-scope.md).
 
 ### SMARTS
 
@@ -123,16 +119,10 @@ Notes on the cells above that need qualification:
   not read this as "SMARTS has no Python support," it means the shape of the
   binding differs from the other formats in this table.
 - **WASM**: `smarts_match_atoms`, `smarts_match_atoms_with_chirality`, `match_smarts_smiles`, `parse_cxsmarts_json`.
-- SMARTS is a query language, not a molecule storage format — streaming,
-  coordinate units, connectivity, round-trip, and lossy-operation columns
-  don't apply in the same sense as the other 14 formats.
-- **Parse limits**: `PdbParseLimits` bounds input bytes, physical line length,
-  ATOM/HETATM records, and MODEL records; use
-  `parse_pdb_atoms_with_limits` for a typed resource-limit error contract.
-- **Strict validation**: `parse_pdb_atoms_strict` is an opt-in fixed-column
-  validator. It rejects missing, non-numeric, or non-finite serial, residue
-  sequence, and XYZ fields with `PdbStrictError`; the compatibility parser
-  remains lenient by design.
+- SMARTS is a query language, not a molecule storage format; coordinate and
+  round-trip columns do not apply.
+- **Parse limits**: `SmartsParserConfig` sets recursive `$()` depth (default
+  8, clamped to 1–16). Use `parse_smarts_with_config` to choose it explicitly.
 
 ### PDBQT
 
@@ -232,8 +222,7 @@ Notes on the cells above that need qualification:
 ### PDB
 
 - **Rust**: `chematic_3d::{PdbAtom, parse_pdb_atoms, parse_pdb_atoms_strict, pdb_to_molecule, write_pdb}` —
-  this format lives in `chematic-3d`, not `chematic-mol`; the one exception
-  among these 15.
+  this format lives in `chematic-3d`, not `chematic-mol`.
 - **Python**: `from_pdb` (lenient) and `from_pdb_strict` (fixed-column
   validation) for reading; both delegate to `chematic_3d`;
   `Mol.to_pdb(coords)` for writing.
@@ -252,7 +241,10 @@ Notes on the cells above that need qualification:
 - **Round-trip**: not characterized in this pass — no documented round-trip
   guarantee found; treat as best-effort.
 - **Lossy operations**: none named.
-- **Parse limits**: no `*ParseLimits` type exists.
+- **Parse limits**: `PdbParseLimits` bounds input bytes, physical line length,
+  ATOM/HETATM records and MODEL records. Use `parse_pdb_atoms_with_limits`
+  for typed resource-limit errors. `parse_pdb_atoms_strict` additionally
+  rejects invalid fixed-column serial, residue sequence and XYZ fields.
 
 ### mmCIF
 
@@ -363,18 +355,14 @@ disambiguate by crate, not by name alone:
 - **Python**: same names, routed through Python's stdlib `json` module rather than a hand-mapped dict.
 - **WASM**: `mol_from_qcschema_molecule`, `qcschema_molecule_coords_json`, `to_qcschema_molecule_json`, `qcschema_validate_atomic_input`, `qcschema_validate_atomic_result`.
 - **Coordinate units**: `QcMolecule.geometry` is explicitly **Bohr (a0)** in Rust; Python and WASM bindings convert to Ångström for convenience.
-- **Connectivity**: `connectivity: Option<Vec<(usize, usize, f64)>>` is the
-  **only** one of these 15 formats where bonds are ever an optional,
-  spec-native part of the document — used if present, never fabricated if
-  absent.
+- **Connectivity**: `connectivity: Option<Vec<(usize, usize, f64)>>` is an
+  optional explicit bond table — used if present, never fabricated if absent.
 - **Round-trip**: open extensibility bags (`extras`/`keywords`/`protocols`/
   `native_files`/`properties`) round-trip losslessly via `BTreeMap`, kept
   distinct from an `unknown_fields` bag for genuinely undocumented
   top-level keys.
 - **Lossy operations**: none named — every numeric leaf is rejected if
   non-finite rather than silently coerced.
-- **Parse limits**: no `*ParseLimits` type exists (size limits, if any, are
-  whatever the caller or `serde_json` impose).
 
 ### ORCA input
 
@@ -528,7 +516,7 @@ mmCIF, PQR, ORCA (input and output), Gaussian Cube, OpenDX, LAMMPS data, and
 plain CIF never infer or fabricate a bond table — they either have no bond
 concept in the format at all, or (PQR specifically) have an element-inference
 step that is documented separately from connectivity. PDB and
-`chematic_3d::parse_xyz` are the exceptions among these 15: both infer bonds
+`chematic_3d::parse_xyz` are exceptions: both infer bonds
 from 3D geometry (distance-based), which is a documented, disclosed choice,
 not a default you should assume applies elsewhere.
 

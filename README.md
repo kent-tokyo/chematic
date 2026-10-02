@@ -23,10 +23,10 @@ Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
 ### v1.0.31 release boundary
 
-v1.0.31 fixes WASM formula spelling and JSON escaping for reaction products
-with E/Z backslashes. The published-package comparison has not yet been
-rerun. The 5,000/5,000 RDKit-compatible HBA result belongs to the published
-v1.0.30 macOS arm64 wheel, not a new v1.0.31 measurement. See
+v1.0.31 is published. It fixes WASM formula spelling and JSON escaping for
+reaction products with E/Z backslashes. The package-output comparison has
+not yet been rerun. The 5,000/5,000 RDKit-compatible HBA result belongs to
+the published v1.0.30 macOS arm64 wheel, not a new v1.0.31 measurement. See
 [validation](docs/validation.md) and the [CHANGELOG](CHANGELOG.md).
 
 ## Use it
