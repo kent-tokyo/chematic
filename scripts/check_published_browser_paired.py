@@ -45,13 +45,19 @@ def check(source: Path) -> dict:
                   ("parse", "parse_write", "parse_fp", "prepared_fp_first_use", "prepared_fp_reused"))
     fingerprint_operations = ("parse_fp", "prepared_fp") if prepared_mode == "mixed" else (
         "parse_fp", "prepared_fp_first_use", "prepared_fp_reused")
+    engine = config["engine"]
+    process_rss_mode = config["process_rss"]
+    measured_rss = process_rss_mode == "summed fresh Chromium process-tree RSS sampled every 50 ms"
     if (document["schema_version"] != 2
             or document["gate"] != "wasm-vs-official-rdkit-browser-isolated"
-            or config["engine"] != "chromium"
+            or engine not in {"chromium", "firefox", "webkit"}
             or config["rows"] != 250 or config["warmup_rows"] != 20
             or config["repetitions"] != 20
             or config["timing_method"] != "single_batch"
-            or config["process_rss"] != "summed fresh Chromium process-tree RSS sampled every 50 ms"
+            or process_rss_mode not in {
+                "summed fresh Chromium process-tree RSS sampled every 50 ms", "not_measured"
+            }
+            or (measured_rss and engine != "chromium")
             or document["corpus"]["sha256"] != sha256(CORPUS)
             or document["corpus"]["rows"] != 250
             or config["fingerprint_typed_unsupported_rows"] != 0):
@@ -76,10 +82,13 @@ def check(source: Path) -> dict:
         for run in runs:
             if run["arm"] != arm or run["accepted_rows"] != 250:
                 raise ValueError(f"{arm}: wrong result arm or row count")
-            if run["process_tree_rss"]["status"] != "measured" or run["process_tree_rss"]["samples"] < 1:
-                raise ValueError(f"{arm}: missing process RSS observation")
-            if not math.isfinite(run["process_tree_rss"]["peak_rss_bytes"]) or run["process_tree_rss"]["peak_rss_bytes"] <= 0:
-                raise ValueError(f"{arm}: invalid process RSS")
+            if measured_rss:
+                if run["process_tree_rss"]["status"] != "measured" or run["process_tree_rss"]["samples"] < 1:
+                    raise ValueError(f"{arm}: missing process RSS observation")
+                if not math.isfinite(run["process_tree_rss"]["peak_rss_bytes"]) or run["process_tree_rss"]["peak_rss_bytes"] <= 0:
+                    raise ValueError(f"{arm}: invalid process RSS")
+            elif run["process_tree_rss"]["status"] != "not_measured":
+                raise ValueError(f"{arm}: unexpected process RSS observation")
             if not math.isfinite(run["init_ms"]) or run["init_ms"] <= 0:
                 raise ValueError(f"{arm}: invalid initialization timing")
             for operation in operations:
@@ -113,24 +122,31 @@ def check(source: Path) -> dict:
                                            else "node_row_preflight_only" if operation == "parse"
                                            else "canonical_write_not_equivalent",
                             "practical_10pct_speed_win": ci[0] > 1.10 and operation in fingerprint_operations}
-    memory = {arm: {"median_peak_process_tree_rss_bytes": quantile(
-                    [run["process_tree_rss"]["peak_rss_bytes"] for run in by_arm[arm].values()], 0.5),
-                    "median_init_ms": quantile([run["init_ms"] for run in by_arm[arm].values()], 0.5)}
-              for arm in by_arm}
+    memory = {}
+    for arm in by_arm:
+        memory[arm] = {
+            **({"median_peak_process_tree_rss_bytes": quantile(
+                [run["process_tree_rss"]["peak_rss_bytes"] for run in by_arm[arm].values()], 0.5)}
+               if measured_rss else {"process_tree_rss": "not_measured"}),
+            "median_init_ms": quantile([run["init_ms"] for run in by_arm[arm].values()], 0.5),
+        }
     result = {"schema": "published-browser-paired20-summary/v1",
             "source_sha256": sha256(source), "corpus_sha256": sha256(CORPUS),
             "artifacts": {name: artifacts[name]["sha256"] for name in EXPECTED},
-            "protocol": {"engine": "chromium", "rows": 250, "paired_blocks": 20,
+            "protocol": {"engine": engine, "rows": 250, "paired_blocks": 20,
                          "processes_per_block": 2, "alternating_order": "AB then BA",
                          "warmup_rows": 20, "timing_method": "single_batch"},
             "lanes": lanes, "memory": memory,
             "limits": ["Single-host Chromium, not a cross-browser or cross-host speed claim",
                        "Canonical-write outputs are not gated for equality and cannot earn a win",
                        "Parse atom-count/Morgan row identity is from the separate Node preflight on the same published artifacts",
-                       "Process-tree RSS can double-count shared pages and is not library-allocated memory"]}
+                       "Process-tree RSS can double-count shared pages and is not library-allocated memory"
+                       if measured_rss else "Process-tree RSS was not measured"]}
     if prepared_mode == "split":
         result["protocol"]["prepared_mode"] = "split: first-use on fresh prepared objects after separate warmup objects, then reused objects"
         result["limits"].append("Prepared first-use and reused lanes time the same 250 objects in sequence; neither includes parsing/preparation")
+    if not measured_rss:
+        result["protocol"]["process_rss"] = "not_measured"
     return result
 
 
