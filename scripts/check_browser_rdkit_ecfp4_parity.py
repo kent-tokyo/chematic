@@ -166,6 +166,10 @@ def main() -> int:
     parser.add_argument("--corpus", type=Path, default=ROOT / "scripts" / "descriptor_census_corpus.smi")
     parser.add_argument("--schematic-dir", type=Path, default=ROOT / "demo" / "pkg")
     parser.add_argument(
+        "--schematic-tarball", type=Path,
+        help="optional published npm tarball corresponding to --schematic-dir",
+    )
+    parser.add_argument(
         "--schematic-package-kind",
         choices=("published", "source_candidate"),
         default="published",
@@ -208,6 +212,8 @@ def main() -> int:
     missing = [str(path) for path in Handler.files.values() if not path.is_file()]
     if missing:
         raise SystemExit(f"missing benchmark artifacts: {missing}")
+    if args.schematic_tarball is not None and not args.schematic_tarball.is_file():
+        raise SystemExit(f"missing schematic npm tarball: {args.schematic_tarball}")
     Handler.html = page_html(smiles, args.schematic_operation).encode()
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -236,6 +242,11 @@ def main() -> int:
     if result.get("error"):
         raise SystemExit(f"browser parity run failed: {result['error']}")
     package_json = json.loads((args.rdkit_package / "package.json").read_text())
+    schematic_package_json = args.schematic_dir / "package.json"
+    schematic_package = (
+        json.loads(schematic_package_json.read_text(encoding="utf-8"))
+        if schematic_package_json.is_file() else None
+    )
     document = {
         "schema_version": 1,
         "gate": "browser-rdkit-ecfp4-bit-parity",
@@ -254,7 +265,18 @@ def main() -> int:
                 "source_revision": args.schematic_source_revision,
                 "source_diff_sha256": args.schematic_source_diff_sha256,
             },
+            "schematic_js": artifact(Handler.files["/schematic/chematic_wasm.js"]),
+            "schematic_package": (
+                {
+                    "name": schematic_package.get("name"),
+                    "version": schematic_package.get("version"),
+                    "package_json_sha256": sha256(schematic_package_json),
+                    "tarball_sha256": sha256(args.schematic_tarball) if args.schematic_tarball else None,
+                }
+                if schematic_package is not None else None
+            ),
             "rdkit_wasm": artifact(Handler.files["/rdkit/RDKit_minimal.wasm"]),
+            "rdkit_js": artifact(Handler.files["/rdkit/RDKit_minimal.js"]),
             "rdkit_package": {
                 "version": package_json.get("version"),
                 "package_json_sha256": sha256(args.rdkit_package / "package.json"),

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "gate": "browser-rdkit-ecfp4-bit-parity",
+  "configuration": {
+    "engine": "chromium",
+    "browser": "/Users/k_tanabe/Library/Caches/ms-playwright/chromium-1193/chrome-mac/Chromium.app/Contents/MacOS/Chromium",
+    "rows": 250,
+    "allow_unsupported": false,
+    "schematic_operation": "direct",
+    "operation": "chematic rdkit_ecfp4_bitvec vs RDKit.js Morgan radius=2, 2048 bits",
+    "comparison": "same browser page; direct packed-bit comparison; yields every 100 rows"
+  },
+  "corpus": {
+    "path": "scripts/descriptor_census_corpus.smi",
+    "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+    "rows": 250
+  },
+  "artifacts": {
+    "schematic_wasm": {
+      "path": "/private/tmp/chematic-v1030-full-gate/npm/package/chematic_wasm_bg.wasm",
+      "raw_bytes": 4320139,
+      "gzip9_bytes": 1588112,
+      "sha256": "e0a505c33a282724114e279201dae199b2e5dbe68c35c0ebaa474693a6eb4ae6",
+      "kind": "published",
+      "source_revision": null,
+      "source_diff_sha256": null
+    },
+    "schematic_js": {
+      "path": "/private/tmp/chematic-v1030-full-gate/npm/package/chematic_wasm.js",
+      "raw_bytes": 280015,
+      "gzip9_bytes": 46355,
+      "sha256": "4ca57d6e9b9c8cc703d854d0265550f5ef355d52c2bf56a1a7b8bfcc09f21eb4"
+    },
+    "schematic_package": {
+      "name": "@kent-tokyo/chematic",
+      "version": "1.0.30",
+      "package_json_sha256": "6a18eb0fa882b4a2772751c9484db8200deca21764f0a9418d8a94196d6b5b90",
+      "tarball_sha256": "fd427a161c11b14e6cca51e78e0c35ff05bbc52faf0539a2ddc2b7090e534201"
+    },
+    "rdkit_wasm": {
+      "path": "/private/tmp/chematic-rdkitjs-paired-ufqyOerH/package/dist/RDKit_minimal.wasm",
+      "raw_bytes": 7333095,
+      "gzip9_bytes": 2379975,
+      "sha256": "f5981af4cf5bdcef861ffdf7410330bf9887f1195e39fbf9901b3a2f134ace2e"
+    },
+    "rdkit_js": {
+      "path": "/private/tmp/chematic-rdkitjs-paired-ufqyOerH/package/dist/RDKit_minimal.js",
+      "raw_bytes": 105843,
+      "gzip9_bytes": 28432,
+      "sha256": "25ea1529b8eeb106ac1f3acb7c5d338a90533248c6223614574fefd14fee772f"
+    },
+    "rdkit_package": {
+      "version": "2026.03.6",
+      "package_json_sha256": "bb938eb6b28bf39baa9778f56aefcdea746d28060fe2c542209f877a71468fed",
+      "lock_status": "not_found"
+    }
+  },
+  "result": {
+    "rdkit_version": "2026.03.6",
+    "compared_rows": 250,
+    "exact_matches": 250,
+    "supported_rows": 250,
+    "unsupported_rows": 0,
+    "unsupported_sample": [],
+    "first_mismatch": null,
+    "mismatch_sample": []
+  },
+  "boundary": "Published package artifact. This confirms an explicitly configured fingerprint bit-vector only for successfully evaluated rows. Typed refusals are separately counted and are not parity claims. It is not a general SMILES, stereo, canonicalization, search-ranking, memory, or performance claim."
+}

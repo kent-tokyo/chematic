@@ -31,10 +31,10 @@ internal fingerprint cores do equal work.
 | Parse + canonical write | 3.32× | 3.29–3.37 | Diagnostic; canonical strings not equivalent |
 
 The packed Morgan digest is `5c006dbe` with 11,307 set bits in every
-fingerprint lane of every browser run. A separate published Node preflight
-checks these artifact hashes at row level (250/250 atom counts and Morgan bit
-vectors); this browser run itself checks only the aggregate digest. It does
-not prove full browser row-level equivalence.
+fingerprint lane of every browser run. A separate
+[separate published Chromium correctness gate](2026-10-03-v1030-published-chromium-morgan-row-parity.md)
+checks the same 250 rows bit by bit (250/250 exact) on the pinned artifacts.
+This timing run itself checks only the aggregate digest.
 
 Whole Chromium process-tree RSS was sampled every 50 ms. Median peak was
 1,235,181,568 bytes for CheMatic and 1,298,235,392 bytes for RDKit.js.
@@ -50,7 +50,7 @@ The artifact-packet checker pins both records. Reproduce with the command in
 the earlier Chromium record plus `--prepared-mode split` and a new output
 path, then run `scripts/check_published_browser_paired.py` on that output.
 
-P0.2 stays open: an independent host/browser, browser row-level output gate,
+P0.2 stays open: an independent host/browser speed run,
 equal-work perception boundaries across the remaining operations, and
 matched library-memory accounting are still missing. These values are not
 general browser speed or per-million-molecule memory claims.
