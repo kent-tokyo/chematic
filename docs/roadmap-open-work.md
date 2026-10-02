@@ -1,14 +1,14 @@
 # Roadmap open-work ledger
 
 Updated 2026-10-02. This is a compact dependency and evidence ledger for work
-that remains open after v1.0.29. It does not repeat completed implementation
+that remains open after v1.0.30. It does not repeat completed implementation
 history; use CHANGELOG, dated validation artifacts, and Git history for that.
 
 ## Immediate queue
 
 | Order | Work | Current evidence | Exit |
 |---:|---|---|---|
-| 1 | Published-v1.0.29 evidence packet | PyPI arm64 wheel vs pinned RDKit: exposed 10k/310k, 57 reaction cases, and 5k operation matrix archived and checked. Named HBA fix reaches 5,000/5,000 only in a dev-profile source wheel. npm/Rust and paired equivalent-work speed remain open | Run the release-profile wheel HBA gate and later published-package replication; measure remaining bindings and paired timing without promoting source data |
+| 1 | Published-package evidence packet | v1.0.29 PyPI arm64 wheel vs pinned RDKit: exposed 10k/310k, 57 reaction cases, and 5k operation matrix archived. The corrected HBA API reaches 5,000/5,000 in installed Linux and macOS arm64 release-profile CI wheels; npm/Rust and paired equivalent-work speed remain open | Replicate HBA using published v1.0.30 artifacts; measure remaining bindings and paired timing without promoting CI-wheel data |
 | 2 | SMARTS/SMIRKS semantic gate | Published wheel keeps 200/310,000 classified cells (194 ring-model, six ferrocene). The expanded reaction fixture is 57/57, but still narrow | Add repeated-charge and broader mapped-product graph/provenance fixtures, missing/extra outcome gates, and no-regression checks; keep any RDKit ring profile opt-in |
 | 3 | CIP abstention gate | Published v1.0.29 wheel reproduces 9,995 exact and five typed abstentions; no wrong confident label in the pinned 10k lane | Preserve abstention stability under permutation and file round trips; adjudicate four phosphorus cases independently and define lone-pair convention before issuing R/S |
 | 4 | A6 MMFF94 | #637 source same-coordinate packet has 262/262 comparable rows within 1 kcal/mol (max 0.32); two published v1.0.26 Mac wheel runs retain 265 rows. These are historical scoped results | Broader typing (including 2,908 heavy-atom residuals), timeout/convergence, stereo and conformer-quality gates; speed only on a quality-equivalent published-package lane |

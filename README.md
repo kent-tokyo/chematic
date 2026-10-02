@@ -21,12 +21,14 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.0.29 release boundary
+### v1.0.30 release boundary
 
-v1.0.29 fixes product-side atomic-number atoms in SMIRKS (#679) and repeated
-charge signs in SMARTS (#680). Unmapped `[#6](=[#8])[#6]` now builds the same
-acetyl group as `C(=O)C`; `[++]` and `[--]` mean +2 and -2. This is a
-correctness release, not a new RDKit parity or performance measurement. See
+v1.0.30 corrects the named RDKit-compatible HBA profile for three-neighbor
+substituted aromatic nitrogen. Installed Linux and macOS arm64 release-profile
+CI wheels matched pinned RDKit 2026.03.6 on 5,000/5,000 exposed ChEMBL
+molecules; the published v1.0.29 wheel matched 3,641/5,000. This is an
+operation-specific source-wheel result, not whole-library parity or a new
+speed claim. See
 [validation](docs/validation.md) and the [CHANGELOG](CHANGELOG.md).
 
 ## Use it

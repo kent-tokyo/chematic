@@ -7,15 +7,15 @@ counted as wins. Dated raw records are indexed in
 
 ## Current status
 
-The current release line is **v1.0.29**. A 2026-10-02 published-wheel Python
+The current release line is **v1.0.30**. A 2026-10-02 v1.0.29 published-wheel Python
 operation matrix covers 5,000 ChEMBL molecules and 63 operations against
 RDKit 2026.03.6. Of 44 output-checked operations, 21 had both complete output
 agreement and a faster median in three repeats. This is a single-host
 diagnostic: all chematic repeats preceded all RDKit repeats, the runs were not
 counterbalanced, and no uncertainty interval was calculated. The named HBA
 profile had only 3,641/5,000 exact agreement in that *published* wheel; an
-unreleased dev-profile source wheel reaches 5,000/5,000 but is outside the
-published timing numbers. See the
+v1.0.30-source release-profile CI wheel reaches 5,000/5,000 but is outside
+those published timing numbers. See the
 [v1.0.29 Python accuracy record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.29-python-accuracy.md).
 
 The newest completed public-package *browser/3D* performance record remains

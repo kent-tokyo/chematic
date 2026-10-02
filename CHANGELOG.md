@@ -10,13 +10,16 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.30] - 2026-10-02
+
 - Corrected the named `rdkit_hba`, Python `CalcNumHBA`, and WASM RDKit-profile
   descriptor `hba` compatibility path
   for RDKit 2026.03.6: three-neighbor substituted aromatic N is no longer
   counted as an acceptor. Published v1.0.29 matched 3,641/5,000 ChEMBL rows
-  on this API; its existing native HBA rule matched 5,000/5,000. The fix is
-  unreleased: a dev-profile source wheel matched 5,000/5,000, while the
-  release-profile and published-package gates remain to be run.
+  on this API; its existing native HBA rule matched 5,000/5,000. The corrected
+  source matched 5,000/5,000 in an installed local dev-profile wheel and
+  Linux and macOS arm64 release-profile CI wheels against pinned RDKit
+  2026.03.6. A published-v1.0.30 package rerun is a separate gate.
 - Added a reproducible, exposed-cohort v1.0.29 Python-wheel accuracy packet:
   10,000 chemistry rows, 310,000 SMARTS cells, 57 reaction fixtures, and a
   5,000-row operation matrix. The reaction gate now rejects unsanitizable
