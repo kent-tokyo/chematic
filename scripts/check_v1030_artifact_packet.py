@@ -20,10 +20,12 @@ if __package__:
     from .check_published_python_version_outputs import compare
     from .check_v1030_published_chemistry_residuals import check as check_chemistry_residuals
     from .check_published_rust_63op_outputs import build_report as build_rust_operation_report
+    from .check_published_wasm_paired import check as check_published_wasm_paired
 else:
     from check_published_python_version_outputs import compare
     from check_v1030_published_chemistry_residuals import check as check_chemistry_residuals
     from check_published_rust_63op_outputs import build_report as build_rust_operation_report
+    from check_published_wasm_paired import check as check_published_wasm_paired
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation/results"
@@ -378,12 +380,14 @@ def main() -> int:
             "published Python paired 63-operation matrix accounting")
     check_npm_version_diff()
     check_chemistry_residuals()
+    check_published_wasm_paired()
     print("v1.0.30 packet integrity OK: 3 published artifacts x 10k/310k; "
           "Python/Rust 63 operations x 210,410 rows each per version (only HBA/bundle changed); "
           "npm 59/63 output adapters (52 exact, ETKDG rounded, 3 representation lanes differ), "
           "v1.0.29 to v1.0.30 only HBA/bundle changed on the same 1,359 rows; "
           "200 SMARTS residuals and 5 CIP abstentions classified on published rows; "
-          "20-block Python speed matrix; npm reaction 74 match, 5 confident "
+          "20-block Python speed matrix and 8 output-gated Node/WASM lanes; "
+          "npm reaction 74 match, 5 confident "
           "differences, 1 invalid JSON; Rust reaction origins 74/83 matched; "
           "73/83 graph-origin-map matches, 1 map-only residual. "
           "P0/P1 acceptance remains OPEN.")
