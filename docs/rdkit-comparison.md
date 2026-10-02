@@ -88,7 +88,7 @@ On the published v1.0.29 wheel, the named `rdkit_hba` profile agrees on only
 source correction brings the named profile to the 2026.03 aromatic-N rule; an
 importable dev-profile source wheel directly agrees on 5,000/5,000. A
 release-profile and published-package rerun are separate gates.
-See the [dated Python-wheel packet](../benchmarks/2026-10-02-v1.0.29-python-accuracy.md)
+See the [dated Python-wheel packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.29-python-accuracy.md)
 for versions and limitations.
 
 The historical 4,999-molecule descriptor snapshot reports:
