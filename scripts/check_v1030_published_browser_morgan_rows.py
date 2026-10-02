@@ -31,8 +31,9 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def check(path: Path, operation: str, rows: int) -> dict:
-    if operation not in {"direct", "prepared"} or rows not in CORPORA:
+def check(path: Path, operation: str, rows: int, engine: str = "chromium") -> dict:
+    if (operation not in {"direct", "prepared"} or rows not in CORPORA
+            or engine not in {"chromium", "firefox", "webkit"}):
         raise ValueError("unrecognized browser Morgan lane")
     document = json.loads(path.read_bytes())
     config = document["configuration"]
@@ -40,7 +41,7 @@ def check(path: Path, operation: str, rows: int) -> dict:
     result = document["result"]
     if (document["schema_version"] != 1
             or document["gate"] != "browser-rdkit-ecfp4-bit-parity"
-            or config["engine"] != "chromium"
+            or config["engine"] != engine
             or config["schematic_operation"] != operation
             or config["rows"] != rows
             or config["allow_unsupported"] != (rows == 10_000)

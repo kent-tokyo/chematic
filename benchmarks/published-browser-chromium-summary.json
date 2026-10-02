@@ -1,0 +1,96 @@
+{
+  "artifacts": {
+    "rdkit_js": "25ea1529b8eeb106ac1f3acb7c5d338a90533248c6223614574fefd14fee772f",
+    "rdkit_wasm": "f5981af4cf5bdcef861ffdf7410330bf9887f1195e39fbf9901b3a2f134ace2e",
+    "schematic_js": "4ca57d6e9b9c8cc703d854d0265550f5ef355d52c2bf56a1a7b8bfcc09f21eb4",
+    "schematic_wasm": "e0a505c33a282724114e279201dae199b2e5dbe68c35c0ebaa474693a6eb4ae6"
+  },
+  "corpus_sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+  "lanes": {
+    "parse": {
+      "bootstrap_95_ci": [
+        19.104848858557126,
+        23.283930426360897
+      ],
+      "geometric_mean_speed_ratio": 21.169836116646287,
+      "median_speed_ratio_chematic_over_rdkit": 23.18927536230474,
+      "output_gate": "node_row_preflight_only",
+      "paired_blocks": 20,
+      "practical_10pct_speed_win": false
+    },
+    "parse_fp": {
+      "bootstrap_95_ci": [
+        3.652142397745766,
+        4.36568066711723
+      ],
+      "geometric_mean_speed_ratio": 4.011862701245837,
+      "median_speed_ratio_chematic_over_rdkit": 4.303462520389825,
+      "output_gate": "browser_morgan_digest_exact",
+      "paired_blocks": 20,
+      "practical_10pct_speed_win": true
+    },
+    "parse_write": {
+      "bootstrap_95_ci": [
+        1.7651079444009443,
+        2.010136391542535
+      ],
+      "geometric_mean_speed_ratio": 1.8896737582687648,
+      "median_speed_ratio_chematic_over_rdkit": 1.8891510559972693,
+      "output_gate": "canonical_write_not_equivalent",
+      "paired_blocks": 20,
+      "practical_10pct_speed_win": false
+    },
+    "prepared_fp_first_use": {
+      "bootstrap_95_ci": [
+        2.263510628242734,
+        3.02717648851494
+      ],
+      "geometric_mean_speed_ratio": 2.6103209180871776,
+      "median_speed_ratio_chematic_over_rdkit": 2.4896897093466595,
+      "output_gate": "browser_morgan_digest_exact",
+      "paired_blocks": 20,
+      "practical_10pct_speed_win": true
+    },
+    "prepared_fp_reused": {
+      "bootstrap_95_ci": [
+        2.7435607757779787,
+        3.823597640451853
+      ],
+      "geometric_mean_speed_ratio": 3.225299388609662,
+      "median_speed_ratio_chematic_over_rdkit": 2.992624356773373,
+      "output_gate": "browser_morgan_digest_exact",
+      "paired_blocks": 20,
+      "practical_10pct_speed_win": true
+    }
+  },
+  "limits": [
+    "Single-host Chromium, not a cross-browser or cross-host speed claim",
+    "Canonical-write outputs are not gated for equality and cannot earn a win",
+    "Parse atom-count/Morgan row identity is from the separate Node preflight on the same published artifacts",
+    "Process-tree RSS was not measured",
+    "Prepared first-use and reused lanes time the same 250 objects in sequence; neither includes parsing/preparation"
+  ],
+  "memory": {
+    "chematic": {
+      "median_init_ms": 46.80000000000291,
+      "process_tree_rss": "not_measured"
+    },
+    "rdkit": {
+      "median_init_ms": 139.65000000000146,
+      "process_tree_rss": "not_measured"
+    }
+  },
+  "protocol": {
+    "alternating_order": "AB then BA",
+    "engine": "chromium",
+    "paired_blocks": 20,
+    "prepared_mode": "split: first-use on fresh prepared objects after separate warmup objects, then reused objects",
+    "process_rss": "not_measured",
+    "processes_per_block": 2,
+    "rows": 250,
+    "timing_method": "single_batch",
+    "warmup_rows": 20
+  },
+  "schema": "published-browser-paired20-summary/v1",
+  "source_sha256": "a8d92068a1f22c986df95e20063e0a1c34b9856201f6fb63aef4df34fb8c92cd"
+}

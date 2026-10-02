@@ -23,6 +23,7 @@ if __package__:
     from .check_published_wasm_paired import check as check_published_wasm_paired
     from .check_published_browser_paired import check as check_published_browser_paired
     from .check_v1030_published_browser_morgan_rows import check as check_browser_morgan_rows
+    from .check_published_linux_browser_replication import check as check_linux_browser_replication
 else:
     from check_published_python_version_outputs import compare
     from check_v1030_published_chemistry_residuals import check as check_chemistry_residuals
@@ -30,6 +31,7 @@ else:
     from check_published_wasm_paired import check as check_published_wasm_paired
     from check_published_browser_paired import check as check_published_browser_paired
     from check_v1030_published_browser_morgan_rows import check as check_browser_morgan_rows
+    from check_published_linux_browser_replication import check as check_linux_browser_replication
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation/results"
@@ -470,6 +472,9 @@ def main() -> int:
         fail_if(hashlib.sha256(path.read_bytes()).hexdigest() != digest or
                 check_browser_morgan_rows(path, operation, rows)["exact"] != rows - (rows == 10_000),
                 f"published Chromium {rows}-row {operation} Morgan bit parity")
+    linux_browser = check_linux_browser_replication()
+    fail_if(set(linux_browser) != {"chromium", "firefox", "webkit"},
+            "published Linux browser replication coverage")
     print("v1.0.30 packet integrity OK: 3 published artifacts x 10k/310k; "
           "Python/Rust 63 operations x 210,410 rows each per version (only HBA/bundle changed); "
           "npm 59/63 output adapters (52 exact, ETKDG rounded, 3 representation lanes differ), "
@@ -478,6 +483,7 @@ def main() -> int:
           "20-block Python speed matrix, 8 output-gated Node/WASM lanes and "
           "3 output-gated Chromium Morgan lanes with prepared first-use/reused split and "
           "direct browser row-level Morgan checks (250/250 plus 9999/10000 and one typed refusal); "
+          "published npm/RDKit.js 20-block Linux Chromium/Firefox/WebKit replication with 250/250 browser row parity; "
           "npm reaction 74 match, 5 confident "
           "differences, 1 invalid JSON; Rust reaction origins 74/83 matched; "
           "73/83 graph-origin-map matches, 1 map-only residual; "

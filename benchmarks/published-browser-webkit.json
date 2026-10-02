@@ -1,0 +1,3134 @@
+{
+  "schema_version": 2,
+  "gate": "wasm-vs-official-rdkit-browser-isolated",
+  "configuration": {
+    "engine": "webkit",
+    "browser": null,
+    "rows": 250,
+    "warmup_rows": 20,
+    "repetitions": 20,
+    "timing_method": "single_batch",
+    "prepared_mode": "split",
+    "timing": "fresh browser process per arm/repetition; no-store local routes",
+    "download_to_ready_contract": "navigation start through JavaScript module/script fetch and WebAssembly initialization; excludes the subsequent parse/write/fingerprint workload",
+    "process_rss": "not_measured",
+    "operation_contract": "parse; parse+canonical-SMILES write; parse+RDKit-compatible preparation+radius-2/2048-bit fingerprint; prepared first-use on fresh objects after separate warmup objects, then reused objects; preparation excluded from both timed lanes.",
+    "fingerprint_output_contract": "both arms produce and consume a 256-byte LSB-first packed radius-2/2048-bit fingerprint; RDKit's bit string is packed inside the timed operation; a per-run FNV-1a checksum and total set-bit count are retained",
+    "fingerprint_typed_unsupported_rows": 0,
+    "fingerprint_typed_unsupported_smiles": []
+  },
+  "corpus": {
+    "path": "scripts/descriptor_census_corpus.smi",
+    "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+    "rows": 250
+  },
+  "artifacts": {
+    "schematic_wasm": {
+      "path": "/tmp/chematic-published/package/chematic_wasm_bg.wasm",
+      "raw_bytes": 4320139,
+      "gzip9_bytes": 1588112,
+      "sha256": "e0a505c33a282724114e279201dae199b2e5dbe68c35c0ebaa474693a6eb4ae6"
+    },
+    "schematic_js": {
+      "path": "/tmp/chematic-published/package/chematic_wasm.js",
+      "raw_bytes": 280015,
+      "gzip9_bytes": 46355,
+      "sha256": "4ca57d6e9b9c8cc703d854d0265550f5ef355d52c2bf56a1a7b8bfcc09f21eb4"
+    },
+    "schematic_package": {
+      "name": "@kent-tokyo/chematic",
+      "version": "1.0.30",
+      "kind": "published",
+      "source_revision": null,
+      "source_diff_sha256": null,
+      "sha256": "6a18eb0fa882b4a2772751c9484db8200deca21764f0a9418d8a94196d6b5b90",
+      "lock_status": "not_found",
+      "tarball": {
+        "path": "/tmp/chematic-package/kent-tokyo-chematic-1.0.30.tgz",
+        "raw_bytes": 1686750,
+        "gzip9_bytes": 1683915,
+        "sha256": "fd427a161c11b14e6cca51e78e0c35ff05bbc52faf0539a2ddc2b7090e534201"
+      }
+    },
+    "rdkit_wasm": {
+      "path": "/tmp/rdkit/node_modules/@rdkit/rdkit/dist/RDKit_minimal.wasm",
+      "raw_bytes": 7333095,
+      "gzip9_bytes": 2379975,
+      "sha256": "f5981af4cf5bdcef861ffdf7410330bf9887f1195e39fbf9901b3a2f134ace2e"
+    },
+    "rdkit_js": {
+      "path": "/tmp/rdkit/node_modules/@rdkit/rdkit/dist/RDKit_minimal.js",
+      "raw_bytes": 105843,
+      "gzip9_bytes": 28432,
+      "sha256": "25ea1529b8eeb106ac1f3acb7c5d338a90533248c6223614574fefd14fee772f"
+    },
+    "rdkit_package": {
+      "name": "@rdkit/rdkit",
+      "version": "2026.03.6",
+      "sha256": "bb938eb6b28bf39baa9778f56aefcdea746d28060fe2c542209f877a71468fed",
+      "lock_status": "recorded",
+      "lock_sha256": "eb2288da9f9caa2670d8211364842c1489a4815d7049abadd33797f93f833b8a",
+      "resolved": "https://registry.npmjs.org/@rdkit/rdkit/-/rdkit-2026.3.6.tgz",
+      "integrity": "sha512-JkMi2PfVjRFuy3ZCDAoTUJeTGyNsgtmq4hDUduLnnbobxsOfSydfpa6lhZGYYaisfMSEAgE1iAT95W4ZsUCMrA=="
+    }
+  },
+  "raw_runs": {
+    "chematic": [
+      {
+        "arm": "chematic",
+        "init_ms": 86,
+        "download_to_ready_ms": 153,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.032,
+            "batch_elapsed_ms": 8,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.192,
+            "batch_elapsed_ms": 48,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.17199999999999988,
+            "batch_elapsed_ms": 42.99999999999997,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.048,
+            "batch_elapsed_ms": 12,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 0
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 112.00000000000003,
+        "download_to_ready_ms": 144.00000000000003,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.032,
+            "batch_elapsed_ms": 8,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.23600000000000013,
+            "batch_elapsed_ms": 59.00000000000003,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.204,
+            "batch_elapsed_ms": 51,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.032,
+            "batch_elapsed_ms": 8,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 1
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 111,
+        "download_to_ready_ms": 146,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.036,
+            "batch_elapsed_ms": 9,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.2200000000000001,
+            "batch_elapsed_ms": 55.00000000000003,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.084,
+            "batch_elapsed_ms": 21,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.052,
+            "batch_elapsed_ms": 13,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.02,
+            "batch_elapsed_ms": 5,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 2
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 114,
+        "download_to_ready_ms": 145,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.044,
+            "batch_elapsed_ms": 11,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.22400000000000012,
+            "batch_elapsed_ms": 56.00000000000003,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.104,
+            "batch_elapsed_ms": 26,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.04,
+            "batch_elapsed_ms": 10,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 3
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 114.00000000000003,
+        "download_to_ready_ms": 143.00000000000003,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.036,
+            "batch_elapsed_ms": 9,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.21199999999999988,
+            "batch_elapsed_ms": 52.99999999999997,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.17199999999999988,
+            "batch_elapsed_ms": 42.99999999999997,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.028,
+            "batch_elapsed_ms": 7,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 4
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 110.00000000000003,
+        "download_to_ready_ms": 142.00000000000003,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.04,
+            "batch_elapsed_ms": 10,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.216,
+            "batch_elapsed_ms": 54,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.116,
+            "batch_elapsed_ms": 29,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.04,
+            "batch_elapsed_ms": 10,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.024000000000000226,
+            "batch_elapsed_ms": 6.000000000000057,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 5
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 114.00000000000003,
+        "download_to_ready_ms": 144.00000000000003,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.036,
+            "batch_elapsed_ms": 9,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.228,
+            "batch_elapsed_ms": 57,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.092,
+            "batch_elapsed_ms": 23,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.02,
+            "batch_elapsed_ms": 5,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.012,
+            "batch_elapsed_ms": 3,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 6
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 104,
+        "download_to_ready_ms": 147,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.032,
+            "batch_elapsed_ms": 8,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.248,
+            "batch_elapsed_ms": 62,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.12,
+            "batch_elapsed_ms": 30,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.052,
+            "batch_elapsed_ms": 13,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 7
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 114,
+        "download_to_ready_ms": 141,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.032,
+            "batch_elapsed_ms": 8,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.212,
+            "batch_elapsed_ms": 53,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.12399999999999989,
+            "batch_elapsed_ms": 30.99999999999997,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.052,
+            "batch_elapsed_ms": 13,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 8
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 115,
+        "download_to_ready_ms": 139,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.044,
+            "batch_elapsed_ms": 11,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.276,
+            "batch_elapsed_ms": 69,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.088,
+            "batch_elapsed_ms": 22,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.048,
+            "batch_elapsed_ms": 12,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 9
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 115.00000000000003,
+        "download_to_ready_ms": 142.00000000000003,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.032,
+            "batch_elapsed_ms": 8,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.2159999999999999,
+            "batch_elapsed_ms": 53.99999999999997,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.07999999999999989,
+            "batch_elapsed_ms": 19.99999999999997,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.03199999999999977,
+            "batch_elapsed_ms": 7.999999999999943,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 10
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 109,
+        "download_to_ready_ms": 139,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.03999999999999988,
+            "batch_elapsed_ms": 9.999999999999972,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.24,
+            "batch_elapsed_ms": 60,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.10799999999999989,
+            "batch_elapsed_ms": 26.99999999999997,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.036,
+            "batch_elapsed_ms": 9,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.012,
+            "batch_elapsed_ms": 3,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 11
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 106,
+        "download_to_ready_ms": 132,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.036,
+            "batch_elapsed_ms": 9,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.3040000000000001,
+            "batch_elapsed_ms": 76.00000000000003,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.08,
+            "batch_elapsed_ms": 20,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.04,
+            "batch_elapsed_ms": 10,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 12
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 98,
+        "download_to_ready_ms": 124,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.072,
+            "batch_elapsed_ms": 18,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.272,
+            "batch_elapsed_ms": 68,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.168,
+            "batch_elapsed_ms": 42,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.048,
+            "batch_elapsed_ms": 12,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016000000000000226,
+            "batch_elapsed_ms": 4.000000000000057,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 13
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 112,
+        "download_to_ready_ms": 149,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.052,
+            "batch_elapsed_ms": 13,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.168,
+            "batch_elapsed_ms": 42,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.08399999999999988,
+            "batch_elapsed_ms": 20.99999999999997,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.052,
+            "batch_elapsed_ms": 13,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.02,
+            "batch_elapsed_ms": 5,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 14
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 108,
+        "download_to_ready_ms": 139,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.028,
+            "batch_elapsed_ms": 7,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.27200000000000013,
+            "batch_elapsed_ms": 68.00000000000003,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.092,
+            "batch_elapsed_ms": 23,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.044,
+            "batch_elapsed_ms": 11,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 15
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 109.00000000000003,
+        "download_to_ready_ms": 143.00000000000003,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.04,
+            "batch_elapsed_ms": 10,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.22,
+            "batch_elapsed_ms": 55,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.108,
+            "batch_elapsed_ms": 27,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.044,
+            "batch_elapsed_ms": 11,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 16
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 110,
+        "download_to_ready_ms": 147,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.044,
+            "batch_elapsed_ms": 11,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.18,
+            "batch_elapsed_ms": 45,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.09599999999999989,
+            "batch_elapsed_ms": 23.99999999999997,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.056,
+            "batch_elapsed_ms": 14,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.016,
+            "batch_elapsed_ms": 4,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 17
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 113.00000000000003,
+        "download_to_ready_ms": 143.00000000000003,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.036,
+            "batch_elapsed_ms": 9,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.2480000000000001,
+            "batch_elapsed_ms": 62.00000000000003,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.14800000000000021,
+            "batch_elapsed_ms": 37.00000000000006,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.064,
+            "batch_elapsed_ms": 16,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.01599999999999977,
+            "batch_elapsed_ms": 3.999999999999943,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 18
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 109.00000000000003,
+        "download_to_ready_ms": 142.00000000000003,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.036,
+            "batch_elapsed_ms": 9,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.2400000000000001,
+            "batch_elapsed_ms": 60.00000000000003,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.104,
+            "batch_elapsed_ms": 26,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.052,
+            "batch_elapsed_ms": 13,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.012,
+            "batch_elapsed_ms": 3,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "measured",
+          "after_init_bytes": 1572864,
+          "after_workload_bytes": 2359296
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 19
+      }
+    ],
+    "rdkit": [
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 195,
+        "download_to_ready_ms": 219,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.756,
+            "batch_elapsed_ms": 189,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.876,
+            "batch_elapsed_ms": 219,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.556,
+            "batch_elapsed_ms": 139,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.07599999999999954,
+            "batch_elapsed_ms": 18.999999999999886,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.06,
+            "batch_elapsed_ms": 15,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 0
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 186,
+        "download_to_ready_ms": 211,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.556,
+            "batch_elapsed_ms": 139,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.696,
+            "batch_elapsed_ms": 174,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.62,
+            "batch_elapsed_ms": 155,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.076,
+            "batch_elapsed_ms": 19,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.06400000000000046,
+            "batch_elapsed_ms": 16.000000000000114,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 1
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 198,
+        "download_to_ready_ms": 218,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.5999999999999998,
+            "batch_elapsed_ms": 149.99999999999994,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.6920000000000005,
+            "batch_elapsed_ms": 173.0000000000001,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.62,
+            "batch_elapsed_ms": 155,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.076,
+            "batch_elapsed_ms": 19,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.068,
+            "batch_elapsed_ms": 17,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 2
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 206,
+        "download_to_ready_ms": 226,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.5559999999999998,
+            "batch_elapsed_ms": 138.99999999999994,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.676,
+            "batch_elapsed_ms": 169,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.62,
+            "batch_elapsed_ms": 155,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.076,
+            "batch_elapsed_ms": 19,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.068,
+            "batch_elapsed_ms": 17,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 3
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 195,
+        "download_to_ready_ms": 219,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.788,
+            "batch_elapsed_ms": 197,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.788,
+            "batch_elapsed_ms": 197,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.532,
+            "batch_elapsed_ms": 133,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.072,
+            "batch_elapsed_ms": 18,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.064,
+            "batch_elapsed_ms": 16,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 4
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 189,
+        "download_to_ready_ms": 209,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.5559999999999998,
+            "batch_elapsed_ms": 138.99999999999994,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.704,
+            "batch_elapsed_ms": 176,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.652,
+            "batch_elapsed_ms": 163,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.08,
+            "batch_elapsed_ms": 20,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.064,
+            "batch_elapsed_ms": 16,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 5
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 197,
+        "download_to_ready_ms": 223,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.5840000000000002,
+            "batch_elapsed_ms": 146.00000000000006,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.776,
+            "batch_elapsed_ms": 194,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.664,
+            "batch_elapsed_ms": 166,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.07600000000000046,
+            "batch_elapsed_ms": 19.000000000000114,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.064,
+            "batch_elapsed_ms": 16,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 6
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 186.00000000000003,
+        "download_to_ready_ms": 208.00000000000003,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.572,
+            "batch_elapsed_ms": 143,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.7120000000000004,
+            "batch_elapsed_ms": 178.0000000000001,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.712,
+            "batch_elapsed_ms": 178,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.08,
+            "batch_elapsed_ms": 20,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.076,
+            "batch_elapsed_ms": 19,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 7
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 212,
+        "download_to_ready_ms": 233,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.548,
+            "batch_elapsed_ms": 137,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.7,
+            "batch_elapsed_ms": 175,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.688,
+            "batch_elapsed_ms": 172,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.08,
+            "batch_elapsed_ms": 20,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.064,
+            "batch_elapsed_ms": 16,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 8
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 200,
+        "download_to_ready_ms": 225,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.5559999999999998,
+            "batch_elapsed_ms": 138.99999999999994,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.7120000000000004,
+            "batch_elapsed_ms": 178.0000000000001,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.62,
+            "batch_elapsed_ms": 155,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.08,
+            "batch_elapsed_ms": 20,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.064,
+            "batch_elapsed_ms": 16,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 9
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 213.00000000000003,
+        "download_to_ready_ms": 239.00000000000003,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.564,
+            "batch_elapsed_ms": 141,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.696,
+            "batch_elapsed_ms": 174,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.648,
+            "batch_elapsed_ms": 162,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.07200000000000045,
+            "batch_elapsed_ms": 18.000000000000114,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.07199999999999955,
+            "batch_elapsed_ms": 17.999999999999886,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 10
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 209,
+        "download_to_ready_ms": 233,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.608,
+            "batch_elapsed_ms": 152,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.696,
+            "batch_elapsed_ms": 174,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.612,
+            "batch_elapsed_ms": 153,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.076,
+            "batch_elapsed_ms": 19,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.06399999999999954,
+            "batch_elapsed_ms": 15.999999999999886,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 11
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 204,
+        "download_to_ready_ms": 230,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.7,
+            "batch_elapsed_ms": 175,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.78,
+            "batch_elapsed_ms": 195,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.548,
+            "batch_elapsed_ms": 137,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.072,
+            "batch_elapsed_ms": 18,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.064,
+            "batch_elapsed_ms": 16,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 12
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 200,
+        "download_to_ready_ms": 226,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.856,
+            "batch_elapsed_ms": 214,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.648,
+            "batch_elapsed_ms": 162,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.54,
+            "batch_elapsed_ms": 135,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.072,
+            "batch_elapsed_ms": 18,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.064,
+            "batch_elapsed_ms": 16,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 13
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 197,
+        "download_to_ready_ms": 219,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.784,
+            "batch_elapsed_ms": 196,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.84,
+            "batch_elapsed_ms": 210,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.5320000000000005,
+            "batch_elapsed_ms": 133.0000000000001,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.076,
+            "batch_elapsed_ms": 19,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.06,
+            "batch_elapsed_ms": 15,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 14
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 213,
+        "download_to_ready_ms": 234,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.708,
+            "batch_elapsed_ms": 177,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 1.02,
+            "batch_elapsed_ms": 255,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.52,
+            "batch_elapsed_ms": 130,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.076,
+            "batch_elapsed_ms": 19,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.068,
+            "batch_elapsed_ms": 17,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 15
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 206,
+        "download_to_ready_ms": 225,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.568,
+            "batch_elapsed_ms": 142,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.7040000000000004,
+            "batch_elapsed_ms": 176.0000000000001,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.624,
+            "batch_elapsed_ms": 156,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.072,
+            "batch_elapsed_ms": 18,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.064,
+            "batch_elapsed_ms": 16,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 16
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 186.00000000000003,
+        "download_to_ready_ms": 206.00000000000003,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.668,
+            "batch_elapsed_ms": 167,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.776,
+            "batch_elapsed_ms": 194,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.564,
+            "batch_elapsed_ms": 141,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.07600000000000046,
+            "batch_elapsed_ms": 19.000000000000114,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.064,
+            "batch_elapsed_ms": 16,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 17
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 186,
+        "download_to_ready_ms": 212,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.6199999999999998,
+            "batch_elapsed_ms": 154.99999999999994,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.764,
+            "batch_elapsed_ms": 191,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.656,
+            "batch_elapsed_ms": 164,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.088,
+            "batch_elapsed_ms": 22,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.08,
+            "batch_elapsed_ms": 20,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 18
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 204,
+        "download_to_ready_ms": 224,
+        "operations": {
+          "parse": {
+            "count": 250,
+            "mean_ms": 0.572,
+            "batch_elapsed_ms": 143,
+            "input_rows": 250
+          },
+          "parse_write": {
+            "count": 250,
+            "mean_ms": 0.692,
+            "batch_elapsed_ms": 173,
+            "input_rows": 250
+          },
+          "parse_fp": {
+            "count": 250,
+            "mean_ms": 0.604,
+            "batch_elapsed_ms": 151,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_first_use": {
+            "count": 250,
+            "mean_ms": 0.08400000000000045,
+            "batch_elapsed_ms": 21.000000000000114,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          },
+          "prepared_fp_reused": {
+            "count": 250,
+            "mean_ms": 0.076,
+            "batch_elapsed_ms": 19,
+            "input_rows": 250,
+            "output": {
+              "format": "packed-lsb-first-2048-bit",
+              "bytes_per_row": 256,
+              "fnv1a32": "5c006dbe",
+              "set_bits": 11307
+            }
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 250,
+        "process_tree_rss": {
+          "status": "not_measured",
+          "reason": "--measure-process-rss not requested"
+        },
+        "repetition": 19
+      }
+    ]
+  },
+  "aggregate": {
+    "chematic": {
+      "runs": 20,
+      "download_to_ready_ms": {
+        "count": 20,
+        "p50_ms": 143.0,
+        "p95_ms": 149.2,
+        "mean_ms": 142.2
+      },
+      "init_ms": {
+        "count": 20,
+        "p50_ms": 110.5,
+        "p95_ms": 115.0,
+        "mean_ms": 109.15
+      },
+      "parse_mean_ms": {
+        "count": 20,
+        "p50_ms": 0.036,
+        "p95_ms": 0.053,
+        "mean_ms": 0.039
+      },
+      "parse_write_mean_ms": {
+        "count": 20,
+        "p50_ms": 0.226,
+        "p95_ms": 0.2774,
+        "mean_ms": 0.2312
+      },
+      "parse_fp_mean_ms": {
+        "count": 20,
+        "p50_ms": 0.106,
+        "p95_ms": 0.1736,
+        "mean_ms": 0.1172
+      },
+      "prepared_fp_first_use_mean_ms": {
+        "count": 20,
+        "p50_ms": 0.046,
+        "p95_ms": 0.0564,
+        "mean_ms": 0.044
+      },
+      "prepared_fp_reused_mean_ms": {
+        "count": 20,
+        "p50_ms": 0.016,
+        "p95_ms": 0.0202,
+        "mean_ms": 0.0162
+      }
+    },
+    "rdkit": {
+      "runs": 20,
+      "download_to_ready_ms": {
+        "count": 20,
+        "p50_ms": 223.5,
+        "p95_ms": 234.25,
+        "mean_ms": 221.95
+      },
+      "init_ms": {
+        "count": 20,
+        "p50_ms": 199.0,
+        "p95_ms": 213.0,
+        "mean_ms": 199.1
+      },
+      "parse_mean_ms": {
+        "count": 20,
+        "p50_ms": 0.592,
+        "p95_ms": 0.7914,
+        "mean_ms": 0.636
+      },
+      "parse_write_mean_ms": {
+        "count": 20,
+        "p50_ms": 0.708,
+        "p95_ms": 0.8832,
+        "mean_ms": 0.7474
+      },
+      "parse_fp_mean_ms": {
+        "count": 20,
+        "p50_ms": 0.62,
+        "p95_ms": 0.6892,
+        "mean_ms": 0.6066
+      },
+      "prepared_fp_first_use_mean_ms": {
+        "count": 20,
+        "p50_ms": 0.076,
+        "p95_ms": 0.0842,
+        "mean_ms": 0.0768
+      },
+      "prepared_fp_reused_mean_ms": {
+        "count": 20,
+        "p50_ms": 0.064,
+        "p95_ms": 0.0762,
+        "mean_ms": 0.0666
+      }
+    }
+  },
+  "boundary": "Published package artifact. Both arms receive the same valid SMILES rows for parse and write. The fingerprint operation excludes only its separately recorded typed RDKit coordination-sanitization refusal from both arms, so its timing denominator is explicit rather than silently filtered. Both timed fingerprint paths materialize and consume the same packed-byte representation, but this artifact alone does not establish bit-identical chemistry; use the separate fingerprint compatibility gate for that claim. JS heap is browser-exposed only. chematic linear memory is measured from the active Wasm memory page count; RDKit.js does not expose that object. When requested on Chromium, RSS is sampled as summed process-tree RSS and may double-count shared pages; otherwise it is not measured."
+}
