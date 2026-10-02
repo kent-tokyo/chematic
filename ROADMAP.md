@@ -28,7 +28,11 @@ boundaries, and reproducible evidence take priority over feature-count races.
   published v1.0.29 tarball changes only HBA and its bundle, on the same
   1,359 input indices as Python; 57 operations are row-identical across
   versions. Four matrix operations have no equivalent public npm API in the
-  pinned releases. Rust's 63-operation mapping remains unfinished.
+  pinned releases. Published Rust crates are now mapped across all 63
+  operations: each version's 210,410 rows exactly match its published Python
+  wheel; with every subcrate version pinned, Rust v1.0.29→v1.0.30 changes
+  only HBA and its bundle on the same 1,359 indices. This closes the Rust
+  operation-output slice, not Rust timing, memory, or RDKit accuracy.
 - **v1.0.29 has the historical partial P0 packet.** Its published Python
   wheel was measured on exposed 10,000-row chemistry, 310,000-cell SMARTS,
   57 reaction fixtures, and a 5,000-row/63-operation matrix. The 21
@@ -80,6 +84,9 @@ records, the [CHANGELOG](CHANGELOG.md), or Git history rather than this plan.
    adjudication of every non-HBA delta. Keep the published 5,000/5,000 HBA
    result as a completed sub-gate, not a substitute for this packet. Exposed
    inputs do not become sealed data.
+   The Rust 63-operation output differential is now a completed sub-gate;
+   finish the remaining cross-binding outcome adjudication and full packet
+   before closing P0.1.
 2. **P0.2 — Make speed comparisons symmetric and repeatable.** Measure both
    v1.0.29 versus v1.0.30 and RDKit versus chematic on pinned, published
    artifacts and equivalent work. Balance execution order (for example ABBA

@@ -19,8 +19,10 @@ from pathlib import Path
 
 if __package__:
     from .check_published_python_version_outputs import compare
+    from .check_published_rust_63op_outputs import build_report as build_rust_operation_report
 else:
     from check_published_python_version_outputs import compare
+    from check_published_rust_63op_outputs import build_report as build_rust_operation_report
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation/results"
@@ -262,6 +264,8 @@ def main() -> int:
     fail_if(diff["operation_count"] != 63 or diff["output_count"] != 210410 or
             {key: value["count"] for key, value in diff["changed_rows_by_operation"].items()} !=
             {"hba": 1359, "lipinski_bundle(mw,logp,hbd,hba)": 1359}, "63-operation accounting")
+    fail_if(build_rust_operation_report() != read_json("v1.0.29-to-v1.0.30-published-rust-63op-diff.json"),
+            "published Rust 63-operation cross-binding or version differential")
 
     reaction = read_json("v1.0.30-published-reaction-83-strata.json")
     matrix = json.loads((ROOT / "benchmarks/2026-10-02-v1.0.30-python-op-matrix.json").read_text(encoding="utf-8"))
@@ -333,7 +337,7 @@ def main() -> int:
             "published Python paired 63-operation matrix accounting")
     check_npm_version_diff()
     print("v1.0.30 packet integrity OK: 3 published artifacts x 10k/310k; "
-          "Python 63 operations x 210,410 rows (only HBA/bundle changed); "
+          "Python/Rust 63 operations x 210,410 rows each per version (only HBA/bundle changed); "
           "npm 59/63 output adapters (52 exact, ETKDG rounded, 3 representation lanes differ), "
           "v1.0.29 to v1.0.30 only HBA/bundle changed on the same 1,359 rows; "
           "20-block Python speed matrix; npm reaction 74 match, 5 confident "

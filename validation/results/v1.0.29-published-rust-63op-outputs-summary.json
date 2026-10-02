@@ -1,0 +1,9 @@
+{
+  "adapted_operations": 63,
+  "corpus_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+  "crate": "chematic 1.0.29 from crates.io",
+  "input_count": 5000,
+  "rows_sha256": "56c58b8ba4fa3d0abab907f8665b19d1831535f82361cc6c5406adda92f31b4c",
+  "schema": "published-rust-python-63op-output-slice/v1",
+  "scope": "output only; not a timing or RDKit parity claim"
+}
