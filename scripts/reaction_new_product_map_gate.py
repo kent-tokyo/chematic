@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare new product-template atom maps from published Rust 1.0.30 with RDKit.
+"""Compare new product-template atom maps from a pinned Rust build with RDKit.
 
 This supplement preserves the original 83-case diagnostic byte-for-byte.
 Product atom maps are diagnostic metadata, not a claim about reaction yields.
@@ -39,6 +39,9 @@ def main() -> int:
     parser.add_argument("--rust-summary", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-rdkit", default="2026.03.6")
+    parser.add_argument("--expected-crate", default="chematic 1.0.30 from crates.io")
+    parser.add_argument("--expected-version", default="1.0.30")
+    parser.add_argument("--expected-profile", default=None)
     args = parser.parse_args()
     if rdBase.rdkitVersion != args.expected_rdkit:
         parser.error(f"RDKit {rdBase.rdkitVersion} != {args.expected_rdkit}")
@@ -59,13 +62,14 @@ def main() -> int:
             or len(rust_rows) != 83 + len(cases)
             or [row["id"] for row in rust_rows[83:]] != [case["id"] for case in cases]
             or summary["schema"] != "published-rust-reaction-template-maps/v1"
-            or summary["crate"] != "chematic 1.0.30 from crates.io"
+            or summary["crate"] != args.expected_crate
+            or summary.get("compatibility_profile") != args.expected_profile
             or summary["input_count"] != len(rust_rows)
             or summary["rows_sha256"] != sha256(raw)
             or summary["base_cases_sha256"] != base_hash
             or summary["strata_sha256"] != strata_hash
             or summary["supplement_sha256"] != sha256(supplement_bytes)):
-        raise ValueError("published Rust rows or fixture provenance disagree")
+        raise ValueError("Rust rows or fixture provenance disagree")
 
     results = []
     for case, row in zip(cases, rust_rows[83:], strict=True):
@@ -98,7 +102,7 @@ def main() -> int:
                         "rdkit_maps": oracle_maps, "rust_maps": candidate_maps,
                         "rdkit_raw_product_sets": raw_count, "rust_raw_product_sets": len(row["sets"])})
     report = {"schema": "published-rust-reaction-new-product-maps/v1",
-              "crate_version": "1.0.30", "rdkit_version": rdBase.rdkitVersion,
+              "crate_version": args.expected_version, "rdkit_version": rdBase.rdkitVersion,
               "fixtures": {"base_sha256": base_hash, "strata_sha256": strata_hash,
                            "supplement_sha256": sha256(supplement_bytes)},
               "rust_rows_sha256": sha256(raw),
@@ -109,6 +113,9 @@ def main() -> int:
                          "No atom maps added to ordinary product molecules",
                          "No reaction yield or selectivity claim"],
               "rows": results}
+    if args.expected_profile is not None:
+        report["crate"] = args.expected_crate
+        report["compatibility_profile"] = args.expected_profile
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"new product maps: {len(results)} inputs, {report['accounting']['outcomes']}")
