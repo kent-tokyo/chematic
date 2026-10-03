@@ -1,0 +1,80 @@
+{
+  "schema": "a6-published-mmff94-stereo-safe-quality/v1",
+  "scope": "published-wheel output quality; archived RDKit coordinates reused; not paired speed",
+  "target_version": "1.0.31",
+  "host": "macOS 27.0.1 arm64; CPython 3.13.6",
+  "seed": 20260801,
+  "attempts": 8,
+  "force_field_max_iterations": 200,
+  "row_timeout_ms": 20000,
+  "inputs": 265,
+  "wheel_sha256": "b481316bb5a49cb572b035c805316e38a381f4f0e6fa141a05d1da3dc6f05c1f",
+  "runner_rows_sha256": "c2525cf7a12f7fd77b1881ee868b49785b7b62b44e006eb708d2c630b6e0d850",
+  "independent_scorer_sha256": "2f631a1368cade9c588fc9f19490bfa26d326519c780b37ead15d92616c6bbb9",
+  "scored_rows_sha256": "73495316864f2f924dde0475adacb27945269cb3888b5595ff23f1a136fa6189",
+  "archived_rdkit_rows_sha256": "a856235a39f37e9f8385ff4d60fc4efc8fdf116eedb43effaf4e3893b041dd1f",
+  "coordinates_array_sha256": "f5fb982a8159b5a3625592bf4194bcf4969e78ecadccaf48ccfc00cbe1685a8e",
+  "v1026_coordinates_array_sha256": "f5fb982a8159b5a3625592bf4194bcf4969e78ecadccaf48ccfc00cbe1685a8e",
+  "counts": {
+    "runner_success": 265,
+    "runner_failure": 0,
+    "force_field_converged": 100,
+    "force_field_not_converged": 165,
+    "force_field_fallback": 0,
+    "missing_bond_terms": 0,
+    "missing_angle_terms": 0,
+    "missing_torsion_terms": 32,
+    "missing_oop_terms": 0,
+    "missing_stretch_bend_terms": 0,
+    "independent_scorer_sound": 265,
+    "independent_scorer_stereo_clean": 265,
+    "independent_gross_clashes": 0,
+    "scorer_integrity_errors": 0,
+    "archived_rdkit_scored": 264
+  },
+  "same_explicit_h_coordinates": {
+    "rdkit_version": "2026.03.6",
+    "raw_rows_sha256": "6ede7c998827d97bca1436246d0b5290e8e1ecf6e7b25991a44d2f954e4d7054",
+    "input_rows": 265,
+    "comparable_rows": 262,
+    "embed_failure": 2,
+    "declared_unsupported": 1,
+    "coordinate_hashes_equal_to_v1019": 262,
+    "median_abs_total_delta_kcal_mol": 0.00433915681330177,
+    "p90_abs_total_delta_kcal_mol": 0.028495157459673237,
+    "max_abs_total_delta_kcal_mol": 0.2621654232793844,
+    "within_1_kcal_mol": 262,
+    "within_5_kcal_mol": 262,
+    "previous_residual_rows": {
+      "166_abs_delta_kcal_mol": 0.003980412504503761,
+      "231_abs_delta_kcal_mol": 0.047858348505599224
+    },
+    "per_term_rows_over_0_1_kcal_mol": {
+      "bond": 0,
+      "angle": 3,
+      "stretch_bend": 0,
+      "oop": 1,
+      "torsion": 0,
+      "vdw": 0,
+      "electrostatic": 0
+    },
+    "gradient_diagnostic": {
+      "input_indices": [166, 231],
+      "max_abs_error_kcal_mol_angstrom": 1.2955729999930554e-07,
+      "max_scaled_error": 4.370072425989233e-08
+    }
+  },
+  "per_row_equal_to_published_v1026": {
+    "input_identities": 265,
+    "coordinates": 265,
+    "convergence": 265,
+    "parameter_coverage": 265
+  },
+  "a6_complete": false,
+  "open_dimensions": [
+    "force_field_convergence",
+    "full_atom_type_and_term_compatibility",
+    "same_coordinate_energy_coverage_and_per_term_residuals",
+    "independent_conformer_quality"
+  ]
+}

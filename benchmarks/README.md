@@ -38,6 +38,8 @@ packet is for **v1.0.30**. No v1.0.31 chemistry or speed rerun is implied.
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
 | Review current public-package fingerprint and 3D evidence | [`2026-09-23-public-package-fingerprint-3d-v1.0.20.md`](2026-09-23-public-package-fingerprint-3d-v1.0.20.md) |
 | Review published v1.0.26 MMFF94 stereo-safe quality (#637) | [`2026-09-26-mmff94-public-v1.0.26.md`](2026-09-26-mmff94-public-v1.0.26.md): two fixed 265-molecule wheel runs with complete raw rows and common scoring; single-host boundary |
+| Review separate A6 quality gates | [`2026-10-03-a6-separated-quality-matrix.md`](2026-10-03-a6-separated-quality-matrix.md): typing, convergence, stereo, clash, same-coordinate energy and independent conformer quality kept distinct; historical artifacts do not clear v1.0.31 |
+| Review published v1.0.31 MMFF94 quality rerun | [`2026-10-03-a6-published-v1031-mmff94-quality.md`](2026-10-03-a6-published-v1031-mmff94-quality.md): current wheel 265/265 independently sound, stereo-clean and clash-free; only 100/265 converged, full A6 remains open |
 | Review the post-freeze MMFF94 stereo-safe source speed gate | [`2026-09-23-mmff94-stereo-safe-performance.md`](2026-09-23-mmff94-stereo-safe-performance.md) |
 | Review MMFF94 per-term same-coordinate energy (#637) | [`2026-09-25-mmff94-per-term-energy.md`](2026-09-25-mmff94-per-term-energy.md) |
 | Historical v1.0.19-source MMFF94 same-coordinate energy | [`2026-09-23-mmff94-current-source-energy.md`](2026-09-23-mmff94-current-source-energy.md) |
