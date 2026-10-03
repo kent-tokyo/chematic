@@ -10,6 +10,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Corrected MMFF94 aromatic-state propagation for compact fused ring systems.
+  A pinned 10,000-molecule source-only type gate reduces RDKit 2026.03.6
+  atom-type differences from 2,964 to 459, with no previously correct atom
+  becoming incorrect in that corpus. Complex cages and large macrocycles
+  retain the prior behavior pending ring-model adjudication. Published-package
+  and geometry/convergence gates remain open.
 - The opt-in RDKit-style SMARTS matcher now converts the verified
   hypervalent `[C-]`--Fe single-bond case to a dative bond in a private
   matching view before ring perception. A source-only pinned 310,000-cell
