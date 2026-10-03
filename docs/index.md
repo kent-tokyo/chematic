@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.32</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.33</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,9 +80,10 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.0.32 adds checked-reaction provenance, opt-in SMARTS compatibility and
-MMFF94 diagnostics. Release availability is not an accuracy or speed result;
-package-output reruns remain separate.
+v1.0.33 fixes SMIRKS reactant SMARTS parsing, product edits, valence checks,
+explicit-hydrogen handling and selected RDKit SMARTS extensions. Release
+availability is not an accuracy or speed result; package-output reruns remain
+separate.
 
 The latest published-package comparison packet is for v1.0.30. It records
 20 exact-output, favorable paired-interval Python operations on one host;
@@ -93,10 +94,10 @@ not general RDKit parity or superiority.
 
 The checked-reaction APIs expose product atom origins and
 template maps in Python and WASM/Node. Linux/macOS release-profile source
-wheels classify the 83-row comparison as 76 exact graph/origin/map, three
-typed unsupported, one refusal and three invalid in both engines; WASM Node
-tests pass. These are not v1.0.32 registry-package results. See the
-[source-wheel record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-reaction-83-python-provenance-source.md).
+wheels on PR #745 classify the 83-row comparison as 77 exact graph/origin/map,
+three typed unsupported and three invalid in both engines; WASM Node tests
+pass. These are not v1.0.33 registry-package results. See the
+[PR #745 and CI](https://github.com/kent-tokyo/chematic/pull/745).
 
 See [validation](validation.md) for denominators, [benchmarks](benchmark.md)
 for timed boundaries, and [compatibility scope](compatibility-scope.md) for

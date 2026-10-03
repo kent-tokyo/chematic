@@ -23,10 +23,11 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.32 范围
+### v1.0.33 范围
 
-v1.0.32 增加了反应原子来源、可选 SMARTS 兼容模式和 MMFF94 诊断。
-比较数据来自发布配置的源码构建；已发布包仍需单独复测。各版本的测量范围见
+v1.0.33 修复了 SMIRKS 反应物 SMARTS 解析、产物原子编辑与价态检查、显式氢处理，
+并支持部分 RDKit SMARTS 扩展。83 条反应测试已通过发布配置的源码 wheel；
+已发布包仍需单独复测。各版本的测量范围见
 [验证报告](docs/validation.md)，变更见 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用

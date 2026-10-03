@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.33] - 2026-10-04
+
 - SMIRKS reactant templates are parsed as SMARTS (#734): query features
   such as `[CD1:1]`, `[CX4:1]`, `[C;H3:1]`, `[C,N:1]`, `[!O:1]` and
   `[$([OH]):1]` now match instead of failing with a SMILES parse error.

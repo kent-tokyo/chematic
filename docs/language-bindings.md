@@ -6,7 +6,7 @@ have different API and error shapes. This page names those differences.
 ## Atom provenance and output order
 
 The atom-tracking APIs expose only mappings with a documented atom order.
-The checked reaction additions below are included in v1.0.32. Their measured
+The checked reaction additions below are included since v1.0.32. Their measured
 comparison is a source-wheel result; published-package parity remains open.
 
 | Capability | Rust | Python | WASM / Node |

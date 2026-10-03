@@ -8,7 +8,10 @@ assert.ok(browsers[browserName], `unknown browser: ${browserName}`);
 const workspaceManifest = readFileSync(new URL("../Cargo.toml", import.meta.url), "utf8");
 const workspaceVersion = workspaceManifest.match(/^version\s*=\s*"([^"]+)"/m)?.[1];
 assert.ok(workspaceVersion, "workspace Cargo.toml must declare a version");
-const expectedVersionBadge = `v${workspaceVersion}`;
+// Pull-request smoke serves the checked-in demo/pkg, which can lag the source
+// version until the Pages workflow rebuilds WASM from the merged commit.
+const checkedInPackage = JSON.parse(readFileSync(new URL("../demo/pkg/package.json", import.meta.url), "utf8"));
+const expectedVersionBadge = `v${checkedInPackage.version}`;
 
 const ETHANE_MOL_BLOCK = `ethane
   chematic
