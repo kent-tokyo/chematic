@@ -427,7 +427,7 @@
       {"smirks": "[N:1]>>[N:1]", "reactants": ["CCO"], "expected_product_sets": 0, "quality_boundary": "no_match_is_empty"}
     ],
     "negative_cases": [
-      {"smirks": "[#7;H2]>>[#7;H2]", "reactants": ["N"], "error": "unsupported compound primitive"},
+      {"smirks": "[#7:1]>>[#7:1][#6,#7]", "reactants": ["N"], "error": "unsupported product primitive"},
       {"smirks": "[#6:1].[#8:2]>>[#6:1][#8:2]", "reactants": ["C"], "error": "reactant count mismatch"},
       {"smirks": "not-a-reaction", "reactants": ["C"], "error": "invalid reaction template"}
     ]

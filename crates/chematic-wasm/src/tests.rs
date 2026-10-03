@@ -429,12 +429,9 @@ fn run_reactants_checked_counts_products_and_valence_refusal() {
     assert!(ordinary["applied_products"].as_u64().unwrap() > 0);
     assert!(!ordinary["products"].as_array().unwrap().is_empty());
 
-    let refused: serde_json::Value = serde_json::from_str(&run_reactants_checked(
-        "[13CH3:1][O:2]>>[13CH3:1].[O:2]",
-        "[13CH3]O",
-        true,
-    ))
-    .unwrap();
+    // A neutral four-bonded N, which RDKit's sanitize also rejects.
+    let refused: serde_json::Value =
+        serde_json::from_str(&run_reactants_checked("[N:1]>>[N:1](C)(C)C", "CN", true)).unwrap();
     assert_eq!(refused["status"], "typed_refusal");
     assert_eq!(refused["reason"], "product_valence");
     assert!(refused["valence_rejected_matches"].as_u64().unwrap() > 0);
@@ -526,7 +523,6 @@ fn checked_reaction_83_exposed_graph_and_refusal_gate() {
     let mut seen = std::collections::BTreeSet::new();
     let mut exact_graph = 0;
     let mut unsupported = 0;
-    let mut refused = 0;
     let mut invalid = 0;
     for case in cases {
         let id = case["id"].as_str().unwrap();
@@ -569,12 +565,6 @@ fn checked_reaction_83_exposed_graph_and_refusal_gate() {
             invalid += 1;
             continue;
         }
-        if id == "v2_isotope_methanol_split" {
-            assert_eq!(got["status"], "typed_refusal", "{id}");
-            assert_eq!(got["reason"], "product_valence", "{id}");
-            refused += 1;
-            continue;
-        }
         let normalized = |sets: &serde_json::Value| -> std::collections::BTreeSet<Vec<String>> {
             sets.as_array()
                 .unwrap()
@@ -610,7 +600,9 @@ fn checked_reaction_83_exposed_graph_and_refusal_gate() {
         exact_graph += 1;
     }
     assert_eq!(seen.len(), 83);
-    assert_eq!((exact_graph, unsupported, refused, invalid), (76, 3, 1, 3));
+    // `v2_isotope_methanol_split` was refused by the native valence model;
+    // with RDKit's sanitize rules it gives RDKit's `[13CH3]` + `O` (#734).
+    assert_eq!((exact_graph, unsupported, invalid), (77, 3, 3));
 }
 
 // Note: run_reactants error-path tests are omitted here because JsValue::from_str

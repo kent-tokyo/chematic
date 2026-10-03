@@ -1061,8 +1061,12 @@ fn bonds_compatible(
             match ctx.mol.bond_between(t, t_nb) {
                 None => return false,
                 Some((_bidx, bond_entry)) => {
-                    let bq = &query.bonds[bond_idx].query;
-                    if !eval_bond_query(bq, bond_entry.order, t, t_nb, ctx) {
+                    let qbond = &query.bonds[bond_idx];
+                    // Whether the target bond runs in the query bond's own
+                    // atom1 -> atom2 direction (dative `->` / `<-`).
+                    let image_of_atom1 = if qbond.atom1 == q { t } else { t_nb };
+                    let forward = bond_entry.atom1 == image_of_atom1;
+                    if !eval_bond_query(&qbond.query, bond_entry.order, t, t_nb, forward, ctx) {
                         return false;
                     }
                 }
@@ -1122,7 +1126,37 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
             !ctx.config.use_isotopes || ctx.mol.atom(idx).isotope == Some(*mass)
         }
         AtomPrimitive::Chirality(kind) => eval_chirality(idx, ctx, *kind),
+        AtomPrimitive::HeteroNeighborCount(n) => {
+            hetero_neighbor_count(ctx.mol, idx, false) == usize::from(*n)
+        }
+        AtomPrimitive::AliphaticHeteroNeighborCount(n) => {
+            hetero_neighbor_count(ctx.mol, idx, true) == usize::from(*n)
+        }
+        AtomPrimitive::HeavyDegree(n) => {
+            ctx.mol
+                .neighbors(idx)
+                .filter(|(nb, _)| ctx.mol.atom(*nb).element.atomic_number() != 1)
+                .count()
+                == usize::from(*n)
+        }
     }
+}
+
+/// Heteroatom neighbours (not C, not H) of `idx`, only non-aromatic ones
+/// when `aliphatic_only` — RDKit's `z` / `Z` SMARTS extensions.
+pub(crate) fn hetero_neighbor_count(
+    mol: &chematic_core::Molecule,
+    idx: AtomIdx,
+    aliphatic_only: bool,
+) -> usize {
+    mol.neighbors(idx)
+        .filter(|(nb, _)| {
+            let a = mol.atom(*nb);
+            !a.wildcard
+                && !matches!(a.element.atomic_number(), 1 | 6)
+                && !(aliphatic_only && a.aromatic)
+        })
+        .count()
 }
 
 /// Total H count (explicit H neighbors + implicit H) for HCount primitive.
@@ -1306,17 +1340,20 @@ fn eval_bond_query(
     order: BondOrder,
     a: AtomIdx,
     b: AtomIdx,
+    forward: bool,
     ctx: &EvalCtx<'_>,
 ) -> bool {
     match q {
-        BondQuery::Primitive(p) => eval_bond_primitive(p, order, a, b, ctx),
+        BondQuery::Primitive(p) => eval_bond_primitive(p, order, a, b, forward, ctx),
         BondQuery::And(x, y) => {
-            eval_bond_query(x, order, a, b, ctx) && eval_bond_query(y, order, a, b, ctx)
+            eval_bond_query(x, order, a, b, forward, ctx)
+                && eval_bond_query(y, order, a, b, forward, ctx)
         }
         BondQuery::Or(x, y) => {
-            eval_bond_query(x, order, a, b, ctx) || eval_bond_query(y, order, a, b, ctx)
+            eval_bond_query(x, order, a, b, forward, ctx)
+                || eval_bond_query(y, order, a, b, forward, ctx)
         }
-        BondQuery::Not(x) => !eval_bond_query(x, order, a, b, ctx),
+        BondQuery::Not(x) => !eval_bond_query(x, order, a, b, forward, ctx),
         // Unspecified bond (`CC` in SMARTS): Daylight/RDKit semantics are
         // "single or aromatic", not "any" — `C#C` or `N=N` must not match `CC`/`NN`.
         BondQuery::Any => matches!(
@@ -1357,6 +1394,7 @@ fn eval_bond_primitive(
     order: BondOrder,
     a: AtomIdx,
     b: AtomIdx,
+    forward: bool,
     ctx: &EvalCtx<'_>,
 ) -> bool {
     match p {
@@ -1391,6 +1429,10 @@ fn eval_bond_primitive(
         }
         BondPrimitive::Up => matches!(order, BondOrder::Up),
         BondPrimitive::Down => matches!(order, BondOrder::Down),
+        // Dative bond: the target's donor (its `atom1`) is the image of the
+        // query bond's atom1 for `->`, of its atom2 for `<-`.
+        BondPrimitive::DativeForward => order == BondOrder::Dative && forward,
+        BondPrimitive::DativeBackward => order == BondOrder::Dative && !forward,
     }
 }
 

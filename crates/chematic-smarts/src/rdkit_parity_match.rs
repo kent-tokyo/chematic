@@ -25,6 +25,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, implicit_hcount};
 use chematic_perception::{RingSet, SymmetrizedSssrStatus};
 
+use crate::match_vf2::hetero_neighbor_count;
 use crate::match_vf2::{MatchConfig, MatchOutcome};
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
 use crate::rdkit_ring_model::{
@@ -388,8 +389,12 @@ fn bonds_compatible(
             match ctx.mol.bond_between(t, t_nb) {
                 None => return false,
                 Some((_bidx, bond_entry)) => {
-                    let bq = &query.bonds[bond_idx].query;
-                    if !eval_bond_query(bq, bond_entry.order, t, t_nb, ctx) {
+                    let qbond = &query.bonds[bond_idx];
+                    // Whether the target bond runs in the query bond's own
+                    // atom1 -> atom2 direction (dative `->` / `<-`).
+                    let image_of_atom1 = if qbond.atom1 == q { t } else { t_nb };
+                    let forward = bond_entry.atom1 == image_of_atom1;
+                    if !eval_bond_query(&qbond.query, bond_entry.order, t, t_nb, forward, ctx) {
                         return false;
                     }
                 }
@@ -473,6 +478,19 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
             !ctx.config.use_isotopes || ctx.mol.atom(idx).isotope == Some(*mass)
         }
         AtomPrimitive::Chirality(kind) => eval_chirality(idx, ctx, *kind),
+        AtomPrimitive::HeteroNeighborCount(n) => {
+            hetero_neighbor_count(ctx.mol, idx, false) == usize::from(*n)
+        }
+        AtomPrimitive::AliphaticHeteroNeighborCount(n) => {
+            hetero_neighbor_count(ctx.mol, idx, true) == usize::from(*n)
+        }
+        AtomPrimitive::HeavyDegree(n) => {
+            ctx.mol
+                .neighbors(idx)
+                .filter(|(nb, _)| ctx.mol.atom(*nb).element.atomic_number() != 1)
+                .count()
+                == usize::from(*n)
+        }
     }
 }
 
@@ -622,17 +640,20 @@ fn eval_bond_query(
     order: BondOrder,
     a: AtomIdx,
     b: AtomIdx,
+    forward: bool,
     ctx: &EvalCtx<'_>,
 ) -> bool {
     match q {
-        BondQuery::Primitive(p) => eval_bond_primitive(p, order, a, b, ctx),
+        BondQuery::Primitive(p) => eval_bond_primitive(p, order, a, b, forward, ctx),
         BondQuery::And(x, y) => {
-            eval_bond_query(x, order, a, b, ctx) && eval_bond_query(y, order, a, b, ctx)
+            eval_bond_query(x, order, a, b, forward, ctx)
+                && eval_bond_query(y, order, a, b, forward, ctx)
         }
         BondQuery::Or(x, y) => {
-            eval_bond_query(x, order, a, b, ctx) || eval_bond_query(y, order, a, b, ctx)
+            eval_bond_query(x, order, a, b, forward, ctx)
+                || eval_bond_query(y, order, a, b, forward, ctx)
         }
-        BondQuery::Not(x) => !eval_bond_query(x, order, a, b, ctx),
+        BondQuery::Not(x) => !eval_bond_query(x, order, a, b, forward, ctx),
         // Unspecified SMARTS bond: single or aromatic (RDKit semantics).
         BondQuery::Any => matches!(
             order,
@@ -668,6 +689,7 @@ fn eval_bond_primitive(
     order: BondOrder,
     a: AtomIdx,
     b: AtomIdx,
+    forward: bool,
     ctx: &EvalCtx<'_>,
 ) -> bool {
     match p {
@@ -705,6 +727,10 @@ fn eval_bond_primitive(
         }
         BondPrimitive::Up => matches!(order, BondOrder::Up),
         BondPrimitive::Down => matches!(order, BondOrder::Down),
+        // Dative bond: the target's donor (its `atom1`) is the image of the
+        // query bond's atom1 for `->`, of its atom2 for `<-`.
+        BondPrimitive::DativeForward => order == BondOrder::Dative && forward,
+        BondPrimitive::DativeBackward => order == BondOrder::Dative && !forward,
     }
 }
 

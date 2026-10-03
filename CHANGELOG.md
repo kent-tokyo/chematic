@@ -10,6 +10,81 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- SMIRKS reactant templates are parsed as SMARTS (#734): query features
+  such as `[CD1:1]`, `[CX4:1]`, `[C;H3:1]`, `[C,N:1]`, `[!O:1]` and
+  `[$([OH]):1]` now match instead of failing with a SMILES parse error.
+  Every stereo-free template matches by its SMARTS reading, as in RDKit:
+  `[*:1]` is any atom (was carbon only), `[N+0:1]` and `[CH0:1]` keep their
+  zero charge / H count, and an implicit bond between aromatic atoms is
+  single or aromatic. Templates with `@`/`@@` or `/`/`\` keep the SMILES
+  reading for the stereo checks; a SMARTS-only template with stereo is
+  refused with a typed error rather than ignoring the stereo.
+- SMIRKS product templates follow RDKit's product semantics: query-only
+  features (`X`, `D`, `R`, `$()`, `,`/`!` alternatives) are dropped and the
+  element, aromaticity, isotope, chirality, H count (`H3` or `;H3`), charge
+  and atom map are applied. A mapped atom whose query names no single
+  element keeps the reactant's element; an unmapped one is a typed error.
+  `[#N;H<n>]` accepts any single-digit H count.
+- SMARTS `[H]`, `[2H]`, `[H+]` and `[H:1]` are hydrogen atoms, per
+  Daylight/OpenSMARTS and RDKit; `[*H]`, `[CH]`, `[H1]` and `[C;H]` keep
+  the H-count meaning.
+- A mapped atom takes a changed product element (#734): `[C:1]>>[N:1]` on
+  ethane gives `CN` instead of returning the reactant unchanged. As in
+  RDKit, the product element applies when it differs from the reactant
+  template's; a `[*:1]` product atom keeps the matched element.
+- Reaction products are checked with RDKit's sanitize rules instead of the
+  native valence model (#734): RDKit's valence table and isoelectronic
+  charge rule (Li/Na/K/Mg/Ca and transition metals unrestricted, `Cl+` like
+  S, `P-2` three), its clean-up spellings (neutral nitro `N(=O)=O`, azide
+  `N=N#N`, perchlorate `OCl(=O)(=O)=O` are valid), a dative bond counting
+  for its acceptor only, aromatic atoms only in rings, and aromatic products
+  must kekulize. Neutral four-bonded N (`N(=C)(C)C`), uncharged N-oxide
+  spellings (`N(=O)(C)C`) and ipso-substituted aromatic carbons are dropped,
+  as RDKit drops them. `[#7+:1]`-style charged
+  atomic-number atoms are supported, so `[#7:1]>>[#7+:1]C` on pyridine gives
+  aromatic `C[n+]1ccccc1`.
+- Implicit hydrogens on electron-poor charged atoms follow the isoelectronic
+  rule (#734): N2+ and C+ take valence 3, B- valence 4, so
+  `[N:1]>>[N+2:1]` on methylamine gives `C[NH2+2]` (was `C[NH4+2]`). Atoms
+  with four or more valence electrons (N+, O-, S+, C-...) are unchanged.
+- Mapped product atoms follow RDKit for hydrogens, charge and isotope
+  (#734): a template that does not spell the charge keeps the reactant's
+  (`[O-:1]>>[O:1]` leaves `C[O-]`, `[N:1]>>[N:1]C` on `C[NH3+]` gives
+  `C[NH2+]C`); an explicit `H0`/`+0` applies; an isotope in the template
+  applies, none keeps the reactant's. An atom whose template degree is
+  unchanged keeps its explicit H count (`[n:1]>>[n:1]` keeps pyrrole's
+  `[nH]`), otherwise its hydrogens follow RDKit's valence lists for every
+  element (`[C:1]>>[Se:1]` gives `C[SeH]`, `[C:1]>>[Si:1]` `C[SiH3]`).
+- An explicit `H0` on a product-only atom uses ordinary valence inference,
+  as RDKit does: `[C:1]>>[C:1][CH0]` on methane gives ethane, while `H0`
+  on a mapped reactant atom remains an explicit override.
+- A dative bond `->` in a SMIRKS or reaction SMARTS is no longer read as a
+  reaction arrow (#734); SMARTS agents (`>[O;X2]>`) are ignored instead of
+  failing the template, and `ReactionMatch::atom_map_positions` accepts a
+  SMIRKS whose product side has atomic-number primitives.
+- Reactants with explicit hydrogen atoms (`add_hydrogens`) give the same
+  products as their implicit-H forms (#734); the edited atoms keep explicit
+  H atoms. Templates that match `[H]` still see them.
+- SMARTS gains RDKit's `z`/`Z` (heteroatom / aliphatic heteroatom neighbour
+  count), `d` (non-hydrogen degree), ranges such as `[CD{1-2}]`, `[R{1-}]`,
+  `[+{1-2}]`, and dative bonds `->`/`<-` (#734). Bare `D`, `X` and `v` mean
+  `D1`, `X1`, `v1`; bare `x` and `h` mean "at least one". New
+  `AtomPrimitive` and `BondPrimitive` variants are added for these.
+- SMARTS parsing fixes found in review (#734): `C<C` and similar inputs are
+  parse errors instead of a panic; out-of-range range bounds
+  (`[+{120-130}]`, `[D{999-1}]`) match nothing instead of overflowing or
+  being misread; `[r0]` and `r` ranges treat acyclic atoms as ring size 0
+  and `k` ranges never match them, as RDKit does; counts and charges read
+  multiple digits (`[D12]`, `[+10]`; previously `[D12]` was `D1` and
+  isotope 2); `[Xe]` parses as xenon.
+- On 89 local reaction-rule cases (the issue's table, BioTransformer-style
+  phase I/II rules and the review's edge cases) `run_smirks` gives the same
+  product sets as RDKit 2026.03.6 after re-canonicalizing with RDKit. On the
+  83 pinned fixtures the checked Python gate matches graph, atom origins and
+  template maps on 77 (was 76); 3 chiral templates stay typed unsupported
+  and 3 invalid inputs are refused. These are source-build results, not
+  published-package evidence.
+
 ## [1.0.32] - 2026-10-03
 
 - Added atom-origin and product-template-map arrays to the opt-in checked

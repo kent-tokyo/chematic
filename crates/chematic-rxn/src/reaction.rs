@@ -51,6 +51,15 @@ pub enum RxnError {
     UnsupportedAtomicNumberPrimitive { primitive: String },
     /// Expanding aromatic/aliphatic alternatives would exceed the safety cap.
     AtomicNumberExpansionLimit { actual: usize, limit: usize },
+    /// A reactant template that is not SMILES-compatible also failed to parse
+    /// as SMARTS.
+    SmartsParse { part: String, source: String },
+    /// A SMARTS-only reactant template uses a feature the reaction engine
+    /// does not interpret (tetrahedral or double-bond stereo).
+    UnsupportedReactantTemplate { part: String, reason: &'static str },
+    /// A product template atom uses a SMARTS feature that cannot be applied
+    /// as a product specification.
+    UnsupportedProductPrimitive { primitive: String },
 }
 
 impl core::fmt::Display for RxnError {
@@ -76,6 +85,17 @@ impl core::fmt::Display for RxnError {
                 f,
                 "atomic-number SMARTS expansion exceeds limit {limit} (got {actual})"
             ),
+            Self::SmartsParse { part, source } => {
+                write!(f, "failed to parse reactant SMARTS '{part}': {source}")
+            }
+            Self::UnsupportedReactantTemplate { part, reason } => {
+                write!(f, "unsupported reactant template '{part}': {reason}")
+            }
+            Self::UnsupportedProductPrimitive { primitive } => write!(
+                f,
+                "unsupported product template atom '{primitive}': only element, isotope, \
+                 charge, chirality, H count (`H<n>` or `;H<n>`) and an atom map can be applied"
+            ),
         }
     }
 }
@@ -88,9 +108,10 @@ impl core::fmt::Display for RxnError {
 /// atom map is retained verbatim and the returned order is deterministic.
 ///
 /// The supported forms are `[#number]`, `[#number:map]`, and the common
-/// explicit-single-hydrogen forms `[#number;H1]` / `[#number;H1:map]`.
-/// More complex primitives must remain on the SMARTS query path and return an
-/// explicit error rather than silently changing semantics.
+/// explicit-hydrogen forms `[#number;H<n>]` / `[#number;H<n>:map]` (one digit).
+/// Any other reactant-side primitive (`[#6;X4:1]`) is left in place for the
+/// SMARTS template parser; on the product side it is an explicit error rather
+/// than a silent change of semantics.
 ///
 /// Reactant-side atoms (every part before the last `>`) are queries: each
 /// primitive expands to its aliphatic form and, where chemically valid, its
@@ -110,6 +131,247 @@ impl core::fmt::Display for RxnError {
 ///   `[N:1]>>[N:1]C` and `[n:1]>>[n:1]C`); otherwise it follows the case of
 ///   the reactant-side atom with that map, or is aliphatic when there is none.
 pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError> {
+    let s = &normalize_product_query_atoms(s)?;
+    expand_atomic_number_primitives_normalized(s)
+}
+
+/// Product-template bracket atoms are specifications, not queries. Following
+/// RDKit's reaction semantics (issue #734), a product bracket atom that is not
+/// valid SMILES is read as SMARTS and rewritten to the parts a product can
+/// apply: element (and aromaticity when spelled), isotope, chirality, H count,
+/// charge and atom map. Query-only features — `X`, `D`, `R`, `r`, `x`, `v`,
+/// `h`, `^`, recursive `$()`, and `,`/`!` alternatives — constrain nothing in
+/// a product and are dropped (`[OX2H1:2]` becomes `[OH1:2]`, `[C;H3:1]`
+/// becomes `[CH3:1]`, `[#6;X4:1]` becomes `[#6:1]`). A mapped atom whose
+/// query names no single element keeps the matched reactant atom's element
+/// (`[c,n:1]` becomes `[*:1]`); an unmapped one cannot be built and is an
+/// [`RxnError::UnsupportedProductPrimitive`] error rather than a dummy atom.
+/// Reactant and agent parts, and every SMILES-valid product atom, are
+/// returned unchanged.
+/// An atom-map label's number (`"01"` and `"1"` are the same map); a label
+/// that is not a number keeps a distinct sentinel.
+fn map_number(label: &str) -> u64 {
+    label.parse().unwrap_or(u64::MAX)
+}
+
+/// Byte offsets of the reaction-arrow `>` separators in `s`: top-level `>`
+/// characters outside bracket atoms that are not the head of a dative bond
+/// `->` (a `->` directly followed by `>` is a bond then the arrow).
+pub(crate) fn reaction_separators(s: &str) -> Vec<usize> {
+    let b = s.as_bytes();
+    let mut depth = 0usize;
+    let mut out: Vec<usize> = Vec::new();
+    for (i, &c) in b.iter().enumerate() {
+        match c {
+            b'[' => depth += 1,
+            b']' => depth = depth.saturating_sub(1),
+            b'>' if depth == 0 => {
+                let dative = i > 0
+                    && b[i - 1] == b'-'
+                    && b.get(i + 1) != Some(&b'>')
+                    && out.last() != Some(&(i - 1));
+                if !dative {
+                    out.push(i);
+                }
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// `reactants>agents>products` split at the first two arrow separators
+/// (see [`reaction_separators`]); `None` without two separators. The
+/// product part keeps any further `>` for the caller to reject.
+pub(crate) fn split_reaction_parts(s: &str) -> Option<[&str; 3]> {
+    let seps = reaction_separators(s);
+    let (&a, &b) = (seps.first()?, seps.get(1)?);
+    Some([&s[..a], &s[a + 1..b], &s[b + 1..]])
+}
+
+pub fn normalize_product_query_atoms(s: &str) -> Result<String, RxnError> {
+    // Product side = text after the last top-level `>` (none: nothing to do).
+    let Some(product_start) = reaction_separators(s).last().map(|i| i + 1) else {
+        return Ok(s.to_string());
+    };
+    let mut out = String::with_capacity(s.len());
+    out.push_str(&s[..product_start]);
+    let mut rest = &s[product_start..];
+    while let Some(open) = rest.find('[') {
+        out.push_str(&rest[..open]);
+        // The matching `]`, skipping brackets nested in a recursive `$()`.
+        let mut depth = 0usize;
+        let mut close = None;
+        for (i, b) in rest[open..].bytes().enumerate() {
+            match b {
+                b'[' => depth += 1,
+                b']' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        close = Some(open + i);
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+        let Some(close) = close else {
+            out.push_str(&rest[open..]);
+            return Ok(out);
+        };
+        let atom = &rest[open..=close];
+        rest = &rest[close + 1..];
+        out.push_str(&product_atom_spec(atom)?);
+    }
+    out.push_str(rest);
+    Ok(out)
+}
+
+/// One product bracket atom rewritten per [`normalize_product_query_atoms`].
+fn product_atom_spec(atom: &str) -> Result<String, RxnError> {
+    use chematic_smarts::{AtomPrimitive, AtomQuery};
+
+    fn conjuncts<'q>(q: &'q AtomQuery, out: &mut Vec<&'q AtomQuery>) {
+        match q {
+            AtomQuery::And(a, b) => {
+                conjuncts(a, out);
+                conjuncts(b, out);
+            }
+            other => out.push(other),
+        }
+    }
+    fn put<T: PartialEq>(slot: &mut Option<T>, value: T, conflict: &mut bool) {
+        if slot.as_ref().is_some_and(|v| *v != value) {
+            *conflict = true;
+        }
+        *slot = Some(value);
+    }
+
+    // SMILES-valid atoms are already specifications.
+    if parse_smiles(atom).is_ok() {
+        return Ok(atom.to_string());
+    }
+    let unsupported = || RxnError::UnsupportedProductPrimitive {
+        primitive: atom.to_string(),
+    };
+    let query = chematic_smarts::parse_smarts(atom).map_err(|_| unsupported())?;
+    if query.atoms.len() != 1 {
+        return Err(unsupported());
+    }
+    let map = query.atoms[0].atom_map;
+
+    let mut parts = Vec::new();
+    conjuncts(&query.atoms[0].query, &mut parts);
+    let mut symbol: Option<String> = None;
+    let mut atomic_number: Option<u8> = None;
+    let mut aromatic: Option<bool> = None;
+    let mut isotope: Option<u16> = None;
+    let mut chirality: Option<u8> = None;
+    let mut hcount: Option<u8> = None;
+    let mut charge: Option<i8> = None;
+    let mut conflict = false;
+    for part in parts {
+        // `,` / `!` alternatives are query-only.
+        let AtomQuery::Primitive(p) = part else {
+            continue;
+        };
+        match p {
+            AtomPrimitive::Symbol(sym) => put(&mut symbol, sym.clone(), &mut conflict),
+            AtomPrimitive::AtomicNum(n) => put(&mut atomic_number, *n, &mut conflict),
+            AtomPrimitive::Aromatic(a) => put(&mut aromatic, *a, &mut conflict),
+            AtomPrimitive::Isotope(m) => put(&mut isotope, *m, &mut conflict),
+            AtomPrimitive::Chirality(c) => put(&mut chirality, *c, &mut conflict),
+            AtomPrimitive::HCount(h) => put(&mut hcount, *h, &mut conflict),
+            AtomPrimitive::Charge(c) => put(&mut charge, *c, &mut conflict),
+            // X, D, R, r, x, v, h, ^, $(), *: query-only.
+            _ => {}
+        }
+    }
+    if conflict {
+        return Err(unsupported());
+    }
+    let symbol_absent = symbol.is_none();
+    let element = match (symbol, atomic_number) {
+        (Some(sym), _) => {
+            let e = chematic_core::Element::from_symbol(&sym).ok_or_else(unsupported)?;
+            if atomic_number.is_some_and(|n| n != e.atomic_number()) {
+                return Err(unsupported());
+            }
+            Some(e)
+        }
+        (None, Some(n)) => {
+            Some(chematic_core::Element::from_atomic_number(n).ok_or_else(unsupported)?)
+        }
+        (None, None) => None,
+    };
+
+    // An atomic-number atom with unspelled aromaticity and nothing but an H
+    // count, a charge and a map stays `[#n(;Hh)(;±c)(:m)]`, so the
+    // atomic-number expansion picks its spelling from the reactant side (#679).
+    if let Some(e) = element
+        && symbol_absent
+        && aromatic.is_none()
+        && isotope.is_none()
+        && chirality.is_none()
+        && hcount.is_none_or(|h| h <= 9)
+        && charge.is_none_or(|c| (-9..=9).contains(&c))
+    {
+        let mut spec = format!("[#{}", e.atomic_number());
+        if let Some(h) = hcount {
+            spec.push_str(&format!(";H{h}"));
+        }
+        match charge {
+            Some(c) if c >= 0 => spec.push_str(&format!(";+{c}")),
+            Some(c) => spec.push_str(&format!(";-{}", -i16::from(c))),
+            None => {}
+        }
+        if let Some(m) = map {
+            spec.push_str(&format!(":{m}"));
+        }
+        spec.push(']');
+        return Ok(spec);
+    }
+
+    let mut spec = String::from("[");
+    if let Some(m) = isotope {
+        spec.push_str(&m.to_string());
+    }
+    match element {
+        Some(e) if aromatic == Some(true) => spec.push_str(&e.symbol().to_ascii_lowercase()),
+        Some(e) => spec.push_str(e.symbol()),
+        // Mapped: the reactant atom's element is kept (RDKit semantics).
+        None if map.is_some()
+            && isotope.is_none()
+            && chirality.is_none()
+            && hcount.is_none()
+            && charge.is_none() =>
+        {
+            spec.push('*')
+        }
+        None => return Err(unsupported()),
+    }
+    match chirality {
+        Some(1) => spec.push('@'),
+        Some(2) => spec.push_str("@@"),
+        _ => {}
+    }
+    if let Some(h) = hcount {
+        spec.push_str(&format!("H{h}"));
+    }
+    match charge {
+        Some(0) => spec.push_str("+0"),
+        Some(c) if c > 0 => spec.push_str(&format!("+{c}")),
+        Some(c) => spec.push_str(&format!("-{}", -i16::from(c))),
+        None => {}
+    }
+    if let Some(m) = map {
+        spec.push_str(&format!(":{m}"));
+    }
+    spec.push(']');
+    Ok(spec)
+}
+
+fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, RxnError> {
     const MAX_VARIANTS: usize = 256;
     const ORGANIC_SUBSET: [&str; 10] = ["B", "C", "N", "O", "P", "S", "F", "Cl", "Br", "I"];
 
@@ -117,15 +379,7 @@ pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError>
     // product side when there is at least one `>`.
     let bytes = s.as_bytes();
     let mut part_starts = vec![0usize];
-    let mut depth = 0usize;
-    for (i, &b) in bytes.iter().enumerate() {
-        match b {
-            b'[' => depth += 1,
-            b']' => depth = depth.saturating_sub(1),
-            b'>' if depth == 0 => part_starts.push(i + 1),
-            _ => {}
-        }
-    }
+    part_starts.extend(reaction_separators(s).into_iter().map(|i| i + 1));
     let has_products = part_starts.len() > 1;
     let product_start = *part_starts.last().unwrap_or(&0);
     let reactant_text = if has_products {
@@ -145,7 +399,8 @@ pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError>
             };
             let inner = &rest[open + 1..open + 1 + close_rel];
             rest = &rest[open + 1 + close_rel + 1..];
-            if !inner.ends_with(map) || !inner[..inner.len() - map.len()].ends_with(':') {
+            // Atom maps compare as numbers (`:01` is map 1).
+            if inner.rsplit_once(':').map(|(_, m)| map_number(m)) != Some(map_number(map)) {
                 continue;
             }
             let body = inner.trim_start_matches(|c: char| c.is_ascii_digit());
@@ -175,8 +430,9 @@ pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError>
     let mut i = 0;
     while i < bytes.len() {
         if bytes[i] != b'[' {
-            text.push(bytes[i] as char);
-            i += 1;
+            let next = s[i..].find('[').map_or(s.len(), |n| i + n);
+            text.push_str(&s[i..next]);
+            i = next;
             continue;
         }
         let start = i;
@@ -199,26 +455,61 @@ pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError>
             .unwrap_or(inner.len());
         let number_text = &inner[1..number_end];
         let suffix = &inner[number_end..];
-        let (hydrogen_count, map_suffix) = if suffix.is_empty() {
-            (None, "")
-        } else if suffix.starts_with(':')
-            && suffix.len() > 1
-            && suffix[1..].bytes().all(|b| b.is_ascii_digit())
-        {
-            (None, suffix)
-        } else if let Some(map) = suffix.strip_prefix(";H1:")
-            && !map.is_empty()
-            && map.bytes().all(|b| b.is_ascii_digit())
-        {
-            (Some(1_u8), &suffix[3..])
-        } else if suffix == ";H1" {
-            (Some(1_u8), "")
-        } else {
-            (None, "")
+        // Suffix: optional H count (`H`, `H2`) and charge (`+`, `++`, `-2`),
+        // each optionally `;`-separated, then an optional `:map`.
+        let (body, map_suffix) = match suffix.rfind(':') {
+            Some(p)
+                if p + 1 < suffix.len() && suffix[p + 1..].bytes().all(|b| b.is_ascii_digit()) =>
+            {
+                (&suffix[..p], &suffix[p..])
+            }
+            _ => (suffix, ""),
         };
-        if number_text.is_empty()
-            || (hydrogen_count.is_none() && map_suffix.is_empty() && !suffix.is_empty())
-        {
+        let mut hydrogen_count: Option<u8> = None;
+        let mut charge: Option<i8> = None;
+        let mut simple_suffix = true;
+        let mut rest = body.as_bytes();
+        while !rest.is_empty() {
+            if rest[0] == b';' {
+                rest = &rest[1..];
+                continue;
+            }
+            match rest[0] {
+                b'H' if hydrogen_count.is_none() => {
+                    let digit = rest.get(1).filter(|b| b.is_ascii_digit());
+                    hydrogen_count = Some(digit.map_or(1, |d| d - b'0'));
+                    rest = &rest[1 + usize::from(digit.is_some())..];
+                }
+                sign @ (b'+' | b'-') if charge.is_none() => {
+                    let mut n: i8 = 1;
+                    let mut used = 1;
+                    if let Some(d) = rest.get(1).filter(|b| b.is_ascii_digit()) {
+                        n = (d - b'0') as i8;
+                        used = 2;
+                    } else {
+                        while rest.get(used) == Some(&sign) && n < 9 {
+                            n += 1;
+                            used += 1;
+                        }
+                    }
+                    charge = Some(if sign == b'+' { n } else { -n });
+                    rest = &rest[used..];
+                }
+                _ => {
+                    simple_suffix = false;
+                    break;
+                }
+            }
+        }
+        let on_product_side = has_products && start >= product_start;
+        if number_text.is_empty() || !simple_suffix {
+            if !on_product_side && !number_text.is_empty() {
+                // A compound reactant-side primitive (`[#6;X4:1]`) is a query
+                // the SMARTS parser handles; leave it for the template parser.
+                text.push_str(primitive);
+                i = end + 1;
+                continue;
+            }
             return Err(RxnError::UnsupportedAtomicNumberPrimitive {
                 primitive: primitive.to_string(),
             });
@@ -235,7 +526,19 @@ pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError>
             });
         };
         let symbol = element.symbol();
-        let hydrogen = hydrogen_count.map_or("", |_| "H");
+        let mut hydrogen = match hydrogen_count {
+            None => String::new(),
+            Some(1) => "H".to_string(),
+            Some(n) => format!("H{n}"),
+        };
+        match charge {
+            Some(0) => hydrogen.push_str("+0"),
+            Some(1) => hydrogen.push('+'),
+            Some(-1) => hydrogen.push('-'),
+            Some(c) if c > 0 => hydrogen.push_str(&format!("+{c}")),
+            Some(c) => hydrogen.push_str(&format!("-{}", -i16::from(c))),
+            None => {}
+        }
         let can_be_aromatic = matches!(atomic_number, 5 | 6 | 7 | 8 | 15 | 16);
         let aliphatic = format!("[{symbol}{hydrogen}{map_suffix}]");
         let aromatic = format!(
@@ -244,8 +547,10 @@ pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError>
             hydrogen,
             map_suffix
         );
-        let on_product_side = has_products && start >= product_start;
-        let map = map_suffix.strip_prefix(':');
+        let map_key = map_suffix
+            .strip_prefix(':')
+            .map(|m| map_number(m).to_string());
+        let map = map_key.as_deref();
 
         let options: Vec<String> = if !on_product_side {
             if can_be_aromatic {
@@ -267,7 +572,7 @@ pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError>
                     _ => vec![aliphatic],
                 }
             }
-        } else if hydrogen_count.is_none() && ORGANIC_SUBSET.contains(&symbol) {
+        } else if hydrogen_count.is_none() && charge.is_none() && ORGANIC_SUBSET.contains(&symbol) {
             vec![symbol.to_string()]
         } else {
             vec![aliphatic]
@@ -365,12 +670,10 @@ pub fn parse_reaction_with_limits(
             limit: limits.max_input_bytes,
         });
     }
-    // splitn(3, '>') yields 3 parts when at least two `>` are present;
-    // fewer parts means the reaction arrow is missing.
-    let parts: Vec<&str> = s.splitn(3, '>').collect();
-    if parts.len() < 3 {
+    // Three parts need two arrow separators (a dative `->` is not one).
+    let Some(parts) = split_reaction_parts(s) else {
         return Err(RxnError::MissingArrow);
-    }
+    };
 
     let parse_part = |side: &'static str, s: &str| -> Result<Vec<Molecule>, RxnError> {
         if s.is_empty() {
@@ -566,6 +869,24 @@ mod tests {
     use chematic_core::AtomIdx;
 
     #[test]
+    fn dative_bonds_are_not_reaction_arrows(/* issue #734 bug check */) {
+        assert_eq!(reaction_separators("[N:1]->[Pt:2]>>[N:1]"), vec![13, 14]);
+        assert_eq!(reaction_separators("[Pt]<-N>[Pd]>N->[Pt]"), vec![7, 12]);
+        // `->` directly followed by `>` is a bond end then the arrow.
+        assert_eq!(reaction_separators("C->>C"), vec![2, 3]);
+        assert_eq!(
+            split_reaction_parts("N->[Pt]>>N.[Pt]"),
+            Some(["N->[Pt]", "", "N.[Pt]"])
+        );
+        let rxn = parse_reaction("N->[Pt]>>N.[Pt]").unwrap();
+        assert_eq!(rxn.reactants.len(), 1);
+        assert_eq!(rxn.products.len(), 2);
+        let query = crate::query::parse_reaction_smarts("[N:1]->[Pt:2]>>[N:1].[Pt:2]").unwrap();
+        assert_eq!(query.reactant_patterns.len(), 1);
+        assert_eq!(query.product_patterns.len(), 2);
+    }
+
+    #[test]
     fn test_simple_reaction() {
         let rxn = parse_reaction("[Na+].[Cl-]>>[Na+].[Cl-]").unwrap();
         assert_eq!(rxn.reactants.len(), 2);
@@ -745,11 +1066,72 @@ mod tests {
     }
 
     #[test]
-    fn rejects_compound_atomic_number_primitives() {
+    fn expands_multi_hydrogen_constraint() {
+        // `;H<n>` with any single digit is a supported H count now (#734).
+        assert_eq!(
+            expand_atomic_number_primitives("[#7;H2:1]").unwrap(),
+            vec!["[NH2:1]".to_string(), "[nH2:1]".to_string()],
+        );
+    }
+
+    #[test]
+    fn leaves_compound_reactant_primitive_for_smarts_parser() {
+        // A non-H compound primitive on the reactant side is passed through
+        // verbatim for the SMARTS template parser (#734)...
+        assert_eq!(
+            expand_atomic_number_primitives("[#7;X3:1]>>[N:1]").unwrap(),
+            vec!["[#7;X3:1]>>[N:1]".to_string()],
+        );
+        // ...and on the product side its query-only part is dropped, as in
+        // RDKit: a product atom is a specification, not a query.
+        assert_eq!(
+            expand_atomic_number_primitives("[#7:1]>>[#7;X3:1]").unwrap(),
+            vec!["[N:1]>>[N:1]".to_string(), "[n:1]>>[n:1]".to_string()],
+        );
+        // An unmapped product atom naming no single element cannot be built.
         assert!(matches!(
-            expand_atomic_number_primitives("[#7;H2]>>[#7;H2]"),
-            Err(RxnError::UnsupportedAtomicNumberPrimitive { .. })
+            expand_atomic_number_primitives("[#7:1]>>[#7:1][#6,#7]"),
+            Err(RxnError::UnsupportedProductPrimitive { .. })
         ));
+    }
+
+    #[test]
+    fn product_query_atoms_reduce_to_specifications() {
+        // Issue #734: RDKit-style product templates. Query-only features are
+        // dropped; element, aromaticity, isotope, chirality, H count, charge
+        // and map are kept.
+        for (smirks, expected) in [
+            (
+                "[c:1][OX2:2][CH3:3]>>[c:1][OX2H1:2]",
+                "[c:1][OX2:2][CH3:3]>>[c:1][OH1:2]",
+            ),
+            ("[C:1]>>[C;H3:1]", "[C:1]>>[CH3:1]"),
+            ("[C:1]>>[CX4;!R:1]", "[C:1]>>[C:1]"),
+            ("[N:1]>>[N+;H3:1]", "[N:1]>>[NH3+1:1]"),
+            ("[C:1]>>[13C@;X4:1]", "[C:1]>>[13C@:1]"),
+            ("[O:1]>>[O:1][CX4]", "[O:1]>>[O:1][C]"),
+            ("[#6;X4:1]>>[#6;X4:1]O", "[#6;X4:1]>>[#6:1]O"),
+            // A mapped atom without a single element keeps the reactant's.
+            ("[C:1]>>[C,N:1]", "[C:1]>>[*:1]"),
+            ("[C:1]>>[$(C):1]", "[C:1]>>[*:1]"),
+            // Reactant side and SMILES-valid product atoms are untouched.
+            ("[CX4:1][OH]>>[C:1]=O", "[CX4:1][OH]>>[C:1]=O"),
+        ] {
+            assert_eq!(
+                normalize_product_query_atoms(smirks).unwrap(),
+                expected,
+                "{smirks}"
+            );
+        }
+        for smirks in ["[O:1]>>[O:1][C,N]", "[O:1]>>[O:1][$(C)]", "[C:1]>>[C;N:1]"] {
+            assert!(
+                matches!(
+                    normalize_product_query_atoms(smirks),
+                    Err(RxnError::UnsupportedProductPrimitive { .. })
+                ),
+                "{smirks}"
+            );
+        }
     }
 
     #[test]

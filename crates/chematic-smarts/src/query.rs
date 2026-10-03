@@ -56,6 +56,15 @@ pub enum AtomPrimitive {
     ///
     /// Whether this constraint is enforced depends on `MatchConfig::use_chirality`.
     Chirality(u8),
+    /// `[zN]` (RDKit extension) — number of heteroatom neighbours (any element
+    /// other than C and H). Bare `[z]` means at least one.
+    HeteroNeighborCount(u8),
+    /// `[ZN]` (RDKit extension) — number of aliphatic heteroatom neighbours.
+    /// Bare `[Z]` means at least one.
+    AliphaticHeteroNeighborCount(u8),
+    /// `[dN]` (RDKit extension) — non-hydrogen degree: neighbours that are not
+    /// hydrogen atoms. Bare `[d]` means `[d1]`.
+    HeavyDegree(u8),
 }
 
 /// Logical combination of atom primitives.
@@ -89,6 +98,10 @@ pub enum BondPrimitive {
     Up,
     /// `\` trans-like geometric direction (for E/Z double bonds).
     Down,
+    /// `->` dative bond from the first query atom (donor) to the second.
+    DativeForward,
+    /// `<-` dative bond from the second query atom (donor) to the first.
+    DativeBackward,
 }
 
 /// Logical combination of bond primitives.
