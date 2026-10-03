@@ -64,8 +64,9 @@ pub use stoichiometry::{
 pub use transform::{
     PreparedReaction, ReactantAtom, ReactionCompatibilityUnsupported, ReactionMatch,
     ReactionMatchContext, ReactionTransformDiagnostics, ReactionTransformLimits,
-    ReactionTransformReport, ReactionVariantDiagnostics, TracedProduct, TransformError,
-    apply_reaction_match, apply_reaction_match_traced, find_reaction_matches,
-    find_reaction_matches_with_limits, run_reactants, run_reactants_strict,
-    run_reactants_strict_with_limits, run_reactants_with_diagnostics, run_reactants_with_limits,
+    ReactionTransformReport, ReactionVariantDiagnostics, TracedProduct,
+    TracedReactionTransformReport, TransformError, apply_reaction_match,
+    apply_reaction_match_traced, find_reaction_matches, find_reaction_matches_with_limits,
+    run_reactants, run_reactants_strict, run_reactants_strict_with_limits,
+    run_reactants_with_diagnostics, run_reactants_with_limits,
 };

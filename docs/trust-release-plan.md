@@ -28,8 +28,13 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
   判定保留が残ります。出力監査は完了しましたが、RDKit完全互換ではありません。
 - 公開v1.0.30の速度証拠は、出力一致と区間条件を満たすPython 20操作など、
   記録された環境・操作に限ります。3D/MMFF94はExperimentalです。
-- 反応は従来の57件が一致しましたが、拡張83件には差分が残ります。
-  v1.0.31の公開artifactで修正を確認してから昇格します。
+- 反応83件はchecked sourceで76件が生成物グラフ・原子由来・テンプレートマップの
+  全軸で一致。3件は型付き非対応、1件は理由付き拒否、3件は双方無効です。
+  Pythonのローカルsource拡張でも同じ内訳ですが、CI wheelと公開artifactは未確認です。
+- SMARTSのopt-in source-wheelは309,982/310,000一致し、残り18件を型付きで
+  非対応とします。公開v1.0.30の200件の差分を置き換える測定ではありません。
+- 3Dは公開v1.0.31 macOSで265/265の構造・立体・clash判定を通過しましたが、
+  収束は100/265です。Linuxでの2件の立体失敗と独立conformer品質が残ります。
 
 版・コーパス・残差は[検証報告](validation.md)と
 [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)に固定します。
@@ -67,8 +72,10 @@ atom-order permutation、full/pseudo atrop、負電荷共鳴系を回帰に含�
 
 ### 3. #635 SMARTS差分を意味単位で解く
 
-状態: 固定31万セル中200セルに差が残ります。主に`[Rn]`/`[kn]`の環数定義と
-配位構造の扱いです。ネイティブSSSRを暗黙に変更せず、互換設定を分けます。
+状態: 公開v1.0.30は固定31万セル中200セルのmatch-set差分が残ります。
+開発中のopt-in source-wheelは309,982件一致、18件を型付き非対応とし、
+wrong-confidentな結果は0件です。これは公開packageでの合格ではありません。
+ネイティブSSSRを暗黙に変更せず、互換設定を分けます。
 
 差分を原子primitive、結合、芳香族性、再帰SMARTS、ring、stereo、
 logical operatorへ分割します。各修正は小さなtruth tableと、RDKit版・設定を固定した
@@ -76,8 +83,11 @@ logical operatorへ分割します。各修正は小さなtruth tableと、RDKit
 
 ### 4. A6 MMFF94の正しさを閉じる
 
-状態: 同一座標でのenergyと各termのgateは、source候補`13d70a2e`で満たしました
-（`benchmarks/2026-09-25-mmff94-per-term-energy.md`）。それ以外のgateは未完了です。
+状態: 公開v1.0.31 macOSの265件ではgeometry/stereo/clashが全件通過し、
+同一座標の比較可能な262件は総エネルギーが1 kcal/mol以内です。ただし
+収束は100件のみです。Linux/Python 3.9では公開版とsource版の両方で53/246行が
+立体エラーとなり、原因調査中です。同一座標の各termの旧source測定だけで
+現在の公開版のMMFF94同等性は主張しません。
 
 速度だけで完了にしません。次を別gateとして扱います。
 

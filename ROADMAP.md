@@ -13,7 +13,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 |---|---|---|
 | P0.1 outputs | Python, npm and pinned Rust artifacts reran 10,000 chemistry inputs, 310,000 SMARTS cells and 57 legacy reactions. Python/Rust covered 63 operation outputs; only HBA and its bundle changed from v1.0.29. Published HBA: 5,000/5,000 vs pinned RDKit 2026.03.6. | **Audit complete, parity not complete:** 200 SMARTS failures, five typed CIP abstentions and four npm-unexposed operations remain. See the [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
 | P0.2 speed | The published Python 63-operation matrix has 20 paired blocks; 20 operations pass exact-output and confidence-interval gates on one host. Published npm/WASM Morgan also has Node and Chromium lanes; Ubuntu 24.04 Chromium, Firefox and WebKit each have 250/250 bit-exact direct/prepared rows and favorable 20-block speed intervals (smallest lower bound 1.63×). | Equal-work perception and library-memory boundaries, other operations/bindings and more corpora. Process RSS is not library allocation; changed HBA output cannot earn an equivalent-output speed win. |
-| P1 reactions | Original 57 fixtures match. Published v1.0.30 had 73/83 graph+origin+template-map matches. The checked v1.0.31-source profile has 76 exact on all three axes, three typed unsupported, one diagnosed refusal and three jointly invalid rows. [Post-merge source and binding gates](benchmarks/2026-10-03-reaction-83-postmerge-binding-gate.md) confirm the same graph/status counts in Linux/macOS CI source wheels and 3/3 new-product-map supplement matches in Rust source. | Rebuild/publish and rerun Rust/Python/npm artifact gates. Python/WASM still do not expose product atom origins or template maps. Typed refusal and invalid input are not exact matches; no general SMIRKS parity claim. |
+| P1 reactions | Original 57 fixtures match. Published v1.0.30 had 73/83 graph+origin+template-map matches. The checked v1.0.31-source profile has 76 exact on all three axes, three typed unsupported, one diagnosed refusal and three jointly invalid rows. [Post-merge source and binding gates](benchmarks/2026-10-03-reaction-83-postmerge-binding-gate.md) confirm graph/status counts in Linux/macOS CI source wheels and 3/3 new-product-map supplement matches in Rust source. A [local Python source extension](benchmarks/2026-10-03-reaction-83-python-provenance-source.md) now exposes origins/maps and reproduces the 76/3/1/3 accounting on all three axes. | Verify the new Python provenance gate on Linux/macOS release-profile source wheels and WASM metadata in Node CI. Then rebuild/publish and rerun Rust/Python/npm artifact gates. Typed refusal and invalid input are not exact matches; no general SMIRKS parity claim. |
 | P1 SMARTS | Published v1.0.30 has 200 differing **match-set** cells / 310,000, but only 43 hit/no-hit differences. The opt-in Python source profile passed [local and Linux/macOS source-wheel CI](benchmarks/2026-10-03-python-source-smarts-optin-310k.md): 309,982 exact match sets, 18 typed unsupported and zero wrong-confident cells; 183 original residuals and all 43 Boolean errors are corrected. The native matcher is unchanged. The [ring-family diagnosis](benchmarks/2026-10-03-smarts-ring-family-diagnostic.md) finds three source families matching the original RDKit ring sets and three differing; RDKit ring sets themselves varied under atom renumbering on five of six structures. | Rerun a deliberately versioned **published** profile and independent corpus. Keep all 18 typed refusals until an order-independent supported contract or runtime safety criterion is proved. Source improvements and typed refusals are not exact parity. |
 | P2 A6 quality | Published v1.0.31: [265/265 geometry/stereo/clash on macOS](benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md), 100/265 converged; 262/262 comparable total energies within 1 kcal/mol. The published [typing census](benchmarks/2026-10-03-a6-published-v1031-typing-census.md) has 2,908 heavy-atom differences. Local and Linux/macOS CI [source-wheel type gates](benchmarks/2026-10-03-a6-source-wheel-mmff94-typing.md) have 451 heavy and eight H differences. The [published 400-iteration diagnosis](benchmarks/2026-10-03-a6-v1031-nonconvergence-classification.md) separates 97 cap hits from four early stops. [Same-host termination diagnostics](benchmarks/2026-10-03-a6-source-mmff94-termination.md): macOS source/published 265/265 success; Linux/Python 3.9 source/published 263/265, with identical typed stereo failures at rows 53 and 246. Published macOS/Python 3.9 succeeds on both rows. | Linux failures are pre-existing on that host, not an introduced source regression. Both rows cross from satisfied stereo before minimization to one violated center after it; diagnose the post-minimization repair and platform/toolchain boundary under [#739](https://github.com/kent-tokyo/chematic/issues/739). Then rerun independent geometry/stereo/clash, per-term energy, missing torsions and conformer quality on published and candidate artifacts. No 3D speed claim yet. |
 
@@ -27,64 +27,30 @@ have separate gates.
 
 ## Priority order and acceptance gates
 
-1. **P1 / A4 — Close the reaction 83-row residuals by outcome, not by forcing
-   83 exact matches.** First reconcile the ten named rows against product graph,
-   distinct-product multiplicity, atom origins and template-map labels; retain
-   raw embedding counts as a separate diagnostic. Adjudicate the one map-only
-   row and the symmetric-origin row before changing code. Convert genuine
-   out-of-contract semantics to typed unsupported; fix supported-domain graph
-   or provenance defects with row-specific regression tests. Then rerun the
-   checked-source profile on rebuilt published Rust/Python/npm artifacts,
-   including the npm E/Z JSON path. The three new-product-map supplement
-   cases pass in latest Rust source, but remain to be rerun on a published
-   checked-profile crate; Linux/macOS source-wheel graph/status gates pass.
-   **Exit:** all 83 rows accounted for on each exposed axis, zero wrong
-   confident supported-domain results, typed reasons for refusals, and no
-   regression in the original 57. The three jointly invalid rows remain
-   classified as such; reaction yield/selectivity is outside this gate.
-2. **P1 / A4 — Reduce SMARTS residuals without broadening silent support.**
-   The published baseline remains 200 differing match sets / 43 Booleans.
-   Current opt-in source profiling and local Python wheel correct 183 match
-   sets and all 43 Boolean errors without a wrong-confident cell. Linux/macOS
-   source-wheel CI gates passed. The Fe-containing residual was a
-   narrowly verified hypervalent carbanion-to-Fe single bond that RDKit
-   sanitizes to dative before ring perception. The source fix does not provide
-   general organometallic sanitization. Independently adjudicate the 18
-   charged-polycycle refusals by ring-set identity (not just count). The
-   six-row diagnosis shows RDKit atom-order dependence and three source
-   ring-family differences; define a defensible order-independent contract
-   before relaxing the guard. Document the supported boundary; preserve
-   native SSSR. **Exit:** rerun the full pinned 310,000-cell matrix on affected
-   published bindings with row-level match sets, Booleans and refusal counts;
-   zero new wrong-confident cells. The 18 source-only refusals do not count
-   as exact parity.
-3. **P2 / A6 — Gate 3D quality before speed.** The published v1.0.31
-   geometry/stereo/clash and same-coordinate total-energy checks are done,
-   but full MMFF equivalence is open. Investigate the largest typing bucket
-   first (1,322 RDKit type-37/CheMatic type-2 carbons across 317 molecules)
-   through MMFF-specific aromatic-ring acceptance and bond flags. The
-   compact-ring source candidate and Linux/macOS Python source wheels reduce that
-   bucket to 16, but published artifacts and complex-ring boundaries are not
-   yet cleared. A fixed-265 **dev-profile** source-wheel rerun exposes three
-   typed failures (rows 240, 246, 248) versus 265/265 published success;
-   optimized CI wheels instead show 265/265 success on macOS and 263/265
-   on Linux (different failing rows). Same-host release-wheel pairs show
-   macOS 265/265 success and Linux/Python 3.9 263/265 success for both source
-   and published v1.0.31. Linux rows 53/246 are pre-existing typed stereo
-   failures on that host; resolve the platform-dependent 3D behavior before
-   a cross-platform quality claim. Other heavy types and
-   22 typing refusal/error rows also remain. The published exploratory
-   400-iteration run leaves 97 cap hits and four early stops without a
-   recorded reason. The new source API distinguishes gradient convergence,
-   iteration cap and constraint-rejected fallback; its four corresponding
-   rows instead hit the 200 cap and converge at 400, so it cannot diagnose
-   the published four retrospectively. Do not silently raise the shipped
-   limit without independent
-   quality and runtime checks. Bound per-term energy/gradient differences,
-   timeout/cancellation, parameter/charge coverage and independent conformer
-   quality on matched seeds and a held-out cohort. **Exit:** predeclared
-   tolerances and complete outcome accounting on published artifacts, with
-   typed unsupported for unhandled chemistry. No 3D speed claim before exit.
+1. **P1 / A4 — Close the reaction 83-row gate by classified outcome.**
+   Current checked source has 76 exact graph/origin/map rows, three typed
+   unsupported, one diagnosed refusal and three jointly invalid. The local
+   Python extension reproduces this; Linux/macOS release-wheel and WASM
+   metadata CI are pending. Next, rerun the checked profile on published
+   Rust/Python/npm artifacts, including npm E/Z JSON and the three
+   new-product-map cases. **Exit:** every row classified on all three axes,
+   zero wrong-confident supported results and no regression in the original
+   57. Refusals and invalid rows are not counted as matches.
+2. **P1 / A4 — Publish a bounded SMARTS compatibility profile.** The
+   published v1.0.30 baseline has 200 match-set and 43 Boolean differences.
+   Source-wheel opt-in checks have 309,982/310,000 exact sets and 18 typed
+   unsupported cells, with no wrong-confident result. Adjudicate the 18
+   charged-polycycle cases under an order-independent ring contract; preserve
+   native SSSR. **Exit:** a full pinned published-binding rerun and an
+   independent corpus with row-level exact/refused/failed accounting.
+3. **P2 / A6 — Gate 3D quality before speed.** Published v1.0.31 macOS
+   passes 265/265 geometry/stereo/clash but converges on only 100/265. The
+   source typing improvement is not published, and same-host Linux wheels
+   have two pre-existing typed stereo failures (rows 53/246; [#739](https://github.com/kent-tokyo/chematic/issues/739)).
+   **Exit:** resolve the platform boundary and separately bound atom typing,
+   per-term energy, convergence, timeout/cancellation, geometry/stereo/clash
+   and independent conformer quality on published and candidate artifacts.
+   No 3D speed claim before this exit.
 4. **P0.2 — Complete paired speed evidence after quality gates.** Extend
    equivalent-output, alternating-order, ≥20-block measurements beyond the
    finished lanes. Separate parse, perception, prepared/reused calls and memory

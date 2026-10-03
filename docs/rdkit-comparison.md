@@ -21,8 +21,8 @@ JSON fixes still need a package-output rerun.
 | RDKit-compatible HBA | Published v1.0.30 macOS arm64 wheel: 5,000/5,000 exposed ChEMBL rows match RDKit; v1.0.29 matched 3,641/5,000. | Other descriptors or platforms. |
 | Python timing | Of 63 operations, 20 meet exact-output and favorable paired-interval gates in 20 alternating blocks on one host. | A universal speed lead; output-mismatched operations are not wins. |
 | Browser Morgan | Published v1.0.30 npm/WASM on Ubuntu 24.04: Chromium, Firefox and WebKit each match 250/250 direct and prepared rows; 20-block speed intervals favor chematic on the measured lane. | Other browser hosts, operations or library-only memory. |
-| Reactions | Published v1.0.30 Rust graph/origin/template-map identity matches RDKit on 73/83 stratified rows, plus one map-only difference. | General SMIRKS parity, yield or selectivity prediction. |
-| 3D/MMFF94 | Experimental; a historical v1.0.26 wheel packet retains 265 quality-scored inputs. | General conformer quality or an MMFF94 speed win. |
+| Reactions | Published v1.0.30 Rust graph/origin/template-map identity matches RDKit on 73/83 stratified rows. An unpublished checked-source Python gate has 76 all-axis matches, three typed unsupported, one diagnosed refusal and three invalid in both. | General SMIRKS parity, yield or selectivity prediction; source results are not published-package results. |
+| 3D/MMFF94 | Experimental. Published v1.0.31 macOS: 265/265 geometry/stereo/clash, 100/265 converged and 262 comparable same-coordinate energies within 1 kcal/mol. | Cross-platform or independent conformer quality; an MMFF94 speed win. |
 
 The [validation report](validation.md) links the exact artifacts, corpus
 hashes, failure counts and operation definitions. The [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)

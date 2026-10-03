@@ -307,12 +307,20 @@ pub fn run_reactants(smirks: &str, reactants_smiles: &str) -> Result<String, JsV
 }
 
 #[derive(Serialize)]
+struct ReactantAtomJson {
+    reactant: usize,
+    atom: u32,
+}
+
+#[derive(Serialize)]
 struct CheckedReactionResponse {
     profile: &'static str,
     status: &'static str,
     reason: Option<&'static str>,
     detail: Option<String>,
     products: Vec<Vec<String>>,
+    product_atom_sources: Vec<Vec<Vec<Option<ReactantAtomJson>>>>,
+    product_template_maps: Vec<Vec<Vec<Option<u16>>>>,
     accepted_matches: usize,
     applied_products: usize,
     valence_rejected_matches: usize,
@@ -332,6 +340,8 @@ impl CheckedReactionResponse {
             reason: Some(reason),
             detail: Some(detail.into()),
             products: Vec::new(),
+            product_atom_sources: Vec::new(),
+            product_template_maps: Vec::new(),
             accepted_matches: 0,
             applied_products: 0,
             valence_rejected_matches: 0,
@@ -413,7 +423,7 @@ fn prepare_checked_reaction(
 
 fn checked_reaction_response(
     profile: &'static str,
-    report: chematic_rxn::ReactionTransformReport,
+    report: chematic_rxn::TracedReactionTransformReport,
 ) -> CheckedReactionResponse {
     let diagnostics = report.diagnostics;
     let mut result = CheckedReactionResponse {
@@ -438,6 +448,8 @@ fn checked_reaction_response(
         },
         detail: None,
         products: Vec::new(),
+        product_atom_sources: Vec::new(),
+        product_template_maps: Vec::new(),
         accepted_matches: diagnostics.accepted_matches,
         applied_products: diagnostics.applied_products,
         valence_rejected_matches: diagnostics.valence_rejected_matches,
@@ -446,18 +458,46 @@ fn checked_reaction_response(
     if report.products.len() > WASM_MAX_BATCH_ITEMS
         || report.products.iter().any(|set| {
             set.len() > WASM_MAX_BATCH_ITEMS
-                || set.iter().any(|mol| mol.atom_count() > WASM_MAX_ATOMS)
+                || set
+                    .iter()
+                    .any(|product| product.molecule.atom_count() > WASM_MAX_ATOMS)
         })
     {
         result.status = "typed_refusal";
         result.reason = Some("result_too_large");
         result.detail = Some("reaction products exceed WASM limits".to_string());
     } else {
-        result.products = report
-            .products
-            .iter()
-            .map(|set| set.iter().map(chematic_smiles::canonical_smiles).collect())
-            .collect();
+        for set in report.products {
+            let mut smiles_set = Vec::with_capacity(set.len());
+            let mut source_set = Vec::with_capacity(set.len());
+            let mut map_set = Vec::with_capacity(set.len());
+            for product in set {
+                let (smiles, output_order) =
+                    chematic_smiles::canonical_smiles_with_atom_order(&product.molecule);
+                smiles_set.push(smiles);
+                source_set.push(
+                    output_order
+                        .iter()
+                        .map(|index| {
+                            let source = product.atom_sources[index.0 as usize];
+                            source.map(|source| ReactantAtomJson {
+                                reactant: source.reactant,
+                                atom: source.atom.0,
+                            })
+                        })
+                        .collect(),
+                );
+                map_set.push(
+                    output_order
+                        .iter()
+                        .map(|index| product.template_maps[index.0 as usize])
+                        .collect(),
+                );
+            }
+            result.products.push(smiles_set);
+            result.product_atom_sources.push(source_set);
+            result.product_template_maps.push(map_set);
+        }
     }
     result
 }
@@ -469,12 +509,14 @@ fn checked_reaction_response(
 /// differ from pinned RDKit 2026.03.6 return `typed_unsupported` and a stable
 /// reason code instead of an apparently compatible product. Native semantics
 /// and the existing [`run_reactants`] API are unchanged. Product graph/origin/
-/// template-map parity is a separate gate: this function returns SMILES and
-/// diagnostics, not atom-provenance maps.
+/// template-map parity remains a separate oracle gate. Source indices and
+/// product-template map labels are returned alongside the product SMILES;
+/// their atom positions match the canonical SMILES parse order.
 ///
 /// The JSON fields mirror Python's `run_smirks_checked`: `status`, `reason`,
 /// `detail`, `products`, `accepted_matches`, `applied_products`,
-/// `valence_rejected_matches`, and `truncated_matches`, plus `profile`.
+/// `valence_rejected_matches`, and `truncated_matches`, plus `profile`,
+/// `product_atom_sources`, and `product_template_maps`.
 #[wasm_bindgen]
 pub fn run_reactants_checked(smirks: &str, reactants_smiles: &str, rdkit_compat: bool) -> String {
     let profile = if rdkit_compat {
@@ -491,7 +533,7 @@ pub fn run_reactants_checked(smirks: &str, reactants_smiles: &str, rdkit_compat:
     let limits = chematic_rxn::ReactionTransformLimits {
         max_matches: WASM_MAX_BATCH_ITEMS,
     };
-    let report = match prepared.run_reactants_with_diagnostics(&refs, &limits) {
+    let report = match prepared.run_reactants_traced_with_diagnostics(&refs, &limits) {
         Ok(report) => report,
         Err(error) => {
             let reason = match &error {
@@ -517,6 +559,8 @@ pub fn run_reactants_checked(smirks: &str, reactants_smiles: &str, rdkit_compat:
         result.reason = Some("output_too_large");
         result.detail = Some("JSON output exceeds WASM limit".to_string());
         result.products.clear();
+        result.product_atom_sources.clear();
+        result.product_template_maps.clear();
         result.json()
     } else {
         json

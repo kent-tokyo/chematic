@@ -441,6 +441,30 @@ fn run_reactants_checked_counts_products_and_valence_refusal() {
 }
 
 #[test]
+fn run_reactants_checked_sources_follow_canonical_smiles_atom_order() {
+    let value: serde_json::Value = serde_json::from_str(&run_reactants_checked(
+        "[O:1][C:2][C:3]>>[O:1][C:2][C:3]",
+        "OCC",
+        false,
+    ))
+    .unwrap();
+    assert_eq!(value["status"], "products");
+    assert_eq!(value["products"], serde_json::json!([["C(C)O"]]));
+    assert_eq!(
+        value["product_atom_sources"],
+        serde_json::json!([[[
+            {"reactant": 0, "atom": 1},
+            {"reactant": 0, "atom": 2},
+            {"reactant": 0, "atom": 0}
+        ]]])
+    );
+    assert_eq!(
+        value["product_template_maps"],
+        serde_json::json!([[[2, 3, 1]]])
+    );
+}
+
+#[test]
 fn run_reactants_checked_returns_typed_parse_and_arity_errors() {
     let malformed: serde_json::Value =
         serde_json::from_str(&run_reactants_checked("NOT_A_SMIRKS", "C", true)).unwrap();

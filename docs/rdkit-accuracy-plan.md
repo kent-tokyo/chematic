@@ -1,6 +1,6 @@
 # RDKit accuracy plan
 
-Updated 2026-10-02. The objective is operation-level equivalence on declared
+Updated 2026-10-03. The objective is operation-level equivalence on declared
 profiles and, where an independent gold standard exists, evidence that chematic
 is equivalent to or better than the pinned comparator. RDKit agreement alone is
 not chemical truth.
@@ -110,6 +110,13 @@ This package covers SMARTS/substructure, standardization, reaction application,
 and V3000. The ordinary-V3000 baseline is complete for its declared external
 reader versions; coordination, haptic, polymer expansion, and ENDPTS/ATTACH
 semantics are not.
+
+Published v1.0.30 has 200/310,000 SMARTS match-set differences and 73/83
+reaction graph/origin/map matches. The opt-in source profile has 309,982
+SMARTS exact sets plus 18 typed unsupported, and 76 reaction all-axis matches
+plus seven separately classified refusals/invalid inputs. The local Python
+reaction gate is source-only; none of these source counts replaces a published
+artifact result.
 
 Remaining exit:
 
