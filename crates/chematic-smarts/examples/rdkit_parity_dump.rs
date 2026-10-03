@@ -18,7 +18,10 @@
 //! /tmp/chematic-smartsC-venv/bin/python scripts/rdkit_ring_parity_diagnosis.py
 //! ```
 
-use chematic_smarts::{RdkitParityConfig, find_matches, find_matches_rdkit_parity, parse_smarts};
+use chematic_smarts::perceived::is_aromaticity_insensitive;
+use chematic_smarts::{
+    RdkitParityConfig, find_matches, find_matches_rdkit_parity, parse_smarts, with_perceived_target,
+};
 use serde_json::json;
 use std::io::Write;
 
@@ -131,6 +134,47 @@ fn match_set_json(
     sets
 }
 
+fn compare_pattern(
+    query: &chematic_smarts::QueryMolecule,
+    target: &chematic_core::Molecule,
+) -> serde_json::Value {
+    let default_matches = find_matches(query, target);
+    let parity_result = find_matches_rdkit_parity(query, target, &RdkitParityConfig::default());
+    let shared_result = find_matches_rdkit_parity(
+        query,
+        target,
+        &RdkitParityConfig {
+            use_shared_symmetrized_sssr: true,
+            ..RdkitParityConfig::default()
+        },
+    );
+    match parity_result {
+        Ok((parity_matches, budget_exhausted)) => json!({
+            "default": match_set_json(&default_matches),
+            "parity": match_set_json(&parity_matches),
+            "parity_budget_exhausted": budget_exhausted,
+            "shared_symmetrized": match shared_result {
+                Ok((matches, budget_exhausted)) => json!({
+                    "matches": match_set_json(&matches),
+                    "budget_exhausted": budget_exhausted,
+                }),
+                Err(e) => json!({"error": format!("{e:?}")}),
+            },
+        }),
+        Err(e) => json!({
+            "default": match_set_json(&default_matches),
+            "parity_error": format!("{e:?}"),
+            "shared_symmetrized": match shared_result {
+                Ok((matches, budget_exhausted)) => json!({
+                    "matches": match_set_json(&matches),
+                    "budget_exhausted": budget_exhausted,
+                }),
+                Err(e) => json!({"error": format!("{e:?}")}),
+            },
+        }),
+    }
+}
+
 fn dump_one(id: &str, smiles: &str, stdout: &mut impl Write) -> bool {
     let Ok(mol) = chematic_smiles::parse(smiles) else {
         let row = json!({
@@ -154,40 +198,13 @@ fn dump_one(id: &str, smiles: &str, stdout: &mut impl Write) -> bool {
             per_pattern.insert((*pat).to_string(), json!({"parse_error": true}));
             continue;
         };
-        let default_matches = find_matches(query, &mol);
-        let parity_result = find_matches_rdkit_parity(query, &mol, &RdkitParityConfig::default());
-        let shared_result = find_matches_rdkit_parity(
-            query,
-            &mol,
-            &RdkitParityConfig {
-                use_shared_symmetrized_sssr: true,
-                ..RdkitParityConfig::default()
-            },
-        );
-        let entry = match parity_result {
-            Ok((parity_matches, budget_exhausted)) => json!({
-                "default": match_set_json(&default_matches),
-                "parity": match_set_json(&parity_matches),
-                "parity_budget_exhausted": budget_exhausted,
-                "shared_symmetrized": match shared_result {
-                    Ok((matches, budget_exhausted)) => json!({
-                        "matches": match_set_json(&matches),
-                        "budget_exhausted": budget_exhausted,
-                    }),
-                    Err(e) => json!({"error": format!("{e:?}")}),
-                },
-            }),
-            Err(e) => json!({
-                "default": match_set_json(&default_matches),
-                "parity_error": format!("{e:?}"),
-                "shared_symmetrized": match shared_result {
-                    Ok((matches, budget_exhausted)) => json!({
-                        "matches": match_set_json(&matches),
-                        "budget_exhausted": budget_exhausted,
-                    }),
-                    Err(e) => json!({"error": format!("{e:?}")}),
-                },
-            }),
+        // Mirror the language bindings' aromaticity preprocessing before
+        // comparing Boolean residuals with their published 310k-cell lane.
+        // Query-insensitive cases use the raw molecule in both paths.
+        let entry = if is_aromaticity_insensitive(query) {
+            compare_pattern(query, &mol)
+        } else {
+            with_perceived_target(&mol, |target| compare_pattern(query, target))
         };
         per_pattern.insert((*pat).to_string(), entry);
     }
