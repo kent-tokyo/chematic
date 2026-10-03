@@ -1,8 +1,8 @@
 # Validation report
 
-Updated 2026-10-03 for **v1.0.32**. The broad chemistry
+Updated 2026-10-04 for **v1.0.33**. The broad chemistry
 and speed packet remains pinned to published v1.0.30; the separately named A6
-quality rows use published v1.0.31 artifacts. v1.0.32 publication and its
+quality rows use published v1.0.31 artifacts. v1.0.33 publication and its
 package-output reruns require separate verification. Every
 comparison is limited to its recorded artifact, comparator, corpus and operation.
 
@@ -14,8 +14,8 @@ comparison is limited to its recorded artifact, comparator, corpus and operation
 | RDKit-compatible HBA | The hash-verified published v1.0.30 macOS arm64 wheel matches RDKit 2026.03.6 on 5,000/5,000 exposed ChEMBL rows; published v1.0.29 matched 3,641/5,000. HBA only. | [Release-channel evidence](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.30.json) |
 | Paired speed (P0.2) | Published Python: 20 operations pass exact-output and paired-interval gates in 20 alternating blocks on one host. Isolated Python and Rust lanes split parse-inclusive, first-use and precomputed calls. Whole-process RSS is not library allocation; changed HBA output is not an equivalent-output speed win. | [Python matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) · [isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) · [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) |
 | Published browser Morgan | On Ubuntu 24.04, Chromium, Firefox and WebKit each have 250/250 direct and prepared bit parity and favorable 20-block speed intervals versus official RDKit.js (smallest lower bound 1.63×). A separate Chromium 10k lane has 9,999 exact and one typed Fe refusal. No universal browser or memory claim. | [Three-browser record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) · [M4 Chromium](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md) |
-| Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.30 Rust: 73/83 graph/origin/map exact. PR #741 release-profile **source** wheels on Linux/macOS: 76/83 exact, three typed unsupported, one diagnosed refusal and three jointly invalid; the WASM Node 83-row test passed. Published v1.0.32 packages need their own rerun. No general SMIRKS parity claim. | [Published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md) · [source-wheel gate](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-reaction-83-python-provenance-source.md) |
-| Release channels | v1.0.31 was verified on six channels. v1.0.32 tag, registries, docs.rs and Pages are tracked separately from chemical accuracy; use the versioned channel record for the current status. | [v1.0.31 record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.31.json) · [v1.0.32 record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.32.json) |
+| Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.30 Rust: 73/83 graph/origin/map exact. PR #745 release-profile **source** wheels on Linux/macOS: 77/83 exact, three typed unsupported and three jointly invalid; the WASM Node 83-row test passed. Published v1.0.33 packages need their own rerun. No general SMIRKS parity claim. | [Published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md) · [PR #745 and CI](https://github.com/kent-tokyo/chematic/pull/745) |
+| Release channels | v1.0.32 was verified on six channels. v1.0.33 tag, registries, docs.rs and Pages are tracked separately from chemical accuracy; use the versioned channel record for the current status. | [v1.0.32 record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.32.json) · [v1.0.33 record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.33.json) |
 
 ## Other bounded results
 
@@ -44,7 +44,7 @@ comparison is limited to its recorded artifact, comparator, corpus and operation
 Earlier source diagnostics and per-release channel checks remain in the
 [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) and
 [versioned validation results](https://github.com/kent-tokyo/chematic/tree/main/validation/results/). They are not promoted
-to v1.0.32 measurements.
+to v1.0.33 measurements.
 
 ## Reproduce and interpret
 

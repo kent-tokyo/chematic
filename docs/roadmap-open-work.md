@@ -1,7 +1,7 @@
 # Open-work ledger
 
-Updated 2026-10-03 for the **v1.0.32 release line**. v1.0.31's six
-release channels were verified; v1.0.32 has a separate channel record.
+Updated 2026-10-04 for the **v1.0.33 release line**. v1.0.32's six
+release channels were verified; v1.0.33 has a separate channel record.
 Published chemistry/benchmark evidence is versioned:
 the P0.1 comparison remains v1.0.30, while the A6 quality packet includes
 v1.0.31. Unreleased source results are labeled separately. The
@@ -14,7 +14,7 @@ dependencies. Completed work and raw evidence stay in the
 
 | Order | Open work | Next verifiable exit |
 |---:|---|---|
-| 1 · P1/A4 | Published v1.0.30 reaction Rust: 73/83 exact. [PR #741 source-wheel gate](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-reaction-83-python-provenance-source.md): 76 exact, three typed unsupported, one refusal, three invalid in both; Linux/macOS Python and WASM Node CI passed. | Rerun published Rust/Python/npm artifacts and npm E/Z JSON. Preserve the original 57; refusals and invalid rows are not matches. |
+| 1 · P1/A4 | Published v1.0.30 reaction Rust: 73/83 exact. [PR #745](https://github.com/kent-tokyo/chematic/pull/745) source-wheel gate: 77 exact, three typed unsupported and three invalid in both; Linux/macOS Python and WASM Node CI passed. | Rerun published Rust/Python/npm artifacts and npm E/Z JSON. Preserve the original 57; unsupported and invalid rows are not matches. |
 | 2 · P1/A4 | Published v1.0.30 SMARTS: 200/310,000 match-set differences and 43 Boolean differences. [Opt-in source-wheel gate](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-python-source-smarts-optin-310k.md): 309,982 exact sets, 18 typed unsupported, zero wrong-confident cells. | Keep the 18 charged-polycycle refusals until an order-independent ring contract is justified. Rerun the full matrix on a deliberately versioned published profile and an independent corpus; native SSSR stays unchanged. |
 | 3 · P2/A6 | [Published v1.0.31 macOS](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md): 265/265 geometry/stereo/clash, 100/265 converged, and 262 comparable same-coordinate totals within 1 kcal/mol. Linux/Python 3.9 published and source wheels both fail stereo on rows 53/246; [#739](https://github.com/kent-tokyo/chematic/issues/739). Source typing improves, but is not published. | Resolve the platform stereo failures; separately gate atom types, termination, per-term energy and independent conformer quality on published and candidate artifacts before 3D speed claims. |
 | 4 · P0.2 | Extend paired performance beyond the completed Python 63-operation and Node/Chromium/Firefox/WebKit Morgan lanes. | Equal-output, equal-work ≥20-block intervals for more operations/corpora; distinguish parsing, perception, prepared reuse and library memory from process RSS. The historical “21 faster” count is not a current package gate. |

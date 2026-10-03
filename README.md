@@ -21,11 +21,12 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.0.32 release boundary
+### v1.0.33 release boundary
 
-v1.0.32 adds checked-reaction provenance, opt-in SMARTS compatibility, and
-MMFF94 diagnostics. The comparison counts were measured on release-profile
-source builds; published v1.0.32 packages still need their own rerun. See
+v1.0.33 fixes SMIRKS reactant SMARTS parsing, product edits, valence checks,
+explicit-hydrogen handling, and selected RDKit SMARTS extensions. The
+83-row reaction gate passes on release-profile source wheels; published
+v1.0.33 packages still need their own rerun. See
 [validation](docs/validation.md) and [CHANGELOG](CHANGELOG.md).
 
 ## Use it
