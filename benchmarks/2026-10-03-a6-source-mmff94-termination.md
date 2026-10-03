@@ -90,12 +90,24 @@ and `3298df1c699449818369102487b0522d664e62b56c5df7d99ee095545033d459`.
 The pair establishes *status retention on one macOS runner only*, not equal
 coordinates, energies or independent A6 quality.
 
-The Linux pair in that run could not start: PyPI v1.0.31 has Linux wheels for
-Python 3.9 but not the CI job's Python 3.12. A separate Python 3.9 Linux pair
-will use the available published wheel. Until its row-level result is retained,
-the Linux/Python 3.12 source failures at rows 53 and 246 are not classified as
-new source regressions. Neither status lane is the independent A6 geometry,
-stereo, clash or energy gate.
+The Linux/Python 3.12 pair in that run could not start: PyPI v1.0.31 has Linux
+wheels for Python 3.9 but not Python 3.12. A separate Python 3.9 same-host pair
+in PR #738 [run `37106956114`](https://github.com/kent-tokyo/chematic/actions/runs/37106956114)
+completed: both source and published wheels returned **263/265 successes** and
+the same `FinalStereoViolation` at rows **53 and 246**. The source and
+published wheel SHA-256 values were respectively
+`d4dbb22b288c7fe6b3c9e165d237c2fb601e8d0b383eba3bb8c06a343f5a72b7`
+and `3bcecd14c121a2ee7c53428fa4c2938998d5252763d17926b8efc8566e15268a`.
+The raw row SHA-256 values were respectively
+`ef60074a9c2a43dfa029d0e5fde2e1bd7341c13be9a68fe17fc9982cac9a32e5`
+and `83b545d0c1634407ada0f4e5a6fb25564ef09f869800b7f614a9307ca6852f66`.
+Thus the two Linux failures are **pre-existing on that host**, not introduced
+by this source candidate. They remain real platform-dependent 3D failures:
+the published macOS wheel returned 265/265, whereas the published Linux
+Python 3.9 wheel returned 263/265. This comparison does not isolate whether
+the cause is OS, architecture, compiler, Python ABI or their interaction.
+Neither status lane is the independent A6 geometry, stereo, clash or energy
+gate; successful rows still require external scoring.
 
 The row-246 Python `PipelineV2Error.diagnostics.cause.force_field_bridge_error`
 contains `reason=excessive_residual_force` and

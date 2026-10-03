@@ -17,9 +17,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   dev-profile source-wheel rerun found three typed failures absent from the
   published v1.0.31 run. Optimized PR wheels returned 265/265 successes on
   macOS and 263/265 on Linux/Python 3.12. A same-host macOS published/source
-  pair preserved all 265 successes and 100 converged rows. Linux status
-  comparison remains open; published v1.0.31 provides Linux Python 3.9 wheels
-  but no Linux Python 3.12 wheel. Neither status comparison replaces the
+  pair preserved all 265 successes and 100 converged rows. A same-host Linux
+  Python 3.9 pair returned 263/265 for both versions, with the same typed
+  stereo failures at rows 53 and 246; these are not new source regressions.
+  Published v1.0.31 provides no Linux Python 3.12 wheel. Neither pair replaces the
   independent 3D-quality gate.
 - Added a pinned row-level A6 non-convergence diagnosis for the published
   v1.0.31 200/400-iteration runs: 97 rows still hit the 400-iteration cap
