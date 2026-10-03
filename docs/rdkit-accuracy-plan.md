@@ -113,9 +113,12 @@ semantics are not.
 
 Remaining exit:
 
-- classify and resolve the current SMARTS residual set without partial-output
-  promotion;
-- measure mapped embedding and reaction-product precision/recall;
+- classify SMARTS residuals by frequency and by specification difference,
+  typed unsupported, or implementation defect; retain native SSSR and rerun
+  the full affected published-artifact matrix after each accepted change;
+- adjudicate the 83 reaction rows separately for product graph, distinct
+  products, atom origins and template-map labels; repair supported defects or
+  return typed unsupported, then rerun the original 57 and rebuilt bindings;
 - test standardization identity and stereo preservation;
 - add typed V3000 capabilities only with external-reader round trips.
 
@@ -129,10 +132,15 @@ not “more accurate than RDKit.”
 
 ## A6 — 3D and force fields
 
-Treat 3D as a separate experimental profile. Evaluate MMFF94/UFF atom typing,
-charges, parameters, energy, analytic gradients, convergence, timeouts, stereo
-retention, and conformer quality on identical coordinates and seeds. Bounded
-typing or finite energy alone does not establish force-field or ETKDG parity.
+Treat 3D as a separate experimental profile. Do not combine quality and speed
+into one success count. First classify MMFF94/UFF atom typing, charges and
+parameter coverage; then compare per-term energy and analytic gradients at
+identical explicit-H coordinates. Independently gate convergence, timeouts,
+cancellation, stereo retention, bond geometry, gross clashes and conformer
+quality on matched seeds and a held-out cohort. Predeclare tolerances, retain
+typed failure reasons and repeat the quality packet on published artifacts.
+Bounded typing, finite energy or a historical 265-row quality result alone
+does not establish force-field or ETKDG parity.
 
 ## Promotion workflow
 
