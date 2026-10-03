@@ -1431,16 +1431,89 @@ fn apply_match_traced_impl(
         })
         .collect();
 
-    // Skip product sets that contain any over-valenced atom.
+    // Skip product sets that contain any over-valenced atom, under both the
+    // native valence model and RDKit's sanitize rules (issue #734).
     if products
         .iter()
-        .all(|p| validate_valence(&p.molecule).is_empty())
+        .all(|p| validate_valence(&p.molecule).is_empty() && sanitizable_product(&p.molecule))
     {
         crate::perf_counters::record_product_set();
         Some(products)
     } else {
         None
     }
+}
+
+/// Whether RDKit's sanitize step would accept `mol`'s valences (issue #734).
+///
+/// The native [`validate_valence`] model allows nitrogen 3 or 5 and counts an
+/// aromatic bond as one, so it kept products RDKit rejects: a neutral
+/// four-bonded N (`N(=C)(C)C`), a neutral N-oxide spelling (`N(=O)(C)C`) and
+/// an ipso-substituted aromatic carbon (`c1ccc(O)(C)cc1`). This check follows
+/// RDKit: aromatic systems are kekulized first (failure rejects the product),
+/// and each atom's explicit valence — bond orders in the Kekulé form plus its
+/// explicit H count — must not exceed its largest allowed valence after the
+/// formal-charge correction (RDKit's: the charge adds to the valence, with
+/// the sign flipped for B and lighter group 1/2/13 atoms, and a positive
+/// charge on carbon lowers it). Elements without a fixed valence list
+/// (metals and most of the periodic table) are not checked.
+fn sanitizable_product(mol: &Molecule) -> bool {
+    /// RDKit's allowed valences (largest last) for the elements it constrains.
+    fn allowed(z: u8) -> Option<&'static [u8]> {
+        Some(match z {
+            1 => &[1],
+            3 | 11 | 19 | 37 | 55 => &[1],
+            4 | 12 | 20 | 38 | 56 => &[2],
+            5 => &[3],
+            6 => &[4],
+            7 => &[3],
+            8 => &[2],
+            9 | 17 | 35 => &[1],
+            13 => &[3],
+            14 | 32 => &[4],
+            15 | 33 | 51 => &[3, 5, 7],
+            16 | 34 | 52 => &[2, 4, 6],
+            50 => &[2, 4],
+            53 => &[1, 3, 5],
+            _ => return None,
+        })
+    }
+    fn is_early(z: u8) -> bool {
+        matches!(z, 3..=5 | 11..=13 | 19 | 20 | 31 | 37 | 38 | 49 | 55 | 56 | 81)
+    }
+
+    let kekule;
+    let mol = if mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic) {
+        match chematic_core::kekulize(mol) {
+            Ok(k) => {
+                kekule = chematic_core::apply_kekule(mol, &k);
+                &kekule
+            }
+            Err(_) => return false,
+        }
+    } else {
+        mol
+    };
+    mol.atoms().all(|(idx, atom)| {
+        if atom.wildcard {
+            return true;
+        }
+        let z = atom.element.atomic_number();
+        let Some(valences) = allowed(z) else {
+            return true;
+        };
+        let mut charge = i16::from(atom.charge);
+        if is_early(z) {
+            charge = -charge;
+        }
+        if z == 6 && charge > 0 {
+            charge = -charge;
+        }
+        let max = i16::from(*valences.last().expect("non-empty valence list")) + charge;
+        let used = i16::from(chematic_core::bond_order_sum(mol, idx))
+            + i16::from(atom.hydrogen_count.unwrap_or(0));
+        used <= max
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -2442,6 +2515,53 @@ mod tests {
     }
 
     #[test]
+    fn products_rdkit_sanitize_rejects_are_dropped(/* issue #734 item 3 */) {
+        // RDKit 2026.03.6 rejects each of these raw products at sanitize; the
+        // native model kept the last three (N valence 3 or 5, aromatic bond
+        // counted as one).
+        for (smirks, reactant) in [
+            ("[C:1][O:2]>>[C:1]=[O:2]", "COC"),
+            ("[C:1][N:2]>>[C:1]=[N:2]", "CN(C)C"),
+            ("[N:1]>>[N:1]=O", "CNC"),
+        ] {
+            let mol = parse(reactant).unwrap();
+            assert!(
+                run_reactants(smirks, &[&mol]).unwrap().is_empty(),
+                "{smirks} on {reactant}"
+            );
+        }
+        // Ipso attack on toluene's methyl-bearing carbon is dropped; the
+        // ortho/meta/para products remain (RDKit: the same three).
+        let canon = |m: &Molecule| chematic_smiles::canonical_smiles(m);
+        let toluene = parse("Cc1ccccc1").unwrap();
+        let mut got: Vec<String> = run_reactants("[c:1]>>[c:1]O", &[&toluene])
+            .unwrap()
+            .iter()
+            .map(|set| canon(&set[0]))
+            .collect();
+        got.sort();
+        got.dedup();
+        let mut want: Vec<String> = ["Cc1ccccc1O", "Cc1cccc(O)c1", "Cc1ccc(O)cc1"]
+            .iter()
+            .map(|s| canon(&parse(s).unwrap()))
+            .collect();
+        want.sort();
+        assert_eq!(got, want);
+        // The charged spellings are valid and kept.
+        let tma = parse("CN(C)C").unwrap();
+        assert!(
+            !run_reactants("[C:1][N:2]>>[C:1]=[N+:2]", &[&tma])
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            !run_reactants("[N:1]>>[N+:1][O-]", &[&tma])
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
     fn reactant_smarts_query_selects_the_matching_atom(/* issue #734 */) {
         // A reactant query that only some atoms satisfy must transform only
         // those atoms, proving the query is actually evaluated (not ignored).
@@ -2528,8 +2648,15 @@ mod tests {
         let out = run_reactants("[#7:1]>>[#7:1]C", &[&amine]).unwrap();
         assert_eq!(out.len(), 1);
         assert_eq!(canon(&out[0][0]), canon(&parse("CCNC").unwrap()));
+        // Pyridine needs the charge (a neutral N-methylpyridine has a
+        // four-valent N, rejected like RDKit's sanitize does, #734).
         let pyridine = parse("c1ccncc1").unwrap();
-        let out = run_reactants("[#7:1]>>[#7:1]C", &[&pyridine]).unwrap();
+        assert!(
+            run_reactants("[#7:1]>>[#7:1]C", &[&pyridine])
+                .unwrap()
+                .is_empty()
+        );
+        let out = run_reactants("[#7:1]>>[#7+:1]C", &[&pyridine]).unwrap();
         assert_eq!(out.len(), 1);
         assert!(
             out[0][0]

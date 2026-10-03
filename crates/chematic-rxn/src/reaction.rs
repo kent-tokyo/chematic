@@ -275,19 +275,24 @@ fn product_atom_spec(atom: &str) -> Result<String, RxnError> {
     };
 
     // An atomic-number atom with unspelled aromaticity and nothing but an H
-    // count and a map stays `[#n(;Hh)(:m)]`, so the atomic-number expansion
-    // picks its spelling from the reactant side (#679).
+    // count, a charge and a map stays `[#n(;Hh)(;±c)(:m)]`, so the
+    // atomic-number expansion picks its spelling from the reactant side (#679).
     if let Some(e) = element
         && symbol_absent
         && aromatic.is_none()
         && isotope.is_none()
         && chirality.is_none()
-        && charge.is_none()
         && hcount.is_none_or(|h| h <= 9)
+        && charge.is_none_or(|c| (-9..=9).contains(&c))
     {
         let mut spec = format!("[#{}", e.atomic_number());
         if let Some(h) = hcount {
             spec.push_str(&format!(";H{h}"));
+        }
+        match charge {
+            Some(c) if c >= 0 => spec.push_str(&format!(";+{c}")),
+            Some(c) => spec.push_str(&format!(";-{}", -i16::from(c))),
+            None => {}
         }
         if let Some(m) = map {
             spec.push_str(&format!(":{m}"));
@@ -425,28 +430,54 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
             .unwrap_or(inner.len());
         let number_text = &inner[1..number_end];
         let suffix = &inner[number_end..];
-        let (hydrogen_count, map_suffix) = if suffix.is_empty() {
-            (None, "")
-        } else if suffix.starts_with(':')
-            && suffix.len() > 1
-            && suffix[1..].bytes().all(|b| b.is_ascii_digit())
-        {
-            (None, suffix)
-        } else if let Some(rest) = suffix.strip_prefix(";H")
-            && let Some(digit) = rest.bytes().next().filter(u8::is_ascii_digit)
-            && (rest.len() == 1
-                || (rest[1..].starts_with(':')
-                    && rest.len() > 2
-                    && rest[2..].bytes().all(|b| b.is_ascii_digit())))
-        {
-            (Some(digit - b'0'), &rest[1..])
-        } else {
-            (None, "")
+        // Suffix: optional H count (`H`, `H2`) and charge (`+`, `++`, `-2`),
+        // each optionally `;`-separated, then an optional `:map`.
+        let (body, map_suffix) = match suffix.rfind(':') {
+            Some(p)
+                if p + 1 < suffix.len() && suffix[p + 1..].bytes().all(|b| b.is_ascii_digit()) =>
+            {
+                (&suffix[..p], &suffix[p..])
+            }
+            _ => (suffix, ""),
         };
+        let mut hydrogen_count: Option<u8> = None;
+        let mut charge: Option<i8> = None;
+        let mut simple_suffix = true;
+        let mut rest = body.as_bytes();
+        while !rest.is_empty() {
+            if rest[0] == b';' {
+                rest = &rest[1..];
+                continue;
+            }
+            match rest[0] {
+                b'H' if hydrogen_count.is_none() => {
+                    let digit = rest.get(1).filter(|b| b.is_ascii_digit());
+                    hydrogen_count = Some(digit.map_or(1, |d| d - b'0'));
+                    rest = &rest[1 + usize::from(digit.is_some())..];
+                }
+                sign @ (b'+' | b'-') if charge.is_none() => {
+                    let mut n: i8 = 1;
+                    let mut used = 1;
+                    if let Some(d) = rest.get(1).filter(|b| b.is_ascii_digit()) {
+                        n = (d - b'0') as i8;
+                        used = 2;
+                    } else {
+                        while rest.get(used) == Some(&sign) && n < 9 {
+                            n += 1;
+                            used += 1;
+                        }
+                    }
+                    charge = Some(if sign == b'+' { n } else { -n });
+                    rest = &rest[used..];
+                }
+                _ => {
+                    simple_suffix = false;
+                    break;
+                }
+            }
+        }
         let on_product_side = has_products && start >= product_start;
-        if number_text.is_empty()
-            || (hydrogen_count.is_none() && map_suffix.is_empty() && !suffix.is_empty())
-        {
+        if number_text.is_empty() || !simple_suffix {
             if !on_product_side && !number_text.is_empty() {
                 // A compound reactant-side primitive (`[#6;X4:1]`) is a query
                 // the SMARTS parser handles; leave it for the template parser.
@@ -470,11 +501,19 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
             });
         };
         let symbol = element.symbol();
-        let hydrogen = match hydrogen_count {
+        let mut hydrogen = match hydrogen_count {
             None => String::new(),
             Some(1) => "H".to_string(),
             Some(n) => format!("H{n}"),
         };
+        match charge {
+            Some(0) => hydrogen.push_str("+0"),
+            Some(1) => hydrogen.push('+'),
+            Some(-1) => hydrogen.push('-'),
+            Some(c) if c > 0 => hydrogen.push_str(&format!("+{c}")),
+            Some(c) => hydrogen.push_str(&format!("-{}", -i16::from(c))),
+            None => {}
+        }
         let can_be_aromatic = matches!(atomic_number, 5 | 6 | 7 | 8 | 15 | 16);
         let aliphatic = format!("[{symbol}{hydrogen}{map_suffix}]");
         let aromatic = format!(
@@ -505,7 +544,7 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
                     _ => vec![aliphatic],
                 }
             }
-        } else if hydrogen_count.is_none() && ORGANIC_SUBSET.contains(&symbol) {
+        } else if hydrogen_count.is_none() && charge.is_none() && ORGANIC_SUBSET.contains(&symbol) {
             vec![symbol.to_string()]
         } else {
             vec![aliphatic]
