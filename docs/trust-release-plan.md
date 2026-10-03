@@ -1,7 +1,7 @@
 # chematic 1.x Trust Release 実行計画
 
-更新日: 2026-10-03。リリース対象は **v1.0.31** です。WASMの分子式・反応JSON修正は
-公開npmで再検証し、配布channelの独立検証と、CIP・SMARTS・A6 gateを続けます。
+更新日: 2026-10-03。**v1.0.31は公開済み**です。6つの配布経路は確認しました。
+WASMの分子式・反応JSON修正は、公開npmでの出力再検証が残っています。
 
 この文書は実行順と合格条件だけを定義します。機能別の優先順位は
 [`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)、未完了項目と依存関係は
@@ -22,36 +22,17 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
 
 ## 現在地
 
-- A0 core-eight descriptor gateは完了しています。2,000件のdevelopmentと
-  一度だけ評価した8,000件のsealed holdoutで、8項目すべてが合格しました。
-  使用済み入力は露出済みで、今後のholdoutには再利用しません。
-- 公開v1.0.20は、固定ブラウザ条件のParse + compatible Morganで
-  RDKit.jsより高速かつ、対応9,999件でbit-exactです。
-- 公開v1.0.20のMMFF94 stereo-safe laneは265/265件で品質条件を満たしますが、
-  RDKitより高速ではありません。current sourceの高速化候補は別証拠です。
-- v1.0.21に含まれる#632修正は、RDKit 2026.03.6比較のSMILES semantic差を
-  18/10,000から0/10,000へ減らしました。28 component x 1,024 relabelの
-  長時間gateは、v1.0.25ベースのclean source（`13d70a2e`）で再実行し0/28 divergentで完走しました。
-- v1.0.23はRDKit-defined atom-pair/torsion、MACCS、QED、TPSA、Murckoの一致を
-  改善しました。3本の5,000行source laneと43/44操作のmatrixは共有2 vCPU実行であり、
-  公開packageまたはWASMの性能・完全互換性の証拠ではありません。
-- v1.0.24はその出力を保持したままperceptionとSMARTS存在判定のhot pathを短縮しました。
-  v1.0.23との差分は7コーパス・1,402,080出力行で0件です。計時は共有2 vCPUの
-  source実行だけであり、公開package、WASM、全環境の性能主張ではありません。
-- v1.0.25はatom-output order、断片とRust反応生成物のsource-atom provenance、
-  RDKit互換Python HBA profileを追加・修正しました。6操作・46,736分子の既存出力
-  differentialは0件ですが、HBA profileとplain writerの意図した修正は別に扱います。
-- v1.0.26 release sourceでは、同じ固定laneでCIPが9,994/10,000一致（旧9,770）、
-  SMARTS差分が200/310,000セル（旧14,306）です。残差はすべて原因別に分類済みです
-  （#634: P oracle不安定4、三価N非対応1、要裁定1。#635: `[Rn]`/`[kn]`の
-  ring数の意味194、フェロセン6）。
-- v1.0.28 release sourceの#634修正では、要裁定だった環内中心1件を独立にSと判定し、
-  階層的なCIP順位付けを修正しました。同じ公開済み1万行で9,995件一致、残る5件は
-  理由付きの判定保留です。完全なCIP互換は主張しません。
-- v1.0.26 release source（#637）では、同一座標のMMFF94をRDKitの項別energyと
-  比べ、262/262行が1 kcal/mol以内（最大0.32、旧9.87）です。
-- 残る主要差分は、孤立電子対中心のCIP対応、SMARTSのring数の意味、A6のheavy-atom
-  typing（Kekulé/荷電入力の芳香族性）・timeout・conformer qualityです。
+- A0の8記述子は、凍結候補でdevelopment 2,000件と一度限りのsealed 8,000件に
+  合格しました。使用済みデータは再びsealedとして扱いません。
+- 公開v1.0.30の比較では、SMARTSに200/310,000セルの差、CIPに5件の理由付き
+  判定保留が残ります。出力監査は完了しましたが、RDKit完全互換ではありません。
+- 公開v1.0.30の速度証拠は、出力一致と区間条件を満たすPython 20操作など、
+  記録された環境・操作に限ります。3D/MMFF94はExperimentalです。
+- 反応は従来の57件が一致しましたが、拡張83件には差分が残ります。
+  v1.0.31の公開artifactで修正を確認してから昇格します。
+
+版・コーパス・残差は[検証報告](validation.md)と
+[benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)に固定します。
 
 ## 実行順
 
@@ -69,11 +50,9 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
 
 ### 2. #634 CIP差分を分類して解く
 
-状態: v1.0.28 release sourceで230件の残差を分類し、9,995/10,000件が一致しました。
-残る5件は4件の`oracle_unstable`と1件の`lone_pair_center`として理由付きで判定保留
-です。判定保留を一致件数に含めません。元の分類記録は
-`validation/results/rdkit-rebaseline-residual-classification-v1.0.25-issue634-635-vs-2026.03.6-2026-09-25.json`、
-最終候補の行単位記録は`validation/results/rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json`を参照してください。
+状態: 固定1万行では9,995件一致、4件の`oracle_unstable`と1件の
+`lone_pair_center`を理由付きで保留しています。保留を一致件数に含めません。
+[行単位の記録](https://github.com/kent-tokyo/chematic/blob/main/validation/results/rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json)を参照してください。
 
 差分を次の4種類に分けます。
 
@@ -88,9 +67,8 @@ atom-order permutation、full/pseudo atrop、負電荷共鳴系を回帰に含�
 
 ### 3. #635 SMARTS差分を意味単位で解く
 
-状態: source候補`11a4ea27`で14,306→200セル。Python/WASMのSMARTS APIは、
-入力の索引を保つperceived aromatic viewに対して照合します（Rust coreは不変）。
-残る200セルは、すべて`[Rn]`/`[kn]`のring数の意味（SSSRか、対称化ring集合か）の差です。
+状態: 固定31万セル中200セルに差が残ります。主に`[Rn]`/`[kn]`の環数定義と
+配位構造の扱いです。ネイティブSSSRを暗黙に変更せず、互換設定を分けます。
 
 差分を原子primitive、結合、芳香族性、再帰SMARTS、ring、stereo、
 logical operatorへ分割します。各修正は小さなtruth tableと、RDKit版・設定を固定した

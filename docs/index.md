@@ -80,36 +80,21 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-The current release line is v1.0.31. WASM formula spelling and reaction
-product JSON escaping were fixed; package-level reruns remain pending.
+v1.0.31 is published on the tracked channels. Its WASM formula and reaction
+JSON fixes have source tests; a published-package output rerun is pending.
+Do not treat release availability as an accuracy or speed result.
 
-- SMIRKS product-side atomic-number atoms now build literal atoms with valence-
-  derived hydrogens, and repeated SMARTS charge signs mean one formal charge.
-  These are #679/#680 correctness fixes, not a new broad parity measurement.
+The latest published-package comparison packet is for v1.0.30. It records
+20 exact-output, favorable paired-interval Python operations on one host;
+the browser Morgan lanes are limited to their named engines and corpus.
+The exposed CIP comparison has 9,995 exact rows and five typed abstentions;
+200 of 310,000 SMARTS cells remain incompatible. These are bounded results,
+not general RDKit parity or superiority.
 
-- Hierarchical CIP ranking now resolves one independently adjudicated residual;
-  unsupported lone-pair stereocentres return a typed abstention instead of
-  disappearing silently. On the pinned exposed 10k source comparison, 9,995
-  rows agree exactly and five abstain with a reason. This is not full CIP parity.
-- Rust atom tags from v1.0.27 remain caller-managed and are not encoded in
-  SMILES without explicit atom-order remapping.
-
-- The latest registry-installed browser benchmark (v1.0.20) records 1.398x parse-inclusive and
-  3.511x prepared compatible-Morgan speedups against official
-  `@rdkit/rdkit@2026.03.6`, with 9,999/9,999 supported rows bit-exact.
-- That release's fixed MMFF94 stereo-safe lane produces 265/265 sound, stereo-clean,
-  clash-free outputs, but measures 0.944x RDKit speed.
-- The published v1.0.15 WASM asset is 4,005,280 bytes raw / 1,460,499 bytes
-  gzip; official RDKit.js 2026.03.6 is 7,333,095 / 2,379,975 bytes under the
-  same local compression method. Feature surfaces differ.
-
-These are scoped measurements, not general claims that chematic is always
-faster, smaller, or more accurate. The v1.0.26 hot-path evidence remains
-shared-VM source evidence, not a WASM or cross-platform performance claim. It
-does not relabel the v1.0.20 package performance record or measure v1.0.29.
-
-See [validation](validation.md), [benchmark methodology](benchmark.md), and
-[compatibility scope](compatibility-scope.md) for exact conditions.
+See [validation](validation.md) for denominators, [benchmarks](benchmark.md)
+for timed boundaries, and [compatibility scope](compatibility-scope.md) for
+unsupported chemistry. Historical results remain in the
+[record index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks).
 
 ## Stable and bounded areas
 

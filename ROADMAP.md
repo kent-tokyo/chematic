@@ -17,9 +17,9 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 The [v1.0.30 published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md),
 [benchmark index](benchmarks/README.md), and [validation report](docs/validation.md)
-hold versions, hashes, denominators and residuals. The WASM formula and E/Z
-JSON fixes are included in v1.0.31 source but need published-package checks
-after release. Exposed data are
+hold versions, hashes, denominators and residuals. v1.0.31 is published on
+all six tracked channels, but its WASM formula and E/Z JSON fixes still need
+package-output checks. Exposed data are
 not sealed evidence; A0's frozen descriptor result and Experimental 3D/MMFF94
 have separate gates.
 

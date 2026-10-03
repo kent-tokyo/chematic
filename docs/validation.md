@@ -1,10 +1,10 @@
 # Validation report
 
-Updated 2026-10-03 for **v1.0.31**. The results below remain pinned to
-published v1.0.30 artifacts; they are not v1.0.31 measurements. The new WASM
-formula and reaction-JSON fixes have source regression tests but still need
-published npm verification. Every comparison is limited to its recorded
-artifact, comparator, corpus and operation.
+Updated 2026-10-03 for **v1.0.31**. All six release channels are verified, but
+the chemistry and speed results below remain pinned to published v1.0.30
+artifacts. The v1.0.31 WASM formula and reaction-JSON fixes have source
+regression tests; published npm output parity has not been rerun. Every
+comparison is limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
 
@@ -15,7 +15,7 @@ artifact, comparator, corpus and operation.
 | Paired speed (P0.2) | Published Python: 20 operations pass exact-output and paired-interval gates in 20 alternating blocks on one host. Isolated Python and Rust lanes split parse-inclusive, first-use and precomputed calls. Whole-process RSS is not library allocation; changed HBA output is not an equivalent-output speed win. | [Python matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) · [isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) · [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) |
 | Published browser Morgan | On Ubuntu 24.04, Chromium, Firefox and WebKit each have 250/250 direct and prepared bit parity and favorable 20-block speed intervals versus official RDKit.js (smallest lower bound 1.63×). A separate Chromium 10k lane has 9,999 exact and one typed Fe refusal. No universal browser or memory claim. | [Three-browser record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) · [M4 Chromium](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md) |
 | Reactions (P1) | Legacy 57/57 fixtures match. Published Rust graph/origin/template-map identity matches RDKit on 73/83 stratified rows, plus one map-only difference. An unpublished checked-source profile has 76 matches, three typed unsupported, one refusal and three jointly invalid rows; it does not establish published or general SMIRKS parity. | [Artifact packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md) · [checked-source profile](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-reaction-checked-source-profile.md) |
-| Release channels | GitHub Release, npm, PyPI, crates.io, docs.rs and Pages were independently verified for v1.0.30. v1.0.31 requires its own check after publication. | [Historical channel record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.30.json) |
+| Release channels | GitHub Release, npm, PyPI, the crates.io publish workflow, docs.rs and Pages are verified for v1.0.31. Direct crates.io API access returned 403 on this host; docs.rs rendered the version-pinned crate. Channel verification does not establish chemical parity. | [v1.0.31 channel record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.31.json) |
 
 ## Other bounded results
 
@@ -37,7 +37,7 @@ artifact, comparator, corpus and operation.
 Earlier source diagnostics and per-release channel checks remain in the
 [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) and
 [versioned validation results](https://github.com/kent-tokyo/chematic/tree/main/validation/results/). They are not promoted
-to v1.0.30 measurements.
+to v1.0.31 measurements.
 
 ## Reproduce and interpret
 
