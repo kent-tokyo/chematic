@@ -363,6 +363,7 @@ dependencies = [
 name = "chematic-ff"
 version = "1.0.31"
 dependencies = [
+ "chematic-chem",
  "chematic-core",
  "chematic-perception",
  "chematic-smiles",

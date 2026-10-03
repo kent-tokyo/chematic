@@ -55,12 +55,13 @@ have separate gates.
 3. **P2 / A6 — Gate 3D quality before speed.** The published v1.0.31
    geometry/stereo/clash and same-coordinate total-energy checks are done,
    but full MMFF equivalence is open. Investigate the largest typing bucket
-   first (1,322 RDKit type-37 carbons across 317 molecules) through its
-   MMFF-specific aromatic-ring acceptance and bond flags; a missing ring in
-   two rows is not a sufficient fix. Then adjudicate other heavy types and
-   22 CheMatic refusal/error rows. Classify the 101 rows still
-   not converged under an exploratory 400-iteration limit (97 at cap, four
-   early stops); do not silently raise the shipped limit without independent
+   first (1,322 RDKit type-37/CheMatic type-2 carbons across 317 molecules)
+   through MMFF-specific aromatic-ring acceptance and bond flags. The
+   compact-ring source candidate reduces that bucket to 16, but published
+   artifacts and complex-ring boundaries are not yet cleared. Then adjudicate
+   other heavy types and 22 CheMatic refusal/error rows. Classify the 101
+   rows still not converged under an exploratory 400-iteration limit (97 at
+   cap, four early stops); do not silently raise the shipped limit without independent
    quality and runtime checks. Bound per-term energy/gradient differences,
    timeout/cancellation, parameter/charge coverage and independent conformer
    quality on matched seeds and a held-out cohort. **Exit:** predeclared

@@ -27,6 +27,7 @@ criterion = { version = "0.8", features = ["html_reports"] }
 # comment -- a version-pinned dev-dependency must resolve against the
 # registry at `cargo publish` time, which a forward reference can't satisfy.
 chematic-smiles = { path = "../chematic-smiles" }
+chematic-chem = { path = "../chematic-chem" }
 
 [[bench]]
 name = "mmff94_bench"

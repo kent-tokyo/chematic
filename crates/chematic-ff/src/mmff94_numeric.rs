@@ -1091,6 +1091,13 @@ pub fn compute_mmff94_aromatic_view(
         >= 2
         && rings.iter().any(|ring| ring.len() >= 20);
     let large_ring_count = rings.iter().filter(|ring| ring.len() >= 20).count();
+    // In compact fused systems RDKit updates the atom aromatic flag as each
+    // MMFF ring is accepted. Our SSSR ordering/selection is not yet equivalent
+    // for cage systems (>20 rings) or larger macrocycles (>=16 atoms): in the
+    // pinned 10k corpus propagating there changed previously correct types.
+    // Preserve the pre-pass behavior on that bounded, still-unsupported lane.
+    let propagate_accepted_ring_aromaticity =
+        rings.len() <= 20 && !rings.iter().any(|ring| ring.len() >= 16);
     let large_ring_bonds: std::collections::HashSet<(AtomIdx, AtomIdx)> = rings
         .iter()
         .filter(|ring| ring.len() >= 20)
@@ -1216,12 +1223,16 @@ pub fn compute_mmff94_aromatic_view(
                         break;
                     }
                     if nb.order == BondOrder::Double {
-                        // RDKit's setMMFFAromaticity checks the neighbor's
-                        // existing aromatic flag here (`nbrAtom->getIsAromatic()`),
-                        // not the MMFF fixed-point bitset being built by this
-                        // pass. Keeping those states separate is important
-                        // for fused rings whose acceptance order differs.
-                        if kmol.atom(nb.neighbor).aromatic {
+                        // RDKit reads the neighbor's *current* aromatic flag
+                        // here. An earlier accepted ring sets that flag in
+                        // the same pass; the Kekule input's frozen flag does
+                        // not contain that update. `is_arom` tracks accepted
+                        // rings, unlike `resolved` (rings merely processed).
+                        // Complex cage/macrocycle systems retain the frozen
+                        // flag until their ring-model parity is adjudicated.
+                        if (propagate_accepted_ring_aromaticity && is_arom[nb.neighbor.0 as usize])
+                            || kmol.atom(nb.neighbor).aromatic
+                        {
                             pi_e += 1;
                         } else {
                             exo_double_bond = true;
@@ -2680,6 +2691,32 @@ mod tests {
 
     use super::*;
     use chematic_smiles::parse;
+
+    #[test]
+    fn fused_carbonyl_pah_mmff_aromaticity_propagates_between_rings() {
+        let m = parse("O=CC1=C2C=CC=CC2=CC3=C1C=CC=C3").unwrap();
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        for idx in [4, 5, 6, 7] {
+            assert_eq!(types[idx], 37, "aromatic six-ring carbon {idx}");
+        }
+    }
+
+    #[test]
+    fn mmff_aromatic_propagation_keeps_macrocycle_boundary() {
+        let m = parse(
+            "CC1=C2NC(=C1CCC(O)=O)C=C3N=C(C=C4NC(=CC5=NC(=C2)C(=C5C)C=C)C(=C4C)C=C)C(=C3CCC(O)=O)C",
+        )
+        .unwrap();
+        let rings = chematic_perception::find_symmetrized_sssr(&m);
+        assert!(rings.rings().iter().any(|ring| ring.len() >= 16));
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        for idx in [11, 12, 15, 19, 22, 23] {
+            assert_eq!(
+                types[idx], 2,
+                "macrocycle atom {idx} must retain its prior type"
+            );
+        }
+    }
 
     fn mol(s: &str) -> Molecule {
         parse(s).unwrap()
