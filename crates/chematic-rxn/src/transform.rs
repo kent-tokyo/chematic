@@ -2160,6 +2160,25 @@ fn build_product(
         .map(|(_, &src)| src)
         .collect();
 
+    // Explicit hydrogen atoms (issue #734): a mapped, non-stereo atom's plain
+    // H-atom neighbours that the template did not match are not carried as
+    // substituents. The atom's hydrogens are re-derived from its product
+    // valence and added back as explicit H atoms after assembly, so an
+    // `add_hydrogens` reactant gives the same products as its implicit-H
+    // form instead of keeping every H and failing the valence check
+    // (`[C:1]-[C:2]>>[C:1]=[C:2]`, `[O:1]>>[O:1]C`, `[CH3:1]>>[CH3:1]`).
+    let mut folded_h: FxHashSet<(usize, AtomIdx)> = FxHashSet::default();
+    let mut folded_cores: Vec<AtomIdx> = Vec::new();
+    let plain_h = |mol: &Molecule, idx: AtomIdx| {
+        let a = mol.atom(idx);
+        a.element.atomic_number() == 1
+            && !a.wildcard
+            && a.isotope.is_none()
+            && a.charge == 0
+            && a.atom_map.is_none()
+            && mol.degree(idx) == 1
+    };
+
     for (i, slot) in template_idx_to_new.iter_mut().enumerate() {
         let tmpl_atom = product_template.atom(AtomIdx(i as u32));
         let new_idx = if let Some(am) = tmpl_atom.atom_map {
@@ -2196,7 +2215,29 @@ fn build_product(
                 // for every atom, whether it inherits from the reactant or
                 // carries an explicit product-template @/@@.
                 new_atom.atom_map = None;
+                // Only organic-subset atoms: their H count can be re-derived
+                // from valence.
+                let explicit_h: Vec<AtomIdx> = if carry_substituents
+                    && src_atom.chirality == Chirality::None
+                    && src_atom.element.is_organic_subset()
+                    && new_atom.element.is_organic_subset()
+                {
+                    input_mols[mol_idx]
+                        .neighbors(src_idx)
+                        .map(|(nb, _)| nb)
+                        .filter(|&nb| {
+                            plain_h(input_mols[mol_idx], nb)
+                                && !all_template_atoms.contains(&(mol_idx, nb))
+                        })
+                        .collect()
+                } else {
+                    Vec::new()
+                };
                 let idx = builder.add_atom(new_atom);
+                if !explicit_h.is_empty() {
+                    folded_h.extend(explicit_h.into_iter().map(|h| (mol_idx, h)));
+                    folded_cores.push(idx);
+                }
                 src_to_new.insert((mol_idx, src_idx), idx);
                 idx
             } else {
@@ -2224,6 +2265,7 @@ fn build_product(
     // Skipped when carry_substituents = false (run_reactants_strict mode).
     // Seed visited with all template atoms so BFS cannot cross into the template region.
     let mut visited: FxHashSet<(usize, AtomIdx)> = all_template_atoms.clone();
+    visited.extend(folded_h.iter().copied());
     if carry_substituents {
         let mut queue: VecDeque<(usize, AtomIdx)> = core_keys.iter().cloned().collect();
 
@@ -2301,7 +2343,21 @@ fn build_product(
 
     // Clear any Up/Down stereo markers left on bonds that are no longer adjacent
     // to a double bond (e.g. after C=C → C=O conversion via SMIRKS).
-    let molecule = clear_orphaned_stereo_bonds(product);
+    let mut molecule = clear_orphaned_stereo_bonds(product);
+
+    // Re-add the folded explicit hydrogens (see Step 1): as many H atoms as
+    // the product valence implies, after which the atom's count is pinned to
+    // its explicit H atoms, as `add_hydrogens` leaves it.
+    for &core in &folded_cores {
+        let n = chematic_core::implicit_hcount(&molecule, core);
+        molecule.set_hydrogen_count(core, Some(0));
+        for _ in 0..n {
+            let mut h = chematic_core::Atom::new(chematic_core::Element::H);
+            h.hydrogen_count = Some(0);
+            let h_idx = molecule.add_atom(h);
+            let _ = molecule.add_bond(core, h_idx, BondOrder::Single);
+        }
+    }
 
     // Both passes above keep atom indices, so `src_to_new` indexes the final
     // product. Atoms absent from it were created from the product template.
@@ -2537,6 +2593,66 @@ mod tests {
                 out.iter().map(|s| canon(&s[0])).collect::<Vec<_>>()
             );
         }
+    }
+
+    #[test]
+    fn explicit_hydrogen_reactants_give_the_implicit_products(/* issue #734 item 5 */) {
+        // Every case the issue lists: the explicit-H reactant must give the
+        // same products (compared without explicit H) as its implicit form.
+        let canon = |m: &Molecule| chematic_smiles::canonical_smiles(m);
+        let strip = |m: &Molecule| canon(&chematic_chem::remove_hydrogens(m));
+        for (smirks, reactant) in [
+            ("[C:1]-[C:2]>>[C:1]=[C:2]", "CC"),
+            ("[O:1]>>[O:1]C(=O)C", "CCO"),
+            ("[C:1]>>[C:1]Cl", "CC"),
+            ("[O:1]>>[O:1]C", "CCO"),
+            ("[C:1][O:2]>>[C:1]=[O:2]", "CO"),
+            ("[C:1][O:2]>>[C:1]=[O:2]", "CCO"),
+            ("[C:1][N:2]>>[C:1]=[N+:2]", "CN(C)C"),
+            ("[CH3:1]>>[CH3:1]", "CC"),
+            ("[C:1]>>[C:1]", "CC"),
+            ("[N:1]>>[N+:1]", "CN"),
+            ("[C:1][O:2]>>[C:1].[O:2]", "CCO"),
+        ] {
+            let implicit = parse(reactant).unwrap();
+            let explicit = chematic_chem::add_hydrogens(&implicit);
+            let mut want: Vec<String> = run_reactants(smirks, &[&implicit])
+                .unwrap()
+                .iter()
+                .map(|set| set.iter().map(canon).collect::<Vec<_>>().join("."))
+                .collect();
+            let mut got: Vec<String> = run_reactants(smirks, &[&explicit])
+                .unwrap()
+                .iter()
+                .map(|set| set.iter().map(|m| strip(m)).collect::<Vec<_>>().join("."))
+                .collect();
+            want.sort();
+            want.dedup();
+            got.sort();
+            got.dedup();
+            assert!(!want.is_empty(), "{smirks}: implicit form must react");
+            assert_eq!(got, want, "{smirks} on explicit-H {reactant}");
+        }
+        // The edited atoms keep the input's explicit-H mode: ethane with
+        // explicit H gives ethylene as C2 plus four H atoms.
+        let ethane = chematic_chem::add_hydrogens(&parse("CC").unwrap());
+        let out = run_reactants("[C:1]-[C:2]>>[C:1]=[C:2]", &[&ethane]).unwrap();
+        assert!(!out.is_empty());
+        for set in out {
+            assert_eq!(set[0].atom_count(), 6);
+            assert!(
+                set[0]
+                    .atoms()
+                    .all(|(i, _)| chematic_core::implicit_hcount(&set[0], i) == 0)
+            );
+        }
+        // A template that matches explicit hydrogens still sees them.
+        let methane = chematic_chem::add_hydrogens(&parse("C").unwrap());
+        assert!(
+            !run_reactants("[C:1][H]>>[C:1]O", &[&methane])
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
