@@ -10,6 +10,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Added a full 83-fixture graph/status regression gate for the opt-in WASM
+  checked reaction API and Linux/macOS source-wheel CI comparison against
+  pinned RDKit 2026.03.6. The latest-main Rust source rerun remains 76 exact
+  graph/origin/map matches, three typed unsupported, one diagnosed refusal,
+  and three jointly invalid; published artifacts and non-Rust provenance
+  remain unverified.
 - Corrected MMFF94 aromatic-state propagation for compact fused ring systems.
   A pinned 10,000-molecule source-only type gate reduces RDKit 2026.03.6
   atom-type differences from 2,964 to 459, with no previously correct atom
