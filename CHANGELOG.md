@@ -10,94 +10,25 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-- Added atom-origin and product-template-map arrays to checked Python and WASM
-  reaction results without annotating ordinary product molecules. A pinned
-  83-row local Python source gate agrees with RDKit 2026.03.6 on all three
-  axes for 76 rows; three remain typed unsupported, one is a diagnosed valence
-  refusal and three are invalid in both engines. Published artifacts and
-  release-profile CI results are still pending.
-- Preserve JSON-native `PipelineV2Error.diagnostics` on failed rows of the
-  fixed A6 public/source wheel runner. Diagnostic-only coordinates remain
-  under `failure_diagnostics.last_known_coords`, never a successful conformer;
-  this enables stage-level analysis of the platform-dependent rows in #739.
-  Linux published/source diagnostics agree: rows 53 and 246 satisfy stereo
-  before MMFF94, then violate one center after minimization. Published
-  macOS/Python 3.9 succeeds on both; the root platform/toolchain cause is open.
-- Exposed typed MMFF94 optimizer termination in Rust, Python
-  (`mmff94_termination`) and WASM (`mmff94Termination`): gradient
-  convergence, iteration limit or rejected fallback. This changes diagnostics,
-  not the minimization algorithm or default iteration limit. A 265-row local
-  dev-profile source-wheel rerun found three typed failures absent from the
-  published v1.0.31 run. Optimized PR wheels returned 265/265 successes on
-  macOS and 263/265 on Linux/Python 3.12. A same-host macOS published/source
-  pair preserved all 265 successes and 100 converged rows. A same-host Linux
-  Python 3.9 pair returned 263/265 for both versions, with the same typed
-  stereo failures at rows 53 and 246; these are not new source regressions.
-  Published v1.0.31 provides no Linux Python 3.12 wheel. Neither pair replaces the
-  independent 3D-quality gate.
-- Added a pinned row-level A6 non-convergence diagnosis for the published
-  v1.0.31 200/400-iteration runs: 97 rows still hit the 400-iteration cap
-  and four stop early at the same iteration in both runs. This does not
-  change the optimizer, default limit, or 3D quality claim.
-- Added a pinned 10,000-molecule source-wheel MMFF94 atom-type gate. A local
-  source wheel has 451 differing heavy-atom and eight H types versus RDKit
-  2026.03.6, down from 2,908 and 56 on published v1.0.31. This is typing
-  evidence only; published-package and independent 3D-quality gates remain open.
-- Added opt-in Python `Mol.find_matches_rdkit_parity()` with explicit
-  successful, typed-unsupported and typed-refusal outcomes. A local source
-  wheel matches pinned RDKit 2026.03.6 on 309,982/310,000 SMARTS cells;
-  the other 18 return typed unsupported rather than a false no-match. This
-  is not a published-package result or a general SMARTS parity guarantee.
-- Confirmed the 83-row checked reaction graph/status gate on Linux and macOS
-  CI source wheels and the three new-product-atom graph/origin/map cases on
-  latest Rust source. These are not published-package or cross-binding
-  provenance results.
-- Added a full 83-fixture graph/status regression gate for the opt-in WASM
-  checked reaction API and Linux/macOS source-wheel CI comparison against
-  pinned RDKit 2026.03.6. The latest-main Rust source rerun remains 76 exact
-  graph/origin/map matches, three typed unsupported, one diagnosed refusal,
-  and three jointly invalid; published artifacts and non-Rust provenance
-  remain unverified.
-- Corrected MMFF94 aromatic-state propagation for compact fused ring systems.
-  A pinned 10,000-molecule source-only type gate reduces RDKit 2026.03.6
-  atom-type differences from 2,964 to 459, with no previously correct atom
-  becoming incorrect in that corpus. Complex cages and large macrocycles
-  retain the prior behavior pending ring-model adjudication. Published-package
-  and geometry/convergence gates remain open.
-- The opt-in RDKit-style SMARTS matcher now converts the verified
-  hypervalent `[C-]`--Fe single-bond case to a dative bond in a private
-  matching view before ring perception. A source-only pinned 310,000-cell
-  check fixes the six match-set and two Boolean residuals in that row:
-  183/200 original match-set differences and all 43 original Boolean
-  differences are corrected, with zero wrong-confident cells and 18 typed
-  refusals. Native SMARTS, parsed molecules and published bindings are
-  unchanged; this is not general organometallic sanitization.
-- The opt-in SMARTS ring-count selector now searches a bounded cyclic 3-core
-  for same-size replacement rings missed when degree-two roots occur only in
-  peripheral substituents. A source-only 310,000-cell check corrects the
-  three remaining fullerene-like `[R2]`/`[R3]` rows without new wrong matches;
-  six match-set and two Boolean differences remain on one Fe-containing row.
-  Native SMARTS and general ring perception are unchanged.
-- The opt-in `[kN]` SMARTS matcher now also consumes same-size replacement
-  rings found by its bounded ring-count selector. This corrects one more
-  `[k6]` atom-set difference in a source-only 310,000-cell comparison, with
-  no new wrong-confident cells; 12 match-set and five Boolean differences,
-  plus 18 typed refusals, remain. Native SMARTS is unchanged.
-- Added opt-in WASM `run_reactants_checked` with structured reaction status,
-  counts and typed RDKit 2026.03.6 reactant-stereo refusal. Existing
-  `run_reactants` behavior is unchanged; this does not expose atom origins
-  or template maps in the npm binding.
-- The opt-in RDKit-style SMARTS matcher now uses bounded symmetrized ring
-  membership for `[kN]`; native SMARTS behavior is unchanged. A source-only
-  310,000-cell comparison corrected ten more match sets without new wrong
-  matches, while six Boolean residuals and typed refusals remain.
-- The opt-in ring-count fallback now finds alternative rings across
-  overlapping basis rings of different sizes. A separate source-only
-  310,000-cell check corrected six more match sets and one Boolean; five
-  Boolean residuals remain. Native matching is unchanged.
-- Simplified the RDKit comparison and migration guides, corrected the
-  format-limit matrix, and recorded v1.0.31 channel verification. No new
-  chemistry or performance claim is made by this documentation update.
+- Added atom-origin and product-template-map arrays to the opt-in checked
+  reaction API in Python and WASM/Node. Ordinary product molecules and the
+  existing reaction API are unchanged. A local Python source gate matches
+  pinned RDKit 2026.03.6 on graph, origin and map for 76/83 rows; three are
+  typed unsupported, one a diagnosed refusal and three invalid in both.
+  Release-profile CI and published-package provenance remain unverified.
+- Added opt-in Python `Mol.find_matches_rdkit_parity()`. Source-wheel CI
+  matches 309,982/310,000 pinned SMARTS match sets; the other 18 are typed
+  unsupported, not exact matches. Native SMARTS is unchanged and published
+  package parity is open.
+- Corrected MMFF94 aromatic-state propagation on compact fused rings and
+  added typed optimizer termination plus stage-level failure diagnostics.
+  Source-wheel atom-type differences are 451 heavy and eight H on 10,000
+  molecules, versus 2,908 and 56 on published v1.0.31. This does not clear
+  geometry, convergence, conformer-quality or cross-platform gates; Linux
+  stereo failures on rows 53/246 remain under #739.
+- Added versioned reaction, SMARTS and A6 evidence records and kept source,
+  published and historical results distinct. See the
+  [benchmark index](benchmarks/README.md) for row-level records.
 
 ## [1.0.31] - 2026-10-03
 

@@ -151,8 +151,10 @@ same documented result/error contract for shared fixtures, not every Rust type
 or every RDKit method.
 
 Atom-output order and connected-component source indices are exposed in Rust
-and Python, but not in the WASM/Node surface. Reaction-product provenance is
-currently Rust-only (`PreparedReaction::apply_match_traced` and
-`apply_reaction_match_traced`). These omissions are explicit API boundaries:
-callers must not infer a provenance map from product atom order or from a JSON
-serialization.
+and Python, but not in the WASM/Node surface. The published v1.0.31 reaction
+API has Rust-only product tracing. A later, unreleased source candidate adds
+origin and template-map arrays to Python `run_smirks_checked()` and WASM/Node
+`run_reactants_checked()`. Python arrays use returned-molecule atom indices;
+WASM/Node arrays use canonical-SMILES parse order. Neither published v1.0.31
+binding exposes those arrays. Do not infer provenance from ordinary product
+SMILES or assume an unreleased API is available in a registry package.

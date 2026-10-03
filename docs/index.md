@@ -91,6 +91,12 @@ The exposed CIP comparison has 9,995 exact rows and five typed abstentions;
 200 of 310,000 SMARTS cells remain incompatible. These are bounded results,
 not general RDKit parity or superiority.
 
+An unreleased checked-reaction source candidate now exposes product atom
+origins and template maps in Python and WASM/Node. A local Python 83-row
+comparison has 76 exact graph/origin/map results, three typed unsupported,
+one diagnosed refusal and three invalid in both engines. It is not a
+v1.0.31 registry-package claim; see the [roadmap](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md).
+
 See [validation](validation.md) for denominators, [benchmarks](benchmark.md)
 for timed boundaries, and [compatibility scope](compatibility-scope.md) for
 unsupported chemistry. Historical results remain in the
