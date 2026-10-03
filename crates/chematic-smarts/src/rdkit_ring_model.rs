@@ -52,6 +52,7 @@
 //! [`build_rdkit_parity_ring_model`].
 
 use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::VecDeque;
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
 use chematic_perception::{
@@ -426,6 +427,37 @@ pub fn build_rdkit_parity_ring_model(
                 }
             }
         }
+
+        // A fully fused cage can have no degree-two roots in its cyclic
+        // core even when peripheral substituents supplied D2 roots to the
+        // graph-wide Figueras pass. Its missing symmetrized face may be the
+        // *second*-shortest ring at every core atom (the fullerene family is
+        // one example), so an unblocked shortest-ring search cannot find it.
+        // On the 3-core of the basis-ring bond graph only, temporarily block
+        // each incident ring edge and reuse the bounded one-tree search. This
+        // is a structural graph rule, not a molecule-name exception; the
+        // same-size/unique-bond substitution check still decides acceptance.
+        if !found_extra.get() {
+            let core = ring_bond_three_core(mol, &base_bond_sets);
+            for root in core {
+                for (_, bond) in mol.neighbors(root) {
+                    if !bond_ring_count.contains_key(&bond) {
+                        continue;
+                    }
+                    let blocked = FxHashSet::from_iter([bond]);
+                    for candidate in find_smallest_rings_bfs_with_rdkit_tree(mol, root, &blocked) {
+                        candidates_examined += 1;
+                        if candidates_examined > budget.max_candidates {
+                            return Err(RdkitParityError::RingModelBudgetExceeded {
+                                candidates_examined,
+                                cap: budget.max_candidates,
+                            });
+                        }
+                        accept_candidate(candidate);
+                    }
+                }
+            }
+        }
     }
 
     // Several D2 groups can describe the same connected symmetry class. Keep
@@ -460,6 +492,48 @@ pub fn build_rdkit_parity_ring_model(
         extra_rings,
         extra_ring_count,
     })
+}
+
+/// Vertices that survive iterative degree-<3 pruning of the cyclic bond
+/// graph. Peripheral fused/pendant rings peel away; dense cage interiors do
+/// not. This is independent of atom numbering and excludes acyclic branches.
+fn ring_bond_three_core(mol: &Molecule, base_bond_sets: &[FxHashSet<BondIdx>]) -> Vec<AtomIdx> {
+    let n = mol.atom_count();
+    let ring_bonds: FxHashSet<BondIdx> = base_bond_sets
+        .iter()
+        .flat_map(|set| set.iter().copied())
+        .collect();
+    let mut neighbors = vec![Vec::new(); n];
+    for bond_idx in ring_bonds {
+        let bond = mol.bond(bond_idx);
+        let a = bond.atom1.0 as usize;
+        let b = bond.atom2.0 as usize;
+        neighbors[a].push(b);
+        neighbors[b].push(a);
+    }
+    let mut degree: Vec<usize> = neighbors.iter().map(Vec::len).collect();
+    let mut active: Vec<bool> = degree.iter().map(|&d| d > 0).collect();
+    let mut pending: VecDeque<usize> = (0..n)
+        .filter(|&idx| active[idx] && degree[idx] < 3)
+        .collect();
+    while let Some(idx) = pending.pop_front() {
+        if !active[idx] {
+            continue;
+        }
+        active[idx] = false;
+        for &other in &neighbors[idx] {
+            if active[other] {
+                degree[other] -= 1;
+                if degree[other] == 2 {
+                    pending.push_back(other);
+                }
+            }
+        }
+    }
+    (0..n)
+        .filter(|&idx| active[idx])
+        .map(|idx| AtomIdx(idx as u32))
+        .collect()
 }
 
 /// Build an experimental ring-count model from perception's shared bounded
@@ -749,5 +823,21 @@ mod tests {
             result,
             Err(RdkitParityError::RingModelBudgetExceeded { .. })
         ));
+    }
+
+    #[test]
+    fn substituted_fullerene_cage_finds_missing_six_face() {
+        // Pinned RDKit 2026.03.6 has 33 selected rings here. CheMatic's
+        // minimal basis has 32, leaving atoms 20/21/22/45/46/47 falsely at
+        // [R2]. All six belong to the extra six-membered face and are [R3].
+        let mol = parse("COCCOCCOCCN1CC23C4=C5C6=C7c8c9c%10c%11c%12c%13c%14c(c2c2c%15c%16c%17c%18c%19c(c5c5c%20c%21c%22c%23c(c8C%22C65)c%10c5c%11c6c%13c8c(c%15%14)c%16c%10c%18c%11c(c%20%19)c%21c%13c%23c5c5c%13c%11c%10c8c65)C%17C42)C%12C9C73C1COCCOCCOC").unwrap();
+        let base = find_sssr(&mol);
+        let model =
+            build_rdkit_parity_ring_model(&mol, &base, &RdkitRingModelBudget::default()).unwrap();
+        assert_eq!(base.ring_count(), 32);
+        assert_eq!(model.extra_ring_count(), 1);
+        for raw in [20, 21, 22, 45, 46, 47] {
+            assert_eq!(model.ring_count(AtomIdx(raw)), 3, "atom {raw}");
+        }
     }
 }
