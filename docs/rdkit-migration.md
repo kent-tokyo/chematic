@@ -16,7 +16,7 @@ operation-level measurement and unsupported states, see the
 |---|---|---|---|
 | Parse SMILES | `Chem.MolFromSmiles(s)` | `chematic.from_smiles(s)`; Rust `chematic_smiles::parse` | Invalid inputs and error text need not match. |
 | Write SMILES | `Chem.MolToSmiles(m)` | `mol.smiles`; Rust `canonical_smiles` | Text equality is not a general identity test. |
-| Match SMARTS | `mol.HasSubstructMatch(q)` | `mol.has_substructure(q)` / `mol.find_matches(q)` | Query interpretation has recorded residuals; index/atom order can differ. |
+| Match SMARTS | `mol.HasSubstructMatch(q)` | `mol.has_substructure(q)` / `mol.find_matches(q)`; opt-in `mol.find_matches_rdkit_parity(q)` | Native query interpretation has recorded residuals. The opt-in result distinguishes no-match from typed refusal; match atom order can differ. |
 | Descriptors | `Descriptors.MolWt(m)`, `rdMolDescriptors.CalcTPSA(m)` | `mol.mw`, `mol.tpsa`, `mol.descriptors()` | Choose native or named RDKit-compatible profiles explicitly. |
 | Fingerprints | `rdFingerprintGenerator.GetMorganGenerator(...)` | `mol.ecfp4()` or named RDKit-compatible Morgan API | Native ECFP and RDKit Morgan bit positions are different profiles. |
 | Similarity | `DataStructs.TanimotoSimilarity(a, b)` | `chematic.tanimoto(a, b)` | Use fingerprints from the same declared profile. |
@@ -43,6 +43,10 @@ read/write coverage rather than assuming every RDKit format is supported.
 - **Aromaticity and SMARTS:** the default per-SSSR model and opt-in
   `AromaticityAlgorithm::RdkitLike` are distinct. The v1.0.30 published
   audit retains 200 disagreements in 310,000 SMARTS query/target cells.
+  A locally built source wheel's opt-in Python profile matches 309,982 cells
+  and marks 18 as typed unsupported; it is not yet published-package evidence.
+  Check `result["status"]` before using `result["matches"]`: `[]` under `ok`
+  means no match, while `None` under a refusal is not a negative match.
   Do not assume `R`/`r` ring-count semantics or a Kekulé/aromatic input
   spelling is interchangeable across engines.
 - **Fingerprints:** native `ecfp4()` uses its own hashing. Use the named

@@ -14,12 +14,24 @@ Quick start::
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator, Optional, Union
+from typing import Any, Iterable, Iterator, Literal, Optional, TypedDict, Union
 
 import numpy as np
 from numpy import ndarray
 
 __version__: str
+
+class SmartsParityOk(TypedDict):
+    status: Literal["ok"]
+    reason: None
+    matches: list[list[int]]
+
+class SmartsParityRefusal(TypedDict):
+    status: Literal["typed_unsupported", "typed_refusal"]
+    reason: str
+    matches: None
+
+SmartsParityResult = Union[SmartsParityOk, SmartsParityRefusal]
 
 # ---------------------------------------------------------------------------
 # Mol
@@ -681,6 +693,18 @@ class Mol:
             mol = chematic.from_smiles("OCC(=O)O")
             mol.find_matches("[OH]")          # [[0], [4]]
             mol.find_matches("[CX3](=O)[OH]") # [[1, 2, 4]]
+        """
+        ...
+
+    def find_matches_rdkit_parity(self, smarts: str) -> SmartsParityResult:
+        """Opt-in RDKit 2026.03.6-style match sets with explicit refusal.
+
+        ``status == "ok"`` provides sorted atom-index sets in ``matches``;
+        an empty list means a completed search with no match. For
+        ``typed_unsupported`` or ``typed_refusal``, ``matches`` is ``None``
+        and ``reason`` is a stable machine-readable code. This is a bounded
+        compatibility profile, not a general RDKit equivalence guarantee.
+        Invalid SMARTS raises ``ValueError``.
         """
         ...
 
