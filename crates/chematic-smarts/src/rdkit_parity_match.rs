@@ -9,9 +9,10 @@
 //! evaluator diverges from `match_vf2.rs` for `AtomPrimitive::RingCount`
 //! (`[RN]`) and `AtomPrimitive::RingSize` (`[kN]`). See
 //! [`crate::rdkit_ring_model`] for the ring-count model. Ring-size membership
-//! uses a separately bounded symmetrized-SSSR selection. All other
-//! ring-shaped primitives (`[R]`/`[R0]`, `[rN]`, `[xN]`, ring-bond `@`/`!@`)
-//! retain the plain-SSSR formula from `match_vf2.rs`.
+//! uses a separately bounded symmetrized-SSSR selection. The narrow
+//! Fe--[C-] cleanup below also makes `[xN]` and ring-bond `@`/`!@` exclude
+//! a converted dative bond. Other ring primitives retain the plain-SSSR
+//! formula from `match_vf2.rs`.
 //!
 //! Everything else in this file — chirality/isotope handling, valence,
 //! hybridization, recursive-SMARTS anchoring, the visit-budget/
@@ -21,7 +22,7 @@
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, implicit_hcount};
 use chematic_perception::{RingSet, SymmetrizedSssrStatus};
 
 use crate::match_vf2::{MatchConfig, MatchOutcome};
@@ -89,6 +90,13 @@ pub fn find_matches_rdkit_parity(
     } else {
         mol
     };
+
+    // RDKit sanitization converts a hypervalent carbanion--metal single
+    // bond into a dative bond before ring perception. Keep this narrowly
+    // established Fe case inside the opt-in matcher: the caller's molecule,
+    // native SMARTS, and the general SMILES parser remain unchanged.
+    let organometallic_view = rdkit_parity_iron_carbanion_view(mol_ref);
+    let mol_ref = organometallic_view.as_ref().unwrap_or(mol_ref);
 
     let rings = chematic_perception::find_sssr(mol_ref);
     let uses_ring_size = query_uses_ring_size(query);
@@ -168,6 +176,51 @@ pub fn find_matches_rdkit_parity(
     }
 
     Ok((results, ctx.budget_exhausted.get()))
+}
+
+/// Reproduce the verified Fe--[C-] valence-four cleanup case without
+/// pretending to implement RDKit's full organometallic sanitizer. RDKit
+/// 2026.03.6 converts this single bond to dative before its ring search.
+/// We only change a uniquely identified Fe bond; multiple metal choices
+/// require canonical ranking and are deliberately left for separate work.
+fn rdkit_parity_iron_carbanion_view(mol: &Molecule) -> Option<Molecule> {
+    let mut convert: Vec<BondIdx> = Vec::new();
+    for (idx, atom) in mol.atoms() {
+        if atom.element != Element::C
+            || atom.charge != -1
+            || atom.aromatic
+            || atom.hydrogen_count != Some(0)
+        {
+            continue;
+        }
+        // Keep this narrow: four explicit single bonds, no H, and exactly
+        // one of those singles to Fe. Other valence/metal combinations need
+        // their own oracle adjudication before changing the private view.
+        let bonds: Vec<_> = mol.neighbors(idx).collect();
+        if bonds.len() != 4
+            || bonds
+                .iter()
+                .any(|(_, bond)| mol.bond(*bond).order != BondOrder::Single)
+        {
+            continue;
+        }
+        let metal_bonds: Vec<_> = bonds
+            .iter()
+            .filter(|(neighbor, _)| mol.atom(*neighbor).element == Element::FE)
+            .map(|(_, bond)| bond)
+            .collect();
+        if metal_bonds.len() == 1 {
+            convert.push(*metal_bonds[0]);
+        }
+    }
+    if convert.is_empty() {
+        return None;
+    }
+    let mut view = mol.clone();
+    for bond in convert {
+        view.set_bond_order(bond, BondOrder::Dative);
+    }
+    Some(view)
 }
 
 /// Existence-only search, mirroring [`crate::has_match_bounded`]'s 3-way
@@ -392,7 +445,7 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         AtomPrimitive::Wildcard => true,
         AtomPrimitive::Recursive(sub_query) => has_match_anchored(sub_query, idx, ctx),
         AtomPrimitive::Valence(v) => eval_valence(idx, ctx, *v),
-        // [xN] -- provably invariant, same rationale as RingMembership above.
+        // [xN] -- use the same ring basis, but never count a dative edge.
         AtomPrimitive::RingBondCount(x) => eval_ring_bond_count(idx, ctx, *x),
         AtomPrimitive::TotalConnectivity(x) => {
             ctx.mol.neighbors(idx).count() as u8 + implicit_hcount(ctx.mol, idx) == *x
@@ -445,11 +498,13 @@ fn eval_ring_bond_count(idx: AtomIdx, ctx: &EvalCtx<'_>, x: u8) -> bool {
     let count = ctx
         .mol
         .neighbors(idx)
-        .filter(|(nb, _)| {
-            ctx.rings
-                .rings()
-                .iter()
-                .any(|ring| ring.contains(&idx) && ring.contains(nb))
+        .filter(|(nb, bond)| {
+            ctx.mol.bond(*bond).order != BondOrder::Dative
+                && ctx
+                    .rings
+                    .rings()
+                    .iter()
+                    .any(|ring| ring.contains(&idx) && ring.contains(nb))
         })
         .count() as u8;
     count == x
@@ -638,13 +693,16 @@ fn eval_bond_primitive(
                 | BondOrder::QueryDoubleOrAromatic
         ),
         BondPrimitive::Any => true,
-        // Ring-bond `@`/`!@` -- provably invariant, same rationale as
-        // RingMembership/RingBondCount above.
-        BondPrimitive::Ring => ctx
-            .rings
-            .rings()
-            .iter()
-            .any(|ring| ring.contains(&a) && ring.contains(&b)),
+        // Dative bonds are excluded from the ring model, even when both
+        // endpoints happen to lie in another ring of that model.
+        BondPrimitive::Ring => {
+            order != BondOrder::Dative
+                && ctx
+                    .rings
+                    .rings()
+                    .iter()
+                    .any(|ring| ring.contains(&a) && ring.contains(&b))
+        }
         BondPrimitive::Up => matches!(order, BondOrder::Up),
         BondPrimitive::Down => matches!(order, BondOrder::Down),
     }
@@ -655,6 +713,68 @@ mod tests {
     use super::*;
     use crate::parser::parse_smarts;
     use chematic_smiles::parse;
+
+    #[test]
+    fn organometallic_ring_closure_is_single_in_raw_graph() {
+        let mol = parse("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10").unwrap();
+        let (bond_idx, bond) = mol.bond_between(AtomIdx(4), AtomIdx(9)).unwrap();
+        assert_eq!(bond.order, BondOrder::Single);
+        assert_eq!(mol.atom(AtomIdx(4)).charge, -1);
+        assert_eq!(mol.atom(AtomIdx(9)).element.atomic_number(), 26);
+        assert_eq!(
+            mol.neighbors(AtomIdx(4))
+                .map(|(_, idx)| mol.bond(idx).order.order_int() as usize)
+                .sum::<usize>(),
+            4
+        );
+        assert_eq!(mol.bond(bond_idx).order, BondOrder::Single);
+
+        let view = rdkit_parity_iron_carbanion_view(&mol).unwrap();
+        assert_eq!(view.bond(bond_idx).order, BondOrder::Dative);
+        assert_eq!(mol.bond(bond_idx).order, BondOrder::Single);
+        let (ordinary_fe_bond, _) = mol.bond_between(AtomIdx(9), AtomIdx(10)).unwrap();
+        assert_eq!(view.bond(ordinary_fe_bond).order, BondOrder::Single);
+        let rings = chematic_perception::find_sssr(&view);
+        assert_eq!(
+            rings
+                .rings()
+                .iter()
+                .filter(|ring| ring.contains(&AtomIdx(4)))
+                .count(),
+            1
+        );
+
+        for (pattern, should_contain) in [
+            ("[R1]", true),
+            ("[R2]", false),
+            ("[x2]", true),
+            ("[x3]", false),
+        ] {
+            let query = parse_smarts(pattern).unwrap();
+            let (matches, exhausted) =
+                find_matches_rdkit_parity(&query, &mol, &RdkitParityConfig::default()).unwrap();
+            assert!(!exhausted);
+            assert_eq!(
+                matches
+                    .iter()
+                    .any(|mapping| mapping.values().any(|idx| *idx == AtomIdx(4))),
+                should_contain,
+                "{pattern}"
+            );
+        }
+
+        for (pattern, should_contain) in [("*@*", false), ("*!@*", true)] {
+            let query = parse_smarts(pattern).unwrap();
+            let (matches, exhausted) =
+                find_matches_rdkit_parity(&query, &mol, &RdkitParityConfig::default()).unwrap();
+            assert!(!exhausted);
+            assert_eq!(
+                atom_sets(&matches).contains(&vec![4, 9]),
+                should_contain,
+                "{pattern}"
+            );
+        }
+    }
 
     fn atom_sets(matches: &[FxHashMap<usize, AtomIdx>]) -> Vec<Vec<u32>> {
         let mut sets: Vec<Vec<u32>> = matches

@@ -10,6 +10,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- The opt-in RDKit-style SMARTS matcher now converts the verified
+  hypervalent `[C-]`--Fe single-bond case to a dative bond in a private
+  matching view before ring perception. A source-only pinned 310,000-cell
+  check fixes the six match-set and two Boolean residuals in that row:
+  183/200 original match-set differences and all 43 original Boolean
+  differences are corrected, with zero wrong-confident cells and 18 typed
+  refusals. Native SMARTS, parsed molecules and published bindings are
+  unchanged; this is not general organometallic sanitization.
 - The opt-in SMARTS ring-count selector now searches a bounded cyclic 3-core
   for same-size replacement rings missed when degree-two roots occur only in
   peripheral substituents. A source-only 310,000-cell check corrects the

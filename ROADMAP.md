@@ -14,7 +14,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 | P0.1 outputs | Python, npm and pinned Rust artifacts reran 10,000 chemistry inputs, 310,000 SMARTS cells and 57 legacy reactions. Python/Rust covered 63 operation outputs; only HBA and its bundle changed from v1.0.29. Published HBA: 5,000/5,000 vs pinned RDKit 2026.03.6. | **Audit complete, parity not complete:** 200 SMARTS failures, five typed CIP abstentions and four npm-unexposed operations remain. See the [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
 | P0.2 speed | The published Python 63-operation matrix has 20 paired blocks; 20 operations pass exact-output and confidence-interval gates on one host. Published npm/WASM Morgan also has Node and Chromium lanes; Ubuntu 24.04 Chromium, Firefox and WebKit each have 250/250 bit-exact direct/prepared rows and favorable 20-block speed intervals (smallest lower bound 1.63×). | Equal-work perception and library-memory boundaries, other operations/bindings and more corpora. Process RSS is not library allocation; changed HBA output cannot earn an equivalent-output speed win. |
 | P1 reactions | Original 57 fixtures match. Published v1.0.30 had 73/83 graph+origin+template-map matches. The checked v1.0.31-source profile has 76 exact on all three axes, three typed unsupported, one diagnosed refusal and three jointly invalid rows; see the [source audit](benchmarks/2026-10-03-source-reaction-83-checked-graph-origin-map.md). | Publish/rebuild the source fix and rerun applicable Rust/Python/npm provenance gates. Typed refusal and invalid input are not exact matches; no general SMIRKS parity claim. |
-| P1 SMARTS | Published v1.0.30 has 200 differing **match-set** cells / 310,000, but only 43 hit/no-hit differences. An opt-in source candidate corrects 177 match sets / 41 Booleans, with 6 / 2 wrong-confident cells in one Fe-containing row and 18 typed refusals; the native matcher is unchanged. | Adjudicate organometallic ring semantics and the 18 refused charged-polycycle cells, then expose and measure a deliberate opt-in published profile. Source improvements and typed refusals are not exact parity. |
+| P1 SMARTS | Published v1.0.30 has 200 differing **match-set** cells / 310,000, but only 43 hit/no-hit differences. The [opt-in source candidate](benchmarks/2026-10-03-source-smarts-organometallic-ring-view.md) corrects 183 match sets and all 43 Booleans, with zero wrong-confident cells and 18 typed refusals; the native matcher is unchanged. | Adjudicate the 18 refused charged-polycycle cells, then expose and measure a deliberate opt-in published profile. Source improvements and typed refusals are not exact parity. |
 | P2 A6 quality | The [published v1.0.31 MMFF94 stereo-safe rerun](benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md) has 265/265 independently sound, stereo-clean and gross-clash-free outputs, but only 100/265 force-field convergence. Separate same-coordinate total energies are within 1 kcal/mol on 262/262 comparable rows. A current-wheel 10k typing census still has 2,908 heavy-atom differences; a 400-iteration diagnostic raises convergence to 164/265 without changing the package default. | Classify the 101 still non-converged, 2,908 numeric type differences, per-term energy residuals, two RDKit embedding failures and one declared unsupported row; measure independent conformer quality. Current geometry/stereo and bounded total-energy results do not complete A6. |
 
 The [v1.0.30 published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md),
@@ -42,13 +42,13 @@ have separate gates.
    classified as such; reaction yield/selectivity is outside this gate.
 2. **P1 / A4 — Reduce SMARTS residuals without broadening silent support.**
    The published baseline remains 200 differing match sets / 43 Booleans.
-   Current opt-in source profiling leaves six wrong-confident match sets and
-   two Boolean errors, all on one Fe-containing organometallic graph. The
-   three fullerene-like `[R2]`/`[R3]` rows and the exposed `[k6]` atom-set
-   difference are corrected in source. Independently adjudicate coordination
-   semantics and supported domain; fix graph-model
-   defects or return typed unsupported, not a guessed match. Preserve native
-   SSSR. **Exit:** rerun the full pinned 310,000-cell matrix on affected
+   Current opt-in source profiling corrects 183 match sets and all 43 Boolean
+   errors without a wrong-confident cell. The Fe-containing residual was a
+   narrowly verified hypervalent carbanion-to-Fe single bond that RDKit
+   sanitizes to dative before ring perception. The source fix does not provide
+   general organometallic sanitization. Independently adjudicate the 18
+   charged-polycycle refusals and document the supported boundary; preserve
+   native SSSR. **Exit:** rerun the full pinned 310,000-cell matrix on affected
    published bindings with row-level match sets, Booleans and refusal counts;
    zero new wrong-confident cells. The 18 source-only refusals do not count
    as exact parity.
