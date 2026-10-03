@@ -10,6 +10,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Added a pinned row-level A6 non-convergence diagnosis for the published
+  v1.0.31 200/400-iteration runs: 97 rows still hit the 400-iteration cap
+  and four stop early at the same iteration in both runs. This does not
+  change the optimizer, default limit, or 3D quality claim.
 - Added a pinned 10,000-molecule source-wheel MMFF94 atom-type gate. A local
   source wheel has 451 differing heavy-atom and eight H types versus RDKit
   2026.03.6, down from 2,908 and 56 on published v1.0.31. This is typing
