@@ -25,6 +25,28 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - SMARTS `[H]`, `[2H]`, `[H+]` and `[H:1]` are hydrogen atoms, per
   Daylight/OpenSMARTS and RDKit; `[*H]`, `[CH]`, `[H1]` and `[C;H]` keep
   the H-count meaning.
+- A mapped atom takes a changed product element (#734): `[C:1]>>[N:1]` on
+  ethane gives `CN` instead of returning the reactant unchanged. As in
+  RDKit, the product element applies when it differs from the reactant
+  template's; a `[*:1]` product atom keeps the matched element.
+- Reaction products are also checked against RDKit's sanitize valence rules
+  (#734): neutral four-bonded N (`N(=C)(C)C`), uncharged N-oxide spellings
+  (`N(=O)(C)C`) and ipso-substituted aromatic carbons are dropped, as RDKit
+  drops them; aromatic products must kekulize. `[#7+:1]`-style charged
+  atomic-number atoms are supported, so `[#7:1]>>[#7+:1]C` on pyridine gives
+  aromatic `C[n+]1ccccc1`.
+- Implicit hydrogens on electron-poor charged atoms follow the isoelectronic
+  rule (#734): N2+ and C+ take valence 3, B- valence 4, so
+  `[N:1]>>[N+2:1]` on methylamine gives `C[NH2+2]` (was `C[NH4+2]`). Atoms
+  with four or more valence electrons (N+, O-, S+, C-...) are unchanged.
+- Reactants with explicit hydrogen atoms (`add_hydrogens`) give the same
+  products as their implicit-H forms (#734); the edited atoms keep explicit
+  H atoms. Templates that match `[H]` still see them.
+- SMARTS gains RDKit's `z`/`Z` (heteroatom / aliphatic heteroatom neighbour
+  count), `d` (non-hydrogen degree), ranges such as `[CD{1-2}]`, `[R{1-}]`,
+  `[+{1-2}]`, and dative bonds `->`/`<-` (#734). Bare `D`, `X` and `v` mean
+  `D1`, `X1`, `v1`. New `AtomPrimitive` and `BondPrimitive` variants are
+  added for these.
 - On 45 reaction-rule cases (the issue's table plus BioTransformer-style
   phase I/II rules) `run_smirks` gives the same product sets as RDKit
   2026.03.6 on 44; the remaining one is a chiral reactant template, already
