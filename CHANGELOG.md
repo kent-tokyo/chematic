@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.32] - 2026-10-03
+
 - Added atom-origin and product-template-map arrays to the opt-in checked
   reaction API in Python and WASM/Node. Ordinary product molecules and the
   existing reaction API are unchanged. Pinned RDKit 2026.03.6 comparisons on

@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "product": "chematic",
+  "release": {
+    "version": "1.0.32",
+    "tag": "v1.0.32",
+    "commit": null,
+    "commit_source": "Pre-tag record; the GitHub Release asset is generated from the exact tag commit and replaces this timestamp and null commit after publication.",
+    "released_at": "2026-10-03T10:09:04Z"
+  },
+  "evidence_context": {
+    "stable_release": {"version": "1.0.32", "tag": "v1.0.32", "commit": null},
+    "candidate": null,
+    "oracle_lanes": [
+      {"engine": "RDKit", "version": "2025.09.3", "role": "pinned_regression", "status": "active"},
+      {"engine": "RDKit", "version": "2026.03.6", "role": "separate_comparison", "status": "active"}
+    ],
+    "measurement_version_policy": "Measurements retain their recorded source, artifact, corpus, and comparator version; v1.0.30 and v1.0.31 results remain historical until v1.0.32 published artifacts are rerun."
+  },
+  "packages": {
+    "rust": {"name": "chematic", "version": "1.0.32", "registry_url": "https://crates.io/crates/chematic/1.0.32"},
+    "python": {"name": "chematic", "version": "1.0.32", "registry_url": "https://pypi.org/project/chematic/1.0.32/"},
+    "npm": {"name": "@kent-tokyo/chematic", "version": "1.0.32", "registry_url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.0.32"}
+  },
+  "wasm": {
+    "artifact": "crates/chematic-wasm/pkg/chematic_wasm_bg.wasm",
+    "measurements": [
+      {"status": "historical", "release_or_snapshot": "v1.0.2 release candidate", "raw_bytes": 3300452, "compressed_bytes": 1213008, "command": "wasm-pack 0.13.1; wasm-opt 130 -O3; gzip -9", "runtime": "macOS arm64", "source": "benchmarks/2026-09-04-wasm-size.md"}
+    ]
+  },
+  "mcp": {"tool_count": 20, "transport": ["stdio"], "network_enabled_tools": ["pubchem_lookup"]},
+  "benchmarks": {
+    "historical": [
+      {"path": "benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md", "status": "historical", "versions": ["published chematic 1.0.30", "RDKit 2026.03.6"], "commit": "v1.0.30", "corpus": "exposed chemistry, SMARTS, reaction and operation cohorts", "hardware": "record-specific"},
+      {"path": "benchmarks/2026-10-03-reaction-83-python-provenance-source.md", "status": "historical", "versions": ["v1.0.31 source candidate", "RDKit 2026.03.6"], "commit": "d3b27f1c", "corpus": "83 stratified exposed reaction rows", "hardware": "GitHub Actions Linux and macOS arm64"}
+    ]
+  },
+  "generated_at": "2026-10-03T10:09:04Z"
+}

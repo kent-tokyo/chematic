@@ -23,10 +23,10 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.31 范围
+### v1.0.32 范围
 
-最新已发布版本为 v1.0.31。反应原子来源、可选 SMARTS 兼容模式和 MMFF94
-诊断改进已合入 main，但尚未作为新版本发布。各版本的测量范围见
+v1.0.32 增加了反应原子来源、可选 SMARTS 兼容模式和 MMFF94 诊断。
+比较数据来自发布配置的源码构建；已发布包仍需单独复测。各版本的测量范围见
 [验证报告](docs/validation.md)，变更见 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用

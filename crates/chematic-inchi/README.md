@@ -14,7 +14,7 @@ Output is **bit-exact** with the reference implementation.
 
 ```toml
 [dependencies]
-chematic-inchi = { version = "1.0.31", features = ["native-inchi"] }
+chematic-inchi = { version = "1.0.32", features = ["native-inchi"] }
 ```
 
 ```rust

@@ -23,11 +23,11 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.0.31 の対応範囲
+### v1.0.32 の対応範囲
 
-最新版は公開済みのv1.0.31です。反応の原子由来、opt-in SMARTS互換、MMFF94の
-診断強化はmainにマージ済みですが、まだ公開パッケージの機能ではありません。
-版ごとの測定範囲は[検証報告](docs/validation.md)、変更内容は[CHANGELOG](CHANGELOG.md)を参照してください。
+v1.0.32では、反応の原子由来、opt-in SMARTS互換、MMFF94の診断を強化しました。
+比較数値は公開用設定のsourceビルドに対する結果であり、公開パッケージの再測定は
+別途必要です。詳しくは[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方
 

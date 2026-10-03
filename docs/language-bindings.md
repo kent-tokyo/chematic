@@ -6,14 +6,14 @@ have different API and error shapes. This page names those differences.
 ## Atom provenance and output order
 
 The atom-tracking APIs expose only mappings with a documented atom order.
-The checked reaction additions below are merged source APIs, not part of
-the published v1.0.31 bindings.
+The checked reaction additions below are included in v1.0.32. Their measured
+comparison is a source-wheel result; published-package parity remains open.
 
 | Capability | Rust | Python | WASM / Node |
 |---|---|---|---|
 | SMILES atom output order | `write_with_atom_order`, `canonical_smiles_with_atom_order` | `Mol.smiles_with_atom_order()` | Not exposed |
 | Connected-component source atom indices | `Molecule::fragments_with_source_atoms()` | `Mol.connected_components_with_atom_indices()` | Not exposed |
-| Reaction product atom provenance and template maps | `PreparedReaction::apply_match_traced`, `run_reactants_traced_with_diagnostics` | Unreleased: `run_smirks_checked()` returns `product_atom_sources` and `product_template_maps` | Unreleased: `run_reactants_checked()` returns the same JSON arrays |
+| Reaction product atom provenance and template maps | `PreparedReaction::apply_match_traced`, `run_reactants_traced_with_diagnostics` | `run_smirks_checked()` returns `product_atom_sources` and `product_template_maps` | `run_reactants_checked()` returns the same JSON arrays |
 
 `order[k]` is the input atom index for the `k`-th atom written in a SMILES
 string; it is also that atom's index after parsing the returned string.
