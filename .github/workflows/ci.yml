@@ -48,6 +48,7 @@ jobs:
           python3 scripts/check_rdkit_rebaseline_manifest.py
           python3 scripts/check_rdkit_rebaseline_execution.py
           python3 scripts/check_rdkit_rebaseline_evidence.py
+          python3 scripts/check_rdkit_2026_09_rebaseline_evidence.py
           python3 scripts/check_v1029_accuracy_packet.py
           python3 scripts/generate_compatibility_dashboard.py --output /tmp/compatibility-dashboard.md
           diff -u docs/compatibility-dashboard.md /tmp/compatibility-dashboard.md

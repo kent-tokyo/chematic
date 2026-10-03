@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-03. Release line: **v1.0.32**. Release-source and
+> Updated 2026-10-04. Release line: **v1.0.33**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -62,8 +62,10 @@ Exposed data are not sealed evidence.
    bounded, Standard InChI separate from native identifiers, and canonical
    SMILES separate from the fail-closed stable key. **Exit:** cross-binding
    fixtures with no silent information loss.
-7. **External — Rebaseline RDKit only after pinning a new official release.**
-   Retain 2026.03.6 evidence and do not tune on sealed data.
+7. **External — Complete RDKit 2026.09.1 rebaseline.** The official npm/WASM
+   lane is pinned and measured on exposed 10k inputs; the Python/nanobind and
+   independent native lanes remain unmeasured until versioned artifacts/build
+   packets exist. Preserve the 2026.03.6 baseline and never tune on sealed data.
 
 Silent corruption or a security regression takes precedence. Source,
 published-package and sealed results remain separate evidence classes.

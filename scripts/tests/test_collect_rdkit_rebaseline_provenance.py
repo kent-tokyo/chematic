@@ -152,3 +152,27 @@ def test_npm_lane_never_infers_runtime_from_package_version(tmp_path: Path):
     assert lane["availability"] == "installed_not_executed"
     assert lane["runtime"] == {"version": None, "status": "not_measured"}
     assert "runtime" in lane["missing_dimensions"]
+
+
+def test_npm_lane_reads_absolute_prefix_lock_key(tmp_path: Path):
+    node_modules = tmp_path / "node_modules"
+    package_dir = node_modules / "@rdkit" / "rdkit"
+    package_dir.mkdir(parents=True)
+    (package_dir / "package.json").write_text(
+        json.dumps({"name": "@rdkit/rdkit", "version": "2026.9.1"}),
+        encoding="utf-8",
+    )
+    lock_path = node_modules / ".package-lock.json"
+    lock_path.write_text(
+        json.dumps({"packages": {
+            "../../private/tmp/rebaseline/node_modules/@rdkit/rdkit": {
+                "integrity": "sha512-exact", "resolved": "https://registry.npmjs.org/rdkit.tgz"
+            }
+        }}),
+        encoding="utf-8",
+    )
+
+    lane = collect_npm_lane(package_dir, "2026.09.1")
+
+    assert lane["package"]["registry"]["integrity"] == "sha512-exact"
+    assert "registry_integrity" not in lane["missing_dimensions"]
