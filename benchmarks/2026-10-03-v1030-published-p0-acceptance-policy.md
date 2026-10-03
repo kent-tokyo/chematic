@@ -10,7 +10,7 @@ The source-only formula fix and older timing records are excluded.
 
 | Result | Adoption policy |
 |---|---|
-| 10,000 chemistry inputs and 310,000 SMARTS cells per applicable artifact | Count every input/cell. The 200 different SMARTS booleans are **compatibility failures**, not matches or typed refusals. All are named in the archived classification: 194 symmetrized-ring and six organometallic ring-semantics cells across 64 rows. Native SSSR remains the default; a future RDKit-style ring profile must be opt-in and newly measured. |
+| 10,000 chemistry inputs and 310,000 SMARTS cells per applicable artifact | Count every input/cell. The 200 different SMARTS **match sets** are compatibility failures, not matches or typed refusals. Of these, 43 also change the hit/no-hit Boolean; 157 have the same Boolean but different matched atom sets. All are named in the archived classification: 194 symmetrized-ring and six organometallic ring-semantics cells across 64 rows. Native SSSR remains the default; a future RDKit-style ring profile must be opt-in and newly measured. |
 | CIP and compatible Morgan on the same 10,000 inputs | CIP is 9,995 exact plus five **typed abstentions**, not 100% labelled parity. Morgan is 9,999 exact plus one typed refusal, not 10,000 exact. Preserve both denominators and reasons. |
 | Canonical SMILES | Literal RDKit spelling agrees on 64/10,000, while semantic round-trip succeeds on 10,000/10,000. Treat semantic identity and exact spelling as separate gates. |
 | 63-operation matrix, v1.0.29 → v1.0.30 | Published Python and Rust each cover all 63 operations and 210,410 output rows per release. Only HBA and its Lipinski bundle change, on the same 1,359 rows. The 10,000-row chemistry stream does not include HBA; its byte identity is not evidence of HBA parity. HBA's independent 5,000/5,000 RDKit result is separate. |
@@ -21,7 +21,7 @@ The source-only formula fix and older timing records are excluded.
 The v1.0.29/v1.0.30 rowwise differential was executed independently for
 each published binding and does not inherit v1.0.29 measurements. The
 200 SMARTS cells cannot be relabelled as unsupported after the fact: the
-published APIs returned confident booleans. Their chemistry policy and future
+published APIs returned confident match sets. Their chemistry policy and future
 implementation work remain open under P1. The four npm gaps likewise require
 a future published package before they can be measured. Exposed fixtures do
 not become sealed evaluation data.

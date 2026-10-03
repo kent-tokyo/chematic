@@ -13,7 +13,9 @@ boundaries, and reproducible evidence take priority over feature-count races.
 |---|---|---|
 | P0.1 outputs | Python, npm and pinned Rust artifacts reran 10,000 chemistry inputs, 310,000 SMARTS cells and 57 legacy reactions. Python/Rust covered 63 operation outputs; only HBA and its bundle changed from v1.0.29. Published HBA: 5,000/5,000 vs pinned RDKit 2026.03.6. | **Audit complete, parity not complete:** 200 SMARTS failures, five typed CIP abstentions and four npm-unexposed operations remain. See the [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
 | P0.2 speed | The published Python 63-operation matrix has 20 paired blocks; 20 operations pass exact-output and confidence-interval gates on one host. Published npm/WASM Morgan also has Node and Chromium lanes; Ubuntu 24.04 Chromium, Firefox and WebKit each have 250/250 bit-exact direct/prepared rows and favorable 20-block speed intervals (smallest lower bound 1.63×). | Equal-work perception and library-memory boundaries, other operations/bindings and more corpora. Process RSS is not library allocation; changed HBA output cannot earn an equivalent-output speed win. |
-| P1 reactions | Original 57 fixtures match; the exposed 83-case extension classifies products and raw matches across Python/Rust/npm. Published Rust graph+origin+template-map agrees on 73/83 rows, plus one map-only difference. An unpublished checked-source profile has 76 semantic matches, three typed unsupported, one refusal and three jointly invalid rows. | Published artifacts still have confident differences. Recheck source fixes after publication; broaden newly created mapped atoms/multiple products and gate origins in Python/npm. No general SMIRKS parity claim. |
+| P1 reactions | Original 57 fixtures match. In the published v1.0.30 Rust 83-row graph/origin/template-map audit, 73 match on all three axes; the other ten are one map-label difference, four graph differences, one origin difference, one diagnosed refusal and three jointly invalid inputs. An unpublished checked-source profile has 76 semantic matches, three typed unsupported, one refusal and three jointly invalid rows. | Adjudicate each axis separately, rerun source fixes on published artifacts and gate applicable origins/maps in Python/npm. Neither a typed refusal nor an invalid oracle input counts as an exact match. No general SMIRKS parity claim. |
+| P1 SMARTS | Published v1.0.30 has 200 differing **match-set** cells out of 310,000: 194 symmetrized-ring semantics and six organometallic ring semantics. Only 43/200 change the hit/no-hit Boolean; 157 have the same Boolean but different matched atom sets. | Rank by affected cells and rows, resolve specification differences separately from defects, and preserve the native SSSR contract. |
+| P2 A6 quality | Historical published v1.0.26 MMFF94 quality lane had 265/265 independently sound, stereo-clean and gross-clash-free outputs; a separate source lane recorded 2,908 heavy-atom typing differences. | Rebuild a current published-artifact quality packet; classify typing, same-coordinate energy/gradient, convergence, stereo, clashes and independent conformer quality separately. Historical quality and source evidence do not promote current 3D. |
 
 The [v1.0.30 published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md),
 [benchmark index](benchmarks/README.md), and [validation report](docs/validation.md)
@@ -25,36 +27,58 @@ have separate gates.
 
 ## Priority order and acceptance gates
 
-1. **P0.2 — Complete paired speed evidence.** Extend equivalent-output,
-   alternating-order, ≥20-block measurements beyond the finished lanes.
-   Separate parse, perception, prepared/reused calls and memory allocations.
-   **Exit:** pinned scripts/raw observations, paired intervals and an explicit
-   no-claim outcome whenever outputs or work differ.
-2. **P1 — Close reaction compatibility gaps.** Extend the 83-case corpus across
-   maps, H, charge, aromaticity, stereo, multiple products and invalid input.
-   Compare graph, distinct-product multiplicity, maps and atom origins, not
-   SMILES spelling. Publish and rerun the checked-source fixes, expand the
-   three-case new-product-map supplement, and expose/gate applicable Python/npm
-   provenance; verify the npm E/Z JSON fix in a future package. **Exit:** every
-   row classified, no wrong confident result in the declared supported domain,
-   and no regression in the original 57. This says nothing about yield or
-   selectivity. Count #635 SMARTS residuals separately.
-3. **P1 — Preserve CIP safety and reduce SMARTS residuals.** Keep the five
-   typed CIP abstentions stable under atom-order, spelling and file round trips;
-   adjudicate phosphorus independently and define a lone-pair convention
-   before assigning R/S. Address 200/310,000 SMARTS failures without silently
-   changing native SSSR; any RDKit-style ring-count profile is opt-in.
-   **Exit:** complete outcome accounting and no wrong confident label/match.
-4. **P2 — Complete A6 before promoting 3D.** Address MMFF94 typing,
-   parameters, gradients, convergence, stereo and conformer quality on matched
-   seeds/coordinates. **Exit:** typed failure for unsupported inputs and
-   independent published-artifact quality evidence before speed claims.
-5. **P2 — Test representation limits separately.** Keep CDXML opaque
+1. **P1 / A4 — Close the reaction 83-row residuals by outcome, not by forcing
+   83 exact matches.** First reconcile the ten named rows against product graph,
+   distinct-product multiplicity, atom origins and template-map labels; retain
+   raw embedding counts as a separate diagnostic. Adjudicate the one map-only
+   row and the symmetric-origin row before changing code. Convert genuine
+   out-of-contract semantics to typed unsupported; fix supported-domain graph
+   or provenance defects with row-specific regression tests. Then rerun the
+   checked-source profile on rebuilt published Rust/Python/npm artifacts,
+   including the npm E/Z JSON path and three new-product-map supplement.
+   **Exit:** all 83 rows accounted for on each exposed axis, zero wrong
+   confident supported-domain results, typed reasons for refusals, and no
+   regression in the original 57. The three jointly invalid rows remain
+   classified as such; reaction yield/selectivity is outside this gate.
+2. **P1 / A4 — Reduce the 200 SMARTS match-set residuals by frequency.** Start
+   with `[R2]` (64 cells), `[R3]` (62), `[R1]` (59), then `[k6]` (10),
+   `[k5]` (1) and the four other organometallic queries (one each).
+   The first three cover 185/200 cells, including two organometallic cells.
+   For each family, record the independent graph/ring interpretation, RDKit
+   behavior, supported domain and a specification-difference / unsupported /
+   implementation-defect verdict before editing. Keep native SSSR unchanged;
+   use an explicit opt-in RDKit-style profile only where its semantics are
+   justified. **Exit:** rerun the full pinned 310,000-cell match-set matrix on
+   affected published bindings, report both match-set and Boolean deltas by
+   query and row, add focused
+   regression tests, and permit no new wrong confident matches or silent
+   acceptance of unsupported organometallic semantics. This is not a general
+   RDKit SMARTS parity claim.
+3. **P2 / A6 — Gate 3D quality before speed.** In order, adjudicate the 2,908
+   heavy-atom MMFF94 typing differences and parameter/charge coverage; compare
+   per-term energies and analytic gradients at identical explicit-H coordinates;
+   account for convergence, timeout and cancellation; check stereo retention,
+   bond geometry and gross clashes; then assess conformer quality against an
+   independent reference on matched seeds and a held-out cohort. Unsupported
+   chemistry must return a typed reason, not plausible coordinates. **Exit:**
+   predeclared tolerances and complete outcome accounting in a rebuilt
+   published-artifact packet. Keep older 265-molecule and source-only results
+   historical; make no 3D speed or RDKit-equivalence claim before quality exits.
+4. **P0.2 — Complete paired speed evidence after quality gates.** Extend
+   equivalent-output, alternating-order, ≥20-block measurements beyond the
+   finished lanes. Separate parse, perception, prepared/reused calls and memory
+   allocations. **Exit:** pinned scripts/raw observations, paired intervals
+   and an explicit no-claim outcome whenever outputs or work differ.
+5. **P1 / A2 — Preserve CIP safety.** Keep five typed abstentions stable under
+   atom-order, spelling and file round trips; adjudicate phosphorus independently
+   and define a lone-pair convention before assigning R/S. **Exit:** complete
+   outcome accounting and no wrong confident label.
+6. **P2 — Test representation limits separately.** Keep CDXML opaque
    preservation distinct from semantic editing, Markush/polymer expansion
    bounded, Standard InChI separate from native identifiers, and canonical
    SMILES separate from the fail-closed stable key. **Exit:** cross-binding
    fixtures with no silent information loss.
-6. **External — Rebaseline RDKit only after pinning a new official release.**
+7. **External — Rebaseline RDKit only after pinning a new official release.**
    Retain 2026.03.6 evidence and do not tune on sealed data.
 
 Silent corruption or a security regression takes precedence. Source,
