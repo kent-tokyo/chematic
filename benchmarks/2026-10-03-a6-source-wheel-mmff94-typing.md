@@ -41,6 +41,10 @@ python scripts/mmff94_atom_type_census.py \
 The gate checks import provenance and the corpus hash, records the wheel hash,
 and checks all row-status
 denominators, the heavy/H difference totals, and the type-37/type-2 bucket.
-Linux/macOS CI retains its own generated reports. They must be reviewed
-before promoting this from local to cross-platform source-wheel evidence;
-published-package quality remains a separate exit.
+Post-merge PR [#736](https://github.com/kent-tokyo/chematic/pull/736), run
+`37102043846`, built release-profile source wheels on Linux and macOS arm64.
+Both retained `rdkit-hba-source-wheel-5k` artifacts were downloaded and read:
+each reports 9,774 comparable rows, 204 RDKit unsupported, 22 CheMatic
+typing errors, **451** differing heavy types and **8** differing H types.
+All 76 CI checks passed (two intentionally skipped). These are source-wheel
+results, not published-package quality or proof of per-row non-regression.

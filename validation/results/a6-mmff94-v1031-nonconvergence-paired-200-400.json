@@ -1,0 +1,1050 @@
+{
+  "counts": {
+    "converged_200": 100,
+    "converged_400": 164,
+    "early_stop_same_iteration_as_200": 4,
+    "early_stop_unexplained": 4,
+    "gained_convergence": 64,
+    "iteration_cap": 97,
+    "lost_convergence": 0,
+    "nonconverged_with_energy_increase": 0,
+    "nonconverged_with_missing_parameters": 6,
+    "not_converged_400": 101
+  },
+  "force_bands_at_400_cap": {
+    "0_01_to_0_1": 20,
+    "0_1_to_1": 50,
+    "1_to_10": 16,
+    "lt_0_01": 11
+  },
+  "nonconverged_rows": [
+    {
+      "category": "druglike_stress",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.013982439859286266,
+      "missing_parameter_kinds": [],
+      "name": "cholesterol",
+      "row_index": 55,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "druglike_stress",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.08076345706898214,
+      "missing_parameter_kinds": [],
+      "name": "atorvastatin_fragment",
+      "row_index": 56,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "known_fail_closed_case",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.10986735267482288,
+      "missing_parameter_kinds": [],
+      "name": "ring_torsion_fail_closed",
+      "row_index": 63,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.6199430296759114,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0008",
+      "row_index": 73,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "macrocycle",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.30251681902252914,
+      "missing_parameter_kinds": [
+        "torsion"
+      ],
+      "name": "chembl_tier_b_0009",
+      "row_index": 74,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.026306388808278847,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0020",
+      "row_index": 85,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.11802122533563497,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0022",
+      "row_index": 87,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "macrocycle",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.03958773536541926,
+      "missing_parameter_kinds": [
+        "torsion"
+      ],
+      "name": "chembl_tier_b_0023",
+      "row_index": 88,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.9024777197296672,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0024",
+      "row_index": 89,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.21635518788278474,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0025",
+      "row_index": 90,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.7263861674936507,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0026",
+      "row_index": 91,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 2.811516434261598,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0027",
+      "row_index": 92,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "macrocycle",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.6906671480908104,
+      "missing_parameter_kinds": [
+        "torsion"
+      ],
+      "name": "chembl_tier_b_0028",
+      "row_index": 93,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "macrocycle",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.4353943184821922,
+      "missing_parameter_kinds": [
+        "torsion"
+      ],
+      "name": "chembl_tier_b_0029",
+      "row_index": 94,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "macrocycle",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.8274853681174257,
+      "missing_parameter_kinds": [
+        "torsion"
+      ],
+      "name": "chembl_tier_b_0030",
+      "row_index": 95,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.009111392266316187,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0032",
+      "row_index": 97,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "macrocycle",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.30919918747934005,
+      "missing_parameter_kinds": [
+        "torsion"
+      ],
+      "name": "chembl_tier_b_0034",
+      "row_index": 99,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.1288981103300033,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0035",
+      "row_index": 100,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.0014473484547465887,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0036",
+      "row_index": 101,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.0065705094902233085,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0037",
+      "row_index": 102,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.010627396443116055,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0038",
+      "row_index": 103,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.1498891482083753,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0039",
+      "row_index": 104,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.15849020049598916,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0041",
+      "row_index": 106,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.41518085407887684,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0042",
+      "row_index": 107,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.004628686139054317,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0043",
+      "row_index": 108,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.18791939960644832,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0044",
+      "row_index": 109,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.014159054424345285,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0045",
+      "row_index": 110,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.01309538514968267,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0046",
+      "row_index": 111,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.6508549379165438,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0047",
+      "row_index": 112,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.09195343717795712,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0048",
+      "row_index": 113,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.0007055390353229996,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0049",
+      "row_index": 114,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.9879661608663195,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0051",
+      "row_index": 116,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.4011645384862206,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0067",
+      "row_index": 132,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.14260274884669544,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0071",
+      "row_index": 136,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.03787055219610913,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0072",
+      "row_index": 137,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.05389047465673802,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0075",
+      "row_index": 140,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.4726706044362423,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0076",
+      "row_index": 141,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.3769361540268399,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0077",
+      "row_index": 142,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.004579477417477662,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0078",
+      "row_index": 143,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.00738301879016845,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0079",
+      "row_index": 144,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.039818159828400534,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0080",
+      "row_index": 145,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.12232296488813943,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0082",
+      "row_index": 147,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.22000371370178318,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0083",
+      "row_index": 148,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.10485901992116231,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0089",
+      "row_index": 154,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.7920093153999601,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0092",
+      "row_index": 157,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.3222995941249669,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0093",
+      "row_index": 158,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 7.476470886222986,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0094",
+      "row_index": 159,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 136,
+      "iterations_400": 136,
+      "max_residual_force_400": 23.650668095726278,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0105",
+      "row_index": 170,
+      "stop_class": "early_stop_unexplained"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.028822465406500575,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0108",
+      "row_index": 173,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.07542205951203496,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0109",
+      "row_index": 174,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 2.2782489524894065,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0110",
+      "row_index": 175,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.211529445556827,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0111",
+      "row_index": 176,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.2848448776026258,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0112",
+      "row_index": 177,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.8666264148280893,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0113",
+      "row_index": 178,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.849185541385002,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0114",
+      "row_index": 179,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.4394720470787874,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0116",
+      "row_index": 181,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.7159918000630955,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0117",
+      "row_index": 182,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.08587919371647712,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0124",
+      "row_index": 189,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.5093842616480253,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0125",
+      "row_index": 190,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 72,
+      "iterations_400": 72,
+      "max_residual_force_400": 8.051093902437326,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0126",
+      "row_index": 191,
+      "stop_class": "early_stop_unexplained"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.822924740754885,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0128",
+      "row_index": 193,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.1580886962666326,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0129",
+      "row_index": 194,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.06857279173225939,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0130",
+      "row_index": 195,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.6657402565765365,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0131",
+      "row_index": 196,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.24578354454046636,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0132",
+      "row_index": 197,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.286811399255373,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0133",
+      "row_index": 198,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.8776699332588076,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0134",
+      "row_index": 199,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 2.5190909219159856,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0135",
+      "row_index": 200,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.21272901551219148,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0136",
+      "row_index": 201,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.32014421005112825,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0137",
+      "row_index": 202,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.12789268928154396,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0138",
+      "row_index": 203,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.4614596066559109,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0139",
+      "row_index": 204,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.24407370122110805,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0140",
+      "row_index": 205,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.11913664267557422,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0141",
+      "row_index": 206,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.941382107976001,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0142",
+      "row_index": 207,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.8274668317739262,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0143",
+      "row_index": 208,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.06429686083675001,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0144",
+      "row_index": 209,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.8789176232650964,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0150",
+      "row_index": 215,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.0011031197614537191,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0152",
+      "row_index": 217,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.11235517988297516,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0153",
+      "row_index": 218,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.1943497892158472,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0155",
+      "row_index": 220,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.23768468854556984,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0156",
+      "row_index": 221,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.191878676085889,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0157",
+      "row_index": 222,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.7472507663324771,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0158",
+      "row_index": 223,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.00022979875825024365,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0161",
+      "row_index": 226,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 74,
+      "iterations_400": 74,
+      "max_residual_force_400": 23.250605689460464,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0162",
+      "row_index": 227,
+      "stop_class": "early_stop_unexplained"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.804583753447023,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0166",
+      "row_index": 231,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.093409209666249,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0167",
+      "row_index": 232,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 74,
+      "iterations_400": 74,
+      "max_residual_force_400": 14.689648733209964,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0169",
+      "row_index": 234,
+      "stop_class": "early_stop_unexplained"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.0009582090204567351,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0170",
+      "row_index": 235,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.018552070753724337,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0172",
+      "row_index": 237,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.3838926875975437,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0175",
+      "row_index": 240,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.19058070793275872,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0176",
+      "row_index": 241,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.215203399249952,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0180",
+      "row_index": 245,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.15638572212449064,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0182",
+      "row_index": 247,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.05385937398262719,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0183",
+      "row_index": 248,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.00017948115009414067,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0187",
+      "row_index": 252,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.07064162146837694,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0191",
+      "row_index": 256,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.08185720627127857,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0194",
+      "row_index": 259,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 0.30330663473617986,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0197",
+      "row_index": 262,
+      "stop_class": "iteration_cap"
+    },
+    {
+      "category": "drug_like",
+      "iterations_200": 200,
+      "iterations_400": 400,
+      "max_residual_force_400": 1.0450507469438417,
+      "missing_parameter_kinds": [],
+      "name": "chembl_tier_b_0199",
+      "row_index": 264,
+      "stop_class": "iteration_cap"
+    }
+  ],
+  "raw_sha256": {
+    "baseline": "c2525cf7a12f7fd77b1881ee868b49785b7b62b44e006eb708d2c630b6e0d850",
+    "extended": "f5a12d84230ffe078dce14e9571d9d9f2b91b7db7bd1ada960212ceea0c67155"
+  },
+  "schema": "a6-mmff94-v1031-nonconvergence-paired/v1",
+  "scope": "published v1.0.31 wheel; same 265-row cohort; optimizer outcomes only"
+}
