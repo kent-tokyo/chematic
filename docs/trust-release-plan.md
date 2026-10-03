@@ -30,7 +30,8 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
   記録された環境・操作に限ります。3D/MMFF94はExperimentalです。
 - 反応83件はchecked sourceで76件が生成物グラフ・原子由来・テンプレートマップの
   全軸で一致。3件は型付き非対応、1件は理由付き拒否、3件は双方無効です。
-  Pythonのローカルsource拡張でも同じ内訳ですが、CI wheelと公開artifactは未確認です。
+  Linux/macOSの公開用設定で作ったsource wheelとWASM NodeテストはCI通過。
+  公開レジストリのartifactは未測定です。
 - SMARTSのopt-in source-wheelは309,982/310,000一致し、残り18件を型付きで
   非対応とします。公開v1.0.30の200件の差分を置き換える測定ではありません。
 - 3Dは公開v1.0.31 macOSで265/265の構造・立体・clash判定を通過しましたが、
@@ -41,70 +42,18 @@ Trust Releaseの目的は、機能数を増やすことではありません。�
 
 ## 実行順
 
-### 1. #632 SMILES E/Zを閉じる
+優先順位と各数値の詳細は[ROADMAP](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)と
+[検証報告](validation.md)に置き、この文書では判定条件だけを保持します。
 
-状態: 下記の合格条件はv1.0.25ベースのsourceで満たしました（長時間gate 0/28 divergent）。
+| 順 | ゲート | 合格条件 |
+|---:|---|---|
+| 1 | 反応・SMARTS | 83反応のgraph/origin/mapを全行分類し、元の57件を維持する。SMARTSはmatch-set、Boolean、typed refusalを別計上し、公開artifactと独立コーパスで再測定する。 |
+| 2 | A6 MMFF94 | [#739](https://github.com/kent-tokyo/chematic/issues/739)のLinux立体失敗を解き、atom type、同一座標の各energy term、収束、stereo/clash、独立conformer品質を別gateにする。品質前に速度や新しいembedding optionを成果扱いしない。 |
+| 3 | CIP・E/Z | 既知の5件は理由付き棄権を維持し、原子順・SMILES表記・file往復で誤った確信ラベルを出さない。E/Zの既存source回帰を保つ。 |
+| 4 | 新RDKit版 | 公式stable公開後に版・hashを固定して再比較する。RDKit 2026.03.6の証拠はhistoricalとして残す。 |
 
-合格条件:
-
-- focused parser/writer/canonical regressionが通る。
-- RDKit 2026.03.6の固定10,000件でgraph差0、semantic差0を維持する。
-- 28 component x 1,024 relabelの長時間gateを完走する。完走しない場合は、
-  未実行であることをrelease判断に明記する。
-- 測定外のcoupled shapeではstable-keyがfail-closedのままである。
-
-### 2. #634 CIP差分を分類して解く
-
-状態: 固定1万行では9,995件一致、4件の`oracle_unstable`と1件の
-`lone_pair_center`を理由付きで保留しています。保留を一致件数に含めません。
-[行単位の記録](https://github.com/kent-tokyo/chematic/blob/main/validation/results/rdkit-rebaseline-issue634-v1.0.27-candidate-vs-rdkit-2026.03.6-2026-09-28.json)を参照してください。
-
-差分を次の4種類に分けます。
-
-- atom/bond correspondenceまたは比較器の問題;
-- RDKit版・表現依存などoracleの問題;
-- chematicが明示的に非対応とする領域;
-- chematic実装の誤り。
-
-実装修正は最後の分類に対して行います。未知同位体、選択した中心だけのlabel、
-atom-order permutation、full/pseudo atrop、負電荷共鳴系を回帰に含めます。
-不確実な中心はラベルを推測せず、typed refusalまたはunresolvedにします。
-
-### 3. #635 SMARTS差分を意味単位で解く
-
-状態: 公開v1.0.30は固定31万セル中200セルのmatch-set差分が残ります。
-開発中のopt-in source-wheelは309,982件一致、18件を型付き非対応とし、
-wrong-confidentな結果は0件です。これは公開packageでの合格ではありません。
-ネイティブSSSRを暗黙に変更せず、互換設定を分けます。
-
-差分を原子primitive、結合、芳香族性、再帰SMARTS、ring、stereo、
-logical operatorへ分割します。各修正は小さなtruth tableと、RDKit版・設定を固定した
-比較を必要とします。parse成功とmatch互換は別の契約です。
-
-### 4. A6 MMFF94の正しさを閉じる
-
-状態: 公開v1.0.31 macOSの265件ではgeometry/stereo/clashが全件通過し、
-同一座標の比較可能な262件は総エネルギーが1 kcal/mol以内です。ただし
-収束は100件のみです。Linux/Python 3.9では公開版とsource版の両方で53/246行が
-立体エラーとなり、原因調査中です。同一座標の各termの旧source測定だけで
-現在の公開版のMMFF94同等性は主張しません。
-
-速度だけで完了にしません。次を別gateとして扱います。
-
-- 同一座標でのenergyと各term;
-- convergence、iteration、timeout、cancel accounting;
-- stereo、bond sanity、gross clash;
-- fixed cohortと独立holdoutでのconformer quality;
-- source候補と公開packageの速度。
-
-新しいembedding optionや3D機能の追加は、この基礎gateより後です。
-
-### 5. 次のRDKit rebaselineを準備する
-
-RDKit 2026.03.6の記録はhistoricalとして固定します。新しい公式stable artifactが
-公開された後にだけ、Python wheelとofficial npm packageをhash付きで固定し、
-SMILES、CIP、SMARTS、Morgan、binding overhead、browser laneを再実行します。
-upstream PRや未公開版から利用可能性を推測しません。
+棄権や無効入力を一致に数えません。対応外と実装誤りを分け、修正時は小さな
+回帰テストと版固定の全量比較を要求します。
 
 ## 常設ゲート
 

@@ -1,22 +1,19 @@
 # Language Bindings Cross-Reference
 
-chematic ships three language surfaces over the same Rust core: the Rust
-crates directly, Python (PyO3), and WASM (wasm-bindgen). They are not
-identical APIs — this page documents where they agree, where they diverge,
-and why, using real function names (not illustrative examples) so the
-divergences are checkable against source.
+Rust crates, Python (PyO3), and WASM (wasm-bindgen) share the Rust core but
+have different API and error shapes. This page names those differences.
 
 ## Atom provenance and output order
 
 The atom-tracking APIs expose only mappings with a documented atom order.
-The checked reaction additions below are source-candidate APIs, not part of
+The checked reaction additions below are merged source APIs, not part of
 the published v1.0.31 bindings.
 
 | Capability | Rust | Python | WASM / Node |
 |---|---|---|---|
 | SMILES atom output order | `write_with_atom_order`, `canonical_smiles_with_atom_order` | `Mol.smiles_with_atom_order()` | Not exposed |
 | Connected-component source atom indices | `Molecule::fragments_with_source_atoms()` | `Mol.connected_components_with_atom_indices()` | Not exposed |
-| Reaction product atom provenance and template maps | `PreparedReaction::apply_match_traced`, `run_reactants_traced_with_diagnostics` | Source candidate: `run_smirks_checked()` returns `product_atom_sources` and `product_template_maps` | Source candidate: `run_reactants_checked()` returns the same JSON arrays |
+| Reaction product atom provenance and template maps | `PreparedReaction::apply_match_traced`, `run_reactants_traced_with_diagnostics` | Unreleased: `run_smirks_checked()` returns `product_atom_sources` and `product_template_maps` | Unreleased: `run_reactants_checked()` returns the same JSON arrays |
 
 `order[k]` is the input atom index for the `k`-th atom written in a SMILES
 string; it is also that atom's index after parsing the returned string.
@@ -26,7 +23,8 @@ arrays follow the returned canonical SMILES parse order. Template-map labels
 may be `None` even when an atom has a reactant origin. These are additive APIs:
 ordinary SMILES writing, connected components, and reaction application retain
 their existing return values. The [83-row source gate](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-reaction-83-python-provenance-source.md)
-does not verify a published package.
+records Linux/macOS release-profile source-wheel and WASM Node CI results,
+not published-package verification.
 
 See also: [`format-capabilities.md`](format-capabilities.md) for the
 per-format read/write/streaming/limits matrix this page's examples are
@@ -75,14 +73,8 @@ compatibility surface, not a claim of bit parity with RDKit's C++ implementation
   large numeric grid/row payloads — **also always fresh copies, never
   views.** Typed Rust errors map to a thrown JS error / `JsValue`.
 
-**No zero-copy exists anywhere in this codebase today** — not in NumPy
-arrays, not in WASM typed arrays. Every array crossing a language boundary
-is a fresh allocation and copy of the underlying Rust data. This is a
-current-state fact, not a promise about the future.
-
-**No format auto-detection/dispatch exists anywhere.** Every parse function
-name states the format it parses; there is no `parse_any(text)` that
-sniffs format from content.
+Python NumPy arrays and WASM typed arrays are copies, not Rust-memory views.
+Parsers are format-specific; there is no `parse_any(text)` auto-detection.
 
 ---
 
@@ -127,12 +119,8 @@ columns (it deliberately does not fall back to `xu yu zu`; see
 | WASM (JSON) | `lammps_dump_cartesian_positions_json` | JSON `null` |
 | WASM (typed array) | `lammps_dump_cartesian_positions_f64` | **`Err`**, not `null` — a `Float64Array` has no `null` representation, so the unresolvable case becomes a thrown error with a message naming the columns it looked for. |
 
-This is the one place in the codebase where the *same* WASM concept has two
-different "no value" behaviors depending on which of its two sibling
-functions you call — both are doc-commented at their definitions
-(`crates/chematic-wasm/src/format_io.rs`), and this is deliberate: it is
-not safe to assume every `*_json` / `*_f64` sibling pair behaves the same
-way just because one does.
+The JSON and typed-array siblings deliberately differ; see their definitions
+in `crates/chematic-wasm/src/format_io.rs`.
 
 ### Typed-error mapping
 
@@ -140,11 +128,8 @@ way just because one does.
 |---|---|---|
 | A typed error enum (e.g. `LammpsDataError::UnsupportedAtomStyle`, `OpenDxError::NonAngstromUnits`, `MmcifError::...`) | `ValueError` with the Rust error's `Display` text as the message | Thrown JS error / `JsValue::from_str(...)` with the same `Display` text |
 
-Python and WASM represent the **same underlying Rust error type**
-differently at the language boundary — `ValueError` vs. a JS exception —
-even when the Rust-side error and its message text are identical. Neither
-language currently exposes the original Rust error's structured
-variant/fields across the boundary; both flatten to a string message.
+Both bindings flatten the Rust error variant to message text; they do not
+expose its structured fields.
 
 ### QCSchema unknown fields
 
@@ -181,29 +166,17 @@ No language collapses these into a single lossy-by-default function — the
 strict/lossy split from the Rust core is preserved identically in every
 binding.
 
-### LAMMPS Cartesian positions
-
-| Language | Function | Notes |
-|---|---|---|
-| Rust | `LammpsDumpFrame::cartesian_positions()` | `Option<Vec<[f64; 3]>>` |
-| Python | `LammpsDumpFrame.cartesian_positions()` | pyclass method, same resolution rules |
-| WASM (JSON) | `lammps_dump_cartesian_positions_json(frame_json)` | `null` on unresolvable |
-| WASM (typed array) | `lammps_dump_cartesian_positions_f64(frame_json)` | `Err` on unresolvable — see divergence table above |
-
----
-
 ## Streaming vs. materialization, by language
 
 | Format | Rust | Python | WASM |
 |---|---|---|---|
-| MOL/SDF | `SdfFileReader<R: BufRead>` — true streaming `Iterator` | `iter_sdf` and `iter_sdf_batched` are file-backed streaming iterators; batches are lazy, cancellable, and expose a progress manifest with seen/emitted/rejected counts. The Python XYZ/Extended XYZ batch readers use the same file-backed, one-line look-ahead recovery boundary and count malformed frames without stopping later frames. WASM additionally exposes bounded resumable `sdf_records_batch_json`, `xyz_frames_batch_json`, and `extxyz_frames_batch_json` over in-memory strings; stopping before the next offset is the cancellation boundary, not file-backed streaming. The WASM XYZ convenience path groups malformed count-line content into one rejected frame and continues only when a later count-line boundary is unambiguous; core Rust file-backed readers remain fail-stop. | materializes |
+| MOL/SDF | `SdfFileReader<R: BufRead>` streams records | `iter_sdf` / `iter_sdf_batched` stream from files with seen/emitted/rejected accounting | `sdf_records_batch_json` is bounded and resumable over an in-memory string, not file-backed streaming |
+| XYZ/Extended XYZ | File-backed readers are fail-stop on ambiguous frame boundaries | Batch readers use one-line look-ahead recovery and count rejected frames | `xyz_frames_batch_json` / `extxyz_frames_batch_json` resume over an in-memory string; the convenience path recovers only at unambiguous count lines |
 | LAMMPS dump/trajectory | `LammpsDumpReader<R: BufRead>` — true streaming `Iterator` | `parse_lammps_dump_all` materializes the whole trajectory as a list (disclosed scope choice, not a silently dropped capability) | `lammps_trajectory_to_json` materializes (same disclosed choice) |
 | Gaussian Cube | `CubeFileReader<R: BufRead>` streams the *input reading* only — the returned `VolumetricGrid.values` is still one fully-materialized `Vec<f64>` (single-dataset format, nothing to iterate across) | via `VolumetricGrid.from_cube()`, materializes | materializes |
 | Other documented formats | no `BufRead`-backed streaming reader type exists | materializes | materializes |
 
-LAMMPS dump is the one format where a real Rust-level streaming/
-materializing distinction exists **and** both bindings deliberately choose
-materialization. This is a documented compatibility choice.
+LAMMPS bindings deliberately materialize even though Rust has a streaming reader.
 
 ---
 

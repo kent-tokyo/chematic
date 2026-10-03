@@ -9,29 +9,25 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 ## Current position
 
-| Gate | Evidence by artifact and version | Remaining exit |
+| Gate | Current evidence | Next exit |
 |---|---|---|
-| P0.1 outputs | Python, npm and pinned Rust artifacts reran 10,000 chemistry inputs, 310,000 SMARTS cells and 57 legacy reactions. Python/Rust covered 63 operation outputs; only HBA and its bundle changed from v1.0.29. Published HBA: 5,000/5,000 vs pinned RDKit 2026.03.6. | **Audit complete, parity not complete:** 200 SMARTS failures, five typed CIP abstentions and four npm-unexposed operations remain. See the [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
-| P0.2 speed | The published Python 63-operation matrix has 20 paired blocks; 20 operations pass exact-output and confidence-interval gates on one host. Published npm/WASM Morgan also has Node and Chromium lanes; Ubuntu 24.04 Chromium, Firefox and WebKit each have 250/250 bit-exact direct/prepared rows and favorable 20-block speed intervals (smallest lower bound 1.63×). | Equal-work perception and library-memory boundaries, other operations/bindings and more corpora. Process RSS is not library allocation; changed HBA output cannot earn an equivalent-output speed win. |
-| P1 reactions | Original 57 fixtures match. Published v1.0.30 had 73/83 graph+origin+template-map matches. The checked v1.0.31-source profile has 76 exact on all three axes, three typed unsupported, one diagnosed refusal and three jointly invalid rows. [Post-merge source and binding gates](benchmarks/2026-10-03-reaction-83-postmerge-binding-gate.md) confirm graph/status counts in Linux/macOS CI source wheels and 3/3 new-product-map supplement matches in Rust source. A [local Python source extension](benchmarks/2026-10-03-reaction-83-python-provenance-source.md) now exposes origins/maps and reproduces the 76/3/1/3 accounting on all three axes. | Verify the new Python provenance gate on Linux/macOS release-profile source wheels and WASM metadata in Node CI. Then rebuild/publish and rerun Rust/Python/npm artifact gates. Typed refusal and invalid input are not exact matches; no general SMIRKS parity claim. |
-| P1 SMARTS | Published v1.0.30 has 200 differing **match-set** cells / 310,000, but only 43 hit/no-hit differences. The opt-in Python source profile passed [local and Linux/macOS source-wheel CI](benchmarks/2026-10-03-python-source-smarts-optin-310k.md): 309,982 exact match sets, 18 typed unsupported and zero wrong-confident cells; 183 original residuals and all 43 Boolean errors are corrected. The native matcher is unchanged. The [ring-family diagnosis](benchmarks/2026-10-03-smarts-ring-family-diagnostic.md) finds three source families matching the original RDKit ring sets and three differing; RDKit ring sets themselves varied under atom renumbering on five of six structures. | Rerun a deliberately versioned **published** profile and independent corpus. Keep all 18 typed refusals until an order-independent supported contract or runtime safety criterion is proved. Source improvements and typed refusals are not exact parity. |
-| P2 A6 quality | Published v1.0.31: [265/265 geometry/stereo/clash on macOS](benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md), 100/265 converged; 262/262 comparable total energies within 1 kcal/mol. The published [typing census](benchmarks/2026-10-03-a6-published-v1031-typing-census.md) has 2,908 heavy-atom differences. Local and Linux/macOS CI [source-wheel type gates](benchmarks/2026-10-03-a6-source-wheel-mmff94-typing.md) have 451 heavy and eight H differences. The [published 400-iteration diagnosis](benchmarks/2026-10-03-a6-v1031-nonconvergence-classification.md) separates 97 cap hits from four early stops. [Same-host termination diagnostics](benchmarks/2026-10-03-a6-source-mmff94-termination.md): macOS source/published 265/265 success; Linux/Python 3.9 source/published 263/265, with identical typed stereo failures at rows 53 and 246. Published macOS/Python 3.9 succeeds on both rows. | Linux failures are pre-existing on that host, not an introduced source regression. Both rows cross from satisfied stereo before minimization to one violated center after it; diagnose the post-minimization repair and platform/toolchain boundary under [#739](https://github.com/kent-tokyo/chematic/issues/739). Then rerun independent geometry/stereo/clash, per-term energy, missing torsions and conformer quality on published and candidate artifacts. No 3D speed claim yet. |
+| P0.1 outputs | Published v1.0.30 artifact audit covers 10k chemistry, 310k SMARTS, 57 reactions and 63 Python/Rust operations. HBA is 5,000/5,000 on its declared lane. | Retain 200 SMARTS differences, five CIP abstentions and four npm gaps as open; see [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
+| P0.2 speed | Published Python: 20 exact-output operations pass paired-interval gates on one host; three-browser Morgan has a separate scoped result. | Equal-work and memory lanes on more artifacts/corpora; see [validation](docs/validation.md). |
+| P1 reactions | Published v1.0.30: 73/83 exact. Checked source: 76 exact, 3 typed unsupported, 1 refusal, 3 jointly invalid. Python Linux/macOS release-profile wheels and WASM Node CI passed the [source gate](benchmarks/2026-10-03-reaction-83-python-provenance-source.md). | Rerun Rust/Python/npm **published** artifacts and npm E/Z JSON; refusals are not matches. |
+| P1 SMARTS | Published v1.0.30: 200/310k match-set differences. Opt-in Python source wheels: 309,982 exact, 18 typed unsupported, zero wrong-confident. | Independent corpus and published-profile rerun; retain native SSSR. |
+| P2 A6 quality | Published v1.0.31 macOS: 265/265 geometry/stereo/clash, 100/265 converged. Linux/Python 3.9 has two typed stereo failures on published and source wheels. | Resolve [#739](https://github.com/kent-tokyo/chematic/issues/739); rerun per-term energy, convergence and independent conformer quality before speed claims. |
 
-The [v1.0.30 published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md),
-[benchmark index](benchmarks/README.md), and [validation report](docs/validation.md)
-hold versions, hashes, denominators and residuals. v1.0.31 is published on
-all six tracked channels, but its WASM formula and E/Z JSON fixes still need
-package-output checks. Exposed data are
-not sealed evidence; A0's frozen descriptor result and Experimental 3D/MMFF94
-have separate gates.
+Detailed versions, hashes and denominators are in [validation](docs/validation.md)
+and the [benchmark index](benchmarks/README.md). v1.0.31 is published on six
+tracked channels; its WASM formula and E/Z JSON fixes still need a
+published-package rerun. Exposed data are not sealed evidence.
 
 ## Priority order and acceptance gates
 
 1. **P1 / A4 — Close the reaction 83-row gate by classified outcome.**
-   Current checked source has 76 exact graph/origin/map rows, three typed
-   unsupported, one diagnosed refusal and three jointly invalid. The local
-   Python extension reproduces this; Linux/macOS release-wheel and WASM
-   metadata CI are pending. Next, rerun the checked profile on published
+   Checked source has 76 exact graph/origin/map rows, three typed unsupported,
+   one diagnosed refusal and three jointly invalid. Linux/macOS release-profile
+   source wheels and WASM Node CI passed. Next, rerun on published
    Rust/Python/npm artifacts, including npm E/Z JSON and the three
    new-product-map cases. **Exit:** every row classified on all three axes,
    zero wrong-confident supported results and no regression in the original
@@ -71,20 +67,8 @@ have separate gates.
 Silent corruption or a security regression takes precedence. Source,
 published-package and sealed results remain separate evidence classes.
 
-## Accuracy packages
-
-| Package | State | Exit focus |
-|---|---|---|
-| A0 Evaluation contract | Complete | Preserve frozen/exposed-cohort and failure-accounting rules |
-| A1 Perception and descriptors | Open | Descriptor families, aromaticity boundaries, potential centers, independent holdouts |
-| A2 Stereo and identity | Active | #632 audit, CIP adjudication, permutation/spelling/file round trips, stable-key scope |
-| A3 Fingerprints and retrieval | Open | Compatible-Morgan options, top-k invariants, cross-binding parity |
-| A4 Workflows and interchange | Open | SMARTS ring counts, reactions, V3000/query semantics, attachment metadata, batch accounting |
-| A5 Independent adjudication | External | Non-maintainer gold data and review without exposed-cohort reuse |
-| A6 3D and force fields | Active | Heavy-atom typing, convergence, conformer quality, publication-level speed |
-
-See [the accuracy plan](docs/rdkit-accuracy-plan.md) for acceptance criteria
-and [the open-work ledger](docs/roadmap-open-work.md) for the dependency state.
+The [accuracy plan](docs/rdkit-accuracy-plan.md) defines A0–A6 acceptance
+criteria; the [open-work ledger](docs/roadmap-open-work.md) tracks dependencies.
 
 The [Trust Release plan](docs/trust-release-plan.md) tracks the cross-cutting
 version, runtime, security and review workstreams without repeating this queue.

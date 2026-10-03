@@ -112,11 +112,11 @@ reader versions; coordination, haptic, polymer expansion, and ENDPTS/ATTACH
 semantics are not.
 
 Published v1.0.30 has 200/310,000 SMARTS match-set differences and 73/83
-reaction graph/origin/map matches. The opt-in source profile has 309,982
-SMARTS exact sets plus 18 typed unsupported, and 76 reaction all-axis matches
-plus seven separately classified refusals/invalid inputs. The local Python
-reaction gate is source-only; none of these source counts replaces a published
-artifact result.
+reaction graph/origin/map matches. Opt-in source wheels have 309,982 SMARTS
+exact sets plus 18 typed unsupported. The Python reaction source-wheel gate
+passed on Linux/macOS with 76 exact, three typed unsupported, one refusal and
+three jointly invalid; WASM Node metadata tests passed. These source counts
+do not replace a published-artifact result.
 
 Remaining exit:
 
