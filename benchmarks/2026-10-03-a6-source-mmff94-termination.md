@@ -60,9 +60,29 @@ LINKEDIT string pool. Rebuilding with `maturin --strip true` did not fix
 the loader error. No optimized-wheel 265-row result was obtained; the
 independent Linux/macOS CI wheel lanes or another working host must decide
 whether rows 240/246/248 also fail under release settings.
-The new CI diagnostic records the corresponding optimized source-wheel rows,
-metadata and summary on both hosts; until those artifacts are read, the
-release-profile outcome is unknown.
+The PR [#738](https://github.com/kent-tokyo/chematic/pull/738) CI run
+[`37105669767`](https://github.com/kent-tokyo/chematic/actions/runs/37105669767)
+did produce optimized source-wheel artifacts:
+
+| Host | Wheel SHA-256 | Success | Typed stop reasons among successes | Failures |
+|---|---|---:|---|---|
+| Linux/Python 3.12 | `6d0923526a7a45553863725bec6abe7615e18b2c1874c28899ce01274ff9fb6a` | 263/265 | 101 gradient, 159 cap, 3 rejected fallback | rows 53 and 246, final stereo violation |
+| macOS arm64/Python 3.13 | `a534552d7359c27740c5edcb0e0e847e151891e09677eae48484d50c41887b68` | 265/265 | 100 gradient, 161 cap, 4 rejected fallback | none |
+
+The retained raw JSONL SHA-256 values are
+`3575988031dda10deac0ee3ae28cd3c26722435fa1db627161c5a07bb13d0658`
+(Linux) and
+`c63c193acb5d9d43399a0c88566ad80ccf88a6d9ce6c63a68b603c258c8a9603`
+(macOS).
+On macOS the four rejected-fallback rows are 170, 191, 227 and 234, at
+the same iteration counts as the published v1.0.31 early stops. On Linux
+they are rows 170, 226 and 258. Both hosts pass the source script's
+schema/accounting checks; only macOS passes its *success-retention* gate.
+The result depends on host/build profile. These CI jobs did not run the
+published wheel on the same hosts, so the two Linux failures are not yet
+classified as newly introduced source regressions. A paired published
+v1.0.31 status lane is now being added; neither status lane alone is the
+independent A6 geometry, stereo, clash or energy gate.
 
 The row-246 Python `PipelineV2Error.diagnostics.cause.force_field_bridge_error`
 contains `reason=excessive_residual_force` and
