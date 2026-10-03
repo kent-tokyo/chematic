@@ -32,6 +32,38 @@
     "scorer_integrity_errors": 0,
     "archived_rdkit_scored": 264
   },
+  "same_explicit_h_coordinates": {
+    "rdkit_version": "2026.03.6",
+    "raw_rows_sha256": "6ede7c998827d97bca1436246d0b5290e8e1ecf6e7b25991a44d2f954e4d7054",
+    "input_rows": 265,
+    "comparable_rows": 262,
+    "embed_failure": 2,
+    "declared_unsupported": 1,
+    "coordinate_hashes_equal_to_v1019": 262,
+    "median_abs_total_delta_kcal_mol": 0.00433915681330177,
+    "p90_abs_total_delta_kcal_mol": 0.028495157459673237,
+    "max_abs_total_delta_kcal_mol": 0.2621654232793844,
+    "within_1_kcal_mol": 262,
+    "within_5_kcal_mol": 262,
+    "previous_residual_rows": {
+      "166_abs_delta_kcal_mol": 0.003980412504503761,
+      "231_abs_delta_kcal_mol": 0.047858348505599224
+    },
+    "per_term_rows_over_0_1_kcal_mol": {
+      "bond": 0,
+      "angle": 3,
+      "stretch_bend": 0,
+      "oop": 1,
+      "torsion": 0,
+      "vdw": 0,
+      "electrostatic": 0
+    },
+    "gradient_diagnostic": {
+      "input_indices": [166, 231],
+      "max_abs_error_kcal_mol_angstrom": 1.2955729999930554e-07,
+      "max_scaled_error": 4.370072425989233e-08
+    }
+  },
   "per_row_equal_to_published_v1026": {
     "input_identities": 265,
     "coordinates": 265,
@@ -42,7 +74,7 @@
   "open_dimensions": [
     "force_field_convergence",
     "full_atom_type_and_term_compatibility",
-    "current_artifact_same_coordinate_energy",
+    "same_coordinate_energy_coverage_and_per_term_residuals",
     "independent_conformer_quality"
   ]
 }

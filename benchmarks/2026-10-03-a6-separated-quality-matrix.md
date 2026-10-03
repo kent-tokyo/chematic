@@ -9,8 +9,11 @@ different code versions and corpora; the matrix never merges their success
 counts into a single parity percentage.
 
 The subsequent [published v1.0.31 rerun](2026-10-03-a6-published-v1031-mmff94-quality.md)
-confirms 265/265 geometry/stereo/clash and the same 100/265 convergence count;
-this historical matrix remains unchanged so its provenance is unambiguous.
+confirms 265/265 geometry/stereo/clash and the same 100/265 convergence count.
+Its separate same-coordinate lane closes the two historical >5 kcal/mol
+total-energy residuals on 262 comparable rows; per-term and coverage exits
+remain open. This historical matrix remains unchanged so its provenance is
+unambiguous.
 
 | Dimension | Measured evidence | A6 status |
 |---|---|---|

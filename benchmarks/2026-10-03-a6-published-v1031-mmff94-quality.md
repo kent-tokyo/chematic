@@ -39,6 +39,36 @@ Those raw files were kept outside Git; they can be regenerated with the
 version-pinned wheel and the repository runners. The [machine summary](../validation/results/a6-published-v1031-mmff94-quality.json)
 retains the digests and counts.
 
+## Same explicit-H coordinates, separate from 3D generation
+
+`scripts/mmff94_same_explicit_h_energy.py` was also run with the same
+published v1.0.31 wheel and pinned RDKit 2026.03.6. RDKit generated a single
+explicit-H coordinate set per row; both engines evaluated that exact set.
+Statuses were 262 comparable, two RDKit embedding failures and one declared
+unsupported row. All 262 coordinate hashes and statuses matched the
+historical v1.0.19 packet, so the energy change is not explained by a changed
+input geometry. The previous >5 kcal/mol rows 166 and 231 are now 0.004 and
+0.048 kcal/mol apart; all 262 comparable total energies are within 1 kcal/mol
+(maximum 0.262; median 0.0043). The raw output SHA-256 is
+`6ede7c998827d97bca1436246d0b5290e8e1ecf6e7b25991a44d2f954e4d7054`.
+
+Per-term residuals are still visible: three angle rows and one OOP row exceed
+0.1 kcal/mol. On the two formerly large-residual rows, the current wheel's
+analytic-gradient/central-difference check has maximum scaled error
+4.37×10⁻⁸. This closes the old **total-energy residual** on the comparable
+cohort, not full atom typing, every per-term tolerance, the three uncomparable
+rows, convergence, or conformer quality.
+
+The energy command used the isolated published-wheel Python environment with
+RDKit 2026.03.6 on its import path:
+
+```sh
+python3 scripts/mmff94_same_explicit_h_energy.py \
+  --output /tmp/mmff94-same-coordinates.jsonl --seed 20260913 \
+  --gradient-input-index 166 --gradient-input-index 231 \
+  --gradient-delta 1e-5
+```
+
 The runner invocation (in an isolated environment containing the wheel) was:
 
 ```sh
@@ -56,6 +86,6 @@ cargo run -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- \
 ```
 
 This closes only the **published v1.0.31 geometry/stereo/clash** recheck.
-Convergence, full force-field typing, current-version same-coordinate energy,
+Convergence, full force-field typing, per-term energy boundaries,
 and independent conformer-quality non-inferiority remain open. It does not
 establish MMFF94 parity or a speed advantage.
