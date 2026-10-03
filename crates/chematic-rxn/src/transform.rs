@@ -1127,11 +1127,12 @@ fn shadow_molecule_of(query: &QueryMolecule) -> Result<Molecule, &'static str> {
             AtomQuery::Primitive(AtomPrimitive::Symbol(sym)) => {
                 chematic_core::Element::from_symbol(sym).filter(|e| e.symbol() == sym.as_str())
             }
+            // The reaction engine compares this element with the product
+            // template's to decide whether a mapped atom changes element
+            // (issue #734). As in RDKit, an alternative (`[C,N]`), a negation
+            // (`[!O]`) or a recursive query pins no element, so any concrete
+            // product element is applied.
             AtomQuery::And(a, b) => implied_element(a).or_else(|| implied_element(b)),
-            AtomQuery::Or(a, b) => match (implied_element(a), implied_element(b)) {
-                (Some(x), Some(y)) if x == y => Some(x),
-                _ => None,
-            },
             _ => None,
         }
     }
@@ -1388,6 +1389,17 @@ fn apply_match_traced_impl(
         }
     }
 
+    // Reactant-template atom per atom map (element / wildcard), for the
+    // element-change rule in `build_product`.
+    let mut reactant_template_atoms: FxHashMap<u16, &chematic_core::Atom> = FxHashMap::default();
+    for template in &prepared.rxn.reactants {
+        for (_, atom) in template.atoms() {
+            if let Some(map) = atom.atom_map {
+                reactant_template_atoms.entry(map).or_insert(atom);
+            }
+        }
+    }
+
     let products: Vec<TracedProduct> = prepared
         .rxn
         .products
@@ -1396,6 +1408,7 @@ fn apply_match_traced_impl(
             let mut product = build_product(
                 pt,
                 &global_map,
+                &reactant_template_atoms,
                 reactants,
                 &all_template_atoms,
                 carry_substituents,
@@ -2048,6 +2061,7 @@ fn correct_product_stereo(
 fn build_product(
     product_template: &Molecule,
     global_map: &FxHashMap<u16, (usize, AtomIdx)>,
+    reactant_template_atoms: &FxHashMap<u16, &chematic_core::Atom>,
     input_mols: &[&Molecule],
     all_template_atoms: &FxHashSet<(usize, AtomIdx)>,
     carry_substituents: bool,
@@ -2080,6 +2094,21 @@ fn build_product(
                 // Core atom: copy source, then override electronic state from template.
                 let src_atom = input_mols[mol_idx].atom(src_idx);
                 let mut new_atom = src_atom.clone();
+                // Element change (issue #734): as in RDKit, a mapped atom takes
+                // the product template's element when that element differs
+                // from the reactant template's (`[C:1]>>[N:1]`). A wildcard
+                // product atom (`[*:1]`) or an unchanged element keeps the
+                // matched atom's element; a reactant query naming no single
+                // element (`[C,N:1]`, `[*:1]`) takes any concrete product one.
+                if !tmpl_atom.wildcard {
+                    let changes = reactant_template_atoms
+                        .get(&am)
+                        .is_none_or(|r| r.wildcard || r.element != tmpl_atom.element);
+                    if changes && new_atom.element != tmpl_atom.element {
+                        new_atom.element = tmpl_atom.element;
+                        new_atom.isotope = tmpl_atom.isotope;
+                    }
+                }
                 new_atom.aromatic = tmpl_atom.aromatic;
                 new_atom.charge = tmpl_atom.charge;
                 // Copy H count only when template specifies > 0 (e.g. [NH2:1]).
@@ -2378,6 +2407,38 @@ mod tests {
         // `;H<n>` is the SMARTS spelling of an H count.
         let out = run_reactants("[C:1]>>[C;H3:1]", &[&ethane]).unwrap();
         assert!(!out.is_empty());
+    }
+
+    #[test]
+    fn mapped_atom_takes_a_changed_product_element(/* issue #734 item 2 */) {
+        // RDKit 2026.03.6 reference products for each case.
+        let canon = |m: &Molecule| chematic_smiles::canonical_smiles(m);
+        for (smirks, reactant, expected) in [
+            ("[C:1]>>[N:1]", "CC", vec!["CN"]),
+            ("[#6:1]>>[#7:1]", "CC", vec!["CN"]),
+            ("[CH3:1]>>[N:1]", "CC", vec!["CN"]),
+            ("[C:1][O:2]>>[C:1][S:2]", "CO", vec!["CS"]),
+            ("[c:1]>>[n:1]", "c1ccccc1", vec!["c1ccncc1"]),
+            ("[*:1]>>[N:1]", "C", vec!["N"]),
+            // No change: wildcard product, or the product element equals the
+            // reactant query's (first) element.
+            ("[C:1]>>[*:1]", "CO", vec!["CO"]),
+            ("[C,N:1]>>[C:1]", "CN", vec!["CC", "CN"]),
+            ("[C,N:1]>>[N:1]", "CC", vec!["CN"]),
+        ] {
+            let mol = parse(reactant).unwrap();
+            let mut got: Vec<String> = run_reactants(smirks, &[&mol])
+                .unwrap()
+                .iter()
+                .map(|set| canon(&set[0]))
+                .collect();
+            got.sort();
+            got.dedup();
+            let mut want: Vec<String> =
+                expected.iter().map(|s| canon(&parse(s).unwrap())).collect();
+            want.sort();
+            assert_eq!(got, want, "{smirks} on {reactant}");
+        }
     }
 
     #[test]
