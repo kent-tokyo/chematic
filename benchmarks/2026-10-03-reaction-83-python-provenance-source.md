@@ -19,15 +19,17 @@ It reads `run_smirks_checked(..., rdkit_compat=True)`, reorders each product's
 metadata using `Mol.smiles_with_atom_order()`, then compares graph, origin and
 template-map labels separately with RDKit. It fails on any change to the above
 outcome counts. The local JSON report SHA-256 was
-`335df44df0830d617067718d7f87e4373a17ae475c22be490314064bc1cc56ed`.
+`036c85cdc02ea778a16f24aa2178f665070933a141315834ef21562f1838d7d6`.
 This hash describes the local development extension, **not** a release wheel.
 
 The WASM checked JSON now returns the same two metadata arrays, aligned to
 canonical-SMILES parse order. A native Rust test checks that reordering, and
 the Node 83-row adapter test checks metadata shape, source-index bounds and
 map-number bounds. The Node test is not itself a full RDKit provenance oracle.
-CI now runs the Python oracle gate on rebuilt Linux and macOS source wheels;
-those CI results remain pending until this branch is run there.
+CI now runs the Python oracle gate on rebuilt Linux and macOS release-profile
+source wheels. The gate records the wheel SHA-256 and requires the installed
+native extension bytes to match the wheel contents; those CI results remain
+pending until the updated branch is run there.
 
 The three typed unsupported rows and the valence refusal are not counted as
 exact parity. Raw reaction embedding counts need not match. This corpus does
