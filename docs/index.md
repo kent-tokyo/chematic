@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.31</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.32</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,9 +80,9 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.0.31 is published on the tracked channels. Its WASM formula and reaction
-JSON fixes have source tests; a published-package output rerun is pending.
-Do not treat release availability as an accuracy or speed result.
+v1.0.32 adds checked-reaction provenance, opt-in SMARTS compatibility and
+MMFF94 diagnostics. Release availability is not an accuracy or speed result;
+package-output reruns remain separate.
 
 The latest published-package comparison packet is for v1.0.30. It records
 20 exact-output, favorable paired-interval Python operations on one host;
@@ -91,11 +91,11 @@ The exposed CIP comparison has 9,995 exact rows and five typed abstentions;
 200 of 310,000 SMARTS cells remain incompatible. These are bounded results,
 not general RDKit parity or superiority.
 
-Merged but unreleased checked-reaction APIs expose product atom origins and
+The checked-reaction APIs expose product atom origins and
 template maps in Python and WASM/Node. Linux/macOS release-profile source
 wheels classify the 83-row comparison as 76 exact graph/origin/map, three
 typed unsupported, one refusal and three invalid in both engines; WASM Node
-tests pass. These are not v1.0.31 registry-package results. See the
+tests pass. These are not v1.0.32 registry-package results. See the
 [source-wheel record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-reaction-83-python-provenance-source.md).
 
 See [validation](validation.md) for denominators, [benchmarks](benchmark.md)

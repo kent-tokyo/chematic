@@ -10,10 +10,10 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The current release is **v1.0.31**. Release channels are verified, but the
-latest published-package chemistry and speed comparison packet is pinned to
-**v1.0.30** against RDKit 2026.03.6. The v1.0.31 WASM formula and reaction
-JSON fixes still need a package-output rerun.
+The **v1.0.32 release** includes new bounded APIs, but the latest
+published-package chemistry and speed comparison packet is pinned to
+**v1.0.30** against RDKit 2026.03.6. v1.0.32 needs its own channel and
+package-output verification.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|

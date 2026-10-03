@@ -1,7 +1,8 @@
 # Open-work ledger
 
-Updated 2026-10-03 for the published **v1.0.31** release. The six release
-channels are verified. Published chemistry/benchmark evidence is versioned:
+Updated 2026-10-03 for the **v1.0.32 release line**. v1.0.31's six
+release channels were verified; v1.0.32 has a separate channel record.
+Published chemistry/benchmark evidence is versioned:
 the P0.1 comparison remains v1.0.30, while the A6 quality packet includes
 v1.0.31. Unreleased source results are labeled separately. The
 [roadmap](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md) sets priority and exit criteria; this ledger names

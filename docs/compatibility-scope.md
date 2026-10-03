@@ -151,10 +151,9 @@ same documented result/error contract for shared fixtures, not every Rust type
 or every RDKit method.
 
 Atom-output order and connected-component source indices are exposed in Rust
-and Python, but not in the WASM/Node surface. The published v1.0.31 reaction
-API has Rust-only product tracing. Merged but unreleased source changes add
+and Python, but not in the WASM/Node surface. v1.0.32 adds reaction product
 origin and template-map arrays to Python `run_smirks_checked()` and WASM/Node
 `run_reactants_checked()`. Python arrays use returned-molecule atom indices;
-WASM/Node arrays use canonical-SMILES parse order. Neither published v1.0.31
-binding exposes those arrays. Do not infer provenance from ordinary product
-SMILES or assume an unreleased API is available in a registry package.
+WASM/Node arrays use canonical-SMILES parse order. Ordinary product SMILES
+alone do not encode provenance. The source-wheel comparison does not prove
+published-package parity.

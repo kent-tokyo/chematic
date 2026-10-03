@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-03. Release line: **v1.0.31**. Release-source and
+> Updated 2026-10-03. Release line: **v1.0.32**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -18,9 +18,10 @@ boundaries, and reproducible evidence take priority over feature-count races.
 | P2 A6 quality | Published v1.0.31 macOS: 265/265 geometry/stereo/clash, 100/265 converged. Linux/Python 3.9 has two typed stereo failures on published and source wheels. | Resolve [#739](https://github.com/kent-tokyo/chematic/issues/739); rerun per-term energy, convergence and independent conformer quality before speed claims. |
 
 Detailed versions, hashes and denominators are in [validation](docs/validation.md)
-and the [benchmark index](benchmarks/README.md). v1.0.31 is published on six
-tracked channels; its WASM formula and E/Z JSON fixes still need a
-published-package rerun. Exposed data are not sealed evidence.
+and the [benchmark index](benchmarks/README.md). v1.0.32 publication and
+published-package reruns are tracked separately. The earlier v1.0.31 WASM
+formula and E/Z JSON fixes still lack a registry-package output rerun.
+Exposed data are not sealed evidence.
 
 ## Priority order and acceptance gates
 
