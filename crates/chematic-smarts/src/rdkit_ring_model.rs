@@ -840,4 +840,32 @@ mod tests {
             assert_eq!(model.ring_count(AtomIdx(raw)), 3, "atom {raw}");
         }
     }
+
+    #[test]
+    fn substituted_fullerene_variants_preserve_ring_counts() {
+        // The same pinned RDKit 2026.03.6 face family, with different
+        // substituent attachment and atom numbering (corpus 3976/4004).
+        let cases: [(&str, &[(u32, u8)]); 2] = [
+            (
+                "COCCOCCOCC1N(C)CC23C4=C5C6=C7c8c9c%10c%11c%12c%13c%14c(c2c2c%15c%16c%17c%18c%19c(c5c5c%20c%21c%22c%23c(c8C%22C65)c%10c5c%11c6c%13c8c(c%15%14)c%16c%10c%18c%11c(c%20%19)c%21c%13c%23c5c5c%13c%11c%10c8c65)C%17C42)C%12C9C713",
+                &[(27, 3), (28, 3), (29, 3), (30, 3), (68, 3), (69, 3)],
+            ),
+            (
+                "COCCOCCOCCN1CC23C4=C5C6=C7c8c9c%10c%11c%12c%13c%14c(c2c2c%15c%16c%17c%18c%19c(c5c5c%20c%21c%22c%23c(c8C%22C65)c%10c5c%11c6c%13c8c(c%15%14)c%16c%10c%18c%11c(c%20%19)c%21c%13c%23c5c5c%13c%11c%10c8c65)C%17C42)C%12C9C73C1",
+                &[(12, 4), (24, 3), (25, 3), (69, 3), (70, 3), (71, 4)],
+            ),
+        ];
+        for (smiles, expected) in cases {
+            let mol = parse(smiles).unwrap();
+            let base = find_sssr(&mol);
+            let model =
+                build_rdkit_parity_ring_model(&mol, &base, &RdkitRingModelBudget::default())
+                    .unwrap();
+            assert_eq!(base.ring_count(), 32);
+            assert_eq!(model.extra_ring_count(), 1);
+            for &(raw, count) in expected {
+                assert_eq!(model.ring_count(AtomIdx(raw)), count, "atom {raw}");
+            }
+        }
+    }
 }
