@@ -10,6 +10,26 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- SMIRKS reactant templates are parsed as SMARTS (#734): query features
+  such as `[CD1:1]`, `[CX4:1]`, `[C;H3:1]`, `[C,N:1]`, `[!O:1]` and
+  `[$([OH]):1]` now match instead of failing with a SMILES parse error.
+  Templates that are valid SMILES take the previous path unchanged. A
+  SMARTS-only template with `@`/`@@` or `/`/`\` stereo is refused with a
+  typed error rather than ignoring the stereo.
+- SMIRKS product templates follow RDKit's product semantics: query-only
+  features (`X`, `D`, `R`, `$()`, `,`/`!` alternatives) are dropped and the
+  element, aromaticity, isotope, chirality, H count (`H3` or `;H3`), charge
+  and atom map are applied. A mapped atom whose query names no single
+  element keeps the reactant's element; an unmapped one is a typed error.
+  `[#N;H<n>]` accepts any single-digit H count.
+- SMARTS `[H]`, `[2H]`, `[H+]` and `[H:1]` are hydrogen atoms, per
+  Daylight/OpenSMARTS and RDKit; `[*H]`, `[CH]`, `[H1]` and `[C;H]` keep
+  the H-count meaning.
+- On 45 reaction-rule cases (the issue's table plus BioTransformer-style
+  phase I/II rules) `run_smirks` gives the same product sets as RDKit
+  2026.03.6 on 44; the remaining one is a chiral reactant template, already
+  documented as outside the pinned RDKit comparison.
+
 ## [1.0.32] - 2026-10-03
 
 - Added atom-origin and product-template-map arrays to the opt-in checked

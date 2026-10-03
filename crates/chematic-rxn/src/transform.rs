@@ -232,8 +232,8 @@ impl ReactionMatch {
         &self,
         smirks: &str,
     ) -> Result<FxHashMap<u16, (usize, AtomIdx)>, TransformError> {
-        let rxn = parse_reaction(smirks)?;
-        let n_templates = rxn.reactants.len();
+        let (_, queries) = parse_smirks_templates(smirks)?;
+        let n_templates = queries.len();
         if self.per_reactant.len() != n_templates {
             return Err(TransformError::ReactantCountMismatch {
                 expected: n_templates,
@@ -242,7 +242,7 @@ impl ReactionMatch {
         }
         Ok(global_map_of(
             &self.per_reactant,
-            &template_atom_maps_of(&rxn),
+            &template_atom_maps_of(&queries),
         ))
     }
 }
@@ -431,13 +431,11 @@ impl PreparedReaction {
 
     fn new_normalized(smirks: &str) -> Result<Self, TransformError> {
         crate::perf_counters::record_reaction_parse_call();
-        let rxn = parse_reaction(smirks)?;
+        let (rxn, queries) = parse_smirks_templates(smirks)?;
 
-        // Build a QueryMolecule from each reactant template, and record the
-        // atom-map number for each query atom index.
-        let queries: Vec<QueryMolecule> = rxn.reactants.iter().map(mol_to_query).collect();
+        // Record the atom-map number for each query atom index.
         let requirements = ReactionRequirements::from_queries(&queries);
-        let template_atom_maps = template_atom_maps_of(&rxn);
+        let template_atom_maps = template_atom_maps_of(&queries);
 
         // Detect whether any reactant template carries @/@@ stereo, so we can apply
         // the parity-aware post-check after VF2 completes.  Chirality is NOT encoded
@@ -964,15 +962,266 @@ fn variant_diagnostics(
     })
 }
 
-fn template_atom_maps_of(rxn: &crate::reaction::Reaction) -> Vec<Vec<Option<u16>>> {
-    rxn.reactants
+fn template_atom_maps_of(queries: &[QueryMolecule]) -> Vec<Vec<Option<u16>>> {
+    queries
         .iter()
-        .map(|tmpl| {
-            (0..tmpl.atom_count())
-                .map(|i| tmpl.atom(AtomIdx(i as u32)).atom_map)
-                .collect()
-        })
+        .map(|q| q.atoms.iter().map(|a| a.atom_map).collect())
         .collect()
+}
+
+/// Parse a SMIRKS into its reaction templates and the compiled reactant
+/// queries (issue #734).
+///
+/// Reactant templates are SMARTS. A component that is also valid SMILES
+/// (`[C:1]`, `[nH:2]`, `[O-:3]`, `[C@H:4]`…) goes through the SMILES parser
+/// and [`mol_to_query`] exactly as before, which keeps the tetrahedral and
+/// E/Z post-checks that read the template molecule. Any other component
+/// (`[CX4:1]`, `[C;H3:1]`, `[C,N:1]`, `[!O:1]`, `[$([OH]):1]`…) is parsed
+/// with the full SMARTS parser; its query is matched directly and a shadow
+/// molecule (same atoms and atom maps, implied elements where the query pins
+/// one) stands in for the template wherever the engine only needs atom
+/// counts and maps. Stereo primitives in such a component are refused with a
+/// typed error rather than silently ignored: the engine checks `@`/`@@` and
+/// `/`/`\` against a template *molecule*, which a general query does not
+/// provide.
+///
+/// Product templates stay SMILES (they are specifications, not queries); the
+/// SMARTS spelling `[C;H3:1]` of an H count is accepted and rewritten to
+/// `[CH3:1]`, any other `;`/`,`/`!`/`$()` product primitive is a typed error.
+fn parse_smirks_templates(
+    smirks: &str,
+) -> Result<(crate::reaction::Reaction, Vec<QueryMolecule>), TransformError> {
+    let limits = crate::reaction::ReactionParseLimits::default();
+    if smirks.len() > limits.max_input_bytes {
+        return Err(TransformError::SmirksParse(RxnError::ResourceLimit {
+            resource: "input bytes",
+            actual: smirks.len(),
+            limit: limits.max_input_bytes,
+        }));
+    }
+    // Reaction SMILES/SMIRKS: reactants>agents>products; `>` never occurs
+    // inside a bracket atom or a recursive SMARTS.
+    let parts: Vec<&str> = smirks.splitn(3, '>').collect();
+    if parts.len() < 3 {
+        return Err(TransformError::SmirksParse(RxnError::MissingArrow));
+    }
+    // Product query atoms (`[OX2H1:2]`) are reduced to what a product can
+    // apply; callers reaching here without the atomic-number expansion
+    // (e.g. `ReactionMatch::atom_map_positions`) get the same reading.
+    let products = crate::reaction::normalize_product_query_atoms(&format!(">>{}", parts[2]))
+        .map_err(TransformError::SmirksParse)?;
+    let products = normalize_product_templates(&products[2..])?;
+    // Agents and products through the ordinary reaction parser (with its
+    // limits); the reactant slot is filled below.
+    let mut rxn = parse_reaction(&format!(">{}>{}", parts[1], products))?;
+
+    let components: Vec<&str> = split_components(parts[0]);
+    if components.len() > limits.max_components_per_side {
+        return Err(TransformError::SmirksParse(RxnError::ResourceLimit {
+            resource: "reactants",
+            actual: components.len(),
+            limit: limits.max_components_per_side,
+        }));
+    }
+    let mut reactants = Vec::with_capacity(components.len());
+    let mut queries = Vec::with_capacity(components.len());
+    for part in components {
+        let (mol, query) = match chematic_smiles::parse(part) {
+            Ok(mol) => {
+                let query = mol_to_query(&mol);
+                (mol, query)
+            }
+            Err(smiles_err) => {
+                let query = chematic_smarts::parse_smarts(part).map_err(|smarts_err| {
+                    TransformError::SmirksParse(RxnError::SmartsParse {
+                        part: part.to_string(),
+                        source: format!("{smarts_err} (as SMILES: {smiles_err})"),
+                    })
+                })?;
+                let shadow = shadow_molecule_of(&query).map_err(|reason| {
+                    TransformError::SmirksParse(RxnError::UnsupportedReactantTemplate {
+                        part: part.to_string(),
+                        reason,
+                    })
+                })?;
+                (shadow, query)
+            }
+        };
+        if mol.atom_count() > limits.max_atoms_per_molecule {
+            return Err(TransformError::SmirksParse(RxnError::ResourceLimit {
+                resource: "atoms per molecule",
+                actual: mol.atom_count(),
+                limit: limits.max_atoms_per_molecule,
+            }));
+        }
+        if mol.bond_count() > limits.max_bonds_per_molecule {
+            return Err(TransformError::SmirksParse(RxnError::ResourceLimit {
+                resource: "bonds per molecule",
+                actual: mol.bond_count(),
+                limit: limits.max_bonds_per_molecule,
+            }));
+        }
+        reactants.push(mol);
+        queries.push(query);
+    }
+    rxn.reactants = reactants;
+    Ok((rxn, queries))
+}
+
+/// Dot-separated components of one reaction side, ignoring dots inside
+/// bracket atoms and recursive SMARTS parentheses.
+fn split_components(side: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let (mut bracket, mut paren) = (0usize, 0usize);
+    let mut start = 0usize;
+    for (i, b) in side.bytes().enumerate() {
+        match b {
+            b'[' => bracket += 1,
+            b']' => bracket = bracket.saturating_sub(1),
+            b'(' if bracket > 0 => paren += 1,
+            b')' if bracket > 0 => paren = paren.saturating_sub(1),
+            b'.' if bracket == 0 && paren == 0 => {
+                if i > start {
+                    out.push(&side[start..i]);
+                }
+                start = i + 1;
+            }
+            _ => {}
+        }
+    }
+    if side.len() > start {
+        out.push(&side[start..]);
+    }
+    out
+}
+
+/// The template molecule standing in for a SMARTS-only reactant query: one
+/// atom per query atom (the implied element when the query pins one, else a
+/// wildcard) carrying the atom map, and one single bond per query bond.
+/// `Err` names the stereo feature that makes the query unsupported.
+fn shadow_molecule_of(query: &QueryMolecule) -> Result<Molecule, &'static str> {
+    fn has_chirality(q: &AtomQuery) -> bool {
+        match q {
+            AtomQuery::Primitive(AtomPrimitive::Chirality(_)) => true,
+            AtomQuery::Primitive(AtomPrimitive::Recursive(sub)) => {
+                sub.atoms.iter().any(|a| has_chirality(&a.query))
+            }
+            AtomQuery::Primitive(_) => false,
+            AtomQuery::And(a, b) | AtomQuery::Or(a, b) => has_chirality(a) || has_chirality(b),
+            AtomQuery::Not(a) => has_chirality(a),
+        }
+    }
+    fn has_direction(q: &BondQuery) -> bool {
+        match q {
+            BondQuery::Primitive(BondPrimitive::Up | BondPrimitive::Down) => true,
+            BondQuery::Primitive(_) | BondQuery::Any => false,
+            BondQuery::And(a, b) | BondQuery::Or(a, b) => has_direction(a) || has_direction(b),
+            BondQuery::Not(a) => has_direction(a),
+        }
+    }
+    fn implied_element(q: &AtomQuery) -> Option<chematic_core::Element> {
+        match q {
+            AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => {
+                chematic_core::Element::from_atomic_number(*n)
+            }
+            AtomQuery::Primitive(AtomPrimitive::Symbol(sym)) => {
+                chematic_core::Element::from_symbol(sym).filter(|e| e.symbol() == sym.as_str())
+            }
+            AtomQuery::And(a, b) => implied_element(a).or_else(|| implied_element(b)),
+            AtomQuery::Or(a, b) => match (implied_element(a), implied_element(b)) {
+                (Some(x), Some(y)) if x == y => Some(x),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+    if query.atoms.iter().any(|a| has_chirality(&a.query)) {
+        return Err(
+            "tetrahedral stereo (@/@@) in a SMARTS-only reactant template is not \
+                    interpreted; spell the atom as a SMILES bracket atom or drop the stereo",
+        );
+    }
+    if query.bonds.iter().any(|b| has_direction(&b.query)) {
+        return Err(
+            "double-bond stereo (/ or \\) in a SMARTS-only reactant template is not \
+                    interpreted; spell the template with SMILES bonds or drop the stereo",
+        );
+    }
+    let mut builder = MoleculeBuilder::new();
+    for qa in &query.atoms {
+        let mut atom = match implied_element(&qa.query) {
+            Some(element) => chematic_core::Atom::new(element),
+            None => chematic_core::Atom::wildcard(),
+        };
+        atom.atom_map = qa.atom_map;
+        builder.add_atom(atom);
+    }
+    for qb in &query.bonds {
+        let _ = builder.add_bond(
+            AtomIdx(qb.atom1 as u32),
+            AtomIdx(qb.atom2 as u32),
+            BondOrder::Single,
+        );
+    }
+    Ok(builder.build())
+}
+
+/// Product templates are SMILES specifications. Accept the SMARTS spelling of
+/// an explicit H count, `[<atom>;H<n>[:map]]` → `[<atom>H<n>[:map]]`; refuse
+/// any other `;`, `,`, `!`, `&` or `$(` inside a product bracket atom with a
+/// typed error instead of the SMILES parser's position message.
+fn normalize_product_templates(products: &str) -> Result<String, TransformError> {
+    let mut out = String::with_capacity(products.len());
+    let mut rest = products;
+    while let Some(open) = rest.find('[') {
+        out.push_str(&rest[..open]);
+        let Some(close_rel) = rest[open + 1..].find(']') else {
+            out.push_str(&rest[open..]);
+            return Ok(out);
+        };
+        let inner = &rest[open + 1..open + 1 + close_rel];
+        rest = &rest[open + 1 + close_rel + 1..];
+        let rewritten = if inner.starts_with('#') {
+            // Atomic-number primitives are handled by
+            // `expand_atomic_number_primitives` before this point.
+            inner.to_string()
+        } else if let Some((atom, tail)) = inner.split_once(';') {
+            let (hcount, map) = match tail.split_once(':') {
+                Some((h, map)) => (h, Some(map)),
+                None => (tail, None),
+            };
+            let valid_h = hcount.strip_prefix('H').is_some_and(|n| {
+                n.is_empty() || (n.len() == 1 && n.bytes().all(|b| b.is_ascii_digit()))
+            });
+            let valid_map =
+                map.is_none_or(|m| !m.is_empty() && m.bytes().all(|b| b.is_ascii_digit()));
+            let valid_atom = !atom.is_empty() && !atom.contains([';', ',', '!', '&', '$', 'H']);
+            if !(valid_h && valid_map && valid_atom) {
+                return Err(TransformError::SmirksParse(
+                    RxnError::UnsupportedProductPrimitive {
+                        primitive: format!("[{inner}]"),
+                    },
+                ));
+            }
+            match map {
+                Some(map) => format!("{atom}{hcount}:{map}"),
+                None => format!("{atom}{hcount}"),
+            }
+        } else if inner.contains([',', '!', '&']) || inner.contains("$(") {
+            return Err(TransformError::SmirksParse(
+                RxnError::UnsupportedProductPrimitive {
+                    primitive: format!("[{inner}]"),
+                },
+            ));
+        } else {
+            inner.to_string()
+        };
+        out.push('[');
+        out.push_str(&rewritten);
+        out.push(']');
+    }
+    out.push_str(rest);
+    Ok(out)
 }
 
 /// `atom_map` number → (reactant slot index, matched `AtomIdx`), built from
@@ -2088,6 +2337,96 @@ mod tests {
     }
 
     #[test]
+    fn reactant_side_smarts_queries_apply(/* issue #734 */) {
+        // The SMIRKS reactant side now parses as full SMARTS: query-only
+        // features (D, X, ;, ',', !, $()) match and the identity transform
+        // returns the input, where before every one of these failed to parse.
+        let canon = |m: &Molecule| chematic_smiles::canonical_smiles(m);
+        let ethane = parse("CC").unwrap();
+        let ethanol = parse("CCO").unwrap();
+        for (smirks, reactant) in [
+            ("[CD1:1]>>[C:1]", &ethane),
+            ("[CX4:1]>>[C:1]", &ethane),
+            ("[C;H3:1]>>[C:1]", &ethane),
+            ("[C,N:1]>>[C:1]", &ethane),
+            ("[!O:1]>>[C:1]", &ethane),
+            ("[$([OH]):1]>>[O:1]", &ethanol),
+        ] {
+            let products = run_reactants(smirks, &[reactant]).unwrap();
+            assert!(!products.is_empty(), "{smirks}: expected a product");
+            assert!(
+                products.iter().all(|set| canon(&set[0]) == canon(reactant)),
+                "{smirks}: identity transform must return the input"
+            );
+        }
+        // Product-side query features are specifications in RDKit's sense:
+        // query-only parts are dropped (`[OX2H1]` applies H1), a mapped atom
+        // without a single element keeps the reactant's element, and an
+        // unmapped one cannot be built.
+        let anisole = parse("COc1ccccc1").unwrap();
+        let out = run_reactants("[c:1][OX2:2][CH3:3]>>[c:1][OX2H1:2]", &[&anisole]).unwrap();
+        assert_eq!(out.len(), 1);
+        assert_eq!(canon(&out[0][0]), canon(&parse("Oc1ccccc1").unwrap()));
+        let out = run_reactants("[C:1]>>[C,N:1]", &[&ethane]).unwrap();
+        assert!(out.iter().all(|set| canon(&set[0]) == canon(&ethane)));
+        assert!(matches!(
+            run_reactants("[C:1]>>[C:1][C,N]", &[&ethane]),
+            Err(TransformError::SmirksParse(
+                crate::reaction::RxnError::UnsupportedProductPrimitive { .. }
+            ))
+        ));
+        // `;H<n>` is the SMARTS spelling of an H count.
+        let out = run_reactants("[C:1]>>[C;H3:1]", &[&ethane]).unwrap();
+        assert!(!out.is_empty());
+    }
+
+    #[test]
+    fn reactant_smarts_query_selects_the_matching_atom(/* issue #734 */) {
+        // A reactant query that only some atoms satisfy must transform only
+        // those atoms, proving the query is actually evaluated (not ignored).
+        // Primary alcohol carbon oxidation: only the CH2 next to OH matches.
+        let canon = |m: &Molecule| chematic_smiles::canonical_smiles(m);
+        let ethanol = parse("CCO").unwrap();
+        let products = run_reactants("[CX4;H2:1][OX2H:2]>>[C:1]=[O:2]", &[&ethanol]).unwrap();
+        assert_eq!(products.len(), 1);
+        assert_eq!(canon(&products[0][0]), canon(&parse("CC=O").unwrap()));
+        // The isopropanol carbon is CH, so the H2 query must not match it.
+        let isopropanol = parse("CC(C)O").unwrap();
+        assert!(
+            run_reactants("[CX4;H2:1][OX2H:2]>>[C:1]=[O:2]", &[&isopropanol])
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn reactant_smarts_only_stereo_is_a_typed_error(/* issue #734 */) {
+        // A SMARTS-only reactant template (one that is not valid SMILES) that
+        // carries tetrahedral or E/Z stereo is refused with a typed error
+        // rather than silently dropping the constraint.
+        let subject = parse("F[C@H](Cl)Br").unwrap();
+        assert!(matches!(
+            run_reactants("[C@;X4:1](F)(Cl)Br>>[C:1](F)(Cl)I", &[&subject]),
+            Err(TransformError::SmirksParse(
+                crate::reaction::RxnError::UnsupportedReactantTemplate { .. }
+            ))
+        ));
+        // A purely SMILES reactant template with the same stereo still works
+        // (it goes through the SMILES parser and the existing post-check).
+        assert!(run_reactants("[C@H:1](F)(Cl)Br>>[C:1](F)(Cl)I", &[&subject]).is_ok());
+    }
+
+    #[test]
+    fn bracket_hydrogen_atom_parses_as_hydrogen(/* issue #734 */) {
+        // `[H]` inside a SMARTS reactant template is a hydrogen atom, not an
+        // H-count primitive: it matches an explicit hydrogen neighbour.
+        let mol = parse("C").unwrap();
+        let mol = chematic_chem::add_hydrogens(&mol);
+        let products = run_reactants("[C:1][H]>>[C:1]", &[&mol]).unwrap();
+        assert!(!products.is_empty(), "[H] must match an explicit hydrogen");
+    }
+
+    #[test]
     fn product_atomic_number_primitives_are_literal_atoms_with_implicit_h() {
         // Issue #679: an unmapped product-side `[#6](=[#8])[#6]` adds an acetyl
         // group exactly like `C(=O)C`; no aromatic-flag variants, no `[C]`
@@ -2184,15 +2523,18 @@ mod tests {
     }
 
     #[test]
-    fn atomic_number_smirks_rejects_unsupported_compound_primitive() {
+    fn atomic_number_smirks_rejects_unsupported_compound_product_primitive() {
         let reactant = parse("N").unwrap();
-        let err = run_reactants("[#7;H2]>>[#7;H2]", &[&reactant]);
+        // An unmapped product atom naming no single element cannot be built
+        // and is rejected (#734); `;X3` alone would just be dropped.
+        let err = run_reactants("[#7:1]>>[#7:1][#6,#7]", &[&reactant]);
         assert!(matches!(
             err,
             Err(TransformError::SmirksParse(
-                crate::reaction::RxnError::UnsupportedAtomicNumberPrimitive { .. }
+                crate::reaction::RxnError::UnsupportedProductPrimitive { .. }
             ))
         ));
+        assert!(run_reactants("[#7:1]>>[#7;X3:1]", &[&reactant]).is_ok());
     }
 
     #[test]

@@ -51,7 +51,8 @@ pub use query::{
 };
 pub use reaction::{
     Reaction, ReactionCenter, ReactionParseLimits, RxnError, expand_atomic_number_primitives,
-    find_reaction_center, parse_reaction, parse_reaction_with_limits, write_reaction,
+    find_reaction_center, normalize_product_query_atoms, parse_reaction,
+    parse_reaction_with_limits, write_reaction,
 };
 pub use requirements::{ReactionBondKind, ReactionBondLowerBound, ReactionRequirements};
 pub use retro::{DEFAULT_TEMPLATES, RetroClass, RetroResult, RetroTemplate, retro_disconnect};

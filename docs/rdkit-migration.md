@@ -21,7 +21,7 @@ operation-level measurement and unsupported states, see the
 | Fingerprints | `rdFingerprintGenerator.GetMorganGenerator(...)` | `mol.ecfp4()` or named RDKit-compatible Morgan API | Native ECFP and RDKit Morgan bit positions are different profiles. |
 | Similarity | `DataStructs.TanimotoSimilarity(a, b)` | `chematic.tanimoto(a, b)` | Use fingerprints from the same declared profile. |
 | 2D depiction | `rdMolDraw2D.MolDraw2DSVG` | `mol._repr_svg_()`; Rust `chematic_depict::depict_svg` | SVG supported; PNG requires the optional feature. |
-| Reactions | `AllChem.ReactionFromSmarts(...).RunReactants(...)` | `chematic.run_smirks(...)` | Bounded template application, not full SMIRKS parity. |
+| Reactions | `AllChem.ReactionFromSmarts(...).RunReactants(...)` | `chematic.run_smirks(...)` | Bounded template application, not full SMIRKS parity. Reactant templates are SMARTS queries (`X`, `D`, `;`, `,`, `!`, `$()`); product query-only features are dropped as in RDKit. A product template does not yet change a mapped atom's element (#734). |
 | MCS | `rdFMCS.FindMCS(mols)` | `chematic.find_mcs(...)` / `find_mcs_checked(...)` | Check timeout separately from no match. |
 | Batch processing | Python loops / `BulkTanimotoSimilarity` | `chematic.bulk.*`, `descriptors_df(...)` | Preserve original input index and all failure outcomes. |
 | Browser | `@rdkit/rdkit` | `@kent-tokyo/chematic` | Compare the published packages on the same operation and host. |

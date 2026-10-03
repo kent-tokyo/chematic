@@ -122,6 +122,36 @@ def test_smarts_repeated_charge_signs_mean_total_charge():
     assert not chematic.smarts_match("[-]", sulfide)
 
 
+@pytest.mark.parametrize(
+    "smirks,smiles,expected",
+    [
+        # Issue #734: SMARTS query features on the reactant side.
+        ("[CD1:1]>>[C:1]", "CC", "CC"),
+        ("[CX4:1]>>[C:1]", "CC", "CC"),
+        ("[C;H3:1]>>[C:1]", "CC", "CC"),
+        ("[C,N:1]>>[C:1]", "CC", "CC"),
+        ("[!O:1]>>[C:1]", "CC", "CC"),
+        ("[$([OH]):1]>>[O:1]", "CCO", "CCO"),
+        ("[C:1]>>[C;H3:1]", "CC", "CC"),
+        ("[CX4;H2:1][OX2H1:2]>>[C:1]=[O:2]", "CCO", "CC=O"),
+        ("[c:1][OX2:2][CH3:3]>>[c:1][OX2H1:2]", "COc1ccccc1", "Oc1ccccc1"),
+        ("[#7X3;H0;!$(NC=O):1][CH3:2]>>[#7:1]", "CN(C)c1ccccc1", "CNc1ccccc1"),
+    ],
+)
+def test_run_smirks_reactant_smarts_queries(smirks, smiles, expected):
+    products = chematic.run_smirks(smirks, [chematic.from_smiles(smiles)])
+    want = chematic.from_smiles(expected).smiles
+    assert products
+    assert {s[0].smiles for s in products} == {want}
+
+
+def test_run_smirks_reactant_query_is_evaluated():
+    # [CX4;H2] must not match the CH of isopropanol.
+    assert chematic.run_smirks(
+        "[CX4;H2:1][OX2H1:2]>>[C:1]=[O:2]", [chematic.from_smiles("CC(C)O")]
+    ) == []
+
+
 def test_run_smirks_invalid_smirks():
     with pytest.raises(ValueError):
         chematic.run_smirks("NOT_A_SMIRKS", [chematic.from_smiles("C")])

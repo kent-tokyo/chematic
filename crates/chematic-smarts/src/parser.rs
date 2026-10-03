@@ -591,7 +591,17 @@ impl<'a> Parser<'a> {
         let bracket_pos = self.pos;
         self.advance(); // consume '['
 
-        let expr = self.parse_expr()?;
+        // Daylight/OpenSMARTS exception: a bracket atom whose whole expression
+        // is `H` — optionally with an isotope before it and a charge and/or
+        // atom map after it (`[H]`, `[2H]`, `[H+]`, `[H:1]`) — is a hydrogen
+        // *atom*, not an H-count primitive; `[*H]`, `[H1]`, `[C;H]` keep the
+        // count meaning. Issue #734: SMIRKS such as `[c:1][H]>>[c:1]O` rely on
+        // this reading.
+        let expr = if let Some(expr) = self.try_parse_hydrogen_atom() {
+            expr
+        } else {
+            self.parse_expr()?
+        };
 
         // Optional atom map number: `[O;D1;H0:3]` → atom_map = Some(3).
         // The `:` is metadata only and does not affect matching.
@@ -622,6 +632,59 @@ impl<'a> Parser<'a> {
         }
 
         Ok((expr, atom_map))
+    }
+
+    /// `[H]`-form hydrogen atom (see `parse_bracket_atom`). Consumes the
+    /// isotope, `H` and charge when the form matches, else consumes nothing.
+    fn try_parse_hydrogen_atom(&mut self) -> Option<AtomQuery> {
+        let mut pos = self.pos;
+        let mut isotope: Option<u16> = None;
+        let mut mass: u32 = 0;
+        while let Some(d) = self.src.get(pos).filter(|b| b.is_ascii_digit()) {
+            mass = mass.saturating_mul(10).saturating_add((d - b'0') as u32);
+            isotope = Some(mass.min(u16::MAX as u32) as u16);
+            pos += 1;
+        }
+        if self.src.get(pos) != Some(&b'H') {
+            return None;
+        }
+        pos += 1;
+        let mut charge: i8 = 0;
+        if let Some(&sign @ (b'+' | b'-')) = self.src.get(pos) {
+            pos += 1;
+            let mut n: i8 = 1;
+            if let Some(d) = self.src.get(pos).filter(|b| b.is_ascii_digit()) {
+                n = (d - b'0') as i8;
+                pos += 1;
+            } else {
+                while self.src.get(pos) == Some(&sign) && n < i8::MAX {
+                    n += 1;
+                    pos += 1;
+                }
+            }
+            charge = if sign == b'+' { n } else { -n };
+        }
+        if !matches!(self.src.get(pos), Some(b']') | Some(b':')) {
+            return None;
+        }
+        self.pos = pos;
+        let mut expr = AtomQuery::And(
+            Box::new(AtomQuery::Primitive(AtomPrimitive::Symbol("H".to_string()))),
+            Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(false))),
+        );
+        if let Some(mass) = isotope {
+            expr = AtomQuery::And(
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Isotope(mass))),
+                Box::new(expr),
+            );
+        }
+        if charge != 0 {
+            expr = AtomQuery::And(
+                Box::new(expr),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Charge(charge))),
+            );
+        }
+        Some(expr)
     }
 
     // -- expression grammar (inside brackets) --------------------------------
@@ -1698,6 +1761,31 @@ mod tests {
         let mol_neg = parse_smarts("[O-1]").unwrap();
         assert_eq!(mol_pos.atoms.len(), 1);
         assert_eq!(mol_neg.atoms.len(), 1);
+    }
+
+    #[test]
+    fn bare_bracket_h_is_a_hydrogen_atom() {
+        // Daylight/OpenSMARTS: `[H]`, `[2H]`, `[H+]` and `[H:1]` are hydrogen
+        // atoms (issue #734); `[*H]`, `[CH]`, `[H1]` and `[C;H]` keep the
+        // H-count meaning.
+        let cfg = crate::MatchConfig::default();
+        let matches = |smarts: &str, smiles: &str| {
+            let q = parse_smarts(smarts).unwrap();
+            crate::find_matches_with_config(&q, &chematic_smiles::parse(smiles).unwrap(), &cfg)
+                .len()
+        };
+        // Methane with one explicit hydrogen atom: only that atom is an H atom.
+        assert_eq!(matches("[H]", "[H]C"), 1);
+        assert_eq!(matches("[H:1]", "[H]C"), 1);
+        assert_eq!(matches("[H]", "C"), 0, "implicit hydrogens are not atoms");
+        assert_eq!(matches("[H+]", "[H+]"), 1);
+        assert_eq!(matches("[H+]", "[H]C"), 0);
+        assert_eq!(matches("[2H]", "[2H]C"), 1);
+        // H-count forms are unchanged.
+        assert_eq!(matches("[*H]", "CC"), 0);
+        assert_eq!(matches("[CH3]", "CC"), 2);
+        assert_eq!(matches("[C;H3]", "CC"), 2);
+        assert_eq!(matches("[H3]", "CC"), 2);
     }
 
     #[test]
