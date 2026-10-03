@@ -26,7 +26,11 @@ type differences has an agreeing parent heavy-atom type. The largest heavy
 bucket is carbon RDKit type 37 versus CheMatic type 2 (1,322 atoms); next are
 carbon 64 versus 37 and carbon 63 versus 37 (203 atoms each). These are
 prioritization buckets, not yet an adjudication of which implementation is
-chemically correct. The [machine census](../validation/results/mmff94-atom-type-census-v1.0.31-2026-10-03.json)
+chemically correct. A separate pass over the same 10,000 inputs found the
+1,322 type-37/type-2 atoms in 317 molecules; RDKit marks all 1,322 aromatic.
+That makes aromaticity/typing interaction the first investigation target,
+not proof that changing aromaticity alone would fix these types. The
+[machine census](../validation/results/mmff94-atom-type-census-v1.0.31-2026-10-03.json)
 contains every bucket and row example; SHA-256
 `aa32fa942bb5f3a7b9d39f363dc2e1c60f64838df5133c2d0cbce77188c6a28c`.
 
