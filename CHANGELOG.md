@@ -10,6 +10,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Confirmed the 83-row checked reaction graph/status gate on Linux and macOS
+  CI source wheels and the three new-product-atom graph/origin/map cases on
+  latest Rust source. These are not published-package or cross-binding
+  provenance results.
 - Added a full 83-fixture graph/status regression gate for the opt-in WASM
   checked reaction API and Linux/macOS source-wheel CI comparison against
   pinned RDKit 2026.03.6. The latest-main Rust source rerun remains 76 exact
