@@ -76,6 +76,23 @@ pub struct ReactionTransformReport {
     pub diagnostics: ReactionTransformDiagnostics,
 }
 
+/// Why the pinned RDKit 2026.03.6 compatibility profile cannot safely claim
+/// a reaction result. Native CheMatic reaction semantics are unchanged.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReactionCompatibilityUnsupported {
+    /// Reactant-side tetrahedral constraints have different matching semantics.
+    ChiralReactantTemplateSemantics,
+}
+
+impl ReactionCompatibilityUnsupported {
+    /// Stable machine-readable refusal code shared by bindings and audit gates.
+    pub const fn reason_code(self) -> &'static str {
+        match self {
+            Self::ChiralReactantTemplateSemantics => "chiral_reactant_template_semantics",
+        }
+    }
+}
+
 /// Diagnostics for one normalized atomic-number variant.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReactionVariantDiagnostics {
@@ -359,6 +376,14 @@ pub struct PreparedReaction {
 }
 
 impl PreparedReaction {
+    /// Return a typed reason when the pinned RDKit 2026.03.6 profile cannot
+    /// safely compare this template. Product-side stereo and E/Z are not
+    /// blanket-refused; only reactant-side tetrahedral matching is affected.
+    pub fn rdkit_2026_03_6_unsupported_reason(&self) -> Option<ReactionCompatibilityUnsupported> {
+        self.has_tetrahedral_reactant_stereo()
+            .then_some(ReactionCompatibilityUnsupported::ChiralReactantTemplateSemantics)
+    }
+
     /// Whether the reactant pattern has tetrahedral `@`/`@@` constraints.
     ///
     /// This is deliberately separate from E/Z bond stereo. Callers that need
@@ -2947,6 +2972,27 @@ mod tests {
         let r_d = run_reactants(smirks, &[&d_ala]).unwrap();
         assert!(!r_l.is_empty(), "L-alanine must match non-stereo template");
         assert!(!r_d.is_empty(), "D-alanine must match non-stereo template");
+    }
+
+    #[test]
+    fn pinned_rdkit_profile_refuses_only_reactant_tetrahedral_templates() {
+        let chiral =
+            PreparedReaction::new("[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O").unwrap();
+        assert_eq!(
+            chiral.rdkit_2026_03_6_unsupported_reason(),
+            Some(ReactionCompatibilityUnsupported::ChiralReactantTemplateSemantics)
+        );
+        assert_eq!(
+            chiral
+                .rdkit_2026_03_6_unsupported_reason()
+                .unwrap()
+                .reason_code(),
+            "chiral_reactant_template_semantics"
+        );
+        let product_only = PreparedReaction::new("[C:1][C:2]>>[C@H:1][C:2]").unwrap();
+        assert_eq!(product_only.rdkit_2026_03_6_unsupported_reason(), None);
+        let ez = PreparedReaction::new("[C:1]/[C:2]=[C:3]/[C:4]>>[C:1]/[C:2]=[C:3]/[C:4]").unwrap();
+        assert_eq!(ez.rdkit_2026_03_6_unsupported_reason(), None);
     }
 
     #[test]

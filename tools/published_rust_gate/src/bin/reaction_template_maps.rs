@@ -1,7 +1,7 @@
-//! Exposed reaction map-label diagnostic from the published v1.0.30 crate.
-//! Map numbers are recovered from the product template's atom order. This
-//! includes newly created mapped atoms, which have no traced reactant origin.
-//! The ordinary product molecule intentionally clears map annotations.
+// Exposed reaction map-label diagnostic from the published v1.0.30 crate.
+// Map numbers are recovered from the product template's atom order. This
+// includes newly created mapped atoms, which have no traced reactant origin.
+// The ordinary product molecule intentionally clears map annotations.
 
 use std::collections::HashMap;
 use std::fs;
@@ -98,6 +98,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 continue;
             }
         };
+        if option_env!("CHEMATIC_REACTION_GATE_PROFILE") == Some("rdkit-2026.03.6")
+            && let Some(reason) = prepared_variants
+                .iter()
+                .find_map(|prepared| prepared.rdkit_2026_03_6_unsupported_reason())
+        {
+            rows.push(json!({"id": case["id"], "status": "typed_unsupported",
+                "reason": reason.reason_code()}));
+            continue;
+        }
         let refs: Vec<_> = reactants.iter().collect();
         let mut accepted_matches = 0;
         let mut valence_rejected_matches = 0;
@@ -185,7 +194,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let raw = serde_json::to_vec_pretty(&rows)?;
     fs::write(&args[3 + output_offset], &raw)?;
     let mut summary = json!({"schema": "published-rust-reaction-template-maps/v1",
-        "crate": "chematic 1.0.30 from crates.io", "input_count": cases.len(),
+        "crate": option_env!("CHEMATIC_REACTION_GATE_LABEL").unwrap_or("chematic 1.0.30 from crates.io"), "input_count": cases.len(),
         "base_cases_sha256": digest(&base_bytes), "strata_sha256": digest(&strata_bytes),
         "rows_sha256": digest(&raw)});
     if let Some(hash) = supplement_sha256 {

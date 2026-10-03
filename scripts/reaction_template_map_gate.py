@@ -88,6 +88,8 @@ def main() -> int:
     parser.add_argument("--baseline-rows", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-rdkit", required=True)
+    parser.add_argument("--expected-crate", default="chematic 1.0.30 from crates.io")
+    parser.add_argument("--expected-version", default="1.0.30")
     args = parser.parse_args()
     if rdBase.rdkitVersion != args.expected_rdkit:
         parser.error(f"RDKit {rdBase.rdkitVersion} != {args.expected_rdkit}")
@@ -99,7 +101,7 @@ def main() -> int:
     rust_rows = json.loads(rust_bytes)
     baseline = json.loads(baseline_bytes)
     if (summary["schema"] != "published-rust-reaction-template-maps/v1"
-            or summary["crate"] != "chematic 1.0.30 from crates.io"
+            or summary["crate"] != args.expected_crate
             or summary["input_count"] != len(cases) == 83
             or summary["base_cases_sha256"] != fixture_hashes["base_sha256"]
             or summary["strata_sha256"] != fixture_hashes["strata_sha256"]
@@ -123,9 +125,12 @@ def main() -> int:
                          "rust_status": rust["status"]})
             continue
         if rust["status"] != "products":
-            outcome = "typed_or_diagnosed_refusal" if rust["status"] in {"typed_refusal", "diagnosed_valence_refusal"} else "unexpected_status"
+            outcome = ("typed_unsupported" if rust["status"] == "typed_unsupported"
+                       else "typed_or_diagnosed_refusal" if rust["status"] in {"typed_refusal", "diagnosed_valence_refusal"}
+                       else "unexpected_status")
             rows.append({"id": case["id"], "outcome": outcome,
-                         "rdkit_raw_product_sets": oracle_raw, "rust_status": rust["status"]})
+                         "rdkit_raw_product_sets": oracle_raw, "rust_status": rust["status"],
+                         "reason": rust.get("reason")})
             continue
         candidate_graph, candidate_origins = rust_sets(case, {"sets_with_atom_sources": rust["sets"]})
         baseline_graph, baseline_origins = rust_sets(case, plain)
@@ -150,7 +155,8 @@ def main() -> int:
                      "rust_raw_product_sets": len(rust["sets"])})
     counts = dict(sorted(Counter(row["outcome"] for row in rows).items()))
     report = {"schema": "published-rust-reaction-template-map-parity/v1",
-              "rdkit_version": rdBase.rdkitVersion, "crate_version": "1.0.30",
+              "rdkit_version": rdBase.rdkitVersion, "crate_version": args.expected_version,
+              "crate_label": args.expected_crate,
               "rust_rows_sha256": hashlib.sha256(rust_bytes).hexdigest(),
               "rust_summary_sha256": hashlib.sha256(rust_summary_bytes).hexdigest(),
               "baseline_rows_sha256": hashlib.sha256(baseline_bytes).hexdigest(),
