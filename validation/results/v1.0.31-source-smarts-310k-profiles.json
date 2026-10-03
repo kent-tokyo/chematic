@@ -1,0 +1,230 @@
+{
+  "accounting": {
+    "cells": 310000,
+    "molecules": 10000,
+    "published_boolean_wrong_cells": 43,
+    "published_match_set_wrong_cells": 200,
+    "published_match_set_wrong_rows": 64,
+    "queries": 31,
+    "source_default_boolean_wrong_by_query": {
+      "[R1]": 14,
+      "[R2]": 3,
+      "[R3]": 25,
+      "[x2]": 1
+    },
+    "source_default_boolean_wrong_cells": 43,
+    "source_default_match_set_wrong_cells": 200
+  },
+  "inputs": {
+    "classification_sha256": "7f6b32d614eefb5604df17261e23d8f746fa17f2afb2307686d1d97b329d39ef",
+    "dump_sha256": "6458da97f225c13790ac8c17a26a0f5b17c7a1ca3fcfdd2c40516f0ed396fcad",
+    "oracle_sha256": "3f55a2e16ee3aef9c59e6d17e1404528021658269fe4edb71208a19e12e07093",
+    "published_rows_sha256": "4c429609828c193d84bde7200e0e8b36eaa91e7c01a8aaf4f6ebe73839412452",
+    "queries_sha256": "250a241a8905d013eb58fff0ccfb1e0dbe3e97c08ff56e021828fbfec957b341"
+  },
+  "profiles": {
+    "parity": {
+      "booleans": {
+        "fixed_by_query": {
+          "[R1]": 13,
+          "[R3]": 24
+        },
+        "fixed_source_default_cells": 37,
+        "refused_source_default_correct_cells": 18,
+        "refused_source_default_wrong_cells": 0,
+        "regressed_cells": 0,
+        "remaining_by_query": {
+          "[R1]": 1,
+          "[R2]": 3,
+          "[R3]": 1,
+          "[x2]": 1
+        },
+        "remaining_cells": [
+          [
+            3498,
+            "[R3]"
+          ],
+          [
+            3837,
+            "[R2]"
+          ],
+          [
+            3976,
+            "[R2]"
+          ],
+          [
+            4004,
+            "[R2]"
+          ],
+          [
+            8341,
+            "[R1]"
+          ],
+          [
+            8341,
+            "[x2]"
+          ]
+        ],
+        "wrong_confident_cells": 6
+      },
+      "match_sets": {
+        "fixed_by_query": {
+          "[R1]": 50,
+          "[R2]": 52,
+          "[R3]": 52
+        },
+        "fixed_source_default_cells": 154,
+        "refused_source_default_correct_cells": 1,
+        "refused_source_default_wrong_cells": 17,
+        "regressed_cells": 0,
+        "remaining_by_query": {
+          "*!@*": 1,
+          "*@*": 1,
+          "[R1]": 3,
+          "[R2]": 6,
+          "[R3]": 5,
+          "[k5]": 1,
+          "[k6]": 10,
+          "[x2]": 1,
+          "[x3]": 1
+        },
+        "remaining_rows": [
+          1177,
+          2951,
+          3498,
+          3837,
+          3976,
+          3995,
+          4004,
+          5717,
+          6264,
+          6265,
+          6266,
+          7276,
+          7448,
+          7764,
+          8341,
+          9862
+        ],
+        "wrong_confident_cells": 29
+      },
+      "refused_by_query": {
+        "[R1]": 6,
+        "[R2]": 6,
+        "[R3]": 6
+      },
+      "refused_rows": [
+        9,
+        23,
+        28,
+        29,
+        30,
+        34
+      ],
+      "typed_refusal_cells": 18
+    },
+    "shared_symmetrized": {
+      "booleans": {
+        "fixed_by_query": {
+          "[R1]": 13,
+          "[R3]": 24
+        },
+        "fixed_source_default_cells": 37,
+        "refused_source_default_correct_cells": 18,
+        "refused_source_default_wrong_cells": 0,
+        "regressed_cells": 0,
+        "remaining_by_query": {
+          "[R1]": 1,
+          "[R2]": 3,
+          "[R3]": 1,
+          "[x2]": 1
+        },
+        "remaining_cells": [
+          [
+            3498,
+            "[R3]"
+          ],
+          [
+            3837,
+            "[R2]"
+          ],
+          [
+            3976,
+            "[R2]"
+          ],
+          [
+            4004,
+            "[R2]"
+          ],
+          [
+            8341,
+            "[R1]"
+          ],
+          [
+            8341,
+            "[x2]"
+          ]
+        ],
+        "wrong_confident_cells": 6
+      },
+      "match_sets": {
+        "fixed_by_query": {
+          "[R1]": 50,
+          "[R2]": 52,
+          "[R3]": 52
+        },
+        "fixed_source_default_cells": 154,
+        "refused_source_default_correct_cells": 1,
+        "refused_source_default_wrong_cells": 17,
+        "regressed_cells": 0,
+        "remaining_by_query": {
+          "*!@*": 1,
+          "*@*": 1,
+          "[R1]": 3,
+          "[R2]": 6,
+          "[R3]": 5,
+          "[k5]": 1,
+          "[k6]": 10,
+          "[x2]": 1,
+          "[x3]": 1
+        },
+        "remaining_rows": [
+          1177,
+          2951,
+          3498,
+          3837,
+          3976,
+          3995,
+          4004,
+          5717,
+          6264,
+          6265,
+          6266,
+          7276,
+          7448,
+          7764,
+          8341,
+          9862
+        ],
+        "wrong_confident_cells": 29
+      },
+      "refused_by_query": {
+        "[R1]": 6,
+        "[R2]": 6,
+        "[R3]": 6
+      },
+      "refused_rows": [
+        9,
+        23,
+        28,
+        29,
+        30,
+        34
+      ],
+      "typed_refusal_cells": 18
+    }
+  },
+  "rdkit_version": "2026.03.6",
+  "schema": "smarts-match-set-and-boolean-profile-310k/v1",
+  "scope": "source-only opt-in diagnostic, not published-package evidence"
+}
