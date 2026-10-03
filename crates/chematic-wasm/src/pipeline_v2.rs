@@ -724,6 +724,8 @@ pub(crate) struct ForceFieldBridgeErrorJson {
     #[serde(skip_serializing_if = "Option::is_none")]
     iterations: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    mmff94_termination: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_residual_force: Option<FiniteF64>,
 }
 
@@ -740,6 +742,7 @@ pub(crate) fn force_field_bridge_error_json(
             reason: None,
             converged: None,
             iterations: None,
+            mmff94_termination: None,
             max_residual_force: None,
         },
         ForceFieldBridgeError::MissingParameters(coverage) => ForceFieldBridgeErrorJson {
@@ -750,6 +753,7 @@ pub(crate) fn force_field_bridge_error_json(
             reason: None,
             converged: None,
             iterations: None,
+            mmff94_termination: None,
             max_residual_force: None,
         },
         ForceFieldBridgeError::MinimizationFailed(detail) => ForceFieldBridgeErrorJson {
@@ -760,6 +764,9 @@ pub(crate) fn force_field_bridge_error_json(
             reason: Some(snake_case_debug(&detail.reason)),
             converged: Some(detail.converged),
             iterations: Some(detail.iterations),
+            mmff94_termination: detail
+                .mmff94_termination
+                .map(|reason| snake_case_debug(&reason)),
             max_residual_force: Some(detail.max_residual_force.into()),
         },
     }
@@ -849,6 +856,7 @@ struct PolicyMinimizeResultJson {
     energy_after: EnergyReportJson,
     converged: bool,
     iterations: usize,
+    mmff94_termination: Option<String>,
     max_residual_force: FiniteF64,
     starting_geometry: Option<String>,
 }
@@ -874,6 +882,7 @@ fn policy_minimize_result_json(
         energy_after: energy_report_json(&r.energy_after),
         converged: r.converged,
         iterations: r.iterations,
+        mmff94_termination: r.mmff94_termination.map(|reason| snake_case_debug(&reason)),
         max_residual_force: r.max_residual_force.into(),
         starting_geometry: r.starting_geometry.map(|g| snake_case_debug(&g)),
     }
@@ -1383,9 +1392,54 @@ mod tests {
         assert_eq!(result["forceField"]["requestedForceField"], "none");
         assert_eq!(result["forceField"]["actualForceFieldUsed"], "none");
         assert_eq!(
+            result["forceField"]["mmff94Termination"],
+            serde_json::Value::Null
+        );
+        assert_eq!(
             result["forceField"]["fallbackReason"],
             serde_json::Value::Null
         );
+    }
+
+    #[test]
+    fn mmff94_termination_is_exposed_in_json() {
+        let mol = parse_smiles("CCCC").expect("butane");
+        let config = safe_config_json("mmff94_bond_angle_strict", "ignore", "diagnostic_only");
+        let value: serde_json::Value =
+            serde_json::from_str(&embed_pipeline_v2_json(&mol, &config)).expect("valid JSON");
+        assert_eq!(value["ok"], true, "{value}");
+        let ff = &value["result"]["forceField"];
+        let reason = ff["mmff94Termination"].as_str().expect("MMFF94 reason");
+        assert!(matches!(
+            reason,
+            "gradient_converged" | "iteration_limit" | "constraint_rejected_fallback"
+        ));
+        assert_eq!(ff["converged"] == true, reason == "gradient_converged");
+    }
+
+    #[test]
+    fn mmff94_failure_json_preserves_optimizer_stop_reason() {
+        use chematic_3d::minimize::{
+            ForceFieldBridgeError, MinimizationFailureDetail, MinimizationFailureReason,
+        };
+        use chematic_ff::Mmff94TerminationReason;
+
+        let error =
+            ForceFieldBridgeError::MinimizationFailed(Box::new(MinimizationFailureDetail {
+                policy: ForceFieldPolicy::Mmff94BondAngleStrict,
+                reason: MinimizationFailureReason::ExcessiveResidualForce,
+                converged: false,
+                iterations: 20,
+                mmff94_termination: Some(Mmff94TerminationReason::ConstraintRejectedFallback),
+                max_residual_force: 557.0,
+                worst_bond_length: 2.1,
+                distance_geometry_v2_retry_attempted: false,
+            }));
+        let value = serde_json::to_value(force_field_bridge_error_json(&error))
+            .expect("serializable typed refusal");
+        assert_eq!(value["kind"], "minimization_failed");
+        assert_eq!(value["reason"], "excessive_residual_force");
+        assert_eq!(value["mmff94Termination"], "constraint_rejected_fallback");
     }
 
     #[test]

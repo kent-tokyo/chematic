@@ -111,6 +111,21 @@ pub struct MinimizeResult {
     pub converged: bool,
     /// Number of gradient steps performed.
     pub iterations: usize,
+    /// Why this run stopped; non-convergence is not always an iteration cap.
+    pub termination: Mmff94TerminationReason,
+}
+
+/// Terminal condition of an MMFF94 minimization run.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Mmff94TerminationReason {
+    /// The gradient fell below the configured threshold.
+    GradientConverged,
+    /// The configured iteration count was exhausted, including a zero budget.
+    IterationLimit,
+    /// Backtracking found no accepted proposal and the caller's geometry
+    /// predicate rejected the final steepest-descent fallback proposal.
+    /// The last accepted coordinates were retained.
+    ConstraintRejectedFallback,
 }
 
 /// Error from MMFF94 minimizer setup.
@@ -556,6 +571,7 @@ pub fn minimize_mmff94_full(
             rmsd: 0.0,
             converged: true,
             iterations: 0,
+            termination: Mmff94TerminationReason::GradientConverged,
         });
     }
 
@@ -619,6 +635,11 @@ pub fn minimize_mmff94_full(
         rmsd,
         converged,
         iterations: iters,
+        termination: if converged {
+            Mmff94TerminationReason::GradientConverged
+        } else {
+            Mmff94TerminationReason::IterationLimit
+        },
     })
 }
 
@@ -672,6 +693,7 @@ where
             rmsd: 0.0,
             converged: true,
             iterations: 0,
+            termination: Mmff94TerminationReason::GradientConverged,
         });
     }
 
@@ -698,6 +720,7 @@ where
 
     let mut iters = 0usize;
     let mut converged = false;
+    let mut termination = Mmff94TerminationReason::IterationLimit;
 
     'iterations: for _ in 0..max_iter {
         iters += 1;
@@ -710,6 +733,7 @@ where
             .fold(0.0_f64, f64::max);
         if max_g < CONVERGENCE {
             converged = true;
+            termination = Mmff94TerminationReason::GradientConverged;
             break;
         }
 
@@ -777,6 +801,7 @@ where
             // tiny steepest-descent direction. Preserve the last accepted
             // coordinates and report ordinary non-convergence; never cross a
             // caller-defined geometry boundary just to keep iterating.
+            termination = Mmff94TerminationReason::ConstraintRejectedFallback;
             break 'iterations;
         };
 
@@ -838,6 +863,7 @@ where
         rmsd,
         converged,
         iterations: iters,
+        termination,
     })
 }
 
@@ -3741,6 +3767,30 @@ mod tests {
         assert_eq!(coords, initial);
         assert!(!result.converged);
         assert_eq!(result.iterations, 1);
+        assert_eq!(
+            result.termination,
+            Mmff94TerminationReason::ConstraintRejectedFallback
+        );
+    }
+
+    #[test]
+    fn bounded_analytic_reports_iteration_limit_separately() {
+        let mol = chematic_smiles::parse("CCCC").expect("butane");
+        let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
+        let mut coords = vec![
+            [0.0, 0.0, 0.0],
+            [1.54, 0.1, 0.0],
+            [2.95, 0.85, 0.2],
+            [4.25, 0.15, 1.05],
+        ];
+        let before = coords.clone();
+        let result = model
+            .minimize_lbfgs_bounded_analytic(&mut coords, 0)
+            .expect("zero-budget minimization");
+        assert_eq!(coords, before);
+        assert!(!result.converged);
+        assert_eq!(result.iterations, 0);
+        assert_eq!(result.termination, Mmff94TerminationReason::IterationLimit);
     }
 
     #[test]

@@ -18,6 +18,7 @@ current issue or benchmark links to them.
 | Sealed cohort | `prepare_sealed_accuracy_cohort.py` |
 | V3000 external readers | `v3000_*_gate.py` |
 | Stereo gates | `stereo_torture_suite_gate.py`, `stereo_spelling_invariance_gate.py` |
+| A6 source-wheel termination diagnostic | `public_package_3d_chematic.py` runs the fixed 265 rows; `summarize_a6_mmff94_termination.py` accounts for every outcome without claiming the full quality gate |
 | Cross-binding Node dump | `binding_dump.mjs <mode>` |
 | Published v1.0.30 artifact packet | `check_v1030_artifact_packet.py`, `check_v1030_published_chemistry_residuals.py`, `emit_rdkit_smarts_oracle.py`, `run_published_npm_chemistry_lane.mjs`, `run_published_npm_63op_outputs.mjs`, `run_reaction_compatibility_v2.py`, `reaction_template_map_gate.py`, `check_published_rust_63op_outputs.py`, and the version-pinned `tools/published_rust_gate*` lockfiles |
 | Published-wheel output and speed comparison | `bench_python_op_matrix_vs_rdkit.py --outputs-only/--paired`, `check_published_python_version_outputs.py`, `bench_published_python_versions.py` |

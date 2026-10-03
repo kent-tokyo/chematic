@@ -213,6 +213,7 @@ def test_result_schema_and_values_for_deterministic_case():
     assert ff["energy_after"] == {"kind": "none", "total": 0.0}
     assert ff["converged"] is True
     assert ff["iterations"] == 0
+    assert ff["mmff94_termination"] is None
     assert ff["max_residual_force"] == 0.0
     assert ff["starting_geometry"] is None
     assert ff["coords"] == result["coords"]
@@ -477,6 +478,20 @@ def test_stereo_safe_sets_all_three_flags_together():
     assert config.stereo_policy == "repair_and_verify"
     assert config.enforce_chirality is True
     assert config.expand_implicit_h_through_pipeline is True
+
+
+def test_mmff94_termination_is_exposed_with_convergence():
+    mol = chematic.from_smiles("CCCC")
+    config = chematic.PipelineV2Config.stereo_safe(
+        force_field="mmff94_bond_angle_strict",
+        ring_torsion_policy="diagnostic_only",
+        embed_seed=20260801,
+        force_field_max_iterations=400,
+    )
+    ff = mol.embed_pipeline_v2(config)["force_field"]
+    assert ff["actual_force_field_used"] == "mmff94_bond_angle_strict"
+    assert ff["converged"] is True
+    assert ff["mmff94_termination"] == "gradient_converged"
 
 
 def test_stereo_safe_fixes_testosterone_via_python_binding():

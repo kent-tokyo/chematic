@@ -9,9 +9,10 @@ use std::collections::HashSet;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
-    EnergyBreakdown, MinimizerError, Mmff94EnergyModel, NumericTypeError, OOP_SP2_TYPES, UffType,
-    angle_type_for, assign_mmff94_numeric_types_with_view, assign_uff_types, bond_type_for,
-    is_angle_in_ring_of_size_3_or_4, minimize_uff as ff_minimize_uff,
+    EnergyBreakdown, MinimizerError, Mmff94EnergyModel, Mmff94TerminationReason, NumericTypeError,
+    OOP_SP2_TYPES, UffType, angle_type_for, assign_mmff94_numeric_types_with_view,
+    assign_uff_types, bond_type_for, is_angle_in_ring_of_size_3_or_4,
+    minimize_uff as ff_minimize_uff,
     minimize_uff_with_constraint as ff_minimize_uff_with_constraint, mmff94_angle_energy_resolved,
     mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
     stretch_bend_type_for, torsion_no_term_by_design, torsion_type_for, uff_total_energy,
@@ -1282,6 +1283,9 @@ pub struct MinimizationFailureDetail {
     /// `check_minimization_soundness`'s doc; this field is diagnostic only.
     pub converged: bool,
     pub iterations: usize,
+    /// Optimizer stop condition for an MMFF94 attempt; absent for other
+    /// force fields. The separate `reason` is the quality gate that failed.
+    pub mmff94_termination: Option<Mmff94TerminationReason>,
     /// Always populated (not just when `reason` is
     /// `ExcessiveResidualForce`) so a failed molecule still reports how far
     /// from equilibrium it is.
@@ -1446,6 +1450,12 @@ pub struct PolicyMinimizeResult {
     pub energy_after: EnergyReport,
     pub converged: bool,
     pub iterations: usize,
+    /// Terminal condition when the returned coordinates came from MMFF94.
+    /// `None` for another returned force field; if an MMFF94 attempt failed
+    /// before UFF fallback, its stop reason is in `fallback_reason`.
+    /// A non-converged result may be a constraint-rejected stop rather than
+    /// an iteration-cap outcome.
+    pub mmff94_termination: Option<Mmff94TerminationReason>,
     /// Max |gradient component| (kcal/mol/Å) at the final geometry, computed
     /// by this bridge's own finite-difference pass over the exact energy
     /// function that produced `energy_after` — not read off any upstream
@@ -1472,6 +1482,7 @@ fn trivial_result(coords: Coords3D, policy: ForceFieldPolicy) -> PolicyMinimizeR
         energy_after: EnergyReport::None,
         converged: true,
         iterations: 0,
+        mmff94_termination: None,
         max_residual_force: 0.0,
         starting_geometry: None,
     }
@@ -1594,6 +1605,12 @@ fn worst_bond_length_vec(mol: &Molecule, coords: &[[f64; 3]]) -> f64 {
         .fold(0.0_f64, f64::max)
 }
 
+struct OptimizerStatus {
+    converged: bool,
+    iterations: usize,
+    mmff94_termination: Option<Mmff94TerminationReason>,
+}
+
 /// Decide whether a minimization result is geometrically/energetically
 /// sound enough to return as `Ok`, or must instead become a typed
 /// `Err(MinimizationFailed)`.
@@ -1619,8 +1636,7 @@ fn check_minimization_soundness(
     mol: &Molecule,
     coords: &[[f64; 3]],
     policy: ForceFieldPolicy,
-    converged: bool,
-    iterations: usize,
+    status: OptimizerStatus,
     max_residual_force: f64,
     distance_geometry_v2_retry_attempted: bool,
 ) -> Result<(), ForceFieldBridgeError> {
@@ -1640,8 +1656,9 @@ fn check_minimization_soundness(
             MinimizationFailureDetail {
                 policy,
                 reason,
-                converged,
-                iterations,
+                converged: status.converged,
+                iterations: status.iterations,
+                mmff94_termination: status.mmff94_termination,
                 max_residual_force,
                 worst_bond_length,
                 distance_geometry_v2_retry_attempted,
@@ -1944,6 +1961,7 @@ struct Mmff94BridgeRun {
     energy_after: EnergyBreakdown,
     converged: bool,
     iterations: usize,
+    termination: Mmff94TerminationReason,
     max_residual_force: f64,
 }
 
@@ -2000,8 +2018,11 @@ fn run_mmff94_bridge(
         mol,
         &work,
         ForceFieldPolicy::Mmff94BondAngleStrict,
-        result.converged,
-        result.iterations,
+        OptimizerStatus {
+            converged: result.converged,
+            iterations: result.iterations,
+            mmff94_termination: Some(result.termination),
+        },
         max_residual_force,
         false,
     )?;
@@ -2013,6 +2034,7 @@ fn run_mmff94_bridge(
         energy_after,
         converged: result.converged,
         iterations: result.iterations,
+        termination: result.termination,
         max_residual_force,
     })
 }
@@ -2065,8 +2087,11 @@ fn run_uff_bridge(
         mol,
         &result.coords,
         ForceFieldPolicy::UffOnly,
-        result.converged,
-        result.iterations,
+        OptimizerStatus {
+            converged: result.converged,
+            iterations: result.iterations,
+            mmff94_termination: None,
+        },
         max_residual_force,
         false,
     ) {
@@ -2088,6 +2113,7 @@ fn run_uff_bridge(
                 reason: MinimizationFailureReason::StereoConstraintViolation,
                 converged: result.converged,
                 iterations: result.iterations,
+                mmff94_termination: None,
                 max_residual_force,
                 worst_bond_length: worst_bond_length_vec(mol, &result.coords),
                 distance_geometry_v2_retry_attempted: false,
@@ -2274,8 +2300,11 @@ fn rescue_with_distance_geometry_v2(
             mol,
             &accepted_vec,
             ForceFieldPolicy::UffOnly,
-            retry.converged,
-            retry.iterations,
+            OptimizerStatus {
+                converged: retry.converged,
+                iterations: retry.iterations,
+                mmff94_termination: None,
+            },
             accepted_max_residual_force,
             false,
         )
@@ -2319,6 +2348,7 @@ fn finish_mmff94(
         energy_after: EnergyReport::Mmff94(r.energy_after),
         converged: r.converged,
         iterations: r.iterations,
+        mmff94_termination: Some(r.termination),
         max_residual_force: r.max_residual_force,
         starting_geometry: None,
     }
@@ -2347,6 +2377,7 @@ fn finish_uff(
         },
         converged: r.converged,
         iterations: r.iterations,
+        mmff94_termination: None,
         max_residual_force: r.max_residual_force,
         starting_geometry: Some(r.starting_geometry),
     }
@@ -2413,8 +2444,11 @@ fn minimize_with_policy_gated_impl(
                 mol,
                 &coord_vec,
                 ForceFieldPolicy::Dreiding,
-                report.converged,
-                report.iterations,
+                OptimizerStatus {
+                    converged: report.converged,
+                    iterations: report.iterations,
+                    mmff94_termination: None,
+                },
                 report.final_max_grad,
                 false,
             )?;
@@ -2430,6 +2464,7 @@ fn minimize_with_policy_gated_impl(
                 energy_after: EnergyReport::Dreiding { total: e_after },
                 converged: report.converged,
                 iterations: report.iterations,
+                mmff94_termination: None,
                 max_residual_force: report.final_max_grad,
             })
         }
@@ -3000,6 +3035,36 @@ mod policy_bridge_tests {
     use crate::dg::generate_coords;
     use chematic_ff::{assign_mmff94_numeric_types, mmff94_bond_energy, mmff94_total_energy};
     use chematic_smiles::parse;
+
+    #[test]
+    fn rejected_mmff94_quality_gate_preserves_optimizer_stop_reason() {
+        let mol = parse("CC").expect("ethane");
+        let coords = [[0.0, 0.0, 0.0], [1.54, 0.0, 0.0]];
+        let error = check_minimization_soundness(
+            &mol,
+            &coords,
+            ForceFieldPolicy::Mmff94BondAngleStrict,
+            OptimizerStatus {
+                converged: false,
+                iterations: 20,
+                mmff94_termination: Some(Mmff94TerminationReason::ConstraintRejectedFallback),
+            },
+            MAX_SANE_RESIDUAL_FORCE + 1.0,
+            false,
+        )
+        .expect_err("excessive force must be a typed refusal");
+        let ForceFieldBridgeError::MinimizationFailed(detail) = error else {
+            panic!("expected minimization failure detail");
+        };
+        assert!(matches!(
+            detail.reason,
+            MinimizationFailureReason::ExcessiveResidualForce
+        ));
+        assert_eq!(
+            detail.mmff94_termination,
+            Some(Mmff94TerminationReason::ConstraintRejectedFallback)
+        );
+    }
 
     // --- Coords3D <-> Vec<[f64; 3]> bridge plumbing -------------------------
 

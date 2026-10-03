@@ -10,6 +10,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Exposed typed MMFF94 optimizer termination in Rust, Python
+  (`mmff94_termination`) and WASM (`mmff94Termination`): gradient
+  convergence, iteration limit or rejected fallback. This changes diagnostics,
+  not the minimization algorithm or default iteration limit. A 265-row local
+  dev-profile source-wheel rerun found three typed failures absent from the
+  published v1.0.31 run. Optimized-wheel confirmation is still needed before
+  this source candidate can clear the quality gate.
 - Added a pinned row-level A6 non-convergence diagnosis for the published
   v1.0.31 200/400-iteration runs: 97 rows still hit the 400-iteration cap
   and four stop early at the same iteration in both runs. This does not

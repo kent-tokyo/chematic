@@ -274,6 +274,11 @@ jobs:
           .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-linux.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":76,"typed_unsupported":3,"typed_refusal":1,"joint_invalid_input":3}'
           .venv/bin/python scripts/check_python_smarts_parity_310k.py --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-linux.json
           .venv/bin/python scripts/mmff94_atom_type_census.py --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --output validation/results/mmff94-type-source-wheel-10k-linux.json --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --type37-context --source-wheel-gate
+      - name: Diagnose A6 optimized source wheel (Linux)
+        run: |
+          git diff --quiet
+          .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/hba-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-linux.jsonl --metadata-output validation/results/a6-source-265-linux.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          .venv/bin/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-linux.jsonl --metadata validation/results/a6-source-265-linux.meta.json --output validation/results/a6-source-265-linux.summary.json --build-profile release
       - name: Retain HBA source-wheel parity result
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -284,6 +289,9 @@ jobs:
             validation/results/reaction-checked-source-wheel-83-linux.json
             validation/results/smarts-checked-source-wheel-310k-linux.json
             validation/results/mmff94-type-source-wheel-10k-linux.json
+            validation/results/a6-source-265-linux.jsonl
+            validation/results/a6-source-265-linux.meta.json
+            validation/results/a6-source-265-linux.summary.json
           if-no-files-found: ignore
 
   test-hba-wheel-macos:
@@ -306,6 +314,11 @@ jobs:
           .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-macos.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":76,"typed_unsupported":3,"typed_refusal":1,"joint_invalid_input":3}'
           .venv/bin/python scripts/check_python_smarts_parity_310k.py --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-macos.json
           .venv/bin/python scripts/mmff94_atom_type_census.py --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --output validation/results/mmff94-type-source-wheel-10k-macos.json --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --type37-context --source-wheel-gate
+      - name: Diagnose A6 optimized source wheel (macOS arm64)
+        run: |
+          git diff --quiet
+          .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/hba-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-macos.jsonl --metadata-output validation/results/a6-source-265-macos.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          .venv/bin/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-macos.jsonl --metadata validation/results/a6-source-265-macos.meta.json --output validation/results/a6-source-265-macos.summary.json --build-profile release
       - name: Retain macOS HBA wheel result
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -316,6 +329,9 @@ jobs:
             validation/results/reaction-checked-source-wheel-83-macos.json
             validation/results/smarts-checked-source-wheel-310k-macos.json
             validation/results/mmff94-type-source-wheel-10k-macos.json
+            validation/results/a6-source-265-macos.jsonl
+            validation/results/a6-source-265-macos.meta.json
+            validation/results/a6-source-265-macos.summary.json
           if-no-files-found: ignore
 
   test-wasm:
