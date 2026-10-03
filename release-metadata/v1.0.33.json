@@ -4,12 +4,12 @@
   "release": {
     "version": "1.0.33",
     "tag": "v1.0.33",
-    "commit": null,
-    "commit_source": "Pre-tag placeholder; the GitHub Release workflow generates an exact-tag asset after publication.",
-    "released_at": "2026-10-04T07:14:11+09:00"
+    "commit": "61548720159a83c90a4201c98ebe9d43121a8872",
+    "commit_source": "Annotated v1.0.33 tag target, verified against the GitHub Release metadata asset.",
+    "released_at": "2026-10-04T07:31:47+09:00"
   },
   "evidence_context": {
-    "stable_release": {"version": "1.0.33", "tag": "v1.0.33", "commit": null},
+    "stable_release": {"version": "1.0.33", "tag": "v1.0.33", "commit": "61548720159a83c90a4201c98ebe9d43121a8872"},
     "candidate": null,
     "oracle_lanes": [
       {"engine": "RDKit", "version": "2025.09.3", "role": "pinned_regression", "status": "active"},
@@ -35,5 +35,5 @@
       {"path": "benchmarks/2026-10-03-reaction-83-python-provenance-source.md", "status": "historical", "versions": ["v1.0.31 source candidate", "RDKit 2026.03.6"], "commit": "d3b27f1c", "corpus": "83 stratified exposed reaction rows", "hardware": "GitHub Actions Linux and macOS arm64"}
     ]
   },
-  "generated_at": "2026-10-04T07:14:11+09:00"
+  "generated_at": "2026-10-04T07:48:00+09:00"
 }
