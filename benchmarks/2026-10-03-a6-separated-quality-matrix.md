@@ -8,6 +8,10 @@ The 10k atom-type census comes from a v1.0.25 wheel. These artifacts have
 different code versions and corpora; the matrix never merges their success
 counts into a single parity percentage.
 
+The subsequent [published v1.0.31 rerun](2026-10-03-a6-published-v1031-mmff94-quality.md)
+confirms 265/265 geometry/stereo/clash and the same 100/265 convergence count;
+this historical matrix remains unchanged so its provenance is unambiguous.
+
 | Dimension | Measured evidence | A6 status |
 |---|---|---|
 | Atom types and parameters | v1.0.26 strict bond-angle arm has no missing bond/angle/OOP/stretch-bend terms, but 32 missing torsion terms across six rows; separate v1.0.25 10k census has 2,908 differing heavy-atom types | Open; strict arm permits those torsion gaps |
