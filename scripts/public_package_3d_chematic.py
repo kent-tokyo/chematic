@@ -96,11 +96,25 @@ def run_pipeline(mol: object, config: object) -> dict[str, object]:
     try:
         result = mol.embed_pipeline_v2(config)  # type: ignore[attr-defined]
     except Exception as error:  # retain every typed or unexpected failure
-        return {
+        failure: dict[str, object] = {
             "status": "typed_failure",
             "failure_cause": f"{type(error).__name__}: {error}",
             "elapsed_ms": (time.perf_counter_ns() - started) / 1_000_000,
         }
+        diagnostics = getattr(error, "diagnostics", None)
+        if isinstance(diagnostics, dict):
+            # The Python binding emits JSON-native types. Keep diagnostic
+            # coordinates under their explicit failure-only key, never as a
+            # successful conformer or as an independently scored structure.
+            try:
+                json.dumps(diagnostics)
+            except (TypeError, ValueError) as serialization_error:
+                failure["diagnostic_serialization_error"] = (
+                    f"{type(serialization_error).__name__}: {serialization_error}"
+                )
+            else:
+                failure["failure_diagnostics"] = diagnostics
+        return failure
     elapsed_ms = (time.perf_counter_ns() - started) / 1_000_000
     validation = result.get("final_validation")
     force_field = result.get("force_field")

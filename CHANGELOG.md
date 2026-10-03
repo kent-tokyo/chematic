@@ -10,6 +10,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Preserve JSON-native `PipelineV2Error.diagnostics` on failed rows of the
+  fixed A6 public/source wheel runner. Diagnostic-only coordinates remain
+  under `failure_diagnostics.last_known_coords`, never a successful conformer;
+  this enables stage-level analysis of the platform-dependent rows in #739.
 - Exposed typed MMFF94 optimizer termination in Rust, Python
   (`mmff94_termination`) and WASM (`mmff94Termination`): gradient
   convergence, iteration limit or rejected fallback. This changes diagnostics,
