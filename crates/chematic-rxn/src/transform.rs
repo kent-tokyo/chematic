@@ -2546,7 +2546,10 @@ fn build_product(
                 // Map number not in reactants — new atom from template.
                 let mut new_atom = tmpl_atom.clone();
                 new_atom.atom_map = None;
-                new_atom.hydrogen_count = template_h(i);
+                // RDKit does not pin H0 on a product-only atom: it uses
+                // ordinary valence inference, as for a bare `[C]`/`[O]`.
+                // A mapped reactant atom above still honours explicit H0.
+                new_atom.hydrogen_count = template_h(i).filter(|&h| h != 0);
                 builder.add_atom(new_atom)
             }
         } else {
@@ -2554,10 +2557,11 @@ fn build_product(
             // a bare bracket atom's `Some(0)` means "unspecified" in a product
             // template (`[*:1][C](=[O])[C]` adds an acetyl group, not three
             // radicals — issue #679); only an explicit `H<n>` with n > 0 pins
-            // the count, as in SMIRKS.
+            // the count, as in SMIRKS. RDKit also leaves an explicit H0 on
+            // a new atom unspecified; it is not a radical marker.
             let mut new_atom = tmpl_atom.clone();
             new_atom.atom_map = None;
-            new_atom.hydrogen_count = template_h(i);
+            new_atom.hydrogen_count = template_h(i).filter(|&h| h != 0);
             builder.add_atom(new_atom)
         };
         *slot = Some(new_idx);
@@ -3057,6 +3061,12 @@ mod tests {
             ("[N:1]>>[N:1]C", "C[NH3+]", vec!["C[NH2+]C"]),
             ("[C:1]>>[13C:1]", "CC", vec!["C[13CH3]"]),
             ("[C:1]>>[CH0:1]", "CC", vec!["[C]C"]),
+            // RDKit 2026.03.6 treats H0 on a newly created, unmapped atom
+            // as unspecified, unlike H0 on a mapped product atom above.
+            ("[C:1]>>[C:1][CH0]", "C", vec!["CC"]),
+            ("[C:1]>>[C:1][CH0:2]", "C", vec!["CC"]),
+            ("[C:1]>>[C:1][OH0]", "C", vec!["CO"]),
+            ("[C:1]>>[C:1][NH0]", "C", vec!["CN"]),
         ] {
             let mol = parse(reactant).unwrap();
             let mut got: Vec<String> = run_reactants(smirks, &[&mol])

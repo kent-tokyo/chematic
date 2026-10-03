@@ -101,4 +101,10 @@ assert.deepEqual(Object.fromEntries(counts), {
   typed_unsupported: 3,
   typed_refusal: 3,
 });
+for (const [atom, expectedSmiles] of [["C", "CC"], ["O", "OC"], ["N", "CN"]]) {
+  const smirks = `[C:1]>>[C:1][${atom}H0]`;
+  const response = JSON.parse(wasm.run_reactants_checked(smirks, "C", true));
+  assert.equal(response.status, "products", smirks);
+  assert.deepEqual(response.products, [[expectedSmiles]], smirks);
+}
 console.log("checked WASM reaction outcomes: 83 exposed rows classified");

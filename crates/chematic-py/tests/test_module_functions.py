@@ -136,6 +136,11 @@ def test_smarts_repeated_charge_signs_mean_total_charge():
         ("[CX4;H2:1][OX2H1:2]>>[C:1]=[O:2]", "CCO", "CC=O"),
         ("[c:1][OX2:2][CH3:3]>>[c:1][OX2H1:2]", "COc1ccccc1", "Oc1ccccc1"),
         ("[#7X3;H0;!$(NC=O):1][CH3:2]>>[#7:1]", "CN(C)c1ccccc1", "CNc1ccccc1"),
+        # RDKit ignores H0 on newly created, unmapped product atoms; mapped
+        # atoms retain the explicit-zero override.
+        ("[C:1]>>[C:1][CH0]", "C", "CC"),
+        ("[C:1]>>[C:1][OH0]", "C", "CO"),
+        ("[C:1]>>[C:1][NH0]", "C", "CN"),
     ],
 )
 def test_run_smirks_reactant_smarts_queries(smirks, smiles, expected):

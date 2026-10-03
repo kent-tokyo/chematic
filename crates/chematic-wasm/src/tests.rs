@@ -430,12 +430,8 @@ fn run_reactants_checked_counts_products_and_valence_refusal() {
     assert!(!ordinary["products"].as_array().unwrap().is_empty());
 
     // A neutral four-bonded N, which RDKit's sanitize also rejects.
-    let refused: serde_json::Value = serde_json::from_str(&run_reactants_checked(
-        "[N:1]>>[N:1](C)(C)C",
-        "CN",
-        true,
-    ))
-    .unwrap();
+    let refused: serde_json::Value =
+        serde_json::from_str(&run_reactants_checked("[N:1]>>[N:1](C)(C)C", "CN", true)).unwrap();
     assert_eq!(refused["status"], "typed_refusal");
     assert_eq!(refused["reason"], "product_valence");
     assert!(refused["valence_rejected_matches"].as_u64().unwrap() > 0);

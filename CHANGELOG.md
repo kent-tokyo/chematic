@@ -55,6 +55,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   unchanged keeps its explicit H count (`[n:1]>>[n:1]` keeps pyrrole's
   `[nH]`), otherwise its hydrogens follow RDKit's valence lists for every
   element (`[C:1]>>[Se:1]` gives `C[SeH]`, `[C:1]>>[Si:1]` `C[SiH3]`).
+- An explicit `H0` on a product-only atom uses ordinary valence inference,
+  as RDKit does: `[C:1]>>[C:1][CH0]` on methane gives ethane, while `H0`
+  on a mapped reactant atom remains an explicit override.
 - A dative bond `->` in a SMIRKS or reaction SMARTS is no longer read as a
   reaction arrow (#734); SMARTS agents (`>[O;X2]>`) are ignored instead of
   failing the template, and `ReactionMatch::atom_map_positions` accepts a
