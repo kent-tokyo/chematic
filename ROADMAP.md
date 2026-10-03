@@ -15,7 +15,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 | P0.2 speed | The published Python 63-operation matrix has 20 paired blocks; 20 operations pass exact-output and confidence-interval gates on one host. Published npm/WASM Morgan also has Node and Chromium lanes; Ubuntu 24.04 Chromium, Firefox and WebKit each have 250/250 bit-exact direct/prepared rows and favorable 20-block speed intervals (smallest lower bound 1.63×). | Equal-work perception and library-memory boundaries, other operations/bindings and more corpora. Process RSS is not library allocation; changed HBA output cannot earn an equivalent-output speed win. |
 | P1 reactions | Original 57 fixtures match. Published v1.0.30 had 73/83 graph+origin+template-map matches. The checked v1.0.31-source profile has 76 exact on all three axes, three typed unsupported, one diagnosed refusal and three jointly invalid rows; see the [source audit](benchmarks/2026-10-03-source-reaction-83-checked-graph-origin-map.md). | Publish/rebuild the source fix and rerun applicable Rust/Python/npm provenance gates. Typed refusal and invalid input are not exact matches; no general SMIRKS parity claim. |
 | P1 SMARTS | Published v1.0.30 has 200 differing **match-set** cells / 310,000, but only 43 hit/no-hit differences. The [opt-in source candidate](benchmarks/2026-10-03-source-smarts-organometallic-ring-view.md) corrects 183 match sets and all 43 Booleans, with zero wrong-confident cells and 18 typed refusals; the native matcher is unchanged. | Adjudicate the 18 refused charged-polycycle cells, then expose and measure a deliberate opt-in published profile. Source improvements and typed refusals are not exact parity. |
-| P2 A6 quality | The [published v1.0.31 MMFF94 stereo-safe rerun](benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md) has 265/265 independently sound, stereo-clean and gross-clash-free outputs, but only 100/265 force-field convergence. Separate same-coordinate total energies are within 1 kcal/mol on 262/262 comparable rows. A current-wheel 10k typing census still has 2,908 heavy-atom differences; a 400-iteration diagnostic raises convergence to 164/265 without changing the package default. | Classify the 101 still non-converged, 2,908 numeric type differences, per-term energy residuals, two RDKit embedding failures and one declared unsupported row; measure independent conformer quality. Current geometry/stereo and bounded total-energy results do not complete A6. |
+| P2 A6 quality | Published v1.0.31: [265/265 geometry/stereo/clash](benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md), 100/265 converged; 262/262 comparable total energies within 1 kcal/mol. The [typing census](benchmarks/2026-10-03-a6-published-v1031-typing-census.md) has 2,908 heavy-atom differences; its largest bucket spans 1,322 atoms on 317 rows, only two with different symmetrized ring sets. A 400-iteration diagnostic converges on 164/265 without changing the default. | Compare MMFF-specific aromatic-ring acceptance/order and bond flags; classify the 101 non-converged rows, remaining types, per-term energy and unsupported cases; measure independent conformer quality. No 3D speed claim yet. |
 
 The [v1.0.30 published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md),
 [benchmark index](benchmarks/README.md), and [validation report](docs/validation.md)
@@ -55,8 +55,10 @@ have separate gates.
 3. **P2 / A6 — Gate 3D quality before speed.** The published v1.0.31
    geometry/stereo/clash and same-coordinate total-energy checks are done,
    but full MMFF equivalence is open. Investigate the largest typing bucket
-   first (1,322 RDKit-aromatic carbons across 317 molecules), then other
-   heavy-type and 22 CheMatic refusal/error rows. Classify the 101 rows still
+   first (1,322 RDKit type-37 carbons across 317 molecules) through its
+   MMFF-specific aromatic-ring acceptance and bond flags; a missing ring in
+   two rows is not a sufficient fix. Then adjudicate other heavy types and
+   22 CheMatic refusal/error rows. Classify the 101 rows still
    not converged under an exploratory 400-iteration limit (97 at cap, four
    early stops); do not silently raise the shipped limit without independent
    quality and runtime checks. Bound per-term energy/gradient differences,
