@@ -38,13 +38,10 @@
 //! change any of those three predicates' verdicts, only `[RN]` (N ≥ 1, exact
 //! ring *count*) can move, because an atom can gain membership in an
 //! additional same-size ring beyond its raw-SSSR count. `[rN]`/`[kN]`
-//! (min-ring-size / any-ring-of-size-N) *could* in principle move too (an
-//! extra ring's atom set differs from the basis ring it substitutes for),
-//! but both already measure at ~100%/99.98% against RDKit using chematic's
-//! plain SSSR alone (`docs/rdkit_compat.md`'s SMARTS-R1 section) — the
-//! opt-in matcher (`crate::rdkit_parity_match`) deliberately leaves them
-//! wired to the plain SSSR, unchanged, and only routes `AtomPrimitive::RingCount`
-//! through this module's model.
+//! (min-ring-size / any-ring-of-size-N) can also differ when an extra ring's
+//! atom set differs from the basis ring it substitutes for. The opt-in
+//! matcher uses a separate bounded symmetrized set for `[kN]`, while `[rN]`
+//! remains on plain SSSR. Neither changes the native matcher.
 //!
 //! **Termination.** Simple-cycle enumeration is depth-bounded by the basis's
 //! largest ring size (not by atom count or ring count), so cost scales with
@@ -69,15 +66,14 @@ use chematic_perception::{
 /// variant's doc comment for what it guards.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RdkitParityError {
-    /// The RDKit-parity ring-count model's bounded simple-cycle search hit
-    /// its candidate-count cap before finishing. Rather than silently
-    /// returning a ring-count model built from a truncated candidate search
-    /// (which could under-report `[RN]` matches while *appearing* to be a
-    /// full RDKit-parity result), the whole call fails closed.
+    /// A bounded RDKit-parity ring-count or ring-size candidate search hit
+    /// its cap before finishing. Rather than silently returning a truncated
+    /// model (which could under-report `[RN]` or `[kN]` matches), the whole
+    /// call fails closed.
     ///
-    /// This is a resource/complexity bound on this module's own
-    /// candidate-generation approximation of RDKit's `symmetrizeSSSR` — it
-    /// is not the shared VF2 [`crate::MatchOutcome::BudgetExhausted`]
+    /// This is a resource/complexity bound on candidate generation for
+    /// RDKit-style ring selection — not the shared VF2
+    /// [`crate::MatchOutcome::BudgetExhausted`]
     /// (VF2 state-space search budget), which is a separate, orthogonal
     /// budget covering the actual subgraph-isomorphism search.
     RingModelBudgetExceeded {

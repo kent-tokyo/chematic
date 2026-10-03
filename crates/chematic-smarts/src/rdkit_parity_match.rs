@@ -6,24 +6,23 @@
 //! "the default matcher is byte-identical before and after this change" is
 //! trivially provable (there is no change to prove anything about) rather
 //! than something that has to be argued from a shared-code refactor. The
-//! only place this module's evaluator actually diverges from
-//! `match_vf2.rs`'s is `AtomPrimitive::RingCount` (`[RN]`), which consults
-//! [`crate::rdkit_ring_model`] instead of a plain SSSR count — see that
-//! module's doc comment for the full root-cause/design rationale (RDKit's
-//! `symmetrizeSSSR`) and for why every *other* ring-shaped primitive
-//! (`[R]`/`[R0]`, `[rN]`, `[kN]`, `[xN]`, ring-bond `@`/`!@`) is left
-//! wired to the identical plain-SSSR formula `match_vf2.rs` already uses.
+//! evaluator diverges from `match_vf2.rs` for `AtomPrimitive::RingCount`
+//! (`[RN]`) and `AtomPrimitive::RingSize` (`[kN]`). See
+//! [`crate::rdkit_ring_model`] for the ring-count model. Ring-size membership
+//! uses a separately bounded symmetrized-SSSR selection. All other
+//! ring-shaped primitives (`[R]`/`[R0]`, `[rN]`, `[xN]`, ring-bond `@`/`!@`)
+//! retain the plain-SSSR formula from `match_vf2.rs`.
 //!
 //! Everything else in this file — chirality/isotope handling, valence,
 //! hybridization, recursive-SMARTS anchoring, the visit-budget/
 //! `MatchOutcome` contract — is copied verbatim in behavior from
-//! `match_vf2.rs` so this mode's non-ring-count results are identical to
+//! `match_vf2.rs` so this mode's other results are identical to
 //! the default matcher's.
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
-use chematic_perception::RingSet;
+use chematic_perception::{RingSet, SymmetrizedSssrStatus};
 
 use crate::match_vf2::{MatchConfig, MatchOutcome};
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
@@ -39,8 +38,8 @@ pub struct RdkitParityConfig {
     /// enforcement, `max_matches`, `uniquify`, VF2 `max_visit_budget`) —
     /// unaffected by, and orthogonal to, this mode's ring-count model.
     pub base: MatchConfig,
-    /// Resource bound on the RDKit-parity ring-count model's candidate
-    /// search. See [`RdkitRingModelBudget`].
+    /// Resource bound on the RDKit-parity ring-count and ring-size candidate
+    /// searches. See [`RdkitRingModelBudget`].
     pub ring_model_budget: RdkitRingModelBudget,
     /// When `true`, the target molecule is re-perceived with
     /// `chematic_perception::apply_aromaticity_rdkit_parity_experimental`
@@ -62,7 +61,7 @@ pub struct RdkitParityConfig {
 }
 
 /// Find all non-overlapping (injective) embeddings of `query` in `mol` using
-/// the opt-in RDKit-parity ring-count model for `[RN]`.
+/// the opt-in RDKit-parity ring models for `[RN]` and `[kN]`.
 ///
 /// Returns `(matches, budget_exhausted)` exactly like
 /// [`crate::find_matches_with_rings_and_config_checked`] — `budget_exhausted`
@@ -92,6 +91,21 @@ pub fn find_matches_rdkit_parity(
     };
 
     let rings = chematic_perception::find_sssr(mol_ref);
+    let symmetrized_rings = if query_uses_ring_size(query) {
+        let result = chematic_perception::find_symmetrized_sssr_with_diagnostics_bounded(
+            mol_ref,
+            Some(config.ring_model_budget.max_candidates),
+        );
+        if result.status() == SymmetrizedSssrStatus::CapExhausted {
+            return Err(RdkitParityError::RingModelBudgetExceeded {
+                candidates_examined: result.candidates_examined(),
+                cap: config.ring_model_budget.max_candidates,
+            });
+        }
+        Some(result.into_ring_set())
+    } else {
+        None
+    };
     let ring_model = if query_uses_ring_count(query) {
         let model = if config.use_shared_symmetrized_sssr {
             build_shared_symmetrized_ring_model(mol_ref, &rings, &config.ring_model_budget)?
@@ -116,6 +130,7 @@ pub fn find_matches_rdkit_parity(
     let ctx = EvalCtx {
         mol: mol_ref,
         rings: &rings,
+        symmetrized_rings: symmetrized_rings.as_ref(),
         ring_model: ring_model.as_ref(),
         config: &config.base,
         visit_budget: std::cell::Cell::new(config.base.max_visit_budget.unwrap_or(u64::MAX)),
@@ -191,6 +206,25 @@ fn atom_query_uses_ring_count(q: &AtomQuery) -> bool {
     }
 }
 
+fn query_uses_ring_size(query: &QueryMolecule) -> bool {
+    query
+        .atoms
+        .iter()
+        .any(|atom| atom_query_uses_ring_size(&atom.query))
+}
+
+fn atom_query_uses_ring_size(q: &AtomQuery) -> bool {
+    match q {
+        AtomQuery::Primitive(AtomPrimitive::RingSize(_)) => true,
+        AtomQuery::Primitive(AtomPrimitive::Recursive(sub)) => query_uses_ring_size(sub),
+        AtomQuery::Primitive(_) => false,
+        AtomQuery::And(a, b) | AtomQuery::Or(a, b) => {
+            atom_query_uses_ring_size(a) || atom_query_uses_ring_size(b)
+        }
+        AtomQuery::Not(a) => atom_query_uses_ring_size(a),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Evaluation context -- same shape as match_vf2::EvalCtx, plus the ring model.
 // ---------------------------------------------------------------------------
@@ -198,6 +232,7 @@ fn atom_query_uses_ring_count(q: &AtomQuery) -> bool {
 struct EvalCtx<'a> {
     mol: &'a Molecule,
     rings: &'a RingSet,
+    symmetrized_rings: Option<&'a RingSet>,
     ring_model: Option<&'a RdkitParityRingModel>,
     config: &'a MatchConfig,
     visit_budget: std::cell::Cell<u64>,
@@ -325,11 +360,14 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         // [R]/[!R] -- provably invariant to which SSSR basis is used (see
         // `rdkit_ring_model`'s module doc comment) -- left on plain SSSR.
         AtomPrimitive::RingMembership(r) => ctx.rings.contains_atom(idx) == *r,
-        // [kN] -- already ~100% (99.98%) against RDKit on plain SSSR
-        // (SMARTS-R1); deliberately left unchanged here, see this module's
-        // doc comment.
+        // [kN] means membership in any selected ring of size N. RDKit's
+        // default ring information is symmetrized; plain SSSR can miss a
+        // symmetry-equivalent ring containing this atom. This opt-in lane
+        // uses the bounded symmetrized set and refuses when it cannot be
+        // computed completely.
         AtomPrimitive::RingSize(n) => ctx
-            .rings
+            .symmetrized_rings
+            .unwrap_or(ctx.rings)
             .rings()
             .iter()
             .any(|ring| ring.len() == *n as usize && ring.contains(&idx)),
@@ -660,6 +698,35 @@ mod tests {
         let mut default_atoms: Vec<u32> = default.iter().map(|m| m[&0].0).collect();
         default_atoms.sort_unstable();
         assert_eq!(default_atoms, vec![1], "default (plain-SSSR) [R3] atom set");
+    }
+
+    #[test]
+    fn k6_uses_symmetry_equivalent_ring_in_opt_in_mode() {
+        // In this bridged fragment, atom 46 belongs to the six-membered
+        // ring selected by RDKit 2026.03.6, but not to chematic's plain
+        // SSSR basis. The default matcher must retain its existing answer.
+        let mol = parse("C=CC[C@H](NC(=O)[C@@H]1C[C@@H](CCCc2cccc3ccccc23)c2c(Cl)nc(NCc3cccc(OC)c3)c(=O)n21)B1OC2CC3CC(C3(C)C)[C@@]2(C)O1").unwrap();
+        let query = parse_smarts("[k6]").unwrap();
+        let default = crate::find_matches(&query, &mol);
+        let (parity, exhausted) =
+            find_matches_rdkit_parity(&query, &mol, &RdkitParityConfig::default()).unwrap();
+        assert!(!exhausted);
+        assert!(!default.iter().any(|m| m[&0] == AtomIdx(46)));
+        assert!(parity.iter().any(|m| m[&0] == AtomIdx(46)));
+    }
+
+    #[test]
+    fn k6_ring_model_budget_exceeded_is_typed() {
+        let mol = parse("C1C2CC3CC1CC(C2)C3").unwrap();
+        let query = parse_smarts("[k6]").unwrap();
+        let config = RdkitParityConfig {
+            ring_model_budget: RdkitRingModelBudget { max_candidates: 0 },
+            ..RdkitParityConfig::default()
+        };
+        assert!(matches!(
+            find_matches_rdkit_parity(&query, &mol, &config),
+            Err(RdkitParityError::RingModelBudgetExceeded { cap: 0, .. })
+        ));
     }
 
     #[test]
