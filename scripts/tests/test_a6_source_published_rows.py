@@ -54,3 +54,8 @@ def test_corpus_mismatch_is_rejected():
     source[0]["smiles"] = "CO"
     with pytest.raises(ValueError, match="corpus mismatch"):
         module.compare(source, published)
+
+
+def test_row_count_mismatch_is_rejected_before_zipping():
+    with pytest.raises(ValueError, match="different row counts"):
+        module.compare(rows()[:-1], rows())

@@ -33,9 +33,11 @@ def load_lane(rows_path: Path, metadata_path: Path, kind: str) -> tuple[list[dic
 
 
 def compare(source: list[dict], published: list[dict]) -> dict:
+    if len(source) != len(published):
+        raise ValueError("source and published lanes have different row counts")
     lost = []
     gained = []
-    for source_row, published_row in zip(source, published, strict=True):
+    for source_row, published_row in zip(source, published):
         if (
             source_row["row_index"] != published_row["row_index"]
             or source_row["name"] != published_row["name"]

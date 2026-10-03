@@ -78,11 +78,24 @@ On macOS the four rejected-fallback rows are 170, 191, 227 and 234, at
 the same iteration counts as the published v1.0.31 early stops. On Linux
 they are rows 170, 226 and 258. Both hosts pass the source script's
 schema/accounting checks; only macOS passes its *success-retention* gate.
-The result depends on host/build profile. These CI jobs did not run the
-published wheel on the same hosts, so the two Linux failures are not yet
-classified as newly introduced source regressions. A paired published
-v1.0.31 status lane is now being added; neither status lane alone is the
-independent A6 geometry, stereo, clash or energy gate.
+The result depends on host/build profile. A subsequent same-host macOS pair in
+PR #738 [run `37106179586`](https://github.com/kent-tokyo/chematic/actions/runs/37106179586)
+compared a new optimized source wheel (`a32f7f3bee21e0e737ab46a4614ee96143a9f3f11ba8a121f23237277746bfe1`)
+with the PyPI v1.0.31 wheel (`b481316bb5a49cb572b035c805316e38a381f4f0e6fa141a05d1da3dc6f05c1f`).
+Both returned 265/265 successes and 100 gradient-converged rows. The four
+constraint-rejected fallback rows and their iteration counts matched. Source
+and published raw JSONL SHA-256 values were respectively
+`fd00c6f9dd6bcb75b3a8a52c139f7d009914879ef62f545748180464ffd46d5a`
+and `3298df1c699449818369102487b0522d664e62b56c5df7d99ee095545033d459`.
+The pair establishes *status retention on one macOS runner only*, not equal
+coordinates, energies or independent A6 quality.
+
+The Linux pair in that run could not start: PyPI v1.0.31 has Linux wheels for
+Python 3.9 but not the CI job's Python 3.12. A separate Python 3.9 Linux pair
+will use the available published wheel. Until its row-level result is retained,
+the Linux/Python 3.12 source failures at rows 53 and 246 are not classified as
+new source regressions. Neither status lane is the independent A6 geometry,
+stereo, clash or energy gate.
 
 The row-246 Python `PipelineV2Error.diagnostics.cause.force_field_bridge_error`
 contains `reason=excessive_residual_force` and
