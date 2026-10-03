@@ -368,8 +368,10 @@ pub fn build_rdkit_parity_ring_model(
         // the replacement search (for example the corpus_3326 tropane
         // family). Before declaring that the symmetrized model has no extra
         // ring at all, complete the same bounded *shortest-ring* search from
-        // the affected ring systems: base rings of equal size that share a
-        // path (three or more atoms). A single shared bond is the usual
+        // the affected ring systems: base rings that share a path (three or
+        // more atoms). The alternative ring may replace a basis ring of a
+        // different size, as long as the resulting candidate itself matches
+        // one basis ring's size (corpus_3498). A single shared bond is the usual
         // fused-ring case and does not need this fallback. This excludes
         // acyclic substituent atoms, disjoint ring systems, and ordinary
         // fused systems, so large drug-like molecules do not acquire an
@@ -386,7 +388,6 @@ pub fn build_rdkit_parity_ring_model(
                 .filter(|(left_idx, left)| {
                     base_rings.iter().enumerate().any(|(right_idx, right)| {
                         left_idx != &right_idx
-                            && left.len() == right.len()
                             && left.iter().filter(|atom| right.contains(atom)).count() >= 3
                     })
                 })
@@ -636,6 +637,26 @@ mod tests {
             vec![
                 1, 1, 1, 1, 0, 0, 0, 2, 3, 2, 2, 3, 2, 2, 2, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1
+            ]
+        );
+    }
+
+    #[test]
+    fn mixed_size_bridged_ring_recovers_same_size_alternative() {
+        // RDKit 2026.03.6 reports five symmetrized rings on corpus_3498:
+        // a four-membered ring and two distinct six-membered paths share
+        // three atoms. The raw SSSR has four rings, only one of the two
+        // six-membered paths, and no same-size overlapping basis pair.
+        let (mol, model) =
+            model_for("C=C1[C@H]2Oc3cc(C(C)(C)CCCCCC)cc(O)c3[C@H]2[C@H]2C[C@@H]1C2(C)C");
+        assert_eq!(model.extra_ring_count(), 1);
+        let counts: Vec<_> = (0..mol.atom_count())
+            .map(|i| model.ring_count(AtomIdx(i as u32)))
+            .collect();
+        assert_eq!(
+            counts,
+            vec![
+                0, 2, 3, 1, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 3, 3, 2, 3, 2, 0, 0
             ]
         );
     }

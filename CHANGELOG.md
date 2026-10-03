@@ -14,6 +14,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   membership for `[kN]`; native SMARTS behavior is unchanged. A source-only
   310,000-cell comparison corrected ten more match sets without new wrong
   matches, while six Boolean residuals and typed refusals remain.
+- The opt-in ring-count fallback now finds alternative rings across
+  overlapping basis rings of different sizes. A separate source-only
+  310,000-cell check corrected six more match sets and one Boolean; five
+  Boolean residuals remain. Native matching is unchanged.
 - Simplified the RDKit comparison and migration guides, corrected the
   format-limit matrix, and recorded v1.0.31 channel verification. No new
   chemistry or performance claim is made by this documentation update.
