@@ -24,9 +24,9 @@ mode exits 2, which prevents a historical 265/265 geometry result from being
 mistaken for a current-release A6 acceptance. Speed is explicitly excluded.
 
 ```sh
-python3 scripts/a6_quality_matrix.py \
+python3 scripts/a6_quality_matrix.py --target-version 1.0.31 \
   --output /tmp/chematic-a6-quality-matrix.json
-python3 scripts/a6_quality_matrix.py --require-ready \
+python3 scripts/a6_quality_matrix.py --target-version 1.0.31 --require-ready \
   --output /tmp/chematic-a6-quality-matrix.json
 ```
 

@@ -20,7 +20,6 @@ ENERGY = (
     ROOT
     / "validation/results/mmff94-same-explicit-h-energy-current-main-v1.0.19-2026-09-23.json"
 )
-CURRENT_RELEASE = "1.0.31"
 
 
 def load_rows(path: Path) -> list[dict]:
@@ -147,7 +146,7 @@ def build_matrix(target_version: str) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--target-version", default=CURRENT_RELEASE)
+    parser.add_argument("--target-version", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--require-ready", action="store_true")
     args = parser.parse_args()
