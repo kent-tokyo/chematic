@@ -446,6 +446,18 @@ impl<'a> Parser<'a> {
 
     /// Consume a single bond primitive character (caller must verify `peek` is a bond token).
     fn consume_bond_prim(&mut self) -> Option<BondPrimitive> {
+        // Dative bonds `->` / `<-` (RDKit extension).
+        if self.peek() == Some(b'-') && self.src.get(self.pos + 1) == Some(&b'>') {
+            self.pos += 2;
+            return Some(BondPrimitive::DativeForward);
+        }
+        if self.peek() == Some(b'<') {
+            if self.src.get(self.pos + 1) == Some(&b'-') {
+                self.pos += 2;
+                return Some(BondPrimitive::DativeBackward);
+            }
+            return None;
+        }
         let prim = match self.peek()? {
             b'-' => BondPrimitive::Single,
             b'=' => BondPrimitive::Double,
@@ -463,7 +475,10 @@ impl<'a> Parser<'a> {
 
     #[inline]
     fn is_bond_token(c: u8) -> bool {
-        matches!(c, b'-' | b'=' | b'#' | b':' | b'~' | b'@' | b'/' | b'\\')
+        matches!(
+            c,
+            b'-' | b'=' | b'#' | b':' | b'~' | b'@' | b'/' | b'\\' | b'<'
+        )
     }
 
     /// Continue parsing bond OR after the first factor.
@@ -876,6 +891,12 @@ impl<'a> Parser<'a> {
             // never an AND of two ±1 primitives (issue #680).
             Some(b'+') => {
                 self.advance(); // consume '+'
+                if let Some((lo, hi)) = self.parse_range()? {
+                    // `+{a-b}` (RDKit range): charge +a..=+b.
+                    return Ok(range_query(lo, Some(hi.unwrap_or(MAX_RANGE_CHARGE)), |c| {
+                        AtomPrimitive::Charge(c as i8)
+                    }));
+                }
                 let n = self.parse_charge_magnitude(b'+');
                 Ok(AtomQuery::Primitive(AtomPrimitive::Charge(n)))
             }
@@ -884,6 +905,12 @@ impl<'a> Parser<'a> {
             // repeated signs; `-0` = explicit neutral)
             Some(b'-') => {
                 self.advance(); // consume '-'
+                if let Some((lo, hi)) = self.parse_range()? {
+                    // `-{a-b}` (RDKit range): charge -a..=-b.
+                    return Ok(range_query(lo, Some(hi.unwrap_or(MAX_RANGE_CHARGE)), |c| {
+                        AtomPrimitive::Charge(-(c as i8))
+                    }));
+                }
                 let n = self.parse_charge_magnitude(b'-');
                 Ok(AtomQuery::Primitive(AtomPrimitive::Charge(-n)))
             }
@@ -900,15 +927,13 @@ impl<'a> Parser<'a> {
                     }
                 }
                 self.advance(); // consume 'H'
-                let n = self.parse_single_digit().unwrap_or(1);
-                Ok(AtomQuery::Primitive(AtomPrimitive::HCount(n)))
+                self.count_primitive(Some(1), AtomPrimitive::HCount)
             }
 
             // Implicit H count `hN` or `h` (implicit hcount only = N or 1)
             Some(b'h') => {
                 self.advance(); // consume 'h'
-                let n = self.parse_single_digit().unwrap_or(1);
-                Ok(AtomQuery::Primitive(AtomPrimitive::ImplicitHCount(n)))
+                self.count_primitive(Some(1), AtomPrimitive::ImplicitHCount)
             }
 
             // Degree `DN`
@@ -923,10 +948,8 @@ impl<'a> Parser<'a> {
                     }
                 }
                 self.advance(); // consume 'D'
-                let n = self
-                    .parse_single_digit()
-                    .ok_or(SmartsError::UnexpectedEnd)?;
-                Ok(AtomQuery::Primitive(AtomPrimitive::Degree(n)))
+                // Bare `D` is `D1` (Daylight/RDKit).
+                self.count_primitive(Some(1), AtomPrimitive::Degree)
             }
 
             // Smallest-ring size `rN` — must be checked BEFORE element parsing.
@@ -941,6 +964,9 @@ impl<'a> Parser<'a> {
             // same `RingSize` primitive as `[kN]`.
             Some(b'r') => {
                 self.advance(); // consume 'r'
+                if let Some((lo, hi)) = self.parse_range()? {
+                    return Ok(range_query(lo, hi, AtomPrimitive::MinRingSize));
+                }
                 // Bare `r` (Daylight/RDKit): "in a ring", same predicate as `R`.
                 // `rN` accepts multi-digit sizes (`[r12]`), as RDKit does.
                 match self.parse_ring_size_number() {
@@ -955,10 +981,7 @@ impl<'a> Parser<'a> {
             // distinct from `[rN]` (see above); do not merge these two primitives.
             Some(b'k') => {
                 self.advance(); // consume 'k'
-                let n = self
-                    .parse_single_digit()
-                    .ok_or(SmartsError::UnexpectedEnd)?;
-                Ok(AtomQuery::Primitive(AtomPrimitive::RingSize(n)))
+                self.count_primitive(None, AtomPrimitive::RingSize)
             }
 
             // Ring membership `R` or ring count `RN` (N = 0, 1, 2, …).
@@ -976,6 +999,9 @@ impl<'a> Parser<'a> {
                     }
                 }
                 self.advance(); // consume 'R'
+                if let Some((lo, hi)) = self.parse_range()? {
+                    return Ok(range_query(lo, hi, AtomPrimitive::RingCount));
+                }
                 if let Some(n) = self.parse_single_digit() {
                     Ok(AtomQuery::Primitive(AtomPrimitive::RingCount(n)))
                 } else {
@@ -986,19 +1012,14 @@ impl<'a> Parser<'a> {
             // Valence `[vN]` — total valence (bond orders + implicit H).
             Some(b'v') => {
                 self.advance(); // consume 'v'
-                let n = self
-                    .parse_single_digit()
-                    .ok_or(SmartsError::UnexpectedEnd)?;
-                Ok(AtomQuery::Primitive(AtomPrimitive::Valence(n)))
+                // Bare `v` is `v1` (Daylight/RDKit).
+                self.count_primitive(Some(1), AtomPrimitive::Valence)
             }
 
             // Ring-bond count `[xN]` — bonds where both endpoints share a ring.
             Some(b'x') => {
                 self.advance(); // consume 'x'
-                let n = self
-                    .parse_single_digit()
-                    .ok_or(SmartsError::UnexpectedEnd)?;
-                Ok(AtomQuery::Primitive(AtomPrimitive::RingBondCount(n)))
+                self.count_primitive(None, AtomPrimitive::RingBondCount)
             }
 
             // Hybridization `[^N]` — 1=sp, 2=sp2, 3=sp3.
@@ -1013,10 +1034,28 @@ impl<'a> Parser<'a> {
             // Total connectivity `[XN]` — heavy-atom degree + implicit H count.
             Some(b'X') => {
                 self.advance(); // consume 'X'
-                let n = self
-                    .parse_single_digit()
-                    .ok_or(SmartsError::UnexpectedEnd)?;
-                Ok(AtomQuery::Primitive(AtomPrimitive::TotalConnectivity(n)))
+                // Bare `X` is `X1` (Daylight/RDKit).
+                self.count_primitive(Some(1), AtomPrimitive::TotalConnectivity)
+            }
+
+            // RDKit extensions: `zN` heteroatom neighbours, `dN` non-H degree.
+            Some(b'z') => {
+                self.advance(); // consume 'z'
+                self.neighbor_count_primitive(AtomPrimitive::HeteroNeighborCount)
+            }
+            Some(b'd') => {
+                self.advance(); // consume 'd'
+                self.count_primitive(Some(1), AtomPrimitive::HeavyDegree)
+            }
+            // `ZN` aliphatic heteroatom neighbours (not `Zn`/`Zr`).
+            Some(b'Z')
+                if !self
+                    .src
+                    .get(self.pos + 1)
+                    .is_some_and(|c| matches!(c, b'n' | b'r')) =>
+            {
+                self.advance(); // consume 'Z'
+                self.neighbor_count_primitive(AtomPrimitive::AliphaticHeteroNeighborCount)
             }
 
             // Isotope mass number: `[13C]`, `[2H]`, etc.
@@ -1135,6 +1174,61 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// An RDKit range `{a-b}`, `{a-}` or `{-b}` at the current position, if
+    /// any: `(a, b)` with `b = None` for an open upper bound.
+    fn parse_range(&mut self) -> Result<Option<(u8, Option<u8>)>, SmartsError> {
+        if self.peek() != Some(b'{') {
+            return Ok(None);
+        }
+        let start = self.pos;
+        self.advance(); // consume '{'
+        let lo = self.parse_digits_u8();
+        if self.peek() != Some(b'-') {
+            return Err(SmartsError::UnexpectedChar(
+                self.peek().map_or('}', char::from),
+                self.pos,
+            ));
+        }
+        self.advance(); // consume '-'
+        let hi = self.parse_digits_u8();
+        if self.peek() != Some(b'}') || (lo.is_none() && hi.is_none()) {
+            return Err(SmartsError::UnexpectedChar('{', start));
+        }
+        self.advance(); // consume '}'
+        Ok(Some((lo.unwrap_or(0), hi)))
+    }
+
+    /// A count primitive: a range, a number (multi-digit), or the bare form
+    /// (`default`; an error when there is none).
+    fn count_primitive(
+        &mut self,
+        default: Option<u8>,
+        make: fn(u8) -> AtomPrimitive,
+    ) -> Result<AtomQuery, SmartsError> {
+        if let Some((lo, hi)) = self.parse_range()? {
+            return Ok(range_query(lo, hi, make));
+        }
+        let n = match self.parse_single_digit() {
+            Some(n) => n,
+            None => default.ok_or(SmartsError::UnexpectedEnd)?,
+        };
+        Ok(AtomQuery::Primitive(make(n)))
+    }
+
+    /// `z`/`Z`: a range, a number, or bare (at least one neighbour).
+    fn neighbor_count_primitive(
+        &mut self,
+        make: fn(u8) -> AtomPrimitive,
+    ) -> Result<AtomQuery, SmartsError> {
+        if let Some((lo, hi)) = self.parse_range()? {
+            return Ok(range_query(lo, hi, make));
+        }
+        Ok(match self.parse_single_digit() {
+            Some(n) => AtomQuery::Primitive(make(n)),
+            None => AtomQuery::Not(Box::new(AtomQuery::Primitive(make(0)))),
+        })
+    }
+
     /// Magnitude of a bracket charge whose first `sign` has just been consumed:
     /// a following digit gives the magnitude (`+2`, `+0`), otherwise one plus
     /// the number of immediately repeated signs (`+` = 1, `++` = 2, `+++` = 3).
@@ -1148,6 +1242,29 @@ impl<'a> Parser<'a> {
             n += 1;
         }
         n
+    }
+}
+
+/// Largest charge magnitude an open charge range (`+{1-}`) enumerates.
+const MAX_RANGE_CHARGE: u8 = 15;
+
+/// Desugar an RDKit range `{lo-hi}` over count primitive `make` into existing
+/// primitives: `make(lo) OR … OR make(hi)`; an open upper bound is
+/// `NOT (make(0) OR … OR make(lo - 1))`; an empty range matches nothing.
+fn range_query(lo: u8, hi: Option<u8>, make: impl Fn(u8) -> AtomPrimitive) -> AtomQuery {
+    let any_of = |from: u8, to: u8| -> AtomQuery {
+        let mut q = AtomQuery::Primitive(make(from));
+        for v in from.saturating_add(1)..=to {
+            q = AtomQuery::Or(Box::new(q), Box::new(AtomQuery::Primitive(make(v))));
+        }
+        q
+    };
+    let nothing = || AtomQuery::Not(Box::new(AtomQuery::Primitive(AtomPrimitive::Wildcard)));
+    match hi {
+        Some(hi) if lo > hi => nothing(),
+        Some(hi) => any_of(lo, hi),
+        None if lo == 0 => AtomQuery::Primitive(AtomPrimitive::Wildcard),
+        None => AtomQuery::Not(Box::new(any_of(0, lo - 1))),
     }
 }
 
@@ -1761,6 +1878,63 @@ mod tests {
         let mol_neg = parse_smarts("[O-1]").unwrap();
         assert_eq!(mol_pos.atoms.len(), 1);
         assert_eq!(mol_neg.atoms.len(), 1);
+    }
+
+    #[test]
+    fn rdkit_smarts_extensions_match_rdkit(/* issue #734 item 6 */) {
+        // Each row: query, target, expected matched atom indices (sorted),
+        // taken from RDKit 2026.03.6 GetSubstructMatches.
+        let cfg = crate::MatchConfig {
+            uniquify: true,
+            ..Default::default()
+        };
+        let hits = |smarts: &str, smiles: &str| -> Vec<u32> {
+            let q = parse_smarts(smarts).unwrap();
+            let mut v: Vec<u32> =
+                crate::find_matches_with_config(&q, &chematic_smiles::parse(smiles).unwrap(), &cfg)
+                    .into_iter()
+                    .map(|m| m.values().map(|a| a.0).min().unwrap())
+                    .collect();
+            v.sort_unstable();
+            v
+        };
+        for (smarts, smiles, expected) in [
+            ("[z1]", "CO", vec![0]),
+            ("[z]", "OCO", vec![1]),
+            ("[Z]", "OCO", vec![1]),
+            ("[z1]", "c1ccncc1", vec![2, 4]),
+            ("[Z1]", "c1ccncc1", vec![]),
+            ("[Z0]", "CO", vec![1]),
+            ("[d1]", "CC", vec![0, 1]),
+            ("[d]", "CCC", vec![0, 2]),
+            ("[d2]", "CCC", vec![1]),
+            ("[D]", "CCC", vec![0, 2]),
+            ("[CD{1-2}]", "CC(C)C", vec![0, 2, 3]),
+            ("[CD{2-}]", "CC(C)C", vec![1]),
+            ("[CD{-1}]", "CC(C)C", vec![0, 2, 3]),
+            ("[D{2-1}]", "CCC", vec![]),
+            ("[C;X{3-4}]", "CC=C", vec![0, 1, 2]),
+            ("[R{1-}]", "C1CC1C", vec![0, 1, 2]),
+            ("[R{-0}]", "CC1CC1", vec![0]),
+            ("[r{5-6}]", "C1CCCC1", vec![0, 1, 2, 3, 4]),
+            ("[x{2-}]", "C1CC1", vec![0, 1, 2]),
+            ("[v{3-4}]", "CN", vec![0, 1]),
+            ("[X{-2}]", "CC#N", vec![1, 2]),
+            ("[C;z{1-}]", "CCO", vec![1]),
+            ("[+{1-2}]", "[NH4+]", vec![0]),
+            ("[-{1-}]", "C[O-]", vec![1]),
+            ("[Zn]", "[Zn]", vec![0]),
+            ("[N]->[Pt]", "N->[Pt]", vec![0]),
+            ("[Pt]<-[N]", "N->[Pt]", vec![0]),
+            ("[N]<-[Pt]", "N->[Pt]", vec![]),
+            ("[Pt]->[N]", "N->[Pt]", vec![]),
+            ("N-[Pt]", "N->[Pt]", vec![]),
+            ("N~[Pt]", "N->[Pt]", vec![0]),
+        ] {
+            assert_eq!(hits(smarts, smiles), expected, "{smarts} on {smiles}");
+        }
+        assert!(parse_smarts("[D{}]").is_err());
+        assert!(parse_smarts("[D{1}]").is_err());
     }
 
     #[test]
