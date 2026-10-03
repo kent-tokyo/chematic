@@ -552,10 +552,13 @@ fn run_smirks_checked<'py>(
             return Ok(result);
         }
     };
-    if rdkit_compat && prepared.has_tetrahedral_reactant_stereo() {
+    if let Some(unsupported) = rdkit_compat
+        .then(|| prepared.rdkit_2026_03_6_unsupported_reason())
+        .flatten()
+    {
         refuse(
             "typed_unsupported",
-            "chiral_reactant_template_semantics",
+            unsupported.reason_code(),
             "RDKit 2026.03.6 reaction chirality semantics differ from strict CheMatic".to_string(),
         )?;
         return Ok(result);

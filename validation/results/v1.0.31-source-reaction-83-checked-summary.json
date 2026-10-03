@@ -1,0 +1,370 @@
+{
+  "accounting": {
+    "input": 83,
+    "outcomes": {
+      "graph_origin_map_match": 76,
+      "joint_invalid_input": 3,
+      "typed_or_diagnosed_refusal": 1,
+      "typed_unsupported": 3
+    }
+  },
+  "compatibility_profile": "rdkit-2026.03.6",
+  "crate_label": "chematic 1.0.31 source ab4eaf9d checked",
+  "fixtures": {
+    "base_sha256": "65b446de1ce66b7d9c355cf8b6bbbfe61d670c955e02931e8e8b8e564c558d3b",
+    "strata_sha256": "4e4ce3ebcea4bcea5398f109554074d97e9f252293fa906493ae3a61d40725a1"
+  },
+  "rdkit_version": "2026.03.6",
+  "rows": [
+    {
+      "id": "alcohol_deprotonation",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "carbonyl_reduction_shape",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "amide_formation",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "mapped_bond_cleavage",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "mapped_fragment_split",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "carboxylate_deprotonation",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "no_match_empty",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "alcohol_deprotonation_isopropanol",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "alcohol_deprotonation_phenol",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "alcohol_deprotonation_benzyl_alcohol",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "carbonyl_reduction_acetone",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "carbonyl_reduction_cyclohexanone",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "carbonyl_reduction_benzaldehyde",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "carbonyl_reduction_butanal",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "carboxylate_deprotonation_butanoic_acid",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "carboxylate_deprotonation_benzoic_acid",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "carboxylate_deprotonation_glycine",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "carboxylate_deprotonation_lactic_acid",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromobenzene",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromoanisole",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromopyridine",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "aromatic_halogen_exchange_bromonaphthalene",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "alkene_hydrogenation_2_butene",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "alkene_hydrogenation_cyclohexene",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "alkene_hydrogenation_styrene",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "alkene_hydrogenation_diene",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "mapped_c_o_cleavage_methyl_ether",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "mapped_c_o_cleavage_ethyl_ether",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "mapped_c_o_cleavage_phenetole",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "mapped_c_o_cleavage_allyl_ether",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "mapped_c_n_cleavage_methylamine",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "mapped_c_n_cleavage_diethylamine",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "mapped_c_n_cleavage_aniline",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "mapped_c_n_cleavage_allylamine",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "amide_formation_methylamine",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "amide_formation_ethylamine",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "amide_formation_aniline",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "amide_formation_benzoyl_methylamine",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "alcohol_oxidation_ethanol",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "alcohol_oxidation_1_propanol",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "alcohol_oxidation_benzyl_alcohol",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "alcohol_oxidation_2_methyl_1_propanol",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "sulfonamide_formation_methylamine",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "sulfonamide_formation_ethylamine",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "sulfonamide_formation_aniline",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "sulfonamide_formation_benzenesulfonyl",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "no_match_carbonyl_on_alkane",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "no_match_aromatic_exchange_on_alkane",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "stereo_identity_l_alanine",
+      "outcome": "typed_unsupported",
+      "reason": "chiral_reactant_template_semantics",
+      "rust_status": "typed_unsupported"
+    },
+    {
+      "id": "stereo_e_alkene",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "stereo_z_alkene",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "issue679_unmapped_atomic_number_acetyl",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "issue679_unmapped_bracket_acetyl",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "issue679_atomic_number_vinyl_explicit_h",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "issue679_mapped_atomic_number_amine",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "issue679_mapped_atomic_number_aromatic_n",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "issue679_mapped_atomic_number_no_match",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_charge_salicylic_deprotonation",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_charge_anisole_phenol_deprotonation",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_charge_methylamine_protonation",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_charge_ethanolamine_protonation",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_charge_quaternary_no_match",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_aromatic_bromo_fluoro",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_aromatic_bromopyridine_fluoro",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_aromatic_bromothiophene_fluoro",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_map_reordered_methanol",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_map_reordered_ethanol",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_map_reordered_isopropanol",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_ester_methyl_acetate",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_ester_ethyl_benzoate",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_ester_missing_second_reactant",
+      "outcome": "joint_invalid_input",
+      "rust_status": "typed_refusal"
+    },
+    {
+      "id": "v2_ether_split_methoxyethane",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_ether_split_dimethyl_ether",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_isotope_methanol_split",
+      "outcome": "typed_or_diagnosed_refusal",
+      "reason": null,
+      "rust_status": "diagnosed_valence_refusal"
+    },
+    {
+      "id": "v2_isotope_methanol_identity",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_isotope_methanol_unlabeled_no_match",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_stereo_l_alanine_identity_reordered",
+      "outcome": "typed_unsupported",
+      "reason": "chiral_reactant_template_semantics",
+      "rust_status": "typed_unsupported"
+    },
+    {
+      "id": "v2_stereo_d_alanine_no_match",
+      "outcome": "typed_unsupported",
+      "reason": "chiral_reactant_template_semantics",
+      "rust_status": "typed_unsupported"
+    },
+    {
+      "id": "v2_stereo_e_alkene_preserve",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_stereo_z_alkene_preserve",
+      "outcome": "graph_origin_map_match"
+    },
+    {
+      "id": "v2_invalid_unclosed_reactant",
+      "outcome": "joint_invalid_input",
+      "rust_status": "typed_refusal"
+    },
+    {
+      "id": "v2_invalid_smirks_branch",
+      "outcome": "joint_invalid_input",
+      "rust_status": "typed_refusal"
+    },
+    {
+      "id": "v2_no_match_halogen_on_alkane",
+      "outcome": "graph_origin_map_match"
+    }
+  ],
+  "schema": "source-reaction-83-checked-summary/v1",
+  "source_commit": "ab4eaf9d",
+  "source_map_report_sha256": "0754b4f7eabd043d1515a159defa3c7091757e685043950631bfabf70bc11f76",
+  "source_map_rows_sha256": "2da4e45ac30c8be6c2b2a686fee7a284b6a9f92a99a704f165c2d2cb21c120dc",
+  "source_map_summary_sha256": "628ab08168ebe88e53584b3fa6f8e0d87a60adcaf4806b194881a931cafb3534",
+  "source_rows_sha256": "15d6a3eeaac782326b6afa1ee9d2af816a63db79d0815012b6979682f0661851",
+  "source_summary_sha256": "9a400d659c0931dbd284f335891bb4f4850aca4558cdcb5c42fa0768bf5d5c54"
+}

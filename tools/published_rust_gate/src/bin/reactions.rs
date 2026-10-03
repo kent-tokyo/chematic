@@ -1,4 +1,4 @@
-//! Published Rust crate reaction output, retaining typed transform failures.
+// Published Rust crate reaction output, retaining typed transform failures.
 
 use std::fs;
 
@@ -11,6 +11,11 @@ fn digest(bytes: &[u8]) -> String {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(profile) = option_env!("CHEMATIC_REACTION_GATE_PROFILE")
+        && profile != "rdkit-2026.03.6"
+    {
+        return Err(format!("unknown reaction gate profile: {profile}").into());
+    }
     let args: Vec<_> = std::env::args().collect();
     if args.len() != 5 {
         return Err("usage: reactions BASE_CASES_JSON STRATA_JSON ROWS_JSON SUMMARY_JSON".into());
@@ -63,6 +68,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         let refs: Vec<_> = reactants.iter().collect();
         let smirks = case["smirks"].as_str().ok_or("non-string SMIRKS")?;
+        if option_env!("CHEMATIC_REACTION_GATE_PROFILE") == Some("rdkit-2026.03.6") {
+            let prepared = match rxn::PreparedReaction::new(smirks) {
+                Ok(value) => value,
+                Err(err) => {
+                    rows.push(json!({"id": case["id"], "status": "typed_refusal",
+                        "stage": "smirks_parse", "reason": "smirks_parse", "detail": err.to_string()}));
+                    continue;
+                }
+            };
+            if let Some(reason) = prepared.rdkit_2026_03_6_unsupported_reason() {
+                rows.push(json!({"id": case["id"], "status": "typed_unsupported",
+                    "reason": reason.reason_code()}));
+                continue;
+            }
+        }
         match rxn::run_reactants_with_diagnostics(
             smirks,
             &refs,
@@ -129,11 +149,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let raw = serde_json::to_vec_pretty(&rows)?;
     fs::write(&args[3], &raw)?;
-    let summary = json!({"schema": "published-rust-reactions/v2", "crate": "chematic 1.0.30 from crates.io",
+    let mut summary = json!({"schema": "published-rust-reactions/v2", "crate": option_env!("CHEMATIC_REACTION_GATE_LABEL").unwrap_or("chematic 1.0.30 from crates.io"),
         "base_cases_sha256": digest(&base_bytes), "strata_sha256": digest(&strata_bytes), "rows_sha256": digest(&raw),
         "input_count": cases.len(), "typed_refusals": rows.iter().filter(|r| r["status"] == "typed_refusal").count(),
         "diagnosed_valence_refusals": rows.iter().filter(|r| r["status"] == "diagnosed_valence_refusal").count(),
         "product_rows": rows.iter().filter(|r| r["status"] == "products").count()});
+    if let Some(profile) = option_env!("CHEMATIC_REACTION_GATE_PROFILE") {
+        summary["compatibility_profile"] = json!(profile);
+    }
     fs::write(&args[4], serde_json::to_vec_pretty(&summary)?)?;
     println!("{summary}");
     Ok(())
