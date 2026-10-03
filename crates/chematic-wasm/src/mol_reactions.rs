@@ -7,7 +7,7 @@ use crate::{
     json_option_string_array, json_option_u8_array, json_string, parse_smiles_json_array,
     rgroup_fragment_smiles,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 fn bounded_json_output(output: String) -> Result<String, JsValue> {
@@ -304,6 +304,223 @@ pub fn run_reactants(smirks: &str, reactants_smiles: &str) -> Result<String, JsV
     bounded_json_output(
         serde_json::to_string(&outer).map_err(|e| JsValue::from_str(&e.to_string()))?,
     )
+}
+
+#[derive(Serialize)]
+struct CheckedReactionResponse {
+    profile: &'static str,
+    status: &'static str,
+    reason: Option<&'static str>,
+    detail: Option<String>,
+    products: Vec<Vec<String>>,
+    accepted_matches: usize,
+    applied_products: usize,
+    valence_rejected_matches: usize,
+    truncated_matches: bool,
+}
+
+impl CheckedReactionResponse {
+    fn refusal(
+        profile: &'static str,
+        status: &'static str,
+        reason: &'static str,
+        detail: impl Into<String>,
+    ) -> Self {
+        Self {
+            profile,
+            status,
+            reason: Some(reason),
+            detail: Some(detail.into()),
+            products: Vec::new(),
+            accepted_matches: 0,
+            applied_products: 0,
+            valence_rejected_matches: 0,
+            truncated_matches: false,
+        }
+    }
+
+    fn json(&self) -> String {
+        serde_json::to_string(self).expect("checked reaction response is JSON-serializable")
+    }
+}
+
+fn prepare_checked_reaction(
+    smirks: &str,
+    reactants_smiles: &str,
+    rdkit_compat: bool,
+    profile: &'static str,
+) -> Result<(Vec<chematic_core::Molecule>, chematic_rxn::PreparedReaction), String> {
+    if smirks.len() > WASM_MAX_INPUT_BYTES || reactants_smiles.len() > WASM_MAX_INPUT_BYTES {
+        return Err(CheckedReactionResponse::refusal(
+            profile,
+            "typed_refusal",
+            "input_too_large",
+            format!("reaction input exceeds {WASM_MAX_INPUT_BYTES} bytes"),
+        )
+        .json());
+    }
+    if reactants_smiles.split('|').count() > WASM_MAX_BATCH_ITEMS {
+        return Err(CheckedReactionResponse::refusal(
+            profile,
+            "typed_refusal",
+            "reactant_count_limit",
+            format!("reactant count exceeds {WASM_MAX_BATCH_ITEMS}"),
+        )
+        .json());
+    }
+    let mut reactants = Vec::new();
+    for smiles in reactants_smiles.split('|') {
+        let mol = chematic_smiles::parse(smiles.trim()).map_err(|error| {
+            CheckedReactionResponse::refusal(
+                profile,
+                "typed_refusal",
+                "smiles_parse",
+                error.to_string(),
+            )
+            .json()
+        })?;
+        if mol.atom_count() > WASM_MAX_ATOMS {
+            return Err(CheckedReactionResponse::refusal(
+                profile,
+                "typed_refusal",
+                "reactant_too_large",
+                format!("reactant exceeds {WASM_MAX_ATOMS} atoms"),
+            )
+            .json());
+        }
+        reactants.push(mol);
+    }
+    let prepared = chematic_rxn::PreparedReaction::new(smirks).map_err(|error| {
+        CheckedReactionResponse::refusal(
+            profile,
+            "typed_refusal",
+            "smirks_parse",
+            error.to_string(),
+        )
+        .json()
+    })?;
+    if rdkit_compat && let Some(unsupported) = prepared.rdkit_2026_03_6_unsupported_reason() {
+        return Err(CheckedReactionResponse::refusal(
+            profile,
+            "typed_unsupported",
+            unsupported.reason_code(),
+            "reactant tetrahedral template semantics differ from RDKit 2026.03.6",
+        )
+        .json());
+    }
+    Ok((reactants, prepared))
+}
+
+fn checked_reaction_response(
+    profile: &'static str,
+    report: chematic_rxn::ReactionTransformReport,
+) -> CheckedReactionResponse {
+    let diagnostics = report.diagnostics;
+    let mut result = CheckedReactionResponse {
+        profile,
+        status: if diagnostics.valence_rejected_matches > 0 || diagnostics.truncated_matches {
+            if report.products.is_empty() {
+                "typed_refusal"
+            } else {
+                "partial_products"
+            }
+        } else if report.products.is_empty() {
+            "no_match"
+        } else {
+            "products"
+        },
+        reason: if diagnostics.truncated_matches {
+            Some("truncated_matches")
+        } else if diagnostics.valence_rejected_matches > 0 {
+            Some("product_valence")
+        } else {
+            None
+        },
+        detail: None,
+        products: Vec::new(),
+        accepted_matches: diagnostics.accepted_matches,
+        applied_products: diagnostics.applied_products,
+        valence_rejected_matches: diagnostics.valence_rejected_matches,
+        truncated_matches: diagnostics.truncated_matches,
+    };
+    if report.products.len() > WASM_MAX_BATCH_ITEMS
+        || report.products.iter().any(|set| {
+            set.len() > WASM_MAX_BATCH_ITEMS
+                || set.iter().any(|mol| mol.atom_count() > WASM_MAX_ATOMS)
+        })
+    {
+        result.status = "typed_refusal";
+        result.reason = Some("result_too_large");
+        result.detail = Some("reaction products exceed WASM limits".to_string());
+    } else {
+        result.products = report
+            .products
+            .iter()
+            .map(|set| set.iter().map(chematic_smiles::canonical_smiles).collect())
+            .collect();
+    }
+    result
+}
+
+/// Apply a SMIRKS template with explicit outcome accounting as a JSON string.
+///
+/// `reactants_smiles` is pipe-separated, as for [`run_reactants`]. With
+/// `rdkit_compat = true`, tetrahedral reactant-side `@`/`@@` templates that
+/// differ from pinned RDKit 2026.03.6 return `typed_unsupported` and a stable
+/// reason code instead of an apparently compatible product. Native semantics
+/// and the existing [`run_reactants`] API are unchanged. Product graph/origin/
+/// template-map parity is a separate gate: this function returns SMILES and
+/// diagnostics, not atom-provenance maps.
+///
+/// The JSON fields mirror Python's `run_smirks_checked`: `status`, `reason`,
+/// `detail`, `products`, `accepted_matches`, `applied_products`,
+/// `valence_rejected_matches`, and `truncated_matches`, plus `profile`.
+#[wasm_bindgen]
+pub fn run_reactants_checked(smirks: &str, reactants_smiles: &str, rdkit_compat: bool) -> String {
+    let profile = if rdkit_compat {
+        "rdkit-2026.03.6"
+    } else {
+        "native"
+    };
+    let (reactants, prepared) =
+        match prepare_checked_reaction(smirks, reactants_smiles, rdkit_compat, profile) {
+            Ok(prepared) => prepared,
+            Err(refusal_json) => return refusal_json,
+        };
+    let refs: Vec<_> = reactants.iter().collect();
+    let limits = chematic_rxn::ReactionTransformLimits {
+        max_matches: WASM_MAX_BATCH_ITEMS,
+    };
+    let report = match prepared.run_reactants_with_diagnostics(&refs, &limits) {
+        Ok(report) => report,
+        Err(error) => {
+            let reason = match &error {
+                chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
+                chematic_rxn::TransformError::ReactantCountMismatch { .. } => {
+                    "reactant_count_mismatch"
+                }
+                chematic_rxn::TransformError::SmirksParse(_) => "smirks_parse",
+            };
+            return CheckedReactionResponse::refusal(
+                profile,
+                "typed_refusal",
+                reason,
+                error.to_string(),
+            )
+            .json();
+        }
+    };
+    let mut result = checked_reaction_response(profile, report);
+    let json = result.json();
+    if json.len() > WASM_MAX_OUTPUT_BYTES {
+        result.status = "typed_refusal";
+        result.reason = Some("output_too_large");
+        result.detail = Some("JSON output exceeds WASM limit".to_string());
+        result.products.clear();
+        result.json()
+    } else {
+        json
+    }
 }
 
 /// Enumerate a combinatorial library from a SMIRKS template and two fragment sets.
