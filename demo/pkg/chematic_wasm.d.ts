@@ -2455,6 +2455,25 @@ export function roundtrip_mol_v3000_block(block: string): string;
 export function run_reactants(smirks: string, reactants_smiles: string): string;
 
 /**
+ * Apply a SMIRKS template with explicit outcome accounting as a JSON string.
+ *
+ * `reactants_smiles` is pipe-separated, as for [`run_reactants`]. With
+ * `rdkit_compat = true`, tetrahedral reactant-side `@`/`@@` templates that
+ * differ from pinned RDKit 2026.03.6 return `typed_unsupported` and a stable
+ * reason code instead of an apparently compatible product. Native semantics
+ * and the existing [`run_reactants`] API are unchanged. Product graph/origin/
+ * template-map parity remains a separate oracle gate. Source indices and
+ * product-template map labels are returned alongside the product SMILES;
+ * their atom positions match the canonical SMILES parse order.
+ *
+ * The JSON fields mirror Python's `run_smirks_checked`: `status`, `reason`,
+ * `detail`, `products`, `accepted_matches`, `applied_products`,
+ * `valence_rejected_matches`, and `truncated_matches`, plus `profile`,
+ * `product_atom_sources`, and `product_template_maps`.
+ */
+export function run_reactants_checked(smirks: string, reactants_smiles: string, rdkit_compat: boolean): string;
+
+/**
  * Parse an MDL RXN V2000 file into the typed reaction-document JSON
  * contract shared with the Rust and Python bindings.
  */
@@ -3322,6 +3341,7 @@ export interface InitOutput {
     readonly ring_families_json: (a: number) => [number, number, number, number];
     readonly roundtrip_mol_v3000_block: (a: number, b: number) => [number, number, number, number];
     readonly run_reactants: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly run_reactants_checked: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly rxn_document_from_rxn: (a: number, b: number) => [number, number, number, number];
     readonly rxn_document_to_rxn: (a: number, b: number) => [number, number, number, number];
     readonly sa_score: (a: number) => number;

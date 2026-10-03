@@ -316,6 +316,7 @@ export const rgroup_decompose_json: (a: number, b: number, c: number, d: number)
 export const ring_families_json: (a: number) => [number, number, number, number];
 export const roundtrip_mol_v3000_block: (a: number, b: number) => [number, number, number, number];
 export const run_reactants: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+export const run_reactants_checked: (a: number, b: number, c: number, d: number, e: number) => [number, number];
 export const rxn_document_from_rxn: (a: number, b: number) => [number, number, number, number];
 export const rxn_document_to_rxn: (a: number, b: number) => [number, number, number, number];
 export const sa_score: (a: number) => number;

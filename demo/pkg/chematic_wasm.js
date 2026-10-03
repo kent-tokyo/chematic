@@ -6312,6 +6312,44 @@ export function run_reactants(smirks, reactants_smiles) {
 }
 
 /**
+ * Apply a SMIRKS template with explicit outcome accounting as a JSON string.
+ *
+ * `reactants_smiles` is pipe-separated, as for [`run_reactants`]. With
+ * `rdkit_compat = true`, tetrahedral reactant-side `@`/`@@` templates that
+ * differ from pinned RDKit 2026.03.6 return `typed_unsupported` and a stable
+ * reason code instead of an apparently compatible product. Native semantics
+ * and the existing [`run_reactants`] API are unchanged. Product graph/origin/
+ * template-map parity remains a separate oracle gate. Source indices and
+ * product-template map labels are returned alongside the product SMILES;
+ * their atom positions match the canonical SMILES parse order.
+ *
+ * The JSON fields mirror Python's `run_smirks_checked`: `status`, `reason`,
+ * `detail`, `products`, `accepted_matches`, `applied_products`,
+ * `valence_rejected_matches`, and `truncated_matches`, plus `profile`,
+ * `product_atom_sources`, and `product_template_maps`.
+ * @param {string} smirks
+ * @param {string} reactants_smiles
+ * @param {boolean} rdkit_compat
+ * @returns {string}
+ */
+export function run_reactants_checked(smirks, reactants_smiles, rdkit_compat) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smirks, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(reactants_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.run_reactants_checked(ptr0, len0, ptr1, len1, rdkit_compat);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Parse an MDL RXN V2000 file into the typed reaction-document JSON
  * contract shared with the Rust and Python bindings.
  * @param {string} text
