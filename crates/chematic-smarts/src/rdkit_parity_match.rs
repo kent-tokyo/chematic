@@ -91,7 +91,8 @@ pub fn find_matches_rdkit_parity(
     };
 
     let rings = chematic_perception::find_sssr(mol_ref);
-    let symmetrized_rings = if query_uses_ring_size(query) {
+    let uses_ring_size = query_uses_ring_size(query);
+    let symmetrized_rings = if uses_ring_size {
         let result = chematic_perception::find_symmetrized_sssr_with_diagnostics_bounded(
             mol_ref,
             Some(config.ring_model_budget.max_candidates),
@@ -103,6 +104,15 @@ pub fn find_matches_rdkit_parity(
             });
         }
         Some(result.into_ring_set())
+    } else {
+        None
+    };
+    let size_model = if uses_ring_size {
+        Some(build_rdkit_parity_ring_model(
+            mol_ref,
+            &rings,
+            &config.ring_model_budget,
+        )?)
     } else {
         None
     };
@@ -131,6 +141,7 @@ pub fn find_matches_rdkit_parity(
         mol: mol_ref,
         rings: &rings,
         symmetrized_rings: symmetrized_rings.as_ref(),
+        size_model: size_model.as_ref(),
         ring_model: ring_model.as_ref(),
         config: &config.base,
         visit_budget: std::cell::Cell::new(config.base.max_visit_budget.unwrap_or(u64::MAX)),
@@ -233,6 +244,7 @@ struct EvalCtx<'a> {
     mol: &'a Molecule,
     rings: &'a RingSet,
     symmetrized_rings: Option<&'a RingSet>,
+    size_model: Option<&'a RdkitParityRingModel>,
     ring_model: Option<&'a RdkitParityRingModel>,
     config: &'a MatchConfig,
     visit_budget: std::cell::Cell<u64>,
@@ -365,12 +377,16 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         // symmetry-equivalent ring containing this atom. This opt-in lane
         // uses the bounded symmetrized set and refuses when it cannot be
         // computed completely.
-        AtomPrimitive::RingSize(n) => ctx
-            .symmetrized_rings
-            .unwrap_or(ctx.rings)
-            .rings()
-            .iter()
-            .any(|ring| ring.len() == *n as usize && ring.contains(&idx)),
+        AtomPrimitive::RingSize(n) => {
+            ctx.symmetrized_rings
+                .unwrap_or(ctx.rings)
+                .rings()
+                .iter()
+                .any(|ring| ring.len() == *n as usize && ring.contains(&idx))
+                || ctx
+                    .size_model
+                    .is_some_and(|model| model.has_extra_ring_of_size(idx, *n as usize))
+        }
         // [rN] -- same rationale as RingSize above.
         AtomPrimitive::MinRingSize(n) => ctx.min_ring_size(idx) == Some(*n),
         AtomPrimitive::Wildcard => true,
@@ -713,6 +729,21 @@ mod tests {
         assert!(!exhausted);
         assert!(!default.iter().any(|m| m[&0] == AtomIdx(46)));
         assert!(parity.iter().any(|m| m[&0] == AtomIdx(46)));
+    }
+
+    #[test]
+    fn k6_corpus_3498_uses_mixed_size_replacement() {
+        // RDKit 2026.03.6 includes atom 22 in the replacement six-ring
+        // 1-2-20-21-22-23. Perception's symmetrized set keeps only the
+        // four-ring through atom 22, while the SMARTS-specific bounded
+        // selector independently recovers the six-ring.
+        let mol = parse("C=C1[C@H]2Oc3cc(C(C)(C)CCCCCC)cc(O)c3[C@H]2[C@H]2C[C@@H]1C2(C)C").unwrap();
+        let query = parse_smarts("[k6]").unwrap();
+        let (parity, _) =
+            find_matches_rdkit_parity(&query, &mol, &RdkitParityConfig::default()).unwrap();
+        let mut atoms: Vec<u32> = parity.iter().map(|m| m[&0].0).collect();
+        atoms.sort_unstable();
+        assert_eq!(atoms, vec![1, 2, 4, 5, 6, 16, 17, 19, 20, 21, 22, 23, 24]);
     }
 
     #[test]

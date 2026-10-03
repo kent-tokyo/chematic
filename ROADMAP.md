@@ -14,7 +14,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 | P0.1 outputs | Python, npm and pinned Rust artifacts reran 10,000 chemistry inputs, 310,000 SMARTS cells and 57 legacy reactions. Python/Rust covered 63 operation outputs; only HBA and its bundle changed from v1.0.29. Published HBA: 5,000/5,000 vs pinned RDKit 2026.03.6. | **Audit complete, parity not complete:** 200 SMARTS failures, five typed CIP abstentions and four npm-unexposed operations remain. See the [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
 | P0.2 speed | The published Python 63-operation matrix has 20 paired blocks; 20 operations pass exact-output and confidence-interval gates on one host. Published npm/WASM Morgan also has Node and Chromium lanes; Ubuntu 24.04 Chromium, Firefox and WebKit each have 250/250 bit-exact direct/prepared rows and favorable 20-block speed intervals (smallest lower bound 1.63×). | Equal-work perception and library-memory boundaries, other operations/bindings and more corpora. Process RSS is not library allocation; changed HBA output cannot earn an equivalent-output speed win. |
 | P1 reactions | Original 57 fixtures match. Published v1.0.30 had 73/83 graph+origin+template-map matches. The checked v1.0.31-source profile has 76 exact on all three axes, three typed unsupported, one diagnosed refusal and three jointly invalid rows; see the [source audit](benchmarks/2026-10-03-source-reaction-83-checked-graph-origin-map.md). | Publish/rebuild the source fix and rerun applicable Rust/Python/npm provenance gates. Typed refusal and invalid input are not exact matches; no general SMIRKS parity claim. |
-| P1 SMARTS | Published v1.0.30 has 200 differing **match-set** cells / 310,000, but only 43 hit/no-hit differences. An opt-in source candidate corrects 170 match sets / 38 Booleans, with 13 / 5 wrong-confident cells and 18 typed refusals; the native matcher is unchanged. | Adjudicate remaining ring-count, ring-size and organometallic semantics, then expose and measure a deliberate opt-in published profile. Source improvements and typed refusals are not exact parity. |
+| P1 SMARTS | Published v1.0.30 has 200 differing **match-set** cells / 310,000, but only 43 hit/no-hit differences. An opt-in source candidate corrects 171 match sets / 38 Booleans, with 12 / 5 wrong-confident cells and 18 typed refusals; the native matcher is unchanged. | Adjudicate remaining ring-count and organometallic semantics, then expose and measure a deliberate opt-in published profile. Source improvements and typed refusals are not exact parity. |
 | P2 A6 quality | The [published v1.0.31 MMFF94 stereo-safe rerun](benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md) has 265/265 independently sound, stereo-clean and gross-clash-free outputs, but only 100/265 force-field convergence. Separate same-coordinate total energies are within 1 kcal/mol on 262/262 comparable rows. A current-wheel 10k typing census still has 2,908 heavy-atom differences; a 400-iteration diagnostic raises convergence to 164/265 without changing the package default. | Classify the 101 still non-converged, 2,908 numeric type differences, per-term energy residuals, two RDKit embedding failures and one declared unsupported row; measure independent conformer quality. Current geometry/stereo and bounded total-energy results do not complete A6. |
 
 The [v1.0.30 published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md),
@@ -42,10 +42,10 @@ have separate gates.
    classified as such; reaction yield/selectivity is outside this gate.
 2. **P1 / A4 — Reduce SMARTS residuals without broadening silent support.**
    The published baseline remains 200 differing match sets / 43 Booleans.
-   Current opt-in source profiling leaves 13 wrong-confident match sets and
+   Current opt-in source profiling leaves 12 wrong-confident match sets and
    five Boolean errors: three `[R2]` on large fused cages, one `[R1]` and
-   one `[x2]` on an organometallic graph. One `[k6]` atom-set difference
-   remains even though its Boolean agrees. Independently adjudicate ring
+   one `[x2]` on an organometallic graph. The exposed `[k6]` atom-set
+   difference is corrected in source without changing its Boolean. Independently adjudicate ring
    basis, coordination semantics and supported domain; fix graph-model
    defects or return typed unsupported, not a guessed match. Preserve native
    SSSR. **Exit:** rerun the full pinned 310,000-cell matrix on affected

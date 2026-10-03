@@ -165,6 +165,11 @@ impl Default for RdkitRingModelBudget {
 #[derive(Debug, Clone)]
 pub struct RdkitParityRingModel {
     ring_count_by_atom: FxHashMap<AtomIdx, u8>,
+    /// Candidate rings accepted beyond the basis by the SMARTS-specific
+    /// bounded selector. Used by the opt-in `[kN]` lane as a supplement to
+    /// perception's symmetrized ring set, which may miss a different but
+    /// equally valid replacement in a mixed-size bridged system.
+    extra_rings: Vec<Vec<AtomIdx>>,
     /// Extra rings accepted beyond the raw SSSR basis (for diagnostics/tests).
     extra_ring_count: usize,
 }
@@ -183,6 +188,12 @@ impl RdkitParityRingModel {
     pub fn extra_ring_count(&self) -> usize {
         self.extra_ring_count
     }
+
+    pub(crate) fn has_extra_ring_of_size(&self, atom: AtomIdx, size: usize) -> bool {
+        self.extra_rings
+            .iter()
+            .any(|ring| ring.len() == size && ring.contains(&atom))
+    }
 }
 
 /// Build an [`RdkitParityRingModel`] for `mol`, given its already-computed
@@ -198,6 +209,7 @@ pub fn build_rdkit_parity_ring_model(
     if base_rings.is_empty() {
         return Ok(RdkitParityRingModel {
             ring_count_by_atom: FxHashMap::default(),
+            extra_rings: Vec::new(),
             extra_ring_count: 0,
         });
     }
@@ -442,9 +454,11 @@ pub fn build_rdkit_parity_ring_model(
         }
     }
 
+    let extra_ring_count = extra_rings.len();
     Ok(RdkitParityRingModel {
         ring_count_by_atom,
-        extra_ring_count: extra_rings.len(),
+        extra_rings,
+        extra_ring_count,
     })
 }
 
@@ -474,6 +488,7 @@ pub fn build_shared_symmetrized_ring_model(
     }
     let shared_model = RdkitParityRingModel {
         ring_count_by_atom,
+        extra_rings: Vec::new(),
         extra_ring_count: result.rings().ring_count().saturating_sub(base_count),
     };
     // Some bridged cages are handled better by the original SMARTS-specific

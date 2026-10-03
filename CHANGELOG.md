@@ -10,6 +10,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- The opt-in `[kN]` SMARTS matcher now also consumes same-size replacement
+  rings found by its bounded ring-count selector. This corrects one more
+  `[k6]` atom-set difference in a source-only 310,000-cell comparison, with
+  no new wrong-confident cells; 12 match-set and five Boolean differences,
+  plus 18 typed refusals, remain. Native SMARTS is unchanged.
 - Added opt-in WASM `run_reactants_checked` with structured reaction status,
   counts and typed RDKit 2026.03.6 reactant-stereo refusal. Existing
   `run_reactants` behavior is unchanged; this does not expose atom origins
