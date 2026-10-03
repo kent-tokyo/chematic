@@ -15,6 +15,11 @@ fn digest(bytes: &[u8]) -> String {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(profile) = option_env!("CHEMATIC_REACTION_GATE_PROFILE")
+        && profile != "rdkit-2026.03.6"
+    {
+        return Err(format!("unknown reaction gate profile: {profile}").into());
+    }
     let args: Vec<_> = std::env::args().collect();
     if args.len() != 5 && args.len() != 6 {
         return Err(
@@ -199,6 +204,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "rows_sha256": digest(&raw)});
     if let Some(hash) = supplement_sha256 {
         summary["supplement_sha256"] = json!(hash);
+    }
+    if let Some(profile) = option_env!("CHEMATIC_REACTION_GATE_PROFILE") {
+        summary["compatibility_profile"] = json!(profile);
     }
     fs::write(
         &args[4 + output_offset],
