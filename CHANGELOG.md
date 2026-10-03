@@ -12,10 +12,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 - Added atom-origin and product-template-map arrays to the opt-in checked
   reaction API in Python and WASM/Node. Ordinary product molecules and the
-  existing reaction API are unchanged. A local Python source gate matches
-  pinned RDKit 2026.03.6 on graph, origin and map for 76/83 rows; three are
-  typed unsupported, one a diagnosed refusal and three invalid in both.
-  Release-profile CI and published-package provenance remain unverified.
+  existing reaction API are unchanged. Pinned RDKit 2026.03.6 comparisons on
+  Linux and macOS release-profile source wheels classify 76/83 rows as exact
+  on graph, origin and map; three are typed unsupported, one a diagnosed
+  refusal and three invalid in both. WASM release-mode Node tests pass.
+  Published-package verification remains open.
 - Added opt-in Python `Mol.find_matches_rdkit_parity()`. Source-wheel CI
   matches 309,982/310,000 pinned SMARTS match sets; the other 18 are typed
   unsupported, not exact matches. Native SMARTS is unchanged and published

@@ -152,7 +152,7 @@ or every RDKit method.
 
 Atom-output order and connected-component source indices are exposed in Rust
 and Python, but not in the WASM/Node surface. The published v1.0.31 reaction
-API has Rust-only product tracing. A later, unreleased source candidate adds
+API has Rust-only product tracing. Merged but unreleased source changes add
 origin and template-map arrays to Python `run_smirks_checked()` and WASM/Node
 `run_reactants_checked()`. Python arrays use returned-molecule atom indices;
 WASM/Node arrays use canonical-SMILES parse order. Neither published v1.0.31

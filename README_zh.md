@@ -25,12 +25,9 @@ Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
 ### v1.0.31 范围
 
-v1.0.31 已发布。它修复了 WASM 分子式的写法，以及反应产物 SMILES 中 E/Z
-反斜杠的 JSON 转义；发布包的输出一致性尚未重新测量。HBA 的 5,000/5,000
-一致结果属于已发布的 v1.0.30 macOS arm64 wheel，不是 v1.0.31 的新测量。详见
-[验证报告](docs/validation.md)和 [CHANGELOG](CHANGELOG.md)。
-开发中的反应原子来源 API 和 SMARTS 对照结果单独列于[路线图](ROADMAP.md)，
-不代表已发布包的功能或测量结果。
+最新已发布版本为 v1.0.31。反应原子来源、可选 SMARTS 兼容模式和 MMFF94
+诊断改进已合入 main，但尚未作为新版本发布。各版本的测量范围见
+[验证报告](docs/validation.md)，变更见 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用
 
