@@ -168,7 +168,7 @@
         }
       ],
       "unavailable_operations": {
-        "cip": "No version-pinned official MinimalLib CIP lane is defined yet.",
+        "cip": "RDKit.js old/new CIP tags are compared separately; CheMatic/MinimalLib CIP parity is not defined here.",
         "smarts": "SMARTS semantics require a separate packed-output contract before timing."
       }
     },
@@ -222,7 +222,7 @@
         }
       ],
       "unavailable_operations": {
-        "cip": "No version-pinned official MinimalLib CIP lane is defined yet.",
+        "cip": "RDKit.js old/new CIP tags are compared separately; CheMatic/MinimalLib CIP parity is not defined here.",
         "smarts": "Oracle-version SMARTS delta is measured separately; CheMatic/MinimalLib packed-output parity is not defined."
       }
     }

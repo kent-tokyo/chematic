@@ -136,7 +136,7 @@
       },
       "operation_evidence": {
         "smiles_parse_write": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.03.6-2026-10-04.json"],
-        "cip": [],
+        "cip": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json"],
         "smarts": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json"],
         "morgan": ["validation/results/rdkit-rebaseline-npm-morgan-parity-v1.0.33-vs-2026.03.6-2026-10-04.json"],
         "browser_runtime": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.03.6-2026-10-04.json"]
@@ -162,7 +162,7 @@
       },
       "operation_evidence": {
         "smiles_parse_write": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.09.1-2026-10-04.json"],
-        "cip": [],
+        "cip": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json"],
         "smarts": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json"],
         "morgan": ["validation/results/rdkit-rebaseline-npm-morgan-parity-v1.0.33-vs-2026.09.1-2026-10-04.json"],
         "browser_runtime": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.09.1-2026-10-04.json"]

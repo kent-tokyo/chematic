@@ -60,8 +60,12 @@ function inspect(module, smiles, queries) {
   try {
     const canonical = molecule.get_smiles();
     const morgan = molecule.get_morgan_fp(JSON.stringify({ radius: 2, nBits: 2048 }));
+    const representation = JSON.parse(molecule.get_json()).molecules[0];
+    const graph = { atoms: representation.atoms, bonds: representation.bonds };
+    const stereo = JSON.parse(molecule.get_stereo_tags());
     const matches = queries.map((query) => query === null ? null : atomSets(molecule.get_substruct_matches(query)));
-    return { status: 'ok', canonical, morgan_sha256: digest(morgan), matches };
+    return { status: 'ok', canonical, morgan_sha256: digest(morgan),
+      graph_sha256: digest(JSON.stringify(graph)), stereo, matches };
   } finally {
     molecule.delete();
   }
@@ -91,6 +95,7 @@ async function main() {
   const counts = {
     rows: lines.length, query_count: queries.length, parse_status_differences: 0,
     canonical_spelling_differences: 0, morgan_bit_differences: 0,
+    graph_json_differences: 0, cip_tag_differences: 0, cip_comparable_rows: 0,
     smarts_cells_compared: 0, smarts_cell_differences: 0,
   };
   const examples = [];
@@ -114,6 +119,16 @@ async function main() {
           counts.morgan_bit_differences++;
           differences.push({ operation: 'morgan_bits', old_sha256: old.morgan_sha256, new_sha256: current.morgan_sha256 });
         }
+        if (old.graph_sha256 !== current.graph_sha256) {
+          counts.graph_json_differences++;
+          differences.push({ operation: 'graph_json', old_sha256: old.graph_sha256, new_sha256: current.graph_sha256 });
+        } else {
+          counts.cip_comparable_rows++;
+          if (JSON.stringify(old.stereo) !== JSON.stringify(current.stereo)) {
+            counts.cip_tag_differences++;
+            differences.push({ operation: 'cip_tags', old: old.stereo, new: current.stereo });
+          }
+        }
         for (let queryIndex = 0; queryIndex < queries.length; queryIndex++) {
           if (oldQueryMols[queryIndex] === null || newQueryMols[queryIndex] === null) continue;
           counts.smarts_cells_compared++;
@@ -126,6 +141,9 @@ async function main() {
       const record = { input_index: index, smiles, old_status: old.status, new_status: current.status,
         old_canonical: old.canonical ?? null, new_canonical: current.canonical ?? null,
         old_morgan_sha256: old.morgan_sha256 ?? null, new_morgan_sha256: current.morgan_sha256 ?? null,
+        old_graph_sha256: old.graph_sha256 ?? null, new_graph_sha256: current.graph_sha256 ?? null,
+        old_cip_sha256: old.stereo ? digest(JSON.stringify(old.stereo)) : null,
+        new_cip_sha256: current.stereo ? digest(JSON.stringify(current.stereo)) : null,
         old_smarts_sha256: old.matches ? digest(JSON.stringify(old.matches)) : null,
         new_smarts_sha256: current.matches ? digest(JSON.stringify(current.matches)) : null,
         differences };

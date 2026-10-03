@@ -41,12 +41,16 @@ inputs and the 31 fixed SMARTS queries (310,000 cells):
 | Parse acceptance | 0 / 10,000 |
 | Canonical SMILES spelling | 0 / 10,000 |
 | Morgan bit string | 0 / 10,000 |
+| Atom/bond JSON graph representation | 0 / 10,000 |
+| CIP stereo tags, after graph correspondence | 0 / 10,000 |
 | SMARTS atom-set result | 12 / 310,000 |
 
 All 12 SMARTS cells are `[R2]` or `[R3]`, six cells each, on six complex
-polycyclic inputs (indices 9, 23, 28, 29, 30, 34). This is an **oracle change**,
+polycyclic inputs (indices 9, 23, 28, 29, 30, 34). The CIP comparison uses
+MinimalLib `get_stereo_tags()` and compares tags only after the ordered atom
+and bond JSON graph agrees. This is an **oracle change**,
 not yet adjudicated as an RDKit fix or regression, and it is not a new CheMatic
-SMARTS parity measurement. Every row is retained with status, output hashes,
+CIP/SMARTS parity measurement. Every row is retained with status, output hashes,
 and explicit changed atom sets in the compressed JSONL packet.
 
 ## Browser measurements

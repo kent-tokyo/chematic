@@ -84,6 +84,7 @@ def check() -> None:
     require(comparison["corpus"]["sha256"] == corpus_hash, "oracle corpus changed")
     require((counts["rows"], counts["query_count"], counts["smarts_cells_compared"]) == (10000, 31, 310000), "oracle comparison incomplete")
     require((counts["parse_status_differences"], counts["canonical_spelling_differences"], counts["morgan_bit_differences"], counts["smarts_cell_differences"]) == (0, 0, 0, 12), "oracle delta counts changed")
+    require((counts["graph_json_differences"], counts["cip_tag_differences"], counts["cip_comparable_rows"]) == (0, 0, 10000), "CIP/index-correspondence evidence changed")
     require(comparison["old"]["query_parse_failures"] == comparison["new"]["query_parse_failures"] == [], "query parser failures")
     for version, name in zip(VERSIONS, ("old", "new")):
         package = artifacts[version]["package"]
@@ -100,6 +101,8 @@ def check() -> None:
     for index, line in enumerate(body.splitlines()):
         row = json.loads(line)
         require(row["input_index"] == index, f"row {index}: index mismatch")
+        require(row["old_graph_sha256"] == row["new_graph_sha256"], f"row {index}: graph correspondence mismatch")
+        require(row["old_cip_sha256"] == row["new_cip_sha256"], f"row {index}: CIP tag mismatch")
         status[(row["old_status"], row["new_status"])] += 1
         for difference in row["differences"]:
             require(difference["operation"] == "smarts", f"row {index}: unexpected difference")

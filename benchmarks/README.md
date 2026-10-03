@@ -139,7 +139,7 @@ measurement was rerun.
 | Record | Scope |
 |---|---|
 | [`2026-10-02-v1.0.30-published-artifact-gates.md`](2026-10-02-v1.0.30-published-artifact-gates.md) | Published v1.0.30 Python/npm/Rust accuracy packet and bounded paired-speed diagnostics; P0/P1 still open |
-| [`2026-10-04-rdkit-2026-09-1-npm-rebaseline.md`](2026-10-04-rdkit-2026-09-1-npm-rebaseline.md) | Official RDKit.js 2026.03.6 → 2026.09.1 on fixed exposed 10k: 9,999/9,999 CheMatic Morgan bits in each supported domain, 12/310,000 old/new SMARTS cells changed, and 20-run isolated browser records; Python/native artifact pending |
+| [`2026-10-04-rdkit-2026-09-1-npm-rebaseline.md`](2026-10-04-rdkit-2026-09-1-npm-rebaseline.md) | Official RDKit.js 2026.03.6 → 2026.09.1 on fixed exposed 10k: 9,999/9,999 CheMatic Morgan bits in each supported domain; old/new CIP unchanged after graph correspondence, 12/310,000 SMARTS cells changed; 20-run isolated browser records; Python/native artifact pending |
 | [`2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json`](2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | Published v1.0.30 Python versus RDKit 2026.03.6 on 63 operations, 20 counterbalanced repeats with raw blocks and 95% paired intervals; not an end-to-end or cross-host claim |
 | [`2026-10-02-reaction-checked-source-profile.md`](2026-10-02-reaction-checked-source-profile.md) | Opt-in unpublished reaction profile: 76/83 semantic matches, 3 typed unsupported, 1 typed refusal, 3 jointly invalid; zero wrong-confident rows in bounded corpus |
 | [`2026-10-02-v1.0.30-python-op-matrix.json`](2026-10-02-v1.0.30-python-op-matrix.json) | Published v1.0.30 Python 5k/63-operation three-repeat diagnostic (not counterbalanced) |
