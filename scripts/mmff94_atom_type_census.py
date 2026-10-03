@@ -42,6 +42,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--wheel", type=Path, help="source wheel used for an artifact gate")
+    parser.add_argument("--module-root", type=Path, help="installation root for the source wheel")
+    parser.add_argument(
+        "--source-wheel-gate", action="store_true",
+        help="require the predeclared v1.0.31-source MMFF94 typing profile",
+    )
     parser.add_argument("--examples", type=int, default=1, help="example rows kept per key")
     parser.add_argument(
         "--type37-context",
@@ -49,6 +55,14 @@ def main() -> int:
         help="diagnose the RDKit 37 / CheMatic 2 carbon bucket without changing the base census",
     )
     args = parser.parse_args()
+    if args.source_wheel_gate:
+        if not (args.wheel and args.module_root and args.type37_context):
+            parser.error("source-wheel gate requires --wheel, --module-root and --type37-context")
+        module_path = Path(chematic.__file__).resolve()
+        if not module_path.is_relative_to(args.module_root.resolve()):
+            parser.error(f"imported {module_path}, not the isolated wheel")
+        if rdBase.rdkitVersion != "2026.03.6":
+            parser.error(f"expected RDKit 2026.03.6, got {rdBase.rdkitVersion}")
     RDLogger.DisableLog("rdApp.*")
 
     status: Counter[str] = Counter()
@@ -182,8 +196,27 @@ def main() -> int:
             "counts": dict(sorted(type37_context.items())),
             "examples": type37_examples,
         }
+    if args.source_wheel_gate:
+        summary["scope"] = "source-built Python wheel; not a published registry artifact"
+        summary["wheel_sha256"] = sha256(args.wheel)
+        summary["module_path_within_wheel"] = str(module_path.relative_to(args.module_root.resolve()))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(summary, indent=1) + "\n", encoding="utf-8")
+    if args.source_wheel_gate:
+        type37_bucket = next(
+            (item["count"] for item in summary["heavy"]["by_key"]
+             if item["element"] == "C" and item["rdkit_type"] == 37 and item["chematic_type"] == 2),
+            0,
+        )
+        expected_corpus_sha = "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+        if (summary["corpus"]["sha256"] != expected_corpus_sha
+                or summary["corpus"]["rows"] != 10_000
+                or summary["row_status"] != {"compared": 9_774, "rdkit_mmff_unsupported": 204, "chematic_error": 22}
+                or summary["atoms_compared"] != {"heavy": 214_990, "hydrogen": 190_737}
+                or summary["heavy"]["differing_atoms"] != 451
+                or summary["hydrogen"]["differing_atoms"] != 8
+                or type37_bucket != 16):
+            raise ValueError("source-wheel MMFF94 type gate failed; inspect the written census report")
     print(json.dumps({k: summary[k] for k in ("row_status", "atoms_compared")} | {
         "hydrogen_differing": summary["hydrogen"]["differing_atoms"],
         "hydrogen_differing_with_agreeing_parent": hydrogen_parent_agrees,

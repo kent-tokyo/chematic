@@ -10,6 +10,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Added a pinned 10,000-molecule source-wheel MMFF94 atom-type gate. A local
+  source wheel has 451 differing heavy-atom and eight H types versus RDKit
+  2026.03.6, down from 2,908 and 56 on published v1.0.31. This is typing
+  evidence only; published-package and independent 3D-quality gates remain open.
 - Added opt-in Python `Mol.find_matches_rdkit_parity()` with explicit
   successful, typed-unsupported and typed-refusal outcomes. A local source
   wheel matches pinned RDKit 2026.03.6 on 309,982/310,000 SMARTS cells;

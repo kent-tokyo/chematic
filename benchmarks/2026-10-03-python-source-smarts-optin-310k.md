@@ -36,5 +36,12 @@ python scripts/check_python_smarts_parity_310k.py \
 
 The checker validates import provenance, wheel and input hashes, all 310,000
 match sets, the exact 18 refusal cells, and the predeclared outcome counts.
-Linux and macOS source-wheel CI runs are separate evidence; a published PyPI
-wheel, npm/WASM profile and independent held-out corpus remain unverified.
+Post-merge PR [#735](https://github.com/kent-tokyo/chematic/pull/735),
+run `37101314517`, built release-profile source wheels on Linux and macOS
+arm64. Both retained reports (`rdkit-hba-source-wheel-5k` and
+`rdkit-hba-source-wheel-5k-macos`) were downloaded and independently read:
+each reports 309,982 exact, 18 typed unsupported, 183 corrected original
+match-set residuals, 43 corrected Boolean residuals and zero unexpected
+cells. All 76 run checks passed (two intentionally skipped). These are
+**CI source wheels**, not PyPI artifacts. A published wheel, npm/WASM profile
+and independent held-out corpus remain unverified.
