@@ -103,6 +103,15 @@ pub fn valence_inferred_hcount_with(
     }
 
     let charge = atom.charge as i32;
+    // Charge-adjusted valence `v + charge` (N+ 4, O- 1, S+ 3...) is the
+    // isoelectronic valence while the atom keeps at least four valence
+    // electrons. Below four (C+, N+2, B, B-) the isoelectronic atom is
+    // electron-poor and its valence is its electron count instead, as in
+    // RDKit: C+ like B (3), N+2 like B (3), B- like C (4) — issue #734:
+    // `[N:1]>>[N+2:1]` on CN gives C[NH2+2], not a five-valent C[NH4+2].
+    let electron_poor_valence = valence_electrons(atom.element.atomic_number())
+        .map(|e| e - charge)
+        .filter(|&e| (0..4).contains(&e) || (e == 4 && atom.element.atomic_number() == 5));
 
     // Separate aromatic bonds from non-aromatic bonds.
     let mut aromatic_count: usize = 0;
@@ -142,7 +151,7 @@ pub fn valence_inferred_hcount_with(
         // Always use the lowest normal valence; aromatic atoms cannot be hypervalent.
         let aromatic_contribution = (aromatic_count as f64 * 1.5).floor() as i32;
         let effective_sum = aromatic_contribution.saturating_add(non_aromatic_sum);
-        let v = normal_valences[0] as i32 + charge;
+        let v = electron_poor_valence.unwrap_or(normal_valences[0] as i32 + charge);
         if v <= 0 || effective_sum >= v {
             return 0;
         }
@@ -163,6 +172,10 @@ pub fn valence_inferred_hcount_with(
         normal_valences
     };
 
+    if let Some(v) = electron_poor_valence {
+        return (v - bond_sum).max(0) as u8;
+    }
+
     // Iterate through valences (ascending) and pick the smallest ≥ bond_sum.
     for &v in valences_to_check {
         let target = v as i32 + charge;
@@ -176,6 +189,18 @@ pub fn valence_inferred_hcount_with(
 
     // bond_sum exceeds all consulted valences → 0 implicit H.
     0
+}
+
+/// Valence (outer-shell) electron count of an organic-subset element.
+fn valence_electrons(atomic_number: u8) -> Option<i32> {
+    match atomic_number {
+        5 => Some(3),
+        6 => Some(4),
+        7 | 15 => Some(5),
+        8 | 16 => Some(6),
+        9 | 17 | 35 | 53 => Some(7),
+        _ => None,
+    }
 }
 
 #[deprecated(
@@ -318,6 +343,34 @@ mod tests {
         let c = b.add_atom(Atom::organic(e2));
         b.add_bond(a, c, order).unwrap();
         b.build()
+    }
+
+    #[test]
+    fn electron_poor_charged_atoms_use_isoelectronic_valence() {
+        // Issue #734 / RDKit: valence = electron count once it drops below
+        // four; unchanged (`v + charge`) otherwise.
+        fn hcount(element: Element, charge: i8, heavy_neighbors: usize) -> u8 {
+            let mut b = MoleculeBuilder::new();
+            let mut center = Atom::organic(element);
+            center.charge = charge;
+            let c = b.add_atom(center);
+            for _ in 0..heavy_neighbors {
+                let n = b.add_atom(Atom::organic(Element::C));
+                b.add_bond(c, n, BondOrder::Single).unwrap();
+            }
+            implicit_hcount(&b.build(), c)
+        }
+        assert_eq!(hcount(Element::N, 2, 1), 2, "C[NH2+2]");
+        assert_eq!(hcount(Element::C, 1, 1), 2, "[CH2+]C");
+        assert_eq!(hcount(Element::B, -1, 0), 4, "[BH4-]");
+        assert_eq!(hcount(Element::B, 0, 0), 3, "BH3");
+        // Unchanged cases.
+        assert_eq!(hcount(Element::N, 1, 1), 3, "C[NH3+]");
+        assert_eq!(hcount(Element::N, -1, 1), 1, "C[NH-]");
+        assert_eq!(hcount(Element::C, -1, 1), 2, "[CH2-]C");
+        assert_eq!(hcount(Element::O, -1, 1), 0, "C[O-]");
+        assert_eq!(hcount(Element::O, 1, 1), 2, "C[OH2+]");
+        assert_eq!(hcount(Element::S, 1, 1), 2, "C[SH2+]");
     }
 
     #[test]

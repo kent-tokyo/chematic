@@ -2515,6 +2515,31 @@ mod tests {
     }
 
     #[test]
+    fn charge_change_keeps_rdkit_hydrogen_count(/* issue #734 item 4 */) {
+        // RDKit 2026.03.6 reference products.
+        let canon = |m: &Molecule| chematic_smiles::canonical_smiles(m);
+        for (smirks, reactant, expected) in [
+            ("[N:1]>>[N+2:1]", "CN", "C[NH2+2]"),
+            ("[N:1]>>[N++:1]", "CN", "C[NH2+2]"),
+            ("[N:1]>>[N+:1]", "CN", "C[NH3+]"),
+            ("[N:1]>>[N-:1]", "CN", "C[NH-]"),
+            ("[O:1]>>[O-:1]", "CO", "C[O-]"),
+            ("[C:1]>>[C-:1]", "CC", "[CH2-]C"),
+            ("[C:1]>>[C+:1]", "CC", "[CH2+]C"),
+        ] {
+            let mol = parse(reactant).unwrap();
+            let out = run_reactants(smirks, &[&mol]).unwrap();
+            assert!(!out.is_empty(), "{smirks}");
+            assert!(
+                out.iter()
+                    .all(|set| canon(&set[0]) == canon(&parse(expected).unwrap())),
+                "{smirks} on {reactant}: {:?}",
+                out.iter().map(|s| canon(&s[0])).collect::<Vec<_>>()
+            );
+        }
+    }
+
+    #[test]
     fn products_rdkit_sanitize_rejects_are_dropped(/* issue #734 item 3 */) {
         // RDKit 2026.03.6 rejects each of these raw products at sanitize; the
         // native model kept the last three (N valence 3 or 5, aromatic bond
