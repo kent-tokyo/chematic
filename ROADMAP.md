@@ -14,7 +14,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 | P0.1 outputs | Python, npm and pinned Rust artifacts reran 10,000 chemistry inputs, 310,000 SMARTS cells and 57 legacy reactions. Python/Rust covered 63 operation outputs; only HBA and its bundle changed from v1.0.29. Published HBA: 5,000/5,000 vs pinned RDKit 2026.03.6. | **Audit complete, parity not complete:** 200 SMARTS failures, five typed CIP abstentions and four npm-unexposed operations remain. See the [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
 | P0.2 speed | The published Python 63-operation matrix has 20 paired blocks; 20 operations pass exact-output and confidence-interval gates on one host. Published npm/WASM Morgan also has Node and Chromium lanes; Ubuntu 24.04 Chromium, Firefox and WebKit each have 250/250 bit-exact direct/prepared rows and favorable 20-block speed intervals (smallest lower bound 1.63×). | Equal-work perception and library-memory boundaries, other operations/bindings and more corpora. Process RSS is not library allocation; changed HBA output cannot earn an equivalent-output speed win. |
 | P1 reactions | Original 57 fixtures match. In the published v1.0.30 Rust 83-row graph/origin/template-map audit, 73 match on all three axes; the other ten are one map-label difference, four graph differences, one origin difference, one diagnosed refusal and three jointly invalid inputs. An unpublished checked-source profile has 76 semantic matches, three typed unsupported, one refusal and three jointly invalid rows. | Adjudicate each axis separately, rerun source fixes on published artifacts and gate applicable origins/maps in Python/npm. Neither a typed refusal nor an invalid oracle input counts as an exact match. No general SMIRKS parity claim. |
-| P1 SMARTS | Published v1.0.30 has 200 differing Boolean cells out of 310,000: 194 symmetrized-ring semantics and six organometallic ring semantics. | Rank by affected cells and rows, resolve specification differences separately from defects, and preserve the native SSSR contract. |
+| P1 SMARTS | Published v1.0.30 has 200 differing **match-set** cells out of 310,000: 194 symmetrized-ring semantics and six organometallic ring semantics. Only 43/200 change the hit/no-hit Boolean; 157 have the same Boolean but different matched atom sets. | Rank by affected cells and rows, resolve specification differences separately from defects, and preserve the native SSSR contract. |
 | P2 A6 quality | Historical published v1.0.26 MMFF94 quality lane had 265/265 independently sound, stereo-clean and gross-clash-free outputs; a separate source lane recorded 2,908 heavy-atom typing differences. | Rebuild a current published-artifact quality packet; classify typing, same-coordinate energy/gradient, convergence, stereo, clashes and independent conformer quality separately. Historical quality and source evidence do not promote current 3D. |
 
 The [v1.0.30 published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md),
@@ -40,7 +40,7 @@ have separate gates.
    confident supported-domain results, typed reasons for refusals, and no
    regression in the original 57. The three jointly invalid rows remain
    classified as such; reaction yield/selectivity is outside this gate.
-2. **P1 / A4 — Reduce the 200 SMARTS Boolean residuals by frequency.** Start
+2. **P1 / A4 — Reduce the 200 SMARTS match-set residuals by frequency.** Start
    with `[R2]` (64 cells), `[R3]` (62), `[R1]` (59), then `[k6]` (10),
    `[k5]` (1) and the four other organometallic queries (one each).
    The first three cover 185/200 cells, including two organometallic cells.
@@ -48,8 +48,9 @@ have separate gates.
    behavior, supported domain and a specification-difference / unsupported /
    implementation-defect verdict before editing. Keep native SSSR unchanged;
    use an explicit opt-in RDKit-style profile only where its semantics are
-   justified. **Exit:** rerun the full pinned 310,000-cell matrix on affected
-   published bindings, show before/after counts by query and row, add focused
+   justified. **Exit:** rerun the full pinned 310,000-cell match-set matrix on
+   affected published bindings, report both match-set and Boolean deltas by
+   query and row, add focused
    regression tests, and permit no new wrong confident matches or silent
    acceptance of unsupported organometallic semantics. This is not a general
    RDKit SMARTS parity claim.
