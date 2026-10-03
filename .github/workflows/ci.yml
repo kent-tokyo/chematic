@@ -272,6 +272,7 @@ jobs:
           .venv/bin/pip install --force-reinstall --no-deps dist/hba-wheel/chematic-*.whl
           .venv/bin/python scripts/check_rdkit_hba_wheel.py --wheel dist/hba-wheel/chematic-*.whl --build-profile release --output validation/results/rdkit-hba-source-wheel-5k.json
           .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-linux.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":76,"typed_unsupported":3,"typed_refusal":1,"joint_invalid_input":3}'
+          .venv/bin/python scripts/check_python_smarts_parity_310k.py --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-linux.json
       - name: Retain HBA source-wheel parity result
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -280,6 +281,7 @@ jobs:
           path: |
             validation/results/rdkit-hba-source-wheel-5k.json
             validation/results/reaction-checked-source-wheel-83-linux.json
+            validation/results/smarts-checked-source-wheel-310k-linux.json
           if-no-files-found: ignore
 
   test-hba-wheel-macos:
@@ -300,6 +302,7 @@ jobs:
           .venv/bin/pip install --no-deps dist/hba-wheel/chematic-*.whl
           .venv/bin/python scripts/check_rdkit_hba_wheel.py --wheel dist/hba-wheel/chematic-*.whl --build-profile release --output validation/results/rdkit-hba-source-wheel-5k-macos.json
           .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-macos.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":76,"typed_unsupported":3,"typed_refusal":1,"joint_invalid_input":3}'
+          .venv/bin/python scripts/check_python_smarts_parity_310k.py --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-macos.json
       - name: Retain macOS HBA wheel result
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -308,6 +311,7 @@ jobs:
           path: |
             validation/results/rdkit-hba-source-wheel-5k-macos.json
             validation/results/reaction-checked-source-wheel-83-macos.json
+            validation/results/smarts-checked-source-wheel-310k-macos.json
           if-no-files-found: ignore
 
   test-wasm:

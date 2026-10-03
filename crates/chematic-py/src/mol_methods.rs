@@ -1886,6 +1886,65 @@ impl Mol {
         ))
     }
 
+    /// Opt-in, RDKit 2026.03.6-style SMARTS match sets with typed refusals.
+    ///
+    /// The native :meth:`find_matches` contract is unchanged. In particular,
+    /// ambiguous ring-count systems and bounded searches are never presented
+    /// as an empty match set. This mode is not general RDKit SMARTS parity.
+    fn find_matches_rdkit_parity<'py>(
+        &self,
+        smarts: &str,
+        py: Python<'py>,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        use chematic_smarts::RdkitParityError;
+
+        let query = crate::misc::cached_smarts(smarts)
+            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        let result = PyDict::new(py);
+        let config = chematic_smarts::RdkitParityConfig {
+            use_rdkit_parity_aromaticity: true,
+            ..chematic_smarts::RdkitParityConfig::default()
+        };
+        match chematic_smarts::find_matches_rdkit_parity(&query, &self.inner, &config) {
+            Ok((matches, false)) => {
+                let mut atom_sets: Vec<Vec<usize>> = matches
+                    .into_iter()
+                    .map(|mapping| {
+                        let mut atoms: Vec<usize> =
+                            mapping.values().map(|atom| atom.0 as usize).collect();
+                        atoms.sort_unstable();
+                        atoms
+                    })
+                    .collect();
+                atom_sets.sort_unstable();
+                atom_sets.dedup();
+                result.set_item("status", "ok")?;
+                result.set_item("reason", py.None())?;
+                result.set_item("matches", atom_sets)?;
+            }
+            Ok((_, true)) => {
+                result.set_item("status", "typed_refusal")?;
+                result.set_item("reason", "matcher_budget_exceeded")?;
+                result.set_item("matches", py.None())?;
+            }
+            Err(error) => {
+                let (status, reason) = match &error {
+                    RdkitParityError::RingModelAmbiguous { .. } => {
+                        ("typed_unsupported", "ring_model_ambiguous")
+                    }
+                    RdkitParityError::RingModelBudgetExceeded { .. } => {
+                        ("typed_refusal", "ring_model_budget_exceeded")
+                    }
+                    RdkitParityError::Aromaticity(_) => ("typed_refusal", "aromaticity_failure"),
+                };
+                result.set_item("status", status)?;
+                result.set_item("reason", reason)?;
+                result.set_item("matches", py.None())?;
+            }
+        }
+        Ok(result)
+    }
+
     /// 2D SVG depiction with highlighted atoms.
     ///
     /// ``atom_indices``: zero-based atom indices to highlight.

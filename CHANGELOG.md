@@ -10,6 +10,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Added opt-in Python `Mol.find_matches_rdkit_parity()` with explicit
+  successful, typed-unsupported and typed-refusal outcomes. A local source
+  wheel matches pinned RDKit 2026.03.6 on 309,982/310,000 SMARTS cells;
+  the other 18 return typed unsupported rather than a false no-match. This
+  is not a published-package result or a general SMARTS parity guarantee.
 - Confirmed the 83-row checked reaction graph/status gate on Linux and macOS
   CI source wheels and the three new-product-atom graph/origin/map cases on
   latest Rust source. These are not published-package or cross-binding
