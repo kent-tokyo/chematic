@@ -106,6 +106,15 @@ WASM tautomer enumeration also caps the result array at 1,024 entries and
 returns an explicit error object when the cap is exceeded.
 WASM `run_reactants` bounds reaction input to 1 MiB, reactants to 1,024
 entries, each reactant to 10,000 atoms, and each product set to 1,024 entries.
+The opt-in `run_reactants_checked(smirks, reactants_smiles, rdkit_compat)`
+returns a JSON object with `profile`, `status`, `reason`, `detail`, `products`
+and accepted/applied/valence-rejected match counts. With `rdkit_compat=true`,
+reactant-side tetrahedral templates outside the pinned RDKit 2026.03.6
+comparison contract return `typed_unsupported` and
+`chiral_reactant_template_semantics`. Input, arity, product-valence and
+resource-limit failures are typed refusals; a combination above 1,024
+accepted matches fails closed rather than returning partial products. This
+SMILES-level API does not yet expose atom origins or template-map identities.
 WASM MCS configuration JSON is also limited to the 1 MiB binding input
 boundary before deserialization.
 WASM R-group decomposition applies the same 1 MiB input limit to its

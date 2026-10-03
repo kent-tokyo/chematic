@@ -399,6 +399,80 @@ fn run_reactants_ez_smiles_is_valid_json() {
     assert!(sets.iter().flatten().any(|smiles| smiles.contains('\\')));
 }
 
+#[test]
+fn run_reactants_checked_reports_opt_in_chiral_unsupported() {
+    let smirks = "[N:1][C@@H:2](C)C(=O)O>>[N:1].[C@@H:2](C)C(=O)O";
+    let checked: serde_json::Value =
+        serde_json::from_str(&run_reactants_checked(smirks, "N[C@@H](C)C(=O)O", true)).unwrap();
+    assert_eq!(checked["profile"], "rdkit-2026.03.6");
+    assert_eq!(checked["status"], "typed_unsupported");
+    assert_eq!(checked["reason"], "chiral_reactant_template_semantics");
+    assert_eq!(checked["products"], serde_json::json!([]));
+    assert_eq!(checked["accepted_matches"], 0);
+
+    let native: serde_json::Value =
+        serde_json::from_str(&run_reactants_checked(smirks, "N[C@@H](C)C(=O)O", false)).unwrap();
+    assert_eq!(native["profile"], "native");
+    assert_ne!(native["status"], "typed_unsupported");
+}
+
+#[test]
+fn run_reactants_checked_counts_products_and_valence_refusal() {
+    let ordinary: serde_json::Value = serde_json::from_str(&run_reactants_checked(
+        "[C:1](=O)[OH:2].[O:3][C:4]>>[C:1](=O)[O:3][C:4]",
+        "CC(=O)O|CCO",
+        true,
+    ))
+    .unwrap();
+    assert_eq!(ordinary["status"], "products");
+    assert!(ordinary["accepted_matches"].as_u64().unwrap() > 0);
+    assert!(ordinary["applied_products"].as_u64().unwrap() > 0);
+    assert!(!ordinary["products"].as_array().unwrap().is_empty());
+
+    let refused: serde_json::Value = serde_json::from_str(&run_reactants_checked(
+        "[13CH3:1][O:2]>>[13CH3:1].[O:2]",
+        "[13CH3]O",
+        true,
+    ))
+    .unwrap();
+    assert_eq!(refused["status"], "typed_refusal");
+    assert_eq!(refused["reason"], "product_valence");
+    assert!(refused["valence_rejected_matches"].as_u64().unwrap() > 0);
+}
+
+#[test]
+fn run_reactants_checked_returns_typed_parse_and_arity_errors() {
+    let malformed: serde_json::Value =
+        serde_json::from_str(&run_reactants_checked("NOT_A_SMIRKS", "C", true)).unwrap();
+    assert_eq!(malformed["status"], "typed_refusal");
+    assert_eq!(malformed["reason"], "smirks_parse");
+    assert!(malformed["products"].as_array().unwrap().is_empty());
+
+    let arity: serde_json::Value =
+        serde_json::from_str(&run_reactants_checked("[C:1].[O:2]>>[C:1][O:2]", "C", true)).unwrap();
+    assert_eq!(arity["status"], "typed_refusal");
+    assert_eq!(arity["reason"], "reactant_count_mismatch");
+}
+
+#[test]
+fn run_reactants_checked_escapes_ez_products_as_json() {
+    let value: serde_json::Value = serde_json::from_str(&run_reactants_checked(
+        "[C:1]/[C:2]=[C:3]/[C:4]>>[C:1]/[C:2]=[C:3]/[C:4]",
+        "C/C=C/C",
+        true,
+    ))
+    .unwrap();
+    assert_eq!(value["status"], "products");
+    assert!(
+        value["products"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .flat_map(|set| set.as_array().unwrap())
+            .any(|smiles| smiles.as_str().unwrap().contains('\\'))
+    );
+}
+
 // Note: run_reactants error-path tests are omitted here because JsValue::from_str
 // panics outside a WASM runtime. Error coverage lives in chematic-rxn unit tests.
 
