@@ -109,6 +109,39 @@ the cause is OS, architecture, compiler, Python ABI or their interaction.
 Neither status lane is the independent A6 geometry, stereo, clash or energy
 gate; successful rows still require external scoring.
 
+## Failure-stage follow-up (PR #740)
+
+PR #740 [CI run `37108077671`](https://github.com/kent-tokyo/chematic/actions/runs/37108077671)
+retained the existing Python `PipelineV2Error.diagnostics` in failed JSONL
+rows, without changing the minimizer. The published v1.0.31 macOS/arm64
+Python 3.9.13 wheel returned **265/265 successes**, including rows 53 and 246
+(wheel SHA-256 `7993b56b64c3b4dde6644cbcba0fc198c656a96d5d2624a8a331fce3f694bef9`;
+raw SHA-256 `32298a7a30d82ce9a888a34260b61eda11d0c92d89b1600e48ac5c67b3246739`).
+On Linux/x86-64 Python 3.9.25, published and source wheels both returned
+**263/265**, again failing on rows 53 and 246. The Linux source wheel SHA-256
+was `81584f119d88441c24f18c7dbf51108f5ff33746bae34e380489ad91317dd953`;
+published was `3bcecd14c121a2ee7c53428fa4c2938998d5252763d17926b8efc8566e15268a`.
+Raw JSONL SHA-256 values were respectively
+`4361a65bba2ba62006a5118746de1cd771705313f067d95edb12ec45164906cd`
+and `ab0738e1c5fdaf588470df51ab17181de0e1ed24f52e1416fdd7ad20994fefc7`.
+
+For each failed Linux row, source and published diagnostics agree on the
+pre-minimization stereo checks, diagnostic-only last-known coordinates,
+post-minimization stereo statuses, force-field coordinates and energies,
+and iteration count. They differ only in the source-added
+`mmff94_termination` field and, on row 246, stage timing. Both rows have
+three declared tetrahedral centers satisfied before minimization. After
+minimization, row 53 violates atom **4** at iteration **44**, and row 246
+violates atom **24** at iteration **41**. The source identifies both stops as
+`constraint_rejected_fallback`. No accepted, stereo-clean result emerged from
+the post-minimization repair path, so the pipeline returned typed
+`FinalStereoViolation`; the diagnostic-only coordinates are
+**not** product conformers. This narrows the failure stage but does not prove
+which platform/toolchain component causes the different trajectories. The
+Python 3.9 minor version is shared; patch version, OS, architecture and
+compiler still differ. Track the remaining root-cause work in
+[#739](https://github.com/kent-tokyo/chematic/issues/739).
+
 The row-246 Python `PipelineV2Error.diagnostics.cause.force_field_bridge_error`
 contains `reason=excessive_residual_force` and
 `mmff94_termination=constraint_rejected_fallback`; these are separate

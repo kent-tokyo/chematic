@@ -380,6 +380,32 @@ jobs:
             validation/results/a6-source-vs-published-265-macos.json
           if-no-files-found: ignore
 
+  test-a6-published-macos-cp39:
+    name: A6 published wheel (macOS Python 3.9)
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.9'
+      - name: Rerun published v1.0.31 A6 rows with the Linux lane Python ABI
+        run: |
+          test "$(uname -m)" = arm64
+          python -m venv .venv
+          .venv/bin/pip download --index-url https://pypi.org/simple --only-binary=:all: --no-deps 'chematic==1.0.31' --dest dist/a6-published-wheel
+          .venv/bin/pip install --no-deps dist/a6-published-wheel/chematic-*.whl
+          .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-macos-cp39.jsonl --metadata-output validation/results/a6-published-265-macos-cp39.meta.json --wall-budget-seconds 1200 --package-kind published
+      - name: Retain macOS Python 3.9 published A6 outcomes
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: a6-published-macos-cp39
+          path: |
+            validation/results/a6-published-265-macos-cp39.jsonl
+            validation/results/a6-published-265-macos-cp39.meta.json
+          if-no-files-found: ignore
+
   test-wasm:
     name: Test (WASM)
     runs-on: ubuntu-latest
