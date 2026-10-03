@@ -457,6 +457,7 @@ fn fake_result_for_raw_dg(mol: &Molecule, coords: Coords3D) -> PipelineV2Result 
             energy_after: EnergyReport::None,
             converged: true,
             iterations: 0,
+            mmff94_termination: None,
             max_residual_force: 0.0,
             starting_geometry: None,
         },

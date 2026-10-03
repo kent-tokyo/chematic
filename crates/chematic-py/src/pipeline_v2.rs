@@ -808,6 +808,12 @@ pub(crate) fn force_field_bridge_error_dict<'py>(
             d.set_item("reason", snake_case_debug(&detail.reason))?;
             d.set_item("converged", detail.converged)?;
             d.set_item("iterations", detail.iterations)?;
+            d.set_item(
+                "mmff94_termination",
+                detail
+                    .mmff94_termination
+                    .map(|reason| snake_case_debug(&reason)),
+            )?;
             d.set_item("max_residual_force", detail.max_residual_force)?;
         }
     }
@@ -881,6 +887,10 @@ fn policy_minimize_result_dict<'py>(
     d.set_item("energy_after", energy_report_dict(py, &r.energy_after)?)?;
     d.set_item("converged", r.converged)?;
     d.set_item("iterations", r.iterations)?;
+    d.set_item(
+        "mmff94_termination",
+        r.mmff94_termination.map(|reason| snake_case_debug(&reason)),
+    )?;
     d.set_item("max_residual_force", r.max_residual_force)?;
     d.set_item(
         "starting_geometry",
