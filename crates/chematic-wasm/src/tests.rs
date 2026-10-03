@@ -473,6 +473,122 @@ fn run_reactants_checked_escapes_ez_products_as_json() {
     );
 }
 
+#[test]
+fn checked_reaction_83_exposed_graph_and_refusal_gate() {
+    // This tests the binding surface against an independently generated,
+    // version-pinned RDKit graph oracle. Atom origins and template-map labels
+    // are not exposed by this WASM API and remain a separate Rust gate.
+    let base: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../validation/reaction_product_parity_cases.json"
+    )))
+    .unwrap();
+    let strata: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../validation/reaction_product_parity_strata_v2.json"
+    )))
+    .unwrap();
+    let oracle: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../validation/results/v1.0.30-published-reaction-83-strata.json"
+    )))
+    .unwrap();
+    assert_eq!(oracle["rdkit_version"], "2026.03.6");
+    let cases = base
+        .as_array()
+        .unwrap()
+        .iter()
+        .chain(strata["cases"].as_array().unwrap());
+    let mut seen = std::collections::BTreeSet::new();
+    let mut exact_graph = 0;
+    let mut unsupported = 0;
+    let mut refused = 0;
+    let mut invalid = 0;
+    for case in cases {
+        let id = case["id"].as_str().unwrap();
+        assert!(seen.insert(id), "duplicate reaction fixture {id}");
+        let reference = oracle["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["id"] == id)
+            .unwrap_or_else(|| panic!("missing RDKit oracle row {id}"));
+        let smirks = case["smirks"].as_str().unwrap();
+        let reactants = case["reactants"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|value| value.as_str().unwrap())
+            .collect::<Vec<_>>()
+            .join("|");
+        let got: serde_json::Value =
+            serde_json::from_str(&run_reactants_checked(smirks, &reactants, true)).unwrap();
+        assert_eq!(got["profile"], "rdkit-2026.03.6", "{id}");
+        if matches!(
+            id,
+            "stereo_identity_l_alanine"
+                | "v2_stereo_l_alanine_identity_reordered"
+                | "v2_stereo_d_alanine_no_match"
+        ) {
+            assert_eq!(got["status"], "typed_unsupported", "{id}");
+            assert_eq!(got["reason"], "chiral_reactant_template_semantics", "{id}");
+            unsupported += 1;
+            continue;
+        }
+        if matches!(
+            id,
+            "v2_ester_missing_second_reactant"
+                | "v2_invalid_unclosed_reactant"
+                | "v2_invalid_smirks_branch"
+        ) {
+            assert_eq!(got["status"], "typed_refusal", "{id}");
+            invalid += 1;
+            continue;
+        }
+        if id == "v2_isotope_methanol_split" {
+            assert_eq!(got["status"], "typed_refusal", "{id}");
+            assert_eq!(got["reason"], "product_valence", "{id}");
+            refused += 1;
+            continue;
+        }
+        let normalized = |sets: &serde_json::Value| -> std::collections::BTreeSet<Vec<String>> {
+            sets.as_array()
+                .unwrap()
+                .iter()
+                .map(|set| {
+                    let mut products = set
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|value| {
+                            let smiles = value.as_str().unwrap();
+                            let mol = chematic_smiles::parse(smiles)
+                                .unwrap_or_else(|_| panic!("unparseable product {smiles}"));
+                            chematic_smiles::canonical_smiles(
+                                &chematic_perception::apply_aromaticity(&mol),
+                            )
+                        })
+                        .collect::<Vec<_>>();
+                    products.sort();
+                    products
+                })
+                .collect()
+        };
+        assert_eq!(
+            normalized(&got["products"]),
+            normalized(&reference["rdkit"]["sets"]),
+            "{id}"
+        );
+        assert!(
+            matches!(got["status"].as_str(), Some("products" | "no_match")),
+            "{id}"
+        );
+        exact_graph += 1;
+    }
+    assert_eq!(seen.len(), 83);
+    assert_eq!((exact_graph, unsupported, refused, invalid), (76, 3, 1, 3));
+}
+
 // Note: run_reactants error-path tests are omitted here because JsValue::from_str
 // panics outside a WASM runtime. Error coverage lives in chematic-rxn unit tests.
 

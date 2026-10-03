@@ -145,6 +145,8 @@ def main() -> int:
     parser.add_argument("--npm-rows", type=Path, help="optional exact-version npm reaction rows")
     parser.add_argument("--checked-rdkit-compat", action="store_true",
                         help="source-candidate typed RDKit-compat profile; not published v1.0.30 evidence")
+    parser.add_argument("--expected-outcomes", type=json.loads,
+                        help="exact outcome accounting required for a pinned CI gate (JSON object)")
     args = parser.parse_args()
     if rdBase.rdkitVersion != args.expected_rdkit:
         parser.error(f"RDKit {rdBase.rdkitVersion} != {args.expected_rdkit}")
@@ -200,6 +202,12 @@ def main() -> int:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"reaction v2: {len(rows)} inputs, {dict(counts)}")
+    if args.expected_outcomes is not None:
+        if not isinstance(args.expected_outcomes, dict):
+            parser.error("--expected-outcomes must be a JSON object")
+        if dict(counts) != args.expected_outcomes:
+            print(f"reaction v2 outcome gate failed: expected {args.expected_outcomes}, got {dict(counts)}")
+            return 2
     return 1 if counts["wrong_confident"] or counts["invalid_product"] or counts["oracle_invalid"] else 0
 
 
