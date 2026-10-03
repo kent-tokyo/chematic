@@ -10,6 +10,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Added atom-origin and product-template-map arrays to checked Python and WASM
+  reaction results without annotating ordinary product molecules. A pinned
+  83-row local Python source gate agrees with RDKit 2026.03.6 on all three
+  axes for 76 rows; three remain typed unsupported, one is a diagnosed valence
+  refusal and three are invalid in both engines. Published artifacts and
+  release-profile CI results are still pending.
 - Preserve JSON-native `PipelineV2Error.diagnostics` on failed rows of the
   fixed A6 public/source wheel runner. Diagnostic-only coordinates remain
   under `failure_diagnostics.last_known_coords`, never a successful conformer;

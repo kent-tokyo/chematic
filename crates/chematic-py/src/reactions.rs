@@ -517,7 +517,12 @@ fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
 /// templates. CheMatic's ordinary reaction API enforces those constraints;
 /// pinned RDKit 2026.03.6 does not produce the same products for the exposed
 /// alanine probes. E/Z templates and non-chiral templates remain supported.
-/// This option does not change :func:`run_smirks` semantics.
+/// ``product_atom_sources[set][product][atom]`` is ``(reactant_index,
+/// reactant_atom_index)`` or ``None`` for a newly created product atom.
+/// ``product_template_maps`` has the same nesting and contains each output
+/// atom's template map label or ``None``. These align with the returned
+/// product molecules' atom indices. This option does not change
+/// :func:`run_smirks` semantics.
 #[pyfunction(signature = (smirks, reactants, rdkit_compat = false))]
 fn run_smirks_checked<'py>(
     smirks: &str,
@@ -531,6 +536,11 @@ fn run_smirks_checked<'py>(
         result.set_item("reason", reason)?;
         result.set_item("detail", detail)?;
         result.set_item("products", Vec::<Vec<Mol>>::new())?;
+        result.set_item(
+            "product_atom_sources",
+            Vec::<Vec<Vec<Option<(usize, u32)>>>>::new(),
+        )?;
+        result.set_item("product_template_maps", Vec::<Vec<Vec<Option<u16>>>>::new())?;
         result.set_item("accepted_matches", 0)?;
         result.set_item("applied_products", 0)?;
         result.set_item("valence_rejected_matches", 0)?;
@@ -564,9 +574,10 @@ fn run_smirks_checked<'py>(
         return Ok(result);
     }
     let refs: Vec<&chematic_core::Molecule> = reactants.iter().map(|m| m.inner.as_ref()).collect();
-    let report = match prepared
-        .run_reactants_with_diagnostics(&refs, &chematic_rxn::ReactionTransformLimits::default())
-    {
+    let report = match prepared.run_reactants_traced_with_diagnostics(
+        &refs,
+        &chematic_rxn::ReactionTransformLimits::default(),
+    ) {
         Ok(report) => report,
         Err(error) => {
             let reason = match &error {
@@ -611,14 +622,30 @@ fn run_smirks_checked<'py>(
         diagnostics.valence_rejected_matches,
     )?;
     result.set_item("truncated_matches", diagnostics.truncated_matches)?;
-    result.set_item(
-        "products",
-        report
-            .products
-            .into_iter()
-            .map(|set| set.into_iter().map(Mol::bare).collect::<Vec<_>>())
-            .collect::<Vec<_>>(),
-    )?;
+    let mut products = Vec::with_capacity(report.products.len());
+    let mut product_atom_sources = Vec::with_capacity(report.products.len());
+    let mut product_template_maps = Vec::with_capacity(report.products.len());
+    for set in report.products {
+        let mut product_set = Vec::with_capacity(set.len());
+        let mut source_set = Vec::with_capacity(set.len());
+        let mut map_set = Vec::with_capacity(set.len());
+        for traced in set {
+            let sources = traced
+                .atom_sources
+                .into_iter()
+                .map(|source| source.map(|s| (s.reactant, s.atom.0)))
+                .collect::<Vec<_>>();
+            map_set.push(traced.template_maps);
+            source_set.push(sources);
+            product_set.push(Mol::bare(traced.molecule));
+        }
+        products.push(product_set);
+        product_atom_sources.push(source_set);
+        product_template_maps.push(map_set);
+    }
+    result.set_item("products", products)?;
+    result.set_item("product_atom_sources", product_atom_sources)?;
+    result.set_item("product_template_maps", product_template_maps)?;
     Ok(result)
 }
 

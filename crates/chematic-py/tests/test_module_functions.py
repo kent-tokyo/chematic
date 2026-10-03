@@ -141,11 +141,30 @@ def test_run_smirks_checked_reports_success_and_no_match():
     assert missing["products"] == []
 
 
+def test_run_smirks_checked_preserves_atom_sources_and_template_maps():
+    methane = chematic.from_smiles("C")
+    report = chematic.run_smirks_checked("[C:1]>>[C:1].[O:2]", [methane])
+    assert report["status"] == "products"
+    assert len(report["products"]) == len(report["product_atom_sources"])
+    assert len(report["products"]) == len(report["product_template_maps"])
+    assert report["product_atom_sources"] == [[[(0, 0)], [None]]]
+    assert report["product_template_maps"] == [[[1], [2]]]
+    assert [product.smiles for product in report["products"][0]] == [
+        product.smiles for product in chematic.run_smirks("[C:1]>>[C:1].[O:2]", [methane])[0]
+    ]
+
+    missing = chematic.run_smirks_checked("[NH2:1]>>[NH3+:1]", [methane])
+    assert missing["product_atom_sources"] == []
+    assert missing["product_template_maps"] == []
+
+
 def test_run_smirks_checked_reports_typed_errors():
     methane = chematic.from_smiles("C")
     invalid = chematic.run_smirks_checked("NOT_A_SMIRKS", [methane])
     assert invalid["status"] == "typed_refusal"
     assert invalid["reason"] == "smirks_parse"
+    assert invalid["product_atom_sources"] == []
+    assert invalid["product_template_maps"] == []
     mismatch = chematic.run_smirks_checked("[C:1].[O:2]>>[C:1][O:2]", [methane])
     assert mismatch["status"] == "typed_refusal"
     assert mismatch["reason"] == "reactant_count_mismatch"

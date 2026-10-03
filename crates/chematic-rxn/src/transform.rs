@@ -76,6 +76,13 @@ pub struct ReactionTransformReport {
     pub diagnostics: ReactionTransformDiagnostics,
 }
 
+/// The same bounded reaction accounting with per-product-atom provenance.
+/// Product and match ordering matches [`ReactionTransformReport`].
+pub struct TracedReactionTransformReport {
+    pub products: Vec<Vec<TracedProduct>>,
+    pub diagnostics: ReactionTransformDiagnostics,
+}
+
 /// Why the pinned RDKit 2026.03.6 compatibility profile cannot safely claim
 /// a reaction result. Native CheMatic reaction semantics are unchanged.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -305,6 +312,10 @@ pub struct TracedProduct {
     pub molecule: Molecule,
     /// Per product atom, the reactant atom it came from (`None` = new atom).
     pub atom_sources: Vec<Option<ReactantAtom>>,
+    /// Per product atom, the map label from the product template. Carried
+    /// substituents have `None`; map labels are intentionally absent from
+    /// the emitted molecule itself.
+    pub template_maps: Vec<Option<u16>>,
 }
 
 /// [`apply_reaction_match`] with per-atom provenance: the same product set
@@ -565,6 +576,33 @@ impl PreparedReaction {
         })
     }
 
+    fn run_reactants_traced_with_diagnostics_impl(
+        &self,
+        reactants: &[&Molecule],
+        carry_substituents: bool,
+        limits: &ReactionTransformLimits,
+    ) -> Result<TracedReactionTransformReport, TransformError> {
+        let matches = find_matches_impl(self, reactants, limits, None)?;
+        let accepted_matches = matches.len();
+        let mut products = Vec::with_capacity(accepted_matches);
+        let mut valence_rejected_matches = 0;
+        for m in &matches {
+            match apply_match_traced_impl(self, reactants, m, carry_substituents) {
+                Some(product_set) => products.push(product_set),
+                None => valence_rejected_matches += 1,
+            }
+        }
+        Ok(TracedReactionTransformReport {
+            diagnostics: ReactionTransformDiagnostics {
+                accepted_matches,
+                applied_products: products.len(),
+                valence_rejected_matches,
+                truncated_matches: false,
+            },
+            products,
+        })
+    }
+
     /// Apply this compiled template and retain bounded accounting for filtered matches.
     pub fn run_reactants_with_diagnostics(
         &self,
@@ -576,6 +614,39 @@ impl PreparedReaction {
             return aggregate_variant_reports(variants, reactants, limits, true, None);
         }
         self.run_reactants_with_diagnostics_impl(reactants, true, limits, None)
+    }
+
+    /// Apply this template with the same bounded accounting and product order
+    /// as [`Self::run_reactants_with_diagnostics`], retaining atom origins.
+    pub fn run_reactants_traced_with_diagnostics(
+        &self,
+        reactants: &[&Molecule],
+        limits: &ReactionTransformLimits,
+    ) -> Result<TracedReactionTransformReport, TransformError> {
+        crate::perf_counters::record_run_reactants_call();
+        if let Some(variants) = &self.variants {
+            let mut products = Vec::new();
+            let mut diagnostics = ReactionTransformDiagnostics {
+                accepted_matches: 0,
+                applied_products: 0,
+                valence_rejected_matches: 0,
+                truncated_matches: false,
+            };
+            for variant in variants {
+                let report =
+                    variant.run_reactants_traced_with_diagnostics_impl(reactants, true, limits)?;
+                diagnostics.accepted_matches += report.diagnostics.accepted_matches;
+                diagnostics.applied_products += report.diagnostics.applied_products;
+                diagnostics.valence_rejected_matches += report.diagnostics.valence_rejected_matches;
+                diagnostics.truncated_matches |= report.diagnostics.truncated_matches;
+                products.extend(report.products);
+            }
+            return Ok(TracedReactionTransformReport {
+                products,
+                diagnostics,
+            });
+        }
+        self.run_reactants_traced_with_diagnostics_impl(reactants, true, limits)
     }
 
     /// Apply this compiled template and return diagnostics separately for
@@ -1887,9 +1958,17 @@ fn build_product(
     for (&(reactant, atom), &new_idx) in &src_to_new {
         atom_sources[new_idx.0 as usize] = Some(ReactantAtom { reactant, atom });
     }
+    let mut template_maps = vec![None; molecule.atom_count()];
+    for (template_idx, product_idx) in template_idx_to_new.iter().enumerate() {
+        if let Some(product_idx) = product_idx {
+            template_maps[product_idx.0 as usize] =
+                product_template.atom(AtomIdx(template_idx as u32)).atom_map;
+        }
+    }
     TracedProduct {
         molecule,
         atom_sources,
+        template_maps,
     }
 }
 
@@ -3534,6 +3613,60 @@ mod tests {
             mol.atom_count(),
             "every reactant atom is carried"
         );
+    }
+
+    #[test]
+    fn traced_report_preserves_product_order_and_diagnostics() {
+        let cases = [
+            ("[C:1]>>[C:1].[O:2]", vec![parse("C").unwrap()]),
+            ("[#6:1]>>[#6:1]", vec![parse("CC").unwrap()]),
+            (
+                "[N:1].[C:2]>>[N:1][C:2]",
+                vec![parse("N").unwrap(), parse("C").unwrap()],
+            ),
+            (
+                "[13CH3:1][O:2]>>[13CH3:1].[O:2]",
+                vec![parse("[13CH3]O").unwrap()],
+            ),
+        ];
+        for (smirks, molecules) in cases {
+            let refs = molecules.iter().collect::<Vec<_>>();
+            let prepared = PreparedReaction::new(smirks).unwrap();
+            let limits = ReactionTransformLimits::default();
+            let plain = prepared
+                .run_reactants_with_diagnostics(&refs, &limits)
+                .unwrap();
+            let traced = prepared
+                .run_reactants_traced_with_diagnostics(&refs, &limits)
+                .unwrap();
+            assert_eq!(plain.diagnostics, traced.diagnostics, "{smirks}");
+            assert_eq!(plain.products.len(), traced.products.len(), "{smirks}");
+            for (plain_set, traced_set) in plain.products.iter().zip(&traced.products) {
+                assert_eq!(plain_set.len(), traced_set.len(), "{smirks}");
+                for (plain_product, traced_product) in plain_set.iter().zip(traced_set) {
+                    assert_eq!(
+                        chematic_smiles::write(plain_product),
+                        chematic_smiles::write(&traced_product.molecule),
+                        "{smirks}"
+                    );
+                    assert_eq!(
+                        traced_product.atom_sources.len(),
+                        traced_product.molecule.atom_count(),
+                        "{smirks}"
+                    );
+                    assert_eq!(
+                        traced_product.template_maps.len(),
+                        traced_product.molecule.atom_count(),
+                        "{smirks}"
+                    );
+                }
+            }
+            if smirks == "[C:1]>>[C:1].[O:2]" {
+                assert_eq!(traced.products[0][0].template_maps, vec![Some(1)]);
+                assert_eq!(traced.products[0][1].template_maps, vec![Some(2)]);
+                assert_eq!(traced.products[0][1].atom_sources, vec![None]);
+            }
+        }
     }
 
     #[test]

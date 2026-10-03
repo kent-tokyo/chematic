@@ -1,6 +1,5 @@
-// Guard the checked WASM outcome contract on the exposed 83-row reaction set.
-// Graph, atom-origin and template-map parity are checked by the Rust source
-// audit, not by this JSON-only adapter test.
+// Guard checked WASM outcomes and metadata alignment on the exposed 83 rows.
+// Full graph/origin/map oracle parity is gated separately by pinned RDKit.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -38,6 +37,37 @@ for (const { id, smirks, reactants } of cases) {
   const response = JSON.parse(wasm.run_reactants_checked(smirks, reactants.join("|"), true));
   assert.equal(response.profile, "rdkit-2026.03.6", id);
   assert.ok(Array.isArray(response.products), id);
+  assert.equal(response.products.length, response.product_atom_sources.length, id);
+  assert.equal(response.products.length, response.product_template_maps.length, id);
+  const reactantSizes = reactants.map((smiles) => {
+    try {
+      return wasm.parse_smiles(smiles).atom_count();
+    } catch {
+      return null; // Three jointly invalid inputs include an invalid reactant.
+    }
+  });
+  for (let set = 0; set < response.products.length; set++) {
+    assert.equal(response.products[set].length, response.product_atom_sources[set].length, id);
+    assert.equal(response.products[set].length, response.product_template_maps[set].length, id);
+    for (let product = 0; product < response.products[set].length; product++) {
+      const size = wasm.parse_smiles(response.products[set][product]).atom_count();
+      const sources = response.product_atom_sources[set][product];
+      const maps = response.product_template_maps[set][product];
+      assert.equal(sources.length, size, id);
+      assert.equal(maps.length, size, id);
+      for (let atom = 0; atom < size; atom++) {
+        const source = sources[atom];
+        if (source !== null) {
+          assert.ok(Number.isInteger(source.reactant) && source.reactant >= 0, id);
+          assert.ok(Number.isInteger(source.atom) && source.atom >= 0, id);
+          assert.ok(source.reactant < reactantSizes.length, id);
+          assert.ok(source.atom < reactantSizes[source.reactant], id);
+        }
+        const map = maps[atom];
+        assert.ok(map === null || (Number.isInteger(map) && map > 0 && map <= 65535), id);
+      }
+    }
+  }
   counts.set(response.status, (counts.get(response.status) ?? 0) + 1);
   switch (outcome) {
     case "graph_origin_map_match":
