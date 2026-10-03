@@ -10,6 +10,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- The opt-in SMARTS ring-count selector now searches a bounded cyclic 3-core
+  for same-size replacement rings missed when degree-two roots occur only in
+  peripheral substituents. A source-only 310,000-cell check corrects the
+  three remaining fullerene-like `[R2]`/`[R3]` rows without new wrong matches;
+  six match-set and two Boolean differences remain on one Fe-containing row.
+  Native SMARTS and general ring perception are unchanged.
 - The opt-in `[kN]` SMARTS matcher now also consumes same-size replacement
   rings found by its bounded ring-count selector. This corrects one more
   `[k6]` atom-set difference in a source-only 310,000-cell comparison, with
