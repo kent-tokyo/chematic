@@ -9,13 +9,13 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 ## Current position
 
-| Gate | Verified on published v1.0.30 artifacts | Remaining exit |
+| Gate | Evidence by artifact and version | Remaining exit |
 |---|---|---|
 | P0.1 outputs | Python, npm and pinned Rust artifacts reran 10,000 chemistry inputs, 310,000 SMARTS cells and 57 legacy reactions. Python/Rust covered 63 operation outputs; only HBA and its bundle changed from v1.0.29. Published HBA: 5,000/5,000 vs pinned RDKit 2026.03.6. | **Audit complete, parity not complete:** 200 SMARTS failures, five typed CIP abstentions and four npm-unexposed operations remain. See the [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
 | P0.2 speed | The published Python 63-operation matrix has 20 paired blocks; 20 operations pass exact-output and confidence-interval gates on one host. Published npm/WASM Morgan also has Node and Chromium lanes; Ubuntu 24.04 Chromium, Firefox and WebKit each have 250/250 bit-exact direct/prepared rows and favorable 20-block speed intervals (smallest lower bound 1.63×). | Equal-work perception and library-memory boundaries, other operations/bindings and more corpora. Process RSS is not library allocation; changed HBA output cannot earn an equivalent-output speed win. |
 | P1 reactions | Original 57 fixtures match. Published v1.0.30 had 73/83 graph+origin+template-map matches. The checked v1.0.31-source profile has 76 exact on all three axes, three typed unsupported, one diagnosed refusal and three jointly invalid rows; see the [source audit](benchmarks/2026-10-03-source-reaction-83-checked-graph-origin-map.md). | Publish/rebuild the source fix and rerun applicable Rust/Python/npm provenance gates. Typed refusal and invalid input are not exact matches; no general SMIRKS parity claim. |
-| P1 SMARTS | Published v1.0.30 has 200 differing **match-set** cells / 310,000, but only 43 hit/no-hit differences. The opt-in source profile corrects 154 match sets / 37 Booleans, retains 29 / 6 wrong-confident cells and refuses 18 cells (including formerly correct ones); see the [source audit](benchmarks/2026-10-03-source-smarts-310k-profiles.md). | Resolve remaining Boolean and `[k6]`/ring-set residuals, adjudicate six charged-polycycle refusal rows, then expose and measure a deliberate opt-in published profile. Native SSSR remains unchanged. |
-| P2 A6 quality | The [published v1.0.31 MMFF94 stereo-safe rerun](benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md) has 265/265 independently sound, stereo-clean and gross-clash-free outputs, but only 100/265 force-field convergence. On the separate same-coordinate lane, 262/262 comparable total energies are within 1 kcal/mol; the historical two >5 kcal/mol residuals no longer appear. A separate v1.0.25 census still has 2,908 heavy-atom type differences. | Keep typing, convergence, per-term energy and independent conformer-quality gates separate; account for two embedding failures and one declared unsupported row. Current geometry/stereo and bounded total-energy results do not complete A6. |
+| P1 SMARTS | Published v1.0.30 has 200 differing **match-set** cells / 310,000, but only 43 hit/no-hit differences. An opt-in source candidate corrects 170 match sets / 38 Booleans, with 13 / 5 wrong-confident cells and 18 typed refusals; the native matcher is unchanged. | Adjudicate remaining ring-count, ring-size and organometallic semantics, then expose and measure a deliberate opt-in published profile. Source improvements and typed refusals are not exact parity. |
+| P2 A6 quality | The [published v1.0.31 MMFF94 stereo-safe rerun](benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md) has 265/265 independently sound, stereo-clean and gross-clash-free outputs, but only 100/265 force-field convergence. Separate same-coordinate total energies are within 1 kcal/mol on 262/262 comparable rows. A current-wheel 10k typing census still has 2,908 heavy-atom differences; a 400-iteration diagnostic raises convergence to 164/265 without changing the package default. | Classify the 101 still non-converged, 2,908 numeric type differences, per-term energy residuals, two RDKit embedding failures and one declared unsupported row; measure independent conformer quality. Current geometry/stereo and bounded total-energy results do not complete A6. |
 
 The [v1.0.30 published-artifact packet](benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md),
 [benchmark index](benchmarks/README.md), and [validation report](docs/validation.md)
@@ -40,31 +40,30 @@ have separate gates.
    confident supported-domain results, typed reasons for refusals, and no
    regression in the original 57. The three jointly invalid rows remain
    classified as such; reaction yield/selectivity is outside this gate.
-2. **P1 / A4 — Reduce the 200 SMARTS match-set residuals by frequency.** Start
-   with `[R2]` (64 cells), `[R3]` (62), `[R1]` (59), then `[k6]` (10),
-   `[k5]` (1) and the four other organometallic queries (one each).
-   The first three cover 185/200 cells, including two organometallic cells.
-   For each family, record the independent graph/ring interpretation, RDKit
-   behavior, supported domain and a specification-difference / unsupported /
-   implementation-defect verdict before editing. Keep native SSSR unchanged;
-   use an explicit opt-in RDKit-style profile only where its semantics are
-   justified. **Exit:** rerun the full pinned 310,000-cell match-set matrix on
-   affected published bindings, report both match-set and Boolean deltas by
-   query and row, add focused
-   regression tests, and permit no new wrong confident matches or silent
-   acceptance of unsupported organometallic semantics. This is not a general
-   RDKit SMARTS parity claim.
-3. **P2 / A6 — Gate 3D quality before speed.** In order, adjudicate the 2,908
-   heavy-atom MMFF94 typing differences and parameter/charge coverage; compare
-   per-term energies and analytic gradients at identical explicit-H coordinates;
-   account for convergence, timeout and cancellation; check stereo retention,
-   bond geometry and gross clashes; then assess conformer quality against an
-   independent reference on matched seeds and a held-out cohort. Unsupported
-   chemistry must return a typed reason, not plausible coordinates. The
-   published v1.0.31 geometry/stereo/clash rerun is complete but 165/265 force
-   fields remain un-converged. **Exit:** predeclared tolerances and complete
-   outcome accounting for each remaining dimension on current published
-   artifacts; make no 3D speed or RDKit-equivalence claim before quality exits.
+2. **P1 / A4 — Reduce SMARTS residuals without broadening silent support.**
+   The published baseline remains 200 differing match sets / 43 Booleans.
+   Current opt-in source profiling leaves 13 wrong-confident match sets and
+   five Boolean errors: three `[R2]` on large fused cages, one `[R1]` and
+   one `[x2]` on an organometallic graph. One `[k6]` atom-set difference
+   remains even though its Boolean agrees. Independently adjudicate ring
+   basis, coordination semantics and supported domain; fix graph-model
+   defects or return typed unsupported, not a guessed match. Preserve native
+   SSSR. **Exit:** rerun the full pinned 310,000-cell matrix on affected
+   published bindings with row-level match sets, Booleans and refusal counts;
+   zero new wrong-confident cells. The 18 source-only refusals do not count
+   as exact parity.
+3. **P2 / A6 — Gate 3D quality before speed.** The published v1.0.31
+   geometry/stereo/clash and same-coordinate total-energy checks are done,
+   but full MMFF equivalence is open. Investigate the largest typing bucket
+   first (1,322 RDKit-aromatic carbons across 317 molecules), then other
+   heavy-type and 22 CheMatic refusal/error rows. Classify the 101 rows still
+   not converged under an exploratory 400-iteration limit (97 at cap, four
+   early stops); do not silently raise the shipped limit without independent
+   quality and runtime checks. Bound per-term energy/gradient differences,
+   timeout/cancellation, parameter/charge coverage and independent conformer
+   quality on matched seeds and a held-out cohort. **Exit:** predeclared
+   tolerances and complete outcome accounting on published artifacts, with
+   typed unsupported for unhandled chemistry. No 3D speed claim before exit.
 4. **P0.2 — Complete paired speed evidence after quality gates.** Extend
    equivalent-output, alternating-order, ≥20-block measurements beyond the
    finished lanes. Separate parse, perception, prepared/reused calls and memory
