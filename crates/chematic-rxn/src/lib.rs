@@ -25,6 +25,7 @@ pub mod enumerate;
 pub mod green;
 pub mod perf_counters;
 pub mod query;
+mod rdkit_valence;
 pub mod reaction;
 pub mod requirements;
 pub mod retro;

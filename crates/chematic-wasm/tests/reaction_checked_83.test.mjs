@@ -28,6 +28,9 @@ const cases = [...base.data, ...strata.data.cases];
 assert.equal(cases.length, 83);
 assert.equal(audit.accounting.input, cases.length);
 const expected = new Map(audit.rows.map(({ id, outcome }) => [id, outcome]));
+// The v1.0.31 audit recorded this row as a valence refusal by the native
+// model; RDKit's sanitize rules (#734) give RDKit's products instead.
+expected.set("v2_isotope_methanol_split", "graph_origin_map_match");
 assert.equal(expected.size, cases.length);
 
 const counts = new Map();
@@ -93,9 +96,9 @@ for (const { id, smirks, reactants } of cases) {
   }
 }
 assert.deepEqual(Object.fromEntries(counts), {
-  products: 69,
+  products: 70,
   no_match: 7,
   typed_unsupported: 3,
-  typed_refusal: 4,
+  typed_refusal: 3,
 });
 console.log("checked WASM reaction outcomes: 83 exposed rows classified");

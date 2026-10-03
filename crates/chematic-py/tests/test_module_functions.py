@@ -201,10 +201,9 @@ def test_run_smirks_checked_reports_typed_errors():
 
 
 def test_run_smirks_checked_does_not_hide_filtered_product():
-    substrate = chematic.from_smiles("[13CH3]O")
-    report = chematic.run_smirks_checked(
-        "[13CH3:1][O:2]>>[13CH3:1].[O:2]", [substrate]
-    )
+    # A neutral four-bonded N, which RDKit's sanitize also rejects.
+    substrate = chematic.from_smiles("CN")
+    report = chematic.run_smirks_checked("[N:1]>>[N:1](C)(C)C", [substrate])
     assert report["status"] == "typed_refusal"
     assert report["reason"] == "product_valence"
     assert report["accepted_matches"] >= 1

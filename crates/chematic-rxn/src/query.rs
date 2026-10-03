@@ -298,9 +298,10 @@ pub mod rdkit_compat {
         let mut warnings = Vec::new();
 
         // Detect format
-        let rdkit_format = if smarts.contains(">>") {
+        let seps = crate::reaction::reaction_separators(smarts);
+        let rdkit_format = if seps.windows(2).any(|w| w[1] == w[0] + 1) {
             RDKitFormat::Legacy
-        } else if smarts.contains('>') {
+        } else if !seps.is_empty() {
             RDKitFormat::WithAgents
         } else {
             return Err(ReactionQueryError::MissingArrowDelimiter);
@@ -325,7 +326,7 @@ pub mod rdkit_compat {
         }
 
         // Check for pipe-separated OR patterns
-        let section_count = smarts.matches('>').count();
+        let section_count = seps.len();
         let has_or_patterns = smarts.contains('|');
         if has_or_patterns && section_count == 0 {
             warnings
@@ -380,7 +381,7 @@ pub mod rdkit_compat {
     /// Validate that a reaction SMARTS follows RDKit conventions.
     pub fn validate_rdkit_conventions(smarts: &str) -> Result<(), String> {
         // Check for balanced arrow delimiters
-        let arrow_count = smarts.matches('>').count();
+        let arrow_count = crate::reaction::reaction_separators(smarts).len();
         if arrow_count == 0 {
             return Err("must contain at least one '>' or '>>' delimiter".to_string());
         }
@@ -441,29 +442,18 @@ pub mod rdkit_compat {
 pub fn parse_reaction_smarts(
     smarts_str: &str,
 ) -> Result<ReactionSmartsPattern, ReactionQueryError> {
-    // Detect format by looking for ">>" or ">"
-    let has_double_arrow = smarts_str.contains(">>");
-
-    let (reactant_strs, agent_strs, product_strs) = if has_double_arrow {
-        // Legacy format: reactants >> products
-        let parts: Vec<&str> = smarts_str.splitn(2, ">>").collect();
-        if parts.len() != 2 {
-            return Err(ReactionQueryError::MissingArrowDelimiter);
-        }
-        (parts[0], "", parts[1])
-    } else {
-        // New format: reactants > agents > products
-        let parts: Vec<&str> = smarts_str.splitn(3, '>').collect();
-        if parts.len() < 2 {
-            return Err(ReactionQueryError::MissingArrowDelimiter);
-        }
-        if parts.len() == 2 {
-            // Only one '>' found, treat as reactants > products (no agents)
-            (parts[0], "", parts[1])
-        } else {
-            // Two '>' found: reactants > agents > products
-            (parts[0], parts[1], parts[2])
-        }
+    // Sections split at the arrow separators (a dative `->` is a bond):
+    // `reactants>>products`, `reactants>agents>products`, or a single `>`
+    // read as `reactants>products`.
+    let seps = crate::reaction::reaction_separators(smarts_str);
+    let (reactant_strs, agent_strs, product_strs) = match seps[..] {
+        [] => return Err(ReactionQueryError::MissingArrowDelimiter),
+        [a] => (&smarts_str[..a], "", &smarts_str[a + 1..]),
+        [a, b, ..] => (
+            &smarts_str[..a],
+            &smarts_str[a + 1..b],
+            &smarts_str[b + 1..],
+        ),
     };
 
     let reactant_components = parse_pattern_components(reactant_strs)?;
@@ -493,33 +483,19 @@ fn extract_map_numbers(smarts_str: &str) -> Result<MapNumberInfo, ReactionQueryE
     let mut agent_maps = HashSet::new();
     let mut product_maps = HashSet::new();
 
-    // Find section boundaries
-    let has_double_arrow = smarts_str.contains(">>");
-
-    let (reactant_end, agent_start, agent_end, product_start) = if has_double_arrow {
-        let idx = smarts_str.find(">>").unwrap();
-        (idx, idx, idx, idx + 2)
-    } else {
-        let arrow_positions: Vec<_> = smarts_str.match_indices('>').collect();
-        match arrow_positions.len() {
-            0 => {
-                return Ok(MapNumberInfo {
-                    all_map_numbers,
-                    reactant_maps,
-                    agent_maps,
-                    product_maps,
-                });
-            }
-            1 => {
-                let idx = arrow_positions[0].0;
-                (idx, idx + 1, idx + 1, idx + 1)
-            }
-            _ => {
-                let first = arrow_positions[0].0;
-                let second = arrow_positions[1].0;
-                (first, first + 1, second, second + 1)
-            }
+    // Find section boundaries (a dative `->` is a bond, not an arrow).
+    let seps = crate::reaction::reaction_separators(smarts_str);
+    let (reactant_end, agent_start, agent_end, product_start) = match seps[..] {
+        [] => {
+            return Ok(MapNumberInfo {
+                all_map_numbers,
+                reactant_maps,
+                agent_maps,
+                product_maps,
+            });
         }
+        [idx] => (idx, idx + 1, idx + 1, idx + 1),
+        [first, second, ..] => (first, first + 1, second, second + 1),
     };
 
     // Extract maps from reactants

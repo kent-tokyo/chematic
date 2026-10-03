@@ -148,19 +148,50 @@ pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError>
 /// [`RxnError::UnsupportedProductPrimitive`] error rather than a dummy atom.
 /// Reactant and agent parts, and every SMILES-valid product atom, are
 /// returned unchanged.
-pub fn normalize_product_query_atoms(s: &str) -> Result<String, RxnError> {
-    // Product side = text after the last top-level `>` (none: nothing to do).
+/// An atom-map label's number (`"01"` and `"1"` are the same map); a label
+/// that is not a number keeps a distinct sentinel.
+fn map_number(label: &str) -> u64 {
+    label.parse().unwrap_or(u64::MAX)
+}
+
+/// Byte offsets of the reaction-arrow `>` separators in `s`: top-level `>`
+/// characters outside bracket atoms that are not the head of a dative bond
+/// `->` (a `->` directly followed by `>` is a bond then the arrow).
+pub(crate) fn reaction_separators(s: &str) -> Vec<usize> {
+    let b = s.as_bytes();
     let mut depth = 0usize;
-    let mut product_start = None;
-    for (i, b) in s.bytes().enumerate() {
-        match b {
+    let mut out: Vec<usize> = Vec::new();
+    for (i, &c) in b.iter().enumerate() {
+        match c {
             b'[' => depth += 1,
             b']' => depth = depth.saturating_sub(1),
-            b'>' if depth == 0 => product_start = Some(i + 1),
+            b'>' if depth == 0 => {
+                let dative = i > 0
+                    && b[i - 1] == b'-'
+                    && b.get(i + 1) != Some(&b'>')
+                    && out.last() != Some(&(i - 1));
+                if !dative {
+                    out.push(i);
+                }
+            }
             _ => {}
         }
     }
-    let Some(product_start) = product_start else {
+    out
+}
+
+/// `reactants>agents>products` split at the first two arrow separators
+/// (see [`reaction_separators`]); `None` without two separators. The
+/// product part keeps any further `>` for the caller to reject.
+pub(crate) fn split_reaction_parts(s: &str) -> Option<[&str; 3]> {
+    let seps = reaction_separators(s);
+    let (&a, &b) = (seps.first()?, seps.get(1)?);
+    Some([&s[..a], &s[a + 1..b], &s[b + 1..]])
+}
+
+pub fn normalize_product_query_atoms(s: &str) -> Result<String, RxnError> {
+    // Product side = text after the last top-level `>` (none: nothing to do).
+    let Some(product_start) = reaction_separators(s).last().map(|i| i + 1) else {
         return Ok(s.to_string());
     };
     let mut out = String::with_capacity(s.len());
@@ -348,15 +379,7 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
     // product side when there is at least one `>`.
     let bytes = s.as_bytes();
     let mut part_starts = vec![0usize];
-    let mut depth = 0usize;
-    for (i, &b) in bytes.iter().enumerate() {
-        match b {
-            b'[' => depth += 1,
-            b']' => depth = depth.saturating_sub(1),
-            b'>' if depth == 0 => part_starts.push(i + 1),
-            _ => {}
-        }
-    }
+    part_starts.extend(reaction_separators(s).into_iter().map(|i| i + 1));
     let has_products = part_starts.len() > 1;
     let product_start = *part_starts.last().unwrap_or(&0);
     let reactant_text = if has_products {
@@ -376,7 +399,8 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
             };
             let inner = &rest[open + 1..open + 1 + close_rel];
             rest = &rest[open + 1 + close_rel + 1..];
-            if !inner.ends_with(map) || !inner[..inner.len() - map.len()].ends_with(':') {
+            // Atom maps compare as numbers (`:01` is map 1).
+            if inner.rsplit_once(':').map(|(_, m)| map_number(m)) != Some(map_number(map)) {
                 continue;
             }
             let body = inner.trim_start_matches(|c: char| c.is_ascii_digit());
@@ -406,8 +430,9 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
     let mut i = 0;
     while i < bytes.len() {
         if bytes[i] != b'[' {
-            text.push(bytes[i] as char);
-            i += 1;
+            let next = s[i..].find('[').map_or(s.len(), |n| i + n);
+            text.push_str(&s[i..next]);
+            i = next;
             continue;
         }
         let start = i;
@@ -522,7 +547,10 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
             hydrogen,
             map_suffix
         );
-        let map = map_suffix.strip_prefix(':');
+        let map_key = map_suffix
+            .strip_prefix(':')
+            .map(|m| map_number(m).to_string());
+        let map = map_key.as_deref();
 
         let options: Vec<String> = if !on_product_side {
             if can_be_aromatic {
@@ -642,12 +670,10 @@ pub fn parse_reaction_with_limits(
             limit: limits.max_input_bytes,
         });
     }
-    // splitn(3, '>') yields 3 parts when at least two `>` are present;
-    // fewer parts means the reaction arrow is missing.
-    let parts: Vec<&str> = s.splitn(3, '>').collect();
-    if parts.len() < 3 {
+    // Three parts need two arrow separators (a dative `->` is not one).
+    let Some(parts) = split_reaction_parts(s) else {
         return Err(RxnError::MissingArrow);
-    }
+    };
 
     let parse_part = |side: &'static str, s: &str| -> Result<Vec<Molecule>, RxnError> {
         if s.is_empty() {
@@ -841,6 +867,24 @@ pub fn find_reaction_center(rxn: &Reaction) -> ReactionCenter {
 mod tests {
     use super::*;
     use chematic_core::AtomIdx;
+
+    #[test]
+    fn dative_bonds_are_not_reaction_arrows(/* issue #734 bug check */) {
+        assert_eq!(reaction_separators("[N:1]->[Pt:2]>>[N:1]"), vec![13, 14]);
+        assert_eq!(reaction_separators("[Pt]<-N>[Pd]>N->[Pt]"), vec![7, 12]);
+        // `->` directly followed by `>` is a bond end then the arrow.
+        assert_eq!(reaction_separators("C->>C"), vec![2, 3]);
+        assert_eq!(
+            split_reaction_parts("N->[Pt]>>N.[Pt]"),
+            Some(["N->[Pt]", "", "N.[Pt]"])
+        );
+        let rxn = parse_reaction("N->[Pt]>>N.[Pt]").unwrap();
+        assert_eq!(rxn.reactants.len(), 1);
+        assert_eq!(rxn.products.len(), 2);
+        let query = crate::query::parse_reaction_smarts("[N:1]->[Pt:2]>>[N:1].[Pt:2]").unwrap();
+        assert_eq!(query.reactant_patterns.len(), 1);
+        assert_eq!(query.product_patterns.len(), 2);
+    }
 
     #[test]
     fn test_simple_reaction() {
