@@ -68,10 +68,30 @@ inputs and the 31 fixed SMARTS queries (310,000 cells):
 All 12 SMARTS cells are `[R2]` or `[R3]`, six cells each, on six complex
 polycyclic inputs (indices 9, 23, 28, 29, 30, 34). The CIP comparison uses
 MinimalLib `get_stereo_tags()` and compares tags only after the ordered atom
-and bond JSON graph agrees. This is an **oracle change**,
-not yet adjudicated as an RDKit fix or regression, and it is not a new CheMatic
-SMARTS parity measurement. Every row is retained with status, output hashes,
+and bond JSON graph agrees. This is an **oracle change**, not yet adjudicated
+as an RDKit fix or regression. Every row is retained with status, output hashes,
 and explicit changed atom sets in the compressed JSONL packet.
+
+Separately, the **published CheMatic 1.0.33 WASM SMARTS** comparison uses
+`smarts_match_atoms()` against the same 31 queries. Atom-index match sets are
+compared only on the 9,999 rows with graph-proven correspondence. The Fe row
+has 31 unproven cells and is not silently counted as equal or unequal.
+
+| Published CheMatic 1.0.33 vs RDKit.js | 2026.03.6 | 2026.09.1 |
+|---|---:|---:|
+| Exact atom-set cells | 309,775 | 309,774 |
+| Mismatched atom-set cells | 194 | 195 |
+| Typed refusal / runtime error | 0 / 0 | 0 / 0 |
+| Unproven index correspondence | 31 | 31 |
+
+The older-version residuals are `[R1]` (58 cells), `[R2]` (63), `[R3]`
+(62), `[k6]` (10), and `[k5]` (1). In the new version `[R3]` has 63
+mismatches; the other counts are unchanged. Of the 12 old/new changed cells,
+only `[R3]` on input index 23 changes from CheMatic-exact to mismatch; the
+other 11 were already mismatches. This is a **versioned exposed-corpus**
+measurement, not a claim of broad SMARTS parity or a chemical adjudication of
+which ring model is correct. It does not replace the published v1.0.30 Python
+310k evidence, which uses a different package and binding.
 
 ## Browser measurements
 
@@ -100,6 +120,8 @@ lanes exclude preparation from the timed operation; RSS was not measured.
   `validation/results/rdkit-rebaseline-npm-morgan-parity-v1.0.33-vs-{2026.03.6,2026.09.1}-2026-10-04.json`.
 - Graph-checked CIP gate and all-row packet:
   `validation/results/rdkit-rebaseline-npm-cip-parity-v1.0.33-vs-{2026.03.6,2026.09.1}-2026-10-04.{json,jsonl.gz}`.
+- Graph-checked CheMatic SMARTS gate and all-row packet:
+  `validation/results/rdkit-rebaseline-npm-smarts-parity-v1.0.33-vs-{2026.03.6,2026.09.1}-2026-10-04.{json,jsonl.gz}`.
 - Isolated 20-run browser records:
   `validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-{2026.03.6,2026.09.1}-2026-10-04.json`.
 - Oracle delta and **all 10,000 row records**:
@@ -107,7 +129,7 @@ lanes exclude preparation from the timed operation; RSS was not measured.
 - Artifact availability snapshot:
   `validation/results/rdkit-2026-09-1-artifact-availability-2026-10-04.json`.
 - Runners: `scripts/compare_rdkitjs_release_chemistry.cjs`,
-  `scripts/check_rdkitjs_cip_parity.cjs`,
+  `scripts/check_rdkitjs_cip_parity.cjs`, `scripts/check_rdkitjs_smarts_parity.cjs`,
   `scripts/check_browser_rdkit_ecfp4_parity.py`,
   `scripts/bench_browser_wasm_vs_rdkit_isolated.py`, and the argv-safe
   `validation/rdkit_rebaseline_execution.json` command catalog.

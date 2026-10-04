@@ -1,5 +1,5 @@
 {
-  "collected_at_utc": "2026-10-04T00:03:21.204884+00:00",
+  "collected_at_utc": "2026-10-04T00:10:29.604197+00:00",
   "host": {
     "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
     "machine": "arm64",
@@ -20,9 +20,9 @@
     ],
     "operation_configurations": [
       {
-        "bytes": 8823,
+        "bytes": 10108,
         "path": "validation/rdkit_rebaseline_execution.json",
-        "sha256": "4ce5344c6ac6972f44bd1f78789cd573d4a3c3b1393bdda3a418a98d374187bd"
+        "sha256": "c08a362b3e962d5fdabf52632e878d0db62d9982d8648e963413392bfa1f3c68"
       }
     ],
     "sealed_accuracy_cohort_reused": false
@@ -89,8 +89,8 @@
     "machine": "arm64",
     "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
     "python_executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
-    "source_commit": "0dcf01b9063b313ee08c9b60cd3cad1362fffe4f",
-    "tracked_diff_sha256": "31ad3d8576c13d6a67fb156f635c513b264ec118b68f12f017ebd9e34f2bb460",
+    "source_commit": "68ea94f5cbb927c4453a86ca71e8c193e780434c",
+    "tracked_diff_sha256": "bfd66bbd0de113e727ab0b6cfc32d18cca8f3303a8e39e2bd29c4bcaf0d32035",
     "untracked_source_files": 0,
     "untracked_source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   }

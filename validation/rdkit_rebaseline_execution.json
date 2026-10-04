@@ -177,11 +177,24 @@
             "--summary", "${OUTPUT_DIR}/npm-cip-parity.json",
             "--rows-output", "${OUTPUT_DIR}/npm-cip-parity.jsonl.gz"
           ]
+        },
+        {
+          "id": "npm-smarts-parity",
+          "covers": ["smarts"],
+          "argv": [
+            "${NODE}", "scripts/check_rdkitjs_smarts_parity.cjs",
+            "--rdkit-package", "${RDKIT_NPM_PACKAGE}",
+            "--chematic-package", "${SCHEMATIC_NPM_PACKAGE}",
+            "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+            "--queries", "validation/rdkit_rebaseline_smarts_queries.json",
+            "--correspondence-summary", "${OUTPUT_DIR}/npm-cip-parity.json",
+            "--correspondence-rows", "${OUTPUT_DIR}/npm-cip-parity.jsonl.gz",
+            "--summary", "${OUTPUT_DIR}/npm-smarts-parity.json",
+            "--rows-output", "${OUTPUT_DIR}/npm-smarts-parity.jsonl.gz"
+          ]
         }
       ],
-      "unavailable_operations": {
-        "smarts": "SMARTS semantics require a separate packed-output contract before timing."
-      }
+      "unavailable_operations": {}
     },
     {
       "id": "npm-2026.9.1-browser",
@@ -242,11 +255,24 @@
             "--summary", "${OUTPUT_DIR}/npm-cip-parity.json",
             "--rows-output", "${OUTPUT_DIR}/npm-cip-parity.jsonl.gz"
           ]
+        },
+        {
+          "id": "npm-2026-09-smarts-parity",
+          "covers": ["smarts"],
+          "argv": [
+            "${NODE}", "scripts/check_rdkitjs_smarts_parity.cjs",
+            "--rdkit-package", "${RDKIT_NPM_PACKAGE}",
+            "--chematic-package", "${SCHEMATIC_NPM_PACKAGE}",
+            "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+            "--queries", "validation/rdkit_rebaseline_smarts_queries.json",
+            "--correspondence-summary", "${OUTPUT_DIR}/npm-cip-parity.json",
+            "--correspondence-rows", "${OUTPUT_DIR}/npm-cip-parity.jsonl.gz",
+            "--summary", "${OUTPUT_DIR}/npm-smarts-parity.json",
+            "--rows-output", "${OUTPUT_DIR}/npm-smarts-parity.jsonl.gz"
+          ]
         }
       ],
-      "unavailable_operations": {
-        "smarts": "Oracle-version SMARTS delta is measured separately; CheMatic/MinimalLib packed-output parity is not defined."
-      }
+      "unavailable_operations": {}
     }
   ]
 }

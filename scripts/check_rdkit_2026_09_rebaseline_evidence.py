@@ -18,6 +18,7 @@ RESULTS = ROOT / "validation" / "results"
 DAY = "2026-10-04"
 CORPUS = ROOT / "validation" / "benchmark_corpora" / "rdkit-js-browser-10k-v1.smi"
 EXECUTION = ROOT / "validation" / "rdkit_rebaseline_execution.json"
+QUERIES = ROOT / "validation" / "rdkit_rebaseline_smarts_queries.json"
 VERSIONS = ("2026.03.6", "2026.09.1")
 
 
@@ -104,6 +105,42 @@ def check() -> None:
         require(cip_nonexact["mismatch"] == [1206, 1213, 1214, 1287, 1370, 1371], f"{version}: CIP mismatch identities changed")
         require(cip_nonexact["typed_abstention"] == [2960, 4419, 4439, 4643, 4644], f"{version}: CIP abstention identities changed")
         require(cip_nonexact["unproven"] == [8341], f"{version}: CIP unproven identity changed")
+
+        smarts = load(f"rdkit-rebaseline-npm-smarts-parity-v1.0.33-vs-{version}-{DAY}.json")
+        require(smarts["rdkit"]["version"] == version, f"{version}: SMARTS runtime mismatch")
+        require(smarts["rdkit"]["wasm_sha256"] == wasm["sha256"], f"{version}: SMARTS RDKit WASM mismatch")
+        require(smarts["chematic"]["wasm_sha256"] == browser["artifacts"]["schematic_wasm"]["sha256"], f"{version}: SMARTS CheMatic WASM mismatch")
+        require(smarts["corpus"]["sha256"] == corpus_hash, f"{version}: SMARTS corpus changed")
+        require(smarts["queries"]["sha256"] == sha256(QUERIES.read_bytes()), f"{version}: SMARTS queries changed")
+        require(smarts["correspondence"]["rows_sha256"] == cip_digest, f"{version}: SMARTS correspondence proof changed")
+        expected_mismatches = 194 if version == VERSIONS[0] else 195
+        require(smarts["counts"] == {
+            "rows": 10000, "queries": 31, "total_cells": 310000,
+            "exact_cells": 309969 - expected_mismatches,
+            "mismatch_cells": expected_mismatches, "typed_refusal_cells": 0,
+            "error_cells": 0, "unproven_cells": 31,
+        }, f"{version}: SMARTS counts changed")
+        smarts_compressed = (ROOT / smarts["rows_output"]["path"]).read_bytes()
+        require(sha256(smarts_compressed) == smarts["rows_output"]["compressed_sha256"], f"{version}: SMARTS compressed rows changed")
+        smarts_body = gzip.decompress(smarts_compressed)
+        require(sha256(smarts_body) == smarts["rows_output"]["uncompressed_sha256"], f"{version}: SMARTS rows changed")
+        smarts_mismatch_queries: Counter[str] = Counter()
+        unproven_rows = []
+        for row_index, line in enumerate(smarts_body.splitlines()):
+            row = json.loads(line)
+            require(row["input_index"] == row_index, f"{version}: SMARTS row order changed")
+            if row["status"] == "unproven_index_correspondence":
+                unproven_rows.append(row_index)
+            for difference in row["differences"]:
+                require(difference["status"] == "mismatch", f"{version}: unexpected SMARTS cell outcome")
+                smarts_mismatch_queries[difference["query"]] += 1
+        require(row_index + 1 == 10000, f"{version}: SMARTS rows incomplete")
+        require(unproven_rows == [8341], f"{version}: SMARTS unproven row changed")
+        expected_r3 = 62 if version == VERSIONS[0] else 63
+        require(smarts_mismatch_queries == {
+            "[R1]": 58, "[R2]": 63, "[R3]": expected_r3,
+            "[k5]": 1, "[k6]": 10,
+        }, f"{version}: SMARTS residual families changed")
     old_browser = load(f"rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-{VERSIONS[0]}-{DAY}.json")
     new_browser = load(f"rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-{VERSIONS[1]}-{DAY}.json")
     require(old_browser["artifacts"]["schematic_wasm"]["sha256"] == new_browser["artifacts"]["schematic_wasm"]["sha256"], "CheMatic WASM differs between arms")
@@ -142,7 +179,7 @@ def check() -> None:
     require(index + 1 == 10000, "row file incomplete")
     require(status == {("ok", "ok"): 10000}, "row parse statuses changed")
     require(changed == {"[R2]": 6, "[R3]": 6}, "SMARTS difference families changed")
-    print("RDKit 2026.09.1 npm rebaseline evidence OK: 10k rows, graph-checked CIP, 310k SMARTS cells, 20 browser runs per arm")
+    print("RDKit 2026.09.1 npm rebaseline evidence OK: 10k rows, graph-checked CIP, 310k CheMatic SMARTS cells, 20 browser runs per arm")
 
 
 if __name__ == "__main__":

@@ -49,7 +49,7 @@ jobs:
           python3 scripts/check_rdkit_rebaseline_execution.py
           python3 scripts/check_rdkit_rebaseline_evidence.py
           python3 scripts/check_rdkit_2026_09_rebaseline_evidence.py
-          node --test scripts/tests/test_compare_rdkitjs_release_chemistry.cjs scripts/tests/test_check_rdkitjs_cip_parity.cjs
+          node --test scripts/tests/test_compare_rdkitjs_release_chemistry.cjs scripts/tests/test_check_rdkitjs_cip_parity.cjs scripts/tests/test_check_rdkitjs_smarts_parity.cjs
           python3 scripts/check_v1029_accuracy_packet.py
           python3 scripts/generate_compatibility_dashboard.py --output /tmp/compatibility-dashboard.md
           diff -u docs/compatibility-dashboard.md /tmp/compatibility-dashboard.md
