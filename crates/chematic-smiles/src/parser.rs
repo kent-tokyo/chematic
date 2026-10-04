@@ -887,16 +887,24 @@ impl<'a> Parser<'a> {
         None
     }
 
+    /// Up to two digits, as RDKit reads `[CH10]` and `[C+10]` (OpenSMILES
+    /// allows two-digit charges; a one-digit reading rejected the rest of
+    /// the bracket atom).
+    fn parse_two_digits(&mut self) -> Option<u8> {
+        let first = self.peek().filter(|c| c.is_ascii_digit())?;
+        self.advance();
+        let mut value = first - b'0';
+        if let Some(d) = self.peek().filter(|c| c.is_ascii_digit()) {
+            self.advance();
+            value = value * 10 + (d - b'0');
+        }
+        Some(value)
+    }
+
     fn parse_hcount(&mut self) -> u8 {
         if self.peek() == Some(b'H') {
             self.advance();
-            match self.peek().filter(|c| c.is_ascii_digit()) {
-                Some(d) => {
-                    self.advance();
-                    d - b'0'
-                }
-                None => 1,
-            }
+            self.parse_two_digits().unwrap_or(1)
         } else {
             0
         }
@@ -910,9 +918,8 @@ impl<'a> Parser<'a> {
                     self.advance();
                     return 2;
                 }
-                if let Some(d) = self.peek().filter(|c| c.is_ascii_digit()) {
-                    self.advance();
-                    return (d - b'0') as i8;
+                if let Some(n) = self.parse_two_digits() {
+                    return n as i8;
                 }
                 1
             }
@@ -922,9 +929,8 @@ impl<'a> Parser<'a> {
                     self.advance();
                     return -2;
                 }
-                if let Some(d) = self.peek().filter(|c| c.is_ascii_digit()) {
-                    self.advance();
-                    return -((d - b'0') as i8);
+                if let Some(n) = self.parse_two_digits() {
+                    return -(n as i8);
                 }
                 -1
             }
@@ -1058,6 +1064,19 @@ fn resolve_aromatic_direction_stash(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bracket_atom_reads_two_digit_charge_and_h_count() {
+        let a = parse("[C+10]").unwrap();
+        assert_eq!(a.atom(AtomIdx(0)).charge, 10);
+        let b = parse("[CH15]").unwrap();
+        assert_eq!(b.atom(AtomIdx(0)).hydrogen_count, Some(15));
+        let c = parse("[O-12]").unwrap();
+        assert_eq!(c.atom(AtomIdx(0)).charge, -12);
+        let d = parse("[NH4+]").unwrap();
+        assert_eq!(d.atom(AtomIdx(0)).hydrogen_count, Some(4));
+        assert_eq!(d.atom(AtomIdx(0)).charge, 1);
+    }
     use crate::canonical::canonical_smiles;
     use chematic_core::{AtomIdx, BondIdx};
 

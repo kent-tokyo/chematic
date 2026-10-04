@@ -523,32 +523,9 @@ fn eval_ring_bond_count(idx: AtomIdx, ctx: &EvalCtx<'_>, x: u8) -> bool {
     count == x
 }
 
+/// RDKit's hybridization (`^n`), see [`crate::hybridization`].
 fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
-    let atom = ctx.mol.atom(idx);
-    let hyb = if atom.aromatic {
-        2u8
-    } else {
-        let mut has_triple = false;
-        let mut has_double = false;
-        for (_, bid) in ctx.mol.neighbors(idx) {
-            match ctx.mol.bond(bid).order {
-                BondOrder::Triple => {
-                    has_triple = true;
-                    break;
-                }
-                BondOrder::Double => has_double = true,
-                _ => {}
-            }
-        }
-        if has_triple {
-            1
-        } else if has_double {
-            2
-        } else {
-            3
-        }
-    };
-    hyb == h
+    crate::hybridization::rdkit_hybridization(ctx.mol, idx) == Some(h)
 }
 
 fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, kind: u8) -> bool {

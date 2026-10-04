@@ -1772,7 +1772,7 @@ fn normalize_product_templates(products: &str) -> Result<String, TransformError>
                 None => (tail, None),
             };
             let valid_h = hcount.strip_prefix('H').is_some_and(|n| {
-                n.is_empty() || (n.len() == 1 && n.bytes().all(|b| b.is_ascii_digit()))
+                n.is_empty() || (n.len() <= 2 && n.bytes().all(|b| b.is_ascii_digit()))
             });
             let valid_map =
                 map.is_none_or(|m| !m.is_empty() && m.bytes().all(|b| b.is_ascii_digit()));
@@ -2121,6 +2121,18 @@ fn sanitizable_product(mol: &Molecule) -> bool {
             .atoms()
             .any(|(idx, a)| a.aromatic && !in_ring[idx.0 as usize])
         {
+            return false;
+        }
+        // A plain double bond between two aromatic ring atoms (an aromatic
+        // ring bond a template rewrote as `=`, `c1cc=ncc1`) is not a form
+        // RDKit's kekulization accepts; the written SMILES would not parse.
+        if mol.bonds().any(|(_, b)| {
+            b.order == BondOrder::Double
+                && mol.atom(b.atom1).aromatic
+                && mol.atom(b.atom2).aromatic
+                && in_ring[b.atom1.0 as usize]
+                && in_ring[b.atom2.0 as usize]
+        }) {
             return false;
         }
     }
@@ -3788,6 +3800,18 @@ mod tests {
             sets("[C:1]>>[N:1]", "[CH2]C")[0],
             vec![canon(&parse("CN").unwrap())]
         );
+        // Two-digit product charges and H counts parse, as in RDKit: `+10`
+        // is kept, `H15` fails the product filter.
+        assert_eq!(
+            sets("[C:1]>>[C;+10:1]", "CC")[0],
+            vec![canon(&parse("C[C+10]").unwrap())]
+        );
+        assert!(sets("[C:1]>>[C;H15:1]", "CC").is_empty());
+        // An aromatic ring bond rewritten as `=` between aromatic atoms is
+        // dropped, as RDKit's sanitize drops it for pyridine.
+        assert!(sets("[#6:1]~[#7:2]>>[#6:1]=[#7:2]", "c1ccncc1").is_empty());
+        // A quaternized pyrrole N kekulizes (RDKit: `C[N+]1(C)C=CC=C1`).
+        assert_eq!(sets("[#7;a:1]>>[#7+:1]C", "Cn1cccc1").len(), 1);
         // `:` flags the bond's atoms aromatic: outside a ring that fails
         // RDKit's sanitize, so no product survives.
         assert!(sets("[#6:1]-[#6:2]>>[#6:1]:[#6:2]", "CC").is_empty());

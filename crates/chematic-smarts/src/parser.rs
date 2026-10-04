@@ -987,7 +987,14 @@ impl<'a> Parser<'a> {
                         Box::new(range_query(lo, hi, AtomPrimitive::RingSize)),
                     ));
                 }
-                self.count_primitive(None, AtomPrimitive::RingSize)
+                // RDKit: bare `k` is "in a ring", and `k0` matches every
+                // atom (its ring-of-size-0 test is always true; ranges use a
+                // different test, above).
+                match self.parse_count_number() {
+                    Some(0) => Ok(AtomQuery::Primitive(AtomPrimitive::Wildcard)),
+                    Some(n) => Ok(AtomQuery::Primitive(AtomPrimitive::RingSize(n))),
+                    None => Ok(AtomQuery::Primitive(AtomPrimitive::RingMembership(true))),
+                }
             }
 
             // Ring membership `R` or ring count `RN` (N = 0, 1, 2, …).
@@ -2026,6 +2033,10 @@ mod tests {
             ("[k{3-}]", "CC1CCCCC1", vec![1, 2, 3, 4, 5, 6]),
             ("[k{-6}]", "CC1CCCCC1", vec![1, 2, 3, 4, 5, 6]),
             ("[k{0-6}]", "CC1CCCCC1", vec![1, 2, 3, 4, 5, 6]),
+            // Bare `k` is "in a ring"; `k0` matches every atom (RDKit).
+            ("[k]", "CC1CCCCC1", vec![1, 2, 3, 4, 5, 6]),
+            ("[k0]", "CC1CCCCC1", vec![0, 1, 2, 3, 4, 5, 6]),
+            ("[!k0]", "CC1CCCCC1", vec![]),
             // Bare `x` / `h` mean "at least one".
             ("[x]", "CC1CCCC1", vec![1, 2, 3, 4, 5]),
             ("[h]", "CC(C)(C)C", vec![0, 2, 3, 4]),
