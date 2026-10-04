@@ -36,6 +36,33 @@ the independently published `@rdkit/rdkit` npm/WASM delta after numeric atom-set
 normalization. This is an **RDKit oracle change** in these ring-count queries,
 not a measured CheMatic regression or a claim of complete SMARTS parity.
 
+RDKit's [2026.09.1 release notes](https://github.com/rdkit/rdkit/releases/tag/Release_2026_09_1)
+say that the default symmetrized-SSSR algorithm changed to a
+RingDecomposerLib-based implementation and document
+`RDK_USE_LEGACY_RING_FINDING=1` as an old-algorithm switch. The merged
+[ring-finding PR #9105](https://github.com/rdkit/rdkit/pull/9105) also describes
+legacy missed-ring cases. A same-binary probe in
+[CI #37176547492](https://github.com/kent-tokyo/chematic/actions/runs/37176547492)
+reran the **new 2026.09.1 C++ binary** with only
+`RDK_USE_LEGACY_RING_FINDING=1` changed. Its 10,000 raw output rows are
+byte-for-byte identical to the old 2026.03.6 rows, including all 310,000
+SMARTS cells, canonical SMILES, CIP and Morgan bits. All 12 new-default
+`[R2]`/`[R3]` differences disappear. Thus the new release's selectable ring
+backend explains **all observed old/new differences on this corpus**. It does
+not independently prove which ring basis is chemically preferable or that
+CheMatic matches the new default in those cells.
+
+The [legacy-mode rows](../validation/results/rdkit-native-ring-backend-2026-09-1-legacy-2026-10-04-rows.jsonl.gz)
+and [diagnostic summary](../validation/results/rdkit-native-ring-backend-2026-09-1-legacy-2026-10-04-summary.json)
+are archived separately from the default old/new lanes. The summary records
+the switch, pinned source/input hashes and all 12 changed cells; its
+SHA-256 is `d423e301d98345f07b9a8c8e57f2e5da9890fd988c4d4e04b9f3bfa36d7f3cdf`.
+The legacy-mode gzip archive SHA-256 is
+`3aabee226a8014dd0151619bf6c3daf80f35646430d6a00d70c31a5d465a84ac`,
+identical to the old-version archive under deterministic gzip. The runner's
+compiled binary and linked RDKit libraries were not retained, so this remains
+partial source-build provenance, not a distributed-package claim.
+
 The checked-in [summary](../validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-summary.json),
 [old rows](../validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-old.jsonl.gz),
 [new rows](../validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-new.jsonl.gz)
@@ -50,6 +77,7 @@ Recheck the versioned evidence, including every row and the npm delta:
 
 ```bash
 python3 scripts/check_rdkit_native_rebaseline_evidence.py
+python3 -m scripts.check_rdkit_ring_backend_evidence
 ```
 
 The RDKit 2026.09.1 **distributed Python/nanobind** lane remains unmeasured:
