@@ -130,7 +130,11 @@ fn bond_is_conjugated(mol: &Molecule, bond: BondIdx) -> bool {
 
 /// RDKit hybridization as the SMARTS `^n` code (0 = S, 1 = SP, 2 = SP2,
 /// 3 = SP3, 4 = SP3D, 5 = SP3D2); `None` = unspecified.
-pub(crate) fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
+///
+/// Follows RDKit's `ConjugHybrid` model: orbital count = total degree plus
+/// lone pairs, and a four-orbital atom with fewer than four neighbours and
+/// a conjugated bond (amide N, aryl ether O, enamine N) is SP2.
+pub fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
     let atom = mol.atom(idx);
     let z = atom.element.atomic_number();
     if atom.wildcard || z == 0 {
@@ -146,6 +150,12 @@ pub(crate) fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
         return (!plain).then_some(0);
     }
     let total_degree = heavy_degree(mol, idx) + total_hs(mol, idx);
+    // An aromatic atom with two or three connections has three orbitals or
+    // a conjugated lone pair: SP2 in RDKit's model. Answering here skips the
+    // Kekulé valence lookup the general rule needs for aromatic atoms.
+    if atom.aromatic && (2..=3).contains(&total_degree) {
+        return Some(2);
+    }
     let norbs = match outer_electrons(z) {
         Some(nouter) if z < 89 => {
             let total_valence = crate::match_vf2::total_valence(mol, idx) as i32;

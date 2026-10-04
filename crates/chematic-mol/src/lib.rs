@@ -45,6 +45,7 @@ pub mod rxn;
 pub mod sdf;
 pub mod semantic;
 pub mod smiles_table;
+pub mod stereo_depiction;
 pub mod tdt;
 pub mod volumetric;
 pub mod xyz;

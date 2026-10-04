@@ -332,7 +332,50 @@ pub(crate) fn kekule_orders_for_writing(
     if inferable {
         return None;
     }
-    chematic_core::kekulize(mol).ok()
+    deterministic_kekule(mol)
+}
+
+/// Kekulé bond orders that do not depend on `mol`'s atom numbering: the
+/// molecule is kekulized with its atoms in canonical order and the orders
+/// are mapped back, so two spellings of one molecule get the same Kekulé
+/// structure (up to symmetry).
+fn deterministic_kekule(
+    mol: &Molecule,
+) -> Option<std::collections::HashMap<chematic_core::BondIdx, BondOrder>> {
+    let order = chematic_smiles::canonical_atom_order(mol);
+    let mut new_of = vec![0u32; mol.atom_count()];
+    let mut builder = chematic_core::MoleculeBuilder::new();
+    for &old in &order {
+        new_of[old] = builder
+            .add_atom(mol.atom(chematic_core::AtomIdx(old as u32)).clone())
+            .0;
+    }
+    let mut bonds: Vec<(u32, u32, chematic_core::BondIdx)> = mol
+        .bonds()
+        .map(|(b, e)| {
+            let (x, y) = (new_of[e.atom1.0 as usize], new_of[e.atom2.0 as usize]);
+            (x.min(y), x.max(y), b)
+        })
+        .collect();
+    bonds.sort_unstable();
+    let mut old_of_new_bond = Vec::with_capacity(bonds.len());
+    for &(x, y, b) in &bonds {
+        builder
+            .add_bond(
+                chematic_core::AtomIdx(x),
+                chematic_core::AtomIdx(y),
+                mol.bond(b).order,
+            )
+            .ok()?;
+        old_of_new_bond.push(b);
+    }
+    let canon = builder.build();
+    let kek = chematic_core::kekulize(&canon).ok()?;
+    Some(
+        kek.into_iter()
+            .map(|(nb, order)| (old_of_new_bond[nb.0 as usize], order))
+            .collect(),
+    )
 }
 
 pub(crate) fn wedge_vs_3d_conflicts(
@@ -1545,6 +1588,12 @@ pub fn write_mol_with_coords_into(
     out.push_str(&metadata.comment);
     out.push('\n');
 
+    // A molecule with stereo is written on coordinates that express it, with
+    // one wedge or hash per tetrahedral centre (see `stereo_depiction`).
+    let depiction = crate::stereo_depiction::needs_stereo_depiction(mol)
+        .then(|| crate::stereo_depiction::stereo_depiction(mol, coords));
+    let coords: &[(f64, f64)] = depiction.as_ref().map_or(coords, |d| &d.coords);
+
     // Counts line (line 4)
     let natoms = mol.atom_count();
     let nbonds = mol.bond_count();
@@ -1561,7 +1610,7 @@ pub fn write_mol_with_coords_into(
         if let Some(&(x, y)) = coords.get(idx.0 as usize) {
             writeln!(
                 out,
-                "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0 {:>3}  0",
+                "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0{:>3}  0",
                 x, y, 0.0_f64, sym, mass_difference, charge_code, atom_map,
             )
             .expect("writing to String cannot fail");
@@ -1606,14 +1655,39 @@ pub fn write_mol_with_coords_into(
             BondOrder::QueryAny | BondOrder::Zero => 8,
             BondOrder::Quadruple => 4,
         };
-        // Stereo field: preserve a wedge/hash bond so a re-parse recovers
-        // the same local parity. This is the only channel MOL/SDF has for
-        // recovered stereo -- `Atom.chirality` itself has no direct MOL
-        // field, so what round-trips is the wedge bond it was derived from.
-        let stereo = match bond.order {
-            BondOrder::Up => 1,
-            BondOrder::Down => 6,
-            _ => 0,
+        // Stereo field: with a stereo depiction, the chosen wedge/hash drawn
+        // from its stereocentre (SMILES `/`/`\` markers are expressed by the
+        // coordinates, not by a stereo code); otherwise a wedge/hash already
+        // on the bond, so a re-parse recovers the same local parity.
+        let (a1, a2, stereo) = match &depiction {
+            Some(d) => match d.wedges.get(&bond_idx) {
+                Some(w) => {
+                    let (start, end) = if w.start == bond.atom1 {
+                        (a1, a2)
+                    } else {
+                        (a2, a1)
+                    };
+                    (start, end, if w.order == BondOrder::Up { 1 } else { 6 })
+                }
+                // A stereo double bond these coordinates cannot draw (in a
+                // ring) is written as "either" rather than with a wrong
+                // geometry.
+                None if d.unexpressed_double_bonds.contains(&bond_idx)
+                    || d.unspecified_double_bonds.contains(&bond_idx) =>
+                {
+                    (a1, a2, 3)
+                }
+                None => (a1, a2, 0),
+            },
+            None => (
+                a1,
+                a2,
+                match bond.order {
+                    BondOrder::Up => 1,
+                    BondOrder::Down => 6,
+                    _ => 0,
+                },
+            ),
         };
         push_right_aligned_u32(out, a1, 3);
         push_right_aligned_u32(out, a2, 3);
@@ -1684,7 +1758,7 @@ pub fn write_mol_with_conformer(
             .copied()
             .unwrap_or(Point3::zero());
         out.push_str(&format!(
-            "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0 {:>3}  0\n",
+            "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0{:>3}  0\n",
             p.x, p.y, p.z, sym, mass_difference, charge_code, atom_map,
         ));
     }

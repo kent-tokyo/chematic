@@ -44,9 +44,11 @@ pub enum DerivedSlot {
     /// Kekulé orders of the aromatic bonds (`None` when kekulization fails),
     /// used for total-valence queries.
     KekuleOrders = 8,
+    /// Topological atom-equivalence classes (canonical SMILES writer).
+    TopologicalClasses = 9,
 }
 
-const SLOT_COUNT: usize = 9;
+const SLOT_COUNT: usize = 10;
 
 /// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
 /// the unwind-safety traits so `Molecule` stays usable across

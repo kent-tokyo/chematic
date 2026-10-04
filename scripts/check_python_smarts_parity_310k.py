@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Gate the opt-in Python SMARTS profile on the pinned 310,000-cell oracle."""
+"""Gate the opt-in Python SMARTS profile on the pinned 310,000-cell oracle.
+
+The oracle is archived, so RDKit is only needed to confirm its version.
+``--archived-oracle`` skips that import and instead checks the oracle file
+against its pinned SHA-256; this runs the gate on a wheel for an
+interpreter RDKit 2026.03.6 does not support (the PyPI v1.0.34 Linux wheel
+is CPython 3.9 only). ``--scope`` labels the artifact in the report.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +18,6 @@ from collections import Counter
 from pathlib import Path
 
 import chematic
-from rdkit import rdBase
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi"
@@ -19,6 +25,8 @@ QUERIES = ROOT / "validation/rdkit_rebaseline_smarts_queries.json"
 ORACLE = ROOT / "validation/results/v1.0.30-rdkit-smarts-all-cells.jsonl.gz"
 CLASSIFICATION = ROOT / "validation/results/rdkit-rebaseline-residual-classification-v1.0.27-issue634-vs-2026.03.6-2026-09-28.json"
 PUBLISHED = ROOT / "validation/results/v1.0.30-published-python-chemistry-rows.jsonl.gz"
+ORACLE_SHA256 = "3f55a2e16ee3aef9c59e6d17e1404528021658269fe4edb71208a19e12e07093"
+ORACLE_RDKIT = "2026.03.6"
 REFUSED_ROWS = (9, 23, 28, 29, 30, 34)
 REFUSED_QUERIES = ("[R1]", "[R2]", "[R3]")
 
@@ -41,9 +49,19 @@ def main() -> int:
     parser.add_argument("--wheel", type=Path, required=True)
     parser.add_argument("--module-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--archived-oracle", action="store_true")
+    parser.add_argument("--scope", default="source-built Python wheel; not a published registry artifact")
     args = parser.parse_args()
-    if rdBase.rdkitVersion != "2026.03.6":
-        parser.error(f"expected RDKit 2026.03.6, got {rdBase.rdkitVersion}")
+    if args.archived_oracle:
+        if sha256(ORACLE) != ORACLE_SHA256:
+            parser.error("archived RDKit oracle does not match its pinned SHA-256")
+        rdkit_version = ORACLE_RDKIT
+    else:
+        from rdkit import rdBase
+
+        rdkit_version = rdBase.rdkitVersion
+    if rdkit_version != ORACLE_RDKIT:
+        parser.error(f"expected RDKit {ORACLE_RDKIT}, got {rdkit_version}")
     module_path = Path(chematic.__file__).resolve()
     if not module_path.is_relative_to(args.module_root.resolve()):
         parser.error(f"imported {module_path}, not the isolated wheel")
@@ -81,7 +99,7 @@ def main() -> int:
     unexpected = []
     with gzip.open(ORACLE, "rt", encoding="utf-8") as stream:
         manifest = json.loads(next(stream))
-        if (manifest.get("rdkit_version") != rdBase.rdkitVersion
+        if (manifest.get("rdkit_version") != rdkit_version
                 or manifest.get("corpus_sha256") != sha256(CORPUS)
                 or manifest.get("queries_sha256") != sha256(QUERIES)
                 or manifest.get("input_count") != len(corpus)
@@ -121,8 +139,10 @@ def main() -> int:
     observed_refused = {(i, q) for i, q, _, _ in refused}
     report = {
         "schema": "python-opt-in-smarts-parity-310k/v1",
-        "scope": "source-built Python wheel; not a published registry artifact",
-        "rdkit_version": rdBase.rdkitVersion,
+        "scope": args.scope,
+        "chematic_version": chematic.__version__,
+        "rdkit_version": rdkit_version,
+        "oracle_mode": "archived (SHA-256 pinned)" if args.archived_oracle else "archived, RDKit version checked live",
         "wheel_sha256": sha256(args.wheel),
         "module_path_within_wheel": str(module_path.relative_to(args.module_root.resolve())),
         "inputs": {name: sha256(path) for name, path in {

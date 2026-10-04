@@ -286,11 +286,15 @@ fn is_removable_explicit_h(mol: &Molecule, idx: AtomIdx) -> bool {
 /// see issue #390).
 pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
     let mut builder = MoleculeBuilder::new();
-    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::with_capacity(mol.atom_count());
+    let removable: Vec<bool> = (0..mol.atom_count())
+        .map(|i| is_removable_explicit_h(mol, AtomIdx(i as u32)))
+        .collect();
+    let is_removed = |a: AtomIdx| removable[a.0 as usize];
 
     for i in 0..mol.atom_count() {
         let old_idx = AtomIdx(i as u32);
-        if is_removable_explicit_h(mol, old_idx) {
+        if is_removed(old_idx) {
             continue;
         }
         let mut atom = mol.atom(old_idx).clone();
@@ -310,7 +314,7 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
         // resulting charge -- a real, confirmed idempotency bug (issue #403).
         let removed_h = mol
             .neighbors(old_idx)
-            .filter(|&(nb, _)| is_removable_explicit_h(mol, nb))
+            .filter(|&(nb, _)| is_removed(nb))
             .count() as u8;
         if removed_h > 0 {
             if !atom.element.is_organic_subset() {
@@ -341,8 +345,8 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
     for i in 0..mol.bond_count() {
         let old_bidx = BondIdx(i as u32);
         let bond = mol.bond(old_bidx);
-        let a1_removed = is_removable_explicit_h(mol, bond.atom1);
-        let a2_removed = is_removable_explicit_h(mol, bond.atom2);
+        let a1_removed = is_removed(bond.atom1);
+        let a2_removed = is_removed(bond.atom2);
         if a1_removed || a2_removed {
             continue;
         }
@@ -438,7 +442,7 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
             let &new_idx = remap.get(&old_idx)?;
             let removed = mol
                 .neighbors(old_idx)
-                .filter(|&(nb, _)| is_removable_explicit_h(mol, nb))
+                .filter(|&(nb, _)| is_removed(nb))
                 .count() as u8;
             (removed > 0).then(|| {
                 let total = chematic_core::implicit_hcount(mol, old_idx).saturating_add(removed);

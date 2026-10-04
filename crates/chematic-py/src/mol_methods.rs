@@ -2691,8 +2691,9 @@ impl Mol {
 
     /// Per-atom hybridization state: 1 = sp, 2 = sp2, 3 = sp3, 0 = other.
     ///
-    /// Aromatic atoms → 2, triple-bond atoms → 1, double-bond atoms → 2, otherwise 3.
-    /// Useful for scaffold modification (PromptSMILES-style) and atom featurization.
+    /// RDKit's model (lone pairs count as orbitals): amide/enamine N and aryl
+    /// ether O are sp2; s, sp3d and sp3d2 report 0. Useful for scaffold
+    /// modification (PromptSMILES-style) and atom featurization.
     ///
     ///     mol = chematic.from_smiles("CC=O")
     ///     mol.hybridization_per_atom()  # [3, 2, 2] (CH3=sp3, C=sp2, O=sp2)

@@ -1,0 +1,129 @@
+{
+ "schema_version": 1,
+ "profile": "mmff94_atom_type_census_v1",
+ "corpus": {
+  "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+  "rows": 10000
+ },
+ "chematic_version": "1.0.34",
+ "rdkit_version": "2026.03.6",
+ "host": {
+  "platform": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+  "machine": "x86_64"
+ },
+ "row_status": {
+  "chematic_error": 22,
+  "compared": 9774,
+  "rdkit_mmff_unsupported": 204
+ },
+ "atoms_compared": {
+  "heavy": 214990,
+  "hydrogen": 190737
+ },
+ "hydrogen": {
+  "differing_atoms": 1,
+  "differing_atoms_with_agreeing_parent_type": 0,
+  "rows_with_difference": 1,
+  "by_key": [
+   {
+    "parent_element": "N",
+    "rdkit_parent_type": 39,
+    "chematic_parent_type": 40,
+    "rdkit_type": 23,
+    "chematic_type": 28,
+    "count": 1,
+    "example_input_indices": [
+     7573
+    ]
+   }
+  ]
+ },
+ "heavy": {
+  "differing_atoms": 89,
+  "rows_with_difference": 6,
+  "by_key": [
+   {
+    "element": "C",
+    "rdkit_type": 2,
+    "chematic_type": 37,
+    "count": 62,
+    "example_input_indices": [
+     3837
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 37,
+    "chematic_type": 2,
+    "count": 16,
+    "example_input_indices": [
+     3837
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 62,
+    "chematic_type": 9,
+    "count": 2,
+    "example_input_indices": [
+     7573
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 2,
+    "chematic_type": 3,
+    "count": 2,
+    "example_input_indices": [
+     7573
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 63,
+    "chematic_type": 2,
+    "count": 2,
+    "example_input_indices": [
+     7573
+    ]
+   },
+   {
+    "element": "C",
+    "rdkit_type": 64,
+    "chematic_type": 2,
+    "count": 2,
+    "example_input_indices": [
+     7573
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 39,
+    "chematic_type": 40,
+    "count": 1,
+    "example_input_indices": [
+     7573
+    ]
+   },
+   {
+    "element": "S",
+    "rdkit_type": 15,
+    "chematic_type": 44,
+    "count": 1,
+    "example_input_indices": [
+     8015
+    ]
+   },
+   {
+    "element": "N",
+    "rdkit_type": 56,
+    "chematic_type": 40,
+    "count": 1,
+    "example_input_indices": [
+     9862
+    ]
+   }
+  ]
+ }
+}

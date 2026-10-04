@@ -2764,6 +2764,45 @@ fn remap_reactant_stereo_order(
         .collect()
 }
 
+/// The reactant stereo order with its implicit-H slot given to the one
+/// neighbour the product atom gained, when that is the only change: every
+/// other recorded neighbour maps into the product and stays bonded, and the
+/// product atom has no H left. `None` otherwise.
+fn gained_neighbour_order(
+    order: &[u32],
+    mol_idx: usize,
+    src_to_new: &FxHashMap<(usize, AtomIdx), AtomIdx>,
+    product: &Molecule,
+    new_idx: AtomIdx,
+) -> Option<Vec<u32>> {
+    if order.iter().filter(|&&t| t == STEREO_H_SENTINEL).count() != 1 {
+        return None;
+    }
+    let remapped = remap_reactant_stereo_order(order, mol_idx, src_to_new)?;
+    let kept: FxHashSet<u32> = remapped
+        .iter()
+        .copied()
+        .filter(|&t| t != STEREO_H_SENTINEL)
+        .collect();
+    let neighbours: Vec<AtomIdx> = product.neighbors(new_idx).map(|(nb, _)| nb).collect();
+    if neighbours.len() != kept.len() + 1
+        || !kept.iter().all(|&t| neighbours.contains(&AtomIdx(t)))
+        || chematic_core::implicit_hcount(product, new_idx) != 0
+    {
+        return None;
+    }
+    let gained = neighbours.into_iter().find(|nb| !kept.contains(&nb.0))?;
+    if product.atom(gained).element == chematic_core::Element::H {
+        return None;
+    }
+    Some(
+        remapped
+            .into_iter()
+            .map(|t| if t == STEREO_H_SENTINEL { gained.0 } else { t })
+            .collect(),
+    )
+}
+
 /// Post-build chirality correction. Must run after `build_product`'s Steps
 /// 3-4 (all bonds added), since validation needs each atom's real final
 /// degree/neighbour set. See the module-level doc above for why this is two
@@ -2843,6 +2882,17 @@ fn correct_product_stereo(
                     .flatten()
                     .and_then(|order| remap_reactant_stereo_order(order, mol_idx, src_to_new))
                     .filter(|order| order_matches_final_topology(&product, new_idx, order));
+                // Case B: the centre lost its one implicit H and gained one
+                // new neighbour, every other neighbour kept. The new bond
+                // takes the H's place, as RDKit's reaction runner copies the
+                // tag (C-H functionalization keeps the configuration).
+                let remapped_order = remapped_order.or_else(|| {
+                    input_mols[mol_idx]
+                        .stereo_neighbor_order(src_idx)
+                        .and_then(|order| {
+                            gained_neighbour_order(order, mol_idx, src_to_new, &product, new_idx)
+                        })
+                });
                 match remapped_order {
                     Some(order) => {
                         product.set_chirality(new_idx, src_atom.chirality);
@@ -3419,6 +3469,66 @@ mod tests {
 
     fn canonical_set(set: Vec<Molecule>) -> Vec<String> {
         set.into_iter().map(|mol| canonical(&mol)).collect()
+    }
+
+    #[test]
+    fn centre_gaining_a_neighbour_in_place_of_its_h_keeps_stereo() {
+        // Native: the new bond takes the implicit H's place (geometric
+        // retention). RDKit 2026.03.6 copies the raw tag onto a bond list
+        // with the new bond appended, which is the opposite arrangement; the
+        // RDKit profile reproduces that (its `RunReactants`, sanitized).
+        for (smirks, smiles, native, rdkit) in [
+            (
+                "[C;$(CO):1]>>[C:1]C(=O)C",
+                "C[C@H](N)O",
+                "C[C@](C(C)=O)(N)O",
+                "CC(=O)[C@](C)(N)O",
+            ),
+            (
+                "[CH1:1]>>[C:1]F",
+                "C[C@@H](Cl)CC",
+                "C[C@@](F)(Cl)CC",
+                "CC[C@@](C)(F)Cl",
+            ),
+            (
+                "[C:1]>>[C:1]C",
+                "F[C@H](Cl)Br",
+                "F[C@](C)(Cl)Br",
+                "C[C@](F)(Cl)Br",
+            ),
+        ] {
+            let mol = parse(smiles).unwrap();
+            let got: Vec<String> = run_reactants(smirks, &[&mol])
+                .unwrap()
+                .into_iter()
+                .flatten()
+                .map(|m| canonical(&m))
+                .collect();
+            let want = canonical(&parse(native).unwrap());
+            assert!(
+                !got.is_empty() && got.iter().all(|g| *g == want),
+                "native {smirks} on {smiles}: {got:?}"
+            );
+            let RdkitProfileOutcome::Report(report) = run_reactants_traced_rdkit_2026_03_6(
+                smirks,
+                &[&mol],
+                &ReactionTransformLimits::default(),
+            )
+            .unwrap() else {
+                panic!("RDKit profile refused {smirks}");
+            };
+            let got: Vec<String> = report
+                .products
+                .iter()
+                .flatten()
+                .map(|p| canonical(&p.molecule))
+                .collect();
+            let want = canonical(&parse(rdkit).unwrap());
+            assert!(
+                !got.is_empty() && got.iter().all(|g| *g == want),
+                "RDKit profile {smirks} on {smiles}: {got:?}"
+            );
+        }
     }
 
     #[test]

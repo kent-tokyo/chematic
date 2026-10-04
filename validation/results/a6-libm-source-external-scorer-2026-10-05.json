@@ -1,0 +1,71 @@
+{
+  "chematic": {
+    "gross_clash_rows": 0,
+    "independently_sound": 265,
+    "rows": 265,
+    "scored": 265,
+    "stereo_clean": 265
+  },
+  "chematic_arm": "chematic_pipeline_v2_mmff94_strict_stereo_safe",
+  "chematic_rows_sha256": "60f708d5165cf9c0a772d5633af3ae1f1e74083a7a673035b29d8d8011e99dab",
+  "chematic_run": {
+    "configuration": {
+      "arms": [
+        "chematic_pipeline_v2_mmff94_strict_stereo_safe"
+      ],
+      "best_of_n": 10,
+      "enforce_chirality": false,
+      "expand_implicit_h_through_pipeline": false,
+      "force_field_max_iterations": 200,
+      "max_attempts": 8,
+      "random_seed": 20260801,
+      "requested_count": null,
+      "ring_torsion_policy": "diagnostic_only",
+      "start": 0,
+      "stereo_policy": {
+        "comparable_arms": "ignore_external_common_scorer_is_authoritative",
+        "stereo_safe_arms": "repair_and_verify_with_chirality_and_explicit_h"
+      },
+      "tiers": "AB",
+      "total_timeout_ms": 20000,
+      "wall_budget_seconds": 3300.0
+    },
+    "package": {
+      "distribution_version": "1.0.34",
+      "kind": "source_candidate",
+      "module_path": "/tmp/claude-0/-home-claude/fecf863c-eace-59af-9d3a-252dd64c4d40/scratchpad/devenv/lib/python3.11/site-packages/chematic/__init__.py",
+      "name": "chematic",
+      "runtime_version": "1.0.34",
+      "source_diff_sha256": "43b6d248f45d15be09531fee49f5ac0f9059441b47087efa5484aaa9fa242a1c",
+      "source_revision": "4823938fc205edf6cad1db1334f84142cb0fe684",
+      "wheel": {
+        "bytes": 6102146,
+        "path": "/tmp/claude-0/-home-claude/fecf863c-eace-59af-9d3a-252dd64c4d40/scratchpad/wheels_src/chematic-1.0.34-cp311-cp311-manylinux_2_35_x86_64.whl",
+        "sha256": "ae006154ac67f20cd51d7973d8433f1b2b5b0efca0334bdddd4d7243138fd515"
+      }
+    },
+    "result": {
+      "elapsed_seconds": 4.095760346000134,
+      "emitted_rows": 265,
+      "output": "/tmp/claude-0/-home-claude/fecf863c-eace-59af-9d3a-252dd64c4d40/scratchpad/a6_final.jsonl",
+      "output_sha256": "60f708d5165cf9c0a772d5633af3ae1f1e74083a7a673035b29d8d8011e99dab",
+      "selected_molecules": 265,
+      "termination": "completed"
+    }
+  },
+  "chematic_status": {
+    "converged": 102,
+    "success": 265
+  },
+  "rdkit_etkdgv3_mmff94": {
+    "gross_clash_rows": 0,
+    "independently_sound": 264,
+    "rows": 264,
+    "scored": 264,
+    "stereo_clean": 264
+  },
+  "rdkit_rows": "validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl (rdkit_etkdgv3_mmff94)",
+  "schema": "a6-external-scorer/v1",
+  "scope": "source branch fix/734-754-dialect-parity (libm transcendental math, this batch's MMFF94 typing); Linux x86-64; not a published artifact",
+  "scorer": "crates/chematic-3d/examples/pipeline_v2_vs_rdkit_common_scorer.rs (covalent-radius bond ratios, 1.2 A clash threshold, verify_stereo)"
+}

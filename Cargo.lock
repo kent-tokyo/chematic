@@ -437,6 +437,7 @@ dependencies = [
  "chematic-chem",
  "chematic-core",
  "chematic-crystal",
+ "chematic-depict",
  "chematic-fp",
  "chematic-perception",
  "chematic-rxn",

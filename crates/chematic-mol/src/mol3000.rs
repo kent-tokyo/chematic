@@ -1666,6 +1666,12 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
         metadata.v3000_sgroups.len()
     ));
 
+    // A molecule with stereo is written on coordinates that express it
+    // (see `stereo_depiction`).
+    let depiction = crate::stereo_depiction::needs_stereo_depiction(mol)
+        .then(|| crate::stereo_depiction::stereo_depiction(mol, coords));
+    let coords: &[(f64, f64)] = depiction.as_ref().map_or(coords, |d| &d.coords);
+
     // Atom block
     out.push_str("M  V30 BEGIN ATOM\n");
     for (idx, atom) in mol.atoms() {
@@ -1731,10 +1737,40 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
         let i = bidx.0 + 1;
         // V3000 bond CFG: 1=Up, 3=Down (NOT V2000's stereo-field codes 1/6 --
         // `CFG=6` is not a valid V3000 value).
-        let stereo = match bond.order {
-            BondOrder::Up => " CFG=1",
-            BondOrder::Down => " CFG=3",
-            _ => "",
+        let (a1, a2, stereo) = match &depiction {
+            Some(d) => match d.wedges.get(&bidx) {
+                Some(w) => {
+                    let (start, end) = if w.start == bond.atom1 {
+                        (a1, a2)
+                    } else {
+                        (a2, a1)
+                    };
+                    (
+                        start,
+                        end,
+                        if w.order == BondOrder::Up {
+                            " CFG=1"
+                        } else {
+                            " CFG=3"
+                        },
+                    )
+                }
+                None if d.unexpressed_double_bonds.contains(&bidx)
+                    || d.unspecified_double_bonds.contains(&bidx) =>
+                {
+                    (a1, a2, " CFG=2")
+                }
+                None => (a1, a2, ""),
+            },
+            None => (
+                a1,
+                a2,
+                match bond.order {
+                    BondOrder::Up => " CFG=1",
+                    BondOrder::Down => " CFG=3",
+                    _ => "",
+                },
+            ),
         };
         let opaque = metadata
             .v3000_bond_properties

@@ -26,17 +26,51 @@ pub(crate) fn emit_bracket_hydrogens(out: &mut String, mol: &Molecule, idx: Atom
     }
 }
 
-/// True when bond `bidx` shares an atom with some *other* `BondOrder::Double`
-/// bond — i.e. whether a `/`/`\` token on this bond could ever carry genuine
-/// OpenSMILES E/Z meaning. Mirrors the double-bond-adjacency test
-/// `CanonicalWriter::build_ez_groups` uses to collect real E/Z side bonds,
-/// just queried per-bond instead of built as a whole-molecule group.
-pub(crate) fn flanks_double_bond(mol: &Molecule, bidx: BondIdx) -> bool {
+/// True when bond `bidx` flanks a double bond whose *other* end also has a
+/// directional substituent bond, so a `/`/`\\` token on `bidx` takes part in
+/// an E/Z specification. A lone marker -- e.g. a MOL wedge drawn from a
+/// stereocentre to an alkene carbon -- specifies nothing, and RDKit drops it
+/// on parse.
+pub(crate) fn flanks_marked_double_bond(mol: &Molecule, bidx: BondIdx) -> bool {
     let bond = mol.bond(bidx);
-    [bond.atom1, bond.atom2].into_iter().any(|endpoint| {
-        mol.neighbors(endpoint)
-            .any(|(_, nb)| nb != bidx && mol.bond(nb).order == BondOrder::Double)
+    [bond.atom1, bond.atom2].into_iter().any(|end| {
+        mol.neighbors(end).any(|(far, db)| {
+            db != bidx
+                && mol.bond(db).order == BondOrder::Double
+                && mol
+                    .neighbors(far)
+                    .any(|(_, sb)| sb != db && sb != bidx && raw_bond_direction(mol, sb).is_some())
+                && !in_ring_smaller_than_eight(mol, db)
+        })
     })
+}
+
+/// Whether `bond` lies on a ring of fewer than eight atoms, where a double
+/// bond has no E/Z (RDKit drops such markers).
+pub(crate) fn in_ring_smaller_than_eight(mol: &Molecule, bond: BondIdx) -> bool {
+    let (start, goal) = (mol.bond(bond).atom1, mol.bond(bond).atom2);
+    let mut seen = vec![false; mol.atom_count()];
+    seen[start.0 as usize] = true;
+    let mut frontier = vec![start];
+    for _ in 0..6 {
+        let mut next = Vec::new();
+        for &a in &frontier {
+            for (nb, bi) in mol.neighbors(a) {
+                if bi == bond {
+                    continue;
+                }
+                if nb == goal {
+                    return true;
+                }
+                if !seen[nb.0 as usize] {
+                    seen[nb.0 as usize] = true;
+                    next.push(nb);
+                }
+            }
+        }
+        frontier = next;
+    }
+    false
 }
 
 /// Demote a `BondOrder::Up`/`Down` bond to `Single` for writer-emission
@@ -64,7 +98,7 @@ pub(crate) fn suppress_standalone_wedge(
     order: BondOrder,
 ) -> BondOrder {
     if matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down)
-        && !flanks_double_bond(mol, bidx)
+        && !flanks_marked_double_bond(mol, bidx)
     {
         BondOrder::Single
     } else {
@@ -84,11 +118,14 @@ pub(crate) fn suppress_standalone_wedge(
 /// direction (docs/rfcs/stereo2d_reader_integration_rfc.md), so this crate keeps
 /// exactly one copy of the rule rather than two that could silently drift.
 pub(crate) fn raw_bond_direction(mol: &Molecule, bidx: BondIdx) -> Option<BondOrder> {
-    let order = mol.bond(bidx).order;
-    if matches!(order, BondOrder::Up | BondOrder::Down) {
-        return Some(order);
+    // A stored direction wins over a literal `Up`/`Down` order: a MOL
+    // reader keeps a wedge's tetrahedral meaning in `order` and may put the
+    // E/Z direction of an adjacent double bond on the same bond.
+    if let Some(direction) = mol.bond_direction(bidx) {
+        return Some(direction);
     }
-    mol.bond_direction(bidx)
+    let order = mol.bond(bidx).order;
+    matches!(order, BondOrder::Up | BondOrder::Down).then_some(order)
 }
 
 /// Re-orient a raw (atom1→atom2-relative) directional marker for reading

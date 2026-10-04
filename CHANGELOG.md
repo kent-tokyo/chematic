@@ -119,6 +119,74 @@ adapter difference. Record: `benchmarks/2026-10-04-xsmarts-autoconf-v1034.md`.
   three jointly invalid rows on the 83 reaction fixtures; npm `formula()`
   spells all 5,000 exposed ChEMBL rows as published Python does (v1.0.30
   npm: 1,575 differed), and E/Z product SMILES parse as JSON.
+- **MOL writer stereo:** `write_mol` / `write_mol_v3000` (and Python
+  `to_mol_block`, WASM, CLI) write a molecule with stereo on 2D coordinates
+  that express it: one wedge or hash per tetrahedral centre, drawn from the
+  centre and checked by re-reading it, and E/Z set by the geometry (a side
+  is reflected where needed). Before, a molecule without coordinates lost
+  every tetrahedral centre, and SMILES `/`/`\` markers were written as wedge
+  codes only chematic read back. RDKit 2026.03.6 reads 1,581 of the 1,687
+  exposed-10k stereo rows and 1,593 of 1,670 ChEMBL-5k rows back as the input
+  (v1.0.34: none); the rest lose a centre the layout cannot draw clearly or
+  write a ring E/Z bond as "either" (stereo 3 / `CFG=2`). No row reads back
+  with an inverted centre. Stereogenic double bonds without declared E/Z are
+  written "either" too, so the drawing does not invent stereo. Kekulé bonds
+  written for an aromatic H that type 4 would lose are chosen in canonical
+  atom order. The coordinates path wrote the atom-map column one character
+  late (RDKit read every atom as mapped 0); fixed.
+- **MOL reader E/Z:** conjugated and branched double bonds are read from
+  coordinates (two double bonds sharing a carrier bond are reconciled by
+  flipping one, as RDKit does for polyenes; the reader used to reject
+  retinoids, amidines and dienes with a branch), a wedge bond can carry the
+  direction of an adjacent double bond, and double bonds in rings of fewer
+  than eight atoms get no E/Z. RDKit-written MOL blocks of the exposed-10k
+  stereo rows read back as RDKit's molecule for 1,666 / 1,687 rows (v1.0.34:
+  1,548); ChEMBL 5k: 1,647 / 1,670 (1,596).
+- Canonical SMILES drop a `/`/`\` marker that specifies no E/Z (its double
+  bond's other end has no marker, or the bond is in a ring of fewer than
+  eight atoms), as RDKit does, and E/Z carrier choice no longer depends on
+  a marker next to a non-stereogenic double bond (`=C(C#N)2`, `=CD2`).
+  Canonical output is unchanged for 14,992 of 15,000 corpus rows; the 8
+  changes move a carrier, and RDKit reads every row's output as the input
+  molecule. `assign_ez_bonds` gives no E/Z to a double bond in a ring of
+  fewer than eight atoms.
+- **Behaviour change:** `hybridization_per_atom` (Python
+  `Mol.hybridization_per_atom`) follows RDKit's model on RDKit's aromaticity
+  view (amide/enamine N and aryl ether O are sp2; five- and six-orbital
+  centres report 0); it used bond orders only. Agreement with RDKit
+  `GetHybridization` on the exposed 10k corpus: 220,003 / 220,015 atoms (was
+  199,617). `hall_kier_alpha` and `carbon_types` use it.
+  `chematic_smarts::rdkit_hybridization` is public.
+- MMFF94 atom typing follows RDKit's `setMMFFHeavyAtomType` for aliphatic
+  carbon (by total degree; CR4E 30, CO2M 41 and CNN+ 57 were never
+  assigned, and a carbon of an MMFF-aromatic seven-ring was typed alkyl),
+  nitroso N (46), NSO N (48), N-oxides (67/68), N=N-N / N=N-C amide-like N
+  (10), =N= (53) and isonitrile N (61), phosphorus (by degree: thiophosphate
+  P was 26), oxonium / pyrylium / water O (49/51/70) and perchlorate Cl
+  (77). Heavy atoms typed differently from RDKit on the exposed 10k corpus:
+  89 (was 451; 78 of them in one fullerene cage); ChEMBL 5k: 103.
+- **CIP (Accurate):** a multiple bond at the stereocentre itself is not
+  expanded, as in RDKit's CIPLabeler (a P=O oxygen ranks like the O⁻ of
+  `[P+][O-]`); acyclic phosphorus centres are labelled (only P on an
+  unsaturated ring, where Kekulé respellings change RDKit's label, stays
+  `OracleUnstable`); a lone pair outside rings is a lowest-priority phantom
+  ligand (sulfoxides, sulfinamides, sulfoximines, phosphines, selenoxides:
+  540 / 540 centres over random atom orders agree with RDKit). Ring
+  lone-pair centres (bridgehead amines) stay `LonePairCenter`. Exposed 10k:
+  4,394 labels agree with RDKit, 1 abstention (was 5), none differ.
+- Native SMIRKS: a stereocentre that loses its implicit H and gains one new
+  neighbour keeps its configuration with the new group in the H's place. The
+  RDKit profile (`rdkit_compat=True`) gives RDKit's opposite arrangement
+  (raw tag copy onto an appended bond).
+- Performance (Linux, exposed 10k, vs v1.0.34): canonical SMILES 1.06x
+  time, add/remove H 1.09x, SMARTS `^n` 1.5x (RDKit model), MOL writing ~17x
+  for the layout of stereo molecules, MMFF94 typing 0.96x, UFF 3D 1.0x,
+  reactions 1.07x (Kekulé aromatic reactants are aromatized first).
+- Evidence: published PyPI v1.0.34 (CPython 3.9) passes the opt-in SMARTS
+  310k gate (309,982 exact, 18 typed refusals, none unexpected) with the
+  archived oracle (`check_python_smarts_parity_310k.py --archived-oracle`);
+  the source build (libm math, new MMFF typing) gives 265 / 265 A6
+  successes, all sound, stereo-clean and clash-free on the external scorer.
 
 ## [1.0.34] - 2026-10-04
 

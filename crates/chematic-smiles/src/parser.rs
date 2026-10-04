@@ -1457,8 +1457,11 @@ mod tests {
         // The `/`/`\` sits between the ring-opening atom and the very next
         // chain atom -- the plain tree-edge path (already had the guard
         // before this fix; kept as a path-1 regression pin, not a new fix).
-        let mol = parse(r"N=c1\c(O)c(O)\c1=N").unwrap();
-        assert_aromatic_with_stash(&mol, BondIdx(1), "path1(chain-edge)");
+        // Both imines carry markers at their N ends too: a marker on one
+        // side only specifies nothing and canonical output drops it, as
+        // RDKit does.
+        let mol = parse(r"C/N=c1\c(O)c(O)\c1=N/C").unwrap();
+        assert_aromatic_with_stash(&mol, BondIdx(2), "path1(chain-edge)");
         assert_round_trip_preserves_stash_representation(&mol, "path1(chain-edge)");
     }
 
@@ -1481,8 +1484,11 @@ mod tests {
         // aromatic atoms (this is the real-world corpus mechanism: a
         // canonical DFS can route what was a chain edge on the original
         // parse through a branch attachment on the next).
-        let mol = parse(r"Cc1ccc(/c1)N").unwrap();
-        assert_aromatic_with_stash(&mol, BondIdx(4), "path3(branch-attachment)");
+        // (`O=c1cccc(/c1=N/C)`: the branch's first atom carries an exocyclic
+        // imine whose N end is marked too, so the marker means something
+        // and survives canonical output.)
+        let mol = parse(r"O=c1cccc(/c1=N/C)").unwrap();
+        assert_aromatic_with_stash(&mol, BondIdx(5), "path3(branch-attachment)");
         assert_round_trip_preserves_stash_representation(&mol, "path3(branch-attachment)");
     }
 

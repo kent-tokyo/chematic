@@ -804,11 +804,11 @@ fn negative_25_cumulene_allene() {
     );
 }
 
-/// Fixture 26: Shared-carrier conflict: two double bonds' independently-computed
-/// requirements on the SAME physical bond disagree. Both must reject; the
-/// shared bond must end up with no direction.
+/// Fixture 26: the two double bonds' independently computed values on the
+/// shared bond disagree. Flipping both carriers of one keeps its geometry,
+/// so both are read, as RDKit 2026.03.6 reads this block: `C/C=C\C=C\C`.
 #[test]
-fn negative_26_shared_carrier_conflict() {
+fn fixture_26_shared_carrier_values_are_reconciled() {
     let mut b = MoleculeBuilder::new();
     let me1 = b.add_atom(Atom::new(Element::C));
     let ca = b.add_atom(Atom::new(Element::C));
@@ -823,7 +823,7 @@ fn negative_26_shared_carrier_conflict() {
     b.add_bond(cd, me2, BondOrder::Single).unwrap();
     let mol = b.build();
     // Hand-verified conflicting layout (see stereo2d_ez_direction.rs's own
-    // `conjugated_diene_shared_bond_conflict` unit test for the derivation).
+    // `conjugated_diene_shared_bond_conflict_is_reconciled` unit test).
     let coords = vec![
         (-1.0, 1.0),
         (0.0, 0.0),
@@ -834,18 +834,13 @@ fn negative_26_shared_carrier_conflict() {
     ];
     let block = write_mol_with_coords(&mol, &MolMetadata::default().with_name("conflict"), &coords);
     let report = read_mol_with_diagnostics(&block).expect("parse");
-    assert_eq!(
-        report.ez_diagnostics.len(),
-        2,
+    assert!(
+        report.ez_diagnostics.is_empty(),
         "{:?}",
         report.ez_diagnostics
     );
-    assert!(
-        report
-            .ez_diagnostics
-            .iter()
-            .all(|d| d.reason == EzDirectionRejectionReason::CarrierConflict)
-    );
+    let want = canonical_smiles(&chematic_smiles::parse("C/C=C\\C=C\\C").unwrap());
+    assert_eq!(canonical_smiles(&report.mol), want);
 }
 
 /// Fixture 27: Wedge only, no E/Z anywhere: must not spuriously produce any E/Z
@@ -1003,4 +998,26 @@ fn pr154_tetrahedral_only_fixture_unaffected() {
         !has_directional_token(&canon),
         "no double bond exists, so no E/Z token should appear: '{canon}'"
     );
+}
+
+/// RDKit draws the hash from the ring stereocentre to the alkene carbon whose
+/// only other substituent is H, so that wedge bond is the only possible
+/// carrier for the E/Z bond. It used to be skipped (the bond lost its E/Z);
+/// the direction now goes in `bond_direction`, which E/Z readers prefer
+/// over the wedge's literal order. Block written by RDKit 2026.03.6
+/// (`Compute2DCoords(canonOrient=True)`).
+#[test]
+fn wedge_bond_carries_adjacent_ez_direction() {
+    let block = "\n     RDKit          2D\n\n 27 27  0  0  0  0  0  0  0  0999 V2000\n    9.2017   -2.9599    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    8.2327   -1.8149    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    6.7566   -2.0816    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.7876   -0.9366    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    4.3115   -1.2034    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.8354   -1.4701    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    4.5782   -2.6795    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n    4.0447    0.2727    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.6330    0.7798    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    2.3663    2.2559    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.9546    2.7629    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.5350    4.2031    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.4535    5.3890    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.9642    4.2491    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.4713    2.8374    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.9114    2.4178    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.2854    1.9189    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.3314    0.4196    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.6528   -0.2902    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.6988   -1.7895    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -3.0202   -2.4993    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -4.2957   -1.7098    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -5.6171   -2.4197    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -6.8925   -1.6302    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -6.8465   -0.1309    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n   -8.2140   -2.3400    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n   -9.4894   -1.5505    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\n  2  3  1  0\n  3  4  1  0\n  4  5  1  0\n  5  6  1  0\n  5  7  1  0\n  5  8  1  0\n  8  9  1  0\n  9 10  2  0\n 11 10  1  6\n 11 12  1  0\n 12 13  1  1\n 12 14  1  0\n 14 15  1  0\n 15 16  2  0\n 15 17  1  0\n 17 18  1  1\n 18 19  1  0\n 19 20  1  0\n 20 21  2  0\n 21 22  1  0\n 22 23  1  0\n 23 24  1  0\n 24 25  2  0\n 24 26  1  0\n 26 27  1  0\n 17 11  1  0\nM  END\n";
+    let report = read_mol_with_diagnostics(block).expect("parse");
+    assert!(
+        report.ez_diagnostics.is_empty(),
+        "{:?}",
+        report.ez_diagnostics
+    );
+    let want = canonical_smiles(
+        &chematic_smiles::parse(r"CCCCC(C)(O)C/C=C/[C@H]1[C@H](O)CC(=O)[C@@H]1CC/C=C\CCC(=O)OC")
+            .unwrap(),
+    );
+    assert_eq!(canonical_smiles(&report.mol), want);
 }
