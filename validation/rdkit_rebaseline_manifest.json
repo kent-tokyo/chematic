@@ -129,14 +129,14 @@
         "artifact": "validation/results/rdkit-rebaseline-npm-provenance-v1.0.33-vs-2026.03.6-2026-10-04.json",
         "runtime": "RDKit.js 2026.03.6 executed in Chrome",
         "backend": "official @rdkit/rdkit MinimalLib WASM",
-        "configuration": "10k exposed rows; Morgan radius 2, 2048 bits; 20 isolated-process browser repetitions with split prepared timing",
+        "configuration": "10k exposed rows; Morgan radius 2, 2048 bits; graph-checked CIP; 20 isolated-process browser repetitions with split prepared timing",
         "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
         "toolchain": "macOS arm64; Node 24.5.0; Chrome executable and Python recorded in raw evidence",
         "missing_dimensions": []
       },
       "operation_evidence": {
         "smiles_parse_write": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.03.6-2026-10-04.json"],
-        "cip": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json"],
+        "cip": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json", "validation/results/rdkit-rebaseline-npm-cip-parity-v1.0.33-vs-2026.03.6-2026-10-04.json"],
         "smarts": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json"],
         "morgan": ["validation/results/rdkit-rebaseline-npm-morgan-parity-v1.0.33-vs-2026.03.6-2026-10-04.json"],
         "browser_runtime": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.03.6-2026-10-04.json"]
@@ -155,14 +155,14 @@
         "artifact": "validation/results/rdkit-rebaseline-npm-provenance-v1.0.33-vs-2026.09.1-2026-10-04.json",
         "runtime": "RDKit.js 2026.09.1 executed in Chrome",
         "backend": "official @rdkit/rdkit MinimalLib WASM",
-        "configuration": "10k exposed rows; Morgan radius 2, 2048 bits; 20 isolated-process browser repetitions with split prepared timing",
+        "configuration": "10k exposed rows; Morgan radius 2, 2048 bits; graph-checked CIP; 20 isolated-process browser repetitions with split prepared timing",
         "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
         "toolchain": "macOS arm64; Node 24.5.0; Chrome executable and Python recorded in raw evidence",
         "missing_dimensions": []
       },
       "operation_evidence": {
         "smiles_parse_write": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.09.1-2026-10-04.json"],
-        "cip": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json"],
+        "cip": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json", "validation/results/rdkit-rebaseline-npm-cip-parity-v1.0.33-vs-2026.09.1-2026-10-04.json"],
         "smarts": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json"],
         "morgan": ["validation/results/rdkit-rebaseline-npm-morgan-parity-v1.0.33-vs-2026.09.1-2026-10-04.json"],
         "browser_runtime": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.09.1-2026-10-04.json"]

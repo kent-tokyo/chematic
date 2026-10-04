@@ -33,6 +33,26 @@ The unchanged unsupported row is input index 8341, an Fe(II) coordination
 structure. It remains visible in the direct browser gate, not removed from the
 corpus. This does not prove parity for other fingerprint options or inputs.
 
+The published WASM CIP comparison uses official MinimalLib `get_stereo_tags()`
+and CheMatic's accurate CIP API. It compares indexed labels **only after**
+both V2000 exports agree on atom symbols, atom order, and bond endpoints.
+RDKit's `?` tags are unspecified centers, not assigned R/S labels.
+
+| CIP row status | RDKit.js 2026.03.6 | RDKit.js 2026.09.1 |
+|---|---:|---:|
+| Proven index correspondence | 9,999 / 10,000 | 9,999 / 10,000 |
+| Exact labels, no CheMatic abstention | 9,988 | 9,988 |
+| CheMatic typed abstention | 5 | 5 |
+| Mismatch | 6 | 6 |
+| Index correspondence unproven (Fe structure) | 1 | 1 |
+
+All six mismatches are the same imine E/Z family (indices 1206, 1213, 1214,
+1287, 1370, 1371): CheMatic reports E and both RDKit.js versions report Z.
+They are **pre-existing compatibility residuals**, not caused by the 2026.09.1
+oracle update; chemical adjudication remains open. Four abstentions are
+`oracleUnstable` phosphorus labels and one is a `lonePairCenter` label. The
+Fe row is unproven, not counted as exact, refusal, or wrong-label mismatch.
+
 The **RDKit-version-to-RDKit-version** direct comparison covered all 10,000
 inputs and the 31 fixed SMARTS queries (310,000 cells):
 
@@ -50,7 +70,7 @@ polycyclic inputs (indices 9, 23, 28, 29, 30, 34). The CIP comparison uses
 MinimalLib `get_stereo_tags()` and compares tags only after the ordered atom
 and bond JSON graph agrees. This is an **oracle change**,
 not yet adjudicated as an RDKit fix or regression, and it is not a new CheMatic
-CIP/SMARTS parity measurement. Every row is retained with status, output hashes,
+SMARTS parity measurement. Every row is retained with status, output hashes,
 and explicit changed atom sets in the compressed JSONL packet.
 
 ## Browser measurements
@@ -78,6 +98,8 @@ lanes exclude preparation from the timed operation; RSS was not measured.
 
 - Direct bit gate:
   `validation/results/rdkit-rebaseline-npm-morgan-parity-v1.0.33-vs-{2026.03.6,2026.09.1}-2026-10-04.json`.
+- Graph-checked CIP gate and all-row packet:
+  `validation/results/rdkit-rebaseline-npm-cip-parity-v1.0.33-vs-{2026.03.6,2026.09.1}-2026-10-04.{json,jsonl.gz}`.
 - Isolated 20-run browser records:
   `validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-{2026.03.6,2026.09.1}-2026-10-04.json`.
 - Oracle delta and **all 10,000 row records**:
@@ -85,6 +107,7 @@ lanes exclude preparation from the timed operation; RSS was not measured.
 - Artifact availability snapshot:
   `validation/results/rdkit-2026-09-1-artifact-availability-2026-10-04.json`.
 - Runners: `scripts/compare_rdkitjs_release_chemistry.cjs`,
+  `scripts/check_rdkitjs_cip_parity.cjs`,
   `scripts/check_browser_rdkit_ecfp4_parity.py`,
   `scripts/bench_browser_wasm_vs_rdkit_isolated.py`, and the argv-safe
   `validation/rdkit_rebaseline_execution.json` command catalog.

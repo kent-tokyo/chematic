@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "profile": "published_wasm_rdkitjs_cip_parity_v1",
+  "generated_at_utc": "2026-10-03T23:58:32.707Z",
+  "node": "v24.5.0",
+  "rdkit": {
+    "version": "2026.09.1",
+    "package": "2026.9.1",
+    "wasm_sha256": "594ceaed387adc70ea13bfbb2e8eace916f6c782254ed5a6f0f0a0a7a4fe4061"
+  },
+  "chematic": {
+    "version": "1.0.33",
+    "package": "1.0.33",
+    "wasm_sha256": "bc930da97afad19dd0c84393cb4b2de94854f408e312e1d12306fb048979d4bc"
+  },
+  "corpus": {
+    "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+  },
+  "counts": {
+    "rows": 10000,
+    "graph_correspondence": 9999,
+    "exact_rows": 9988,
+    "typed_abstention_rows": 5,
+    "mismatch_rows": 6,
+    "unproven_rows": 1
+  },
+  "examples": [
+    {
+      "input_index": 1206,
+      "smiles": "CCOC(=O)c1cc2ccccn2/c(=N/c2ccc(OC)cc2)n1",
+      "status": "mismatch",
+      "differences": [
+        {
+          "kind": "bonds",
+          "key": "13-14",
+          "chematic": "E",
+          "rdkit": "Z"
+        }
+      ],
+      "unresolved": [],
+      "chematic_labels_sha256": "3f95e91b67382917784dbee47aa37c47d81d973a99199855c8e77919c6e23987",
+      "rdkit_labels_sha256": "9534bbebb29c5b412ea70aa6f2ca53aedbd295ac6970b9b06dbb426f4e510564"
+    },
+    {
+      "input_index": 1213,
+      "smiles": "CCOC(=O)c1cc2ccccn2/c(=N/c2ccc(F)cc2)n1",
+      "status": "mismatch",
+      "differences": [
+        {
+          "kind": "bonds",
+          "key": "13-14",
+          "chematic": "E",
+          "rdkit": "Z"
+        }
+      ],
+      "unresolved": [],
+      "chematic_labels_sha256": "3f95e91b67382917784dbee47aa37c47d81d973a99199855c8e77919c6e23987",
+      "rdkit_labels_sha256": "9534bbebb29c5b412ea70aa6f2ca53aedbd295ac6970b9b06dbb426f4e510564"
+    },
+    {
+      "input_index": 1214,
+      "smiles": "CCOC(=O)c1cc2ccccn2/c(=N/c2ccc(Br)cc2)n1",
+      "status": "mismatch",
+      "differences": [
+        {
+          "kind": "bonds",
+          "key": "13-14",
+          "chematic": "E",
+          "rdkit": "Z"
+        }
+      ],
+      "unresolved": [],
+      "chematic_labels_sha256": "3f95e91b67382917784dbee47aa37c47d81d973a99199855c8e77919c6e23987",
+      "rdkit_labels_sha256": "9534bbebb29c5b412ea70aa6f2ca53aedbd295ac6970b9b06dbb426f4e510564"
+    },
+    {
+      "input_index": 1287,
+      "smiles": "CCOC(=O)c1cc2ccccn2/c(=N/c2ccc(C)cc2)n1",
+      "status": "mismatch",
+      "differences": [
+        {
+          "kind": "bonds",
+          "key": "13-14",
+          "chematic": "E",
+          "rdkit": "Z"
+        }
+      ],
+      "unresolved": [],
+      "chematic_labels_sha256": "3f95e91b67382917784dbee47aa37c47d81d973a99199855c8e77919c6e23987",
+      "rdkit_labels_sha256": "9534bbebb29c5b412ea70aa6f2ca53aedbd295ac6970b9b06dbb426f4e510564"
+    },
+    {
+      "input_index": 1370,
+      "smiles": "CCOC(=O)c1cc2ccccn2/c(=N/c2ccc(Cl)cc2)n1",
+      "status": "mismatch",
+      "differences": [
+        {
+          "kind": "bonds",
+          "key": "13-14",
+          "chematic": "E",
+          "rdkit": "Z"
+        }
+      ],
+      "unresolved": [],
+      "chematic_labels_sha256": "3f95e91b67382917784dbee47aa37c47d81d973a99199855c8e77919c6e23987",
+      "rdkit_labels_sha256": "9534bbebb29c5b412ea70aa6f2ca53aedbd295ac6970b9b06dbb426f4e510564"
+    },
+    {
+      "input_index": 1371,
+      "smiles": "CCOC(=O)c1cc2ccccn2/c(=N/c2ccccc2)n1",
+      "status": "mismatch",
+      "differences": [
+        {
+          "kind": "bonds",
+          "key": "13-14",
+          "chematic": "E",
+          "rdkit": "Z"
+        }
+      ],
+      "unresolved": [],
+      "chematic_labels_sha256": "3f95e91b67382917784dbee47aa37c47d81d973a99199855c8e77919c6e23987",
+      "rdkit_labels_sha256": "9534bbebb29c5b412ea70aa6f2ca53aedbd295ac6970b9b06dbb426f4e510564"
+    },
+    {
+      "input_index": 2960,
+      "smiles": "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+      "status": "typed_abstention",
+      "differences": [],
+      "unresolved": [
+        {
+          "atomIdx": 9,
+          "reason": "lonePairCenter"
+        }
+      ],
+      "chematic_labels_sha256": "57cb8eebe92b0da42a6b0456a8515d842329b448a7af6bb79959999830b7f5e8",
+      "rdkit_labels_sha256": "57cb8eebe92b0da42a6b0456a8515d842329b448a7af6bb79959999830b7f5e8"
+    },
+    {
+      "input_index": 4419,
+      "smiles": "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@](=O)(OC)[C@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
+      "status": "typed_abstention",
+      "differences": [
+        {
+          "kind": "atoms",
+          "key": "13",
+          "chematic": null,
+          "rdkit": "R"
+        }
+      ],
+      "unresolved": [
+        {
+          "atomIdx": 13,
+          "reason": "oracleUnstable"
+        }
+      ],
+      "chematic_labels_sha256": "75d8b003f9b79736a4d31bf96f9f353c92a2d61ba44d9e895c64ee6f5ceb62b0",
+      "rdkit_labels_sha256": "9cf1f9c81472b40204432040abb5f4b9fa884c1e947b3a525f0b3c83b4cbfba4"
+    },
+    {
+      "input_index": 4439,
+      "smiles": "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@@](=O)(OC)[C@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
+      "status": "typed_abstention",
+      "differences": [
+        {
+          "kind": "atoms",
+          "key": "13",
+          "chematic": null,
+          "rdkit": "S"
+        }
+      ],
+      "unresolved": [
+        {
+          "atomIdx": 13,
+          "reason": "oracleUnstable"
+        }
+      ],
+      "chematic_labels_sha256": "75d8b003f9b79736a4d31bf96f9f353c92a2d61ba44d9e895c64ee6f5ceb62b0",
+      "rdkit_labels_sha256": "a68114669d52d5c4eaadc450f2acce9021eaf426761a16ff16073292c78e4e0a"
+    },
+    {
+      "input_index": 4643,
+      "smiles": "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@@](=O)(OC)[C@@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
+      "status": "typed_abstention",
+      "differences": [
+        {
+          "kind": "atoms",
+          "key": "13",
+          "chematic": null,
+          "rdkit": "S"
+        }
+      ],
+      "unresolved": [
+        {
+          "atomIdx": 13,
+          "reason": "oracleUnstable"
+        }
+      ],
+      "chematic_labels_sha256": "1507464d1a63fb3b8afde2ff5f3aa08c92f4709248d3cc4de6b1996ce6bccbbe",
+      "rdkit_labels_sha256": "1f0e13e8bc9aba8a7fcb5c063ffba22c80a3b6b255636ec43999a56d1159620d"
+    },
+    {
+      "input_index": 4644,
+      "smiles": "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@](=O)(OC)[C@@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
+      "status": "typed_abstention",
+      "differences": [
+        {
+          "kind": "atoms",
+          "key": "13",
+          "chematic": null,
+          "rdkit": "R"
+        }
+      ],
+      "unresolved": [
+        {
+          "atomIdx": 13,
+          "reason": "oracleUnstable"
+        }
+      ],
+      "chematic_labels_sha256": "1507464d1a63fb3b8afde2ff5f3aa08c92f4709248d3cc4de6b1996ce6bccbbe",
+      "rdkit_labels_sha256": "a2e2fa005a12d4e7ce0f3091903f5a753c17f8198df94bfa232babe9f266d801"
+    },
+    {
+      "input_index": 8341,
+      "smiles": "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10",
+      "status": "unproven",
+      "differences": [],
+      "reason": "Error: V2000 counts line missing"
+    }
+  ],
+  "rows_output": {
+    "path": "validation/results/rdkit-rebaseline-npm-cip-parity-v1.0.33-vs-2026.09.1-2026-10-04.jsonl.gz",
+    "rows": 10000,
+    "compressed_bytes": 178242,
+    "compressed_sha256": "f29c29f3d450dba165bba40d8b68b50a9f3d98c910df3ce371d1c7a7e13982e5",
+    "uncompressed_sha256": "43c2d7fc3e01e4464819dcca6dc5a56baf6caf7c65c06378698b70ff3eff6421"
+  },
+  "boundary": "Atom symbols and bond endpoints from both V2000 writers must agree before indexed CIP labels are compared. Unsupported graph exports are unproven, not mismatches or exact matches."
+}

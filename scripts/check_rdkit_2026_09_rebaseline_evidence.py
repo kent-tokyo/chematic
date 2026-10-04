@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "validation" / "results"
 DAY = "2026-10-04"
 CORPUS = ROOT / "validation" / "benchmark_corpora" / "rdkit-js-browser-10k-v1.smi"
+EXECUTION = ROOT / "validation" / "rdkit_rebaseline_execution.json"
 VERSIONS = ("2026.03.6", "2026.09.1")
 
 
@@ -41,10 +42,12 @@ def check() -> None:
     require(availability["npm"]["http_status"] == 200, "npm availability snapshot changed")
 
     artifacts: dict[str, dict] = {}
+    cip_rows_digests: dict[str, str] = {}
     for version in VERSIONS:
         provenance = load(f"rdkit-rebaseline-npm-provenance-v1.0.33-vs-{version}-{DAY}.json")
         require(provenance["inputs"]["sealed_accuracy_cohort_reused"] is False, "sealed corpus used")
         require(provenance["inputs"]["corpora"][0]["sha256"] == corpus_hash, "provenance corpus changed")
+        require(provenance["inputs"]["operation_configurations"][0]["sha256"] == sha256(EXECUTION.read_bytes()), f"{version}: execution catalog changed")
         require(len(provenance["lanes"]) == 1, "expected one provenance lane")
         lane = provenance["lanes"][0]
         require(lane["runtime"]["version"] == version, f"{version}: runtime mismatch")
@@ -73,9 +76,38 @@ def check() -> None:
         wasm = next(asset for asset in lane["package"]["assets"] if asset["path"] == "dist/RDKit_minimal.wasm")
         require(wasm["sha256"] == browser["artifacts"]["rdkit_wasm"]["sha256"], f"{version}: WASM artifact changed")
         require(browser["artifacts"]["schematic_package"]["version"] == "1.0.33", f"{version}: CheMatic package changed")
+        cip = load(f"rdkit-rebaseline-npm-cip-parity-v1.0.33-vs-{version}-{DAY}.json")
+        require(cip["rdkit"]["version"] == version, f"{version}: CIP runtime mismatch")
+        require(cip["chematic"]["package"] == "1.0.33", f"{version}: CIP CheMatic package mismatch")
+        require(cip["rdkit"]["wasm_sha256"] == wasm["sha256"], f"{version}: CIP RDKit WASM mismatch")
+        require(cip["chematic"]["wasm_sha256"] == browser["artifacts"]["schematic_wasm"]["sha256"], f"{version}: CIP CheMatic WASM mismatch")
+        require(cip["corpus"]["sha256"] == corpus_hash, f"{version}: CIP corpus changed")
+        require(cip["counts"] == {
+            "rows": 10000, "graph_correspondence": 9999, "exact_rows": 9988,
+            "typed_abstention_rows": 5, "mismatch_rows": 6, "unproven_rows": 1,
+        }, f"{version}: CIP counts changed")
+        cip_compressed = (ROOT / cip["rows_output"]["path"]).read_bytes()
+        require(sha256(cip_compressed) == cip["rows_output"]["compressed_sha256"], f"{version}: CIP compressed rows changed")
+        cip_body = gzip.decompress(cip_compressed)
+        cip_digest = sha256(cip_body)
+        require(cip_digest == cip["rows_output"]["uncompressed_sha256"], f"{version}: CIP rows changed")
+        cip_rows_digests[version] = cip_digest
+        cip_status: Counter[str] = Counter()
+        cip_nonexact: dict[str, list[int]] = {}
+        for row_index, line in enumerate(cip_body.splitlines()):
+            row = json.loads(line)
+            require(row["input_index"] == row_index, f"{version}: CIP row order changed")
+            cip_status[row["status"]] += 1
+            cip_nonexact.setdefault(row["status"], []).append(row_index)
+        require(row_index + 1 == 10000, f"{version}: CIP rows incomplete")
+        require(cip_status == {"exact": 9988, "typed_abstention": 5, "mismatch": 6, "unproven": 1}, f"{version}: CIP row status count changed")
+        require(cip_nonexact["mismatch"] == [1206, 1213, 1214, 1287, 1370, 1371], f"{version}: CIP mismatch identities changed")
+        require(cip_nonexact["typed_abstention"] == [2960, 4419, 4439, 4643, 4644], f"{version}: CIP abstention identities changed")
+        require(cip_nonexact["unproven"] == [8341], f"{version}: CIP unproven identity changed")
     old_browser = load(f"rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-{VERSIONS[0]}-{DAY}.json")
     new_browser = load(f"rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-{VERSIONS[1]}-{DAY}.json")
     require(old_browser["artifacts"]["schematic_wasm"]["sha256"] == new_browser["artifacts"]["schematic_wasm"]["sha256"], "CheMatic WASM differs between arms")
+    require(cip_rows_digests[VERSIONS[0]] == cip_rows_digests[VERSIONS[1]], "CheMatic/RDKit CIP row outcomes differ by RDKit version")
 
     comparison = load(f"rdkit-rebaseline-npm-oracle-delta-{VERSIONS[0]}-to-{VERSIONS[1]}-{DAY}.json")
     counts = comparison["counts"]
@@ -110,7 +142,7 @@ def check() -> None:
     require(index + 1 == 10000, "row file incomplete")
     require(status == {("ok", "ok"): 10000}, "row parse statuses changed")
     require(changed == {"[R2]": 6, "[R3]": 6}, "SMARTS difference families changed")
-    print("RDKit 2026.09.1 npm rebaseline evidence OK: 10k rows, 310k SMARTS cells, 20 browser runs per arm")
+    print("RDKit 2026.09.1 npm rebaseline evidence OK: 10k rows, graph-checked CIP, 310k SMARTS cells, 20 browser runs per arm")
 
 
 if __name__ == "__main__":
