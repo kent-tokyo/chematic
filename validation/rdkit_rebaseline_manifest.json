@@ -2,7 +2,7 @@
   "schema_version": 3,
   "policy": {
     "baseline_lanes_are_immutable": true,
-    "next_stable_lane": "2026.09.1 npm measured and 2026.03.6 Python baseline measured; 2026.09.1 Python and independent native artifacts pending; keep future lanes separate",
+    "next_stable_lane": "2026.09.1 npm/WASM and independent C++ source-build lanes measured; 2026.03.6 distributed Python baseline measured; 2026.09.1 distributed Python and native binaries pending; keep future lanes separate",
     "prohibited_inference": "A Python or native package release does not prove that an RDKit.js npm artifact exists or has the same runtime version."
   },
   "operations": [
@@ -238,6 +238,58 @@
         "smiles_parse_write": [], "cip": [], "smarts": [], "morgan": [], "browser_runtime": []
       },
       "availability_evidence": ["validation/results/rdkit-2026-09-1-artifact-availability-2026-10-04.json"]
+    },
+    {
+      "id": "native-cpp-source-2026.03.6-exposed-10k",
+      "channel": "native_cpp_source_build",
+      "availability": "measured",
+      "rdkit_version": "2026.03.6",
+      "wrapper_backend": "independent_cpp_source_build",
+      "corpus_policy": "same exposed 10k and 31 SMARTS as Python/npm lanes; no sealed cohort reuse",
+      "artifact_provenance": {
+        "status": "partial_historical",
+        "artifact": "validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-summary.json and old.jsonl.gz",
+        "runtime": "RDKit Release_2026_03_6 source commit 0e0d85f4ca34aeae15dfc0f7cf5503bdb0a8e985",
+        "backend": "independent C++ source build; not the distributed Python wheel or RDKit.js",
+        "configuration": "validation/rdkit_native_rebaseline_build.json; exact flags and binary SHA-256 in summary",
+        "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "toolchain": "Ubuntu 24.04, GCC 13.3.0, CMake 3.31.6; exact runner platform in summary",
+        "missing_dimensions": ["compiled_binary_payload", "linked_rdkit_library_payload"]
+      },
+      "operation_evidence": {
+        "smiles_parse_write": ["validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-old.jsonl.gz"],
+        "cip": ["validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-old.jsonl.gz"],
+        "smarts": ["validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-old.jsonl.gz"],
+        "morgan": ["validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-old.jsonl.gz"],
+        "browser_runtime": []
+      },
+      "availability_evidence": []
+    },
+    {
+      "id": "native-cpp-source-2026.09.1-exposed-10k",
+      "channel": "native_cpp_source_build",
+      "availability": "measured",
+      "rdkit_version": "2026.09.1",
+      "wrapper_backend": "independent_cpp_source_build",
+      "corpus_policy": "same exposed 10k and 31 SMARTS as Python/npm lanes; no sealed cohort reuse",
+      "artifact_provenance": {
+        "status": "partial_historical",
+        "artifact": "validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-summary.json and new.jsonl.gz",
+        "runtime": "RDKit Release_2026_09_1 source commit fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
+        "backend": "independent C++ source build; not the distributed Python wheel or RDKit.js",
+        "configuration": "validation/rdkit_native_rebaseline_build.json; exact flags and binary SHA-256 in summary",
+        "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "toolchain": "Ubuntu 24.04, GCC 13.3.0, CMake 3.31.6; exact runner platform in summary",
+        "missing_dimensions": ["compiled_binary_payload", "linked_rdkit_library_payload"]
+      },
+      "operation_evidence": {
+        "smiles_parse_write": ["validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-new.jsonl.gz"],
+        "cip": ["validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-new.jsonl.gz"],
+        "smarts": ["validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-new.jsonl.gz", "validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-delta.jsonl.gz"],
+        "morgan": ["validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-new.jsonl.gz"],
+        "browser_runtime": []
+      },
+      "availability_evidence": []
     },
     {
       "id": "next-stable-pending",

@@ -4,10 +4,11 @@ This is a version-pinned **partial** rebaseline. Official `@rdkit/rdkit@2026.9.1
 is published and its browser runtime reports `2026.09.1`. At the collection time,
 `rdkit==2026.9.1` returned PyPI 404; the GitHub release had no attached binary.
 Therefore Python/nanobind call overhead, Python CIP/SMARTS parity, and an
-independent native-C++ lane are **not measured** here. A separately pinned
+independent native-C++ lane are **not measured in this npm packet**. A separately pinned
 [published Python 2026.03.6 baseline](2026-10-04-rdkit-2026-09-1-python-baseline.md)
-is now recorded, but cannot be carried forward as a new-version result or
-make the entire rebaseline complete.
+and [independent C++ source-build delta](2026-10-04-rdkit-2026-09-1-native-source-rebaseline.md)
+are recorded separately, but cannot be carried forward as a 2026.09.1 Python
+result or make the entire rebaseline complete.
 
 ## Fixed inputs and artifacts
 

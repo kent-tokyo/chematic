@@ -76,6 +76,8 @@ or wrapper-overhead interpretation.
   `python3 scripts/check_rdkit_2026_09_rebaseline_evidence.py`.
 
 When a versioned 2026.09.1 Python wheel exists, hash and run it in a separate
-environment, then compare complete rows and classify changes. Native C++
-requires its own separately pinned binary or build packet. Neither pending
-lane is marked complete by this baseline.
+environment, then compare complete rows and classify changes. The
+[independent native C++ source-build packet](2026-10-04-rdkit-2026-09-1-native-source-rebaseline.md)
+now measures the old/new chemistry delta, but is not a distributed binary or
+Python-wrapper measurement. This Python baseline alone does not complete the
+new-version Python gate.
