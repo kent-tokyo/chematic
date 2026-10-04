@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_native_2026_03_6_to_2026_09_1_exposed_10k_v1",
+  "old_source_commit": "0e0d85f4ca34aeae15dfc0f7cf5503bdb0a8e985",
+  "new_source_commit": "fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
+  "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "queries": "validation/rdkit_rebaseline_smarts_queries.json",
+  "expected_rows": 10000,
+  "expected_queries": 31,
+  "cmake_flags": [
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DRDK_INSTALL_INTREE=OFF",
+    "-DBUILD_TESTING=OFF",
+    "-DRDK_BUILD_PYTHON_WRAPPERS=OFF",
+    "-DRDK_BUILD_CPP_TESTS=OFF",
+    "-DRDK_BUILD_COORDGEN_SUPPORT=OFF",
+    "-DRDK_BUILD_MAEPARSER_SUPPORT=OFF",
+    "-DRDK_BUILD_DESCRIPTORS3D=OFF",
+    "-DRDK_BUILD_INCHI_SUPPORT=OFF",
+    "-DRDK_BUILD_AVALON_SUPPORT=OFF",
+    "-DRDK_BUILD_CAIRO_SUPPORT=OFF",
+    "-DRDK_BUILD_FREETYPE_SUPPORT=OFF",
+    "-DRDK_BUILD_PGSQL=OFF"
+  ]
+}
