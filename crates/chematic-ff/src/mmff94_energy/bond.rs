@@ -1,6 +1,8 @@
 //! MMFF94 bond stretching parameters (Halgren 1996 Table IV).
 
 use super::{BondEnergyParams, Mmff94Resolution};
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 
 /// 493 bond stretching entries (Halgren 1996 Table IV). Sorted by (bond_type, type_i, type_j).
 /// type_i ≤ type_j (pairs normalized for binary search).
@@ -708,7 +710,7 @@ fn bond_empirical(atomic_number_i: u8, atomic_number_j: u8) -> Option<BondEnergy
         0.085
     };
     let n = 1.4;
-    let r0 = r0_i + r0_j - c * (chi_i - chi_j).abs().powf(n);
+    let r0 = r0_i + r0_j - c * (chi_i - chi_j).abs().dpowf(n);
 
     let (lo, hi) = if atomic_number_i <= atomic_number_j {
         (atomic_number_i, atomic_number_j)
@@ -726,7 +728,7 @@ fn bond_empirical(atomic_number_i: u8, atomic_number_j: u8) -> Option<BondEnergy
             if a <= b { (a, b) } else { (b, a) }
         };
         let (a_ij, d_ij) = herschbach_laurie(row_lo, row_hi)?;
-        10f64.powf(-(r0 - a_ij) / d_ij)
+        10f64.dpowf(-(r0 - a_ij) / d_ij)
     };
     Some(BondEnergyParams { kb, r0 })
 }

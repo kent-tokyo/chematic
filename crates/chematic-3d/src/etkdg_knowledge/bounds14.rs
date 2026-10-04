@@ -55,6 +55,8 @@
 //! RDKit's own inline comment in the generic branch of
 //! `_setMacrocycleAllInSameRing14Bounds`).
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use chematic_core::{AtomIdx, Molecule};
 
 use super::classify::{MACROCYCLE_MIN, RingMembershipIndex, classify_bond};
@@ -86,16 +88,16 @@ pub struct PairBoundAdjustment {
 /// 2-3 bond. Translated from `RDGeom::compute14DistCis`
 /// (`Code/Geometry/Utils.h`).
 pub fn dist14_cis(d1: f64, d2: f64, d3: f64, ang12: f64, ang23: f64) -> f64 {
-    let dx = d2 - d3 * ang23.cos() - d1 * ang12.cos();
-    let dy = d3 * ang23.sin() - d1 * ang12.sin();
+    let dx = d2 - d3 * ang23.dcos() - d1 * ang12.dcos();
+    let dy = d3 * ang23.dsin() - d1 * ang12.dsin();
     (dx * dx + dy * dy).sqrt()
 }
 
 /// Same as [`dist14_cis`] but for a **trans** (180-degree torsion)
 /// configuration. Translated from `RDGeom::compute14DistTrans`.
 pub fn dist14_trans(d1: f64, d2: f64, d3: f64, ang12: f64, ang23: f64) -> f64 {
-    let dx = d2 - d3 * ang23.cos() - d1 * ang12.cos();
-    let dy = d3 * ang23.sin() + d1 * ang12.sin();
+    let dx = d2 - d3 * ang23.dcos() - d1 * ang12.dcos();
+    let dy = d3 * ang23.dsin() + d1 * ang12.dsin();
     (dx * dx + dy * dy).sqrt()
 }
 

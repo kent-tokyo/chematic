@@ -3,6 +3,8 @@
 //! Provides NVE (microcanonical) and NVT (constant temperature) simulations
 //! with optional Berendsen thermostat control. Compatible with WASM.
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use std::f64;
 
 use chematic_chem::gasteiger_charges;
@@ -480,7 +482,7 @@ fn angle_from_vectors(v1: &Point3, v2: &Point3) -> f64 {
     let mag2 = (v2.x * v2.x + v2.y * v2.y + v2.z * v2.z).sqrt();
     if mag1 > 1e-10 && mag2 > 1e-10 {
         let cos_angle = (dot / (mag1 * mag2)).clamp(-1.0, 1.0);
-        cos_angle.acos()
+        cos_angle.dacos()
     } else {
         0.0
     }

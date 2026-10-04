@@ -40,6 +40,8 @@
 //!   pre-existing behavior of the shared parser/descriptor, not something
 //!   this diagnostic tool works around.
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use std::f64::consts::PI;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
@@ -321,7 +323,7 @@ impl TorsionHistogram {
             return None;
         }
         let (s, c) = self.resultant_vector();
-        Some(s.atan2(c).to_degrees())
+        Some(s.datan2(c).to_degrees())
     }
 
     /// Mean resultant length `R` in `[0, 1]` — 1 means all mass at one
@@ -339,8 +341,8 @@ impl TorsionHistogram {
         let (mut s, mut c) = (0.0, 0.0);
         for (i, &count) in self.bin_counts.iter().enumerate() {
             let rad = self.bin_center_deg(i).to_radians();
-            s += count as f64 * rad.sin();
-            c += count as f64 * rad.cos();
+            s += count as f64 * rad.dsin();
+            c += count as f64 * rad.dcos();
         }
         (s, c)
     }
@@ -396,7 +398,7 @@ fn bessel_i0(x: f64) -> f64 {
                     + t * (1.206_749_2 + t * (0.265_973_2 + t * (0.036_076_8 + t * 0.004_581_3)))))
     } else {
         let t = 3.75 / ax;
-        (ax.exp() / ax.sqrt())
+        (ax.dexp() / ax.sqrt())
             * (0.398_942_28
                 + t * (0.013_285_92
                     + t * (0.002_253_19
@@ -412,7 +414,7 @@ fn von_mises_density_rad(theta: f64, mu: f64, kappa: f64) -> f64 {
     if kappa <= 0.0 {
         return 1.0 / (2.0 * PI);
     }
-    (kappa * (theta - mu).cos()).exp() / (2.0 * PI * bessel_i0(kappa))
+    (kappa * (theta - mu).dcos()).dexp() / (2.0 * PI * bessel_i0(kappa))
 }
 
 /// Fisher's (1993, *Statistical Analysis of Circular Data*) closed-form
@@ -526,12 +528,12 @@ pub fn fit_von_mises_mixture(
             for i in 0..n_bins {
                 let wk = weights[i] * resp[i][k];
                 nk += wk;
-                s += wk * centers_rad[i].sin();
-                c += wk * centers_rad[i].cos();
+                s += wk * centers_rad[i].dsin();
+                c += wk * centers_rad[i].dcos();
             }
             if nk > 0.0 {
                 pis[k] = nk / total;
-                mus[k] = s.atan2(c);
+                mus[k] = s.datan2(c);
                 let r = (s * s + c * c).sqrt() / nk;
                 kappas[k] = kappa_from_mean_resultant_length(r);
             }
@@ -564,7 +566,7 @@ fn kl_divergence(p: &[f64], m: &[f64]) -> f64 {
             if pi <= 0.0 || mi <= 0.0 {
                 0.0
             } else {
-                pi * (pi / mi).ln()
+                pi * (pi / mi).dln()
             }
         })
         .sum()
@@ -907,7 +909,7 @@ mod tests {
         loop {
             let theta = rng.f64() * 2.0 * PI - PI;
             let u = rng.f64();
-            let accept = (kappa * ((theta - mu).cos() - 1.0)).exp();
+            let accept = (kappa * ((theta - mu).dcos() - 1.0)).dexp();
             if u <= accept {
                 return theta;
             }

@@ -149,6 +149,8 @@
 //! `MoleculeBuilder` construction from raw coordinates.
 
 use crate::coords::Coords3D;
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use crate::shape_descriptors::jacobi3;
 use chematic_core::{AtomIdx, Molecule};
 
@@ -871,7 +873,7 @@ mod tests {
             [1.0 / n, 2.0 / n, 3.0 / n]
         };
         let theta = 0.7_f64;
-        let (s, c) = theta.sin_cos();
+        let (s, c) = theta.dsin_cos();
         let mut out = Coords3D::new_zeroed(coords.atom_count());
         for i in 0..coords.atom_count() {
             let p = coords.get(AtomIdx(i as u32));
@@ -1131,7 +1133,7 @@ mod tests {
         let mut coords = Coords3D::new_zeroed(12);
         for i in 0..12u32 {
             let theta = std::f64::consts::TAU * (i as f64) / 12.0;
-            coords.set(AtomIdx(i), Point3::new(theta.cos(), theta.sin(), 0.0));
+            coords.set(AtomIdx(i), Point3::new(theta.dcos(), theta.dsin(), 0.0));
         }
         assert_eq!(
             detect_macrocycle_status(&mol),

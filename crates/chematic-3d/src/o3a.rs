@@ -22,6 +22,8 @@
 //!    score stops improving.
 //! 4. Return the correspondence from whichever seed reached the best score.
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use chematic_core::Molecule;
 use chematic_ff::MMFF94Type;
 
@@ -155,7 +157,7 @@ fn overlap_score_paired(a: &[[f64; 3]], b: &[[f64; 3]]) -> f64 {
         .zip(b)
         .map(|(p, q)| {
             let d2: f64 = (0..3).map(|k| (p[k] - q[k]).powi(2)).sum();
-            (-d2 / (2.0 * SCORE_SIGMA * SCORE_SIGMA)).exp()
+            (-d2 / (2.0 * SCORE_SIGMA * SCORE_SIGMA)).dexp()
         })
         .sum()
 }
@@ -464,7 +466,7 @@ mod tests {
         let coords1: Vec<[f64; 3]> = (0..n)
             .map(|i| {
                 let t = i as f64;
-                [t * 1.3, (t * 0.7).sin() * 2.0, (t * 0.3).cos() * 1.5]
+                [t * 1.3, (t * 0.7).dsin() * 2.0, (t * 0.3).dcos() * 1.5]
             })
             .collect();
         let coords2 = rotate_translate(&coords1);
@@ -483,7 +485,7 @@ mod tests {
         let coords1: Vec<[f64; 3]> = (0..n)
             .map(|i| {
                 let t = i as f64;
-                [t * 1.3, (t * 0.7).sin() * 2.0, (t * 0.3).cos() * 1.5]
+                [t * 1.3, (t * 0.7).dsin() * 2.0, (t * 0.3).dcos() * 1.5]
             })
             .collect();
         let coords2 = rotate_translate(&coords1);
@@ -688,7 +690,7 @@ mod tests {
         let coords1: Vec<[f64; 3]> = (0..n)
             .map(|i| {
                 let t = i as f64;
-                [t * 1.3, (t * 0.7).sin() * 2.0, (t * 0.3).cos() * 1.5]
+                [t * 1.3, (t * 0.7).dsin() * 2.0, (t * 0.3).dcos() * 1.5]
             })
             .collect();
         let coords2 = rotate_translate(&coords1);

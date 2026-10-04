@@ -7,6 +7,8 @@
 //! **Priority rule**: v0.1.93+ uses full multi-sphere BFS CIP priority rules,
 //! superseding the simplified 1-sphere approach from prior versions.
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use std::cmp::Ordering;
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, CipCode, Molecule};
@@ -141,7 +143,7 @@ pub(crate) fn dihedral(pa1: Point3, pa2: Point3, ph1: Point3, ph2: Point3) -> Op
     }
 
     let cos_a = n1.dot(&n2) / (d1 * d2);
-    let angle = cos_a.clamp(-1.0, 1.0).acos();
+    let angle = cos_a.clamp(-1.0, 1.0).dacos();
 
     // Sign: (n1 × n2) · b2 > 0 → positive (same sense as b2)
     let sign = n1.cross(&n2).dot(&b2);

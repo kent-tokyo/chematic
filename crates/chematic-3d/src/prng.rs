@@ -1,3 +1,5 @@
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 /// Minimal xorshift64 PRNG — replaces the `fastrand` crate dependency.
 ///
 /// Quality is sufficient for ETKDG torsion noise and MD velocity initialization;
@@ -73,7 +75,7 @@ impl Prng {
             }
         };
         let u2 = self.f64();
-        (-2.0 * u1.ln()).sqrt() * (2.0 * PI * u2).cos()
+        (-2.0 * u1.dln()).sqrt() * (2.0 * PI * u2).dcos()
     }
 }
 

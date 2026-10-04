@@ -29,6 +29,8 @@
 //! let result = minimize_uff(&mol, &types, coords, 500);
 //! ```
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 
 // ── Atom type ─────────────────────────────────────────────────────────────────
@@ -431,7 +433,7 @@ fn uff_bond_length(ti: UffType, tj: UffType, bond_order: f64) -> f64 {
     let rij = ti.r1() + tj.r1();
     // Bond order correction r_BO = −λ(r_i + r_j) ln(n)
     let lambda = 0.1332;
-    let r_bo = -lambda * rij * bond_order.ln();
+    let r_bo = -lambda * rij * bond_order.dln();
     // Electronegativity correction (χ) — simplified: use zero for now
     rij + r_bo
 }
@@ -572,7 +574,7 @@ impl PreparedUffEnergy {
         let mut inversions = Vec::new();
         for &(center, center_type) in types {
             let theta0 = center_type.theta0().to_radians();
-            let sin0 = theta0.sin();
+            let sin0 = theta0.dsin();
             let neighbors: Vec<AtomIdx> = mol.neighbors(center).map(|(nb, _)| nb).collect();
             for i in 0..neighbors.len() {
                 for j in (i + 1)..neighbors.len() {
@@ -580,7 +582,7 @@ impl PreparedUffEnergy {
                         a: neighbors[i],
                         center,
                         c: neighbors[j],
-                        cos0: theta0.cos(),
+                        cos0: theta0.dcos(),
                         k: 0.5 * 332.06 / (sin0 * sin0 + 1e-10),
                     });
                 }
@@ -614,7 +616,7 @@ impl PreparedUffEnergy {
             } else if tj.is_sp2() && tk.is_sp2() {
                 (
                     5.0 * (tj.u1() * tk.u1()).sqrt()
-                        * (1.0 + 4.18 * bond_order_f64(bond.order).ln()),
+                        * (1.0 + 4.18 * bond_order_f64(bond.order).dln()),
                     2,
                     1.0,
                 )
@@ -1083,7 +1085,7 @@ where
         // Line search: accept step only if energy decreases
         let max_gradient_norm = grad
             .iter()
-            .map(|g| g[0].hypot(g[1]).hypot(g[2]))
+            .map(|g| g[0].dhypot(g[1]).dhypot(g[2]))
             .fold(0.0_f64, f64::max);
         let proposal_step = if max_gradient_norm.is_finite() && max_gradient_norm > 0.0 {
             step.min(trust_radius / max_gradient_norm)
@@ -1215,7 +1217,7 @@ mod tests {
         let mut folded = vec![[0.0, 0.0, 0.0]; mol.atom_count()];
         for (idx, point) in folded.iter_mut().enumerate() {
             point[0] = idx as f64;
-            point[1] = (idx as f64 * 0.7).sin();
+            point[1] = (idx as f64 * 0.7).dsin();
             point[2] = if idx % 2 == 0 { 0.8 } else { -0.6 };
         }
         let mut planar = folded.clone();
@@ -1417,9 +1419,9 @@ mod tests {
         let r = 1.514_f64; // UFF C_3-C_3 bond length
         let half = theta_deg.to_radians() / 2.0;
         let coords = vec![
-            [r * half.cos(), r * half.sin(), 0.0],
+            [r * half.dcos(), r * half.dsin(), 0.0],
             [0.0, 0.0, 0.0],
-            [r * half.cos(), -r * half.sin(), 0.0],
+            [r * half.dcos(), -r * half.dsin(), 0.0],
         ];
         (mol, types, coords)
     }

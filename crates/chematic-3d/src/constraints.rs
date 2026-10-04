@@ -22,6 +22,8 @@
 //! ```
 
 use crate::coords::{Coords3D, Point3};
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use core::f64::consts::PI;
 
@@ -290,7 +292,7 @@ pub(crate) fn compute_angle(coords: &Coords3D, a: AtomIdx, center: AtomIdx, b: A
     }
 
     let cos_angle = (va.dot(&vb) / (na * nb)).clamp(-1.0, 1.0);
-    cos_angle.acos()
+    cos_angle.dacos()
 }
 
 /// Return any unit vector perpendicular to `v`.
@@ -308,8 +310,8 @@ fn perpendicular_to(v: Point3) -> Point3 {
 /// Rotate vector `v` around unit axis `axis` by angle `theta` (radians).
 /// Uses Rodrigues' rotation formula.
 pub(crate) fn rotate_around_axis(v: Point3, axis: Point3, theta: f64) -> Point3 {
-    let cos_t = theta.cos();
-    let sin_t = theta.sin();
+    let cos_t = theta.dcos();
+    let sin_t = theta.dsin();
     let dot = axis.dot(&v);
 
     let term1 = v.scale(cos_t);
@@ -387,7 +389,7 @@ fn project_angle_constraint(coords: &mut Coords3D, constraint: &AngleConstraint)
 
     // Current angle
     let cos_angle = (v1.dot(&v2) / (n1 * n2)).clamp(-1.0, 1.0);
-    let current_angle = cos_angle.acos();
+    let current_angle = cos_angle.dacos();
 
     // Check if already satisfied
     let lower = constraint.target_angle - constraint.tolerance;

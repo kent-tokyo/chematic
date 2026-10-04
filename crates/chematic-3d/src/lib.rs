@@ -24,6 +24,7 @@ pub mod distance_geometry_v2;
 pub mod ensemble_v2;
 pub mod etkdg;
 pub mod etkdg_knowledge;
+pub(crate) mod fmath;
 #[cfg(test)]
 mod issue256_255_phase2_evaluation;
 pub mod md;

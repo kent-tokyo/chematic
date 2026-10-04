@@ -11,6 +11,8 @@
 
 #![allow(dead_code)]
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use std::f64::consts::PI;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
@@ -102,7 +104,7 @@ pub(crate) fn build_bond_angle_bounds(mol: &Molecule) -> (Vec<Vec<f64>>, Vec<Vec
 
                 // Distance = sqrt(r1^2 + r2^2 - 2*r1*r2*cos(angle))
                 let dist_sq = bond_len_1.powi(2) + bond_len_2.powi(2)
-                    - 2.0 * bond_len_1 * bond_len_2 * angle.cos();
+                    - 2.0 * bond_len_1 * bond_len_2 * angle.dcos();
                 let dist = dist_sq.max(0.0).sqrt();
                 let tolerance = 0.1;
 
@@ -542,9 +544,9 @@ pub(crate) fn jacobi_eigendecompose(mat: &[Vec<f64>]) -> (Vec<f64>, Vec<Vec<f64>
         let app = a[p][p];
         let aqq = a[q][q];
 
-        let theta = 0.5 * (2.0 * apq / (app - aqq)).atan();
-        let c = theta.cos();
-        let s = theta.sin();
+        let theta = 0.5 * (2.0 * apq / (app - aqq)).datan();
+        let c = theta.dcos();
+        let s = theta.dsin();
 
         // Apply Givens rotation
         for i in 0..n {

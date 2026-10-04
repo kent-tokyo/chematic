@@ -520,11 +520,12 @@ fn is_potential_ez_system(
     if left.is_empty() || right.is_empty() || left.len() > 2 || right.len() > 2 {
         return false;
     }
-    !(left.len() == 2
-        && compare_branches(mol, bond.atom1, left[0].0, left[1].0) == std::cmp::Ordering::Equal)
-        && !(right.len() == 2
-            && compare_branches(mol, bond.atom2, right[0].0, right[1].0)
-                == std::cmp::Ordering::Equal)
+    // Each end with two substituents needs them to differ.
+    let distinct = |end: AtomIdx, other: &[(AtomIdx, BondIdx)]| {
+        other.len() != 2
+            || compare_branches(mol, end, other[0].0, other[1].0) != std::cmp::Ordering::Equal
+    };
+    distinct(bond.atom1, &left) && distinct(bond.atom2, &right)
 }
 
 /// Find every double bond that must be rejected because a branch point (a

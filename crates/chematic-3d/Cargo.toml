@@ -17,6 +17,7 @@ documentation = "https://docs.rs/chematic-3d"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
+libm = "0.2"
 chematic-core       = { path = "../chematic-core",       version = "1.0.34" }
 chematic-perception = { path = "../chematic-perception", version = "1.0.34" }
 chematic-ff         = { path = "../chematic-ff",         version = "1.0.34" }

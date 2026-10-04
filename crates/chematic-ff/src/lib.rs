@@ -9,6 +9,7 @@
 //! Includes atom type enumerations, assignment functions, and parameter lookups.
 
 pub mod dreiding;
+pub(crate) mod fmath;
 pub mod mmff94;
 pub mod mmff94_advanced;
 pub mod mmff94_bci;

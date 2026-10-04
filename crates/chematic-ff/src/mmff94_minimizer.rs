@@ -12,6 +12,8 @@
 //! - **vdW**: buffered 14-7 potential with Slater-Kirkwood combining rule (Halgren MMFF.I eq. 2)
 //! - **Electrostatic**: Coulomb with δ buffer (Halgren MMFF.V eq. 14)
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use std::collections::{HashMap, VecDeque};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
@@ -517,7 +519,7 @@ pub fn mmff94_torsion_scan(
                     [d[0] / len, d[1] / len, d[2] / len]
                 }
             };
-            let (sin_a, cos_a) = step_rad.sin_cos();
+            let (sin_a, cos_a) = step_rad.dsin_cos();
             for &ai in &moving_atoms {
                 // Rodrigues' rotation about axis through j
                 let p = [work[ai][0] - j[0], work[ai][1] - j[1], work[ai][2] - j[2]];
@@ -1226,7 +1228,7 @@ fn prepared_angle_energy(coords: &[[f64; 3]], terms: &[PreparedAngle]) -> f64 {
     terms
         .iter()
         .map(|term| {
-            let dt = cos_angle(coords[term.i], coords[term.j], coords[term.k]).acos() * RAD_TO_DEG
+            let dt = cos_angle(coords[term.i], coords[term.j], coords[term.k]).dacos() * RAD_TO_DEG
                 - term.params.theta0;
             (KA_CONV * term.params.ka / 2.0) * dt * dt * (1.0 - 0.007 * dt)
         })
@@ -1241,7 +1243,7 @@ fn prepared_stretch_bend_energy(coords: &[[f64; 3]], terms: &[PreparedStretchBen
         .map(|term| {
             let dr_ij = dist(coords[term.i], coords[term.j]) - term.r0_ij;
             let dr_kj = dist(coords[term.k], coords[term.j]) - term.r0_kj;
-            let dtheta = cos_angle(coords[term.i], coords[term.j], coords[term.k]).acos()
+            let dtheta = cos_angle(coords[term.i], coords[term.j], coords[term.k]).dacos()
                 * RAD_TO_DEG
                 - term.theta0;
             CONV * (term.kba_ij * dr_ij + term.kba_kj * dr_kj) * dtheta
@@ -1259,9 +1261,9 @@ fn prepared_torsion_energy(coords: &[[f64; 3]], terms: &[PreparedTorsion]) -> f6
                 coords[term.k],
                 coords[term.l],
             );
-            0.5 * term.params.v1 * (1.0 + phi.cos())
-                + 0.5 * term.params.v2 * (1.0 - (2.0 * phi).cos())
-                + 0.5 * term.params.v3 * (1.0 + (3.0 * phi).cos())
+            0.5 * term.params.v1 * (1.0 + phi.dcos())
+                + 0.5 * term.params.v2 * (1.0 - (2.0 * phi).dcos())
+                + 0.5 * term.params.v3 * (1.0 + (3.0 * phi).dcos())
         })
         .sum()
 }
@@ -1287,8 +1289,8 @@ fn prepared_torsion_gradient(coords: &[[f64; 3]], terms: &[PreparedTorsion]) -> 
         }
 
         let phi = dihedral(p1, p2, p3, p4);
-        let d_ed_phi = -0.5 * term.params.v1 * phi.sin() + term.params.v2 * (2.0 * phi).sin()
-            - 1.5 * term.params.v3 * (3.0 * phi).sin();
+        let d_ed_phi = -0.5 * term.params.v1 * phi.dsin() + term.params.v2 * (2.0 * phi).dsin()
+            - 1.5 * term.params.v3 * (3.0 * phi).dsin();
         let dphi = dual_dihedral(p1, p2, p3, p4);
         for atom in 0..4 {
             let target = &mut gradient[[term.i, term.j, term.k, term.l][atom]];
@@ -1316,7 +1318,7 @@ fn prepared_oop_energy(coords: &[[f64; 3]], terms: &[PreparedOop]) -> f64 {
             if n_len < 1e-12 || l_len < 1e-12 {
                 return 0.0;
             }
-            let chi = (dot3(n, l) / (n_len * l_len)).clamp(-1.0, 1.0).asin();
+            let chi = (dot3(n, l) / (n_len * l_len)).clamp(-1.0, 1.0).dasin();
             (CONV * term.koop / 2.0) * (chi * RAD_TO_DEG).powi(2)
         })
         .sum()
@@ -1763,7 +1765,7 @@ fn prepared_bond_angle_gradient(
         if sin_theta <= 1e-12 {
             continue;
         }
-        let theta = cos_theta.acos() * RAD_TO_DEG;
+        let theta = cos_theta.dacos() * RAD_TO_DEG;
         let dt = theta - term.params.theta0;
         let prefactor = KA_CONV * term.params.ka / 2.0;
         let d_e_d_theta = prefactor * (2.0 * dt - 3.0 * 0.007 * dt * dt);
@@ -1817,7 +1819,7 @@ fn prepared_stretch_bend_gradient(
         if sin_theta <= 1e-12 {
             continue;
         }
-        let dtheta = cos_theta.acos() * RAD_TO_DEG - term.theta0;
+        let dtheta = cos_theta.dacos() * RAD_TO_DEG - term.theta0;
         let stretch = term.kba_ij * (r_ij - term.r0_ij) + term.kba_kj * (r_kj - term.r0_kj);
         let d_e_d_r = CONV * dtheta;
         let d_e_d_theta = CONV * stretch;
@@ -1924,7 +1926,7 @@ fn stretch_bend_energy(
                             rkj.r0,
                             ring_size,
                         ) {
-                            let dtheta = cos_t.acos() * RAD_TO_DEG - ap.theta0;
+                            let dtheta = cos_t.dacos() * RAD_TO_DEG - ap.theta0;
                             energy += CONV * (kba_ijk * dr_ij + kba_kji * dr_kj) * dtheta;
                         }
                     }
@@ -1978,7 +1980,7 @@ fn oop_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
                 continue;
             }
             let sin_chi = dot3(n, rjl) / (n_len * l_len);
-            let chi_deg = sin_chi.clamp(-1.0, 1.0).asin() * RAD_TO_DEG;
+            let chi_deg = sin_chi.clamp(-1.0, 1.0).dasin() * RAD_TO_DEG;
             energy += (CONV * koop / 2.0) * chi_deg * chi_deg;
         }
     }
@@ -2040,7 +2042,7 @@ fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], rings: &[Vec<
                     ring_size,
                 ) {
                     let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
-                    let theta_deg = cos_t.acos() * RAD_TO_DEG;
+                    let theta_deg = cos_t.dacos() * RAD_TO_DEG;
                     let dt = theta_deg - p.theta0;
                     let cubic = 1.0 - 0.007 * dt;
                     energy += (KA_CONV * p.ka / 2.0) * dt * dt * cubic;
@@ -2079,9 +2081,9 @@ fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
                 let tt = torsion_type_for(mol, i, j, k, l, types[i], types[j], types[k], types[l]);
                 if let Some(p) = mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l]) {
                     let phi = dihedral(coords[i], coords[j], coords[k], coords[l]);
-                    energy += 0.5 * p.v1 * (1.0 + phi.cos())
-                        + 0.5 * p.v2 * (1.0 - (2.0 * phi).cos())
-                        + 0.5 * p.v3 * (1.0 + (3.0 * phi).cos());
+                    energy += 0.5 * p.v1 * (1.0 + phi.dcos())
+                        + 0.5 * p.v2 * (1.0 - (2.0 * phi).dcos())
+                        + 0.5 * p.v3 * (1.0 + (3.0 * phi).dcos());
                 }
             }
         }
@@ -2254,7 +2256,7 @@ fn dihedral(i: [f64; 3], j: [f64; 3], k: [f64; 3], l: [f64; 3]) -> f64 {
     }
     let x = dot3(n1, n2);
     let y = dot3(m1, n2) / b2_len;
-    y.atan2(x)
+    y.datan2(x)
 }
 
 #[derive(Clone, Copy)]
@@ -2336,13 +2338,13 @@ fn dual_sqrt(a: Dual12) -> Dual12 {
 fn dual_atan2(y: Dual12, x: Dual12) -> Dual12 {
     let denominator = x.value * x.value + y.value * y.value;
     Dual12 {
-        value: y.value.atan2(x.value),
+        value: y.value.datan2(x.value),
         grad: std::array::from_fn(|i| (x.value * y.grad[i] - y.value * x.grad[i]) / denominator),
     }
 }
 
 fn dual_asin_clamped(a: Dual12) -> Dual12 {
-    let value = a.value.clamp(-1.0, 1.0).asin();
+    let value = a.value.clamp(-1.0, 1.0).dasin();
     let denominator = (1.0 - a.value * a.value).max(1e-24).sqrt();
     Dual12 {
         value,
@@ -3602,10 +3604,10 @@ mod tests {
             // j (atom1) at origin; i (atom0) and k (atom2) placed to form
             // the target angle at j.
             let coords = vec![
-                [r * half.cos(), r * half.sin(), 0.0],
+                [r * half.dcos(), r * half.dsin(), 0.0],
                 [0.0, 0.0, 0.0],
-                [r * half.cos(), -r * half.sin(), 0.0],
-                [r * half.cos() + 1.3, -r * half.sin() - 0.9, 0.0],
+                [r * half.dcos(), -r * half.dsin(), 0.0],
+                [r * half.dcos() + 1.3, -r * half.dsin() - 0.9, 0.0],
             ];
             angle_energy(&mol, &coords, &types, rings.rings())
         };
@@ -3627,10 +3629,10 @@ mod tests {
         let r = 1.45_f64;
         let half = 100.0_f64.to_radians() / 2.0; // distorted away from 121.55°
         let coords = vec![
-            [r * half.cos(), r * half.sin(), 0.0],
+            [r * half.dcos(), r * half.dsin(), 0.0],
             [0.0, 0.0, 0.0],
-            [r * half.cos(), -r * half.sin(), 0.0],
-            [r * half.cos() + 1.3, -r * half.sin() - 0.9, 0.0],
+            [r * half.dcos(), -r * half.dsin(), 0.0],
+            [r * half.dcos() + 1.3, -r * half.dsin() - 0.9, 0.0],
         ];
         let grad = compute_gradient(&mol, &coords, &types, &charges, rings.rings(), 1e-4);
         let grad_norm: f64 = grad

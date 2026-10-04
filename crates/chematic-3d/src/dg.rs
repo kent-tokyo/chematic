@@ -20,6 +20,8 @@
 
 #![allow(dead_code)]
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use core::f64::consts::PI;
 use std::collections::VecDeque;
 
@@ -380,7 +382,7 @@ fn place_rings(
         };
 
         // Circumradius of a regular polygon: r = bond_len / (2 * sin(PI / n)).
-        let r = bond_len / (2.0 * (PI / ring_size as f64).sin());
+        let r = bond_len / (2.0 * (PI / ring_size as f64).dsin());
 
         // Placement strategy is decided from LIVE `placed` state here, not
         // from `order_rings_by_fusion_adjacency`'s visiting order: that
@@ -459,8 +461,8 @@ fn place_rings(
                 let ring_atom_y = anchor_pos.y + uy * bond_len_to_ring;
                 let k = ring.iter().position(|&a| a == ring_atom).unwrap();
                 let angle = 2.0 * PI * k as f64 / ring_size as f64;
-                ring_cx = ring_atom_x - r * angle.cos();
-                ring_cy = ring_atom_y - r * angle.sin();
+                ring_cx = ring_atom_x - r * angle.dcos();
+                ring_cy = ring_atom_y - r * angle.dsin();
             } else {
                 // No direct bond to any already-placed atom -- this ring is
                 // reachable, if at all within this component, only through
@@ -551,8 +553,8 @@ fn place_rings(
                 continue; // shared atom already placed by a previous ring
             }
             let angle = 2.0 * PI * k as f64 / ring_size as f64;
-            let x = ring_cx + effective_r * angle.cos();
-            let y = ring_cy + effective_r * angle.sin();
+            let x = ring_cx + effective_r * angle.dcos();
+            let y = ring_cy + effective_r * angle.dsin();
             let z = match conf {
                 // Chair: alternating ±h (CHAIR_H ≈ 0.256 Å).
                 Conf::Chair => {
@@ -667,8 +669,8 @@ pub(crate) fn perpendicular_to(v: Point3) -> Point3 {
 ///
 /// `pub(crate)`: also used by [`crate::dg_connectivity_ordered`].
 pub(crate) fn rotate_around_axis(v: Point3, axis: Point3, theta: f64) -> Point3 {
-    let cos_t = theta.cos();
-    let sin_t = theta.sin();
+    let cos_t = theta.dcos();
+    let sin_t = theta.dsin();
     let dot = axis.dot(&v);
 
     // v*cos + (axis × v)*sin + axis*(dot)*(1 - cos)

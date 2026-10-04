@@ -45,6 +45,8 @@
 //!   a later independent review pass caught it, see that test's own comment
 //!   for the full account.
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use chematic_core::{AtomIdx, Molecule};
 use std::collections::{HashMap, HashSet};
 
@@ -78,7 +80,7 @@ fn dihedral_deg(coords: &Coords3D, atoms: [AtomIdx; 4]) -> f64 {
 
     let x = n1.dot(&n2);
     let y = m1.dot(&n2);
-    y.atan2(x).to_degrees()
+    y.datan2(x).to_degrees()
 }
 
 // ---------------------------------------------------------------------------
@@ -208,7 +210,7 @@ fn rotate_fragment(
         return 0; // degenerate (coincident b/c) -- nothing sensible to rotate
     };
     let theta = delta_deg.to_radians();
-    let (sin_t, cos_t) = (theta.sin(), theta.cos());
+    let (sin_t, cos_t) = (theta.dsin(), theta.dcos());
     for &atom in &moving {
         let p = coords.get(atom).sub(&origin);
         // Rodrigues' rotation formula about `axis_unit` through the origin.

@@ -273,6 +273,7 @@ dependencies = [
  "chematic-smarts",
  "chematic-smiles",
  "criterion",
+ "libm",
  "serde_json",
  "web-time",
 ]
@@ -368,6 +369,7 @@ dependencies = [
  "chematic-perception",
  "chematic-smiles",
  "criterion",
+ "libm",
  "rayon",
 ]
 

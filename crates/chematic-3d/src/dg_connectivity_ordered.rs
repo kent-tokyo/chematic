@@ -35,6 +35,8 @@
 //! `generate_coords` entry point now routes here, while the previous builder
 //! remains crate-private as an internal differential baseline.
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use core::f64::consts::PI;
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
@@ -118,7 +120,7 @@ fn seed_ring_system_index(ring_systems: &[Vec<Vec<AtomIdx>>]) -> Option<usize> {
 
 /// Circumradius of a regular n-gon whose side is `bond_len`.
 fn ring_circumradius(bond_len: f64, ring_size: usize) -> f64 {
-    bond_len / (2.0 * (PI / ring_size as f64).sin())
+    bond_len / (2.0 * (PI / ring_size as f64).dsin())
 }
 
 /// Conformer Z offset at ring-position `step`, mirroring `crate::dg`'s
@@ -145,13 +147,8 @@ fn ring_conf_z(mol: &Molecule, ring: &[AtomIdx], is_fused: bool, step: usize) ->
                 -CHAIR_H
             }
         }
-        5 => {
-            if step == ring_size - 1 {
-                ENVELOPE_H
-            } else {
-                0.0
-            }
-        }
+        5 if step == ring_size - 1 => ENVELOPE_H,
+        5 => 0.0,
         n if n >= 8 => {
             let h = 0.3 + 0.04 * (n as f64 - 8.0).min(10.0);
             if step.is_multiple_of(2) { h } else { -h }
@@ -355,7 +352,7 @@ fn place_first_ring_anchored_3d(
     let center_y = entry_pos.y + r * dir_xy.1;
     let base_z = entry_pos.z;
     let idx0 = ring.iter().position(|&a| a == entry_atom).unwrap_or(0);
-    let angle_to_entry = (entry_pos.y - center_y).atan2(entry_pos.x - center_x);
+    let angle_to_entry = (entry_pos.y - center_y).datan2(entry_pos.x - center_x);
     let angle_step = -2.0 * PI / n as f64;
 
     for step in 0..n {
@@ -365,8 +362,8 @@ fn place_first_ring_anchored_3d(
             continue;
         }
         let angle = angle_to_entry + step as f64 * angle_step;
-        let x = center_x + effective_r * angle.cos();
-        let y = center_y + effective_r * angle.sin();
+        let x = center_x + effective_r * angle.dcos();
+        let y = center_y + effective_r * angle.dsin();
         let z = base_z + ring_conf_z(mol, ring, is_fused, step);
         coords.set(atom, Point3::new(x, y, z));
         placed[atom.0 as usize] = true;
@@ -417,7 +414,7 @@ fn place_ring_anchored_3d(
         return;
     }
     let (perp_x, perp_y) = (-dy / edge_len, dx / edge_len);
-    let apothem = r * (PI / n as f64).cos();
+    let apothem = r * (PI / n as f64).dcos();
 
     let existing_center = centroid_of_placed_xy(coords, placed).unwrap_or(mid);
     let cand1 = (mid.0 + perp_x * apothem, mid.1 + perp_y * apothem);
@@ -433,8 +430,8 @@ fn place_ring_anchored_3d(
         cand2
     };
 
-    let angle_to_a1 = (p1.y - new_center.1).atan2(p1.x - new_center.0);
-    let angle_to_a2 = (p2.y - new_center.1).atan2(p2.x - new_center.0);
+    let angle_to_a1 = (p1.y - new_center.1).datan2(p1.x - new_center.0);
+    let angle_to_a2 = (p2.y - new_center.1).datan2(p2.x - new_center.0);
     let mut delta = angle_to_a2 - angle_to_a1;
     while delta > PI {
         delta -= 2.0 * PI;
@@ -461,8 +458,8 @@ fn place_ring_anchored_3d(
             continue;
         }
         let angle = angle_to_a1 + step as f64 * angle_step;
-        let x = new_center.0 + r * angle.cos();
-        let y = new_center.1 + r * angle.sin();
+        let x = new_center.0 + r * angle.dcos();
+        let y = new_center.1 + r * angle.dsin();
         coords.set(atom, Point3::new(x, y, base_z));
         placed[atom.0 as usize] = true;
     }
@@ -570,8 +567,8 @@ fn place_seed_ring_system_3d(
     let center_y = 0.0;
     for (k, &atom) in first_ring.iter().enumerate() {
         let angle = 2.0 * PI * k as f64 / n as f64;
-        let x = center_x + effective_r * angle.cos();
-        let y = center_y + effective_r * angle.sin();
+        let x = center_x + effective_r * angle.dcos();
+        let y = center_y + effective_r * angle.dsin();
         let z = ring_conf_z(mol, first_ring, false, k);
         coords.set(atom, Point3::new(x, y, z));
         placed[atom.0 as usize] = true;

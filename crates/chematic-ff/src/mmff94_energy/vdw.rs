@@ -1,6 +1,8 @@
 //! MMFF94 van der Waals parameters (Halgren 1996 Table VII, Slater-Kirkwood).
 
 use super::VdwEnergyParams;
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 
 /// 95 vdW entries (Halgren 1996 Table VII). One entry per MMFF94 numeric atom type.
 pub static MMFF94_VDW_ENERGY: &[(u8, f64, f64, f64, f64, u8)] = &[
@@ -127,8 +129,8 @@ pub fn mmff94_vdw_combined(type_i: u8, type_j: u8) -> Option<(f64, f64)> {
     let pj = mmff94_vdw_energy(type_j)?;
 
     // r*_ii = A_i × alpha_i^(1/4)
-    let r_ii = pi.a_i * pi.alpha_i.powf(0.25);
-    let r_jj = pj.a_i * pj.alpha_i.powf(0.25);
+    let r_ii = pi.a_i * pi.alpha_i.dpowf(0.25);
+    let r_jj = pj.a_i * pj.alpha_i.dpowf(0.25);
 
     // Arithmetic mean + asymmetry correction (MMFF94 eq. 2). MMFF (and
     // RDKit's `calcUnscaledVdWMinimum`) omits the B(1 - exp(-beta gamma^2))
@@ -139,7 +141,7 @@ pub fn mmff94_vdw_combined(type_i: u8, type_j: u8) -> Option<(f64, f64)> {
         0.0
     } else {
         let gamma = (r_ii - r_jj) / (r_ii + r_jj);
-        0.2 * (1.0 - (-12.0 * gamma * gamma).exp())
+        0.2 * (1.0 - (-12.0 * gamma * gamma).dexp())
     };
     let r_star_ij = r_ij_unscaled * (1.0 + asymmetry);
 
