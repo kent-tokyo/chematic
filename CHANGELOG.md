@@ -66,6 +66,41 @@ adapter difference. Record: `benchmarks/2026-10-04-xsmarts-autoconf-v1034.md`.
   exposed 10k corpus, 1,999 of 5,061 random SMILES (three seeds) encoded a
   different molecule according to RDKit; none do now. Reaction products
   written with `write` are affected the same way.
+- **3D (#739):** chematic-3d and chematic-ff take transcendental functions
+  from the pure-Rust `libm` crate (as wasm32 builds already did), so
+  conformers no longer depend on the host C library. Coordinates change in
+  the last bits; on Linux the stereo-safe MMFF94 A6 arm now gives 265/265
+  (rows 53 and 246 failed with `FinalStereoViolation`).
+- **Behaviour change:** `uncharge` follows RDKit's `Uncharger`: cations
+  without H keep their charge, charge-separated groups (nitro, N-oxide) stay,
+  and enough anions stay charged to balance them (it set every charge to 0,
+  turning nitro groups into radicals). `CanonicalMode::Backbone` keeps the
+  old force-neutral key.
+- `reionize` deprotonates only the O–H of carboxylic acids and phenols and
+  protonates only aliphatic primary/secondary amines (an ether or ester O
+  was given a negative charge with two bonds, depending on atom order).
+- `canonical_tautomer` / `standardize` no longer turn amides, ureas and
+  carbamates into iminols when a methoxyarene is present (216 of the exposed
+  10k rows), and drop tetrahedral tags on atoms the shift made sp2 (the
+  result depended on input atom order).
+- `add_hydrogens` keeps E/Z bond directions held in the side table (aromatic
+  exocyclic imines), stereo groups, R-group labels and atom tags;
+  `remove_hydrogens` keeps stereo groups, R-group labels and tags. The
+  add/remove round trip now leaves canonical SMILES unchanged on all 10,000
+  exposed rows.
+- MOL V2000/V3000: atoms of type-4 (aromatic) bonds are read as aromatic;
+  the writer uses Kekulé bonds when type 4 would lose an aromatic atom's H
+  (`c1cc[nH]c1` came back as `c1ccnc1`).
+- SMARTS `^n` uses RDKit's hybridization model (conjugation-aware: amide N,
+  ester O and carboxylate O⁻ are SP2; plain H atoms have none); per-atom
+  agreement with RDKit on the exposed 10k corpus rose from 90.7% to 99.94%.
+  `k` alone is "in a ring" and `k0` matches every atom, as in RDKit.
+- SMILES bracket atoms read two-digit charges and H counts (`[C+10]`,
+  `[CH10]`), as RDKit does.
+- Kekulization: an aromatic N/P cation already at valence 4
+  (`C[n+]1(C)cccc1`) needs no ring double bond, as in RDKit. Reaction
+  products with a plain double bond between two aromatic ring atoms are
+  dropped (RDKit's sanitize rejects them).
 - Scripts: `reaction_python_checked_candidates.py` and
   `run_published_npm_checked_candidates.mjs` emit checked 83-row candidates
   from an interpreter or npm package that cannot load RDKit, and
@@ -75,6 +110,10 @@ adapter difference. Record: `benchmarks/2026-10-04-xsmarts-autoconf-v1034.md`.
   `tools/published_rust_checked_gate` runs the checked RDKit profile of the
   published crate on the 83 rows; `check_published_npm_formula_ez_json.mjs`
   reruns the v1.0.31 WASM formula and E/Z JSON fixes on a published tarball.
+  `check_smarts_independent_corpus.py` runs the 31 SMARTS queries on corpus
+  rows outside the exposed 10k lane (chematic and RDKit in separate
+  interpreters if needed); `check_rdkit_ring_order_dependence.py` lists ring
+  queries whose RDKit answer depends on atom order.
 - Published v1.0.34 evidence: the PyPI Linux wheel (CPython 3.9), the npm
   package and the crates.io crate each give 80 graph/origin/map matches and
   three jointly invalid rows on the 83 reaction fixtures; npm `formula()`

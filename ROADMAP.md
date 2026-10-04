@@ -15,8 +15,8 @@ boundaries, and reproducible evidence take priority over feature-count races.
 | P0.2 speed | Published Python: 20 exact-output operations pass paired-interval gates on one host; three-browser Morgan has a separate scoped result. | Equal-work and memory lanes on more artifacts/corpora; see [validation](docs/validation.md). |
 | P1 reactions | Published v1.0.34 PyPI Linux wheel, npm package and crates.io crate: 80 exact graph/origin/map, 3 jointly invalid, no typed unsupported (v1.0.30: 73/83). | Rerun the macOS and Windows wheels; refusals are not matches. |
 | P1 SMARTS/SMIRKS dialect ([#734](https://github.com/kent-tokyo/chematic/issues/734), [#754](https://github.com/kent-tokyo/chematic/issues/754)) | Contributor's [xsmarts-autoconf](https://github.com/swamidasslab/xsmarts-autoconf): v1.0.34 65/83 behaviour flags give RDKit 2026.03.6's value (v1.0.30: 42/83); unreleased source 75/83, with no wrong-confident flag left and a decided outcome for each of the 8 others. Sweep findings fixed or decided; tweak kinds 16 → 4. [Record](benchmarks/2026-10-04-xsmarts-autoconf-v1034.md). | Release the source fixes (isotope default and `random_smiles`/`write` stereo are user-visible); pinned autoconf lane runs in CI. |
-| P1 SMARTS | Published v1.0.30: 200/310k match-set differences. Opt-in Python source wheels: 309,982 exact, 18 typed unsupported, zero wrong-confident. | Independent corpus and published-profile rerun; retain native SSSR. |
-| P2 A6 quality | Published v1.0.31 macOS: 265/265 geometry/stereo/clash, 100/265 converged. Linux/Python 3.9 has two typed stereo failures on published and source wheels. | Resolve [#739](https://github.com/kent-tokyo/chematic/issues/739); rerun per-term energy, convergence and independent conformer quality before speed claims. |
+| P1 SMARTS | Published v1.0.30: 200/310k match-set differences. Opt-in profile: 309,982/310k exact with 18 typed refusals, which are exactly the cells whose RDKit answer changes with atom order; independent ChEMBL 4,625 rows: 143,375/143,375 exact on PyPI v1.0.34 and source. [Record](benchmarks/2026-10-04-stereo-integrity-smarts-a6-followups.md). | Published-binding 310k rerun of the opt-in profile; retain native SSSR. |
+| P2 A6 quality | Published v1.0.31 macOS: 265/265 geometry/stereo/clash, 100/265 converged. Published Linux wheels: 263/265 ([#739](https://github.com/kent-tokyo/chematic/issues/739)); source with `libm` math: 265/265 on Linux. | Rerun macOS and the external geometry/stereo/clash scorer on the `libm` build; per-term energy, convergence and independent conformer quality before speed claims. |
 
 Detailed versions, hashes and denominators are in [validation](docs/validation.md)
 and the [benchmark index](benchmarks/README.md). v1.0.32 publication and
@@ -51,36 +51,43 @@ Exposed data are not sealed evidence.
    created centres) under review. **Exit:** a published rule denominator
    with exact / differing / refused counts.
 4. **P1 / A4 — Publish a bounded SMARTS compatibility profile.** The
-   published v1.0.30 baseline has 200 match-set and 43 Boolean differences;
-   most are the `R<n>` ring-count basis (SSSR versus RDKit's symmetrized
-   rings), also autoconf flag `match.ring_count_basis`.
-   Source-wheel opt-in checks have 309,982/310,000 exact sets and 18 typed
-   unsupported cells, with no wrong-confident result. Adjudicate the 18
-   charged-polycycle cases under an order-independent ring contract; preserve
-   native SSSR. **Exit:** a full pinned published-binding rerun and an
-   independent corpus with row-level exact/refused/failed accounting.
+   published v1.0.30 baseline has 200 match-set and 43 Boolean differences,
+   mostly the `R<n>` ring-count basis (SSSR versus RDKit's symmetrized
+   rings). The opt-in profile is exact on 309,982/310,000 pinned cells and on
+   all 143,375 cells of an independent ChEMBL corpus (PyPI v1.0.34 and
+   source); its 18 typed refusals are exactly the cells whose RDKit answer
+   changes with input atom order, so they stay refusals. `^n` follows RDKit's
+   hybridization model (99.94% per-atom agreement). **Exit:** a pinned
+   published-binding 310k rerun with row-level exact/refused/failed
+   accounting; native SSSR is preserved.
 5. **P2 / A6 — Gate 3D quality before speed.** Published v1.0.31 macOS
-   passes 265/265 geometry/stereo/clash but converges on only 100/265. The
-   source typing improvement is not published, and same-host Linux wheels
-   have two pre-existing typed stereo failures (rows 53/246; [#739](https://github.com/kent-tokyo/chematic/issues/739)).
-   **Exit:** resolve the platform boundary and separately bound atom typing,
-   per-term energy, convergence, timeout/cancellation, geometry/stereo/clash
-   and independent conformer quality on published and candidate artifacts.
-   No 3D speed claim before this exit.
+   passes 265/265 geometry/stereo/clash but converges on only 100/265.
+   Published Linux wheels failed stereo on rows 53/246
+   ([#739](https://github.com/kent-tokyo/chematic/issues/739)); the cause was
+   host-libm last-bit differences amplified by the minimiser, and the source
+   now uses the `libm` crate (as WASM already did): Linux 265/265.
+   **Exit:** rerun macOS and the external scorer on the `libm` build, then
+   bound atom typing, per-term energy, convergence, timeout/cancellation,
+   geometry/stereo/clash and independent conformer quality on published and
+   candidate artifacts. No 3D speed claim before this exit.
 6. **P0.2 — Complete paired speed evidence after quality gates.** Extend
    equivalent-output, alternating-order, ≥20-block measurements beyond the
    finished lanes. Separate parse, perception, prepared/reused calls and memory
    allocations. **Exit:** pinned scripts/raw observations, paired intervals
    and an explicit no-claim outcome whenever outputs or work differ.
-7. **P1 / A2 — Preserve CIP safety.** Keep five typed abstentions stable under
-   atom-order, spelling and file round trips; adjudicate phosphorus independently
-   and define a lone-pair convention before assigning R/S. **Exit:** complete
-   outcome accounting and no wrong confident label.
+7. **P1 / A2 — Preserve CIP safety.** On the 1,687 stereo rows of the
+   exposed 10k lane, Accurate-mode labels, the five typed abstentions and
+   bond-keyed E/Z are identical across random atom orders, an H round trip
+   and a canonical reparse. Remaining: adjudicate phosphorus independently
+   and define a lone-pair convention before assigning R/S. **Exit:**
+   complete outcome accounting and no wrong confident label.
 8. **P2 — Test representation limits separately.** Keep CDXML opaque
    preservation distinct from semantic editing, Markush/polymer expansion
    bounded, Standard InChI separate from native identifiers, and canonical
-   SMILES separate from the fail-closed stable key. **Exit:** cross-binding
-   fixtures with no silent information loss.
+   SMILES separate from the fail-closed stable key. MOL writing without
+   coordinates drops tetrahedral stereo and writes E/Z as wedge codes only
+   chematic reads back; a coordinate-and-wedge writer is open. **Exit:**
+   cross-binding fixtures with no silent information loss.
 9. **External — Complete RDKit 2026.09.1 rebaseline.** The official npm/WASM
    old/new lanes, published Python 2026.03.6 baseline, and independent C++
    source-build old/new lanes are pinned and measured on exposed 10k inputs.

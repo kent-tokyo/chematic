@@ -38,9 +38,10 @@ comparison is limited to its recorded artifact, comparator, corpus and operation
 - **3D/MMFF94:** Experimental. Published v1.0.31 macOS quality checks pass
   geometry/stereo/clash on 265/265, but only 100/265 converge at the declared
   limit; 262 comparable same-coordinate total energies are within 1 kcal/mol.
-  Linux/Python 3.9 published and source wheels both have typed stereo failures
-  on rows 53/246, so cross-platform equivalence and independent conformer
-  quality remain open. [Quality record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md)
+  Linux/Python 3.9 published wheels have typed stereo failures on rows
+  53/246; unreleased source, which takes its math from the `libm` crate,
+  passes 265/265 on Linux ([record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-04-stereo-integrity-smarts-a6-followups.md)).
+  A macOS rerun of that build and independent conformer quality remain open. [Quality record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md)
   · [platform diagnosis](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-a6-source-mmff94-termination.md).
 
 Earlier source diagnostics and per-release channel checks remain in the
