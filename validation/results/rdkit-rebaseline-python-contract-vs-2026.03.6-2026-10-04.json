@@ -1,0 +1,288 @@
+{
+  "contract": {
+    "bytes": {
+      "outcome": "returned",
+      "value": true
+    },
+    "invalid_smiles": {
+      "outcome": "returned",
+      "value": null
+    },
+    "invalid_type": {
+      "exception_type": "builtins.TypeError",
+      "message": "No registered converter was able to produce a C++ rvalue of type std::__1::basic_string<wchar_t, std::__1::char_traits<wchar_t>, std::__1::allocator<wchar_t>> from this Python object of type int",
+      "outcome": "raised"
+    },
+    "keyword": {
+      "outcome": "returned",
+      "value": true
+    },
+    "morgan_iterable": {
+      "generator": {
+        "exception_type": "builtins.TypeError",
+        "message": "object of type 'generator' has no len()",
+        "outcome": "raised"
+      },
+      "list": {
+        "outcome": "returned",
+        "value": {
+          "length": 10000,
+          "type": "tuple"
+        }
+      },
+      "tuple": {
+        "outcome": "returned",
+        "value": {
+          "length": 10000,
+          "type": "tuple"
+        }
+      }
+    },
+    "path_like": {
+      "outcome": "returned",
+      "value": 1
+    },
+    "str": {
+      "outcome": "returned",
+      "value": true
+    }
+  },
+  "corpus": {
+    "bytes": 429750,
+    "path": "/Users/k_tanabe/.codex/worktrees/reaction-83-residuals/chematic/validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+  },
+  "expected_rdkit": "2026.03.6",
+  "gate": {
+    "row_accounting_complete": true,
+    "runtime_matches": true
+  },
+  "gate_passed": true,
+  "package": {
+    "artifact": {
+      "bytes": 30280927,
+      "path": "/private/tmp/chematic-rdkit-python-rebaseline.ylWbEI/wheels/rdkit-2026.3.6-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "e16c467cb254a223e59a0cf81358c6b39da15a99d2909170d693e95778fddb41"
+    },
+    "name": "rdkit",
+    "version": "2026.3.6"
+  },
+  "profile": "rdkit_python_binding_contract_v1",
+  "row_accounting": {
+    "failed_count": 0,
+    "failures": [],
+    "input_count": 10000,
+    "success_count": 10000
+  },
+  "runtime": {
+    "backend": {
+      "evidence": "runtime callable type=Boost.Python.function",
+      "value": "boost_python"
+    },
+    "executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python_implementation": "CPython",
+    "python_version": "3.13.6",
+    "rdkit_version": "2026.03.6"
+  },
+  "schema_version": 1,
+  "timing": {
+    "batch_morgan": {
+      "median_ns": 287646333,
+      "p95_ns": 288916250,
+      "repetitions": 7,
+      "result_count": 10000,
+      "samples_ns": [
+        285642583,
+        287646333,
+        288916250,
+        288916042,
+        286651375,
+        287985917,
+        286637041
+      ]
+    },
+    "classification": "python_binding_end_to_end; not chemistry_kernel_timing",
+    "empty_batch_boundary": {
+      "median_ns": 583.0,
+      "p95_ns": 625,
+      "repetitions": 140,
+      "result_count": 0,
+      "samples_ns": [
+        2333,
+        1000,
+        667,
+        708,
+        583,
+        583,
+        584,
+        625,
+        584,
+        542,
+        583,
+        542,
+        625,
+        584,
+        584,
+        667,
+        625,
+        583,
+        542,
+        584,
+        541,
+        542,
+        542,
+        583,
+        584,
+        584,
+        584,
+        541,
+        542,
+        584,
+        625,
+        625,
+        542,
+        541,
+        583,
+        583,
+        542,
+        541,
+        709,
+        583,
+        583,
+        583,
+        583,
+        625,
+        584,
+        583,
+        541,
+        584,
+        584,
+        584,
+        625,
+        584,
+        584,
+        541,
+        542,
+        584,
+        625,
+        542,
+        584,
+        541,
+        542,
+        583,
+        542,
+        625,
+        583,
+        541,
+        583,
+        583,
+        625,
+        541,
+        541,
+        542,
+        584,
+        584,
+        584,
+        541,
+        541,
+        583,
+        583,
+        542,
+        583,
+        584,
+        542,
+        542,
+        541,
+        542,
+        541,
+        542,
+        584,
+        541,
+        584,
+        541,
+        542,
+        583,
+        541,
+        542,
+        542,
+        583,
+        583,
+        541,
+        584,
+        583,
+        583,
+        667,
+        542,
+        542,
+        541,
+        584,
+        541,
+        583,
+        541,
+        584,
+        583,
+        542,
+        541,
+        542,
+        583,
+        542,
+        542,
+        584,
+        583,
+        625,
+        541,
+        584,
+        542,
+        542,
+        584,
+        583,
+        542,
+        583,
+        583,
+        583,
+        583,
+        542,
+        583,
+        584,
+        625,
+        583,
+        541,
+        584
+      ]
+    },
+    "parse_batch_api": {
+      "availability": "unavailable"
+    },
+    "scalar_morgan": {
+      "median_ns": 293122625,
+      "p95_ns": 298339291,
+      "repetitions": 7,
+      "result_count": 10000,
+      "samples_ns": [
+        286009250,
+        293122625,
+        285162667,
+        287381416,
+        298339291,
+        295993125,
+        295000667
+      ]
+    },
+    "scalar_parse": {
+      "median_ns": 808270250,
+      "p95_ns": 809852542,
+      "repetitions": 7,
+      "result_count": 10000,
+      "samples_ns": [
+        808270250,
+        806622167,
+        801040292,
+        808552667,
+        799971917,
+        809087458,
+        809852542
+      ]
+    }
+  }
+}

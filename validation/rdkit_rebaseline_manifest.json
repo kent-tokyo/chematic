@@ -2,7 +2,7 @@
   "schema_version": 3,
   "policy": {
     "baseline_lanes_are_immutable": true,
-    "next_stable_lane": "2026.09.1 npm measured; Python and independent native artifacts pending; keep future lanes separate",
+    "next_stable_lane": "2026.09.1 npm measured and 2026.03.6 Python baseline measured; 2026.09.1 Python and independent native artifacts pending; keep future lanes separate",
     "prohibited_inference": "A Python or native package release does not prove that an RDKit.js npm artifact exists or has the same runtime version."
   },
   "operations": [
@@ -61,6 +61,32 @@
         "cip": [],
         "smarts": ["validation/results/rdkit-smarts-oracle-lanes-v1.0.14.json"],
         "morgan": [],
+        "browser_runtime": []
+      },
+      "availability_evidence": []
+    },
+    {
+      "id": "python-2026.03.6-v1.0.33-published-baseline",
+      "channel": "python_native",
+      "availability": "measured",
+      "rdkit_version": "2026.03.6",
+      "wrapper_backend": "boost_python",
+      "corpus_policy": "fixed_exposed_10k; published CheMatic 1.0.33 and RDKit 2026.3.6 macOS arm64 CPython 3.13 wheels",
+      "artifact_provenance": {
+        "status": "verified",
+        "artifact": "validation/results/rdkit-rebaseline-python-provenance-v1.0.33-vs-2026.03.6-2026-10-04.json",
+        "runtime": "RDKit 2026.03.6 and CheMatic 1.0.33 executed on CPython 3.13",
+        "backend": "runtime type(Chem.MolFromSmiles)=Boost.Python.function",
+        "configuration": "10k complete chemistry rows, 31 SMARTS queries, seven repeated scalar/batch Python boundary probes",
+        "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "toolchain": "macOS arm64 CPython 3.13.6; exact wheel names and hashes in provenance/benchmark record",
+        "missing_dimensions": []
+      },
+      "operation_evidence": {
+        "smiles_parse_write": ["validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.json", "validation/results/rdkit-rebaseline-python-contract-vs-2026.03.6-2026-10-04.json"],
+        "cip": ["validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.json"],
+        "smarts": ["validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.json"],
+        "morgan": ["validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.json", "validation/results/rdkit-rebaseline-python-contract-vs-2026.03.6-2026-10-04.json"],
         "browser_runtime": []
       },
       "availability_evidence": []

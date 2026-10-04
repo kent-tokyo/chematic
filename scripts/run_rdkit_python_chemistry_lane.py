@@ -63,7 +63,7 @@ def bond_endpoint_key(atom1: int, atom2: int) -> str:
     return f"{left}-{right}"
 
 
-def rdkit_cip(Chem, rdCIPLabeler, molecule) -> tuple[dict[int, str], dict[str, str]]:
+def rdkit_cip(rdCIPLabeler, molecule) -> tuple[dict[int, str], dict[str, str]]:
     rdCIPLabeler.AssignCIPLabels(molecule)
     atoms = {
         atom.GetIdx(): atom.GetProp("_CIPCode")
@@ -72,11 +72,11 @@ def rdkit_cip(Chem, rdCIPLabeler, molecule) -> tuple[dict[int, str], dict[str, s
     }
     bonds: dict[str, str] = {}
     for bond in molecule.GetBonds():
-        endpoint = bond_endpoint_key(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
-        if bond.GetStereo() == Chem.BondStereo.STEREOTRANS:
-            bonds[endpoint] = "E"
-        elif bond.GetStereo() == Chem.BondStereo.STEREOCIS:
-            bonds[endpoint] = "Z"
+        # Cis/trans is a topological marker, not a CIP descriptor. The same
+        # STEREOTRANS bond can be Z after substituent priority is considered.
+        if bond.HasProp("_CIPCode"):
+            endpoint = bond_endpoint_key(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
+            bonds[endpoint] = bond.GetProp("_CIPCode")
     return atoms, bonds
 
 
@@ -289,7 +289,7 @@ def main() -> int:
                     )
                 counts["smiles_semantic_difference"] += 1
 
-            oracle_atoms, oracle_bonds = rdkit_cip(Chem, rdCIPLabeler, rd_mol)
+            oracle_atoms, oracle_bonds = rdkit_cip(rdCIPLabeler, rd_mol)
             candidate_atoms, candidate_bonds, unresolved = chematic_cip(candidate)
             correspondence = index_correspondence(rd_mol, candidate)
             cip_exact = (
