@@ -7,6 +7,7 @@ on:
       - .github/workflows/rdkit-native-rebaseline.yml
       - tools/rdkit_native_rebaseline/**
       - scripts/summarize_rdkit_native_rebaseline.py
+      - scripts/summarize_rdkit_ring_backend.py
       - validation/rdkit_native_rebaseline_build.json
       - validation/rdkit_rebaseline_smarts_queries.json
       - validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi
@@ -112,9 +113,22 @@ jobs:
             --python-baseline-rows validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.jsonl.gz \
             --summary "$RUNNER_TEMP/rdkit-native-results/summary.json" \
             --delta "$RUNNER_TEMP/rdkit-native-results/delta.jsonl"
+          RDK_USE_LEGACY_RING_FINDING=1 \
+            LD_LIBRARY_PATH="$RUNNER_TEMP/rdkit-install-new/lib:${LD_LIBRARY_PATH:-}" \
+            "$RUNNER_TEMP/probe-build-new/rdkit_native_rebaseline" \
+            validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
+            "$RUNNER_TEMP/rdkit-queries.txt" \
+            "$RUNNER_TEMP/rdkit-native-results/new-legacy.jsonl"
+          python3 -m scripts.summarize_rdkit_ring_backend \
+            --build-config validation/rdkit_native_rebaseline_build.json \
+            --old-rows "$RUNNER_TEMP/rdkit-native-results/old.jsonl" \
+            --new-rows "$RUNNER_TEMP/rdkit-native-results/new.jsonl" \
+            --legacy-rows "$RUNNER_TEMP/rdkit-native-results/new-legacy.jsonl" \
+            --output "$RUNNER_TEMP/rdkit-native-results/ring-backend-summary.json"
           gzip -n -9 "$RUNNER_TEMP/rdkit-native-results/old.jsonl"
           gzip -n -9 "$RUNNER_TEMP/rdkit-native-results/new.jsonl"
           gzip -n -9 "$RUNNER_TEMP/rdkit-native-results/delta.jsonl"
+          gzip -n -9 "$RUNNER_TEMP/rdkit-native-results/new-legacy.jsonl"
       - name: Upload pinned native output packet
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
