@@ -28,9 +28,9 @@ else:
 ROOT = Path(__file__).resolve().parents[1]
 RDLogger.DisableLog("rdApp.*")
 EXPECTED = {
-    # v2_isotope_methanol_split matches RDKit since #734 (was a refusal).
-    "graph_origin_map_match": 77,
-    "typed_unsupported": 3,
+    # v2_isotope_methanol_split and the three alanine stereo rows match
+    # RDKit since #734 (were a refusal and typed unsupported).
+    "graph_origin_map_match": 80,
     "joint_invalid_input": 3,
 }
 

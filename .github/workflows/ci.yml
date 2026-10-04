@@ -276,7 +276,7 @@ jobs:
           .venv/bin/maturin build --release -m crates/chematic-py/Cargo.toml --interpreter .venv/bin/python --out dist/hba-wheel
           .venv/bin/pip install --force-reinstall --no-deps dist/hba-wheel/chematic-*.whl
           .venv/bin/python scripts/check_rdkit_hba_wheel.py --wheel dist/hba-wheel/chematic-*.whl --build-profile release --output validation/results/rdkit-hba-source-wheel-5k.json
-          .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-linux.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":77,"typed_unsupported":3,"joint_invalid_input":3}'
+          .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-linux.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":80,"joint_invalid_input":3}'
           .venv/bin/python scripts/reaction_python_checked_provenance_gate.py --expected-rdkit 2026.03.6 --wheel dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-provenance-83-linux.json
           .venv/bin/python scripts/check_python_smarts_parity_310k.py --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-linux.json
           .venv/bin/python scripts/mmff94_atom_type_census.py --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --output validation/results/mmff94-type-source-wheel-10k-linux.json --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --type37-context --source-wheel-gate
@@ -355,7 +355,7 @@ jobs:
           .venv/bin/maturin build --release -m crates/chematic-py/Cargo.toml --interpreter .venv/bin/python --out dist/hba-wheel
           .venv/bin/pip install --no-deps dist/hba-wheel/chematic-*.whl
           .venv/bin/python scripts/check_rdkit_hba_wheel.py --wheel dist/hba-wheel/chematic-*.whl --build-profile release --output validation/results/rdkit-hba-source-wheel-5k-macos.json
-          .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-macos.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":77,"typed_unsupported":3,"joint_invalid_input":3}'
+          .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-macos.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":80,"joint_invalid_input":3}'
           .venv/bin/python scripts/reaction_python_checked_provenance_gate.py --expected-rdkit 2026.03.6 --wheel dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-provenance-83-macos.json
           .venv/bin/python scripts/check_python_smarts_parity_310k.py --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-macos.json
           .venv/bin/python scripts/mmff94_atom_type_census.py --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --output validation/results/mmff94-type-source-wheel-10k-macos.json --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --type37-context --source-wheel-gate

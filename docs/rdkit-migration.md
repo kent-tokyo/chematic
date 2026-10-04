@@ -63,6 +63,12 @@ read/write coverage rather than assuming every RDKit format is supported.
   semantics are not generally interchangeable. The published v1.0.30
   reaction audit matches the original 57 fixtures but retains differences
   in an 83-case extension; it does not predict yield or selectivity.
+  `run_smirks_checked(..., rdkit_compat=True)` reproduces RDKit 2026.03.6
+  reaction stereochemistry, including its bond-order-dependent tag copy;
+  it returns `typed_unsupported` (`ambiguous_stereo_bond_order`) when the
+  answer depends on ring-closure numbers the input molecule does not keep.
+  The native `run_smirks` keeps its own stereo semantics (reactant `@`/`@@`
+  filter matches; product tags are geometric).
 
 ## Move a persisted workflow safely
 

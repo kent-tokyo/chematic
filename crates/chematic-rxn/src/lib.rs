@@ -25,6 +25,7 @@ pub mod enumerate;
 pub mod green;
 pub mod perf_counters;
 pub mod query;
+mod rdkit_stereo;
 mod rdkit_valence;
 pub mod reaction;
 pub mod requirements;
@@ -64,11 +65,12 @@ pub use stoichiometry::{
     StoichiometryStep, analyze_components, analyze_reaction_document, analyze_reaction_step,
 };
 pub use transform::{
-    PreparedReaction, ReactantAtom, ReactionCompatibilityUnsupported, ReactionMatch,
-    ReactionMatchContext, ReactionTransformDiagnostics, ReactionTransformLimits,
+    PreparedReaction, RdkitProfileOutcome, ReactantAtom, ReactionCompatibilityUnsupported,
+    ReactionMatch, ReactionMatchContext, ReactionTransformDiagnostics, ReactionTransformLimits,
     ReactionTransformReport, ReactionVariantDiagnostics, TracedProduct,
     TracedReactionTransformReport, TransformError, apply_reaction_match,
     apply_reaction_match_traced, find_reaction_matches, find_reaction_matches_with_limits,
     run_reactants, run_reactants_strict, run_reactants_strict_with_limits,
-    run_reactants_with_diagnostics, run_reactants_with_limits,
+    run_reactants_traced_rdkit_2026_03_6, run_reactants_with_diagnostics,
+    run_reactants_with_limits,
 };

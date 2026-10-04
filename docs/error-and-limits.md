@@ -109,8 +109,11 @@ entries, each reactant to 10,000 atoms, and each product set to 1,024 entries.
 The opt-in `run_reactants_checked(smirks, reactants_smiles, rdkit_compat)`
 returns a JSON object with `profile`, `status`, `reason`, `detail`, `products`
 and accepted/applied/valence-rejected match counts. With `rdkit_compat=true`,
-reactant-side tetrahedral templates outside the pinned RDKit 2026.03.6
-comparison contract return `typed_unsupported` and
+reaction stereochemistry follows pinned RDKit 2026.03.6; a product whose
+stereo depends on unrecorded ring-closure numbers returns
+`typed_unsupported` and `ambiguous_stereo_bond_order`, a match rejected only
+by the native E/Z check `ez_reactant_template_semantics`, and stereo syntax
+the profile does not read (`@?`, `@TH1`, component grouping)
 `chiral_reactant_template_semantics`. Input, arity, product-valence and
 resource-limit failures are typed refusals; a combination above 1,024
 accepted matches fails closed rather than returning partial products. This

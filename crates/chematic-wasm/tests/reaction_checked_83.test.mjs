@@ -31,6 +31,14 @@ const expected = new Map(audit.rows.map(({ id, outcome }) => [id, outcome]));
 // The v1.0.31 audit recorded this row as a valence refusal by the native
 // model; RDKit's sanitize rules (#734) give RDKit's products instead.
 expected.set("v2_isotope_methanol_split", "graph_origin_map_match");
+// These were typed unsupported until RDKit's reaction stereo was reproduced.
+for (const id of [
+  "stereo_identity_l_alanine",
+  "v2_stereo_l_alanine_identity_reordered",
+  "v2_stereo_d_alanine_no_match",
+]) {
+  expected.set(id, "graph_origin_map_match");
+}
 assert.equal(expected.size, cases.length);
 
 const counts = new Map();
@@ -96,9 +104,8 @@ for (const { id, smirks, reactants } of cases) {
   }
 }
 assert.deepEqual(Object.fromEntries(counts), {
-  products: 70,
+  products: 73,
   no_match: 7,
-  typed_unsupported: 3,
   typed_refusal: 3,
 });
 for (const [atom, expectedSmiles] of [["C", "CC"], ["O", "OC"], ["N", "CN"]]) {

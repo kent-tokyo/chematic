@@ -86,8 +86,16 @@ pub struct TracedReactionTransformReport {
 /// a reaction result. Native CheMatic reaction semantics are unchanged.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReactionCompatibilityUnsupported {
-    /// Reactant-side tetrahedral constraints have different matching semantics.
+    /// A stereo template uses syntax the RDKit reading here does not follow
+    /// (component grouping, `@?`, non-tetrahedral chirality classes).
     ChiralReactantTemplateSemantics,
+    /// A product's tetrahedral stereo depends on a reactant bond order the
+    /// input molecule does not record (RDKit orders an atom's ring-closure
+    /// bonds by ring number).
+    AmbiguousStereoBondOrder,
+    /// RDKit ignores reactant-template `/` `\\` when matching; this match
+    /// was rejected by the native E/Z check.
+    EzReactantTemplateSemantics,
 }
 
 impl ReactionCompatibilityUnsupported {
@@ -95,6 +103,8 @@ impl ReactionCompatibilityUnsupported {
     pub const fn reason_code(self) -> &'static str {
         match self {
             Self::ChiralReactantTemplateSemantics => "chiral_reactant_template_semantics",
+            Self::AmbiguousStereoBondOrder => "ambiguous_stereo_bond_order",
+            Self::EzReactantTemplateSemantics => "ez_reactant_template_semantics",
         }
     }
 }
@@ -236,7 +246,7 @@ impl ReactionMatch {
         let Some(parts) = crate::reaction::split_reaction_parts(smirks) else {
             return Err(TransformError::SmirksParse(RxnError::MissingArrow));
         };
-        let (_, queries) = parse_reactant_templates(parts[0])?;
+        let (_, queries) = parse_reactant_templates(parts[0], false)?;
         let n_templates = queries.len();
         if self.per_reactant.len() != n_templates {
             return Err(TransformError::ReactantCountMismatch {
@@ -392,6 +402,42 @@ pub struct PreparedReaction {
     product_specs: Vec<Vec<ProductAtomSpec>>,
     /// Reactant-template atom facts per atom map, for `build_product`.
     reactant_map_atoms: FxHashMap<u16, ReactantMapAtom>,
+    /// Atom-map pairs bonded in a reactant template (unmapped = 0).
+    reactant_bond_maps: FxHashSet<(u16, u16)>,
+    /// Reactant queries for the RDKit profile where they differ from
+    /// `queries`: stereo templates matched by their SMARTS reading with
+    /// `@`/`@@` dropped (RDKit does not match on them).
+    rdkit_queries: Option<Vec<QueryMolecule>>,
+    /// RDKit's reading of the template stereo, built on first use.
+    rdkit_stereo: std::sync::OnceLock<Option<crate::rdkit_stereo::ReactionStereo>>,
+}
+
+/// Apply `smirks` with RDKit 2026.03.6 reaction semantics; see
+/// [`PreparedReaction::run_reactants_traced_rdkit_2026_03_6`]. Unlike
+/// [`PreparedReaction::new`], a SMARTS-only reactant template may carry
+/// `@`/`@@` here, since RDKit reads them only for the product.
+pub fn run_reactants_traced_rdkit_2026_03_6(
+    smirks: &str,
+    reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
+) -> Result<RdkitProfileOutcome, TransformError> {
+    PreparedReaction::new_with_reading(smirks, true)?
+        .run_reactants_traced_rdkit_2026_03_6(reactants, limits)
+}
+
+/// Outcome of applying a reaction under the pinned RDKit 2026.03.6 profile.
+pub enum RdkitProfileOutcome {
+    /// Products, accounting and provenance as RDKit would give them.
+    Report(TracedReactionTransformReport),
+    /// The profile cannot claim a result for these inputs.
+    Unsupported(ReactionCompatibilityUnsupported),
+}
+
+/// Which reaction semantics a run follows.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Profile {
+    Native,
+    Rdkit,
 }
 
 /// What `build_product` needs to know about a mapped reactant-template atom:
@@ -406,11 +452,76 @@ struct ReactantMapAtom {
 
 impl PreparedReaction {
     /// Return a typed reason when the pinned RDKit 2026.03.6 profile cannot
-    /// safely compare this template. Product-side stereo and E/Z are not
-    /// blanket-refused; only reactant-side tetrahedral matching is affected.
+    /// read this template's stereo at all (`@?`, `@TH1`, component grouping).
+    /// Ordinary `@`/`@@` templates are supported; inputs whose result the
+    /// profile cannot reproduce are reported per call by
+    /// [`Self::run_reactants_traced_rdkit_2026_03_6`].
     pub fn rdkit_2026_03_6_unsupported_reason(&self) -> Option<ReactionCompatibilityUnsupported> {
-        self.has_tetrahedral_reactant_stereo()
-            .then_some(ReactionCompatibilityUnsupported::ChiralReactantTemplateSemantics)
+        let unreadable =
+            |p: &PreparedReaction| p.rdkit_stereo().is_none() && p.has_any_stereo_text();
+        let any = match &self.variants {
+            Some(variants) => variants.iter().any(unreadable),
+            None => unreadable(self),
+        };
+        any.then_some(ReactionCompatibilityUnsupported::ChiralReactantTemplateSemantics)
+    }
+
+    /// RDKit's reading of this template's stereo (`None`: not followed).
+    fn rdkit_stereo(&self) -> Option<&crate::rdkit_stereo::ReactionStereo> {
+        self.rdkit_stereo
+            .get_or_init(|| {
+                let parts = crate::reaction::split_reaction_parts(&self.normalized_smirks)?;
+                crate::rdkit_stereo::ReactionStereo::new(parts[0], parts[2])
+            })
+            .as_ref()
+    }
+
+    /// Whether the template text spells any tetrahedral stereo.
+    fn has_any_stereo_text(&self) -> bool {
+        self.normalized_smirks.contains('@')
+    }
+
+    /// Apply this template with RDKit 2026.03.6 reaction semantics: reactant
+    /// `@`/`@@` do not restrict matching, and product tetrahedral tags follow
+    /// RDKit's inversion flags and bond orders (see `rdkit_stereo`). Products,
+    /// accounting and provenance are otherwise those of
+    /// [`Self::run_reactants_traced_with_diagnostics`].
+    pub fn run_reactants_traced_rdkit_2026_03_6(
+        &self,
+        reactants: &[&Molecule],
+        limits: &ReactionTransformLimits,
+    ) -> Result<RdkitProfileOutcome, TransformError> {
+        crate::perf_counters::record_run_reactants_call();
+        if let Some(reason) = self.rdkit_2026_03_6_unsupported_reason() {
+            return Ok(RdkitProfileOutcome::Unsupported(reason));
+        }
+        let variants: Vec<&PreparedReaction> = match &self.variants {
+            Some(variants) => variants.iter().collect(),
+            None => vec![self],
+        };
+        let mut products = Vec::new();
+        let mut diagnostics = ReactionTransformDiagnostics {
+            accepted_matches: 0,
+            applied_products: 0,
+            valence_rejected_matches: 0,
+            truncated_matches: false,
+        };
+        for variant in variants {
+            let report =
+                match variant.run_traced_profile(reactants, true, limits, Profile::Rdkit)? {
+                    Ok(report) => report,
+                    Err(reason) => return Ok(RdkitProfileOutcome::Unsupported(reason)),
+                };
+            diagnostics.accepted_matches += report.diagnostics.accepted_matches;
+            diagnostics.applied_products += report.diagnostics.applied_products;
+            diagnostics.valence_rejected_matches += report.diagnostics.valence_rejected_matches;
+            diagnostics.truncated_matches |= report.diagnostics.truncated_matches;
+            products.extend(report.products);
+        }
+        Ok(RdkitProfileOutcome::Report(TracedReactionTransformReport {
+            products,
+            diagnostics,
+        }))
     }
 
     /// Whether the reactant pattern has tetrahedral `@`/`@@` constraints.
@@ -430,13 +541,20 @@ impl PreparedReaction {
     /// application. The returned value owns all query state, is safe to share
     /// between threads, and never reparses the template during its methods.
     pub fn new(smirks: &str) -> Result<Self, TransformError> {
+        Self::new_with_reading(smirks, false)
+    }
+
+    /// `rdkit_reading`: SMARTS-only reactant templates may carry `@`/`@@`,
+    /// which then do not restrict matching (RDKit's reading). Only the RDKit
+    /// profile entry points build with it.
+    fn new_with_reading(smirks: &str, rdkit_reading: bool) -> Result<Self, TransformError> {
         let variants = crate::reaction::expand_atomic_number_primitives(smirks)?;
         if variants.len() > 1 || variants.first().is_none_or(|variant| variant != smirks) {
             let mut compiled = Vec::with_capacity(variants.len());
             for variant in &variants {
-                compiled.push(Self::new_normalized(variant)?);
+                compiled.push(Self::new_normalized(variant, rdkit_reading)?);
             }
-            let mut primary = Self::new_normalized(&variants[0])?;
+            let mut primary = Self::new_normalized(&variants[0], rdkit_reading)?;
             primary.variants = Some(compiled);
             primary.requirements.element_lower_bounds.clear();
             primary.requirements.aromatic_element_lower_bounds.clear();
@@ -444,12 +562,13 @@ impl PreparedReaction {
             primary.requirements.bond_lower_bounds.clear();
             return Ok(primary);
         }
-        Self::new_normalized(smirks)
+        Self::new_normalized(smirks, rdkit_reading)
     }
 
-    fn new_normalized(smirks: &str) -> Result<Self, TransformError> {
+    fn new_normalized(smirks: &str, rdkit_reading: bool) -> Result<Self, TransformError> {
         crate::perf_counters::record_reaction_parse_call();
-        let (rxn, queries, product_specs) = parse_smirks_templates(smirks)?;
+        let (rxn, queries, product_specs, rdkit_queries) =
+            parse_smirks_templates(smirks, rdkit_reading)?;
         let mut reactant_map_atoms: FxHashMap<u16, ReactantMapAtom> = FxHashMap::default();
         for template in &rxn.reactants {
             for (idx, atom) in template.atoms() {
@@ -460,6 +579,15 @@ impl PreparedReaction {
                         degree: template.degree(idx),
                     });
                 }
+            }
+        }
+
+        let mut reactant_bond_maps: FxHashSet<(u16, u16)> = FxHashSet::default();
+        for template in &rxn.reactants {
+            for (_, bond) in template.bonds() {
+                let a = template.atom(bond.atom1).atom_map.unwrap_or(0);
+                let b = template.atom(bond.atom2).atom_map.unwrap_or(0);
+                reactant_bond_maps.insert((a.min(b), a.max(b)));
             }
         }
 
@@ -494,6 +622,9 @@ impl PreparedReaction {
             requirements,
             product_specs,
             reactant_map_atoms,
+            reactant_bond_maps,
+            rdkit_queries,
+            rdkit_stereo: std::sync::OnceLock::new(),
         })
     }
 
@@ -612,17 +743,57 @@ impl PreparedReaction {
         carry_substituents: bool,
         limits: &ReactionTransformLimits,
     ) -> Result<TracedReactionTransformReport, TransformError> {
-        let matches = find_matches_impl(self, reactants, limits, None)?;
+        Ok(self
+            .run_traced_profile(reactants, carry_substituents, limits, Profile::Native)?
+            .unwrap_or_else(|_| unreachable!("the native profile never declines")))
+    }
+
+    fn run_traced_profile(
+        &self,
+        reactants: &[&Molecule],
+        carry_substituents: bool,
+        limits: &ReactionTransformLimits,
+        profile: Profile,
+    ) -> Result<
+        Result<TracedReactionTransformReport, ReactionCompatibilityUnsupported>,
+        TransformError,
+    > {
+        // RDKit's SMILES parser drops tags on atoms that cannot be centres.
+        let cleaned: Vec<Option<Molecule>> = match profile {
+            Profile::Native => Vec::new(),
+            Profile::Rdkit => reactants
+                .iter()
+                .map(|m| crate::rdkit_stereo::rdkit_parse_cleanup(m))
+                .collect(),
+        };
+        let cleaned_refs: Vec<&Molecule>;
+        let reactants: &[&Molecule] = if cleaned.iter().any(Option::is_some) {
+            cleaned_refs = reactants
+                .iter()
+                .zip(&cleaned)
+                .map(|(&m, c)| c.as_ref().unwrap_or(m))
+                .collect();
+            &cleaned_refs
+        } else {
+            reactants
+        };
+        let (matches, ez_rejected) = find_matches_profile(self, reactants, limits, None, profile)?;
+        if ez_rejected {
+            return Ok(Err(
+                ReactionCompatibilityUnsupported::EzReactantTemplateSemantics,
+            ));
+        }
         let accepted_matches = matches.len();
         let mut products = Vec::with_capacity(accepted_matches);
         let mut valence_rejected_matches = 0;
         for m in &matches {
-            match apply_match_traced_impl(self, reactants, m, carry_substituents) {
-                Some(product_set) => products.push(product_set),
-                None => valence_rejected_matches += 1,
+            match apply_match_profile(self, reactants, m, carry_substituents, profile) {
+                Ok(Some(product_set)) => products.push(product_set),
+                Ok(None) => valence_rejected_matches += 1,
+                Err(reason) => return Ok(Err(reason)),
             }
         }
-        Ok(TracedReactionTransformReport {
+        Ok(Ok(TracedReactionTransformReport {
             diagnostics: ReactionTransformDiagnostics {
                 accepted_matches,
                 applied_products: products.len(),
@@ -630,7 +801,7 @@ impl PreparedReaction {
                 truncated_matches: false,
             },
             products,
-        })
+        }))
     }
 
     /// Apply this compiled template and retain bounded accounting for filtered matches.
@@ -1024,9 +1195,13 @@ type SmirksTemplates = (
     crate::reaction::Reaction,
     Vec<QueryMolecule>,
     Vec<Vec<ProductAtomSpec>>,
+    Option<Vec<QueryMolecule>>,
 );
 
-fn parse_smirks_templates(smirks: &str) -> Result<SmirksTemplates, TransformError> {
+fn parse_smirks_templates(
+    smirks: &str,
+    rdkit_reading: bool,
+) -> Result<SmirksTemplates, TransformError> {
     let limits = crate::reaction::ReactionParseLimits::default();
     if smirks.len() > limits.max_input_bytes {
         return Err(TransformError::SmirksParse(RxnError::ResourceLimit {
@@ -1058,9 +1233,10 @@ fn parse_smirks_templates(smirks: &str) -> Result<SmirksTemplates, TransformErro
         .filter(|p| !p.is_empty())
         .map(product_atom_specs)
         .collect();
-    let (reactants, queries) = parse_reactant_templates(parts[0])?;
+    let (reactants, queries) = parse_reactant_templates(parts[0], rdkit_reading)?;
+    let rdkit_queries = rdkit_reactant_queries(parts[0], &reactants, &queries);
     rxn.reactants = reactants;
-    Ok((rxn, queries, product_specs))
+    Ok((rxn, queries, product_specs, rdkit_queries))
 }
 
 /// What a product template atom's SMILES spelling specifies. A bare bracket
@@ -1141,6 +1317,7 @@ fn bracket_atom_spec(inner: &str) -> ProductAtomSpec {
 /// queries (see [`parse_smirks_templates`]).
 fn parse_reactant_templates(
     side: &str,
+    rdkit_reading: bool,
 ) -> Result<(Vec<Molecule>, Vec<QueryMolecule>), TransformError> {
     let limits = crate::reaction::ReactionParseLimits::default();
     let components: Vec<&str> = split_components(side);
@@ -1181,12 +1358,21 @@ fn parse_reactant_templates(
                 }
             },
             Err(smiles_err) => {
-                let query = chematic_smarts::parse_smarts(part).map_err(|smarts_err| {
+                let mut query = chematic_smarts::parse_smarts(part).map_err(|smarts_err| {
                     TransformError::SmirksParse(RxnError::SmartsParse {
                         part: part.to_string(),
                         source: format!("{smarts_err} (as SMILES: {smiles_err})"),
                     })
                 })?;
+                if rdkit_reading {
+                    // RDKit does not match on `@`/`@@`; their effect on the
+                    // product is read from the template text.
+                    for atom in &mut query.atoms {
+                        if let Some(stripped) = strip_chirality(&atom.query) {
+                            atom.query = stripped;
+                        }
+                    }
+                }
                 let shadow = shadow_molecule_of(&query).map_err(|reason| {
                     TransformError::SmirksParse(RxnError::UnsupportedReactantTemplate {
                         part: part.to_string(),
@@ -1214,6 +1400,83 @@ fn parse_reactant_templates(
         queries.push(query);
     }
     Ok((reactants, queries))
+}
+
+/// Reactant queries for the RDKit profile, where a stereo template's
+/// SMARTS reading (with `@`/`@@` dropped: RDKit does not match on them)
+/// differs from the SMILES reading the native profile matches. `None` when
+/// no template has tetrahedral stereo.
+fn rdkit_reactant_queries(
+    side: &str,
+    reactants: &[Molecule],
+    queries: &[QueryMolecule],
+) -> Option<Vec<QueryMolecule>> {
+    if !reactants
+        .iter()
+        .any(|t| t.atoms().any(|(_, a)| a.chirality != Chirality::None))
+    {
+        return None;
+    }
+    let components = split_components(side);
+    let mut any = false;
+    let mut out = Vec::with_capacity(queries.len());
+    for (k, query) in queries.iter().enumerate() {
+        let template = reactants.get(k)?;
+        let tetrahedral = template
+            .atoms()
+            .any(|(_, a)| a.chirality != Chirality::None);
+        let replacement = tetrahedral
+            .then(|| components.get(k))
+            .flatten()
+            .and_then(|part| chematic_smarts::parse_smarts(part).ok())
+            .and_then(|mut q| {
+                for atom in &mut q.atoms {
+                    atom.query = strip_chirality(&atom.query)?;
+                }
+                for bond in &mut q.bonds {
+                    if matches!(
+                        bond.query,
+                        BondQuery::Primitive(BondPrimitive::Up | BondPrimitive::Down)
+                    ) {
+                        bond.query = BondQuery::Primitive(BondPrimitive::Single);
+                    }
+                }
+                (q.atoms.len() == template.atom_count() && q.bonds.len() == template.bond_count())
+                    .then(|| {
+                        simplify_reactant_query(&mut q);
+                        q
+                    })
+            });
+        any |= replacement.is_some();
+        out.push(replacement.unwrap_or_else(|| query.clone()));
+    }
+    any.then_some(out)
+}
+
+/// `q` without its chirality primitives; `None` when one sits under `!` or
+/// `,` (not a plain conjunction) or nothing else is left.
+fn strip_chirality(q: &AtomQuery) -> Option<AtomQuery> {
+    fn has(q: &AtomQuery) -> bool {
+        match q {
+            AtomQuery::Primitive(AtomPrimitive::Chirality(_)) => true,
+            AtomQuery::Primitive(_) => false,
+            AtomQuery::And(a, b) | AtomQuery::Or(a, b) => has(a) || has(b),
+            AtomQuery::Not(a) => has(a),
+        }
+    }
+    fn strip(q: &AtomQuery) -> Result<Option<AtomQuery>, ()> {
+        match q {
+            AtomQuery::Primitive(AtomPrimitive::Chirality(_)) => Ok(None),
+            AtomQuery::And(a, b) => Ok(match (strip(a)?, strip(b)?) {
+                (Some(a), Some(b)) => Some(AtomQuery::And(Box::new(a), Box::new(b))),
+                (Some(x), None) | (None, Some(x)) => Some(x),
+                (None, None) => None,
+            }),
+            other if has(other) => Err(()),
+            other => Ok(Some(other.clone())),
+        }
+    }
+    strip(q).ok().flatten()
 }
 
 /// Rewrite a SMARTS reactant query into the equivalent form the engine's
@@ -1453,6 +1716,19 @@ fn find_matches_impl(
     limits: &ReactionTransformLimits,
     rings: Option<&[&RingSet]>,
 ) -> Result<Vec<ReactionMatch>, TransformError> {
+    Ok(find_matches_profile(prepared, reactants, limits, rings, Profile::Native)?.0)
+}
+
+/// [`find_matches_impl`] for either profile. Under RDKit's, reactant `@`/`@@`
+/// do not restrict matching; the second value reports whether the native E/Z
+/// check rejected a combination (RDKit would not have).
+fn find_matches_profile(
+    prepared: &PreparedReaction,
+    reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
+    rings: Option<&[&RingSet]>,
+    profile: Profile,
+) -> Result<(Vec<ReactionMatch>, bool), TransformError> {
     let n_templates = prepared.rxn.reactants.len();
     if reactants.len() != n_templates {
         return Err(TransformError::ReactantCountMismatch {
@@ -1480,8 +1756,11 @@ fn find_matches_impl(
         use_isotopes: true,
         ..MatchConfig::default()
     };
-    let all_match_sets: Vec<Vec<FxHashMap<usize, AtomIdx>>> = prepared
-        .queries
+    let queries = match (profile, &prepared.rdkit_queries) {
+        (Profile::Rdkit, Some(rdkit)) => rdkit,
+        _ => &prepared.queries,
+    };
+    let all_match_sets: Vec<Vec<FxHashMap<usize, AtomIdx>>> = queries
         .iter()
         .zip(reactants.iter())
         .enumerate()
@@ -1506,7 +1785,7 @@ fn find_matches_impl(
 
     // No matches when any template has no match.
     if all_match_sets.iter().any(|ms| ms.is_empty()) {
-        return Ok(vec![]);
+        return Ok((vec![], false));
     }
 
     let total_combinations = all_match_sets
@@ -1523,6 +1802,7 @@ fn find_matches_impl(
     }
 
     let mut matches: Vec<ReactionMatch> = Vec::new();
+    let mut ez_rejected = false;
 
     for combo in cartesian_product(&all_match_sets) {
         crate::perf_counters::record_match_combination();
@@ -1530,7 +1810,7 @@ fn find_matches_impl(
         // Parity-aware chirality post-check.  Runs only when the SMIRKS has @/@@.
         // This must happen after the complete VF2 mapping is known, because
         // correct chirality comparison requires the full neighbor permutation.
-        if prepared.has_stereo {
+        if prepared.has_stereo && profile == Profile::Native {
             let ok = (0..prepared.rxn.reactants.len()).all(|ri| {
                 smirks_chirality_ok(&prepared.rxn.reactants[ri], reactants[ri], &combo[ri])
             });
@@ -1544,6 +1824,7 @@ fn find_matches_impl(
                 smirks_ez_stereo_ok(&prepared.rxn.reactants[ri], reactants[ri], &combo[ri])
             });
             if !ok {
+                ez_rejected = true;
                 continue;
             }
         }
@@ -1553,7 +1834,7 @@ fn find_matches_impl(
         });
     }
 
-    Ok(matches)
+    Ok((matches, ez_rejected))
 }
 
 /// Step 3 of the original `run_reactants_impl`: build the product set for
@@ -1575,6 +1856,25 @@ fn apply_match_traced_impl(
     m: &ReactionMatch,
     carry_substituents: bool,
 ) -> Option<Vec<TracedProduct>> {
+    apply_match_profile(prepared, reactants, m, carry_substituents, Profile::Native)
+        .unwrap_or_else(|_| unreachable!("the native profile never declines"))
+}
+
+fn apply_match_profile(
+    prepared: &PreparedReaction,
+    reactants: &[&Molecule],
+    m: &ReactionMatch,
+    carry_substituents: bool,
+    profile: Profile,
+) -> Result<Option<Vec<TracedProduct>>, ReactionCompatibilityUnsupported> {
+    let stereo = match profile {
+        Profile::Native => None,
+        Profile::Rdkit => Some(
+            prepared
+                .rdkit_stereo()
+                .ok_or(ReactionCompatibilityUnsupported::ChiralReactantTemplateSemantics)?,
+        ),
+    };
     // global_map: atom_map_number → (reactant_mol_idx, matched_AtomIdx)
     let global_map = global_map_of(&m.per_reactant, &prepared.template_atom_maps);
 
@@ -1594,15 +1894,34 @@ fn apply_match_traced_impl(
         .iter()
         .enumerate()
         .map(|(pi, pt)| {
-            let mut product = build_product(
+            let (mut product, template_idx_to_new) = build_product(
                 pt,
                 &global_map,
                 &prepared.reactant_map_atoms,
+                &prepared.reactant_bond_maps,
                 reactants,
                 &all_template_atoms,
                 carry_substituents,
                 prepared.product_specs.get(pi).map_or(&[], Vec::as_slice),
             );
+            if let Some(stereo) = stereo {
+                let src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx> = product
+                    .atom_sources
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, s)| s.map(|s| ((s.reactant, s.atom), AtomIdx(i as u32))))
+                    .collect();
+                crate::rdkit_stereo::apply_product_stereo(
+                    stereo,
+                    reactants,
+                    &m.per_reactant,
+                    pi,
+                    &template_idx_to_new,
+                    &src_to_new,
+                    &mut product.molecule,
+                )
+                .map_err(|_| ReactionCompatibilityUnsupported::AmbiguousStereoBondOrder)?;
+            }
             // The same provenance map serves traced and ordinary reaction
             // APIs. Born atoms remain untagged; caller labels are not remapped
             // or made unique across reactants.
@@ -1617,16 +1936,16 @@ fn apply_match_traced_impl(
                 product.molecule.atom_count(),
                 product.molecule.bond_count(),
             );
-            product
+            Ok(product)
         })
-        .collect();
+        .collect::<Result<_, ReactionCompatibilityUnsupported>>()?;
 
     // Skip product sets RDKit's sanitize step would reject (issue #734).
     if products.iter().all(|p| sanitizable_product(&p.molecule)) {
         crate::perf_counters::record_product_set();
-        Some(products)
+        Ok(Some(products))
     } else {
-        None
+        Ok(None)
     }
 }
 
@@ -2383,15 +2702,17 @@ fn correct_product_stereo(
 ///    (non-template atoms reachable without crossing template-atom walls).
 /// 4. Add product-template bonds (new/changed bonds).
 /// 5. Carry through bonds from source molecules where at least one endpoint is a substituent.
+#[allow(clippy::too_many_arguments)]
 fn build_product(
     product_template: &Molecule,
     global_map: &FxHashMap<u16, (usize, AtomIdx)>,
     reactant_template_atoms: &FxHashMap<u16, ReactantMapAtom>,
+    reactant_bond_maps: &FxHashSet<(u16, u16)>,
     input_mols: &[&Molecule],
     all_template_atoms: &FxHashSet<(usize, AtomIdx)>,
     carry_substituents: bool,
     specs: &[ProductAtomSpec],
-) -> TracedProduct {
+) -> (TracedProduct, Vec<Option<AtomIdx>>) {
     let mut builder = MoleculeBuilder::new();
     // What each template atom's spelling specifies; without spelling
     // information a charge always applies and only `H<n>` with n > 0 pins
@@ -2605,6 +2926,12 @@ fn build_product(
     }
 
     // --- Step 4: carry-through bonds from source molecules ---
+    let map_of = |key: (usize, AtomIdx)| {
+        global_map
+            .iter()
+            .find(|&(_, &k)| k == key)
+            .map(|(&am, _)| am)
+    };
     // Bonds where both endpoints are template atoms are replaced or broken by the template;
     // bonds where at least one endpoint is a substituent are carried through.
     for (&(mol_idx, src_idx), &a_new) in &src_to_new {
@@ -2616,7 +2943,16 @@ fn build_product(
             if all_template_atoms.contains(&(mol_idx, src_idx))
                 && all_template_atoms.contains(&nb_key)
             {
-                continue;
+                // Both ends matched: the templates decide this bond, except
+                // between two mapped atoms the reactant template does not
+                // bond, whose reactant bond is kept (RDKit, github #1387).
+                let kept = match (map_of((mol_idx, src_idx)), map_of(nb_key)) {
+                    (Some(a), Some(b)) => !reactant_bond_maps.contains(&(a.min(b), a.max(b))),
+                    _ => false,
+                };
+                if !kept {
+                    continue;
+                }
             }
             let pair = (a_new.min(b_new), a_new.max(b_new));
             if added_bond_pairs.contains(&pair) {
@@ -2648,6 +2984,28 @@ fn build_product(
         input_mols,
         &src_to_new,
     );
+
+    // Carried stereocentres keep their geometry: re-express the reactant's
+    // stereo record in product atoms, since the product's bond order around
+    // them can differ from the reactant's (a ring re-entered from another
+    // side).
+    let mut product = product;
+    for (&(mol_idx, src_idx), &new_idx) in &src_to_new {
+        let src = input_mols[mol_idx];
+        if !src.atom(src_idx).chirality.is_tetrahedral()
+            || template_idx_to_new.contains(&Some(new_idx))
+        {
+            continue;
+        }
+        match src
+            .stereo_neighbor_order(src_idx)
+            .and_then(|order| remap_reactant_stereo_order(order, mol_idx, &src_to_new))
+            .filter(|order| order_matches_final_topology(&product, new_idx, order))
+        {
+            Some(order) => product.set_stereo_neighbor_order(new_idx, order),
+            None => product.set_chirality(new_idx, Chirality::None),
+        }
+    }
 
     // Clear any Up/Down stereo markers left on bonds that are no longer adjacent
     // to a double bond (e.g. after C=C → C=O conversion via SMIRKS).
@@ -2734,11 +3092,14 @@ fn build_product(
                 product_template.atom(AtomIdx(template_idx as u32)).atom_map;
         }
     }
-    TracedProduct {
-        molecule,
-        atom_sources,
-        template_maps,
-    }
+    (
+        TracedProduct {
+            molecule,
+            atom_sources,
+            template_maps,
+        },
+        template_idx_to_new,
+    )
 }
 
 /// Standard Cartesian product: given `sets[0], sets[1], …`, return all
@@ -4168,25 +4529,185 @@ mod tests {
         assert!(!r_d.is_empty(), "D-alanine must match non-stereo template");
     }
 
+    /// Products under the RDKit profile, as canonical SMILES per set.
+    fn rdkit_profile(smirks: &str, reactants: &[&str]) -> Result<Vec<String>, &'static str> {
+        let mols: Vec<Molecule> = reactants.iter().map(|s| parse(s).unwrap()).collect();
+        let refs: Vec<&Molecule> = mols.iter().collect();
+        match run_reactants_traced_rdkit_2026_03_6(smirks, &refs, &Default::default()).unwrap() {
+            RdkitProfileOutcome::Report(report) => Ok(report
+                .products
+                .iter()
+                .map(|set| {
+                    set.iter()
+                        .map(|p| canonical(&p.molecule))
+                        .collect::<Vec<_>>()
+                        .join(".")
+                })
+                .collect()),
+            RdkitProfileOutcome::Unsupported(reason) => Err(reason.reason_code()),
+        }
+    }
+
+    fn same_molecule(a: &str, b: &str) -> bool {
+        canonical(&parse(a).unwrap()) == canonical(&parse(b).unwrap())
+    }
+
     #[test]
-    fn pinned_rdkit_profile_refuses_only_reactant_tetrahedral_templates() {
-        let chiral =
-            PreparedReaction::new("[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O").unwrap();
-        assert_eq!(
-            chiral.rdkit_2026_03_6_unsupported_reason(),
-            Some(ReactionCompatibilityUnsupported::ChiralReactantTemplateSemantics)
+    fn rdkit_profile_reproduces_rdkit_alanine_identity_rows(/* issue #734 */) {
+        // RDKit 2026.03.6: the reactant `@@` does not filter, and with all
+        // other neighbours unmapped the product takes the reactant's raw tag
+        // in the product's bond order — so the reordered L-alanine spelling
+        // comes out as D-alanine, exactly as RDKit gives it.
+        let smirks = "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O";
+        for (reactant, rdkit) in [
+            ("N[C@@H](C)C(=O)O", "C[C@H](N)C(=O)O"),
+            ("C[C@H](N)C(=O)O", "C[C@@H](N)C(=O)O"),
+            ("N[C@H](C)C(=O)O", "C[C@@H](N)C(=O)O"),
+        ] {
+            let got = rdkit_profile(smirks, &[reactant]).unwrap();
+            assert_eq!(got.len(), 1, "{reactant}");
+            assert!(same_molecule(&got[0], rdkit), "{reactant}: {got:?}");
+        }
+    }
+
+    #[test]
+    fn rdkit_profile_inversion_flags_follow_rdkit() {
+        // Invert (tags differ), with every neighbour traced: geometric.
+        let got = rdkit_profile(
+            "[C:1][C@H:2]([N:3])[C:4]>>[C:1][C@@H:2]([N:3])[C:4]",
+            &["N[C@@H](C)CC"],
+        )
+        .unwrap();
+        assert!(
+            got.iter().all(|p| same_molecule(p, "CC[C@@H](C)N")),
+            "{got:?}"
         );
-        assert_eq!(
-            chiral
-                .rdkit_2026_03_6_unsupported_reason()
-                .unwrap()
-                .reason_code(),
-            "chiral_reactant_template_semantics"
+        // Replacing a leaving group keeps the traced neighbours' frame.
+        let got = rdkit_profile(
+            "[C:1][C@H:2](Br)[C:3]>>[C:1][C@@H:2](O)[C:3]",
+            &["C[C@@H](Br)CC"],
+        )
+        .unwrap();
+        assert!(
+            got.iter().all(|p| same_molecule(p, "CC[C@H](C)O")),
+            "{got:?}"
         );
-        let product_only = PreparedReaction::new("[C:1][C:2]>>[C@H:1][C:2]").unwrap();
-        assert_eq!(product_only.rdkit_2026_03_6_unsupported_reason(), None);
-        let ez = PreparedReaction::new("[C:1]/[C:2]=[C:3]/[C:4]>>[C:1]/[C:2]=[C:3]/[C:4]").unwrap();
-        assert_eq!(ez.rdkit_2026_03_6_unsupported_reason(), None);
+        // Remove: stereo in the reactant template only.
+        let got = rdkit_profile(
+            "[C:1][C@H:2]([O:3])[C:4]>>[C:1][CH:2]([O:3])[C:4]",
+            &["C[C@@H](O)CC"],
+        )
+        .unwrap();
+        assert!(got.iter().all(|p| same_molecule(p, "CCC(C)O")), "{got:?}");
+        // Ring cis/trans: the mapped centre inverts, the carried one stays.
+        let got = rdkit_profile(
+            "[C:1][C@H:2]([N:3])[C:4]>>[C:1][C@@H:2]([N:3])[C:4]",
+            &["N[C@H]1CC[C@H](CC1)O"],
+        )
+        .unwrap();
+        assert!(
+            got.iter().all(|p| same_molecule(p, "N[C@H]1CC[C@H](O)CC1")),
+            "{got:?}"
+        );
+    }
+
+    #[test]
+    fn rdkit_profile_declines_unrecorded_ring_closure_order() {
+        // Raw tag copy on a ring-fusion atom with two ring closures: RDKit's
+        // answer depends on the ring-closure numbers, which a parsed molecule
+        // does not keep.
+        assert_eq!(
+            rdkit_profile(
+                "[CH3:1][C@:2]([CH2:3])([CH2:4])[CH:5]>>[CH3:1][C@:2](O)(N)F",
+                &["C[C@]12CCC[C@H]1CCC2"],
+            ),
+            Err("ambiguous_stereo_bond_order")
+        );
+        // When the atom is no stereocentre in the product, any order does.
+        let got = rdkit_profile(
+            "[CH3:1][C@@:2](C)(C)C>>[CH3:1][C@@:2](C)(C)C",
+            &["C[C@]12CCC[C@H]1CCC2"],
+        )
+        .unwrap();
+        assert_eq!(got.len(), 6, "{got:?}");
+    }
+
+    #[test]
+    fn rdkit_profile_reads_smarts_only_stereo_and_ez_matching() {
+        // SMARTS-only reactant templates may carry `@` here (RDKit matches
+        // without it); the native constructor still refuses them.
+        let smirks = "[N;H2:1][C@@H:2]([CH3:3])[C:4]>>[N:1][C@@H:2]([CH3:3])[C:4]";
+        assert!(PreparedReaction::new(smirks).is_err());
+        let got = rdkit_profile(smirks, &["C[C@H](N)C(=O)O"]).unwrap();
+        assert!(same_molecule(&got[0], "C[C@H](N)C(=O)O"), "{got:?}");
+        // RDKit ignores reactant `/` `\` when matching; the native check
+        // rejecting a match is reported rather than turned into no products.
+        assert_eq!(
+            rdkit_profile(
+                "[C:1]/[C:2]=[C:3]/[C:4]>>[C:1][C:2][C:3][C:4]",
+                &["C/C=C\\C"]
+            ),
+            Err("ez_reactant_template_semantics")
+        );
+        assert!(
+            rdkit_profile(
+                "[C:1]/[C:2]=[C:3]/[C:4]>>[C:1][C:2][C:3][C:4]",
+                &["C/C=C/C"]
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn rdkit_profile_drops_tags_rdkit_parsing_drops() {
+        // `C[C@H](C)O` has no stereocentre; RDKit's parser drops the tag and
+        // its bracket H, so the new centre comes out unspecified.
+        let got = rdkit_profile("[CH3:1][C:2]>>[CH2:1](F)[C:2]", &["C[C@H](C)O"]).unwrap();
+        assert!(got.iter().all(|p| same_molecule(p, "CC(O)CF")), "{got:?}");
+        // A real centre keeps its tag.
+        let got = rdkit_profile("[CH3:1][C:2]>>[CH2:1](F)[C:2]", &["CC[C@H](C)O"]).unwrap();
+        assert!(
+            got.iter().any(|p| same_molecule(p, "C[C@H](O)CCF")),
+            "{got:?}"
+        );
+        // So does a 1,4-disubstituted ring pair (cis/trans).
+        let got = rdkit_profile("[C:1]>>[C:1]", &["C[C@H]1CC[C@@H](C)CC1"]).unwrap();
+        assert!(
+            got.iter()
+                .all(|p| same_molecule(p, "C[C@H]1CC[C@@H](C)CC1")),
+            "{got:?}"
+        );
+    }
+
+    #[test]
+    fn carried_stereocentres_keep_their_configuration() {
+        // A stereocentre carried through unchanged keeps its configuration
+        // in whatever bond order the product has (v1.0.33 inverted it when
+        // the template atoms came first in the product).
+        for reactant in ["N[C@@H](C)C(O)=O", "C[C@H](N)C(O)=O", "OC(=O)[C@@H](N)C"] {
+            let mol = parse(reactant).unwrap();
+            for set in run_reactants("[C:1](=[O:2])[OH:3]>>[C:1](=[O:2])OC", &[&mol]).unwrap() {
+                assert!(
+                    same_molecule(&canonical(&set[0]), "COC(=O)[C@H](C)N"),
+                    "{reactant}: {}",
+                    canonical(&set[0])
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn bond_between_mapped_atoms_absent_from_template_is_kept() {
+        // RDKit (github #1387): the reactant template does not bond the two
+        // mapped ring atoms, so their ring bond is carried, not broken.
+        let mol = parse("NC1CC1").unwrap();
+        for set in run_reactants("[N:1][C:2][C:3]>>[N:1][C:2][C:3]", &[&mol]).unwrap() {
+            assert!(same_molecule(&canonical(&set[0]), "NC1CC1"));
+        }
+        // A bond the reactant template spells and the product omits is broken.
+        for set in run_reactants("[C:2]1[C:3][C:4]1>>[C:2][C:3].[C:4]", &[&mol]).unwrap() {
+            assert_eq!(set.len(), 2);
+        }
     }
 
     #[test]

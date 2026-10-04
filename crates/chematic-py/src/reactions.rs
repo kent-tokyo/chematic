@@ -513,10 +513,14 @@ fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
 
 /// Apply a SMIRKS while preserving every terminal outcome and typed reason.
 ///
-/// ``rdkit_compat=True`` fails closed on tetrahedral reactant-side ``@``/``@@``
-/// templates. CheMatic's ordinary reaction API enforces those constraints;
-/// pinned RDKit 2026.03.6 does not produce the same products for the exposed
-/// alanine probes. E/Z templates and non-chiral templates remain supported.
+/// ``rdkit_compat=True`` follows RDKit 2026.03.6 reaction semantics: reactant
+/// ``@``/``@@`` do not restrict matching, and product tetrahedral tags follow
+/// RDKit's inversion flags and bond orders (retain, invert, create, destroy,
+/// and RDKit's raw tag copy when the neighbours cannot be traced). It returns
+/// ``typed_unsupported`` when a product's stereo depends on a reactant bond
+/// order the molecule does not record (``ambiguous_stereo_bond_order``) or
+/// the native E/Z check rejected a match RDKit would accept
+/// (``ez_reactant_template_semantics``).
 /// ``product_atom_sources[set][product][atom]`` is ``(reactant_index,
 /// reactant_atom_index)`` or ``None`` for a newly created product atom.
 /// ``product_template_maps`` has the same nesting and contains each output
@@ -555,30 +559,28 @@ fn run_smirks_checked<'py>(
         )?;
         return Ok(result);
     }
-    let prepared = match chematic_rxn::PreparedReaction::new(smirks) {
-        Ok(prepared) => prepared,
-        Err(error) => {
-            refuse("typed_refusal", "smirks_parse", error.to_string())?;
+    let refs: Vec<&chematic_core::Molecule> = reactants.iter().map(|m| m.inner.as_ref()).collect();
+    let limits = chematic_rxn::ReactionTransformLimits::default();
+    let outcome = if rdkit_compat {
+        chematic_rxn::run_reactants_traced_rdkit_2026_03_6(smirks, &refs, &limits)
+    } else {
+        chematic_rxn::PreparedReaction::new(smirks).and_then(|prepared| {
+            prepared
+                .run_reactants_traced_with_diagnostics(&refs, &limits)
+                .map(chematic_rxn::RdkitProfileOutcome::Report)
+        })
+    };
+    let report = match outcome {
+        Ok(chematic_rxn::RdkitProfileOutcome::Report(report)) => report,
+        Ok(chematic_rxn::RdkitProfileOutcome::Unsupported(unsupported)) => {
+            refuse(
+                "typed_unsupported",
+                unsupported.reason_code(),
+                "RDKit 2026.03.6 reaction semantics cannot be reproduced for this input"
+                    .to_string(),
+            )?;
             return Ok(result);
         }
-    };
-    if let Some(unsupported) = rdkit_compat
-        .then(|| prepared.rdkit_2026_03_6_unsupported_reason())
-        .flatten()
-    {
-        refuse(
-            "typed_unsupported",
-            unsupported.reason_code(),
-            "RDKit 2026.03.6 reaction chirality semantics differ from strict CheMatic".to_string(),
-        )?;
-        return Ok(result);
-    }
-    let refs: Vec<&chematic_core::Molecule> = reactants.iter().map(|m| m.inner.as_ref()).collect();
-    let report = match prepared.run_reactants_traced_with_diagnostics(
-        &refs,
-        &chematic_rxn::ReactionTransformLimits::default(),
-    ) {
-        Ok(report) => report,
         Err(error) => {
             let reason = match &error {
                 chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
