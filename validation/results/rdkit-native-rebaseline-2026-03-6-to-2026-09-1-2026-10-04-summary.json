@@ -1,0 +1,59 @@
+{
+  "build_config_sha256": "7931f53a7c0577baa7337d6fefeca96623212584f7ee1a01c520aa42ce9104b7",
+  "cmake_flags": [
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DRDK_INSTALL_INTREE=OFF",
+    "-DBUILD_TESTING=OFF",
+    "-DRDK_BUILD_PYTHON_WRAPPERS=OFF",
+    "-DRDK_BUILD_CPP_TESTS=OFF",
+    "-DRDK_BUILD_COORDGEN_SUPPORT=OFF",
+    "-DRDK_BUILD_MAEPARSER_SUPPORT=OFF",
+    "-DRDK_BUILD_DESCRIPTORS3D=OFF",
+    "-DRDK_BUILD_CHEMDRAW_SUPPORT=OFF",
+    "-DRDK_BUILD_INCHI_SUPPORT=OFF",
+    "-DRDK_BUILD_AVALON_SUPPORT=OFF",
+    "-DRDK_BUILD_CAIRO_SUPPORT=OFF",
+    "-DRDK_BUILD_FREETYPE_SUPPORT=OFF",
+    "-DRDK_BUILD_PGSQL=OFF"
+  ],
+  "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+  "counts": {
+    "canonical_changed_rows": 0,
+    "changed_rows": 6,
+    "cip_atoms_changed_rows": 0,
+    "cip_bonds_changed_rows": 0,
+    "morgan_on_bits_changed_rows": 0,
+    "noncomparable_rows": 0,
+    "parse_status_changed_rows": 0,
+    "rows": 10000,
+    "smarts_cells_compared": 310000,
+    "smarts_changed_cells": 12,
+    "smarts_new_parse_failure_cells": 0,
+    "smarts_old_parse_failure_cells": 0
+  },
+  "delta_sha256": "268ea922d5ad23a4443edb7cf3dce32497150e4a6121d251901e6f251eb3488f",
+  "interpretation": "version-pinned independent C++ source builds; not distributed binaries, Python wrappers, or a speed comparison",
+  "profile": "rdkit_native_2026_03_6_to_2026_09_1_exposed_10k_v1",
+  "python_baseline_rows_sha256": "c551fe040917fb88b8694390048f3be782fc14a4d70abd0dab231b27208b79a5",
+  "python_baseline_verified_rows": 10000,
+  "queries_sha256": "250a241a8905d013eb58fff0ccfb1e0dbe3e97c08ff56e021828fbfec957b341",
+  "runner_source_sha256": "c7f966eac28131325df755c98e0961a6a3f6b0013220389f6ed4d020091b9cea",
+  "schema_version": 1,
+  "sources": {
+    "new": {
+      "binary_sha256": "2a09c658ed1d079adfd9c678937bcd1f99371c8368f229c51bdbe539872eaf2b",
+      "commit": "fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
+      "rows_sha256": "ce9fb4370a31623db68e17326a84a310f23717b881404bf804b255a42a482c2f"
+    },
+    "old": {
+      "binary_sha256": "01d9ea0a467fafae2fd0ae49a109cc8a0707e7eb6e27620a64676289623b877d",
+      "commit": "0e0d85f4ca34aeae15dfc0f7cf5503bdb0a8e985",
+      "rows_sha256": "532a846f537c52b5b477daf97aa84a7be8e589aad9f67c8217e82b13fb5a1bb0"
+    }
+  },
+  "toolchain": {
+    "cmake": "cmake version 3.31.6",
+    "compiler": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39"
+  }
+}

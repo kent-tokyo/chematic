@@ -63,10 +63,14 @@ Exposed data are not sealed evidence.
    SMILES separate from the fail-closed stable key. **Exit:** cross-binding
    fixtures with no silent information loss.
 7. **External — Complete RDKit 2026.09.1 rebaseline.** The official npm/WASM
-   old/new lanes and published Python 2026.03.6 baseline are pinned and measured
-   on exposed 10k inputs; the **2026.09.1** Python/nanobind and independent
-   native lanes remain unmeasured until versioned artifacts/build packets exist.
-   Preserve the old baseline and never tune on sealed data.
+   old/new lanes, published Python 2026.03.6 baseline, and independent C++
+   source-build old/new lanes are pinned and measured on exposed 10k inputs.
+   The source-build delta reproduces the npm delta: six rows and 12 SMARTS
+   cells, all `[R2]`/`[R3]`; old C++ agrees with the old Python wheel on
+   canonical SMILES, CIP and Morgan for all 10k rows. The **2026.09.1**
+   distributed Python/nanobind lane and distributed native binary remain
+   unavailable/unmeasured. Preserve the old baseline, keep source builds
+   separate from distributed packages, and never tune on sealed data.
 
 Silent corruption or a security regression takes precedence. Source,
 published-package and sealed results remain separate evidence classes.

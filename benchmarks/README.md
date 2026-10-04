@@ -2,8 +2,9 @@
 
 This directory contains dated, reproducible measurement records. Numbers are
 scoped to each record's source or package, corpus, host, runtime and operation.
-The current release is **v1.0.31**; the latest published-package comparison
-packet is for **v1.0.30**. No v1.0.31 chemistry or speed rerun is implied.
+The current release is **v1.0.33**. Its published-package RDKit 2026.03.6
+Python baseline and RDKit.js 2026.03.6/2026.09.1 rebaseline are versioned
+below. Other older records remain scoped to their stated artifacts and hosts.
 
 ## Start here
 
@@ -73,7 +74,7 @@ packet is for **v1.0.30**. No v1.0.31 chemistry or speed rerun is implied.
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.0.31. Older records remain versioned historical
+The current release line is v1.0.33. Older records remain versioned historical
 measurements where their headers say so; a release does not imply that an older
 measurement was rerun.
 
@@ -139,8 +140,9 @@ measurement was rerun.
 | Record | Scope |
 |---|---|
 | [`2026-10-02-v1.0.30-published-artifact-gates.md`](2026-10-02-v1.0.30-published-artifact-gates.md) | Published v1.0.30 Python/npm/Rust accuracy packet and bounded paired-speed diagnostics; P0/P1 still open |
-| [`2026-10-04-rdkit-2026-09-1-npm-rebaseline.md`](2026-10-04-rdkit-2026-09-1-npm-rebaseline.md) | Official RDKit.js 2026.03.6 → 2026.09.1 on fixed exposed 10k: 9,999/9,999 CheMatic Morgan bits; graph-checked CIP has 9,988 exact, five abstentions, six pre-existing E/Z mismatches, one unproven row in both versions; published CheMatic WASM SMARTS has 194 → 195 mismatches and 31 index-unproven cells per 310k lane; 12 old/new SMARTS cells changed; 20-run browser records; Python/native artifact pending |
+| [`2026-10-04-rdkit-2026-09-1-npm-rebaseline.md`](2026-10-04-rdkit-2026-09-1-npm-rebaseline.md) | Official RDKit.js 2026.03.6 → 2026.09.1 on fixed exposed 10k: 9,999/9,999 CheMatic Morgan bits; graph-checked CIP has 9,988 exact, five abstentions, six pre-existing E/Z mismatches, one unproven row in both versions; published CheMatic WASM SMARTS has 194 → 195 mismatches and 31 index-unproven cells per 310k lane; 12 old/new SMARTS cells changed; 20-run browser records; Python 2026.09.1 remains pending |
 | [`2026-10-04-rdkit-2026-09-1-python-baseline.md`](2026-10-04-rdkit-2026-09-1-python-baseline.md) | Published Python 2026.03.6 baseline on the same exposed 10k: 9,989 CIP exact + five abstentions and six E/Z mismatches after correcting the cis/trans comparator, 9,999 Morgan exact + one typed refusal, 200/310k SMARTS mismatches; seven Python boundary timing samples; 2026.09.1 Python wheel still unavailable |
+| [`2026-10-04-rdkit-2026-09-1-native-source-rebaseline.md`](2026-10-04-rdkit-2026-09-1-native-source-rebaseline.md) | Pinned independent C++ source builds on the same exposed 10k: old/new canonical, CIP and Morgan unchanged; 12 `[R2]`/`[R3]` SMARTS cell changes across six rows exactly match npm/WASM; old C++ matches the old distributed Python oracle on canonical/CIP/Morgan; not a distributed binary or new Python binding |
 | [`2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json`](2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | Published v1.0.30 Python versus RDKit 2026.03.6 on 63 operations, 20 counterbalanced repeats with raw blocks and 95% paired intervals; not an end-to-end or cross-host claim |
 | [`2026-10-02-reaction-checked-source-profile.md`](2026-10-02-reaction-checked-source-profile.md) | Opt-in unpublished reaction profile: 76/83 semantic matches, 3 typed unsupported, 1 typed refusal, 3 jointly invalid; zero wrong-confident rows in bounded corpus |
 | [`2026-10-02-v1.0.30-python-op-matrix.json`](2026-10-02-v1.0.30-python-op-matrix.json) | Published v1.0.30 Python 5k/63-operation three-repeat diagnostic (not counterbalanced) |
