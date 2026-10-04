@@ -41,9 +41,12 @@ pub enum DerivedSlot {
     RdkitParityShortcut = 6,
     /// Cyclic-subgraph component labels (computed with `RingBondFlags`).
     RingComponents = 7,
+    /// Kekulé orders of the aromatic bonds (`None` when kekulization fails),
+    /// used for total-valence queries.
+    KekuleOrders = 8,
 }
 
-const SLOT_COUNT: usize = 8;
+const SLOT_COUNT: usize = 9;
 
 /// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
 /// the unwind-safety traits so `Molecule` stays usable across

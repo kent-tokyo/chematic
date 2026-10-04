@@ -692,7 +692,20 @@ pub fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
         // RDKit's own charge-sign flip (see doc comment above) drops a +1 carbon's
         // target valence from 4 to 3, which its existing ring bonds + H already
         // satisfy — no double bond needed or possible.
-        6 if atom.charge > 0 => false,
+        // A charged carbon without that H (`[c+]1ccccc1`, `[c-]1ccccc1`: a
+        // ring bond short of the target valence 3) is a candidate, as in
+        // RDKit's `sbo == dv - 1`; `[cH-]` (cyclopentadienyl) is not.
+        6 if atom.charge != 0 => {
+            let bonds: i32 = mol
+                .neighbors(idx)
+                .map(|(_, b)| match mol.bond(b).order {
+                    BondOrder::Aromatic => 1,
+                    order => i32::from(order.order_int()),
+                })
+                .sum();
+            let h = i32::from(atom.hydrogen_count.unwrap_or(0));
+            bonds + h == 3 - i32::from(atom.charge).abs()
+        }
         // Any anionic aromatic atom (e.g. cyclopentadienyl [cH-]) donates its lone pair.
         _ if atom.charge < 0 => false,
         // Any atom (typically C) that already has an exocyclic π bond (e.g. `c(=O)` in
@@ -1627,6 +1640,34 @@ mod tests {
                 .unwrap();
         }
         b.build()
+    }
+
+    /// `[c+]1ccccc1` and `[c-]1ccccc1` (no H) kekulize as in RDKit;
+    /// `[cH+]1ccccc1` and `[cH-]1ccccc1` do not (RDKit rejects them too).
+    #[test]
+    fn test_kekulize_six_ring_charged_carbon_follows_h_count() {
+        for (charge, h, ok) in [
+            (1i8, 0u8, true),
+            (1, 1, false),
+            (-1, 0, true),
+            (-1, 1, false),
+        ] {
+            let mut b = MoleculeBuilder::new();
+            let mut cation = Atom::aromatic(Element::C);
+            cation.charge = charge;
+            cation.hydrogen_count = Some(h);
+            let mut atoms = vec![b.add_atom(cation)];
+            atoms.extend((0..5).map(|_| b.add_atom(Atom::aromatic(Element::C))));
+            for i in 0..6 {
+                b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Aromatic)
+                    .unwrap();
+            }
+            assert_eq!(
+                kekulize(&b.build()).is_ok(),
+                ok,
+                "charge {charge} H count {h}"
+            );
+        }
     }
 
     #[test]

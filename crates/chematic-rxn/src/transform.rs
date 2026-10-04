@@ -1729,6 +1729,9 @@ fn find_matches_profile(
     rings: Option<&[&RingSet]>,
     profile: Profile,
 ) -> Result<(Vec<ReactionMatch>, bool), TransformError> {
+    let views = aromatic_views(reactants);
+    let perceived = perceived_refs(reactants, &views);
+    let reactants: &[&Molecule] = &perceived;
     let n_templates = prepared.rxn.reactants.len();
     if reactants.len() != n_templates {
         return Err(TransformError::ReactantCountMismatch {
@@ -1837,6 +1840,35 @@ fn find_matches_profile(
     Ok((matches, ez_rejected))
 }
 
+/// The RDKit-parity aromatic view of each reactant, where it differs from
+/// the reactant (`None`: the reactant is its own view). RDKit's SMILES parser
+/// aromatizes reactants before a reaction sees them, so a Kekulé benzene or
+/// a 4-pyranone matches `[c]`, not `[C]` (#754); `smarts_find` already
+/// matches on this view. Atom and bond indices and stereo records are
+/// unchanged.
+type AromaticView = Option<std::sync::Arc<Result<Molecule, chematic_perception::AromaticityError>>>;
+
+fn aromatic_views(reactants: &[&Molecule]) -> Vec<AromaticView> {
+    reactants
+        .iter()
+        .map(|m| {
+            (!chematic_perception::rdkit_parity_view_is_identity(m))
+                .then(|| chematic_perception::apply_aromaticity_rdkit_parity_shared(m))
+        })
+        .collect()
+}
+
+fn perceived_refs<'a>(reactants: &[&'a Molecule], views: &'a [AromaticView]) -> Vec<&'a Molecule> {
+    reactants
+        .iter()
+        .zip(views)
+        .map(|(&m, view)| match view {
+            Some(view) => view.as_ref().as_ref().unwrap_or(m),
+            None => m,
+        })
+        .collect()
+}
+
 /// Step 3 of the original `run_reactants_impl`: build the product set for
 /// one already-accepted match and apply the valence filter. `None` means
 /// the product set contained an over-valenced atom.
@@ -1867,6 +1899,10 @@ fn apply_match_profile(
     carry_substituents: bool,
     profile: Profile,
 ) -> Result<Option<Vec<TracedProduct>>, ReactionCompatibilityUnsupported> {
+    let originals = reactants;
+    let views = aromatic_views(reactants);
+    let perceived = perceived_refs(reactants, &views);
+    let reactants: &[&Molecule] = &perceived;
     let stereo = match profile {
         Profile::Native => None,
         Profile::Rdkit => Some(
@@ -1927,7 +1963,7 @@ fn apply_match_profile(
             // or made unique across reactants.
             for (i, source) in product.atom_sources.iter().enumerate() {
                 if let Some(source) = source
-                    && let Some(tag) = reactants[source.reactant].atom_tag(source.atom)
+                    && let Some(tag) = originals[source.reactant].atom_tag(source.atom)
                 {
                     product.molecule.set_tag(AtomIdx(i as u32), Some(tag.get()));
                 }
@@ -2773,6 +2809,14 @@ fn build_product(
             && mol.degree(idx) == 1
     };
 
+    // Reactants given with explicit H atoms (`add_hydrogens`).
+    let explicit_h_reactant: Vec<bool> = input_mols
+        .iter()
+        .map(|m| {
+            m.atoms()
+                .any(|(i, a)| a.element == chematic_core::Element::H && m.degree(i) == 1)
+        })
+        .collect();
     for (i, slot) in template_idx_to_new.iter_mut().enumerate() {
         let tmpl_atom = product_template.atom(AtomIdx(i as u32));
         let new_idx = if let Some(am) = tmpl_atom.atom_map {
@@ -2848,7 +2892,22 @@ fn build_product(
                 } else {
                     Vec::new()
                 };
-                if !explicit_h.is_empty() {
+                // An H-free mapped atom of an explicit-H reactant has its
+                // count pinned to 0 by `add_hydrogens`; RDKit refills it when
+                // the edit lowers its valence (`[C:1]=[O:2]>>[C:1]-[O:2]` on
+                // explicit-H acetic acid gives `CC(O)O`, #754).
+                let refill = explicit_h.is_empty()
+                    && carry_substituents
+                    && src_atom.chirality == Chirality::None
+                    && src_atom.hydrogen_count == Some(0)
+                    && src_atom.charge == 0
+                    && !src_atom.aromatic
+                    && !new_atom.aromatic
+                    && src_atom.element.is_organic_subset()
+                    && new_atom.element.is_organic_subset()
+                    && template_h(i).is_none()
+                    && explicit_h_reactant[mol_idx];
+                if !explicit_h.is_empty() || refill {
                     // The folded H atoms are re-derived from valence below.
                     new_atom.hydrogen_count = template_h(i);
                 }
@@ -2856,6 +2915,9 @@ fn build_product(
                 let idx = builder.add_atom(new_atom);
                 if dearomatize {
                     dearomatized.push(idx);
+                }
+                if refill {
+                    folded_cores.push(idx);
                 }
                 if !explicit_h.is_empty() {
                     folded_h.extend(explicit_h.into_iter().map(|h| (mol_idx, h)));
@@ -3011,11 +3073,49 @@ fn build_product(
     // to a double bond (e.g. after C=C → C=O conversion via SMIRKS).
     let mut molecule = clear_orphaned_stereo_bonds(product);
 
+    // A carried atom of an explicit-H reactant that lost a bond (its
+    // neighbour went to another product or was deleted) gets its hydrogens
+    // back, as RDKit refills them: `add_hydrogens` pinned its count, which
+    // would otherwise leave a radical (#754).
+    for (&(mol_idx, src_idx), &new_idx) in &src_to_new {
+        let src = input_mols[mol_idx];
+        let atom = src.atom(src_idx);
+        if atom.hydrogen_count != Some(0)
+            || atom.charge != 0
+            || atom.aromatic
+            || !atom.element.is_organic_subset()
+            || atom.element == chematic_core::Element::H
+            || molecule.degree(new_idx) >= src.degree(src_idx)
+            || template_idx_to_new.contains(&Some(new_idx))
+        {
+            continue;
+        }
+        if explicit_h_reactant[mol_idx] {
+            molecule.set_hydrogen_count(new_idx, None);
+            folded_cores.push(new_idx);
+        }
+    }
+
     // Re-add the folded explicit hydrogens (see Step 1): as many H atoms as
     // the product valence implies, after which the atom's count is pinned to
     // its explicit H atoms, as `add_hydrogens` leaves it.
     for &core in &folded_cores {
-        let n = chematic_core::implicit_hcount(&molecule, core);
+        // A charged atom takes RDKit's count (`[O:1]>>[O+:1]` on explicit-H
+        // dimethyl ether gives `C[OH+]C`).
+        let atom = molecule.atom(core);
+        let n = if atom.charge != 0 && !atom.aromatic {
+            let bonds: i16 = molecule
+                .neighbors(core)
+                .map(|(_, b)| i16::from(molecule.bond(b).order.order_int()))
+                .sum();
+            crate::rdkit_valence::implicit_hydrogens(
+                atom.element.atomic_number(),
+                atom.charge,
+                bonds,
+            )
+        } else {
+            chematic_core::implicit_hcount(&molecule, core)
+        };
         molecule.set_hydrogen_count(core, Some(0));
         for _ in 0..n {
             let mut h = chematic_core::Atom::new(chematic_core::Element::H);
@@ -3049,6 +3149,34 @@ fn build_product(
     // agrees with RDKit wherever the product can be valid.
     for &idx in template_idx_to_new.iter().flatten() {
         let atom = molecule.atom(idx);
+        // A charged aromatic atom with two aromatic bonds: RDKit counts them
+        // as 3 (`[c:1]>>[c+:1]` on benzene gives an H-free cation, which
+        // its sanitize keeps).
+        let aromatic_bonds = molecule
+            .neighbors(idx)
+            .filter(|&(_, b)| molecule.bond(b).order == BondOrder::Aromatic)
+            .count();
+        if atom.aromatic
+            && atom.charge != 0
+            && atom.hydrogen_count.is_none()
+            && !atom.wildcard
+            && aromatic_bonds == 2
+        {
+            let other: i16 = molecule
+                .neighbors(idx)
+                .filter(|&(_, b)| molecule.bond(b).order != BondOrder::Aromatic)
+                .map(|(_, b)| i16::from(molecule.bond(b).order.order_int()))
+                .sum();
+            let rdkit_h = crate::rdkit_valence::implicit_hydrogens(
+                atom.element.atomic_number(),
+                atom.charge,
+                3 + other,
+            );
+            if rdkit_h != chematic_core::implicit_hcount(&molecule, idx) {
+                molecule.set_hydrogen_count(idx, Some(rdkit_h));
+            }
+            continue;
+        }
         if (atom.charge == 0 && atom.element.is_organic_subset())
             || atom.hydrogen_count.is_some()
             || atom.wildcard
@@ -3375,6 +3503,83 @@ mod tests {
             !run_reactants("[C:1][H]>>[C:1]O", &[&methane])
                 .unwrap()
                 .is_empty()
+        );
+    }
+
+    #[test]
+    fn reactants_follow_rdkit_sanitized_input(/* issues #734, #754 sweep */) {
+        let canon = |m: &Molecule| chematic_smiles::canonical_smiles(m);
+        // Kekulé-written aromatic reactants are matched as their aromatic
+        // form, like RDKit's sanitized input: an aliphatic C template does
+        // not match benzene, pyranone or tropone.
+        for reactant in ["C1=CC=CC=C1", "O=C1C=COC=C1", "O=C1C=CC=CC=C1"] {
+            let mol = parse(reactant).unwrap();
+            assert!(
+                run_reactants("[C:1]>>[C:1]", &[&mol]).unwrap().is_empty(),
+                "{reactant}"
+            );
+            assert!(
+                !run_reactants("[c:1]>>[c:1]", &[&mol]).unwrap().is_empty(),
+                "{reactant}"
+            );
+        }
+        // Breaking a bond of an explicit-H reactant refills both ends: no
+        // radical on the former spiro atom.
+        let spiro = chematic_chem::add_hydrogens(&parse("C1CCC2(C1)CCCCC2").unwrap());
+        let out = run_reactants("[C:1][C:2]>>[C:1].[C:2]", &[&spiro]).unwrap();
+        assert!(!out.is_empty());
+        for set in &out {
+            for p in set {
+                assert!(
+                    p.atoms().all(|(i, a)| a.element.atomic_number() != 6
+                        || chematic_core::implicit_hcount(p, i) + p.neighbors(i).count() as u8
+                            == 4),
+                    "radical in {}",
+                    canon(p)
+                );
+            }
+        }
+        // A cationic aromatic carbon without H kekulizes, so RDKit's
+        // sanitize keeps `[c:1]>>[c+:1]` products.
+        let benzene = parse("c1ccccc1").unwrap();
+        let out = run_reactants("[c:1]>>[c+:1]", &[&benzene]).unwrap();
+        assert_eq!(out.len(), 6);
+        for set in &out {
+            assert_eq!(set[0].atoms().filter(|(_, a)| a.charge == 1).count(), 1);
+            assert_eq!(
+                set[0]
+                    .atoms()
+                    .map(|(i, _)| u32::from(chematic_core::implicit_hcount(&set[0], i)))
+                    .sum::<u32>(),
+                5
+            );
+        }
+        let naphthalene = parse("c1ccc2ccccc2c1").unwrap();
+        assert_eq!(
+            run_reactants("[c;H1:1]>>[c+:1]", &[&naphthalene])
+                .unwrap()
+                .len(),
+            8
+        );
+        assert_eq!(
+            run_reactants("[c:1]>>[c-:1]", &[&benzene]).unwrap().len(),
+            6
+        );
+        // Lowering the bond order of H-free atoms of an explicit-H reactant
+        // refills them too: RDKit gives `CC(O)O`.
+        let acid = chematic_chem::add_hydrogens(&parse("CC(=O)O").unwrap());
+        let out = run_reactants("[C:1]=[O:2]>>[C:1]-[O:2]", &[&acid]).unwrap();
+        assert_eq!(out.len(), 1);
+        assert_eq!(
+            canon(&chematic_chem::remove_hydrogens(&out[0][0])),
+            canon(&parse("CC(O)O").unwrap())
+        );
+        // A charged H-free atom takes RDKit's H count: `C[OH+]C`.
+        let ether = chematic_chem::add_hydrogens(&parse("COC").unwrap());
+        let out = run_reactants("[O:1]>>[O+:1]", &[&ether]).unwrap();
+        assert_eq!(
+            canon(&chematic_chem::remove_hydrogens(&out[0][0])),
+            canon(&parse("C[OH+]C").unwrap())
         );
     }
 
