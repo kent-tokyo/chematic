@@ -1,7 +1,7 @@
 # Open-work ledger
 
-Updated 2026-10-04 for the **v1.0.34 release line**. v1.0.33's six
-release channels were verified; v1.0.34 has a separate channel record.
+Updated 2026-10-04 for the **v1.0.34 release line**. All six v1.0.34
+release channels were verified; published-package chemistry reruns remain open.
 Published chemistry/benchmark evidence is versioned:
 the P0.1 comparison remains v1.0.30, while the A6 quality packet includes
 v1.0.31. Unreleased source results are labeled separately. The
