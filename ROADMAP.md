@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-04. Release line: **v1.0.33**. Release-source and
+> Updated 2026-10-04. Release line: **v1.0.34**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -13,7 +13,8 @@ boundaries, and reproducible evidence take priority over feature-count races.
 |---|---|---|
 | P0.1 outputs | Published v1.0.30 artifact audit covers 10k chemistry, 310k SMARTS, 57 reactions and 63 Python/Rust operations. HBA is 5,000/5,000 on its declared lane. | Retain 200 SMARTS differences, five CIP abstentions and four npm gaps as open; see [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
 | P0.2 speed | Published Python: 20 exact-output operations pass paired-interval gates on one host; three-browser Morgan has a separate scoped result. | Equal-work and memory lanes on more artifacts/corpora; see [validation](docs/validation.md). |
-| P1 reactions | Published v1.0.30: 73/83 exact. Checked source: 76 exact, 3 typed unsupported, 1 refusal, 3 jointly invalid. Python Linux/macOS release-profile wheels and WASM Node CI passed the [source gate](benchmarks/2026-10-03-reaction-83-python-provenance-source.md). | Rerun Rust/Python/npm **published** artifacts and npm E/Z JSON; refusals are not matches. |
+| P1 reactions | Published v1.0.30: 73/83 exact. v1.0.34 source wheels (Linux/macOS) and WASM Node: 80 exact graph/origin/map, 3 jointly invalid, no typed unsupported. | Rerun Rust/Python/npm **published** v1.0.34 artifacts and npm E/Z JSON; refusals are not matches. |
+| P1 SMARTS/SMIRKS dialect ([#734](https://github.com/kent-tokyo/chematic/issues/734), [#754](https://github.com/kent-tokyo/chematic/issues/754)) | Contributor's [xsmarts-autoconf](https://github.com/swamidasslab/xsmarts-autoconf) on published v1.0.34: 65/83 behaviour flags match RDKit 2026.03.6 (v1.0.30: 42/83). Of the 18 left, 6 return a confident result RDKit does not give; its differential sweep found 5 new cases. [Record](benchmarks/2026-10-04-xsmarts-autoconf-v1034.md). | Wrong-confident flags fixed or typed; autoconf lane pinned in CI; remaining flags documented as policy. |
 | P1 SMARTS | Published v1.0.30: 200/310k match-set differences. Opt-in Python source wheels: 309,982 exact, 18 typed unsupported, zero wrong-confident. | Independent corpus and published-profile rerun; retain native SSSR. |
 | P2 A6 quality | Published v1.0.31 macOS: 265/265 geometry/stereo/clash, 100/265 converged. Linux/Python 3.9 has two typed stereo failures on published and source wheels. | Resolve [#739](https://github.com/kent-tokyo/chematic/issues/739); rerun per-term energy, convergence and independent conformer quality before speed claims. |
 
@@ -25,22 +26,45 @@ Exposed data are not sealed evidence.
 
 ## Priority order and acceptance gates
 
-1. **P1 / A4 — Close the reaction 83-row gate by classified outcome.**
-   Checked source has 76 exact graph/origin/map rows, three typed unsupported,
-   one diagnosed refusal and three jointly invalid. Linux/macOS release-profile
-   source wheels and WASM Node CI passed. Next, rerun on published
-   Rust/Python/npm artifacts, including npm E/Z JSON and the three
-   new-product-map cases. **Exit:** every row classified on all three axes,
+1. **P1 / A4 — Remove wrong-confident SMARTS/SMIRKS dialect results
+   (#734, #754).** The contributor's autoconf catalog and sweep on published
+   v1.0.34 leave these confident answers that RDKit does not give, in this
+   order: isotope primitives ignored (`[12C]` matches every C); `v` counting
+   an aromatic bond as 1 (`[c;v4]` misses benzene); directional bonds
+   (`C/C` matches nothing, `F/C=C/F` depends on the input spelling);
+   reactants not aromatized before SMIRKS matching (`[C:1]` matches Kekulé
+   benzene); a bond broken next to an H-less atom of an explicit-H reactant
+   leaving a radical; `[c:1]>>[c+:1]` products dropped though RDKit's
+   sanitize keeps them; `i` and `^6`/`^7` parsing but matching nothing.
+   **Exit:** each aligned with RDKit or turned into a typed refusal, a pinned
+   autoconf lane in CI that fails on a changed flag, and no new
+   wrong-confident sweep finding over the pinned seeds.
+2. **P1 / A4 — Close the reaction 83-row gate on published artifacts.**
+   v1.0.34 source wheels and WASM Node give 80 exact graph/origin/map rows and
+   three jointly invalid. Next, rerun on published Rust/Python/npm artifacts,
+   including npm E/Z JSON. **Exit:** every row classified on all three axes,
    zero wrong-confident supported results and no regression in the original
    57. Refusals and invalid rows are not counted as matches.
-2. **P1 / A4 — Publish a bounded SMARTS compatibility profile.** The
-   published v1.0.30 baseline has 200 match-set and 43 Boolean differences.
+3. **P1 / A4 — Broaden reaction evidence and settle policy flags.** Run the
+   contributor's approximately 1,200 BioTransformer rules when the rule file
+   is available, and record each remaining autoconf difference as a decided
+   policy with its typed outcome: raw versus sanitized products, product H
+   pins on explicit-H reactants (`C[CH5]`/`C[CH6]` in RDKit), first-alternative
+   product bonds (`=,:`), product component grouping `(A.B)`, one-template
+   multi-component reactants, and the native profile's reaction E/Z and
+   case-B stereo (a mapped centre gaining a bond). **Exit:** a published rule
+   denominator with exact / differing / refused counts and every policy
+   flag documented.
+4. **P1 / A4 — Publish a bounded SMARTS compatibility profile.** The
+   published v1.0.30 baseline has 200 match-set and 43 Boolean differences;
+   most are the `R<n>` ring-count basis (SSSR versus RDKit's symmetrized
+   rings), also autoconf flag `match.ring_count_basis`.
    Source-wheel opt-in checks have 309,982/310,000 exact sets and 18 typed
    unsupported cells, with no wrong-confident result. Adjudicate the 18
    charged-polycycle cases under an order-independent ring contract; preserve
    native SSSR. **Exit:** a full pinned published-binding rerun and an
    independent corpus with row-level exact/refused/failed accounting.
-3. **P2 / A6 — Gate 3D quality before speed.** Published v1.0.31 macOS
+5. **P2 / A6 — Gate 3D quality before speed.** Published v1.0.31 macOS
    passes 265/265 geometry/stereo/clash but converges on only 100/265. The
    source typing improvement is not published, and same-host Linux wheels
    have two pre-existing typed stereo failures (rows 53/246; [#739](https://github.com/kent-tokyo/chematic/issues/739)).
@@ -48,21 +72,21 @@ Exposed data are not sealed evidence.
    per-term energy, convergence, timeout/cancellation, geometry/stereo/clash
    and independent conformer quality on published and candidate artifacts.
    No 3D speed claim before this exit.
-4. **P0.2 — Complete paired speed evidence after quality gates.** Extend
+6. **P0.2 — Complete paired speed evidence after quality gates.** Extend
    equivalent-output, alternating-order, ≥20-block measurements beyond the
    finished lanes. Separate parse, perception, prepared/reused calls and memory
    allocations. **Exit:** pinned scripts/raw observations, paired intervals
    and an explicit no-claim outcome whenever outputs or work differ.
-5. **P1 / A2 — Preserve CIP safety.** Keep five typed abstentions stable under
+7. **P1 / A2 — Preserve CIP safety.** Keep five typed abstentions stable under
    atom-order, spelling and file round trips; adjudicate phosphorus independently
    and define a lone-pair convention before assigning R/S. **Exit:** complete
    outcome accounting and no wrong confident label.
-6. **P2 — Test representation limits separately.** Keep CDXML opaque
+8. **P2 — Test representation limits separately.** Keep CDXML opaque
    preservation distinct from semantic editing, Markush/polymer expansion
    bounded, Standard InChI separate from native identifiers, and canonical
    SMILES separate from the fail-closed stable key. **Exit:** cross-binding
    fixtures with no silent information loss.
-7. **External — Complete RDKit 2026.09.1 rebaseline.** The official npm/WASM
+9. **External — Complete RDKit 2026.09.1 rebaseline.** The official npm/WASM
    old/new lanes, published Python 2026.03.6 baseline, and independent C++
    source-build old/new lanes are pinned and measured on exposed 10k inputs.
    The source-build delta reproduces the npm delta: six rows and 12 SMARTS
