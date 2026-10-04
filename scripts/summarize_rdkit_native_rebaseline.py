@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import platform
@@ -52,6 +53,55 @@ def read_rows(path: Path, smiles: list[str], query_count: int) -> list[dict[str,
     if len(rows) != len(smiles):
         raise ValueError(f"{path}: expected {len(smiles)} rows, got {len(rows)}")
     return rows
+
+
+def morgan_binary_sha256(on_bits: list[int]) -> str:
+    """Hash RDKit's 2048-bit little-endian BitVectToBinaryText representation."""
+    data = bytearray(2048 // 8)
+    for bit in on_bits:
+        data[bit // 8] |= 1 << (bit % 8)
+    return hashlib.sha256(data).hexdigest()
+
+
+def verify_python_baseline(path: Path, rows: list[dict[str, Any]]) -> int:
+    """Cross-check the old C++ oracle against the pinned old Python wheel oracle."""
+    count = 0
+    with gzip.open(path, "rt", encoding="utf-8") as handle:
+        for index, line in enumerate(handle):
+            if index >= len(rows):
+                raise ValueError(f"{path}: excess Python baseline row {index}")
+            reference = json.loads(line)
+            native = rows[index]
+            checks = {
+                "input_index": (reference.get("input_index"), index),
+                "smiles": (reference.get("smiles"), native["smiles"]),
+                "status": (reference.get("status"), "completed"),
+                "canonical": (
+                    reference.get("smiles_parse_write", {}).get("rdkit_canonical"),
+                    native["canonical"],
+                ),
+                "cip_atoms": (
+                    reference.get("cip", {}).get("rdkit_atoms"),
+                    native["cip_atoms"],
+                ),
+                "cip_bonds": (
+                    reference.get("cip", {}).get("rdkit_bonds"),
+                    native["cip_bonds"],
+                ),
+                "morgan_sha256": (
+                    reference.get("morgan", {}).get("rdkit_sha256"),
+                    morgan_binary_sha256(native["morgan_on_bits"]),
+                ),
+            }
+            for field, (expected, actual) in checks.items():
+                if expected != actual:
+                    raise ValueError(
+                        f"{path}: row {index} {field} differs from old C++ oracle"
+                    )
+            count += 1
+    if count != len(rows):
+        raise ValueError(f"{path}: expected {len(rows)} Python rows, got {count}")
+    return count
 
 
 def summarize(
@@ -114,6 +164,7 @@ def main() -> int:
         "new-binary",
         "old-rows",
         "new-rows",
+        "python-baseline-rows",
         "summary",
         "delta",
     ):
@@ -147,6 +198,9 @@ def main() -> int:
         }
     old_rows = read_rows(args.old_rows, smiles, len(queries))
     new_rows = read_rows(args.new_rows, smiles, len(queries))
+    python_baseline_verified_rows = verify_python_baseline(
+        args.python_baseline_rows, old_rows
+    )
     counts, deltas = summarize(old_rows, new_rows, queries)
     args.delta.parent.mkdir(parents=True, exist_ok=True)
     with args.delta.open("w", encoding="utf-8") as handle:
@@ -163,6 +217,8 @@ def main() -> int:
         "cmake_flags": config["cmake_flags"],
         "corpus_sha256": digest(corpus),
         "queries_sha256": digest(queries_path),
+        "python_baseline_rows_sha256": digest(args.python_baseline_rows),
+        "python_baseline_verified_rows": python_baseline_verified_rows,
         "sources": sources,
         "toolchain": {
             "platform": platform.platform(),

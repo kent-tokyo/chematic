@@ -1,6 +1,7 @@
 """Accounting checks for the independent RDKit C++ old/new packet."""
 
 import importlib.util
+import gzip
 import json
 from pathlib import Path
 
@@ -67,3 +68,22 @@ def test_invalid_bit_set_fails(tmp_path: Path):
     path.write_text(json.dumps(bad) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="invalid Morgan"):
         MODULE.read_rows(path, ["CC"], 2)
+
+
+def test_old_native_oracle_must_match_python_wheel_oracle(tmp_path: Path):
+    native = row()
+    baseline = {
+        "input_index": 0,
+        "smiles": "CC",
+        "status": "completed",
+        "smiles_parse_write": {"rdkit_canonical": "CC"},
+        "cip": {"rdkit_atoms": {}, "rdkit_bonds": {}},
+        "morgan": {"rdkit_sha256": MODULE.morgan_binary_sha256([2, 5])},
+    }
+    path = tmp_path / "python.jsonl.gz"
+    with gzip.open(path, "wt", encoding="utf-8") as handle:
+        handle.write(json.dumps(baseline) + "\n")
+    assert MODULE.verify_python_baseline(path, [native]) == 1
+    native["canonical"] = "C-C"
+    with pytest.raises(ValueError, match="canonical differs"):
+        MODULE.verify_python_baseline(path, [native])

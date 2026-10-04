@@ -106,6 +106,7 @@ jobs:
             --new-binary "$RUNNER_TEMP/probe-build-new/rdkit_native_rebaseline" \
             --old-rows "$RUNNER_TEMP/rdkit-native-results/old.jsonl" \
             --new-rows "$RUNNER_TEMP/rdkit-native-results/new.jsonl" \
+            --python-baseline-rows validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.jsonl.gz \
             --summary "$RUNNER_TEMP/rdkit-native-results/summary.json" \
             --delta "$RUNNER_TEMP/rdkit-native-results/delta.jsonl"
           gzip -n -9 "$RUNNER_TEMP/rdkit-native-results/old.jsonl"
