@@ -20,7 +20,17 @@ dependencies. Completed work and raw evidence stay in the
 | 4 · P0.2 | Extend paired performance beyond the completed Python 63-operation and Node/Chromium/Firefox/WebKit Morgan lanes. | Equal-output, equal-work ≥20-block intervals for more operations/corpora; distinguish parsing, perception, prepared reuse and library memory from process RSS. The historical “21 faster” count is not a current package gate. |
 | 5 · P1/A2 | CIP has 9,995 exact rows and five typed abstentions on the pinned exposed 10k lane. | Keep abstentions stable under reorder/round trips; adjudicate phosphorus and define a lone-pair convention before assigning labels. |
 | 6 · P2 | CDXML, Markush/polymer, Standard InChI and canonical identity are bounded. | Per-format preservation, semantic round-trip, typed-refusal and no-false-merge gates across bindings. |
-| 7 · external | A later RDKit oracle is not pinned here. | Rebaseline only against a new official artifact; preserve 2026.03.6 results separately. |
+| 7 · external | Official RDKit.js 2026.09.1 is pinned on exposed 10k: Morgan unchanged on 9,999 supported CheMatic rows; graph-checked CIP retains six pre-existing imine E/Z mismatches, five abstentions and one unproven Fe row. Published CheMatic WASM SMARTS has 194 old-oracle versus 195 new-oracle mismatches in 310k cells, with 31 index-unproven cells per lane; old/new RDKit SMARTS differs in 12 `[R2]`/`[R3]` cells. [npm record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-04-rdkit-2026-09-1-npm-rebaseline.md). A [same-binary C++ legacy-ring probe](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-04-rdkit-2026-09-1-native-source-rebaseline.md) now attributes all 12 old/new cells on this corpus to RDKit's selectable ring backend; it does not adjudicate chemical correctness. The corrected [published Python 2026.03.6 baseline](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-04-rdkit-2026-09-1-python-baseline.md) also retains six imine E/Z mismatches and five abstentions. PyPI 2026.9.1 was unavailable at the recorded check. | Adjudicate the six E/Z and new-default ring-model residuals separately; recheck wheel/conda availability, hash the exact 2026.09.1 Python artifact, identify its wrapper backend, rerun the complete 10k Python chemistry/typed-error/overhead packet and classify residuals against the pinned old baseline. Keep native C++ separate. |
+
+The [independent native C++ source-build packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-04-rdkit-2026-09-1-native-source-rebaseline.md)
+now reproduces the same six changed rows and 12 `[R2]`/`[R3]` cells. Its old
+oracle matches the distributed Python 2026.03.6 baseline on canonical SMILES,
+CIP and Morgan across all 10k rows. Compiled binaries/libraries were not
+retained, and this source-build result does not satisfy the still-open
+2026.09.1 distributed Python/nanobind or native-binary gates. The
+[separate Python 2026.09.1 command catalog](https://github.com/kent-tokyo/chematic/blob/main/validation/rdkit_rebaseline_python_2026_09_execution.json)
+is ready for an exact wheel when published; no new-version Python result is
+inferred from it.
 
 P0.1's **published-artifact accounting is complete**, not strict RDKit
 parity: [the acceptance policy](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md)
@@ -50,7 +60,8 @@ contains the versioned denominators and raw-row identities.
   published-package result.
 - **`data-sealed`:** freeze a candidate and audit overlap before one-time
   evaluation. Exposed or inspected rows never become sealed again.
-- **`external-open`:** registry publication, official future RDKit releases,
+- **`external-open`:** the RDKit 2026.09.1 Python/native distribution artifacts,
+  registry publication for future releases,
   non-maintainer review and independent security assessment require their
   respective outside artifacts or people.
 - **`historical`:** source-only A/B timings, rejected candidates and older

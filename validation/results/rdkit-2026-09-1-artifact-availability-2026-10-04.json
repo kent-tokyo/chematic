@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-03T23:35:40Z",
+  "target_runtime": "2026.09.1",
+  "github_release": {
+    "url": "https://api.github.com/repos/rdkit/rdkit/releases/tags/Release_2026_09_1",
+    "http_status": 200,
+    "tag": "Release_2026_09_1",
+    "published_at": "2026-10-03T06:52:46Z",
+    "attached_assets": 0,
+    "interpretation": "Versioned source release exists; no downloadable native or Python binary is attached."
+  },
+  "pypi": {
+    "version_url": "https://pypi.org/pypi/rdkit/2026.9.1/json",
+    "http_status": 404,
+    "project_url": "https://pypi.org/pypi/rdkit/json",
+    "project_latest_version": "2026.3.6",
+    "published_2026_9_versions": [],
+    "interpretation": "A published PyPI 2026.9.1 wheel is not available at this check time."
+  },
+  "conda_forge": {
+    "url": "https://api.anaconda.org/package/conda-forge/rdkit",
+    "published_2026_09_versions": [],
+    "interpretation": "No 2026.09 package was listed in the community channel at this check time."
+  },
+  "npm": {
+    "version_url": "https://registry.npmjs.org/@rdkit%2frdkit/2026.9.1",
+    "http_status": 200,
+    "package": "@rdkit/rdkit",
+    "version": "2026.9.1",
+    "registry_integrity": "sha512-nbdi5yEw+mG2kIxFvgVMGulS5fjNMzzocx9nKs01NAjNpFAEQVb6RDl3pd9AWEa7m5D8DR4QAS6CDzu+5xjzEA==",
+    "interpretation": "Official npm package exists; browser runtime version was separately measured as 2026.09.1."
+  },
+  "scope": "Availability snapshot, not a standing assertion that PyPI/conda will remain unavailable. Recheck before Python/native execution."
+}

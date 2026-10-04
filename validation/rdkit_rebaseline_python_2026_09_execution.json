@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_python_2026_09_1_distributed_execution_v1",
+  "sealed_accuracy_cohort_reused": false,
+  "difference_classes": [
+    "chematic_regression",
+    "oracle_change",
+    "contract_difference",
+    "unresolved"
+  ],
+  "required_operation_ids": [
+    "provenance",
+    "binding_contract",
+    "smiles_parse_write",
+    "cip",
+    "smarts",
+    "morgan",
+    "browser_runtime"
+  ],
+  "lanes": [
+    {
+      "id": "python-2026.09.1-distributed",
+      "channel": "python_native",
+      "rdkit_version": "2026.09.1",
+      "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+      "commands": [
+        {
+          "id": "python-2026-09-provenance",
+          "covers": ["provenance"],
+          "argv": [
+            "${PYTHON}",
+            "scripts/collect_rdkit_rebaseline_provenance.py",
+            "--python",
+            "--python-wrapper-backend", "${PYTHON_BACKEND}",
+            "--python-backend-evidence", "${PYTHON_BACKEND_EVIDENCE}",
+            "--python-artifact", "${PYTHON_ARTIFACT}",
+            "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+            "--operation-config", "validation/rdkit_rebaseline_python_2026_09_execution.json",
+            "--output", "${OUTPUT_DIR}/python-provenance.json"
+          ]
+        },
+        {
+          "id": "python-2026-09-binding-contract",
+          "covers": ["binding_contract"],
+          "argv": [
+            "${PYTHON}",
+            "scripts/probe_rdkit_python_contract.py",
+            "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+            "--output", "${OUTPUT_DIR}/python-binding-contract.json",
+            "--expected-rdkit", "2026.09.1",
+            "--artifact", "${PYTHON_ARTIFACT}",
+            "--rows", "10000",
+            "--repetitions", "7"
+          ]
+        },
+        {
+          "id": "python-2026-09-chemistry-all",
+          "covers": ["smiles_parse_write", "cip", "smarts", "morgan"],
+          "argv": [
+            "${PYTHON}",
+            "scripts/run_rdkit_python_chemistry_lane.py",
+            "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+            "--queries", "validation/rdkit_rebaseline_smarts_queries.json",
+            "--output", "${OUTPUT_DIR}/python-chemistry-summary.json",
+            "--rows-output", "${OUTPUT_DIR}/python-chemistry-rows.jsonl",
+            "--expected-rdkit", "2026.09.1",
+            "--expected-chematic", "1.0.33"
+          ]
+        }
+      ],
+      "unavailable_operations": {
+        "browser_runtime": "Python/native timing is kept separate from browser runtime."
+      }
+    }
+  ]
+}

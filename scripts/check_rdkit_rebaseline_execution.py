@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "validation" / "rdkit_rebaseline_execution.json"
@@ -21,8 +21,15 @@ DIFFERENCE_CLASSES = {
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, default=MANIFEST)
+    args = parser.parse_args()
     try:
-        document = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        manifest_label = str(args.manifest.resolve().relative_to(ROOT))
+    except ValueError:
+        manifest_label = str(args.manifest.resolve())
+    try:
+        document = json.loads(args.manifest.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         print(f"RDKit execution manifest invalid: {exc}", file=sys.stderr)
         return 1
@@ -51,6 +58,10 @@ def main() -> int:
             errors.append("lane ids must be unique non-empty strings")
             continue
         lane_ids.add(lane_id)
+        if lane.get("channel") == "python_native":
+            version = lane.get("rdkit_version")
+            if not isinstance(version, str) or not version:
+                errors.append(f"{lane_id}: rdkit_version must be set")
         corpus = lane.get("corpus")
         if not isinstance(corpus, str) or not (ROOT / corpus).is_file():
             errors.append(f"{lane_id}: corpus must exist")
@@ -64,7 +75,11 @@ def main() -> int:
                 errors.append(f"{lane_id}: command must be an object")
                 continue
             command_id = command.get("id")
-            if not isinstance(command_id, str) or not command_id or command_id in command_ids:
+            if (
+                not isinstance(command_id, str)
+                or not command_id
+                or command_id in command_ids
+            ):
                 errors.append(f"{lane_id}: command ids must be globally unique")
                 continue
             command_ids.add(command_id)
@@ -74,18 +89,39 @@ def main() -> int:
                 errors.append(f"{command_id}: covers contains an unknown operation")
             else:
                 covered.update(covers)
-            if not isinstance(argv, list) or len(argv) < 2 or not all(
-                isinstance(token, str) and token for token in argv
+            if (
+                not isinstance(argv, list)
+                or len(argv) < 2
+                or not all(isinstance(token, str) and token for token in argv)
             ):
                 errors.append(f"{command_id}: argv must be a non-empty string array")
                 continue
             script_tokens = [token for token in argv if token.startswith("scripts/")]
-            if not script_tokens or not all((ROOT / token).is_file() for token in script_tokens):
+            if not script_tokens or not all(
+                (ROOT / token).is_file() for token in script_tokens
+            ):
                 errors.append(f"{command_id}: referenced script does not exist")
             for token in argv:
                 for placeholder in PLACEHOLDER.findall(token):
                     if placeholder in {"SEALED_CORPUS", "SEALED_8K"}:
-                        errors.append(f"{command_id}: sealed-data placeholder is prohibited")
+                        errors.append(
+                            f"{command_id}: sealed-data placeholder is prohibited"
+                        )
+            if lane.get("channel") == "python_native":
+                for index, token in enumerate(argv[:-1]):
+                    if token == "--expected-rdkit" and argv[index + 1] != lane.get(
+                        "rdkit_version"
+                    ):
+                        errors.append(
+                            f"{command_id}: expected RDKit version differs from lane"
+                        )
+                    if (
+                        token == "--operation-config"
+                        and argv[index + 1] != manifest_label
+                    ):
+                        errors.append(
+                            f"{command_id}: operation-config differs from manifest"
+                        )
         unavailable = lane.get("unavailable_operations")
         if not isinstance(unavailable, dict) or not all(
             isinstance(key, str) and isinstance(value, str) and value
@@ -97,7 +133,9 @@ def main() -> int:
         if not unavailable_ids <= required:
             errors.append(f"{lane_id}: unknown unavailable operation")
         if covered & unavailable_ids:
-            errors.append(f"{lane_id}: operation cannot be both covered and unavailable")
+            errors.append(
+                f"{lane_id}: operation cannot be both covered and unavailable"
+            )
         if covered | unavailable_ids != required:
             missing = sorted(required - covered - unavailable_ids)
             errors.append(f"{lane_id}: unaccounted operations {missing}")
@@ -105,7 +143,9 @@ def main() -> int:
         print("RDKit execution manifest invalid:", file=sys.stderr)
         print("\n".join(f"- {error}" for error in errors), file=sys.stderr)
         return 1
-    print(f"RDKit execution manifest OK: {len(lanes)} lanes, {len(command_ids)} commands")
+    print(
+        f"RDKit execution manifest OK: {len(lanes)} lanes, {len(command_ids)} commands"
+    )
     return 0
 
 

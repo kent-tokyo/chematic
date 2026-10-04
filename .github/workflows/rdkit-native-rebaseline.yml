@@ -1,0 +1,138 @@
+name: RDKit native source rebaseline
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/rdkit-native-rebaseline.yml
+      - tools/rdkit_native_rebaseline/**
+      - scripts/summarize_rdkit_native_rebaseline.py
+      - scripts/summarize_rdkit_ring_backend.py
+      - validation/rdkit_native_rebaseline_build.json
+      - validation/rdkit_rebaseline_smarts_queries.json
+      - validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi
+      - validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.jsonl.gz
+
+permissions:
+  contents: read
+
+jobs:
+  native-output-diff:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout CheMatic comparison harness
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Checkout RDKit 2026.03.6 source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: rdkit/rdkit
+          ref: 0e0d85f4ca34aeae15dfc0f7cf5503bdb0a8e985
+          path: rdkit-old
+          persist-credentials: false
+      - name: Checkout RDKit 2026.09.1 source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: rdkit/rdkit
+          ref: fece8caa860bdf6c9c82bdb9253f22a0cf87150c
+          path: rdkit-new
+          persist-credentials: false
+      - name: Install native build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libboost-all-dev libeigen3-dev
+      - name: Restore pinned old native installation
+        id: old-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/rdkit-install-old
+          key: rdkit-native-old-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('validation/rdkit_native_rebaseline_build.json') }}
+      - name: Build RDKit 2026.03.6 C++ source
+        if: steps.old-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t config_flags < <(jq -r '.cmake_flags[]' validation/rdkit_native_rebaseline_build.json)
+          cmake -S rdkit-old -B "$RUNNER_TEMP/rdkit-build-old" -G Ninja \
+            "${config_flags[@]}" -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/rdkit-install-old"
+          cmake --build "$RUNNER_TEMP/rdkit-build-old" --parallel 4
+          cmake --install "$RUNNER_TEMP/rdkit-build-old"
+      - name: Cache pinned old native installation
+        if: steps.old-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/rdkit-install-old
+          key: rdkit-native-old-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('validation/rdkit_native_rebaseline_build.json') }}
+      - name: Restore pinned new native installation
+        id: new-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/rdkit-install-new
+          key: rdkit-native-new-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('validation/rdkit_native_rebaseline_build.json') }}
+      - name: Build RDKit 2026.09.1 C++ source
+        if: steps.new-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t config_flags < <(jq -r '.cmake_flags[]' validation/rdkit_native_rebaseline_build.json)
+          cmake -S rdkit-new -B "$RUNNER_TEMP/rdkit-build-new" -G Ninja \
+            "${config_flags[@]}" -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/rdkit-install-new"
+          cmake --build "$RUNNER_TEMP/rdkit-build-new" --parallel 4
+          cmake --install "$RUNNER_TEMP/rdkit-build-new"
+      - name: Cache pinned new native installation
+        if: steps.new-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/rdkit-install-new
+          key: rdkit-native-new-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('validation/rdkit_native_rebaseline_build.json') }}
+      - name: Build and run both independent C++ oracles
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -r '.queries[]' validation/rdkit_rebaseline_smarts_queries.json > "$RUNNER_TEMP/rdkit-queries.txt"
+          mkdir -p "$RUNNER_TEMP/rdkit-native-results"
+          for lane in old new; do
+            cmake -S tools/rdkit_native_rebaseline -B "$RUNNER_TEMP/probe-build-$lane" -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/rdkit-install-$lane"
+            cmake --build "$RUNNER_TEMP/probe-build-$lane" --parallel 4
+            LD_LIBRARY_PATH="$RUNNER_TEMP/rdkit-install-$lane/lib:${LD_LIBRARY_PATH:-}" \
+              "$RUNNER_TEMP/probe-build-$lane/rdkit_native_rebaseline" \
+              validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
+              "$RUNNER_TEMP/rdkit-queries.txt" \
+              "$RUNNER_TEMP/rdkit-native-results/$lane.jsonl"
+          done
+          python3 scripts/summarize_rdkit_native_rebaseline.py \
+            --build-config validation/rdkit_native_rebaseline_build.json \
+            --old-source rdkit-old --new-source rdkit-new \
+            --old-binary "$RUNNER_TEMP/probe-build-old/rdkit_native_rebaseline" \
+            --new-binary "$RUNNER_TEMP/probe-build-new/rdkit_native_rebaseline" \
+            --old-rows "$RUNNER_TEMP/rdkit-native-results/old.jsonl" \
+            --new-rows "$RUNNER_TEMP/rdkit-native-results/new.jsonl" \
+            --python-baseline-rows validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.jsonl.gz \
+            --summary "$RUNNER_TEMP/rdkit-native-results/summary.json" \
+            --delta "$RUNNER_TEMP/rdkit-native-results/delta.jsonl"
+          RDK_USE_LEGACY_RING_FINDING=1 \
+            LD_LIBRARY_PATH="$RUNNER_TEMP/rdkit-install-new/lib:${LD_LIBRARY_PATH:-}" \
+            "$RUNNER_TEMP/probe-build-new/rdkit_native_rebaseline" \
+            validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
+            "$RUNNER_TEMP/rdkit-queries.txt" \
+            "$RUNNER_TEMP/rdkit-native-results/new-legacy.jsonl"
+          python3 -m scripts.summarize_rdkit_ring_backend \
+            --build-config validation/rdkit_native_rebaseline_build.json \
+            --old-rows "$RUNNER_TEMP/rdkit-native-results/old.jsonl" \
+            --new-rows "$RUNNER_TEMP/rdkit-native-results/new.jsonl" \
+            --legacy-rows "$RUNNER_TEMP/rdkit-native-results/new-legacy.jsonl" \
+            --output "$RUNNER_TEMP/rdkit-native-results/ring-backend-summary.json"
+          gzip -n -9 "$RUNNER_TEMP/rdkit-native-results/old.jsonl"
+          gzip -n -9 "$RUNNER_TEMP/rdkit-native-results/new.jsonl"
+          gzip -n -9 "$RUNNER_TEMP/rdkit-native-results/delta.jsonl"
+          gzip -n -9 "$RUNNER_TEMP/rdkit-native-results/new-legacy.jsonl"
+      - name: Upload pinned native output packet
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: rdkit-native-2026-03-6-to-2026-09-1
+          path: ${{ runner.temp }}/rdkit-native-results/
+          retention-days: 30
+          if-no-files-found: error

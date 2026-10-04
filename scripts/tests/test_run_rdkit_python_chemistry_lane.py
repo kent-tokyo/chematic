@@ -12,6 +12,7 @@ from scripts.run_rdkit_python_chemistry_lane import (
     load_queries,
     load_smiles,
     normalized_match_sets,
+    rdkit_cip,
 )
 
 
@@ -68,6 +69,17 @@ def test_difference_class_counts_count_each_operation_result():
 def test_bond_endpoint_key_is_independent_of_bond_index_and_direction():
     assert bond_endpoint_key(7, 2) == "2-7"
     assert bond_endpoint_key(2, 7) == "2-7"
+
+
+def test_rdkit_cip_uses_bond_label_not_cis_trans_marker():
+    from rdkit import Chem
+    from rdkit.Chem import rdCIPLabeler
+
+    molecule = Chem.MolFromSmiles("CCOC(=O)c1cc2ccccn2/c(=N/c2ccc(OC)cc2)n1")
+    bond = molecule.GetBondBetweenAtoms(13, 14)
+    _atoms, bonds = rdkit_cip(rdCIPLabeler, molecule)
+    assert bond.GetStereo() == Chem.BondStereo.STEREOTRANS
+    assert bonds["13-14"] == "Z"
 
 
 def test_chematic_cip_reads_ez_bond_endpoints():
