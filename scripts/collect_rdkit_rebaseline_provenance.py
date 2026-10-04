@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.validation_provenance import collect as collect_source_provenance
+from scripts.validation_provenance import collect as collect_source_provenance  # noqa: E402
 
 
 PYTHON_BACKENDS = ("unknown", "boost_python", "nanobind")
@@ -180,6 +180,23 @@ def find_node_modules(path: Path) -> Path | None:
     )
 
 
+def npm_lock_entry(packages: dict[str, object], package_name: str) -> dict | None:
+    """Accept npm's canonical or absolute-prefix lock keys, but never guess.
+
+    npm may write ``../../.../node_modules/@scope/name`` when installing with
+    an absolute ``--prefix``.  Only a unique matching package is admissible.
+    """
+    suffix = f"node_modules/{package_name}"
+    matches = [
+        value
+        for key, value in packages.items()
+        if isinstance(key, str)
+        and (key == suffix or key.endswith(f"/{suffix}"))
+        and isinstance(value, dict)
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
 def collect_npm_lane(
     package_dir: Path,
     runtime_version: str | None,
@@ -205,7 +222,7 @@ def collect_npm_lane(
         if lock_path.is_file():
             try:
                 lock = json.loads(lock_path.read_text(encoding="utf-8"))
-                entry = lock.get("packages", {}).get(f"node_modules/{package_name}")
+                entry = npm_lock_entry(lock.get("packages", {}), package_name)
             except (json.JSONDecodeError, OSError):
                 entry = None
                 lock_record = {"status": "unreadable"}

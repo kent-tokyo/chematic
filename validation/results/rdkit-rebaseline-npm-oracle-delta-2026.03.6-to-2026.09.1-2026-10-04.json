@@ -1,0 +1,414 @@
+{
+  "schema_version": 1,
+  "profile": "rdkitjs_old_new_exposed_chemistry_v1",
+  "generated_at_utc": "2026-10-03T23:52:24.562Z",
+  "node": "v24.5.0",
+  "old": {
+    "name": "@rdkit/rdkit",
+    "version": "2026.03.6",
+    "package_json": {
+      "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-rdkit-rebaseline.pmRDDpTYXP/rdkit-old/node_modules/@rdkit/rdkit/package.json",
+      "bytes": 718,
+      "sha256": "bb938eb6b28bf39baa9778f56aefcdea746d28060fe2c542209f877a71468fed"
+    },
+    "wasm": {
+      "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-rdkit-rebaseline.pmRDDpTYXP/rdkit-old/node_modules/@rdkit/rdkit/dist/RDKit_minimal.wasm",
+      "bytes": 7333095,
+      "sha256": "f5981af4cf5bdcef861ffdf7410330bf9887f1195e39fbf9901b3a2f134ace2e"
+    },
+    "javascript": {
+      "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-rdkit-rebaseline.pmRDDpTYXP/rdkit-old/node_modules/@rdkit/rdkit/dist/RDKit_minimal.js",
+      "bytes": 105843,
+      "sha256": "25ea1529b8eeb106ac1f3acb7c5d338a90533248c6223614574fefd14fee772f"
+    },
+    "runtime_version": "2026.03.6",
+    "query_parse_failures": []
+  },
+  "new": {
+    "name": "@rdkit/rdkit",
+    "version": "2026.9.1",
+    "package_json": {
+      "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-rdkit-rebaseline.pmRDDpTYXP/rdkit-new/node_modules/@rdkit/rdkit/package.json",
+      "bytes": 717,
+      "sha256": "11eb8f1b1f224dc0d1cf29ad5d89996251d5b5bec82186886a909c33dd7cd206"
+    },
+    "wasm": {
+      "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-rdkit-rebaseline.pmRDDpTYXP/rdkit-new/node_modules/@rdkit/rdkit/dist/RDKit_minimal.wasm",
+      "bytes": 7379879,
+      "sha256": "594ceaed387adc70ea13bfbb2e8eace916f6c782254ed5a6f0f0a0a7a4fe4061"
+    },
+    "javascript": {
+      "path": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-rdkit-rebaseline.pmRDDpTYXP/rdkit-new/node_modules/@rdkit/rdkit/dist/RDKit_minimal.js",
+      "bytes": 106667,
+      "sha256": "ea427db9cc39be245065603de0df10c3053cb49af3b63fdf6bc2bf73d6fc17da"
+    },
+    "runtime_version": "2026.09.1",
+    "query_parse_failures": []
+  },
+  "corpus": {
+    "path": "/Users/k_tanabe/.codex/worktrees/reaction-83-residuals/chematic/validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "bytes": 429750,
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+  },
+  "queries": {
+    "path": "/Users/k_tanabe/.codex/worktrees/reaction-83-residuals/chematic/validation/rdkit_rebaseline_smarts_queries.json",
+    "bytes": 524,
+    "sha256": "250a241a8905d013eb58fff0ccfb1e0dbe3e97c08ff56e021828fbfec957b341"
+  },
+  "counts": {
+    "rows": 10000,
+    "query_count": 31,
+    "parse_status_differences": 0,
+    "canonical_spelling_differences": 0,
+    "morgan_bit_differences": 0,
+    "graph_json_differences": 0,
+    "cip_tag_differences": 0,
+    "cip_comparable_rows": 10000,
+    "smarts_cells_compared": 310000,
+    "smarts_cell_differences": 12
+  },
+  "examples": [
+    {
+      "input_index": 9,
+      "smiles": "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2",
+      "old_status": "ok",
+      "new_status": "ok",
+      "old_canonical": "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2",
+      "new_canonical": "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2",
+      "old_morgan_sha256": "cda8b8c4f568d38ec17109adf739054d657d7e2f123678edabbaa2cdcfcc4782",
+      "new_morgan_sha256": "cda8b8c4f568d38ec17109adf739054d657d7e2f123678edabbaa2cdcfcc4782",
+      "old_graph_sha256": "be7c583390d75b2e4e4a16669033334497ec383bef38210524617aed4126ba9a",
+      "new_graph_sha256": "be7c583390d75b2e4e4a16669033334497ec383bef38210524617aed4126ba9a",
+      "old_cip_sha256": "a6018fa8e84eb54a19c52b9794d9d3bffc26a95c8ce64e0937e31d556176aa8e",
+      "new_cip_sha256": "a6018fa8e84eb54a19c52b9794d9d3bffc26a95c8ce64e0937e31d556176aa8e",
+      "old_smarts_sha256": "43538113e5e158ee56c66afbd670d369bc218e1ca415e696ad54dfd9478d24dc",
+      "new_smarts_sha256": "15069aa7c06c7ebaf977ccf5b39df5c8ee7ad9d002d3f58688580534843dc4a1",
+      "differences": [
+        {
+          "operation": "smarts",
+          "query_index": 19,
+          "query": "[R2]",
+          "old": [
+            "[12]",
+            "[17]",
+            "[22]",
+            "[23]",
+            "[24]",
+            "[25]",
+            "[26]",
+            "[27]",
+            "[28]",
+            "[29]",
+            "[30]",
+            "[31]",
+            "[32]",
+            "[33]",
+            "[34]",
+            "[36]",
+            "[37]",
+            "[45]"
+          ],
+          "new": []
+        },
+        {
+          "operation": "smarts",
+          "query_index": 20,
+          "query": "[R3]",
+          "old": [
+            "[10]",
+            "[11]",
+            "[13]",
+            "[14]",
+            "[15]",
+            "[16]",
+            "[2]",
+            "[35]",
+            "[38]",
+            "[39]",
+            "[3]",
+            "[44]",
+            "[4]",
+            "[6]"
+          ],
+          "new": [
+            "[14]",
+            "[15]",
+            "[36]",
+            "[37]"
+          ]
+        }
+      ]
+    },
+    {
+      "input_index": 23,
+      "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "old_status": "ok",
+      "new_status": "ok",
+      "old_canonical": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "new_canonical": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "old_morgan_sha256": "a099f6d3043a99384b0dabf94978c0110e9a5d55e218d8aaf1343083e6502d4c",
+      "new_morgan_sha256": "a099f6d3043a99384b0dabf94978c0110e9a5d55e218d8aaf1343083e6502d4c",
+      "old_graph_sha256": "1301724a350a86ed8e5a3ad876971f76d8c947a88f59591884b86cfcc2e72188",
+      "new_graph_sha256": "1301724a350a86ed8e5a3ad876971f76d8c947a88f59591884b86cfcc2e72188",
+      "old_cip_sha256": "a6018fa8e84eb54a19c52b9794d9d3bffc26a95c8ce64e0937e31d556176aa8e",
+      "new_cip_sha256": "a6018fa8e84eb54a19c52b9794d9d3bffc26a95c8ce64e0937e31d556176aa8e",
+      "old_smarts_sha256": "2c0f66ddd77ba3e5d8b67cc8955d603969caa80af2392f3e359a68a59fbc70ca",
+      "new_smarts_sha256": "6d6ba8e6b8bdf69dd478aab0b1ae315f9ccf0b7e5cc36d47d01a3741f3330e7a",
+      "differences": [
+        {
+          "operation": "smarts",
+          "query_index": 19,
+          "query": "[R2]",
+          "old": [
+            "[15]",
+            "[16]",
+            "[21]",
+            "[22]",
+            "[28]",
+            "[33]"
+          ],
+          "new": []
+        },
+        {
+          "operation": "smarts",
+          "query_index": 20,
+          "query": "[R3]",
+          "old": [
+            "[3]",
+            "[4]"
+          ],
+          "new": []
+        }
+      ]
+    },
+    {
+      "input_index": 28,
+      "smiles": "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
+      "old_status": "ok",
+      "new_status": "ok",
+      "old_canonical": "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
+      "new_canonical": "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
+      "old_morgan_sha256": "654873b434844283acce336fedbc7ef0d85d37c073dc2ad7f73e6ae6064035c9",
+      "new_morgan_sha256": "654873b434844283acce336fedbc7ef0d85d37c073dc2ad7f73e6ae6064035c9",
+      "old_graph_sha256": "da9fe24857ef70e7c954c58cef8bb1e0295f6a465f05bc305c0d2b5e8cea80df",
+      "new_graph_sha256": "da9fe24857ef70e7c954c58cef8bb1e0295f6a465f05bc305c0d2b5e8cea80df",
+      "old_cip_sha256": "e6e6c1f5b2af304e8186f768612e2268e9e62b7d33d2eefdf1a1d861fd12f1e3",
+      "new_cip_sha256": "e6e6c1f5b2af304e8186f768612e2268e9e62b7d33d2eefdf1a1d861fd12f1e3",
+      "old_smarts_sha256": "c78556fff08db319b11d93e57cdcfac7ee59a42497437323fb0d14c404beb996",
+      "new_smarts_sha256": "40bcef95c460f5b1dfdbb6cc7c2f6c1fbf0fb3171398784041c2f7b5279e3cb9",
+      "differences": [
+        {
+          "operation": "smarts",
+          "query_index": 19,
+          "query": "[R2]",
+          "old": [
+            "[13]",
+            "[18]",
+            "[35]",
+            "[40]",
+            "[46]",
+            "[47]",
+            "[6]",
+            "[7]"
+          ],
+          "new": []
+        },
+        {
+          "operation": "smarts",
+          "query_index": 20,
+          "query": "[R3]",
+          "old": [
+            "[0]",
+            "[19]",
+            "[1]",
+            "[20]",
+            "[21]",
+            "[22]",
+            "[23]",
+            "[24]",
+            "[25]",
+            "[26]",
+            "[27]",
+            "[28]",
+            "[29]",
+            "[30]",
+            "[3]",
+            "[41]",
+            "[43]",
+            "[44]",
+            "[4]",
+            "[8]"
+          ],
+          "new": []
+        }
+      ]
+    },
+    {
+      "input_index": 29,
+      "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "old_status": "ok",
+      "new_status": "ok",
+      "old_canonical": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "new_canonical": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "old_morgan_sha256": "f5f3ea570f27b3f183859485d0eb947f66de3f5a18b840cf950f3155dfeea675",
+      "new_morgan_sha256": "f5f3ea570f27b3f183859485d0eb947f66de3f5a18b840cf950f3155dfeea675",
+      "old_graph_sha256": "b76e0565975fc71c96176ef722a472d2f3013838692ea12f9acde8250109a2bf",
+      "new_graph_sha256": "b76e0565975fc71c96176ef722a472d2f3013838692ea12f9acde8250109a2bf",
+      "old_cip_sha256": "a6018fa8e84eb54a19c52b9794d9d3bffc26a95c8ce64e0937e31d556176aa8e",
+      "new_cip_sha256": "a6018fa8e84eb54a19c52b9794d9d3bffc26a95c8ce64e0937e31d556176aa8e",
+      "old_smarts_sha256": "8a9fffc3db104df69abaf97ae743170a0aa8edbbbb7316ebf48f08e468bec8d8",
+      "new_smarts_sha256": "4b92b840988196b199d49d1457b61468191a4abe89e25d88b6848d08daf647bd",
+      "differences": [
+        {
+          "operation": "smarts",
+          "query_index": 19,
+          "query": "[R2]",
+          "old": [
+            "[15]",
+            "[16]",
+            "[23]",
+            "[24]",
+            "[30]",
+            "[35]"
+          ],
+          "new": []
+        },
+        {
+          "operation": "smarts",
+          "query_index": 20,
+          "query": "[R3]",
+          "old": [
+            "[3]",
+            "[4]"
+          ],
+          "new": []
+        }
+      ]
+    },
+    {
+      "input_index": 30,
+      "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "old_status": "ok",
+      "new_status": "ok",
+      "old_canonical": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "new_canonical": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "old_morgan_sha256": "c256e156f1e783439c92c7c1cde716d1a14a85c2523b249f29870852e01e4e09",
+      "new_morgan_sha256": "c256e156f1e783439c92c7c1cde716d1a14a85c2523b249f29870852e01e4e09",
+      "old_graph_sha256": "53e47366a1a826404dc65c16ce4fedadc367cb445d552505c6c0355529ef7d3c",
+      "new_graph_sha256": "53e47366a1a826404dc65c16ce4fedadc367cb445d552505c6c0355529ef7d3c",
+      "old_cip_sha256": "a6018fa8e84eb54a19c52b9794d9d3bffc26a95c8ce64e0937e31d556176aa8e",
+      "new_cip_sha256": "a6018fa8e84eb54a19c52b9794d9d3bffc26a95c8ce64e0937e31d556176aa8e",
+      "old_smarts_sha256": "9f90d05dcb14ecd8d5867d91a15b29f0fa1ab3289d4d20e000a55e865c9dd113",
+      "new_smarts_sha256": "1c58d03bf2e39d9a6fe838701736fe2da7996a3e8de3b80c44de66de9d69b4ab",
+      "differences": [
+        {
+          "operation": "smarts",
+          "query_index": 19,
+          "query": "[R2]",
+          "old": [
+            "[15]",
+            "[16]",
+            "[22]",
+            "[23]",
+            "[29]",
+            "[34]"
+          ],
+          "new": []
+        },
+        {
+          "operation": "smarts",
+          "query_index": 20,
+          "query": "[R3]",
+          "old": [
+            "[3]",
+            "[4]"
+          ],
+          "new": []
+        }
+      ]
+    },
+    {
+      "input_index": 34,
+      "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "old_status": "ok",
+      "new_status": "ok",
+      "old_canonical": "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "new_canonical": "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "old_morgan_sha256": "5b79fb6023e85f1a9ba3b6accae16a2467749c58c01a364769df567d21014f5e",
+      "new_morgan_sha256": "5b79fb6023e85f1a9ba3b6accae16a2467749c58c01a364769df567d21014f5e",
+      "old_graph_sha256": "e5a66144e38c0c64c2ede9a4f9fd892440118d419a446d01a6b2ec8df14d73ff",
+      "new_graph_sha256": "e5a66144e38c0c64c2ede9a4f9fd892440118d419a446d01a6b2ec8df14d73ff",
+      "old_cip_sha256": "a6018fa8e84eb54a19c52b9794d9d3bffc26a95c8ce64e0937e31d556176aa8e",
+      "new_cip_sha256": "a6018fa8e84eb54a19c52b9794d9d3bffc26a95c8ce64e0937e31d556176aa8e",
+      "old_smarts_sha256": "3fac58591f29ef4bf5c0012e04fc76bda02ebc0247ef59cc8ae40f829a34490e",
+      "new_smarts_sha256": "c2389f42724b6b09197a0b7471b509d2dc3abd7cf686b72eb5e27567938abfa5",
+      "differences": [
+        {
+          "operation": "smarts",
+          "query_index": 19,
+          "query": "[R2]",
+          "old": [
+            "[10]",
+            "[14]",
+            "[23]",
+            "[24]",
+            "[29]",
+            "[34]",
+            "[35]",
+            "[36]",
+            "[37]",
+            "[38]",
+            "[39]",
+            "[40]",
+            "[41]",
+            "[42]",
+            "[43]",
+            "[44]",
+            "[45]",
+            "[46]",
+            "[7]",
+            "[8]"
+          ],
+          "new": [
+            "[14]",
+            "[23]"
+          ]
+        },
+        {
+          "operation": "smarts",
+          "query_index": 20,
+          "query": "[R3]",
+          "old": [
+            "[11]",
+            "[16]",
+            "[17]",
+            "[19]",
+            "[20]",
+            "[25]",
+            "[26]",
+            "[27]",
+            "[28]",
+            "[3]",
+            "[4]",
+            "[6]",
+            "[9]"
+          ],
+          "new": [
+            "[26]",
+            "[27]",
+            "[7]",
+            "[8]"
+          ]
+        }
+      ]
+    }
+  ],
+  "rows_output": {
+    "path": "validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.jsonl.gz",
+    "rows": 10000,
+    "uncompressed_sha256": "ab2f58669745458ca34011cf75617f4c48fa5c32ee286e2fbfe36fab22582c4b",
+    "compressed_bytes": 1793014,
+    "compressed_sha256": "d498192aad6a8668b86d7528966aa8ae3eb423c108801c5e3cd5110a97289003"
+  },
+  "caveat": "Official RDKit.js oracle-version delta on exposed inputs; no CheMatic accuracy or speed claim."
+}

@@ -2,7 +2,7 @@
   "schema_version": 3,
   "policy": {
     "baseline_lanes_are_immutable": true,
-    "next_stable_lane": "unavailable_until_artifact_metadata_is_verified",
+    "next_stable_lane": "2026.09.1 npm measured and 2026.03.6 Python baseline measured; 2026.09.1 Python and independent native artifacts pending; keep future lanes separate",
     "prohibited_inference": "A Python or native package release does not prove that an RDKit.js npm artifact exists or has the same runtime version."
   },
   "operations": [
@@ -66,6 +66,32 @@
       "availability_evidence": []
     },
     {
+      "id": "python-2026.03.6-v1.0.33-published-baseline",
+      "channel": "python_native",
+      "availability": "measured",
+      "rdkit_version": "2026.03.6",
+      "wrapper_backend": "boost_python",
+      "corpus_policy": "fixed_exposed_10k; published CheMatic 1.0.33 and RDKit 2026.3.6 macOS arm64 CPython 3.13 wheels",
+      "artifact_provenance": {
+        "status": "verified",
+        "artifact": "validation/results/rdkit-rebaseline-python-provenance-v1.0.33-vs-2026.03.6-2026-10-04.json",
+        "runtime": "RDKit 2026.03.6 and CheMatic 1.0.33 executed on CPython 3.13",
+        "backend": "runtime type(Chem.MolFromSmiles)=Boost.Python.function",
+        "configuration": "10k complete chemistry rows, 31 SMARTS queries, seven repeated scalar/batch Python boundary probes",
+        "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "toolchain": "macOS arm64 CPython 3.13.6; exact wheel names and hashes in provenance/benchmark record",
+        "missing_dimensions": []
+      },
+      "operation_evidence": {
+        "smiles_parse_write": ["validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.json", "validation/results/rdkit-rebaseline-python-contract-vs-2026.03.6-2026-10-04.json"],
+        "cip": ["validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.json"],
+        "smarts": ["validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.json"],
+        "morgan": ["validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.json", "validation/results/rdkit-rebaseline-python-contract-vs-2026.03.6-2026-10-04.json"],
+        "browser_runtime": []
+      },
+      "availability_evidence": []
+    },
+    {
       "id": "npm-2026.3.6-browser",
       "channel": "npm_wasm",
       "availability": "measured",
@@ -116,6 +142,102 @@
         "browser_runtime": []
       },
       "availability_evidence": ["validation/results/rdkit-rebaseline-native-cpp-availability-v1.0.19-vs-2026.03.6-2026-09-23.json"]
+    },
+    {
+      "id": "npm-2026.3.6-v1.0.33-paired-baseline",
+      "channel": "npm_wasm",
+      "availability": "measured",
+      "rdkit_version": "2026.03.6",
+      "wrapper_backend": "official_rdkit_js",
+      "corpus_policy": "fixed_exposed_10k; same published CheMatic 1.0.33 as 2026.09.1 lane; typed Fe(II) refusal retained",
+      "artifact_provenance": {
+        "status": "verified",
+        "artifact": "validation/results/rdkit-rebaseline-npm-provenance-v1.0.33-vs-2026.03.6-2026-10-04.json",
+        "runtime": "RDKit.js 2026.03.6 executed in Chrome",
+        "backend": "official @rdkit/rdkit MinimalLib WASM",
+        "configuration": "10k exposed rows; Morgan radius 2, 2048 bits; graph-checked CIP and 31 SMARTS atom sets; 20 isolated-process browser repetitions with split prepared timing",
+        "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "toolchain": "macOS arm64; Node 24.5.0; Chrome executable and Python recorded in raw evidence",
+        "missing_dimensions": []
+      },
+      "operation_evidence": {
+        "smiles_parse_write": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.03.6-2026-10-04.json"],
+        "cip": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json", "validation/results/rdkit-rebaseline-npm-cip-parity-v1.0.33-vs-2026.03.6-2026-10-04.json"],
+        "smarts": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json", "validation/results/rdkit-rebaseline-npm-smarts-parity-v1.0.33-vs-2026.03.6-2026-10-04.json"],
+        "morgan": ["validation/results/rdkit-rebaseline-npm-morgan-parity-v1.0.33-vs-2026.03.6-2026-10-04.json"],
+        "browser_runtime": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.03.6-2026-10-04.json"]
+      },
+      "availability_evidence": []
+    },
+    {
+      "id": "npm-2026.9.1-v1.0.33-rebaseline",
+      "channel": "npm_wasm",
+      "availability": "measured",
+      "rdkit_version": "2026.09.1",
+      "wrapper_backend": "official_rdkit_js",
+      "corpus_policy": "fixed_exposed_10k; same published CheMatic 1.0.33 as 2026.03.6 lane; typed Fe(II) refusal retained",
+      "artifact_provenance": {
+        "status": "verified",
+        "artifact": "validation/results/rdkit-rebaseline-npm-provenance-v1.0.33-vs-2026.09.1-2026-10-04.json",
+        "runtime": "RDKit.js 2026.09.1 executed in Chrome",
+        "backend": "official @rdkit/rdkit MinimalLib WASM",
+        "configuration": "10k exposed rows; Morgan radius 2, 2048 bits; graph-checked CIP and 31 SMARTS atom sets; 20 isolated-process browser repetitions with split prepared timing",
+        "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "toolchain": "macOS arm64; Node 24.5.0; Chrome executable and Python recorded in raw evidence",
+        "missing_dimensions": []
+      },
+      "operation_evidence": {
+        "smiles_parse_write": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.09.1-2026-10-04.json"],
+        "cip": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json", "validation/results/rdkit-rebaseline-npm-cip-parity-v1.0.33-vs-2026.09.1-2026-10-04.json"],
+        "smarts": ["validation/results/rdkit-rebaseline-npm-oracle-delta-2026.03.6-to-2026.09.1-2026-10-04.json", "validation/results/rdkit-rebaseline-npm-smarts-parity-v1.0.33-vs-2026.09.1-2026-10-04.json"],
+        "morgan": ["validation/results/rdkit-rebaseline-npm-morgan-parity-v1.0.33-vs-2026.09.1-2026-10-04.json"],
+        "browser_runtime": ["validation/results/rdkit-rebaseline-npm-browser-runtime-v1.0.33-vs-2026.09.1-2026-10-04.json"]
+      },
+      "availability_evidence": []
+    },
+    {
+      "id": "python-2026.09.1-unavailable",
+      "channel": "python_native",
+      "availability": "unavailable",
+      "rdkit_version": "2026.09.1",
+      "wrapper_backend": null,
+      "corpus_policy": "same exposed 10k when an exact distributed wheel becomes available; no sealed 8k reuse",
+      "artifact_provenance": {
+        "status": "unavailable",
+        "artifact": null,
+        "runtime": null,
+        "backend": null,
+        "configuration": null,
+        "corpus": null,
+        "toolchain": null,
+        "missing_dimensions": ["artifact", "runtime", "wrapper_backend", "configuration", "corpus", "toolchain"]
+      },
+      "operation_evidence": {
+        "smiles_parse_write": [], "cip": [], "smarts": [], "morgan": [], "browser_runtime": []
+      },
+      "availability_evidence": ["validation/results/rdkit-2026-09-1-artifact-availability-2026-10-04.json"]
+    },
+    {
+      "id": "native-cpp-2026.09.1-unavailable",
+      "channel": "native_cpp",
+      "availability": "unavailable",
+      "rdkit_version": "2026.09.1",
+      "wrapper_backend": null,
+      "corpus_policy": "a source build requires its own exact build packet and must not impersonate a distributed binary",
+      "artifact_provenance": {
+        "status": "unavailable",
+        "artifact": null,
+        "runtime": null,
+        "backend": null,
+        "configuration": null,
+        "corpus": null,
+        "toolchain": null,
+        "missing_dimensions": ["distributed_binary", "runtime", "configuration", "toolchain"]
+      },
+      "operation_evidence": {
+        "smiles_parse_write": [], "cip": [], "smarts": [], "morgan": [], "browser_runtime": []
+      },
+      "availability_evidence": ["validation/results/rdkit-2026-09-1-artifact-availability-2026-10-04.json"]
     },
     {
       "id": "next-stable-pending",
