@@ -216,13 +216,22 @@ def test_run_smirks_checked_does_not_hide_filtered_product():
     assert report["products"] == []
 
 
-def test_run_smirks_checked_rdkit_profile_declines_chiral_reactants():
-    alanine = chematic.from_smiles("N[C@@H](C)C(=O)O")
-    smirks = "[N:1][C@@H:2](C)C(=O)O>>[N:1].[C@@H:2](C)C(=O)O"
+def test_run_smirks_checked_rdkit_profile_follows_rdkit_reaction_stereo():
+    # RDKit 2026.03.6 gives D-alanine for this L-alanine spelling under the
+    # identity template (it copies the raw tag); the profile reproduces it.
+    smirks = "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O"
+    alanine = chematic.from_smiles("C[C@H](N)C(=O)O")
     report = chematic.run_smirks_checked(smirks, [alanine], rdkit_compat=True)
-    assert report["status"] == "typed_unsupported"
-    assert report["reason"] == "chiral_reactant_template_semantics"
-    assert report["products"] == []
+    assert report["status"] == "products"
+    d_alanine = chematic.from_smiles("C[C@@H](N)C(=O)O").smiles
+    assert [p.smiles for p in report["products"][0]] == [d_alanine]
+    ambiguous = chematic.run_smirks_checked(
+        "[CH3:1][C@:2]([CH2:3])([CH2:4])[CH:5]>>[CH3:1][C@:2](O)(N)F",
+        [chematic.from_smiles("C[C@]12CCC[C@H]1CCC2")],
+        rdkit_compat=True,
+    )
+    assert ambiguous["status"] == "typed_unsupported"
+    assert ambiguous["reason"] == "ambiguous_stereo_bond_order"
     ordinary = chematic.run_smirks_checked(smirks, [alanine])
     assert ordinary["status"] != "typed_unsupported"
 

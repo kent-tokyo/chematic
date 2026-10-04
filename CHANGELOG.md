@@ -10,6 +10,40 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- `run_smirks_checked(..., rdkit_compat=True)` and the WASM
+  `run_reactants_checked(..., true)` follow RDKit 2026.03.6 reaction
+  stereochemistry instead of declining tetrahedral reactant templates
+  (#734): reactant `@`/`@@` do not restrict matching, and product tags
+  follow RDKit's inversion flags (retain, invert, create, remove) and its
+  bond orders, including its raw tag copy when a product atom's neighbours
+  cannot be traced to the reactant — so the reordered L-alanine spelling
+  under the identity template gives D-alanine, as RDKit does. Reactant tags
+  RDKit's SMILES parser would drop (no stereocentre) are dropped first.
+  SMARTS-only reactant templates may carry `@` under this profile. When a
+  product's stereo depends on the order of an atom's ring-closure bonds,
+  which RDKit takes from ring-closure numbers that a parsed molecule does
+  not keep, the result is `typed_unsupported` /
+  `ambiguous_stereo_bond_order`; a match rejected only by the native E/Z
+  check gives `ez_reactant_template_semantics`. New Rust API:
+  `run_reactants_traced_rdkit_2026_03_6`,
+  `PreparedReaction::run_reactants_traced_rdkit_2026_03_6`,
+  `RdkitProfileOutcome`.
+- Reaction products keep the configuration of stereocentres carried
+  through unchanged. v1.0.33 could invert one when the product's bond order
+  around it differed from the reactant's: esterifying `N[C@@H](C)C(O)=O`
+  with `[C:1](=[O:2])[OH:3]>>[C:1](=[O:2])OC` gave the D-alanine ester.
+- A bond between two mapped atoms that the reactant template does not
+  spell is kept, as in RDKit (github #1387): `[N:1][C:2][C:3]>>...` on
+  cyclopropylamine keeps the ring instead of opening it.
+- On the 83 pinned reaction fixtures the checked Python gate now matches
+  graph, atom origins and template maps on 80 (was 77); the remaining 3 are
+  invalid inputs refused by both RDKit and chematic. Against RDKit
+  2026.03.6 on about 29,000 generated cases (stereo and stereo-free
+  templates, chiral reactants in random atom orders and as enantiomers),
+  product sets agree on all of them, and an atom-level check (atom origins,
+  element/charge/H, bonds, each carried atom's configuration) agrees on all
+  3,650 product sets it covers. These are source-build results.
+
 ## [1.0.33] - 2026-10-04
 
 - SMIRKS reactant templates are parsed as SMARTS (#734): query features

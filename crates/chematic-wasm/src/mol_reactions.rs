@@ -359,7 +359,13 @@ fn prepare_checked_reaction(
     reactants_smiles: &str,
     rdkit_compat: bool,
     profile: &'static str,
-) -> Result<(Vec<chematic_core::Molecule>, chematic_rxn::PreparedReaction), String> {
+) -> Result<
+    (
+        Vec<chematic_core::Molecule>,
+        Option<chematic_rxn::PreparedReaction>,
+    ),
+    String,
+> {
     if smirks.len() > WASM_MAX_INPUT_BYTES || reactants_smiles.len() > WASM_MAX_INPUT_BYTES {
         return Err(CheckedReactionResponse::refusal(
             profile,
@@ -400,6 +406,10 @@ fn prepare_checked_reaction(
         }
         reactants.push(mol);
     }
+    // The RDKit profile prepares its own reading of the template.
+    if rdkit_compat {
+        return Ok((reactants, None));
+    }
     let prepared = chematic_rxn::PreparedReaction::new(smirks).map_err(|error| {
         CheckedReactionResponse::refusal(
             profile,
@@ -409,16 +419,7 @@ fn prepare_checked_reaction(
         )
         .json()
     })?;
-    if rdkit_compat && let Some(unsupported) = prepared.rdkit_2026_03_6_unsupported_reason() {
-        return Err(CheckedReactionResponse::refusal(
-            profile,
-            "typed_unsupported",
-            unsupported.reason_code(),
-            "reactant tetrahedral template semantics differ from RDKit 2026.03.6",
-        )
-        .json());
-    }
-    Ok((reactants, prepared))
+    Ok((reactants, Some(prepared)))
 }
 
 fn checked_reaction_response(
@@ -505,10 +506,12 @@ fn checked_reaction_response(
 /// Apply a SMIRKS template with explicit outcome accounting as a JSON string.
 ///
 /// `reactants_smiles` is pipe-separated, as for [`run_reactants`]. With
-/// `rdkit_compat = true`, tetrahedral reactant-side `@`/`@@` templates that
-/// differ from pinned RDKit 2026.03.6 return `typed_unsupported` and a stable
-/// reason code instead of an apparently compatible product. Native semantics
-/// and the existing [`run_reactants`] API are unchanged. Product graph/origin/
+/// `rdkit_compat = true`, matching and product stereochemistry follow pinned
+/// RDKit 2026.03.6; inputs it cannot reproduce return `typed_unsupported` and
+/// a stable reason code (`ambiguous_stereo_bond_order`,
+/// `ez_reactant_template_semantics`, `chiral_reactant_template_semantics`)
+/// instead of an apparently compatible product. Native semantics and the
+/// existing [`run_reactants`] API are unchanged. Product graph/origin/
 /// template-map parity remains a separate oracle gate. Source indices and
 /// product-template map labels are returned alongside the product SMILES;
 /// their atom positions match the canonical SMILES parse order.
@@ -533,8 +536,23 @@ pub fn run_reactants_checked(smirks: &str, reactants_smiles: &str, rdkit_compat:
     let limits = chematic_rxn::ReactionTransformLimits {
         max_matches: WASM_MAX_BATCH_ITEMS,
     };
-    let report = match prepared.run_reactants_traced_with_diagnostics(&refs, &limits) {
-        Ok(report) => report,
+    let outcome = match &prepared {
+        Some(prepared) => prepared
+            .run_reactants_traced_with_diagnostics(&refs, &limits)
+            .map(chematic_rxn::RdkitProfileOutcome::Report),
+        None => chematic_rxn::run_reactants_traced_rdkit_2026_03_6(smirks, &refs, &limits),
+    };
+    let report = match outcome {
+        Ok(chematic_rxn::RdkitProfileOutcome::Report(report)) => report,
+        Ok(chematic_rxn::RdkitProfileOutcome::Unsupported(unsupported)) => {
+            return CheckedReactionResponse::refusal(
+                profile,
+                "typed_unsupported",
+                unsupported.reason_code(),
+                "RDKit 2026.03.6 reaction semantics cannot be reproduced for this input",
+            )
+            .json();
+        }
         Err(error) => {
             let reason = match &error {
                 chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",

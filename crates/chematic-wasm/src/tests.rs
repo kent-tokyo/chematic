@@ -400,18 +400,34 @@ fn run_reactants_ez_smiles_is_valid_json() {
 }
 
 #[test]
-fn run_reactants_checked_reports_opt_in_chiral_unsupported() {
-    let smirks = "[N:1][C@@H:2](C)C(=O)O>>[N:1].[C@@H:2](C)C(=O)O";
+fn run_reactants_checked_rdkit_profile_follows_rdkit_reaction_stereo() {
+    // RDKit 2026.03.6 gives D-alanine for the reordered L-alanine spelling
+    // under this identity template (raw tag copy); the profile reproduces it.
+    let smirks = "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O";
     let checked: serde_json::Value =
-        serde_json::from_str(&run_reactants_checked(smirks, "N[C@@H](C)C(=O)O", true)).unwrap();
+        serde_json::from_str(&run_reactants_checked(smirks, "C[C@H](N)C(=O)O", true)).unwrap();
     assert_eq!(checked["profile"], "rdkit-2026.03.6");
-    assert_eq!(checked["status"], "typed_unsupported");
-    assert_eq!(checked["reason"], "chiral_reactant_template_semantics");
-    assert_eq!(checked["products"], serde_json::json!([]));
-    assert_eq!(checked["accepted_matches"], 0);
+    assert_eq!(checked["status"], "products");
+    let product = checked["products"][0][0].as_str().unwrap();
+    let d_alanine =
+        chematic_smiles::canonical_smiles(&chematic_smiles::parse("C[C@@H](N)C(=O)O").unwrap());
+    assert_eq!(
+        chematic_smiles::canonical_smiles(&chematic_smiles::parse(product).unwrap()),
+        d_alanine
+    );
+
+    // A product whose stereo depends on an unrecorded ring-closure order.
+    let ambiguous: serde_json::Value = serde_json::from_str(&run_reactants_checked(
+        "[CH3:1][C@:2]([CH2:3])([CH2:4])[CH:5]>>[CH3:1][C@:2](O)(N)F",
+        "C[C@]12CCC[C@H]1CCC2",
+        true,
+    ))
+    .unwrap();
+    assert_eq!(ambiguous["status"], "typed_unsupported");
+    assert_eq!(ambiguous["reason"], "ambiguous_stereo_bond_order");
 
     let native: serde_json::Value =
-        serde_json::from_str(&run_reactants_checked(smirks, "N[C@@H](C)C(=O)O", false)).unwrap();
+        serde_json::from_str(&run_reactants_checked(smirks, "C[C@H](N)C(=O)O", false)).unwrap();
     assert_eq!(native["profile"], "native");
     assert_ne!(native["status"], "typed_unsupported");
 }
@@ -522,7 +538,6 @@ fn checked_reaction_83_exposed_graph_and_refusal_gate() {
         .chain(strata["cases"].as_array().unwrap());
     let mut seen = std::collections::BTreeSet::new();
     let mut exact_graph = 0;
-    let mut unsupported = 0;
     let mut invalid = 0;
     for case in cases {
         let id = case["id"].as_str().unwrap();
@@ -544,17 +559,6 @@ fn checked_reaction_83_exposed_graph_and_refusal_gate() {
         let got: serde_json::Value =
             serde_json::from_str(&run_reactants_checked(smirks, &reactants, true)).unwrap();
         assert_eq!(got["profile"], "rdkit-2026.03.6", "{id}");
-        if matches!(
-            id,
-            "stereo_identity_l_alanine"
-                | "v2_stereo_l_alanine_identity_reordered"
-                | "v2_stereo_d_alanine_no_match"
-        ) {
-            assert_eq!(got["status"], "typed_unsupported", "{id}");
-            assert_eq!(got["reason"], "chiral_reactant_template_semantics", "{id}");
-            unsupported += 1;
-            continue;
-        }
         if matches!(
             id,
             "v2_ester_missing_second_reactant"
@@ -602,7 +606,9 @@ fn checked_reaction_83_exposed_graph_and_refusal_gate() {
     assert_eq!(seen.len(), 83);
     // `v2_isotope_methanol_split` was refused by the native valence model;
     // with RDKit's sanitize rules it gives RDKit's `[13CH3]` + `O` (#734).
-    assert_eq!((exact_graph, unsupported, invalid), (77, 3, 3));
+    // The three alanine stereo rows were typed unsupported until RDKit's
+    // reaction stereo was reproduced (#734).
+    assert_eq!((exact_graph, invalid), (80, 3));
 }
 
 // Note: run_reactants error-path tests are omitted here because JsValue::from_str
