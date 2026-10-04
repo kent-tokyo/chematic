@@ -292,6 +292,32 @@
       "availability_evidence": []
     },
     {
+      "id": "native-cpp-source-2026.09.1-legacy-ring-diagnostic",
+      "channel": "native_cpp_source_build",
+      "availability": "measured",
+      "rdkit_version": "2026.09.1",
+      "wrapper_backend": "independent_cpp_source_build",
+      "corpus_policy": "same exposed 10k and 31 SMARTS; diagnostic legacy-ring switch on the new-version C++ binary; no sealed cohort reuse",
+      "artifact_provenance": {
+        "status": "partial_historical",
+        "artifact": "validation/results/rdkit-native-ring-backend-2026-09-1-legacy-2026-10-04-summary.json and rows.jsonl.gz",
+        "runtime": "RDKit Release_2026_09_1 source commit fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
+        "backend": "same independent 2026.09.1 C++ source-build binary with RDK_USE_LEGACY_RING_FINDING=1; not a distributed Python wheel",
+        "configuration": "validation/rdkit_native_rebaseline_build.json; legacy switch and input digests in diagnostic summary",
+        "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "toolchain": "Ubuntu 24.04, GCC 13.3.0, CMake 3.31.6; CI run 37176547492",
+        "missing_dimensions": ["compiled_binary_payload", "linked_rdkit_library_payload"]
+      },
+      "operation_evidence": {
+        "smiles_parse_write": ["validation/results/rdkit-native-ring-backend-2026-09-1-legacy-2026-10-04-rows.jsonl.gz"],
+        "cip": ["validation/results/rdkit-native-ring-backend-2026-09-1-legacy-2026-10-04-rows.jsonl.gz"],
+        "smarts": ["validation/results/rdkit-native-ring-backend-2026-09-1-legacy-2026-10-04-rows.jsonl.gz", "validation/results/rdkit-native-ring-backend-2026-09-1-legacy-2026-10-04-summary.json"],
+        "morgan": ["validation/results/rdkit-native-ring-backend-2026-09-1-legacy-2026-10-04-rows.jsonl.gz"],
+        "browser_runtime": []
+      },
+      "availability_evidence": []
+    },
+    {
       "id": "next-stable-pending",
       "channel": "python_native_and_npm_wasm",
       "availability": "unavailable",
