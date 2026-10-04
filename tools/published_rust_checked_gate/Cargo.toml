@@ -1,0 +1,12 @@
+[package]
+name = "published-chematic-checked-gate"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+chematic = { version = "=1.0.34", default-features = false, features = ["smiles", "rxn"] }
+serde_json = "1"
+sha2 = "0.10"

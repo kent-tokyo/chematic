@@ -12,8 +12,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 SMARTS/SMIRKS dialect fixes from the xsmarts-autoconf report (#734, #754).
 On the tool's 83 behaviour flags the source gives RDKit 2026.03.6's value for
-72 (published v1.0.34: 65); the remaining 11 are typed refusals or documented
-policies. Record: `benchmarks/2026-10-04-xsmarts-autoconf-v1034.md`.
+75 (published v1.0.34: 65); the remaining 8 are documented policies or an
+adapter difference. Record: `benchmarks/2026-10-04-xsmarts-autoconf-v1034.md`.
 
 - **Behaviour change:** SMARTS isotope primitives are enforced by default,
   as in RDKit: `[12C]` matches only a carbon labelled 12, and an unlabelled
@@ -39,12 +39,47 @@ policies. Record: `benchmarks/2026-10-04-xsmarts-autoconf-v1034.md`.
   ether gives `C[OH+]C`).
 - An H-free charged aromatic carbon (`[c+]1ccccc1`, `[c-]1ccccc1`) kekulizes,
   as in RDKit; `[c:1]>>[c+:1]` on benzene gives products instead of none.
+- SMIRKS product bonds spelled as alternatives (`=,:`) take the first one,
+  and product component grouping (`([C:1].[O:2])`) gives one product object,
+  as in RDKit (both were parse errors). Under the checked RDKit profile a
+  grouped template is `typed_unsupported`.
+- A product `:` bond flags its atoms aromatic, as in RDKit; outside a ring
+  the product fails sanitize and is dropped (it was returned as `C:C`).
+- A mapped atom whose element changes re-derives its H count, as in RDKit
+  (`[C:1]>>[N:1]` on `[13CH3]C` gives `CN` for the labelled carbon instead
+  of a rejected five-valent N).
+- An explicit-H aromatic atom keeps its H count through an edit that leaves
+  its degree, element and charge alone (`[n:1]>>[n:1]` on explicit-H
+  pyrrole returned nothing).
+- `remove_hydrogens` keeps the H atoms RDKit's `RemoveHs` keeps (isolated
+  `[H+]`/`[H]`, `[H][H]`, hydrides, H on `*`), turns a removed H on a
+  non-organic atom into its H count (`[Na][H]` → `[NaH]`), and keeps each
+  atom's total H count: explicit-H pyrrole came back as `c1ccnc1`. On the
+  exposed 10k corpus, canonical SMILES after `add_hydrogens` then
+  `remove_hydrogens` differ from the input for 45 rows (was 652; the 45 are
+  exocyclic imine E/Z spellings).
+- **Fixed stereo in `random_smiles` and the non-canonical `write`:**
+  `random_smiles` dropped the tetrahedral neighbour order and E/Z bond
+  directions when it renumbered atoms, and `write` printed stored `@`/`@@`
+  without re-expressing them for its own neighbour order (and dropped the
+  tag of an unbracketed stereocentre). On the 1,687 stereo rows of the
+  exposed 10k corpus, 1,999 of 5,061 random SMILES (three seeds) encoded a
+  different molecule according to RDKit; none do now. Reaction products
+  written with `write` are affected the same way.
 - Scripts: `reaction_python_checked_candidates.py` and
   `run_published_npm_checked_candidates.mjs` emit checked 83-row candidates
   from an interpreter or npm package that cannot load RDKit, and
   `reaction_python_checked_provenance_gate.py --candidates` classifies them;
   `xsmarts_autoconf_lane.py` (CI, Linux) pins the autoconf commit and fails
   on any flag difference not listed in `validation/xsmarts_autoconf_expected.json`.
+  `tools/published_rust_checked_gate` runs the checked RDKit profile of the
+  published crate on the 83 rows; `check_published_npm_formula_ez_json.mjs`
+  reruns the v1.0.31 WASM formula and E/Z JSON fixes on a published tarball.
+- Published v1.0.34 evidence: the PyPI Linux wheel (CPython 3.9), the npm
+  package and the crates.io crate each give 80 graph/origin/map matches and
+  three jointly invalid rows on the 83 reaction fixtures; npm `formula()`
+  spells all 5,000 exposed ChEMBL rows as published Python does (v1.0.30
+  npm: 1,575 differed), and E/Z product SMILES parse as JSON.
 
 ## [1.0.34] - 2026-10-04
 

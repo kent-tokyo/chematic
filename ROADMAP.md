@@ -13,47 +13,43 @@ boundaries, and reproducible evidence take priority over feature-count races.
 |---|---|---|
 | P0.1 outputs | Published v1.0.30 artifact audit covers 10k chemistry, 310k SMARTS, 57 reactions and 63 Python/Rust operations. HBA is 5,000/5,000 on its declared lane. | Retain 200 SMARTS differences, five CIP abstentions and four npm gaps as open; see [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
 | P0.2 speed | Published Python: 20 exact-output operations pass paired-interval gates on one host; three-browser Morgan has a separate scoped result. | Equal-work and memory lanes on more artifacts/corpora; see [validation](docs/validation.md). |
-| P1 reactions | Published v1.0.30: 73/83 exact. v1.0.34 source wheels (Linux/macOS) and WASM Node: 80 exact graph/origin/map, 3 jointly invalid, no typed unsupported. | Rerun Rust/Python/npm **published** v1.0.34 artifacts and npm E/Z JSON; refusals are not matches. |
-| P1 SMARTS/SMIRKS dialect ([#734](https://github.com/kent-tokyo/chematic/issues/734), [#754](https://github.com/kent-tokyo/chematic/issues/754)) | Contributor's [xsmarts-autoconf](https://github.com/swamidasslab/xsmarts-autoconf): v1.0.34 65/83 behaviour flags give RDKit 2026.03.6's value (v1.0.30: 42/83); unreleased source 72/83, with no wrong-confident flag left and the 11 others typed refusals or policies. Sweep: 5 v1.0.34 findings fixed; 2 edge cases and 1 native stereo policy remain. [Record](benchmarks/2026-10-04-xsmarts-autoconf-v1034.md). | Release the source fixes; settle the 11 policy flags; pinned autoconf lane runs in CI. |
+| P1 reactions | Published v1.0.34 PyPI Linux wheel, npm package and crates.io crate: 80 exact graph/origin/map, 3 jointly invalid, no typed unsupported (v1.0.30: 73/83). | Rerun the macOS and Windows wheels; refusals are not matches. |
+| P1 SMARTS/SMIRKS dialect ([#734](https://github.com/kent-tokyo/chematic/issues/734), [#754](https://github.com/kent-tokyo/chematic/issues/754)) | Contributor's [xsmarts-autoconf](https://github.com/swamidasslab/xsmarts-autoconf): v1.0.34 65/83 behaviour flags give RDKit 2026.03.6's value (v1.0.30: 42/83); unreleased source 75/83, with no wrong-confident flag left and a decided outcome for each of the 8 others. Sweep findings fixed or decided; tweak kinds 16 → 4. [Record](benchmarks/2026-10-04-xsmarts-autoconf-v1034.md). | Release the source fixes (isotope default and `random_smiles`/`write` stereo are user-visible); pinned autoconf lane runs in CI. |
 | P1 SMARTS | Published v1.0.30: 200/310k match-set differences. Opt-in Python source wheels: 309,982 exact, 18 typed unsupported, zero wrong-confident. | Independent corpus and published-profile rerun; retain native SSSR. |
 | P2 A6 quality | Published v1.0.31 macOS: 265/265 geometry/stereo/clash, 100/265 converged. Linux/Python 3.9 has two typed stereo failures on published and source wheels. | Resolve [#739](https://github.com/kent-tokyo/chematic/issues/739); rerun per-term energy, convergence and independent conformer quality before speed claims. |
 
 Detailed versions, hashes and denominators are in [validation](docs/validation.md)
 and the [benchmark index](benchmarks/README.md). v1.0.32 publication and
-published-package reruns are tracked separately. The earlier v1.0.31 WASM
-formula and E/Z JSON fixes still lack a registry-package output rerun.
+published-package reruns are tracked separately. The v1.0.31 WASM formula
+and E/Z JSON fixes are confirmed on the published v1.0.34 npm package.
 Exposed data are not sealed evidence.
 
 ## Priority order and acceptance gates
 
 1. **P1 / A4 — Release the SMARTS/SMIRKS dialect fixes (#734, #754).**
    On published v1.0.34 the autoconf catalog and sweep found confident
-   answers RDKit does not give: isotope primitives ignored, `v` counting an
-   aromatic bond as 1, directional bonds matching nothing or depending on
-   input spelling, Kekulé reactants not aromatized before SMIRKS matching,
-   radicals on explicit-H reactants after a bond is broken or lowered,
-   `[c+]`/`[c-]` products dropped, and `i`/`^6`/`^7` parsing. The source
-   aligns all seven flags with RDKit (72/83) and pins the tool in CI
-   (`scripts/xsmarts_autoconf_lane.py`); the isotope default is a behaviour
-   change. **Exit:** released, the published package rerun at 72/83 or
-   better, and the open sweep cases (`[H+]`, `[nH+2]`) aligned or typed.
+   answers RDKit does not give (isotope primitives, aromatic `v`,
+   directional bonds, Kekulé reactants, explicit-H radicals, dropped
+   `[c±]` products, `i`/`^6`/`^7`). The source aligns 75/83 flags, settles
+   the other 8 (sanitized views agree, implicit-H equivalence from #734
+   item 5, an adapter difference, native SSSR), and pins the tool in CI.
+   The same work fixed `random_smiles`/`write` stereo (39% of stereo rows
+   wrong) and `remove_hydrogens` on aromatic NH. **Exit:** released and the
+   published package rerun at 75/83 with the same 8 expected differences.
 2. **P1 / A4 — Close the reaction 83-row gate on published artifacts.**
-   Published v1.0.34 PyPI Linux wheel (CPython 3.9) and npm package: 80 exact
-   graph/origin/map rows and three jointly invalid, as in source. Next: the
-   published Rust crates, the macOS and Windows wheels, and npm E/Z JSON.
+   Published v1.0.34 PyPI Linux wheel (CPython 3.9), npm package and
+   crates.io crate: 80 exact graph/origin/map rows and three jointly invalid,
+   as in source; npm `formula()` and E/Z JSON confirmed. Remaining: the
+   macOS and Windows wheels (not runnable on the Linux evidence host).
    **Exit:** every row classified on all three axes on each published
    artifact, zero wrong-confident supported results and no regression in the
    original 57. Refusals and invalid rows are not counted as matches.
-3. **P1 / A4 — Broaden reaction evidence and settle policy flags.** Run the
-   contributor's approximately 1,200 BioTransformer rules when the rule file
-   is available, and record each remaining autoconf difference as a decided
-   policy with its typed outcome: raw versus sanitized products, product H
-   pins on explicit-H reactants (`C[CH5]`/`C[CH6]` in RDKit), first-alternative
-   product bonds (`=,:`), product component grouping `(A.B)`, one-template
-   multi-component reactants, and the native profile's reaction E/Z and
-   case-B stereo (a mapped centre gaining a bond). **Exit:** a published rule
-   denominator with exact / differing / refused counts and every policy
-   flag documented.
+3. **P1 / A4 — Broaden reaction evidence.** Run the contributor's
+   approximately 1,200 BioTransformer rules when the rule file (it needs the
+   BioTransformer 3.0 jar) is available, and keep the remaining sweep
+   decisions (`~` product bonds on charged N, `[nH+2]`, native stereo for
+   created centres) under review. **Exit:** a published rule denominator
+   with exact / differing / refused counts.
 4. **P1 / A4 — Publish a bounded SMARTS compatibility profile.** The
    published v1.0.30 baseline has 200 match-set and 43 Boolean differences;
    most are the `R<n>` ring-count basis (SSSR versus RDKit's symmetrized
