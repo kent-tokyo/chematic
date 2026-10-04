@@ -1220,19 +1220,40 @@ fn parse_smirks_templates(
     // (e.g. `ReactionMatch::atom_map_positions`) get the same reading.
     let products = crate::reaction::normalize_product_query_atoms(&format!(">>{}", parts[2]))
         .map_err(TransformError::SmirksParse)?;
-    let products = normalize_product_templates(&products[2..])?;
+    let products = first_alternative_product_bonds(&normalize_product_templates(&products[2..])?);
+    // Product component grouping, `([C:1].[O:2])`: as in RDKit, a group is
+    // one product object (one molecule with disconnected components).
+    let grouped = grouped_product_components(&products)?;
+    let ungrouped = grouped.as_ref().map_or(products.clone(), |c| c.join("."));
     // Agents and products through the ordinary reaction parser (with its
     // limits); the reactant slot is filled below.
     // Agents take no part in template application (RDKit ignores them too)
     // and may be SMARTS (`>[O;X2]>`); when they are not SMILES they are
     // dropped rather than failing the whole template.
-    let mut rxn = parse_reaction(&format!(">{}>{}", parts[1], products))
-        .or_else(|_| parse_reaction(&format!(">>{products}")))?;
-    let product_specs = products
-        .split('.')
-        .filter(|p| !p.is_empty())
-        .map(product_atom_specs)
-        .collect();
+    let mut rxn = parse_reaction(&format!(">{}>{}", parts[1], ungrouped))
+        .or_else(|_| parse_reaction(&format!(">>{ungrouped}")))?;
+    let components: Vec<String> = match grouped {
+        Some(components) => {
+            rxn.products = components
+                .iter()
+                .map(|c| {
+                    chematic_smiles::parse(c).map_err(|e| {
+                        TransformError::SmirksParse(RxnError::SmilesParse {
+                            part: c.clone(),
+                            source: e.to_string(),
+                        })
+                    })
+                })
+                .collect::<Result<_, _>>()?;
+            components
+        }
+        None => products
+            .split('.')
+            .filter(|p| !p.is_empty())
+            .map(str::to_string)
+            .collect(),
+    };
+    let product_specs = components.iter().map(|c| product_atom_specs(c)).collect();
     let (reactants, queries) = parse_reactant_templates(parts[0], rdkit_reading)?;
     let rdkit_queries = rdkit_reactant_queries(parts[0], &reactants, &queries);
     rxn.reactants = reactants;
@@ -1627,6 +1648,103 @@ fn shadow_molecule_of(query: &QueryMolecule) -> Result<Molecule, &'static str> {
         );
     }
     Ok(builder.build())
+}
+
+/// A product bond spelled as a list of alternatives (`=,:`) takes the first
+/// one, as RDKit does (`[C:1]-[C:2]>>[C:1]=,:[C:2]` gives `C=C`). Only text
+/// outside bracket atoms is rewritten; a list whose first entry is not a
+/// plain bond symbol is left for the SMILES parser to refuse.
+fn first_alternative_product_bonds(products: &str) -> String {
+    const BOND: &[u8] = b"-=#:$/\\~";
+    let b = products.as_bytes();
+    let mut out = String::with_capacity(products.len());
+    let mut depth = 0usize;
+    let mut i = 0;
+    while i < b.len() {
+        let c = b[i];
+        match c {
+            b'[' => depth += 1,
+            b']' => depth = depth.saturating_sub(1),
+            b',' if depth == 0 && i > 0 && BOND.contains(&b[i - 1]) => {
+                // Drop `,X` (and any further `,Y`) after the first bond symbol.
+                let mut j = i;
+                while j + 1 < b.len() && b[j] == b',' && BOND.contains(&b[j + 1]) {
+                    j += 2;
+                }
+                if j > i {
+                    i = j;
+                    continue;
+                }
+            }
+            _ => {}
+        }
+        out.push(c as char);
+        i += 1;
+    }
+    out
+}
+
+/// The product components when the product side uses component grouping
+/// (`([C:1].[O:2]).[N:3]`), with each group's parentheses removed; `None`
+/// when it does not.
+fn grouped_product_components(products: &str) -> Result<Option<Vec<String>>, TransformError> {
+    let b = products.as_bytes();
+    let (mut components, mut any_group) = (Vec::new(), false);
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'(' {
+            // A component starting with `(` is a group: up to the matching `)`.
+            let (mut depth, mut bracket, mut close) = (0usize, 0usize, None);
+            for (k, &c) in b.iter().enumerate().skip(i) {
+                match c {
+                    b'[' => bracket += 1,
+                    b']' => bracket = bracket.saturating_sub(1),
+                    b'(' if bracket == 0 => depth += 1,
+                    b')' if bracket == 0 => {
+                        depth -= 1;
+                        if depth == 0 {
+                            close = Some(k);
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            let close = close.ok_or_else(|| {
+                TransformError::SmirksParse(RxnError::SmilesParse {
+                    part: products.to_string(),
+                    source: "unclosed product component group".to_string(),
+                })
+            })?;
+            if close + 1 < b.len() && b[close + 1] != b'.' {
+                return Err(TransformError::SmirksParse(RxnError::SmilesParse {
+                    part: products.to_string(),
+                    source: "a product component group must be followed by `.` or end".into(),
+                }));
+            }
+            components.push(products[i + 1..close].to_string());
+            any_group = true;
+            i = close + 2;
+        } else {
+            let mut bracket = 0usize;
+            let end = b[i..]
+                .iter()
+                .position(|&c| {
+                    match c {
+                        b'[' => bracket += 1,
+                        b']' => bracket = bracket.saturating_sub(1),
+                        _ => {}
+                    }
+                    c == b'.' && bracket == 0
+                })
+                .map_or(b.len(), |p| i + p);
+            if end > i {
+                components.push(products[i..end].to_string());
+            }
+            i = end + 1;
+        }
+    }
+    Ok(any_group.then_some(components))
 }
 
 /// Product templates are SMILES specifications. Accept the SMARTS spelling of
@@ -2862,9 +2980,12 @@ fn build_product(
                 // bonds were added or removed (`[n:1]>>[n:1]C`).
                 let degree_unchanged = reactant_tmpl
                     .is_some_and(|r| r.degree == product_template.degree(AtomIdx(i as u32)));
+                // An element change re-derives H as well (`[C:1]>>[N:1]` on
+                // `[13CH3]C` gives `CN`, not a five-valent N).
+                let element_unchanged = new_atom.element == src_atom.element;
                 new_atom.hydrogen_count = match template_h(i) {
                     Some(h) => Some(h),
-                    None if degree_unchanged => src_atom.hydrogen_count,
+                    None if degree_unchanged && element_unchanged => src_atom.hydrogen_count,
                     None => None,
                 };
                 // Chirality is intentionally left as whatever src_atom.clone()
@@ -2910,6 +3031,19 @@ fn build_product(
                 if !explicit_h.is_empty() || refill {
                     // The folded H atoms are re-derived from valence below.
                     new_atom.hydrogen_count = template_h(i);
+                    // An aromatic atom keeps its H count when the template
+                    // leaves its degree, element and charge alone, as the
+                    // implicit form keeps `[nH]`: valence inference cannot
+                    // tell pyrrole's N from pyridine's.
+                    if new_atom.hydrogen_count.is_none()
+                        && new_atom.aromatic
+                        && src_atom.aromatic
+                        && degree_unchanged
+                        && element_unchanged
+                        && new_atom.charge == src_atom.charge
+                    {
+                        new_atom.hydrogen_count = Some(explicit_h.len() as u8);
+                    }
                 }
                 let dearomatize = src_atom.aromatic && !new_atom.aromatic;
                 let idx = builder.add_atom(new_atom);
@@ -2980,9 +3114,16 @@ fn build_product(
     // --- Step 3: add product template bonds ---
     let mut added_bond_pairs: FxHashSet<(AtomIdx, AtomIdx)> = FxHashSet::default();
 
+    // Atoms of a product `:` bond are flagged aromatic, as RDKit does
+    // (`[#6:1]-[#6:2]>>[#6:1]:[#6:2]` on ethane gives aromatic atoms outside
+    // a ring, which its sanitize, and so the product filter, rejects).
+    let mut colon_atoms: Vec<AtomIdx> = Vec::new();
     for (_bidx, bond) in product_template.bonds() {
         let a_new = template_idx_to_new[bond.atom1.0 as usize].unwrap();
         let b_new = template_idx_to_new[bond.atom2.0 as usize].unwrap();
+        if bond.order == BondOrder::Aromatic {
+            colon_atoms.extend([a_new, b_new]);
+        }
         let _ = builder.add_bond(a_new, b_new, bond.order);
         added_bond_pairs.insert((a_new.min(b_new), a_new.max(b_new)));
     }
@@ -3128,6 +3269,12 @@ fn build_product(
     // A mapped aromatic atom spelled aliphatic in the product (`[#6:1]` from
     // a SMARTS reactant expands to `[C:1]`) that still sits in its aromatic
     // ring stays aromatic, as RDKit's sanitize re-perceives it.
+    for &idx in &colon_atoms {
+        if !molecule.atom(idx).aromatic {
+            molecule.set_atom_aromatic(idx, true);
+        }
+    }
+
     for &idx in &dearomatized {
         if molecule
             .neighbors(idx)
@@ -3574,6 +3721,23 @@ mod tests {
             canon(&chematic_chem::remove_hydrogens(&out[0][0])),
             canon(&parse("CC(O)O").unwrap())
         );
+        // RDKit keeps `[n:1]>>[n+2:1]` on pyrrole as `C1=C[NH+2]C=C1`, but its
+        // own SMILES parser rejects the aromatic spelling `c1cc[nH+2]c1`;
+        // chematic gives no product (a typed refusal in the checked API).
+        let pyrrole = parse("c1cc[nH]c1").unwrap();
+        assert!(
+            run_reactants("[n:1]>>[n+2:1]", &[&pyrrole])
+                .unwrap()
+                .is_empty()
+        );
+        // An explicit-H pyrrole N keeps its H through an identity edit.
+        let pyrrole_h = chematic_chem::add_hydrogens(&parse("c1cc[nH]c1").unwrap());
+        let out = run_reactants("[n:1]>>[n:1]", &[&pyrrole_h]).unwrap();
+        assert_eq!(out.len(), 1);
+        assert_eq!(
+            canon(&chematic_chem::remove_hydrogens(&out[0][0])),
+            canon(&parse("c1cc[nH]c1").unwrap())
+        );
         // A charged H-free atom takes RDKit's H count: `C[OH+]C`.
         let ether = chematic_chem::add_hydrogens(&parse("COC").unwrap());
         let out = run_reactants("[O:1]>>[O+:1]", &[&ether]).unwrap();
@@ -3581,6 +3745,52 @@ mod tests {
             canon(&chematic_chem::remove_hydrogens(&out[0][0])),
             canon(&parse("C[OH+]C").unwrap())
         );
+    }
+
+    #[test]
+    fn product_template_policies_follow_rdkit(/* issue #754 policy flags */) {
+        let canon = |m: &Molecule| chematic_smiles::canonical_smiles(m);
+        let sets = |smirks: &str, reactant: &str| -> Vec<Vec<String>> {
+            let mol = parse(reactant).unwrap();
+            run_reactants(smirks, &[&mol])
+                .unwrap()
+                .iter()
+                .map(|set| set.iter().map(canon).collect())
+                .collect()
+        };
+        let c2h4 = canon(&parse("C=C").unwrap());
+        // A product bond list takes its first alternative.
+        for smirks in [
+            "[C:1]-[C:2]>>[C:1]=,:[C:2]",
+            "[#6:1]-,:[#6:2]>>[#6:1]=,:[#6:2]",
+        ] {
+            let out = sets(smirks, "CC");
+            assert!(!out.is_empty(), "{smirks}");
+            assert!(out.iter().all(|set| set == &vec![c2h4.clone()]), "{smirks}");
+        }
+        // A grouped product component is one product object.
+        let out = sets("[C:1][O:2]>>([C:1].[O:2]).[N]", "CCO");
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].len(), 2);
+        assert_eq!(out[0][0], canon(&parse("CC.O").unwrap()));
+        assert!(run_reactants("[C:1][O:2]>>([C:1].[O:2]", &[&parse("CCO").unwrap()]).is_err());
+        // An element change re-derives the H count, as RDKit does.
+        let mut out = sets("[C:1]>>[N:1]", "[13CH3]C");
+        out.sort();
+        assert_eq!(
+            out,
+            vec![
+                vec![canon(&parse("CN").unwrap())],
+                vec![canon(&parse("[13CH3]N").unwrap())]
+            ]
+        );
+        assert_eq!(
+            sets("[C:1]>>[N:1]", "[CH2]C")[0],
+            vec![canon(&parse("CN").unwrap())]
+        );
+        // `:` flags the bond's atoms aromatic: outside a ring that fails
+        // RDKit's sanitize, so no product survives.
+        assert!(sets("[#6:1]-[#6:2]>>[#6:1]:[#6:2]", "CC").is_empty());
     }
 
     #[test]

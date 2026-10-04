@@ -5,7 +5,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
+use chematic_core::{
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, remap_square_planar_tag,
+    remap_tetrahedral_parity,
+};
 
 /// Write the `H`/`Hn` token for a bracket atom's hydrogen count.
 ///
@@ -345,7 +348,7 @@ impl<'a> SmilesWriter<'a> {
 
         // Write the atom symbol.
         self.order.push(atom);
-        self.emit_atom(atom);
+        self.emit_atom(atom, from_atom);
 
         // Write ring-closure digits for this atom (both open and close digits).
         if let Some(rings) = self.atom_ring_nums.remove(&atom) {
@@ -446,16 +449,89 @@ impl<'a> SmilesWriter<'a> {
         }
     }
 
-    fn emit_atom(&mut self, idx: AtomIdx) {
+    /// The atom's stereo tag re-expressed for the neighbour order this
+    /// writer emits: the incoming atom, an implicit/bracket H, ring-closure
+    /// partners in digit order, then the tree children. A stored `@`/`@@` is
+    /// relative to [`Molecule::stereo_neighbor_order`]; when the atom has
+    /// none, the tag is written as stored.
+    fn written_chirality(&self, idx: AtomIdx, from_atom: Option<AtomIdx>) -> Chirality {
+        let stored = self.mol.atom(idx).chirality;
+        if stored == Chirality::None {
+            return stored;
+        }
+        let Some(original) = self.mol.stereo_neighbor_order(idx) else {
+            return stored;
+        };
+        let mut written: Vec<u32> = Vec::with_capacity(original.len());
+        if let Some(prev) = from_atom {
+            written.push(prev.0);
+        }
+        if chematic_core::implicit_hcount(self.mol, idx) > 0 {
+            written.push(STEREO_H_SENTINEL);
+        }
+        if let Some(rings) = self.atom_ring_nums.get(&idx) {
+            for &(_, _, bidx) in rings {
+                let bond = self.mol.bond(bidx);
+                let partner = if bond.atom1 == idx {
+                    bond.atom2
+                } else {
+                    bond.atom1
+                };
+                written.push(partner.0);
+            }
+        }
+        for (nb, bidx) in self.mol.neighbors(idx) {
+            if Some(nb) != from_atom
+                && !self.written[nb.0 as usize]
+                && !self.ring_bonds.contains(&bidx)
+            {
+                written.push(nb.0);
+            }
+        }
+        if written.len() != original.len() {
+            return if stored.is_tetrahedral() {
+                stored
+            } else {
+                Chirality::None
+            };
+        }
+        let original_arr = <[u32; 4]>::try_from(original).ok();
+        let written_arr = <[u32; 4]>::try_from(written.as_slice()).ok();
+        match stored {
+            Chirality::CounterClockwise | Chirality::Clockwise => {
+                let odd = match (original_arr, written_arr) {
+                    (Some(o), Some(w)) => remap_tetrahedral_parity(o, w).unwrap_or(false),
+                    _ => permutation_is_odd(original, &written),
+                };
+                match (odd, stored) {
+                    (false, tag) => tag,
+                    (true, Chirality::CounterClockwise) => Chirality::Clockwise,
+                    (true, _) => Chirality::CounterClockwise,
+                }
+            }
+            Chirality::SquarePlanar(tag) => match (original_arr, written_arr) {
+                (Some(o), Some(w)) => remap_square_planar_tag(tag, o, w)
+                    .map(Chirality::SquarePlanar)
+                    .unwrap_or(Chirality::None),
+                _ => Chirality::None,
+            },
+            Chirality::None => Chirality::None,
+        }
+    }
+
+    fn emit_atom(&mut self, idx: AtomIdx, from_atom: Option<AtomIdx>) {
         let atom = self.mol.atom(idx);
+        let chirality = self.written_chirality(idx, from_atom);
 
         // An atom needs bracket notation when:
         //  - it has an isotope, charge, explicit H count, atom map, or
+        //    a stereo tag, or
         //  - it is not in the organic subset (cannot rely on implicit-H rules).
         let needs_bracket = atom.wildcard
             || atom.isotope.is_some()
             || atom.charge != 0
             || atom.hydrogen_count.is_some()
+            || chirality != Chirality::None
             || !atom.element.is_organic_subset()
             || atom.atom_map.is_some();
 
@@ -473,7 +549,7 @@ impl<'a> SmilesWriter<'a> {
             };
             self.out.push_str(&sym);
 
-            match atom.chirality {
+            match chirality {
                 chematic_core::Chirality::CounterClockwise => self.out.push('@'),
                 chematic_core::Chirality::Clockwise => self.out.push_str("@@"),
                 chematic_core::Chirality::None => {}
@@ -506,9 +582,88 @@ impl<'a> SmilesWriter<'a> {
     }
 }
 
+/// Whether reordering `original` into `written` is an odd permutation (both
+/// name the same distinct ids).
+/// Not a permutation (a different id set or a repeated id): `false`, the
+/// pass-through used for every unverifiable order.
+fn permutation_is_odd(original: &[u32], written: &[u32]) -> bool {
+    let Some(mut perm) = written
+        .iter()
+        .map(|w| original.iter().position(|o| o == w))
+        .collect::<Option<Vec<usize>>>()
+    else {
+        return false;
+    };
+    let mut seen = vec![false; perm.len()];
+    for &p in &perm {
+        if p >= seen.len() || std::mem::replace(&mut seen[p], true) {
+            return false;
+        }
+    }
+    let mut swaps = 0;
+    for i in 0..perm.len() {
+        while perm[i] != i {
+            let j = perm[i];
+            perm.swap(i, j);
+            swaps += 1;
+        }
+    }
+    swaps % 2 == 1
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `write` re-expresses a stored `@`/`@@` for the order it emits: a
+    /// molecule whose recorded neighbour order differs from the DFS order
+    /// (here: atoms renumbered, as reaction products are) keeps its
+    /// configuration, and an organic-subset stereocentre is bracketed.
+    #[test]
+    fn write_keeps_configuration_when_dfs_order_differs() {
+        for input in [
+            "N[C@@H](C)C(=O)O",
+            "O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O",
+            "F[C@]1(Cl)CCC1",
+            "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@@H](O)CC[C@]34C)[C@@H]1CC[C@@H]2O",
+        ] {
+            let mol = crate::parse(input).unwrap();
+            let want = crate::canonical_smiles(&mol);
+            let n = mol.atom_count();
+            // Reverse the atom order, carrying the stereo neighbour order.
+            let mut b = chematic_core::MoleculeBuilder::new();
+            for i in (0..n).rev() {
+                let mut atom = mol.atom(AtomIdx(i as u32)).clone();
+                atom.hydrogen_count = None;
+                b.add_atom(atom);
+            }
+            let new = |i: u32| (n as u32 - 1) - i;
+            for (_, bond) in mol.bonds() {
+                b.add_bond(
+                    AtomIdx(new(bond.atom1.0)),
+                    AtomIdx(new(bond.atom2.0)),
+                    bond.order,
+                )
+                .unwrap();
+            }
+            for (i, _) in mol.atoms() {
+                if let Some(order) = mol.stereo_neighbor_order(i) {
+                    let order = order
+                        .iter()
+                        .map(|&v| if v == STEREO_H_SENTINEL { v } else { new(v) })
+                        .collect();
+                    b.set_stereo_neighbor_order(AtomIdx(new(i.0)), order);
+                }
+            }
+            let reversed = b.build();
+            let written = write(&reversed);
+            assert_eq!(
+                crate::canonical_smiles(&crate::parse(&written).unwrap()),
+                want,
+                "{input}: {written}"
+            );
+        }
+    }
     use crate::parser::parse;
     use chematic_core::{Atom, Element, MoleculeBuilder};
 
