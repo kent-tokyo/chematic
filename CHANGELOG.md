@@ -12,6 +12,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [1.0.34] - 2026-10-04
 
+- Pinned the published RDKit.js 2026.09.1 rebaseline against the v1.0.33
+  browser package on the exposed 10,000-row corpus, with separate Morgan,
+  CIP, SMARTS and runtime records. The 12 old/new `[R2]`/`[R3]` SMARTS
+  differences were reproduced with a same-binary native C++ legacy-ring
+  probe. A corrected RDKit Python 2026.03.6 baseline and a separate
+  2026.09.1 Python execution plan were recorded; no distributed 2026.09.1
+  Python result or v1.0.34 package result is inferred from them.
 - `run_smirks_checked(..., rdkit_compat=True)` and the WASM
   `run_reactants_checked(..., true)` follow RDKit 2026.03.6 reaction
   stereochemistry instead of declining tetrahedral reactant templates
