@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "release": {"version": "1.0.34", "tag": "v1.0.34", "commit": null},
-  "checked_at": "2026-10-04T17:51:21+09:00",
-  "release_ready": false,
+  "release": {"version": "1.0.34", "tag": "v1.0.34", "commit": "a42c7b0c6fad61638244c9116f64d82121324470"},
+  "checked_at": "2026-10-04T18:26:08+09:00",
+  "release_ready": true,
   "channels": [
-    {"id": "github_release", "status": "not_measured", "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.34", "detail": "Pending tag and GitHub Release verification."},
-    {"id": "npm", "status": "not_measured", "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.34", "detail": "Pending direct registry verification."},
-    {"id": "pypi", "status": "not_measured", "url": "https://pypi.org/pypi/chematic/1.0.34/json", "detail": "Pending direct registry verification."},
-    {"id": "crates_io", "status": "not_measured", "url": "https://crates.io/crates/chematic/1.0.34", "detail": "Pending direct registry verification."},
-    {"id": "docs_rs", "status": "not_measured", "url": "https://docs.rs/chematic/1.0.34/chematic/", "detail": "Pending direct rustdoc verification."},
-    {"id": "site", "status": "not_measured", "url": "https://kent-tokyo.github.io/chematic/", "detail": "Pending Pages publication and direct homepage verification."}
+    {"id": "github_release", "status": "verified", "observed_version": "1.0.34", "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.34", "detail": "Annotated tag peels to main commit a42c7b0c6fad61638244c9116f64d82121324470. Non-draft, non-prerelease Release published at 2026-10-04T09:10:19Z with exact-commit metadata asset; workflow 37191241777 succeeded."},
+    {"id": "npm", "status": "verified", "observed_version": "1.0.34", "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.34", "detail": "Official registry returned @kent-tokyo/chematic 1.0.34 with integrity sha512-E2/7tny7jbLriHP3fzD3AykeAbbXTKMYGJBBWLAEFiH/Q1R+WmFFJC21w2lQ32A6IXY5ador0DbHVfBNCQSrPg==; tarball returned HTTP 200; workflow 37191241701 succeeded."},
+    {"id": "pypi", "status": "verified", "observed_version": "1.0.34", "url": "https://pypi.org/pypi/chematic/1.0.34/json", "detail": "Official PyPI version JSON returned 17 non-yanked wheels and one non-yanked sdist; workflow 37191241678 succeeded. Publication does not establish reaction-corpus parity."},
+    {"id": "crates_io", "status": "verified", "observed_version": "1.0.34", "url": "https://crates.io/crates/chematic/1.0.34", "detail": "All 20 version-pinned .crate archives returned HTTP 200 from static.crates.io; dependency-ordered publish workflow 37191241697 succeeded."},
+    {"id": "docs_rs", "status": "verified", "observed_version": "1.0.34", "url": "https://docs.rs/chematic/1.0.34/chematic/", "detail": "Version-pinned rustdoc endpoint returned HTTP 200."},
+    {"id": "site", "status": "verified", "observed_version": "1.0.34", "url": "https://kent-tokyo.github.io/chematic/", "detail": "Direct homepage fetch displayed Current release: v1.0.34; Pages workflow 37191210320 succeeded."}
   ]
 }
