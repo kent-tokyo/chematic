@@ -1,5 +1,5 @@
 {
-  "collected_at_utc": "2026-10-04T00:21:48.604308+00:00",
+  "collected_at_utc": "2026-10-04T00:40:18.270076+00:00",
   "host": {
     "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
     "machine": "arm64",
@@ -80,7 +80,7 @@
     "machine": "arm64",
     "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
     "python_executable": "/private/tmp/chematic-rdkit-python-rebaseline.ylWbEI/venv/bin/python",
-    "source_commit": "63294f2253b7199f03e8e2a68e6cc48427c62f1b",
+    "source_commit": "35f96e67a899992fec53e006d96f4532a4019da2",
     "tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "untracked_source_files": 0,
     "untracked_source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

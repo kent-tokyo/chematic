@@ -40,6 +40,12 @@ def check_python_baseline(corpus_hash: str) -> None:
     prefix = "rdkit-rebaseline-python"
     provenance = load(f"{prefix}-provenance-v1.0.33-vs-2026.03.6-{DAY}.json")
     require(
+        provenance["source"]["source_commit"]
+        == "35f96e67a899992fec53e006d96f4532a4019da2"
+        and provenance["source"]["dirty_worktree"] is False,
+        "Python baseline source was not the corrected clean CIP comparator",
+    )
+    require(
         provenance["inputs"]["sealed_accuracy_cohort_reused"] is False,
         "Python baseline used sealed rows",
     )
