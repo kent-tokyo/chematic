@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
       queries.push_back(std::move(parsed));
     }
     std::unique_ptr<RDKit::FingerprintGenerator<std::uint32_t>> generator(
-        RDKit::getMorganGenerator<std::uint32_t>(2));
+        RDKit::MorganFingerprint::getMorganGenerator<std::uint32_t>(2));
     std::ofstream out(argv[3]);
     if (!out) throw std::runtime_error("cannot open output file");
     for (std::size_t index = 0; index < smiles.size(); ++index) {

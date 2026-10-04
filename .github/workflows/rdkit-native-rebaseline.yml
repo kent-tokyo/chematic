@@ -39,18 +39,57 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build libboost-all-dev libeigen3-dev
-      - name: Build and run both independent C++ oracles
+      - name: Restore pinned old native installation
+        id: old-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/rdkit-install-old
+          key: rdkit-native-old-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('validation/rdkit_native_rebaseline_build.json') }}
+      - name: Build RDKit 2026.03.6 C++ source
+        if: steps.old-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
           mapfile -t config_flags < <(jq -r '.cmake_flags[]' validation/rdkit_native_rebaseline_build.json)
+          cmake -S rdkit-old -B "$RUNNER_TEMP/rdkit-build-old" -G Ninja \
+            "${config_flags[@]}" -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/rdkit-install-old"
+          cmake --build "$RUNNER_TEMP/rdkit-build-old" --parallel 4
+          cmake --install "$RUNNER_TEMP/rdkit-build-old"
+      - name: Cache pinned old native installation
+        if: steps.old-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/rdkit-install-old
+          key: rdkit-native-old-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('validation/rdkit_native_rebaseline_build.json') }}
+      - name: Restore pinned new native installation
+        id: new-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/rdkit-install-new
+          key: rdkit-native-new-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('validation/rdkit_native_rebaseline_build.json') }}
+      - name: Build RDKit 2026.09.1 C++ source
+        if: steps.new-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t config_flags < <(jq -r '.cmake_flags[]' validation/rdkit_native_rebaseline_build.json)
+          cmake -S rdkit-new -B "$RUNNER_TEMP/rdkit-build-new" -G Ninja \
+            "${config_flags[@]}" -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/rdkit-install-new"
+          cmake --build "$RUNNER_TEMP/rdkit-build-new" --parallel 4
+          cmake --install "$RUNNER_TEMP/rdkit-build-new"
+      - name: Cache pinned new native installation
+        if: steps.new-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/rdkit-install-new
+          key: rdkit-native-new-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('validation/rdkit_native_rebaseline_build.json') }}
+      - name: Build and run both independent C++ oracles
+        shell: bash
+        run: |
+          set -euo pipefail
           jq -r '.queries[]' validation/rdkit_rebaseline_smarts_queries.json > "$RUNNER_TEMP/rdkit-queries.txt"
           mkdir -p "$RUNNER_TEMP/rdkit-native-results"
           for lane in old new; do
-            cmake -S "rdkit-$lane" -B "$RUNNER_TEMP/rdkit-build-$lane" -G Ninja \
-              "${config_flags[@]}" -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/rdkit-install-$lane"
-            cmake --build "$RUNNER_TEMP/rdkit-build-$lane" --parallel 4
-            cmake --install "$RUNNER_TEMP/rdkit-build-$lane"
             cmake -S tools/rdkit_native_rebaseline -B "$RUNNER_TEMP/probe-build-$lane" -G Ninja \
               -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/rdkit-install-$lane"
             cmake --build "$RUNNER_TEMP/probe-build-$lane" --parallel 4
