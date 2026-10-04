@@ -280,6 +280,10 @@ jobs:
           .venv/bin/python scripts/reaction_python_checked_provenance_gate.py --expected-rdkit 2026.03.6 --wheel dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-provenance-83-linux.json
           .venv/bin/python scripts/check_python_smarts_parity_310k.py --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-linux.json
           .venv/bin/python scripts/mmff94_atom_type_census.py --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --output validation/results/mmff94-type-source-wheel-10k-linux.json --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --type37-context --source-wheel-gate
+      - name: xsmarts-autoconf SMARTS/SMIRKS flag lane (#754)
+        run: |
+          .venv/bin/pip install "xsmarts-autoconf @ git+https://github.com/swamidasslab/xsmarts-autoconf@6ce94c945652fa4fc47719387b41be6bf0419402" --quiet
+          .venv/bin/python scripts/xsmarts_autoconf_lane.py --output validation/results/xsmarts-autoconf-lane-linux.json
       - name: Diagnose A6 optimized source wheel (Linux)
         run: |
           git diff --quiet
@@ -295,6 +299,7 @@ jobs:
             validation/results/reaction-checked-source-wheel-83-linux.json
             validation/results/reaction-checked-provenance-83-linux.json
             validation/results/smarts-checked-source-wheel-310k-linux.json
+            validation/results/xsmarts-autoconf-lane-linux.json
             validation/results/mmff94-type-source-wheel-10k-linux.json
             validation/results/a6-source-265-linux.jsonl
             validation/results/a6-source-265-linux.meta.json

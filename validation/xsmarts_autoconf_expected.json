@@ -1,0 +1,79 @@
+{
+  "schema": "xsmarts-autoconf-expected/v1",
+  "autoconf_repository": "https://github.com/swamidasslab/xsmarts-autoconf",
+  "autoconf_commit": "6ce94c945652fa4fc47719387b41be6bf0419402",
+  "rules_digest": "b2367621cbe9c1d1",
+  "reference": {
+    "adapter": "rdkit",
+    "version": "2026.03.6"
+  },
+  "flag_count": 83,
+  "differing": {
+    "match.ring_count_basis": {
+      "rdkit": "symmetric",
+      "chematic": "sssr",
+      "class": "documented_profile",
+      "roadmap_queue": 4
+    },
+    "products.grouped_product_component": {
+      "rdkit": "one_object",
+      "chematic": "rejected",
+      "class": "typed_refusal",
+      "roadmap_queue": 3
+    },
+    "smirks.colon_product_bond": {
+      "rdkit": "aromatic_flag_set",
+      "chematic": "aromatic_bond_written",
+      "class": "policy",
+      "roadmap_queue": 3
+    },
+    "smirks.fragmented_reactant": {
+      "rdkit": "intermolecular_pair",
+      "chematic": "rejected",
+      "class": "typed_refusal",
+      "roadmap_queue": 3
+    },
+    "smirks.hcount_query_explicit_h": {
+      "rdkit": "pin_adds_h",
+      "chematic": "preserved",
+      "class": "policy_rdkit_raw_invalid",
+      "roadmap_queue": 3
+    },
+    "smirks.product_h_atom_added": {
+      "rdkit": "h_dropped",
+      "chematic": "UNKNOWN",
+      "class": "policy",
+      "roadmap_queue": 3
+    },
+    "smirks.product_h_pin": {
+      "rdkit": "authoritative",
+      "chematic": "UNKNOWN",
+      "class": "policy_rdkit_raw_invalid",
+      "roadmap_queue": 3
+    },
+    "smirks.star_on_explicit_h": {
+      "rdkit": "h_atoms_when_explicit",
+      "chematic": "UNKNOWN",
+      "class": "policy",
+      "roadmap_queue": 3
+    },
+    "smirks.undefined_order_both_sides": {
+      "rdkit": "first_alternative",
+      "chematic": "rejected",
+      "class": "typed_refusal",
+      "roadmap_queue": 3
+    },
+    "smirks.undefined_product_bond": {
+      "rdkit": "first_alternative",
+      "chematic": "rejected",
+      "class": "typed_refusal",
+      "roadmap_queue": 3
+    },
+    "smirks.valence_invalid_raw": {
+      "rdkit": "kept_raw",
+      "chematic": "dropped_at_apply",
+      "class": "policy_sanitized_views_agree",
+      "roadmap_queue": 3
+    }
+  }
+}

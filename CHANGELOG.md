@@ -10,6 +10,42 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+SMARTS/SMIRKS dialect fixes from the xsmarts-autoconf report (#734, #754).
+On the tool's 83 behaviour flags the source gives RDKit 2026.03.6's value for
+72 (published v1.0.34: 65); the remaining 11 are typed refusals or documented
+policies. Record: `benchmarks/2026-10-04-xsmarts-autoconf-v1034.md`.
+
+- **Behaviour change:** SMARTS isotope primitives are enforced by default,
+  as in RDKit: `[12C]` matches only a carbon labelled 12, and an unlabelled
+  atom has isotope 0 (`[0C]` matches it). `MatchConfig { use_isotopes:
+  false, .. }` keeps the old behaviour. MACCS and MCS keep ignoring isotopes.
+- SMARTS `v` counts an aromatic atom's Kekulé bond orders (benzene `c` is
+  `v4`, pyrrole `n` `v3`), as in RDKit.
+- SMARTS `/` and `\` match a single or aromatic bond and do not constrain
+  E/Z, as in RDKit (`C/C` matched nothing before, and `F/C=C/F` depended on
+  the input spelling).
+- The SMARTS parser follows RDKit for chirality classes (`@TH1`–`@TH2`,
+  `@AL1`–`@AL2`, `@SP1`–`@SP3`, `@TB1`–`@TB20`, `@OH1`–`@OH30`; other
+  numbers are errors) and rejects `i`, `^6`/`^7` and one-letter lowercase
+  symbols other than `b c n o p s` (they parsed and matched nothing).
+- `run_smirks` / `run_reactants` match Kekulé-written aromatic reactants as
+  their aromatic form, as RDKit does after sanitizing its input
+  (`[C:1]>>[C:1]` no longer matches `C1=CC=CC=C1`). Atom and bond indices,
+  and stereo, are unchanged.
+- Explicit-H reactants (`add_hydrogens`): an atom that loses a bond or bond
+  order gets its hydrogens back, as RDKit refills them, instead of being
+  left a radical (`[C:1][C:2]>>[C:1].[C:2]` on an explicit-H spiro ring,
+  `[C:1]=[O:2]>>[C:1]-[O:2]` on acetic acid, `[O:1]>>[O+:1]` on dimethyl
+  ether gives `C[OH+]C`).
+- An H-free charged aromatic carbon (`[c+]1ccccc1`, `[c-]1ccccc1`) kekulizes,
+  as in RDKit; `[c:1]>>[c+:1]` on benzene gives products instead of none.
+- Scripts: `reaction_python_checked_candidates.py` and
+  `run_published_npm_checked_candidates.mjs` emit checked 83-row candidates
+  from an interpreter or npm package that cannot load RDKit, and
+  `reaction_python_checked_provenance_gate.py --candidates` classifies them;
+  `xsmarts_autoconf_lane.py` (CI, Linux) pins the autoconf commit and fails
+  on any flag difference not listed in `validation/xsmarts_autoconf_expected.json`.
+
 ## [1.0.34] - 2026-10-04
 
 - Pinned the published RDKit.js 2026.09.1 rebaseline against the v1.0.33
