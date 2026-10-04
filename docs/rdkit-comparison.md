@@ -10,9 +10,10 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.0.33 release** includes new bounded APIs, but the latest
+The **v1.0.34 release** includes a bounded RDKit 2026.03.6 reaction-stereo
+compatibility path, but the latest
 published-package chemistry and speed comparison packet is pinned to
-**v1.0.30** against RDKit 2026.03.6. v1.0.33 needs its own channel and
+**v1.0.30** against RDKit 2026.03.6. v1.0.34 needs its own channel and
 package-output verification.
 
 | Lane | Recorded result | What it does not show |

@@ -23,12 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.0.33 の対応範囲
+### v1.0.34 の対応範囲
 
-v1.0.33では、SMIRKSの反応物側SMARTS、生成物の原子編集・原子価検査、明示的水素、
-一部のRDKit SMARTS拡張を修正しました。83件の反応ゲートは公開用設定のsource wheelで
-検証済みです。公開パッケージの再測定は
-別途必要です。詳しくは[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
+v1.0.34では、RDKit 2026.03.6に合わせた反応の立体化学を追加し、反応時の立体中心の
+反転と環結合の欠落を修正しました。公開用設定のsource wheelでは、反応83件のうち
+80件が一致し、残り3件は両エンジンで無効です。公開パッケージの再測定は別途必要です。
+詳しくは[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方
 

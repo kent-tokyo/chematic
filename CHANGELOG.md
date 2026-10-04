@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.34] - 2026-10-04
+
 - `run_smirks_checked(..., rdkit_compat=True)` and the WASM
   `run_reactants_checked(..., true)` follow RDKit 2026.03.6 reaction
   stereochemistry instead of declining tetrahedral reactant templates
@@ -35,14 +37,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - A bond between two mapped atoms that the reactant template does not
   spell is kept, as in RDKit (github #1387): `[N:1][C:2][C:3]>>...` on
   cyclopropylamine keeps the ring instead of opening it.
-- On the 83 pinned reaction fixtures the checked Python gate now matches
-  graph, atom origins and template maps on 80 (was 77); the remaining 3 are
-  invalid inputs refused by both RDKit and chematic. Against RDKit
-  2026.03.6 on about 29,000 generated cases (stereo and stereo-free
-  templates, chiral reactants in random atom orders and as enantiomers),
-  product sets agree on all of them, and an atom-level check (atom origins,
-  element/charge/H, bonds, each carried atom's configuration) agrees on all
-  3,650 product sets it covers. These are source-build results.
+- On the 83 pinned reaction fixtures, Linux and macOS release-profile source
+  wheels match graph, atom origins and template maps on 80 (was 77); the
+  remaining 3 are invalid inputs refused by both RDKit and chematic. The
+  WASM/Node 83-row test also passes. These are source-build checks, not
+  published-package results or general SMIRKS parity. The contributor's
+  broader BioTransformer rule collection remains untested.
 
 ## [1.0.33] - 2026-10-04
 
