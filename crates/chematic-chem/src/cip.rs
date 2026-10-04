@@ -1458,6 +1458,50 @@ mod tests {
 
     use super::*;
 
+    /// Accurate-mode tetrahedral labels, abstentions and bond-keyed E/Z do
+    /// not depend on input atom order (random SMILES now keep stereo).
+    #[test]
+    fn accurate_labels_and_abstentions_survive_atom_reordering() {
+        use std::collections::BTreeMap;
+        let keyed = |m: &Molecule| -> (String, BTreeMap<usize, String>) {
+            let (can, order) = chematic_smiles::canonical_smiles_with_atom_order(m);
+            let pos: BTreeMap<u32, usize> =
+                order.iter().enumerate().map(|(k, a)| (a.0, k)).collect();
+            let r = assign_cip_with_mode(m, CipMode::Accurate).unwrap();
+            let mut out = BTreeMap::new();
+            for (a, c) in &r.assignments {
+                if !matches!(c, CipCode::E | CipCode::Z) {
+                    out.insert(pos[&a.0], format!("{c:?}"));
+                }
+            }
+            for (a, why) in &r.unresolved {
+                out.insert(pos[&a.0], format!("{why:?}"));
+            }
+            for (b, c) in assign_ez_bonds_with_mode(m, CipMode::Accurate) {
+                let e = m.bond(b);
+                let (x, y) = (pos[&e.atom1.0], pos[&e.atom2.0]);
+                out.insert(100_000 + x.min(y) * 1000 + x.max(y), format!("{c:?}"));
+            }
+            (can, out)
+        };
+        for smiles in [
+            "N[C@@H](C)C(=O)O",
+            "C#C/C=C1\\CCC(c2cccc3ccccc23)C(=O)O1",
+            // Lone-pair and phosphorus abstentions of the exposed 10k lane.
+            "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+            "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@](=O)(OC)[C@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
+        ] {
+            let mol = chematic_smiles::parse(smiles).unwrap();
+            let want = keyed(&mol);
+            assert!(!want.1.is_empty(), "{smiles}");
+            for seed in 1..8 {
+                let other =
+                    chematic_smiles::parse(&chematic_smiles::random_smiles(&mol, seed)).unwrap();
+                assert_eq!(keyed(&other), want, "{smiles} seed {seed}");
+            }
+        }
+    }
+
     /// Issue #634: accurate-mode E/Z ranks substituents with the hierarchical
     /// digraph (MANCUDE duplicates for aromatic rings). The legacy sphere
     /// comparison adds no duplicate for aromatic bonds and let tert-butyl

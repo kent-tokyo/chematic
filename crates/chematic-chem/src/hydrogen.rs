@@ -69,6 +69,9 @@ pub fn add_hydrogens(mol: &Molecule) -> Molecule {
         let mut atom = mol.atom(old_idx).clone();
         atom.hydrogen_count = Some(0);
         let new_idx = builder.add_atom(atom);
+        if let Some(tag) = mol.atom_tag(old_idx) {
+            builder.set_tag(new_idx, Some(tag.get()));
+        }
         remap.insert(old_idx, new_idx);
     }
 
@@ -85,6 +88,13 @@ pub fn add_hydrogens(mol: &Molecule) -> Molecule {
     // heavy atoms is already correct verbatim. Entries with a sentinel are
     // patched below once each atom's new explicit H index is known.
     builder.copy_stereo_from(mol);
+    // Bond indices are unchanged too: E/Z directions kept in the side table
+    // (an aromatic ring bond's `/`, e.g. `C/N=c1/sccn1`) and stereo groups
+    // carry over verbatim. They were dropped, so a later `remove_hydrogens`
+    // lost exocyclic imine E/Z.
+    builder.copy_bond_directions_from(mol);
+    builder.copy_stereo_groups_from(mol);
+    builder.copy_r_groups_from(mol);
 
     // Add explicit H atoms for each implicit hydrogen, and fix up declared
     // stereo order for any stereocenter that gains one.
@@ -391,7 +401,31 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
         builder.set_stereo_neighbor_order(new_idx, new_order);
     }
 
+    // Atom-keyed side tables follow the kept atoms.
+    for (&old_idx, &new_idx) in &remap {
+        if let Some(label) = mol.r_group_label(old_idx) {
+            builder.set_r_group(new_idx, label);
+        }
+        if let Some(tag) = mol.atom_tag(old_idx) {
+            builder.set_tag(new_idx, Some(tag.get()));
+        }
+    }
+    let stereo_groups: Vec<chematic_core::StereoGroup> = mol
+        .stereo_groups()
+        .iter()
+        .filter_map(|g| {
+            let atoms: Vec<AtomIdx> = g
+                .atom_indices
+                .iter()
+                .filter_map(|a| remap.get(a).copied())
+                .collect();
+            (!atoms.is_empty()).then(|| chematic_core::StereoGroup::new(g.kind.clone(), atoms))
+        })
+        .collect();
     let mut out = builder.build();
+    if !stereo_groups.is_empty() {
+        out.set_stereo_groups(stereo_groups);
+    }
     // Each atom that lost H atoms keeps its total H count. Valence inference
     // alone can guess wrong for aromatic atoms (explicit-H pyrrole's N would
     // come back as `n`, not `[nH]`), so a count it misses is written
@@ -515,6 +549,9 @@ mod tests {
             "C[C@H](N)C(=O)O",
             "[NH4+]",
             "c1ccccc1",
+            // Exocyclic imine E/Z kept in the bond-direction side table.
+            "CC(=O)/N=c1/sc(S(N)(=O)=O)nn1C",
+            "C/N=c1/cccc[nH]1",
         ] {
             let m = mol(input);
             let round = remove_hydrogens(&add_hydrogens(&m));

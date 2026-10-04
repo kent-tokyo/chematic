@@ -801,6 +801,7 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
     }
 
     let mut mol = builder.build();
+    crate::mol2000::flag_aromatic_bond_atoms(&mut mol);
     metadata.v3000_sgroups = sgroups;
     metadata.v3000_bond_properties = bond_properties;
     metadata.v3000_atom_properties = atom_properties;
@@ -1699,10 +1700,15 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
 
     // Bond block
     out.push_str("M  V30 BEGIN BOND\n");
+    let kekule = crate::mol2000::kekule_orders_for_writing(mol);
     for (bidx, bond) in mol.bonds() {
         let a1 = bond.atom1.0 + 1;
         let a2 = bond.atom2.0 + 1;
-        let order = match bond.order {
+        let written = kekule
+            .as_ref()
+            .and_then(|k| k.get(&bidx).copied())
+            .unwrap_or(bond.order);
+        let order = match written {
             BondOrder::Zero => 0,
             BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
             BondOrder::Double => 2,
@@ -1866,10 +1872,15 @@ pub fn write_mol_v3000_with_conformer(
     out.push_str("M  V30 END ATOM\n");
 
     out.push_str("M  V30 BEGIN BOND\n");
+    let kekule = crate::mol2000::kekule_orders_for_writing(mol);
     for (bidx, bond) in mol.bonds() {
         let a1 = bond.atom1.0 + 1;
         let a2 = bond.atom2.0 + 1;
-        let order = match bond.order {
+        let written = kekule
+            .as_ref()
+            .and_then(|k| k.get(&bidx).copied())
+            .unwrap_or(bond.order);
+        let order = match written {
             BondOrder::Zero => 0,
             BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
             BondOrder::Double => 2,

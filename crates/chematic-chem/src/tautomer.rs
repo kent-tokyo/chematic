@@ -1013,7 +1013,7 @@ fn reverse_exocyclic_lactim_candidates(mol: &Molecule, config: &TautomerConfig) 
                         || donor_atom.charge != 0
                         || donor_atom.hydrogen_count != Some(1)
                         || mol.neighbors(donor).count() != 2
-                        || !ring_distance(ring, bridge, donor).is_some_and(|d| d % 2 == 1)
+                        || ring_distance(ring, bridge, donor).is_none_or(|d| d % 2 != 1)
                     {
                         continue;
                     }
@@ -1113,15 +1113,42 @@ fn aromatic_exocyclic_carbonyl_count(mol: &Molecule) -> usize {
         .count()
 }
 
+/// An aromatic carbon with an exocyclic O that can take part in a
+/// lactam/lactim shift: `c=O` or `c-[OH]`. An ether O (`c-OC`, methoxy) cannot;
+/// counting it sent every methoxyarene through the global O/C selection,
+/// whose O-H preference then turned unrelated amides into iminols.
 fn has_aromatic_exocyclic_oxygen(mol: &Molecule) -> bool {
     mol.atoms().any(|(bridge, atom)| {
         atom.aromatic
             && atom.element.atomic_number() == 6
             && mol.neighbors(bridge).any(|(neighbor, bond)| {
                 mol.atom(neighbor).element.atomic_number() == 8
-                    && matches!(mol.bond(bond).order, BondOrder::Single | BondOrder::Double)
+                    && match mol.bond(bond).order {
+                        BondOrder::Double => true,
+                        BondOrder::Single => implicit_hcount(mol, neighbor) > 0,
+                        _ => false,
+                    }
             })
     })
+}
+
+/// Non-aromatic iminol groups, `C(-[OH])=N`.
+fn iminol_count(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|&(c, atom)| {
+            !atom.aromatic
+                && atom.element.atomic_number() == 6
+                && mol.neighbors(c).any(|(o, b)| {
+                    mol.atom(o).element.atomic_number() == 8
+                        && mol.bond(b).order == BondOrder::Single
+                        && implicit_hcount(mol, o) > 0
+                })
+                && mol.neighbors(c).any(|(n, b)| {
+                    mol.atom(n).element.atomic_number() == 7
+                        && mol.bond(b).order == BondOrder::Double
+                })
+        })
+        .count()
 }
 
 /// Find the dual-flank N-H ambiguity of aromatic lactam systems such as
@@ -2050,9 +2077,14 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
                 .all(|candidate| aromatic_exocyclic_carbonyl_count(candidate) <= 1)
         {
             let prefer_lactam = forms.iter().any(has_aromatic_exocyclic_carbonyl);
+            // The selection is about the aromatic O/C system: a form that
+            // also turns an amide elsewhere into an iminol is not a
+            // candidate (the rule-based search prefers the amide).
+            let max_iminols = iminol_count(&result);
             let mut candidates: Vec<Molecule> = forms
                 .into_iter()
                 .filter(|candidate| !prefer_lactam || has_aromatic_exocyclic_carbonyl(candidate))
+                .filter(|candidate| iminol_count(candidate) <= max_iminols)
                 .collect();
             candidates.sort_by(|a, b| {
                 tautomer_score(b).cmp(&tautomer_score(a)).then_with(|| {
@@ -2069,7 +2101,39 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
             }
         }
     }
+    clear_moved_stereo(mol, &mut result);
     result
+}
+
+/// Drop tetrahedral tags the tautomer shift invalidated: an atom that gained
+/// a multiple bond, changed aromaticity or changed its H count is no longer the
+/// stereocentre it was (`N[C@H](C)C=O` → enol `NC(C)=CO`). RDKit's tautomer
+/// canonicalizer removes the same stereo. Atoms the shift did not touch keep
+/// theirs.
+fn clear_moved_stereo(input: &Molecule, result: &mut Molecule) {
+    let n = input.atom_count().min(result.atom_count());
+    for i in 0..n {
+        let idx = AtomIdx(i as u32);
+        if result.atom(idx).chirality == Chirality::None {
+            continue;
+        }
+        let multiple = |m: &Molecule| {
+            m.neighbors(idx).any(|(_, b)| {
+                matches!(
+                    m.bond(b).order,
+                    BondOrder::Double | BondOrder::Triple | BondOrder::Aromatic
+                )
+            })
+        };
+        // An allene end keeps its double bond and its tag.
+        let moved = (multiple(result) && !multiple(input))
+            || result.atom(idx).aromatic != input.atom(idx).aromatic
+            || chematic_core::implicit_hcount(result, idx)
+                != chematic_core::implicit_hcount(input, idx);
+        if moved {
+            result.set_chirality(idx, Chirality::None);
+        }
+    }
 }
 
 /// The actual rule-based/exocyclic-lactam/direct-aromatic search. Returns
@@ -2748,6 +2812,48 @@ mod tests {
     #![allow(dead_code)]
 
     use super::*;
+
+    #[test]
+    fn canonical_tautomer_keeps_amides_next_to_methoxyarenes() {
+        // A methoxy group sent the molecule through the aromatic O/C
+        // selection, which turned the urea/carbamate into an iminol.
+        for input in [
+            "COc1cc2nc(N3CCN(C(=O)Nc4ccccc4)CC3)nc(N)c2cc1OC",
+            "COc1ccc(CNC(=O)OCC)cc1",
+            "COc1ccc(CC(=O)NC)cc1",
+        ] {
+            let mol = chematic_smiles::parse(input).unwrap();
+            let out = canonical_tautomer(&mol);
+            assert_eq!(iminol_count(&out), 0, "{input}");
+        }
+    }
+
+    #[test]
+    fn canonical_tautomer_drops_tags_on_atoms_it_moves() {
+        // No tetrahedral tag may survive on an atom that gained a double
+        // bond; the result is also independent of input atom order.
+        let input = "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(O)cc4)nn3)[C@H]2S1(=O)=O";
+        let mol = chematic_smiles::parse(input).unwrap();
+        let out = canonical_tautomer(&mol);
+        for (idx, atom) in out.atoms() {
+            if atom.chirality != Chirality::None {
+                assert!(
+                    out.neighbors(idx)
+                        .all(|(_, b)| out.bond(b).order != BondOrder::Double)
+                );
+            }
+        }
+        let want = chematic_smiles::canonical_smiles(&out);
+        for seed in 1..6 {
+            let shuffled =
+                chematic_smiles::parse(&chematic_smiles::random_smiles(&mol, seed)).unwrap();
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&canonical_tautomer(&shuffled)),
+                want,
+                "seed {seed}"
+            );
+        }
+    }
     use chematic_core::{AtomIdx, Chirality, STEREO_H_SENTINEL, StereoGroup};
     use chematic_smiles::{canonical_smiles, parse};
     use std::collections::HashMap;

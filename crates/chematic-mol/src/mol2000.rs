@@ -291,6 +291,50 @@ fn signed_volume3(p1: Point3, p2: Point3, p3: Point3, p4: Point3) -> f64 {
 /// equality-vs-exhaustive-match bug shape fixed twice before in this
 /// project's history (`chematic-3d/src/stereo_constraints.rs`,
 /// `chematic-chem/src/cip.rs`).
+/// Atoms of an aromatic (type 4) bond are aromatic, as RDKit reads them: the
+/// file records aromaticity on bonds only, and leaving the atoms aliphatic
+/// gave `C:1:C:C:C:C:C:1` for benzene (SMARTS `c` then missed it).
+pub(crate) fn flag_aromatic_bond_atoms(mol: &mut Molecule) {
+    let atoms: Vec<AtomIdx> = mol
+        .bonds()
+        .filter(|(_, b)| b.order == BondOrder::Aromatic)
+        .flat_map(|(_, b)| [b.atom1, b.atom2])
+        .collect();
+    for idx in atoms {
+        if !mol.atom(idx).aromatic {
+            mol.set_atom_aromatic(idx, true);
+        }
+    }
+}
+
+/// Bond orders to write for aromatic bonds. Aromatic bonds are written as
+/// type 4 when a reader can recover every aromatic atom's H count from the
+/// bonds alone; otherwise (pyrrole's `[nH]`, a charged aromatic atom) the
+/// Kekulé orders are written instead, as RDKit always does, since type 4
+/// would turn `c1cc[nH]c1` into `c1ccnc1`. `None`: write type 4.
+pub(crate) fn kekule_orders_for_writing(
+    mol: &Molecule,
+) -> Option<std::collections::HashMap<chematic_core::BondIdx, BondOrder>> {
+    if !mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic) {
+        return None;
+    }
+    let mut stripped = mol.clone();
+    for (idx, atom) in mol.atoms() {
+        if atom.aromatic && atom.hydrogen_count.is_some() {
+            stripped.set_hydrogen_count(idx, None);
+        }
+    }
+    let inferable = mol.atoms().all(|(idx, atom)| {
+        !atom.aromatic
+            || chematic_core::implicit_hcount(&stripped, idx)
+                == chematic_core::implicit_hcount(mol, idx)
+    });
+    if inferable {
+        return None;
+    }
+    chematic_core::kekulize(mol).ok()
+}
+
 pub(crate) fn wedge_vs_3d_conflicts(
     mol: &Molecule,
     conformer: &Coords3D,
@@ -1149,6 +1193,7 @@ fn read_mol_internal(
     }
 
     let mut mol = builder.build();
+    flag_aromatic_bond_atoms(&mut mol);
     for (atom, charge) in property_charges {
         mol.set_charge(atom, charge);
     }
@@ -1542,10 +1587,15 @@ pub fn write_mol_with_coords_into(
     }
 
     // Bond block
-    for (_idx, bond) in mol.bonds() {
+    let kekule = kekule_orders_for_writing(mol);
+    for (bond_idx, bond) in mol.bonds() {
         let a1 = bond.atom1.0 + 1; // convert to 1-based
         let a2 = bond.atom2.0 + 1;
-        let btype = match bond.order {
+        let order = kekule
+            .as_ref()
+            .and_then(|k| k.get(&bond_idx).copied())
+            .unwrap_or(bond.order);
+        let btype = match order {
             BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
             BondOrder::Double => 2,
             BondOrder::Triple => 3,
@@ -1639,10 +1689,15 @@ pub fn write_mol_with_conformer(
         ));
     }
 
-    for (_idx, bond) in mol.bonds() {
+    let kekule = kekule_orders_for_writing(mol);
+    for (bond_idx, bond) in mol.bonds() {
         let a1 = bond.atom1.0 + 1;
         let a2 = bond.atom2.0 + 1;
-        let btype = match bond.order {
+        let order = kekule
+            .as_ref()
+            .and_then(|k| k.get(&bond_idx).copied())
+            .unwrap_or(bond.order);
+        let btype = match order {
             BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
             BondOrder::Double => 2,
             BondOrder::Triple => 3,
@@ -2103,6 +2158,33 @@ pub fn write_sdf_record_with_conformer_checked(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn aromatic_bond_atoms_read_as_aromatic() {
+        for smiles in ["c1ccccc1", "Cc1ccncc1", "c1cc[nH]c1"] {
+            let mol = chematic_smiles::parse(smiles).unwrap();
+            let v2000 = parse_mol(&write_mol(&mol, &MolMetadata::default()))
+                .unwrap()
+                .0;
+            let coords = vec![(0.0, 0.0); mol.atom_count()];
+            let v3000 = crate::parse_mol_v3000(&crate::write_mol_v3000(
+                &mol,
+                &MolMetadata::default(),
+                &coords,
+            ))
+            .unwrap()
+            .0;
+            // Pyrrole's N-H is not recoverable from type-4 bonds, so that
+            // molecule is written Kekulé; compare after aromaticity
+            // perception.
+            let perceived = |m: &Molecule| {
+                chematic_smiles::canonical_smiles(&chematic_perception::apply_aromaticity(m))
+            };
+            for back in [v2000, v3000] {
+                assert_eq!(perceived(&back), perceived(&mol), "{smiles}");
+            }
+        }
+    }
 
     #[test]
     fn three_column_parser_matches_legacy_spelling_contract() {

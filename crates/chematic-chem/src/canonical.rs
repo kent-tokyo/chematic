@@ -3,7 +3,7 @@
 use chematic_core::Molecule;
 use chematic_smiles::canonical_smiles;
 
-use crate::standardize::{remove_isotopes, remove_stereo, uncharge};
+use crate::standardize::{remove_isotopes, remove_stereo, strip_charges};
 use crate::tautomer::canonical_tautomer;
 
 /// Canonicalization mode for [`canonical_smiles_mode`].
@@ -45,7 +45,7 @@ pub fn canonical_smiles_mode(mol: &Molecule, mode: CanonicalMode) -> String {
         CanonicalMode::Backbone => {
             let m = remove_stereo(mol);
             let m = remove_isotopes(&m);
-            let m = uncharge(&m);
+            let m = strip_charges(&m);
             canonical_smiles(&m)
         }
         CanonicalMode::Tautomer => canonical_smiles(&canonical_tautomer(mol)),
