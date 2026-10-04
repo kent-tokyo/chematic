@@ -40,6 +40,8 @@ def test_counts_each_changed_cell_without_losing_unchanged_rows():
         "changed_rows": 1,
         "canonical_changed_rows": 1,
         "smarts_changed_cells": 1,
+        "smarts_old_parse_failure_cells": 0,
+        "smarts_new_parse_failure_cells": 0,
         "noncomparable_rows": 0,
         "parse_status_changed_rows": 0,
         "cip_atoms_changed_rows": 0,
@@ -86,6 +88,17 @@ def test_new_parse_failure_is_a_reported_oracle_change(tmp_path: Path):
     assert counts["parse_status_changed_rows"] == 1
     assert counts["smarts_cells_compared"] == 0
     assert deltas[0]["differences"][0]["operation"] == "smiles_parse"
+
+
+def test_smarts_parser_failure_is_retained_per_query():
+    old = row()
+    new = row()
+    new["smarts"] = [None, []]
+    counts, deltas = MODULE.summarize([old], [new], ["C", "N"])
+    assert counts["smarts_cells_compared"] == 2
+    assert counts["smarts_new_parse_failure_cells"] == 1
+    assert counts["smarts_changed_cells"] == 1
+    assert deltas[0]["differences"][0]["new"] is None
 
 
 def test_old_native_oracle_must_match_python_wheel_oracle(tmp_path: Path):

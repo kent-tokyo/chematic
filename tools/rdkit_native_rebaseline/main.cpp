@@ -122,6 +122,10 @@ void emit_smarts(std::ostream &out, const RDKit::ROMol &mol,
   params.maxMatches = 1000;  // Python GetSubstructMatches default.
   for (std::size_t query_index = 0; query_index < queries.size(); ++query_index) {
     if (query_index) out << ',';
+    if (!queries[query_index]) {
+      out << "null";  // Preserve a version-specific SMARTS parse failure.
+      continue;
+    }
     std::set<std::vector<int>> sets;
     for (const auto &match : RDKit::SubstructMatch(mol, *queries[query_index], params)) {
       std::vector<int> atoms;
@@ -159,7 +163,6 @@ int main(int argc, char **argv) {
     queries.reserve(query_strings.size());
     for (const auto &query : query_strings) {
       auto parsed = std::unique_ptr<RDKit::RWMol>(RDKit::SmartsToMol(query));
-      if (!parsed) throw std::runtime_error("SMARTS parse failed: " + query);
       queries.push_back(std::move(parsed));
     }
     std::unique_ptr<RDKit::FingerprintGenerator<std::uint32_t>> generator(

@@ -8,6 +8,9 @@ on:
       - tools/rdkit_native_rebaseline/**
       - scripts/summarize_rdkit_native_rebaseline.py
       - validation/rdkit_native_rebaseline_build.json
+      - validation/rdkit_rebaseline_smarts_queries.json
+      - validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi
+      - validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.jsonl.gz
 
 permissions:
   contents: read

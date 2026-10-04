@@ -64,6 +64,16 @@ def read_rows(path: Path, smiles: list[str], query_count: int) -> list[dict[str,
             matches = row.get("smarts")
             if not isinstance(matches, list) or len(matches) != query_count:
                 raise ValueError(f"{path}: missing SMARTS cells at row {index}")
+            for cell in matches:
+                if cell is None:
+                    continue
+                if not isinstance(cell, list) or any(
+                    not isinstance(atom_set, list)
+                    or any(not isinstance(atom, int) or atom < 0 for atom in atom_set)
+                    or atom_set != sorted(set(atom_set))
+                    for atom_set in cell
+                ):
+                    raise ValueError(f"{path}: invalid SMARTS cell at row {index}")
             rows.append(row)
     if len(rows) != len(smiles):
         raise ValueError(f"{path}: expected {len(smiles)} rows, got {len(rows)}")
@@ -163,6 +173,10 @@ def summarize(
                 )
         for query_index, query in enumerate(queries):
             counts["smarts_cells_compared"] += 1
+            if old["smarts"][query_index] is None:
+                counts["smarts_old_parse_failure_cells"] += 1
+            if new["smarts"][query_index] is None:
+                counts["smarts_new_parse_failure_cells"] += 1
             if old["smarts"][query_index] != new["smarts"][query_index]:
                 counts["smarts_changed_cells"] += 1
                 differences.append(
@@ -185,6 +199,8 @@ def summarize(
             )
     for key in (
         "smarts_cells_compared",
+        "smarts_old_parse_failure_cells",
+        "smarts_new_parse_failure_cells",
         "changed_rows",
         "noncomparable_rows",
         "parse_status_changed_rows",
