@@ -40,6 +40,8 @@ def test_counts_each_changed_cell_without_losing_unchanged_rows():
         "changed_rows": 1,
         "canonical_changed_rows": 1,
         "smarts_changed_cells": 1,
+        "noncomparable_rows": 0,
+        "parse_status_changed_rows": 0,
         "cip_atoms_changed_rows": 0,
         "cip_bonds_changed_rows": 0,
         "morgan_on_bits_changed_rows": 0,
@@ -68,6 +70,22 @@ def test_invalid_bit_set_fails(tmp_path: Path):
     path.write_text(json.dumps(bad) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="invalid Morgan"):
         MODULE.read_rows(path, ["CC"], 2)
+
+
+def test_new_parse_failure_is_a_reported_oracle_change(tmp_path: Path):
+    path = tmp_path / "rows.jsonl"
+    path.write_text(
+        json.dumps({"input_index": 0, "smiles": "CC", "status": "parse_failure"})
+        + "\n",
+        encoding="utf-8",
+    )
+    new = MODULE.read_rows(path, ["CC"], 2)
+    counts, deltas = MODULE.summarize([row()], new, ["C", "N"])
+    assert counts["rows"] == 1
+    assert counts["noncomparable_rows"] == 1
+    assert counts["parse_status_changed_rows"] == 1
+    assert counts["smarts_cells_compared"] == 0
+    assert deltas[0]["differences"][0]["operation"] == "smiles_parse"
 
 
 def test_old_native_oracle_must_match_python_wheel_oracle(tmp_path: Path):

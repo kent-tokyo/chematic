@@ -27,9 +27,24 @@ def read_rows(path: Path, smiles: list[str], query_count: int) -> list[dict[str,
                 raise ValueError(f"{path}: missing, excess, or reordered row {index}")
             if row.get("smiles") != smiles[index]:
                 raise ValueError(f"{path}: SMILES mismatch at row {index}")
-            if row.get("status") != "ok":
+            status = row.get("status")
+            if status == "parse_failure":
+                if any(
+                    field in row
+                    for field in (
+                        "canonical",
+                        "cip_atoms",
+                        "cip_bonds",
+                        "morgan_on_bits",
+                        "smarts",
+                    )
+                ):
+                    raise ValueError(f"{path}: partial parse-failure row {index}")
+                rows.append(row)
+                continue
+            if status != "ok":
                 raise ValueError(
-                    f"{path}: failed native row {index}: {row.get('status')}"
+                    f"{path}: unknown native status at row {index}: {status}"
                 )
             if not isinstance(row.get("canonical"), str):
                 raise ValueError(f"{path}: missing canonical at row {index}")
@@ -72,6 +87,8 @@ def verify_python_baseline(path: Path, rows: list[dict[str, Any]]) -> int:
                 raise ValueError(f"{path}: excess Python baseline row {index}")
             reference = json.loads(line)
             native = rows[index]
+            if native["status"] != "ok":
+                raise ValueError(f"{path}: old C++ oracle failed to parse row {index}")
             checks = {
                 "input_index": (reference.get("input_index"), index),
                 "smiles": (reference.get("smiles"), native["smiles"]),
@@ -115,7 +132,29 @@ def summarize(
     for old, new in zip(old_rows, new_rows, strict=True):
         if old["input_index"] != new["input_index"] or old["smiles"] != new["smiles"]:
             raise ValueError("old/new input order differs")
+        counts["rows"] += 1
         differences: list[dict[str, Any]] = []
+        if old["status"] != "ok" or new["status"] != "ok":
+            counts["noncomparable_rows"] += 1
+            if old["status"] != new["status"]:
+                counts["parse_status_changed_rows"] += 1
+                differences.append(
+                    {
+                        "operation": "smiles_parse",
+                        "old": old["status"],
+                        "new": new["status"],
+                    }
+                )
+            if differences:
+                counts["changed_rows"] += 1
+                deltas.append(
+                    {
+                        "input_index": old["input_index"],
+                        "smiles": old["smiles"],
+                        "differences": differences,
+                    }
+                )
+            continue
         for field in fields:
             if old[field] != new[field]:
                 counts[f"{field}_changed_rows"] += 1
@@ -135,7 +174,6 @@ def summarize(
                         "new": new["smarts"][query_index],
                     }
                 )
-        counts["rows"] += 1
         if differences:
             counts["changed_rows"] += 1
             deltas.append(
@@ -146,7 +184,10 @@ def summarize(
                 }
             )
     for key in (
+        "smarts_cells_compared",
         "changed_rows",
+        "noncomparable_rows",
+        "parse_status_changed_rows",
         "smarts_changed_cells",
         *(f"{f}_changed_rows" for f in fields),
     ):
