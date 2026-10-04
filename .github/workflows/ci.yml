@@ -47,6 +47,7 @@ jobs:
           python3 scripts/check_compatibility_profiles.py
           python3 scripts/check_rdkit_rebaseline_manifest.py
           python3 scripts/check_rdkit_rebaseline_execution.py
+          python3 scripts/check_rdkit_rebaseline_execution.py --manifest validation/rdkit_rebaseline_python_2026_09_execution.json
           python3 scripts/check_rdkit_rebaseline_evidence.py
           python3 scripts/check_rdkit_2026_09_rebaseline_evidence.py
           python3 scripts/check_rdkit_native_rebaseline_evidence.py

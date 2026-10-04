@@ -27,7 +27,10 @@ now reproduces the same six changed rows and 12 `[R2]`/`[R3]` cells. Its old
 oracle matches the distributed Python 2026.03.6 baseline on canonical SMILES,
 CIP and Morgan across all 10k rows. Compiled binaries/libraries were not
 retained, and this source-build result does not satisfy the still-open
-2026.09.1 distributed Python/nanobind or native-binary gates.
+2026.09.1 distributed Python/nanobind or native-binary gates. The
+[separate Python 2026.09.1 command catalog](https://github.com/kent-tokyo/chematic/blob/main/validation/rdkit_rebaseline_python_2026_09_execution.json)
+is ready for an exact wheel when published; no new-version Python result is
+inferred from it.
 
 P0.1's **published-artifact accounting is complete**, not strict RDKit
 parity: [the acceptance policy](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md)

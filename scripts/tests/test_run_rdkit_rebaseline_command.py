@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from scripts.run_rdkit_rebaseline_command import expand, find_command, parse_values
@@ -18,9 +20,7 @@ def test_expand_rejects_missing_placeholders():
 
 
 def test_command_catalog_exposes_python_chemistry_lane():
-    lane, command = find_command(
-        "python-2026.03.6-distributed", "python-chemistry-all"
-    )
+    lane, command = find_command("python-2026.03.6-distributed", "python-chemistry-all")
     assert lane["rdkit_version"] == "2026.03.6"
     assert set(command["covers"]) == {
         "smiles_parse_write",
@@ -28,3 +28,20 @@ def test_command_catalog_exposes_python_chemistry_lane():
         "smarts",
         "morgan",
     }
+
+
+def test_new_python_catalog_keeps_old_lane_immutable_and_pins_new_version():
+    root = Path(__file__).resolve().parents[2]
+    manifest = root / "validation" / "rdkit_rebaseline_python_2026_09_execution.json"
+    lane, command = find_command(
+        "python-2026.09.1-distributed", "python-2026-09-chemistry-all", manifest
+    )
+    assert lane["rdkit_version"] == "2026.09.1"
+    assert command["argv"][-4:] == [
+        "--expected-rdkit",
+        "2026.09.1",
+        "--expected-chematic",
+        "1.0.33",
+    ]
+    old, _ = find_command("python-2026.03.6-distributed", "python-chemistry-all")
+    assert old["rdkit_version"] == "2026.03.6"

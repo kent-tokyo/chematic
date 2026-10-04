@@ -173,6 +173,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--rows-output", type=Path, required=True)
     parser.add_argument("--expected-rdkit", required=True)
+    parser.add_argument("--expected-chematic")
     parser.add_argument("--limit", type=int)
     args = parser.parse_args()
     for path in (args.corpus, args.queries):
@@ -436,6 +437,10 @@ def main() -> int:
         == counts["completed"] + counts["parse_failure"],
         "rows_hash_recorded": bool(summary["rows"]["sha256"]),
     }
+    if args.expected_chematic is not None:
+        summary["gate"]["chematic_runtime_matches"] = (
+            summary["chematic_version"] == args.expected_chematic
+        )
     summary["gate_passed"] = all(summary["gate"].values())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(

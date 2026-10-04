@@ -81,3 +81,15 @@ environment, then compare complete rows and classify changes. The
 now measures the old/new chemistry delta, but is not a distributed binary or
 Python-wrapper measurement. This Python baseline alone does not complete the
 new-version Python gate.
+
+The future Python lane has a separate, checked command catalog:
+`validation/rdkit_rebaseline_python_2026_09_execution.json`. Use
+`scripts/run_rdkit_rebaseline_command.py --manifest` with that path in a fresh
+environment containing the **distributed** `rdkit==2026.9.1` wheel and the
+same published CheMatic 1.0.33 wheel. Supply the exact RDKit wheel path as
+`PYTHON_ARTIFACT`. Run the binding-contract command first to observe the
+runtime callable type, then use that observation for `PYTHON_BACKEND` and
+`PYTHON_BACKEND_EVIDENCE` in the provenance command. Finally run the 10k
+chemistry command. The commands pin RDKit runtime `2026.09.1`, CheMatic
+runtime `1.0.33`, 10k exposed corpus, 31 queries and seven binding-timing
+samples; their presence is preparation, **not** a 2026.09.1 measurement.
