@@ -1080,6 +1080,13 @@ impl Molecule {
         self.invalidate_derived();
         self.bond_direction_anchors.insert(idx.0, atom);
     }
+
+    /// Remove bond `idx`'s stashed direction and its anchor, if any.
+    pub fn clear_bond_direction(&mut self, idx: BondIdx) {
+        self.invalidate_derived();
+        self.bond_directions.remove(&idx.0);
+        self.bond_direction_anchors.remove(&idx.0);
+    }
 }
 
 // ---------------------------------------------------------------------------

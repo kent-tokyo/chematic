@@ -7,6 +7,8 @@
 //! - AutoCorr3D (8 dims): Moreau-Broto self-correlation at Euclidean distance lags
 
 use crate::coords::Coords3D;
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use crate::shape_descriptors::jacobi3;
 use chematic_core::Molecule;
 
@@ -82,7 +84,7 @@ fn whim_11(xs: &[[f64; 3]], weights: &[f64]) -> [f64; 11] {
                 + (xs[i][2] - com[2]) * evecs[2][col];
             sum_cube += weights[i] * proj.powi(3);
         }
-        nu[k] = (sum_cube / total_w) / lambda.powf(1.5);
+        nu[k] = (sum_cube / total_w) / lambda.dpowf(1.5);
     }
 
     // Global 3D indices
@@ -364,7 +366,7 @@ pub fn rdf_descriptors(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
             for k in 0..N_SHELLS {
                 let r_k = (k as f64 + 1.0) * 0.5; // 0.5, 1.0, ..., 10.0
                 let diff = r_k - rij;
-                g[k] += weight * (-BETA * diff * diff).exp();
+                g[k] += weight * (-BETA * diff * diff).dexp();
             }
         }
     }

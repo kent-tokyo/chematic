@@ -322,9 +322,40 @@ pub fn canonical_smiles(mol: &Molecule) -> String {
     if mol.atom_count() == 0 {
         return String::new();
     }
+    let cleaned = without_lone_markers(mol);
+    let mol = cleaned.as_ref().unwrap_or(mol);
 
     let (_, winning_string) = winning_individualized_ranks(mol);
     winning_string
+}
+
+/// `mol` without `/`/`\\` markers that take part in no E/Z specification
+/// (a marker flanking only double bonds whose other end has no marker, or
+/// that sit in rings of fewer than eight atoms), or `None` when it has
+/// none. RDKit drops such markers when parsing; removing them first makes
+/// a spelling with and without them canonicalize alike. A literal
+/// `Up`/`Down` order becomes `Single`.
+fn without_lone_markers(mol: &Molecule) -> Option<Molecule> {
+    let mut out: Option<Molecule> = None;
+    loop {
+        let current = out.as_ref().unwrap_or(mol);
+        let lone: Vec<BondIdx> = current
+            .bonds()
+            .filter(|&(bidx, _)| crate::writer::raw_bond_direction(current, bidx).is_some())
+            .filter(|&(bidx, _)| !crate::writer::flanks_marked_double_bond(current, bidx))
+            .map(|(bidx, _)| bidx)
+            .collect();
+        if lone.is_empty() {
+            return out;
+        }
+        let next = out.get_or_insert_with(|| mol.clone());
+        for bidx in lone {
+            next.clear_bond_direction(bidx);
+            if matches!(next.bond(bidx).order, BondOrder::Up | BondOrder::Down) {
+                next.set_bond_order(bidx, BondOrder::Single);
+            }
+        }
+    }
 }
 
 /// [`canonical_smiles`] together with the order in which the atoms appear in
@@ -340,6 +371,8 @@ pub fn canonical_smiles_with_atom_order(mol: &Molecule) -> (String, Vec<AtomIdx>
     if mol.atom_count() == 0 {
         return (String::new(), Vec::new());
     }
+    let cleaned = without_lone_markers(mol);
+    let mol = cleaned.as_ref().unwrap_or(mol);
     let (ranks, winning_string) = winning_individualized_ranks(mol);
     // The winner may have been written from an equivalent E/Z carrier
     // spelling of `mol` (same atoms and bonds, different directional
@@ -662,6 +695,9 @@ pub(crate) struct CanonicalWriter<'a> {
     /// carrier polarity because either legal digit occurrence can encode the
     /// same bond direction.
     ring_marker_on_close: HashSet<BondIdx>,
+    /// Double bonds checked by [`Self::suppress_lone_marker`] for lying in
+    /// a ring of fewer than eight atoms.
+    small_ring_double: std::cell::RefCell<HashMap<BondIdx, bool>>,
     next_ring: u32,
     out: String,
     /// Atoms in the order `write_chain` emitted them.
@@ -818,6 +854,7 @@ impl<'a> CanonicalWriter<'a> {
             ring_bonds: vec![false; mol.bond_count()],
             atom_ring_nums: vec![Vec::new(); n],
             ring_marker_on_close: HashSet::new(),
+            small_ring_double: std::cell::RefCell::new(HashMap::new()),
             next_ring: 1,
             out: String::with_capacity(n.saturating_mul(4) + mol.bond_count().saturating_mul(2)),
             order: Vec::with_capacity(n),
@@ -873,6 +910,41 @@ impl<'a> CanonicalWriter<'a> {
     /// emission alike) must go through this, not read `bond_direction`/
     /// `order` directly, or the two sites can disagree on which bond a
     /// moved E/Z marker landed on.
+    /// Drop a `/`/`\\` token that takes part in no E/Z specification: a
+    /// standalone wedge, or a marker flanking only double bonds whose other
+    /// end will carry no marker in this output (RDKit drops such tokens, so
+    /// writing one would make the canonical form unstable).
+    fn suppress_lone_marker(&self, bidx: BondIdx, order: BondOrder) -> BondOrder {
+        let order = suppress_standalone_wedge(self.mol, bidx, order);
+        if !matches!(order, BondOrder::Up | BondOrder::Down) {
+            return order;
+        }
+        let bond = self.mol.bond(bidx);
+        let small_ring_double = |db: BondIdx| {
+            let mut cache = self.small_ring_double.borrow_mut();
+            *cache
+                .entry(db)
+                .or_insert_with(|| crate::writer::in_ring_smaller_than_eight(self.mol, db))
+        };
+        let specifies = [bond.atom1, bond.atom2].into_iter().any(|end| {
+            self.mol.neighbors(end).any(|(far, db)| {
+                db != bidx
+                    && self.mol.bond(db).order == BondOrder::Double
+                    && self.mol.neighbors(far).any(|(_, sb)| {
+                        sb != db
+                            && sb != bidx
+                            && matches!(self.effective_order(sb), BondOrder::Up | BondOrder::Down)
+                    })
+                    && !small_ring_double(db)
+            })
+        });
+        if specifies {
+            order
+        } else {
+            Self::plain_order(self.mol.bond(bidx).order)
+        }
+    }
+
     fn effective_order(&self, bidx: BondIdx) -> BondOrder {
         if let Some(orders) = &self.direct_ez_orders
             && let Some(&order) = orders.get(&bidx)
@@ -1107,11 +1179,52 @@ impl<'a> CanonicalWriter<'a> {
         });
         let ring_set = needs_ring_check.then(|| chematic_perception::find_sssr(mol));
         let rings = ring_set.as_ref().map(|set| set.rings());
+        // A double bond with two equivalent substituents at one end (=CF2,
+        // =C(C#N)2, =CD2) is not stereogenic; its ends must not take part in
+        // carrier resolution, or a marker merely adjacent to it would steer
+        // the choice for a real stereo bond next to it.
+        // The equivalence classes are computed only when two substituents
+        // could be equivalent at all (same element, degree and H count).
+        let classes: std::cell::OnceCell<std::sync::Arc<Vec<usize>>> = std::cell::OnceCell::new();
+        // Without any `/`/`\\` marker there is no carrier to resolve.
+        let has_markers = mol
+            .bonds()
+            .any(|(b, _)| crate::writer::raw_bond_direction(mol, b).is_some());
+        let symmetric_end = |end: AtomIdx, other: AtomIdx| {
+            if !has_markers {
+                return false;
+            }
+            let mut subs = mol
+                .neighbors(end)
+                .filter(|&(nb, _)| nb != other)
+                .map(|(nb, _)| nb);
+            let (Some(a), Some(b), None) = (subs.next(), subs.next(), subs.next()) else {
+                return false;
+            };
+            let (x, y) = (mol.atom(a), mol.atom(b));
+            if x.element != y.element
+                || x.isotope != y.isotope
+                || x.charge != y.charge
+                || mol.degree(a) != mol.degree(b)
+                || chematic_core::implicit_hcount(mol, a) != chematic_core::implicit_hcount(mol, b)
+            {
+                return false;
+            }
+            let classes = classes.get_or_init(|| {
+                mol.derived(chematic_core::DerivedSlot::TopologicalClasses, || {
+                    crate::canonical_partition::topological_equivalence_classes(mol)
+                })
+            });
+            classes[a.0 as usize] == classes[b.0 as usize]
+        };
         let mut ends = HashSet::new();
         for (_, bond) in candidates {
             if rings.is_some_and(|rings| {
                 Self::double_bond_endocyclic_in_small_ring(rings, bond.atom1, bond.atom2)
             }) {
+                continue;
+            }
+            if symmetric_end(bond.atom1, bond.atom2) || symmetric_end(bond.atom2, bond.atom1) {
                 continue;
             }
             for end in [bond.atom1, bond.atom2] {
@@ -1718,15 +1831,21 @@ impl<'a> CanonicalWriter<'a> {
         if Self::substituents(self.mol, other_end).len() != 1 {
             return false; // other_end is itself ambiguous -- has its own resolution path
         }
+        // Only a double bond that is specified -- its far end carries a
+        // marker too, and it is not held cis by a small ring -- depends on
+        // this marker; a lone marker means nothing and is dropped on output.
         self.mol.neighbors(other_end).any(|(_, nb_bidx)| {
             nb_bidx != bidx
                 && self.mol.bond(nb_bidx).order == BondOrder::Double
+                && !crate::writer::in_ring_smaller_than_eight(self.mol, nb_bidx)
                 && Self::end_has_substituent(self.mol, other_end)
-                && self
-                    .mol
-                    .bond(nb_bidx)
-                    .other(other_end)
-                    .is_some_and(|far| Self::end_has_substituent(self.mol, far))
+                && self.mol.bond(nb_bidx).other(other_end).is_some_and(|far| {
+                    Self::end_has_substituent(self.mol, far)
+                        && self
+                            .mol
+                            .neighbors(far)
+                            .any(|(_, sb)| sb != nb_bidx && self.raw_input_direction(sb).is_some())
+                })
         })
     }
 
@@ -2253,7 +2372,7 @@ impl<'a> CanonicalWriter<'a> {
                         other => other,
                     }
                 };
-                let bond_order = suppress_standalone_wedge(self.mol, bidx, bond_order);
+                let bond_order = self.suppress_lone_marker(bidx, bond_order);
                 // Whether a ring-closure digit needs an explicit bond-order
                 // prefix depends on BOTH endpoints' aromaticity, exactly like
                 // a tree-edge's own `implicit` computation below: a bare
@@ -2323,7 +2442,7 @@ impl<'a> CanonicalWriter<'a> {
             let normalized = self.normalize_ez(bidx, atom);
             let bond_order =
                 Self::reorient_for_write(self.raw_direction_anchor(bidx), atom, normalized);
-            let bond_order = suppress_standalone_wedge(self.mol, bidx, bond_order);
+            let bond_order = self.suppress_lone_marker(bidx, bond_order);
             let is_last = i == n - 1;
             let parent_arom = self.mol.atom(atom).aromatic;
             let child_arom = self.mol.atom(child).aromatic;
@@ -4123,7 +4242,7 @@ mod tests {
     /// tests live in parser.rs and already re-run on every `cargo test`).
     #[test]
     fn canonical_aromatic_stash_with_real_double_bond_still_emits_direction() {
-        let mol = parse(r"N=c1\c(O)c(O)\c1=N").unwrap();
+        let mol = parse(r"C/N=c1\c(O)c(O)\c1=N/C").unwrap();
         let out = canonical_smiles(&mol);
         assert!(
             out.contains('/') || out.contains('\\'),
@@ -5451,13 +5570,12 @@ mod tests {
     ///    gets propagated).
     #[test]
     fn issue390_witness_geometry_preserved_and_stable() {
+        // `C=N/O` has a marker on one side only, which specifies nothing
+        // and is dropped (as RDKit does); the two defined bonds stay.
         let smi = "O/N=C/C(C=N/O)=N\\NC";
         let mol = parse(smi).unwrap();
         let canon = canonical_smiles(&mol);
-        assert_eq!(
-            canon, smi,
-            "canonical form must match this already-canonically-written input exactly"
-        );
+        assert_eq!(canon, "O/N=C/C(C=NO)=N\\NC");
 
         let reparsed = parse(&canon).unwrap();
         let canon_twice = canonical_smiles(&reparsed);

@@ -1,9 +1,9 @@
 # Validation report
 
-Updated 2026-10-04 for **v1.0.34**. The broad chemistry
+Updated 2026-10-05 for **v1.0.35**. The broad chemistry
 and speed packet remains pinned to published v1.0.30; the separately named A6
-quality rows use published v1.0.31 artifacts. v1.0.34 is verified on six
-publication channels, while its package-output reruns remain open. Every
+quality rows use published v1.0.31 artifacts. v1.0.35 package-output reruns
+remain open. Every
 comparison is limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
@@ -17,7 +17,7 @@ comparison is limited to its recorded artifact, comparator, corpus and operation
 | Paired speed (P0.2) | Published Python: 20 operations pass exact-output and paired-interval gates in 20 alternating blocks on one host. Isolated Python and Rust lanes split parse-inclusive, first-use and precomputed calls. Whole-process RSS is not library allocation; changed HBA output is not an equivalent-output speed win. | [Python matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) · [isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) · [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) |
 | Published browser Morgan | On Ubuntu 24.04, Chromium, Firefox and WebKit each have 250/250 direct and prepared bit parity and favorable 20-block speed intervals versus official RDKit.js (smallest lower bound 1.63×). A separate Chromium 10k lane has 9,999 exact and one typed Fe refusal. No universal browser or memory claim. | [Three-browser record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) · [M4 Chromium](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md) |
 | Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.30 Rust: 73/83 graph/origin/map exact. PR #755 release-profile **source** wheels on Linux/macOS: 80/83 exact and three jointly invalid; the WASM Node 83-row test passed. Published v1.0.34 packages need their own rerun. No general SMIRKS parity claim. | [Published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md) · [PR #755 and CI](https://github.com/kent-tokyo/chematic/pull/755) |
-| Release channels | v1.0.34 GitHub Release, npm, PyPI, 20 crates.io archives, docs.rs and Pages were directly verified. This confirms availability, not chemical accuracy. | [v1.0.34 record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.34.json) |
+| Release channels | v1.0.34 GitHub Release, npm, PyPI, 20 crates.io archives, docs.rs and Pages were directly verified. v1.0.35 publication is pending. Availability does not establish chemical accuracy. | [v1.0.34 record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.34.json) |
 
 ## Other bounded results
 
@@ -38,9 +38,10 @@ comparison is limited to its recorded artifact, comparator, corpus and operation
 - **3D/MMFF94:** Experimental. Published v1.0.31 macOS quality checks pass
   geometry/stereo/clash on 265/265, but only 100/265 converge at the declared
   limit; 262 comparable same-coordinate total energies are within 1 kcal/mol.
-  Linux/Python 3.9 published and source wheels both have typed stereo failures
-  on rows 53/246, so cross-platform equivalence and independent conformer
-  quality remain open. [Quality record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md)
+  Linux/Python 3.9 published wheels have typed stereo failures on rows
+  53/246; unreleased source, which takes its math from the `libm` crate,
+  passes 265/265 on Linux ([record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-04-stereo-integrity-smarts-a6-followups.md)).
+  A macOS rerun of that build and independent conformer quality remain open. [Quality record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md)
   · [platform diagnosis](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-a6-source-mmff94-termination.md).
 
 Earlier source diagnostics and per-release channel checks remain in the

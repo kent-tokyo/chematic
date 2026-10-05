@@ -22,25 +22,22 @@
 //! this module writes goes through [`chematic_core::Molecule::set_bond_direction`]
 //! -- the same side channel already used to stash an aromatic-bond-adjacent
 //! E/Z direction, generalized here to a plain `Single`-order bond too -- a
-//! strictly separate storage slot from `order`. A candidate substituent bond
-//! whose *own* `order` is already `Up`/`Down` (an existing wedge) is never
-//! usable as an E/Z carrier: see [`EzDirectionRejectionReason::CarrierConflict`].
+//! strictly separate storage slot from `order`. A wedge/hash bond is used
+//! as an E/Z carrier only when the alkene end has no plain substituent
+//! bond; its direction then sits in `bond_direction`, which every E/Z
+//! reader prefers over the literal order.
 //!
-//! ## Scope limits (deliberate, see `docs/rfcs/stereo2d_reader_integration_rfc.md`)
+//! ## Shared carriers
 //!
-//! - Joint canonical carrier resolution across independently-stereogenic
-//!   double bonds that share one physical candidate bond (issue #149) is out
-//!   of scope. When two double bonds computed FROM RAW GEOMETRY ALONE (never
-//!   from each other's output) happen to require the *same* literal
-//!   direction on a shared bond, both succeed (this is the ordinary,
-//!   expected shape of a conjugated diene, e.g. `(2E,4E)-hexa-2,4-diene`).
-//!   When they disagree, *both* double bonds relying on that bond are
-//!   rejected with [`EzDirectionRejectionReason::CarrierConflict`] rather
-//!   than letting bond-index or processing order pick an arbitrary winner.
-//! - No retry/search across double bonds is attempted beyond the natural
-//!   sibling fallback within one alkene end (see [`resolve_end`]). A
-//!   fixed-point joint resolver is exactly the issue #149 problem this PR
-//!   does not solve.
+//! Only the relative direction of a double bond's two carriers encodes its
+//! geometry, so both may be flipped together. Double bonds whose carriers
+//! interact -- two claiming one bond, or an alkene end whose two
+//! substituents both end up marked (its own carrier and a neighbouring
+//! double bond's) -- are reconciled by a two-colouring of those
+//! constraints, as RDKit does for conjugated polyenes. Only a set of
+//! constraints with no consistent colouring rejects its double bonds with
+//! [`EzDirectionRejectionReason::CarrierConflict`]. Double bonds in rings
+//! of fewer than eight atoms are not candidates.
 //!
 //! ## Aromatic (Kekulé) ring bonds are never candidates
 //!
@@ -187,28 +184,13 @@ pub fn apply_ez_directions_from_2d_ex(
     // as an E/Z candidate.
     let aromaticity = assign_aromaticity(mol);
 
-    // Pre-pass: a branch point (2-substituent alkene end) with a
-    // substituent that is itself part of a DIFFERENT double bond poisons
-    // BOTH double bonds, not just its own -- see
-    // `poisoned_by_branch_ambiguity`'s doc comment for why rejecting only
-    // the branch point's own bond is not sufficient (OpenSMILES `/`/`\`
-    // markers are read by plain adjacency, not by which system "intended"
-    // them, so the neighboring double bond's own, otherwise-legitimate
-    // marker unavoidably leaks into the branch point's perceived stereo
-    // too).
-    let poisoned = poisoned_by_branch_ambiguity(mol, &aromaticity);
-
     // Phase 1: classify every double bond independently, from raw geometry
     // and topology alone -- never from another double bond's outcome, so
     // the result for one bond can't depend on which order this loop visits
     // bonds in.
     let mut outcomes: HashMap<BondIdx, EzOutcome> = HashMap::with_capacity(double_bonds.len());
     for &bidx in &double_bonds {
-        let outcome = if poisoned.contains(&bidx) {
-            EzOutcome::Rejected(EzDirectionRejectionReason::CarrierConflict)
-        } else {
-            classify_double_bond(mol, coords, bidx, explicitly_unspecified, &aromaticity)
-        };
+        let outcome = classify_double_bond(mol, coords, bidx, explicitly_unspecified, &aromaticity);
         outcomes.insert(bidx, outcome);
     }
 
@@ -237,15 +219,103 @@ pub fn apply_ez_directions_from_2d_ex(
                 .push((db, carrier_a2.1));
         }
     }
-    let mut conflicted: HashSet<BondIdx> = HashSet::new();
-    for claimants in claims.values() {
-        if claimants.len() > 1 {
-            let first = claimants[0].1;
-            if claimants.iter().any(|&(_, v)| v != first) {
-                for &(db, _) in claimants {
-                    conflicted.insert(db);
+    // Only the relative direction of a double bond's two carriers encodes
+    // its geometry, so flipping both keeps it. Two double bonds that claim
+    // the same bond with opposite values are reconciled by flipping one of
+    // them (a two-colouring of the claim graph, as RDKit's direction
+    // assignment does for conjugated polyenes). Only a claim graph with no
+    // consistent colouring (an odd cycle) still rejects every double bond
+    // in it.
+    let mut parent: HashMap<BondIdx, (BondIdx, bool)> = HashMap::new();
+    fn find(parent: &mut HashMap<BondIdx, (BondIdx, bool)>, x: BondIdx) -> (BondIdx, bool) {
+        let (p, flip) = *parent.get(&x).unwrap_or(&(x, false));
+        if p == x {
+            return (x, false);
+        }
+        let (root, f) = find(parent, p);
+        parent.insert(x, (root, flip ^ f));
+        (root, flip ^ f)
+    }
+    // Constraints `flip(x) ^ flip(y) == want`:
+    // * two double bonds claiming one bond must leave it one value;
+    // * an alkene end whose two substituents both carry a marker (its own
+    //   carrier and another double bond's) needs them on opposite sides, as
+    //   every SMILES reader requires.
+    let up_from = |bond: BondIdx, dir: BondOrder, end: AtomIdx| {
+        (mol.bond(bond).atom1 == end) == (dir == BondOrder::Up)
+    };
+    let mut constraints: Vec<(BondIdx, BondIdx, bool)> = Vec::new();
+    let mut claim_list: Vec<&Vec<(BondIdx, BondOrder)>> = claims.values().collect();
+    claim_list.sort_by_key(|c| c.iter().map(|&(db, _)| db.0).min());
+    for claimants in &claim_list {
+        let (db0, v0) = claimants[0];
+        for &(db, v) in &claimants[1..] {
+            constraints.push((db0, db, v != v0));
+        }
+    }
+    type Carrier = (BondIdx, BondOrder);
+    let mut assigned_sorted: Vec<(BondIdx, Carrier, Carrier)> = outcomes
+        .iter()
+        .filter_map(|(&db, o)| match o {
+            EzOutcome::Assigned {
+                carrier_a1,
+                carrier_a2,
+            } => Some((db, *carrier_a1, *carrier_a2)),
+            _ => None,
+        })
+        .collect();
+    assigned_sorted.sort_by_key(|&(db, ..)| db.0);
+    for &(db, c1, c2) in &assigned_sorted {
+        let bond = mol.bond(db);
+        for (end, (cx, vx)) in [(bond.atom1, c1), (bond.atom2, c2)] {
+            for (_, m) in mol.neighbors(end) {
+                if m == db || m == cx {
+                    continue;
+                }
+                for &(other, vy) in claims.get(&m).map(Vec::as_slice).unwrap_or(&[]) {
+                    if other != db {
+                        let same = up_from(cx, vx, end) == up_from(m, vy, end);
+                        constraints.push((db, other, same));
+                    }
                 }
             }
+        }
+    }
+    let mut inconsistent: HashSet<BondIdx> = HashSet::new();
+    for (db0, db, want) in constraints {
+        {
+            let (r0, f0) = find(&mut parent, db0);
+            let (r1, f1) = find(&mut parent, db);
+            if r0 == r1 {
+                if f0 ^ f1 != want {
+                    inconsistent.insert(r0);
+                }
+            } else {
+                let (lo, hi, fl) = if r0.0 < r1.0 {
+                    (r0, r1, f0 ^ f1 ^ want)
+                } else {
+                    (r1, r0, f0 ^ f1 ^ want)
+                };
+                parent.insert(hi, (lo, fl));
+                if inconsistent.remove(&hi) {
+                    inconsistent.insert(lo);
+                }
+            }
+        }
+    }
+    let mut conflicted: HashSet<BondIdx> = HashSet::new();
+    let mut flipped: HashSet<BondIdx> = HashSet::new();
+    let assigned: Vec<BondIdx> = outcomes
+        .iter()
+        .filter(|(_, o)| matches!(o, EzOutcome::Assigned { .. }))
+        .map(|(&db, _)| db)
+        .collect();
+    for db in assigned {
+        let (root, flip) = find(&mut parent, db);
+        if inconsistent.contains(&root) {
+            conflicted.insert(db);
+        } else if flip {
+            flipped.insert(db);
         }
     }
 
@@ -268,8 +338,13 @@ pub fn apply_ez_directions_from_2d_ex(
                         reason: EzDirectionRejectionReason::CarrierConflict,
                     });
                 } else {
-                    mol.set_bond_direction(carrier_a1.0, carrier_a1.1);
-                    mol.set_bond_direction(carrier_a2.0, carrier_a2.1);
+                    let flip = |d: BondOrder| match (flipped.contains(&bidx), d) {
+                        (true, BondOrder::Up) => BondOrder::Down,
+                        (true, BondOrder::Down) => BondOrder::Up,
+                        (_, d) => d,
+                    };
+                    mol.set_bond_direction(carrier_a1.0, flip(carrier_a1.1));
+                    mol.set_bond_direction(carrier_a2.0, flip(carrier_a2.1));
                 }
             }
         }
@@ -334,6 +409,13 @@ fn classify_double_bond(
         return EzOutcome::NotRequested;
     }
 
+    // A double bond in a ring of fewer than eight atoms is held cis by the
+    // ring, so its drawn geometry carries no stereo (RDKit's
+    // `shouldDetectDoubleBondStereo`, used when reading MOL blocks).
+    if in_ring_smaller_than(mol, bond_idx, 8) {
+        return EzOutcome::NotRequested;
+    }
+
     // Cumulated pi system (allene/cumulene): an endpoint with another double
     // bond besides this one. Checked before the terminal-alkene check so a
     // cumulated system is reported as UnsupportedTopology, never silently
@@ -379,8 +461,8 @@ fn classify_double_bond(
     // these directions (`chematic_chem::cip::assign_ez`) reproduces the
     // same Z/E verdict `assign_ez_from_2d` would compute directly from the
     // same coordinates.
-    let end1 = resolve_end(mol, coords, a1, &subs_a1, p1, axis, aromaticity);
-    let end2 = resolve_end(mol, coords, a2, &subs_a2, p1, axis, aromaticity);
+    let end1 = resolve_end(mol, coords, a1, &subs_a1, p1, axis);
+    let end2 = resolve_end(mol, coords, a2, &subs_a2, p1, axis);
 
     match (end1, end2) {
         (EndOutcome::NonStereogenic, _) | (_, EndOutcome::NonStereogenic) => {
@@ -422,7 +504,6 @@ fn resolve_end(
     subs: &[(AtomIdx, BondIdx)],
     axis_origin: (f64, f64),
     axis: (f64, f64),
-    aromaticity: &AromaticityModel,
 ) -> EndOutcome {
     if subs.len() == 2
         && compare_branches(mol, end, subs[0].0, subs[1].0) == std::cmp::Ordering::Equal
@@ -430,38 +511,15 @@ fn resolve_end(
         return EndOutcome::NonStereogenic;
     }
 
-    // A 2-substituted end where EITHER candidate is itself an endpoint of a
-    // DIFFERENT, genuinely-classifiable (non-aromatic) double bond is a
-    // branch-point-adjacent-to-conjugation shape this module deliberately
-    // does not attempt (see `is_conjugated_to_another_double_bond`'s doc
-    // comment for the full root-cause writeup: found empirically on the
-    // broad-corpus run, not anticipated by the original design). Choosing
-    // either candidate here risks corruption downstream in
-    // `chematic_smiles::canonical`'s pre-existing `resolve_ez_markers`,
-    // which cannot tell "a marker scoped to a different double bond's axis"
-    // apart from "no marker at all" -- and reusing the conjugated
-    // candidate as a shared carrier is NOT guaranteed to agree with the
-    // neighboring system's own requirement the way a straight-chain
-    // conjugated diene's shared bond is (that guarantee relies on neither
-    // flanking atom having an extra branch; a branch point breaks it, and a
-    // real disagreeing pair confirmed this directly). Reject rather than
-    // guess, exactly like the ordinary conjugated-diene shared-carrier
-    // agreement check, just detected one step earlier (before ever writing
-    // a value) since a branch point can't be resolved without solving the
-    // Issue #149 joint-carrier problem this module is out of scope for.
-    if subs.len() == 2
-        && subs
-            .iter()
-            .any(|&(a, b)| is_conjugated_to_another_double_bond(mol, a, b, aromaticity))
-    {
-        return EndOutcome::Failed(EzDirectionRejectionReason::CarrierConflict);
-    }
-
     let mut first_geometry_failure: Option<EzDirectionRejectionReason> = None;
-    for &(sub_atom, sub_bond) in subs {
-        if matches!(mol.bond(sub_bond).order, BondOrder::Up | BondOrder::Down) {
-            continue; // reserved for tetrahedral wedge/hash notation
-        }
+    // A wedge/hash bond (tetrahedral notation in its `order`) can still carry
+    // the direction in the separate `bond_direction` slot, which every E/Z
+    // reader prefers over a literal `Up`/`Down` order; it is only used when
+    // no plain bond will do (RDKit draws a wedge from a ring stereocentre to
+    // an alkene carbon that has no other substituent).
+    let mut ordered: Vec<(AtomIdx, BondIdx)> = subs.to_vec();
+    ordered.sort_by_key(|&(_, b)| matches!(mol.bond(b).order, BondOrder::Up | BondOrder::Down));
+    for &(sub_atom, sub_bond) in &ordered {
         if mol.bond_direction(sub_bond).is_some() {
             continue; // already occupied by an unrelated pre-existing stash
         }
@@ -483,8 +541,8 @@ fn resolve_end(
     }
     match first_geometry_failure {
         Some(reason) => EndOutcome::Failed(reason),
-        // Every candidate was skipped for occupancy reasons (wedge/hash or
-        // an unrelated stash), never for a geometry reason.
+        // Every candidate was skipped for occupancy reasons (an unrelated
+        // stash), never for a geometry reason.
         None => EndOutcome::Failed(EzDirectionRejectionReason::CarrierConflict),
     }
 }
@@ -493,147 +551,35 @@ fn resolve_end(
 // Small geometry/topology helpers
 // ---------------------------------------------------------------------------
 
-/// True when `atom` has a `BondOrder::Double` neighbor other than `exclude`
-/// -- i.e. `atom` sits in a cumulated pi system (allene/cumulene).
-/// Return whether a double bond can carry E/Z stereochemistry by topology
-/// alone.  This deliberately excludes coordinate- and input-specific
-/// conditions: callers use it only to decide whether two pi systems can
-/// compete for a textual `/` or `\` carrier.  A carbonyl, terminal alkene,
-/// allene, or locally symmetric alkene cannot do that and therefore must not
-/// cause an otherwise ordinary neighbouring alkene to be rejected.
-fn is_potential_ez_system(
-    mol: &Molecule,
-    bond_idx: BondIdx,
-    aromaticity: &AromaticityModel,
-) -> bool {
-    let bond = mol.bond(bond_idx);
-    if bond.order != BondOrder::Double || aromaticity.is_bond_aromatic(bond_idx) {
-        return false;
-    }
-    if has_other_double_bond(mol, bond.atom1, bond_idx)
-        || has_other_double_bond(mol, bond.atom2, bond_idx)
-    {
-        return false;
-    }
-    let left = substituents(mol, bond.atom1, bond.atom2);
-    let right = substituents(mol, bond.atom2, bond.atom1);
-    if left.is_empty() || right.is_empty() || left.len() > 2 || right.len() > 2 {
-        return false;
-    }
-    !(left.len() == 2
-        && compare_branches(mol, bond.atom1, left[0].0, left[1].0) == std::cmp::Ordering::Equal)
-        && !(right.len() == 2
-            && compare_branches(mol, bond.atom2, right[0].0, right[1].0)
-                == std::cmp::Ordering::Equal)
-}
-
-/// Find every double bond that must be rejected because a branch point (a
-/// 2-substituent alkene end) somewhere in the molecule has a substituent
-/// that is itself an endpoint of a DIFFERENT, potentially stereogenic
-/// double bond -- BOTH the branch point's own bond and that other bond are
-/// poisoned, not just the former.
-///
-/// Rejecting only the branch point's own double bond is NOT sufficient,
-/// confirmed empirically against a live RDKit oracle (not assumed): a
-/// directional marker in OpenSMILES is read by plain textual adjacency, not
-/// by which system produced it, so the OTHER double bond's own,
-/// individually-correct marker on the shared bond unavoidably becomes a
-/// (possibly wrong) reference substituent for the branch point's double
-/// bond too, once re-parsed by any standards-compliant consumer -- RDKit
-/// re-parsing chematic's own SMILES output for a real corpus molecule of
-/// this shape was directly observed inferring a definite (and wrong)
-/// stereo for the "rejected" bond purely from the neighboring bond's
-/// legitimate marker. This is exactly the Issue #149 joint-carrier problem,
-/// just discovered one step earlier than the ordinary shared-carrier
-/// agreement check in [`apply_ez_directions_from_2d_ex`] (which still
-/// handles the ordinary, non-branched conjugated-diene case correctly --
-/// this pre-pass only fires when a branch point is involved).
-fn poisoned_by_branch_ambiguity(
-    mol: &Molecule,
-    aromaticity: &AromaticityModel,
-) -> HashSet<BondIdx> {
-    let mut poisoned = HashSet::new();
-    for (bidx, bond) in mol.bonds() {
-        // A non-stereogenic double bond (notably a carbonyl) cannot be an
-        // E/Z system that competes for a `/` or `\` carrier.  Starting the
-        // scan from it would nevertheless find a neighbouring real alkene
-        // and incorrectly poison that alkene in both directions.
-        if bond.order != BondOrder::Double || !is_potential_ez_system(mol, bidx, aromaticity) {
-            continue;
-        }
-        for (end, other_end) in [(bond.atom1, bond.atom2), (bond.atom2, bond.atom1)] {
-            let subs = substituents(mol, end, other_end);
-            if subs.len() != 2 {
-                continue;
-            }
-            for &(sub_atom, sub_bond) in &subs {
-                let other_db =
-                    mol.neighbors(sub_atom)
-                        .map(|(_, nb_bidx)| nb_bidx)
-                        .find(|&nb_bidx| {
-                            nb_bidx != sub_bond && is_potential_ez_system(mol, nb_bidx, aromaticity)
-                        });
-                if let Some(other_db) = other_db {
-                    poisoned.insert(bidx);
-                    poisoned.insert(other_db);
+/// True when `bond` lies on a ring of fewer than `size` atoms: a path of at
+/// most `size - 2` other bonds joins its endpoints.
+fn in_ring_smaller_than(mol: &Molecule, bond: BondIdx, size: usize) -> bool {
+    let (start, goal) = (mol.bond(bond).atom1, mol.bond(bond).atom2);
+    let mut seen = HashSet::from([start]);
+    let mut frontier = vec![start];
+    for _ in 0..size.saturating_sub(2) {
+        let mut next = Vec::new();
+        for &a in &frontier {
+            for (nb, bi) in mol.neighbors(a) {
+                if bi == bond {
+                    continue;
+                }
+                if nb == goal {
+                    return true;
+                }
+                if seen.insert(nb) {
+                    next.push(nb);
                 }
             }
         }
+        frontier = next;
     }
-    poisoned
+    false
 }
 
 fn has_other_double_bond(mol: &Molecule, atom: AtomIdx, exclude: BondIdx) -> bool {
     mol.neighbors(atom)
         .any(|(_, bidx)| bidx != exclude && mol.bond(bidx).order == BondOrder::Double)
-}
-
-/// True when `sub_atom` (reached from an alkene end via `sub_bond`) is
-/// itself an endpoint of a DIFFERENT, potentially stereogenic double bond --
-/// i.e. `sub_atom` is part of a longer E/Z-capable conjugated system (an
-/// azine/hydrazone chain, a polyene, etc.), not a carbonyl, terminal, or
-/// otherwise non-stereogenic substituent.
-///
-/// Used by [`resolve_end`] to REJECT (not choose between) a 2-substituted
-/// end when either candidate has this shape -- a branch point immediately
-/// adjacent to a different double bond's own conjugated system. Found
-/// empirically on the broad-corpus run (not anticipated by the original
-/// design), via two failed attempts, both confirmed wrong by direct
-/// atom-level RDKit comparison before landing on this one:
-///
-/// 1. An earlier version of this module let the branch point's OTHER
-///    (unrelated) substituent carry its own, independently-computed
-///    direction. That value was individually correct for THIS axis, but
-///    `chematic_smiles::canonical`'s pre-existing `resolve_ez_markers`
-///    carrier-selection (which predates this module and cannot distinguish
-///    "a marker scoped to a different double bond's axis" from "no marker
-///    at all") could then silently discard it in favor of the conjugated
-///    substituent's OWN marker -- which is real, but scoped to the OTHER
-///    double bond's axis, not this one -- corrupting the result.
-/// 2. A second attempt tried reusing the conjugated substituent's bond as
-///    THIS end's own carrier too (mirroring how an ordinary conjugated
-///    diene's shared middle bond legitimately serves both flanking double
-///    bonds at once). Measured directly: this shared-bond-agreement
-///    guarantee holds for a straight chain (verified by hand for a real
-///    diene fixture) but does NOT generally hold once one of the two
-///    flanking atoms is a branch point with an extra substituent -- a real
-///    corpus molecule of exactly this shape produced two independently-
-///    computed, genuinely DISAGREEING requirements for the same bond.
-///
-/// Both failure modes are avoided by rejecting outright: this is exactly
-/// the Issue #149 joint-carrier-resolution problem this module is out of
-/// scope for, just detected one step earlier (before ever writing a value)
-/// rather than via the whole-molecule agreement check in
-/// [`apply_ez_directions_from_2d_ex`], which still catches the ordinary
-/// (non-branched) shared-carrier case correctly.
-fn is_conjugated_to_another_double_bond(
-    mol: &Molecule,
-    sub_atom: AtomIdx,
-    sub_bond: BondIdx,
-    aromaticity: &AromaticityModel,
-) -> bool {
-    mol.neighbors(sub_atom)
-        .any(|(_, bidx)| bidx != sub_bond && is_potential_ez_system(mol, bidx, aromaticity))
 }
 
 /// Non-double-bond neighbors of `end`, excluding `other_end` (the double
@@ -970,18 +916,15 @@ mod tests {
     }
 
     #[test]
-    fn existing_wedge_on_only_candidate_is_carrier_conflict() {
+    fn existing_wedge_on_only_candidate_carries_direction_in_side_table() {
         // The ONE substituent bond at an end already carries a literal
-        // wedge (as if a tetrahedral-parity stage ran first and this same
-        // physical bond was drawn as a wedge from the OTHER endpoint's
-        // perspective) -- must never be reinterpreted as an E/Z marker, and
-        // with no sibling to fall back to, the whole double bond rejects.
+        // wedge (RDKit draws the wedge from a ring stereocentre to such an
+        // alkene carbon). It becomes the carrier: the direction goes in
+        // `bond_direction`, which E/Z readers prefer, and the wedge order
+        // itself is left untouched for tetrahedral perception.
         let (mol, coords, db) = but2ene((-0.866, 0.5), (0.0, 0.0), (1.5, 0.0), (2.366, 0.5));
         let bond = mol.bond(db);
         let sub1 = mol.bond_between(bond.atom1, AtomIdx(0)).unwrap().0;
-        // There is no in-place bond-order setter, so rebuild through the
-        // builder to force sub1's order to a literal wedge (`Up`), keeping
-        // every other atom/bond identical.
         let mut b = MoleculeBuilder::new();
         for (_, atom) in mol.atoms() {
             b.add_atom(atom.clone());
@@ -997,14 +940,9 @@ mod tests {
         let mut mol = b.build();
 
         let diagnostics = apply_ez_directions_from_2d_with_diagnostics(&mut mol, &coords);
-        assert_eq!(diagnostics.len(), 1);
-        assert_eq!(
-            diagnostics[0].reason,
-            EzDirectionRejectionReason::CarrierConflict
-        );
-        // The wedge itself must survive untouched.
+        assert!(diagnostics.is_empty(), "{diagnostics:?}");
         assert_eq!(mol.bond(sub1).order, BondOrder::Up);
-        assert!(mol.bond_direction(sub1).is_none());
+        assert!(mol.bond_direction(sub1).is_some());
     }
 
     #[test]
@@ -1119,12 +1057,11 @@ mod tests {
     }
 
     #[test]
-    fn conjugated_diene_shared_bond_conflict() {
-        // Deliberately non-planar-consistent layout (hand-verified): bond1
-        // requires `Up` on the shared Cb-Cc bond while bond2 independently
-        // requires `Down` on the SAME physical bond. Per module scope, both
-        // double bonds relying on it must reject with CarrierConflict --
-        // neither wins by bond-index/parse order, and nothing is written.
+    fn conjugated_diene_shared_bond_conflict_is_reconciled() {
+        // The two double bonds computed independently want opposite values
+        // on the shared Cb-Cc bond. Flipping both carriers of one of them
+        // keeps its geometry, so both are kept: Ca=Cb is cis (Me1 and Cc
+        // above the axis) and Cc=Cd is trans (Cb left, Me2 right).
         let mut b = MoleculeBuilder::new();
         let me1 = b.add_atom(Atom::new(Element::C));
         let ca = b.add_atom(Atom::new(Element::C));
@@ -1132,11 +1069,11 @@ mod tests {
         let cc = b.add_atom(Atom::new(Element::C));
         let cd = b.add_atom(Atom::new(Element::C));
         let me2 = b.add_atom(Atom::new(Element::C));
-        b.add_bond(me1, ca, BondOrder::Single).unwrap();
+        let c1 = b.add_bond(me1, ca, BondOrder::Single).unwrap();
         b.add_bond(ca, cb, BondOrder::Double).unwrap();
         let shared = b.add_bond(cb, cc, BondOrder::Single).unwrap();
         b.add_bond(cc, cd, BondOrder::Double).unwrap();
-        b.add_bond(cd, me2, BondOrder::Single).unwrap();
+        let c2 = b.add_bond(cd, me2, BondOrder::Single).unwrap();
         let mut mol = b.build();
         let coords = vec![
             (-1.0, 1.0), // Me1
@@ -1147,15 +1084,13 @@ mod tests {
             (3.0, 3.0),  // Me2
         ];
         let diagnostics = apply_ez_directions_from_2d_with_diagnostics(&mut mol, &coords);
-        assert_eq!(diagnostics.len(), 2, "{diagnostics:?}");
-        assert!(
-            diagnostics
-                .iter()
-                .all(|d| d.reason == EzDirectionRejectionReason::CarrierConflict)
-        );
-        assert!(
-            mol.bond_direction(shared).is_none(),
-            "a conflicting shared carrier must end up with NO direction written"
-        );
+        assert!(diagnostics.is_empty(), "{diagnostics:?}");
+        // "Up" read from the bond's atom1: the far atom is above it.
+        let up_from = |bond: BondIdx, end: AtomIdx| {
+            let dir = mol.bond_direction(bond).expect("carrier written");
+            (mol.bond(bond).atom1 == end) == (dir == BondOrder::Up)
+        };
+        assert_eq!(up_from(c1, ca), up_from(shared, cb), "Ca=Cb cis");
+        assert_ne!(up_from(shared, cc), up_from(c2, cd), "Cc=Cd trans");
     }
 }

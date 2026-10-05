@@ -117,11 +117,13 @@ fn test_smiles_respelling_invariance() {
 
 #[test]
 fn test_double_bond_duplication_structure() {
-    // C=C, rooted at atom 0: departure-side (atom0's own list, iterating its
-    // neighbors) contributes 1 duplicate of atom1; arrival-side (atom1's own list,
-    // since its incoming edge was the double bond) contributes 1 duplicate of atom0.
-    // 2 duplicates total -- both halves of the symmetric rule, not just one.
-    let mol = parse("C=C").unwrap();
+    // CC=C, rooted at atom 0: departure-side (atom1's own list, iterating its
+    // neighbors) contributes 1 duplicate of atom2; arrival-side (atom2's own list,
+    // since its incoming edge was the double bond) contributes 1 duplicate of atom1.
+    // 2 duplicates total -- both halves of the symmetric rule, not just one. (A
+    // multiple bond at the root itself is not expanded, as in RDKit's CIPLabeler;
+    // see `test_root_multiple_bond_is_not_duplicated`.)
+    let mol = parse("CC=C").unwrap();
     let mut g = CipDigraph::new(&mol, AtomIdx(0), CipBudget::default_budget()).unwrap();
     g.expand_all(g.root()).unwrap();
     let dup_count = g
@@ -137,8 +139,8 @@ fn test_double_bond_duplication_structure() {
 
 #[test]
 fn test_triple_bond_duplication_structure() {
-    // C#C: 2 duplicates on each side (k-1=2), 4 total.
-    let mol = parse("C#C").unwrap();
+    // CC#C: 2 duplicates on each side of the non-root triple bond (k-1=2), 4 total.
+    let mol = parse("CC#C").unwrap();
     let mut g = CipDigraph::new(&mol, AtomIdx(0), CipBudget::default_budget()).unwrap();
     g.expand_all(g.root()).unwrap();
     let dup_count = g
@@ -150,6 +152,24 @@ fn test_triple_bond_duplication_structure() {
         dup_count, 4,
         "a triple bond must duplicate its partner twice into BOTH atoms' own lists"
     );
+}
+
+#[test]
+fn test_root_multiple_bond_is_not_duplicated() {
+    // RDKit's CIPLabeler does not expand bond orders at the root, so a P=O
+    // oxygen of a phosphorus stereocentre carries no duplicate P and ranks
+    // like the O- of the [P+][O-] spelling.
+    for smi in ["P(=O)(OC)(N)C", "[P+]([O-])(OC)(N)C"] {
+        let mol = parse(smi).unwrap();
+        let mut g = CipDigraph::new(&mol, AtomIdx(0), CipBudget::default_budget()).unwrap();
+        g.expand_all(g.root()).unwrap();
+        let dup_count = g
+            .nodes()
+            .iter()
+            .filter(|n| matches!(n.kind, CipNodeKind::MultipleBondDuplicate { .. }))
+            .count();
+        assert_eq!(dup_count, 0, "{smi}");
+    }
 }
 
 #[test]

@@ -2398,48 +2398,31 @@ pub fn cns_mpo_score(mol: &Molecule) -> f64 {
 // Per-atom property vectors
 // ---------------------------------------------------------------------------
 
-/// Per-atom hybridization state.
+/// Per-atom hybridization state, in RDKit's model.
 ///
 /// Returns a `Vec<u8>` of length `mol.atom_count()` with:
-///   `1` = sp, `2` = sp2, `3` = sp3, `0` = other (metals, wildcard, etc.)
+///   `1` = sp, `2` = sp2, `3` = sp3, `0` = other (s, sp3d, sp3d2, metals
+///   without a defined state, wildcard atoms).
 ///
-/// Assignment rules:
-/// - Wildcard atom (`*`) → 0
-/// - Aromatic atom → 2
-/// - Has a triple bond → 1
-/// - Has any double bond → 2
-/// - Otherwise → 3 (sp3)
+/// Values follow RDKit 2026.03's `ConjugHybrid` (the same model as the SMARTS
+/// `^n` primitive, [`chematic_smarts::rdkit_hybridization`], evaluated on
+/// RDKit's aromaticity view of `mol`): a lone pair
+/// counts as an orbital, so an amide or enamine N, an aryl ether O and a
+/// carboxylate O⁻ are sp2; five- and six-orbital centres (PF₅, SF₆) are
+/// sp3d/sp3d2 and report `0`. Before 1.0.35 this used bond orders only (any
+/// atom without a multiple bond was sp3).
 pub fn hybridization_per_atom(mol: &Molecule) -> Vec<u8> {
-    let n = mol.atom_count();
-    let mut out = vec![3u8; n];
-    for (idx, atom) in mol.atoms() {
-        let i = idx.0 as usize;
-        if atom.wildcard {
-            out[i] = 0;
-            continue;
-        }
-        if atom.aromatic {
-            out[i] = 2;
-            continue;
-        }
-        let mut has_triple = false;
-        let mut has_double = false;
-        for (_, bidx) in mol.neighbors(idx) {
-            match mol.bond(bidx).order {
-                BondOrder::Triple => has_triple = true,
-                BondOrder::Double => has_double = true,
-                _ => {}
-            }
-        }
-        out[i] = if has_triple {
-            1
-        } else if has_double {
-            2
-        } else {
-            3
-        };
-    }
-    out
+    // On RDKit's aromaticity view, as RDKit's sanitized molecule: a
+    // Kekulé-written thiophene S is aromatic, hence sp2.
+    let view = descriptor_aromaticity(mol);
+    let view: &Molecule = &view;
+    view.atoms()
+        .map(|(idx, _)| {
+            chematic_smarts::rdkit_hybridization(view, idx)
+                .filter(|h| (1..=3).contains(h))
+                .unwrap_or(0)
+        })
+        .collect()
 }
 
 /// Per-atom formal charge.
@@ -5734,6 +5717,20 @@ mod tests {
         let h = hybridization_per_atom(&m);
         assert_eq!(h.len(), 2);
         assert!(h.iter().all(|&v| v == 1), "alkyne C → sp: {h:?}");
+    }
+
+    #[test]
+    fn test_hybridization_per_atom_follows_rdkit_lone_pair_model() {
+        // RDKit 2026.03.6 GetHybridization: amide N, aryl ether O and
+        // carboxylate O- are SP2; DMSO-like S(=O)(=O) is SP3.
+        for (smiles, want) in [
+            ("CC(=O)NC", vec![3, 2, 2, 2, 3]),
+            ("COc1ccccc1", vec![3, 2, 2, 2, 2, 2, 2, 2]),
+            ("CC(=O)[O-]", vec![3, 2, 2, 2]),
+            ("CS(C)(=O)=O", vec![3, 3, 3, 2, 2]),
+        ] {
+            assert_eq!(hybridization_per_atom(&mol(smiles)), want, "{smiles}");
+        }
     }
 
     #[test]

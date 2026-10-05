@@ -475,7 +475,7 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         },
         AtomPrimitive::Hybridization(h) => eval_hybridization(idx, ctx, *h),
         AtomPrimitive::Isotope(mass) => {
-            !ctx.config.use_isotopes || ctx.mol.atom(idx).isotope == Some(*mass)
+            !ctx.config.use_isotopes || ctx.mol.atom(idx).isotope.unwrap_or(0) == *mass
         }
         AtomPrimitive::Chirality(kind) => eval_chirality(idx, ctx, *kind),
         AtomPrimitive::HeteroNeighborCount(n) => {
@@ -504,12 +504,7 @@ fn eval_hcount(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
 }
 
 fn eval_valence(idx: AtomIdx, ctx: &EvalCtx<'_>, v: u8) -> bool {
-    let bond_sum: u8 = ctx
-        .mol
-        .neighbors(idx)
-        .map(|(_, bid)| bond_order_int(ctx.mol.bond(bid).order))
-        .sum();
-    bond_sum + implicit_hcount(ctx.mol, idx) == v
+    crate::match_vf2::total_valence(ctx.mol, idx) == v
 }
 
 fn eval_ring_bond_count(idx: AtomIdx, ctx: &EvalCtx<'_>, x: u8) -> bool {
@@ -528,32 +523,9 @@ fn eval_ring_bond_count(idx: AtomIdx, ctx: &EvalCtx<'_>, x: u8) -> bool {
     count == x
 }
 
+/// RDKit's hybridization (`^n`), see [`crate::hybridization`].
 fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
-    let atom = ctx.mol.atom(idx);
-    let hyb = if atom.aromatic {
-        2u8
-    } else {
-        let mut has_triple = false;
-        let mut has_double = false;
-        for (_, bid) in ctx.mol.neighbors(idx) {
-            match ctx.mol.bond(bid).order {
-                BondOrder::Triple => {
-                    has_triple = true;
-                    break;
-                }
-                BondOrder::Double => has_double = true,
-                _ => {}
-            }
-        }
-        if has_triple {
-            1
-        } else if has_double {
-            2
-        } else {
-            3
-        }
-    };
-    hyb == h
+    crate::hybridization::rdkit_hybridization(ctx.mol, idx) == Some(h)
 }
 
 fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, kind: u8) -> bool {
@@ -666,24 +638,6 @@ fn eval_bond_query(
     }
 }
 
-fn bond_order_int(order: BondOrder) -> u8 {
-    match order {
-        BondOrder::Zero => 0,
-        BondOrder::Single
-        | BondOrder::Up
-        | BondOrder::Down
-        | BondOrder::Aromatic
-        | BondOrder::Dative
-        | BondOrder::QueryAny
-        | BondOrder::QuerySingleOrDouble
-        | BondOrder::QuerySingleOrAromatic
-        | BondOrder::QueryDoubleOrAromatic => 1,
-        BondOrder::Double => 2,
-        BondOrder::Triple => 3,
-        BondOrder::Quadruple => 4,
-    }
-}
-
 fn eval_bond_primitive(
     p: &BondPrimitive,
     order: BondOrder,
@@ -725,8 +679,19 @@ fn eval_bond_primitive(
                     .iter()
                     .any(|ring| ring.contains(&a) && ring.contains(&b))
         }
-        BondPrimitive::Up => matches!(order, BondOrder::Up),
-        BondPrimitive::Down => matches!(order, BondOrder::Down),
+        // `/` and `\\` match a single or aromatic bond without constraining
+        // cis/trans, as in RDKit (which ignores bond stereo when matching):
+        // `C/C` matches ethane, and the answer for `F/C=C/F` does not depend
+        // on how the target was written.
+        BondPrimitive::Up | BondPrimitive::Down => matches!(
+            order,
+            BondOrder::Single
+                | BondOrder::Up
+                | BondOrder::Down
+                | BondOrder::Aromatic
+                | BondOrder::QuerySingleOrDouble
+                | BondOrder::QuerySingleOrAromatic
+        ),
         // Dative bond: the target's donor (its `atom1`) is the image of the
         // query bond's atom1 for `->`, of its atom2 for `<-`.
         BondPrimitive::DativeForward => order == BondOrder::Dative && forward,

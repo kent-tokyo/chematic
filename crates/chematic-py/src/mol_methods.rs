@@ -223,8 +223,40 @@ impl Mol {
     ///     block = mol.to_mol_block()
     ///     with open("molecule.mol", "w") as f:
     ///         f.write(block)
-    fn to_mol_block(&self) -> String {
-        chematic_mol::write_mol(&self.inner, &chematic_mol::MolMetadata::default())
+    ///
+    /// ``strict=True`` raises ``ValueError`` instead of returning a block that
+    /// loses stereo (a centre left unwedged, an E/Z bond written "either");
+    /// :meth:`to_mol_block_with_report` returns the block with the list.
+    #[pyo3(signature = (strict = false))]
+    fn to_mol_block(&self, strict: bool) -> PyResult<String> {
+        let (block, loss) = chematic_mol::write_mol_with_stereo_report(
+            &self.inner,
+            &chematic_mol::MolMetadata::default(),
+            &[],
+        );
+        strict_mol_block(block, &loss, strict)
+    }
+
+    /// :meth:`to_mol_block` plus what the block does not carry of the
+    /// molecule's stereo: ``(block, report)`` where ``report`` has
+    /// ``centres`` (atom indices written without a wedge), ``double_bonds``
+    /// (bond indices of declared E/Z written "either"),
+    /// ``non_tetrahedral_centres`` (square-planar atoms) and
+    /// ``stereo_groups_dropped``. All empty / ``False``: nothing lost.
+    ///
+    ///     block, report = mol.to_mol_block_with_report()
+    ///     if report["centres"]:
+    ///         ...
+    fn to_mol_block_with_report<'py>(
+        &self,
+        py: Python<'py>,
+    ) -> PyResult<(String, Bound<'py, PyDict>)> {
+        let (block, loss) = chematic_mol::write_mol_with_stereo_report(
+            &self.inner,
+            &chematic_mol::MolMetadata::default(),
+            &[],
+        );
+        Ok((block, stereo_loss_dict(py, &loss)?))
     }
 
     /// Serialize this molecule to MDL MOL V2000 format with 2D layout coordinates.
@@ -234,15 +266,25 @@ impl Mol {
     ///
     ///     mol, name, coords_2d = chematic.from_mol_block_with_coords(block)
     ///     new_block = mol.to_mol_block_2d(coords_2d, name=name)
-    #[pyo3(signature = (coords, name = None))]
-    fn to_mol_block_2d(&self, coords: Vec<[f64; 2]>, name: Option<&str>) -> String {
+    ///
+    /// ``strict=True`` raises ``ValueError`` when the block would lose stereo
+    /// (see :meth:`to_mol_block`).
+    #[pyo3(signature = (coords, name = None, strict = false))]
+    fn to_mol_block_2d(
+        &self,
+        coords: Vec<[f64; 2]>,
+        name: Option<&str>,
+        strict: bool,
+    ) -> PyResult<String> {
         let metadata = chematic_mol::MolMetadata {
             name: name.unwrap_or("").to_string(),
             comment: String::new(),
             ..Default::default()
         };
         let coords_2d: Vec<(f64, f64)> = coords.iter().map(|c| (c[0], c[1])).collect();
-        chematic_mol::write_mol_with_coords(&self.inner, &metadata, &coords_2d)
+        let (block, loss) =
+            chematic_mol::write_mol_with_stereo_report(&self.inner, &metadata, &coords_2d);
+        strict_mol_block(block, &loss, strict)
     }
 
     /// Serialize this molecule to MDL MOL V3000 format with 2D layout coordinates.
@@ -254,15 +296,25 @@ impl Mol {
     /// Equivalent to RDKit ``Chem.MolToV3KMolBlock(mol)``.
     ///
     ///     block = mol.to_mol_v3000(coords_2d, name="my_mol")
-    #[pyo3(signature = (coords, name = None))]
-    fn to_mol_v3000(&self, coords: Vec<[f64; 2]>, name: Option<&str>) -> String {
+    ///
+    /// ``strict=True`` raises ``ValueError`` when the block would lose stereo
+    /// (see :meth:`to_mol_block`).
+    #[pyo3(signature = (coords, name = None, strict = false))]
+    fn to_mol_v3000(
+        &self,
+        coords: Vec<[f64; 2]>,
+        name: Option<&str>,
+        strict: bool,
+    ) -> PyResult<String> {
         let metadata = chematic_mol::MolMetadata {
             name: name.unwrap_or("").to_string(),
             comment: String::new(),
             ..Default::default()
         };
         let coords_2d: Vec<(f64, f64)> = coords.iter().map(|c| (c[0], c[1])).collect();
-        chematic_mol::write_mol_v3000(&self.inner, &metadata, &coords_2d)
+        let (block, loss) =
+            chematic_mol::write_mol_v3000_with_stereo_report(&self.inner, &metadata, &coords_2d);
+        strict_mol_block(block, &loss, strict)
     }
 
     /// Serialize this molecule to Chemical Markup Language (CML) XML.
@@ -2691,8 +2743,9 @@ impl Mol {
 
     /// Per-atom hybridization state: 1 = sp, 2 = sp2, 3 = sp3, 0 = other.
     ///
-    /// Aromatic atoms → 2, triple-bond atoms → 1, double-bond atoms → 2, otherwise 3.
-    /// Useful for scaffold modification (PromptSMILES-style) and atom featurization.
+    /// RDKit's model (lone pairs count as orbitals): amide/enamine N and aryl
+    /// ether O are sp2; s, sp3d and sp3d2 report 0. Useful for scaffold
+    /// modification (PromptSMILES-style) and atom featurization.
     ///
     ///     mol = chematic.from_smiles("CC=O")
     ///     mol.hybridization_per_atom()  # [3, 2, 2] (CH3=sp3, C=sp2, O=sp2)
@@ -4794,4 +4847,35 @@ fn bitvecn_to_bytes(fp: &chematic_fp::bitvec::BitVecN) -> Vec<u8> {
             byte
         })
         .collect()
+}
+
+/// The block, or a `ValueError` naming what it loses when `strict`.
+fn strict_mol_block(
+    block: String,
+    loss: &chematic_mol::MolStereoLoss,
+    strict: bool,
+) -> PyResult<String> {
+    if strict && !loss.is_empty() {
+        return Err(PyValueError::new_err(loss.to_string()));
+    }
+    Ok(block)
+}
+
+fn stereo_loss_dict<'py>(
+    py: Python<'py>,
+    loss: &chematic_mol::MolStereoLoss,
+) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    let atoms = |v: &[chematic_core::AtomIdx]| v.iter().map(|a| a.0).collect::<Vec<u32>>();
+    d.set_item("centres", atoms(&loss.centres))?;
+    d.set_item(
+        "double_bonds",
+        loss.double_bonds.iter().map(|b| b.0).collect::<Vec<u32>>(),
+    )?;
+    d.set_item(
+        "non_tetrahedral_centres",
+        atoms(&loss.non_tetrahedral_centres),
+    )?;
+    d.set_item("stereo_groups_dropped", loss.stereo_groups_dropped)?;
+    Ok(d)
 }

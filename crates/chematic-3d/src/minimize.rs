@@ -5,6 +5,8 @@
 //! the prepared analytic energy/gradient pair; reference and legacy paths
 //! retain finite-difference or gradient-descent implementations.
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use std::collections::HashSet;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
@@ -377,7 +379,7 @@ fn angle_energy_dreiding(
                 }
 
                 let cos_theta = (va.dot(&vc) / (na * nc)).clamp(-1.0, 1.0);
-                let theta = cos_theta.acos();
+                let theta = cos_theta.dacos();
                 let dtheta = theta - theta0;
                 energy += 0.5 * k * dtheta * dtheta;
             }
@@ -692,7 +694,7 @@ fn angle_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
                 }
 
                 let cos_theta = (va.dot(&vc) / (na * nc)).clamp(-1.0, 1.0);
-                let theta = cos_theta.acos();
+                let theta = cos_theta.dacos();
                 let dtheta = theta - theta0;
                 energy += 0.5 * ANGLE_SPRING_CONSTANT * dtheta * dtheta;
             }
@@ -837,7 +839,7 @@ fn angle_energy_mmff94(
                     }
 
                     let cos_theta = (va.dot(&vc) / (na * nc)).clamp(-1.0, 1.0);
-                    let theta = cos_theta.acos();
+                    let theta = cos_theta.dacos();
                     let dtheta = theta - params.theta0;
                     energy += 0.5 * params.ka * dtheta * dtheta;
                 }

@@ -278,7 +278,18 @@ impl<'m> CipDigraph<'m> {
         // (crates/chematic-chem/src/cip.rs): a real atom "sees" its multiply-bonded
         // partner twice, from *both* atoms' own local perspective, regardless of which
         // direction a tree traversal happened to cross the bond.
-        if let (Some(parent), Some(bond_order)) = (parent_atom, incoming_bond_order) {
+        //
+        // Neither side is duplicated for a multiple bond at the root (the
+        // stereocentre itself, e.g. P=O or S=O): RDKit's `CIPLabeler`
+        // (`Digraph::expand`, Hanson et al. 2018) does not expand bond orders
+        // there, so a P=O oxygen ranks like an O- and P=O / [P+][O-] give one
+        // label.
+        let parent_is_root = node
+            .parent
+            .is_some_and(|p| self.nodes[p.0 as usize].depth == 0);
+        if let (Some(parent), Some(bond_order), false) =
+            (parent_atom, incoming_bond_order, parent_is_root)
+        {
             let multiplicity = bond_order.order_int();
             for _ in 0..multiplicity.saturating_sub(1) {
                 let dup = self.push_node(
@@ -310,7 +321,12 @@ impl<'m> CipDigraph<'m> {
             // via a multiple bond, regardless of whether `nb` turns out to be a fresh
             // atom or a ring closure (both can co-occur, e.g. a
             // ring-closing double bond in a bridged bicyclic alkene).
-            for _ in 0..multiplicity.saturating_sub(1) {
+            let departure_duplicates = if depth == 0 {
+                0
+            } else {
+                multiplicity.saturating_sub(1)
+            };
+            for _ in 0..departure_duplicates {
                 let dup = self.push_node(
                     CipNodeKind::MultipleBondDuplicate {
                         source_atom: atom_idx,
@@ -565,9 +581,28 @@ mod tests {
         // is a *root child*, not requiring deeper expansion to reach.
         let atom1 = AtomIdx(1);
         let budget = CipBudget::default_budget();
-        let mut graph = CipDigraph::new_with_mancude(&kekule_mol, atom1, budget, &mancude).unwrap();
+        // Rooted two bonds away (atom3 -> atom2 -> atom1): a multiple bond at
+        // the root itself is not expanded, so atom1's own duplicate is read
+        // from atom1's node, whichever Kekulé direction its double bond took.
+        let mut graph =
+            CipDigraph::new_with_mancude(&kekule_mol, AtomIdx(3), budget, &mancude).unwrap();
         let root = graph.root();
-        let children = graph.expand_children(root).unwrap();
+        let atom_child = |graph: &mut CipDigraph, parent, atom: AtomIdx| {
+            graph
+                .expand_children(parent)
+                .unwrap()
+                .into_iter()
+                .find(|&id| matches!(graph.node(id).kind, CipNodeKind::Atom { atom_idx } if atom_idx == atom))
+                .unwrap()
+        };
+        let n2 = atom_child(&mut graph, root, AtomIdx(2));
+        let n1 = atom_child(&mut graph, n2, atom1);
+        let children: Vec<_> = graph
+            .expand_children(n1)
+            .unwrap()
+            .into_iter()
+            .filter(|&id| matches!(graph.node(id).kind, CipNodeKind::MultipleBondDuplicate { source_atom, .. } if source_atom == atom1))
+            .collect();
 
         let duplicates: Vec<_> = children
             .iter()
@@ -600,9 +635,27 @@ mod tests {
         let (kekule_mol, _mancude) = prepare_kekule_form(&mol).unwrap();
         let atom1 = AtomIdx(1);
         let budget = CipBudget::default_budget();
-        let mut graph = CipDigraph::new(&kekule_mol, atom1, budget).unwrap();
+        // Rooted two bonds away (atom3 -> atom2 -> atom1): a multiple bond at
+        // the root itself is not expanded, so atom1's own duplicate is read
+        // from atom1's node, whichever Kekulé direction its double bond took.
+        let mut graph = CipDigraph::new(&kekule_mol, AtomIdx(3), budget).unwrap();
         let root = graph.root();
-        let children = graph.expand_children(root).unwrap();
+        let atom_child = |graph: &mut CipDigraph, parent, atom: AtomIdx| {
+            graph
+                .expand_children(parent)
+                .unwrap()
+                .into_iter()
+                .find(|&id| matches!(graph.node(id).kind, CipNodeKind::Atom { atom_idx } if atom_idx == atom))
+                .unwrap()
+        };
+        let n2 = atom_child(&mut graph, root, AtomIdx(2));
+        let n1 = atom_child(&mut graph, n2, atom1);
+        let children: Vec<_> = graph
+            .expand_children(n1)
+            .unwrap()
+            .into_iter()
+            .filter(|&id| matches!(graph.node(id).kind, CipNodeKind::MultipleBondDuplicate { source_atom, .. } if source_atom == atom1))
+            .collect();
         let duplicate = children
             .iter()
             .map(|&id| graph.node(id))

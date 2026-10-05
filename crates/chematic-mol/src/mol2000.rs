@@ -291,6 +291,90 @@ fn signed_volume3(p1: Point3, p2: Point3, p3: Point3, p4: Point3) -> f64 {
 /// equality-vs-exhaustive-match bug shape fixed twice before in this
 /// project's history (`chematic-3d/src/stereo_constraints.rs`,
 /// `chematic-chem/src/cip.rs`).
+/// Atoms of an aromatic (type 4) bond are aromatic, as RDKit reads them: the
+/// file records aromaticity on bonds only, and leaving the atoms aliphatic
+/// gave `C:1:C:C:C:C:C:1` for benzene (SMARTS `c` then missed it).
+pub(crate) fn flag_aromatic_bond_atoms(mol: &mut Molecule) {
+    let atoms: Vec<AtomIdx> = mol
+        .bonds()
+        .filter(|(_, b)| b.order == BondOrder::Aromatic)
+        .flat_map(|(_, b)| [b.atom1, b.atom2])
+        .collect();
+    for idx in atoms {
+        if !mol.atom(idx).aromatic {
+            mol.set_atom_aromatic(idx, true);
+        }
+    }
+}
+
+/// Bond orders to write for aromatic bonds. Aromatic bonds are written as
+/// type 4 when a reader can recover every aromatic atom's H count from the
+/// bonds alone; otherwise (pyrrole's `[nH]`, a charged aromatic atom) the
+/// Kekulé orders are written instead, as RDKit always does, since type 4
+/// would turn `c1cc[nH]c1` into `c1ccnc1`. `None`: write type 4.
+pub(crate) fn kekule_orders_for_writing(
+    mol: &Molecule,
+) -> Option<std::collections::HashMap<chematic_core::BondIdx, BondOrder>> {
+    if !mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic) {
+        return None;
+    }
+    // An atom's inferred H count depends on its own bonds only, so each
+    // stored count is compared with the inference directly.
+    let inferable = mol.atoms().all(|(idx, atom)| match atom.hydrogen_count {
+        Some(h) if atom.aromatic && !atom.wildcard => {
+            chematic_core::valence::valence_inferred_hcount(mol, idx) == h
+        }
+        _ => true,
+    });
+    if inferable {
+        return None;
+    }
+    deterministic_kekule(mol)
+}
+
+/// Kekulé bond orders that do not depend on `mol`'s atom numbering: the
+/// molecule is kekulized with its atoms in canonical order and the orders
+/// are mapped back, so two spellings of one molecule get the same Kekulé
+/// structure (up to symmetry).
+fn deterministic_kekule(
+    mol: &Molecule,
+) -> Option<std::collections::HashMap<chematic_core::BondIdx, BondOrder>> {
+    let order = chematic_smiles::canonical_atom_order(mol);
+    let mut new_of = vec![0u32; mol.atom_count()];
+    let mut builder = chematic_core::MoleculeBuilder::new();
+    for &old in &order {
+        new_of[old] = builder
+            .add_atom(mol.atom(chematic_core::AtomIdx(old as u32)).clone())
+            .0;
+    }
+    let mut bonds: Vec<(u32, u32, chematic_core::BondIdx)> = mol
+        .bonds()
+        .map(|(b, e)| {
+            let (x, y) = (new_of[e.atom1.0 as usize], new_of[e.atom2.0 as usize]);
+            (x.min(y), x.max(y), b)
+        })
+        .collect();
+    bonds.sort_unstable();
+    let mut old_of_new_bond = Vec::with_capacity(bonds.len());
+    for &(x, y, b) in &bonds {
+        builder
+            .add_bond(
+                chematic_core::AtomIdx(x),
+                chematic_core::AtomIdx(y),
+                mol.bond(b).order,
+            )
+            .ok()?;
+        old_of_new_bond.push(b);
+    }
+    let canon = builder.build();
+    let kek = chematic_core::kekulize(&canon).ok()?;
+    Some(
+        kek.into_iter()
+            .map(|(nb, order)| (old_of_new_bond[nb.0 as usize], order))
+            .collect(),
+    )
+}
+
 pub(crate) fn wedge_vs_3d_conflicts(
     mol: &Molecule,
     conformer: &Coords3D,
@@ -1149,6 +1233,7 @@ fn read_mol_internal(
     }
 
     let mut mol = builder.build();
+    flag_aromatic_bond_atoms(&mut mol);
     for (atom, charge) in property_charges {
         mol.set_charge(atom, charge);
     }
@@ -1393,6 +1478,48 @@ fn write_v2000_rgroups(out: &mut String, mol: &Molecule) {
 }
 
 #[inline]
+/// Append `x` as `format!("{x:>width$.4}")` would, without the general
+/// float formatter (its exact fallback dominated writing laid-out
+/// molecules). Values near a rounding tie, very large values and
+/// non-finite values take the formatter, so the bytes are always the same.
+pub(crate) fn push_fixed4(out: &mut String, x: f64, width: usize) {
+    use std::fmt::Write as _;
+    let scaled = x.abs() * 10_000.0;
+    let frac = scaled - scaled.floor();
+    if !x.is_finite() || scaled >= 1e15 || (frac - 0.5).abs() < 1e-6 {
+        write!(out, "{x:>width$.4}").expect("writing to String cannot fail");
+        return;
+    }
+    let units = scaled.round() as u64;
+    let mut buf = [0u8; 24];
+    let mut pos = buf.len();
+    let mut push = |b: u8| {
+        pos -= 1;
+        buf[pos] = b;
+    };
+    let (mut int, mut dec) = (units / 10_000, units % 10_000);
+    for _ in 0..4 {
+        push(b'0' + (dec % 10) as u8);
+        dec /= 10;
+    }
+    push(b'.');
+    loop {
+        push(b'0' + (int % 10) as u8);
+        int /= 10;
+        if int == 0 {
+            break;
+        }
+    }
+    if x.is_sign_negative() {
+        push(b'-');
+    }
+    let digits = &buf[pos..];
+    for _ in digits.len()..width {
+        out.push(' ');
+    }
+    out.push_str(std::str::from_utf8(digits).expect("ASCII digits"));
+}
+
 fn push_right_aligned_u32(out: &mut String, mut value: u32, width: usize) {
     // V2000 counts and bond fields are almost always three columns wide.
     // Append the entire field in one operation, retaining the general path
@@ -1484,6 +1611,134 @@ pub fn write_mol_with_coords_into(
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
 ) {
+    write_v2000_reporting(out, mol, metadata, coords);
+}
+
+/// [`write_mol_with_coords`] that also reports the stereo the block does not
+/// carry. An empty `coords` lays the molecule out (as [`write_mol`] does).
+///
+/// ```
+/// let mol = chematic_smiles::parse("C[C@H](N)O").unwrap();
+/// let (block, loss) =
+///     chematic_mol::write_mol_with_stereo_report(&mol, &Default::default(), &[]);
+/// assert!(loss.is_empty());
+/// assert!(block.contains("V2000"));
+/// ```
+pub fn write_mol_with_stereo_report(
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    coords: &[(f64, f64)],
+) -> (String, MolStereoLoss) {
+    let mut out = String::new();
+    let loss = write_v2000_reporting(&mut out, mol, metadata, coords);
+    (out, loss)
+}
+
+/// Stereo of a molecule that a written 2D MOL block does not carry. A reader
+/// sees each listed centre as unspecified and each listed double bond as
+/// "either" (V2000 stereo 3 / V3000 `CFG=2`).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct MolStereoLoss {
+    /// Tetrahedral centres written without a wedge or hash: no wedge on the
+    /// coordinates read back as the declared configuration (bridged and cage
+    /// layouts, bonds drawn in nearly one direction).
+    pub centres: Vec<AtomIdx>,
+    /// Declared E/Z double bonds whose geometry the coordinates could not be
+    /// given (ring bonds); written "either".
+    pub double_bonds: Vec<chematic_core::BondIdx>,
+    /// Square-planar centres: a 2D block has no field for them.
+    pub non_tetrahedral_centres: Vec<AtomIdx>,
+    /// Enhanced stereo groups other than absolute: V2000 has no field for
+    /// them (V3000 writes them).
+    pub stereo_groups_dropped: bool,
+}
+
+impl MolStereoLoss {
+    /// Whether the block carries all of the molecule's stereo.
+    pub fn is_empty(&self) -> bool {
+        self.centres.is_empty()
+            && self.double_bonds.is_empty()
+            && self.non_tetrahedral_centres.is_empty()
+            && !self.stereo_groups_dropped
+    }
+
+    pub(crate) fn from_depiction(
+        mol: &Molecule,
+        depiction: Option<&crate::stereo_depiction::StereoDepiction>,
+        format: MolFormat,
+    ) -> Self {
+        let mut centres: Vec<AtomIdx> = depiction
+            .map(|d| d.unexpressed_centres.clone())
+            .unwrap_or_default();
+        // A tetrahedral tag without a neighbour order has no configuration
+        // to draw.
+        centres.extend(mol.atoms().filter_map(|(idx, atom)| {
+            (atom.chirality.is_tetrahedral() && mol.stereo_neighbor_order(idx).is_none())
+                .then_some(idx)
+        }));
+        centres.sort_by_key(|a| a.0);
+        centres.dedup();
+        MolStereoLoss {
+            centres,
+            double_bonds: depiction
+                .map(|d| d.unexpressed_double_bonds.clone())
+                .unwrap_or_default(),
+            non_tetrahedral_centres: mol
+                .atoms()
+                .filter(|(_, a)| {
+                    a.chirality != chematic_core::Chirality::None && !a.chirality.is_tetrahedral()
+                })
+                .map(|(idx, _)| idx)
+                .collect(),
+            stereo_groups_dropped: format == MolFormat::V2000
+                && mol
+                    .stereo_groups()
+                    .iter()
+                    .any(|g| g.kind != chematic_core::StereoGroupKind::Absolute),
+        }
+    }
+}
+
+impl core::fmt::Display for MolStereoLoss {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let atoms = |v: &[AtomIdx]| v.iter().map(|a| a.0.to_string()).collect::<Vec<_>>();
+        let mut parts = Vec::new();
+        if !self.centres.is_empty() {
+            parts.push(format!(
+                "tetrahedral centres without a wedge (atoms {})",
+                atoms(&self.centres).join(", ")
+            ));
+        }
+        if !self.double_bonds.is_empty() {
+            let bonds: Vec<String> = self.double_bonds.iter().map(|b| b.0.to_string()).collect();
+            parts.push(format!(
+                "E/Z written as either (bonds {})",
+                bonds.join(", ")
+            ));
+        }
+        if !self.non_tetrahedral_centres.is_empty() {
+            parts.push(format!(
+                "square-planar centres (atoms {})",
+                atoms(&self.non_tetrahedral_centres).join(", ")
+            ));
+        }
+        if self.stereo_groups_dropped {
+            parts.push("enhanced stereo groups".to_string());
+        }
+        if parts.is_empty() {
+            write!(f, "no stereo lost")
+        } else {
+            write!(f, "MOL block loses stereo: {}", parts.join("; "))
+        }
+    }
+}
+
+fn write_v2000_reporting(
+    out: &mut String,
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    coords: &[(f64, f64)],
+) -> MolStereoLoss {
     use std::fmt::Write as _;
 
     // A MOL block is dominated by fixed-width atom and bond rows.  Reserve
@@ -1500,6 +1755,12 @@ pub fn write_mol_with_coords_into(
     out.push_str(&metadata.comment);
     out.push('\n');
 
+    // A molecule with stereo is written on coordinates that express it, with
+    // one wedge or hash per tetrahedral centre (see `stereo_depiction`).
+    let depiction = crate::stereo_depiction::needs_stereo_depiction(mol)
+        .then(|| crate::stereo_depiction::stereo_depiction(mol, coords));
+    let coords: &[(f64, f64)] = depiction.as_ref().map_or(coords, |d| &d.coords);
+
     // Counts line (line 4)
     let natoms = mol.atom_count();
     let nbonds = mol.bond_count();
@@ -1514,10 +1775,12 @@ pub fn write_mol_with_coords_into(
         let mass_difference = encode_mass_difference(atom.element, atom.isotope).unwrap_or(0);
         let atom_map = atom.atom_map.unwrap_or(0);
         if let Some(&(x, y)) = coords.get(idx.0 as usize) {
+            push_fixed4(out, x, 10);
+            push_fixed4(out, y, 10);
             writeln!(
                 out,
-                "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0 {:>3}  0",
-                x, y, 0.0_f64, sym, mass_difference, charge_code, atom_map,
+                "    0.0000 {:<3}{:>2}{:>3}  0  0  0  0  0  0  0{:>3}  0",
+                sym, mass_difference, charge_code, atom_map,
             )
             .expect("writing to String cannot fail");
         } else {
@@ -1542,10 +1805,15 @@ pub fn write_mol_with_coords_into(
     }
 
     // Bond block
-    for (_idx, bond) in mol.bonds() {
+    let kekule = kekule_orders_for_writing(mol);
+    for (bond_idx, bond) in mol.bonds() {
         let a1 = bond.atom1.0 + 1; // convert to 1-based
         let a2 = bond.atom2.0 + 1;
-        let btype = match bond.order {
+        let order = kekule
+            .as_ref()
+            .and_then(|k| k.get(&bond_idx).copied())
+            .unwrap_or(bond.order);
+        let btype = match order {
             BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
             BondOrder::Double => 2,
             BondOrder::Triple => 3,
@@ -1556,14 +1824,39 @@ pub fn write_mol_with_coords_into(
             BondOrder::QueryAny | BondOrder::Zero => 8,
             BondOrder::Quadruple => 4,
         };
-        // Stereo field: preserve a wedge/hash bond so a re-parse recovers
-        // the same local parity. This is the only channel MOL/SDF has for
-        // recovered stereo -- `Atom.chirality` itself has no direct MOL
-        // field, so what round-trips is the wedge bond it was derived from.
-        let stereo = match bond.order {
-            BondOrder::Up => 1,
-            BondOrder::Down => 6,
-            _ => 0,
+        // Stereo field: with a stereo depiction, the chosen wedge/hash drawn
+        // from its stereocentre (SMILES `/`/`\` markers are expressed by the
+        // coordinates, not by a stereo code); otherwise a wedge/hash already
+        // on the bond, so a re-parse recovers the same local parity.
+        let (a1, a2, stereo) = match &depiction {
+            Some(d) => match d.wedges.get(&bond_idx) {
+                Some(w) => {
+                    let (start, end) = if w.start == bond.atom1 {
+                        (a1, a2)
+                    } else {
+                        (a2, a1)
+                    };
+                    (start, end, if w.order == BondOrder::Up { 1 } else { 6 })
+                }
+                // A stereo double bond these coordinates cannot draw (in a
+                // ring) is written as "either" rather than with a wrong
+                // geometry.
+                None if d.unexpressed_double_bonds.contains(&bond_idx)
+                    || d.unspecified_double_bonds.contains(&bond_idx) =>
+                {
+                    (a1, a2, 3)
+                }
+                None => (a1, a2, 0),
+            },
+            None => (
+                a1,
+                a2,
+                match bond.order {
+                    BondOrder::Up => 1,
+                    BondOrder::Down => 6,
+                    _ => 0,
+                },
+            ),
         };
         push_right_aligned_u32(out, a1, 3);
         push_right_aligned_u32(out, a2, 3);
@@ -1576,6 +1869,7 @@ pub fn write_mol_with_coords_into(
 
     // Terminator
     out.push_str("M  END\n");
+    MolStereoLoss::from_depiction(mol, depiction.as_ref(), MolFormat::V2000)
 }
 
 /// Serialize `mol` to MOL V2000 format using `conformer`'s real 3D
@@ -1633,16 +1927,24 @@ pub fn write_mol_with_conformer(
             .get(idx.0 as usize)
             .copied()
             .unwrap_or(Point3::zero());
+        push_fixed4(&mut out, p.x, 10);
+        push_fixed4(&mut out, p.y, 10);
+        push_fixed4(&mut out, p.z, 10);
         out.push_str(&format!(
-            "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0 {:>3}  0\n",
-            p.x, p.y, p.z, sym, mass_difference, charge_code, atom_map,
+            " {:<3}{:>2}{:>3}  0  0  0  0  0  0  0{:>3}  0\n",
+            sym, mass_difference, charge_code, atom_map,
         ));
     }
 
-    for (_idx, bond) in mol.bonds() {
+    let kekule = kekule_orders_for_writing(mol);
+    for (bond_idx, bond) in mol.bonds() {
         let a1 = bond.atom1.0 + 1;
         let a2 = bond.atom2.0 + 1;
-        let btype = match bond.order {
+        let order = kekule
+            .as_ref()
+            .and_then(|k| k.get(&bond_idx).copied())
+            .unwrap_or(bond.order);
+        let btype = match order {
             BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
             BondOrder::Double => 2,
             BondOrder::Triple => 3,
@@ -2103,6 +2405,77 @@ pub fn write_sdf_record_with_conformer_checked(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn push_fixed4_matches_the_float_formatter() {
+        let mut values = vec![
+            0.0,
+            -0.0,
+            0.03125,
+            -0.03125,
+            0.00005,
+            -0.00005,
+            1.23455,
+            2.5e-5,
+            7.5e-5,
+            0.99995,
+            -0.99995,
+            12345.6789,
+            -99999.99995,
+            1e9,
+            1e16,
+            -1e16,
+            f64::NAN,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            1.5,
+            -1.5,
+        ];
+        // A fixed linear congruential sequence over the coordinate range.
+        let mut state = 0x2545_f491_4f6c_dd1du64;
+        for _ in 0..200_000 {
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            let unit = (state >> 11) as f64 / (1u64 << 53) as f64;
+            values.push((unit - 0.5) * 2_000.0);
+            values.push(((unit - 0.5) * 2e8).round() / 1e4 + 5e-5);
+        }
+        for x in values {
+            for width in [0, 10] {
+                let mut fast = String::new();
+                push_fixed4(&mut fast, x, width);
+                assert_eq!(fast, format!("{x:>width$.4}"), "{x:e}");
+            }
+        }
+    }
+
+    #[test]
+    fn aromatic_bond_atoms_read_as_aromatic() {
+        for smiles in ["c1ccccc1", "Cc1ccncc1", "c1cc[nH]c1"] {
+            let mol = chematic_smiles::parse(smiles).unwrap();
+            let v2000 = parse_mol(&write_mol(&mol, &MolMetadata::default()))
+                .unwrap()
+                .0;
+            let coords = vec![(0.0, 0.0); mol.atom_count()];
+            let v3000 = crate::parse_mol_v3000(&crate::write_mol_v3000(
+                &mol,
+                &MolMetadata::default(),
+                &coords,
+            ))
+            .unwrap()
+            .0;
+            // Pyrrole's N-H is not recoverable from type-4 bonds, so that
+            // molecule is written Kekulé; compare after aromaticity
+            // perception.
+            let perceived = |m: &Molecule| {
+                chematic_smiles::canonical_smiles(&chematic_perception::apply_aromaticity(m))
+            };
+            for back in [v2000, v3000] {
+                assert_eq!(perceived(&back), perceived(&mol), "{smiles}");
+            }
+        }
+    }
 
     #[test]
     fn three_column_parser_matches_legacy_spelling_contract() {

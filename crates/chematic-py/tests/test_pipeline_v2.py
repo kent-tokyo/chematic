@@ -547,7 +547,7 @@ def test_pyi_declares_the_new_public_surface():
     pyi_path = (
         Path(__file__).resolve().parents[1] / "python" / "chematic" / "__init__.pyi"
     )
-    tree = ast.parse(pyi_path.read_text())
+    tree = ast.parse(pyi_path.read_text(encoding="utf-8"))
     top_level_classes = {
         node.name: node for node in tree.body if isinstance(node, ast.ClassDef)
     }

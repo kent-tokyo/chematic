@@ -149,20 +149,50 @@ pub fn mol_from_sdf_block(block: &str) -> Result<MolHandle, JsValue> {
 ///
 /// Atom positions are computed via the same layout engine used for SVG depiction
 /// and converted to Ångström units (`1.5 Å` per bond).
+///
+/// A molecule with stereo gets the MOL writer's stereo layout (E/Z set by
+/// the geometry, one checked wedge per centre); a centre or E/Z bond that
+/// layout cannot express is lost silently here. Use [`to_mol_block_strict`]
+/// to get an error instead, or [`mol_block_stereo_loss_json`] for the list.
 #[wasm_bindgen]
 pub fn to_mol_block(mol: &MolHandle) -> String {
+    mol_block_with_loss(&mol.inner).0
+}
+
+/// [`to_mol_block`] that fails, naming the lost centres and bonds, when the
+/// block would not carry all of the molecule's stereo.
+#[wasm_bindgen]
+pub fn to_mol_block_strict(mol: &MolHandle) -> Result<String, JsValue> {
+    let (block, loss) = mol_block_with_loss(&mol.inner);
+    if loss.is_empty() {
+        Ok(block)
+    } else {
+        Err(JsValue::from_str(&loss.to_string()))
+    }
+}
+
+/// The stereo [`to_mol_block`] does not carry, as JSON:
+/// `{"centres": [atom...], "double_bonds": [bond...],
+/// "non_tetrahedral_centres": [atom...], "stereo_groups_dropped": bool}`.
+#[wasm_bindgen]
+pub fn mol_block_stereo_loss_json(mol: &MolHandle) -> String {
+    let loss = mol_block_with_loss(&mol.inner).1;
+    serde_json::json!({
+        "centres": loss.centres.iter().map(|a| a.0).collect::<Vec<_>>(),
+        "double_bonds": loss.double_bonds.iter().map(|b| b.0).collect::<Vec<_>>(),
+        "non_tetrahedral_centres":
+            loss.non_tetrahedral_centres.iter().map(|a| a.0).collect::<Vec<_>>(),
+        "stereo_groups_dropped": loss.stereo_groups_dropped,
+    })
+    .to_string()
+}
+
+/// Every molecule is laid out (also without stereo, unlike `write_mol`);
+/// with stereo the layout is the writer's stereo depiction.
+fn mol_block_with_loss(mol: &chematic_core::Molecule) -> (String, chematic_mol::MolStereoLoss) {
     let meta = chematic_mol::MolMetadata::default();
-    let layout = chematic_depict::compute_layout(&mol.inner);
-    // SVG bond length is 40 px; standard MOL bond length is 1.5 Å.
-    // Negate Y because SVG y-axis points down, MOL y-axis points up.
-    const SCALE: f64 = 1.5 / 40.0;
-    let coords: Vec<(f64, f64)> = (0..mol.inner.atom_count())
-        .map(|i| {
-            let p = layout.get(chematic_core::AtomIdx(i as u32));
-            (p.x * SCALE, -p.y * SCALE)
-        })
-        .collect();
-    chematic_mol::write_mol_with_coords(&mol.inner, &meta, &coords)
+    let depiction = chematic_mol::stereo_depiction::stereo_depiction(mol, &[]);
+    chematic_mol::write_mol_with_stereo_report(mol, &meta, &depiction.coords)
 }
 
 /// Parse an SDF string and return a JSON array of canonical SMILES strings.

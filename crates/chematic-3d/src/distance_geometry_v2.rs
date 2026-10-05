@@ -159,6 +159,8 @@
 //! molecule retry variance (4/5, same both before and after this fix) — expected, see
 //! `ez_bounds_cinnamic_acid_e_retry_loop_still_resolves_flexible_variance`.
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use std::collections::HashMap;
 
 use crate::clock::Instant;
@@ -754,9 +756,12 @@ fn declared_1_4_distance(
     let angle1 = ideal_bond_angle(mol, end1);
     let angle2 = ideal_bond_angle(mol, end2);
 
-    let sub1_pos = (d_sub1 * angle1.cos(), d_sub1 * angle1.sin());
+    let sub1_pos = (d_sub1 * angle1.dcos(), d_sub1 * angle1.dsin());
     let sign = if same_side { 1.0 } else { -1.0 };
-    let sub2_pos = (d_ends - d_sub2 * angle2.cos(), sign * d_sub2 * angle2.sin());
+    let sub2_pos = (
+        d_ends - d_sub2 * angle2.dcos(),
+        sign * d_sub2 * angle2.dsin(),
+    );
 
     ((sub1_pos.0 - sub2_pos.0).powi(2) + (sub1_pos.1 - sub2_pos.1).powi(2)).sqrt()
 }
@@ -1039,7 +1044,7 @@ fn random_initial_coords(n: usize, radius_scale: f64, seed: u64) -> Coords3D {
     // Distinct sub-stream from the metrization sampler so `use_random_coords = true`
     // doesn't just replay the same bytes a bounds-sampling attempt would have used.
     let mut prng = Prng::from_seed(seed ^ 0xA5A5_A5A5_A5A5_A5A5);
-    let box_size = radius_scale.max(3.0) * (n as f64).cbrt();
+    let box_size = radius_scale.max(3.0) * (n as f64).dcbrt();
     let mut coords = Coords3D::new_zeroed(n);
     for i in 0..n {
         let x = (prng.f64() - 0.5) * 2.0 * box_size;

@@ -839,7 +839,8 @@ pub(crate) fn apply_product_stereo(
             Some((k, a)) => {
                 let mol = reactants[k];
                 let chiral = mol.atom(a).chirality.is_tetrahedral();
-                if !chiral && !(flag == Some(4) && template[i].tag.is_some()) {
+                let created = flag == Some(4) && template[i].tag.is_some();
+                if !chiral && !created {
                     vec![None]
                 } else {
                     let view = &views[k];

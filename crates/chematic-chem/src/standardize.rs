@@ -1341,46 +1341,60 @@ pub fn reionize(mol: &Molecule) -> Molecule {
         let mut atom = mol.atom(idx).clone();
         let an = atom.element.atomic_number();
 
-        // Check for carboxylic acid or phenol: C=O with O-H or Ar-O-H
-        if an == 8 {
-            // Oxygen: check if it's OH bonded to C
-            if let Some((c_idx, _)) = mol.neighbors(idx).find(|(neighbor, bond_idx)| {
-                mol.bond(*bond_idx).order == chematic_core::BondOrder::Single
-                    && mol.atom(*neighbor).element.atomic_number() == 6
-            }) {
-                // Check if C is aromatic (phenol) or has a double-bonded O (carboxylic acid)
-                let is_aromatic = mol.atom(c_idx).aromatic;
-                let has_double_bonded_o = mol.neighbors(c_idx).any(|(other, bond_idx)| {
-                    mol.bond(bond_idx).order == chematic_core::BondOrder::Double
-                        && mol.atom(other).element.atomic_number() == 8
-                        && other != idx
-                });
+        // Check for carboxylic acid or phenol: C=O with O-H or Ar-O-H. Only
+        // an O that has an H and a single carbon neighbour (an ether or ester
+        // O was charged with two bonds before, depending on atom order).
+        let oh_carbon = (an == 8
+            && atom.charge == 0
+            && chematic_core::implicit_hcount(mol, idx) > 0
+            && mol.degree(idx) == 1)
+            .then(|| mol.neighbors(idx).next())
+            .flatten()
+            .filter(|&(neighbor, bond_idx)| {
+                mol.bond(bond_idx).order == chematic_core::BondOrder::Single
+                    && mol.atom(neighbor).element.atomic_number() == 6
+            });
+        if let Some((c_idx, _)) = oh_carbon {
+            // Check if C is aromatic (phenol) or has a double-bonded O (carboxylic acid)
+            let is_aromatic = mol.atom(c_idx).aromatic;
+            let has_double_bonded_o = mol.neighbors(c_idx).any(|(other, bond_idx)| {
+                mol.bond(bond_idx).order == chematic_core::BondOrder::Double
+                    && mol.atom(other).element.atomic_number() == 8
+                    && other != idx
+            });
 
-                // Only deprotonate if it's a phenol or carboxylic acid, not aliphatic OH
-                if (is_aromatic || has_double_bonded_o) && atom.charge >= 0 {
-                    atom.charge -= 1; // Deprotonate: OH → O-
+            // Only deprotonate if it's a phenol or carboxylic acid, not aliphatic OH
+            if is_aromatic || has_double_bonded_o {
+                atom.charge -= 1; // Deprotonate: OH → O-
+                if let Some(h) = atom.hydrogen_count {
+                    atom.hydrogen_count = Some(h.saturating_sub(1));
                 }
             }
         }
 
         // Check for primary/secondary amines (but NOT amides)
-        if an == 7 {
-            // Check if this N is NOT part of an amide (C(=O)-N)
-            let is_amide = mol.neighbors(idx).any(|(neighbor, bond_idx)| {
-                mol.bond(bond_idx).order == chematic_core::BondOrder::Single
-                    && mol.atom(neighbor).element.atomic_number() == 6
-                    && mol.neighbors(neighbor).any(|(o_neighbor, o_bond)| {
-                        mol.bond(o_bond).order == chematic_core::BondOrder::Double
-                            && (mol.atom(o_neighbor).element.atomic_number() == 8
-                                || mol.atom(o_neighbor).element.atomic_number() == 16)
+        if an == 7 && !atom.aromatic && atom.charge == 0 {
+            // A primary/secondary aliphatic amine: single bonds only, no
+            // aromatic neighbour (aniline), and no neighbour doubly bonded
+            // to O/S (amide, thioamide, sulfonamide, carbamate).
+            let all_single = mol
+                .neighbors(idx)
+                .all(|(_, b)| mol.bond(b).order == chematic_core::BondOrder::Single);
+            let conjugated = mol.neighbors(idx).any(|(neighbor, _)| {
+                mol.atom(neighbor).aromatic
+                    || mol.neighbors(neighbor).any(|(o_neighbor, o_bond)| {
+                        o_neighbor != idx
+                            && matches!(
+                                mol.bond(o_bond).order,
+                                chematic_core::BondOrder::Double | chematic_core::BondOrder::Triple
+                            )
                     })
             });
-
-            if !is_amide {
-                let h_count = chematic_core::implicit_hcount(mol, idx);
-                // Protonate free amines only (not amides)
-                if (h_count == 2 || h_count == 1) && atom.charge <= 0 {
-                    atom.charge += 1; // Protonate: NH2 → NH3+
+            let h_count = chematic_core::implicit_hcount(mol, idx);
+            if all_single && !conjugated && (h_count == 2 || h_count == 1) {
+                atom.charge += 1; // Protonate: NH2 → NH3+
+                if let Some(h) = atom.hydrogen_count {
+                    atom.hydrogen_count = Some(h + 1);
                 }
             }
         }
@@ -1397,30 +1411,138 @@ pub fn reionize(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
-/// Remove all charges from a molecule by protonation/deprotonation.
+/// Remove formal charges by protonation/deprotonation, as RDKit's
+/// `Uncharger` does.
 ///
-/// Neutralizes positively charged atoms by removing protons and
-/// negatively charged atoms by adding protons. This is an aggressive
-/// neutralization that may create chemically unrealistic structures.
+/// A cation loses its charge only when it has hydrogens to give up
+/// (`[NH4+]` → `N`); one without (`[N+](C)(C)(C)C`, `[Na+]`, the N of a nitro
+/// group) keeps it. An anion bonded to such a cation stays charge-separated
+/// (nitro, N-oxide); other anions gain hydrogens, except as many as are
+/// needed to balance the cations that keep their charge (`[Na+].[O-]C(=O)C`
+/// stays a salt), and except anions whose neutral form would exceed a common
+/// valence (`[B-](F)(F)(F)F`). Which balancing anions keep their charge
+/// follows canonical atom order, so the result does not depend on input
+/// atom order.
 ///
 /// # Note
 /// This differs from [`neutralize_charges`] which uses specific rules.
-/// `uncharge` is a brute-force approach suitable for structure cleanup.
 pub fn uncharge(mol: &Molecule) -> Molecule {
+    use chematic_core::implicit_hcount;
+    let n = mol.atom_count();
+    let bond_sum = |idx: AtomIdx| -> i32 {
+        mol.neighbors(idx)
+            .map(|(_, b)| match mol.bond(b).order {
+                chematic_core::BondOrder::Aromatic => 1,
+                o => i32::from(o.order_int()),
+            })
+            .sum()
+    };
+    let max_neutral_valence = |z: u8| -> Option<i32> {
+        match z {
+            6 => Some(4),
+            7 => Some(3),
+            8 => Some(2),
+            15 => Some(5),
+            16 => Some(6),
+            9 | 17 | 35 | 53 => Some(1),
+            _ => None,
+        }
+    };
+    let mut charge = vec![0i8; n];
+    let mut hcount: Vec<Option<u8>> = vec![None; n];
+    let mut keep = vec![false; n];
+    for (idx, atom) in mol.atoms() {
+        let i = idx.0 as usize;
+        charge[i] = atom.charge;
+        hcount[i] = atom.hydrogen_count;
+    }
+    // Cations: give up H where there is H to give.
+    let mut kept_positive = 0i32;
+    for (idx, atom) in mol.atoms() {
+        let i = idx.0 as usize;
+        if atom.charge <= 0 {
+            continue;
+        }
+        let h = implicit_hcount(mol, idx);
+        if i32::from(h) >= i32::from(atom.charge) {
+            charge[i] = 0;
+            if atom.hydrogen_count.is_some() || atom.aromatic {
+                hcount[i] = Some(h - atom.charge as u8);
+            }
+        } else {
+            keep[i] = true;
+            kept_positive += i32::from(atom.charge);
+        }
+    }
+    // Anions bonded to a kept cation stay charge-separated.
+    let mut anions = Vec::new();
+    for (idx, atom) in mol.atoms() {
+        if atom.charge >= 0 {
+            continue;
+        }
+        if mol.neighbors(idx).any(|(nb, _)| keep[nb.0 as usize]) {
+            keep[idx.0 as usize] = true;
+            kept_positive += i32::from(atom.charge);
+        } else {
+            anions.push(idx);
+        }
+    }
+    // The remaining cationic charge is balanced by anions in canonical order.
+    if kept_positive > 0 && !anions.is_empty() {
+        let (_, order) = chematic_smiles::canonical_smiles_with_atom_order(mol);
+        let mut rank = vec![usize::MAX; n];
+        for (r, a) in order.iter().enumerate() {
+            rank[a.0 as usize] = r;
+        }
+        anions.sort_by_key(|a| rank[a.0 as usize]);
+    }
+    for idx in anions {
+        let i = idx.0 as usize;
+        let atom = mol.atom(idx);
+        let q = -i32::from(atom.charge);
+        if kept_positive > 0 {
+            kept_positive -= q;
+            continue;
+        }
+        let h = i32::from(implicit_hcount(mol, idx));
+        let fits = max_neutral_valence(atom.element.atomic_number())
+            .is_some_and(|max| bond_sum(idx) + h + q <= max);
+        if !fits {
+            continue;
+        }
+        charge[i] = 0;
+        if atom.hydrogen_count.is_some() || atom.aromatic {
+            hcount[i] = Some((h + q) as u8);
+        }
+    }
     let mut builder = MoleculeBuilder::new();
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
-
-    // Copy all atoms, removing charges
-    for i in 0..mol.atom_count() {
-        let idx = AtomIdx(i as u32);
-        let mut atom = mol.atom(idx).clone();
-        atom.charge = 0; // Force neutral
+    for (idx, atom) in mol.atoms() {
+        let mut atom = atom.clone();
+        atom.charge = charge[idx.0 as usize];
+        atom.hydrogen_count = hcount[idx.0 as usize];
         let new_idx = builder.add_atom(atom);
         remap.insert(idx, new_idx);
     }
-
     copy_bonds(mol, &mut builder, &remap);
     // Identity-preserving rebuild -- see issue #399.
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
+    builder.copy_stereo_groups_from(mol);
+    builder.build()
+}
+
+/// Set every formal charge to zero, keeping all other atom data: a topology
+/// key, not a chemical transformation (`CanonicalMode::Backbone`).
+pub(crate) fn strip_charges(mol: &Molecule) -> Molecule {
+    let mut builder = MoleculeBuilder::new();
+    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+    for (idx, atom) in mol.atoms() {
+        let mut atom = atom.clone();
+        atom.charge = 0;
+        remap.insert(idx, builder.add_atom(atom));
+    }
+    copy_bonds(mol, &mut builder, &remap);
     builder.copy_stereo_from(mol);
     builder.copy_bond_directions_from(mol);
     builder.copy_stereo_groups_from(mol);
@@ -2305,6 +2427,42 @@ mod tests {
         for (_, atom) in result.atoms() {
             assert_eq!(atom.charge, 0, "all atoms should be neutral");
         }
+    }
+
+    #[test]
+    fn uncharge_follows_rdkit_uncharger() {
+        let canon = |s: &str| chematic_smiles::canonical_smiles(&parse(s).unwrap());
+        let run = |s: &str| chematic_smiles::canonical_smiles(&uncharge(&parse(s).unwrap()));
+        for (input, expected) in [
+            ("[NH4+].[OH-]", "N.O"),
+            ("C[NH3+]", "CN"),
+            ("CC(=O)[O-]", "CC(=O)O"),
+            // Charge-separated groups stay (were radicals `[N](=O)[O]`).
+            ("C[N+](=O)[O-]", "C[N+](=O)[O-]"),
+            ("C[N+](C)(C)[O-]", "C[N+](C)(C)[O-]"),
+            // A cation without H keeps its charge and one balancing anion.
+            ("C[N+](C)(C)CC(=O)[O-]", "C[N+](C)(C)CC(=O)[O-]"),
+            ("[Na+].CC(=O)[O-]", "[Na+].CC(=O)[O-]"),
+            ("F[B-](F)(F)F", "F[B-](F)(F)F"),
+        ] {
+            assert_eq!(run(input), canon(expected), "{input}");
+        }
+    }
+
+    #[test]
+    fn reionize_leaves_ethers_and_esters_alone() {
+        // An ether/ester O was given a negative charge with two bonds,
+        // depending on which C neighbour came first.
+        for input in ["COc1ccccc1", "CC(=O)OC", "c1ccccc1OC(=O)C"] {
+            let out = reionize(&parse(input).unwrap());
+            assert!(out.atoms().all(|(_, a)| a.charge == 0), "{input}");
+        }
+        let canon = |s: &str| chematic_smiles::canonical_smiles(&parse(s).unwrap());
+        let run = |s: &str| chematic_smiles::canonical_smiles(&reionize(&parse(s).unwrap()));
+        assert_eq!(run("OC(=O)CCN"), canon("[O-]C(=O)CC[NH3+]"));
+        // Anilines and sulfonamides are not protonated.
+        assert_eq!(run("Nc1ccccc1"), canon("Nc1ccccc1"));
+        assert_eq!(run("CS(=O)(=O)NC"), canon("CS(=O)(=O)NC"));
     }
 
     #[test]

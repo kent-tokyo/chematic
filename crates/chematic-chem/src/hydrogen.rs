@@ -69,6 +69,9 @@ pub fn add_hydrogens(mol: &Molecule) -> Molecule {
         let mut atom = mol.atom(old_idx).clone();
         atom.hydrogen_count = Some(0);
         let new_idx = builder.add_atom(atom);
+        if let Some(tag) = mol.atom_tag(old_idx) {
+            builder.set_tag(new_idx, Some(tag.get()));
+        }
         remap.insert(old_idx, new_idx);
     }
 
@@ -85,6 +88,13 @@ pub fn add_hydrogens(mol: &Molecule) -> Molecule {
     // heavy atoms is already correct verbatim. Entries with a sentinel are
     // patched below once each atom's new explicit H index is known.
     builder.copy_stereo_from(mol);
+    // Bond indices are unchanged too: E/Z directions kept in the side table
+    // (an aromatic ring bond's `/`, e.g. `C/N=c1/sccn1`) and stereo groups
+    // carry over verbatim. They were dropped, so a later `remove_hydrogens`
+    // lost exocyclic imine E/Z.
+    builder.copy_bond_directions_from(mol);
+    builder.copy_stereo_groups_from(mol);
+    builder.copy_r_groups_from(mol);
 
     // Add explicit H atoms for each implicit hydrogen, and fix up declared
     // stereo order for any stereocenter that gains one.
@@ -198,8 +208,24 @@ pub fn add_stereocenter_hydrogens(mol: &Molecule) -> Molecule {
 /// [`remove_hydrogens`]'s own doc comment for the full rationale and the
 /// regression this guards (issue: isotope labels silently destroyed by
 /// unconditional H-node removal).
-fn is_removable_explicit_h(a: &Atom) -> bool {
-    a.element == Element::H && a.isotope.is_none()
+///
+/// As in RDKit's `RemoveHs`, an H atom is also kept when it is not a plain
+/// terminal substituent: an isolated H (`[H+]`, `[H]`), an H bonded only to
+/// H (`[H][H]`), an H of degree other than 1, a hydride (`[H-]`), or an H on
+/// a wildcard (`*[H]`).
+fn is_removable_explicit_h(mol: &Molecule, idx: AtomIdx) -> bool {
+    let a = mol.atom(idx);
+    if a.element != Element::H || a.isotope.is_some() || a.charge == -1 {
+        return false;
+    }
+    let mut neighbors = mol.neighbors(idx);
+    match (neighbors.next(), neighbors.next()) {
+        (Some((nb, _)), None) => {
+            let n = mol.atom(nb);
+            n.element != Element::H && !n.wildcard
+        }
+        _ => false,
+    }
 }
 
 /// Return a new molecule in which removable explicit H atom nodes (see
@@ -260,11 +286,15 @@ fn is_removable_explicit_h(a: &Atom) -> bool {
 /// see issue #390).
 pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
     let mut builder = MoleculeBuilder::new();
-    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::with_capacity(mol.atom_count());
+    let removable: Vec<bool> = (0..mol.atom_count())
+        .map(|i| is_removable_explicit_h(mol, AtomIdx(i as u32)))
+        .collect();
+    let is_removed = |a: AtomIdx| removable[a.0 as usize];
 
     for i in 0..mol.atom_count() {
         let old_idx = AtomIdx(i as u32);
-        if is_removable_explicit_h(mol.atom(old_idx)) {
+        if is_removed(old_idx) {
             continue;
         }
         let mut atom = mol.atom(old_idx).clone();
@@ -282,12 +312,20 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
         // happened elsewhere in the pipeline, and does so too late for
         // `neutralize_charges` (which already ran) to neutralize the
         // resulting charge -- a real, confirmed idempotency bug (issue #403).
-        if atom.hydrogen_count == Some(0)
-            && mol
-                .neighbors(old_idx)
-                .any(|(nb, _)| is_removable_explicit_h(mol.atom(nb)))
-        {
-            atom.hydrogen_count = None;
+        let removed_h = mol
+            .neighbors(old_idx)
+            .filter(|&(nb, _)| is_removed(nb))
+            .count() as u8;
+        if removed_h > 0 {
+            if !atom.element.is_organic_subset() {
+                // No valence inference for these elements: the removed H
+                // atoms become explicit H count, as in RDKit (`[Na][H]` ->
+                // `[NaH]`).
+                atom.hydrogen_count =
+                    Some(atom.hydrogen_count.unwrap_or(0).saturating_add(removed_h));
+            } else if atom.hydrogen_count == Some(0) {
+                atom.hydrogen_count = None;
+            }
         }
         let new_idx = builder.add_atom(atom);
         remap.insert(old_idx, new_idx);
@@ -307,8 +345,8 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
     for i in 0..mol.bond_count() {
         let old_bidx = BondIdx(i as u32);
         let bond = mol.bond(old_bidx);
-        let a1_removed = is_removable_explicit_h(mol.atom(bond.atom1));
-        let a2_removed = is_removable_explicit_h(mol.atom(bond.atom2));
+        let a1_removed = is_removed(bond.atom1);
+        let a2_removed = is_removed(bond.atom2);
         if a1_removed || a2_removed {
             continue;
         }
@@ -367,7 +405,64 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
         builder.set_stereo_neighbor_order(new_idx, new_order);
     }
 
-    builder.build()
+    // Atom-keyed side tables follow the kept atoms.
+    for (&old_idx, &new_idx) in &remap {
+        if let Some(label) = mol.r_group_label(old_idx) {
+            builder.set_r_group(new_idx, label);
+        }
+        if let Some(tag) = mol.atom_tag(old_idx) {
+            builder.set_tag(new_idx, Some(tag.get()));
+        }
+    }
+    let stereo_groups: Vec<chematic_core::StereoGroup> = mol
+        .stereo_groups()
+        .iter()
+        .filter_map(|g| {
+            let atoms: Vec<AtomIdx> = g
+                .atom_indices
+                .iter()
+                .filter_map(|a| remap.get(a).copied())
+                .collect();
+            (!atoms.is_empty()).then(|| chematic_core::StereoGroup::new(g.kind.clone(), atoms))
+        })
+        .collect();
+    let mut out = builder.build();
+    if !stereo_groups.is_empty() {
+        out.set_stereo_groups(stereo_groups);
+    }
+    // Each atom that lost H atoms keeps its total H count. Valence inference
+    // alone can guess wrong for aromatic atoms (explicit-H pyrrole's N would
+    // come back as `n`, not `[nH]`), so a count it misses is written
+    // explicitly; inference that already agrees leaves `hydrogen_count`
+    // unset. Repeated because one aromatic atom's count can change another's
+    // inferred one through kekulization.
+    let expected: Vec<(AtomIdx, u8)> = (0..mol.atom_count())
+        .filter_map(|i| {
+            let old_idx = AtomIdx(i as u32);
+            let &new_idx = remap.get(&old_idx)?;
+            let removed = mol
+                .neighbors(old_idx)
+                .filter(|&(nb, _)| is_removed(nb))
+                .count() as u8;
+            (removed > 0).then(|| {
+                let total = chematic_core::implicit_hcount(mol, old_idx).saturating_add(removed);
+                (new_idx, total)
+            })
+        })
+        .collect();
+    for _ in 0..3 {
+        let mut changed = false;
+        for &(idx, total) in &expected {
+            if chematic_core::implicit_hcount(&out, idx) != total {
+                out.set_hydrogen_count(idx, Some(total));
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    out
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -418,6 +513,54 @@ mod tests {
         let expanded = add_stereocenter_hydrogens(&original);
         assert_eq!(expanded.atom_count(), original.atom_count());
         assert_eq!(expanded.bond_count(), original.bond_count());
+    }
+
+    #[test]
+    fn remove_hydrogens_keeps_hydrogens_rdkit_keeps() {
+        // RDKit 2026.03.6 `Chem.RemoveHs` (default parameters).
+        for (input, expected) in [
+            ("[H+]", "[H+]"),
+            ("[H-]", "[H-]"),
+            ("[H][H]", "[H][H]"),
+            ("[Na+].[H-]", "[Na+].[H-]"),
+            ("[H-][Na]", "[H-][Na]"),
+            ("C[H-]", "C[H-]"),
+            ("[*][H]", "[*][H]"),
+            ("C[H+]", "C"),
+            ("[H]C", "C"),
+            ("C[H:3]", "C"),
+            ("F[H]", "F"),
+            ("[Na][H]", "[NaH]"),
+        ] {
+            assert_eq!(
+                canonical_smiles(&remove_hydrogens(&mol(input))),
+                canonical_smiles(&mol(expected)),
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
+    fn add_then_remove_hydrogens_keeps_aromatic_nh() {
+        // Explicit-H pyrrole came back as `c1ccnc1` (its N lost the H).
+        for input in [
+            "c1cc[nH]c1",
+            "c1ccc2[nH]ccc2c1",
+            "c1c[nH]cn1",
+            "Cc1cc(C)[nH]n1",
+            "O=c1cc[nH]cc1",
+            "c1cc[nH+]cc1",
+            "C[C@H](N)C(=O)O",
+            "[NH4+]",
+            "c1ccccc1",
+            // Exocyclic imine E/Z kept in the bond-direction side table.
+            "CC(=O)/N=c1/sc(S(N)(=O)=O)nn1C",
+            "C/N=c1/cccc[nH]1",
+        ] {
+            let m = mol(input);
+            let round = remove_hydrogens(&add_hydrogens(&m));
+            assert_eq!(canonical_smiles(&round), canonical_smiles(&m), "{input}");
+        }
     }
 
     // ─── Isotopic-hydrogen preservation ────────────────────────────────────

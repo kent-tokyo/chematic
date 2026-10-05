@@ -11,6 +11,8 @@
 //! Coordinator integration is a later, separate PR (see this crate's
 //! `etkdg_knowledge.rs` module docs and `docs/rfcs/3d_breakthrough_master_plan.md`).
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use chematic_core::AtomIdx;
 
 // ---------------------------------------------------------------------------
@@ -116,7 +118,7 @@ impl FourierTorsionTerm {
         let n = f64::from(self.periodicity);
         let phi_rad = phi_deg.to_radians();
         let phase_rad = self.phase_deg.to_radians();
-        self.amplitude * (1.0 + (n * phi_rad - phase_rad).cos())
+        self.amplitude * (1.0 + (n * phi_rad - phase_rad).dcos())
     }
 
     /// Analytic `dE/dphi` (degrees^-1, since `phi` is in degrees):
@@ -128,7 +130,7 @@ impl FourierTorsionTerm {
         let n = f64::from(self.periodicity);
         let phi_rad = phi_deg.to_radians();
         let phase_rad = self.phase_deg.to_radians();
-        -self.amplitude * n * (n * phi_rad - phase_rad).sin() * (std::f64::consts::PI / 180.0)
+        -self.amplitude * n * (n * phi_rad - phase_rad).dsin() * (std::f64::consts::PI / 180.0)
     }
 }
 

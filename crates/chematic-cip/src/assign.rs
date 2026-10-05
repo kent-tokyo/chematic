@@ -191,6 +191,47 @@ pub fn assign_cip_accurate_experimental_without_mancude(
     assign_all(mol, budget, None)
 }
 
+/// Whether `p` lies on a ring (of at most eight atoms) that contains a
+/// double bond, where an alternative Kekulé spelling changes RDKit's label.
+fn phosphorus_on_unsaturated_ring(mol: &Molecule, p: AtomIdx) -> bool {
+    use chematic_core::BondOrder;
+    // Breadth-first from each neighbour back to `p` without the first bond,
+    // remembering whether the path used a double or aromatic bond.
+    for (start, first) in mol.neighbors(p) {
+        let first_unsat = matches!(
+            mol.bond(first).order,
+            BondOrder::Double | BondOrder::Aromatic
+        );
+        let mut seen = vec![false; mol.atom_count()];
+        seen[start.0 as usize] = true;
+        let mut frontier = vec![(start, first_unsat)];
+        for _ in 0..7 {
+            let mut next = Vec::new();
+            for &(a, unsat) in &frontier {
+                for (nb, b) in mol.neighbors(a) {
+                    if b == first {
+                        continue;
+                    }
+                    let u = unsat
+                        || matches!(mol.bond(b).order, BondOrder::Double | BondOrder::Aromatic);
+                    if nb == p {
+                        if u {
+                            return true;
+                        }
+                        continue;
+                    }
+                    if !seen[nb.0 as usize] {
+                        seen[nb.0 as usize] = true;
+                        next.push((nb, u));
+                    }
+                }
+            }
+            frontier = next;
+        }
+    }
+    false
+}
+
 fn assign_all(
     mol: &Molecule,
     budget: CipBudget,
@@ -206,10 +247,13 @@ fn assign_all(
         }
 
         // The held-out phosphorus corpus contains neutral Kekulé respellings
-        // for which both RDKit CIP labelers flip R/S while InChI confirms the
-        // molecule is unchanged. Until a representation-independent P oracle
-        // is available, never turn those cases into confident output.
-        if atom.element == Element::P {
+        // (cyclophosphazene P=N rings) for which both RDKit CIP labelers flip
+        // R/S while InChI confirms the molecule is unchanged. A P centre on a
+        // ring that carries a double bond can be respelled that way, so it
+        // fails closed. An acyclic-ring P (phosphonamidate, phosphonate
+        // ester) has no such respelling: RDKit's labeler gives the same label
+        // over atom orders and P=O / [P+][O-] spellings, and it is assigned.
+        if atom.element == Element::P && phosphorus_on_unsaturated_ring(mol, idx) {
             result.skipped.push((idx, SkipReason::OracleUnstable));
             continue;
         }
@@ -219,7 +263,11 @@ fn assign_all(
             continue;
         };
         if stereo_order.len() == 3 {
-            result.skipped.push((idx, SkipReason::LonePairCenter));
+            match assign_lone_pair_centre(mol, idx, atom.chirality, stereo_order, budget, kekule) {
+                Ok(Some(code)) => result.assignments.push((idx, code)),
+                Ok(None) => result.skipped.push((idx, SkipReason::LonePairCenter)),
+                Err(reason) => result.skipped.push((idx, reason)),
+            }
             continue;
         }
         if stereo_order.len() != 4 {
@@ -479,6 +527,95 @@ fn assign_one(
     Ok(Some(if is_r { CipCode::R } else { CipCode::S }))
 }
 
+/// A three-ligand centre outside rings (sulfoxide, sulfinamide, phosphine):
+/// the lone pair is a phantom ligand of lowest priority, as in RDKit's
+/// `CIPLabeler`. `None` (reported as `LonePairCenter`) for a ring centre such
+/// as a bridgehead amine, where RDKit's reading depends on how a ring-closure
+/// digit on the centre was written and `stereo_neighbor_order` does not keep
+/// that; also when a ligand is hydrogen or the centre has implicit H.
+fn assign_lone_pair_centre(
+    mol: &Molecule,
+    idx: AtomIdx,
+    chirality: Chirality,
+    stereo_order: &[u32],
+    budget: CipBudget,
+    kekule: Option<&(Molecule, MancudeContext)>,
+) -> Result<Option<CipCode>, SkipReason> {
+    if stereo_order.len() != 3
+        || stereo_order.contains(&STEREO_H_SENTINEL)
+        || chematic_core::implicit_hcount(mol, idx) > 0
+        || stereo_order
+            .iter()
+            .any(|&a| mol.atom(AtomIdx(a)).element == Element::H)
+        || atom_in_ring(mol, idx)
+    {
+        return Ok(None);
+    }
+    let mut graph = match kekule {
+        Some((kekule_mol, ctx)) => {
+            CipDigraph::new_with_mancude(kekule_mol, idx, budget, ctx).map_err(map_digraph_err)?
+        }
+        None => CipDigraph::new(mol, idx, budget).map_err(map_digraph_err)?,
+    };
+    let root = graph.root();
+    let root_children = graph.expand_children(root).map_err(map_digraph_err)?;
+    let Some(position_nodes) = position_node_ids(&graph, stereo_order, &root_children) else {
+        return Ok(None);
+    };
+    let mut ctx = CompareContext::new();
+    let groups = rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
+    let position_set: HashSet<NodeId> = position_nodes.iter().copied().collect();
+    for group in &groups {
+        if group.iter().filter(|n| position_set.contains(n)).count() > 1 {
+            return Err(SkipReason::Tied);
+        }
+    }
+    // Highest group first: rank the three ligands 4, 3, 2; the lone pair is 1.
+    let group_of = |node: NodeId| groups.iter().position(|g| g.contains(&node));
+    let mut by_priority: Vec<(usize, usize)> = position_nodes
+        .iter()
+        .enumerate()
+        .map(|(slot, &node)| group_of(node).map(|g| (g, slot)))
+        .collect::<Option<_>>()
+        .ok_or(SkipReason::NotFourSubstituents)?;
+    by_priority.sort_unstable();
+    let mut ranks3 = [0u8; 3];
+    for (k, &(_, slot)) in by_priority.iter().enumerate() {
+        ranks3[slot] = 4 - k as u8;
+    }
+    // Matched against RDKit 2026.03.6 `rdCIPLabeler` on acyclic sulfoxides,
+    // sulfinamides and phosphines over random atom orders: the phantom takes
+    // the second slot whether or not the centre has a preceding atom.
+    let lone_pair_slot = 1;
+    let mut ranks = ranks3.to_vec();
+    ranks.insert(lone_pair_slot, 1);
+    Ok(is_r_from_ranks(&ranks, chirality).map(|r| if r { CipCode::R } else { CipCode::S }))
+}
+
+/// Whether `idx` lies on a ring: some neighbour reaches another without
+/// passing through `idx`.
+fn atom_in_ring(mol: &Molecule, idx: AtomIdx) -> bool {
+    let nbrs: Vec<AtomIdx> = mol.neighbors(idx).map(|(nb, _)| nb).collect();
+    for (k, &start) in nbrs.iter().enumerate() {
+        let mut seen = vec![false; mol.atom_count()];
+        seen[idx.0 as usize] = true;
+        seen[start.0 as usize] = true;
+        let mut stack = vec![start];
+        while let Some(a) = stack.pop() {
+            for (nb, _) in mol.neighbors(a) {
+                if nbrs[k + 1..].contains(&nb) {
+                    return true;
+                }
+                if !seen[nb.0 as usize] {
+                    seen[nb.0 as usize] = true;
+                    stack.push(nb);
+                }
+            }
+        }
+    }
+    false
+}
+
 /// Given a fully-ranked group partition (highest-priority group first, matching
 /// [`rank_children`]'s convention) and the 4 physical positions in `stereo_order`
 /// order, compute whether the center is *rectus* (R). Shared by [`assign_one`] (Rules
@@ -528,6 +665,12 @@ pub(crate) fn resolve_is_r_from_groups(
         .map(|&r| distinct_ranks.iter().position(|&x| x == r).unwrap() as u8 + 1)
         .collect();
 
+    is_r_from_ranks(&ranks, chirality)
+}
+
+/// R/S from four dense position ranks (1 = lowest priority) in
+/// `stereo_neighbor_order` order and the SMILES chirality tag.
+fn is_r_from_ranks(ranks: &[u8], chirality: Chirality) -> Option<bool> {
     // Mirrors crates/chematic-chem/src/cip.rs::assign_tetrahedral's parity computation
     // verbatim (already correct there, fixed in d0e726b) -- only the source of
     // `ranks` differs (the new recursive comparator, not the old shell-pooling one).

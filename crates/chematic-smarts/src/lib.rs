@@ -10,6 +10,7 @@
 pub mod cache;
 pub(crate) mod clock;
 pub mod cx;
+pub(crate) mod hybridization;
 pub mod match_vf2;
 pub mod mcs;
 pub mod parser;
@@ -20,6 +21,7 @@ pub mod rdkit_ring_model;
 
 pub use cache::{SmartsCache, named_pattern};
 pub use cx::{CxQueryAtomProp, CxSmarts, parse_cxsmarts};
+pub use hybridization::rdkit_hybridization;
 pub use match_vf2::{
     MatchConfig, MatchOutcome, find_matches, find_matches_with_config, find_matches_with_rings,
     find_matches_with_rings_and_config, find_matches_with_rings_and_config_checked,

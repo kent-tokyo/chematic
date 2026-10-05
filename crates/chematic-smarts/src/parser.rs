@@ -987,7 +987,14 @@ impl<'a> Parser<'a> {
                         Box::new(range_query(lo, hi, AtomPrimitive::RingSize)),
                     ));
                 }
-                self.count_primitive(None, AtomPrimitive::RingSize)
+                // RDKit: bare `k` is "in a ring", and `k0` matches every
+                // atom (its ring-of-size-0 test is always true; ranges use a
+                // different test, above).
+                match self.parse_count_number() {
+                    Some(0) => Ok(AtomQuery::Primitive(AtomPrimitive::Wildcard)),
+                    Some(n) => Ok(AtomQuery::Primitive(AtomPrimitive::RingSize(n))),
+                    None => Ok(AtomQuery::Primitive(AtomPrimitive::RingMembership(true))),
+                }
             }
 
             // Ring membership `R` or ring count `RN` (N = 0, 1, 2, …).
@@ -1029,12 +1036,19 @@ impl<'a> Parser<'a> {
                 self.neighbor_count_primitive(AtomPrimitive::RingBondCount)
             }
 
-            // Hybridization `[^N]` — 1=sp, 2=sp2, 3=sp3.
+            // Hybridization `[^N]` — 0=s, 1=sp, 2=sp2, 3=sp3, 4=sp3d,
+            // 5=sp3d2 (RDKit); other digits are errors.
             Some(b'^') => {
                 self.advance(); // consume '^'
                 let n = self
                     .parse_single_digit()
                     .ok_or(SmartsError::UnexpectedEnd)?;
+                if n > 5 {
+                    return Err(SmartsError::UnexpectedChar(
+                        (b'0' + n) as char,
+                        self.pos - 1,
+                    ));
+                }
                 Ok(AtomQuery::Primitive(AtomPrimitive::Hybridization(n)))
             }
 
@@ -1092,6 +1106,37 @@ impl<'a> Parser<'a> {
                 } else {
                     1u8 // counterclockwise (@)
                 };
+                // Chirality classes `@TH1`, `@AL2`, `@SP3`, `@TB12`, `@OH30`
+                // (RDKit). `@TH1`/`@TH2` are `@`/`@@`; the others are kept as
+                // "some chirality", which like `@`/`@@` does not constrain a
+                // match unless `use_chirality` is set.
+                if kind == 1 {
+                    let rest = &self.src[self.pos..];
+                    let class = [b"TH", b"AL", b"SP", b"TB", b"OH"]
+                        .into_iter()
+                        .find(|c| rest.starts_with(*c));
+                    if let Some(class) = class {
+                        self.pos += 2;
+                        let n = self.parse_digits_u8().ok_or(SmartsError::UnexpectedEnd)?;
+                        let max = match class {
+                            b"TH" | b"AL" => 2,
+                            b"SP" => 3,
+                            b"TB" => 20,
+                            _ => 30,
+                        };
+                        if n == 0 || n > max {
+                            return Err(SmartsError::UnexpectedChar(
+                                (b'0' + n.min(9)) as char,
+                                self.pos - 1,
+                            ));
+                        }
+                        let kind = match (class, n) {
+                            (b"TH", n) => n,
+                            _ => 3,
+                        };
+                        return Ok(AtomQuery::Primitive(AtomPrimitive::Chirality(kind)));
+                    }
+                }
                 Ok(AtomQuery::Primitive(AtomPrimitive::Chirality(kind)))
             }
 
@@ -1125,8 +1170,13 @@ impl<'a> Parser<'a> {
             }
         }
 
-        // Single-character symbol.
+        // Single-character symbol. Lowercase (aromatic) is only `b c n o p s`,
+        // as in Daylight and RDKit: `[i]`, `[f]` are errors, not atoms that
+        // can never match.
         let sym = upper_first.to_string();
+        if aromatic && !matches!(first, 'b' | 'c' | 'n' | 'o' | 'p' | 's') {
+            return Err(SmartsError::UnexpectedChar(first, pos));
+        }
         if chematic_core::Element::from_symbol(&sym).is_some() {
             let sym_q = AtomQuery::Primitive(AtomPrimitive::Symbol(sym));
             // Lowercase (e.g. `[o]`, `[n]`) → aromatic; uppercase (e.g. `[O]`, `[N]`) → aliphatic.
@@ -1983,6 +2033,10 @@ mod tests {
             ("[k{3-}]", "CC1CCCCC1", vec![1, 2, 3, 4, 5, 6]),
             ("[k{-6}]", "CC1CCCCC1", vec![1, 2, 3, 4, 5, 6]),
             ("[k{0-6}]", "CC1CCCCC1", vec![1, 2, 3, 4, 5, 6]),
+            // Bare `k` is "in a ring"; `k0` matches every atom (RDKit).
+            ("[k]", "CC1CCCCC1", vec![1, 2, 3, 4, 5, 6]),
+            ("[k0]", "CC1CCCCC1", vec![0, 1, 2, 3, 4, 5, 6]),
+            ("[!k0]", "CC1CCCCC1", vec![]),
             // Bare `x` / `h` mean "at least one".
             ("[x]", "CC1CCCC1", vec![1, 2, 3, 4, 5]),
             ("[h]", "CC(C)(C)C", vec![0, 2, 3, 4]),
@@ -2168,5 +2222,24 @@ mod tests {
         let result = parse_smarts("[$$()]");
         // Empty recursion is probably an error.
         assert!(result.is_err() || result.as_ref().unwrap().atoms.len() == 1);
+    }
+
+    #[test]
+    fn rdkit_rejects_and_accepts_like_rdkit(/* issue #754 */) {
+        // Lowercase atoms are only the aromatic organic subset.
+        for bad in [
+            "[i]", "[Ci1]", "[f]", "[C^6]", "[C^7]", "[C@TH3]", "[C@SP4]", "[C@SP]",
+        ] {
+            assert!(parse_smarts(bad).is_err(), "{bad} should be an error");
+        }
+        for good in [
+            "[c]", "[b]", "[se]", "[C^0]", "[C^5]", "[C@TH1]", "[C@SP1]", "[C@TB20]", "[C@OH30]",
+        ] {
+            assert!(parse_smarts(good).is_ok(), "{good} should parse");
+        }
+        // `@SP1` is one chirality primitive, not `@` followed by S and P.
+        let q = parse_smarts("[C;@SP1]").unwrap();
+        let mol = chematic_smiles::parse("ClCCBr").unwrap();
+        assert_eq!(crate::find_matches(&q, &mol).len(), 2);
     }
 }

@@ -806,6 +806,8 @@ pub fn assign_mmff94_numeric_types_with_view(
             Element::P => assign_p_type(&mmff_mol, idx)?,
             Element::SI => 19,
             Element::F => 11,
+            // RDKit: chlorine with four oxygens is perchlorate Cl (77).
+            Element::CL if total_degree(&mmff_mol, idx) == 4 => 77,
             Element::CL => 12,
             Element::BR => 13,
             Element::I => 14,
@@ -902,12 +904,6 @@ fn count_bond_order(mol: &Molecule, idx: AtomIdx, order: BondOrder) -> usize {
         .iter()
         .filter(|b| b.order == order)
         .count()
-}
-
-fn is_bonded_to(mol: &Molecule, idx: AtomIdx, elem: Element, order: BondOrder) -> bool {
-    bonds_of(mol, idx)
-        .iter()
-        .any(|b| mol.atom(b.neighbor).element == elem && b.order == order)
 }
 
 // ── Aromatic ring helpers ────────────────────────────────────────────────────
@@ -1478,70 +1474,67 @@ fn assign_c_type(
     // matching RDKit's own fallthrough when its aromatic switch doesn't set
     // atomType.
 
-    let double_bonds = count_bond_order(mol, idx, BondOrder::Double);
-
-    // sp carbon: RDKit's real CSP (type 4) rule for a non-aromatic carbon
-    // is simply `getTotalDegree() == 2` (`AtomTyper.cpp`, pinned commit
-    // `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f`, lines ~954-960 -- the
-    // "2 neighbors" branch reached once the earlier degree-4 and degree-3
-    // branches don't match), with no check on which elements the two
-    // bonds go to. It covers both true acetylenic carbons (one triple
-    // bond leaves exactly one remaining substituent, so degree is always
-    // 2) *and* cumulated-double-bond ("allenic") carbons such as the
-    // central C of an aryl isothiocyanate's N=C=S (two double bonds, zero
-    // remaining substituents, also degree 2). Chematic previously only
-    // special-cased `triple_bonds > 0`, so a degree-2 carbon reached via
-    // two double bonds instead fell into the `double_bonds > 0`
-    // "double-bonded to N/O/P/S" branch below and was mistyped 3 (generic
-    // carbonyl-family) instead of 4 -- confirmed live against RDKit on
-    // `chembl_tier_b_0071`/`_0082`'s isothiocyanate carbon (issue #337).
-    // `total_degree(mol, idx) == 2` is a strict superset of the old
-    // `triple_bonds > 0` gate (a carbon triple bond always consumes 3 of
-    // its 4 valence units, leaving exactly one more substituent), not a
-    // narrower replacement, so this cannot regress any previously-correct
-    // triple-bond CSP assignment.
-    if total_degree(mol, idx) == 2 {
-        return Ok(4); // CSP: acetylenic or cumulated-double-bond ("allenic") carbon
-    }
-
-    // sp2 carbon
-    if double_bonds > 0 {
-        // Issue #227 Priority 1A-2: RDKit's real type-3 "C=O" row is an
-        // umbrella covering a 3-connected carbon double-bonded to N, O, P,
-        // *or* S (`AtomTyper.cpp` lines 907-943 at the pinned commit,
-        // `doubleBondedElement ∈ {7,8,15,16}`), not literal C=O alone --
-        // it also names C=N (imine), C=P, and thio- variants explicitly in
-        // its own symbol list. Previously only O/S were checked here, so a
-        // carbon double-bonded to nitrogen (e.g. the ring carbon of a
-        // cyclic hydrazide/dione tautomer, or an amidine carbon) fell
-        // through to the generic vinylic type below -- verified this was
-        // the single root cause of a 39-atom residual (chematic: C=C(2),
-        // RDKit: C=O(3)) via a live RDKit oracle re-measurement, not
-        // assumed.
-        if is_bonded_to(mol, idx, Element::O, BondOrder::Double)
-            || is_bonded_to(mol, idx, Element::S, BondOrder::Double)
-            || is_bonded_to(mol, idx, Element::N, BondOrder::Double)
-            || is_bonded_to(mol, idx, Element::P, BondOrder::Double)
-        {
-            return Ok(3); // C=O / C=N / C=P / C=S family (generic carbonyl-like)
+    // Aliphatic carbon, dispatched on total degree exactly as RDKit's
+    // `setMMFFHeavyAtomType` (`AtomTyper.cpp`, Release_2026_03_6, `case 6`
+    // aliphatic block). The previous port keyed on "has a double bond" and
+    // fell back to alkyl carbon (1), so a three-connected carbon with no
+    // double bond -- a ring carbon of an MMFF-aromatic ring RDKit's typer
+    // does not special-case (tropone's seven-ring) -- was typed 1 instead of
+    // 2, and CR4E (30), CO2M/CS2M (41) and CNN+/CGD+ (57) were never
+    // assigned.
+    match total_degree(mol, idx) {
+        4 => {
+            if atom_in_ring_of_size(rings, idx, 3) {
+                return Ok(22); // CR3R
+            }
+            if atom_in_ring_of_size(rings, idx, 4) {
+                return Ok(20); // CR4R
+            }
+            Ok(1) // CR alkyl carbon
         }
-        // Otherwise generic sp2/vinylic carbon (C=C).
-        return Ok(2); // C=C vinylic
-    }
-
-    // sp3: small-ring strain context (RDKit AtomTyper.cpp aliphatic-carbon
-    // block, `getTotalDegree() == 4` gate -- 3-membered ring checked before
-    // 4-membered, matching RDKit's own if/if (not if/else if) order, though
-    // a carbon can't be in both a 3- and 4-ring simultaneously in practice).
-    if total_degree(mol, idx) == 4 {
-        if atom_in_ring_of_size(rings, idx, 3) {
-            return Ok(22); // CR3R
+        3 => {
+            let (mut n_n2, mut n_n3, mut n_o, mut n_s) = (0, 0, 0, 0);
+            let mut double_bonded_element: Option<Element> = None;
+            for nb in bonds_of(mol, idx) {
+                let nb_atom = mol.atom(nb.neighbor);
+                if nb.order == BondOrder::Double {
+                    double_bonded_element = Some(nb_atom.element);
+                }
+                let nb_degree = total_degree(mol, nb.neighbor);
+                if nb_degree == 1 {
+                    match nb_atom.element {
+                        Element::O => n_o += 1,
+                        Element::S => n_s += 1,
+                        _ => {}
+                    }
+                } else if nb_atom.element == Element::N {
+                    if nb_degree == 3 {
+                        n_n3 += 1;
+                    } else if nb_degree == 2 && nb.order == BondOrder::Double {
+                        n_n2 += 1;
+                    }
+                }
+            }
+            if n_n3 >= 2 && n_n2 == 0 && double_bonded_element == Some(Element::N) {
+                return Ok(57); // CNN+ / CGD+
+            }
+            if n_o == 2 || n_s == 2 {
+                return Ok(41); // CO2M / CS2M
+            }
+            if atom_in_ring_of_size(rings, idx, 4) && double_bonded_element == Some(Element::C) {
+                return Ok(30); // CR4E
+            }
+            if matches!(
+                double_bonded_element,
+                Some(Element::N | Element::O | Element::P | Element::S)
+            ) {
+                return Ok(3); // C=N / C=O / C=P / C=S family
+            }
+            Ok(2) // C=C vinylic / generic sp2 carbon
         }
-        if atom_in_ring_of_size(rings, idx, 4) {
-            return Ok(20); // CR4R
-        }
+        2 => Ok(4), // CSP: acetylenic or allenic carbon
+        _ => Ok(1),
     }
-    Ok(1) // CR alkyl carbon
 }
 
 /// Faithful port of RDKit's aromatic-carbon cases (`AtomTyper.cpp`
@@ -1819,13 +1812,10 @@ fn assign_n_type(
     // an azide/diazo group, type 53). Must run before the generic
     // `charge > 0 -> 34` fallback below, which would otherwise mask it
     // (issue #227's "azide/diazo typing" gap).
-    if atom.charge > 0
-        && degree == 2
-        && nbrs
-            .iter()
-            .all(|b| mol.atom(b.neighbor).element == Element::N)
-    {
-        return Ok(53); // =N=: central cumulated nitrogen (azide/diazo)
+    // RDKit: a two-connected N of valence four is isonitrile N (61) when it
+    // has a triple bond, otherwise =N= (53: azide or diazo centre).
+    if degree == 2 && total_valence(mol, idx) == 4 {
+        return Ok(if triple_bonds > 0 { 61 } else { 53 });
     }
 
     // Iminium nitrogen (N+=C, type 54). RDKit's MMFF atom typer checks this
@@ -1867,6 +1857,14 @@ fn assign_n_type(
     if atom.charge > 0 && terminal_o_count >= 2 {
         return Ok(45); // NO2 / NO3
     }
+    // RDKit: a four-connected N-oxide is N3OX (68); a three-connected N of
+    // bond order four with one terminal O is N2OX (67).
+    if degree == 4 && is_atom_n_oxide(mol, idx) {
+        return Ok(68); // N3OX
+    }
+    if degree == 3 && total_bond_order >= 4 && terminal_o_count == 1 {
+        return Ok(67); // N2OX
+    }
 
     // Formal charge: quaternary ammonium / protonated N.
     // Registry-verified: type 34 is NR+ (N+, QUATERNARY N); type 32 is
@@ -1902,6 +1900,28 @@ fn assign_n_type(
 
     // N=C or N=N (imine, hydrazone, etc.)
     if double_bonds > 0 {
+        // RDKit: a two-connected N double bonded to a terminal O (and not
+        // to C or N) is nitroso N (46).
+        let nitroso = degree == 2
+            && terminal_o_count == 1
+            && nbrs.iter().any(|b| {
+                b.order == BondOrder::Double && mol.atom(b.neighbor).element == Element::O
+            })
+            && !double_bonded_to_c_or_n;
+        if nitroso {
+            return Ok(46); // N=O nitroso nitrogen
+        }
+        // RDKit's NSO: a two-connected N double bonded to neither C nor N,
+        // bonded to an S carrying exactly one terminal O.
+        if degree == 2
+            && !double_bonded_to_c_or_n
+            && nbrs.iter().any(|b| {
+                mol.atom(b.neighbor).element == Element::S
+                    && count_terminal_o_neighbors(mol, b.neighbor) == 1
+            })
+        {
+            return Ok(48); // NSO
+        }
         return Ok(9); // N=C imine
     }
 
@@ -1941,6 +1961,38 @@ fn assign_n_type(
 
     if is_amide {
         return Ok(10); // NC=O amide nitrogen
+    }
+
+    // RDKit's isNNNorNNC: a three-connected N bonded to an N that is double
+    // bonded to N (N=N-N), or to a C with no other N, O or S neighbour
+    // (N=N-C), unless the ipso N is bonded to a benzene carbon.
+    if degree == 3 {
+        let benzene_neighbour = nbrs.iter().any(|b| {
+            let nb = mol.atom(b.neighbor);
+            nb.element == Element::C
+                && nb.aromatic
+                && atom_in_aromatic_ring_of_size(mol, rings, b.neighbor, 6)
+        });
+        let nn_double = nbrs.iter().any(|b| {
+            mol.atom(b.neighbor).element == Element::N
+                && bonds_of(mol, b.neighbor).iter().any(|b2| {
+                    b2.order == BondOrder::Double
+                        && match mol.atom(b2.neighbor).element {
+                            Element::N => true,
+                            Element::C => bonds_of(mol, b2.neighbor).iter().all(|b3| {
+                                b3.neighbor == b.neighbor
+                                    || !matches!(
+                                        mol.atom(b3.neighbor).element,
+                                        Element::N | Element::O | Element::S
+                                    )
+                            }),
+                            _ => false,
+                        }
+                })
+        });
+        if nn_double && !benzene_neighbour {
+            return Ok(10); // NN=N / NN=C
+        }
     }
 
     Ok(8) // NR plain amine
@@ -2185,6 +2237,28 @@ fn assign_o_type(
         return Ok(t);
     }
 
+    // RDKit `case 8` for two- and three-connected oxygen.
+    match total_degree(mol, idx) {
+        3 => return Ok(49), // O+: oxonium
+        2 => {
+            // (An MMFF-aromatic ring's bonds count 1 here; a two-connected
+            // O+ has valence three either way.)
+            if total_valence(mol, idx) == 3 || mol.atom(idx).charge == 1 {
+                return Ok(51); // O=+: oxenium (pyrylium)
+            }
+            let h = bonds_of(mol, idx)
+                .iter()
+                .filter(|b| mol.atom(b.neighbor).element == Element::H)
+                .count()
+                + usize::from(implicit_hcount(mol, idx));
+            if h == 2 {
+                return Ok(70); // OH2: water
+            }
+            return Ok(6); // OR
+        }
+        _ => {}
+    }
+
     // Double bond to C or N → carbonyl/similar oxygen (type 7)
     if count_bond_order(mol, idx, BondOrder::Double) > 0 {
         return Ok(7); // O=C
@@ -2289,17 +2363,13 @@ fn assign_s_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 // ── P type assignment ────────────────────────────────────────────────────────
 
 fn assign_p_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
-    // P with =O → phosphoryl (type 25)
-    if is_bonded_to(mol, idx, Element::O, BondOrder::Double) {
-        return Ok(25); // PO4
-    }
-    // P=C has its own registry entry (type 75). Do not use the historical
-    // numeric value 20 here: type 20 is CR4R, a carbon-only cyclobutyl type,
-    // and the semantic-compatibility invariant correctly rejects it for P.
-    if is_bonded_to(mol, idx, Element::C, BondOrder::Double) {
-        return Ok(75); // P doubly bonded to C
-    }
-    Ok(26) // tricoordinate P
+    // RDKit `setMMFFHeavyAtomType` `case 15`: by total degree only. (The
+    // previous "P=O -> 25" rule typed a thiophosphate P(=S)(O)(O)O as 26.)
+    Ok(match total_degree(mol, idx) {
+        4 => 25, // PO4 / PO3 / PO2 / PO / PTET
+        2 => 75, // -P=C
+        _ => 26, // P: tricoordinate phosphorus
+    })
 }
 
 // ── H type assignment ────────────────────────────────────────────────────────
@@ -3589,14 +3659,19 @@ mod tests {
             .expect("generic P atom");
         assert_eq!(generic_p, 26, "tricoordinate P should use registry type 26");
 
-        let ylide = mol("[P](C)(C)(C)=C");
-        let ylide_types = assign_mmff94_numeric_types(&ylide).unwrap();
-        let ylide_p = ylide
-            .atoms()
-            .find(|(_, atom)| atom.element == Element::P)
-            .map(|(idx, _)| ylide_types[idx.0 as usize])
-            .expect("P=C atom");
-        assert_eq!(ylide_p, 75, "P=C should use registry type 75");
+        // RDKit types phosphorus by total degree: the four-connected ylide
+        // P is 25 and only a two-connected -P= is 75 (RDKit 2026.03.6
+        // `MMFFGetMMFFAtomType`).
+        for (smiles, want) in [("[P](C)(C)(C)=C", 25), ("C=PC", 75)] {
+            let m = mol(smiles);
+            let types = assign_mmff94_numeric_types(&m).unwrap();
+            let p = m
+                .atoms()
+                .find(|(_, atom)| atom.element == Element::P)
+                .map(|(idx, _)| types[idx.0 as usize])
+                .expect("P atom");
+            assert_eq!(p, want, "{smiles}");
+        }
     }
 
     // ── Issue #227: nitrile/sulfonamide/nitro/azide/charged-sulfoxide

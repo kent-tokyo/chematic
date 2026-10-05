@@ -1,0 +1,136 @@
+{
+  "chematic_version": "1.0.34",
+  "counts": {
+    "exact": 309982,
+    "fixed_original_boolean": 43,
+    "fixed_original_residual": 183,
+    "refused_original_correct": 1,
+    "refused_original_residual": 17
+  },
+  "input_cells": 310000,
+  "inputs": {
+    "classification": "7f6b32d614eefb5604df17261e23d8f746fa17f2afb2307686d1d97b329d39ef",
+    "corpus": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "oracle": "3f55a2e16ee3aef9c59e6d17e1404528021658269fe4edb71208a19e12e07093",
+    "published_baseline": "4c429609828c193d84bde7200e0e8b36eaa91e7c01a8aaf4f6ebe73839412452",
+    "queries": "250a241a8905d013eb58fff0ccfb1e0dbe3e97c08ff56e021828fbfec957b341"
+  },
+  "module_path_within_wheel": "chematic/__init__.py",
+  "oracle_mode": "archived (SHA-256 pinned)",
+  "rdkit_version": "2026.03.6",
+  "refused": [
+    [
+      9,
+      "[R1]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      9,
+      "[R2]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      9,
+      "[R3]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      23,
+      "[R1]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      23,
+      "[R2]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      23,
+      "[R3]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      28,
+      "[R1]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      28,
+      "[R2]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      28,
+      "[R3]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      29,
+      "[R1]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      29,
+      "[R2]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      29,
+      "[R3]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      30,
+      "[R1]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      30,
+      "[R2]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      30,
+      "[R3]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      34,
+      "[R1]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      34,
+      "[R2]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ],
+    [
+      34,
+      "[R3]",
+      "typed_unsupported",
+      "ring_model_ambiguous"
+    ]
+  ],
+  "schema": "python-opt-in-smarts-parity-310k/v1",
+  "scope": "published PyPI chematic 1.0.34 Linux x86-64 CPython 3.9 wheel",
+  "unexpected": [],
+  "unexpected_total": 0,
+  "wheel_sha256": "b4e3da6664f0d43c55606258a8beb97b0183ef12e9ee6fc2d6edf067f358f34b"
+}

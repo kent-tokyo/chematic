@@ -151,6 +151,8 @@
 //!   standing convention that heuristic-projection residuals are visible, not assumed
 //!   away (`distance_geometry_v2::bounds_conformance`'s own doc comment).
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use chematic_core::{AtomIdx, Molecule};
 
 use crate::clock::Instant;
@@ -2127,7 +2129,7 @@ mod tests {
         let m1 = n1.cross(&b2_unit);
         let x = n1.dot(&n2);
         let y = m1.dot(&n2);
-        y.atan2(x).to_degrees()
+        y.datan2(x).to_degrees()
     }
 
     /// Distance (degrees) from `dihedral` to the nearest of a planar amide's

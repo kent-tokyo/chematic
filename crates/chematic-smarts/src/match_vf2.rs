@@ -212,10 +212,12 @@ pub struct MatchConfig {
     pub use_chirality: bool,
 
     /// When `true`, isotope primitives (`[13C]`, `[2H]`, …) are enforced
-    /// against the target atom's isotope label.
+    /// against the target atom's isotope label; an unlabelled atom counts
+    /// as isotope 0.
     ///
-    /// Defaults to `false` (isotopes are ignored, matching RDKit's default
-    /// `useIsotopes=False` behaviour).
+    /// Defaults to `true`, as in RDKit, where an isotope in a query always
+    /// constrains the match (`[12C]` does not match an unlabelled carbon).
+    /// `false` ignores isotope primitives.
     pub use_isotopes: bool,
 
     /// When `true`, deduplicate matches: only return one mapping per unique
@@ -244,7 +246,7 @@ impl Default for MatchConfig {
         Self {
             max_matches: None,
             use_chirality: false,
-            use_isotopes: false,
+            use_isotopes: true,
             uniquify: true,
             max_visit_budget: None,
         }
@@ -1122,8 +1124,9 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
                 == *n
         }
         AtomPrimitive::Hybridization(h) => eval_hybridization(idx, ctx, *h),
+        // An unlabelled atom has isotope 0, as in RDKit (`[0C]` matches it).
         AtomPrimitive::Isotope(mass) => {
-            !ctx.config.use_isotopes || ctx.mol.atom(idx).isotope == Some(*mass)
+            !ctx.config.use_isotopes || ctx.mol.atom(idx).isotope.unwrap_or(0) == *mass
         }
         AtomPrimitive::Chirality(kind) => eval_chirality(idx, ctx, *kind),
         AtomPrimitive::HeteroNeighborCount(n) => {
@@ -1152,9 +1155,9 @@ pub(crate) fn hetero_neighbor_count(
     mol.neighbors(idx)
         .filter(|(nb, _)| {
             let a = mol.atom(*nb);
-            !a.wildcard
-                && !matches!(a.element.atomic_number(), 1 | 6)
-                && !(aliphatic_only && a.aromatic)
+            let hetero = !a.wildcard && !matches!(a.element.atomic_number(), 1 | 6);
+            let counted = !aliphatic_only || !a.aromatic;
+            hetero && counted
         })
         .count()
 }
@@ -1171,12 +1174,38 @@ fn eval_hcount(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
 
 /// Total valence (bond order sum + implicit H) for Valence primitive.
 fn eval_valence(idx: AtomIdx, ctx: &EvalCtx<'_>, v: u8) -> bool {
-    let bond_sum: u8 = ctx
-        .mol
+    total_valence(ctx.mol, idx) == v
+}
+
+/// Daylight/RDKit total valence: bond orders of the Kekulé form plus all
+/// hydrogens, so benzene carbon is `v4` and pyrrole nitrogen `v3`. When the
+/// aromatic system cannot be kekulized an aromatic bond counts 1.
+pub(crate) fn total_valence(mol: &Molecule, idx: AtomIdx) -> u8 {
+    let has_aromatic = mol
         .neighbors(idx)
-        .map(|(_, bid)| bond_order_int(ctx.mol.bond(bid).order))
+        .any(|(_, bid)| mol.bond(bid).order == BondOrder::Aromatic);
+    let kekule = has_aromatic.then(|| {
+        mol.derived(
+            chematic_core::derived_cache::DerivedSlot::KekuleOrders,
+            || chematic_core::kekulize(mol).ok(),
+        )
+    });
+    let bond_sum: u8 = mol
+        .neighbors(idx)
+        .map(|(_, bid)| {
+            let order = mol.bond(bid).order;
+            let order = match (&kekule, order) {
+                (Some(k), BondOrder::Aromatic) => k
+                    .as_ref()
+                    .as_ref()
+                    .and_then(|map| map.get(&bid).copied())
+                    .unwrap_or(order),
+                _ => order,
+            };
+            bond_order_int(order)
+        })
         .sum();
-    bond_sum + implicit_hcount(ctx.mol, idx) == v
+    bond_sum + implicit_hcount(mol, idx)
 }
 
 /// Ring bond count: bonds where both endpoints share at least one SSSR ring.
@@ -1195,32 +1224,9 @@ fn eval_ring_bond_count(idx: AtomIdx, ctx: &EvalCtx<'_>, x: u8) -> bool {
 }
 
 /// Inferred hybridization: aromatic→sp2, triple→sp, double→sp2, else→sp3.
+/// RDKit's hybridization (`^n`), see [`crate::hybridization`].
 fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
-    let atom = ctx.mol.atom(idx);
-    let hyb = if atom.aromatic {
-        2u8
-    } else {
-        let mut has_triple = false;
-        let mut has_double = false;
-        for (_, bid) in ctx.mol.neighbors(idx) {
-            match ctx.mol.bond(bid).order {
-                BondOrder::Triple => {
-                    has_triple = true;
-                    break;
-                }
-                BondOrder::Double => has_double = true,
-                _ => {}
-            }
-        }
-        if has_triple {
-            1
-        } else if has_double {
-            2
-        } else {
-            3
-        }
-    };
-    hyb == h
+    crate::hybridization::rdkit_hybridization(ctx.mol, idx) == Some(h)
 }
 
 /// Chirality primitive: ignored when use_chirality is false.
@@ -1427,8 +1433,19 @@ fn eval_bond_primitive(
                 .iter()
                 .any(|ring| ring.contains(&a) && ring.contains(&b))
         }
-        BondPrimitive::Up => matches!(order, BondOrder::Up),
-        BondPrimitive::Down => matches!(order, BondOrder::Down),
+        // `/` and `\\` match a single or aromatic bond without constraining
+        // cis/trans, as in RDKit (which ignores bond stereo when matching):
+        // `C/C` matches ethane, and the answer for `F/C=C/F` does not depend
+        // on how the target was written.
+        BondPrimitive::Up | BondPrimitive::Down => matches!(
+            order,
+            BondOrder::Single
+                | BondOrder::Up
+                | BondOrder::Down
+                | BondOrder::Aromatic
+                | BondOrder::QuerySingleOrDouble
+                | BondOrder::QuerySingleOrAromatic
+        ),
         // Dative bond: the target's donor (its `atom1`) is the image of the
         // query bond's atom1 for `->`, of its atom2 for `<-`.
         BondPrimitive::DativeForward => order == BondOrder::Dative && forward,
@@ -1500,16 +1517,57 @@ mod tests {
     // -- Isotope matching -----------------------------------------------------
 
     #[test]
-    fn test_isotope_ignored_by_default() {
-        // [13C] query should match any carbon when use_isotopes=false (default).
-        let mol = parse("CC").unwrap();
-        let query = parse_smarts("[13C]").unwrap();
-        let matches = find_matches(&query, &mol);
+    fn test_isotope_enforced_by_default_like_rdkit() {
+        // RDKit: an isotope in a query always constrains; unlabelled is 0.
+        let mol = parse("[13CH3]C").unwrap();
+        let count = |q: &str| find_matches(&parse_smarts(q).unwrap(), &mol).len();
+        assert_eq!(count("[13C]"), 1);
+        assert_eq!(count("[12C]"), 0);
+        assert_eq!(count("[0C]"), 1);
+        assert_eq!(count("[C;!13]"), 1);
+        assert_eq!(count("[!1]"), 2);
+        let ignoring = MatchConfig {
+            use_isotopes: false,
+            ..MatchConfig::default()
+        };
+        let all = find_matches_with_config(&parse_smarts("[12C]").unwrap(), &mol, &ignoring);
         assert_eq!(
-            matches.len(),
+            all.len(),
             2,
-            "[13C] with use_isotopes=false should match all carbons"
+            "use_isotopes=false ignores isotope primitives"
         );
+    }
+
+    #[test]
+    fn directional_bonds_match_without_stereo_like_rdkit() {
+        let count =
+            |q: &str, s: &str| find_matches(&parse_smarts(q).unwrap(), &parse(s).unwrap()).len();
+        assert_eq!(count("C/C", "CC"), 1);
+        assert_eq!(count("c/c", "c1ccccc1"), 6);
+        assert_eq!(count("c\\c", "c1ccccc1"), 6);
+        // Not enforced, and the same for every spelling of the target.
+        for target in [
+            "F/C=C/F",
+            "F/C=C\\F",
+            "FC=CF",
+            "C(/F)=C/F",
+            "C(/F)=C\\F",
+            "C(\\F)=C/F",
+        ] {
+            assert_eq!(count("F/C=C/F", target), 1, "{target}");
+        }
+        assert_eq!(count("C/C", "C=C"), 0);
+    }
+
+    #[test]
+    fn total_valence_uses_kekule_bond_orders() {
+        let count =
+            |q: &str, s: &str| find_matches(&parse_smarts(q).unwrap(), &parse(s).unwrap()).len();
+        assert_eq!(count("[c;v4]", "c1ccccc1"), 6);
+        assert_eq!(count("[c;v3]", "c1ccccc1"), 0);
+        assert_eq!(count("[n;v3]", "c1cc[nH]c1"), 1);
+        assert_eq!(count("[n;v3]", "c1ccncc1"), 1);
+        assert_eq!(count("[o;v2]", "c1ccoc1"), 1);
     }
 
     #[test]

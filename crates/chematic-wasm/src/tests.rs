@@ -1131,6 +1131,24 @@ fn to_mol_block_has_nonzero_coords() {
 }
 
 #[test]
+fn to_mol_block_reports_or_refuses_lost_stereo() {
+    let h = parse("N[C@@H](C)C(=O)O");
+    let block = to_mol_block(&h);
+    assert_eq!(to_mol_block_strict(&h).unwrap(), block);
+    let back = chematic_mol::parse_mol(&block).unwrap().0;
+    assert_eq!(
+        chematic_smiles::canonical_smiles(&back),
+        chematic_smiles::canonical_smiles(&h.inner)
+    );
+    assert_eq!(
+        mol_block_stereo_loss_json(&h),
+        r#"{"centres":[],"double_bonds":[],"non_tetrahedral_centres":[],"stereo_groups_dropped":false}"#
+    );
+    let sp = parse("F[Pt@SP1](Cl)(Br)I");
+    assert!(mol_block_stereo_loss_json(&sp).contains(r#""non_tetrahedral_centres":[1]"#));
+}
+
+#[test]
 fn sa_score_range() {
     let h = parse("CC(=O)Oc1ccccc1C(=O)O"); // aspirin
     let score = sa_score(&h);

@@ -1,5 +1,5 @@
 use crate::writer::write;
-use chematic_core::{AtomIdx, Molecule, MoleculeBuilder};
+use chematic_core::{AtomIdx, Molecule, MoleculeBuilder, STEREO_H_SENTINEL, StereoGroup};
 use std::collections::HashSet;
 
 /// Generate a single random SMILES from a molecule using the given seed.
@@ -103,21 +103,82 @@ fn apply_permutation(mol: &Molecule, permutation: &[usize]) -> Molecule {
     }
 
     // Add bonds with remapped indices
-    for (_, bond_entry) in mol.bonds() {
-        let old_a = bond_entry.atom1;
-        let old_b = bond_entry.atom2;
-        let new_a = AtomIdx(old_to_new[old_a.0 as usize] as u32);
-        let new_b = AtomIdx(old_to_new[old_b.0 as usize] as u32);
-        let _ = builder.add_bond(new_a, new_b, bond_entry.order);
+    let new_atom = |old: AtomIdx| AtomIdx(old_to_new[old.0 as usize] as u32);
+    for (old_bidx, bond_entry) in mol.bonds() {
+        let new_a = new_atom(bond_entry.atom1);
+        let new_b = new_atom(bond_entry.atom2);
+        // Stereo side tables follow the atoms: E/Z bond directions, and the
+        // tetrahedral neighbour order a stored `@`/`@@` is relative to.
+        // Without them the writer emitted the raw tag against the permuted
+        // order and could invert a stereocentre.
+        if let Ok(new_bidx) = builder.add_bond(new_a, new_b, bond_entry.order) {
+            if let Some(direction) = mol.bond_direction(old_bidx) {
+                builder.set_bond_direction(new_bidx, direction);
+            }
+            if let Some(anchor) = mol.bond_direction_anchor(old_bidx) {
+                builder.set_bond_direction_anchor(new_bidx, new_atom(anchor));
+            }
+        }
     }
-
-    builder.build()
+    for (old_idx, _) in mol.atoms() {
+        if let Some(order) = mol.stereo_neighbor_order(old_idx) {
+            let remapped = order
+                .iter()
+                .map(|&v| {
+                    if v == STEREO_H_SENTINEL {
+                        v
+                    } else {
+                        old_to_new[v as usize] as u32
+                    }
+                })
+                .collect();
+            builder.set_stereo_neighbor_order(new_atom(old_idx), remapped);
+        }
+    }
+    let mut permuted = builder.build();
+    if !mol.stereo_groups().is_empty() {
+        permuted.set_stereo_groups(
+            mol.stereo_groups()
+                .iter()
+                .map(|g| {
+                    StereoGroup::new(
+                        g.kind.clone(),
+                        g.atom_indices.iter().map(|&a| new_atom(a)).collect(),
+                    )
+                })
+                .collect(),
+        );
+    }
+    permuted
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::parse;
+
+    #[test]
+    fn random_smiles_keep_stereo() {
+        // Before the side tables were remapped, about 40% of the stereo
+        // rows of the exposed 10k corpus came back inverted or lost.
+        for input in [
+            "CN1CCC[C@H]1CN1CCN(Cc2ccncc2)CC1",
+            "N[C@@H](C)C(=O)O",
+            "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@@H](O)CC[C@]34C)[C@@H]1CC[C@@H]2O",
+            "F/C=C/C=C\\Cl",
+        ] {
+            let mol = parse(input).unwrap();
+            let want = crate::canonical_smiles(&mol);
+            for seed in 0..16 {
+                let out = random_smiles(&mol, seed);
+                assert_eq!(
+                    crate::canonical_smiles(&parse(&out).unwrap()),
+                    want,
+                    "{input} seed {seed}: {out}"
+                );
+            }
+        }
+    }
 
     #[test]
     fn test_random_smiles_single() {

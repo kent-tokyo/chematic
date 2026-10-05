@@ -177,10 +177,17 @@ class Mol:
         """
         ...
 
-    def to_mol_block(self) -> str:
+    def to_mol_block(self, strict: bool = False) -> str:
         """Serialize to MDL MOL V2000 format (without 3D coordinates).
 
-        Equivalent to RDKit's ``Chem.MolToMolBlock(mol)``.
+        Equivalent to RDKit's ``Chem.MolToMolBlock(mol)``. A molecule with
+        stereo is written on a 2D layout with one wedge or hash per
+        tetrahedral centre and E/Z set by the geometry; a centre the layout
+        cannot draw unambiguously is left unwedged, and a stereo double bond
+        that cannot be drawn (in a ring) or has no declared E/Z is written as
+        "either". Such a block loses that stereo: with ``strict=True`` this
+        raises ``ValueError`` instead, and :meth:`to_mol_block_with_report`
+        returns the block together with the lost centres and bonds.
         Use :meth:`to_mol2` for Tripos format or :meth:`to_pdb` for PDB with 3D.
 
         Example::
@@ -190,15 +197,30 @@ class Mol:
         """
         ...
 
+    def to_mol_block_with_report(self) -> tuple[str, dict[str, Any]]:
+        """:meth:`to_mol_block` plus the stereo the block does not carry.
+
+        Returns ``(block, report)``; ``report`` has ``centres`` (atom indices
+        of tetrahedral centres written without a wedge), ``double_bonds``
+        (bond indices of declared E/Z written "either"),
+        ``non_tetrahedral_centres`` (square-planar atoms) and
+        ``stereo_groups_dropped`` (enhanced stereo groups, which V2000 cannot
+        hold). Empty lists and ``False``: nothing lost.
+        """
+        ...
+
     def to_mol_block_2d(
         self,
         coords: list[list[float]],
         name: Optional[str] = None,
+        strict: bool = False,
     ) -> str:
         """Serialize to MDL MOL V2000 format preserving 2D layout coordinates.
 
         Each element of ``coords`` is an ``[x, y]`` pair in Å.
         Designed for round-tripping with :func:`from_mol_block_with_coords`.
+        ``strict=True`` raises ``ValueError`` when the block would lose
+        stereo (see :meth:`to_mol_block`).
 
         Example::
 
@@ -211,12 +233,16 @@ class Mol:
         self,
         coords: list[list[float]],
         name: Optional[str] = None,
+        strict: bool = False,
     ) -> str:
         """Serialize to MDL MOL V3000 format with 2D layout coordinates.
 
         V3000 supports >999 atoms and extended atom/bond features.
         Accepts the same ``[[x, y], ...]`` coordinate format as :meth:`to_mol_block_2d`.
-        Pass an empty list for zero coordinates.
+        Pass an empty list to have a molecule with stereo laid out with
+        wedges (as :meth:`to_mol_block`); otherwise coordinates are zero.
+        ``strict=True`` raises ``ValueError`` when the block would lose
+        stereo (see :meth:`to_mol_block`).
 
         Equivalent to RDKit ``Chem.MolToV3KMolBlock(mol)``.
 
@@ -1465,18 +1491,17 @@ class Mol:
         Returns one value per heavy atom (index = atom order):
         ``1`` = sp, ``2`` = sp2, ``3`` = sp3, ``0`` = other/wildcard.
 
-        Rules:
-        - Aromatic atom → 2 (sp2)
-        - Has triple bond → 1 (sp)
-        - Has double bond → 2 (sp2)
-        - Otherwise → 3 (sp3)
+        Values follow RDKit's hybridization model: a lone pair counts as an
+        orbital, so an amide or enamine N and an aryl ether O are sp2 (2);
+        s, sp3d and sp3d2 states report 0. (Before 1.0.35 any atom without a
+        multiple bond was reported as sp3.)
 
         Useful for scaffold modification (PromptSMILES), fragment building
         (BuildAMol), and custom QSAR feature generation.
 
         Example::
 
-            mol = chematic.from_smiles("CC=O")   # ethanol-like, acetaldehyde
+            mol = chematic.from_smiles("CC=O")   # acetaldehyde
             mol.hybridization_per_atom()  # [3, 2, 2] (CH3=sp3, C=sp2, O=sp2)
         """
         ...

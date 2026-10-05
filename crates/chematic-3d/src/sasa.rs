@@ -11,6 +11,8 @@
 //!
 //! Default parameters: probe_radius=1.4 Å (water), sphere_points=100 (speed/accuracy trade-off)
 
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use chematic_core::{AtomIdx, Molecule};
 
 use crate::coords::{Coords3D, Point3};
@@ -231,8 +233,8 @@ fn generate_sphere_points(center: Point3, radius: f64, num_points: usize) -> Vec
         let x_radius = (1.0 - y * y).sqrt();
 
         let theta = golden_angle * (i as f64);
-        let x = theta.cos() * x_radius;
-        let z = theta.sin() * x_radius;
+        let x = theta.dcos() * x_radius;
+        let z = theta.dsin() * x_radius;
 
         let point = Point3::new(
             center.x + x * radius,

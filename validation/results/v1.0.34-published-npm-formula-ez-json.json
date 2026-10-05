@@ -1,0 +1,89 @@
+{
+  "schema": "published-npm-formula-ez-json/v1",
+  "artifact": {
+    "package": "@kent-tokyo/chematic",
+    "version": "1.0.34",
+    "tarball_sha256": "9e8b2feb46ecfd5eaefdffa6ba47c1cbb870f1567bd82fc29d68db938fac73c3",
+    "tarball_sha512": "E2/7tny7jbLriHP3fzD3AykeAbbXTKMYGJBBWLAEFiH/Q1R+WmFFJC21w2lQ32A6IXY5ador0DbHVfBNCQSrPg==",
+    "node": "v22.22.2"
+  },
+  "corpus_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+  "reference": {
+    "chematic_version": "1.0.34",
+    "python": "3.9.23",
+    "wheel_sha256": "b4e3da6664f0d43c55606258a8beb97b0183ef12e9ee6fc2d6edf067f358f34b"
+  },
+  "formula": {
+    "rows": 5000,
+    "exact": 5000,
+    "differ": 0,
+    "both_refused": 0,
+    "one_refused": 0,
+    "examples": []
+  },
+  "ez_json": {
+    "cases": 5,
+    "ok": 5,
+    "rows": [
+      {
+        "api": "run_reactants",
+        "template": "[C:1]/[C:2]=[C:3]/[C:4]>>[C:1]/[C:2]=[C:3]/[C:4]",
+        "inputs": [
+          "C/C=C/C"
+        ],
+        "status": "ok",
+        "products": [
+          "C(=C/C)\\C",
+          "C(=C/C)\\C"
+        ]
+      },
+      {
+        "api": "run_reactants",
+        "template": "[C:1]/[C:2]=[C:3]\\[C:4]>>[C:1]/[C:2]=[C:3]\\[C:4]",
+        "inputs": [
+          "C/C=C\\C"
+        ],
+        "status": "ok",
+        "products": [
+          "C(=C/C)/C",
+          "C(=C/C)/C"
+        ]
+      },
+      {
+        "api": "run_reactants",
+        "template": "[OH:1]>>[O:1]C",
+        "inputs": [
+          "F/C=C\\CO"
+        ],
+        "status": "ok",
+        "products": [
+          "F/C=C\\COC"
+        ]
+      },
+      {
+        "api": "run_reactants",
+        "template": "[Cl:1]>>[Br:1]",
+        "inputs": [
+          "Cl/C=C/C=C\\Cl"
+        ],
+        "status": "ok",
+        "products": [
+          "C(=C/C=C/Br)/Cl",
+          "C(=C/C=C\\Br)\\Cl"
+        ]
+      },
+      {
+        "api": "enumerate_library_2way",
+        "template": "[C:1][Cl].[N:2]>>[C:1][N:2]",
+        "inputs": [
+          "F/C=C\\CCl",
+          "NC/C=C/F"
+        ],
+        "status": "ok",
+        "products": [
+          "F/C=C/CNC/C=C\\F"
+        ]
+      }
+    ]
+  }
+}

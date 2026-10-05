@@ -118,7 +118,9 @@ model for fused and non-alternant systems. Purine and azulene are covered by
 the RDKit-like regression gate, but the two models intentionally remain
 distinct; neither mode claims universal RDKit aromaticity parity. Known
 bridgehead-N and other fused-ring gaps remain documented residuals. Accurate
-phosphorus CIP is fail-closed as `OracleUnstable` until a stable oracle exists.
+CIP labels acyclic phosphorus and acyclic lone-pair centres as RDKit's
+CIPLabeler does; phosphorus on an unsaturated ring stays `OracleUnstable` and a
+ring lone-pair centre (bridgehead amine) stays `LonePairCenter`.
 
 The default CIP path remains the fast legacy assignment. Accurate hierarchical
 CIP is opt-in through `CipMode::Accurate` (and its named Python/WASM binding

@@ -1147,9 +1147,38 @@ fn assign_allene(mol: &Molecule, central_idx: AtomIdx) -> Option<(AtomIdx, CipCo
 /// Returns `Some((atom_idx, E or Z))` using one of the double-bond endpoints
 /// as the key atom index.  Returns `None` if the bond isn't double or stereo
 /// cannot be determined.
+/// Whether `bond` lies on a ring of fewer than eight atoms.
+fn double_bond_in_small_ring(mol: &Molecule, bond: BondIdx) -> bool {
+    let (start, goal) = (mol.bond(bond).atom1, mol.bond(bond).atom2);
+    let mut seen = vec![false; mol.atom_count()];
+    seen[start.0 as usize] = true;
+    let mut frontier = vec![start];
+    for _ in 0..6 {
+        let mut next = Vec::new();
+        for &a in &frontier {
+            for (nb, bi) in mol.neighbors(a) {
+                if bi == bond {
+                    continue;
+                }
+                if nb == goal {
+                    return true;
+                }
+                if !seen[nb.0 as usize] {
+                    seen[nb.0 as usize] = true;
+                    next.push(nb);
+                }
+            }
+        }
+        frontier = next;
+    }
+    false
+}
+
 fn assign_ez(mol: &Molecule, bond_idx: BondIdx) -> Option<(AtomIdx, CipCode)> {
     let bond = mol.bond(bond_idx);
-    if bond.order != BondOrder::Double {
+    // A ring of fewer than eight atoms holds its double bond cis: no E/Z
+    // (RDKit drops such stereo too).
+    if bond.order != BondOrder::Double || double_bond_in_small_ring(mol, bond_idx) {
         return None;
     }
 
@@ -1243,7 +1272,9 @@ fn assign_ez_accurate(
     ranker: &chematic_cip::SubstituentRanker,
 ) -> Option<(AtomIdx, CipCode)> {
     let bond = mol.bond(bond_idx);
-    if bond.order != BondOrder::Double {
+    // A ring of fewer than eight atoms holds its double bond cis: no E/Z
+    // (RDKit drops such stereo too).
+    if bond.order != BondOrder::Double || double_bond_in_small_ring(mol, bond_idx) {
         return None;
     }
     let a1 = bond.atom1;
@@ -1457,6 +1488,50 @@ mod tests {
     }
 
     use super::*;
+
+    /// Accurate-mode tetrahedral labels, abstentions and bond-keyed E/Z do
+    /// not depend on input atom order (random SMILES now keep stereo).
+    #[test]
+    fn accurate_labels_and_abstentions_survive_atom_reordering() {
+        use std::collections::BTreeMap;
+        let keyed = |m: &Molecule| -> (String, BTreeMap<usize, String>) {
+            let (can, order) = chematic_smiles::canonical_smiles_with_atom_order(m);
+            let pos: BTreeMap<u32, usize> =
+                order.iter().enumerate().map(|(k, a)| (a.0, k)).collect();
+            let r = assign_cip_with_mode(m, CipMode::Accurate).unwrap();
+            let mut out = BTreeMap::new();
+            for (a, c) in &r.assignments {
+                if !matches!(c, CipCode::E | CipCode::Z) {
+                    out.insert(pos[&a.0], format!("{c:?}"));
+                }
+            }
+            for (a, why) in &r.unresolved {
+                out.insert(pos[&a.0], format!("{why:?}"));
+            }
+            for (b, c) in assign_ez_bonds_with_mode(m, CipMode::Accurate) {
+                let e = m.bond(b);
+                let (x, y) = (pos[&e.atom1.0], pos[&e.atom2.0]);
+                out.insert(100_000 + x.min(y) * 1000 + x.max(y), format!("{c:?}"));
+            }
+            (can, out)
+        };
+        for smiles in [
+            "N[C@@H](C)C(=O)O",
+            "C#C/C=C1\\CCC(c2cccc3ccccc23)C(=O)O1",
+            // Lone-pair and phosphorus abstentions of the exposed 10k lane.
+            "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+            "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@](=O)(OC)[C@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
+        ] {
+            let mol = chematic_smiles::parse(smiles).unwrap();
+            let want = keyed(&mol);
+            assert!(!want.1.is_empty(), "{smiles}");
+            for seed in 1..8 {
+                let other =
+                    chematic_smiles::parse(&chematic_smiles::random_smiles(&mol, seed)).unwrap();
+                assert_eq!(keyed(&other), want, "{smiles} seed {seed}");
+            }
+        }
+    }
 
     /// Issue #634: accurate-mode E/Z ranks substituents with the hierarchical
     /// digraph (MANCUDE duplicates for aromatic rings). The legacy sphere
@@ -2319,14 +2394,27 @@ mod tests {
         }));
         assert_eq!(result.get(AtomIdx(7)), Some(CipCode::R));
         assert_eq!(result.get(AtomIdx(12)), Some(CipCode::R));
-        // Same for a sulfoxide.
+        // A centre outside rings (sulfoxide, phosphine) takes the lone pair as
+        // a lowest-priority phantom ligand, as RDKit 2026.03.6 rdCIPLabeler
+        // does: (S)-methyl phenyl sulfoxide.
         let mol = chematic_smiles::parse("C[S@](=O)c1ccccc1").expect("valid SMILES");
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
-        assert!(result.assignments.is_empty());
-        assert_eq!(
-            result.unresolved,
-            vec![(AtomIdx(1), CipUnresolvedReason::LonePairCenter)]
-        );
+        assert_eq!(result.get(AtomIdx(1)), Some(CipCode::S));
+        assert!(result.unresolved.is_empty());
+    }
+
+    #[test]
+    fn cip_mode_accurate_labels_acyclic_phosphorus_like_rdkit() {
+        // A phosphonamidate P outside any unsaturated ring: the P=O oxygen
+        // gets no duplicate at the root (RDKit CIPLabeler), so OMe > =O and
+        // the label matches RDKit (exposed 10k row 4419: R). A cyclophosphazene
+        // P stays OracleUnstable (see the test above).
+        let mol = chematic_smiles::parse(
+            "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@](=O)(OC)[C@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
+        )
+        .expect("valid SMILES");
+        let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        assert_eq!(result.get(AtomIdx(13)), Some(CipCode::R));
     }
 
     #[test]

@@ -1,0 +1,69 @@
+{
+  "schema": "xsmarts-autoconf-expected/v1",
+  "autoconf_repository": "https://github.com/swamidasslab/xsmarts-autoconf",
+  "autoconf_commit": "6ce94c945652fa4fc47719387b41be6bf0419402",
+  "rules_digest": "b2367621cbe9c1d1",
+  "reference": {
+    "adapter": "rdkit",
+    "version": "2026.03.6"
+  },
+  "flag_count": 83,
+  "differing": {
+    "match.ring_count_basis": {
+      "rdkit": "symmetric",
+      "chematic": "sssr",
+      "class": "documented_profile",
+      "note": "Native SSSR ring counts are kept; RDKit uses symmetrized rings.",
+      "roadmap_queue": 4
+    },
+    "smirks.colon_product_bond": {
+      "rdkit": "aromatic_flag_set",
+      "chematic": "UNKNOWN",
+      "class": "policy_sanitized_views_agree",
+      "note": "Both flag the atoms aromatic; outside a ring RDKit keeps the raw product, which fails its sanitize, and chematic drops it.",
+      "roadmap_queue": 3
+    },
+    "smirks.fragmented_reactant": {
+      "rdkit": "intermolecular_pair",
+      "chematic": "rejected",
+      "class": "adapter_difference",
+      "note": "The RDKit adapter passes the molecule once per reactant template; chematic run_smirks with the same two reactants gives RDKit's COCO.",
+      "roadmap_queue": 3
+    },
+    "smirks.hcount_query_explicit_h": {
+      "rdkit": "pin_adds_h",
+      "chematic": "preserved",
+      "class": "policy_implicit_h_equivalence",
+      "note": "Explicit-H reactants give the implicit-H products (#734 item 5); every RDKit product here fails its own SanitizeMol.",
+      "roadmap_queue": 3
+    },
+    "smirks.product_h_atom_added": {
+      "rdkit": "h_dropped",
+      "chematic": "UNKNOWN",
+      "class": "policy_sanitized_views_agree",
+      "note": "RDKit drops the added H atom and keeps CC[O-] raw; its sanitized product (CC[OH-]) is invalid, and chematic gives none.",
+      "roadmap_queue": 3
+    },
+    "smirks.product_h_pin": {
+      "rdkit": "authoritative",
+      "chematic": "UNKNOWN",
+      "class": "policy_implicit_h_equivalence",
+      "note": "Explicit-H reactants give the implicit-H products (#734 item 5); RDKit C[CH5] fails its own SanitizeMol.",
+      "roadmap_queue": 3
+    },
+    "smirks.star_on_explicit_h": {
+      "rdkit": "h_atoms_when_explicit",
+      "chematic": "UNKNOWN",
+      "class": "policy_implicit_h_equivalence",
+      "note": "`*` edits heavy atoms of explicit-H reactants as in the implicit form (#734 item 5); every RDKit product here fails its own SanitizeMol.",
+      "roadmap_queue": 3
+    },
+    "smirks.valence_invalid_raw": {
+      "rdkit": "kept_raw",
+      "chematic": "dropped_at_apply",
+      "class": "policy_sanitized_views_agree",
+      "note": "RDKit returns an unsanitized product that fails its own SanitizeMol; chematic returns only sanitizable products.",
+      "roadmap_queue": 3
+    }
+  }
+}

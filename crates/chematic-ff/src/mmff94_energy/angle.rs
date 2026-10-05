@@ -1,6 +1,8 @@
 //! MMFF94 angle bending parameters (Halgren 1996 Table V).
 
 use super::{AngleEnergyParams, Mmff94Resolution};
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 
 /// 2342 angle bending entries (Halgren 1996 Table V). Sorted by (angle_type, type_i, type_j, type_k).
 ///
@@ -2700,7 +2702,7 @@ fn angle_empirical_ka(
     }
     let d = (r0_ij - r0_jk).powi(2) / (r0_ij + r0_jk).powi(2);
     let theta0_rad = theta0.to_radians();
-    Some(beta * zi * cj * zk / ((r0_ij + r0_jk) * theta0_rad * theta0_rad * (2.0 * d).exp()))
+    Some(beta * zi * cj * zk / ((r0_ij + r0_jk) * theta0_rad * theta0_rad * (2.0 * d).dexp()))
 }
 
 /// Look up angle bending parameters, falling back to Halgren's MMFF.V eq. 20

@@ -18,6 +18,8 @@
 //! (C-O + O-H) → remaining 0 → correctly stays Single.
 
 use crate::coords::Point3;
+#[allow(unused_imports)]
+use crate::fmath::DetMath;
 use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 use chematic_perception::apply_aromaticity;
 
@@ -231,14 +233,14 @@ mod tests {
             let angle = i as f64 * PI / 3.0;
             atoms.push((
                 Element::C,
-                Point3::new(1.40 * angle.cos(), 1.40 * angle.sin(), 0.0),
+                Point3::new(1.40 * angle.dcos(), 1.40 * angle.dsin(), 0.0),
             ));
         }
         for i in 0..6 {
             let angle = i as f64 * PI / 3.0;
             atoms.push((
                 Element::H,
-                Point3::new(2.49 * angle.cos(), 2.49 * angle.sin(), 0.0),
+                Point3::new(2.49 * angle.dcos(), 2.49 * angle.dsin(), 0.0),
             ));
         }
         let mol = determine_bonds(&atoms, 0.40).unwrap();
