@@ -14,10 +14,11 @@ Remaining #734 work: BioTransformer's public rule tables (983 rules, about
 the 1,200 the reporter used) were run through RDKit 2026.03.6 and the RDKit
 profile on 400 corpus molecules, as parsed and with explicit hydrogens.
 Where RDKit has a product, the source gives the same product sets for
-1,051/1,051 implicit-H pairs (v1.0.35: 775) and 6,601/6,652 explicit-H
+1,051/1,051 implicit-H pairs (v1.0.35: 775) and 6,604/6,652 explicit-H
 pairs (v1.0.35: 3,807), and refuses none (v1.0.35: 241 rules refused on
-every molecule). Records: `benchmarks/2026-10-05-biotransformer-rule-corpus.md`
-and `benchmarks/2026-10-05-biotransformer-corpus-followups.md`; the apply
+every molecule). Records: `benchmarks/2026-10-05-biotransformer-rule-corpus.md`,
+`benchmarks/2026-10-05-biotransformer-corpus-followups.md` and
+`benchmarks/2026-10-05-biotransformer-corpus-followups-2.md`; the apply
 model is written down in `docs/smirks-apply-model.md`.
 
 - **Canonical SMILES E/Z fix:** a direction stashed beside a bond and read
@@ -30,9 +31,31 @@ model is written down in `docs/smirks-apply-model.md`.
   markers of conjugated double bonds are rewritten together
   (`chematic_core::ez_markers`).
 - **Behaviour change:** canonical SMILES of explicit-H molecules carry E/Z
-  markers on heavy atoms where possible. RDKit's `RemoveHs` read 22 of 572
+  markers on heavy atoms where possible, a ring-closure bond included (its
+  marker is written at the ring opening). RDKit's `RemoveHs` read 22 of 572
   explicit-H E/Z molecules written by chematic with an E/Z dropped or
-  inverted; now 1 (a macrocycle).
+  inverted; now none.
+- Canonical SMILES of two E/Z double bonds coupled through a shared bond
+  (squaraine diimines in Kekulé form) kept both: one was written inverted
+  or without a marker, depending on the input spelling. A double bond in a
+  ring of fewer than eight atoms no longer ties the marker orientation of
+  its neighbours. RDKit-written MOL blocks of such molecules (14 rows of
+  two ChEMBL sets) now read back as RDKit's molecule.
+- MOL reader: a centre with one wedge or hash takes its parity from the
+  angular order of the flat bonds; two flat bonds a few degrees apart with
+  different lengths gave the opposite centre (artemisinin peroxide-bridge
+  carbons and a morphinan in RDKit's layout, 14 rows). RDKit-written stereo
+  blocks read back as RDKit's molecule for 1,678/1,687 exposed-10k and
+  1,663/1,670 ChEMBL-5k rows (were 1,666 and 1,647); the remaining 15 of
+  the 16 are read by RDKit itself the same way from its own block.
+- Kekulization: a neutral ring-fusion N or P with three aromatic bonds is
+  tried as a lone-pair donor first, as RDKit does (a pyrido[1,2-a]pyrimidine
+  beside `c(=O)`/`c(=S)`/`c(=N)` did not kekulize, and the imine E/Z of six
+  BioTransformer products was ranked without the ring's duplicate atoms; it
+  now agrees with RDKit's CIPLabeler on 1,949/1,949 double bonds of 1,492
+  E/Z molecules); a three-bonded `[s+]` (`[s+]([O-])` of a thiadiazole
+  S-oxide) is a donor too. 22 molecules of a 25,000-molecule check set
+  kekulize that did not.
 - RDKit profile: E/Z of double bonds copied from the reactant follows
   RDKit's stereo atoms (dropped when the stereo atom stays in the product
   but is no longer bonded to its end, e.g. a Baeyer–Villiger ring
@@ -53,6 +76,19 @@ model is written down in `docs/smirks-apply-model.md`.
   whitespace in a SMIRKS is ignored.
 - Python reaction functions accept reactants of up to 1,000 atoms, explicit
   H atoms included (was 300).
+- Performance: SMIRKS entry points that take the template as text
+  (`run_reactants*`, Python `run_smirks_checked`, WASM checked reactions)
+  share prepared templates through a bounded process-wide cache
+  (`PreparedReaction::shared`); RDKit's parse clean-up and its ring model
+  are memoized per molecule, and the RDKit-parity ring matcher runs only
+  where RDKit's rings differ from the SSSR. The BioTransformer corpus loop
+  (974 rules × 100 molecules) reacts in 1.15 s instead of 15.7 s
+  (`e2b188a8`). A pre-pass of the canonical writer over explicit-H E/Z
+  molecules that changed no output (and made writing them 2.5x slower) is
+  gone. SMARTS `^n` looks up conjugation only for atoms with fewer than
+  four neighbours (`[C^2]` matching: 122M → 66M instructions on 1,500
+  molecules), and the product valence check reads Kekulé orders in place
+  (13 reaction cases: 1.28x → 1.17x v1.0.34's instructions).
 
 - SMIRKS with more `[#6:n]`-style atoms than the aromatic/aliphatic
   expansion enumerates (256 combinations) are applied instead of refused

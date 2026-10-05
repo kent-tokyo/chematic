@@ -1,5 +1,9 @@
 # BioTransformer rule corpus: follow-ups after the first record
 
+> Superseded for the source lane by
+> [the second follow-up batch](2026-10-05-biotransformer-corpus-followups-2.md)
+> (6,604/6,652 explicit-H pairs; the macrolide E/Z rows closed).
+
 Second pass over the BioTransformer public rule corpus of
 [the first record](2026-10-05-biotransformer-rule-corpus.md) (same rules,
 reactants, RDKit 2026.03.6, harness and host). It closes the differences
