@@ -14,10 +14,45 @@ Remaining #734 work: BioTransformer's public rule tables (983 rules, about
 the 1,200 the reporter used) were run through RDKit 2026.03.6 and the RDKit
 profile on 400 corpus molecules, as parsed and with explicit hydrogens.
 Where RDKit has a product, the source gives the same product sets for
-1,045/1,051 implicit-H pairs (v1.0.35: 775) and 6,453/6,652 explicit-H
-pairs (v1.0.35: 3,807); rules refused on every molecule went from 241 to 5.
-Record: `benchmarks/2026-10-05-biotransformer-rule-corpus.md`; the apply
+1,051/1,051 implicit-H pairs (v1.0.35: 775) and 6,601/6,652 explicit-H
+pairs (v1.0.35: 3,807), and refuses none (v1.0.35: 241 rules refused on
+every molecule). Records: `benchmarks/2026-10-05-biotransformer-rule-corpus.md`
+and `benchmarks/2026-10-05-biotransformer-corpus-followups.md`; the apply
 model is written down in `docs/smirks-apply-model.md`.
+
+- **Canonical SMILES E/Z fix:** a direction stashed beside a bond and read
+  from the bond's atom2 (reaction products, reactions on aromatic E/Z
+  carriers) was written mirrored when the writer chose that bond as marker
+  carrier. `remove_hydrogens`, atom/bond removal, metal disconnection and
+  tautomer atom reordering no longer drop the stash's anchor.
+- `remove_hydrogens` keeps an E/Z whose only marker at one end was on a
+  removed H atom: the marker moves to the end's other substituent, and the
+  markers of conjugated double bonds are rewritten together
+  (`chematic_core::ez_markers`).
+- **Behaviour change:** canonical SMILES of explicit-H molecules carry E/Z
+  markers on heavy atoms where possible. RDKit's `RemoveHs` read 22 of 572
+  explicit-H E/Z molecules written by chematic with an E/Z dropped or
+  inverted; now 1 (a macrocycle).
+- RDKit profile: E/Z of double bonds copied from the reactant follows
+  RDKit's stereo atoms (dropped when the stereo atom stays in the product
+  but is no longer bonded to its end, e.g. a Baeyer–Villiger ring
+  expansion; dropped for a template double bond with template neighbours at
+  both ends that spells no stereo); template markers next to carried ones
+  no longer conflict (an enyne reduction gave both E and Z).
+- RDKit profile: `R<n>` and ring sizes in reactant templates count RDKit's
+  symmetrized rings (a quinuclidine N is `R3`); a ring model that cannot be
+  settled is a typed `ring_model_unresolved`.
+- RDKit profile: an unmapped product atom naming no single element
+  (`P([!#1!#6;O,$([O-])])`) is a dummy atom `*`, as in RDKit (it was a
+  parse error). SMILES accepts an unbracketed `*`.
+- An aromatic product atom keeps no tetrahedral tag (a steroid A-ring
+  aromatization was refused as `ambiguous_stereo_bond_order`); an
+  explicit-H ring CH beside a rewritten C=C keeps its H count; an indole
+  [nH] beside a zero-order bond is a kekulization candidate as in RDKit;
+  a zero-order bond is never written as an E/Z carrier. Surrounding
+  whitespace in a SMIRKS is ignored.
+- Python reaction functions accept reactants of up to 1,000 atoms, explicit
+  H atoms included (was 300).
 
 - SMIRKS with more `[#6:n]`-style atoms than the aromatic/aliphatic
   expansion enumerates (256 combinations) are applied instead of refused

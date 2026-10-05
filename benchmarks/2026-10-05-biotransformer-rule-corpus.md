@@ -1,5 +1,9 @@
 # BioTransformer rule corpus and v1.0.35 published reruns
 
+> Superseded for the source lane by
+> [the follow-up record](2026-10-05-biotransformer-corpus-followups.md)
+> (1,051/1,051 implicit-H and 6,601/6,652 explicit-H pairs, no refusals).
+
 #734 asked for BioTransformer's metabolism rules (the reporter used about
 1,200) to be applied by RDKit and chematic to the same molecules. The public
 BioTransformer repository keeps its rule tables as JSON, so no jar is needed.

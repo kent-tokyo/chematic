@@ -14,7 +14,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 | P0.1 outputs | Published v1.0.30 artifact audit covers 10k chemistry, 310k SMARTS, 57 reactions and 63 Python/Rust operations. HBA is 5,000/5,000 on its declared lane. | Retain 200 SMARTS differences, five CIP abstentions and four npm gaps as open; see [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
 | P0.2 speed | Published Python: 20 exact-output operations pass paired-interval gates on one host; three-browser Morgan has a separate scoped result. | Equal-work and memory lanes on more artifacts/corpora; see [validation](docs/validation.md). |
 | P1 reactions | Published v1.0.34 PyPI Linux wheel, npm package and crates.io crate: 80 exact graph/origin/map, 3 jointly invalid, no typed unsupported (v1.0.30: 73/83). | Rerun the macOS and Windows wheels; refusals are not matches. |
-| P1 SMARTS/SMIRKS dialect ([#734](https://github.com/kent-tokyo/chematic/issues/734), [#754](https://github.com/kent-tokyo/chematic/issues/754)) | Contributor's [xsmarts-autoconf](https://github.com/swamidasslab/xsmarts-autoconf): published v1.0.35 75/83 behaviour flags give RDKit 2026.03.6's value (v1.0.30: 42/83), with a decided outcome for each of the 8 others. BioTransformer public rules: the unreleased source gives RDKit's product sets for 1,045/1,051 implicit-H pairs where RDKit has a product (v1.0.35: 775). [Record](benchmarks/2026-10-05-biotransformer-rule-corpus.md). | Release the BioTransformer-corpus fixes (the RDKit profile builds `[#6;a:1]` products aliphatic; `~` is zero-order); rerun the corpus on the published package. |
+| P1 SMARTS/SMIRKS dialect ([#734](https://github.com/kent-tokyo/chematic/issues/734), [#754](https://github.com/kent-tokyo/chematic/issues/754)) | Contributor's [xsmarts-autoconf](https://github.com/swamidasslab/xsmarts-autoconf): published v1.0.35 75/83 behaviour flags give RDKit 2026.03.6's value (v1.0.30: 42/83), with a decided outcome for each of the 8 others. BioTransformer public rules: the unreleased source gives RDKit's product sets for 1,051/1,051 implicit-H and 6,601/6,652 explicit-H pairs where RDKit has a product (v1.0.35: 775 and 3,807). [Record](benchmarks/2026-10-05-biotransformer-corpus-followups.md). | Release the corpus fixes (canonical E/Z writer fix, heavy-atom E/Z carriers in explicit-H output, RDKit-profile ring model, dummy atoms and E/Z rules); rerun the corpus on the published package. |
 | P1 SMARTS | Published v1.0.30: 200/310k match-set differences. Opt-in profile: 309,982/310k exact with 18 typed refusals, which are exactly the cells whose RDKit answer changes with atom order; independent ChEMBL 4,625 rows: 143,375/143,375 exact on PyPI v1.0.34 and source; the published PyPI v1.0.34 Linux wheel passes the 310k opt-in gate. [Record](benchmarks/2026-10-04-stereo-integrity-smarts-a6-followups.md), [310k](benchmarks/2026-10-05-mol-stereo-cip-mmff-followups.md). | macOS/Windows wheel reruns; retain native SSSR. |
 | P2 A6 quality | Published v1.0.31 macOS: 265/265 geometry/stereo/clash, 100/265 converged. Published Linux wheels: 263/265 ([#739](https://github.com/kent-tokyo/chematic/issues/739)); source with `libm` math: 265/265 on Linux from a clean commit, 265/265 sound/stereo-clean/clash-free on the external scorer ([record](benchmarks/2026-10-05-mol-stereo-loss-and-clean-a6.md)). | Rerun macOS and Windows (CI jobs) on the `libm` build; per-term energy, convergence and independent conformer quality before speed claims. |
 
@@ -29,13 +29,12 @@ Exposed data are not sealed evidence.
 1. **P1 / A4 — Release the BioTransformer-corpus SMIRKS fixes (#734).**
    v1.0.35 shipped the dialect fixes: its sdist gives 75/83 autoconf flags
    with the same 8 decided differences. On BioTransformer's public rules the
-   unreleased source gives RDKit's product sets for 1,045/1,051 implicit-H
-   and 6,453/6,652 explicit-H pairs where RDKit has a product (v1.0.35: 775
-   and 3,807); the rest are classified policies (dummy atoms, `R<n>` basis,
-   implicit-H equivalence), the explicit-H atom limit and two stereo gaps
-   (created double bonds; an H atom carrying a conjugated double bond's
-   direction). **Exit:** released and the corpus rerun on the published
-   package with the same classes.
+   unreleased source gives RDKit's product sets for all 1,051 implicit-H and
+   6,601/6,652 explicit-H pairs where RDKit has a product (v1.0.35: 775 and
+   3,807) and refuses none; the explicit-H rest is implicit-H equivalence,
+   RDKit truncation, three macrocycle E/Z rows read through RDKit's
+   `RemoveHs` and one naphthalene kekulization. **Exit:** released and the
+   corpus rerun on the published package with the same classes.
 2. **P1 / A4 — Close the reaction 83-row gate on published artifacts.**
    Published v1.0.35 PyPI Linux wheel (CPython 3.9), npm package and
    crates.io crate: 80 graph/origin/map rows and three jointly invalid, as
@@ -45,11 +44,13 @@ Exposed data are not sealed evidence.
    regression in the original 57. Refusals and invalid rows are not counted
    as matches.
 3. **P1 / A4 — Broaden reaction evidence.** The BioTransformer public
-   rule denominator is measured (above). Next: direction transfer when
-   `remove_hydrogens` drops an H atom that carries a conjugated double
-   bond's E/Z, E/Z of double bonds a template creates, and the explicit-H
-   reactant atom limit; keep the `[nH+2]` and native created-centre stereo
-   decisions under review. **Exit:** the stereo gaps closed or typed.
+   rule denominator is measured and its stereo gaps are closed (E/Z through
+   `remove_hydrogens`, created and copied double bonds; canonical writer
+   fix for atom2-anchored direction stashes). Next: a writer that can put a
+   macrocycle alkene's marker on a ring-closure bond (RDKit then reads all
+   explicit-H output back; 1 of 572 E/Z molecules still differs), RDKit's
+   kekulization of rings joined by unspecified bonds, and the `[nH+2]` and
+   native created-centre stereo decisions. **Exit:** those closed or typed.
 4. **P1 / A4 — Publish a bounded SMARTS compatibility profile.** The
    published v1.0.30 baseline has 200 match-set and 43 Boolean differences,
    mostly the `R<n>` ring-count basis (SSSR versus RDKit's symmetrized
