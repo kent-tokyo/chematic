@@ -35,6 +35,11 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def sha256_text(path: Path) -> str:
+    """Hash logical UTF-8 text identically for LF and CRLF checkouts."""
+    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
 def match_sets(value: object) -> frozenset[tuple[int, ...]]:
     if not isinstance(value, list) or any(
         not isinstance(match, list) or any(not isinstance(atom, int) for atom in match)
@@ -100,8 +105,8 @@ def main() -> int:
     with gzip.open(ORACLE, "rt", encoding="utf-8") as stream:
         manifest = json.loads(next(stream))
         if (manifest.get("rdkit_version") != rdkit_version
-                or manifest.get("corpus_sha256") != sha256(CORPUS)
-                or manifest.get("queries_sha256") != sha256(QUERIES)
+                or manifest.get("corpus_sha256") != sha256_text(CORPUS)
+                or manifest.get("queries_sha256") != sha256_text(QUERIES)
                 or manifest.get("input_count") != len(corpus)
                 or manifest.get("query_count") != len(queries)):
             raise ValueError("RDKit oracle provenance changed")
