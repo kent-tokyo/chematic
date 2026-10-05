@@ -1,0 +1,114 @@
+{
+ "schema": "chematic-734-754-batch10/v1",
+ "date": "2026-10-06",
+ "code_revision": "b5ff95ad",
+ "rdkit": "2026.03.6",
+ "biotransformer_corpus": {
+  "counts": {
+   "explicit_h:both_none": 382090,
+   "explicit_h:both_none_refused": 673,
+   "explicit_h:differ": 35,
+   "explicit_h:exact": 6604,
+   "explicit_h:rdkit_raw_unsanitizable": 172,
+   "explicit_h:rdkit_resanitize_fails_same_products": 14,
+   "explicit_h:rdkit_truncated_subset": 12,
+   "implicit:both_none": 388406,
+   "implicit:both_none_refused": 143,
+   "implicit:exact": 1051,
+   "multi_reactant_rules_skipped": 6,
+   "rdkit_parse_error_rules": 3,
+   "rules_run": 974
+  },
+  "new_class": {
+   "rdkit_resanitize_fails_same_products": {
+    "BTMR1031": 13,
+    "BTMR1032": 1
+   }
+  },
+  "chematic_products_identical_to": "batch 9"
+ },
+ "cip_accurate": {
+  "chembl_5k": {
+   "before": {
+    "agree": 4166,
+    "abstain": 20
+   },
+   "after": {
+    "agree": 4186,
+    "abstain": 0
+   }
+  },
+  "exposed_10k": {
+   "agree": 4394,
+   "abstain": 1
+  },
+  "phosphorus_spellings": {
+   "molecules": 12,
+   "spellings_each": 40,
+   "agree": 520,
+   "total": 520
+  },
+  "held_out_phosphorus_corpus_report": {
+   "accurate_match": 15,
+   "total": 15
+  }
+ },
+ "rdkit_ring_order": {
+  "exposed_10k": {
+   "rows_with_rings": 8830,
+   "identical": 8825,
+   "start_atom_only": 2,
+   "differ": 3
+  },
+  "chembl_5k": {
+   "rows_with_rings": 4929,
+   "identical": 4929
+  }
+ },
+ "mmff94_heavy_differing": {
+  "exposed_10k": {
+   "before": 88,
+   "after": 81,
+   "hydrogen_before": 1,
+   "hydrogen_after": 0
+  },
+  "chembl_5k": {
+   "before": 53,
+   "after": 5
+  }
+ },
+ "hybridization": {
+  "exposed_10k": "220015/220015",
+  "chembl_5k": "138655/138655",
+  "smarts_hyb_kekule_cells": "134999/135000"
+ },
+ "mol_writer_rdkit_readback": {
+  "exposed_10k": {
+   "before": 1681,
+   "after": 1686,
+   "rows": 1687
+  },
+  "chembl_5k": {
+   "before": 1663,
+   "after": 1669,
+   "rows": 1670
+  },
+  "strict_refusals": {
+   "exposed_10k": 1,
+   "chembl_5k": 1
+  }
+ },
+ "reaction_run_reactants_instructions_13x100": {
+  "v1.0.34": 270782338,
+  "batch9": 313314418,
+  "after": 253850348
+ },
+ "gates": {
+  "reaction_83_checked_provenance": {
+   "graph_origin_map_match": 80,
+   "joint_invalid_input": 3
+  },
+  "xsmarts_autoconf_6ce94c9": "75/83, 0 unexpected",
+  "pytest": 1021
+ }
+}

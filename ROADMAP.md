@@ -47,11 +47,13 @@ Exposed data are not sealed evidence.
    `remove_hydrogens`, created and copied double bonds; canonical writer
    fix for atom2-anchored direction stashes; a macrocycle alkene's marker on
    a ring-closure bond, so RDKit reads all 572 explicit-H E/Z molecules
-   back; products independent of hash-map order). Next: RDKit's
-   kekulization of rings joined by unspecified bonds, the cyclophosphazene
-   CIP fence (chematic matches RDKit's spelling-dependent label 220/220),
-   and the `[nH+2]` and native created-centre stereo decisions. **Exit:**
-   those closed or typed.
+   back; products independent of hash-map order). Closed or typed: the
+   naphthalene rows RDKit cannot re-sanitize give RDKit's products after one
+   sanitize (BTMR1031, typed in the harness), cyclophosphazene P gets
+   RDKit's (spelling-dependent) CIP label, and the `[nH+2]` and native
+   created-centre stereo cases are decided
+   ([record](benchmarks/2026-10-04-xsmarts-autoconf-v1034.md)). **Exit:**
+   released, and the corpus rerun on the published package.
 4. **P1 / A4 — Publish a bounded SMARTS compatibility profile.** The
    published v1.0.30 baseline has 200 match-set and 43 Boolean differences,
    mostly the `R<n>` ring-count basis (SSSR versus RDKit's symmetrized
@@ -85,9 +87,9 @@ Exposed data are not sealed evidence.
    bond-keyed E/Z are identical across random atom orders, an H round trip
    and a canonical reparse. Source: acyclic phosphorus and acyclic lone-pair
    centres are labelled as RDKit's CIPLabeler does; one abstention is left
-   (a bridgehead amine). Remaining: ring lone-pair centres, whose RDKit
-   label depends on how a ring-closure digit on the centre was written, and
-   P on unsaturated rings (`OracleUnstable`). **Exit:**
+   (a bridgehead amine). P on unsaturated rings gets RDKit's label, marked
+   Kekulé-dependent. Remaining: ring lone-pair centres, whose RDKit label
+   depends on how a ring-closure digit on the centre was written. **Exit:**
    complete outcome accounting and no wrong confident label.
 8. **P2 — Test representation limits separately.** Keep CDXML opaque
    preservation distinct from semantic editing, Markush/polymer expansion

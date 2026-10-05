@@ -18,8 +18,9 @@ Where RDKit has a product, the source gives the same product sets for
 pairs (v1.0.35: 3,807), and refuses none (v1.0.35: 241 rules refused on
 every molecule). Records: `benchmarks/2026-10-05-biotransformer-rule-corpus.md`,
 `benchmarks/2026-10-05-biotransformer-corpus-followups.md`,
-`benchmarks/2026-10-05-biotransformer-corpus-followups-2.md` and
-`benchmarks/2026-10-06-734-754-followups-batch9.md`; the apply
+`benchmarks/2026-10-05-biotransformer-corpus-followups-2.md`,
+`benchmarks/2026-10-06-734-754-followups-batch9.md` and
+`benchmarks/2026-10-06-734-754-followups-batch10.md`; the apply
 model is written down in `docs/smirks-apply-model.md`.
 
 - **Canonical SMILES E/Z fix:** a direction stashed beside a bond and read
@@ -96,6 +97,30 @@ model is written down in `docs/smirks-apply-model.md`.
   only in a five-membered ring, and a two-connected N double bonded to
   neither C nor N is NM (62), as in RDKit. Heavy atoms typed differently
   from RDKit: exposed 10k 89 → 88, ChEMBL 5k 103 → 53.
+- **Behaviour change:** accurate CIP labels phosphorus on a ring carrying a
+  double bond (cyclophosphazenes) with RDKit's CIPLabeler label instead of
+  `OracleUnstable` (ChEMBL 5k: 4,186 labels agree, no abstention; 520/520
+  spellings of 12 P molecules). The label flips between the ring's Kekulé
+  spellings in both libraries: Python marks it `"kekule_dependent": True`,
+  WASM `"kekuleDependent": true`, Rust
+  `chematic_chem::cip_label_depends_on_kekule_spelling`; identity
+  deduplication still fails closed on it.
+- New `chematic_perception::rdkit_sssr_ring_order`: RDKit's ring list, in
+  RDKit's order (port of `findSSSR`/`symmetrizeSSSR`; identical lists on
+  8,825/8,830 exposed-10k and all 4,929 ChEMBL-5k ring rows).
+- **Behaviour change:** MMFF94 aromaticity takes rings in RDKit's order and,
+  like RDKit, counts only rings it has accepted toward an exocyclic double
+  bond (staurosporine aglycones, porphyrins). Heavy atoms typed differently
+  from RDKit: exposed 10k 88 → 81 (78 in three fullerenes), ChEMBL 5k
+  53 → 5.
+- **Behaviour change:** RDKit-model hybridization counts a bracket atom's
+  radical electrons below an octet, as RDKit's `assignRadicals` does (the
+  Mg of a magnesium acetylacetonate is SP3; `C[CH2]` both SP3): all 220,015
+  exposed-10k atoms agree.
+- MOL writer: a centre whose layout leaves two neighbours 5–15 degrees apart
+  gets a wedge when no other drawing works (RDKit reads 1,686/1,687
+  exposed-10k and 1,669/1,670 ChEMBL-5k stereo rows back, was 1,681 and
+  1,663).
 - Performance: SMIRKS entry points that take the template as text
   (`run_reactants*`, Python `run_smirks_checked`, WASM checked reactions)
   share prepared templates through a bounded process-wide cache
@@ -108,9 +133,11 @@ model is written down in `docs/smirks-apply-model.md`.
   gone. SMARTS `^n` looks up conjugation only for atoms with fewer than
   four neighbours (`[C^2]` matching: 122M → 66M instructions on 1,500
   molecules), and the product valence check reads Kekulé orders in place
-  (13 reaction cases: 1.28x → 1.16x v1.0.34's instructions). `write_mol`
-  writes laid-out atom lines without the formatter (5% fewer instructions,
-  same bytes).
+  (13 reaction cases: 1.28x → 1.16x v1.0.34's instructions). Product
+  construction reserves the product once and keeps its atom tables as
+  vectors (13 reaction cases: 0.94x v1.0.34's instructions, same products;
+  re-added hydrogens follow product atom order). `write_mol` writes laid-out
+  atom lines without the formatter (5% fewer instructions, same bytes).
 
 - SMIRKS with more `[#6:n]`-style atoms than the aromatic/aliphatic
   expansion enumerates (256 combinations) are applied instead of refused
