@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.34</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.35</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,9 +80,11 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.0.34 adds pinned RDKit 2026.03.6 reaction-stereo compatibility and fixes
-carried stereocentres and mapped ring bonds. Release availability is not an
-accuracy or speed result; package-output reruns remain separate.
+v1.0.35 adds stereo-aware MOL V2000/V3000 writing and reports stereo that
+cannot be represented. Python and WASM strict modes refuse such lossy output.
+It also contains scoped RDKit 2026.03.6 alignment work for hybridization,
+MMFF94 typing, and CIP. Release availability is not an accuracy or speed
+result; package-output reruns remain separate.
 
 The latest published-package comparison packet is for v1.0.30. It records
 20 exact-output, favorable paired-interval Python operations on one host;

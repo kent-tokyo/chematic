@@ -8,7 +8,7 @@ benchmark claims remain scoped to their dated records.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.35] - 2026-10-05
 
 SMARTS/SMIRKS dialect fixes from the xsmarts-autoconf report (#734, #754).
 On the tool's 83 behaviour flags the source gives RDKit 2026.03.6's value for

@@ -21,13 +21,14 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.0.34 release boundary
+### v1.0.35 release boundary
 
-v1.0.34 adds a pinned RDKit 2026.03.6 reaction-stereo compatibility path and
-fixes carried stereocentres and mapped ring bonds. Release-profile source
-wheels match 80/83 exposed reaction rows; the other three inputs are invalid
-in both engines. Published v1.0.34 packages need their own rerun. See
-[validation](docs/validation.md) and [CHANGELOG](CHANGELOG.md).
+v1.0.35 adds stereo-aware MOL V2000/V3000 writing, explicit reports for
+stereo that cannot be represented, and strict Python/WASM write modes. It
+also aligns hybridization, MMFF94 typing, CIP phosphorus and acyclic
+lone-pair handling with scoped RDKit 2026.03.6 comparisons. Source results
+and published-package reruns remain separate. See [validation](docs/validation.md)
+and [CHANGELOG](CHANGELOG.md).
 
 ## Use it
 
