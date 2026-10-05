@@ -115,7 +115,15 @@ fn marked_at(mol: &Molecule, center: AtomIdx, bond: BondIdx) -> bool {
         let other = if e.atom1 == center { e.atom2 } else { e.atom1 };
         substituents(mol, other) <= 3 && conjugation_candidate(mol, other)
     };
-    let multiple = |b: BondIdx| valence_contrib(mol.bond(b).order) >= 1.5;
+    // A multiple bond counts only toward a candidate atom: a double bond to
+    // `[S+]`/`[Se+]` with two substituents conjugates nothing (RDKit 2026.03.6
+    // marks no bond in `CN(C)C(=[S+]C)C`; the metal dithiocarbamates of the
+    // exposed 10k have sp3 amine N).
+    let multiple = |b: BondIdx| {
+        let e = mol.bond(b);
+        let other = if e.atom1 == center { e.atom2 } else { e.atom1 };
+        valence_contrib(e.order) >= 1.5 && conjugation_candidate(mol, other)
+    };
     let others = || {
         mol.neighbors(center)
             .map(|(_, b)| b)
@@ -159,6 +167,22 @@ pub fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
     // Kekulé valence lookup the general rule needs for aromatic atoms.
     if atom.aromatic && (2..=3).contains(&total_degree) {
         return Some(2);
+    }
+    // RDKit's clean-up reads a neutral Cl/Br/I of valence 3, 5 or 7 bonded
+    // only to O as `[X+k]([O-])…`: its `=O` atoms are sp3 `[O-]` (perchlorate).
+    if z == 8
+        && atom.charge == 0
+        && total_degree == 1
+        && let Some((halogen, bond)) = mol.neighbors(idx).next()
+        && mol.bond(bond).order == BondOrder::Double
+        && matches!(mol.atom(halogen).element.atomic_number(), 17 | 35 | 53)
+        && mol.atom(halogen).charge == 0
+        && matches!(crate::match_vf2::total_valence(mol, halogen), 3 | 5 | 7)
+        && mol
+            .neighbors(halogen)
+            .all(|(nb, _)| mol.atom(nb).element.atomic_number() == 8)
+    {
+        return Some(3);
     }
     let norbs = match outer_electrons(z) {
         Some(nouter) if z < 89 => {
@@ -204,6 +228,15 @@ mod tests {
             ("CC(S)=N", "3232"),
             ("C=C[S-]", "222"),
             ("C=CCl", "223"),
+            (
+                "CN(C)C(=[S+]C)C",
+                "3332233", /* no conjugation through [S+] */
+            ),
+            (
+                "OCl(=O)(=O)=O",
+                "33333", /* clean-up: [Cl+3]([O-])... */
+            ),
+            ("CC(=O)N=S1OCCO1", "322233333"),
             ("CC#N", "311"),
             ("C[N+](C)(C)C", "33333"),
             ("[2H]C", "03"),

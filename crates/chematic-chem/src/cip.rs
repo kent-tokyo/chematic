@@ -2456,6 +2456,15 @@ mod tests {
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
         assert_eq!(result.get(AtomIdx(1)), Some(CipCode::S));
         assert!(result.unresolved.is_empty());
+        // A ring sulfoxide is labelled too: RDKit reads its spellings as
+        // chematic does (RDKit 2026.03.6 rdCIPLabeler: R, and R/S).
+        let mol = chematic_smiles::parse("O=[S@@]1CCc2ccccc21").expect("valid SMILES");
+        let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        assert_eq!(result.get(AtomIdx(1)), Some(CipCode::R));
+        let mol = chematic_smiles::parse("C[C@@H]1CCC[S@](=O)C1").expect("valid SMILES");
+        let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        assert_eq!(result.get(AtomIdx(1)), Some(CipCode::R));
+        assert_eq!(result.get(AtomIdx(5)), Some(CipCode::S));
     }
 
     #[test]

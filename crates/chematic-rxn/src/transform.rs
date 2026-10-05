@@ -3606,10 +3606,10 @@ fn build_product(
     // template_idx_to_new[i]: new AtomIdx for product template atom i.
     let mut template_idx_to_new: Vec<Option<AtomIdx>> = vec![None; product_template.atom_count()];
     // src_to_new: (mol_idx, src_AtomIdx) → new AtomIdx in the product.
-    // Not pre-sized: carried bonds are added in this map's iteration order,
-    // and the product's Kekulé form (so a mixed aromatic product's fate)
-    // still depends on it (BTMR1032).
-    let mut src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx> = FxHashMap::default();
+    let mut src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx> = FxHashMap::with_capacity_and_hasher(
+        input_mols.iter().map(|m| m.atom_count()).sum(),
+        Default::default(),
+    );
 
     // --- Step 1: add product template atoms ---
     // core_keys: only source atoms that are mapped by THIS product template.
@@ -3813,7 +3813,11 @@ fn build_product(
         visited.extend(folded_h.iter().copied());
     }
     if carry_substituents {
-        let mut queue: VecDeque<(usize, AtomIdx)> = core_keys.iter().cloned().collect();
+        // Seeded in reactant atom order, so the product's atom order does not
+        // follow the hash set's iteration order.
+        let mut seeds: Vec<(usize, AtomIdx)> = core_keys.iter().cloned().collect();
+        seeds.sort_unstable();
+        let mut queue: VecDeque<(usize, AtomIdx)> = seeds.into();
 
         while let Some((mol_idx, cur_idx)) = queue.pop_front() {
             for (nb_idx, _bond_idx) in input_mols[mol_idx].neighbors(cur_idx) {
@@ -3894,7 +3898,13 @@ fn build_product(
     };
     // Bonds where both endpoints are template atoms are replaced or broken by the template;
     // bonds where at least one endpoint is a substituent are carried through.
-    for (&(mol_idx, src_idx), &a_new) in &src_to_new {
+    // In product atom order, not the map's: the product's bond order decides
+    // its Kekulé form, and with it whether RDKit's sanitize accepts a mixed
+    // aromatic product (BTMR1032 changed with the map's capacity).
+    let mut carried: Vec<((usize, AtomIdx), AtomIdx)> =
+        src_to_new.iter().map(|(&src, &new)| (src, new)).collect();
+    carried.sort_unstable_by_key(|&(_, new)| new);
+    for ((mol_idx, src_idx), a_new) in carried {
         for (nb_idx, bond_idx) in input_mols[mol_idx].neighbors(src_idx) {
             let nb_key = (mol_idx, nb_idx);
             let Some(&b_new) = src_to_new.get(&nb_key) else {
@@ -4311,6 +4321,33 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].len(), 1);
         assert_eq!(results[0][0].atom_count(), 1);
+    }
+
+    #[test]
+    fn carried_bonds_follow_product_atom_order() {
+        // Carried atoms are added breadth-first from the template atoms in
+        // reactant order and their bonds in product atom order, not in hash
+        // map order (BTMR1032's Kekulé product changed with a map's
+        // capacity, #734).
+        let mol = parse("OC(=O)c1ccc2ccccc2c1CCN(C)C").unwrap();
+        let results = run_reactants("[C:1](=[O:2])[OH:3]>>[C:1](=[O:2])Cl", &[&mol]).unwrap();
+        let product = &results[0][0];
+        let carried: Vec<u32> = product
+            .bonds()
+            .skip(3)
+            .map(|(_, b)| b.atom1.0.min(b.atom2.0))
+            .collect();
+        assert!(carried.windows(2).all(|w| w[0] <= w[1]), "{carried:?}");
+        // The same product however often the reaction runs.
+        for _ in 0..3 {
+            let again = run_reactants("[C:1](=[O:2])[OH:3]>>[C:1](=[O:2])Cl", &[&mol]).unwrap();
+            let bonds = |m: &Molecule| {
+                m.bonds()
+                    .map(|(_, b)| (b.atom1.0, b.atom2.0, b.order))
+                    .collect::<Vec<_>>()
+            };
+            assert_eq!(bonds(&again[0][0]), bonds(product));
+        }
     }
 
     #[test]

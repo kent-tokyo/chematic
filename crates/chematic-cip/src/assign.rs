@@ -529,10 +529,14 @@ fn assign_one(
 
 /// A three-ligand centre outside rings (sulfoxide, sulfinamide, phosphine):
 /// the lone pair is a phantom ligand of lowest priority, as in RDKit's
-/// `CIPLabeler`. `None` (reported as `LonePairCenter`) for a ring centre such
-/// as a bridgehead amine, where RDKit's reading depends on how a ring-closure
-/// digit on the centre was written and `stereo_neighbor_order` does not keep
-/// that; also when a ligand is hydrogen or the centre has implicit H.
+/// `CIPLabeler`. A ring centre with a double bond (a cyclic sulfoxide or
+/// sulfoximine) is labelled too: RDKit reads its spellings as chematic does
+/// (180/180 random spellings of five ring sulfoxides and a selenoxide agree). `None`
+/// (reported as `LonePairCenter`) for a ring centre with three single bonds
+/// (a bridgehead amine, a cyclic phosphine or sulfonium), where RDKit's
+/// reading of `@`/`@@` changes with the spelling while chematic follows
+/// OpenSMILES (the lone pair in the implicit-H position); also when a ligand
+/// is hydrogen or the centre has implicit H.
 fn assign_lone_pair_centre(
     mol: &Molecule,
     idx: AtomIdx,
@@ -547,7 +551,10 @@ fn assign_lone_pair_centre(
         || stereo_order
             .iter()
             .any(|&a| mol.atom(AtomIdx(a)).element == Element::H)
-        || atom_in_ring(mol, idx)
+        || (atom_in_ring(mol, idx)
+            && !mol
+                .neighbors(idx)
+                .any(|(_, b)| mol.bond(b).order == chematic_core::BondOrder::Double))
     {
         return Ok(None);
     }

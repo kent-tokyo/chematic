@@ -1739,8 +1739,6 @@ fn write_v2000_reporting(
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
 ) -> MolStereoLoss {
-    use std::fmt::Write as _;
-
     // A MOL block is dominated by fixed-width atom and bond rows.  Reserve
     // the common-size output up front so serialization does not repeatedly
     // grow and copy the String for every row (the old empty String was a
@@ -1777,12 +1775,18 @@ fn write_v2000_reporting(
         if let Some(&(x, y)) = coords.get(idx.0 as usize) {
             push_fixed4(out, x, 10);
             push_fixed4(out, y, 10);
-            writeln!(
-                out,
-                "    0.0000 {:<3}{:>2}{:>3}  0  0  0  0  0  0  0{:>3}  0",
-                sym, mass_difference, charge_code, atom_map,
-            )
-            .expect("writing to String cannot fail");
+            // `"    0.0000 {:<3}{:>2}{:>3}  0  0  0  0  0  0  0{:>3}  0\n"`,
+            // without the formatter (a tenth of laying out and writing).
+            out.push_str("    0.0000 ");
+            out.push_str(sym);
+            for _ in sym.len()..3 {
+                out.push(' ');
+            }
+            push_right_aligned_i16(out, mass_difference, 2);
+            push_right_aligned_u32(out, charge_code as u32, 3);
+            out.push_str("  0  0  0  0  0  0  0");
+            push_right_aligned_u32(out, atom_map as u32, 3);
+            out.push_str("  0\n");
         } else {
             // Serialization-only SDF output overwhelmingly has no coordinate
             // array. Avoid running the float formatter three times per atom
