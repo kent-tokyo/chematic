@@ -132,7 +132,18 @@ impl core::fmt::Display for RxnError {
 ///   the reactant-side atom with that map, or is aliphatic when there is none.
 pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError> {
     let s = &normalize_product_query_atoms(s)?;
-    expand_atomic_number_primitives_normalized(s)
+    expand_atomic_number_primitives_normalized(s, false)
+}
+
+/// [`expand_atomic_number_primitives`] for the RDKit 2026.03.6 profile: no
+/// enumeration. The reactant primitives stay SMARTS (`[#6:1]` matches
+/// aliphatic and aromatic carbon) and a product primitive is aliphatic, as
+/// in RDKit, whose product atom takes the template's aromaticity and whose
+/// sanitize then perceives aromaticity again (`[#6:1]1[#6:2]…[#6:6]1>>…O`
+/// on benzene gives RDKit's cyclohexanol).
+pub(crate) fn expand_atomic_number_primitives_rdkit(s: &str) -> Result<Vec<String>, RxnError> {
+    let s = &normalize_product_query_atoms_reading(s, true)?;
+    expand_atomic_number_primitives_normalized(s, true)
 }
 
 /// Product-template bracket atoms are specifications, not queries. Following
@@ -190,6 +201,17 @@ pub(crate) fn split_reaction_parts(s: &str) -> Option<[&str; 3]> {
 }
 
 pub fn normalize_product_query_atoms(s: &str) -> Result<String, RxnError> {
+    normalize_product_query_atoms_reading(s, false)
+}
+
+/// [`normalize_product_query_atoms`]; with `rdkit_reading`, an `a`/`A`
+/// primitive beside no element symbol is query-only, as RDKit builds a
+/// `[#6;a:1]` product atom aliphatic (only an aromatic symbol, `[c:1]`, makes
+/// it aromatic).
+pub(crate) fn normalize_product_query_atoms_reading(
+    s: &str,
+    rdkit_reading: bool,
+) -> Result<String, RxnError> {
     // Product side = text after the last top-level `>` (none: nothing to do).
     let Some(product_start) = reaction_separators(s).last().map(|i| i + 1) else {
         return Ok(s.to_string());
@@ -221,14 +243,14 @@ pub fn normalize_product_query_atoms(s: &str) -> Result<String, RxnError> {
         };
         let atom = &rest[open..=close];
         rest = &rest[close + 1..];
-        out.push_str(&product_atom_spec(atom)?);
+        out.push_str(&product_atom_spec(atom, rdkit_reading)?);
     }
     out.push_str(rest);
     Ok(out)
 }
 
 /// One product bracket atom rewritten per [`normalize_product_query_atoms`].
-fn product_atom_spec(atom: &str) -> Result<String, RxnError> {
+fn product_atom_spec(atom: &str, rdkit_reading: bool) -> Result<String, RxnError> {
     use chematic_smarts::{AtomPrimitive, AtomQuery};
 
     fn conjuncts<'q>(q: &'q AtomQuery, out: &mut Vec<&'q AtomQuery>) {
@@ -290,6 +312,38 @@ fn product_atom_spec(atom: &str) -> Result<String, RxnError> {
     if conflict {
         return Err(unsupported());
     }
+    if rdkit_reading && symbol.is_none() {
+        aromatic = None;
+    }
+    // An H count or charge spelled only inside a list of alternatives
+    // (`[N;X3H1+0,X4H2+:1]`): RDKit applies the first one written, with a
+    // warning; elements in such a list name no single element and stay
+    // unapplied.
+    fn first_in_text<T: Copy>(
+        q: &AtomQuery,
+        pick: &impl Fn(&AtomPrimitive) -> Option<T>,
+    ) -> Option<T> {
+        match q {
+            AtomQuery::Primitive(p) => pick(p),
+            AtomQuery::And(a, b) | AtomQuery::Or(a, b) => {
+                first_in_text(a, pick).or_else(|| first_in_text(b, pick))
+            }
+            AtomQuery::Not(_) => None,
+        }
+    }
+    let root = &query.atoms[0].query;
+    if hcount.is_none() {
+        hcount = first_in_text(root, &|p| match p {
+            AtomPrimitive::HCount(h) => Some(*h),
+            _ => None,
+        });
+    }
+    if charge.is_none() {
+        charge = first_in_text(root, &|p| match p {
+            AtomPrimitive::Charge(c) => Some(*c),
+            _ => None,
+        });
+    }
     let symbol_absent = symbol.is_none();
     let element = match (symbol, atomic_number) {
         (Some(sym), _) => {
@@ -339,15 +393,10 @@ fn product_atom_spec(atom: &str) -> Result<String, RxnError> {
     match element {
         Some(e) if aromatic == Some(true) => spec.push_str(&e.symbol().to_ascii_lowercase()),
         Some(e) => spec.push_str(e.symbol()),
-        // Mapped: the reactant atom's element is kept (RDKit semantics).
-        None if map.is_some()
-            && isotope.is_none()
-            && chirality.is_none()
-            && hcount.is_none()
-            && charge.is_none() =>
-        {
-            spec.push('*')
-        }
+        // Mapped: the reactant atom's element is kept (RDKit semantics);
+        // a spelled charge, H count or isotope still applies
+        // (`[F,Cl,Br,I;-:7]` makes the matched halogen a halide).
+        None if map.is_some() && chirality.is_none() => spec.push('*'),
         None => return Err(unsupported()),
     }
     match chirality {
@@ -371,7 +420,10 @@ fn product_atom_spec(atom: &str) -> Result<String, RxnError> {
     Ok(spec)
 }
 
-fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, RxnError> {
+fn expand_atomic_number_primitives_normalized(
+    s: &str,
+    single_variant: bool,
+) -> Result<Vec<String>, RxnError> {
     const MAX_VARIANTS: usize = 256;
     const ORGANIC_SUBSET: [&str; 10] = ["B", "C", "N", "O", "P", "S", "F", "Cl", "Br", "I"];
 
@@ -419,7 +471,12 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
     // primitives with the same map share a group).
     enum Piece {
         Text(String),
-        Slot { options: Vec<String>, group: usize },
+        Slot {
+            options: Vec<String>,
+            group: usize,
+            /// The primitive as written, for a reactant-side slot.
+            reactant_text: Option<String>,
+        },
     }
     let mut pieces: Vec<Piece> = Vec::new();
     let mut groups: Vec<usize> = Vec::new(); // option count per group
@@ -567,8 +624,11 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
                     vec![aliphatic]
                 }
             } else {
+                // RDKit's product atom takes the template's (aliphatic)
+                // aromaticity even when the reactant spells `[c:1]`; only
+                // the native expansion pairs them (#679).
                 match reactant_case(map) {
-                    Some(true) if can_be_aromatic => vec![aromatic],
+                    Some(true) if can_be_aromatic && !single_variant => vec![aromatic],
                     _ => vec![aliphatic],
                 }
             }
@@ -598,7 +658,11 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
         if !text.is_empty() {
             pieces.push(Piece::Text(std::mem::take(&mut text)));
         }
-        pieces.push(Piece::Slot { options, group });
+        pieces.push(Piece::Slot {
+            options,
+            group,
+            reactant_text: (!on_product_side).then(|| primitive.to_string()),
+        });
         i = end + 1;
     }
     if !text.is_empty() {
@@ -612,11 +676,25 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
             (next <= MAX_VARIANTS).then_some(next)
         })
         .unwrap_or(usize::MAX);
-    if total > MAX_VARIANTS {
-        return Err(RxnError::AtomicNumberExpansionLimit {
-            actual: total,
-            limit: MAX_VARIANTS,
-        });
+    if total > MAX_VARIANTS || single_variant {
+        // The RDKit profile, or too many combinations to enumerate
+        // (BioTransformer rules spell dozens of `[#6:n]` atoms). The reactant templates are matched with
+        // their SMARTS reading, where `[#6:1]` is aliphatic or aromatic
+        // carbon, and a mapped product atom keeps the matched atom's
+        // aromaticity, so one variant with the reactant primitives as
+        // written and aliphatic product spellings gives the same products.
+        let mut out = String::with_capacity(s.len());
+        for piece in &pieces {
+            match piece {
+                Piece::Text(t) => out.push_str(t),
+                Piece::Slot {
+                    reactant_text: Some(written),
+                    ..
+                } => out.push_str(written),
+                Piece::Slot { options, .. } => out.push_str(&options[0]),
+            }
+        }
+        return Ok(vec![out]);
     }
 
     // Enumerate choice vectors in lexicographic order (first group slowest).
@@ -627,7 +705,7 @@ fn expand_atomic_number_primitives_normalized(s: &str) -> Result<Vec<String>, Rx
         for piece in &pieces {
             match piece {
                 Piece::Text(t) => out.push_str(t),
-                Piece::Slot { options, group } => out.push_str(&options[choice[*group]]),
+                Piece::Slot { options, group, .. } => out.push_str(&options[choice[*group]]),
             }
         }
         variants.push(out);

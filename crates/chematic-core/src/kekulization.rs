@@ -42,6 +42,17 @@ pub type KekuleResult = HashMap<BondIdx, BondOrder>;
 ///
 /// If the molecule has no aromatic bonds the result is empty (success, no-op).
 pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
+    kekulize_with(mol, |idx| atom_must_be_matched(mol, idx))
+}
+
+/// [`kekulize`] with the caller's rule for which aromatic atoms must take a
+/// double bond (an aromatic bond's atom for which `must_match` is false only
+/// gets single bonds). Reaction products use it to apply RDKit's candidate
+/// rule to atoms a template gave a non-aromatic double bond.
+pub fn kekulize_with(
+    mol: &Molecule,
+    must_match_atom: impl Fn(AtomIdx) -> bool,
+) -> Result<KekuleResult, KekuleError> {
     // Collect aromatic bonds and the atoms they touch.
     let n = mol.atom_count();
     let mut aromatic_bonds: Vec<BondIdx> = Vec::new();
@@ -75,7 +86,7 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
     let mut must_match = vec![false; n];
     let mut sorted_atoms: Vec<AtomIdx> = Vec::new();
     for i in 0..n {
-        if aromatic_atom[i] && atom_must_be_matched(mol, AtomIdx(i as u32)) {
+        if aromatic_atom[i] && must_match_atom(AtomIdx(i as u32)) {
             must_match[i] = true;
             sorted_atoms.push(AtomIdx(i as u32));
         }

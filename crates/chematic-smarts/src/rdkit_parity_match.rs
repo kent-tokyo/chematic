@@ -662,6 +662,7 @@ fn eval_bond_primitive(
             BondOrder::Double | BondOrder::QuerySingleOrDouble | BondOrder::QueryDoubleOrAromatic
         ),
         BondPrimitive::Triple => matches!(order, BondOrder::Triple),
+        BondPrimitive::Quadruple => matches!(order, BondOrder::Quadruple),
         BondPrimitive::Aromatic => matches!(
             order,
             BondOrder::Aromatic

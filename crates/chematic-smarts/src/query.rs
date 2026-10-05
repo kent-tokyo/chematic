@@ -88,6 +88,8 @@ pub enum BondPrimitive {
     Double,
     /// `#` triple bond.
     Triple,
+    /// `$` quadruple bond (RDKit SMARTS).
+    Quadruple,
     /// `:` aromatic bond.
     Aromatic,
     /// `~` any bond.

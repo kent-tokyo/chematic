@@ -622,7 +622,9 @@ fn initial_invariant(mol: &Molecule, idx: AtomIdx) -> u64 {
     let atom = mol.atom(idx);
 
     if atom.wildcard {
-        return 0;
+        // Charge and isotope still tell dummy atoms apart (`[*-]`, `[13*]`).
+        // A plain `[*]` stays 0.
+        return (atom.isotope.unwrap_or(0) as u64) << 8 | (atom.charge as u8) as u64;
     }
 
     let an = atom.element.atomic_number() as u64;
@@ -2488,7 +2490,24 @@ impl<'a> CanonicalWriter<'a> {
         let atom = self.mol.atom(idx);
 
         if atom.wildcard {
-            self.out.push_str("[*");
+            self.out.push('[');
+            if let Some(iso) = atom.isotope {
+                self.out.push_str(&iso.to_string());
+            }
+            self.out.push('*');
+            if let Some(h) = atom.hydrogen_count.filter(|&h| h > 0) {
+                self.out.push('H');
+                if h > 1 {
+                    self.out.push_str(&h.to_string());
+                }
+            }
+            match atom.charge {
+                0 => {}
+                1 => self.out.push('+'),
+                -1 => self.out.push('-'),
+                c if c > 0 => self.out.push_str(&format!("+{c}")),
+                c => self.out.push_str(&c.to_string()),
+            }
             if let Some(map) = atom.atom_map {
                 self.out.push(':');
                 self.out.push_str(&map.to_string());

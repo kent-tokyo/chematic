@@ -46,6 +46,12 @@ pub(crate) fn allowed_valences(z: u8, charge: i8) -> Option<(&'static [u8], i16)
     valence_list(effective).map(|list| (list, 0))
 }
 
+/// RDKit's default (smallest allowed) valence; `None` = unrestricted.
+pub(crate) fn default_valence(z: u8, charge: i8) -> Option<i16> {
+    let (list, offset) = allowed_valences(z, charge)?;
+    Some(i16::from(*list.first().expect("non-empty valence list")) + offset)
+}
+
 /// RDKit's largest allowed explicit valence; `None` = unrestricted.
 pub(crate) fn max_valence(z: u8, charge: i8) -> Option<i16> {
     if charge == 0 {

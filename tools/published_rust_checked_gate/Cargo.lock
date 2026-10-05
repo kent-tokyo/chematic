@@ -25,9 +25,9 @@ checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
 name = "chematic"
-version = "1.0.34"
+version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ca1c7b6797ea106bdc44574f350e9c6561a38b75517085b6ecefaa2e07ce974"
+checksum = "921ee8f1f8cb00458183e77fdbc92e372842c9d662e77c018046aeee8d08c711"
 dependencies = [
  "chematic-core",
  "chematic-rxn",
@@ -36,15 +36,15 @@ dependencies = [
 
 [[package]]
 name = "chematic-core"
-version = "1.0.34"
+version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a20aa1f45ed34602c94c2aee63af420eaad74b1237be20a17b97f5d577ff1ab4"
+checksum = "f405406552248bf56139e96a9c08bd20c08a51c19378a740b8e2c6e1f16b6cc8"
 
 [[package]]
 name = "chematic-perception"
-version = "1.0.34"
+version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3cf942d1121e2856831bee3d9c1e9496c517b4a130b5a62427019d2446ec716"
+checksum = "fafac667dc01168742f44bebe3ab3d53db112506275f81a7feb63ab53086192a"
 dependencies = [
  "chematic-core",
  "rustc-hash",
@@ -52,9 +52,9 @@ dependencies = [
 
 [[package]]
 name = "chematic-rxn"
-version = "1.0.34"
+version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6cd146b97ee757c837989410e18624dc3fcbbf87fd49d2e33b27d56160e06e9"
+checksum = "26685fe258c5418e64c47f64b42f8211ee1ef67cb2d0bd6ada27e0e96c1907fa"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -67,9 +67,9 @@ dependencies = [
 
 [[package]]
 name = "chematic-smarts"
-version = "1.0.34"
+version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2af4a5d477fe80315a9bc4962d813a23d80351516c80e4f9a07f855304bba9a4"
+checksum = "5a6dcaebbfd1da4b1e760657d8a858fa174d05c05f382476bfd8dc0f29a1f472"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -79,9 +79,9 @@ dependencies = [
 
 [[package]]
 name = "chematic-smiles"
-version = "1.0.34"
+version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71f6e8167ad22a4686713f8543c148dae1ce25fc655d2371288128657c0322d8"
+checksum = "8302fdb83de9e3553fc8b7a5644e5eb7d4928b1b88e2a935ec64f97fd57b5d08"
 dependencies = [
  "chematic-core",
  "chematic-perception",

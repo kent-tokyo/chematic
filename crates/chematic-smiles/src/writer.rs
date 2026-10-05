@@ -17,7 +17,12 @@ use chematic_core::{
 /// explicit H count recorded) still get their inferred hydrogens written,
 /// e.g. `[NH4+]` rather than `[N+]`.
 pub(crate) fn emit_bracket_hydrogens(out: &mut String, mol: &Molecule, idx: AtomIdx) {
-    let h = chematic_core::implicit_hcount(mol, idx);
+    let atom = mol.atom(idx);
+    let h = if atom.wildcard {
+        atom.hydrogen_count.unwrap_or(0)
+    } else {
+        chematic_core::implicit_hcount(mol, idx)
+    };
     if h > 0 {
         out.push('H');
         if h > 1 {

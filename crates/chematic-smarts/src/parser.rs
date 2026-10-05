@@ -462,6 +462,7 @@ impl<'a> Parser<'a> {
             b'-' => BondPrimitive::Single,
             b'=' => BondPrimitive::Double,
             b'#' => BondPrimitive::Triple,
+            b'$' => BondPrimitive::Quadruple,
             b':' => BondPrimitive::Aromatic,
             b'~' => BondPrimitive::Any,
             b'@' => BondPrimitive::Ring,
@@ -477,7 +478,7 @@ impl<'a> Parser<'a> {
     /// `true` when byte `c` at `pos` starts a bond primitive (`<` only as `<-`).
     fn is_bond_token_at(&self, pos: usize, c: u8) -> bool {
         match c {
-            b'-' | b'=' | b'#' | b':' | b'~' | b'@' | b'/' | b'\\' => true,
+            b'-' | b'=' | b'#' | b'$' | b':' | b'~' | b'@' | b'/' | b'\\' => true,
             b'<' => self.src.get(pos + 1) == Some(&b'-'),
             _ => false,
         }
@@ -2203,6 +2204,7 @@ mod tests {
             ("C-C", BondPrimitive::Single),
             ("C=C", BondPrimitive::Double),
             ("C#C", BondPrimitive::Triple),
+            ("C$C", BondPrimitive::Quadruple),
             ("c:c", BondPrimitive::Aromatic),
         ];
         for (smarts, expected_prim) in bonds {

@@ -33,7 +33,9 @@ pub use coords3d::{Coords3D, Point3};
 pub use derived_cache::DerivedSlot;
 pub use element::Element;
 pub use extension::{ExtensionError, ExtensionRegistry, ExtensionValue, MoleculeExtension};
-pub use kekulization::{KekuleError, KekuleResult, apply_kekule, kekulize};
+pub use kekulization::{
+    KekuleError, KekuleResult, apply_kekule, atom_must_be_matched, kekulize, kekulize_with,
+};
 pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};
 // `StereoConfiguration`/`CanonicalStereoConfiguration`/`canonicalize_configuration`/
 // `equivalent_under_rotation` are deliberately `pub(crate)`, not re-exported
