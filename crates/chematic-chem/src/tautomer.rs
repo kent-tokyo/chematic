@@ -2085,6 +2085,7 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
                 .into_iter()
                 .filter(|candidate| !prefer_lactam || has_aromatic_exocyclic_carbonyl(candidate))
                 .filter(|candidate| iminol_count(candidate) <= max_iminols)
+                .filter(|candidate| changes_confined_to_aromatic_system(&result, candidate))
                 .collect();
             candidates.sort_by(|a, b| {
                 tautomer_score(b).cmp(&tautomer_score(a)).then_with(|| {
@@ -2103,6 +2104,39 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
     }
     clear_moved_stereo(mol, &mut result);
     result
+}
+
+/// Whether `candidate` differs from `base` only inside aromatic O/C
+/// systems: every atom whose H count or bonds changed is aromatic in one of
+/// the two forms, or is a heteroatom directly on such an atom. Keeps the
+/// global aromatic O/C selection from also enolizing carbonyls or turning
+/// amides into enamine/enol forms elsewhere (a tyrosine phenol made the whole
+/// peptide backbone a candidate, and the O-H-favouring score picked enols).
+fn changes_confined_to_aromatic_system(base: &Molecule, candidate: &Molecule) -> bool {
+    if base.atom_count() != candidate.atom_count() {
+        return false;
+    }
+    let bond_orders = |m: &Molecule, idx: AtomIdx| {
+        let mut v: Vec<(u32, BondOrder)> = m
+            .neighbors(idx)
+            .map(|(nb, b)| (nb.0, m.bond(b).order))
+            .collect();
+        v.sort_by_key(|&(nb, _)| nb);
+        v
+    };
+    let aromatic_any = |idx: AtomIdx| base.atom(idx).aromatic || candidate.atom(idx).aromatic;
+    (0..base.atom_count()).all(|i| {
+        let idx = AtomIdx(i as u32);
+        let changed = chematic_core::implicit_hcount(base, idx)
+            != chematic_core::implicit_hcount(candidate, idx)
+            || base.atom(idx).hydrogen_count != candidate.atom(idx).hydrogen_count
+            || bond_orders(base, idx) != bond_orders(candidate, idx);
+        if !changed || aromatic_any(idx) {
+            return true;
+        }
+        let hetero = matches!(base.atom(idx).element.atomic_number(), 7 | 8 | 16);
+        hetero && base.neighbors(idx).any(|(nb, _)| aromatic_any(nb))
+    })
 }
 
 /// Drop tetrahedral tags the tautomer shift invalidated: an atom that gained
@@ -2812,6 +2846,31 @@ mod tests {
     #![allow(dead_code)]
 
     use super::*;
+
+    #[test]
+    fn phenol_does_not_turn_peptide_amides_into_enols() {
+        // A tyrosine phenol made the whole backbone a candidate of the
+        // aromatic O/C selection, whose O-H-favouring score picked enols
+        // (`C(N)(O)=C...`) and, for a penicillin sulfone, an S=C ylide. RDKit
+        // keeps every amide and the sulfone.
+        for (smiles, want) in [
+            (
+                "NC(=O)C(Cc1ccc(O)cc1)NC(C)=O",
+                "NC(=O)C(Cc1ccc(O)cc1)NC(C)=O",
+            ),
+            (
+                "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+                "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+            ),
+            ("Oc1ccccn1", "O=c1cccc[nH]1"),
+        ] {
+            let got = chematic_smiles::canonical_smiles(&canonical_tautomer(
+                &chematic_smiles::parse(smiles).unwrap(),
+            ));
+            let want = chematic_smiles::canonical_smiles(&chematic_smiles::parse(want).unwrap());
+            assert_eq!(got, want, "{smiles}");
+        }
+    }
 
     #[test]
     fn canonical_tautomer_keeps_amides_next_to_methoxyarenes() {

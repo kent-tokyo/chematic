@@ -91,10 +91,14 @@ Exposed data are not sealed evidence.
    preservation distinct from semantic editing, Markush/polymer expansion
    bounded, Standard InChI separate from native identifiers, and canonical
    SMILES separate from the fail-closed stable key. The source MOL writer
-   draws stereo (one checked wedge per centre, E/Z by geometry); RDKit reads
-   1,581 of 1,687 exposed-10k stereo rows back unchanged and none inverted.
-   Bridged and cage layouts still leave some centres undrawable. **Exit:**
-   cross-binding fixtures with no silent information loss.
+   draws stereo (one checked wedge per centre, E/Z by geometry, macrocycle
+   E/Z included); RDKit reads 1,681 of 1,687 exposed-10k and 1,663 of 1,670
+   ChEMBL-5k stereo rows back unchanged and none inverted. What a block
+   cannot carry (6 cage centres per corpus, one ring E/Z) is reported by
+   `write_mol_with_stereo_report`, and Python `strict=True` / WASM
+   `to_mol_block_strict` refuse it; the default writer still returns the
+   lossy block. **Exit:** cross-binding fixtures with no silent information
+   loss, and a decision on whether the default should refuse.
 9. **External — Complete RDKit 2026.09.1 rebaseline.** The official npm/WASM
    old/new lanes, published Python 2026.03.6 baseline, and independent C++
    source-build old/new lanes are pinned and measured on exposed 10k inputs.

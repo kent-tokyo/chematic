@@ -366,8 +366,13 @@ fn place_ring_system(
         .map(|(_, ring)| ring)
         .collect();
     let mut iterations = 0;
+    // Bounded by the starting count: `remaining` shrinks as rings are
+    // placed, and a bound on its current length stopped a fused system
+    // before its last ring could anchor (that ring then fell to the
+    // origin-centred fallback with stretched bonds).
+    let max_iterations = remaining.len() * 2;
 
-    while !remaining.is_empty() && iterations < remaining.len() * 2 {
+    while !remaining.is_empty() && iterations < max_iterations {
         iterations += 1;
         let mut progressed = false;
 
@@ -587,10 +592,30 @@ fn place_ring_anchored(
             cand2
         }
     } else {
-        // With only the two anchors available, choose the side away from the
-        // existing layout to keep unrelated geometry separated.
+        // With only the two anchors available, choose the side whose new
+        // atoms land on fewer placed atoms; when both are clear (or both
+        // clash equally), the side away from the existing layout. In an
+        // angular fused system the layout centroid can lie on the free side
+        // of the shared edge, and the ring then lands on its neighbour.
+        let clashes = |center: Point| {
+            let (angle_to_a1, angle_step) = candidate_geometry(center);
+            (0..n)
+                .filter(|&step| placed[ring[(idx1 + step) % n].0 as usize].is_none())
+                .filter(|&step| {
+                    let angle = angle_to_a1 + step as f64 * angle_step;
+                    let p = Point::new(
+                        center.x + radius * angle.cos(),
+                        center.y + radius * angle.sin(),
+                    );
+                    placed.iter().flatten().any(|q| q.dist(&p) < 0.5 * BOND_LEN)
+                })
+                .count()
+        };
+        let (c1, c2) = (clashes(cand1), clashes(cand2));
         let existing_center = centroid_of_placed(placed).unwrap_or(mid);
-        if cand1.dist(&existing_center) > cand2.dist(&existing_center) {
+        if c1 != c2 {
+            if c1 < c2 { cand1 } else { cand2 }
+        } else if cand1.dist(&existing_center) > cand2.dist(&existing_center) {
             cand1
         } else {
             cand2
@@ -903,12 +928,14 @@ fn ranked_candidates(used_angles: &[f64]) -> Vec<f64> {
         candidates.push(a - 2.0 * PI / 3.0);
     }
 
-    candidates.sort_by(|&a, &b| {
-        let min_sep_a = min_angle_separation(a, used_angles);
-        let min_sep_b = min_angle_separation(b, used_angles);
-        min_sep_b.partial_cmp(&min_sep_a).unwrap()
-    });
-    candidates
+    // Separation computed once per candidate; the stable sort keeps the
+    // order the per-comparison version gave.
+    let mut keyed: Vec<(f64, f64)> = candidates
+        .into_iter()
+        .map(|c| (min_angle_separation(c, used_angles), c))
+        .collect();
+    keyed.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
+    keyed.into_iter().map(|(_, c)| c).collect()
 }
 
 /// Minimum angular separation between `angle` and any angle in `used`.

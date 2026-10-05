@@ -468,6 +468,30 @@ def test_reaction_smarts_invalid_rxn_smiles():
 # from_mol_block
 # ---------------------------------------------------------------------------
 
+def test_to_mol_block_stereo_report_and_strict():
+    mol = chematic.from_smiles("N[C@@H](C)C(=O)O")
+    block, report = mol.to_mol_block_with_report()
+    assert block == mol.to_mol_block() == mol.to_mol_block(strict=True)
+    assert report == {
+        "centres": [],
+        "double_bonds": [],
+        "non_tetrahedral_centres": [],
+        "stereo_groups_dropped": False,
+    }
+    # Every atom on one line: no wedge can express the centre.
+    line = [[1.5 * i, 0.0] for i in range(mol.heavy_atoms)]
+    assert "M  END" in mol.to_mol_block_2d(line)
+    with pytest.raises(ValueError, match="without a wedge"):
+        mol.to_mol_block_2d(line, strict=True)
+    with pytest.raises(ValueError, match="without a wedge"):
+        mol.to_mol_v3000(line, strict=True)
+    square_planar = chematic.from_smiles("F[Pt@SP1](Cl)(Br)I")
+    _, report = square_planar.to_mol_block_with_report()
+    assert report["non_tetrahedral_centres"] == [1]
+    with pytest.raises(ValueError, match="square-planar"):
+        square_planar.to_mol_block(strict=True)
+
+
 def test_from_mol_block_basic():
     # Minimal V2000 MOL block for methane
     mol_block = """\n\n\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n"""

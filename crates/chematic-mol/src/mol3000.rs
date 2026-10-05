@@ -1645,6 +1645,16 @@ fn append_v3000_rgroup_property(line: &mut String, mol: &Molecule, idx: AtomIdx)
 }
 
 pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f64)]) -> String {
+    write_mol_v3000_with_stereo_report(mol, metadata, coords).0
+}
+
+/// [`write_mol_v3000`] that also reports the stereo the block does not carry
+/// (see [`crate::MolStereoLoss`]). An empty `coords` lays the molecule out.
+pub fn write_mol_v3000_with_stereo_report(
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    coords: &[(f64, f64)],
+) -> (String, crate::MolStereoLoss) {
     let natoms = mol.atom_count();
     let nbonds = mol.bond_count();
 
@@ -1680,7 +1690,11 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
         let atom_map = atom.atom_map.unwrap_or(0);
         let i = idx.0 + 1; // 1-based
 
-        let mut line = format!("M  V30 {i} {sym} {x:.4} {y:.4} 0.0000 {atom_map}");
+        let mut line = format!("M  V30 {i} {sym} ");
+        crate::mol2000::push_fixed4(&mut line, x, 0);
+        line.push(' ');
+        crate::mol2000::push_fixed4(&mut line, y, 0);
+        line.push_str(&format!(" 0.0000 {atom_map}"));
         if atom.charge != 0 {
             line.push_str(&format!(" CHG={}", atom.charge));
         }
@@ -1823,7 +1837,12 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
     out.push_str("M  V30 END CTAB\n");
     out.push_str("M  END\n");
 
-    out
+    let loss = crate::MolStereoLoss::from_depiction(
+        mol,
+        depiction.as_ref(),
+        crate::mol2000::MolFormat::V3000,
+    );
+    (out, loss)
 }
 
 /// Serialize `mol` to MOL V3000 (Extended Ctab) format using `conformer`'s

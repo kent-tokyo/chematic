@@ -122,18 +122,44 @@ adapter difference. Record: `benchmarks/2026-10-04-xsmarts-autoconf-v1034.md`.
 - **MOL writer stereo:** `write_mol` / `write_mol_v3000` (and Python
   `to_mol_block`, WASM, CLI) write a molecule with stereo on 2D coordinates
   that express it: one wedge or hash per tetrahedral centre, drawn from the
-  centre and checked by re-reading it, and E/Z set by the geometry (a side
-  is reflected where needed). Before, a molecule without coordinates lost
-  every tetrahedral centre, and SMILES `/`/`\` markers were written as wedge
-  codes only chematic read back. RDKit 2026.03.6 reads 1,581 of the 1,687
-  exposed-10k stereo rows and 1,593 of 1,670 ChEMBL-5k rows back as the input
-  (v1.0.34: none); the rest lose a centre the layout cannot draw clearly or
-  write a ring E/Z bond as "either" (stereo 3 / `CFG=2`). No row reads back
-  with an inverted centre. Stereogenic double bonds without declared E/Z are
-  written "either" too, so the drawing does not invent stereo. Kekulé bonds
-  written for an aromatic H that type 4 would lose are chosen in canonical
-  atom order. The coordinates path wrote the atom-map column one character
-  late (RDKit read every atom as mapped 0); fixed.
+  centre and checked by re-reading it (also at the far end of a wedge that
+  meets another centre), and E/Z set by the geometry (a side is reflected;
+  in a macrocycle one end of the double bond is moved across its ring
+  neighbours). Before, a molecule without coordinates lost every
+  tetrahedral centre, and SMILES `/`/`\` markers were written as wedge codes
+  only chematic read back. RDKit 2026.03.6 reads 1,681 of the 1,687
+  exposed-10k stereo rows and 1,663 of 1,670 ChEMBL-5k rows back as the
+  input (v1.0.34: none); no row reads back with an inverted centre. The rest
+  lose a centre in a cage layout (6 rows each) or write one ring E/Z bond as
+  "either" (stereo 3 / `CFG=2`; 1 row). A centre whose bonds the layout
+  draws in nearly one direction gets a second layout (atoms in reverse
+  order) or has a two-bond bridge neighbour moved into the widest gap.
+  Stereogenic double bonds without declared E/Z are written "either", so
+  the drawing does not invent stereo. Kekulé bonds written for an aromatic
+  H that type 4 would lose are chosen in canonical atom order. The
+  coordinates path wrote the atom-map column one character late (RDKit read
+  every atom as mapped 0); fixed.
+- **Stereo loss is reported:** `write_mol_with_stereo_report` /
+  `write_mol_v3000_with_stereo_report` return the block with a
+  `MolStereoLoss` (centres written without a wedge, E/Z bonds written
+  "either", square-planar centres, enhanced stereo groups V2000 cannot
+  hold). Python: `Mol.to_mol_block_with_report()`, and `strict=True` on
+  `to_mol_block` / `to_mol_block_2d` / `to_mol_v3000` raises `ValueError`
+  instead of returning a lossy block. WASM: `to_mol_block_strict`,
+  `mol_block_stereo_loss_json`; `to_mol_block` now uses the writer's stereo
+  layout (it passed plain layout coordinates, so E/Z was not set).
+- 2D layout: a fused ring system stopped placing rings after a bound that
+  shrank as rings were placed, so the last ring of a pentacyclic system fell
+  to a fallback with stretched bonds; a ring fused on two atoms goes to the
+  side where it lands on fewer placed atoms. Molecules with a bond outside
+  0.9–1.1 bond lengths: 233 of 10,000 exposed rows (v1.0.34: 272), ChEMBL 5k
+  242 (297). This changes some SVG depictions.
+- `canonical_tautomer` no longer turns peptide amides into enols when a
+  molecule has a phenol: a change to the aromatic O/C candidate set must
+  stay within the aromatic system and the heteroatoms on it. On the exposed
+  10k corpus, rows with more enol groups than RDKit's canonical tautomer
+  113 → 4, amide-derived enamines 44 → 0, S ylides 4 → 0; same tautomer as
+  RDKit 7,137 → 7,218 of 10,000.
 - **MOL reader E/Z:** conjugated and branched double bonds are read from
   coordinates (two double bonds sharing a carrier bond are reconciled by
   flipping one, as RDKit does for polyenes; the reader used to reject
@@ -178,10 +204,18 @@ adapter difference. Record: `benchmarks/2026-10-04-xsmarts-autoconf-v1034.md`.
   neighbour keeps its configuration with the new group in the H's place. The
   RDKit profile (`rdkit_compat=True`) gives RDKit's opposite arrangement
   (raw tag copy onto an appended bond).
-- Performance (Linux, exposed 10k, vs v1.0.34): canonical SMILES 1.06x
-  time, add/remove H 1.09x, SMARTS `^n` 1.5x (RDKit model), MOL writing ~17x
-  for the layout of stereo molecules, MMFF94 typing 0.96x, UFF 3D 1.0x,
-  reactions 1.07x (Kekulé aromatic reactants are aromatized first).
+- Performance (Linux, exposed 10k, time relative to v1.0.34, >1 is
+  slower): canonical SMILES 1.06x, add/remove H 1.09x, SMARTS `^n` 1.5x
+  (RDKit model), MMFF94 typing 0.96x, UFF 3D 1.0x, reactions 1.07x (Kekulé
+  aromatic reactants are aromatized first). **`write_mol` is about 9x
+  slower** (8.2 → 76.6 ms for 10,000 molecules): v1.0.34 wrote zero
+  coordinates and dropped stereo; the source lays out each molecule with
+  stereo (about a third of the added time), places and checks wedges, and
+  kekulizes in canonical order where type 4 would lose an aromatic H. An
+  earlier draft of this change was 17x slower (190.1 ms); rebuilding the
+  molecule for every wedge check, comparisons that recomputed angles, and
+  the general float formatter were removed. Writing given coordinates
+  (`write_mol_with_coords`) skips the layout.
 - Evidence: published PyPI v1.0.34 (CPython 3.9) passes the opt-in SMARTS
   310k gate (309,982 exact, 18 typed refusals, none unexpected) with the
   archived oracle (`check_python_smarts_parity_310k.py --archived-oracle`);
