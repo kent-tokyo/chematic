@@ -8,7 +8,7 @@ benchmark claims remain scoped to their dated records.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.36] - 2026-10-06
 
 Remaining #734 work: BioTransformer's public rule tables (983 rules, about
 the 1,200 the reporter used) were run through RDKit 2026.03.6 and the RDKit

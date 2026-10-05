@@ -21,14 +21,13 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.0.35 release boundary
+### v1.0.36 release boundary
 
-v1.0.35 adds stereo-aware MOL V2000/V3000 writing, explicit reports for
-stereo that cannot be represented, and strict Python/WASM write modes. It
-also aligns hybridization, MMFF94 typing, CIP phosphorus and acyclic
-lone-pair handling with scoped RDKit 2026.03.6 comparisons. Source results
-and published-package reruns remain separate. See [validation](docs/validation.md)
-and [CHANGELOG](CHANGELOG.md).
+v1.0.36 expands the checked RDKit reaction profile over BioTransformer's
+public rules, fixes E/Z preservation across graph edits, and improves scoped
+CIP, hybridization, MMFF94 typing, and MOL stereo output. The corpus results
+are source measurements until v1.0.36 packages are rerun. See
+[validation](docs/validation.md) and [CHANGELOG](CHANGELOG.md).
 
 ## Use it
 

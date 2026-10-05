@@ -3,7 +3,7 @@
 This page answers the question asked in
 [#734](https://github.com/kent-tokyo/chematic/issues/734): what chematic does
 when it applies a reaction template, and where that differs from RDKit's
-`RunReactants` on purpose. It describes the source after v1.0.35.
+`RunReactants` on purpose. It describes the v1.0.36 implementation.
 
 There are two entry points:
 

@@ -1,8 +1,8 @@
 # Validation report
 
-Updated 2026-10-05 for **v1.0.35**. The broad chemistry
+Updated 2026-10-06 for **v1.0.36**. The broad chemistry
 and speed packet remains pinned to published v1.0.30; the separately named A6
-quality rows use published v1.0.31 artifacts. v1.0.35 package-output reruns
+quality rows use published v1.0.31 artifacts. v1.0.36 package-output reruns
 remain open. Every
 comparison is limited to its recorded artifact, comparator, corpus and operation.
 

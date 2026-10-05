@@ -23,12 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.35 范围
+### v1.0.36 范围
 
-v1.0.35 增加了保留立体化学的 MOL V2000/V3000 写出、无法表示立体的报告，以及
-Python/WASM 的 strict 写出模式。混成、MMFF94 原子类型、CIP 的磷和环外孤对电子
-也按有明确范围的 RDKit 2026.03.6 比较进行了对齐。源码结果与已发布包的复测是不同证据。
-详情见[验证报告](docs/validation.md)，变更见 [CHANGELOG](CHANGELOG.md)。
+v1.0.36 使用 BioTransformer 公共规则扩展了受检的 RDKit 反应兼容配置，并修复了
+图编辑后的 E/Z 保留。CIP、杂化、MMFF94 原子类型和 MOL 立体写出也在明确范围内得到
+改进。在 v1.0.36 已发布包完成复测前，语料结果仍属于源码测量。详情见
+[验证报告](docs/validation.md)，变更见 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用
 
