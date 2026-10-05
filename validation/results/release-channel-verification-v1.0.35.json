@@ -3,46 +3,52 @@
   "release": {
     "version": "1.0.35",
     "tag": "v1.0.35",
-    "commit": "bb3c4da10078d75dd31b913802aff1b842518afb"
+    "commit": "ae02d7b417a05d19f7756a0eabf1f2e619a84613"
   },
-  "checked_at": "2026-10-05T10:49:45+09:00",
-  "release_ready": false,
+  "checked_at": "2026-10-05T11:29:34+09:00",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.35",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.35",
-      "detail": "Pending merge, tag creation, and GitHub Release publication."
+      "detail": "Annotated tag peels to main merge commit ae02d7b417a05d19f7756a0eabf1f2e619a84613. Non-draft, non-prerelease Release published at 2026-10-05T02:15:11Z with a versioned metadata JSON asset; release workflow 37254483140 succeeded."
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.35",
       "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.35",
-      "detail": "Pending publication to the official npm registry."
+      "detail": "Official registry returned @kent-tokyo/chematic 1.0.35 with integrity sha512-X1l4L+s/Ad5SkbHlrZylRdf4j1g0d1I2mn8wUl+eNZDBGJ+c8AG8MkKEdWhpKrEfW+Dho2ow1bzH/JD3odAQBA==; publish workflow 37254483163 succeeded."
     },
     {
       "id": "pypi",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.35",
       "url": "https://pypi.org/pypi/chematic/1.0.35/json",
-      "detail": "Pending publication to the official PyPI registry."
+      "detail": "Official PyPI JSON returned 17 non-yanked wheels and one non-yanked sdist; publish workflow 37254483191 succeeded. Availability does not establish chemistry parity."
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.35",
       "url": "https://crates.io/crates/chematic/1.0.35",
-      "detail": "Pending publication of the 20 version-pinned crates."
+      "detail": "All 20 version-pinned .crate archives returned HTTP 200 from static.crates.io; dependency-ordered publish workflow 37254483166 succeeded."
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.35",
       "url": "https://docs.rs/chematic/1.0.35/chematic/",
-      "detail": "Pending docs.rs build and publication."
+      "detail": "Version-pinned rustdoc endpoint returned HTTP 200."
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.35",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "Pending the main-branch Pages deployment."
+      "detail": "Direct homepage fetch displayed Current release: v1.0.35; Pages workflow 37254420811 succeeded."
     }
   ]
 }
