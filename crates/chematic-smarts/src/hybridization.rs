@@ -34,6 +34,61 @@ fn outer_electrons(z: u8) -> Option<i32> {
     })
 }
 
+/// RDKit 2026.03.6's allowed-valence list (`GetValenceList`); `None` for
+/// elements it lists as `[-1]` (any valence: transition metals and the rest).
+fn rdkit_valence_list(z: u8) -> Option<&'static [i32]> {
+    Some(match z {
+        1 | 9 | 17 | 35 => &[1],
+        2 | 10 | 18 | 36 | 86 => &[0],
+        3 | 11 | 19 | 37 => &[1, -1],
+        55 | 87 => &[1],
+        4 => &[2],
+        12 | 20 | 38 | 56 | 88 => &[2, -1],
+        5 | 13 | 31 | 49 => &[3],
+        6 | 14 | 32 => &[4],
+        7 => &[3],
+        8 => &[2],
+        15 | 33 | 51 | 83 => &[3, 5],
+        16 | 34 | 52 | 84 => &[2, 4, 6],
+        50 | 82 => &[2, 4],
+        53 | 85 => &[1, 3, 5],
+        54 => &[0, 2, 4, 6],
+        _ => return None,
+    })
+}
+
+/// RDKit `assignRadicals`: radical electrons of an atom with no implicit H
+/// (a bracket atom), from its total valence.
+fn rdkit_radicals(mol: &Molecule, idx: AtomIdx, nouter: i32, total_valence: i32) -> i32 {
+    let atom = mol.atom(idx);
+    if atom.hydrogen_count.is_none() {
+        return 0;
+    }
+    let z = atom.element.atomic_number();
+    let chg = i32::from(atom.charge);
+    let Some(valens) = rdkit_valence_list(z) else {
+        if mol.degree(idx) > 0 {
+            return 0;
+        }
+        return (nouter - chg).max(0) % 2;
+    };
+    let base = if z <= 2 { 2 } else { 8 };
+    let mut radicals = base - nouter - total_valence + chg;
+    if radicals < 0 {
+        radicals = 0;
+        if valens.len() > 1
+            && let Some(&v) = valens.iter().find(|&&v| v - total_valence + chg >= 0)
+        {
+            radicals = v - total_valence + chg;
+        }
+    }
+    let early = nouter - total_valence - chg;
+    if early >= 0 {
+        radicals = radicals.min(early);
+    }
+    radicals
+}
+
 /// RDKit's default (first) valence for the elements conjugation looks at.
 fn default_valence(mol: &Molecule, idx: AtomIdx) -> i32 {
     let element = mol.atom(idx).element;
@@ -189,8 +244,16 @@ pub fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
             let total_valence = crate::match_vf2::total_valence(mol, idx) as i32;
             // Not clamped: RDKit lets a negative lone-pair count lower the
             // orbital count (`[Zn++]` with four bonds is SP).
-            let free = nouter - (total_valence + i32::from(atom.charge));
-            total_degree + free / 2
+            let chg = i32::from(atom.charge);
+            let free = nouter - (total_valence + chg);
+            if total_valence + nouter - chg < 8 {
+                // Below an octet RDKit counts radical electrons as orbitals
+                // (`[Mg]` with four bonds to O+ has two: SP3).
+                let radicals = rdkit_radicals(mol, idx, nouter, total_valence);
+                total_degree + (free - radicals) / 2 + radicals
+            } else {
+                total_degree + free / 2
+            }
         }
         _ => total_degree,
     };
@@ -240,6 +303,26 @@ mod tests {
             ("CC#N", "311"),
             ("C[N+](C)(C)C", "33333"),
             ("[2H]C", "03"),
+            // Below an octet radical electrons count as orbitals (RDKit
+            // `assignRadicals` on bracket atoms).
+            (
+                "CC1=[O+][Mg]2([O+]=C(C)C1)[O+]=C(C)CC(=[O+]2)C",
+                "322322332233223",
+            ),
+            ("C[CH2]", "33"),
+            ("[CH2]", "3"),
+            ("C[CH]C", "333"),
+            ("C[O]", "33"),
+            ("C[N]C", "333"),
+            ("[Mg](C)C", "133"),
+            ("C[B]C", "323"),
+            ("[Na]C", "03"),
+            ("C[Sn](C)(C)C", "33333"),
+            ("[Li]", "0"),
+            ("C[Al](C)C", "3233"),
+            ("[Ca]", "1"),
+            ("[SiH2]", "3"),
+            ("CC[Ge]C", "3333"),
         ] {
             let mol = chematic_smiles::parse(smiles).unwrap();
             let got: String = (0..mol.atom_count())

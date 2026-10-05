@@ -14,9 +14,9 @@
 //! and assigns R/S — the current residual-corpus report estimates 99.64%
 //! stable-oracle agreement (4171/4186) against modern RDKit `rdCIPLabeler` on
 //! the project's full validation corpus,
-//! with the remaining phosphorus cases surfaced as `OracleUnstable` when the
-//! independent oracle is representation-unstable. It does not replace
-//! `chematic_chem::assign_cip()`'s default (legacy) path, which is unaffected.
+//! with phosphorus on an unsaturated ring labelled as RDKit labels it (a label
+//! that changes with the Kekulé spelling, see `label_depends_on_kekule_spelling`).
+//! It does not replace `chematic_chem::assign_cip()`'s default (legacy) path, which is unaffected.
 //!
 //! The motivation is a real, proven limitation in `chematic-chem`'s existing engine:
 //! `cip_branch_spheres`/`compare_branches` pool every atom at a given BFS depth into
@@ -51,7 +51,7 @@ mod tests;
 
 pub use assign::{
     AccurateCipAssignment, SkipReason, assign_cip_accurate_experimental,
-    assign_cip_accurate_experimental_without_mancude,
+    assign_cip_accurate_experimental_without_mancude, label_depends_on_kekule_spelling,
 };
 pub use budget::CipBudget;
 pub use compare::{

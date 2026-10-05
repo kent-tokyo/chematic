@@ -28,6 +28,12 @@ Outcome per (rule, reactant, hydrogen mode):
   own sanitize, chematic returns products;
 * ``rdkit_truncated_subset``: RDKit stopped at ``--max-products`` and its
   set is a subset of chematic's;
+* ``rdkit_resanitize_fails_same_products``: the sets differ only because
+  RDKit's ``RemoveHs`` re-sanitizes a product that RDKit's own ``SanitizeMol``
+  accepted and fails (an aromatic ring perceived across order-less ``~``
+  bonds that its kekulizer cannot redo), or because RDKit writes the same
+  hydrogen count with a different implicit-H flag: compared after a single
+  sanitize with every atom's hydrogen count made explicit, the two sets agree;
 * ``differ``: anything else, with both sets recorded.
 
 Rules RDKit cannot parse, and rules with more than one reactant template,
@@ -88,15 +94,34 @@ def sanitized_key(mols) -> tuple[str, ...] | None:
     return tuple(sorted(out))
 
 
-def rdkit_set(rxn, mol, max_products: int) -> tuple[set, int]:
-    """Sanitized product sets and the raw product-set count."""
+def single_sanitize_key(mols) -> tuple[str, ...] | None:
+    """Sorted canonical SMILES after one ``SanitizeMol`` (``RemoveHs`` without
+    re-sanitizing), each atom's hydrogen count written explicitly."""
+    out = []
+    for mol in mols:
+        mol = Chem.Mol(mol)
+        try:
+            Chem.SanitizeMol(mol)
+            mol = Chem.RemoveHs(mol, sanitize=False)
+        except Exception:
+            return None
+        for atom in mol.GetAtoms():
+            h = atom.GetTotalNumHs()
+            atom.SetNoImplicit(True)
+            atom.SetNumExplicitHs(h)
+        out.extend(Chem.MolToSmiles(mol).split("."))
+    return tuple(sorted(out))
+
+
+def rdkit_set(rxn, mol, max_products: int) -> tuple[set, int, list]:
+    """Sanitized product sets, the raw product-set count and the raw sets."""
     values = set()
     raw = rxn.RunReactants((mol,), max_products)
     for product_set in raw:
         key = sanitized_key(product_set)
         if key is not None:
             values.add(key)
-    return values, len(raw)
+    return values, len(raw), raw
 
 
 def to_rdkit(product):
@@ -122,7 +147,7 @@ def to_rdkit(product):
     return rw.GetMol()
 
 
-def chematic_set(chematic, smirks: str, smiles: str) -> tuple[str, set | None, str | None]:
+def chematic_set(chematic, smirks: str, smiles: str) -> tuple[str, tuple | None, str | None]:
     try:
         reactant = chematic.from_smiles(smiles)
     except ValueError as exc:
@@ -135,6 +160,7 @@ def chematic_set(chematic, smirks: str, smiles: str) -> tuple[str, set | None, s
     if status in {"typed_refusal", "typed_unsupported"}:
         return status, None, checked.get("reason")
     values = set()
+    single = set()
     for product_set in checked.get("products", []):
         mols = [to_rdkit(p) for p in product_set]
         if any(m is None for m in mols):
@@ -142,7 +168,10 @@ def chematic_set(chematic, smirks: str, smiles: str) -> tuple[str, set | None, s
         key = sanitized_key(mols)
         if key is not None:
             values.add(key)
-    return status, values, None
+        key = single_sanitize_key(mols)
+        if key is not None:
+            single.add(key)
+    return status, (values, single), None
 
 
 def main() -> int:
@@ -198,14 +227,19 @@ def main() -> int:
             stats = Counter()
             for smi, mol, molh in reactants:
                 for mode, rmol in (("implicit", mol), ("explicit_h", molh)):
-                    want, raw_count = rdkit_set(rxn, rmol, args.max_products)
-                    status, got, detail = chematic_set(chematic, rule["smirks"], Chem.MolToSmiles(rmol))
+                    want, raw_count, raw = rdkit_set(rxn, rmol, args.max_products)
+                    status, got_pair, detail = chematic_set(chematic, rule["smirks"], Chem.MolToSmiles(rmol))
+                    got, got_single = got_pair if got_pair is not None else (None, None)
                     if got is None:
                         outcome = "chematic_refused" if want else "both_none_refused"
                     elif not want and not got:
                         outcome = "both_none"
                     elif want == got:
                         outcome = "exact"
+                    elif raw_count < args.max_products and got_single == (
+                        {k for k in map(single_sanitize_key, raw) if k is not None}
+                    ):
+                        outcome = "rdkit_resanitize_fails_same_products"
                     elif raw_count >= args.max_products and want <= got:
                         # RDKit stopped at max_products (H-atom mapping
                         # permutations), so its set is a subset.
@@ -218,7 +252,8 @@ def main() -> int:
                     counts[f"{mode}:{outcome}"] += 1
                     stats[f"{mode}:{outcome}"] += 1
                     if outcome in {"differ", "chematic_refused", "rdkit_raw_unsanitizable",
-                                   "rdkit_truncated_subset"}:
+                                   "rdkit_truncated_subset",
+                                   "rdkit_resanitize_fails_same_products"}:
                         rows_out.write(json.dumps({
                             "rule": rule["id"], "name": rule["name"], "table": rule["table"],
                             "smirks": rule["smirks"], "reactant": smi, "mode": mode,

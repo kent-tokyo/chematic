@@ -1087,13 +1087,6 @@ pub fn compute_mmff94_aromatic_view(
         >= 2
         && rings.iter().any(|ring| ring.len() >= 20);
     let large_ring_count = rings.iter().filter(|ring| ring.len() >= 20).count();
-    // In compact fused systems RDKit updates the atom aromatic flag as each
-    // MMFF ring is accepted. Our SSSR ordering/selection is not yet equivalent
-    // for cage systems (>20 rings) or larger macrocycles (>=16 atoms): in the
-    // pinned 10k corpus propagating there changed previously correct types.
-    // Preserve the pre-pass behavior on that bounded, still-unsupported lane.
-    let propagate_accepted_ring_aromaticity =
-        rings.len() <= 20 && !rings.iter().any(|ring| ring.len() >= 16);
     let large_ring_bonds: std::collections::HashSet<(AtomIdx, AtomIdx)> = rings
         .iter()
         .filter(|ring| ring.len() >= 20)
@@ -1126,9 +1119,29 @@ pub fn compute_mmff94_aromatic_view(
     // one size, the earliest atom encountered by the input graph. This is
     // deliberately local to the RDKit-compatibility layer; general ring
     // perception remains atom-order independent.
+    //
+    // RDKit's pass stops once every ring atom has been looked at, so a ring
+    // deferred until its neighbours are typed is decided by where it sits in
+    // that order. Rings RDKit lists are taken in RDKit's own order
+    // (`rdkit_sssr_ring_order`, a port of its `findSSSR`/`symmetrizeSSSR`);
+    // the size/first-atom order above is the fallback.
+    let rdkit_position: std::collections::HashMap<Vec<u32>, usize> =
+        chematic_perception::rdkit_sssr_ring_order(mol)
+            .unwrap_or_default()
+            .into_iter()
+            .enumerate()
+            .map(|(i, ring)| {
+                let mut key: Vec<u32> = ring.iter().map(|a| a.0).collect();
+                key.sort_unstable();
+                (key, i)
+            })
+            .collect();
     let mut rings = rings.to_vec();
     rings.sort_by_key(|ring| {
+        let mut key: Vec<u32> = ring.iter().map(|a| a.0).collect();
+        key.sort_unstable();
         (
+            rdkit_position.get(&key).copied().unwrap_or(usize::MAX),
             ring.len(),
             ring.iter().map(|atom| atom.0).min().unwrap_or(u32::MAX),
         )
@@ -1220,15 +1233,11 @@ pub fn compute_mmff94_aromatic_view(
                     }
                     if nb.order == BondOrder::Double {
                         // RDKit reads the neighbor's *current* aromatic flag
-                        // here. An earlier accepted ring sets that flag in
-                        // the same pass; the Kekule input's frozen flag does
-                        // not contain that update. `is_arom` tracks accepted
-                        // rings, unlike `resolved` (rings merely processed).
-                        // Complex cage/macrocycle systems retain the frozen
-                        // flag until their ring-model parity is adjudicated.
-                        if (propagate_accepted_ring_aromaticity && is_arom[nb.neighbor.0 as usize])
-                            || kmol.atom(nb.neighbor).aromatic
-                        {
+                        // here, on a molecule it kekulized with the flags
+                        // cleared: only rings accepted so far (`is_arom`, not
+                        // `resolved`, which also holds rings merely looked
+                        // at) count, in RDKit's ring order.
+                        if is_arom[nb.neighbor.0 as usize] {
                             pi_e += 1;
                         } else {
                             exo_double_bond = true;
@@ -3565,6 +3574,23 @@ mod tests {
             c_types,
             vec![63, 64],
             "furan ring carbons should be C5A (alpha, 63) and C5B (beta, 64)"
+        );
+    }
+
+    #[test]
+    fn indolocarbazole_pyrroles_follow_rdkit_ring_order() {
+        // RDKit 2026.03.6 MMFFGetMMFFAtomType (heavy atoms): its MMFF
+        // aromaticity pass walks RingInfo in RDKit's order and stops once
+        // every ring atom was looked at, so the second pyrrole (listed last)
+        // is aromatic only because its benzene neighbours came first.
+        let m = mol("O=C1NC(=O)c2c1c1c3ccccc3n3c1c1c2c2ccccc2n1[C@H]1CC[C@@H]3O1");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        assert_eq!(
+            &types[..m.atom_count()],
+            &[
+                7, 3, 10, 3, 7, 37, 37, 64, 64, 37, 37, 37, 37, 63, 39, 63, 63, 64, 64, 37, 37, 37,
+                37, 63, 39, 1, 1, 1, 1, 6
+            ]
         );
     }
 

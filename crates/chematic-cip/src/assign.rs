@@ -132,8 +132,9 @@ pub enum SkipReason {
     /// The underlying digraph or comparator exceeded its budget for this atom.
     BudgetExceeded,
     /// No representation-stable external oracle is established for this
-    /// phosphorus stereocenter. The accurate engine therefore fails closed
-    /// instead of emitting a plausible but unverified label.
+    /// stereocenter. No centre is reported this way since phosphorus on an
+    /// unsaturated ring is labelled (see [`label_depends_on_kekule_spelling`]);
+    /// the variant is kept for API stability.
     OracleUnstable,
     /// The centre carries a tetrahedral stereo tag but has only three explicit
     /// ligands (e.g. a bridgehead amine `[N@@]`, a sulfoxide `[S@](=O)`): its
@@ -191,8 +192,16 @@ pub fn assign_cip_accurate_experimental_without_mancude(
     assign_all(mol, budget, None)
 }
 
-/// Whether `p` lies on a ring (of at most eight atoms) that contains a
-/// double bond, where an alternative Kekulé spelling changes RDKit's label.
+/// Whether the accurate label of tetrahedral centre `atom` can change
+/// between neutral Kekulé spellings of one molecule: a phosphorus on a ring
+/// (of at most eight atoms) carrying a double bond, such as a
+/// cyclophosphazene P. RDKit's CIPLabeler flips such a label the same way
+/// (220/220 labels agree over both spellings and 10 atom orders each), so
+/// the label is reported, but it is not a property of the molecule.
+pub fn label_depends_on_kekule_spelling(mol: &Molecule, atom: AtomIdx) -> bool {
+    mol.atom(atom).element == Element::P && phosphorus_on_unsaturated_ring(mol, atom)
+}
+
 fn phosphorus_on_unsaturated_ring(mol: &Molecule, p: AtomIdx) -> bool {
     use chematic_core::BondOrder;
     // Breadth-first from each neighbour back to `p` without the first bond,
@@ -246,18 +255,11 @@ fn assign_all(
             continue;
         }
 
-        // The held-out phosphorus corpus contains neutral Kekulé respellings
-        // (cyclophosphazene P=N rings) for which both RDKit CIP labelers flip
-        // R/S while InChI confirms the molecule is unchanged. A P centre on a
-        // ring that carries a double bond can be respelled that way, so it
-        // fails closed. An acyclic-ring P (phosphonamidate, phosphonate
-        // ester) has no such respelling: RDKit's labeler gives the same label
-        // over atom orders and P=O / [P+][O-] spellings, and it is assigned.
-        if atom.element == Element::P && phosphorus_on_unsaturated_ring(mol, idx) {
-            result.skipped.push((idx, SkipReason::OracleUnstable));
-            continue;
-        }
-
+        // A P centre on a ring that carries a double bond (cyclophosphazene
+        // P=N rings) is labelled as RDKit's CIPLabeler labels it. Both engines
+        // flip that label between the ring's neutral Kekulé spellings, which
+        // InChI reads as one molecule, so identity checks treat it as
+        // spelling-dependent ([`label_depends_on_kekule_spelling`]).
         let Some(stereo_order) = mol.stereo_neighbor_order(idx) else {
             result.skipped.push((idx, SkipReason::NotFourSubstituents));
             continue;

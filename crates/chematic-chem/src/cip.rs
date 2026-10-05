@@ -213,6 +213,15 @@ impl std::fmt::Display for CipModeError {
 
 impl std::error::Error for CipModeError {}
 
+/// Whether the accurate (`CipMode::Accurate`) label of tetrahedral centre
+/// `atom` can change between neutral Kekulé spellings of the same molecule
+/// (a phosphorus on an unsaturated ring, such as a cyclophosphazene P). RDKit's
+/// CIPLabeler flips those labels the same way; identity checks should not
+/// compare them across inputs.
+pub fn cip_label_depends_on_kekule_spelling(mol: &Molecule, atom: AtomIdx) -> bool {
+    chematic_cip::label_depends_on_kekule_spelling(mol, atom)
+}
+
 /// Run CIP assignment on `mol` using the requested engine. See [`CipMode`] for what
 /// each mode covers. `CipMode::LegacyFast` is `assign_cip`'s output unchanged, wrapped
 /// -- every existing caller of `assign_cip` is untouched by this function's existence.
@@ -2320,55 +2329,27 @@ mod tests {
     }
 
     #[test]
-    fn cip_mode_accurate_pseudoasymmetric_fix_stays_unresolved_for_phosphorus_ties() {
-        // Milestone 4A-2's `assign_one_with_rule5` fix (resolving the carbon cage
-        // family's pseudoasymmetric centers) reaches this *different*, previously-
-        // `SkipReason::Tied` molecule (docs/rfcs/cip_accurate_rfc.md Milestone 4C-1) via the
-        // exact same code path: atoms 6/19 tie for the identical structural reason as
-        // the carbon cage family (a chain-length-1-degenerate Rule 4b comparison whose
-        // branches' auxiliary R/S signs genuinely differ). Left unguarded, the fix would
-        // resolve these two phosphorus atoms as a side effect -- but Milestone 4C-1
-        // independently found that *neither* RDKit CIP engine (`rdCIPLabeler` nor legacy
-        // `_CIPCode`) has a representation-stable answer for this specific molecule, both
-        // flip under a chemically-neutral Kekule respelling of the P/N ring -- so there
-        // is no reliable oracle a resolved phosphorus label could ever be checked
-        // against. `assign_one_with_rule5` therefore carries an explicit element-level
-        // guard (see `crates/chematic-cip/src/assign.rs` module docs, "Element-level
-        // guard: phosphorus stays tied"): it only ever emits a resolved label for a
-        // carbon stereocenter, so these 2 phosphorus atoms fall back to
-        // `SkipReason::OracleUnstable` -> `CipUnresolvedReason::OracleUnstable`:
-        // the public Accurate API now reports the reason explicitly, never an
-        // unverified label.
+    fn cip_mode_accurate_labels_phosphorus_ties_like_rdkit() {
+        // docs/rfcs/cip_accurate_rfc.md Milestone 4C-1: atoms 6/19 of this
+        // cyclophosphazene were reported unresolved because neither RDKit CIP
+        // engine gives a label that survives a neutral Kekulé respelling of the
+        // P/N ring. They now carry RDKit's CIPLabeler label for the spelling
+        // given (RDKit 2026.03.6: 6 R, 19 S), flagged as spelling-dependent.
         let smi = "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1";
         let mol = chematic_smiles::parse(smi).expect("valid SMILES");
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
-        for atom_idx in [6u32, 19u32] {
-            let idx = AtomIdx(atom_idx);
-            assert_eq!(
-                result.get(idx),
-                None,
-                "atom={atom_idx}: phosphorus stereocenter must NOT get an unverified label"
-            );
-            assert!(
-                result.unresolved.iter().any(|(i, reason)| {
-                    *i == idx && *reason == CipUnresolvedReason::OracleUnstable
-                }),
-                "atom={atom_idx} must be reported unresolved (OracleUnstable): {:?}",
-                result.unresolved
-            );
-        }
+        assert_eq!(result.get(AtomIdx(6)), Some(CipCode::R));
+        assert_eq!(result.get(AtomIdx(19)), Some(CipCode::S));
+        assert!(cip_label_depends_on_kekule_spelling(&mol, AtomIdx(6)));
     }
 
     #[test]
-    fn cip_mode_accurate_phosphorus_ties_stay_unresolved_kekule_stable() {
+    fn cip_mode_accurate_phosphorus_labels_flip_with_kekule_spelling_as_rdkit() {
         // Same molecule as the test above. Flip every P/N ring bond Single<->Double (a
         // chemically neutral resonance respelling, the same test Milestone 4C-0/4C-1
-        // used to show *both* RDKit engines are representation-unstable here) and
-        // confirm chematic's own "stays unresolved" guard does NOT flap to resolved on
-        // either spelling -- the element-level guard is keyed on atom identity
-        // (`mol.atom(idx).element`), which a bond-order respelling never changes, so it
-        // must stay unresolved on both spellings by construction; checked directly here
-        // rather than just asserted.
+        // used to show *both* RDKit engines are representation-unstable here): both
+        // spellings are labelled, the labels flip as RDKit's CIPLabeler does, and
+        // both are flagged as spelling-dependent.
         use chematic_core::BondOrder;
         use chematic_perception::find_sssr;
 
@@ -2404,34 +2385,39 @@ mod tests {
         let after = assign_cip_with_mode(&respelled, CipMode::Accurate).expect("no engine error");
         for atom_idx in [6u32, 19u32] {
             let idx = AtomIdx(atom_idx);
-            assert_eq!(
-                original.get(idx),
-                None,
-                "atom={atom_idx}: original spelling"
-            );
-            assert_eq!(after.get(idx), None, "atom={atom_idx}: respelled");
+            let (before, respelled_code) = (original.get(idx), after.get(idx));
             assert!(
-                original.unresolved.iter().any(|(i, _)| *i == idx),
-                "atom={atom_idx}: original spelling must stay unresolved"
+                before.is_some(),
+                "atom={atom_idx}: original spelling labelled"
             );
             assert!(
-                after.unresolved.iter().any(|(i, _)| *i == idx),
-                "atom={atom_idx}: respelled must stay unresolved too (not flapping)"
+                respelled_code.is_some(),
+                "atom={atom_idx}: respelled labelled"
             );
+            assert_ne!(before, respelled_code, "atom={atom_idx}: label flips");
+            assert!(cip_label_depends_on_kekule_spelling(&mol, idx));
+            assert!(cip_label_depends_on_kekule_spelling(&respelled, idx));
         }
     }
 
     #[test]
-    fn cip_mode_accurate_fails_closed_for_oracle_unstable_phosphorus() {
-        // Accurate mode must not expose a phosphorus label while the external
-        // oracle is representation-unstable under neutral Kekulé respelling.
+    fn cip_mode_accurate_labels_cyclophosphazene_phosphorus_like_rdkit() {
+        // A P on an unsaturated ring gets RDKit's CIPLabeler label (RDKit
+        // 2026.03.6: 1 S, 12 R). The label flips with the P=N Kekulé spelling
+        // in both engines, which `cip_label_depends_on_kekule_spelling` reports.
         let mol = chematic_smiles::parse("N[P@]1(Cl)=NP(N2CC2)(N2CC2)=N[P@](N)(Cl)=N1")
             .expect("valid SMILES");
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
-        assert_eq!(result.get(AtomIdx(12)), None);
-        assert!(result.unresolved.iter().any(|(idx, reason)| {
-            *idx == AtomIdx(12) && *reason == CipUnresolvedReason::OracleUnstable
-        }));
+        assert_eq!(result.get(AtomIdx(1)), Some(CipCode::S));
+        assert_eq!(result.get(AtomIdx(12)), Some(CipCode::R));
+        assert!(result.unresolved.is_empty());
+        assert!(cip_label_depends_on_kekule_spelling(&mol, AtomIdx(12)));
+        assert!(!cip_label_depends_on_kekule_spelling(&mol, AtomIdx(0)));
+        // The other Kekulé spelling of the same ring: both engines flip.
+        let mol = chematic_smiles::parse("N[P@]1(Cl)N=P(N2CC2)(N2CC2)N=[P@](N)(Cl)N=1")
+            .expect("valid SMILES");
+        let flipped = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        assert_eq!(flipped.get(AtomIdx(12)), Some(CipCode::S));
     }
 
     #[test]
@@ -2471,8 +2457,7 @@ mod tests {
     fn cip_mode_accurate_labels_acyclic_phosphorus_like_rdkit() {
         // A phosphonamidate P outside any unsaturated ring: the P=O oxygen
         // gets no duplicate at the root (RDKit CIPLabeler), so OMe > =O and
-        // the label matches RDKit (exposed 10k row 4419: R). A cyclophosphazene
-        // P stays OracleUnstable (see the test above).
+        // the label matches RDKit (exposed 10k row 4419: R).
         let mol = chematic_smiles::parse(
             "CCC(C)[C@H](NC(=O)[C@@H]1CCCN1[P@](=O)(OC)[C@H](Cc1ccccc1)NC(=O)[C@H](CC(N)=O)NC(=O)OC(C)(C)C)C(=O)NCC(C)C",
         )

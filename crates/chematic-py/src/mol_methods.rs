@@ -3342,7 +3342,10 @@ impl Mol {
     ///   (the accurate engine doesn't compute either). Atoms it explicitly can't
     ///   resolve (a genuine tie, or exceeding its computation budget) are omitted
     ///   here and reported instead via :meth:`cip_stereo_unresolved` — never a
-    ///   silently-guessed label.
+    ///   silently-guessed label. A phosphorus on an unsaturated ring
+    ///   (cyclophosphazene) gets RDKit's CIPLabeler label, which flips between
+    ///   the ring's Kekulé spellings in both libraries; its entry carries
+    ///   ``"kekule_dependent": True``.
     #[pyo3(signature = (mode = "legacy"))]
     fn cip_stereo<'py>(&self, py: Python<'py>, mode: &str) -> PyResult<Vec<Bound<'py, PyDict>>> {
         use chematic_core::CipCode;
@@ -3393,6 +3396,15 @@ impl Mol {
                     CipCode::LowerS => "s",
                 };
                 d.set_item("descriptor", label)?;
+                if mode == "accurate"
+                    && matches!(
+                        code,
+                        CipCode::R | CipCode::S | CipCode::LowerR | CipCode::LowerS
+                    )
+                    && chematic_chem::cip_label_depends_on_kekule_spelling(&self.inner, *idx)
+                {
+                    d.set_item("kekule_dependent", true)?;
+                }
                 Ok(d)
             })
             .collect()
