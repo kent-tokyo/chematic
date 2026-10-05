@@ -773,35 +773,18 @@ fn isotope_ignored_never_mutates_original_molecule() {
 // --- 13. Batch reconciliation (`deduplicate_verified`) ---------------------
 
 #[test]
-fn deduplicate_verified_unifies_residual_row_pair_into_one_group() {
-    // Required fixture: two of this project's own canonical-SMILES residual
-    // rows -- same molecule, different canonical string. A different
-    // canonical-SMILES key must not stop `deduplicate_verified` from
-    // unifying them into ONE `VerifiedGroup`, reconciled across the whole
-    // collection (not just detectable via a manual pairwise `compare` call).
-    //
-    // Originally used one of the 18 issue #149 shared-carrier-bond
-    // fixtures; that specific pair is now resolved by the joint component
-    // solver (`resolve_component_jointly`, chematic-smiles/src/canonical.rs)
-    // -- see `residual_row_relabeling_only_reconciled_via_native_inchi`
-    // above, which documents that resolution directly. Replaced with a pair
-    // from one of the 8 issue #149 fixtures still a documented residual
-    // (ring-constrained double bond in the coupled component; see the doc
-    // comment on `EZ_SHARED_CANDIDATE_BOND_RESIDUALS` in canonical.rs) --
-    // both strings are chematic's own canonical output for two
-    // RDKit-`RenumberAtoms`-relabeled spellings of
-    // `CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\N=C(N)N`
-    // (`validation/results/canonical_residual_diagnosis_summary.json`,
-    // `permutation_invariance_failures_sample`), confirmed
-    // `outputs_semantically_identical: true` there (RDKit re-parse agrees
-    // they're the same molecule) and re-confirmed below via native InChI.
+fn deduplicate_verified_merges_previously_residual_row_pair() {
+    // This pair previously produced different canonical SMILES for two
+    // atom-order permutations of the same molecule. The joint component
+    // solver now canonicalizes both spellings identically; verified
+    // deduplication should still produce one group without a canonical split.
     let a = mol("C(N)(N)=N/N=C/[C@@H]2[C@]1(C)C(CC2)=C(/C)C(/CC1)=N/N=C(N)N");
     let b = mol("C(N)(N)=N/N=C/[C@@H]2[C@]1(C)C(CC2)=C(C)C(/CC1)=N/N=C(N)N");
     let key_a = chematic_smiles::canonical_smiles(&a);
     let key_b = chematic_smiles::canonical_smiles(&b);
-    assert_ne!(
+    assert_eq!(
         key_a, key_b,
-        "this fixture is only meaningful if the residual actually reproduces"
+        "resolved E/Z residual must be permutation invariant"
     );
 
     let mols = [a, b];
@@ -809,14 +792,11 @@ fn deduplicate_verified_unifies_residual_row_pair_into_one_group() {
 
     assert_eq!(report.groups.len(), 1, "{:?}", report.groups);
     assert_eq!(report.groups[0].members, vec![0, 1]);
-    assert_eq!(
-        report.canonical_splits.len(),
-        1,
+    assert!(
+        report.canonical_splits.is_empty(),
         "{:?}",
         report.canonical_splits
     );
-    assert_eq!(report.canonical_splits[0].members, vec![0, 1]);
-    assert_eq!(report.canonical_splits[0].canonical_subgroups.len(), 2);
     assert!(report.canonical_collisions.is_empty());
     assert!(report.verification_unavailable.is_empty());
     assert!(report.invalid_molecules.is_empty());

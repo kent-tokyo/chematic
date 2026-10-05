@@ -213,8 +213,8 @@ def main() -> int:
                 or summary["corpus"]["rows"] != 10_000
                 or summary["row_status"] != {"compared": 9_774, "rdkit_mmff_unsupported": 204, "chematic_error": 22}
                 or summary["atoms_compared"] != {"heavy": 214_990, "hydrogen": 190_737}
-                or summary["heavy"]["differing_atoms"] != 451
-                or summary["hydrogen"]["differing_atoms"] != 8
+                or summary["heavy"]["differing_atoms"] != 89
+                or summary["hydrogen"]["differing_atoms"] != 1
                 or type37_bucket != 16):
             raise ValueError("source-wheel MMFF94 type gate failed; inspect the written census report")
     print(json.dumps({k: summary[k] for k in ("row_status", "atoms_compared")} | {
