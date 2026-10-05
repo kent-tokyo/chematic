@@ -173,7 +173,7 @@ pub fn run_reactants_with_diagnostics(
     reactants: &[&Molecule],
     limits: &ReactionTransformLimits,
 ) -> Result<ReactionTransformReport, TransformError> {
-    PreparedReaction::new(smirks)?.run_reactants_with_diagnostics(reactants, limits)
+    PreparedReaction::shared(smirks)?.run_reactants_with_diagnostics(reactants, limits)
 }
 
 /// Like [`run_reactants`] but **does not carry through substituents**.
@@ -209,7 +209,7 @@ fn run_reactants_impl(
     let variants = crate::reaction::expand_atomic_number_primitives(smirks)?;
     let mut products = Vec::new();
     for variant in variants {
-        products.extend(PreparedReaction::new(&variant)?.run_reactants_impl(
+        products.extend(PreparedReaction::shared(&variant)?.run_reactants_impl(
             reactants,
             carry_substituents,
             limits,
@@ -426,8 +426,43 @@ pub fn run_reactants_traced_rdkit_2026_03_6(
     reactants: &[&Molecule],
     limits: &ReactionTransformLimits,
 ) -> Result<RdkitProfileOutcome, TransformError> {
-    PreparedReaction::new_with_reading(smirks, true)?
+    PreparedReaction::shared_with_reading(smirks, true)?
         .run_reactants_traced_rdkit_2026_03_6(reactants, limits)
+}
+
+/// Prepared templates by SMIRKS text, for the free functions that take a
+/// SMIRKS string: a batch applies the same template to many molecules, and
+/// preparing it (parsing and normalizing every component) took about a
+/// third of a BioTransformer corpus run. Bounded; cleared when full.
+type PreparedCache =
+    std::sync::Mutex<std::collections::HashMap<(bool, String), std::sync::Arc<PreparedReaction>>>;
+const PREPARED_CACHE_CAPACITY: usize = 2048;
+
+impl PreparedReaction {
+    /// [`Self::new`], shared from a process-wide cache keyed by the SMIRKS.
+    pub fn shared(smirks: &str) -> Result<std::sync::Arc<Self>, TransformError> {
+        Self::shared_with_reading(smirks, false)
+    }
+
+    fn shared_with_reading(
+        smirks: &str,
+        rdkit_reading: bool,
+    ) -> Result<std::sync::Arc<Self>, TransformError> {
+        static CACHE: std::sync::OnceLock<PreparedCache> = std::sync::OnceLock::new();
+        let cache = CACHE.get_or_init(Default::default);
+        let key = (rdkit_reading, smirks.to_string());
+        if let Some(hit) = cache.lock().ok().and_then(|c| c.get(&key).cloned()) {
+            return Ok(hit);
+        }
+        let prepared = std::sync::Arc::new(Self::new_with_reading(smirks, rdkit_reading)?);
+        if let Ok(mut c) = cache.lock() {
+            if c.len() >= PREPARED_CACHE_CAPACITY {
+                c.clear();
+            }
+            c.insert(key, std::sync::Arc::clone(&prepared));
+        }
+        Ok(prepared)
+    }
 }
 
 /// Outcome of applying a reaction under the pinned RDKit 2026.03.6 profile.
@@ -771,7 +806,7 @@ impl PreparedReaction {
         TransformError,
     > {
         // RDKit's SMILES parser drops tags on atoms that cannot be centres.
-        let cleaned: Vec<Option<Molecule>> = match profile {
+        let cleaned: Vec<std::sync::Arc<Option<Molecule>>> = match profile {
             Profile::Native => Vec::new(),
             Profile::Rdkit => reactants
                 .iter()
@@ -779,11 +814,11 @@ impl PreparedReaction {
                 .collect(),
         };
         let cleaned_refs: Vec<&Molecule>;
-        let reactants: &[&Molecule] = if cleaned.iter().any(Option::is_some) {
+        let reactants: &[&Molecule] = if cleaned.iter().any(|c| c.is_some()) {
             cleaned_refs = reactants
                 .iter()
                 .zip(&cleaned)
-                .map(|(&m, c)| c.as_ref().unwrap_or(m))
+                .map(|(&m, c)| c.as_ref().as_ref().unwrap_or(m))
                 .collect();
             &cleaned_refs
         } else {
@@ -1986,7 +2021,10 @@ fn find_matches_profile(
                 // set (a quinuclidine N is in three rings there, two in the
                 // SSSR); the RDKit profile uses the SMARTS opt-in matcher
                 // that reads them that way.
-                None if profile == Profile::Rdkit && query_uses_ring_model(q) => {
+                None if profile == Profile::Rdkit
+                    && query_uses_ring_model(q)
+                    && !rdkit_ring_model_is_sssr(mol) =>
+                {
                     let config = chematic_smarts::RdkitParityConfig {
                         base: match_config.clone(),
                         ..chematic_smarts::RdkitParityConfig::default()
@@ -2077,6 +2115,36 @@ fn find_matches_profile(
         matches,
         ez_rejected.then_some(ReactionCompatibilityUnsupported::EzReactantTemplateSemantics),
     ))
+}
+
+/// Whether RDKit's ring models give the same rings as the SSSR for `mol`
+/// (no extra symmetrized rings, no organometallic view), so the ordinary
+/// matcher answers `R<n>` and ring-size queries as RDKit does. Memoized on
+/// the (cached) aromatic view; only cages such as quinuclidine or adamantane
+/// need the slower RDKit-parity matcher.
+fn rdkit_ring_model_is_sssr(mol: &Molecule) -> bool {
+    *mol.derived(chematic_core::DerivedSlot::RdkitRingModelIsSssr, || {
+        if mol
+            .atoms()
+            .any(|(_, a)| a.element == chematic_core::Element::FE)
+        {
+            return false;
+        }
+        let rings = chematic_perception::find_sssr(mol);
+        let budget = chematic_smarts::RdkitRingModelBudget::default();
+        let Ok(model) = chematic_smarts::build_rdkit_parity_ring_model(mol, &rings, &budget) else {
+            return false;
+        };
+        if model.extra_ring_count() > 0 {
+            return false;
+        }
+        let symmetrized = chematic_perception::find_symmetrized_sssr_with_diagnostics_bounded(
+            mol,
+            Some(budget.max_candidates),
+        );
+        symmetrized.status() != chematic_perception::SymmetrizedSssrStatus::CapExhausted
+            && symmetrized.rings().rings().len() == rings.rings().len()
+    })
 }
 
 /// Whether a reactant template asks for a positive ring count or a ring size,
@@ -2668,24 +2736,29 @@ fn sanitizable_product(mol: &Molecule) -> bool {
             return false;
         }
     }
-    let kekule;
-    let mol = if mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic) {
+    // Kekulé orders of the aromatic bonds, read in place (the product is
+    // not copied).
+    let kekule = if mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic) {
         match chematic_core::kekulize_with(mol, |idx| rdkit_kekule_candidate(mol, idx)) {
-            Ok(k) => {
-                kekule = chematic_core::apply_kekule(mol, &k);
-                &kekule
-            }
+            Ok(k) => Some(k),
             Err(_) => return false,
         }
     } else {
-        mol
+        None
+    };
+    let order_of = |b: BondIdx| {
+        let order = mol.bond(b).order;
+        match (&kekule, order) {
+            (Some(k), BondOrder::Aromatic) => k.get(&b).copied().unwrap_or(order),
+            _ => order,
+        }
     };
     let explicit_valence = |idx: AtomIdx| -> i16 {
         let bonds: i16 = mol
             .neighbors(idx)
             .map(|(_, b)| {
                 let bond = mol.bond(b);
-                match bond.order {
+                match order_of(b) {
                     BondOrder::Dative if bond.atom1 == idx => 0,
                     order => i16::from(order.order_int()),
                 }
@@ -2704,7 +2777,7 @@ fn sanitizable_product(mol: &Molecule) -> bool {
         if charge == 0 {
             let bond_to = |order: BondOrder, nz: u8| {
                 mol.neighbors(idx).any(|(nb, b)| {
-                    mol.bond(b).order == order && {
+                    order_of(b) == order && {
                         let n = mol.atom(nb);
                         n.element.atomic_number() == nz && n.charge == 0
                     }
@@ -2724,7 +2797,7 @@ fn sanitizable_product(mol: &Molecule) -> bool {
             {
                 let doubles = mol
                     .neighbors(idx)
-                    .filter(|&(_, b)| mol.bond(b).order == BondOrder::Double)
+                    .filter(|&(_, b)| order_of(b) == BondOrder::Double)
                     .count() as i16;
                 charge = doubles as i8;
                 used -= doubles;
@@ -2744,7 +2817,11 @@ fn carry_direction_stash(
     input_mols: &[&Molecule],
     src_to_new: &FxHashMap<(usize, AtomIdx), AtomIdx>,
 ) {
-    let mut source_of: FxHashMap<AtomIdx, (usize, AtomIdx)> = FxHashMap::default();
+    if !input_mols.iter().any(|m| m.has_bond_directions()) {
+        return;
+    }
+    let mut source_of: FxHashMap<AtomIdx, (usize, AtomIdx)> =
+        FxHashMap::with_capacity_and_hasher(src_to_new.len(), Default::default());
     for (&key, &new_idx) in src_to_new {
         source_of.insert(new_idx, key);
     }
@@ -3529,6 +3606,9 @@ fn build_product(
     // template_idx_to_new[i]: new AtomIdx for product template atom i.
     let mut template_idx_to_new: Vec<Option<AtomIdx>> = vec![None; product_template.atom_count()];
     // src_to_new: (mol_idx, src_AtomIdx) → new AtomIdx in the product.
+    // Not pre-sized: carried bonds are added in this map's iteration order,
+    // and the product's Kekulé form (so a mixed aromatic product's fate)
+    // still depends on it (BTMR1032).
     let mut src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx> = FxHashMap::default();
 
     // --- Step 1: add product template atoms ---

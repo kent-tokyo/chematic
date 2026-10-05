@@ -116,11 +116,15 @@ fn marked_at(mol: &Molecule, center: AtomIdx, bond: BondIdx) -> bool {
         substituents(mol, other) <= 3 && conjugation_candidate(mol, other)
     };
     let multiple = |b: BondIdx| valence_contrib(mol.bond(b).order) >= 1.5;
-    let bonds: Vec<BondIdx> = mol.neighbors(center).map(|(_, b)| b).collect();
+    let others = || {
+        mol.neighbors(center)
+            .map(|(_, b)| b)
+            .filter(move |&b| b != bond)
+    };
     // `bond` as the multiple bond, paired with any other candidate bond …
-    (multiple(bond) && bonds.iter().any(|&b2| b2 != bond && other_ok(b2)))
+    (multiple(bond) && others().any(other_ok))
         // … or as the partner of another multiple bond.
-        || (other_ok(bond) && bonds.iter().any(|&b1| b1 != bond && multiple(b1)))
+        || (others().any(multiple) && other_ok(bond))
 }
 
 fn bond_is_conjugated(mol: &Molecule, bond: BondIdx) -> bool {
@@ -170,10 +174,16 @@ pub fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
         0 | 1 => Some(0),
         2 => Some(1),
         3 => Some(2),
-        4 => {
-            let conjugated = mol.neighbors(idx).any(|(_, b)| bond_is_conjugated(mol, b));
-            Some(if total_degree < 4 && conjugated { 2 } else { 3 })
-        }
+        // Conjugation is only looked up for an atom with fewer than four
+        // neighbours (it decided nothing for an sp3 CH3/CH2, and was most
+        // of a `[C^3]` match).
+        4 => Some(
+            if total_degree < 4 && mol.neighbors(idx).any(|(_, b)| bond_is_conjugated(mol, b)) {
+                2
+            } else {
+                3
+            },
+        ),
         5 => Some(4),
         6 => Some(5),
         _ => None,

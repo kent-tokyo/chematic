@@ -1556,6 +1556,10 @@ mod tests {
                 (26, 27),
                 CipCode::Z,
             ),
+            // Imine on a pyrido[1,2-a]pyrimidine: the ring-fusion N is a
+            // lone-pair donor in RDKit's Kekulé form, which ranks the ring
+            // side's duplicate atoms (#734, six BioTransformer products).
+            ("CCOC(=O)c1cc2ccccn2/c(=N/c2ccccc2)n1", (13, 14), CipCode::Z),
             // Simple controls where both comparators already agree.
             ("F/C=C/F", (1, 2), CipCode::E),
             ("F/C=C\\F", (1, 2), CipCode::Z),
@@ -1578,6 +1582,57 @@ mod tests {
             );
         }
     }
+    #[test]
+    fn squaraine_diimine_canonical_smiles_keeps_both_ez() {
+        // Two exocyclic imines on a Kekulé four-membered ring, coupled
+        // through the ring bond between them (#734: RDKit-written MOL blocks
+        // came back with one imine inverted or unspecified).
+        let ez = |smiles: &str| {
+            let mol = parse(smiles).unwrap();
+            let mut labels: Vec<CipCode> = assign_ez_bonds_with_mode(&mol, CipMode::Accurate)
+                .into_iter()
+                .map(|(_, code)| code)
+                .collect();
+            labels.sort_by_key(|code| format!("{code:?}"));
+            labels
+        };
+        for group in [
+            [r"CC/N=C1/C(O)=C(O)/C1=N\C", r"CC/N=C1/C(O)=C(O)\C1=N/C"],
+            [r"CC/N=C1\C(O)=C(O)/C1=N/C", r"CC/N=C1\C(O)=C(O)\C1=N\C"],
+            [
+                r"C1(C(=C(C/1=N\CC)O)O)=N/C(CC)C",
+                r"C1(O)C(/C(=N/CC)C=1O)=N\C(CC)C",
+            ],
+        ] {
+            let written: Vec<String> = group
+                .iter()
+                .map(|s| chematic_smiles::canonical_smiles(&parse(s).unwrap()))
+                .collect();
+            assert_eq!(written[0], written[1], "{group:?}");
+            assert_eq!(ez(&written[0]), ez(group[0]), "{group:?}: {}", written[0]);
+            assert_eq!(ez(group[0]).len(), 2);
+        }
+    }
+
+    #[test]
+    fn lone_pair_donors_beside_exocyclic_bonds_kekulize() {
+        // The fusion N keeps its lone pair; the exocyclic `=O`/`=S`/`=N`
+        // carbon takes no ring double bond (17 molecules of a 25,000-molecule
+        // check set did not kekulize before, #734).
+        for smiles in [
+            "Cc1cc2ccccn2c(=O)n1",
+            "CCOC(=O)c1cc2ccccn2c(=S)n1",
+            "c1ccn2ccccc2c1",
+            // 1,2,5-thiadiazole S-oxide: the three-bonded `[s+]` is a
+            // lone-pair donor, as in RDKit.
+            "CNc1n[s+]([O-])nc1N",
+        ] {
+            let mol = parse(smiles).unwrap();
+            let kekule = chematic_core::kekulization::kekulize(&mol);
+            assert!(kekule.is_ok(), "{smiles}");
+        }
+    }
+
     use chematic_smiles::parse;
 
     fn cip_at(smiles: &str, atom_idx: usize) -> Option<CipCode> {

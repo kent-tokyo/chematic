@@ -120,7 +120,7 @@ fn alternate_ez_carrier_spellings(mol: &Molecule) -> Vec<Molecule> {
         return Vec::new();
     }
     let mut alternates = Vec::new();
-    for end in ends {
+    for &end in &ends {
         let subs = CanonicalWriter::substituents(mol, end);
         if subs.len() != 2 {
             continue;
@@ -131,8 +131,17 @@ fn alternate_ez_carrier_spellings(mol: &Molecule) -> Vec<Molecule> {
             let Some(direction) = writer.raw_input_direction(marked.1) else {
                 continue;
             };
+            // A bond leading to another stereo end is that end's candidate
+            // too (the two are coupled, left to the writer's joint
+            // resolver): a marker moved onto it also states that end's
+            // geometry, and one moved off it can take that end's only
+            // marker. Squaraine diimines in Kekulé form came out with one
+            // imine inverted or unspecified (`C/N=C1/C(O)=C(O)\C1=N/C`,
+            // #734).
             if !matches!(direction, BondOrder::Up | BondOrder::Down)
                 || mol.bond(sibling.1).order != BondOrder::Single
+                || ends.contains(&sibling.0)
+                || ends.contains(&marked.0)
                 || writer.is_load_bearing_elsewhere(marked.1, end)
             {
                 continue;
@@ -326,56 +335,9 @@ pub fn canonical_smiles(mol: &Molecule) -> String {
     let mol = oriented.as_ref().unwrap_or(mol);
     let cleaned = without_lone_markers(mol);
     let mol = cleaned.as_ref().unwrap_or(mol);
-    let heavy = heavy_atom_carriers(mol);
-    let mol = heavy.as_ref().unwrap_or(mol);
 
     let (_, winning_string) = winning_individualized_ranks(mol);
     winning_string
-}
-
-/// `mol` with the E/Z markers of an explicit-H molecule on heavy atoms:
-/// every heavy substituent of a stereo double bond's end is marked and no H
-/// atom is, all double bonds rewritten together so a shared single bond
-/// suits both of its double bonds; `None` when no stereo double bond has an
-/// H atom substituent. RDKit's `RemoveHs` moves a marker off an H atom onto
-/// the end's other single bond, where it can contradict a conjugated double
-/// bond's markers and drop or invert its E/Z (22 of 572 E/Z molecules
-/// written with explicit H were read back changed, #734). With every heavy
-/// candidate marked consistently, the writer's carrier choice needs no H.
-fn heavy_atom_carriers(mol: &Molecule) -> Option<Molecule> {
-    use chematic_core::ez_markers::{read_ez_facts, write_ez_facts_marking};
-    let is_h = |a: AtomIdx| mol.atom(a).element == chematic_core::Element::H;
-    let h_on_double_end = mol.bonds().any(|(_, bond)| {
-        bond.order == BondOrder::Double
-            && [bond.atom1, bond.atom2]
-                .into_iter()
-                .any(|end| mol.neighbors(end).any(|(nb, _)| is_h(nb)))
-    });
-    if !h_on_double_end {
-        return None;
-    }
-    let (mut facts, _) = read_ez_facts(mol)?;
-    if facts.is_empty() {
-        return None;
-    }
-    let mut heavy: Vec<BondIdx> = Vec::new();
-    for fact in &mut facts {
-        for end in &mut fact.ends {
-            let subs: Vec<(AtomIdx, BondIdx)> = mol
-                .neighbors(end.atom)
-                .filter(|&(_, b)| b != fact.double && mol.bond(b).order != BondOrder::Double)
-                .collect();
-            if mol.bond(end.reference).other(end.atom).is_some_and(is_h)
-                && let Some(&(_, sibling)) = subs.iter().find(|&&(nb, _)| !is_h(nb))
-            {
-                end.reference = sibling;
-                end.up = !end.up;
-            }
-            heavy.extend(subs.iter().filter(|&&(nb, _)| !is_h(nb)).map(|&(_, b)| b));
-        }
-    }
-    let mut out = mol.clone();
-    write_ez_facts_marking(&mut out, &facts, &heavy).then_some(out)
 }
 
 /// `mol` with every stashed direction ([`Molecule::bond_direction`]) read
@@ -469,8 +431,6 @@ pub fn canonical_smiles_with_atom_order(mol: &Molecule) -> (String, Vec<AtomIdx>
     let mol = oriented.as_ref().unwrap_or(mol);
     let cleaned = without_lone_markers(mol);
     let mol = cleaned.as_ref().unwrap_or(mol);
-    let heavy = heavy_atom_carriers(mol);
-    let mol = heavy.as_ref().unwrap_or(mol);
     let (ranks, winning_string) = winning_individualized_ranks(mol);
     // The winner may have been written from an equivalent E/Z carrier
     // spelling of `mol` (same atoms and bonds, different directional
@@ -1881,8 +1841,16 @@ impl<'a> CanonicalWriter<'a> {
             if !Self::can_carry_marker(self.mol.bond(chosen_bidx).order) {
                 return None;
             }
+            // The one exception: when the other candidate is an explicit H
+            // atom, the marker goes on the ring bond and is written at its
+            // opening (both readers take the direction from there), since
+            // RDKit's `RemoveHs` misreads a marker on an H atom next to a
+            // conjugated double bond (#734: an explicit-H macrolide).
+            let sibling_is_h =
+                self.mol.atom(subs[i][1 - choice[i]].0).element == chematic_core::Element::H;
             if self.ring_closure_is_close_side(chosen_bidx, end)
                 && !self.ring_marker_is_permitted_on_close(chosen_bidx)
+                && !sibling_is_h
             {
                 return None;
             }
@@ -2072,6 +2040,19 @@ impl<'a> CanonicalWriter<'a> {
             let Some(&first) = side_bonds.first() else {
                 continue;
             };
+            // A double bond held cis by a small ring has no E/Z: its
+            // flanking markers belong to the double bonds next to it, whose
+            // spellings flip independently (two exocyclic imines on a
+            // squaraine ring were written in either relative orientation).
+            if side_bonds.len() > 1
+                && *self
+                    .small_ring_double
+                    .borrow_mut()
+                    .entry(bidx)
+                    .or_insert_with(|| crate::writer::in_ring_smaller_than_eight(self.mol, bidx))
+            {
+                continue;
+            }
             self.ez_group.entry(first).or_insert(first);
             for &b in &side_bonds[1..] {
                 self.ez_group.entry(b).or_insert(b);

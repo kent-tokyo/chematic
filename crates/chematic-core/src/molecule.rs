@@ -1075,6 +1075,11 @@ impl Molecule {
         self.bond_directions.get(&idx.0).copied()
     }
 
+    /// Whether any bond has a stashed direction ([`Self::bond_direction`]).
+    pub fn has_bond_directions(&self) -> bool {
+        !self.bond_directions.is_empty()
+    }
+
     /// Return the endpoint that anchored a parser-side aromatic direction
     /// stash, if one was recorded.
     pub fn bond_direction_anchor(&self, idx: BondIdx) -> Option<AtomIdx> {

@@ -573,7 +573,7 @@ fn run_smirks_checked<'py>(
     let outcome = if rdkit_compat {
         chematic_rxn::run_reactants_traced_rdkit_2026_03_6(smirks, &refs, &limits)
     } else {
-        chematic_rxn::PreparedReaction::new(smirks).and_then(|prepared| {
+        chematic_rxn::PreparedReaction::shared(smirks).and_then(|prepared| {
             prepared
                 .run_reactants_traced_with_diagnostics(&refs, &limits)
                 .map(chematic_rxn::RdkitProfileOutcome::Report)

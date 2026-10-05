@@ -1125,7 +1125,16 @@ fn to_product_config(
 /// whether inverting the tag gives a different molecule (by stereo-aware
 /// canonical SMILES), which covers ring cis/trans pairs and
 /// pseudo-asymmetric centres the same way.
-pub(crate) fn rdkit_parse_cleanup(mol: &Molecule) -> Option<Molecule> {
+pub(crate) fn rdkit_parse_cleanup(mol: &Molecule) -> std::sync::Arc<Option<Molecule>> {
+    // Memoized on the reactant: a batch applies many templates to the same
+    // molecule, and the cleanup's canonical comparisons were a third of the
+    // profile's run time.
+    mol.derived(chematic_core::DerivedSlot::RdkitParseCleanup, || {
+        rdkit_parse_cleanup_uncached(mol)
+    })
+}
+
+fn rdkit_parse_cleanup_uncached(mol: &Molecule) -> Option<Molecule> {
     let tagged: Vec<AtomIdx> = mol
         .atoms()
         .filter(|(_, a)| a.chirality.is_tetrahedral())

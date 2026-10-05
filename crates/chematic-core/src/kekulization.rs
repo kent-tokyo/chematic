@@ -107,6 +107,53 @@ pub fn kekulize_with(
     // Run maximum matching via augmenting paths (`mate[i]` = partner or NO_MATE).
     let mut matcher = Matcher::new(n);
 
+    // --- Pass 0: neutral ring-fusion N/P as lone-pair donors --------------
+    //
+    // A neutral N/P with three aromatic bonds already has its valence of
+    // three, so a Kekulé form that gives it a double bond describes a
+    // different (charged) molecule; RDKit never makes it a candidate. Try
+    // the matching without such atoms first. The later passes keep the
+    // lenient reading for inputs that only kekulize with one (neutral
+    // quinolizine), and Pass 3 below only catches atoms with three
+    // must-match neighbours, missing a fusion N beside a `c(=O)`/`c(=N)`
+    // carbon (pyrido[1,2-a]pyrimidin-2-one, whose imine E/Z was then ranked
+    // without the ring's duplicate atoms, #734).
+    let ring_fusion_pnictogen = |idx: AtomIdx| {
+        let atom = mol.atom(idx);
+        matches!(atom.element.atomic_number(), 7 | 15)
+            && atom.charge == 0
+            && mol
+                .neighbors(idx)
+                .filter(|&(_, b)| mol.bond(b).order == BondOrder::Aromatic)
+                .count()
+                >= 3
+    };
+    if sorted_atoms.iter().any(|&idx| ring_fusion_pnictogen(idx)) {
+        let mut must_match_0 = must_match.clone();
+        let mut sorted_0: Vec<AtomIdx> = Vec::with_capacity(sorted_atoms.len());
+        for &idx in &sorted_atoms {
+            if ring_fusion_pnictogen(idx) {
+                must_match_0[idx.0 as usize] = false;
+            } else {
+                sorted_0.push(idx);
+            }
+        }
+        let adj_0 = matching_adjacency(mol, &aromatic_bonds, &must_match_0);
+        matcher.run_pass(sorted_0.iter().copied(), &adj_0);
+        if !matcher.all_matched(&sorted_0) {
+            matcher.clear();
+            matcher.run_pass(sorted_0.iter().rev().copied(), &adj_0);
+        }
+        if matcher.all_matched(&sorted_0) {
+            return Ok(kekule_result_from_mates(
+                &aromatic_bonds,
+                mol,
+                &matcher.mate,
+            ));
+        }
+        matcher.clear();
+    }
+
     // Process must-match atoms in a deterministic order (by index) for reproducibility.
     // Non-must-match atoms (lone-pair donors) are skipped — they never initiate
     // augmenting paths and are never placed in the matching.
@@ -664,6 +711,19 @@ pub fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
         // needs a double bond exactly like pyridine-type N (falls through to the
         // catch-all `_ => true` below).
         8 | 16 | 34 | 52 if atom.charge <= 0 => false,
+        // A cation with a third bond (`[s+]([O-])` of a 1,2,5-thiadiazole
+        // S-oxide) already has RDKit's target valence 3 and keeps a lone pair;
+        // only the two-bonded one (thiopyrylium, pyrylium) needs a double bond.
+        8 | 16 | 34 | 52 if atom.charge == 1 => {
+            let bonds: i32 = mol
+                .neighbors(idx)
+                .map(|(_, b)| match mol.bond(b).order {
+                    BondOrder::Aromatic => 1,
+                    order => i32::from(order.order_int()),
+                })
+                .sum();
+            bonds + i32::from(atom.hydrogen_count.unwrap_or(0)) == 2
+        }
         // Aromatic B contributes an empty p orbital (electron acceptor), not a lone pair.
         // It must appear in a double bond in the Kekulé form, just like aromatic C.
         5 => true,

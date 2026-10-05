@@ -362,7 +362,7 @@ fn prepare_checked_reaction(
 ) -> Result<
     (
         Vec<chematic_core::Molecule>,
-        Option<chematic_rxn::PreparedReaction>,
+        Option<std::sync::Arc<chematic_rxn::PreparedReaction>>,
     ),
     String,
 > {
@@ -410,7 +410,7 @@ fn prepare_checked_reaction(
     if rdkit_compat {
         return Ok((reactants, None));
     }
-    let prepared = chematic_rxn::PreparedReaction::new(smirks).map_err(|error| {
+    let prepared = chematic_rxn::PreparedReaction::shared(smirks).map_err(|error| {
         CheckedReactionResponse::refusal(
             profile,
             "typed_refusal",

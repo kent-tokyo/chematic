@@ -79,12 +79,6 @@ fn substituents(mol: &Molecule, end: AtomIdx, double: BondIdx) -> Vec<BondIdx> {
 /// bond carrying a literal marker (stored directions on aromatic ring bonds
 /// are left alone).
 pub fn write_ez_facts(mol: &mut Molecule, facts: &[EzFact]) -> bool {
-    write_ez_facts_marking(mol, facts, &[])
-}
-
-/// [`write_ez_facts`], also marking `also_mark` (substituent bonds of the
-/// facts' ends, each on the side its end's geometry gives it).
-pub fn write_ez_facts_marking(mol: &mut Molecule, facts: &[EzFact], also_mark: &[BondIdx]) -> bool {
     if facts.is_empty() {
         return true;
     }
@@ -116,7 +110,6 @@ pub fn write_ez_facts_marking(mol: &mut Molecule, facts: &[EzFact], also_mark: &
     let marked: std::collections::HashSet<BondIdx> = facts
         .iter()
         .flat_map(|f| f.ends.iter().map(|e| e.reference))
-        .chain(also_mark.iter().copied())
         .collect();
     // Side wanted for each marked bond, per fact, read from its atom1.
     let mut wanted: HashMap<BondIdx, Vec<(usize, bool)>> = HashMap::new();
@@ -273,6 +266,10 @@ pub fn read_ez_facts(mol: &Molecule) -> Option<(Vec<EzFact>, bool)> {
 /// changed; a molecule without such a conflict, or one whose conflict cannot
 /// be attributed, is left unchanged.
 pub fn reconcile_ez_markers(mol: &mut Molecule) -> bool {
+    let directional = |order: BondOrder| matches!(order, BondOrder::Up | BondOrder::Down);
+    if !mol.has_bond_directions() && !mol.bonds().any(|(_, b)| directional(b.order)) {
+        return false;
+    }
     let Some((facts, true)) = read_ez_facts(mol) else {
         return false;
     };
