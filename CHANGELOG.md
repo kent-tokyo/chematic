@@ -207,20 +207,22 @@ adapter difference. Record: `benchmarks/2026-10-04-xsmarts-autoconf-v1034.md`.
 - Performance (Linux, exposed 10k, time relative to v1.0.34, >1 is
   slower): canonical SMILES 1.06x, add/remove H 1.09x, SMARTS `^n` 1.5x
   (RDKit model), MMFF94 typing 0.96x, UFF 3D 1.0x, reactions 1.07x (Kekulé
-  aromatic reactants are aromatized first). **`write_mol` is about 9x
-  slower** (8.2 → 76.6 ms for 10,000 molecules): v1.0.34 wrote zero
+  aromatic reactants are aromatized first). **`write_mol` is about 9.5x
+  slower** (8.2 → 77.9 ms for 10,000 molecules): v1.0.34 wrote zero
   coordinates and dropped stereo; the source lays out each molecule with
-  stereo (about a third of the added time), places and checks wedges, and
-  kekulizes in canonical order where type 4 would lose an aromatic H. An
-  earlier draft of this change was 17x slower (190.1 ms); rebuilding the
-  molecule for every wedge check, comparisons that recomputed angles, and
-  the general float formatter were removed. Writing given coordinates
-  (`write_mol_with_coords`) skips the layout.
+  stereo (≈21 ms), places and checks wedges and E/Z (≈21 ms), and kekulizes
+  in canonical order where type 4 would lose an aromatic H (most of ≈20 ms
+  for the molecules without stereo). An earlier draft of this change took
+  190.1 ms; a molecule rebuild for every wedge check, angles recomputed in a
+  sort comparator and the general float formatter were removed. Writing
+  given coordinates (`write_mol_with_coords`) skips the layout.
 - Evidence: published PyPI v1.0.34 (CPython 3.9) passes the opt-in SMARTS
   310k gate (309,982 exact, 18 typed refusals, none unexpected) with the
   archived oracle (`check_python_smarts_parity_310k.py --archived-oracle`);
-  the source build (libm math, new MMFF typing) gives 265 / 265 A6
-  successes, all sound, stereo-clean and clash-free on the external scorer.
+  a clean source commit (`b014d970`, empty diff; libm math, new MMFF
+  typing) gives 265 / 265 A6 successes, 102 gradient-converged, all sound,
+  stereo-clean and clash-free on the external scorer. (An earlier 265 / 265
+  record was built from an uncommitted tree.)
 
 ## [1.0.34] - 2026-10-04
 

@@ -9,6 +9,11 @@ stereo rows).
 
 ## MOL/SDF stereo
 
+> Superseded for the writer by
+> [2026-10-05-mol-stereo-loss-and-clean-a6.md](2026-10-05-mol-stereo-loss-and-clean-a6.md)
+> (1,681 / 1,687 and 1,663 / 1,670, with a loss report). The numbers below
+> are from `ea09a51a`.
+
 **Writer.** `write_mol` / `write_mol_v3000` now lay a molecule with stereo
 out (`chematic_mol::stereo_depiction`), reflect one side of each E/Z bond
 whose drawn geometry disagrees with its declared markers, and draw one wedge
@@ -129,6 +134,10 @@ unexpected**. [Report](../validation/results/v1.0.34-published-pypi-linux-cp39-p
 
 ## A6 external scorer on the libm build
 
+> This row was measured on a wheel built from `4823938f` plus an
+> uncommitted diff, not on a commit. The clean-commit rerun is in
+> [2026-10-05-mol-stereo-loss-and-clean-a6.md](2026-10-05-mol-stereo-loss-and-clean-a6.md).
+
 The stereo-safe MMFF94 arm rerun with this batch's source wheel (libm math
 and the new MMFF typing): 265 / 265 successes, 102 gradient-converged.
 `crates/chematic-3d/examples/pipeline_v2_vs_rdkit_common_scorer.rs` on those
@@ -149,7 +158,7 @@ interleaved runs over the exposed 10k corpus:
 | SMARTS `[C^2]` | 28.6 ms | ~44 ms | 1.5 |
 | SMARTS `[R2]` | 101.6 ms | 102.3 ms | 1.01 |
 | kekulize | 11.0 ms | 11.1 ms | 1.01 |
-| `write_mol` | 11.2 ms | 190.1 ms | 17 (layout of stereo molecules) |
+| `write_mol` | 11.2 ms | 190.1 ms | 17x slower (superseded: 9.5x, see the follow-up record) |
 | MMFF94 typing | 573.6 ms | 549.4 ms | 0.96 |
 | UFF 3D, 249 molecules | ~127 s | ~127 s | 1.0 |
 | 13 reaction cases | 409 µs/iter | 437 µs/iter | 1.07 (Kekulé reactants aromatized) |

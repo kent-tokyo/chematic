@@ -1,0 +1,61 @@
+{
+ "schema": "mol-writer-stereo-readback/v1",
+ "source_revision": "b014d9701f93d645c782ef6c4554f1e0392cf814",
+ "reader": "RDKit 2026.03.6 Chem.MolFromMolBlock on chematic write_mol / write_mol_v3000 output (no coordinates given); compared on RDKit canonical isomeric SMILES of the input",
+ "corpora": {
+  "exposed_10k": {
+   "file": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+   "stereo_rows": 1687,
+   "v2000": {
+    "rows": 1687,
+    "v2_centre_lost": 6,
+    "v2_exact": 1681
+   },
+   "previous_draft_ea09a51a": {
+    "rows": 1687,
+    "v2_centre_lost": 25,
+    "v2_centre_lost+ez_either_or_lost": 12,
+    "v2_exact": 1581,
+    "v2_ez_either_or_lost": 69
+   }
+  },
+  "chembl_5k": {
+   "file": "scripts/chembl_accuracy_corpus_4999.smi",
+   "stereo_rows": 1670,
+   "v2000": {
+    "rows": 1670,
+    "v2_centre_lost": 6,
+    "v2_exact": 1663,
+    "v2_ez_either_or_lost": 1
+   },
+   "previous_draft_ea09a51a": {
+    "rows": 1670,
+    "v2_centre_lost": 46,
+    "v2_centre_lost+ez_either_or_lost": 12,
+    "v2_exact": 1593,
+    "v2_ez_either_or_lost": 14,
+    "v2_other": 5
+   }
+  }
+ },
+ "loss_report": {
+  "exposed_10k": {
+   "rows_with_stereo": 1325,
+   "rows_with_loss": 6,
+   "centres": 6,
+   "double_bonds": 0
+  },
+  "chembl_5k": {
+   "rows_with_stereo": 1286,
+   "rows_with_loss": 7,
+   "centres": 6,
+   "double_bonds": 1
+  },
+  "note": "write_mol_with_stereo_report on rows chematic parses with any chirality or bond direction"
+ },
+ "notes": [
+  "v2000 and v3000 blocks give the same RDKit SMILES on every row",
+  "no row reads back with an inverted centre or a wrong E/Z",
+  "v3000 counts omitted: the V3000 blocks give the same RDKit SMILES as V2000 on every row (both revisions); a per-atom CIP comparison of the V3000 molecules mislabels rows with a STEREOANY bond and is not used"
+ ]
+}
