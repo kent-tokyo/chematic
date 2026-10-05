@@ -1987,6 +1987,9 @@ fn disconnect_metals(mol: &Molecule) -> Molecule {
             && let Some(direction) = mol.bond_direction(old_bidx)
         {
             builder.set_bond_direction(new_bidx, direction);
+            if let Some(anchor) = mol.bond_direction_anchor(old_bidx) {
+                builder.set_bond_direction_anchor(new_bidx, anchor);
+            }
         }
     }
     let disconnected = builder.build();
@@ -2009,6 +2012,9 @@ fn disconnect_metals(mol: &Molecule) -> Molecule {
             && let Some(direction) = disconnected.bond_direction(BondIdx(i as u32))
         {
             builder.set_bond_direction(new_bidx, direction);
+            if let Some(anchor) = disconnected.bond_direction_anchor(BondIdx(i as u32)) {
+                builder.set_bond_direction_anchor(new_bidx, anchor);
+            }
         }
     }
     builder.copy_stereo_from(&disconnected);

@@ -322,11 +322,105 @@ pub fn canonical_smiles(mol: &Molecule) -> String {
     if mol.atom_count() == 0 {
         return String::new();
     }
+    let oriented = atom1_relative_stashes(mol);
+    let mol = oriented.as_ref().unwrap_or(mol);
     let cleaned = without_lone_markers(mol);
     let mol = cleaned.as_ref().unwrap_or(mol);
+    let heavy = heavy_atom_carriers(mol);
+    let mol = heavy.as_ref().unwrap_or(mol);
 
     let (_, winning_string) = winning_individualized_ranks(mol);
     winning_string
+}
+
+/// `mol` with the E/Z markers of an explicit-H molecule on heavy atoms:
+/// every heavy substituent of a stereo double bond's end is marked and no H
+/// atom is, all double bonds rewritten together so a shared single bond
+/// suits both of its double bonds; `None` when no stereo double bond has an
+/// H atom substituent. RDKit's `RemoveHs` moves a marker off an H atom onto
+/// the end's other single bond, where it can contradict a conjugated double
+/// bond's markers and drop or invert its E/Z (22 of 572 E/Z molecules
+/// written with explicit H were read back changed, #734). With every heavy
+/// candidate marked consistently, the writer's carrier choice needs no H.
+fn heavy_atom_carriers(mol: &Molecule) -> Option<Molecule> {
+    use chematic_core::ez_markers::{read_ez_facts, write_ez_facts_marking};
+    let is_h = |a: AtomIdx| mol.atom(a).element == chematic_core::Element::H;
+    let h_on_double_end = mol.bonds().any(|(_, bond)| {
+        bond.order == BondOrder::Double
+            && [bond.atom1, bond.atom2]
+                .into_iter()
+                .any(|end| mol.neighbors(end).any(|(nb, _)| is_h(nb)))
+    });
+    if !h_on_double_end {
+        return None;
+    }
+    let (mut facts, _) = read_ez_facts(mol)?;
+    if facts.is_empty() {
+        return None;
+    }
+    let mut heavy: Vec<BondIdx> = Vec::new();
+    for fact in &mut facts {
+        for end in &mut fact.ends {
+            let subs: Vec<(AtomIdx, BondIdx)> = mol
+                .neighbors(end.atom)
+                .filter(|&(_, b)| b != fact.double && mol.bond(b).order != BondOrder::Double)
+                .collect();
+            if mol.bond(end.reference).other(end.atom).is_some_and(is_h)
+                && let Some(&(_, sibling)) = subs.iter().find(|&&(nb, _)| !is_h(nb))
+            {
+                end.reference = sibling;
+                end.up = !end.up;
+            }
+            heavy.extend(subs.iter().filter(|&&(nb, _)| !is_h(nb)).map(|&(_, b)| b));
+        }
+    }
+    let mut out = mol.clone();
+    write_ez_facts_marking(&mut out, &facts, &heavy).then_some(out)
+}
+
+/// `mol` with every stashed direction ([`Molecule::bond_direction`]) read
+/// from the bond's atom1, or `None` when none is read from atom2. A stash on
+/// a plain single bond becomes its literal `Up`/`Down` order; one on an
+/// aromatic (or wedge) bond keeps its stash with atom1 as anchor. Both are
+/// the same geometry; the writer's carrier resolution produces atom1-relative
+/// markers and its emission reads them against the anchor, so a stash read
+/// from atom2 came out mirrored (92 of 272 E/Z molecules with their markers
+/// moved into atom2-anchored stashes changed geometry, #734).
+fn atom1_relative_stashes(mol: &Molecule) -> Option<Molecule> {
+    let flip = |d: BondOrder| match d {
+        BondOrder::Up => BondOrder::Down,
+        BondOrder::Down => BondOrder::Up,
+        other => other,
+    };
+    let todo: Vec<(BondIdx, BondOrder, bool)> = mol
+        .bonds()
+        .filter_map(|(bidx, bond)| {
+            let direction = mol.bond_direction(bidx)?;
+            let anchor = mol.bond_direction_anchor(bidx).unwrap_or(bond.atom1);
+            let direction = if anchor == bond.atom1 {
+                direction
+            } else {
+                flip(direction)
+            };
+            let to_literal = bond.order == BondOrder::Single;
+            (to_literal || anchor != bond.atom1).then_some((bidx, direction, to_literal))
+        })
+        .collect();
+    if todo.is_empty() {
+        return None;
+    }
+    let mut out = mol.clone();
+    for (bidx, direction, to_literal) in todo {
+        let atom1 = out.bond(bidx).atom1;
+        out.clear_bond_direction(bidx);
+        if to_literal {
+            out.set_bond_order(bidx, direction);
+        } else {
+            out.set_bond_direction(bidx, direction);
+            out.set_bond_direction_anchor(bidx, atom1);
+        }
+    }
+    Some(out)
 }
 
 /// `mol` without `/`/`\\` markers that take part in no E/Z specification
@@ -371,8 +465,12 @@ pub fn canonical_smiles_with_atom_order(mol: &Molecule) -> (String, Vec<AtomIdx>
     if mol.atom_count() == 0 {
         return (String::new(), Vec::new());
     }
+    let oriented = atom1_relative_stashes(mol);
+    let mol = oriented.as_ref().unwrap_or(mol);
     let cleaned = without_lone_markers(mol);
     let mol = cleaned.as_ref().unwrap_or(mol);
+    let heavy = heavy_atom_carriers(mol);
+    let mol = heavy.as_ref().unwrap_or(mol);
     let (ranks, winning_string) = winning_individualized_ranks(mol);
     // The winner may have been written from an equivalent E/Z carrier
     // spelling of `mol` (same atoms and bonds, different directional
@@ -1297,6 +1395,49 @@ impl<'a> CanonicalWriter<'a> {
         components
     }
 
+    /// Whether a bond of this order can be written with `/` or `\` (a
+    /// zero-order or dative bond cannot; it would print as single).
+    fn can_carry_marker(order: BondOrder) -> bool {
+        matches!(
+            order,
+            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic
+        )
+    }
+
+    /// The substituent an alkene end prefers as its marker carrier: the
+    /// lower-ranked one among bonds that can carry a marker, except that a
+    /// heavy atom is preferred over an
+    /// explicit hydrogen atom. RDKit's `RemoveHs` moves a marker off a
+    /// removed H onto the end's other single bond; when that bond also
+    /// flanks a conjugated double bond, the moved marker can contradict
+    /// that double bond's own markers, and RDKit then drops or inverts its
+    /// E/Z (#734: 22 of 572 E/Z molecules written with explicit H were read
+    /// back differently).
+    ///
+    /// A heavy substituent that is itself the end of a double bond whose
+    /// other substituent is an H atom is preferred too: that end carries
+    /// its marker on this shared bond, and both ends choosing it keeps the
+    /// choice free of an H carrier.
+    fn preferred_carrier(&self, pair: &[(AtomIdx, BondIdx); 2]) -> usize {
+        let is_h = |a: AtomIdx| self.mol.atom(a).element == chematic_core::Element::H;
+        let far_end_has_h = |far: AtomIdx| {
+            self.mol
+                .neighbors(far)
+                .any(|(_, b)| self.mol.bond(b).order == BondOrder::Double)
+                && self.mol.neighbors(far).any(|(nb, _)| is_h(nb))
+        };
+        let key = |i: usize| {
+            let far = pair[i].0;
+            (
+                !Self::can_carry_marker(self.mol.bond(pair[i].1).order),
+                is_h(far),
+                !far_end_has_h(far),
+                self.ranks[pair[i].0.0 as usize],
+            )
+        };
+        if key(1) < key(0) { 1 } else { 0 }
+    }
+
     /// Jointly resolve one coupling component (see
     /// [`Self::coupling_components`]) — a cluster of ambiguous alkene ends,
     /// possibly of size 1 (no coupling at all, the common case: this method
@@ -1359,11 +1500,7 @@ impl<'a> CanonicalWriter<'a> {
         if k == 1 {
             let end = ordered[0];
             let pair = subs[0];
-            let preferred = if self.ranks[pair[1].0.0 as usize] < self.ranks[pair[0].0.0 as usize] {
-                1
-            } else {
-                0
-            };
+            let preferred = self.preferred_carrier(&pair);
             let Some(reference_up) = self.geometry_reference_up(end, &pair, preferred) else {
                 return;
             };
@@ -1395,16 +1532,7 @@ impl<'a> CanonicalWriter<'a> {
         // automorphic (per `self.ranks`'s own fully-discrete-for-genuinely-
         // distinct-atoms invariant, established at `winning_individualized_
         // ranks`) — either index then writes the same canonical string.
-        let pref: Vec<usize> = subs
-            .iter()
-            .map(|s| {
-                if self.ranks[s[1].0.0 as usize] < self.ranks[s[0].0.0 as usize] {
-                    1
-                } else {
-                    0
-                }
-            })
-            .collect();
+        let pref: Vec<usize> = subs.iter().map(|s| self.preferred_carrier(s)).collect();
 
         // Each end's own geometry fact — computed ONCE per end, via a FIXED
         // rank-based reference substituent (never "whichever candidate
@@ -1750,6 +1878,9 @@ impl<'a> CanonicalWriter<'a> {
             // the remote endpoint (which is not adjacent to this alkene),
             // and a re-parser would silently lose this stereochemistry.
             let chosen_bidx = subs[i][choice[i]].1;
+            if !Self::can_carry_marker(self.mol.bond(chosen_bidx).order) {
+                return None;
+            }
             if self.ring_closure_is_close_side(chosen_bidx, end)
                 && !self.ring_marker_is_permitted_on_close(chosen_bidx)
             {
@@ -3966,6 +4097,43 @@ mod tests {
         "C/C=C/c1ccccc1", // (E)-propenylbenzene
         "C/C(F)=C(\\F)C",
     ];
+
+    #[test]
+    fn stashed_directions_read_from_atom2_keep_their_geometry() {
+        // The same markers moved into stashes read from the bond's atom2
+        // (Up from atom2 is Down from atom1): carrier resolution wrote
+        // atom1-relative markers that emission then read against the
+        // anchor, mirroring the E/Z (#734, 92 of 272 E/Z molecules).
+        for smiles in [
+            r"COc1cc2nc(N3CCN(C(=O)/C(F)=C/c4ccccc4)CC3)nc(N)c2cc1OC",
+            r"COc1cc2nc(N3CCN(/C(S)=N/C4CCCCC4)CC3)nc(N)c2cc1OC",
+            r"O=C1OC(=C/I)/CCC1c1cccc2ccccc12",
+            r"C/C=C/C(C)=C/C=C\C",
+        ] {
+            let literal = crate::parse(smiles).unwrap();
+            let mut stashed = literal.clone();
+            let marked: Vec<(BondIdx, BondOrder, AtomIdx)> = literal
+                .bonds()
+                .filter(|(_, b)| matches!(b.order, BondOrder::Up | BondOrder::Down))
+                .map(|(i, b)| (i, b.order, b.atom2))
+                .collect();
+            for (bidx, order, atom2) in marked {
+                let from_atom2 = if order == BondOrder::Up {
+                    BondOrder::Down
+                } else {
+                    BondOrder::Up
+                };
+                stashed.set_bond_order(bidx, BondOrder::Single);
+                stashed.set_bond_direction(bidx, from_atom2);
+                stashed.set_bond_direction_anchor(bidx, atom2);
+            }
+            assert_eq!(
+                canonical_smiles(&stashed),
+                canonical_smiles(&literal),
+                "{smiles}"
+            );
+        }
+    }
 
     #[test]
     fn ez_canonical_smiles_is_idempotent() {

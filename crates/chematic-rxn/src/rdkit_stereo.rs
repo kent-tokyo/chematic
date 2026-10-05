@@ -823,6 +823,16 @@ pub(crate) fn apply_product_stereo(
         let Some(new_idx) = template_idx_to_new.get(i).copied().flatten() else {
             continue;
         };
+        // An aromatic product atom is not a stereocentre: RDKit's sanitize
+        // clears whatever tag the runner copied onto it (a steroid A-ring
+        // aromatization, BioTransformer BTMR0822, leaves the old C10 tag on
+        // an aromatic carbon), so its tag cannot make the product ambiguous.
+        if product.atom(new_idx).aromatic {
+            if product.atom(new_idx).chirality != Chirality::None {
+                product.set_chirality(new_idx, Chirality::None);
+            }
+            continue;
+        }
         let flag = info.flags[p][i];
         let template_part: Vec<Node> = template[i]
             .order

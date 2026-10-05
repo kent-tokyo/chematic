@@ -369,6 +369,13 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
         if let Some(direction) = mol.bond_direction(old_bidx) {
             builder.set_bond_direction(new_bidx, direction);
         }
+        // The anchor a stash is read from follows its atom; without it the
+        // stash is read from atom1 and one read from atom2 flips its E/Z.
+        if let Some(anchor) = mol.bond_direction_anchor(old_bidx)
+            && let Some(&new_anchor) = remap.get(&anchor)
+        {
+            builder.set_bond_direction_anchor(new_bidx, new_anchor);
+        }
     }
 
     // Restore stereo_neighbor_order for every surviving stereocenter --
@@ -430,6 +437,7 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
     if !stereo_groups.is_empty() {
         out.set_stereo_groups(stereo_groups);
     }
+    transfer_ez_off_removed_hydrogens(mol, &removable, &remap, &bond_remap, &mut out);
     // Each atom that lost H atoms keeps its total H count. Valence inference
     // alone can guess wrong for aromatic atoms (explicit-H pyrrole's N would
     // come back as `n`, not `[nH]`), so a count it misses is written
@@ -463,6 +471,89 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
         }
     }
     out
+}
+
+/// Keep the E/Z of a double bond whose only marker at one end was on a
+/// removed H atom: the end's other substituent becomes its reference, on
+/// the other side, as RDKit's `RemoveHs` moves the marker. When that bond
+/// also flanks a second double bond (conjugation), the markers of all the
+/// stereo double bonds are rewritten together
+/// ([`chematic_core::ez_markers::write_ez_facts`]) so no bond is asked for
+/// two directions.
+fn transfer_ez_off_removed_hydrogens(
+    old: &Molecule,
+    removable: &[bool],
+    remap: &HashMap<AtomIdx, AtomIdx>,
+    bond_remap: &HashMap<BondIdx, BondIdx>,
+    out: &mut Molecule,
+) {
+    use chematic_core::ez_markers::{EzFact, EzFactEnd, marker_side, write_ez_facts};
+    let removed = |a: AtomIdx| removable[a.0 as usize];
+    let mut needs_transfer = false;
+    let mut facts: Vec<EzFact> = Vec::new();
+    for (bidx, bond) in old.bonds() {
+        if bond.order != BondOrder::Double
+            || old.atom(bond.atom1).aromatic && old.atom(bond.atom2).aromatic
+        {
+            continue;
+        }
+        let Some(&double) = bond_remap.get(&bidx) else {
+            continue;
+        };
+        let mut ends: Vec<EzFactEnd> = Vec::with_capacity(2);
+        for end in [bond.atom1, bond.atom2] {
+            let subs: Vec<(BondIdx, AtomIdx)> = old
+                .neighbors(end)
+                .filter(|&(_, b)| b != bidx && old.bond(b).order != BondOrder::Double)
+                .map(|(nb, b)| (b, nb))
+                .collect();
+            if subs.is_empty() || subs.len() > 2 {
+                break;
+            }
+            let marks: Vec<(BondIdx, AtomIdx, bool)> = subs
+                .iter()
+                .filter_map(|&(b, nb)| marker_side(old, b, end).map(|up| (b, nb, up)))
+                .collect();
+            if marks.len() == 2 && marks[0].2 == marks[1].2 {
+                break; // conflicting markers: no geometry to keep
+            }
+            // A surviving marked substituent, else the sibling of a removed
+            // marked H atom, on the other side.
+            let reference = marks
+                .iter()
+                .find(|&&(_, nb, _)| !removed(nb))
+                .map(|&(b, _, up)| (b, up))
+                .or_else(|| {
+                    let &(_, _, h_up) = marks.first()?;
+                    let &(b, _) = subs.iter().find(|&&(_, nb)| !removed(nb))?;
+                    needs_transfer = true;
+                    Some((b, !h_up))
+                });
+            let (Some((b, up)), Some(&atom)) = (reference, remap.get(&end)) else {
+                break;
+            };
+            let Some(&reference) = bond_remap.get(&b) else {
+                break;
+            };
+            ends.push(EzFactEnd {
+                atom,
+                reference,
+                up,
+            });
+        }
+        if let [a, b] = ends.as_slice() {
+            facts.push(EzFact {
+                double,
+                ends: [*a, *b],
+            });
+        }
+    }
+    if needs_transfer {
+        let mut trial = out.clone();
+        if write_ez_facts(&mut trial, &facts) {
+            *out = trial;
+        }
+    }
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -1057,6 +1148,67 @@ mod tests {
             "stereo_neighbor_order must survive a remove_hydrogens call that \
              removed nothing at all"
         );
+    }
+
+    #[test]
+    fn explicit_h_ez_markers_sit_on_heavy_atoms() {
+        // RDKit's RemoveHs moves a marker off an H atom onto the end's other
+        // single bond, where it can contradict a conjugated double bond's
+        // markers: 22 of 572 E/Z molecules written with explicit H were read
+        // back with a dropped or inverted E/Z (`C/C=C/C=C/C` as Z,E). The
+        // canonical writer carries markers on heavy atoms where it can (a
+        // longer polyene can still need an H carrier: the writer's carrier
+        // choice does not flip a double bond's markers).
+        for input in [
+            "C/C=C/C=C/C",
+            "COC(=O)/C=C/C=C/C(=O)N",
+            "CC1=C(/C=C/C(C)=C/C=C/C(C)=C/C(=O)O)C(C)(C)CCC1",
+        ] {
+            let written = canonical_smiles(&add_hydrogens(&mol(input)));
+            for marked_h in ["/[H]", "\\[H]", "[H]/", "[H]\\"] {
+                assert!(!written.contains(marked_h), "{input}: {written}");
+            }
+            assert_eq!(
+                canonical_smiles(&remove_hydrogens(&mol(&written))),
+                canonical_smiles(&mol(input)),
+                "{input}"
+            );
+        }
+        let retinoic = mol("CC1=C(/C=C/C(C)=C/C=C/C(C)=C/C(=O)O)C(C)(C)CCC1");
+        let written = canonical_smiles(&add_hydrogens(&retinoic));
+        assert_eq!(
+            canonical_smiles(&remove_hydrogens(&mol(&written))),
+            canonical_smiles(&retinoic)
+        );
+    }
+
+    #[test]
+    fn remove_hydrogens_moves_ez_marker_off_a_removed_h() {
+        // The only marker of the second double bond sits on an H atom; the
+        // shared single bond carries none. #734 BioTransformer corpus: the
+        // E/Z was dropped (and RDKit's RemoveHs read the transferred marker
+        // as conflicting with the first double bond's).
+        for (input, expected) in [
+            ("C(=C(C(/[H])=C(/C)[H])/C)(/F)[H]", "C/C=C/C(C)=C/F"),
+            ("[H]/C(C)=C([H])\\C(C)=C(/[H])F", "C/C=C/C(C)=C/F"),
+            ("C(/F)([H])=C(/C)[H]", "C/C=C\\F"),
+            ("F/C=C(/[H])C", "C/C=C\\F"),
+            ("F/C=C(\\[H])C", "C/C=C/F"),
+            (
+                "C(=C(C(/[H])=C(/C([H])([H])C)[H])/C([H])([H])[H])(/C1CC1)[H]",
+                "CC/C=C/C(C)=C/C1CC1",
+            ),
+        ] {
+            assert_eq!(
+                canonical_smiles(&remove_hydrogens(&mol(input))),
+                canonical_smiles(&mol(expected)),
+                "{input}"
+            );
+        }
+        // A whole explicit-H round trip keeps every E/Z of a triene.
+        let triene = mol("C/C=C/C(C)=C/C=C\\C1CC1");
+        let back = remove_hydrogens(&add_hydrogens(&triene));
+        assert_eq!(canonical_smiles(&back), canonical_smiles(&triene));
     }
 
     #[test]

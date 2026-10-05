@@ -397,6 +397,10 @@ fn product_atom_spec(atom: &str, rdkit_reading: bool) -> Result<String, RxnError
         // a spelled charge, H count or isotope still applies
         // (`[F,Cl,Br,I;-:7]` makes the matched halogen a halide).
         None if map.is_some() && chirality.is_none() => spec.push('*'),
+        // Unmapped: RDKit builds a dummy atom (`*`) from a product query atom
+        // that names no single element (BioTransformer's
+        // `P([!#1!#6;O,$([O-])])` phosphates give `*P(*)(=O)...`).
+        None if rdkit_reading && chirality.is_none() => spec.push('*'),
         None => return Err(unsupported()),
     }
     match chirality {

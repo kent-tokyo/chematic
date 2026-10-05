@@ -2952,6 +2952,12 @@ mod tests {
             if let Some(direction) = mol.bond_direction(old_bidx) {
                 builder.set_bond_direction(new_bidx, direction);
             }
+            // The anchor a stashed direction is read from follows its atom;
+            // without it the direction is read from the bond's atom1 and a
+            // stash read from atom2 flips its E/Z.
+            if let Some(anchor) = mol.bond_direction_anchor(old_bidx) {
+                builder.set_bond_direction_anchor(new_bidx, atom_map[&anchor]);
+            }
         }
 
         for &old_idx in new_order {

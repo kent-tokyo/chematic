@@ -672,6 +672,14 @@ impl<'a> Parser<'a> {
             Some(b'b' | b'c' | b'n' | b'o' | b'p' | b's') => {
                 Ok(Some(self.parse_aromatic_organic()?))
             }
+            // OpenSMILES: an unbracketed `*` is a wildcard atom with no
+            // hydrogens, the same atom as `[*]` (RDKit writes it bare).
+            Some(b'*') => {
+                self.advance();
+                let mut atom = Atom::wildcard();
+                atom.chirality = self.parse_chirality(false)?;
+                Ok(Some(atom))
+            }
             _ => Ok(None),
         }
     }
@@ -1208,6 +1216,20 @@ mod tests {
         let mol = parse("[*:17]C").unwrap();
         assert!(mol.atom(AtomIdx(0)).wildcard);
         assert_eq!(mol.atom(AtomIdx(0)).atom_map, Some(17));
+    }
+
+    #[test]
+    fn bare_wildcard_is_the_bracket_wildcard() {
+        for (bare, bracket) in [("C*", "C[*]"), ("*C(*)=O", "[*]C([*])=O"), ("*", "[*]")] {
+            let a = parse(bare).unwrap();
+            let b = parse(bracket).unwrap();
+            assert_eq!(
+                crate::canonical_smiles(&a),
+                crate::canonical_smiles(&b),
+                "{bare}"
+            );
+            assert!(a.atoms().any(|(_, atom)| atom.wildcard));
+        }
     }
 
     #[test]

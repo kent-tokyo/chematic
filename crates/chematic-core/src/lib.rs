@@ -20,6 +20,7 @@ pub mod coords3d;
 pub mod derived_cache;
 pub mod element;
 pub mod extension;
+pub mod ez_markers;
 pub mod kekulization;
 pub mod molecule;
 pub mod stereo_geometry;
