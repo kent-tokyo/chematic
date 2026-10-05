@@ -138,7 +138,7 @@ the template creates takes the template's markers.
 
 These are policies, not bugs, and each is measured in the BioTransformer
 rule corpus record
-([benchmarks/2026-10-05-biotransformer-rule-corpus.md](../benchmarks/2026-10-05-biotransformer-rule-corpus.md)):
+([benchmark record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-05-biotransformer-rule-corpus.md)):
 
 - explicit-H reactants give the implicit-H products (step 3): RDKit's
   products that keep H atoms over-valent (`[SH2]`), as radicals or failing
