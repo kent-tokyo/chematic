@@ -29,7 +29,18 @@ RDLogger.DisableLog("rdApp.*")
 def load_cases(base_path: Path, strata_path: Path) -> tuple[list[dict], dict]:
     base = json.loads(base_path.read_text(encoding="utf-8"))
     strata = json.loads(strata_path.read_text(encoding="utf-8"))
-    if strata.get("schema_version") != 2 or strata.get("base_fixture_sha256") != hashlib.sha256(base_path.read_bytes()).hexdigest():
+    # Git may check JSON fixtures out with CRLF on Windows. Pin their logical
+    # UTF-8 text so the same fixture has the same digest on every platform.
+    base_sha256 = hashlib.sha256(
+        base_path.read_bytes().replace(b"\r\n", b"\n")
+    ).hexdigest()
+    strata_sha256 = hashlib.sha256(
+        strata_path.read_bytes().replace(b"\r\n", b"\n")
+    ).hexdigest()
+    if (
+        strata.get("schema_version") != 2
+        or strata.get("base_fixture_sha256") != base_sha256
+    ):
         raise ValueError("strata manifest does not pin the historical base fixture")
     cases = [{**case, "strata": ["legacy"]} for case in base] + strata["cases"]
     ids = [case["id"] for case in cases]
@@ -37,8 +48,7 @@ def load_cases(base_path: Path, strata_path: Path) -> tuple[list[dict], dict]:
         raise ValueError("legacy fixture count or case IDs changed")
     if any(not case.get("strata") or not isinstance(case.get("reactants"), list) for case in cases):
         raise ValueError("every case needs strata and reactants")
-    return cases, {"base_sha256": hashlib.sha256(base_path.read_bytes()).hexdigest(),
-                   "strata_sha256": hashlib.sha256(strata_path.read_bytes()).hexdigest()}
+    return cases, {"base_sha256": base_sha256, "strata_sha256": strata_sha256}
 
 
 def candidate_products(chematic, case: dict, *, checked_rdkit_compat: bool = False) -> dict:
