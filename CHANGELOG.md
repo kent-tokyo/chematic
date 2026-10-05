@@ -17,8 +17,9 @@ Where RDKit has a product, the source gives the same product sets for
 1,051/1,051 implicit-H pairs (v1.0.35: 775) and 6,604/6,652 explicit-H
 pairs (v1.0.35: 3,807), and refuses none (v1.0.35: 241 rules refused on
 every molecule). Records: `benchmarks/2026-10-05-biotransformer-rule-corpus.md`,
-`benchmarks/2026-10-05-biotransformer-corpus-followups.md` and
-`benchmarks/2026-10-05-biotransformer-corpus-followups-2.md`; the apply
+`benchmarks/2026-10-05-biotransformer-corpus-followups.md`,
+`benchmarks/2026-10-05-biotransformer-corpus-followups-2.md` and
+`benchmarks/2026-10-06-734-754-followups-batch9.md`; the apply
 model is written down in `docs/smirks-apply-model.md`.
 
 - **Canonical SMILES E/Z fix:** a direction stashed beside a bond and read
@@ -76,6 +77,25 @@ model is written down in `docs/smirks-apply-model.md`.
   whitespace in a SMIRKS is ignored.
 - Python reaction functions accept reactants of up to 1,000 atoms, explicit
   H atoms included (was 300).
+- Reaction products no longer depend on hash-map iteration order: carried
+  atoms are added from template atoms in reactant order and carried bonds in
+  product atom order (a mixed aromatic product's Kekulé form, and so whether
+  it passes RDKit's sanitize, changed with a map's capacity, BTMR1032).
+- Accurate CIP labels ring sulfoxides and selenoxides (RDKit reads their
+  spellings as chematic does); ring centres with three single bonds
+  (bridgehead amines, cyclic phosphines, sulfonium ions) stay
+  `LonePairCenter`, since RDKit's reading of their `@`/`@@` changes with the
+  spelling while chematic follows OpenSMILES.
+- **Behaviour change:** RDKit-model hybridization (`hybridization_per_atom`,
+  SMARTS `^n`): a multiple bond conjugates only toward a conjugation
+  candidate (the amine N of metal dithiocarbamates is sp3), and the `=O` of
+  a neutral Cl/Br/I oxo acid is sp3 as RDKit's clean-up reads it. Exposed
+  10k 220,014/220,015 atoms, ChEMBL 5k all 138,655, `^n` 134,999/135,000
+  cells (were 220,003, 138,654 and 134,990).
+- **Behaviour change:** MMFF94 typing: an aromatic S is thiophene S5 (44)
+  only in a five-membered ring, and a two-connected N double bonded to
+  neither C nor N is NM (62), as in RDKit. Heavy atoms typed differently
+  from RDKit: exposed 10k 89 → 88, ChEMBL 5k 103 → 53.
 - Performance: SMIRKS entry points that take the template as text
   (`run_reactants*`, Python `run_smirks_checked`, WASM checked reactions)
   share prepared templates through a bounded process-wide cache
@@ -88,7 +108,9 @@ model is written down in `docs/smirks-apply-model.md`.
   gone. SMARTS `^n` looks up conjugation only for atoms with fewer than
   four neighbours (`[C^2]` matching: 122M → 66M instructions on 1,500
   molecules), and the product valence check reads Kekulé orders in place
-  (13 reaction cases: 1.28x → 1.17x v1.0.34's instructions).
+  (13 reaction cases: 1.28x → 1.16x v1.0.34's instructions). `write_mol`
+  writes laid-out atom lines without the formatter (5% fewer instructions,
+  same bytes).
 
 - SMIRKS with more `[#6:n]`-style atoms than the aromatic/aliphatic
   expansion enumerates (256 combinations) are applied instead of refused

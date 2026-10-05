@@ -119,8 +119,11 @@ the RDKit-like regression gate, but the two models intentionally remain
 distinct; neither mode claims universal RDKit aromaticity parity. Known
 bridgehead-N and other fused-ring gaps remain documented residuals. Accurate
 CIP labels acyclic phosphorus and acyclic lone-pair centres as RDKit's
-CIPLabeler does; phosphorus on an unsaturated ring stays `OracleUnstable` and a
-ring lone-pair centre (bridgehead amine) stays `LonePairCenter`.
+CIPLabeler does, and ring sulfoxides/selenoxides; phosphorus on an unsaturated
+ring stays `OracleUnstable` and a ring lone-pair centre with three single bonds
+(bridgehead amine, cyclic phosphine or sulfonium) stays `LonePairCenter`:
+chematic reads its `@`/`@@` as OpenSMILES does (lone pair in the implicit-H
+position), RDKit's reading changes with the spelling.
 
 The default CIP path remains the fast legacy assignment. Accurate hierarchical
 CIP is opt-in through `CipMode::Accurate` (and its named Python/WASM binding
