@@ -8,6 +8,71 @@ benchmark claims remain scoped to their dated records.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Remaining #734 work: BioTransformer's public rule tables (983 rules, about
+the 1,200 the reporter used) were run through RDKit 2026.03.6 and the RDKit
+profile on 400 corpus molecules, as parsed and with explicit hydrogens.
+Where RDKit has a product, the source gives the same product sets for
+1,045/1,051 implicit-H pairs (v1.0.35: 775) and 6,453/6,652 explicit-H
+pairs (v1.0.35: 3,807); rules refused on every molecule went from 241 to 5.
+Record: `benchmarks/2026-10-05-biotransformer-rule-corpus.md`; the apply
+model is written down in `docs/smirks-apply-model.md`.
+
+- SMIRKS with more `[#6:n]`-style atoms than the aromatic/aliphatic
+  expansion enumerates (256 combinations) are applied instead of refused
+  (136 BioTransformer rules failed with "atomic-number SMARTS expansion
+  exceeds limit"). The RDKit profile no longer enumerates at all: reactant
+  atoms are SMARTS and product atoms aliphatic, as in RDKit, whose sanitize
+  then perceives aromaticity again.
+- **Behaviour change (RDKit profile):** a product `[#6:1]` mapped to a
+  reactant `[c:1]`, and a product `[#6;a:1]`, are built aliphatic, as RDKit
+  builds them (an aromatic ring cleavage now gives RDKit's product; a
+  dioxygenation that leaves one such atom in an aromatic ring gives RDKit's
+  empty set). The native profile keeps pairing aromaticity (#679).
+- Product bond expressions are read as RDKit's SMARTS parser reads them
+  (about 80 rules failed to parse): the first order primitive (`=,:` is
+  double, `-;!@` single, `!=` double), and no order after a leading ring
+  primitive (`!@-`, `@=`, `@`), which gives a zero-order bond.
+  **Behaviour change:** a product `~` keeps the reactant bond between two
+  atoms already bonded and is otherwise a zero-order bond that adds nothing
+  to valence (`[N+:1]>>[N+:1]~C` gives RDKit's `C[NH3+]~C`; it counted as a
+  single bond).
+- The RDKit profile accepts `/` and `\` in SMARTS-only reactant templates
+  (they match a single or aromatic bond, as RDKit matches them).
+- A mapped product atom naming no single element (`[F,Cl,Br,I;-:7]`) keeps
+  the matched element and applies a spelled charge, H count or isotope; an
+  H count or charge inside a list takes the first alternative written, as
+  RDKit does.
+- A product whose template writes Kekulé bonds into an aromatic ring is
+  judged after RDKit's sanitize steps (kekulize what is still aromatic,
+  perceive aromaticity again) instead of being dropped.
+- Product kekulization uses RDKit's candidate rule for neutral N and P and
+  for `[o+]`/`[s+]`: benzothiophene S-oxidation and methyl hydroxylation of
+  an imidazo[1,2-a]pyrimidinone (a ring-fusion N beside `c(=O)`) gave no
+  product in either profile.
+- E/Z next to the reaction centre is kept when the template rewrites the
+  carrier single bond, when the carrier was an explicit H atom, and when the
+  direction sits on an aromatic ring bond (`C/N=c1\c(O)c(O)c1`, dropped by
+  every template, even `[Cl:1]>>[Cl:1]`).
+- An explicit-H ring the template dearomatizes gets RDKit's H counts (ring
+  carbons are refilled instead of left as radicals).
+- SMARTS `$` is a quadruple bond, as in RDKit. It was a parse error in
+  SMARTS, and in a SMIRKS reactant template it matched any bond
+  (`[C:1]$[O:2]>>[C:1].[O:2]` split ethanol; found by `xsmarts-autoconf
+  tweak`).
+- **Behaviour change:** SMILES dummy atoms keep a charge, isotope or H count
+  (`[*-]`, `[13*]`, `[*H2]`); they were dropped.
+- Evidence: the published v1.0.35 PyPI Linux wheel (CPython 3.9), npm
+  package and crates.io crate each give 80 graph/origin/map matches and
+  three jointly invalid rows on the 83 reaction fixtures; the PyPI sdist
+  gives 75/83 xsmarts-autoconf flags with the same 8 expected differences.
+  The source gives the same on both. `tools/published_rust_checked_gate`
+  pins the published crate version.
+- Scripts: `biotransformer_rule_corpus.py` runs BioTransformer rule tables
+  through RDKit and chematic (rules are not vendored; the tables are pinned
+  by SHA-256 in the output).
+
 ## [1.0.35] - 2026-10-05
 
 SMARTS/SMIRKS dialect fixes from the xsmarts-autoconf report (#734, #754).
