@@ -1,7 +1,7 @@
 # Open-work ledger
 
-Updated 2026-10-05 for the **v1.0.35 release line**. v1.0.35 publication
-and published-package chemistry reruns remain open.
+Updated 2026-10-05 for the **v1.0.35 release line**. v1.0.35 publication is
+verified; published-package chemistry reruns remain open.
 Published chemistry/benchmark evidence is versioned:
 the P0.1 comparison remains v1.0.30, while the A6 quality packet includes
 v1.0.31. Unreleased source results are labeled separately. The
