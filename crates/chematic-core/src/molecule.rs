@@ -510,6 +510,15 @@ impl Molecule {
                 builder.set_bond_direction(*new_bidx, *direction);
             }
         }
+        // Anchors follow their atoms (a stash is read from its anchor).
+        for (old_bidx, anchor) in &self.bond_direction_anchors {
+            if let (Some(Some(new_bidx)), Some(Some(new_anchor))) = (
+                bond_remap.get(*old_bidx as usize),
+                remap.get(anchor.0 as usize),
+            ) {
+                builder.set_bond_direction_anchor(*new_bidx, *new_anchor);
+            }
+        }
         for (old_atom, label) in &self.r_groups {
             if let Some(Some(new_atom)) = remap.get(*old_atom as usize) {
                 builder.set_r_group(*new_atom, *label);
@@ -646,6 +655,9 @@ impl Molecule {
                 && let Some(direction) = self.bond_direction(bidx)
             {
                 builder.set_bond_direction(new_bidx, direction);
+                if let Some(anchor) = self.bond_direction_anchor(bidx) {
+                    builder.set_bond_direction_anchor(new_bidx, anchor);
+                }
             }
         }
         builder.copy_stereo_from(self);
@@ -1061,6 +1073,11 @@ impl Molecule {
     /// Returns `BondOrder::Up` or `BondOrder::Down` when present.
     pub fn bond_direction(&self, idx: BondIdx) -> Option<BondOrder> {
         self.bond_directions.get(&idx.0).copied()
+    }
+
+    /// Whether any bond has a stashed direction ([`Self::bond_direction`]).
+    pub fn has_bond_directions(&self) -> bool {
+        !self.bond_directions.is_empty()
     }
 
     /// Return the endpoint that anchored a parser-side aromatic direction

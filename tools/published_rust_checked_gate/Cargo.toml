@@ -7,6 +7,6 @@ publish = false
 [workspace]
 
 [dependencies]
-chematic = { version = "=1.0.34", default-features = false, features = ["smiles", "rxn"] }
+chematic = { version = "=1.0.35", default-features = false, features = ["smiles", "rxn"] }
 serde_json = "1"
 sha2 = "0.10"

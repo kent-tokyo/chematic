@@ -46,9 +46,15 @@ pub enum DerivedSlot {
     KekuleOrders = 8,
     /// Topological atom-equivalence classes (canonical SMILES writer).
     TopologicalClasses = 9,
+    /// The reactant RDKit's SMILES parser would see (stereo tags it drops
+    /// removed); `chematic-rxn`'s RDKit reaction profile.
+    RdkitParseCleanup = 10,
+    /// Whether RDKit's ring models (symmetrized rings for `R<n>` and ring
+    /// sizes) equal the SSSR for this molecule; `chematic-rxn`.
+    RdkitRingModelIsSssr = 11,
 }
 
-const SLOT_COUNT: usize = 10;
+const SLOT_COUNT: usize = 12;
 
 /// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
 /// the unwind-safety traits so `Molecule` stays usable across

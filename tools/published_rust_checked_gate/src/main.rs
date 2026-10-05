@@ -115,6 +115,9 @@ fn row(case: &Value) -> Result<Value, Box<dyn std::error::Error>> {
     Ok(json!({"status": status, "sets": sets, "diagnostics": diag}))
 }
 
+/// The published crate version pinned in Cargo.toml.
+const CHEMATIC_VERSION: &str = "1.0.35";
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().collect();
     if args.len() != 4 {
@@ -159,8 +162,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "schema": "python-checked-reaction-candidates/v1",
         "fixtures": {"base_sha256": digest(&base_bytes), "strata_sha256": digest(&strata_bytes)},
         "artifact": {"kind": "published_crate", "published": true,
-                     "published_from": "https://crates.io/crates/chematic/1.0.34",
-                     "chematic_version": "1.0.34", "crate_checksum": checksum},
+                     "published_from": format!("https://crates.io/crates/chematic/{CHEMATIC_VERSION}"),
+                     "chematic_version": CHEMATIC_VERSION, "crate_checksum": checksum},
         "rows": rows,
     });
     fs::write(&args[3], serde_json::to_string_pretty(&report)? + "\n")?;

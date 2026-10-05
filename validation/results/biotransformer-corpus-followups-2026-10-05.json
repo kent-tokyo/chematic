@@ -1,0 +1,163 @@
+{
+ "schema": "biotransformer-rule-corpus-summary/v1",
+ "date": "2026-10-05",
+ "rules_sources": [
+  {
+   "path": "database_metabolicReactions.json",
+   "sha256": "9bbfa5b8c0fd3d06539381714ca95fc5ff73fc3da821ce96d3f7bfb58915c04d"
+  },
+  {
+   "path": "database_ENVMICRO_metabolicReactions.json",
+   "sha256": "f586471d0f3674cda4577d95af73c19f5c779b9267fd663484be34ece3521836"
+  },
+  {
+   "path": "database_standardizationReactions.json",
+   "sha256": "749c16a0a0471b18a00cebda01b460839e5d7e10e5e7a8e7d7447f20f51804a8"
+  }
+ ],
+ "rules_upstream": {
+  "repository": "https://github.com/Wishartlab-openscience/Biotransformer",
+  "commit": "7149f7ec",
+  "note": "rule tables not vendored (LGPL-3.0 with a non-commercial clause; ENVMICRO CC BY-NC-SA); pinned by SHA-256"
+ },
+ "rule_count": 983,
+ "reactants": {
+  "file": "bt_reactants_400.smi",
+  "sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+  "every": 1,
+  "limit": null,
+  "count": 400
+ },
+ "rdkit": "2026.03.6",
+ "harness": "scripts/biotransformer_rule_corpus.py",
+ "lanes": {
+  "source": {
+   "chematic": "source f64fff42, CPython 3.11 release wheel",
+   "elapsed_seconds": 857.9,
+   "counts": {
+    "explicit_h:both_none": 382090,
+    "explicit_h:both_none_refused": 673,
+    "explicit_h:differ": 39,
+    "explicit_h:exact": 6601,
+    "explicit_h:rdkit_raw_unsanitizable": 185,
+    "explicit_h:rdkit_truncated_subset": 12,
+    "implicit:both_none": 388406,
+    "implicit:both_none_refused": 143,
+    "implicit:exact": 1051,
+    "multi_reactant_rules_skipped": 6,
+    "rdkit_parse_error_rules": 3,
+    "rules_run": 974
+   },
+   "rdkit_product_pairs": {
+    "implicit": 1051,
+    "explicit_h": 6652
+   },
+   "code_revision": "f64fff42"
+  },
+  "e2b188a8": {
+   "chematic": "source e2b188a8 (previous record)",
+   "elapsed_seconds": 618.4,
+   "counts": {
+    "explicit_h:both_none": 378251,
+    "explicit_h:both_none_refused": 4502,
+    "explicit_h:chematic_refused": 95,
+    "explicit_h:differ": 96,
+    "explicit_h:exact": 6453,
+    "explicit_h:rdkit_raw_unsanitizable": 193,
+    "explicit_h:rdkit_truncated_subset": 10,
+    "implicit:both_none": 386406,
+    "implicit:both_none_refused": 2142,
+    "implicit:chematic_refused": 2,
+    "implicit:differ": 5,
+    "implicit:exact": 1045,
+    "multi_reactant_rules_skipped": 6,
+    "rdkit_parse_error_rules": 3,
+    "rules_run": 974
+   },
+   "rdkit_product_pairs": {
+    "implicit": 1051,
+    "explicit_h": 6652
+   }
+  },
+  "v1.0.35": {
+   "chematic": "1.0.35 (PyPI sdist sha256 190b89eb..., built locally for CPython 3.11)",
+   "elapsed_seconds": 2914.7,
+   "counts": {
+    "explicit_h:both_none": 286419,
+    "explicit_h:both_none_refused": 96233,
+    "explicit_h:chematic_refused": 2478,
+    "explicit_h:differ": 442,
+    "explicit_h:exact": 3807,
+    "explicit_h:rdkit_raw_unsanitizable": 211,
+    "explicit_h:rdkit_truncated_subset": 10,
+    "implicit:both_none": 292218,
+    "implicit:both_none_refused": 96274,
+    "implicit:chematic_refused": 241,
+    "implicit:differ": 65,
+    "implicit:exact": 775,
+    "implicit:rdkit_raw_unsanitizable": 27,
+    "multi_reactant_rules_skipped": 6,
+    "rdkit_parse_error_rules": 3,
+    "rules_run": 974
+   },
+   "rdkit_product_pairs": {
+    "implicit": 1051,
+    "explicit_h": 6652
+   }
+  }
+ },
+ "source_non_exact_classes": [
+  {
+   "mode": "explicit_h",
+   "class": "E/Z only: RDKit RemoveHs drops an E/Z whose marker chematic writes on an H atom (macrocycle ring closure)",
+   "rows": 3
+  },
+  {
+   "mode": "explicit_h",
+   "class": "RDKit cannot kekulize an aromatic ring joined by unspecified bonds to the Kekule template ring (naphthalene); chematic keeps the products",
+   "rows": 1
+  },
+  {
+   "mode": "explicit_h",
+   "class": "RDKit keeps explicit H on S ([SH2]); implicit-H product",
+   "rows": 15
+  },
+  {
+   "mode": "explicit_h",
+   "class": "RDKit radical from kept H atoms/bracket count; chematic refills H",
+   "rows": 20
+  },
+  {
+   "mode": "explicit_h",
+   "class": "RDKit raw products all fail its sanitize; chematic gives the implicit-H product",
+   "rows": 185
+  },
+  {
+   "mode": "explicit_h",
+   "class": "RDKit stopped at max_products (H permutations); its set is a subset",
+   "rows": 12
+  }
+ ],
+ "gates": {
+  "reaction_83_checked_provenance": {
+   "graph_origin_map_match": 80,
+   "joint_invalid_input": 3
+  },
+  "xsmarts_autoconf_6ce94c9": "75/83, 0 unexpected"
+ },
+ "explicit_h_writer_check": {
+  "molecules": 572,
+  "rdkit_reads_back_changed": {
+   "before": 22,
+   "after": 1
+  },
+  "atom2_anchored_stash_canonical_changed": {
+   "before": "92/272",
+   "after": "0/572"
+  },
+  "random_smiles_canonical_changed": {
+   "explicit_h": "0/1716",
+   "implicit_h_stereo": "0/6748"
+  }
+ }
+}

@@ -10,6 +10,7 @@ pub mod aromaticity;
 pub mod cip_priority;
 pub mod pharmacophore;
 mod rdkit_parity;
+pub mod rdkit_sssr_order;
 pub mod ring_family;
 pub mod sssr;
 pub mod stereo_validation;
@@ -34,6 +35,7 @@ pub use rdkit_parity::{
     apply_aromaticity_rdkit_parity_shared, assign_aromaticity_rdkit_parity_experimental,
     rdkit_parity_view_is_identity, with_rdkit_parity_view,
 };
+pub use rdkit_sssr_order::rdkit_sssr_ring_order;
 pub use ring_family::{RingFamily, RingSystemKind, find_ring_families, find_ring_families_over};
 
 /// Diagnostic-only APIs, not meant for production use — reference-engine

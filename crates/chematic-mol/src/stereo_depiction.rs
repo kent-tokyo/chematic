@@ -330,6 +330,25 @@ fn wedge_matches(
     centre: AtomIdx,
     wedged: AtomIdx,
 ) -> Option<bool> {
+    wedge_matches_with(mol, drawn, coords, centre, wedged, NEIGHBOUR_SEPARATION_DEG)
+}
+
+/// Neighbours of a wedged centre drawn closer than this (degrees) leave the
+/// parity to each reader's tie-breaking.
+const NEIGHBOUR_SEPARATION_DEG: f64 = 15.0;
+/// The separation accepted when no wedge passes [`NEIGHBOUR_SEPARATION_DEG`]
+/// (a bridgehead squeezed by the layout): RDKit reads such a drawing as
+/// declared, while without a wedge every reader loses the centre.
+const FALLBACK_NEIGHBOUR_SEPARATION_DEG: f64 = 5.0;
+
+fn wedge_matches_with(
+    mol: &Molecule,
+    drawn: &Molecule,
+    coords: &[(f64, f64)],
+    centre: AtomIdx,
+    wedged: AtomIdx,
+    min_separation_deg: f64,
+) -> Option<bool> {
     // Neighbours drawn in (nearly) the same direction leave the parity to
     // each reader's tie-breaking; do not rely on such a drawing.
     let c = coords[centre.0 as usize];
@@ -343,7 +362,7 @@ fn wedge_matches(
     for (i, a) in angles.iter().enumerate() {
         for b in &angles[i + 1..] {
             let d = (a - b).rem_euclid(std::f64::consts::TAU);
-            if d.min(std::f64::consts::TAU - d) < 15f64.to_radians() {
+            if d.min(std::f64::consts::TAU - d) < min_separation_deg.to_radians() {
                 return None;
             }
         }
@@ -755,28 +774,35 @@ fn place_wedges(
             .collect();
         candidates.sort_by_key(|&(rank, nb, _)| (rank, nb.0));
         let mut placed = false;
-        for (_, nb, bond) in candidates {
-            for order in [BondOrder::Up, BondOrder::Down] {
-                let wedge = Wedge {
-                    start: centre,
-                    order,
-                };
-                drawn.set_bond_order(bond, stored_order(bond, wedge));
-                // A wedge also shows at its wide end, so a centre there that
-                // already has its wedge must still read as declared.
-                let other_ok = || {
-                    !is_centre(nb)
-                        || wedge_ends.get(&nb).is_none_or(|&end| {
-                            wedge_matches(mol, &drawn, coords, nb, end) == Some(true)
-                        })
-                };
-                if wedge_matches(mol, &drawn, coords, centre, nb) == Some(true) && other_ok() {
-                    wedge_ends.insert(centre, nb);
-                    wedges.insert(bond, wedge);
-                    placed = true;
+        for separation in [NEIGHBOUR_SEPARATION_DEG, FALLBACK_NEIGHBOUR_SEPARATION_DEG] {
+            for &(_, nb, bond) in &candidates {
+                for order in [BondOrder::Up, BondOrder::Down] {
+                    let wedge = Wedge {
+                        start: centre,
+                        order,
+                    };
+                    drawn.set_bond_order(bond, stored_order(bond, wedge));
+                    // A wedge also shows at its wide end, so a centre there
+                    // that already has its wedge must still read as declared.
+                    let other_ok = || {
+                        !is_centre(nb)
+                            || wedge_ends.get(&nb).is_none_or(|&end| {
+                                wedge_matches(mol, &drawn, coords, nb, end) == Some(true)
+                            })
+                    };
+                    if wedge_matches_with(mol, &drawn, coords, centre, nb, separation) == Some(true)
+                        && other_ok()
+                    {
+                        wedge_ends.insert(centre, nb);
+                        wedges.insert(bond, wedge);
+                        placed = true;
+                        break;
+                    }
+                    drawn.set_bond_order(bond, BondOrder::Single);
+                }
+                if placed {
                     break;
                 }
-                drawn.set_bond_order(bond, BondOrder::Single);
             }
             if placed {
                 break;
@@ -885,6 +911,11 @@ mod tests {
         // Pentacyclic: the last fused ring used to fall to the fallback
         // placement with two stretched bonds.
         "CCOC(=O)[C@]12CCC(C)(C)CC1C1C(=O)C=C3[C@@]4(C)C=C(C#N)C(=O)C(C)(C)[C@@H]4CC[C@@]3(C)[C@]1(C)CC2",
+        // A bridgehead and a cage spiro centre whose layout leaves two
+        // neighbours 9 and 12 degrees apart: wedged with the narrower
+        // fallback separation (RDKit 2026.03.6 reads both as declared).
+        "O=C1OC(=O)[C@@H]2[C@H]1[C@@H]1O[C@H]2C[C@@H]1COC(=O)[C@@H]1C[C@H]1c1ccccc1",
+        "CC1CC(=O)OC[C@]23C[C@@H](O)[C@H](C)C[C@H]2O[C@@H]2C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)O[C@@H](O)C1)[C@@]3(C)C21CO1",
     ];
 
     #[test]

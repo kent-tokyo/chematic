@@ -282,6 +282,26 @@ fn tetrahedral_4(
         return Err(StereoRejectionReason::ContradictoryWedges);
     }
 
+    // With one wedge/hash, the parity is the wedge's sign and the angular
+    // order of the three flat bonds around the centre. The triangle of their
+    // end points has that orientation only when they are equally long: two
+    // flat bonds a few degrees apart with different lengths turn it over
+    // (artemisinin's peroxide-bridge carbon in RDKit's layout, 12 ChEMBL
+    // rows, #734). Unit bond directions keep the angular order.
+    let mut pts = pts;
+    if pts.iter().filter(|p| p.z != 0.0).count() == 1
+        && let Some(&(cx, cy)) = coords.get(center.0 as usize)
+    {
+        for p in &mut pts {
+            let (dx, dy) = (p.x - cx, p.y - cy);
+            let len = dx.hypot(dy);
+            if len > VOLUME_EPS {
+                p.x = cx + dx / len;
+                p.y = cy + dy / len;
+            }
+        }
+    }
+
     // Apex = first-listed neighbor; viewed = the other three, in order.
     let vol = signed_volume(pts[1], pts[2], pts[3], pts[0]);
     if vol.abs() < VOLUME_EPS {

@@ -193,6 +193,22 @@ def test_run_smirks_checked_preserves_atom_sources_and_template_maps():
     assert missing["product_template_maps"] == []
 
 
+def test_reaction_reactant_limit_counts_explicit_h_up_to_1000_atoms():
+    # An explicit-H peptide of more than 300 atoms was refused at the old
+    # limit (#734 BioTransformer corpus); up to 1,000 atoms are accepted.
+    peptide = chematic.from_smiles("NCC(=O)" + "NCC(=O)" * 50 + "O").add_hydrogens()
+    assert 300 < len(peptide.atom_table) < 1000
+    report = chematic.run_smirks_checked(
+        "[C:1](=[O:2])[OH:3]>>[C:1](=[O:2])[O-:3]", [peptide], rdkit_compat=True
+    )
+    assert report["status"] == "products"
+    huge = chematic.from_smiles("C" * 400).add_hydrogens()
+    assert len(huge.atom_table) > 1000
+    refused = chematic.run_smirks_checked("[C:1]>>[C:1]O", [huge])
+    assert refused["status"] == "typed_refusal"
+    assert refused["reason"] == "reactant_too_large"
+
+
 def test_run_smirks_checked_reports_typed_errors():
     methane = chematic.from_smiles("C")
     invalid = chematic.run_smirks_checked("NOT_A_SMIRKS", [methane])

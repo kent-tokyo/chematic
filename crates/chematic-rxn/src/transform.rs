@@ -96,6 +96,10 @@ pub enum ReactionCompatibilityUnsupported {
     /// RDKit ignores reactant-template `/` `\\` when matching; this match
     /// was rejected by the native E/Z check.
     EzReactantTemplateSemantics,
+    /// A reactant template asks for a ring count or ring size (`R<n>`,
+    /// `r<n>`) and RDKit's symmetrized ring set for this reactant could not
+    /// be settled (the ring model is ambiguous or over its budget).
+    RingModelUnresolved,
 }
 
 impl ReactionCompatibilityUnsupported {
@@ -105,6 +109,7 @@ impl ReactionCompatibilityUnsupported {
             Self::ChiralReactantTemplateSemantics => "chiral_reactant_template_semantics",
             Self::AmbiguousStereoBondOrder => "ambiguous_stereo_bond_order",
             Self::EzReactantTemplateSemantics => "ez_reactant_template_semantics",
+            Self::RingModelUnresolved => "ring_model_unresolved",
         }
     }
 }
@@ -168,7 +173,7 @@ pub fn run_reactants_with_diagnostics(
     reactants: &[&Molecule],
     limits: &ReactionTransformLimits,
 ) -> Result<ReactionTransformReport, TransformError> {
-    PreparedReaction::new(smirks)?.run_reactants_with_diagnostics(reactants, limits)
+    PreparedReaction::shared(smirks)?.run_reactants_with_diagnostics(reactants, limits)
 }
 
 /// Like [`run_reactants`] but **does not carry through substituents**.
@@ -204,7 +209,7 @@ fn run_reactants_impl(
     let variants = crate::reaction::expand_atomic_number_primitives(smirks)?;
     let mut products = Vec::new();
     for variant in variants {
-        products.extend(PreparedReaction::new(&variant)?.run_reactants_impl(
+        products.extend(PreparedReaction::shared(&variant)?.run_reactants_impl(
             reactants,
             carry_substituents,
             limits,
@@ -421,8 +426,43 @@ pub fn run_reactants_traced_rdkit_2026_03_6(
     reactants: &[&Molecule],
     limits: &ReactionTransformLimits,
 ) -> Result<RdkitProfileOutcome, TransformError> {
-    PreparedReaction::new_with_reading(smirks, true)?
+    PreparedReaction::shared_with_reading(smirks, true)?
         .run_reactants_traced_rdkit_2026_03_6(reactants, limits)
+}
+
+/// Prepared templates by SMIRKS text, for the free functions that take a
+/// SMIRKS string: a batch applies the same template to many molecules, and
+/// preparing it (parsing and normalizing every component) took about a
+/// third of a BioTransformer corpus run. Bounded; cleared when full.
+type PreparedCache =
+    std::sync::Mutex<std::collections::HashMap<(bool, String), std::sync::Arc<PreparedReaction>>>;
+const PREPARED_CACHE_CAPACITY: usize = 2048;
+
+impl PreparedReaction {
+    /// [`Self::new`], shared from a process-wide cache keyed by the SMIRKS.
+    pub fn shared(smirks: &str) -> Result<std::sync::Arc<Self>, TransformError> {
+        Self::shared_with_reading(smirks, false)
+    }
+
+    fn shared_with_reading(
+        smirks: &str,
+        rdkit_reading: bool,
+    ) -> Result<std::sync::Arc<Self>, TransformError> {
+        static CACHE: std::sync::OnceLock<PreparedCache> = std::sync::OnceLock::new();
+        let cache = CACHE.get_or_init(Default::default);
+        let key = (rdkit_reading, smirks.to_string());
+        if let Some(hit) = cache.lock().ok().and_then(|c| c.get(&key).cloned()) {
+            return Ok(hit);
+        }
+        let prepared = std::sync::Arc::new(Self::new_with_reading(smirks, rdkit_reading)?);
+        if let Ok(mut c) = cache.lock() {
+            if c.len() >= PREPARED_CACHE_CAPACITY {
+                c.clear();
+            }
+            c.insert(key, std::sync::Arc::clone(&prepared));
+        }
+        Ok(prepared)
+    }
 }
 
 /// Outcome of applying a reaction under the pinned RDKit 2026.03.6 profile.
@@ -548,7 +588,14 @@ impl PreparedReaction {
     /// which then do not restrict matching (RDKit's reading). Only the RDKit
     /// profile entry points build with it.
     fn new_with_reading(smirks: &str, rdkit_reading: bool) -> Result<Self, TransformError> {
-        let variants = crate::reaction::expand_atomic_number_primitives(smirks)?;
+        // Surrounding whitespace is not part of the template (RDKit ignores
+        // it; the stereo tokenizer refused the template).
+        let smirks = smirks.trim();
+        let variants = if rdkit_reading {
+            crate::reaction::expand_atomic_number_primitives_rdkit(smirks)?
+        } else {
+            crate::reaction::expand_atomic_number_primitives(smirks)?
+        };
         if variants.len() > 1 || variants.first().is_none_or(|variant| variant != smirks) {
             let mut compiled = Vec::with_capacity(variants.len());
             for variant in &variants {
@@ -759,7 +806,7 @@ impl PreparedReaction {
         TransformError,
     > {
         // RDKit's SMILES parser drops tags on atoms that cannot be centres.
-        let cleaned: Vec<Option<Molecule>> = match profile {
+        let cleaned: Vec<std::sync::Arc<Option<Molecule>>> = match profile {
             Profile::Native => Vec::new(),
             Profile::Rdkit => reactants
                 .iter()
@@ -767,21 +814,19 @@ impl PreparedReaction {
                 .collect(),
         };
         let cleaned_refs: Vec<&Molecule>;
-        let reactants: &[&Molecule] = if cleaned.iter().any(Option::is_some) {
+        let reactants: &[&Molecule] = if cleaned.iter().any(|c| c.is_some()) {
             cleaned_refs = reactants
                 .iter()
                 .zip(&cleaned)
-                .map(|(&m, c)| c.as_ref().unwrap_or(m))
+                .map(|(&m, c)| c.as_ref().as_ref().unwrap_or(m))
                 .collect();
             &cleaned_refs
         } else {
             reactants
         };
-        let (matches, ez_rejected) = find_matches_profile(self, reactants, limits, None, profile)?;
-        if ez_rejected {
-            return Ok(Err(
-                ReactionCompatibilityUnsupported::EzReactantTemplateSemantics,
-            ));
+        let (matches, unsupported) = find_matches_profile(self, reactants, limits, None, profile)?;
+        if let Some(reason) = unsupported {
+            return Ok(Err(reason));
         }
         let accepted_matches = matches.len();
         let mut products = Vec::with_capacity(accepted_matches);
@@ -1218,12 +1263,24 @@ fn parse_smirks_templates(
     // Product query atoms (`[OX2H1:2]`) are reduced to what a product can
     // apply; callers reaching here without the atomic-number expansion
     // (e.g. `ReactionMatch::atom_map_positions`) get the same reading.
-    let products = crate::reaction::normalize_product_query_atoms(&format!(">>{}", parts[2]))
-        .map_err(TransformError::SmirksParse)?;
-    let products = first_alternative_product_bonds(&normalize_product_templates(&products[2..])?);
+    let products = crate::reaction::normalize_product_query_atoms_reading(
+        &format!(">>{}", parts[2]),
+        rdkit_reading,
+    )
+    .map_err(TransformError::SmirksParse)?;
+    let written = normalize_product_templates(&products[2..])?;
+    let products = rdkit_product_bonds(&written);
     // Product component grouping, `([C:1].[O:2])`: as in RDKit, a group is
     // one product object (one molecule with disconnected components).
     let grouped = grouped_product_components(&products)?;
+    let written_components: Vec<String> = match grouped_product_components(&written)? {
+        Some(components) => components,
+        None => written
+            .split('.')
+            .filter(|p| !p.is_empty())
+            .map(str::to_string)
+            .collect(),
+    };
     let ungrouped = grouped.as_ref().map_or(products.clone(), |c| c.join("."));
     // Agents and products through the ordinary reaction parser (with its
     // limits); the reactant slot is filled below.
@@ -1253,6 +1310,13 @@ fn parse_smirks_templates(
             .map(str::to_string)
             .collect(),
     };
+    if written_components.len() == rxn.products.len() {
+        for (component, original) in rxn.products.iter_mut().zip(&written_components) {
+            if original.contains(['@', ',', ';', '&', '!', '~']) {
+                zero_order_product_bonds(component, original);
+            }
+        }
+    }
     let product_specs = components.iter().map(|c| product_atom_specs(c)).collect();
     let (reactants, queries) = parse_reactant_templates(parts[0], rdkit_reading)?;
     let rdkit_queries = rdkit_reactant_queries(parts[0], &reactants, &queries);
@@ -1394,7 +1458,11 @@ fn parse_reactant_templates(
                         }
                     }
                 }
-                let shadow = shadow_molecule_of(&query).map_err(|reason| {
+                // RDKit does not match on `/`/`\` either (they match a
+                // single or aromatic bond, as in plain SMARTS): the RDKit
+                // profile accepts them; the native profile, which enforces
+                // E/Z on SMILES templates, refuses what it cannot check.
+                let shadow = shadow_molecule_of(&query, rdkit_reading).map_err(|reason| {
                     TransformError::SmirksParse(RxnError::UnsupportedReactantTemplate {
                         part: part.to_string(),
                         reason,
@@ -1582,7 +1650,10 @@ fn split_components(side: &str) -> Vec<&str> {
 /// atom per query atom (the implied element when the query pins one, else a
 /// wildcard) carrying the atom map, and one single bond per query bond.
 /// `Err` names the stereo feature that makes the query unsupported.
-fn shadow_molecule_of(query: &QueryMolecule) -> Result<Molecule, &'static str> {
+fn shadow_molecule_of(
+    query: &QueryMolecule,
+    allow_direction: bool,
+) -> Result<Molecule, &'static str> {
     fn has_chirality(q: &AtomQuery) -> bool {
         match q {
             AtomQuery::Primitive(AtomPrimitive::Chirality(_)) => true,
@@ -1625,7 +1696,7 @@ fn shadow_molecule_of(query: &QueryMolecule) -> Result<Molecule, &'static str> {
                     interpreted; spell the atom as a SMILES bracket atom or drop the stereo",
         );
     }
-    if query.bonds.iter().any(|b| has_direction(&b.query)) {
+    if !allow_direction && query.bonds.iter().any(|b| has_direction(&b.query)) {
         return Err(
             "double-bond stereo (/ or \\) in a SMARTS-only reactant template is not \
                     interpreted; spell the template with SMILES bonds or drop the stereo",
@@ -1650,38 +1721,96 @@ fn shadow_molecule_of(query: &QueryMolecule) -> Result<Molecule, &'static str> {
     Ok(builder.build())
 }
 
-/// A product bond spelled as a list of alternatives (`=,:`) takes the first
-/// one, as RDKit does (`[C:1]-[C:2]>>[C:1]=,:[C:2]` gives `C=C`). Only text
-/// outside bracket atoms is rewritten; a list whose first entry is not a
-/// plain bond symbol is left for the SMILES parser to refuse.
-fn first_alternative_product_bonds(products: &str) -> String {
-    const BOND: &[u8] = b"-=#:$/\\~";
+/// A product bond spelled as a SMARTS expression takes the bond type RDKit's
+/// SMARTS parser gives it: the first primitive's order (`=,:` is double,
+/// `-;!@` single, `!=` double: a leading `!` is skipped as RDKit does), or
+/// no order when the expression starts with a ring primitive (`!@-`, `@=`,
+/// `@`). An order-less bond is written `~` here and becomes a zero-order
+/// bond in [`zero_order_product_bonds`]. Only text outside bracket atoms is
+/// rewritten; a dative `->`/`<-` is left alone.
+fn rdkit_product_bonds(products: &str) -> String {
+    const EXPR: &[u8] = b"-=#:$/\\~@!,;&";
     let b = products.as_bytes();
     let mut out = String::with_capacity(products.len());
     let mut depth = 0usize;
     let mut i = 0;
     while i < b.len() {
         let c = b[i];
-        match c {
-            b'[' => depth += 1,
-            b']' => depth = depth.saturating_sub(1),
-            b',' if depth == 0 && i > 0 && BOND.contains(&b[i - 1]) => {
-                // Drop `,X` (and any further `,Y`) after the first bond symbol.
-                let mut j = i;
-                while j + 1 < b.len() && b[j] == b',' && BOND.contains(&b[j + 1]) {
-                    j += 2;
-                }
-                if j > i {
-                    i = j;
-                    continue;
-                }
+        if c == b'[' {
+            depth += 1;
+        } else if c == b']' {
+            depth = depth.saturating_sub(1);
+        } else if depth == 0 && EXPR.contains(&c) {
+            let mut j = i;
+            while j < b.len() && EXPR.contains(&b[j]) {
+                j += 1;
             }
-            _ => {}
+            let run = &products[i..j];
+            let dative = b.get(j) == Some(&b'>') || (i > 0 && b[i - 1] == b'<');
+            if (run.len() > 1 || run == "@") && !dative {
+                out.push(rdkit_bond_symbol(run));
+                i = j;
+                continue;
+            }
+            out.push_str(run);
+            i = j;
+            continue;
         }
         out.push(c as char);
         i += 1;
     }
     out
+}
+
+/// The single bond symbol for a product bond expression (see
+/// [`rdkit_product_bonds`]): its first primitive's order, or `~`.
+fn rdkit_bond_symbol(expr: &str) -> char {
+    expr.trim_start_matches('!')
+        .chars()
+        .next()
+        .filter(|c| "-=#:$/\\".contains(*c))
+        .unwrap_or('~')
+}
+
+/// Whether RDKit gives the product bond `q` no order: its first primitive
+/// is a ring primitive or `~` inside a larger expression (a lone `~` is
+/// RDKit's "any" bond, which keeps a reactant bond).
+fn zero_order_product_bond(q: &BondQuery) -> bool {
+    fn first(q: &BondQuery) -> &BondQuery {
+        match q {
+            BondQuery::And(a, _) | BondQuery::Or(a, _) => first(a),
+            BondQuery::Not(a) => first(a),
+            other => other,
+        }
+    }
+    let lone_any = matches!(q, BondQuery::Primitive(BondPrimitive::Any));
+    match first(q) {
+        BondQuery::Primitive(BondPrimitive::Ring) => true,
+        BondQuery::Primitive(BondPrimitive::Any) => !lone_any,
+        _ => false,
+    }
+}
+
+/// Set the bonds of a parsed product component that RDKit builds without an
+/// order (see [`rdkit_product_bonds`]) to [`BondOrder::Zero`]. `original` is
+/// the component as written, read as SMARTS for its bond expressions; atoms
+/// are numbered in text order by both parsers, so bonds pair by endpoints.
+fn zero_order_product_bonds(component: &mut Molecule, original: &str) {
+    let Ok(query) = chematic_smarts::parse_smarts(original) else {
+        return;
+    };
+    if query.atoms.len() != component.atom_count() {
+        return;
+    }
+    for qb in &query.bonds {
+        if !zero_order_product_bond(&qb.query) {
+            continue;
+        }
+        let (a, b) = (AtomIdx(qb.atom1 as u32), AtomIdx(qb.atom2 as u32));
+        if let Some((bidx, _)) = component.bond_between(a, b) {
+            component.set_bond_order(bidx, BondOrder::Zero);
+        }
+    }
 }
 
 /// The product components when the product side uses component grouping
@@ -1846,7 +1975,7 @@ fn find_matches_profile(
     limits: &ReactionTransformLimits,
     rings: Option<&[&RingSet]>,
     profile: Profile,
-) -> Result<(Vec<ReactionMatch>, bool), TransformError> {
+) -> Result<(Vec<ReactionMatch>, Option<ReactionCompatibilityUnsupported>), TransformError> {
     let views = aromatic_views(reactants);
     let perceived = perceived_refs(reactants, &views);
     let reactants: &[&Molecule] = &perceived;
@@ -1881,12 +2010,33 @@ fn find_matches_profile(
         (Profile::Rdkit, Some(rdkit)) => rdkit,
         _ => &prepared.queries,
     };
+    let mut ring_model_unresolved = false;
     let all_match_sets: Vec<Vec<FxHashMap<usize, AtomIdx>>> = queries
         .iter()
         .zip(reactants.iter())
         .enumerate()
         .map(|(index, (q, mol))| {
             let matches = match rings {
+                // RDKit counts `R<n>` and ring sizes on its symmetrized ring
+                // set (a quinuclidine N is in three rings there, two in the
+                // SSSR); the RDKit profile uses the SMARTS opt-in matcher
+                // that reads them that way.
+                None if profile == Profile::Rdkit
+                    && query_uses_ring_model(q)
+                    && !rdkit_ring_model_is_sssr(mol) =>
+                {
+                    let config = chematic_smarts::RdkitParityConfig {
+                        base: match_config.clone(),
+                        ..chematic_smarts::RdkitParityConfig::default()
+                    };
+                    match chematic_smarts::find_matches_rdkit_parity(q, mol, &config) {
+                        Ok((matches, _)) => matches,
+                        Err(_) => {
+                            ring_model_unresolved = true;
+                            Vec::new()
+                        }
+                    }
+                }
                 Some(rings) => {
                     find_matches_with_rings_and_config(q, mol, rings[index], &match_config)
                 }
@@ -1904,9 +2054,15 @@ fn find_matches_profile(
         })
         .collect::<Result<_, _>>()?;
 
+    if ring_model_unresolved {
+        return Ok((
+            vec![],
+            Some(ReactionCompatibilityUnsupported::RingModelUnresolved),
+        ));
+    }
     // No matches when any template has no match.
     if all_match_sets.iter().any(|ms| ms.is_empty()) {
-        return Ok((vec![], false));
+        return Ok((vec![], None));
     }
 
     let total_combinations = all_match_sets
@@ -1955,7 +2111,57 @@ fn find_matches_profile(
         });
     }
 
-    Ok((matches, ez_rejected))
+    Ok((
+        matches,
+        ez_rejected.then_some(ReactionCompatibilityUnsupported::EzReactantTemplateSemantics),
+    ))
+}
+
+/// Whether RDKit's ring models give the same rings as the SSSR for `mol`
+/// (no extra symmetrized rings, no organometallic view), so the ordinary
+/// matcher answers `R<n>` and ring-size queries as RDKit does. Memoized on
+/// the (cached) aromatic view; only cages such as quinuclidine or adamantane
+/// need the slower RDKit-parity matcher.
+fn rdkit_ring_model_is_sssr(mol: &Molecule) -> bool {
+    *mol.derived(chematic_core::DerivedSlot::RdkitRingModelIsSssr, || {
+        if mol
+            .atoms()
+            .any(|(_, a)| a.element == chematic_core::Element::FE)
+        {
+            return false;
+        }
+        let rings = chematic_perception::find_sssr(mol);
+        let budget = chematic_smarts::RdkitRingModelBudget::default();
+        let Ok(model) = chematic_smarts::build_rdkit_parity_ring_model(mol, &rings, &budget) else {
+            return false;
+        };
+        if model.extra_ring_count() > 0 {
+            return false;
+        }
+        let symmetrized = chematic_perception::find_symmetrized_sssr_with_diagnostics_bounded(
+            mol,
+            Some(budget.max_candidates),
+        );
+        symmetrized.status() != chematic_perception::SymmetrizedSssrStatus::CapExhausted
+            && symmetrized.rings().rings().len() == rings.rings().len()
+    })
+}
+
+/// Whether a reactant template asks for a positive ring count or a ring size,
+/// the primitives RDKit reads on its symmetrized ring set.
+fn query_uses_ring_model(query: &chematic_smarts::QueryMolecule) -> bool {
+    use chematic_smarts::{AtomPrimitive, AtomQuery};
+    fn atom(q: &AtomQuery) -> bool {
+        match q {
+            AtomQuery::Primitive(AtomPrimitive::RingCount(n)) => *n > 0,
+            AtomQuery::Primitive(AtomPrimitive::RingSize(_)) => true,
+            AtomQuery::Primitive(AtomPrimitive::Recursive(sub)) => query_uses_ring_model(sub),
+            AtomQuery::Primitive(_) => false,
+            AtomQuery::And(a, b) | AtomQuery::Or(a, b) => atom(a) || atom(b),
+            AtomQuery::Not(a) => atom(a),
+        }
+    }
+    query.atoms.iter().any(|a| atom(&a.query))
 }
 
 /// The RDKit-parity aromatic view of each reactant, where it differs from
@@ -2075,6 +2281,7 @@ fn apply_match_profile(
                     &mut product.molecule,
                 )
                 .map_err(|_| ReactionCompatibilityUnsupported::AmbiguousStereoBondOrder)?;
+                rdkit_carried_ez(&mut product, reactants, pt, &template_idx_to_new);
             }
             // The same provenance map serves traced and ordinary reaction
             // APIs. Born atoms remain untagged; caller labels are not remapped
@@ -2094,6 +2301,20 @@ fn apply_match_profile(
         })
         .collect::<Result<_, ReactionCompatibilityUnsupported>>()?;
 
+    // A template that writes Kekulé bonds into an aromatic ring (`=,:` takes
+    // its first alternative) leaves atoms flagged aromatic beside plain
+    // double bonds, as in RDKit's raw product; RDKit's sanitize kekulizes
+    // what is still aromatic and perceives aromaticity again. Do the same
+    // before judging the product.
+    let mut products = products;
+    for product in &mut products {
+        if mixed_aromatic_state(&product.molecule)
+            && let Some(view) = rdkit_sanitized_view(&product.molecule)
+        {
+            product.molecule = view;
+        }
+    }
+
     // Skip product sets RDKit's sanitize step would reject (issue #734).
     if products.iter().all(|p| sanitizable_product(&p.molecule)) {
         crate::perf_counters::record_product_set();
@@ -2101,6 +2322,385 @@ fn apply_match_profile(
     } else {
         Ok(None)
     }
+}
+
+/// RDKit's legacy CIP ranks (`assignStereochemistry`'s atom invariants,
+/// which pick a double bond's stereo atoms): atomic number and isotope,
+/// refined by the sorted ranks of the neighbours, each counted by bond order
+/// (twice the order, so a double bond's partner counts twice), and implicit
+/// H as the lowest rank. Explicit H atoms are ordinary neighbours, so an
+/// explicit-H molecule ranks as its implicit-H form.
+fn rdkit_legacy_cip_ranks(mol: &Molecule) -> Vec<u32> {
+    let n = mol.atom_count();
+    let key0 = |i: usize| {
+        let a = mol.atom(AtomIdx(i as u32));
+        (
+            u32::from(a.element.atomic_number()),
+            u32::from(a.isotope.unwrap_or(0)),
+        )
+    };
+    let mut keys0: Vec<(u32, u32)> = (0..n).map(key0).collect();
+    keys0.sort_unstable();
+    keys0.dedup();
+    let mut ranks: Vec<u32> = (0..n)
+        .map(|i| keys0.binary_search(&key0(i)).unwrap_or(0) as u32 + 1)
+        .collect();
+    let mut distinct = keys0.len();
+    for _ in 0..n {
+        let keys: Vec<(u32, Vec<u32>)> = (0..n)
+            .map(|i| {
+                let idx = AtomIdx(i as u32);
+                let mut nbrs: Vec<u32> = Vec::new();
+                for (nb, b) in mol.neighbors(idx) {
+                    let count = match mol.bond(b).order {
+                        BondOrder::Double => 4,
+                        BondOrder::Triple => 6,
+                        BondOrder::Aromatic => 3,
+                        BondOrder::Zero => 0,
+                        _ => 2,
+                    };
+                    nbrs.extend(std::iter::repeat_n(ranks[nb.0 as usize], count));
+                }
+                // Implicit H: rank 0, below every atom.
+                let h = chematic_core::implicit_hcount(mol, idx) as usize;
+                nbrs.extend(std::iter::repeat_n(0, 2 * h));
+                nbrs.sort_unstable_by(|a, b| b.cmp(a));
+                (ranks[i], nbrs)
+            })
+            .collect();
+        let mut sorted: Vec<&(u32, Vec<u32>)> = keys.iter().collect();
+        sorted.sort_unstable();
+        sorted.dedup();
+        let next: Vec<u32> = keys
+            .iter()
+            .map(|k| sorted.binary_search(&k).unwrap_or(0) as u32 + 1)
+            .collect();
+        let now = sorted.len();
+        ranks = next;
+        if now == distinct {
+            break;
+        }
+        distinct = now;
+    }
+    ranks
+}
+
+/// RDKit's reading of a reactant double bond's E/Z at one end: its stereo
+/// atom (the substituent of higher legacy CIP rank, which RDKit records
+/// whatever the markers), that atom's side seen from the end, and the end's
+/// other substituent. `None` when the end has no stereo atom.
+fn rdkit_reactant_ez_end(
+    mol: &Molecule,
+    ranks: &[u32],
+    double: BondIdx,
+    end: AtomIdx,
+) -> Option<(AtomIdx, bool, Option<AtomIdx>)> {
+    use chematic_core::ez_markers::marker_side;
+    let subs: Vec<(AtomIdx, BondIdx)> = mol
+        .neighbors(end)
+        .filter(|&(_, b)| b != double && mol.bond(b).order != BondOrder::Double)
+        .collect();
+    let (stereo, other) = match subs.as_slice() {
+        [one] => (*one, None),
+        [a, b] => match ranks[a.0.0 as usize].cmp(&ranks[b.0.0 as usize]) {
+            std::cmp::Ordering::Less => (*b, Some(*a)),
+            std::cmp::Ordering::Greater => (*a, Some(*b)),
+            std::cmp::Ordering::Equal => return None,
+        },
+        _ => return None,
+    };
+    let side = marker_side(mol, stereo.1, end)
+        .or_else(|| other.and_then(|o| marker_side(mol, o.1, end)).map(|up| !up))?;
+    Some((stereo.0, side, other.map(|o| o.0)))
+}
+
+/// E/Z of product double bonds copied from a reactant double bond, as
+/// RDKit's reaction runner carries it: the reactant bond's stereo atoms are
+/// followed into the product. A stereo atom left out of the product is
+/// replaced by the end's other substituent, on the other side (the E/Z
+/// survives losing the bond that carried its marker); a stereo atom still in
+/// the product but no longer bonded to its end drops the E/Z (a ring
+/// expansion inserting an atom on that side). A template double bond with
+/// template neighbours at both ends takes the template's stereo: the
+/// template's own when it spells one, else none.
+fn rdkit_carried_ez(
+    product: &mut TracedProduct,
+    reactants: &[&Molecule],
+    template: &Molecule,
+    template_idx_to_new: &[Option<AtomIdx>],
+) {
+    use chematic_core::ez_markers::{
+        EzFact, EzFactEnd, raw_direction, read_ez_facts, write_ez_facts,
+    };
+    if !reactants
+        .iter()
+        .any(|r| r.bonds().any(|(b, _)| raw_direction(r, b).is_some()))
+    {
+        return;
+    }
+    let mol = &product.molecule;
+    let template_atom_of: FxHashMap<AtomIdx, AtomIdx> = template_idx_to_new
+        .iter()
+        .enumerate()
+        .filter_map(|(t, p)| p.map(|p| (p, AtomIdx(t as u32))))
+        .collect();
+    // The template double bond between two product atoms, with whether each
+    // template end has another template neighbour and a marked one.
+    let template_double = |a: AtomIdx, b: AtomIdx| -> Option<(bool, bool)> {
+        let (&ta, &tb) = (template_atom_of.get(&a)?, template_atom_of.get(&b)?);
+        let (tbond, entry) = template.bond_between(ta, tb)?;
+        (entry.order == BondOrder::Double).then(|| {
+            let ends = [ta, tb];
+            let neighbours = ends
+                .iter()
+                .all(|&end| template.neighbors(end).any(|(_, nb)| nb != tbond));
+            let marked = ends.iter().all(|&end| {
+                template
+                    .neighbors(end)
+                    .any(|(_, nb)| nb != tbond && raw_direction(template, nb).is_some())
+            });
+            (neighbours, marked)
+        })
+    };
+    let product_of = |ri: usize, atom: AtomIdx| -> Option<AtomIdx> {
+        product
+            .atom_sources
+            .iter()
+            .position(|s| s.is_some_and(|s| s.reactant == ri && s.atom == atom))
+            .map(|i| AtomIdx(i as u32))
+    };
+    let mut dropped: Vec<BondIdx> = Vec::new();
+    let mut derived: Vec<EzFact> = Vec::new();
+    let mut rank_cache: FxHashMap<usize, Vec<u32>> = FxHashMap::default();
+    for (pb, bond) in mol.bonds() {
+        if bond.order != BondOrder::Double {
+            continue;
+        }
+        let (pa, pz) = (bond.atom1, bond.atom2);
+        let (Some(sa), Some(sz)) = (
+            product.atom_sources[pa.0 as usize],
+            product.atom_sources[pz.0 as usize],
+        ) else {
+            continue;
+        };
+        if sa.reactant != sz.reactant {
+            continue;
+        }
+        let r = reactants[sa.reactant];
+        let Some((rb, rbond)) = r.bond_between(sa.atom, sz.atom) else {
+            continue;
+        };
+        if rbond.order != BondOrder::Double || r.atom(sa.atom).aromatic && r.atom(sz.atom).aromatic
+        {
+            continue;
+        }
+        let ranks = rank_cache
+            .entry(sa.reactant)
+            .or_insert_with(|| rdkit_legacy_cip_ranks(r));
+        let (Some(ea), Some(ez)) = (
+            rdkit_reactant_ez_end(r, ranks, rb, sa.atom),
+            rdkit_reactant_ez_end(r, ranks, rb, sz.atom),
+        ) else {
+            continue;
+        };
+        match template_double(pa, pz) {
+            // The template spells this double bond's stereo: keep it.
+            Some((_, true)) => continue,
+            // `[C:4][C:1]=[C:2][C:3]>>[C:4][C:1]=[C:2][C:3]` on an alkene,
+            // BTMR0072 on a bis-allylic CH2: no E/Z.
+            Some((true, false)) => {
+                dropped.push(pb);
+                continue;
+            }
+            _ => {}
+        }
+        let mut ends: Vec<EzFactEnd> = Vec::with_capacity(2);
+        let mut drop = false;
+        for (p_end, (stereo, side, other)) in [(pa, ea), (pz, ez)] {
+            let reference = match product_of(sa.reactant, stereo) {
+                Some(ps) => match mol.bond_between(p_end, ps) {
+                    Some((b, _)) => Some((b, side)),
+                    None => {
+                        drop = true;
+                        None
+                    }
+                },
+                // Only the end's other reactant substituent replaces it; an
+                // atom the template adds does not (a vinyl iodide reduced to
+                // `C=C[H]` has no E/Z, BTMR0671).
+                None => other
+                    .and_then(|o| product_of(sa.reactant, o))
+                    .and_then(|po| mol.bond_between(p_end, po))
+                    .map(|(b, _)| (b, !side)),
+            };
+            match reference {
+                Some((reference, up)) => ends.push(EzFactEnd {
+                    atom: p_end,
+                    reference,
+                    up,
+                }),
+                None => {
+                    drop = true;
+                    break;
+                }
+            }
+        }
+        if drop {
+            dropped.push(pb);
+        } else if let [a, b] = ends.as_slice() {
+            derived.push(EzFact {
+                double: pb,
+                ends: [*a, *b],
+            });
+        }
+    }
+    if dropped.is_empty() && derived.is_empty() {
+        return;
+    }
+    // Markers of dropped double bonds go first, so they cannot be read as
+    // another double bond's (or conflict with its).
+    let mut trial = product.molecule.clone();
+    let keep: FxHashSet<BondIdx> = derived
+        .iter()
+        .flat_map(|f| f.ends.iter().map(|e| e.reference))
+        .collect();
+    for &pb in &dropped {
+        let bond = trial.bond(pb);
+        for end in [bond.atom1, bond.atom2] {
+            let subs: Vec<BondIdx> = trial
+                .neighbors(end)
+                .filter(|&(_, b)| b != pb && !keep.contains(&b))
+                .map(|(_, b)| b)
+                .collect();
+            for b in subs {
+                if matches!(trial.bond(b).order, BondOrder::Up | BondOrder::Down) {
+                    trial.set_bond_order(b, BondOrder::Single);
+                }
+            }
+        }
+    }
+    let mut facts = read_ez_facts(&trial).map(|(f, _)| f).unwrap_or_default();
+    facts.retain(|f| !dropped.contains(&f.double) && !derived.iter().any(|d| d.double == f.double));
+    facts.extend(derived);
+    if write_ez_facts(&mut trial, &facts) {
+        product.molecule = trial;
+    }
+}
+
+/// Atoms flagged aromatic with a plain double bond between two of them or
+/// with fewer than two aromatic bonds, or an aromatic bond on an atom not
+/// flagged aromatic: a template rewrote part of an aromatic system.
+fn mixed_aromatic_state(mol: &Molecule) -> bool {
+    mol.bonds().any(|(_, b)| {
+        b.order == BondOrder::Double && mol.atom(b.atom1).aromatic && mol.atom(b.atom2).aromatic
+    }) || mol.atoms().any(|(idx, a)| {
+        let aromatic_bonds = mol
+            .neighbors(idx)
+            .filter(|&(_, b)| mol.bond(b).order == BondOrder::Aromatic)
+            .count();
+        (a.aromatic && aromatic_bonds < 2) || (!a.aromatic && aromatic_bonds > 0)
+    })
+}
+
+/// `mol` after RDKit's sanitize steps for a mixed aromatic state: the
+/// remaining aromatic bonds kekulized, aromatic flags cleared, aromaticity
+/// perceived again with RDKit's model. `None` when the aromatic bonds do
+/// not kekulize (RDKit's sanitize fails too).
+fn rdkit_sanitized_view(mol: &Molecule) -> Option<Molecule> {
+    // RDKit's kekulization refuses an aromatic atom outside a ring.
+    let in_ring = atoms_in_rings(mol);
+    if mol
+        .atoms()
+        .any(|(idx, a)| a.aromatic && !in_ring[idx.0 as usize])
+    {
+        return None;
+    }
+    // RDKit kekulizes the aromatic bonds; see [`rdkit_kekule_candidate`].
+    let mut kekule = if mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic) {
+        let k = chematic_core::kekulize_with(mol, |idx| rdkit_kekule_candidate(mol, idx)).ok()?;
+        chematic_core::apply_kekule(mol, &k)
+    } else {
+        mol.clone()
+    };
+    let flagged: Vec<AtomIdx> = kekule
+        .atoms()
+        .filter(|(_, a)| a.aromatic)
+        .map(|(i, _)| i)
+        .collect();
+    for idx in flagged {
+        kekule.set_atom_aromatic(idx, false);
+    }
+    let mut view = match &*chematic_perception::apply_aromaticity_rdkit_parity_shared(&kekule) {
+        Ok(view) => view.clone(),
+        Err(_) => kekule,
+    };
+    // RDKit recomputes the H count of a carbon read without brackets: one
+    // left non-aromatic takes the hydrogens its Kekulé bonds leave room for
+    // (an explicit-H ring CH next to a carbon the template made sp3 becomes
+    // CH2, BTMR0655).
+    for (idx, atom) in mol.atoms() {
+        let now = view.atom(idx);
+        if atom.aromatic
+            && atom.element == chematic_core::Element::C
+            && atom.charge == 0
+            && !now.aromatic
+            && now.hydrogen_count.is_some()
+        {
+            view.set_hydrogen_count(idx, None);
+        }
+    }
+    Some(view)
+}
+
+/// Whether RDKit's kekulization would give atom `idx` of `mol` a double
+/// bond. RDKit makes an atom a candidate when its bond orders (aromatic
+/// bonds as 1) and explicit H come to one less than its default valence,
+/// `sbo == dv - 1`. That rule decides for an atom that already has a
+/// non-aromatic double or triple bond (a benzene carbon whose ring bond a
+/// template rewrote as `=` still is a candidate, RDKit's `C1=C=CC=CC=1`; a
+/// ring carbon with a substituent or a second ring bond rewritten is not)
+/// for a chalcogen cation (`[o+]`/`[s+]` with two ring bonds, as in
+/// pyrylium, is one; a thiophene S-oxide `[O-][s+]1cccc1` is not) and for a
+/// neutral N or P (pyridine's N is one; a ring-fusion N with three aromatic
+/// bonds is not, also when its third ring neighbour is a `c(=O)` carbon, as
+/// in imidazo[1,2-a]pyrimidin-5-one, where chematic's bridgehead fallback
+/// does not apply). Other atoms follow chematic's ordinary rule.
+fn rdkit_kekule_candidate(mol: &Molecule, idx: AtomIdx) -> bool {
+    let atom = mol.atom(idx);
+    let pi = mol
+        .neighbors(idx)
+        .any(|(_, b)| matches!(mol.bond(b).order, BondOrder::Double | BondOrder::Triple));
+    let chalcogen_cation =
+        matches!(atom.element.atomic_number(), 8 | 16 | 34 | 52) && atom.charge == 1;
+    let neutral_pnictogen = matches!(atom.element.atomic_number(), 7 | 15)
+        && atom.charge == 0
+        && !mol
+            .neighbors(idx)
+            .any(|(nb, _)| mol.atom(nb).element.atomic_number() == 1);
+    // A zero-order bond (RDKit's unspecified bond from a product `~` or
+    // ring-led `@`) is not counted for a neutral N or P: an [nH] of an
+    // explicit-H indole left with one aromatic bond and a zero-order bond
+    // to its fused ring is then a candidate, as in RDKit, and the product
+    // fails to kekulize (BTMR1031). Carbon keeps the ordinary rule there
+    // (RDKit kekulizes `c1ccc~cc1`).
+    let pnictogen_beside_zero = matches!(atom.element.atomic_number(), 7 | 15)
+        && atom.charge == 0
+        && mol
+            .neighbors(idx)
+            .any(|(_, b)| mol.bond(b).order == BondOrder::Zero);
+    if !pi && !chalcogen_cation && !neutral_pnictogen && !pnictogen_beside_zero {
+        return chematic_core::atom_must_be_matched(mol, idx);
+    }
+    let sbo: i16 = mol
+        .neighbors(idx)
+        .map(|(_, b)| match mol.bond(b).order {
+            BondOrder::Aromatic => 1,
+            order => i16::from(order.order_int()),
+        })
+        .sum::<i16>()
+        + i16::from(atom.hydrogen_count.unwrap_or(0));
+    crate::rdkit_valence::default_valence(atom.element.atomic_number(), atom.charge)
+        .is_some_and(|dv| sbo == dv - 1)
 }
 
 /// Whether RDKit's sanitize step would accept `mol` (issue #734).
@@ -2136,24 +2736,29 @@ fn sanitizable_product(mol: &Molecule) -> bool {
             return false;
         }
     }
-    let kekule;
-    let mol = if mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic) {
-        match chematic_core::kekulize(mol) {
-            Ok(k) => {
-                kekule = chematic_core::apply_kekule(mol, &k);
-                &kekule
-            }
+    // Kekulé orders of the aromatic bonds, read in place (the product is
+    // not copied).
+    let kekule = if mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic) {
+        match chematic_core::kekulize_with(mol, |idx| rdkit_kekule_candidate(mol, idx)) {
+            Ok(k) => Some(k),
             Err(_) => return false,
         }
     } else {
-        mol
+        None
+    };
+    let order_of = |b: BondIdx| {
+        let order = mol.bond(b).order;
+        match (&kekule, order) {
+            (Some(k), BondOrder::Aromatic) => k.get(&b).copied().unwrap_or(order),
+            _ => order,
+        }
     };
     let explicit_valence = |idx: AtomIdx| -> i16 {
         let bonds: i16 = mol
             .neighbors(idx)
             .map(|(_, b)| {
                 let bond = mol.bond(b);
-                match bond.order {
+                match order_of(b) {
                     BondOrder::Dative if bond.atom1 == idx => 0,
                     order => i16::from(order.order_int()),
                 }
@@ -2172,7 +2777,7 @@ fn sanitizable_product(mol: &Molecule) -> bool {
         if charge == 0 {
             let bond_to = |order: BondOrder, nz: u8| {
                 mol.neighbors(idx).any(|(nb, b)| {
-                    mol.bond(b).order == order && {
+                    order_of(b) == order && {
                         let n = mol.atom(nb);
                         n.element.atomic_number() == nz && n.charge == 0
                     }
@@ -2192,7 +2797,7 @@ fn sanitizable_product(mol: &Molecule) -> bool {
             {
                 let doubles = mol
                     .neighbors(idx)
-                    .filter(|&(_, b)| mol.bond(b).order == BondOrder::Double)
+                    .filter(|&(_, b)| order_of(b) == BondOrder::Double)
                     .count() as i16;
                 charge = doubles as i8;
                 used -= doubles;
@@ -2200,6 +2805,56 @@ fn sanitizable_product(mol: &Molecule) -> bool {
         }
         max_valence(z, charge).is_none_or(|max| used <= max)
     })
+}
+
+/// Copy each reactant bond's stashed direction ([`Molecule::bond_direction`]
+/// with its anchor) onto the product bond between the same two atoms, when
+/// that bond is still single or aromatic and one of its atoms keeps a double
+/// bond to a third atom (#734: `[Cl:1]>>[Cl:1]` dropped the E/Z of a
+/// squaraine imine).
+fn carry_direction_stash(
+    product: &mut Molecule,
+    input_mols: &[&Molecule],
+    src_to_new: &FxHashMap<(usize, AtomIdx), AtomIdx>,
+) {
+    if !input_mols.iter().any(|m| m.has_bond_directions()) {
+        return;
+    }
+    let mut source_of: FxHashMap<AtomIdx, (usize, AtomIdx)> =
+        FxHashMap::with_capacity_and_hasher(src_to_new.len(), Default::default());
+    for (&key, &new_idx) in src_to_new {
+        source_of.insert(new_idx, key);
+    }
+    let stashed: Vec<(BondIdx, BondOrder, AtomIdx)> = product
+        .bonds()
+        .filter_map(|(pb, bond)| {
+            if !matches!(bond.order, BondOrder::Single | BondOrder::Aromatic)
+                || product.bond_direction(pb).is_some()
+            {
+                return None;
+            }
+            let &(ma, sa) = source_of.get(&bond.atom1)?;
+            let &(mb, sb) = source_of.get(&bond.atom2)?;
+            if ma != mb {
+                return None;
+            }
+            let src = input_mols[ma];
+            let (sbid, sbond) = src.bond_between(sa, sb)?;
+            let dir = src.bond_direction(sbid)?;
+            let anchor = src.bond_direction_anchor(sbid).unwrap_or(sbond.atom1);
+            let new_anchor = *src_to_new.get(&(ma, anchor))?;
+            let flanks_double = [bond.atom1, bond.atom2].into_iter().any(|end| {
+                product
+                    .neighbors(end)
+                    .any(|(_, b)| b != pb && product.bond(b).order == BondOrder::Double)
+            });
+            flanks_double.then_some((pb, dir, new_anchor))
+        })
+        .collect();
+    for (pb, dir, anchor) in stashed {
+        product.set_bond_direction(pb, dir);
+        product.set_bond_direction_anchor(pb, anchor);
+    }
 }
 
 /// Per atom, whether it lies on a ring (has an incident non-bridge bond).
@@ -2540,9 +3195,8 @@ fn mol_to_query(mol: &Molecule) -> QueryMolecule {
                 Box::new(BondQuery::Primitive(BondPrimitive::Double)),
                 Box::new(BondQuery::Primitive(BondPrimitive::Aromatic)),
             ),
-            BondOrder::Quadruple | BondOrder::Zero | BondOrder::QueryAny => {
-                BondQuery::Primitive(BondPrimitive::Any)
-            }
+            BondOrder::Quadruple => BondQuery::Primitive(BondPrimitive::Quadruple),
+            BondOrder::Zero | BondOrder::QueryAny => BondQuery::Primitive(BondPrimitive::Any),
         };
         qmol.add_bond(bond.atom1.0 as usize, bond.atom2.0 as usize, bq);
     }
@@ -2929,7 +3583,12 @@ fn build_product(
     carry_substituents: bool,
     specs: &[ProductAtomSpec],
 ) -> (TracedProduct, Vec<Option<AtomIdx>>) {
-    let mut builder = MoleculeBuilder::new();
+    // A product holds at most the reactants' atoms and bonds plus the
+    // template's: reserve them once instead of growing per atom and bond.
+    let mut builder = MoleculeBuilder::with_capacity(
+        input_mols.iter().map(|m| m.atom_count()).sum::<usize>() + product_template.atom_count(),
+        input_mols.iter().map(|m| m.bond_count()).sum::<usize>() + product_template.bond_count(),
+    );
     // What each template atom's spelling specifies; without spelling
     // information a charge always applies and only `H<n>` with n > 0 pins
     // the H count (a bare bracket atom's `Some(0)` is "unspecified", #18).
@@ -2952,21 +3611,22 @@ fn build_product(
     // template_idx_to_new[i]: new AtomIdx for product template atom i.
     let mut template_idx_to_new: Vec<Option<AtomIdx>> = vec![None; product_template.atom_count()];
     // src_to_new: (mol_idx, src_AtomIdx) → new AtomIdx in the product.
-    let mut src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx> = FxHashMap::default();
+    let mut src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx> = FxHashMap::with_capacity_and_hasher(
+        input_mols.iter().map(|m| m.atom_count()).sum(),
+        Default::default(),
+    );
 
     // --- Step 1: add product template atoms ---
     // core_keys: only source atoms that are mapped by THIS product template.
     // Using global_map.values() (all matched atoms across all templates) would
     // seed the BFS in Step 2 from atoms belonging to *other* product templates,
     // causing their substituents to leak into this product (issue #13).
-    let product_maps: FxHashSet<u16> = (0..product_template.atom_count())
-        .filter_map(|i| product_template.atom(AtomIdx(i as u32)).atom_map)
+    let mut core_keys: Vec<(usize, AtomIdx)> = product_template
+        .atoms()
+        .filter_map(|(_, atom)| atom.atom_map.and_then(|am| global_map.get(&am).copied()))
         .collect();
-    let core_keys: FxHashSet<(usize, AtomIdx)> = global_map
-        .iter()
-        .filter(|(am, _)| product_maps.contains(am))
-        .map(|(_, &src)| src)
-        .collect();
+    core_keys.sort_unstable();
+    core_keys.dedup();
 
     // Explicit hydrogen atoms (issue #734): a mapped, non-stereo atom's plain
     // H-atom neighbours that the template did not match are not carried as
@@ -2990,13 +3650,17 @@ fn build_product(
     };
 
     // Reactants given with explicit H atoms (`add_hydrogens`).
-    let explicit_h_reactant: Vec<bool> = input_mols
+    let explicit_h_cache: Vec<std::cell::OnceCell<bool>> = input_mols
         .iter()
-        .map(|m| {
+        .map(|_| std::cell::OnceCell::new())
+        .collect();
+    let explicit_h_reactant = |mol_idx: usize| {
+        *explicit_h_cache[mol_idx].get_or_init(|| {
+            let m = input_mols[mol_idx];
             m.atoms()
                 .any(|(i, a)| a.element == chematic_core::Element::H && m.degree(i) == 1)
         })
-        .collect();
+    };
     for (i, slot) in template_idx_to_new.iter_mut().enumerate() {
         let tmpl_atom = product_template.atom(AtomIdx(i as u32));
         let new_idx = if let Some(am) = tmpl_atom.atom_map {
@@ -3084,12 +3748,14 @@ fn build_product(
                     && src_atom.chirality == Chirality::None
                     && src_atom.hydrogen_count == Some(0)
                     && src_atom.charge == 0
-                    && !src_atom.aromatic
+                    // An aromatic carbon the template spells aliphatic
+                    // (`[#6;a:1]` in RDKit's reading) is refilled too.
+                    && (!src_atom.aromatic || src_atom.element == chematic_core::Element::C)
                     && !new_atom.aromatic
                     && src_atom.element.is_organic_subset()
                     && new_atom.element.is_organic_subset()
                     && template_h(i).is_none()
-                    && explicit_h_reactant[mol_idx];
+                    && explicit_h_reactant(mol_idx);
                 if !explicit_h.is_empty() || refill {
                     // The folded H atoms are re-derived from valence below.
                     new_atom.hydrogen_count = template_h(i);
@@ -3149,20 +3815,24 @@ fn build_product(
     // --- Step 2: BFS from core atoms to collect substituents ---
     // Skipped when carry_substituents = false (run_reactants_strict mode).
     // Seed visited with all template atoms so BFS cannot cross into the template region.
-    let mut visited: FxHashSet<(usize, AtomIdx)> = all_template_atoms.clone();
-    if !folded_h.is_empty() {
-        visited.extend(folded_h.iter().copied());
+    let mut visited: Vec<Vec<bool>> = input_mols
+        .iter()
+        .map(|m| vec![false; m.atom_count()])
+        .collect();
+    for &(mol_idx, atom) in all_template_atoms.iter().chain(folded_h.iter()) {
+        visited[mol_idx][atom.0 as usize] = true;
     }
     if carry_substituents {
-        let mut queue: VecDeque<(usize, AtomIdx)> = core_keys.iter().cloned().collect();
+        // Seeded in reactant atom order, so the product's atom order does not
+        // follow the hash set's iteration order.
+        let mut queue: VecDeque<(usize, AtomIdx)> = core_keys.into();
 
         while let Some((mol_idx, cur_idx)) = queue.pop_front() {
             for (nb_idx, _bond_idx) in input_mols[mol_idx].neighbors(cur_idx) {
                 let key = (mol_idx, nb_idx);
-                if visited.contains(&key) {
+                if std::mem::replace(&mut visited[mol_idx][nb_idx.0 as usize], true) {
                     continue;
                 }
-                visited.insert(key);
                 let src_atom = input_mols[mol_idx].atom(nb_idx);
                 let mut new_atom = src_atom.clone();
                 new_atom.atom_map = None;
@@ -3173,21 +3843,65 @@ fn build_product(
         }
     }
 
+    // Each product atom's reactant atom, and each reactant atom's product
+    // atom (`src_to_new` as dense tables, iterated in product atom order).
+    let mut source_of: Vec<Option<(usize, AtomIdx)>> = vec![None; builder.atom_count()];
+    let mut new_of: Vec<Vec<Option<AtomIdx>>> = input_mols
+        .iter()
+        .map(|m| vec![None; m.atom_count()])
+        .collect();
+    for (&src, &new) in &src_to_new {
+        source_of[new.0 as usize] = Some(src);
+        new_of[src.0][src.1.0 as usize] = Some(new);
+    }
+
     // --- Step 3: add product template bonds ---
-    let mut added_bond_pairs: FxHashSet<(AtomIdx, AtomIdx)> = FxHashSet::default();
 
     // Atoms of a product `:` bond are flagged aromatic, as RDKit does
     // (`[#6:1]-[#6:2]>>[#6:1]:[#6:2]` on ethane gives aromatic atoms outside
     // a ring, which its sanitize, and so the product filter, rejects).
     let mut colon_atoms: Vec<AtomIdx> = Vec::new();
+    // A product `~` (RDKit's "any" bond) keeps the reactant bond between the
+    // two atoms it joins and is a zero-order bond otherwise, as in RDKit
+    // (`[C:1][O:2]>>[C:1]~[O:2]` leaves `CO`; `[C:1]>>[C:1]~O` gives a
+    // bond that adds nothing to valence).
     for (_bidx, bond) in product_template.bonds() {
         let a_new = template_idx_to_new[bond.atom1.0 as usize].unwrap();
         let b_new = template_idx_to_new[bond.atom2.0 as usize].unwrap();
         if bond.order == BondOrder::Aromatic {
             colon_atoms.extend([a_new, b_new]);
         }
-        let _ = builder.add_bond(a_new, b_new, bond.order);
-        added_bond_pairs.insert((a_new.min(b_new), a_new.max(b_new)));
+        let mut order = bond.order;
+        let (mut from, mut to) = (a_new, b_new);
+        // A template single bond over a reactant `/`/`\` bond keeps the
+        // direction: it carries the E/Z of an adjacent double bond the
+        // template leaves alone (RDKit keeps that stereo on the double bond).
+        if order == BondOrder::Single
+            && let (Some((ma, sa)), Some((mb, sb))) =
+                (source_of[a_new.0 as usize], source_of[b_new.0 as usize])
+            && ma == mb
+            && let Some((_, ob)) = input_mols[ma].bond_between(sa, sb)
+            && matches!(ob.order, BondOrder::Up | BondOrder::Down)
+        {
+            order = ob.order;
+            if ob.atom1 != sa {
+                (from, to) = (b_new, a_new);
+            }
+        }
+        if order == BondOrder::QueryAny {
+            order = BondOrder::Zero;
+            if let (Some((ma, sa)), Some((mb, sb))) =
+                (source_of[a_new.0 as usize], source_of[b_new.0 as usize])
+                && ma == mb
+                && let Some((_, ob)) = input_mols[ma].bond_between(sa, sb)
+            {
+                order = ob.order;
+                if ob.atom1 != sa {
+                    (from, to) = (b_new, a_new);
+                }
+            }
+        }
+        let _ = builder.add_bond(from, to, order);
     }
 
     // --- Step 4: carry-through bonds from source molecules ---
@@ -3199,10 +3913,17 @@ fn build_product(
     };
     // Bonds where both endpoints are template atoms are replaced or broken by the template;
     // bonds where at least one endpoint is a substituent are carried through.
-    for (&(mol_idx, src_idx), &a_new) in &src_to_new {
+    // In product atom order, not the map's: the product's bond order decides
+    // its Kekulé form, and with it whether RDKit's sanitize accepts a mixed
+    // aromatic product (BTMR1032 changed with the map's capacity).
+    let carried = source_of
+        .iter()
+        .enumerate()
+        .filter_map(|(new, src)| src.map(|src| (src, AtomIdx(new as u32))));
+    for ((mol_idx, src_idx), a_new) in carried {
         for (nb_idx, bond_idx) in input_mols[mol_idx].neighbors(src_idx) {
             let nb_key = (mol_idx, nb_idx);
-            let Some(&b_new) = src_to_new.get(&nb_key) else {
+            let Some(b_new) = new_of[mol_idx][nb_idx.0 as usize] else {
                 continue;
             };
             if all_template_atoms.contains(&(mol_idx, src_idx))
@@ -3219,11 +3940,6 @@ fn build_product(
                     continue;
                 }
             }
-            let pair = (a_new.min(b_new), a_new.max(b_new));
-            if added_bond_pairs.contains(&pair) {
-                continue;
-            }
-            added_bond_pairs.insert(pair);
             let ob = input_mols[mol_idx].bond(bond_idx);
             // Preserve the original atom1→atom2 orientation. Up/Down (E/Z)
             // bond semantics are direction-dependent, so adding the bond with
@@ -3233,6 +3949,8 @@ fn build_product(
             } else {
                 (b_new, a_new)
             };
+            // A pair already bonded (by the template, or from the other
+            // end) is refused by the builder.
             let _ = builder.add_bond(a, b, ob.order);
         }
     }
@@ -3255,7 +3973,12 @@ fn build_product(
     // them can differ from the reactant's (a ring re-entered from another
     // side).
     let mut product = product;
-    for (&(mol_idx, src_idx), &new_idx) in &src_to_new {
+    let sourced_atoms: Vec<((usize, AtomIdx), AtomIdx)> = source_of
+        .iter()
+        .enumerate()
+        .filter_map(|(new, src)| src.map(|src| (src, AtomIdx(new as u32))))
+        .collect();
+    for &((mol_idx, src_idx), new_idx) in &sourced_atoms {
         let src = input_mols[mol_idx];
         if !src.atom(src_idx).chirality.is_tetrahedral()
             || template_idx_to_new.contains(&Some(new_idx))
@@ -3272,6 +3995,66 @@ fn build_product(
         }
     }
 
+    // A folded H atom (explicit-H reactant, see above) can be the only
+    // `/`/`\` carrier of its double-bond end (`[H]/C(=C(/[H])C)C`). Move
+    // its direction to another substituent of that end, on the other side,
+    // so the E/Z survives as it does in RDKit.
+    for &(mol_idx, h) in &folded_h {
+        let src = input_mols[mol_idx];
+        let Some((core, hb)) = src.neighbors(h).next() else {
+            continue;
+        };
+        let hbond = src.bond(hb);
+        let from_core = |order: BondOrder, atom1: AtomIdx, at: AtomIdx| match (order, atom1 == at) {
+            (o, true) => o,
+            (BondOrder::Up, false) => BondOrder::Down,
+            (BondOrder::Down, false) => BondOrder::Up,
+            (o, false) => o,
+        };
+        let h_dir = from_core(hbond.order, hbond.atom1, core);
+        if !matches!(h_dir, BondOrder::Up | BondOrder::Down) {
+            continue;
+        }
+        let Some(c) = new_of[mol_idx][core.0 as usize] else {
+            continue;
+        };
+        let on_double = product
+            .neighbors(c)
+            .any(|(_, b)| product.bond(b).order == BondOrder::Double);
+        let marked = product
+            .neighbors(c)
+            .any(|(_, b)| matches!(product.bond(b).order, BondOrder::Up | BondOrder::Down));
+        if !on_double || marked {
+            continue;
+        }
+        let other = if h_dir == BondOrder::Up {
+            BondOrder::Down
+        } else {
+            BondOrder::Up
+        };
+        let carrier = product
+            .neighbors(c)
+            .find(|&(_, b)| product.bond(b).order == BondOrder::Single)
+            .map(|(_, b)| b);
+        if let Some(b) = carrier {
+            let atom1 = product.bond(b).atom1;
+            product.set_bond_order(b, from_core(other, atom1, c));
+        }
+    }
+
+    // A `/`/`\` read on an aromatic ring bond is stashed beside the bond
+    // (`Molecule::bond_direction`): it carries the E/Z of an exocyclic
+    // double bond (`C/N=c1\c(O)c(O)c1`). Carry it onto the product bond
+    // built from that ring bond while the double bond is still there.
+    carry_direction_stash(&mut product, input_mols, &src_to_new);
+
+    // Template markers on a double bond the template creates can sit next
+    // to a carried marker of a conjugated double bond, asking the shared
+    // end for the same side twice; readers then drop or misread one E/Z
+    // (BioTransformer BTMR0709 on an enyne gave both E and Z). Rewrite the
+    // markers consistently, each double bond keeping its own geometry.
+    chematic_core::ez_markers::reconcile_ez_markers(&mut product);
+
     // Clear any Up/Down stereo markers left on bonds that are no longer adjacent
     // to a double bond (e.g. after C=C → C=O conversion via SMIRKS).
     let mut molecule = clear_orphaned_stereo_bonds(product);
@@ -3280,7 +4063,7 @@ fn build_product(
     // neighbour went to another product or was deleted) gets its hydrogens
     // back, as RDKit refills them: `add_hydrogens` pinned its count, which
     // would otherwise leave a radical (#754).
-    for (&(mol_idx, src_idx), &new_idx) in &src_to_new {
+    for &((mol_idx, src_idx), new_idx) in &sourced_atoms {
         let src = input_mols[mol_idx];
         let atom = src.atom(src_idx);
         if atom.hydrogen_count != Some(0)
@@ -3293,7 +4076,7 @@ fn build_product(
         {
             continue;
         }
-        if explicit_h_reactant[mol_idx] {
+        if explicit_h_reactant(mol_idx) {
             molecule.set_hydrogen_count(new_idx, None);
             folded_cores.push(new_idx);
         }
@@ -3306,7 +4089,23 @@ fn build_product(
         // A charged atom takes RDKit's count (`[O:1]>>[O+:1]` on explicit-H
         // dimethyl ether gives `C[OH+]C`).
         let atom = molecule.atom(core);
-        let n = if atom.charge != 0 && !atom.aromatic {
+        // A core the template spells aliphatic that still has an aromatic
+        // bond is judged by RDKit after kekulizing that bond, which this
+        // count cannot see; RDKit keeps its H atoms as carried substituents,
+        // so it keeps its reactant H count (BTMR0254: the ring CH beside a
+        // rewritten C=C gained a second H and failed the valence check).
+        let mixed = !atom.aromatic
+            && molecule
+                .neighbors(core)
+                .any(|(_, b)| molecule.bond(b).order == BondOrder::Aromatic);
+        let n = if mixed {
+            source_of[core.0 as usize].map_or(0, |(mol_idx, src)| {
+                input_mols[mol_idx]
+                    .neighbors(src)
+                    .filter(|&(nb, _)| folded_h.contains(&(mol_idx, nb)))
+                    .count() as u8
+            })
+        } else if atom.charge != 0 && !atom.aromatic {
             let bonds: i16 = molecule
                 .neighbors(core)
                 .map(|(_, b)| i16::from(molecule.bond(b).order.order_int()))
@@ -3419,7 +4218,7 @@ fn build_product(
     // Both passes above keep atom indices, so `src_to_new` indexes the final
     // product. Atoms absent from it were created from the product template.
     let mut atom_sources = vec![None; molecule.atom_count()];
-    for (&(reactant, atom), &new_idx) in &src_to_new {
+    for &((reactant, atom), new_idx) in &sourced_atoms {
         atom_sources[new_idx.0 as usize] = Some(ReactantAtom { reactant, atom });
     }
     let mut template_maps = vec![None; molecule.atom_count()];
@@ -3538,6 +4337,33 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].len(), 1);
         assert_eq!(results[0][0].atom_count(), 1);
+    }
+
+    #[test]
+    fn carried_bonds_follow_product_atom_order() {
+        // Carried atoms are added breadth-first from the template atoms in
+        // reactant order and their bonds in product atom order, not in hash
+        // map order (BTMR1032's Kekulé product changed with a map's
+        // capacity, #734).
+        let mol = parse("OC(=O)c1ccc2ccccc2c1CCN(C)C").unwrap();
+        let results = run_reactants("[C:1](=[O:2])[OH:3]>>[C:1](=[O:2])Cl", &[&mol]).unwrap();
+        let product = &results[0][0];
+        let carried: Vec<u32> = product
+            .bonds()
+            .skip(3)
+            .map(|(_, b)| b.atom1.0.min(b.atom2.0))
+            .collect();
+        assert!(carried.windows(2).all(|w| w[0] <= w[1]), "{carried:?}");
+        // The same product however often the reaction runs.
+        for _ in 0..3 {
+            let again = run_reactants("[C:1](=[O:2])[OH:3]>>[C:1](=[O:2])Cl", &[&mol]).unwrap();
+            let bonds = |m: &Molecule| {
+                m.bonds()
+                    .map(|(_, b)| (b.atom1.0, b.atom2.0, b.order))
+                    .collect::<Vec<_>>()
+            };
+            assert_eq!(bonds(&again[0][0]), bonds(product));
+        }
     }
 
     #[test]
@@ -3866,6 +4692,349 @@ mod tests {
         assert_eq!(
             canon(&chematic_chem::remove_hydrogens(&out[0][0])),
             canon(&parse("C[OH+]C").unwrap())
+        );
+    }
+
+    /// Product sets under the RDKit 2026.03.6 profile, as canonical SMILES
+    /// (explicit-H inputs are spelled with `[H]` atoms).
+    fn rdkit_profile_sets(smirks: &str, reactant: &str) -> Vec<Vec<String>> {
+        let mol = parse(reactant).unwrap();
+        let canon =
+            |m: &Molecule| chematic_smiles::canonical_smiles(&chematic_chem::remove_hydrogens(m));
+        match run_reactants_traced_rdkit_2026_03_6(
+            smirks,
+            &[&mol],
+            &ReactionTransformLimits::default(),
+        )
+        .unwrap()
+        {
+            RdkitProfileOutcome::Report(report) => {
+                let mut sets: Vec<Vec<String>> = report
+                    .products
+                    .iter()
+                    .map(|set| set.iter().map(|p| canon(&p.molecule)).collect())
+                    .collect();
+                sets.sort();
+                sets.dedup();
+                sets
+            }
+            RdkitProfileOutcome::Unsupported(u) => panic!("{smirks}: unsupported {u:?}"),
+        }
+    }
+
+    fn canon_of(smiles: &str) -> String {
+        chematic_smiles::canonical_smiles(&parse(smiles).unwrap())
+    }
+
+    #[test]
+    fn biotransformer_corpus_follow_ups_follow_rdkit(/* #734 follow-ups */) {
+        // Each row: SMIRKS, reactant (explicit-H rows spelled with `[H]`
+        // atoms, as RDKit's AddHs writes them) and RDKit 2026.03.6's
+        // sanitized product sets. Covers the ring model for `R<n>`
+        // (quinuclidine N is in three rings for RDKit), dummy product atoms,
+        // E/Z of created and carried double bonds, an aromatic product atom
+        // losing its tag, the H count of a ring CH beside a rewritten C=C,
+        // an indole [nH] beside a zero-order bond, and multi-digit charges.
+        let cases: &[(&str, &str, &[&[&str]])] = &[
+            (
+                r#"[#6:1][#7;A;X3;R1,R2;+0:2]>>[#6:1][#7;A;X4+:2][#8-]"#,
+                r#"C1CN2CCC1CC2"#,
+                &[],
+            ),
+            (
+                r#"[#6:1][#7;A;X3;R3;+0:2]>>[#6:1][#7;A;X4+:2][#8-]"#,
+                r#"C1CN2CCC1CC2"#,
+                &[&[r#"[O-][N+]12CCC(CC1)CC2"#]],
+            ),
+            (
+                r#"[C:1][O:2]>>[C:1][O:2]P([!#1!#6;O,$([O-])])([!#1!#6;O,$([O-])])=O"#,
+                r#"CO"#,
+                &[&[r#"*P(*)(=O)OC"#]],
+            ),
+            (r#"[C:1]>>[C:1]*"#, r#"C"#, &[&[r#"*C"#]]),
+            (
+                r#"[C:1][O:2]>>[C:1][O:2][!#1;-]"#,
+                r#"CO"#,
+                &[&[r#"[*-]OC"#]],
+            ),
+            (
+                r#"[C:2]#[C:1]>>[H]/[#6:2]=[#6:1]/[H]"#,
+                r#"C/C=C/C#CC"#,
+                &[&[r#"C/C=C/C=C/C"#]],
+            ),
+            (
+                r#"[C:1][CH2:3][OH:4]>>[C:1]"#,
+                r#"CC/C(CO)=C/C"#,
+                &[&[r#"C/C=C/CC"#]],
+            ),
+            (
+                r#"[C:1][CH2:3][OH:4]>>[C:1]O[CH2:3][OH:4]"#,
+                r#"CC/C(CO)=C/C"#,
+                &[&[r#"CC=C(CC)OCO"#]],
+            ),
+            (
+                r#"[C:1][CH2:3][OH:4]>>[C:1].[CH2:3][OH:4]"#,
+                r#"CC/C(CO)=C/C"#,
+                &[&[r#"C/C=C/CC"#, r#"[CH2]O"#]],
+            ),
+            (
+                r#"[C:1][CH2:3][CH3:4]>>[C:1]O[CH2:3][CH3:4]"#,
+                r#"CC/C(CO)=C/C"#,
+                &[&[r#"C/C=C(\CO)OCC"#]],
+            ),
+            (
+                r#"[C:4][C:1]=[C:2][CH2:3]>>[C:4][C:1]=[C:2][CH:3]O"#,
+                r#"CC/C=C/CC"#,
+                &[&[r#"CCC=CC(C)O"#]],
+            ),
+            (
+                r#"[C:1]=[C:2]/[CH2:3]>>[C:1]=[C:2]/[CH:3]O"#,
+                r#"CC/C=C/CC"#,
+                &[&[r#"CC/C=C/C(C)O"#]],
+            ),
+            (
+                r#"[#6:1][#16;D2:2][#6,#7:3]>>[#6:1]-,:[S:2](-,:[#6,#7:3])=O"#,
+                r#"Cn1c2c(s/c1=N\C(=O)C)CCC2"#,
+                &[&[r#"CC(=O)/N=C1/N(C)C2=C(CCC2)S1=O"#]],
+            ),
+            (
+                r#"[O;X1:1]=[#6:2]-1[#6;A;X4;H1,H2:3][#6;A;X4;H1,H2:4][#6:5]-2-[#6:6]-3-[#6:7]-[#6:8]-[#6:9]-4-[#6:10]-[#6:11]-[#6:12]-[#6:13]-4-[#6:14]-3-[#6:15]-[#6:16]-[#6:17]-2=[#6:18]-1>>[#8;H1X2:1]-[c:2]1[c:3][c:4][c:5][c:17](-[#6:16]-[#6:15]-[#6:14]-2-[#6:13]-3-[#6:12]-[#6:11]-[#6:10]-[#6:9]-3-[#6:8]-[#6:7]-[#6:6]-2=O)[c:18]1"#,
+                r#"C[C@]12CCC3C(CCC4=CC(=O)CC[C@]43C3CS3)C1CCC2=O"#,
+                &[&[r#"C[C@]12CCC(=O)C(CCc3cc(O)ccc3C3CS3)C1CCC2=O"#]],
+            ),
+            (
+                r#"[#6:7][#6;X3:5](=,:[#6:4]!@-[#6;X3:2](-[#6:1])=[O;X1:3])-[#8;X2:6][H:8]>>[H][#8]-[#6;X3:2](-[#6:1])=[O;X1:3].[#6:7][#6;X3:5](=,:[#6:4][H])-[#8;X2:6][H:8]"#,
+                r#"[H]Oc1c([H])c(C([H])([H])[H])oc(=O)c1C(=O)C([H])([H])[H]"#,
+                &[&[r#"CC(=O)O"#, r#"Cc1cc(O)cc(=O)o1"#]],
+            ),
+            (
+                r#"[#6:1]@[#6;R2:2]1=,:[#6;R2:3](@[#6,#8,#7,#16:4])[#6;R1:5]([H:6])=,:[#6;R1:7](-[!#8;*,#1:11])[#6;R1:8]=,:[#6;R1:9]1[H:10]>>[#6:1]@[#6;R2:2]1=,:[#6;R2:3](@[#6,#8,#7,#16:4])[#6;R1:5](-[#8][H:6])=,:[#6;R1:7](-[!#8;*,#1:11])[#6;R1:8]=,:[#6;R1:9]1[H:10]"#,
+                r#"[H]c1c([H])c([H])c2c(c1[H])c(C([H])([H])[H])c([H])n2[H]"#,
+                &[],
+            ),
+            (r#"[C:1]>>[C;+10:1]"#, r#"CC"#, &[&[r#"[C+10]C"#]]),
+            (r#"[C:1]>>[C;H15:1]"#, r#"CC"#, &[]),
+        ];
+        for (smirks, reactant, want) in cases {
+            let mut want: Vec<Vec<String>> = want
+                .iter()
+                .map(|set| set.iter().map(|p| canon_of(p)).collect())
+                .collect();
+            want.sort();
+            assert_eq!(
+                rdkit_profile_sets(smirks, reactant),
+                want,
+                "{smirks} on {reactant}"
+            );
+        }
+        // Surrounding whitespace is not part of the template.
+        assert_eq!(
+            rdkit_profile_sets(" [C:1][CH2:3][OH:4]>>[C:1] ", r"CC/C(CO)=C/C"),
+            vec![vec![canon_of(r"C/C=C/CC")]]
+        );
+    }
+
+    #[test]
+    fn biotransformer_rule_shapes_follow_rdkit(/* #734: BioTransformer rule corpus */) {
+        // More `[#6:n]` atoms than the aromatic/aliphatic expansion can
+        // enumerate (2^9 variants): one SMARTS reading instead of a refusal.
+        let many = "[#6:1]1[#6:2][#6:3][#6:4][#6:5][#6:6]1[#6:7][#6:8][#6:9]>>\
+                    [#6:1]1[#6:2][#6:3][#6:4][#6:5][#6:6]1[#6:7][#6:8][#6:9]O";
+        // RDKit's product atoms take the template's (aliphatic) aromaticity
+        // and its implicit product bonds are single, so the ring the template
+        // spells is saturated; a ring bond the template leaves alone stays
+        // aromatic after RDKit's sanitize.
+        assert_eq!(
+            rdkit_profile_sets(many, "CCCc1ccccc1"),
+            vec![vec![canon_of("OCCCC1CCCCC1")]]
+        );
+        assert_eq!(
+            rdkit_profile_sets(
+                "[#6:1]1[#6:2][#6:3][#6:4][#6:5][#6:6]1>>[#6:1]1[#6:2][#6:3][#6:4][#6:5][#6:6]1O",
+                "c1ccccc1"
+            ),
+            vec![vec![canon_of("OC1CCCCC1")]]
+        );
+        assert_eq!(
+            rdkit_profile_sets("[#6:1][#6:2]>>[#6:1][#6:2]O", "c1ccccc1"),
+            vec![vec![canon_of("Oc1ccccc1")]]
+        );
+        // Product bond expressions take RDKit's bond type: the first order
+        // primitive, or no order (a zero-order `~` bond) after `@`/`!@`; a
+        // lone `~` keeps the reactant bond.
+        for (smirks, reactant, want) in [
+            ("[C:1][O:2]>>[C:1]-;!@[O:2]", "CO", "CO"),
+            ("[C:1][O:2]>>[C:1]!=[O:2]", "CO", "C=O"),
+            ("[C:1][O:2]>>[C:1]~[O:2]", "CO", "CO"),
+        ] {
+            assert_eq!(
+                rdkit_profile_sets(smirks, reactant),
+                vec![vec![canon_of(want)]],
+                "{smirks}"
+            );
+        }
+        for smirks in ["[C:1][O:2]>>[C:1]!@-[O:2]", "[C:1][O:2]>>[C:1]@[O:2]"] {
+            let mol = parse("CO").unwrap();
+            let RdkitProfileOutcome::Report(report) = run_reactants_traced_rdkit_2026_03_6(
+                smirks,
+                &[&mol],
+                &ReactionTransformLimits::default(),
+            )
+            .unwrap() else {
+                panic!("{smirks}");
+            };
+            let product = &report.products[0][0].molecule;
+            // C~O with CH4 and OH2: the bond adds nothing to valence.
+            assert_eq!(product.bond(BondIdx(0)).order, BondOrder::Zero, "{smirks}");
+            assert_eq!(
+                chematic_core::implicit_hcount(product, AtomIdx(0)),
+                4,
+                "{smirks}"
+            );
+        }
+        let new_bond = rdkit_profile_sets("[N+:1]>>[N+:1]~C", "C[NH3+]");
+        assert_eq!(new_bond.len(), 1);
+        assert!(new_bond[0][0].contains("NH3+"), "{new_bond:?}");
+        // `/` `\` in a SMARTS-only reactant template match like plain SMARTS.
+        assert_eq!(
+            rdkit_profile_sets(
+                "[#6;X3:1]=[#6:2](/[#6:3])>>[#6:1]1[#6:2]([#6:3])O1",
+                "CC=CC"
+            )
+            .len(),
+            1
+        );
+        // A product atom naming no single element keeps the matched one;
+        // H count and charge spelled in a list take the first alternative.
+        for (smirks, reactant, want) in [
+            (
+                "[C:1][Cl:2]>>[C:1].[F,Cl,Br,I;-:2]",
+                "CCl",
+                vec!["C", "[Cl-]"],
+            ),
+            ("[N:1]>>[N;H1,H2:1]", "CN", vec!["C[NH]"]),
+            ("[N:1]>>[N;X4H2+,X3H1+0:1]", "CN", vec!["C[NH2+]"]),
+        ] {
+            let mut want: Vec<String> = want.into_iter().map(canon_of).collect();
+            want.sort();
+            let mut got = rdkit_profile_sets(smirks, reactant);
+            got.iter_mut().for_each(|s| s.sort());
+            assert_eq!(got, vec![want], "{smirks}");
+        }
+        // E/Z next to the reaction survives explicit H atoms: on the
+        // template's own single bond, and when the H that carried it folds.
+        for (smirks, reactant, want) in [
+            (
+                "[#6:1]-[#6;X3:2](-[#6:4])=[O;X1:3]>>[H][#8;X2:3][C;X4:2]([H])([#6:1])[#6:4]",
+                "O=C(C)/C(C)=C/C",
+                "CC(O)/C(C)=C/C",
+            ),
+            ("[C:1]=[C:2]>>[C:1]=[C:2]", "[H]/C(C)=C(/[H])CC", "C/C=C/CC"),
+        ] {
+            let mol = chematic_chem::add_hydrogens(&parse(reactant).unwrap());
+            let input = chematic_smiles::write(&mol);
+            assert_eq!(
+                rdkit_profile_sets(smirks, &input),
+                vec![vec![canon_of(want)]],
+                "{smirks}"
+            );
+        }
+        // A template that writes Kekulé bonds into an aromatic ring is judged
+        // after RDKit's sanitize: kekulize, perceive aromaticity again.
+        let demethylation = "[H:1][*:2][#6:3](=,:[*:4][H:5])-[#8;X2R0:6][C:7]([H:8])([H])[H:9]>>\
+                             [H:8][#6:7]([H:9])=O.[H:1][*:2][#6:3](=,:[*:4][H:5])-[#8;X2R0:6][H]";
+        let anisole =
+            chematic_smiles::write(&chematic_chem::add_hydrogens(&parse("COc1ccccc1").unwrap()));
+        let mut got = rdkit_profile_sets(demethylation, &anisole);
+        got.iter_mut().for_each(|s| s.sort());
+        let mut want = vec![canon_of("C=O"), canon_of("Oc1ccccc1")];
+        want.sort();
+        assert_eq!(got, vec![want]);
+        // `$` is a quadruple bond on the reactant side too (it matched any
+        // bond when the SMARTS reader did not know it).
+        assert!(rdkit_profile_sets("[C:1]$[O:2]>>[C:1].[O:2]", "CCO").is_empty());
+        assert!(rdkit_profile_sets("[C:1]$[C:2]>>[C:1]-[C:2]", "N#CC").is_empty());
+        // A double bond between two ring atoms that stay aromatic satisfies
+        // neither: RDKit's cumulene for benzene.
+        assert_eq!(
+            rdkit_profile_sets("[c:1]:[c:2]>>[c:1]=[c:2]", "c1ccccc1"),
+            vec![vec![canon_of("C1=C=CC=CC=1")]]
+        );
+        // A Kekulé ring spelled over one ring of naphthalene keeps it
+        // naphthalene, its fusion bond single or double.
+        for product in [
+            "[#6:1]1=[#6:2][#6:3]=[#6:4][#6:5]=[#6:6]1",
+            "[#6:1]1-[#6:2]=[#6:3]-[#6:4]=[#6:5]-[#6:6]=1",
+        ] {
+            let smirks = format!("[#6:1]1:[#6:2]:[#6:3]:[#6:4]:[#6:5]:[#6:6]:1>>{product}");
+            let sets = rdkit_profile_sets(&smirks, "c1ccc2ccccc2c1");
+            assert!(!sets.is_empty(), "{smirks}");
+            assert!(
+                sets.iter()
+                    .all(|set| set == &vec![canon_of("c1ccc2ccccc2c1")]),
+                "{smirks}: {sets:?}"
+            );
+        }
+        // E/Z of an exocyclic imine whose ring-side direction sits on an
+        // aromatic ring bond survives a template elsewhere (BTMR0884), in
+        // both profiles.
+        let imine = "ClCC/N=c1\\c(O)c(O)\\c1=N/C";
+        assert_eq!(
+            rdkit_profile_sets("[Cl:1]>>[Cl:1]", imine),
+            vec![vec![canon_of(imine)]]
+        );
+        let mol = parse(imine).unwrap();
+        let native = run_reactants("[Cl:1]>>[Cl:1]", &[&mol]).unwrap();
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&native[0][0]),
+            canon_of(imine)
+        );
+        // An explicit-H ring the template dearomatizes takes RDKit's H
+        // counts: the carbon that loses its `[H]` and the ring CH beside it
+        // are refilled (BTMR0655 on toluene).
+        let ring_oh = "[H][#6;a:5]1[#6,#7;a:4][c:3][c:2][c:1][c:6]1!@-[#6:7]>>\
+                       [H][#8]-[#6;a:5]1[#6,#7;a:4][c:3][c:2][c:1][c:6]1!@-[#6:7]";
+        let sets = rdkit_profile_sets(ring_oh, "[H]c1c([H])c([H])c(C([H])([H])[H])c([H])c1[H]");
+        let reread: Vec<Vec<String>> = sets
+            .iter()
+            .map(|set| set.iter().map(|smi| canon_of(smi)).collect())
+            .collect();
+        assert_eq!(reread, vec![vec![canon_of("C~C1=CC=CCC1O")]]);
+        // So is a product `[#6;a:1]`: RDKit's dioxygenation BTMR0842 leaves
+        // one aliphatic atom in a ring of aromatic ones, which RDKit's
+        // sanitize cannot kekulize; the native reading gives the catechol.
+        let dioxygenation = "[#8:7]([c:6]1[c:1][c:2][c:3][c:4][c:5]1)[c:8]1[c:10][c:11][c:12]\
+                             [c:13][#6;a;H1X3:9]1>>[#8:7]-[c:6]1[c:1][c:2][c:3][c:4][c:5]1.\
+                             [#8]-[c:8]1[c:10][c:11][c:12][c:13][#6;a:9]1-[#8]";
+        assert!(rdkit_profile_sets(dioxygenation, "c1ccccc1Oc1ccccc1").is_empty());
+        let mol = parse("c1ccccc1Oc1ccccc1").unwrap();
+        assert!(!run_reactants(dioxygenation, &[&mol]).unwrap().is_empty());
+        // A product `[#6:1]` mapped to a reactant `[c:1]` is aliphatic, as
+        // RDKit builds it (BTMR0826 ring cleavage leaves no aromatic atom).
+        let cleavage = "[#6:8]-[c:2]1[#6;a;H1X3:3][c:4]([#8;A;H1X2:9])[#6;a;H1X3:5]\
+                        [#6;a;H1X3:6][c:1]1[#8;A;H1X2:7]>>[#6:8]-[#6:2](=O)[#6;A;H1X3:3]\
+                        [#6:4](=[#8;A;X1:9])-[#6;A;H1X3:5]=[#6;A;H1X3:6]-[#6:1]([#8;A;X1-:7])=O";
+        assert_eq!(
+            rdkit_profile_sets(cleavage, "CC(C)(C)c1cc(O)ccc1O"),
+            vec![vec![canon_of("CC(C)(C)C(=O)[CH]C(=O)C=CC(=O)[O-]")]]
+        );
+        // A ring-fusion N next to a `c(=O)` carbon takes no double bond
+        // (BTMR0678 methyl hydroxylation of an imidazo[1,2-a]pyrimidinone).
+        let methyl = "[#6;A;H3X4:1][c:2]>>[#8][#6;A;H2X4:1][c:2]";
+        assert_eq!(
+            rdkit_profile_sets(methyl, "Cc1cn2c(=O)ccnc2n1C"),
+            vec![vec![canon_of("OCc1cn2c(=O)ccnc2n1C")]]
+        );
+        // S-oxidation that writes a Kekulé thiophene into benzothiophene: the
+        // `[s+]` with three bonds needs no double bond (BTMR0102).
+        let s_oxidation = "[#6:1]=,:1[#6:2]=,:[#6:3][#16;X2:4][#6:5]=,:1>>\
+                           [#8-][S;X3+:4]-,:1-,:[#6:5]=,:[#6:1][#6:2]=,:[#6:3]-,:1";
+        let sets = rdkit_profile_sets(s_oxidation, "c1ccc2sccc2c1");
+        assert!(!sets.is_empty());
+        assert!(
+            sets.iter()
+                .all(|set| set == &vec![canon_of("[O-][s+]1ccc2ccccc21")]),
+            "{sets:?}"
         );
     }
 

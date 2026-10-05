@@ -1739,8 +1739,6 @@ fn write_v2000_reporting(
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
 ) -> MolStereoLoss {
-    use std::fmt::Write as _;
-
     // A MOL block is dominated by fixed-width atom and bond rows.  Reserve
     // the common-size output up front so serialization does not repeatedly
     // grow and copy the String for every row (the old empty String was a
@@ -1777,12 +1775,18 @@ fn write_v2000_reporting(
         if let Some(&(x, y)) = coords.get(idx.0 as usize) {
             push_fixed4(out, x, 10);
             push_fixed4(out, y, 10);
-            writeln!(
-                out,
-                "    0.0000 {:<3}{:>2}{:>3}  0  0  0  0  0  0  0{:>3}  0",
-                sym, mass_difference, charge_code, atom_map,
-            )
-            .expect("writing to String cannot fail");
+            // `"    0.0000 {:<3}{:>2}{:>3}  0  0  0  0  0  0  0{:>3}  0\n"`,
+            // without the formatter (a tenth of laying out and writing).
+            out.push_str("    0.0000 ");
+            out.push_str(sym);
+            for _ in sym.len()..3 {
+                out.push(' ');
+            }
+            push_right_aligned_i16(out, mass_difference, 2);
+            push_right_aligned_u32(out, charge_code as u32, 3);
+            out.push_str("  0  0  0  0  0  0  0");
+            push_right_aligned_u32(out, atom_map as u32, 3);
+            out.push_str("  0\n");
         } else {
             // Serialization-only SDF output overwhelmingly has no coordinate
             // array. Avoid running the float formatter three times per atom
@@ -2405,6 +2409,72 @@ pub fn write_sdf_record_with_conformer_checked(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn single_hash_centre_with_unequal_flat_bonds_reads_rdkit_parity() {
+        // RDKit's layout of an artemisinin analogue (ChEMBL): the methyl
+        // carbon's two O bonds are drawn 6 degrees apart with different
+        // lengths. Its parity is the hash's sign and the flat bonds' angular
+        // order; the triangle of their end points had turned over (#734).
+        let block = r"
+     RDKit          2D
+
+ 20 23  0  0  0  0  0  0  0  0999 V2000
+    1.9033   -3.6288    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7339   -2.6894    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.6643   -3.2324    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.8337   -2.2930    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.6049   -0.8105    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -2.7743    0.1289    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -4.1725   -0.4141    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -2.5454    1.6113    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -3.7148    2.5507    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.1471    2.1543    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0223    1.2149    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.4919    0.9148    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    2.4360    1.8245    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.3755    2.9939    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.0820    0.4707    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.4264   -0.8784    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.9628   -1.2069    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.2066   -0.2675    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.0171    0.7012    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2123    0.8558    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+  2  1  1  6
+  2  3  1  0
+  3  4  1  0
+  5  4  1  1
+  5  6  1  0
+  6  7  1  1
+  6  8  1  0
+  8  9  2  0
+  8 10  1  0
+ 11 10  1  6
+ 11 12  1  0
+ 12 13  1  0
+ 13 14  1  6
+ 13 15  1  0
+ 15 16  1  0
+ 17 16  1  1
+ 17 18  1  0
+ 18 19  1  0
+ 19 20  1  0
+ 17  2  1  0
+ 18  5  1  0
+ 18 11  1  0
+ 20 13  1  0
+M  END
+";
+        let (mol, _) = parse_mol(block).unwrap();
+        let want = chematic_smiles::parse(
+            "C[C@@H]1CC[C@H]2[C@@H](C)C(=O)O[C@@H]3O[C@]4(C)CC[C@@H]1C32OO4",
+        )
+        .unwrap();
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&mol),
+            chematic_smiles::canonical_smiles(&want)
+        );
+    }
 
     #[test]
     fn push_fixed4_matches_the_float_formatter() {

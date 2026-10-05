@@ -14,7 +14,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 | P0.1 outputs | Published v1.0.30 artifact audit covers 10k chemistry, 310k SMARTS, 57 reactions and 63 Python/Rust operations. HBA is 5,000/5,000 on its declared lane. | Retain 200 SMARTS differences, five CIP abstentions and four npm gaps as open; see [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
 | P0.2 speed | Published Python: 20 exact-output operations pass paired-interval gates on one host; three-browser Morgan has a separate scoped result. | Equal-work and memory lanes on more artifacts/corpora; see [validation](docs/validation.md). |
 | P1 reactions | Published v1.0.34 PyPI Linux wheel, npm package and crates.io crate: 80 exact graph/origin/map, 3 jointly invalid, no typed unsupported (v1.0.30: 73/83). | Rerun the macOS and Windows wheels; refusals are not matches. |
-| P1 SMARTS/SMIRKS dialect ([#734](https://github.com/kent-tokyo/chematic/issues/734), [#754](https://github.com/kent-tokyo/chematic/issues/754)) | Contributor's [xsmarts-autoconf](https://github.com/swamidasslab/xsmarts-autoconf): v1.0.34 65/83 behaviour flags give RDKit 2026.03.6's value (v1.0.30: 42/83); unreleased source 75/83, with no wrong-confident flag left and a decided outcome for each of the 8 others. Sweep findings fixed or decided; tweak kinds 16 → 4. [Record](benchmarks/2026-10-04-xsmarts-autoconf-v1034.md). | Release the source fixes (isotope default and `random_smiles`/`write` stereo are user-visible); pinned autoconf lane runs in CI. |
+| P1 SMARTS/SMIRKS dialect ([#734](https://github.com/kent-tokyo/chematic/issues/734), [#754](https://github.com/kent-tokyo/chematic/issues/754)) | Contributor's [xsmarts-autoconf](https://github.com/swamidasslab/xsmarts-autoconf): published v1.0.35 75/83 behaviour flags give RDKit 2026.03.6's value (v1.0.30: 42/83), with a decided outcome for each of the 8 others. BioTransformer public rules: the unreleased source gives RDKit's product sets for 1,051/1,051 implicit-H and 6,604/6,652 explicit-H pairs where RDKit has a product (v1.0.35: 775 and 3,807). [Record](benchmarks/2026-10-05-biotransformer-corpus-followups-2.md). | Release the corpus fixes (canonical E/Z writer fixes, RDKit-profile ring model, dummy atoms, E/Z rules, kekulization, MOL wedge reading, template cache); rerun the corpus on the published package. |
 | P1 SMARTS | Published v1.0.30: 200/310k match-set differences. Opt-in profile: 309,982/310k exact with 18 typed refusals, which are exactly the cells whose RDKit answer changes with atom order; independent ChEMBL 4,625 rows: 143,375/143,375 exact on PyPI v1.0.34 and source; the published PyPI v1.0.34 Linux wheel passes the 310k opt-in gate. [Record](benchmarks/2026-10-04-stereo-integrity-smarts-a6-followups.md), [310k](benchmarks/2026-10-05-mol-stereo-cip-mmff-followups.md). | macOS/Windows wheel reruns; retain native SSSR. |
 | P2 A6 quality | Published v1.0.31 macOS: 265/265 geometry/stereo/clash, 100/265 converged. Published Linux wheels: 263/265 ([#739](https://github.com/kent-tokyo/chematic/issues/739)); source with `libm` math: 265/265 on Linux from a clean commit, 265/265 sound/stereo-clean/clash-free on the external scorer ([record](benchmarks/2026-10-05-mol-stereo-loss-and-clean-a6.md)). | Rerun macOS and Windows (CI jobs) on the `libm` build; per-term energy, convergence and independent conformer quality before speed claims. |
 
@@ -26,30 +26,34 @@ Exposed data are not sealed evidence.
 
 ## Priority order and acceptance gates
 
-1. **P1 / A4 — Release the SMARTS/SMIRKS dialect fixes (#734, #754).**
-   On published v1.0.34 the autoconf catalog and sweep found confident
-   answers RDKit does not give (isotope primitives, aromatic `v`,
-   directional bonds, Kekulé reactants, explicit-H radicals, dropped
-   `[c±]` products, `i`/`^6`/`^7`). The source aligns 75/83 flags, settles
-   the other 8 (sanitized views agree, implicit-H equivalence from #734
-   item 5, an adapter difference, native SSSR), and pins the tool in CI.
-   The same work fixed `random_smiles`/`write` stereo (39% of stereo rows
-   wrong) and `remove_hydrogens` on aromatic NH. **Exit:** released and the
-   published package rerun at 75/83 with the same 8 expected differences.
+1. **P1 / A4 — Release the BioTransformer-corpus SMIRKS fixes (#734).**
+   v1.0.35 shipped the dialect fixes: its sdist gives 75/83 autoconf flags
+   with the same 8 decided differences. On BioTransformer's public rules the
+   unreleased source gives RDKit's product sets for all 1,051 implicit-H and
+   6,604/6,652 explicit-H pairs where RDKit has a product (v1.0.35: 775 and
+   3,807) and refuses none; the explicit-H rest is implicit-H equivalence,
+   RDKit truncation and one naphthalene kekulization. **Exit:** released and the
+   corpus rerun on the published package with the same classes.
 2. **P1 / A4 — Close the reaction 83-row gate on published artifacts.**
-   Published v1.0.34 PyPI Linux wheel (CPython 3.9), npm package and
-   crates.io crate: 80 exact graph/origin/map rows and three jointly invalid,
-   as in source; npm `formula()` and E/Z JSON confirmed. Remaining: the
-   macOS and Windows wheels (not runnable on the Linux evidence host).
-   **Exit:** every row classified on all three axes on each published
-   artifact, zero wrong-confident supported results and no regression in the
-   original 57. Refusals and invalid rows are not counted as matches.
-3. **P1 / A4 — Broaden reaction evidence.** Run the contributor's
-   approximately 1,200 BioTransformer rules when the rule file (it needs the
-   BioTransformer 3.0 jar) is available, and keep the remaining sweep
-   decisions (`~` product bonds on charged N, `[nH+2]`, native stereo for
-   created centres) under review. **Exit:** a published rule denominator
-   with exact / differing / refused counts.
+   Published v1.0.35 PyPI Linux wheel (CPython 3.9), npm package and
+   crates.io crate: 80 graph/origin/map rows and three jointly invalid, as
+   in source. Remaining: the macOS and Windows wheels (not runnable on the
+   Linux evidence host). **Exit:** every row classified on all three axes on
+   each published artifact, zero wrong-confident supported results and no
+   regression in the original 57. Refusals and invalid rows are not counted
+   as matches.
+3. **P1 / A4 — Broaden reaction evidence.** The BioTransformer public
+   rule denominator is measured and its stereo gaps are closed (E/Z through
+   `remove_hydrogens`, created and copied double bonds; canonical writer
+   fix for atom2-anchored direction stashes; a macrocycle alkene's marker on
+   a ring-closure bond, so RDKit reads all 572 explicit-H E/Z molecules
+   back; products independent of hash-map order). Closed or typed: the
+   naphthalene rows RDKit cannot re-sanitize give RDKit's products after one
+   sanitize (BTMR1031, typed in the harness), cyclophosphazene P gets
+   RDKit's (spelling-dependent) CIP label, and the `[nH+2]` and native
+   created-centre stereo cases are decided
+   ([record](benchmarks/2026-10-04-xsmarts-autoconf-v1034.md)). **Exit:**
+   released, and the corpus rerun on the published package.
 4. **P1 / A4 — Publish a bounded SMARTS compatibility profile.** The
    published v1.0.30 baseline has 200 match-set and 43 Boolean differences,
    mostly the `R<n>` ring-count basis (SSSR versus RDKit's symmetrized
@@ -83,9 +87,9 @@ Exposed data are not sealed evidence.
    bond-keyed E/Z are identical across random atom orders, an H round trip
    and a canonical reparse. Source: acyclic phosphorus and acyclic lone-pair
    centres are labelled as RDKit's CIPLabeler does; one abstention is left
-   (a bridgehead amine). Remaining: ring lone-pair centres, whose RDKit
-   label depends on how a ring-closure digit on the centre was written, and
-   P on unsaturated rings (`OracleUnstable`). **Exit:**
+   (a bridgehead amine). P on unsaturated rings gets RDKit's label, marked
+   Kekulé-dependent. Remaining: ring lone-pair centres, whose RDKit label
+   depends on how a ring-closure digit on the centre was written. **Exit:**
    complete outcome accounting and no wrong confident label.
 8. **P2 — Test representation limits separately.** Keep CDXML opaque
    preservation distinct from semantic editing, Markush/polymer expansion

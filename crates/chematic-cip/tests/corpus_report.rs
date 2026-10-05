@@ -186,14 +186,18 @@ fn corpus_report_fast_vs_accurate_vs_modern_oracle() {
                 stats.accurate_wrong, 0,
                 "phosphorus: no confident wrong labels"
             );
+            // Phosphorus on an unsaturated ring takes RDKit's label for the
+            // spelling given; that label flips under a neutral Kekule
+            // respelling in both libraries (cip_oracle_instability.jsonl),
+            // which `label_depends_on_kekule_spelling` reports.
             assert_eq!(
-                stats.accurate_oracle_unstable, stats.total,
-                "phosphorus: every held-out row must fail closed"
+                stats.accurate_match, stats.total,
+                "phosphorus: every held-out row gets the oracle's label"
             );
         }
 
-        // The non-phosphorus held-out scope is now a hard parity contract.
-        // Phosphorus remains deliberately separate because its RDKit label is
+        // The non-phosphorus held-out scope is a hard parity contract.
+        // Phosphorus stays a separate bucket because its RDKit label is
         // representation-unstable under neutral Kekule respellings (see the
         // corpus manifest and cip_oracle_instability.jsonl).
         if name != "phosphorus" {

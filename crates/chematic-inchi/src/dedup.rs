@@ -805,6 +805,11 @@ fn accurate_stereo_supplement(mol: &Molecule) -> Result<Vec<(u64, CipCode)>, Ide
     let mut supplement: Vec<(u64, CipCode)> = Vec::with_capacity(unresolved.len());
     let mut seen_ranks: std::collections::HashSet<u64> = std::collections::HashSet::new();
     for atom in unresolved {
+        // A label that flips between Kekulé spellings of one molecule
+        // (cyclophosphazene P) cannot tell two inputs apart.
+        if chematic_chem::cip_label_depends_on_kekule_spelling(mol, atom) {
+            return Err(IdentityDiagnostic::AccurateCipOracleUnstable);
+        }
         if let Some((_, reason)) = accurate.unresolved.iter().find(|(i, _)| *i == atom) {
             return Err(match reason {
                 chematic_chem::CipUnresolvedReason::Tied => IdentityDiagnostic::AccurateCipTied,

@@ -1,0 +1,91 @@
+{
+ "schema": "chematic-734-754-batch9/v1",
+ "date": "2026-10-06",
+ "code_revision": "117a5a1a",
+ "rdkit": "2026.03.6",
+ "biotransformer_corpus": {
+  "counts": {
+   "explicit_h:both_none": 382090,
+   "explicit_h:both_none_refused": 673,
+   "explicit_h:differ": 36,
+   "explicit_h:exact": 6604,
+   "explicit_h:rdkit_raw_unsanitizable": 185,
+   "explicit_h:rdkit_truncated_subset": 12,
+   "implicit:both_none": 388406,
+   "implicit:both_none_refused": 143,
+   "implicit:exact": 1051,
+   "multi_reactant_rules_skipped": 6,
+   "rdkit_parse_error_rules": 3,
+   "rules_run": 974
+  },
+  "non_exact_rows_identical_to": "biotransformer-corpus-followups-2-rows-2026-10-05.jsonl"
+ },
+ "cip_accurate": {
+  "exposed_10k": {
+   "agree": 4394,
+   "abstain": 1,
+   "differ": 0
+  },
+  "chembl_5k": {
+   "agree": 4166,
+   "abstain": 20,
+   "differ": 0
+  },
+  "ring_sulfoxide_random_spellings": {
+   "agree": 180,
+   "total": 180
+  }
+ },
+ "hybridization": {
+  "exposed_10k": {
+   "before": "220003/220015",
+   "after": "220014/220015"
+  },
+  "chembl_5k": {
+   "before": "138654/138655",
+   "after": "138655/138655"
+  },
+  "smarts_hyb_kekule_cells": {
+   "before": "134990/135000",
+   "after": "134999/135000"
+  }
+ },
+ "mmff94_heavy_differing": {
+  "exposed_10k": {
+   "before": 89,
+   "after": 88
+  },
+  "chembl_5k": {
+   "before": 103,
+   "after": 53
+  },
+  "removed_keys": {
+   "chembl_5k": {
+    "S 18->44": 33,
+    "N 62->9": 17
+   },
+   "exposed_10k": {
+    "S 15->44": 1
+   }
+  }
+ },
+ "performance_instructions": {
+  "write_mol_2000": {
+   "before": 406226270,
+   "after": 384496562
+  },
+  "reaction_13_cases_run_reactants": {
+   "v1.0.34": 270695007,
+   "before": 316588649,
+   "after": 313314418
+  }
+ },
+ "gates": {
+  "reaction_83_checked_provenance": {
+   "graph_origin_map_match": 80,
+   "joint_invalid_input": 3
+  },
+  "xsmarts_autoconf_6ce94c9": "75/83, 0 unexpected",
+  "pytest": 1021
+ }
+}

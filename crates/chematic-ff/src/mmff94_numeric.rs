@@ -802,7 +802,7 @@ pub fn assign_mmff94_numeric_types_with_view(
             Element::C => assign_c_type(&mmff_mol, &rings, idx)?,
             Element::N => assign_n_type(&mmff_mol, &rings, idx)?,
             Element::O => assign_o_type(&mmff_mol, &rings, idx)?,
-            Element::S => assign_s_type(&mmff_mol, idx)?,
+            Element::S => assign_s_type(&mmff_mol, &rings, idx)?,
             Element::P => assign_p_type(&mmff_mol, idx)?,
             Element::SI => 19,
             Element::F => 11,
@@ -1087,13 +1087,6 @@ pub fn compute_mmff94_aromatic_view(
         >= 2
         && rings.iter().any(|ring| ring.len() >= 20);
     let large_ring_count = rings.iter().filter(|ring| ring.len() >= 20).count();
-    // In compact fused systems RDKit updates the atom aromatic flag as each
-    // MMFF ring is accepted. Our SSSR ordering/selection is not yet equivalent
-    // for cage systems (>20 rings) or larger macrocycles (>=16 atoms): in the
-    // pinned 10k corpus propagating there changed previously correct types.
-    // Preserve the pre-pass behavior on that bounded, still-unsupported lane.
-    let propagate_accepted_ring_aromaticity =
-        rings.len() <= 20 && !rings.iter().any(|ring| ring.len() >= 16);
     let large_ring_bonds: std::collections::HashSet<(AtomIdx, AtomIdx)> = rings
         .iter()
         .filter(|ring| ring.len() >= 20)
@@ -1126,9 +1119,29 @@ pub fn compute_mmff94_aromatic_view(
     // one size, the earliest atom encountered by the input graph. This is
     // deliberately local to the RDKit-compatibility layer; general ring
     // perception remains atom-order independent.
+    //
+    // RDKit's pass stops once every ring atom has been looked at, so a ring
+    // deferred until its neighbours are typed is decided by where it sits in
+    // that order. Rings RDKit lists are taken in RDKit's own order
+    // (`rdkit_sssr_ring_order`, a port of its `findSSSR`/`symmetrizeSSSR`);
+    // the size/first-atom order above is the fallback.
+    let rdkit_position: std::collections::HashMap<Vec<u32>, usize> =
+        chematic_perception::rdkit_sssr_ring_order(mol)
+            .unwrap_or_default()
+            .into_iter()
+            .enumerate()
+            .map(|(i, ring)| {
+                let mut key: Vec<u32> = ring.iter().map(|a| a.0).collect();
+                key.sort_unstable();
+                (key, i)
+            })
+            .collect();
     let mut rings = rings.to_vec();
     rings.sort_by_key(|ring| {
+        let mut key: Vec<u32> = ring.iter().map(|a| a.0).collect();
+        key.sort_unstable();
         (
+            rdkit_position.get(&key).copied().unwrap_or(usize::MAX),
             ring.len(),
             ring.iter().map(|atom| atom.0).min().unwrap_or(u32::MAX),
         )
@@ -1220,15 +1233,11 @@ pub fn compute_mmff94_aromatic_view(
                     }
                     if nb.order == BondOrder::Double {
                         // RDKit reads the neighbor's *current* aromatic flag
-                        // here. An earlier accepted ring sets that flag in
-                        // the same pass; the Kekule input's frozen flag does
-                        // not contain that update. `is_arom` tracks accepted
-                        // rings, unlike `resolved` (rings merely processed).
-                        // Complex cage/macrocycle systems retain the frozen
-                        // flag until their ring-model parity is adjudicated.
-                        if (propagate_accepted_ring_aromaticity && is_arom[nb.neighbor.0 as usize])
-                            || kmol.atom(nb.neighbor).aromatic
-                        {
+                        // here, on a molecule it kekulized with the flags
+                        // cleared: only rings accepted so far (`is_arom`, not
+                        // `resolved`, which also holds rings merely looked
+                        // at) count, in RDKit's ring order.
+                        if is_arom[nb.neighbor.0 as usize] {
                             pi_e += 1;
                         } else {
                             exo_double_bond = true;
@@ -1922,6 +1931,12 @@ fn assign_n_type(
         {
             return Ok(48); // NSO
         }
+        // RDKit: any other two-connected N double bonded to neither C nor N
+        // (an iminophosphorane or sulfilimine N, a cyclophosphazene N outside
+        // an MMFF-aromatic ring) is NM (62).
+        if degree == 2 && !double_bonded_to_c_or_n {
+            return Ok(62); // NM
+        }
         return Ok(9); // N=C imine
     }
 
@@ -2290,9 +2305,16 @@ fn assign_o_type(
 /// degree/terminal-neighbor-counting rule, which is bond-order-separation
 /// agnostic by construction (a terminal O counts whether it's reached via a
 /// double bond or a charge-separated single bond).
-fn assign_s_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
+fn assign_s_type(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    idx: AtomIdx,
+) -> Result<u8, NumericTypeError> {
     let atom = mol.atom(idx);
-    if atom.aromatic {
+    // S5 is the sulfur of a five-membered aromatic ring; an aromatic sulfur
+    // in a six-membered ring (methylene blue's `[S+]`) takes the degree
+    // rules below, as in RDKit.
+    if atom.aromatic && rings.iter().any(|r| r.len() == 5 && r.contains(&idx)) {
         return Ok(44); // S5 aromatic sulfur (thiophene)
     }
 
@@ -3553,6 +3575,42 @@ mod tests {
             vec![63, 64],
             "furan ring carbons should be C5A (alpha, 63) and C5B (beta, 64)"
         );
+    }
+
+    #[test]
+    fn indolocarbazole_pyrroles_follow_rdkit_ring_order() {
+        // RDKit 2026.03.6 MMFFGetMMFFAtomType (heavy atoms): its MMFF
+        // aromaticity pass walks RingInfo in RDKit's order and stops once
+        // every ring atom was looked at, so the second pyrrole (listed last)
+        // is aromatic only because its benzene neighbours came first.
+        let m = mol("O=C1NC(=O)c2c1c1c3ccccc3n3c1c1c2c2ccccc2n1[C@H]1CC[C@@H]3O1");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        assert_eq!(
+            &types[..m.atom_count()],
+            &[
+                7, 3, 10, 3, 7, 37, 37, 64, 64, 37, 37, 37, 37, 63, 39, 63, 63, 64, 64, 37, 37, 37,
+                37, 63, 39, 1, 1, 1, 1, 6
+            ]
+        );
+    }
+
+    #[test]
+    fn six_ring_aromatic_sulfur_and_n_double_bonded_to_p_s_si_follow_rdkit() {
+        // RDKit 2026.03.6 MMFFGetMMFFAtomType: methylene blue's ring [S+] is
+        // S (15), not thiophene S5 (44); a cyclophosphazene-like S(=O) is
+        // SO2 (18); a two-connected N double bonded to P, S or Si is NM (62).
+        for (smiles, idx, want) in [
+            ("CN(C)C1=CC2=C(C=C1)N=C3C=CC(=CC3=[S+]2)N(C)C", 16, 15),
+            ("O=S1(C)=NP(C)(C)=NP(C)(C)=N1", 1, 18),
+            ("CN=P(C)(C)C", 1, 62),
+            ("CN=S(C)C", 1, 62),
+            ("CN=[Si](C)C", 1, 62),
+            ("CN=S(=O)(C)C", 1, 48),
+        ] {
+            let m = mol(smiles);
+            let types = assign_mmff94_numeric_types(&m).unwrap();
+            assert_eq!(types[idx], want, "{smiles}");
+        }
     }
 
     #[test]

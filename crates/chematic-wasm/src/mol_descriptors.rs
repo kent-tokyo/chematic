@@ -422,12 +422,19 @@ pub fn cip_assignments_json(mol: &MolHandle) -> String {
 /// but merges the accurate engine's tetrahedral R/S (~99.6% oracle-stable agreement,
 /// see `docs/rfcs/cip_accurate_rfc.md`) with legacy's E/Z and allene answers (the accurate
 /// engine computes neither). Atoms it can't resolve are omitted here -- see
-/// [`cip_unresolved_json`] -- never a silently-guessed label. Returns `"null"` on an
-/// internal engine error (budget-independent computations should not normally hit this).
+/// [`cip_unresolved_json`] -- never a silently-guessed label. A phosphorus on an
+/// unsaturated ring (cyclophosphazene) gets RDKit's CIPLabeler label, which flips
+/// with the ring's Kekulé spelling; its object carries `"kekuleDependent": true`.
+/// Returns `"null"` on an internal engine error (budget-independent computations
+/// should not normally hit this).
 #[wasm_bindgen]
 pub fn cip_assignments_accurate_json(mol: &MolHandle) -> String {
     match chematic_chem::assign_cip_with_mode(&mol.inner, chematic_chem::CipMode::Accurate) {
-        Ok(result) => cip_code_pairs_to_json(&result.assignments),
+        Ok(result) => cip_code_pairs_to_json_marked(&result.assignments, |idx| {
+            // A cyclophosphazene P's label flips with the ring's Kekulé
+            // spelling (as RDKit's does).
+            chematic_chem::cip_label_depends_on_kekule_spelling(&mol.inner, idx)
+        }),
         Err(_) => "null".to_string(),
     }
 }
@@ -461,6 +468,15 @@ pub fn cip_unresolved_json(mol: &MolHandle) -> String {
 }
 
 fn cip_code_pairs_to_json(pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)]) -> String {
+    cip_code_pairs_to_json_marked(pairs, |_| false)
+}
+
+/// [`cip_code_pairs_to_json`] with `"kekuleDependent": true` on the atoms
+/// `kekule_dependent` selects.
+fn cip_code_pairs_to_json_marked(
+    pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)],
+    kekule_dependent: impl Fn(chematic_core::AtomIdx) -> bool,
+) -> String {
     let parts: Vec<String> = pairs
         .iter()
         .map(|(idx, code)| {
@@ -472,7 +488,15 @@ fn cip_code_pairs_to_json(pairs: &[(chematic_core::AtomIdx, chematic_core::CipCo
                 chematic_core::CipCode::LowerR => "r",
                 chematic_core::CipCode::LowerS => "s",
             };
-            format!("{{\"atomIdx\":{},\"cipCode\":\"{}\"}}", idx.0, code_str)
+            let mark = if kekule_dependent(*idx) {
+                ",\"kekuleDependent\":true"
+            } else {
+                ""
+            };
+            format!(
+                "{{\"atomIdx\":{},\"cipCode\":\"{}\"{mark}}}",
+                idx.0, code_str
+            )
         })
         .collect();
     format!("[{}]", parts.join(","))
@@ -531,4 +555,32 @@ pub fn labute_asa_per_atom_json(mol: &MolHandle) -> String {
         })
         .collect();
     format!("[{}]", parts.join(","))
+}
+
+#[cfg(test)]
+mod cip_json_tests {
+    use super::*;
+
+    #[test]
+    fn accurate_cip_json_marks_kekule_dependent_phosphorus() {
+        // RDKit 2026.03.6 rdCIPLabeler: atom 1 S, atom 12 R.
+        let mol = MolHandle {
+            inner: std::rc::Rc::new(
+                chematic_smiles::parse("N[P@]1(Cl)=NP(N2CC2)(N2CC2)=N[P@](N)(Cl)=N1").unwrap(),
+            ),
+        };
+        assert_eq!(
+            cip_assignments_accurate_json(&mol),
+            "[{\"atomIdx\":1,\"cipCode\":\"S\",\"kekuleDependent\":true},\
+             {\"atomIdx\":12,\"cipCode\":\"R\",\"kekuleDependent\":true}]"
+        );
+        assert_eq!(cip_unresolved_json(&mol), "[]");
+        let plain = MolHandle {
+            inner: std::rc::Rc::new(chematic_smiles::parse("C[C@H](N)O").unwrap()),
+        };
+        assert_eq!(
+            cip_assignments_accurate_json(&plain),
+            "[{\"atomIdx\":1,\"cipCode\":\"R\"}]"
+        );
+    }
 }

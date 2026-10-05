@@ -672,6 +672,14 @@ impl<'a> Parser<'a> {
             Some(b'b' | b'c' | b'n' | b'o' | b'p' | b's') => {
                 Ok(Some(self.parse_aromatic_organic()?))
             }
+            // OpenSMILES: an unbracketed `*` is a wildcard atom with no
+            // hydrogens, the same atom as `[*]` (RDKit writes it bare).
+            Some(b'*') => {
+                self.advance();
+                let mut atom = Atom::wildcard();
+                atom.chirality = self.parse_chirality(false)?;
+                Ok(Some(atom))
+            }
             _ => Ok(None),
         }
     }
@@ -745,8 +753,8 @@ impl<'a> Parser<'a> {
         // Handle wildcard [*] — return immediately with a dedicated wildcard atom.
         if symbol == "*" {
             let chirality = self.parse_chirality(true)?;
-            let _hcount = self.parse_hcount();
-            let _charge = self.parse_charge();
+            let hcount = self.parse_hcount();
+            let charge = self.parse_charge();
             let atom_map = if self.peek() == Some(b':') {
                 self.advance();
                 self.parse_leading_digits_u16()
@@ -762,6 +770,13 @@ impl<'a> Parser<'a> {
             self.advance();
             let mut wc = Atom::wildcard();
             wc.chirality = chirality;
+            // Isotope, H count and charge are kept as RDKit keeps them on a
+            // dummy atom (`[*-]`, `[13*]`); they used to be dropped.
+            wc.isotope = isotope;
+            wc.charge = charge;
+            if hcount > 0 {
+                wc.hydrogen_count = Some(hcount);
+            }
             // Wildcard atoms participate in atom-mapped reactions and in
             // RDKit CXSMILES attachment labels (`[*:7] |$_AP1;$|`). Dropping
             // the map here made the label's atom identity untraceable after a
@@ -1201,6 +1216,39 @@ mod tests {
         let mol = parse("[*:17]C").unwrap();
         assert!(mol.atom(AtomIdx(0)).wildcard);
         assert_eq!(mol.atom(AtomIdx(0)).atom_map, Some(17));
+    }
+
+    #[test]
+    fn bare_wildcard_is_the_bracket_wildcard() {
+        for (bare, bracket) in [("C*", "C[*]"), ("*C(*)=O", "[*]C([*])=O"), ("*", "[*]")] {
+            let a = parse(bare).unwrap();
+            let b = parse(bracket).unwrap();
+            assert_eq!(
+                crate::canonical_smiles(&a),
+                crate::canonical_smiles(&b),
+                "{bare}"
+            );
+            assert!(a.atoms().any(|(_, atom)| atom.wildcard));
+        }
+    }
+
+    #[test]
+    fn wildcard_keeps_charge_isotope_and_h_count() {
+        // RDKit keeps these on a dummy atom; they used to be dropped.
+        let mol = parse("[13*H2-:3]").unwrap();
+        let atom = mol.atom(AtomIdx(0));
+        assert!(atom.wildcard);
+        assert_eq!(
+            (
+                atom.isotope,
+                atom.charge,
+                atom.hydrogen_count,
+                atom.atom_map
+            ),
+            (Some(13), -1, Some(2), Some(3))
+        );
+        assert_eq!(crate::canonical_smiles(&mol), "[13*H2-:3]");
+        assert!(crate::canonical_smiles(&parse("C[*+]").unwrap()).contains("[*+]"));
     }
 
     #[test]

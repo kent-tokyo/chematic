@@ -477,6 +477,12 @@ fn scaffold_network_counts<'py>(
     Ok(d)
 }
 
+/// Largest reactant (atom count, explicit H atoms included) the reaction
+/// functions accept. Bounds matching work on untrusted input; 1,000 covers
+/// explicit-H peptides and macrolides (it was 300, which refused 2 of the 400
+/// BioTransformer corpus reactants with explicit H, #734).
+const MAX_REACTANT_ATOMS: usize = 1_000;
+
 /// Apply a SMIRKS reaction template to a list of reactant molecules.
 ///
 /// Returns a list of product sets; each set is a list of Mol.
@@ -495,9 +501,9 @@ fn scaffold_network_counts<'py>(
 #[pyfunction]
 fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
     for mol in &reactants {
-        if mol.inner.atom_count() > 300 {
+        if mol.inner.atom_count() > MAX_REACTANT_ATOMS {
             return Err(PyValueError::new_err(
-                "reactant too large for run_smirks (max 300 heavy atoms)",
+                "reactant too large for run_smirks (max 1000 atoms, explicit H atoms included)",
             ));
         }
     }
@@ -551,11 +557,14 @@ fn run_smirks_checked<'py>(
         result.set_item("truncated_matches", false)?;
         Ok(())
     };
-    if reactants.iter().any(|mol| mol.inner.atom_count() > 300) {
+    if reactants
+        .iter()
+        .any(|mol| mol.inner.atom_count() > MAX_REACTANT_ATOMS)
+    {
         refuse(
             "typed_refusal",
             "reactant_too_large",
-            "max 300 atoms per reactant".to_string(),
+            "max 1000 atoms per reactant, explicit H atoms included".to_string(),
         )?;
         return Ok(result);
     }
@@ -564,7 +573,7 @@ fn run_smirks_checked<'py>(
     let outcome = if rdkit_compat {
         chematic_rxn::run_reactants_traced_rdkit_2026_03_6(smirks, &refs, &limits)
     } else {
-        chematic_rxn::PreparedReaction::new(smirks).and_then(|prepared| {
+        chematic_rxn::PreparedReaction::shared(smirks).and_then(|prepared| {
             prepared
                 .run_reactants_traced_with_diagnostics(&refs, &limits)
                 .map(chematic_rxn::RdkitProfileOutcome::Report)
@@ -662,9 +671,9 @@ fn run_smirks_checked<'py>(
 #[pyfunction]
 fn run_smirks_strict(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
     for mol in &reactants {
-        if mol.inner.atom_count() > 300 {
+        if mol.inner.atom_count() > MAX_REACTANT_ATOMS {
             return Err(PyValueError::new_err(
-                "reactant too large for run_smirks_strict (max 300 heavy atoms)",
+                "reactant too large for run_smirks_strict (max 1000 atoms, explicit H atoms included)",
             ));
         }
     }

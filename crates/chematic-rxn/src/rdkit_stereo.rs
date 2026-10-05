@@ -823,6 +823,16 @@ pub(crate) fn apply_product_stereo(
         let Some(new_idx) = template_idx_to_new.get(i).copied().flatten() else {
             continue;
         };
+        // An aromatic product atom is not a stereocentre: RDKit's sanitize
+        // clears whatever tag the runner copied onto it (a steroid A-ring
+        // aromatization, BioTransformer BTMR0822, leaves the old C10 tag on
+        // an aromatic carbon), so its tag cannot make the product ambiguous.
+        if product.atom(new_idx).aromatic {
+            if product.atom(new_idx).chirality != Chirality::None {
+                product.set_chirality(new_idx, Chirality::None);
+            }
+            continue;
+        }
         let flag = info.flags[p][i];
         let template_part: Vec<Node> = template[i]
             .order
@@ -1115,7 +1125,16 @@ fn to_product_config(
 /// whether inverting the tag gives a different molecule (by stereo-aware
 /// canonical SMILES), which covers ring cis/trans pairs and
 /// pseudo-asymmetric centres the same way.
-pub(crate) fn rdkit_parse_cleanup(mol: &Molecule) -> Option<Molecule> {
+pub(crate) fn rdkit_parse_cleanup(mol: &Molecule) -> std::sync::Arc<Option<Molecule>> {
+    // Memoized on the reactant: a batch applies many templates to the same
+    // molecule, and the cleanup's canonical comparisons were a third of the
+    // profile's run time.
+    mol.derived(chematic_core::DerivedSlot::RdkitParseCleanup, || {
+        rdkit_parse_cleanup_uncached(mol)
+    })
+}
+
+fn rdkit_parse_cleanup_uncached(mol: &Molecule) -> Option<Molecule> {
     let tagged: Vec<AtomIdx> = mol
         .atoms()
         .filter(|(_, a)| a.chirality.is_tetrahedral())

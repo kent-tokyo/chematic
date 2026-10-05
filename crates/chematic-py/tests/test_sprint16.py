@@ -109,17 +109,19 @@ def test_cip_stereo_unresolved_empty_for_resolvable_molecule():
     assert m.cip_stereo_unresolved() == []
 
 
-def test_cip_stereo_unresolved_reports_genuine_ties():
-    """The 2 phosphorus rows found to be genuine chematic ties (not merely
-    oracle-unstable, see docs/rfcs/cip_accurate_rfc.md Milestone 4C-1) must come back in
-    cip_stereo_unresolved(), never a silently-guessed label in cip_stereo()."""
+def test_cip_stereo_labels_cyclophosphazene_phosphorus_like_rdkit():
+    """Cyclophosphazene P (docs/rfcs/cip_accurate_rfc.md Milestone 4C-1) carries
+    RDKit 2026.03.6 rdCIPLabeler's label (6 R, 19 S); the label flips with the
+    P=N Kekule spelling in both libraries, so the entry is marked."""
     m = chematic.from_smiles(
         "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1"
     )
-    unresolved_atoms = {d["atom_idx"] for d in m.cip_stereo_unresolved()}
-    assert unresolved_atoms == {6, 19}
-    resolved_atoms = {d["atom_idx"] for d in m.cip_stereo(mode="accurate")}
-    assert resolved_atoms.isdisjoint(unresolved_atoms)
+    assert m.cip_stereo_unresolved() == []
+    labels = {d["atom_idx"]: d for d in m.cip_stereo(mode="accurate")}
+    assert labels[6]["descriptor"] == "R" and labels[6]["kekule_dependent"] is True
+    assert labels[19]["descriptor"] == "S" and labels[19]["kekule_dependent"] is True
+    plain = chematic.from_smiles("C[C@H](N)O").cip_stereo(mode="accurate")
+    assert all("kekule_dependent" not in d for d in plain)
 
 
 def test_generate_3d_atom_count():

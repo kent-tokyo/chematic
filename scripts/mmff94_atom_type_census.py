@@ -211,11 +211,11 @@ def main() -> int:
         expected_corpus_sha = "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
         if (summary["corpus"]["sha256"] != expected_corpus_sha
                 or summary["corpus"]["rows"] != 10_000
-                or summary["row_status"] != {"compared": 9_774, "rdkit_mmff_unsupported": 204, "chematic_error": 22}
-                or summary["atoms_compared"] != {"heavy": 214_990, "hydrogen": 190_737}
-                or summary["heavy"]["differing_atoms"] != 89
-                or summary["hydrogen"]["differing_atoms"] != 1
-                or type37_bucket != 16):
+                or summary["row_status"] != {"compared": 9_796, "rdkit_mmff_unsupported": 204}
+                or summary["atoms_compared"] != {"heavy": 215_565, "hydrogen": 191_148}
+                or summary["heavy"]["differing_atoms"] != 81
+                or summary["hydrogen"]["differing_atoms"] != 0
+                or type37_bucket != 66):
             raise ValueError("source-wheel MMFF94 type gate failed; inspect the written census report")
     print(json.dumps({k: summary[k] for k in ("row_status", "atoms_compared")} | {
         "hydrogen_differing": summary["hydrogen"]["differing_atoms"],

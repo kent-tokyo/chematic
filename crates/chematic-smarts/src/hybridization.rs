@@ -34,6 +34,61 @@ fn outer_electrons(z: u8) -> Option<i32> {
     })
 }
 
+/// RDKit 2026.03.6's allowed-valence list (`GetValenceList`); `None` for
+/// elements it lists as `[-1]` (any valence: transition metals and the rest).
+fn rdkit_valence_list(z: u8) -> Option<&'static [i32]> {
+    Some(match z {
+        1 | 9 | 17 | 35 => &[1],
+        2 | 10 | 18 | 36 | 86 => &[0],
+        3 | 11 | 19 | 37 => &[1, -1],
+        55 | 87 => &[1],
+        4 => &[2],
+        12 | 20 | 38 | 56 | 88 => &[2, -1],
+        5 | 13 | 31 | 49 => &[3],
+        6 | 14 | 32 => &[4],
+        7 => &[3],
+        8 => &[2],
+        15 | 33 | 51 | 83 => &[3, 5],
+        16 | 34 | 52 | 84 => &[2, 4, 6],
+        50 | 82 => &[2, 4],
+        53 | 85 => &[1, 3, 5],
+        54 => &[0, 2, 4, 6],
+        _ => return None,
+    })
+}
+
+/// RDKit `assignRadicals`: radical electrons of an atom with no implicit H
+/// (a bracket atom), from its total valence.
+fn rdkit_radicals(mol: &Molecule, idx: AtomIdx, nouter: i32, total_valence: i32) -> i32 {
+    let atom = mol.atom(idx);
+    if atom.hydrogen_count.is_none() {
+        return 0;
+    }
+    let z = atom.element.atomic_number();
+    let chg = i32::from(atom.charge);
+    let Some(valens) = rdkit_valence_list(z) else {
+        if mol.degree(idx) > 0 {
+            return 0;
+        }
+        return (nouter - chg).max(0) % 2;
+    };
+    let base = if z <= 2 { 2 } else { 8 };
+    let mut radicals = base - nouter - total_valence + chg;
+    if radicals < 0 {
+        radicals = 0;
+        if valens.len() > 1
+            && let Some(&v) = valens.iter().find(|&&v| v - total_valence + chg >= 0)
+        {
+            radicals = v - total_valence + chg;
+        }
+    }
+    let early = nouter - total_valence - chg;
+    if early >= 0 {
+        radicals = radicals.min(early);
+    }
+    radicals
+}
+
 /// RDKit's default (first) valence for the elements conjugation looks at.
 fn default_valence(mol: &Molecule, idx: AtomIdx) -> i32 {
     let element = mol.atom(idx).element;
@@ -115,12 +170,24 @@ fn marked_at(mol: &Molecule, center: AtomIdx, bond: BondIdx) -> bool {
         let other = if e.atom1 == center { e.atom2 } else { e.atom1 };
         substituents(mol, other) <= 3 && conjugation_candidate(mol, other)
     };
-    let multiple = |b: BondIdx| valence_contrib(mol.bond(b).order) >= 1.5;
-    let bonds: Vec<BondIdx> = mol.neighbors(center).map(|(_, b)| b).collect();
+    // A multiple bond counts only toward a candidate atom: a double bond to
+    // `[S+]`/`[Se+]` with two substituents conjugates nothing (RDKit 2026.03.6
+    // marks no bond in `CN(C)C(=[S+]C)C`; the metal dithiocarbamates of the
+    // exposed 10k have sp3 amine N).
+    let multiple = |b: BondIdx| {
+        let e = mol.bond(b);
+        let other = if e.atom1 == center { e.atom2 } else { e.atom1 };
+        valence_contrib(e.order) >= 1.5 && conjugation_candidate(mol, other)
+    };
+    let others = || {
+        mol.neighbors(center)
+            .map(|(_, b)| b)
+            .filter(move |&b| b != bond)
+    };
     // `bond` as the multiple bond, paired with any other candidate bond …
-    (multiple(bond) && bonds.iter().any(|&b2| b2 != bond && other_ok(b2)))
+    (multiple(bond) && others().any(other_ok))
         // … or as the partner of another multiple bond.
-        || (other_ok(bond) && bonds.iter().any(|&b1| b1 != bond && multiple(b1)))
+        || (others().any(multiple) && other_ok(bond))
 }
 
 fn bond_is_conjugated(mol: &Molecule, bond: BondIdx) -> bool {
@@ -156,13 +223,37 @@ pub fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
     if atom.aromatic && (2..=3).contains(&total_degree) {
         return Some(2);
     }
+    // RDKit's clean-up reads a neutral Cl/Br/I of valence 3, 5 or 7 bonded
+    // only to O as `[X+k]([O-])…`: its `=O` atoms are sp3 `[O-]` (perchlorate).
+    if z == 8
+        && atom.charge == 0
+        && total_degree == 1
+        && let Some((halogen, bond)) = mol.neighbors(idx).next()
+        && mol.bond(bond).order == BondOrder::Double
+        && matches!(mol.atom(halogen).element.atomic_number(), 17 | 35 | 53)
+        && mol.atom(halogen).charge == 0
+        && matches!(crate::match_vf2::total_valence(mol, halogen), 3 | 5 | 7)
+        && mol
+            .neighbors(halogen)
+            .all(|(nb, _)| mol.atom(nb).element.atomic_number() == 8)
+    {
+        return Some(3);
+    }
     let norbs = match outer_electrons(z) {
         Some(nouter) if z < 89 => {
             let total_valence = crate::match_vf2::total_valence(mol, idx) as i32;
             // Not clamped: RDKit lets a negative lone-pair count lower the
             // orbital count (`[Zn++]` with four bonds is SP).
-            let free = nouter - (total_valence + i32::from(atom.charge));
-            total_degree + free / 2
+            let chg = i32::from(atom.charge);
+            let free = nouter - (total_valence + chg);
+            if total_valence + nouter - chg < 8 {
+                // Below an octet RDKit counts radical electrons as orbitals
+                // (`[Mg]` with four bonds to O+ has two: SP3).
+                let radicals = rdkit_radicals(mol, idx, nouter, total_valence);
+                total_degree + (free - radicals) / 2 + radicals
+            } else {
+                total_degree + free / 2
+            }
         }
         _ => total_degree,
     };
@@ -170,10 +261,16 @@ pub fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
         0 | 1 => Some(0),
         2 => Some(1),
         3 => Some(2),
-        4 => {
-            let conjugated = mol.neighbors(idx).any(|(_, b)| bond_is_conjugated(mol, b));
-            Some(if total_degree < 4 && conjugated { 2 } else { 3 })
-        }
+        // Conjugation is only looked up for an atom with fewer than four
+        // neighbours (it decided nothing for an sp3 CH3/CH2, and was most
+        // of a `[C^3]` match).
+        4 => Some(
+            if total_degree < 4 && mol.neighbors(idx).any(|(_, b)| bond_is_conjugated(mol, b)) {
+                2
+            } else {
+                3
+            },
+        ),
         5 => Some(4),
         6 => Some(5),
         _ => None,
@@ -194,9 +291,38 @@ mod tests {
             ("CC(S)=N", "3232"),
             ("C=C[S-]", "222"),
             ("C=CCl", "223"),
+            (
+                "CN(C)C(=[S+]C)C",
+                "3332233", /* no conjugation through [S+] */
+            ),
+            (
+                "OCl(=O)(=O)=O",
+                "33333", /* clean-up: [Cl+3]([O-])... */
+            ),
+            ("CC(=O)N=S1OCCO1", "322233333"),
             ("CC#N", "311"),
             ("C[N+](C)(C)C", "33333"),
             ("[2H]C", "03"),
+            // Below an octet radical electrons count as orbitals (RDKit
+            // `assignRadicals` on bracket atoms).
+            (
+                "CC1=[O+][Mg]2([O+]=C(C)C1)[O+]=C(C)CC(=[O+]2)C",
+                "322322332233223",
+            ),
+            ("C[CH2]", "33"),
+            ("[CH2]", "3"),
+            ("C[CH]C", "333"),
+            ("C[O]", "33"),
+            ("C[N]C", "333"),
+            ("[Mg](C)C", "133"),
+            ("C[B]C", "323"),
+            ("[Na]C", "03"),
+            ("C[Sn](C)(C)C", "33333"),
+            ("[Li]", "0"),
+            ("C[Al](C)C", "3233"),
+            ("[Ca]", "1"),
+            ("[SiH2]", "3"),
+            ("CC[Ge]C", "3333"),
         ] {
             let mol = chematic_smiles::parse(smiles).unwrap();
             let got: String = (0..mol.atom_count())

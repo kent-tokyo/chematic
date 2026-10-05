@@ -1302,7 +1302,7 @@ fn rule5_15_row_cage_family_is_renumbering_invariant_worst_of_30() {
 /// phosphorus stereocenters from Milestone 4C-1 never flap to a resolved label on any
 /// of 30 renumbering permutations.
 #[test]
-fn rule5_phosphorus_ties_stay_tied_across_renumbering_worst_of_30() {
+fn rule5_phosphorus_labels_are_renumbering_invariant_worst_of_30() {
     fn next(state: &mut u64) -> u64 {
         *state ^= *state << 13;
         *state ^= *state >> 7;
@@ -1333,26 +1333,18 @@ fn rule5_phosphorus_ties_stay_tied_across_renumbering_worst_of_30() {
             crate::assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
                 .expect("assignment succeeds");
 
-        for atom_idx in [6u32, 19u32] {
+        for (atom_idx, want) in [(6u32, CipCode::R), (19u32, CipCode::S)] {
             let new_idx = old_to_new[atom_idx as usize];
-            let resolved = assignment
+            let got = assignment
                 .assignments
                 .iter()
-                .any(|(idx, _)| idx.0 == new_idx);
-            assert!(
-                !resolved,
+                .find(|(idx, _)| idx.0 == new_idx)
+                .map(|&(_, code)| code);
+            assert_eq!(
+                got,
+                Some(want),
                 "original atom {atom_idx} (trial {trial}, new idx {new_idx}): \
-                 phosphorus must never resolve to a label"
-            );
-            let declined = assignment
-                .skipped
-                .iter()
-                .any(|(idx, reason)| idx.0 == new_idx && *reason == SkipReason::OracleUnstable);
-            assert!(
-                declined,
-                "original atom {atom_idx} (trial {trial}, new idx {new_idx}): \
-                 expected SkipReason::OracleUnstable under every renumbering, got {:?}",
-                assignment.skipped.iter().find(|(idx, _)| idx.0 == new_idx)
+                 RDKit's CIPLabeler label under every renumbering"
             );
             checked += 1;
         }

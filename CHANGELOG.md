@@ -8,6 +8,191 @@ benchmark claims remain scoped to their dated records.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.36] - 2026-10-06
+
+Remaining #734 work: BioTransformer's public rule tables (983 rules, about
+the 1,200 the reporter used) were run through RDKit 2026.03.6 and the RDKit
+profile on 400 corpus molecules, as parsed and with explicit hydrogens.
+Where RDKit has a product, the source gives the same product sets for
+1,051/1,051 implicit-H pairs (v1.0.35: 775) and 6,604/6,652 explicit-H
+pairs (v1.0.35: 3,807), and refuses none (v1.0.35: 241 rules refused on
+every molecule). Records: `benchmarks/2026-10-05-biotransformer-rule-corpus.md`,
+`benchmarks/2026-10-05-biotransformer-corpus-followups.md`,
+`benchmarks/2026-10-05-biotransformer-corpus-followups-2.md`,
+`benchmarks/2026-10-06-734-754-followups-batch9.md` and
+`benchmarks/2026-10-06-734-754-followups-batch10.md`; the apply
+model is written down in `docs/smirks-apply-model.md`.
+
+- **Canonical SMILES E/Z fix:** a direction stashed beside a bond and read
+  from the bond's atom2 (reaction products, reactions on aromatic E/Z
+  carriers) was written mirrored when the writer chose that bond as marker
+  carrier. `remove_hydrogens`, atom/bond removal, metal disconnection and
+  tautomer atom reordering no longer drop the stash's anchor.
+- `remove_hydrogens` keeps an E/Z whose only marker at one end was on a
+  removed H atom: the marker moves to the end's other substituent, and the
+  markers of conjugated double bonds are rewritten together
+  (`chematic_core::ez_markers`).
+- **Behaviour change:** canonical SMILES of explicit-H molecules carry E/Z
+  markers on heavy atoms where possible, a ring-closure bond included (its
+  marker is written at the ring opening). RDKit's `RemoveHs` read 22 of 572
+  explicit-H E/Z molecules written by chematic with an E/Z dropped or
+  inverted; now none.
+- Canonical SMILES of two E/Z double bonds coupled through a shared bond
+  (squaraine diimines in Kekulé form) kept both: one was written inverted
+  or without a marker, depending on the input spelling. A double bond in a
+  ring of fewer than eight atoms no longer ties the marker orientation of
+  its neighbours. RDKit-written MOL blocks of such molecules (14 rows of
+  two ChEMBL sets) now read back as RDKit's molecule.
+- MOL reader: a centre with one wedge or hash takes its parity from the
+  angular order of the flat bonds; two flat bonds a few degrees apart with
+  different lengths gave the opposite centre (artemisinin peroxide-bridge
+  carbons and a morphinan in RDKit's layout, 14 rows). RDKit-written stereo
+  blocks read back as RDKit's molecule for 1,678/1,687 exposed-10k and
+  1,663/1,670 ChEMBL-5k rows (were 1,666 and 1,647); the remaining 15 of
+  the 16 are read by RDKit itself the same way from its own block.
+- Kekulization: a neutral ring-fusion N or P with three aromatic bonds is
+  tried as a lone-pair donor first, as RDKit does (a pyrido[1,2-a]pyrimidine
+  beside `c(=O)`/`c(=S)`/`c(=N)` did not kekulize, and the imine E/Z of six
+  BioTransformer products was ranked without the ring's duplicate atoms; it
+  now agrees with RDKit's CIPLabeler on 1,949/1,949 double bonds of 1,492
+  E/Z molecules); a three-bonded `[s+]` (`[s+]([O-])` of a thiadiazole
+  S-oxide) is a donor too. 22 molecules of a 25,000-molecule check set
+  kekulize that did not.
+- RDKit profile: E/Z of double bonds copied from the reactant follows
+  RDKit's stereo atoms (dropped when the stereo atom stays in the product
+  but is no longer bonded to its end, e.g. a Baeyer–Villiger ring
+  expansion; dropped for a template double bond with template neighbours at
+  both ends that spells no stereo); template markers next to carried ones
+  no longer conflict (an enyne reduction gave both E and Z).
+- RDKit profile: `R<n>` and ring sizes in reactant templates count RDKit's
+  symmetrized rings (a quinuclidine N is `R3`); a ring model that cannot be
+  settled is a typed `ring_model_unresolved`.
+- RDKit profile: an unmapped product atom naming no single element
+  (`P([!#1!#6;O,$([O-])])`) is a dummy atom `*`, as in RDKit (it was a
+  parse error). SMILES accepts an unbracketed `*`.
+- An aromatic product atom keeps no tetrahedral tag (a steroid A-ring
+  aromatization was refused as `ambiguous_stereo_bond_order`); an
+  explicit-H ring CH beside a rewritten C=C keeps its H count; an indole
+  [nH] beside a zero-order bond is a kekulization candidate as in RDKit;
+  a zero-order bond is never written as an E/Z carrier. Surrounding
+  whitespace in a SMIRKS is ignored.
+- Python reaction functions accept reactants of up to 1,000 atoms, explicit
+  H atoms included (was 300).
+- Reaction products no longer depend on hash-map iteration order: carried
+  atoms are added from template atoms in reactant order and carried bonds in
+  product atom order (a mixed aromatic product's Kekulé form, and so whether
+  it passes RDKit's sanitize, changed with a map's capacity, BTMR1032).
+- Accurate CIP labels ring sulfoxides and selenoxides (RDKit reads their
+  spellings as chematic does); ring centres with three single bonds
+  (bridgehead amines, cyclic phosphines, sulfonium ions) stay
+  `LonePairCenter`, since RDKit's reading of their `@`/`@@` changes with the
+  spelling while chematic follows OpenSMILES.
+- **Behaviour change:** RDKit-model hybridization (`hybridization_per_atom`,
+  SMARTS `^n`): a multiple bond conjugates only toward a conjugation
+  candidate (the amine N of metal dithiocarbamates is sp3), and the `=O` of
+  a neutral Cl/Br/I oxo acid is sp3 as RDKit's clean-up reads it. Exposed
+  10k 220,014/220,015 atoms, ChEMBL 5k all 138,655, `^n` 134,999/135,000
+  cells (were 220,003, 138,654 and 134,990).
+- **Behaviour change:** MMFF94 typing: an aromatic S is thiophene S5 (44)
+  only in a five-membered ring, and a two-connected N double bonded to
+  neither C nor N is NM (62), as in RDKit. Heavy atoms typed differently
+  from RDKit: exposed 10k 89 → 88, ChEMBL 5k 103 → 53.
+- **Behaviour change:** accurate CIP labels phosphorus on a ring carrying a
+  double bond (cyclophosphazenes) with RDKit's CIPLabeler label instead of
+  `OracleUnstable` (ChEMBL 5k: 4,186 labels agree, no abstention; 520/520
+  spellings of 12 P molecules). The label flips between the ring's Kekulé
+  spellings in both libraries: Python marks it `"kekule_dependent": True`,
+  WASM `"kekuleDependent": true`, Rust
+  `chematic_chem::cip_label_depends_on_kekule_spelling`; identity
+  deduplication still fails closed on it.
+- New `chematic_perception::rdkit_sssr_ring_order`: RDKit's ring list, in
+  RDKit's order (port of `findSSSR`/`symmetrizeSSSR`; identical lists on
+  8,825/8,830 exposed-10k and all 4,929 ChEMBL-5k ring rows).
+- **Behaviour change:** MMFF94 aromaticity takes rings in RDKit's order and,
+  like RDKit, counts only rings it has accepted toward an exocyclic double
+  bond (staurosporine aglycones, porphyrins). Heavy atoms typed differently
+  from RDKit: exposed 10k 88 → 81 (78 in three fullerenes), ChEMBL 5k
+  53 → 5.
+- **Behaviour change:** RDKit-model hybridization counts a bracket atom's
+  radical electrons below an octet, as RDKit's `assignRadicals` does (the
+  Mg of a magnesium acetylacetonate is SP3; `C[CH2]` both SP3): all 220,015
+  exposed-10k atoms agree.
+- MOL writer: a centre whose layout leaves two neighbours 5–15 degrees apart
+  gets a wedge when no other drawing works (RDKit reads 1,686/1,687
+  exposed-10k and 1,669/1,670 ChEMBL-5k stereo rows back, was 1,681 and
+  1,663).
+- Performance: SMIRKS entry points that take the template as text
+  (`run_reactants*`, Python `run_smirks_checked`, WASM checked reactions)
+  share prepared templates through a bounded process-wide cache
+  (`PreparedReaction::shared`); RDKit's parse clean-up and its ring model
+  are memoized per molecule, and the RDKit-parity ring matcher runs only
+  where RDKit's rings differ from the SSSR. The BioTransformer corpus loop
+  (974 rules × 100 molecules) reacts in 1.15 s instead of 15.7 s
+  (`e2b188a8`). A pre-pass of the canonical writer over explicit-H E/Z
+  molecules that changed no output (and made writing them 2.5x slower) is
+  gone. SMARTS `^n` looks up conjugation only for atoms with fewer than
+  four neighbours (`[C^2]` matching: 122M → 66M instructions on 1,500
+  molecules), and the product valence check reads Kekulé orders in place
+  (13 reaction cases: 1.28x → 1.16x v1.0.34's instructions). Product
+  construction reserves the product once and keeps its atom tables as
+  vectors (13 reaction cases: 0.94x v1.0.34's instructions, same products;
+  re-added hydrogens follow product atom order). `write_mol` writes laid-out
+  atom lines without the formatter (5% fewer instructions, same bytes).
+
+- SMIRKS with more `[#6:n]`-style atoms than the aromatic/aliphatic
+  expansion enumerates (256 combinations) are applied instead of refused
+  (136 BioTransformer rules failed with "atomic-number SMARTS expansion
+  exceeds limit"). The RDKit profile no longer enumerates at all: reactant
+  atoms are SMARTS and product atoms aliphatic, as in RDKit, whose sanitize
+  then perceives aromaticity again.
+- **Behaviour change (RDKit profile):** a product `[#6:1]` mapped to a
+  reactant `[c:1]`, and a product `[#6;a:1]`, are built aliphatic, as RDKit
+  builds them (an aromatic ring cleavage now gives RDKit's product; a
+  dioxygenation that leaves one such atom in an aromatic ring gives RDKit's
+  empty set). The native profile keeps pairing aromaticity (#679).
+- Product bond expressions are read as RDKit's SMARTS parser reads them
+  (about 80 rules failed to parse): the first order primitive (`=,:` is
+  double, `-;!@` single, `!=` double), and no order after a leading ring
+  primitive (`!@-`, `@=`, `@`), which gives a zero-order bond.
+  **Behaviour change:** a product `~` keeps the reactant bond between two
+  atoms already bonded and is otherwise a zero-order bond that adds nothing
+  to valence (`[N+:1]>>[N+:1]~C` gives RDKit's `C[NH3+]~C`; it counted as a
+  single bond).
+- The RDKit profile accepts `/` and `\` in SMARTS-only reactant templates
+  (they match a single or aromatic bond, as RDKit matches them).
+- A mapped product atom naming no single element (`[F,Cl,Br,I;-:7]`) keeps
+  the matched element and applies a spelled charge, H count or isotope; an
+  H count or charge inside a list takes the first alternative written, as
+  RDKit does.
+- A product whose template writes Kekulé bonds into an aromatic ring is
+  judged after RDKit's sanitize steps (kekulize what is still aromatic,
+  perceive aromaticity again) instead of being dropped.
+- Product kekulization uses RDKit's candidate rule for neutral N and P and
+  for `[o+]`/`[s+]`: benzothiophene S-oxidation and methyl hydroxylation of
+  an imidazo[1,2-a]pyrimidinone (a ring-fusion N beside `c(=O)`) gave no
+  product in either profile.
+- E/Z next to the reaction centre is kept when the template rewrites the
+  carrier single bond, when the carrier was an explicit H atom, and when the
+  direction sits on an aromatic ring bond (`C/N=c1\c(O)c(O)c1`, dropped by
+  every template, even `[Cl:1]>>[Cl:1]`).
+- An explicit-H ring the template dearomatizes gets RDKit's H counts (ring
+  carbons are refilled instead of left as radicals).
+- SMARTS `$` is a quadruple bond, as in RDKit. It was a parse error in
+  SMARTS, and in a SMIRKS reactant template it matched any bond
+  (`[C:1]$[O:2]>>[C:1].[O:2]` split ethanol; found by `xsmarts-autoconf
+  tweak`).
+- **Behaviour change:** SMILES dummy atoms keep a charge, isotope or H count
+  (`[*-]`, `[13*]`, `[*H2]`); they were dropped.
+- Evidence: the published v1.0.35 PyPI Linux wheel (CPython 3.9), npm
+  package and crates.io crate each give 80 graph/origin/map matches and
+  three jointly invalid rows on the 83 reaction fixtures; the PyPI sdist
+  gives 75/83 xsmarts-autoconf flags with the same 8 expected differences.
+  The source gives the same on both. `tools/published_rust_checked_gate`
+  pins the published crate version.
+- Scripts: `biotransformer_rule_corpus.py` runs BioTransformer rule tables
+  through RDKit and chematic (rules are not vendored; the tables are pinned
+  by SHA-256 in the output).
+
 ## [1.0.35] - 2026-10-05
 
 SMARTS/SMIRKS dialect fixes from the xsmarts-autoconf report (#734, #754).
