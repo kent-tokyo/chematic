@@ -43,7 +43,9 @@ Exposed data are not sealed evidence.
    in source. Remaining: the macOS and Windows wheels, not runnable on the
    Linux evidence host; `published-wheel-chemistry-gates.yml` runs this gate
    and those of items 3–5 on them and checks every count against the Linux
-   numbers ([record](benchmarks/2026-10-06-734-754-followups-batch11.md)).
+   numbers ([record](benchmarks/2026-10-06-734-754-followups-batch11.md)); on
+   the published Linux aarch64 wheel it gives every x86-64 count
+   ([record](benchmarks/2026-10-06-734-754-followups-batch12.md)).
    **Exit:** every row classified on all three axes on
    each published artifact, zero wrong-confident supported results and no
    regression in the original 57. Refusals and invalid rows are not counted
@@ -82,8 +84,10 @@ Exposed data are not sealed evidence.
    Source MMFF94 typing matches RDKit on every heavy atom of the exposed 10k,
    ChEMBL 5k and Kekulé-written 15k corpora (v1.0.36: 81, 5 and 39 differ),
    reading RDKit's canonical Kekulé structure and ring list
-   ([record](benchmarks/2026-10-06-734-754-followups-batch11.md)). **Exit:** rerun macOS on the `libm` build, then
-   bound atom typing, per-term energy, convergence, timeout/cancellation,
+   ([record](benchmarks/2026-10-06-734-754-followups-batch11.md)), and every
+   per-term energy is within 1e-12 kcal/mol of RDKit's on the 262
+   same-coordinate rows ([record](benchmarks/2026-10-06-734-754-followups-batch12.md)). **Exit:** rerun macOS on the `libm` build, then
+   bound convergence, timeout/cancellation,
    geometry/stereo/clash and independent conformer quality on published and
    candidate artifacts. No 3D speed claim before this exit.
 6. **P0.2 — Complete paired speed evidence after quality gates.** Extend
@@ -95,10 +99,11 @@ Exposed data are not sealed evidence.
    exposed 10k lane, Accurate-mode labels, the typed abstentions and
    bond-keyed E/Z are identical across random atom orders, an H round trip
    and a canonical reparse. Source: acyclic phosphorus and acyclic lone-pair
-   centres are labelled as RDKit's CIPLabeler does; one abstention is left
-   (a bridgehead amine). P on unsaturated rings gets RDKit's label, marked
-   Kekulé-dependent. Remaining: ring lone-pair centres, whose RDKit label
-   depends on how a ring-closure digit on the centre was written. **Exit:**
+   centres are labelled as RDKit's CIPLabeler does, and saturated ring
+   lone-pair centres (bridgehead amines) get RDKit's label for the parsed
+   spelling, marked spelling-dependent; none abstain on exposed 10k. P on
+   unsaturated rings gets RDKit's label, marked Kekulé-dependent. Remaining:
+   pseudo-asymmetric lone-pair centres (typed `tied`). **Exit:**
    complete outcome accounting and no wrong confident label.
 8. **P2 — Test representation limits separately.** Keep CDXML opaque
    preservation distinct from semantic editing, Markush/polymer expansion
@@ -108,10 +113,10 @@ Exposed data are not sealed evidence.
    E/Z included); RDKit reads 1,686 of 1,687 exposed-10k and all 1,670
    ChEMBL-5k stereo rows back unchanged and none inverted. What a block
    cannot carry (the bridgehead amine chematic reads as OpenSMILES does) is reported by
-   `write_mol_with_stereo_report`, and Python `strict=True` / WASM
-   `to_mol_block_strict` refuse it; the default writer still returns the
-   lossy block. **Exit:** cross-binding fixtures with no silent information
-   loss, and a decision on whether the default should refuse.
+   `write_mol_with_stereo_report`, Python warns (`StereoLossWarning`), and
+   Python `strict=True` / WASM `to_mol_block_strict` refuse it; the default
+   writer keeps returning the block (decided). **Exit:** cross-binding
+   fixtures with no silent information loss.
 9. **External — Complete RDKit 2026.09.1 rebaseline.** The official npm/WASM
    old/new lanes, published Python 2026.03.6 baseline, and independent C++
    source-build old/new lanes are pinned and measured on exposed 10k inputs.
@@ -121,7 +126,9 @@ Exposed data are not sealed evidence.
    distributed Python/nanobind lane and distributed native binary remain
    unavailable/unmeasured (no PyPI 2026.9.1 wheel at the 2026-10-06 check).
    The six imine E/Z residuals are default (legacy) CIP labels; accurate mode
-   gives rdCIPLabeler's Z, and agrees on all 780 exposed-10k E/Z bonds. Preserve the old baseline, keep source builds
+   gives rdCIPLabeler's Z, and agrees on all 780 exposed-10k E/Z bonds. The
+   12 `[R2]`/`[R3]` cells are relevant-cycle ring counts in 2026.09.1
+   ([record](benchmarks/2026-10-06-734-754-followups-batch12.md)). Preserve the old baseline, keep source builds
    separate from distributed packages, and never tune on sealed data.
 
 Silent corruption or a security regression takes precedence. Source,

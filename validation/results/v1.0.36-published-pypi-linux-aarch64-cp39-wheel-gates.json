@@ -1,0 +1,258 @@
+{
+  "schema": "published-wheel-chemistry-gates/v1",
+  "scope": "published_pypi_v1.0.36_linux_aarch64_cp39",
+  "chematic_version": "1.0.36",
+  "wheel": "chematic-1.0.36-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+  "wheel_sha256": "4d380046ae24b4e2dd682313cad3c9cdd69ac6a596b691696770487cee56e464",
+  "host": {
+    "platform": "Linux-6.8.0-138-generic-aarch64-with-glibc2.35",
+    "machine": "aarch64",
+    "python": "3.10.12",
+    "chematic_python": "3.9.25",
+    "rdkit_python": "3.10.12",
+    "os": "Ubuntu 22.04 (linked VM), 4 cores, 4 GB"
+  },
+  "expected": "validation/published-wheel-chemistry-gates-expected-v1.0.36.json",
+  "gates": {
+    "reaction_83": {
+      "graph_origin_map_match": 80,
+      "joint_invalid_input": 3
+    },
+    "smarts_310k": {
+      "counts": {
+        "exact": 309982,
+        "fixed_original_boolean": 43,
+        "fixed_original_residual": 183,
+        "refused_original_correct": 1,
+        "refused_original_residual": 17
+      },
+      "unexpected_total": 0
+    },
+    "exposed_10k": {
+      "cip_accurate": {
+        "agree": 4394,
+        "kekule_dependent": 0,
+        "abstain": 1
+      },
+      "hybridization": {
+        "atoms": 220015,
+        "agree": 220015
+      },
+      "mmff94": {
+        "compared_rows": 9796,
+        "heavy": 215565,
+        "hydrogen": 191148,
+        "rdkit_unsupported": 204,
+        "heavy_differing": 81
+      },
+      "mol_writer": {
+        "stereo_rows": 1687,
+        "read_back_as_input": 1686,
+        "strict_refused": 1
+      }
+    },
+    "chembl_5k": {
+      "cip_accurate": {
+        "agree": 4186,
+        "kekule_dependent": 20
+      },
+      "hybridization": {
+        "atoms": 138655,
+        "agree": 138655
+      },
+      "mmff94": {
+        "compared_rows": 4990,
+        "heavy": 138500,
+        "hydrogen": 116364,
+        "heavy_differing": 5,
+        "rdkit_unsupported": 10
+      },
+      "mol_writer": {
+        "stereo_rows": 1670,
+        "read_back_as_input": 1669,
+        "strict_refused": 1
+      }
+    },
+    "biotransformer_corpus": {
+      "explicit_h:both_none": 382090,
+      "explicit_h:both_none_refused": 673,
+      "explicit_h:differ": 35,
+      "explicit_h:exact": 6604,
+      "explicit_h:rdkit_raw_unsanitizable": 172,
+      "implicit:both_none": 388405,
+      "implicit:both_none_refused": 143,
+      "implicit:exact": 1051,
+      "rules_run": 974,
+      "multi_reactant_rules_skipped": 6,
+      "explicit_h:rdkit_resanitize_fails_same_products": 14,
+      "explicit_h:rdkit_truncated_subset": 11,
+      "rdkit_parse_error_rules": 3
+    }
+  },
+  "differences": [],
+  "pass": true,
+  "biotransformer_corpus_run": {
+    "shards": [
+      {
+        "shard": "s0",
+        "rules_slice": "0:150",
+        "reactants_slice": null,
+        "rule_count": 150,
+        "reactant_count": 400,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 63.9
+      },
+      {
+        "shard": "s1",
+        "rules_slice": "150:350",
+        "reactants_slice": null,
+        "rule_count": 200,
+        "reactant_count": 400,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 64.6
+      },
+      {
+        "shard": "s2",
+        "rules_slice": "350:450",
+        "reactants_slice": null,
+        "rule_count": 100,
+        "reactant_count": 400,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 38.9
+      },
+      {
+        "shard": "s3a",
+        "rules_slice": "450:466",
+        "reactants_slice": null,
+        "rule_count": 16,
+        "reactant_count": 400,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 16.8
+      },
+      {
+        "shard": "s3b0",
+        "rules_slice": "466:467",
+        "reactants_slice": "0:100",
+        "rule_count": 1,
+        "reactant_count": 100,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 26.3
+      },
+      {
+        "shard": "s3b1",
+        "rules_slice": "466:467",
+        "reactants_slice": "100:250",
+        "rule_count": 1,
+        "reactant_count": 150,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 77.2
+      },
+      {
+        "shard": "s3b2",
+        "rules_slice": "466:467",
+        "reactants_slice": "250:300",
+        "rule_count": 1,
+        "reactant_count": 50,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 6.9
+      },
+      {
+        "shard": "s3b3",
+        "rules_slice": "466:467",
+        "reactants_slice": "300:316",
+        "rule_count": 1,
+        "reactant_count": 16,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 0.2
+      },
+      {
+        "shard": "s3b4",
+        "rules_slice": "466:467",
+        "reactants_slice": "316:317",
+        "rule_count": 1,
+        "reactant_count": 1,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 0.1
+      },
+      {
+        "shard": "s3b6",
+        "rules_slice": "466:467",
+        "reactants_slice": "318:400",
+        "rule_count": 1,
+        "reactant_count": 82,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 8.0
+      },
+      {
+        "shard": "s4",
+        "rules_slice": "467:560",
+        "reactants_slice": null,
+        "rule_count": 93,
+        "reactant_count": 400,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 58.2
+      },
+      {
+        "shard": "s5",
+        "rules_slice": "560:700",
+        "reactants_slice": null,
+        "rule_count": 140,
+        "reactant_count": 400,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 55.2
+      },
+      {
+        "shard": "s6",
+        "rules_slice": "700:850",
+        "reactants_slice": null,
+        "rule_count": 150,
+        "reactant_count": 400,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 61.5
+      },
+      {
+        "shard": "s7",
+        "rules_slice": "850:",
+        "reactants_slice": null,
+        "rule_count": 133,
+        "reactant_count": 400,
+        "reactants_sha256": "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f",
+        "elapsed_seconds": 52.5
+      }
+    ],
+    "not_run": {
+      "rule": "BTMR1063",
+      "reactant": "CCCCCCCCCCCCSC(SCCCCCCCCCCCC)SCCCCCCCCCCCC",
+      "reason": "one (rule, reactant) call outlives the host's 3-minute process limit: the published v1.0.36 wheel writes canonical SMILES of the 4,320 explicit-H product sets in about 175 s on Linux x86-64 (fixed on source, 1.8 s)",
+      "x86_64_outcomes": {
+        "implicit": "both_none",
+        "explicit_h": "rdkit_truncated_subset"
+      }
+    },
+    "counts_with_not_run_pair_at_x86_64_outcome": {
+      "explicit_h:both_none": 382090,
+      "explicit_h:both_none_refused": 673,
+      "explicit_h:differ": 35,
+      "explicit_h:exact": 6604,
+      "explicit_h:rdkit_raw_unsanitizable": 172,
+      "implicit:both_none": 388406,
+      "implicit:both_none_refused": 143,
+      "implicit:exact": 1051,
+      "rules_run": 974,
+      "multi_reactant_rules_skipped": 6,
+      "explicit_h:rdkit_resanitize_fails_same_products": 14,
+      "explicit_h:rdkit_truncated_subset": 12,
+      "rdkit_parse_error_rules": 3
+    },
+    "matches_expected_with_not_run_pair": true,
+    "non_exact_rows_vs_x86_64": {
+      "aarch64_rows": 232,
+      "x86_64_rows": 233,
+      "missing": [
+        "BTMR1063 explicit_h (not run)"
+      ],
+      "differing": 0
+    }
+  },
+  "note": "Driver run in two parts: every gate except the BioTransformer corpus in one process (summary below, pass), the corpus in rule/reactant shards because processes on this host end with each 3-minute call."
+}

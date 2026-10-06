@@ -1,0 +1,676 @@
+{
+ "schema": "734-754-followups/v1",
+ "batch": 12,
+ "date": "2026-10-06",
+ "rdkit": "2026.03.6",
+ "host": "Linux x86-64, CPython 3.11 source build",
+ "published_linux_aarch64_wheel_gates": "validation/results/v1.0.36-published-pypi-linux-aarch64-cp39-wheel-gates.json",
+ "mmff94_per_term_same_coordinates": {
+  "rows": 262,
+  "total_abs_delta": {
+   "median": 8.526512829121202e-14,
+   "p90": 3.055333763768431e-13,
+   "max": 1.9326762412674725e-12
+  },
+  "per_term_max": {
+   "angle": 1.1368683772161603e-13,
+   "bond": 7.105427357601002e-15,
+   "electrostatic": 2.2737367544323206e-13,
+   "oop": 3.282096816548119e-15,
+   "stretch_bend": 2.4868995751603507e-14,
+   "torsion": 8.526512829121202e-14,
+   "vdw": 3.126388037344441e-13
+  },
+  "batch11_source": {
+   "median": 0.004009622073489538,
+   "p90": 0.03022858437188347,
+   "max": 0.321211359141671,
+   "angle_max": 0.3581568079956128,
+   "oop_max": 0.17274430856159512,
+   "vdw_max": 0.08036645463931791,
+   "torsion_max": 0.04789482369679199,
+   "stretch_bend_max": 0.003193717173571642
+  },
+  "gradient_check": {
+   "input_indices": [
+    166,
+    178,
+    231
+   ],
+   "max_abs_error_kcal_mol_angstrom": 1.5709286820708712e-05,
+   "max_scaled_error": 1.7004481282903006e-06,
+   "rows": 3
+  },
+  "rows_file": "validation/results/mmff94-same-explicit-h-energy-per-term-batch12-2026-10-06.jsonl"
+ },
+ "mmff94_broad_rdkit_embedded": {
+  "molecules": 1000,
+  "ok": 980,
+  "rdkit_unsupported": 15,
+  "embed_failure": 5,
+  "bonded_terms_max_abs": {
+   "bond": 2.84e-14,
+   "angle": 1.14e-13,
+   "stretch_bend": 1.42e-14,
+   "torsion": 7.11e-14,
+   "oop": 8.85e-06
+  },
+  "nonbonded_differ_rows": 8,
+  "nonbonded_cause": "multi-fragment salts: RDKit ignoreInterfragInteractions=True by default; chematic keeps interfragment terms"
+ },
+ "mmff94_torsion_parameters": {
+  "molecules": 2958,
+  "torsions": 336298,
+  "differ": 0
+ },
+ "a6_265": {
+  "success": 265,
+  "terminations": {
+   "gradient_converged": 100,
+   "iteration_limit": 164,
+   "constraint_rejected_fallback": 1
+  },
+  "externally_sound": 265,
+  "stereo_clean": 265,
+  "gross_clash_rows": 0,
+  "rows_sha256": "d30c316651cfef47e6bcefa8715c98c7b92b7a6dd0aacaa353e6aa74666e267d"
+ },
+ "cip_ring_lone_pair_centres": {
+  "rdkit_random_spellings": {
+   "molecules": 13,
+   "spellings_each": 40,
+   "agree": 520,
+   "disagree": 0,
+   "abstain": 0,
+   "flagged_spelling_dependent": 520
+  },
+  "exposed_10k": {
+   "agree": 4395,
+   "abstain": 0
+  },
+  "chembl_5k": {
+   "agree": 4186,
+   "kekule_dependent": 20
+  },
+  "pseudoasymmetric_lone_pair_centres": "typed tied"
+ },
+ "rdkit_2026_09_1_ring_model": {
+  "rows": [
+   9,
+   23,
+   28,
+   29,
+   30,
+   34
+  ],
+  "changed_cells": 12,
+  "reproduced_by_relevant_cycle_counts": 12,
+  "relevant_cycle_counts_equal_2026_03_6_on_other_ring_rows": 8823,
+  "other_differ": [
+   "row 8341 ferrocene (metal bonds)"
+  ],
+  "per_row": [
+   {
+    "row": 9,
+    "n_sssr_rdkit_old": 8,
+    "n_mcb": 7,
+    "n_relevant": 10,
+    "mcb_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     28
+    ],
+    "relevant_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     28,
+     28,
+     28,
+     28
+    ],
+    "rdkit_old_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     28,
+     28
+    ],
+    "relevant_matches_new": true,
+    "rdkit_old_matches_old": true,
+    "chematic_matches_old": false,
+    "chematic_matches_new": false,
+    "parity_matches_old": false,
+    "default_r2": [
+     2,
+     3,
+     4,
+     6,
+     10,
+     11,
+     13,
+     16,
+     35,
+     38
+    ],
+    "default_r3": [
+     17,
+     22,
+     39,
+     44
+    ],
+    "mcb_counts": null,
+    "max_relevant_count": 5
+   },
+   {
+    "row": 23,
+    "n_sssr_rdkit_old": 10,
+    "n_mcb": 7,
+    "n_relevant": 22,
+    "mcb_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     30
+    ],
+    "relevant_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     30,
+     30,
+     30,
+     30,
+     30,
+     30,
+     30,
+     30,
+     30,
+     30,
+     30,
+     30,
+     30,
+     30,
+     30,
+     30
+    ],
+    "rdkit_old_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     30,
+     30,
+     30,
+     30
+    ],
+    "relevant_matches_new": true,
+    "rdkit_old_matches_old": true,
+    "chematic_matches_old": false,
+    "chematic_matches_new": false,
+    "parity_matches_old": false,
+    "default_r2": [
+     6,
+     9,
+     11,
+     12,
+     13,
+     14,
+     17,
+     18,
+     19,
+     20,
+     24,
+     25,
+     26,
+     27,
+     28,
+     33
+    ],
+    "default_r3": [
+     3,
+     4
+    ],
+    "mcb_counts": null,
+    "max_relevant_count": 17
+   },
+   {
+    "row": 28,
+    "n_sssr_rdkit_old": 9,
+    "n_mcb": 7,
+    "n_relevant": 22,
+    "mcb_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     32
+    ],
+    "relevant_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32
+    ],
+    "rdkit_old_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     32,
+     32,
+     32
+    ],
+    "relevant_matches_new": true,
+    "rdkit_old_matches_old": true,
+    "chematic_matches_old": false,
+    "chematic_matches_new": false,
+    "parity_matches_old": false,
+    "default_r2": [
+     2,
+     3,
+     4,
+     5,
+     9,
+     10,
+     11,
+     12,
+     13,
+     18,
+     31,
+     34,
+     42,
+     43,
+     44,
+     45
+    ],
+    "default_r3": [
+     35,
+     40
+    ],
+    "mcb_counts": null,
+    "max_relevant_count": 17
+   },
+   {
+    "row": 29,
+    "n_sssr_rdkit_old": 10,
+    "n_mcb": 7,
+    "n_relevant": 22,
+    "mcb_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     32
+    ],
+    "relevant_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32,
+     32
+    ],
+    "rdkit_old_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     32,
+     32,
+     32,
+     32
+    ],
+    "relevant_matches_new": true,
+    "rdkit_old_matches_old": true,
+    "chematic_matches_old": false,
+    "chematic_matches_new": false,
+    "parity_matches_old": false,
+    "default_r2": [
+     6,
+     9,
+     11,
+     12,
+     13,
+     14,
+     19,
+     20,
+     21,
+     22,
+     26,
+     29
+    ],
+    "default_r3": [
+     3,
+     4,
+     30,
+     35
+    ],
+    "mcb_counts": null,
+    "max_relevant_count": 17
+   },
+   {
+    "row": 30,
+    "n_sssr_rdkit_old": 10,
+    "n_mcb": 7,
+    "n_relevant": 22,
+    "mcb_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     31
+    ],
+    "relevant_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     31,
+     31,
+     31,
+     31,
+     31,
+     31,
+     31,
+     31,
+     31,
+     31,
+     31,
+     31,
+     31,
+     31,
+     31,
+     31
+    ],
+    "rdkit_old_sizes": [
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     31,
+     31,
+     31,
+     31
+    ],
+    "relevant_matches_new": true,
+    "rdkit_old_matches_old": true,
+    "chematic_matches_old": false,
+    "chematic_matches_new": false,
+    "parity_matches_old": false,
+    "default_r2": [
+     6,
+     9,
+     11,
+     12,
+     13,
+     14,
+     18,
+     19,
+     20,
+     21,
+     25,
+     28
+    ],
+    "default_r3": [
+     3,
+     4,
+     29,
+     34
+    ],
+    "mcb_counts": null,
+    "max_relevant_count": 17
+   },
+   {
+    "row": 34,
+    "n_sssr_rdkit_old": 9,
+    "n_mcb": 8,
+    "n_relevant": 11,
+    "mcb_sizes": [
+     5,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     29
+    ],
+    "relevant_sizes": [
+     5,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     29,
+     29,
+     29,
+     29
+    ],
+    "rdkit_old_sizes": [
+     5,
+     6,
+     6,
+     6,
+     6,
+     6,
+     6,
+     29,
+     29
+    ],
+    "relevant_matches_new": true,
+    "rdkit_old_matches_old": true,
+    "chematic_matches_old": false,
+    "chematic_matches_new": false,
+    "parity_matches_old": false,
+    "default_r2": [
+     6,
+     9,
+     11,
+     14,
+     16,
+     17,
+     19,
+     20,
+     23,
+     25,
+     26,
+     27,
+     28,
+     29,
+     34
+    ],
+    "default_r3": [
+     3,
+     4,
+     15,
+     18
+    ],
+    "mcb_counts": null,
+    "max_relevant_count": 6
+   }
+  ]
+ },
+ "canonical_ranks_with_ez": {
+  "exposed_10k": {
+   "ez_rows": 572,
+   "ez_identical": 572,
+   "batch11": 400,
+   "all_identical": 10000
+  },
+  "chembl_5k": {
+   "ez_rows": 518,
+   "ez_identical": 518,
+   "batch11": 350,
+   "all_identical": 5000
+  },
+  "kekule_written_15k": {
+   "ez_rows": 1090,
+   "ez_identical": 1090,
+   "batch11": 750,
+   "all_identical": 15000
+  },
+  "legacy_ez_vs_rdkit_bond_stereo": {
+   "bonds": 1458,
+   "same": 1454,
+   "flipped": 4
+  }
+ },
+ "mmff94_typing_cost_2000_rows_instructions": {
+  "v1.0.36": {
+   "aromatic": 1390667668,
+   "kekule": 1310997113
+  },
+  "source": {
+   "aromatic": 1235884584,
+   "kekule": 1450926408
+  }
+ },
+ "chemistry_gates_source": {
+  "exposed_10k": {
+   "cip_accurate": {
+    "agree": 4395,
+    "kekule_dependent": 0
+   },
+   "hybridization": {
+    "atoms": 220015,
+    "agree": 220015
+   },
+   "mmff94": {
+    "compared_rows": 9796,
+    "heavy": 215565,
+    "hydrogen": 191148,
+    "rdkit_unsupported": 204
+   },
+   "mol_writer": {
+    "stereo_rows": 1687,
+    "read_back_as_input": 1686,
+    "strict_refused": 1
+   }
+  },
+  "chembl_5k": {
+   "cip_accurate": {
+    "agree": 4186,
+    "kekule_dependent": 20
+   },
+   "hybridization": {
+    "atoms": 138655,
+    "agree": 138655
+   },
+   "mmff94": {
+    "compared_rows": 4990,
+    "heavy": 138500,
+    "hydrogen": 116364,
+    "rdkit_unsupported": 10
+   },
+   "mol_writer": {
+    "stereo_rows": 1670,
+    "read_back_as_input": 1670,
+    "strict_refused": 0
+   }
+  },
+  "kek15k": {
+   "cip_accurate": {
+    "agree": 8581,
+    "kekule_dependent": 20
+   },
+   "hybridization": {
+    "atoms": 358670,
+    "agree": 358670
+   },
+   "mmff94": {
+    "compared_rows": 14786,
+    "heavy": 354065,
+    "hydrogen": 307512,
+    "rdkit_unsupported": 214
+   },
+   "mol_writer": {
+    "stereo_rows": 3357,
+    "read_back_as_input": 3356,
+    "strict_refused": 1
+   }
+  }
+ },
+ "canonical_smiles_automorphism": {
+  "product": "BTMR1063 x tri(dodecylthio)methane explicit-H",
+  "product_sets": 4320,
+  "seconds_before": 174.7,
+  "seconds_after": 1.8,
+  "single_product_ms_before": 34,
+  "single_product_us_after": 24,
+  "identity": {
+   "corpus_rows": 15000,
+   "variants": "as parsed, explicit H, 2 random orders + 1 explicit-H random order every 5th row",
+   "identical": true,
+   "product_smiles_identical": true
+  }
+ }
+}

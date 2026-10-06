@@ -121,10 +121,12 @@ bridgehead-N and other fused-ring gaps remain documented residuals. Accurate
 CIP labels acyclic phosphorus and acyclic lone-pair centres as RDKit's
 CIPLabeler does, and ring sulfoxides/selenoxides; phosphorus on an unsaturated
 ring (cyclophosphazene) gets RDKit's label, which flips with the ring's Kekulé
-spelling in both libraries and is marked as such; a ring lone-pair centre with three single bonds
-(bridgehead amine, cyclic phosphine or sulfonium) stays `LonePairCenter`:
-chematic reads its `@`/`@@` as OpenSMILES does (lone pair in the implicit-H
-position), RDKit's reading changes with the spelling.
+spelling in both libraries and is marked as such. A ring lone-pair centre with three single bonds
+(bridgehead amine, cyclic phosphine or sulfonium) gets RDKit's label for the
+spelling parsed and is marked spelling-dependent: chematic reads its `@`/`@@`
+as OpenSMILES does (lone pair in the implicit-H position), while RDKit inverts
+it when exactly one ring-closure digit is written on the centre. An aromatic
+ring lone-pair centre stays `LonePairCenter`.
 
 The default CIP path remains the fast legacy assignment. Accurate hierarchical
 CIP is opt-in through `CipMode::Accurate` (and its named Python/WASM binding

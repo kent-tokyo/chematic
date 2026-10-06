@@ -16,6 +16,39 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- MMFF94 energies match RDKit 2026.03.6 term by term (within 1e-12 kcal/mol
+  on the 262 same-coordinate rows; the largest difference was 0.32): three
+  out-of-plane terms per trigonal centre (one was added), RDKit's unrounded
+  angle and stretch-bend constants and its linear-angle form, no 10 Å cutoff
+  on van der Waals in the default energy and gradient (the opt-in cutoff
+  path keeps it), RDKit's torsion lookup through equivalence levels with
+  Halgren's empirical rule as fallback (`mmff94_torsion_term_params`), `/`
+  `\` bonds read as single for torsion types, and RDKit's stretch-bend
+  orientation for equal end types. Minimized geometries change slightly.
+  Record: `benchmarks/2026-10-06-734-754-followups-batch12.md`.
+- `cip_stereo(mode="accurate")` labels saturated ring lone-pair centres
+  (bridgehead amines, cyclic phosphines, sulfonium) as RDKit reads the
+  parsed spelling (RDKit inverts `@`/`@@` when one ring-closure digit is on
+  the centre); such labels carry `spelling_dependent` (Python),
+  `spellingDependent` (WASM) and `cip_label_depends_on_smiles_spelling`
+  (Rust), and InChI identity checks refuse them. SMILES parsing is
+  unchanged. Exposed 10k: 4,395 agree, no abstention.
+- Python: `Mol.to_mol_block`, `to_mol_block_2d` and `to_mol_v3000` warn
+  with the new `chematic.StereoLossWarning` when the block loses stereo; the
+  returned block is unchanged.
+- `chematic_chem::rdkit_canonical_atom_ranks` and
+  `chematic_perception::rdkit_canonical_atom_ranks_with_bond_stereo`: RDKit's
+  canonical ranks including `STEREOE`/`STEREOZ` bonds (all E/Z rows of the
+  three corpora identical to `CanonicalRankAtoms`).
+- Performance: canonical SMILES of large explicit-H molecules in reaction
+  product atom order (the automorphism check extends from the mapped
+  region: 34 ms to 24 µs on a 117-atom product; output unchanged); MMFF94
+  typing reads atom adjacency instead of scanning bonds and skips RDKit's
+  canonical Kekulé ranking for isolated aromatic rings (−11% instructions
+  on aromatic input).
+- Harness: `published_wheel_chemistry_gates.py` resolves its path
+  arguments; `biotransformer_rule_corpus.py --rules-slice/--reactants-slice`.
+  The published v1.0.36 Linux aarch64 wheel gives every Linux x86-64 count.
 - MMFF94 typing matches RDKit 2026.03.6 on every heavy atom of the exposed
   10k, ChEMBL 5k and Kekulé-written 15k corpora (81, 5 and 39 atoms differed
   in v1.0.36): the aromaticity pass reads RDKit's canonical Kekulé structure
