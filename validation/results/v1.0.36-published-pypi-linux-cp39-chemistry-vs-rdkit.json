@@ -1,0 +1,80 @@
+{
+ "schema": "v1.0.36-published-chemistry/v1",
+ "artifact": {
+  "kind": "published_wheel",
+  "wheel": "chematic-1.0.36-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+  "wheel_sha256": "5d897d8bc81a77850a04db1da2d669845d5c8605a1b59842495945e20d4860cf",
+  "published_from": "https://pypi.org/project/chematic/1.0.36/"
+ },
+ "corpora": {
+  "exposed_10k": {
+   "schema": "chematic-chemistry-dump-vs-rdkit/v1",
+   "rdkit": "2026.03.6",
+   "chematic": {
+    "chematic": "1.0.36",
+    "module": "/tmp/claude-0/-home-claude/fecf863c-eace-59af-9d3a-252dd64c4d40/scratchpad/py39env/lib/python3.9/site-packages/chematic/__init__.py",
+    "python": "3.9.23",
+    "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+   },
+   "cip_accurate": {
+    "agree": 4394,
+    "kekule_dependent": 0,
+    "abstain": 1
+   },
+   "hybridization": {
+    "atoms": 220015,
+    "agree": 220015
+   },
+   "mmff94": {
+    "compared_rows": 9796,
+    "heavy": 215565,
+    "hydrogen": 191148,
+    "rdkit_unsupported": 204,
+    "heavy_differing": 81
+   },
+   "mol_writer": {
+    "stereo_rows": 1687,
+    "read_back_as_input": 1686,
+    "strict_refused": 1
+   },
+   "mol_writer_lost": [
+    "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21"
+   ]
+  },
+  "chembl_5k": {
+   "schema": "chematic-chemistry-dump-vs-rdkit/v1",
+   "rdkit": "2026.03.6",
+   "chematic": {
+    "chematic": "1.0.36",
+    "module": "/tmp/claude-0/-home-claude/fecf863c-eace-59af-9d3a-252dd64c4d40/scratchpad/py39env/lib/python3.9/site-packages/chematic/__init__.py",
+    "python": "3.9.23",
+    "corpus": "scripts/chembl_accuracy_corpus_4999.smi",
+    "corpus_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+   },
+   "cip_accurate": {
+    "agree": 4186,
+    "kekule_dependent": 20
+   },
+   "hybridization": {
+    "atoms": 138655,
+    "agree": 138655
+   },
+   "mmff94": {
+    "compared_rows": 4990,
+    "heavy": 138500,
+    "hydrogen": 116364,
+    "heavy_differing": 5,
+    "rdkit_unsupported": 10
+   },
+   "mol_writer": {
+    "stereo_rows": 1670,
+    "read_back_as_input": 1669,
+    "strict_refused": 1
+   },
+   "mol_writer_lost": [
+    "CCC/C=C/C=C/C(=O)O[C@H]1/C(=C/C(=O)OC)C[C@H]2CC([C@@H](C)O)OC(=O)C[C@H](O)C[C@@H]3C[C@H](OC(C)=O)C(C)(C)[C@](O)(C[C@@H]4C/C(=C/C(=O)OC)C[C@H](/C=C/C(C)(C)[C@]1(O)O2)O4)O3"
+   ]
+  }
+ }
+}

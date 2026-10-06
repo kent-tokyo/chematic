@@ -8,6 +8,30 @@ benchmark claims remain scoped to their dated records.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Published v1.0.36 reruns (PyPI Linux wheel, sdist, npm, crate) give the
+source's results on the BioTransformer corpus, the 83 reaction fixtures,
+xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
+MOL writer and the WASM Node tests. Record:
+`benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
+
+- Performance: the SMIRKS template cache (`PreparedReaction::shared`) is 16
+  least-recently-used shards per reading instead of one map cleared whole
+  when full (a working set used to be prepared again after every 2,048 new
+  templates), and a hit no longer allocates.
+- Performance: `write_mol` on stereo molecules (12% fewer instructions,
+  same bytes): E/Z perception skips the CIP ranking and small-ring search
+  for double bonds without `/`/`\` markers, and the 2D layout reuses the
+  molecule's memoized SSSR.
+- `scripts/check_release_docs_consistency.py` fails on a `docs/` link that
+  leaves the MkDocs tree (the v1.0.36 Pages deploy failed on one).
+- Harness: `biotransformer_rule_corpus.py --chematic-python` runs chematic
+  under another interpreter (published CPython 3.9 wheels);
+  `chematic_chemistry_dump.py` / `compare_chemistry_dump_rdkit.py` do the
+  same for CIP, hybridization, MMFF and the MOL writer;
+  `rdkitjs_reaction_corpus.mjs` runs the corpus with RDKit.js.
+
 ## [1.0.36] - 2026-10-06
 
 Remaining #734 work: BioTransformer's public rule tables (983 rules, about

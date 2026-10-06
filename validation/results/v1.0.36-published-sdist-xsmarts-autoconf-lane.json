@@ -1,0 +1,45 @@
+{
+  "autoconf_commit": "6ce94c945652fa4fc47719387b41be6bf0419402",
+  "chematic_version": "1.0.36",
+  "differing": {
+    "match.ring_count_basis": {
+      "chematic": "sssr",
+      "rdkit": "symmetric"
+    },
+    "smirks.colon_product_bond": {
+      "chematic": "UNKNOWN",
+      "rdkit": "aromatic_flag_set"
+    },
+    "smirks.fragmented_reactant": {
+      "chematic": "rejected",
+      "rdkit": "intermolecular_pair"
+    },
+    "smirks.hcount_query_explicit_h": {
+      "chematic": "preserved",
+      "rdkit": "pin_adds_h"
+    },
+    "smirks.product_h_atom_added": {
+      "chematic": "UNKNOWN",
+      "rdkit": "h_dropped"
+    },
+    "smirks.product_h_pin": {
+      "chematic": "UNKNOWN",
+      "rdkit": "authoritative"
+    },
+    "smirks.star_on_explicit_h": {
+      "chematic": "UNKNOWN",
+      "rdkit": "h_atoms_when_explicit"
+    },
+    "smirks.valence_invalid_raw": {
+      "chematic": "dropped_at_apply",
+      "rdkit": "kept_raw"
+    }
+  },
+  "flags": 83,
+  "newly_aligned": [],
+  "reference": "rdkit 2026.03.6",
+  "rules_digest": "b2367621cbe9c1d1",
+  "same_as_reference": 75,
+  "schema": "xsmarts-autoconf-lane/v1",
+  "unexpected": {}
+}

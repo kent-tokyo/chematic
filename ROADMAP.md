@@ -26,16 +26,19 @@ Exposed data are not sealed evidence.
 
 ## Priority order and acceptance gates
 
-1. **P1 / A4 — Release the BioTransformer-corpus SMIRKS fixes (#734).**
-   v1.0.35 shipped the dialect fixes: its sdist gives 75/83 autoconf flags
-   with the same 8 decided differences. On BioTransformer's public rules the
-   unreleased source gives RDKit's product sets for all 1,051 implicit-H and
-   6,604/6,652 explicit-H pairs where RDKit has a product (v1.0.35: 775 and
-   3,807) and refuses none; the explicit-H rest is implicit-H equivalence,
-   RDKit truncation and one naphthalene kekulization. **Exit:** released and the
-   corpus rerun on the published package with the same classes.
+1. **P1 / A4 — BioTransformer-corpus SMIRKS fixes (#734): released.**
+   v1.0.36 ships them. The published PyPI Linux wheel gives the source's
+   rows on BioTransformer's public rules: RDKit's product sets for all 1,051
+   implicit-H and 6,604/6,652 explicit-H pairs where RDKit has a product,
+   none refused, the rest typed (implicit-H equivalence, RDKit truncation,
+   products RDKit cannot re-sanitize)
+   ([record](benchmarks/2026-10-06-v1036-published-reruns-and-followups.md)).
+   RDKit.js 2026.03.6 and 2026.09.1 give the same product sets on 8,627 of
+   the corpus's 8,706 rows with products, every change a stereo difference
+   in the MOL-block read-back, so the 2026.03.6 profile stands. **Next:**
+   rerun against the Python 2026.09.1 wheel once it is published.
 2. **P1 / A4 — Close the reaction 83-row gate on published artifacts.**
-   Published v1.0.35 PyPI Linux wheel (CPython 3.9), npm package and
+   Published v1.0.36 PyPI Linux wheel (CPython 3.9), npm package and
    crates.io crate: 80 graph/origin/map rows and three jointly invalid, as
    in source. Remaining: the macOS and Windows wheels (not runnable on the
    Linux evidence host). **Exit:** every row classified on all three axes on
@@ -52,8 +55,9 @@ Exposed data are not sealed evidence.
    sanitize (BTMR1031, typed in the harness), cyclophosphazene P gets
    RDKit's (spelling-dependent) CIP label, and the `[nH+2]` and native
    created-centre stereo cases are decided
-   ([record](benchmarks/2026-10-04-xsmarts-autoconf-v1034.md)). **Exit:**
-   released, and the corpus rerun on the published package.
+   ([record](benchmarks/2026-10-04-xsmarts-autoconf-v1034.md)); released in
+   v1.0.36 and rerun on the published wheel with the same rows. **Exit:**
+   the macOS and Windows wheels.
 4. **P1 / A4 — Publish a bounded SMARTS compatibility profile.** The
    published v1.0.30 baseline has 200 match-set and 43 Boolean differences,
    mostly the `R<n>` ring-count basis (SSSR versus RDKit's symmetrized
@@ -62,7 +66,7 @@ Exposed data are not sealed evidence.
    source); its 18 typed refusals are exactly the cells whose RDKit answer
    changes with input atom order, so they stay refusals. `^n` follows RDKit's
    hybridization model (99.94% per-atom agreement). The published PyPI
-   v1.0.34 Linux wheel passes the pinned 310k gate (309,982 exact, 18 typed
+   v1.0.36 Linux wheel passes the pinned 310k gate (309,982 exact, 18 typed
    refusals, none unexpected). **Exit:** the same rerun on the macOS and
    Windows wheels; native SSSR is preserved.
 5. **P2 / A6 — Gate 3D quality before speed.** Published v1.0.31 macOS
