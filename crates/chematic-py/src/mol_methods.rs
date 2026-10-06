@@ -3338,8 +3338,8 @@ impl Mol {
     ///   RDKit's modern ``rdCIPLabeler`` oracle. Unchanged from every prior release.
     /// - ``"accurate"`` — a hierarchical-digraph engine for tetrahedral R/S
     ///   (~99.6% oracle-agreement on the representation-stable subset; see
-    ///   ``docs/rfcs/cip_accurate_rfc.md``), merged with legacy's E/Z and allene answers
-    ///   (the accurate engine doesn't compute either). Atoms it explicitly can't
+    ///   ``docs/rfcs/cip_accurate_rfc.md``); E/Z from the same engine's substituent
+    ///   ranking, allenes from legacy. Atoms it explicitly can't
     ///   resolve (a genuine tie, or exceeding its computation budget) are omitted
     ///   here and reported instead via :meth:`cip_stereo_unresolved` — never a
     ///   silently-guessed label. A phosphorus on an unsaturated ring

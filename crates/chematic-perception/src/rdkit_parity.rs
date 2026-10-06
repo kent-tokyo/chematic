@@ -778,10 +778,31 @@ fn verdict_with_typing(
     // are a partition by shared bonds, and every combination of each group
     // is evaluated for every subset size reached, with marks accumulated as
     // unions, so ring order never matters.
-    let rings = if allow_ranks {
+    let sssr = if allow_ranks {
         crate::sssr::find_sssr_ring_set_in_components(mol, &keep)
     } else {
         crate::sssr::find_sssr_ring_set_in_components_unranked(mol, &keep)?
+    };
+    // RDKit perceives over its symmetrized SSSR. The rings `symmetrizeSSSR`
+    // adds matter in cages (a fullerene, where one hexagon is aromatic only
+    // through such a ring); a cage has atoms on three or more SSSR rings,
+    // so only then are RDKit's rings (graph-only, in its order) used.
+    let mut ring_membership = vec![0u8; n];
+    for ring in &sssr {
+        for a in ring {
+            ring_membership[a.0 as usize] = ring_membership[a.0 as usize].saturating_add(1);
+        }
+    }
+    let rings = if ring_membership.iter().any(|&c| c >= 3) {
+        match crate::rdkit_sssr_ring_order(mol) {
+            Some(all) => all
+                .into_iter()
+                .filter(|ring| keep[ring[0].0 as usize])
+                .collect(),
+            None => sssr,
+        }
+    } else {
+        sssr
     };
     let srings: &[Vec<AtomIdx>] = &rings;
 
@@ -2000,6 +2021,28 @@ mod tests {
                 1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 29, 30,
             ],
             "must retain RDKit's aromatic partition before Morgan expansion"
+        );
+    }
+
+    #[test]
+    fn fullerene_kekule_copy_uses_rdkit_symmetrized_rings() {
+        // RDKit 2026.03.6 perceives over its symmetrized SSSR; on this
+        // Kekule-written fullerene adduct one hexagon only becomes aromatic
+        // through a ring `symmetrizeSSSR` adds.
+        let smi = "COCCOCCOCCN1CC23C4=C5C6=C7C8=C9C%10=C%11C%12=C%13C%14=C%15C%16=C%17C%14=C%14C%12=C%12C%10=C%10C%18=C%19C%12=C%14C%12=C%17C%14C%17=C%12C%19=C%12C%18=C(C6=C9%10)C5C5C%12=C%17C(=C6C9=C2C2C4=C7C4=C8C%11=C%13C7=C4C2C(=C%157)C9=C%16C6%14)C53C1COCCOCCOC";
+        let parsed = chematic_smiles::parse(smi).expect("parses");
+        let applied = apply_aromaticity_rdkit_parity_experimental(&parsed).expect("perceives");
+        let aromatic: Vec<u32> = applied
+            .atoms()
+            .filter_map(|(idx, atom)| atom.aromatic.then_some(idx.0))
+            .collect();
+        assert_eq!(
+            aromatic,
+            vec![
+                13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+                34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 47, 50, 51, 57, 58, 59, 60, 61, 62,
+                63, 64, 66, 67, 68, 69
+            ]
         );
     }
 

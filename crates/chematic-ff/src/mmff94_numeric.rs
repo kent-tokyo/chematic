@@ -780,9 +780,13 @@ pub fn assign_mmff94_numeric_types_with_view(
     // fused rings become resolved. `compute_mmff94_aromatic_view` restores
     // the compatibility-specific processing order without changing the
     // general perception API's canonical ring ordering.
-    let rings = chematic_perception::find_symmetrized_sssr(mol)
-        .rings()
-        .to_vec();
+    // RDKit's own ring list (its symmetrized SSSR, in its order) where the
+    // port has it; RDKit types from that `RingInfo` throughout.
+    let rings = chematic_perception::rdkit_sssr_ring_order(mol).unwrap_or_else(|| {
+        chematic_perception::find_symmetrized_sssr(mol)
+            .rings()
+            .to_vec()
+    });
     // MMFF94 has its own, stricter, Kekule-based aromaticity perception
     // (RDKit's `setMMFFAromaticity`), distinct from chematic's own general
     // Huckel model -- most visibly for "mancude" ring systems where a ring
@@ -1080,39 +1084,6 @@ pub fn compute_mmff94_aromatic_view(
     if rings.is_empty() {
         return Ok(mol.clone());
     }
-    let has_charged_large_ring = mol
-        .atoms()
-        .filter(|(_, atom)| atom.element == Element::N && atom.charge > 0)
-        .count()
-        >= 2
-        && rings.iter().any(|ring| ring.len() >= 20);
-    let large_ring_count = rings.iter().filter(|ring| ring.len() >= 20).count();
-    let large_ring_bonds: std::collections::HashSet<(AtomIdx, AtomIdx)> = rings
-        .iter()
-        .filter(|ring| ring.len() >= 20)
-        .flat_map(|ring| {
-            ring.iter().enumerate().map(|(i, &a)| {
-                let b = ring[(i + 1) % ring.len()];
-                (a.min(b), a.max(b))
-            })
-        })
-        .collect();
-    let fully_embedded_charged_six_ring_count = rings
-        .iter()
-        .filter(|ring| ring.len() == 6)
-        .filter(|ring| {
-            ring.iter().any(|&atom_idx| {
-                let atom = mol.atom(atom_idx);
-                atom.element == Element::N && atom.charge > 0
-            })
-        })
-        .filter(|ring| {
-            ring.iter().enumerate().all(|(i, &a)| {
-                let b = ring[(i + 1) % ring.len()];
-                large_ring_bonds.contains(&(a.min(b), a.max(b)))
-            })
-        })
-        .count();
     // RDKit's MMFF pass consumes RingInfo in size/insertion order. The
     // symmetrized SSSR canonicalizes its public ring list, so restore the
     // equivalent compatibility order here: smaller rings first and, within
@@ -1125,17 +1096,18 @@ pub fn compute_mmff94_aromatic_view(
     // that order. Rings RDKit lists are taken in RDKit's own order
     // (`rdkit_sssr_ring_order`, a port of its `findSSSR`/`symmetrizeSSSR`);
     // the size/first-atom order above is the fallback.
-    let rdkit_position: std::collections::HashMap<Vec<u32>, usize> =
-        chematic_perception::rdkit_sssr_ring_order(mol)
-            .unwrap_or_default()
-            .into_iter()
-            .enumerate()
-            .map(|(i, ring)| {
-                let mut key: Vec<u32> = ring.iter().map(|a| a.0).collect();
-                key.sort_unstable();
-                (key, i)
-            })
-            .collect();
+    // The caller passes RDKit's own ring list where the port has it, so the
+    // input order is RDKit's; the sort below only orders a fallback list.
+    let rdkit_position: std::collections::HashMap<Vec<u32>, usize> = rings
+        .iter()
+        .cloned()
+        .enumerate()
+        .map(|(i, ring)| {
+            let mut key: Vec<u32> = ring.iter().map(|a| a.0).collect();
+            key.sort_unstable();
+            (key, i)
+        })
+        .collect();
     let mut rings = rings.to_vec();
     rings.sort_by_key(|ring| {
         let mut key: Vec<u32> = ring.iter().map(|a| a.0).collect();
@@ -1146,9 +1118,25 @@ pub fn compute_mmff94_aromatic_view(
             ring.iter().map(|atom| atom.0).min().unwrap_or(u32::MAX),
         )
     });
-    let kmol = match chematic_core::kekulize(mol) {
-        Ok(kek) if kek.is_empty() => mol.clone(),
-        Ok(kek) => chematic_core::apply_kekule(mol, &kek),
+    // RDKit kekulizes with canonical atom ranks before this pass; where a
+    // system has several Kekule structures (fullerene cages) the pass reads
+    // a different set of hexagons as aromatic depending on which one it
+    // gets, so take RDKit's (`rdkit_canonical_kekule`), falling back to
+    // chematic's own valid structure.
+    //
+    // `MolFromSmiles` perceives aromaticity from scratch whatever the input
+    // spelling, so a Kekule-written ring system gets the same structure as
+    // its aromatic spelling: kekulize RDKit's aromatic view, not the input's
+    // own double bonds.
+    let rdkit_view = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).ok();
+    let base: &Molecule = rdkit_view.as_ref().unwrap_or(mol);
+    let kmol = match chematic_core::kekulize(base) {
+        Ok(kek) if kek.is_empty() => base.clone(),
+        Ok(kek) => {
+            let kek = chematic_perception::rdkit_canonical_kekule_with_rings(base, &kek, &rings)
+                .unwrap_or(kek);
+            chematic_core::apply_kekule(base, &kek)
+        }
         Err(e) => {
             return Err(NumericTypeError(format!(
                 "MMFF94 aromaticity re-perception failed at the Kekulization stage: {} \
@@ -1247,41 +1235,6 @@ pub fn compute_mmff94_aromatic_view(
             }
 
             if move_to_next_ring {
-                continue;
-            }
-
-            if has_charged_large_ring
-                && len == 6
-                && ring.iter().any(|&atom_idx| {
-                    let atom = kmol.atom(atom_idx);
-                    atom.element == Element::N && atom.charge > 0
-                })
-                && (ring.iter().enumerate().any(|(i, &a)| {
-                    let b = ring[(i + 1) % len];
-                    !large_ring_bonds.contains(&(a.min(b), a.max(b)))
-                }) || (large_ring_count == 2 && fully_embedded_charged_six_ring_count >= 2)
-                    || (fully_embedded_charged_six_ring_count >= 2
-                        && ring
-                            .iter()
-                            .filter(|&&atom_idx| {
-                                let atom = kmol.atom(atom_idx);
-                                atom.element == Element::N && atom.charge > 0
-                            })
-                            .all(|&atom_idx| {
-                                bonds_of(&kmol, atom_idx)
-                                    .iter()
-                                    .all(|nb| ring.contains(&nb.neighbor))
-                            })))
-            {
-                // RDKit's MMFF aromaticity boundary treats charged six-rings
-                // embedded in this large macrocycle family as Kekulé. The
-                // earlier edge-outside-large-ring condition missed families
-                // where every six-ring edge is itself part of a large-cycle
-                // representative. Resolve the six-ring without accepting it
-                // as aromatic; the general perception API is unchanged.
-                for &atom_idx in ring {
-                    resolved[atom_idx.0 as usize] = true;
-                }
                 continue;
             }
 
@@ -1551,24 +1504,52 @@ fn assign_c_type(
 /// aromatic switches). Returns `None` if the atom is flagged aromatic but
 /// isn't actually in a fully-aromatic-bonded 5- or 6-membered ring.
 ///
-/// Not ported: CIM+ (type 80, aromatic C between two imidazolium N's) --
-/// rare in the corpus this targets and not yet needed to close the
-/// dominant gap; falls through to C5/C5A/C5B below instead of being
-/// misclassified as a different element (still element-correct, just not
-/// maximally specific).
+/// CIM+ (type 80): with no beta heteroatom, a carbon bonded to two
+/// three-connected N (one in an aromatic 5-ring, none in an aromatic 6-ring)
+/// of which one is a positive non-N-oxide N, or to three such N with two in
+/// aromatic 5-rings.
 fn aromatic_c_type(mol: &Molecule, rings: &[Vec<AtomIdx>], idx: AtomIdx) -> Option<u8> {
     if atom_in_aromatic_ring_of_size(mol, rings, idx, 5) {
         let het = find_alpha_beta_heteroatoms(mol, rings, idx);
 
+        if het.beta.is_empty() {
+            let (mut n_n, mut n_charged, mut n_arom5, mut n_arom6) = (0, 0, 0, 0);
+            for nb in bonds_of(mol, idx) {
+                let a = nb.neighbor;
+                if mol.atom(a).element == Element::N && total_degree(mol, a) == 3 {
+                    n_n += 1;
+                    if mol.atom(a).charge > 0 && !is_atom_n_oxide(mol, a) {
+                        n_charged += 1;
+                    }
+                    if atom_in_aromatic_ring_of_size(mol, rings, a, 5) {
+                        n_arom5 += 1;
+                    }
+                    if atom_in_aromatic_ring_of_size(mol, rings, a, 6) {
+                        n_arom6 += 1;
+                    }
+                }
+            }
+            if ((n_n == 2 && n_arom5 > 0) || (n_n == 3 && n_arom5 == 2))
+                && n_charged > 0
+                && n_arom6 == 0
+            {
+                return Some(80); // CIM+
+            }
+        }
+
         // General C5: no alpha/beta heteroatoms but ring not all benzene-like,
         // or alpha+beta present but in different rings / neither is O/S.
+        // RDKit tests the neighbours against any 6-ring and any shared
+        // 5-ring here, aromatic or not.
         if het.alpha.len() == het.beta.len() {
             let surrounded_by_benzene_c = bonds_of(mol, idx).iter().all(|nb| {
                 mol.atom(nb.neighbor).element == Element::C
-                    && atom_in_aromatic_ring_of_size(mol, rings, nb.neighbor, 6)
+                    && atom_in_ring_of_size(rings, nb.neighbor, 6)
             });
             let surrounded_by_arom = bonds_of(mol, idx).iter().all(|nb| {
-                !atoms_share_aromatic_ring_of_size(mol, rings, idx, nb.neighbor, 5)
+                !rings
+                    .iter()
+                    .any(|r| r.len() == 5 && r.contains(&idx) && r.contains(&nb.neighbor))
                     || mol.atom(nb.neighbor).aromatic
             });
             if (het.alpha.is_empty()
@@ -1599,175 +1580,6 @@ fn aromatic_c_type(mol: &Molecule, rings: &[Vec<AtomIdx>], idx: AtomIdx) -> Opti
 
 // ── N type assignment ────────────────────────────────────────────────────────
 
-/// Per-nitrogen-atom aggregate of the structural facts RDKit's `case 7:`
-/// 3-connected branch (`AtomTyper.cpp` lines 1093-1325 at the pinned
-/// commit) computes across all of a nitrogen's carbon neighbors, used to
-/// pick NC=C (40) vs NC=O (10) vs plain NR (8).
-struct N3CarbonContext {
-    has_carbon_neighbor: bool,
-    /// `isNCOorNCS`: at least one carbon neighbor carries its own real
-    /// (non-aromatic) double bond to O or S.
-    is_carbonyl_like: bool,
-    /// The `elementTripleBondedToC == 7` contribution to
-    /// `isNSO2orNSO3orNCN`: at least one carbon neighbor is triple-bonded
-    /// to a nitrogen (cyano). The sulfonamide (P/S-with->=2-terminal-O)
-    /// contribution to the same RDKit flag is a separate, ipso-N-level
-    /// check this port does not implement (type 43, a distinct tiny
-    /// residual bucket -- see `mmff94_hybridization_gate_gap_227_report.py`-
-    /// style audit tooling for issue #227 Priority 1A-2).
-    is_cyano_like: bool,
-    /// True if *any* carbon neighbor independently qualifies for the
-    /// NC=C-family trigger (see [`nc_eq_c_carbon_neighbor_qualifies`]).
-    any_carbon_qualifies_nc_eq_c: bool,
-}
-
-/// Source-grounded deterministic port of RDKit's `case 7:` 3-connected-
-/// nitrogen carbon-neighbor scan (`AtomTyper.cpp` lines 1093-1325 at the
-/// pinned commit -- see `scripts/mmff94_provenance/PROVENANCE.md`), used by
-/// `assign_n_type` to
-/// pick NC=C (type 40: enamine/aniline/amidine/N-C%C nitrogen with a
-/// delocalized lone pair) over generic NR (8) or NC=O (10).
-///
-/// For each carbon neighbor of the ipso nitrogen, RDKit checks (per
-/// [`nc_eq_c_carbon_neighbor_qualifies`]) whether that carbon: carries its
-/// own real C=O/C=S double bond (excludes NC=C, routes toward NC=O
-/// instead); is triple-bonded to another nitrogen (cyano, excludes both);
-/// or otherwise qualifies via being an aromatic 6-ring carbon with no
-/// attached aromatic O/S, or via its own genuine double bond to
-/// carbon/nitrogen/phosphorus (an *aromatic* bond to a plain carbon, or to
-/// a nitrogen in exactly one ring, also counts per RDKit's own rule at
-/// lines 1124-1130), or via its own triple bond to carbon.
-///
-/// Not ported: the charged amidinium (`NCN+`, type 55) / guanidinium
-/// (`NGD+`, type 56) sub-cases (lines 1197-1206, 1273-1284) -- moot for
-/// `assign_n_type`'s actual callers, since every positively-charged
-/// nitrogen is already routed to type 34 before reaching this function at
-/// all (issue #227's construction-time semantic-compatibility work);
-/// verified 0/129 corpus atoms in the NR-vs-NC=C residual this port closes
-/// carry a charge, so this omission is not a silent gap for this fix's
-/// actual target population.
-///
-/// Structural divergence point from RDKit's literal C++ (not a
-/// simplification of the underlying chemistry, a difference in how a
-/// nitrogen with *several* differently-behaved carbon neighbors is
-/// resolved): RDKit's loop uses shared mutable variables for
-/// `elementDoubleBondedToC`/`isNbrBenzeneC`/`nObondedToC`/`nSbondedToC`
-/// that are declared once before the carbon-neighbor loop and are not all
-/// reset the same way per iteration -- `nObondedToC`/`nSbondedToC` reset to
-/// 0 at the start of each carbon neighbor's processing (so after the loop
-/// they only reflect the *last* carbon neighbor visited), while
-/// `isNbrBenzeneC` never resets (true if *any* carbon neighbor was a
-/// benzene carbon) and `elementDoubleBondedToC` is only overwritten by a
-/// later neighbor that itself qualifies. In principle this makes the C++
-/// code's outcome depend on adjacency-list iteration order for a nitrogen
-/// with several differently-behaved carbon neighbors -- an implementation
-/// incidental, not an intentional MMFF rule, and not something chematic's
-/// own neighbor iteration order is guaranteed to reproduce anyway. This
-/// port instead evaluates each carbon neighbor independently and triggers
-/// NC=C if *any one* qualifies (after the shared carbonyl/cyano exclusion
-/// gates, which genuinely are OR-accumulated across all neighbors in
-/// RDKit's own code too, and are ported as such below) -- well-defined and
-/// order-independent by construction.
-///
-/// Empirically, this theoretical divergence does not appear to be
-/// observable for legal-valence neutral organic molecules: 8 constructed
-/// multi-carbon-context molecules (nitrogen bonded to two structurally
-/// distinct carbons, each combination of qualifying/non-qualifying/
-/// carbonyl-blocked) were probed against a live RDKit oracle across 32
-/// `Chem.RenumberAtoms` atom orderings apiece (256 trials total) and
-/// RDKit's own output never varied by order in any of them. The
-/// mechanism appears to be that any aromatic-6-ring carbon neighbor's own
-/// ring bonds set `elementDoubleBondedToC` into `{6,7}` regardless of which
-/// neighbor is processed last (a neutral aromatic 6-ring's atoms are always
-/// C or N), which happens to make the order-sensitive branch practically
-/// unreachable in that population. The corresponding test,
-/// `nc_eq_c_multi_carbon_context_is_order_independent_and_matches_rdkit`,
-/// therefore pins these as exact RDKit-parity regressions (both chematic's
-/// own determinism *and* RDKit agreement), not merely a documented
-/// divergence -- and this port is identical to RDKit whenever a nitrogen
-/// has only one structurally-relevant carbon neighbor, which is the
-/// overwhelming majority of real molecules regardless.
-fn classify_n_c3_carbon_context(
-    mol: &Molecule,
-    rings: &[Vec<AtomIdx>],
-    idx: AtomIdx,
-) -> N3CarbonContext {
-    let mut ctx = N3CarbonContext {
-        has_carbon_neighbor: false,
-        is_carbonyl_like: false,
-        is_cyano_like: false,
-        any_carbon_qualifies_nc_eq_c: false,
-    };
-    for nb in bonds_of(mol, idx) {
-        if mol.atom(nb.neighbor).element != Element::C {
-            continue;
-        }
-        ctx.has_carbon_neighbor = true;
-        let (carbonyl, cyano, qualifies) =
-            nc_eq_c_carbon_neighbor_qualifies(mol, rings, nb.neighbor);
-        ctx.is_carbonyl_like |= carbonyl;
-        ctx.is_cyano_like |= cyano;
-        ctx.any_carbon_qualifies_nc_eq_c |= qualifies;
-    }
-    ctx
-}
-
-/// Evaluates a single carbon neighbor of a 3-connected nitrogen against
-/// RDKit's per-carbon structural tests (`AtomTyper.cpp` lines 1093-1188,
-/// 1266-1298 at the pinned commit). Returns
-/// `(has_own_carbonyl_or_thiocarbonyl, is_cyano_carbon,
-/// qualifies_for_nc_eq_c)`. See [`classify_n_c3_carbon_context`]'s doc for
-/// how the three are combined and this function's role in that port.
-fn nc_eq_c_carbon_neighbor_qualifies(
-    mol: &Molecule,
-    rings: &[Vec<AtomIdx>],
-    c_idx: AtomIdx,
-) -> (bool, bool, bool) {
-    let is_benzene_c = mol.atom(c_idx).aromatic && atom_in_ring_of_size(rings, c_idx, 6);
-    let mut has_own_carbonyl_or_thiocarbonyl = false;
-    let mut is_cyano_carbon = false;
-    let mut has_aromatic_o_or_s_neighbor = false;
-    let mut double_bonded_c_n_or_p = false;
-    let mut triple_bonded_c = false;
-
-    for nb in bonds_of(mol, c_idx) {
-        let nbr_elem = mol.atom(nb.neighbor).element;
-        match nb.order {
-            BondOrder::Double => match nbr_elem {
-                Element::O | Element::S => has_own_carbonyl_or_thiocarbonyl = true,
-                Element::C | Element::N | Element::P => double_bonded_c_n_or_p = true,
-                _ => {}
-            },
-            BondOrder::Triple => {
-                if nbr_elem == Element::N {
-                    is_cyano_carbon = true;
-                }
-                if nbr_elem == Element::C {
-                    triple_bonded_c = true;
-                }
-            }
-            BondOrder::Aromatic => {
-                let counts_as_double = nbr_elem == Element::C
-                    || (nbr_elem == Element::N
-                        && rings.iter().filter(|r| r.contains(&nb.neighbor)).count() == 1);
-                if counts_as_double {
-                    double_bonded_c_n_or_p = true;
-                }
-            }
-            _ => {}
-        }
-        if mol.atom(nb.neighbor).aromatic && matches!(nbr_elem, Element::O | Element::S) {
-            has_aromatic_o_or_s_neighbor = true;
-        }
-    }
-
-    let qualifies = (is_benzene_c && !has_aromatic_o_or_s_neighbor)
-        || double_bonded_c_n_or_p
-        || triple_bonded_c;
-
-    (has_own_carbonyl_or_thiocarbonyl, is_cyano_carbon, qualifies)
-}
-
 fn assign_n_type(
     mol: &Molecule,
     rings: &[Vec<AtomIdx>],
@@ -1782,235 +1594,348 @@ fn assign_n_type(
         return Ok(t);
     }
 
-    let double_bonds = count_bond_order(mol, idx, BondOrder::Double);
-    let triple_bonds = count_bond_order(mol, idx, BondOrder::Triple);
+    Ok(general_n_type(mol, rings, idx))
+}
+
+/// RDKit's `getValence(EXPLICIT) + getNumImplicitHs()` for a nitrogen of the
+/// MMFF view. `setMMFFAromaticity` sets the bonds of an accepted ring to
+/// `AROMATIC` and recomputes the explicit valence of its non-carbon atoms
+/// from them (`calculateExplicitValence`: aromatic bonds count 1.5, an
+/// aromatic atom over its default valence drops to the nearest allowed
+/// valence within 1.5, then `round(accum + 0.1)`); every other atom keeps
+/// the valence of RDKit's Kekule structure.
+fn rdkit_n_total_bond_order(mol: &Molecule, idx: AtomIdx) -> u32 {
+    let atom = mol.atom(idx);
+    let nbrs = bonds_of(mol, idx);
+    let implicit = u32::from(implicit_hcount(mol, idx));
+    if !atom.aromatic || !nbrs.iter().any(|b| b.order == BondOrder::Aromatic) {
+        return nbrs.iter().map(|b| b.order.order_int() as u32).sum::<u32>() + implicit;
+    }
+    let mut accum: f64 = nbrs
+        .iter()
+        .map(|b| match b.order {
+            BondOrder::Aromatic => 1.5,
+            o => f64::from(o.order_int()),
+        })
+        .sum::<f64>()
+        + f64::from(implicit);
+    // Effective element: N+ is valence-isoelectronic with C, N- with O.
+    let (dv, valens): (f64, &[f64]) = match atom.charge {
+        1 => (4.0, &[4.0]),
+        -1 => (2.0, &[2.0]),
+        0 => (3.0, &[3.0]),
+        _ => (3.0, &[3.0]),
+    };
+    if accum > dv {
+        let mut pval = dv;
+        for &v in valens {
+            if v > accum {
+                break;
+            }
+            pval = v;
+        }
+        if accum - pval <= 1.5 {
+            accum = pval;
+        }
+    }
+    (accum + 0.1).round() as u32
+}
+
+/// Literal port of RDKit's non-aromatic nitrogen typing (`AtomTyper.cpp`
+/// `setMMFFHeavyAtomType`, `case 7:` of the general switch, RDKit
+/// 2026.03.6), including its loop-carried state: `elementDoubleBondedToC`,
+/// `elementTripleBondedToC` and `isNbrBenzeneC` keep their values from one
+/// carbon neighbour to the next, so a carbon met later can be judged with an
+/// earlier carbon's double bond (a neutral N between an imine carbon and a
+/// tri-aminated carbon is NGD+, 56, in RDKit). Neighbours are visited in
+/// bond order, which is RDKit's order for molecules read from MOL files and
+/// for SMILES without ring-closure bonds on the visited atoms.
+fn general_n_type(mol: &Molecule, rings: &[Vec<AtomIdx>], idx: AtomIdx) -> u8 {
     let nbrs = bonds_of(mol, idx);
     let degree = total_degree(mol, idx);
+    let tbo = rdkit_n_total_bond_order(mol, idx);
+    let elem = |a: AtomIdx| mol.atom(a).element;
+    let bond = |a: AtomIdx, b: AtomIdx| {
+        mol.bond_between(a, b)
+            .map(|(_, b)| b.order)
+            .unwrap_or(BondOrder::Single)
+    };
+    let is_double = |o: BondOrder| o == BondOrder::Double;
+    let n_rings = |a: AtomIdx| rings.iter().filter(|r| r.contains(&a)).count();
 
-    // Terminal (degree-1) nitrogen: nitrile/isocyanide (NSP, type 42) or the
-    // terminal nitrogen of an azide/diazo group (NAZT, type 47).
-    // Source-grounded port of RDKit's degree-1 nitrogen branch
-    // (`AtomTyper.cpp` lines ~1454-1481 at the pinned commit, issue #227) --
-    // must run before the generic `triple_bonds > 0 -> 9` fallback below,
-    // which previously caught every real nitrile nitrogen (always degree-1
-    // in a legal structure) before this more specific check could fire.
-    if degree == 1
-        && let Some(nb) = nbrs.first()
-    {
-        if nb.order == BondOrder::Triple {
-            return Ok(42); // NSP: nitrile/isocyanide nitrogen
+    let mut n_term_o = 0usize;
+    let mut is_nso2_nso3_ncn = false;
+    for nb in &nbrs {
+        let e = elem(nb.neighbor);
+        if e == Element::O && total_degree(mol, nb.neighbor) == 1 {
+            n_term_o += 1;
         }
-        if mol.atom(nb.neighbor).element == Element::N && total_degree(mol, nb.neighbor) == 2 {
-            // ipso is bonded to a 2-connected nitrogen (the azide/diazo
-            // center) -- NAZT iff that center's OTHER neighbor is itself a
-            // 2-connected nitrogen or a 3-connected carbon.
-            let is_azt = bonds_of(mol, nb.neighbor).iter().any(|b2| {
-                b2.neighbor != idx
-                    && ((mol.atom(b2.neighbor).element == Element::N
-                        && total_degree(mol, b2.neighbor) == 2)
-                        || (mol.atom(b2.neighbor).element == Element::C
-                            && total_degree(mol, b2.neighbor) == 3))
-            });
-            if is_azt {
-                return Ok(47); // NAZT: terminal azide/diazo nitrogen
+        if tbo >= 3 && matches!(e, Element::P | Element::S) {
+            let n_o = bonds_of(mol, nb.neighbor)
+                .iter()
+                .filter(|b2| elem(b2.neighbor) == Element::O && total_degree(mol, b2.neighbor) == 1)
+                .count();
+            if !is_nso2_nso3_ncn {
+                is_nso2_nso3_ncn = n_o >= 2;
             }
         }
     }
 
-    // Central, charged, 2-connected cumulated nitrogen (the "=N=" center of
-    // an azide/diazo group, type 53). Must run before the generic
-    // `charge > 0 -> 34` fallback below, which would otherwise mask it
-    // (issue #227's "azide/diazo typing" gap).
-    // RDKit: a two-connected N of valence four is isonitrile N (61) when it
-    // has a triple bond, otherwise =N= (53: azide or diazo centre).
-    if degree == 2 && total_valence(mol, idx) == 4 {
-        return Ok(if triple_bonds > 0 { 61 } else { 53 });
+    if degree == 4 {
+        return if is_atom_n_oxide(mol, idx) { 68 } else { 34 };
     }
 
-    // Iminium nitrogen (N+=C, type 54). RDKit's MMFF atom typer checks this
-    // before the generic positive-N fallback: a three-connected, positively
-    // charged N with total bond order at least four and a real N=C/C=N
-    // double bond is the iminium class, unless it is a terminal-oxygen
-    // environment handled by the dedicated oxygen/nitro cases below.
-    let double_bonded_to_c_or_n = nbrs.iter().any(|b| {
-        b.order == BondOrder::Double
-            && matches!(mol.atom(b.neighbor).element, Element::C | Element::N)
-    });
-    let total_bond_order: u32 = nbrs.iter().map(|b| b.order.order_int() as u32).sum();
-    let iminium_terminal_o_count = nbrs
-        .iter()
-        .filter(|b| {
-            mol.atom(b.neighbor).element == Element::O && bonds_of(mol, b.neighbor).len() == 1
-        })
-        .count();
-    if atom.charge > 0
-        && degree == 3
-        && total_bond_order >= 4
-        && double_bonded_to_c_or_n
-        && iminium_terminal_o_count == 0
-    {
-        return Ok(54); // N+=C: iminium nitrogen
-    }
-
-    // Nitro nitrogen (NO2/NO3, type 45). Also must run before the generic
-    // `charge > 0 -> 34` fallback: a nitro N is only ever written
-    // charge-separated ([N+](=O)[O-]) by a sanitizable structure, so the
-    // generic charge check would otherwise mask it every time (issue #227's
-    // "charge-shortcut masking nitro-N" gap).
-    let terminal_o_count = nbrs
-        .iter()
-        .filter(|b| {
-            mol.atom(b.neighbor).element == Element::O && bonds_of(mol, b.neighbor).len() == 1
-        })
-        .count();
-    if atom.charge > 0 && terminal_o_count >= 2 {
-        return Ok(45); // NO2 / NO3
-    }
-    // RDKit: a four-connected N-oxide is N3OX (68); a three-connected N of
-    // bond order four with one terminal O is N2OX (67).
-    if degree == 4 && is_atom_n_oxide(mol, idx) {
-        return Ok(68); // N3OX
-    }
-    if degree == 3 && total_bond_order >= 4 && terminal_o_count == 1 {
-        return Ok(67); // N2OX
-    }
-
-    // Formal charge: quaternary ammonium / protonated N.
-    // Registry-verified: type 34 is NR+ (N+, QUATERNARY N); type 32 is
-    // O2CM (O, CARBOXYLATE ANION), an oxygen-only type -- the previous
-    // `32` here was exactly the silent element-collision the numeric
-    // type registry's construction-time invariant now catches instead
-    // of allowing through as a false "success".
-    if atom.charge > 0 {
-        return Ok(34); // NR+
-    }
-
-    // Sulfonamide/sulfonate/phosphonamide nitrogen (NSO2/NSO3, type 43):
-    // ipso attached to a P or S bonded to >=2 terminal oxygens. Source-
-    // grounded port of the S/P-neighbor half of RDKit's `isNSO2orNSO3orNCN`
-    // (`AtomTyper.cpp` lines ~985-1000 at the pinned commit, issue #227) --
-    // the cyanamide (N-C%N) half of the same RDKit flag is handled by
-    // `ctx.is_cyano_like` in the 3-connected branch below, which already
-    // existed but wasn't wired to return 43 until now.
-    if nbrs.iter().any(|b| {
-        let e = mol.atom(b.neighbor).element;
-        (e == Element::P || e == Element::S) && count_terminal_o_neighbors(mol, b.neighbor) >= 2
-    }) {
-        return Ok(43); // NSO2 / NSO3
-    }
-
-    // Nitrile / isocyanide (N≡C). Unreachable for any real (degree-1)
-    // nitrile now that the branch above handles it -- kept as a
-    // conservative fallback for a hypothetical non-degree-1 triple-bonded N
-    // this port hasn't observed in practice.
-    if triple_bonds > 0 {
-        return Ok(9); // N=C (close approximation for nitrile)
-    }
-
-    // N=C or N=N (imine, hydrazone, etc.)
-    if double_bonds > 0 {
-        // RDKit: a two-connected N double bonded to a terminal O (and not
-        // to C or N) is nitroso N (46).
-        let nitroso = degree == 2
-            && terminal_o_count == 1
-            && nbrs.iter().any(|b| {
-                b.order == BondOrder::Double && mol.atom(b.neighbor).element == Element::O
-            })
-            && !double_bonded_to_c_or_n;
-        if nitroso {
-            return Ok(46); // N=O nitroso nitrogen
-        }
-        // RDKit's NSO: a two-connected N double bonded to neither C nor N,
-        // bonded to an S carrying exactly one terminal O.
-        if degree == 2
-            && !double_bonded_to_c_or_n
-            && nbrs.iter().any(|b| {
-                mol.atom(b.neighbor).element == Element::S
-                    && count_terminal_o_neighbors(mol, b.neighbor) == 1
-            })
-        {
-            return Ok(48); // NSO
-        }
-        // RDKit: any other two-connected N double bonded to neither C nor N
-        // (an iminophosphorane or sulfilimine N, a cyclophosphazene N outside
-        // an MMFF-aromatic ring) is NM (62).
-        if degree == 2 && !double_bonded_to_c_or_n {
-            return Ok(62); // NM
-        }
-        return Ok(9); // N=C imine
-    }
-
-    // sp3 N, 3-connected: enamine/aniline (NC=C) vs amide (NC=O) vs
-    // cyanamide (NC%N) vs plain (NR). Source-grounded deterministic port of
-    // RDKit's `case 7:` 3-connected branch (`AtomTyper.cpp` lines 1093-1325
-    // at the pinned commit) -- see `classify_n_c3_carbon_context`'s doc for
-    // the exact condition and its one documented, empirically-unobserved
-    // structural divergence from RDKit's literal C++.
-    if total_degree(mol, idx) == 3 {
-        let ctx = classify_n_c3_carbon_context(mol, rings, idx);
-        if ctx.has_carbon_neighbor {
-            if ctx.is_cyano_like {
-                return Ok(43); // NC%N: nitrogen attached to a cyano carbon
-            }
-            if !ctx.is_carbonyl_like && ctx.any_carbon_qualifies_nc_eq_c {
-                return Ok(40); // NC=C / NC=N / NC=P / NC%C: deloc. lone pair
-            }
-            if ctx.is_carbonyl_like {
-                return Ok(10); // NC=O / NC=S amide/thioamide nitrogen
-            }
-        }
-    }
-
-    // sp3 N — check if amide (bonded to carbonyl C). Fallback for N atoms
-    // not covered by the 3-connected-with-carbon-neighbor branch above
-    // (e.g. degree != 3, or a degree-3 N with no carbon neighbor at all).
-    let is_amide = nbrs.iter().any(|b| {
-        let nbr = mol.atom(b.neighbor);
-        nbr.element == Element::C && {
-            // Check if that C has a C=O double bond
-            bonds_of(mol, b.neighbor).iter().any(|bb| {
-                bb.order == BondOrder::Double && mol.atom(bb.neighbor).element == Element::O
-            })
-        }
-    });
-
-    if is_amide {
-        return Ok(10); // NC=O amide nitrogen
-    }
-
-    // RDKit's isNNNorNNC: a three-connected N bonded to an N that is double
-    // bonded to N (N=N-N), or to a C with no other N, O or S neighbour
-    // (N=N-C), unless the ipso N is bonded to a benzene carbon.
     if degree == 3 {
-        let benzene_neighbour = nbrs.iter().any(|b| {
-            let nb = mol.atom(b.neighbor);
-            nb.element == Element::C
-                && nb.aromatic
-                && atom_in_aromatic_ring_of_size(mol, rings, b.neighbor, 6)
-        });
-        let nn_double = nbrs.iter().any(|b| {
-            mol.atom(b.neighbor).element == Element::N
-                && bonds_of(mol, b.neighbor).iter().any(|b2| {
-                    b2.order == BondOrder::Double
-                        && match mol.atom(b2.neighbor).element {
-                            Element::N => true,
-                            Element::C => bonds_of(mol, b2.neighbor).iter().all(|b3| {
-                                b3.neighbor == b.neighbor
-                                    || !matches!(
-                                        mol.atom(b3.neighbor).element,
-                                        Element::N | Element::O | Element::S
-                                    )
-                            }),
-                            _ => false,
+        if tbo >= 4 {
+            let mut double_bonded_cn = false;
+            for nb in &nbrs {
+                if is_double(nb.order) {
+                    let e = elem(nb.neighbor);
+                    double_bonded_cn = e == Element::N || e == Element::C;
+                    if e == Element::C {
+                        for b2 in bonds_of(mol, nb.neighbor) {
+                            if !double_bonded_cn {
+                                break;
+                            }
+                            if b2.neighbor == idx {
+                                continue;
+                            }
+                            double_bonded_cn = !(elem(b2.neighbor) == Element::N
+                                && total_degree(mol, b2.neighbor) == 3);
                         }
-                })
-        });
-        if nn_double && !benzene_neighbour {
-            return Ok(10); // NN=N / NN=C
+                    }
+                }
+            }
+            if n_term_o == 1 {
+                return 67; // N2OX
+            }
+            if n_term_o >= 2 {
+                return 45; // NO2 / NO3
+            }
+            if double_bonded_cn {
+                return 54; // N+=C / N+=N
+            }
+        }
+        if tbo >= 3 {
+            let mut is_nco_or_ncs = false;
+            let mut is_ncn_plus = false;
+            let mut is_ngd_plus = false;
+            let mut is_nnn_or_nnc = false;
+            let mut is_nbr_c = false;
+            let mut is_nbr_benzene_c = false;
+            let mut element_double_bonded_to_c: Option<Element> = None;
+            let mut element_triple_bonded_to_c: Option<Element> = None;
+            let mut n_o_bonded_to_c = 0usize;
+            let mut n_s_bonded_to_c = 0usize;
+            for nb in &nbrs {
+                let c = nb.neighbor;
+                if elem(c) == Element::C {
+                    is_nbr_c = true;
+                    if mol.atom(c).aromatic && atom_in_ring_of_size(rings, c, 6) {
+                        is_nbr_benzene_c = true;
+                    }
+                    let mut n_n2 = 0usize;
+                    let mut n_n3 = 0usize;
+                    n_o_bonded_to_c = 0;
+                    n_s_bonded_to_c = 0;
+                    let mut n_formal_charge = 0usize;
+                    let mut n_in_arom6 = 0usize;
+                    for b2 in bonds_of(mol, c) {
+                        let x = b2.neighbor;
+                        let ex = elem(x);
+                        let o = b2.order;
+                        if is_double(o) && matches!(ex, Element::O | Element::S) {
+                            is_nco_or_ncs = true;
+                        }
+                        if is_double(o)
+                            || (o == BondOrder::Aromatic
+                                && (ex == Element::C || (ex == Element::N && n_rings(x) == 1)))
+                        {
+                            element_double_bonded_to_c = Some(ex);
+                        }
+                        if o == BondOrder::Triple {
+                            element_triple_bonded_to_c = Some(ex);
+                        }
+                        if ex == Element::N && total_degree(mol, x) == 3 {
+                            if mol.atom(x).charge == 1 {
+                                n_formal_charge += 1;
+                            }
+                            if atom_in_aromatic_ring_of_size(mol, rings, c, 6) {
+                                n_in_arom6 += 1;
+                            }
+                            let n_o_on_n3 = bonds_of(mol, x)
+                                .iter()
+                                .filter(|b3| elem(b3.neighbor) == Element::O)
+                                .count();
+                            if n_o_on_n3 < 2 {
+                                n_n3 += 1;
+                            }
+                        }
+                        if ex == Element::N
+                            && total_degree(mol, x) == 2
+                            && (is_double(o) || o == BondOrder::Aromatic)
+                        {
+                            n_n2 += 1;
+                        }
+                        if mol.atom(x).aromatic {
+                            if ex == Element::O {
+                                n_o_bonded_to_c += 1;
+                            }
+                            if ex == Element::S {
+                                n_s_bonded_to_c += 1;
+                            }
+                        }
+                    }
+                    if element_double_bonded_to_c == Some(Element::N) {
+                        if n_n3 == 2
+                            && n_n2 == 0
+                            && n_formal_charge > 0
+                            && n_in_arom6 == 0
+                            && total_degree(mol, c) < 4
+                        {
+                            is_ncn_plus = true;
+                        }
+                        if n_n3 == 3 {
+                            is_ngd_plus = true;
+                        }
+                    }
+                }
+                if elem(c) == Element::N {
+                    let n = c;
+                    let (mut n_n, mut n_o, mut n_s) = (0usize, 0usize, 0usize);
+                    for b2 in bonds_of(mol, n) {
+                        if !is_double(b2.order) {
+                            continue;
+                        }
+                        let x = b2.neighbor;
+                        if elem(x) == Element::C {
+                            for b3 in bonds_of(mol, x) {
+                                if b3.neighbor == n {
+                                    continue;
+                                }
+                                match elem(b3.neighbor) {
+                                    Element::N => n_n += 1,
+                                    Element::O => n_o += 1,
+                                    Element::S => n_s += 1,
+                                    _ => {}
+                                }
+                            }
+                            if n_o == 0 && n_s == 0 && n_n == 0 && !is_nbr_benzene_c {
+                                is_nnn_or_nnc = true;
+                            }
+                        }
+                        if elem(x) == Element::N && !is_nbr_benzene_c {
+                            is_nnn_or_nnc = true;
+                        }
+                    }
+                }
+            }
+            if is_nbr_c {
+                if element_triple_bonded_to_c == Some(Element::N) {
+                    is_nso2_nso3_ncn = true;
+                }
+                if is_ncn_plus {
+                    return 55; // NCN+
+                }
+                if is_ngd_plus {
+                    return 56; // NGD+
+                }
+                if !is_nco_or_ncs
+                    && !is_nso2_nso3_ncn
+                    && ((n_o_bonded_to_c == 0 && n_s_bonded_to_c == 0 && is_nbr_benzene_c)
+                        || matches!(
+                            element_double_bonded_to_c,
+                            Some(Element::C | Element::N | Element::P)
+                        )
+                        || element_triple_bonded_to_c == Some(Element::C))
+                {
+                    return 40; // NC=C, NC=N, NC=P, NC%C
+                }
+            }
+            if !is_nso2_nso3_ncn && (is_nco_or_ncs || is_nnn_or_nnc) {
+                return 10; // NC=O, NC=S, NN=C, NN=N
+            }
         }
     }
 
-    Ok(8) // NR plain amine
+    if degree == 2 {
+        if tbo == 4 {
+            let isonitrile = nbrs.iter().any(|b| b.order == BondOrder::Triple);
+            return if isonitrile { 61 } else { 53 };
+        }
+        if tbo == 3 {
+            let mut is_nitroso = false;
+            let mut is_imine_or_azo = false;
+            for nb in &nbrs {
+                if is_double(bond(idx, nb.neighbor)) {
+                    let e = elem(nb.neighbor);
+                    is_nitroso = e == Element::O && n_term_o == 1;
+                    is_imine_or_azo = e == Element::C || e == Element::N;
+                }
+            }
+            if is_nitroso && !is_imine_or_azo {
+                return 46; // N=O
+            }
+            if is_imine_or_azo {
+                return 9; // N=C, N=N
+            }
+        }
+        if tbo >= 2 {
+            let mut is_nso = false;
+            for nb in &nbrs {
+                if is_nso {
+                    break;
+                }
+                if elem(nb.neighbor) == Element::S {
+                    let n_term_o_on_s = bonds_of(mol, nb.neighbor)
+                        .iter()
+                        .filter(|b2| {
+                            elem(b2.neighbor) == Element::O && total_degree(mol, b2.neighbor) == 1
+                        })
+                        .count();
+                    is_nso = n_term_o_on_s == 1;
+                }
+            }
+            if is_nso {
+                return 48; // NSO
+            }
+            if !is_nso2_nso3_ncn {
+                return 62; // NM
+            }
+        }
+    }
+
+    if is_nso2_nso3_ncn {
+        return 43; // NSO2, NSO3, NC%N
+    }
+
+    if degree == 1 {
+        let mut is_nsp = false;
+        let mut is_nazt = false;
+        for nb in &nbrs {
+            if is_nsp || is_nazt {
+                break;
+            }
+            is_nsp = bond(idx, nb.neighbor) == BondOrder::Triple;
+            if elem(nb.neighbor) == Element::N && total_degree(mol, nb.neighbor) == 2 {
+                for b2 in bonds_of(mol, nb.neighbor) {
+                    if is_nazt {
+                        break;
+                    }
+                    let x = b2.neighbor;
+                    is_nazt = (elem(x) == Element::N && total_degree(mol, x) == 2)
+                        || (elem(x) == Element::C && total_degree(mol, x) == 3);
+                }
+            }
+        }
+        if is_nsp {
+            return 42; // NSP
+        }
+        if is_nazt {
+            return 47; // NAZT
+        }
+    }
+    8 // NR
 }
 
 /// Faithful port of RDKit's aromatic-nitrogen cases (`AtomTyper.cpp`

@@ -9,6 +9,7 @@
 pub mod aromaticity;
 pub mod cip_priority;
 pub mod pharmacophore;
+pub mod rdkit_canon;
 mod rdkit_parity;
 pub mod rdkit_sssr_order;
 pub mod ring_family;
@@ -30,6 +31,9 @@ pub use aromaticity::{
 };
 pub use chematic_core::{ValenceError, validate_valence};
 pub use pharmacophore::{Feature, FeatureType, detect_features, features_to_bitvec};
+pub use rdkit_canon::{
+    rdkit_canonical_atom_ranks, rdkit_canonical_kekule, rdkit_canonical_kekule_with_rings,
+};
 pub use rdkit_parity::{
     AromaticityError, apply_aromaticity_rdkit_parity_experimental,
     apply_aromaticity_rdkit_parity_shared, assign_aromaticity_rdkit_parity_experimental,

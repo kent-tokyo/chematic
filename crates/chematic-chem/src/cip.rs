@@ -134,12 +134,11 @@ pub fn assign_ez_bonds_with_mode(mol: &Molecule, mode: CipMode) -> Vec<(BondIdx,
 
 /// Which CIP engine [`assign_cip_with_mode`] uses.
 ///
-/// [`CipMode::Accurate`] only affects tetrahedral R/S -- [`assign_cip_accurate_experimental`]
-/// (`chematic-cip`) never computes E/Z or allene axial chirality (it iterates atoms
-/// with `chirality != None` and a 4-item `stereo_neighbor_order`; double-bond and
-/// allene stereo aren't represented that way), so `Accurate` mode merges the accurate
-/// engine's tetrahedral answers with [`LegacyFast`](CipMode::LegacyFast)'s E/Z and
-/// allene answers rather than replacing `assign_cip` outright.
+/// [`assign_cip_accurate_experimental`] (`chematic-cip`) labels tetrahedral centres
+/// only (it iterates atoms with `chirality != None` and a 4-item
+/// `stereo_neighbor_order`); `Accurate` mode labels double-bond E/Z by ranking each
+/// end's substituents with the same engine (`SubstituentRanker`, #634) and keeps
+/// [`LegacyFast`](CipMode::LegacyFast)'s allene answers.
 ///
 /// [`assign_cip_accurate_experimental`]: chematic_cip::assign_cip_accurate_experimental
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -152,7 +151,7 @@ pub enum CipMode {
     LegacyFast,
     /// Tetrahedral R/S (incl. Rule 5 pseudoasymmetric `r`/`s`) from the hierarchical
     /// digraph engine (~99.64% oracle-stable agreement, see `docs/rfcs/cip_accurate_rfc.md`),
-    /// merged with legacy's E/Z and allene answers. Atoms the accurate engine
+    /// E/Z ranked by the same engine, and legacy's allene answers. Atoms the accurate engine
     /// explicitly ties on or exceeds its budget on are never silently backfilled with
     /// legacy's (less rigorous) guess -- they surface via
     /// [`CipModeAssignment::unresolved`] instead.
@@ -2500,6 +2499,21 @@ mod tests {
         .expect("valid SMILES");
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
         assert_eq!(result.get(AtomIdx(13)), Some(CipCode::R));
+    }
+
+    #[test]
+    fn cip_mode_accurate_labels_ring_amidine_imine_like_rdkit() {
+        // Exposed 10k rows 1206/1213/1214/1287/1370/1371: an exocyclic imine
+        // on the ring-fusion carbon of an imidazo[1,2-a]pyridine. RDKit
+        // 2026.03.6 rdCIPLabeler and RDKit.js 2026.03.6/2026.09.1 label it Z;
+        // the accurate ranking does too. The legacy engine (the default
+        // mode, kept unchanged) says E.
+        let mol = chematic_smiles::parse("CCOC(=O)c1cc2ccccn2/c(=N/c2ccc(OC)cc2)n1")
+            .expect("valid SMILES");
+        let accurate = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        assert_eq!(accurate.get(AtomIdx(13)), Some(CipCode::Z));
+        let legacy = assign_cip_with_mode(&mol, CipMode::LegacyFast).expect("infallible");
+        assert_eq!(legacy.get(AtomIdx(13)), Some(CipCode::E));
     }
 
     #[test]

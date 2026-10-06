@@ -529,6 +529,7 @@ impl<'a> Parser<'a> {
                 mol.set_bond_direction(new_bond_idx, dir);
                 mol.set_bond_direction_anchor(new_bond_idx, a1);
             }
+            mol.set_smiles_ring_closure(new_bond_idx, ring_num, slot);
             // Record the close partner for final PendingRing resolution, keyed
             // by this occurrence's unique slot -- NOT the ring digit, which
             // may be reused by an unrelated ring later in the same SMILES.

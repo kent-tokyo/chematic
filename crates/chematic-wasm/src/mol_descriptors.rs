@@ -420,8 +420,8 @@ pub fn cip_assignments_json(mol: &MolHandle) -> String {
 /// CIP stereo assignments via the accurate hierarchical-digraph engine, as a JSON
 /// array of `{atomIdx, cipCode}` objects -- same shape as [`cip_assignments_json`],
 /// but merges the accurate engine's tetrahedral R/S (~99.6% oracle-stable agreement,
-/// see `docs/rfcs/cip_accurate_rfc.md`) with legacy's E/Z and allene answers (the accurate
-/// engine computes neither). Atoms it can't resolve are omitted here -- see
+/// see `docs/rfcs/cip_accurate_rfc.md`), E/Z ranked by the same engine and legacy's
+/// allene answers. Atoms it can't resolve are omitted here -- see
 /// [`cip_unresolved_json`] -- never a silently-guessed label. A phosphorus on an
 /// unsaturated ring (cyclophosphazene) gets RDKit's CIPLabeler label, which flips
 /// with the ring's Kekulé spelling; its object carries `"kekuleDependent": true`.

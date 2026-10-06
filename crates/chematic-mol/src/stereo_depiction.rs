@@ -442,12 +442,13 @@ pub fn stereo_depiction(mol: &Molecule, coords: &[(f64, f64)]) -> StereoDepictio
     }
     let first = depict_on(mol, layout_angstrom(mol, false), false);
     let lost = |d: &StereoDepiction| d.unexpressed_centres.len() + d.unexpressed_double_bonds.len();
-    if first.unexpressed_centres.is_empty() {
+    if first.unexpressed_centres.is_empty() && first.unexpressed_double_bonds.is_empty() {
         return first;
     }
     // The layout of fused and bridged systems depends on atom order, and a
     // stretched ring closure or two bonds in one direction can leave a
-    // centre undrawable. Lay the atoms out in reverse order as well and
+    // centre undrawable, or a ring double bond that cannot be flipped to its
+    // declared geometry. Lay the atoms out in reverse order as well and
     // keep whichever drawing loses less.
     let second = depict_on(mol, layout_angstrom(mol, true), false);
     if lost(&second) < lost(&first) {
@@ -914,6 +915,10 @@ mod tests {
         // fallback separation (RDKit 2026.03.6 reads both as declared).
         "O=C1OC(=O)[C@@H]2[C@H]1[C@@H]1O[C@H]2C[C@@H]1COC(=O)[C@@H]1C[C@H]1c1ccccc1",
         "CC1CC(=O)OC[C@]23C[C@@H](O)[C@H](C)C[C@H]2O[C@@H]2C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)O[C@@H](O)C1)[C@@]3(C)C21CO1",
+        // Bryostatin (ChEMBL 5k row 3533): the macrocycle's trans ring double
+        // bond cannot be flipped on the first layout, only on the layout of
+        // the reversed atom order.
+        "CCC/C=C/C=C/C(=O)O[C@H]1/C(=C/C(=O)OC)C[C@H]2CC([C@@H](C)O)OC(=O)C[C@H](O)C[C@@H]3C[C@H](OC(C)=O)C(C)(C)[C@](O)(C[C@@H]4C/C(=C/C(=O)OC)C[C@H](/C=C/C(C)(C)[C@]1(O)O2)O4)O3",
     ];
 
     #[test]
