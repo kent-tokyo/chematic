@@ -16,6 +16,34 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- MMFF94 energies match RDKit 2026.03.6 term by term on every
+  single-fragment row of the exposed 10k and ChEMBL 5k (14,684): RDKit's
+  formal-charge sharing for partial charges (carboxylate/sulfonate heads,
+  N5M rings, amidinium/imidazolium N, N=N+ next to diazonium), out-of-plane
+  terms on every RDKit-covered trigonal type, no angle-type-0 retry before
+  the empirical rule, and RDKit's 100 Å non-bonded threshold. New
+  `Mmff94Options { ignore_interfragment_interactions }` (Python/WASM
+  `ignore_interfrag_interactions`) leaves out pairs between fragments as
+  RDKit's `MMFFGetMoleculeForceField` does; the default keeps them. Record:
+  `benchmarks/2026-10-07-734-754-followups-batch13.md`.
+- `Mmff94EnergyModel::minimize_bfgs`: a port of RDKit's BFGS minimizer
+  (`Mmff94Convergence::Rdkit` follows RDKit's trajectory from the same
+  start; `MaxGradient` runs to chematic's absolute residual-force test). The
+  3D pipeline's MMFF94 step uses it (A6: 135 of 265 rows converged within
+  200 iterations, was 100; 265/265 sound, stereo-clean, clash-free) and
+  retries with the earlier L-BFGS when the result crosses declared stereo.
+- `find_matches_rdkit_parity(smarts, profile="2026.09.1")` (Rust
+  `RdkitRingCountModel::RelevantCycles`): `[R<n>]` counted over relevant
+  cycles as in RDKit 2026.09.1 (310,000/310,000 cells of the native
+  2026.09.1 grid; no `ring_model_ambiguous` refusals). New
+  `chematic_perception::relevant_cycles`.
+- Accurate CIP gives RDKit's `r`/`s` to pseudo-asymmetric saturated ring
+  lone-pair centres.
+- Performance: canonical SMILES of rigid symmetric graphs (a 60-atom random
+  cubic graph took seconds, now 3 ms; identical output on 30,305 inputs);
+  MMFF94 typing −22% instructions vs v1.0.36 on aromatic input, −0.6% on
+  Kekulé input (was +11%).
+- Harness: `published_wheel_chemistry_gates.py --resume --corpus-shards N`.
 - MMFF94 energies match RDKit 2026.03.6 term by term (within 1e-12 kcal/mol
   on the 262 same-coordinate rows; the largest difference was 0.32): three
   out-of-plane terms per trigonal centre (one was added), RDKit's unrounded

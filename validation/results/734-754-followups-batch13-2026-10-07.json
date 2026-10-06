@@ -1,0 +1,199 @@
+{
+ "schema": "734-754-followups-batch13/v1",
+ "rdkit": "2026.03.6 (Python); 2026.09.1 native C++ build for the ring-count profile",
+ "mmff94_full_corpus_terms": {
+  "rows_ok": 14684,
+  "rdkit_unsupported": 180,
+  "multifragment": 136,
+  "rows_over_rel_1e-9": {
+   "batch12": {
+    "bond": 0,
+    "angle": 1,
+    "stretch_bend": 1,
+    "oop": 34,
+    "torsion": 0,
+    "vdw": 3,
+    "electrostatic": 8
+   },
+   "source": {
+    "bond": 0,
+    "angle": 0,
+    "stretch_bend": 0,
+    "oop": 0,
+    "torsion": 0,
+    "vdw": 0,
+    "electrostatic": 0
+   }
+  }
+ },
+ "mmff94_salts_ignore_interfrag": {
+  "rows_ok": 102,
+  "rdkit_unsupported": 34,
+  "rows_over_rel_1e-9": 0
+ },
+ "mmff94_per_term_lane": {
+  "rows": 262,
+  "median_abs_total": 8.526512829121202e-14,
+  "max_abs_total": 1.9326762412674725e-12
+ },
+ "bfgs_vs_rdkit_262_starts": {
+  "rdkit_mode_abs_dE_median": 1.94e-13,
+  "p90": 5.05e-09,
+  "max": 0.0683,
+  "converged_agree": 262,
+  "rdkit_converged": 140
+ },
+ "bfgs_max_gradient": {
+  "converged": 262,
+  "iterations_median": 192.5,
+  "iterations_p90": 449,
+  "within_200": 136,
+  "seconds": 22.8,
+  "lbfgs": {
+   "iterations_median": 356.5,
+   "iterations_p90": 1414,
+   "within_200": 77,
+   "seconds": 43.5
+  },
+  "final_vs_lbfgs": {
+   "same": 235,
+   "lower": 11,
+   "higher": 16
+  },
+  "final_vs_rdkit_converged": {
+   "same": 254,
+   "lower": 4,
+   "higher": 4
+  }
+ },
+ "a6": {
+  "successes": 265,
+  "gradient_converged": 135,
+  "externally_sound": 265,
+  "stereo_clean": 265,
+  "gross_clash": 0,
+  "median_residual_force": 9.83e-05,
+  "elapsed_seconds": 6.58,
+  "batch12": {
+   "gradient_converged": 100,
+   "median_residual_force": 0.215,
+   "elapsed_seconds": 5.35
+  }
+ },
+ "cip_pseudoasymmetric_lone_pair": {
+  "spellings": 1120,
+  "agree": 1080,
+  "tied_quinuclidinone_carbon": 40
+ },
+ "canonical_audit": {
+  "inputs": 30305,
+  "identical_strings": 30305,
+  "spelling_groups_invariant": 47,
+  "cubic60_seconds": {
+   "batch12": "3.3-8.8",
+   "source": 0.003
+  },
+  "cubic200": {
+   "batch12": ">20 s",
+   "source_ms": 41
+  },
+  "corpus_instructions": {
+   "batch12": 37151801565,
+   "source": 37419034249
+  },
+  "worst_corpus_row": {
+   "row": 4903,
+   "ms": "50-80",
+   "rdkit_ms": 0.17
+  }
+ },
+ "mmff_typing_instructions_2000_rows": {
+  "aromatic": {
+   "v1.0.36": 1391000000.0,
+   "batch12": 1237087552,
+   "source": 1090643224
+  },
+  "kekule": {
+   "v1.0.36": 1311000000.0,
+   "batch12": 1451366914,
+   "source": 1303048472
+  }
+ },
+ "smarts_310k_rdkit_2026_09_1": {
+  "profile_2026_09_1_exact": 310000,
+  "profile_2026_03_6_exact": 309982,
+  "profile_2026_03_6_refused": 18
+ },
+ "smarts_310k_rdkit_2026_03_6_archived": {
+  "exact": 309982,
+  "fixed_original_boolean": 43,
+  "fixed_original_residual": 183,
+  "refused_original_correct": 1,
+  "refused_original_residual": 17
+ },
+ "chemistry": {
+  "exposed_10k": {
+   "cip_accurate": {
+    "agree": 4395,
+    "kekule_dependent": 0
+   },
+   "hybridization": {
+    "atoms": 220015,
+    "agree": 220015
+   },
+   "mmff94": {
+    "compared_rows": 9796,
+    "heavy": 215565,
+    "hydrogen": 191148,
+    "rdkit_unsupported": 204
+   },
+   "mol_writer": {
+    "stereo_rows": 1687,
+    "read_back_as_input": 1686,
+    "strict_refused": 1
+   }
+  },
+  "chembl_5k": {
+   "cip_accurate": {
+    "agree": 4186,
+    "kekule_dependent": 20
+   },
+   "hybridization": {
+    "atoms": 138655,
+    "agree": 138655
+   },
+   "mmff94": {
+    "compared_rows": 4990,
+    "heavy": 138500,
+    "hydrogen": 116364,
+    "rdkit_unsupported": 10
+   },
+   "mol_writer": {
+    "stereo_rows": 1670,
+    "read_back_as_input": 1670,
+    "strict_refused": 0
+   }
+  },
+  "kek15k": {
+   "cip_accurate": {
+    "agree": 8581,
+    "kekule_dependent": 20
+   },
+   "hybridization": {
+    "atoms": 358670,
+    "agree": 358670
+   },
+   "mmff94": {
+    "compared_rows": 14786,
+    "heavy": 354065,
+    "hydrogen": 307512,
+    "rdkit_unsupported": 214
+   },
+   "mol_writer": {
+    "stereo_rows": 3357,
+    "read_back_as_input": 3356,
+    "strict_refused": 1
+   }
+  }
+ }
+}

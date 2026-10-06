@@ -86,7 +86,10 @@ Exposed data are not sealed evidence.
    reading RDKit's canonical Kekulé structure and ring list
    ([record](benchmarks/2026-10-06-734-754-followups-batch11.md)), and every
    per-term energy is within 1e-12 kcal/mol of RDKit's on the 262
-   same-coordinate rows ([record](benchmarks/2026-10-06-734-754-followups-batch12.md)). **Exit:** rerun macOS on the `libm` build, then
+   same-coordinate rows ([record](benchmarks/2026-10-06-734-754-followups-batch12.md))
+   and on all 14,684 single-fragment rows of both corpora; the 3D pipeline
+   minimizes with a port of RDKit's BFGS (A6: 135/265 converged, was 100;
+   [record](benchmarks/2026-10-07-734-754-followups-batch13.md)). **Exit:** rerun macOS on the `libm` build, then
    bound convergence, timeout/cancellation,
    geometry/stereo/clash and independent conformer quality on published and
    candidate artifacts. No 3D speed claim before this exit.
@@ -103,7 +106,9 @@ Exposed data are not sealed evidence.
    lone-pair centres (bridgehead amines) get RDKit's label for the parsed
    spelling, marked spelling-dependent; none abstain on exposed 10k. P on
    unsaturated rings gets RDKit's label, marked Kekulé-dependent. Remaining:
-   pseudo-asymmetric lone-pair centres (typed `tied`). **Exit:**
+   a carbon whose rule-5 arms differ only through a lone-pair centre (typed
+   `tied`); pseudo-asymmetric lone-pair centres get RDKit's `r`/`s`
+   ([record](benchmarks/2026-10-07-734-754-followups-batch13.md)). **Exit:**
    complete outcome accounting and no wrong confident label.
 8. **P2 — Test representation limits separately.** Keep CDXML opaque
    preservation distinct from semantic editing, Markush/polymer expansion
@@ -128,7 +133,9 @@ Exposed data are not sealed evidence.
    The six imine E/Z residuals are default (legacy) CIP labels; accurate mode
    gives rdCIPLabeler's Z, and agrees on all 780 exposed-10k E/Z bonds. The
    12 `[R2]`/`[R3]` cells are relevant-cycle ring counts in 2026.09.1
-   ([record](benchmarks/2026-10-06-734-754-followups-batch12.md)). Preserve the old baseline, keep source builds
+   ([record](benchmarks/2026-10-06-734-754-followups-batch12.md)); the opt-in
+   `profile="2026.09.1"` counts them so (310,000/310,000 native cells,
+   [record](benchmarks/2026-10-07-734-754-followups-batch13.md)). Preserve the old baseline, keep source builds
    separate from distributed packages, and never tune on sealed data.
 
 Silent corruption or a security regression takes precedence. Source,

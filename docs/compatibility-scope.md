@@ -125,8 +125,9 @@ spelling in both libraries and is marked as such. A ring lone-pair centre with t
 (bridgehead amine, cyclic phosphine or sulfonium) gets RDKit's label for the
 spelling parsed and is marked spelling-dependent: chematic reads its `@`/`@@`
 as OpenSMILES does (lone pair in the implicit-H position), while RDKit inverts
-it when exactly one ring-closure digit is written on the centre. An aromatic
-ring lone-pair centre stays `LonePairCenter`.
+it when exactly one ring-closure digit is written on the centre; a
+pseudo-asymmetric one gets RDKit's `r`/`s`. An aromatic ring lone-pair centre
+stays `LonePairCenter`.
 
 The default CIP path remains the fast legacy assignment. Accurate hierarchical
 CIP is opt-in through `CipMode::Accurate` (and its named Python/WASM binding
@@ -149,7 +150,12 @@ typing, parameter coverage, charged/metal/fused-ring cases, and convergence
 remain incomplete. Missing parameters or failed minimization must remain
 observable as failure; callers must not interpret the presence of all seven
 term implementations as universal MMFF94 coverage. Use UFF or DREIDING when
-the selected molecule and policy require a different supported scope.
+the selected molecule and policy require a different supported scope. Where
+RDKit 2026.03.6 types a molecule, chematic's per-term energies equal RDKit's
+on the exposed 10k and ChEMBL 5k corpora; pairs between fragments are kept
+unless `ignore_interfragment_interactions` asks for RDKit's default. The
+minimizer is a port of RDKit's BFGS run to an absolute residual-force test,
+so minimized geometries and iteration counts are not RDKit's.
 
 ## Binding contract
 
