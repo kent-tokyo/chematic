@@ -40,8 +40,11 @@ Exposed data are not sealed evidence.
 2. **P1 / A4 — Close the reaction 83-row gate on published artifacts.**
    Published v1.0.36 PyPI Linux wheel (CPython 3.9), npm package and
    crates.io crate: 80 graph/origin/map rows and three jointly invalid, as
-   in source. Remaining: the macOS and Windows wheels (not runnable on the
-   Linux evidence host). **Exit:** every row classified on all three axes on
+   in source. Remaining: the macOS and Windows wheels, not runnable on the
+   Linux evidence host; `published-wheel-chemistry-gates.yml` runs this gate
+   and those of items 3–5 on them and checks every count against the Linux
+   numbers ([record](benchmarks/2026-10-06-734-754-followups-batch11.md)).
+   **Exit:** every row classified on all three axes on
    each published artifact, zero wrong-confident supported results and no
    regression in the original 57. Refusals and invalid rows are not counted
    as matches.
@@ -76,8 +79,10 @@ Exposed data are not sealed evidence.
    host-libm last-bit differences amplified by the minimiser, and the source
    now uses the `libm` crate (as WASM already did): Linux 265/265, and
    265/265 sound, stereo-clean and clash-free on the external scorer.
-   Source MMFF94 typing now differs from RDKit on 89 heavy atoms of exposed
-   10k (78 in one fullerene cage). **Exit:** rerun macOS on the `libm` build, then
+   Source MMFF94 typing matches RDKit on every heavy atom of the exposed 10k,
+   ChEMBL 5k and Kekulé-written 15k corpora (v1.0.36: 81, 5 and 39 differ),
+   reading RDKit's canonical Kekulé structure and ring list
+   ([record](benchmarks/2026-10-06-734-754-followups-batch11.md)). **Exit:** rerun macOS on the `libm` build, then
    bound atom typing, per-term energy, convergence, timeout/cancellation,
    geometry/stereo/clash and independent conformer quality on published and
    candidate artifacts. No 3D speed claim before this exit.
@@ -100,9 +105,9 @@ Exposed data are not sealed evidence.
    bounded, Standard InChI separate from native identifiers, and canonical
    SMILES separate from the fail-closed stable key. The source MOL writer
    draws stereo (one checked wedge per centre, E/Z by geometry, macrocycle
-   E/Z included); RDKit reads 1,681 of 1,687 exposed-10k and 1,663 of 1,670
+   E/Z included); RDKit reads 1,686 of 1,687 exposed-10k and all 1,670
    ChEMBL-5k stereo rows back unchanged and none inverted. What a block
-   cannot carry (6 cage centres per corpus, one ring E/Z) is reported by
+   cannot carry (the bridgehead amine chematic reads as OpenSMILES does) is reported by
    `write_mol_with_stereo_report`, and Python `strict=True` / WASM
    `to_mol_block_strict` refuse it; the default writer still returns the
    lossy block. **Exit:** cross-binding fixtures with no silent information
@@ -114,7 +119,9 @@ Exposed data are not sealed evidence.
    cells, all `[R2]`/`[R3]`; old C++ agrees with the old Python wheel on
    canonical SMILES, CIP and Morgan for all 10k rows. The **2026.09.1**
    distributed Python/nanobind lane and distributed native binary remain
-   unavailable/unmeasured. Preserve the old baseline, keep source builds
+   unavailable/unmeasured (no PyPI 2026.9.1 wheel at the 2026-10-06 check).
+   The six imine E/Z residuals are default (legacy) CIP labels; accurate mode
+   gives rdCIPLabeler's Z, and agrees on all 780 exposed-10k E/Z bonds. Preserve the old baseline, keep source builds
    separate from distributed packages, and never tune on sealed data.
 
 Silent corruption or a security regression takes precedence. Source,

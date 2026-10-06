@@ -1,0 +1,179 @@
+{
+ "schema": "chematic-734-754-batch11/v1",
+ "date": "2026-10-06",
+ "rdkit": "2026.03.6",
+ "mmff94_heavy_differing": {
+  "exposed_10k": {
+   "before": 81,
+   "after": 0
+  },
+  "chembl_5k": {
+   "before": 5,
+   "after": 0
+  },
+  "kekule_written_15k": {
+   "before": 39,
+   "after": 0
+  },
+  "hydrogen_differing_after": 0,
+  "before_is": "published v1.0.36 (CPython 3.9 wheel)"
+ },
+ "rdkit_canonical_kekule": {
+  "exposed_10k_aromatic_rows": {
+   "identical": 7957,
+   "rows": 7957
+  },
+  "chembl_5k_aromatic_rows": {
+   "identical": 4637,
+   "rows": 4637
+  },
+  "ranks_exact_rows_without_ez": {
+   "exposed_10k": "9428/9428",
+   "chembl_5k": "4482/4482",
+   "kekule_written_15k": "13910/13910"
+  },
+  "ranks_rows_with_ez": {
+   "exposed_10k": "400/572",
+   "chembl_5k": "350/518",
+   "kekule_written_15k": "750/1090"
+  },
+  "kekule_written_15k_aromatic_rows": {
+   "identical": 12594,
+   "rows": 12594
+  }
+ },
+ "rdkit_ring_order": {
+  "exposed_10k": {
+   "rows_with_rings": 8830,
+   "identical_before": 8825,
+   "identical_after": 8830
+  },
+  "chembl_5k": {
+   "rows_with_rings": 4929,
+   "identical": 4929
+  }
+ },
+ "smarts_hyb_kekule_cells": {
+  "before": "134999/135000",
+  "after": "135000/135000"
+ },
+ "mol_writer_rdkit_readback": {
+  "exposed_10k": {
+   "stereo_rows": 1687,
+   "read_back_as_input": 1686,
+   "strict_refused": 1
+  },
+  "chembl_5k": {
+   "stereo_rows": 1670,
+   "read_back_as_input": 1670,
+   "strict_refused": 0
+  },
+  "kekule_written_15k": {
+   "stereo_rows": 3357,
+   "read_back_as_input": 3356,
+   "strict_refused": 1
+  },
+  "kekule_written_15k_v1036": {
+   "stereo_rows": 3357,
+   "read_back_as_input": 3355,
+   "strict_refused": 2
+  }
+ },
+ "ez_vs_rdCIPLabeler": {
+  "exposed_10k": {
+   "bonds": 780,
+   "accurate": 780,
+   "legacy": 770
+  },
+  "chembl_5k": {
+   "bonds": 678,
+   "accurate": 678,
+   "legacy": 678
+  }
+ },
+ "unchanged": {
+  "cip_accurate": {
+   "exposed_10k": {
+    "agree": 4394,
+    "kekule_dependent": 0,
+    "abstain": 1
+   },
+   "chembl_5k": {
+    "agree": 4186,
+    "kekule_dependent": 20
+   }
+  },
+  "hybridization": {
+   "exposed_10k": {
+    "atoms": 220015,
+    "agree": 220015
+   },
+   "chembl_5k": {
+    "atoms": 138655,
+    "agree": 138655
+   }
+  },
+  "smarts_optin_310k": {
+   "exact": 309982,
+   "fixed_original_boolean": 43,
+   "fixed_original_residual": 183,
+   "refused_original_correct": 1,
+   "refused_original_residual": 17
+  },
+  "smarts_unexpected": 0,
+  "reaction_83": {
+   "graph_origin_map_match": 80,
+   "joint_invalid_input": 3
+  },
+  "xsmarts_autoconf": "75/83, unexpected 0",
+  "biotransformer_corpus": {
+   "explicit_h:both_none": 382090,
+   "explicit_h:both_none_refused": 673,
+   "explicit_h:differ": 35,
+   "explicit_h:exact": 6604,
+   "explicit_h:rdkit_raw_unsanitizable": 172,
+   "explicit_h:rdkit_resanitize_fails_same_products": 14,
+   "explicit_h:rdkit_truncated_subset": 12,
+   "implicit:both_none": 388406,
+   "implicit:both_none_refused": 143,
+   "implicit:exact": 1051,
+   "multi_reactant_rules_skipped": 6,
+   "rdkit_parse_error_rules": 3,
+   "rules_run": 974
+  },
+  "biotransformer_non_exact_rows_identical_to_v1036": true,
+  "morgan_10k": "9999/9999 (+1 typed Fe refusal)"
+ },
+ "aromaticity_instructions_3000_rows": {
+  "kekule_written": {
+   "before": 511802783,
+   "after": 521297386
+  },
+  "aromatic_written": {
+   "before": 216302915,
+   "after": 216268368
+  }
+ },
+ "rdkit_2026_09_1_python": "not on PyPI at the 2026-10-06 check (latest 2026.3.6); conda channels not reachable from this host",
+ "dependabot_lock_bumps": [
+  "cc 1.4.7 -> 1.5.1",
+  "jsonschema 0.58.2 -> 0.58.4",
+  "pyo3 0.29.2 -> 0.29.3",
+  "smallvec 1.16.1 -> 1.16.2"
+ ],
+ "corpora": {
+  "exposed_10k": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "chembl_5k": "scripts/chembl_accuracy_corpus_4999.smi",
+  "kekule_written_15k": "both corpora rewritten by RDKit 2026.03.6 MolToSmiles(kekuleSmiles=True) after Kekulize(clearAromaticFlags=True)"
+ },
+ "mmff_typing_instructions_2000_rows_parse_addh_type": {
+  "aromatic_written": {
+   "v1.0.36_typer": 1412115835,
+   "source": 1475449718
+  },
+  "kekule_written": {
+   "v1.0.36_typer": 1324430181,
+   "source": 1673986170
+  }
+ }
+}

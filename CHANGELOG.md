@@ -16,6 +16,29 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- MMFF94 typing matches RDKit 2026.03.6 on every heavy atom of the exposed
+  10k, ChEMBL 5k and Kekulé-written 15k corpora (81, 5 and 39 atoms differed
+  in v1.0.36): the aromaticity pass reads RDKit's canonical Kekulé structure
+  (new `chematic_perception::rdkit_canonical_kekule`, a port of RDKit's
+  canonical ranking and `kekulizeWorker`; fullerene cages), RDKit's ring
+  list, and RDKit's aromatic view of Kekulé-written input; non-aromatic
+  nitrogen is a literal port of RDKit's rules (NGD+, NCN+, NM, NSO, imine/azo
+  N next to sulfonyl) and imidazolium C2 is CIM+. Record:
+  `benchmarks/2026-10-06-734-754-followups-batch11.md`.
+- `rdkit_sssr_ring_order` gives RDKit's ring order on all 8,830 ring rows of
+  the exposed 10k (8,825): the SMILES parser records ring closures so
+  `Molecule::rdkit_bond_order` lists bonds as RDKit's parser creates them,
+  and metal bonds RDKit makes dative are skipped.
+- RDKit-parity aromaticity takes RDKit's symmetrized rings on cages (a
+  fullerene hexagon was missed); `^n` 135,000/135,000 cells.
+- MOL writer: a declared ring E/Z bond the first layout cannot draw is drawn
+  on the reversed-order layout (bryostatin; ChEMBL 5k 1,670/1,670 read back).
+- Docs: `cip_stereo(mode="accurate")` labels E/Z with the accurate engine
+  (it agrees with rdCIPLabeler on 780/780 and 678/678 bonds); the default
+  legacy mode is unchanged.
+- CI: `published-wheel-chemistry-gates.yml` runs the chemistry gates on the
+  published macOS and Windows wheels (`scripts/published_wheel_chemistry_gates.py`).
+- Dependencies: cc 1.5.1, jsonschema 0.58.4, pyo3 0.29.3, smallvec 1.16.2.
 - Performance: the SMIRKS template cache (`PreparedReaction::shared`) is 16
   least-recently-used shards per reading instead of one map cleared whole
   when full (a working set used to be prepared again after every 2,048 new
