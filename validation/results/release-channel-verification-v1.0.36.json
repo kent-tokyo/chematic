@@ -3,46 +3,52 @@
   "release": {
     "version": "1.0.36",
     "tag": "v1.0.36",
-    "commit": null
+    "commit": "70f36b001203264bfbaf292164c057e4f0d979e2"
   },
-  "checked_at": "2026-10-06T00:00:00Z",
-  "release_ready": false,
+  "checked_at": "2026-10-06T09:04:17+09:00",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.36",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.36",
-      "detail": "Pre-release record. Verify the published GitHub Release and attached metadata after the v1.0.36 tag workflow completes."
+      "detail": "Annotated tag peels to main merge commit 70f36b001203264bfbaf292164c057e4f0d979e2. Non-draft, non-prerelease Release published at 2026-10-05T23:34:05Z with a versioned metadata JSON asset; release workflow 37389090422 succeeded."
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.36",
       "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.36",
-      "detail": "Pre-release record. Verify @kent-tokyo/chematic@1.0.36 after the tag-triggered npm publication completes."
+      "detail": "Official registry returned @kent-tokyo/chematic 1.0.36 with integrity sha512-8abA6x6A6RHcYN3oILwyfFKGBCokQKKuRheUze3XMR6T03x04cgNB5RbKGjhP1/FZnCP7kzqIWs4zvy7hqZD0w==; publish workflow 37389090942 succeeded."
     },
     {
       "id": "pypi",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.36",
       "url": "https://pypi.org/pypi/chematic/1.0.36/json",
-      "detail": "Pre-release record. Verify the v1.0.36 wheels and source distribution after the tag-triggered PyPI publication completes."
+      "detail": "Official PyPI JSON returned 17 non-yanked wheels and one non-yanked sdist; publish workflow 37389090258 succeeded. Availability does not establish chemistry parity."
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.36",
       "url": "https://crates.io/crates/chematic/1.0.36",
-      "detail": "Pre-release record. Verify the root crate and all 20 workspace publications after the tag-triggered crates.io workflow completes."
+      "detail": "All 20 version-pinned .crate archives returned HTTP 200 from static.crates.io; dependency-ordered publish workflow 37389090344 succeeded."
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.36",
       "url": "https://docs.rs/chematic/1.0.36/chematic/",
-      "detail": "Pre-release record. Verify version-pinned docs.rs availability after crates.io indexing completes."
+      "detail": "Version-pinned rustdoc endpoint returned HTTP 200."
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.36",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "Pre-release record. Verify the Pages deployment displays v1.0.36 after the release commit reaches main."
+      "detail": "Direct homepage fetch displayed Current release: v1.0.36; Pages workflow 37391410522 succeeded after PR #765 fixed the strict MkDocs benchmark link."
     }
   ]
 }
