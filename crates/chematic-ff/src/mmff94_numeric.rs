@@ -883,24 +883,23 @@ struct BondInfo {
     order: BondOrder,
 }
 
+/// The atom's bonds in bond-index order (the order a scan of `mol.bonds()`
+/// gives), from its adjacency list rather than a scan of every bond.
 fn bonds_of(mol: &Molecule, idx: AtomIdx) -> Vec<BondInfo> {
-    mol.bonds()
-        .filter_map(|(_, b)| {
-            if b.atom1 == idx {
-                Some(BondInfo {
-                    neighbor: b.atom2,
-                    order: b.order,
-                })
-            } else if b.atom2 == idx {
-                Some(BondInfo {
-                    neighbor: b.atom1,
-                    order: b.order,
-                })
-            } else {
-                None
-            }
+    let mut nbrs: Vec<(u32, BondInfo)> = mol
+        .neighbors(idx)
+        .map(|(nb, b)| {
+            (
+                b.0,
+                BondInfo {
+                    neighbor: nb,
+                    order: mol.bond(b).order,
+                },
+            )
         })
-        .collect()
+        .collect();
+    nbrs.sort_unstable_by_key(|&(b, _)| b);
+    nbrs.into_iter().map(|(_, info)| info).collect()
 }
 
 fn count_bond_order(mol: &Molecule, idx: AtomIdx, order: BondOrder) -> usize {
@@ -1080,7 +1079,6 @@ pub fn compute_mmff94_aromatic_view(
     mol: &Molecule,
     rings: &[Vec<AtomIdx>],
 ) -> Result<Molecule, NumericTypeError> {
-    let n = mol.atom_count();
     if rings.is_empty() {
         return Ok(mol.clone());
     }
@@ -1133,6 +1131,19 @@ pub fn compute_mmff94_aromatic_view(
     let kmol = match chematic_core::kekulize(base) {
         Ok(kek) if kek.is_empty() => base.clone(),
         Ok(kek) => {
+            // Where every aromatic system is one ring that no other ring
+            // shares a bond with, the Kekule structures only move that ring's
+            // double bonds around: once the pass accepts the ring its bonds
+            // are aromatic whichever one was used, so chematic's own structure
+            // gives RDKit's result without the canonical ranking. A ring the
+            // pass rejects keeps its double bonds, so it falls through.
+            if let Some(rings_of_systems) = isolated_aromatic_rings(base, &rings) {
+                let kmol = chematic_core::apply_kekule(base, &kek);
+                let (view, accepted) = mmff_aromatic_pass(&kmol, &rings);
+                if rings_of_systems.iter().all(|&r| accepted[r]) {
+                    return Ok(view);
+                }
+            }
             let kek = chematic_perception::rdkit_canonical_kekule_with_rings(base, &kek, &rings)
                 .unwrap_or(kek);
             chematic_core::apply_kekule(base, &kek)
@@ -1147,6 +1158,60 @@ pub fn compute_mmff94_aromatic_view(
         }
     };
 
+    Ok(mmff_aromatic_pass(&kmol, &rings).0)
+}
+
+/// For each aromatic system of `base` (connected aromatic bonds), the index
+/// in `rings` of the one ring it is, when every system is a single ring
+/// whose bonds lie on no other ring; `None` otherwise.
+fn isolated_aromatic_rings(base: &Molecule, rings: &[Vec<AtomIdx>]) -> Option<Vec<usize>> {
+    let key = |a: AtomIdx, b: AtomIdx| (a.0.min(b.0), a.0.max(b.0));
+    let aromatic: std::collections::HashSet<(u32, u32)> = base
+        .bonds()
+        .filter(|(_, b)| b.order == BondOrder::Aromatic)
+        .map(|(_, b)| key(b.atom1, b.atom2))
+        .collect();
+    if aromatic.is_empty() {
+        return None;
+    }
+    let mut covered: std::collections::HashSet<(u32, u32)> = std::collections::HashSet::new();
+    let mut out = Vec::new();
+    for (ri, ring) in rings.iter().enumerate() {
+        let len = ring.len();
+        let bonds: Vec<(u32, u32)> = (0..len)
+            .map(|j| key(ring[j], ring[(j + 1) % len]))
+            .collect();
+        let n_arom = bonds.iter().filter(|b| aromatic.contains(b)).count();
+        if n_arom == 0 {
+            continue;
+        }
+        // A ring partly aromatic, or sharing an aromatic bond with a ring
+        // already taken: not an isolated system.
+        if n_arom != len || bonds.iter().any(|b| !covered.insert(*b)) {
+            return None;
+        }
+        out.push(ri);
+    }
+    // Every aromatic bond on some ring, and no aromatic atom joining two
+    // rings (a spiro or ring-assembly system through aromatic bonds).
+    if covered.len() != aromatic.len() {
+        return None;
+    }
+    let mut seen = std::collections::HashSet::new();
+    for &ri in &out {
+        for &a in &rings[ri] {
+            if !seen.insert(a) {
+                return None;
+            }
+        }
+    }
+    Some(out)
+}
+
+/// RDKit's `setMMFFAromaticity` on a kekulized molecule: the MMFF view and,
+/// per ring, whether the ring itself passed.
+fn mmff_aromatic_pass(kmol: &Molecule, rings: &[Vec<AtomIdx>]) -> (Molecule, Vec<bool>) {
+    let n = kmol.atom_count();
     let atom_in_any_ring = |a: AtomIdx| -> bool { rings.iter().any(|r| r.contains(&a)) };
 
     let mut resolved = vec![false; n]; // aromBitVect
@@ -1182,8 +1247,7 @@ pub fn compute_mmff94_aromatic_view(
                     break;
                 }
                 let atom = kmol.atom(atom_idx);
-                let is_divalent_s =
-                    atom.element == Element::S && total_degree(&kmol, atom_idx) == 2;
+                let is_divalent_s = atom.element == Element::S && total_degree(kmol, atom_idx) == 2;
                 if atom.element == Element::N || atom.element == Element::O || is_divalent_s {
                     is_nos_in_ring = true;
                 }
@@ -1200,12 +1264,12 @@ pub fn compute_mmff94_aromatic_view(
                 }
 
                 let is_candidate = atom.element == Element::C
-                    || (atom.element == Element::N && total_valence(&kmol, atom_idx) == 4);
+                    || (atom.element == Element::N && total_valence(kmol, atom_idx) == 4);
                 if !is_candidate {
                     continue;
                 }
 
-                for nb in bonds_of(&kmol, atom_idx) {
+                for nb in bonds_of(kmol, atom_idx) {
                     if ring.contains(&nb.neighbor) {
                         continue; // looking for exocyclic neighbors only
                     }
@@ -1243,7 +1307,7 @@ pub fn compute_mmff94_aromatic_view(
                 resolved[atom_idx.0 as usize] = true;
                 let atom = kmol.atom(atom_idx);
                 if matches!(atom.element, Element::C | Element::N)
-                    && total_degree(&kmol, atom_idx) > 3
+                    && total_degree(kmol, atom_idx) > 3
                 {
                     can_be_aromatic = false;
                 }
@@ -1324,7 +1388,7 @@ pub fn compute_mmff94_aromatic_view(
             .add_bond(bond.atom1, bond.atom2, order)
             .expect("duplicate bond during MMFF94 aromaticity re-perception");
     }
-    Ok(builder.build())
+    (builder.build(), ring_accepted)
 }
 
 /// RDKit's `isAtomNOxide`: a >=3-connected nitrogen with a terminal

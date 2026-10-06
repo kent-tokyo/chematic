@@ -149,7 +149,7 @@ fn organometallic_dative_bonds(mol: &Molecule) -> Vec<bool> {
         .iter()
         .map(|r| r.iter().map(|a| a.0 as usize).collect())
         .collect();
-    let ranks = crate::rdkit_canon::rank_with_rings(mol, &rings);
+    let ranks = crate::rdkit_canon::rank_with_rings(mol, &rings, &[]);
     let mut by_rank: Vec<usize> = (0..n).collect();
     by_rank.sort_by_key(|&a| ranks[a]);
     for a in by_rank {

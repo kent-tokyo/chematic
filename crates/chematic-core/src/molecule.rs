@@ -1043,6 +1043,18 @@ impl Molecule {
         self.stereo_groups.push(group);
     }
 
+    /// How many SMILES ring-closure digits were written on atom `idx` (the
+    /// ring-closure bonds it ends, see [`Molecule::rdkit_bond_order`]); 0 for
+    /// molecules not read from SMILES.
+    pub fn smiles_ring_closure_count(&self, idx: AtomIdx) -> usize {
+        if self.smiles_ring_closure_keys.is_empty() {
+            return 0;
+        }
+        self.neighbors(idx)
+            .filter(|(_, b)| self.smiles_ring_closure_keys.contains_key(&b.0))
+            .count()
+    }
+
     /// Bond indices in the order RDKit's SMILES parser creates the bonds:
     /// chain bonds as written, then every ring-closure bond, ordered by ring
     /// label and, for a reused label, by occurrence (RDKit closes rings after

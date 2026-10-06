@@ -221,6 +221,16 @@ pub fn cip_label_depends_on_kekule_spelling(mol: &Molecule, atom: AtomIdx) -> bo
     chematic_cip::label_depends_on_kekule_spelling(mol, atom)
 }
 
+/// Whether [`CipMode::Accurate`]'s label of tetrahedral centre `atom` is
+/// RDKit's reading of the SMILES spelling it was parsed from rather than a
+/// property of the molecule: a ring centre with three single-bonded ligands
+/// and a lone pair (bridgehead amine, cyclic phosphine or sulfonium), whose
+/// `@`/`@@` RDKit inverts when one ring-closure digit is written on it
+/// (`chematic_cip::label_follows_rdkit_smiles_reading`).
+pub fn cip_label_depends_on_smiles_spelling(mol: &Molecule, atom: AtomIdx) -> bool {
+    chematic_cip::label_follows_rdkit_smiles_reading(mol, atom)
+}
+
 /// Run CIP assignment on `mol` using the requested engine. See [`CipMode`] for what
 /// each mode covers. `CipMode::LegacyFast` is `assign_cip`'s output unchanged, wrapped
 /// -- every existing caller of `assign_cip` is untouched by this function's existence.
@@ -1502,6 +1512,22 @@ pub fn ez_completeness(mol: &Molecule) -> EzCompleteness {
     }
 }
 
+/// RDKit's canonical atom ranks (`Chem.CanonicalRankAtoms(mol,
+/// breakTies=True)`) including double-bond stereo: the E/Z labels of the
+/// legacy engine stand for RDKit's `STEREOE`/`STEREOZ` bond stereo (see
+/// [`chematic_perception::rdkit_canonical_atom_ranks_with_bond_stereo`]).
+pub fn rdkit_canonical_atom_ranks(mol: &Molecule) -> Vec<u32> {
+    let ez: Vec<(BondIdx, bool)> = assign_ez_bonds_with_mode(mol, CipMode::LegacyFast)
+        .into_iter()
+        .filter_map(|(b, code)| match code {
+            CipCode::E => Some((b, true)),
+            CipCode::Z => Some((b, false)),
+            _ => None,
+        })
+        .collect();
+    chematic_perception::rdkit_canonical_atom_ranks_with_bond_stereo(mol, &ez)
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -1534,7 +1560,8 @@ mod tests {
     use super::*;
 
     /// Accurate-mode tetrahedral labels, abstentions and bond-keyed E/Z do
-    /// not depend on input atom order (random SMILES now keep stereo).
+    /// not depend on input atom order (random SMILES now keep stereo), apart
+    /// from labels marked spelling-dependent.
     #[test]
     fn accurate_labels_and_abstentions_survive_atom_reordering() {
         use std::collections::BTreeMap;
@@ -1546,7 +1573,14 @@ mod tests {
             let mut out = BTreeMap::new();
             for (a, c) in &r.assignments {
                 if !matches!(c, CipCode::E | CipCode::Z) {
-                    out.insert(pos[&a.0], format!("{c:?}"));
+                    // A saturated ring lone-pair centre gets RDKit's label for
+                    // the spelling parsed, which a reordered spelling may flip.
+                    let label = if cip_label_depends_on_smiles_spelling(m, *a) {
+                        "spelling_dependent".to_string()
+                    } else {
+                        format!("{c:?}")
+                    };
+                    out.insert(pos[&a.0], label);
                 }
             }
             for (a, why) in &r.unresolved {
@@ -2458,16 +2492,16 @@ mod tests {
     #[test]
     fn cip_mode_accurate_reports_lone_pair_centres() {
         // Issue #634, rebaseline row 2960: a stereo-tagged bridgehead amine has
-        // three explicit ligands; its fourth would be a lone pair, which is not
-        // modelled. It is reported as unresolved (never silently dropped and
-        // never labelled), while the molecule's carbon centres keep their labels.
+        // three explicit ligands and a lone pair. It gets RDKit's label for this
+        // spelling (RDKit inverts `@@` here: one ring-closure digit on the
+        // centre), marked spelling-dependent; the carbon centres keep theirs.
         let mol = chematic_smiles::parse("Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21")
             .expect("valid SMILES");
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
-        assert_eq!(result.get(AtomIdx(9)), None);
-        assert!(result.unresolved.iter().any(|(idx, reason)| {
-            *idx == AtomIdx(9) && *reason == CipUnresolvedReason::LonePairCenter
-        }));
+        assert_eq!(result.get(AtomIdx(9)), Some(CipCode::S));
+        assert!(cip_label_depends_on_smiles_spelling(&mol, AtomIdx(9)));
+        assert!(!cip_label_depends_on_smiles_spelling(&mol, AtomIdx(7)));
+        assert!(result.unresolved.is_empty());
         assert_eq!(result.get(AtomIdx(7)), Some(CipCode::R));
         assert_eq!(result.get(AtomIdx(12)), Some(CipCode::R));
         // A centre outside rings (sulfoxide, phosphine) takes the lone pair as

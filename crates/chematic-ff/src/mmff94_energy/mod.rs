@@ -116,7 +116,9 @@ mod vdw;
 
 pub use angle::{MMFF94_ANGLE_ENERGY, mmff94_angle_energy, mmff94_angle_energy_resolved};
 pub use bond::{MMFF94_BOND_ENERGY, mmff94_bond_energy, mmff94_bond_energy_resolved};
-pub use oop_stbn::{MMFF94_OOP, MMFF94_STBN, mmff94_oop, mmff94_stbn, mmff94_stbn_type_only};
+pub use oop_stbn::{
+    MMFF94_OOP, MMFF94_STBN, mmff94_oop, mmff94_stbn, mmff94_stbn_oriented, mmff94_stbn_type_only,
+};
 pub use torsion::{MMFF94_TORSION_ENERGY, mmff94_torsion_energy};
 pub use vdw::{MMFF94_VDW_ENERGY, mmff94_vdw_combined, mmff94_vdw_energy};
 

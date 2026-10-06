@@ -11,8 +11,10 @@
 //!
 //! The ranking is exact for the invariants chematic carries (degree, element,
 //! isotope, hydrogen count, charge, atom map, tetrahedral parity, ring
-//! membership in RDKit's SSSR); double-bond stereo and RDKit's ring-stereo
-//! atom property are not modelled, so they never split a tie here.
+//! membership in RDKit's SSSR). Double-bond stereo enters only through
+//! [`rdkit_canonical_atom_ranks_with_bond_stereo`], whose caller supplies
+//! RDKit's `STEREOE`/`STEREOZ` labels; RDKit's ring-stereo atom property is
+//! not modelled.
 //!
 //! Which atoms must take a double bond is read from a valid Kekulé structure
 //! supplied by the caller (`chematic_core::kekulize`): every aromatic atom
@@ -46,6 +48,8 @@ struct BondHolder {
 #[derive(Default)]
 struct CanonAtom {
     index: u32,
+    /// `Ranker::epoch` when `bonds` was last refreshed by `update_nbr_index`.
+    nbr_epoch: u64,
     degree: u32,
     total_hs: u32,
     has_ring_nbr: bool,
@@ -91,6 +95,9 @@ struct Ranker<'a> {
     touched_list: Vec<usize>,
     /// Reused partition/scratch buffer for `hanoi`.
     scratch: Vec<u32>,
+    /// Bumped whenever an atom's `index` changes: a neighbour list refreshed
+    /// at the current epoch is already up to date.
+    epoch: u64,
 }
 
 #[derive(Clone, Copy)]
@@ -136,6 +143,7 @@ impl Ranker<'_> {
             use_nbrs: false,
             touched_list: Vec::new(),
             scratch: Vec::new(),
+            epoch: 1,
         };
         for bidx in 0..inp.bonds.len() {
             let (a, b, ..) = inp.bonds[bidx];
@@ -254,8 +262,21 @@ impl Ranker<'_> {
         0
     }
 
-    /// `updateAtomNeighborIndex`: refresh neighbour classes, re-sort descending.
+    fn set_index(&mut self, i: usize, value: u32) {
+        if self.atoms[i].index != value {
+            self.atoms[i].index = value;
+            self.epoch += 1;
+        }
+    }
+
+    /// `updateAtomNeighborIndex`: refresh neighbour classes, re-sort
+    /// descending. The result depends only on the atoms' current `index`
+    /// values, so a list refreshed since the last change is kept.
     fn update_nbr_index(&mut self, i: usize) {
+        if self.atoms[i].nbr_epoch == self.epoch {
+            return;
+        }
+        self.atoms[i].nbr_epoch = self.epoch;
         let mut nbrs = std::mem::take(&mut self.atoms[i].bonds);
         for nb in &mut nbrs {
             nb.nbr_sym_class = self.atoms[nb.nbr_idx as usize].index;
@@ -675,7 +696,7 @@ impl Ranker<'_> {
                 if count[index] != 0 {
                     symclass = (offset + i) as u32;
                 }
-                self.atoms[index].index = symclass;
+                self.set_index(index, symclass);
                 for &nb in &self.atoms[index].nbr_ids {
                     changed[nb as usize] = true;
                 }
@@ -741,7 +762,7 @@ impl Ranker<'_> {
                 let len = count[partition] as usize;
                 let offset = self.atoms[partition].index as usize + len - 1;
                 let index = order[offset] as usize;
-                self.atoms[index].index = offset as u32;
+                self.set_index(index, offset as u32);
                 count[partition] = (len - 1) as i32;
                 count[index] = 1;
                 if self.atoms[index].degree < 1 {
@@ -816,6 +837,7 @@ impl Ranker<'_> {
         for a in &mut self.atoms {
             a.index = 0;
         }
+        self.epoch += 1;
         count[0] = n as i32;
         self.use_nbrs = true;
         Self::activate(&order, &count, &mut activeset, &mut next, &mut changed);
@@ -940,7 +962,7 @@ fn rings_of(mol: &Molecule) -> Vec<Vec<usize>> {
     }
 }
 
-fn build_input(mol: &Molecule, rings: &[Vec<usize>]) -> Input {
+fn build_input(mol: &Molecule, rings: &[Vec<usize>], ez: &[(BondIdx, bool)]) -> Input {
     let n = mol.atom_count();
     let mut nrings = vec![0u32; n];
     for ring in rings {
@@ -970,12 +992,16 @@ fn build_input(mol: &Molecule, rings: &[Vec<usize>]) -> Input {
         inp.chiral.push(adjacency_chiral_tag(mol, idx));
         inp.nbrs[idx.0 as usize] = mol.neighbors(idx).map(|(nb, _)| nb.0).collect();
     }
-    for (_, bond) in mol.bonds() {
+    for (bidx, bond) in mol.bonds() {
+        let stereo = ez
+            .iter()
+            .find(|(b, _)| *b == bidx)
+            .map_or(STEREONONE, |&(_, e)| if e { STEREOE } else { STEREOZ });
         inp.bonds.push((
             bond.atom1.0,
             bond.atom2.0,
             rdkit_bond_type(bond.order),
-            STEREONONE,
+            stereo,
             None,
         ));
     }
@@ -986,11 +1012,29 @@ fn build_input(mol: &Molecule, rings: &[Vec<usize>]) -> Input {
 /// for the invariants chematic carries; see the module documentation.
 pub fn rdkit_canonical_atom_ranks(mol: &Molecule) -> Vec<u32> {
     let rings = rings_of(mol);
-    rank_with_rings(mol, &rings)
+    rank_with_rings(mol, &rings, &[])
 }
 
-pub(crate) fn rank_with_rings(mol: &Molecule, rings: &[Vec<usize>]) -> Vec<u32> {
-    let inp = build_input(mol, rings);
+/// [`rdkit_canonical_atom_ranks`] with double-bond stereo: `ez` lists the
+/// bonds RDKit's stereo perception marks `STEREOE` (`true`) or `STEREOZ`
+/// (`false`), which RDKit's bond invariants compare (`CanonicalRankAtoms`
+/// on a molecule read from SMILES with `/` `\`). chematic's legacy E/Z
+/// assignment gives RDKit's labels on 1,454 of 1,458 stereo bonds of the
+/// exposed 10k and ChEMBL 5k corpora (four oxime/ylidene CIP flips).
+pub fn rdkit_canonical_atom_ranks_with_bond_stereo(
+    mol: &Molecule,
+    ez: &[(BondIdx, bool)],
+) -> Vec<u32> {
+    let rings = rings_of(mol);
+    rank_with_rings(mol, &rings, ez)
+}
+
+pub(crate) fn rank_with_rings(
+    mol: &Molecule,
+    rings: &[Vec<usize>],
+    ez: &[(BondIdx, bool)],
+) -> Vec<u32> {
+    let inp = build_input(mol, rings, ez);
     let mut ranker = Ranker::new(&inp);
     for i in 0..inp.anum.len() {
         ranker.atoms[i].total_hs = u32::from(implicit_hcount(mol, AtomIdx(i as u32)));
@@ -1036,7 +1080,7 @@ fn rdkit_canonical_kekule_in_rings(
 ) -> Option<KekuleResult> {
     let n = mol.atom_count();
     let rings = rings.to_vec();
-    let ranks = rank_with_rings(mol, &rings);
+    let ranks = rank_with_rings(mol, &rings, &[]);
     let aromatic_bond: Vec<bool> = mol
         .bonds()
         .map(|(_, b)| b.order == BondOrder::Aromatic)

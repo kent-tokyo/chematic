@@ -52,6 +52,7 @@ mod tests;
 pub use assign::{
     AccurateCipAssignment, SkipReason, assign_cip_accurate_experimental,
     assign_cip_accurate_experimental_without_mancude, label_depends_on_kekule_spelling,
+    label_follows_rdkit_smiles_reading,
 };
 pub use budget::CipBudget;
 pub use compare::{

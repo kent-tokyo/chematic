@@ -57,7 +57,7 @@ jobs:
       - name: Download and install the published wheel
         shell: bash
         run: |
-          python -m pip install --disable-pip-version-check "rdkit==2026.3.6"
+          python -m pip install --disable-pip-version-check "rdkit==2026.3.6" "json5==0.15.0"
           python -m pip download --disable-pip-version-check --only-binary=:all: --no-deps \
             -d published-wheel "chematic==${{ inputs.version }}"
           python -m pip install --disable-pip-version-check --no-deps published-wheel/chematic-*.whl

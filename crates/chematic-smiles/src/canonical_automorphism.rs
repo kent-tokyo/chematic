@@ -98,8 +98,29 @@ fn extend_mapping(
         return false;
     }
     let n = image.len();
-    let Some(u) = (0..n).find(|&i| image[i] == UNMAPPED) else {
-        return true;
+    // Extend from the mapped region: the next vertex is an unmapped
+    // neighbour of a mapped one, whose image must then be a neighbour of
+    // that one's image. Taking vertices in index order instead lets a
+    // vertex far from everything mapped so far take any same-cell
+    // candidate, and the search revisits the same conflicts combinatorially
+    // often (a 150-atom explicit-H tri(dodecylthio)methane product took
+    // tens of milliseconds per canonical SMILES in its reaction-product atom
+    // order, 0.6 ms in SMILES order).
+    let anchored = (0..n).find_map(|i| {
+        if image[i] != UNMAPPED {
+            return None;
+        }
+        graph
+            .neighbors(AtomIdx(i as u32))
+            .find(|(nb, _)| image[nb.0 as usize] != UNMAPPED)
+            .map(|(nb, _)| (i, image[nb.0 as usize]))
+    });
+    let (u, anchor_image) = match anchored {
+        Some((u, img)) => (u, Some(img)),
+        None => match (0..n).find(|&i| image[i] == UNMAPPED) {
+            Some(u) => (u, None),
+            None => return true,
+        },
     };
     let cell = coloring.cell_of[u];
     let u_color = graph.vertex_color(AtomIdx(u as u32));
@@ -118,13 +139,19 @@ fn extend_mapping(
     // spuriously report `false` for a genuinely automorphic pair reachable
     // via a different candidate. Checking color directly here removes that
     // dependency entirely.
-    let candidates: SmallVec<[u32; 8]> = (0..n as u32)
-        .filter(|&v| {
-            preimage[v as usize] == UNMAPPED
-                && coloring.cell_of[v as usize] == cell
-                && graph.vertex_color(AtomIdx(v)) == u_color
-        })
-        .collect();
+    let candidate = |v: u32| {
+        preimage[v as usize] == UNMAPPED
+            && coloring.cell_of[v as usize] == cell
+            && graph.vertex_color(AtomIdx(v)) == u_color
+    };
+    let candidates: SmallVec<[u32; 8]> = match anchor_image {
+        Some(img) => graph
+            .neighbors(AtomIdx(img))
+            .map(|(nb, _)| nb.0)
+            .filter(|&v| candidate(v))
+            .collect(),
+        None => (0..n as u32).filter(|&v| candidate(v)).collect(),
+    };
 
     for v in candidates {
         if !feasible(graph, image, preimage, u as u32, v) {

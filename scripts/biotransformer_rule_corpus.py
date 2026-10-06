@@ -208,6 +208,11 @@ def main() -> int:
     ap.add_argument("--every", type=int, default=1, help="take every n-th reactant row")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--max-products", type=int, default=1000)
+    ap.add_argument("--rules-slice", default=None,
+                    help="START:END, run only rules[START:END] (shards a run on hosts that "
+                         "limit how long one process may live; counts add up across shards)")
+    ap.add_argument("--reactants-slice", default=None,
+                    help="START:END, run only these reactant rows (after --every/--limit)")
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--rows", type=Path, required=True, help="JSONL of non-exact rows")
     ap.add_argument("--chematic-python", default=None,
@@ -219,10 +224,16 @@ def main() -> int:
     chematic = Worker(args.chematic_python) if args.chematic_python else InProcess()
 
     rules, sources = load_rules(args.rules)
+    if args.rules_slice:
+        start, _, end = args.rules_slice.partition(":")
+        rules = rules[int(start or 0): int(end) if end else None]
     lines = [l.split()[0] for l in args.reactants.read_text().splitlines() if l.strip()]
     lines = lines[:: args.every]
     if args.limit:
         lines = lines[: args.limit]
+    if args.reactants_slice:
+        start, _, end = args.reactants_slice.partition(":")
+        lines = lines[int(start or 0): int(end) if end else None]
     reactants = []
     for smi in lines:
         mol = Chem.MolFromSmiles(smi)

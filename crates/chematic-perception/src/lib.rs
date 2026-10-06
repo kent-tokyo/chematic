@@ -32,7 +32,8 @@ pub use aromaticity::{
 pub use chematic_core::{ValenceError, validate_valence};
 pub use pharmacophore::{Feature, FeatureType, detect_features, features_to_bitvec};
 pub use rdkit_canon::{
-    rdkit_canonical_atom_ranks, rdkit_canonical_kekule, rdkit_canonical_kekule_with_rings,
+    rdkit_canonical_atom_ranks, rdkit_canonical_atom_ranks_with_bond_stereo,
+    rdkit_canonical_kekule, rdkit_canonical_kekule_with_rings,
 };
 pub use rdkit_parity::{
     AromaticityError, apply_aromaticity_rdkit_parity_experimental,

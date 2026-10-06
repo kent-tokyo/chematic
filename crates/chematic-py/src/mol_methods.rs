@@ -224,17 +224,19 @@ impl Mol {
     ///     with open("molecule.mol", "w") as f:
     ///         f.write(block)
     ///
-    /// ``strict=True`` raises ``ValueError`` instead of returning a block that
-    /// loses stereo (a centre left unwedged, an E/Z bond written "either");
-    /// :meth:`to_mol_block_with_report` returns the block with the list.
+    /// A block that loses stereo (a centre left unwedged, an E/Z bond written
+    /// "either") is still returned, with a :class:`StereoLossWarning` naming
+    /// what is lost; ``strict=True`` raises ``ValueError`` instead.
+    /// :meth:`to_mol_block_with_report` returns the block with the list and
+    /// does not warn.
     #[pyo3(signature = (strict = false))]
-    fn to_mol_block(&self, strict: bool) -> PyResult<String> {
+    fn to_mol_block(&self, py: Python<'_>, strict: bool) -> PyResult<String> {
         let (block, loss) = chematic_mol::write_mol_with_stereo_report(
             &self.inner,
             &chematic_mol::MolMetadata::default(),
             &[],
         );
-        strict_mol_block(block, &loss, strict)
+        strict_mol_block(py, block, &loss, strict)
     }
 
     /// :meth:`to_mol_block` plus what the block does not carry of the
@@ -267,11 +269,12 @@ impl Mol {
     ///     mol, name, coords_2d = chematic.from_mol_block_with_coords(block)
     ///     new_block = mol.to_mol_block_2d(coords_2d, name=name)
     ///
-    /// ``strict=True`` raises ``ValueError`` when the block would lose stereo
-    /// (see :meth:`to_mol_block`).
+    /// A block that loses stereo warns with :class:`StereoLossWarning`;
+    /// ``strict=True`` raises ``ValueError`` instead (see :meth:`to_mol_block`).
     #[pyo3(signature = (coords, name = None, strict = false))]
     fn to_mol_block_2d(
         &self,
+        py: Python<'_>,
         coords: Vec<[f64; 2]>,
         name: Option<&str>,
         strict: bool,
@@ -284,7 +287,7 @@ impl Mol {
         let coords_2d: Vec<(f64, f64)> = coords.iter().map(|c| (c[0], c[1])).collect();
         let (block, loss) =
             chematic_mol::write_mol_with_stereo_report(&self.inner, &metadata, &coords_2d);
-        strict_mol_block(block, &loss, strict)
+        strict_mol_block(py, block, &loss, strict)
     }
 
     /// Serialize this molecule to MDL MOL V3000 format with 2D layout coordinates.
@@ -297,11 +300,12 @@ impl Mol {
     ///
     ///     block = mol.to_mol_v3000(coords_2d, name="my_mol")
     ///
-    /// ``strict=True`` raises ``ValueError`` when the block would lose stereo
-    /// (see :meth:`to_mol_block`).
+    /// A block that loses stereo warns with :class:`StereoLossWarning`;
+    /// ``strict=True`` raises ``ValueError`` instead (see :meth:`to_mol_block`).
     #[pyo3(signature = (coords, name = None, strict = false))]
     fn to_mol_v3000(
         &self,
+        py: Python<'_>,
         coords: Vec<[f64; 2]>,
         name: Option<&str>,
         strict: bool,
@@ -314,7 +318,7 @@ impl Mol {
         let coords_2d: Vec<(f64, f64)> = coords.iter().map(|c| (c[0], c[1])).collect();
         let (block, loss) =
             chematic_mol::write_mol_v3000_with_stereo_report(&self.inner, &metadata, &coords_2d);
-        strict_mol_block(block, &loss, strict)
+        strict_mol_block(py, block, &loss, strict)
     }
 
     /// Serialize this molecule to Chemical Markup Language (CML) XML.
@@ -3345,7 +3349,11 @@ impl Mol {
     ///   silently-guessed label. A phosphorus on an unsaturated ring
     ///   (cyclophosphazene) gets RDKit's CIPLabeler label, which flips between
     ///   the ring's Kekulé spellings in both libraries; its entry carries
-    ///   ``"kekule_dependent": True``.
+    ///   ``"kekule_dependent": True``. A ring centre with three single bonds
+    ///   and a lone pair (bridgehead amine, cyclic phosphine or sulfonium)
+    ///   gets RDKit's label for the parsed SMILES spelling (RDKit inverts its
+    ///   ``@``/``@@`` when one ring-closure digit is on the centre); its entry
+    ///   carries ``"spelling_dependent": True``.
     #[pyo3(signature = (mode = "legacy"))]
     fn cip_stereo<'py>(&self, py: Python<'py>, mode: &str) -> PyResult<Vec<Bound<'py, PyDict>>> {
         use chematic_core::CipCode;
@@ -3405,6 +3413,12 @@ impl Mol {
                 {
                     d.set_item("kekule_dependent", true)?;
                 }
+                if mode == "accurate"
+                    && matches!(code, CipCode::R | CipCode::S)
+                    && chematic_chem::cip_label_depends_on_smiles_spelling(&self.inner, *idx)
+                {
+                    d.set_item("spelling_dependent", true)?;
+                }
                 Ok(d)
             })
             .collect()
@@ -3414,8 +3428,9 @@ impl Mol {
     /// R/S for — list of ``{"atom_idx": int, "reason": str}`` dicts, ``reason`` is
     /// ``"tied"`` (a genuine CIP-rule tie, not a missing rule),
     /// ``"budget_exceeded"``, ``"oracle_unstable"``, or ``"lone_pair_center"`` (a
-    /// stereo-tagged centre with three explicit ligands, e.g. a bridgehead amine,
-    /// whose fourth ligand would be a lone pair — not modelled).
+    /// stereo-tagged three-ligand centre on an aromatic ring, or one with a
+    /// hydrogen ligand; saturated ring centres such as bridgehead amines are
+    /// labelled, see :meth:`cip_stereo`).
     /// Always empty for ``mode="legacy"`` (that engine never reports "I don't know").
     fn cip_stereo_unresolved<'py>(&self, py: Python<'py>) -> PyResult<Vec<Bound<'py, PyDict>>> {
         let result =
@@ -4861,15 +4876,36 @@ fn bitvecn_to_bytes(fp: &chematic_fp::bitvec::BitVecN) -> Vec<u8> {
         .collect()
 }
 
-/// The block, or a `ValueError` naming what it loses when `strict`.
+pyo3::create_exception!(
+    chematic,
+    StereoLossWarning,
+    pyo3::exceptions::PyUserWarning,
+    "A MOL block written without part of the molecule's stereo (a centre \
+     left unwedged, a declared E/Z bond written \"either\"). The block is \
+     still returned; pass strict=True to raise instead, or call \
+     Mol.to_mol_block_with_report() for the lost atoms and bonds."
+);
+
+/// The block, with a [`StereoLossWarning`] naming what it loses, or a
+/// `ValueError` instead when `strict`.
 fn strict_mol_block(
+    py: Python<'_>,
     block: String,
     loss: &chematic_mol::MolStereoLoss,
     strict: bool,
 ) -> PyResult<String> {
-    if strict && !loss.is_empty() {
+    if loss.is_empty() {
+        return Ok(block);
+    }
+    if strict {
         return Err(PyValueError::new_err(loss.to_string()));
     }
+    PyErr::warn(
+        py,
+        py.get_type::<StereoLossWarning>().as_any(),
+        &std::ffi::CString::new(loss.to_string()).unwrap_or_default(),
+        1,
+    )?;
     Ok(block)
 }
 

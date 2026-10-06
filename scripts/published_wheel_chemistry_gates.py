@@ -122,6 +122,11 @@ def main() -> int:
     ap.add_argument("--scope", required=True, help="label, e.g. published_pypi_v1.0.36_macos_arm64_cp312")
     ap.add_argument("--out-dir", type=Path, required=True)
     args = ap.parse_args()
+    # Steps run from the repository root; anchor the caller's paths first.
+    args.wheel = args.wheel.resolve()
+    args.expected = args.expected.resolve()
+    if args.rules_dir:
+        args.rules_dir = args.rules_dir.resolve()
 
     out = args.out_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)

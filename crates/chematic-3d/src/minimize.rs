@@ -16,8 +16,8 @@ use chematic_ff::{
     assign_uff_types, bond_type_for, is_angle_in_ring_of_size_3_or_4,
     minimize_uff as ff_minimize_uff,
     minimize_uff_with_constraint as ff_minimize_uff_with_constraint, mmff94_angle_energy_resolved,
-    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
-    stretch_bend_type_for, torsion_no_term_by_design, torsion_type_for, uff_total_energy,
+    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_term_params,
+    stretch_bend_type_for, uff_total_energy,
 };
 use chematic_ff::{
     assign_dreiding_types, assign_mmff94_types, dreiding_angle, dreiding_bond_len, dreiding_vdw,
@@ -1888,38 +1888,21 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
                     continue;
                 }
                 report.torsions_total += 1;
-                let (ti_, tj_, tk_, tl_) = (
-                    types[i.0 as usize],
-                    types[j.0 as usize],
-                    types[k.0 as usize],
-                    types[l.0 as usize],
-                );
-                let tt = torsion_type_for(
+                // Table row or, failing that, Halgren's empirical rule, as
+                // RDKit and the energy model take it: a torsion is never
+                // uncovered; all-zero barriers add no term (linear centres
+                // among them).
+                if mmff94_torsion_term_params(
                     mol,
                     i.0 as usize,
                     j.0 as usize,
                     k.0 as usize,
                     l.0 as usize,
-                    ti_,
-                    tj_,
-                    tk_,
-                    tl_,
-                );
-                if mmff94_torsion_energy(tt, ti_, tj_, tk_, tl_).is_none() {
-                    if torsion_no_term_by_design(tj_, tk_) {
-                        // Issue #227 Phase 1: RDKit itself generates no term
-                        // here either (linear central atom) -- correct, not
-                        // a coverage gap. Counted separately so this never
-                        // trips `include_torsion_oop_in_gate`.
-                        report.torsions_no_term_by_design += 1;
-                    } else {
-                        report.torsions_missing.push(missing_term(
-                            mol,
-                            types,
-                            Mmff94TermKind::Torsion,
-                            &[i, j, k, l],
-                        ));
-                    }
+                    types,
+                )
+                .is_none()
+                {
+                    report.torsions_no_term_by_design += 1;
                 }
             }
         }

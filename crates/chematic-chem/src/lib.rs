@@ -54,7 +54,8 @@ pub mod xlogp3;
 pub use cip::{
     CipAssignment, CipMode, CipModeAssignment, CipModeError, CipUnresolvedReason, EzCompleteness,
     assign_cip, assign_cip_with_mode, assign_ez_bonds, assign_ez_bonds_with_mode,
-    cip_label_depends_on_kekule_spelling, ez_completeness, tetrahedral_stereo_neighbors,
+    cip_label_depends_on_kekule_spelling, cip_label_depends_on_smiles_spelling, ez_completeness,
+    rdkit_canonical_atom_ranks, tetrahedral_stereo_neighbors,
 };
 pub use descriptors::{
     Bcut2D, CarbonTypes, DistanceDescriptorBundle, InformationContent, RingBundle,
