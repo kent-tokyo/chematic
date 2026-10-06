@@ -11,10 +11,10 @@ use std::collections::HashSet;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
-    EnergyBreakdown, MinimizerError, Mmff94EnergyModel, Mmff94TerminationReason, NumericTypeError,
-    OOP_SP2_TYPES, UffType, angle_type_for, assign_mmff94_numeric_types_with_view,
-    assign_uff_types, bond_type_for, is_angle_in_ring_of_size_3_or_4,
-    minimize_uff as ff_minimize_uff,
+    EnergyBreakdown, MinimizerError, Mmff94Convergence, Mmff94EnergyModel, Mmff94TerminationReason,
+    NumericTypeError, OOP_SP2_TYPES, UffType, angle_type_for,
+    assign_mmff94_numeric_types_with_view, assign_uff_types, bond_type_for,
+    is_angle_in_ring_of_size_3_or_4, minimize_uff as ff_minimize_uff,
     minimize_uff_with_constraint as ff_minimize_uff_with_constraint, mmff94_angle_energy_resolved,
     mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_term_params,
     stretch_bend_type_for, uff_total_energy,
@@ -1939,6 +1939,22 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
 
 // --- policy dispatch ---------------------------------------------------------
 
+/// Residual-force threshold (kcal/mol/Å) at which the MMFF94 bridge's
+/// minimizer reports convergence; the same absolute test chematic-ff's L-BFGS
+/// applies.
+const MMFF94_BRIDGE_GRADIENT_TOLERANCE: f64 = 1e-4;
+
+/// Which chematic-ff minimizer the MMFF94 bridge runs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Mmff94Minimizer {
+    /// Dense BFGS with RDKit's line search (`Mmff94EnergyModel::minimize_bfgs`),
+    /// the default since batch 13.
+    Bfgs,
+    /// The earlier L-BFGS (`minimize_lbfgs_bounded_analytic`); the pipeline
+    /// retries with it when the BFGS geometry fails declared stereo.
+    Lbfgs,
+}
+
 struct Mmff94BridgeRun {
     coords: Coords3D,
     coverage: Mmff94CoverageReport,
@@ -1957,6 +1973,7 @@ fn run_mmff94_bridge(
     include_torsion_oop_in_gate: bool,
     include_stretch_bend_in_gate: bool,
     accept_geometry: Option<&dyn Fn(&Coords3D) -> bool>,
+    minimizer: Mmff94Minimizer,
 ) -> Result<Mmff94BridgeRun, ForceFieldBridgeError> {
     let n = mol.atom_count();
     // Must use the same MMFF-specific re-perceived bond orders chematic-ff's
@@ -1975,17 +1992,22 @@ fn run_mmff94_bridge(
     let energy_before = energy_model.energy_breakdown(&coord_vec);
 
     let mut work = coord_vec.clone();
-    let result = if let Some(accept_geometry) = accept_geometry {
-        energy_model.minimize_lbfgs_bounded_analytic_with_constraint(
-            &mut work,
-            max_iter,
-            |candidate| {
-                let candidate = vec_to_coords(candidate);
-                accept_geometry(&candidate)
-            },
-        )?
-    } else {
-        energy_model.minimize_lbfgs_bounded_analytic(&mut work, max_iter)?
+    let convergence = Mmff94Convergence::MaxGradient(MMFF94_BRIDGE_GRADIENT_TOLERANCE);
+    let result = match (minimizer, accept_geometry) {
+        (Mmff94Minimizer::Bfgs, Some(accept_geometry)) => energy_model
+            .minimize_bfgs_with_constraint(&mut work, max_iter, convergence, |candidate| {
+                accept_geometry(&vec_to_coords(candidate))
+            })?,
+        (Mmff94Minimizer::Bfgs, None) => {
+            energy_model.minimize_bfgs(&mut work, max_iter, convergence)?
+        }
+        (Mmff94Minimizer::Lbfgs, Some(accept_geometry)) => energy_model
+            .minimize_lbfgs_bounded_analytic_with_constraint(&mut work, max_iter, |candidate| {
+                accept_geometry(&vec_to_coords(candidate))
+            })?,
+        (Mmff94Minimizer::Lbfgs, None) => {
+            energy_model.minimize_lbfgs_bounded_analytic(&mut work, max_iter)?
+        }
     };
 
     let energy_after = energy_model.energy_breakdown(&work);
@@ -2401,6 +2423,7 @@ fn finish_uff(
 /// [`minimize_with_policy`] passes `false`, matching its existing
 /// `include_torsion_oop_in_gate = false` default — no existing caller's
 /// behavior changes.
+#[allow(clippy::too_many_arguments)]
 fn minimize_with_policy_gated_impl(
     mol: &Molecule,
     coords: Coords3D,
@@ -2409,6 +2432,7 @@ fn minimize_with_policy_gated_impl(
     include_torsion_oop_in_gate: bool,
     include_stretch_bend_in_gate: bool,
     accept_geometry: Option<&dyn Fn(&Coords3D) -> bool>,
+    minimizer: Mmff94Minimizer,
 ) -> Result<PolicyMinimizeResult, ForceFieldBridgeError> {
     if mol.atom_count() <= 1 {
         return Ok(trivial_result(coords, policy));
@@ -2474,6 +2498,7 @@ fn minimize_with_policy_gated_impl(
                 include_torsion_oop_in_gate,
                 include_stretch_bend_in_gate,
                 accept_geometry,
+                minimizer,
             )?;
             Ok(finish_mmff94(
                 r,
@@ -2491,6 +2516,7 @@ fn minimize_with_policy_gated_impl(
                 include_torsion_oop_in_gate,
                 include_stretch_bend_in_gate,
                 accept_geometry,
+                minimizer,
             ) {
                 Ok(r) => Ok(finish_mmff94(
                     r,
@@ -2550,12 +2576,37 @@ pub fn minimize_with_policy_gated(
         include_torsion_oop_in_gate,
         include_stretch_bend_in_gate,
         None,
+        Mmff94Minimizer::Bfgs,
+    )
+}
+
+/// [`minimize_with_policy_gated`] with the MMFF94 minimizer chosen by the
+/// pipeline.
+pub(crate) fn minimize_with_policy_gated_using(
+    mol: &Molecule,
+    coords: Coords3D,
+    policy: ForceFieldPolicy,
+    config: &MinimizeConfig,
+    include_torsion_oop_in_gate: bool,
+    include_stretch_bend_in_gate: bool,
+    minimizer: Mmff94Minimizer,
+) -> Result<PolicyMinimizeResult, ForceFieldBridgeError> {
+    minimize_with_policy_gated_impl(
+        mol,
+        coords,
+        policy,
+        config,
+        include_torsion_oop_in_gate,
+        include_stretch_bend_in_gate,
+        None,
+        minimizer,
     )
 }
 
 /// Pipeline-only force-field dispatch with a caller-owned MMFF94 line-search
 /// acceptance predicate. Public low-level callers retain the historical
 /// unconstrained minimizer through [`minimize_with_policy_gated`].
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn minimize_with_policy_gated_with_constraint<F>(
     mol: &Molecule,
     coords: Coords3D,
@@ -2564,6 +2615,7 @@ pub(crate) fn minimize_with_policy_gated_with_constraint<F>(
     include_torsion_oop_in_gate: bool,
     include_stretch_bend_in_gate: bool,
     accept_geometry: &F,
+    minimizer: Mmff94Minimizer,
 ) -> Result<PolicyMinimizeResult, ForceFieldBridgeError>
 where
     F: Fn(&Coords3D) -> bool,
@@ -2576,6 +2628,7 @@ where
         include_torsion_oop_in_gate,
         include_stretch_bend_in_gate,
         Some(accept_geometry),
+        minimizer,
     )
 }
 

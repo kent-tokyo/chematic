@@ -24,6 +24,7 @@ diagnostics = []
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "1.0.36" }
 rustc-hash = "2"
+smallvec = "1"
 
 [dev-dependencies]
 # Path-only (no `version`): see chematic-smiles/Cargo.toml's dev-dependencies

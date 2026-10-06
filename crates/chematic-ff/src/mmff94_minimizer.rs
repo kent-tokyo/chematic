@@ -43,6 +43,9 @@ const MMFF_ANGLE_CONV: f64 = MDYNE_A_TO_KCAL_MOL * DEG2RAD * DEG2RAD;
 const MMFF_ANGLE_CUBIC: f64 = 0.006981317;
 /// Stretch-bend prefactor, `MDYNE_A_TO_KCAL_MOL * DEG2RAD` (2.512076…).
 const MMFF_STBN_CONV: f64 = MDYNE_A_TO_KCAL_MOL * DEG2RAD;
+/// RDKit's `nonBondedThresh` default: nonbonded pairs farther apart than
+/// this (Å) contribute nothing.
+const NONBONDED_THRESH: f64 = 100.0;
 type VdwPairs = Vec<PreparedVdwPair>;
 type ElectrostaticPairs = Vec<PreparedElectrostaticPair>;
 
@@ -184,6 +187,42 @@ pub struct EnergyBreakdown {
     pub total: f64,
 }
 
+/// Options for building an MMFF94 energy model.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Mmff94Options {
+    /// Leave out van der Waals and electrostatic pairs between disconnected
+    /// fragments (a salt's ions, a solvent molecule), as RDKit's
+    /// `MMFFGetMoleculeForceField` does by default
+    /// (`ignoreInterfragInteractions=True`). Off by default: chematic's
+    /// minimizer keeps the fragments of a salt from overlapping through them.
+    pub ignore_interfragment_interactions: bool,
+}
+
+/// Connected-component id of every atom.
+fn fragment_ids(mol: &Molecule) -> Vec<usize> {
+    let n = mol.atom_count();
+    let mut id = vec![usize::MAX; n];
+    let mut next = 0;
+    for start in 0..n {
+        if id[start] != usize::MAX {
+            continue;
+        }
+        let mut stack = vec![start];
+        id[start] = next;
+        while let Some(a) = stack.pop() {
+            for (nb, _) in mol.neighbors(AtomIdx(a as u32)) {
+                let b = nb.0 as usize;
+                if id[b] == usize::MAX {
+                    id[b] = next;
+                    stack.push(b);
+                }
+            }
+        }
+        next += 1;
+    }
+    id
+}
+
 /// Reusable MMFF94 energy evaluator for one molecular topology.
 ///
 /// Atom typing, MMFF94's aromatic view, charges, and ring perception are
@@ -204,10 +243,23 @@ pub struct Mmff94EnergyModel {
 impl Mmff94EnergyModel {
     /// Prepare the topology-dependent MMFF94 state once.
     pub fn new(mol: &Molecule) -> Result<Self, MinimizerError> {
+        Self::new_with_options(mol, Mmff94Options::default())
+    }
+
+    /// [`Self::new`] with [`Mmff94Options`].
+    pub fn new_with_options(
+        mol: &Molecule,
+        options: Mmff94Options,
+    ) -> Result<Self, MinimizerError> {
         let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
         let charges = mmff94_charges_numeric(mol).map_err(MinimizerError::ChargeCalculation)?;
         let rings = find_sssr(mol).rings().to_vec();
-        let (vdw_pairs, electrostatic_pairs) = build_nonbonded_pairs(mol, &types, &charges);
+        let (mut vdw_pairs, mut electrostatic_pairs) = build_nonbonded_pairs(mol, &types, &charges);
+        if options.ignore_interfragment_interactions {
+            let frag = fragment_ids(mol);
+            vdw_pairs.retain(|p| frag[p.i] == frag[p.j]);
+            electrostatic_pairs.retain(|p| frag[p.i] == frag[p.j]);
+        }
         let bonds = build_bond_terms(&mmff_mol, &types);
         let angles = build_angle_terms(&mmff_mol, &types, &rings);
         let stretch_bends = build_stretch_bend_terms(&mmff_mol, &types, &rings);
@@ -418,6 +470,47 @@ impl Mmff94EnergyModel {
         minimize_mmff94_lbfgs_prepared_with_mode(self, coords, max_iter, true, false, accept)
     }
 
+    /// Dense BFGS with RDKit's line search and gradient scaling
+    /// (`BFGSOpt::minimize` as called by `ForceField::minimize`).
+    ///
+    /// With [`Mmff94Convergence::Rdkit`] this is RDKit's minimizer: from the
+    /// same coordinates it follows RDKit's trajectory, so `MMFFOptimizeMolecule
+    /// (maxIters=n)` and this method with `max_iter = n` reach the same
+    /// geometry (to rounding). With [`Mmff94Convergence::MaxGradient`] it
+    /// runs the same algorithm to chematic's absolute residual-force test,
+    /// never accepts an energy increase and bounds each line search's first
+    /// trial by [`BFGS_MAX_COORDINATE_STEP`]. The inverse Hessian is a dense
+    /// `3N x 3N` matrix; above [`BFGS_DENSE_MAX_ATOMS`] atoms the call
+    /// delegates to [`Self::minimize_lbfgs_bounded_analytic`] (MaxGradient)
+    /// so memory stays bounded.
+    pub fn minimize_bfgs(
+        &self,
+        coords: &mut [[f64; 3]],
+        max_iter: usize,
+        convergence: Mmff94Convergence,
+    ) -> Result<MinimizeResult, MinimizerError> {
+        minimize_mmff94_bfgs_prepared(self, coords, max_iter, convergence, |_| true)
+    }
+
+    /// [`Self::minimize_bfgs`] with a caller-supplied acceptance constraint.
+    ///
+    /// A line-search proposal the predicate rejects is backtracked like one
+    /// that fails the sufficient-decrease test. If no admissible step is
+    /// left, the last accepted coordinates are kept and the run reports
+    /// [`Mmff94TerminationReason::ConstraintRejectedFallback`].
+    pub fn minimize_bfgs_with_constraint<F>(
+        &self,
+        coords: &mut [[f64; 3]],
+        max_iter: usize,
+        convergence: Mmff94Convergence,
+        accept: F,
+    ) -> Result<MinimizeResult, MinimizerError>
+    where
+        F: Fn(&[[f64; 3]]) -> bool,
+    {
+        minimize_mmff94_bfgs_prepared(self, coords, max_iter, convergence, accept)
+    }
+
     /// Experimental analytic L-BFGS using the bounded 10 Å coordinate-
     /// dependent non-bonded neighbor lists.
     ///
@@ -564,6 +657,16 @@ pub fn mmff94_energy_breakdown(
     coords: &[[f64; 3]],
 ) -> Result<EnergyBreakdown, MinimizerError> {
     Ok(Mmff94EnergyModel::new(mol)?.energy_breakdown(coords))
+}
+
+/// [`mmff94_energy_breakdown`] with [`Mmff94Options`] (e.g. RDKit's default
+/// of no interactions between fragments).
+pub fn mmff94_energy_breakdown_with_options(
+    mol: &Molecule,
+    coords: &[[f64; 3]],
+    options: Mmff94Options,
+) -> Result<EnergyBreakdown, MinimizerError> {
+    Ok(Mmff94EnergyModel::new_with_options(mol, options)?.energy_breakdown(coords))
 }
 
 /// Minimize molecular geometry using the full MMFF94 force field.
@@ -873,6 +976,390 @@ where
         (sum / n as f64).sqrt()
     };
 
+    Ok(MinimizeResult {
+        energy: f0,
+        rmsd,
+        converged,
+        iterations: iters,
+        termination,
+    })
+}
+
+/// Largest molecule (atoms, hydrogens included) for which
+/// [`Mmff94EnergyModel::minimize_bfgs`] keeps a dense inverse Hessian
+/// (1,500 x 1,500 doubles, 18 MB); larger molecules use L-BFGS.
+pub const BFGS_DENSE_MAX_ATOMS: usize = 500;
+
+/// Longest move (Å) along any coordinate that one line search of
+/// [`Mmff94EnergyModel::minimize_bfgs`] starts from under
+/// [`Mmff94Convergence::MaxGradient`]. RDKit's first steps can move an atom
+/// several Å, which on the A6 corpus carried strained stereocentres across
+/// their plane; 0.2-0.5 Å give the same successes and nearly the same
+/// converged rows, 0.3 is used.
+pub const BFGS_MAX_COORDINATE_STEP: f64 = 0.3;
+
+/// Convergence test for [`Mmff94EnergyModel::minimize_bfgs`].
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Mmff94Convergence {
+    /// Every gradient component below this value (kcal/mol/Å). chematic's
+    /// L-BFGS and the 3D pipeline use 1e-4.
+    MaxGradient(f64),
+    /// RDKit's `BFGSOpt` tests: the step test (`TOLX` = 1.2e-7, relative
+    /// to coordinates) or `max |g_i| max(|x_i|, 1) / max(|E| s, 1) <
+    /// grad_tol`, with `g` RDKit's scaled gradient and `s` its scale factor.
+    /// `MMFFOptimizeMolecule` passes `grad_tol = 1e-4`. A converged run can
+    /// keep residual forces well above 1e-4 kcal/mol/Å.
+    Rdkit {
+        /// RDKit's `forceTol` (1e-4 by default).
+        grad_tol: f64,
+    },
+}
+
+impl Default for Mmff94Convergence {
+    fn default() -> Self {
+        Mmff94Convergence::MaxGradient(1e-4)
+    }
+}
+
+/// RDKit `ForceFieldsHelper::calcGradient`: scales the gradient by 0.1 and,
+/// when a component still exceeds 10, halves the factor until none does.
+/// Returns (RDKit's returned scale, largest unscaled component).
+fn rdkit_scaled_gradient(model: &Mmff94EnergyModel, x: &[[f64; 3]], out: &mut [f64]) -> (f64, f64) {
+    let g = model.bounded_analytic_gradient(x);
+    let mut raw_max = 0.0_f64;
+    let mut scaled_max = 0.0_f64;
+    for (o, v) in out.iter_mut().zip(g.iter().flat_map(|v| v.iter())) {
+        raw_max = raw_max.max(v.abs());
+        *o = v * 0.1;
+        scaled_max = scaled_max.max(o.abs());
+    }
+    let mut scale = 0.1;
+    if scaled_max > 10.0 {
+        while scaled_max * scale > 10.0 {
+            scale *= 0.5;
+        }
+        for o in out.iter_mut() {
+            *o *= scale;
+        }
+    }
+    (scale, raw_max)
+}
+
+enum BfgsLineSearch {
+    /// Sufficient decrease met by an admissible point.
+    Accepted(f64),
+    /// RDKit's `resCode = 1`: the step fell below its position-scaled
+    /// minimum. Carries the last trial and whether it was admissible.
+    StepTooSmall(f64, bool),
+    /// The direction is not a descent direction.
+    BadDirection,
+}
+
+/// RDKit `BFGSOpt::linearSearch` (Numerical Recipes `lnsrch`): Armijo
+/// backtracking with quadratic then cubic interpolation. A point the caller's
+/// predicate rejects is treated as failing the decrease test and halves the
+/// step without entering the interpolation.
+#[allow(clippy::too_many_arguments)]
+fn bfgs_line_search<F>(
+    model: &Mmff94EnergyModel,
+    x3: &[[f64; 3]],
+    f0: f64,
+    g: &[f64],
+    dir: &mut [f64],
+    max_step: f64,
+    max_component: Option<f64>,
+    out3: &mut [[f64; 3]],
+    accept: &F,
+) -> BfgsLineSearch
+where
+    F: Fn(&[[f64; 3]]) -> bool,
+{
+    const FUNCTOL: f64 = 1e-4;
+    const MOVETOL: f64 = 1e-7;
+    const MAX_ITER: usize = 1000;
+    let x = x3.as_flattened();
+    let len = dir.iter().map(|d| d * d).sum::<f64>().sqrt();
+    if len > max_step {
+        for d in dir.iter_mut() {
+            *d *= max_step / len;
+        }
+    }
+    if let Some(cap) = max_component {
+        let big = dir.iter().fold(0.0_f64, |m, d| m.max(d.abs()));
+        if big > cap {
+            for d in dir.iter_mut() {
+                *d *= cap / big;
+            }
+        }
+    }
+    let slope: f64 = dir.iter().zip(g).map(|(d, gi)| d * gi).sum();
+    // Also rejects a NaN slope.
+    if slope.partial_cmp(&0.0) != Some(std::cmp::Ordering::Less) {
+        return BfgsLineSearch::BadDirection;
+    }
+    let test = dir
+        .iter()
+        .zip(x)
+        .map(|(d, xi)| d.abs() / xi.abs().max(1.0))
+        .fold(0.0_f64, f64::max);
+    let lambda_min = MOVETOL / test;
+    let mut lambda = 1.0_f64;
+    let mut lambda2 = 0.0_f64;
+    let mut f2 = 0.0_f64;
+    let mut have_previous = false;
+    let mut last = (f0, false);
+    for _ in 0..MAX_ITER {
+        if lambda < lambda_min {
+            return BfgsLineSearch::StepTooSmall(last.0, last.1);
+        }
+        for ((o, xi), d) in out3.as_flattened_mut().iter_mut().zip(x).zip(dir.iter()) {
+            *o = xi + lambda * d;
+        }
+        let f = model.energy(out3);
+        let admissible = f.is_finite() && accept(out3);
+        last = (f, admissible);
+        if admissible && f - f0 <= FUNCTOL * lambda * slope {
+            return BfgsLineSearch::Accepted(f);
+        }
+        let next = if !admissible {
+            0.5 * lambda
+        } else if !have_previous {
+            -slope / (2.0 * (f - f0 - slope))
+        } else {
+            let rhs1 = f - f0 - lambda * slope;
+            let rhs2 = f2 - f0 - lambda2 * slope;
+            let a = (rhs1 / (lambda * lambda) - rhs2 / (lambda2 * lambda2)) / (lambda - lambda2);
+            let b = (-lambda2 * rhs1 / (lambda * lambda) + lambda * rhs2 / (lambda2 * lambda2))
+                / (lambda - lambda2);
+            let t = if a == 0.0 {
+                -slope / (2.0 * b)
+            } else {
+                let disc = b * b - 3.0 * a * slope;
+                if disc < 0.0 {
+                    0.5 * lambda
+                } else if b <= 0.0 {
+                    (-b + disc.sqrt()) / (3.0 * a)
+                } else {
+                    -slope / (b + disc.sqrt())
+                }
+            };
+            t.min(0.5 * lambda)
+        };
+        if admissible {
+            lambda2 = lambda;
+            f2 = f;
+            have_previous = true;
+        }
+        // NaN-safe: a non-finite interpolant falls back to the 0.1 floor.
+        lambda = if next.is_nan() {
+            0.1 * lambda
+        } else {
+            next.max(0.1 * lambda)
+        };
+    }
+    out3.copy_from_slice(x3);
+    BfgsLineSearch::StepTooSmall(f0, false)
+}
+
+fn minimize_mmff94_bfgs_prepared<F>(
+    model: &Mmff94EnergyModel,
+    coords: &mut [[f64; 3]],
+    max_iter: usize,
+    convergence: Mmff94Convergence,
+    accept: F,
+) -> Result<MinimizeResult, MinimizerError>
+where
+    F: Fn(&[[f64; 3]]) -> bool,
+{
+    const EPS: f64 = 3e-8;
+    const TOLX: f64 = 4.0 * EPS;
+    const MAXSTEP: f64 = 100.0;
+
+    let n = model.mmff_mol.atom_count();
+    if n <= 1 {
+        return Ok(MinimizeResult {
+            energy: 0.0,
+            rmsd: 0.0,
+            converged: true,
+            iterations: 0,
+            termination: Mmff94TerminationReason::GradientConverged,
+        });
+    }
+    if n > BFGS_DENSE_MAX_ATOMS {
+        return minimize_mmff94_lbfgs_prepared_with_mode(
+            model, coords, max_iter, true, false, accept,
+        );
+    }
+    let abs_tol = match convergence {
+        Mmff94Convergence::MaxGradient(t) => Some(t),
+        Mmff94Convergence::Rdkit { .. } => None,
+    };
+
+    let dim = 3 * n;
+    // Under the absolute test each line search starts no farther than
+    // BFGS_MAX_COORDINATE_STEP along any coordinate (RDKit's only bound is
+    // the overall MAXSTEP); see that constant.
+    let max_component = abs_tol.map(|_| BFGS_MAX_COORDINATE_STEP);
+    let initial = coords.to_vec();
+    let mut x3: Vec<[f64; 3]> = coords.to_vec();
+    let mut g = vec![0.0; dim];
+    let mut dg = vec![0.0; dim];
+    let mut hdg = vec![0.0; dim];
+    let mut xi = vec![0.0; dim];
+    let mut trial3 = vec![[0.0; 3]; n];
+    let mut inv_h = vec![0.0; dim * dim];
+    let reset_inverse_hessian = |h: &mut [f64]| {
+        h.fill(0.0);
+        for i in 0..dim {
+            h[i * dim + i] = 1.0;
+        }
+    };
+    reset_inverse_hessian(&mut inv_h);
+    let mut hessian_is_identity = true;
+
+    let mut f0 = model.energy(coords);
+    let (_, mut raw_max) = rdkit_scaled_gradient(model, &x3, &mut g);
+    for (d, gi) in xi.iter_mut().zip(&g) {
+        *d = -gi;
+    }
+    let norm = x3.as_flattened().iter().map(|v| v * v).sum::<f64>().sqrt();
+    let max_step = MAXSTEP * norm.max(dim as f64);
+
+    let mut iters = 0usize;
+    let mut converged = false;
+    let mut termination = Mmff94TerminationReason::IterationLimit;
+
+    'outer: {
+        if abs_tol.is_some_and(|t| raw_max < t) {
+            converged = true;
+            termination = Mmff94TerminationReason::GradientConverged;
+            break 'outer;
+        }
+        for _ in 0..max_iter {
+            iters += 1;
+            let search = bfgs_line_search(
+                model,
+                &x3,
+                f0,
+                &g,
+                &mut xi,
+                max_step,
+                max_component,
+                &mut trial3,
+                &accept,
+            );
+            let f_new = match search {
+                BfgsLineSearch::Accepted(f) => f,
+                BfgsLineSearch::StepTooSmall(f, admissible) if abs_tol.is_none() && admissible => f,
+                BfgsLineSearch::BadDirection | BfgsLineSearch::StepTooSmall(..) => {
+                    if !hessian_is_identity {
+                        // Restart from steepest descent before giving up.
+                        reset_inverse_hessian(&mut inv_h);
+                        hessian_is_identity = true;
+                        for (d, gi) in xi.iter_mut().zip(&g) {
+                            *d = -gi;
+                        }
+                        continue;
+                    }
+                    if abs_tol.is_none() && matches!(search, BfgsLineSearch::StepTooSmall(..)) {
+                        // RDKit: a collapsed step on the steepest-descent
+                        // direction ends the run as converged (TOLX).
+                        converged = true;
+                        termination = Mmff94TerminationReason::GradientConverged;
+                        break 'outer;
+                    }
+                    termination = Mmff94TerminationReason::ConstraintRejectedFallback;
+                    break 'outer;
+                }
+            };
+            f0 = f_new;
+            let mut step_test = 0.0_f64;
+            let x = x3.as_flattened_mut();
+            let trial = trial3.as_flattened();
+            for i in 0..dim {
+                xi[i] = trial[i] - x[i];
+                x[i] = trial[i];
+                step_test = step_test.max(xi[i].abs() / x[i].abs().max(1.0));
+                dg[i] = g[i];
+            }
+            if abs_tol.is_none() && step_test < TOLX {
+                converged = true;
+                termination = Mmff94TerminationReason::GradientConverged;
+                break 'outer;
+            }
+            let (scale, raw) = rdkit_scaled_gradient(model, &x3, &mut g);
+            raw_max = raw;
+            match convergence {
+                Mmff94Convergence::MaxGradient(t) => {
+                    if raw_max < t {
+                        converged = true;
+                        termination = Mmff94TerminationReason::GradientConverged;
+                        break 'outer;
+                    }
+                }
+                Mmff94Convergence::Rdkit { grad_tol } => {
+                    let term = (f0.abs() * scale).max(1.0);
+                    let test = g
+                        .iter()
+                        .zip(x3.as_flattened())
+                        .map(|(gi, xi)| gi.abs() * xi.abs().max(1.0))
+                        .fold(0.0_f64, f64::max)
+                        / term;
+                    if test < grad_tol {
+                        converged = true;
+                        termination = Mmff94TerminationReason::GradientConverged;
+                        break 'outer;
+                    }
+                }
+            }
+            for i in 0..dim {
+                dg[i] = g[i] - dg[i];
+            }
+            // BFGS inverse-Hessian update (Numerical Recipes dfpmin).
+            let (mut fac, mut fae, mut sum_dg, mut sum_xi) = (0.0, 0.0, 0.0, 0.0);
+            for i in 0..dim {
+                let row = &inv_h[i * dim..(i + 1) * dim];
+                hdg[i] = row.iter().zip(&dg).map(|(h, d)| h * d).sum();
+                fac += dg[i] * xi[i];
+                fae += dg[i] * hdg[i];
+                sum_dg += dg[i] * dg[i];
+                sum_xi += xi[i] * xi[i];
+            }
+            if fac > (EPS * sum_dg * sum_xi).sqrt() {
+                let fac = 1.0 / fac;
+                let fad = 1.0 / fae;
+                for i in 0..dim {
+                    dg[i] = fac * xi[i] - fad * hdg[i];
+                }
+                for i in 0..dim {
+                    let (pxi, hdgi, dgi) = (fac * xi[i], fad * hdg[i], fae * dg[i]);
+                    for j in i..dim {
+                        let v = inv_h[i * dim + j] + pxi * xi[j] - hdgi * hdg[j] + dgi * dg[j];
+                        inv_h[i * dim + j] = v;
+                        inv_h[j * dim + i] = v;
+                    }
+                }
+                hessian_is_identity = false;
+            }
+            for i in 0..dim {
+                let row = &inv_h[i * dim..(i + 1) * dim];
+                xi[i] = -row.iter().zip(&g).map(|(h, gi)| h * gi).sum::<f64>();
+            }
+        }
+    }
+    let _ = raw_max;
+    coords.copy_from_slice(&x3);
+    let rmsd = {
+        let sum: f64 = coords
+            .iter()
+            .zip(initial.iter())
+            .map(|(c, i0)| {
+                let d = [c[0] - i0[0], c[1] - i0[1], c[2] - i0[2]];
+                dot3(d, d)
+            })
+            .sum();
+        (sum / n as f64).sqrt()
+    };
     Ok(MinimizeResult {
         energy: f0,
         rmsd,
@@ -1529,14 +2016,15 @@ fn prepared_vdw_neighbor_list<'a>(
     active
 }
 
-/// vdW energy over every prepared pair, as RDKit's MMFF force field sums it
-/// (`nonBondedThresh` 100 Å, beyond any molecule this evaluates).
+/// vdW energy over every prepared pair within RDKit's `nonBondedThresh`
+/// (100 Å). The buffered 14-7 form is finite at any distance, coincident
+/// atoms included, as in RDKit.
 fn vdw_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedVdwPair]) -> f64 {
     pairs
         .iter()
         .map(|pair| {
             let r = dist(coords[pair.i], coords[pair.j]);
-            if r > 0.01 {
+            if r <= NONBONDED_THRESH {
                 mmff94_vdw_energy_value(r, pair.r_star, pair.epsilon)
             } else {
                 0.0
@@ -1575,7 +2063,12 @@ fn electrostatic_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedElectrostati
     pairs
         .iter()
         .map(|pair| {
-            pair.scale_charge_product * COULOMB / (dist(coords[pair.i], coords[pair.j]) + DELTA)
+            let r = dist(coords[pair.i], coords[pair.j]);
+            if r <= NONBONDED_THRESH {
+                pair.scale_charge_product * COULOMB / (r + DELTA)
+            } else {
+                0.0
+            }
         })
         .sum()
 }
@@ -1727,7 +2220,7 @@ fn prepared_nonbonded_gradient(
             coords[pair.i][2] - coords[pair.j][2],
         ];
         let r = dist(coords[pair.i], coords[pair.j]);
-        if r > 0.01 {
+        if r <= NONBONDED_THRESH {
             let radial = mmff94_vdw_radial_derivative(r, pair.r_star, pair.epsilon);
             add_pair(&mut gradient, pair.i, pair.j, radial, delta, r);
         }
@@ -1742,6 +2235,9 @@ fn prepared_nonbonded_gradient(
             coords[pair.i][2] - coords[pair.j][2],
         ];
         let r = dist(coords[pair.i], coords[pair.j]);
+        if r > NONBONDED_THRESH {
+            continue;
+        }
         let radial = -pair.scale_charge_product * COULOMB / (r + DELTA).powi(2);
         add_pair(&mut gradient, pair.i, pair.j, radial, delta, r);
     }
@@ -1988,10 +2484,13 @@ fn stretch_bend_energy(
 /// [`oop_energy`] below. `pub` so downstream coverage-checkers (e.g.
 /// `chematic-3d`'s MMFF94 bridge) can mirror exactly which atoms this
 /// module's own energy loop would evaluate, instead of hand-copying this
-/// list and risking drift.
+/// list and risking drift. Every centre type with an MMFFOOP row is listed,
+/// as RDKit adds a term at any three-connected atom its table covers: NCN+
+/// (55) and the N-oxide nitrogen NPOX (69) carry barriers; NR (8), S=O (17),
+/// tricoordinate P (26) and SO2M (73) have zero rows.
 pub const OOP_SP2_TYPES: &[u8] = &[
-    2, 3, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57, 58, 59, 63, 64, 65, 66, 67, 76,
-    78, 79, 80, 81, 82,
+    2, 3, 8, 9, 10, 17, 26, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 55, 56, 57, 58, 59, 63, 64, 65,
+    66, 67, 69, 73, 76, 78, 79, 80, 81, 82,
 ];
 
 /// Out-of-plane bending for trigonal sp2 centers (Halgren MMFF.VI eq. 6)
@@ -2172,7 +2671,7 @@ fn vdw_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
             if let Some((r_star, eps)) = mmff94_vdw_combined(types[i], types[j])
                 && r_star > 0.0
                 && eps > 0.0
-                && r > 0.01
+                && r <= NONBONDED_THRESH
             {
                 energy += mmff94_vdw_energy_value(r, r_star, eps);
             }
@@ -2228,6 +2727,9 @@ fn elec_energy(mol: &Molecule, coords: &[[f64; 3]], charges: &[f64]) -> f64 {
                 continue;
             }
             let r = dist(coords[i], coords[j]);
+            if r > NONBONDED_THRESH {
+                continue;
+            }
             let scale = if one_four.contains(&(i, j)) {
                 0.75
             } else {

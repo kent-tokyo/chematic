@@ -12,6 +12,7 @@ pub mod pharmacophore;
 pub mod rdkit_canon;
 mod rdkit_parity;
 pub mod rdkit_sssr_order;
+pub mod relevant_cycles;
 pub mod ring_family;
 pub mod sssr;
 pub mod stereo_validation;
@@ -41,6 +42,7 @@ pub use rdkit_parity::{
     rdkit_parity_view_is_identity, with_rdkit_parity_view,
 };
 pub use rdkit_sssr_order::rdkit_sssr_ring_order;
+pub use relevant_cycles::{RelevantCyclesTooMany, relevant_cycle_counts, relevant_cycles};
 pub use ring_family::{RingFamily, RingSystemKind, find_ring_families, find_ring_families_over};
 
 /// Diagnostic-only APIs, not meant for production use — reference-engine

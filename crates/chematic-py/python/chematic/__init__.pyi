@@ -724,8 +724,14 @@ class Mol:
         """
         ...
 
-    def find_matches_rdkit_parity(self, smarts: str) -> SmartsParityResult:
+    def find_matches_rdkit_parity(
+        self, smarts: str, profile: Literal["2026.03.6", "2026.09.1"] = "2026.03.6"
+    ) -> SmartsParityResult:
         """Opt-in RDKit 2026.03.6-style match sets with explicit refusal.
+
+        ``profile="2026.09.1"`` counts ``[R<n>]`` rings in RDKit 2026.09.1's
+        ring list (all relevant cycles); nothing is then refused as
+        ``ring_model_ambiguous``. Any other profile raises ``ValueError``.
 
         ``status == "ok"`` provides sorted atom-index sets in ``matches``;
         an empty list means a completed search with no match. For
@@ -1057,7 +1063,9 @@ class Mol:
 
     # -- Force field analysis ------------------------------------------------
 
-    def mmff94_total_energy(self, coords: list[list[float]]) -> float:
+    def mmff94_total_energy(
+        self, coords: list[list[float]], ignore_interfrag_interactions: bool = False
+    ) -> float:
         """Total MMFF94 force field energy in kcal/mol for the given 3D coordinates.
 
         Returns ``0.0`` if MMFF94 typing fails. Complements :meth:`mmff94_energy_breakdown`.
@@ -1096,12 +1104,15 @@ class Mol:
         ...
 
     def mmff94_energy_breakdown(
-        self, coords: list[list[float]]
+        self, coords: list[list[float]], ignore_interfrag_interactions: bool = False
     ) -> dict[str, float]:
         """MMFF94 energy breakdown for given 3D coordinates.
 
         Returns a dict with keys: ``bond``, ``angle``, ``stretch_bend``,
         ``torsion``, ``oop``, ``vdw``, ``electrostatic``, ``total`` (kcal/mol).
+        ``ignore_interfrag_interactions=True`` leaves out van der Waals and
+        electrostatic pairs between disconnected fragments, as RDKit's
+        ``MMFFGetMoleculeForceField`` does by default.
 
         Raises:
             ValueError: for atoms not parameterised by MMFF94.

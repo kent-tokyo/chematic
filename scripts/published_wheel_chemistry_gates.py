@@ -53,7 +53,22 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def run(cmd: list[str], log: Path) -> None:
+def finished(output: Path | None) -> bool:
+    """Whether a step's JSON output is already complete (``--resume``)."""
+    if output is None or not output.is_file():
+        return False
+    try:
+        json.loads(output.read_text(encoding="utf-8"))
+    except ValueError:
+        return False
+    return True
+
+
+def run(cmd: list[str], log: Path, output: Path | None = None, resume: bool = False) -> None:
+    if resume and finished(output):
+        with log.open("a", encoding="utf-8") as out:
+            out.write(f"# resume: {output} is complete, skipping $ {' '.join(cmd)}\n")
+        return
     t0 = time.time()
     with log.open("a", encoding="utf-8") as out:
         out.write("$ " + " ".join(cmd) + "\n")
@@ -81,6 +96,44 @@ def reactants(out: Path) -> Path:
     if sha256(out) != REACTANTS_SHA256:
         raise SystemExit(f"reactant set {out} does not hash to the record's {REACTANTS_SHA256}")
     return out
+
+
+def merge_corpus_shards(shards: list[tuple[Path, Path]], output: Path, rows: Path) -> None:
+    """Add up the counts of reactant shards of the BioTransformer corpus."""
+    from collections import Counter
+
+    counts: Counter = Counter()
+    per_rule: dict = {}
+    merged: dict = {}
+    reactant_count = 0
+    elapsed = 0.0
+    with rows.open("w", encoding="utf-8") as rows_out:
+        for summary_path, rows_path in shards:
+            part = json.loads(summary_path.read_text(encoding="utf-8"))
+            if not merged:
+                merged = {k: v for k, v in part.items() if k not in {"counts", "per_rule"}}
+            # rules_run and the per-rule skip counts repeat in every shard.
+            for key, value in part["counts"].items():
+                if ":" in key:
+                    counts[key] += value
+                else:
+                    counts[key] = value
+            for rule, stats in part["per_rule"].items():
+                if not all(type(v) is int for v in stats.values()):
+                    per_rule[rule] = stats
+                    continue
+                into = per_rule.setdefault(rule, {})
+                for key, value in stats.items():
+                    into[key] = into.get(key, 0) + value
+            reactant_count += part["reactants"]["count"]
+            elapsed += part["elapsed_seconds"]
+            rows_out.write(rows_path.read_text(encoding="utf-8"))
+    merged["reactants"] = {**merged["reactants"], "count": reactant_count}
+    merged["elapsed_seconds"] = round(elapsed, 1)
+    merged["shards"] = len(shards)
+    merged["counts"] = dict(sorted(counts.items()))
+    merged["per_rule"] = per_rule
+    output.write_text(json.dumps(merged, indent=1) + "\n", encoding="utf-8")
 
 
 def summarize(out_dir: Path, ran_corpus: bool) -> dict:
@@ -121,7 +174,15 @@ def main() -> int:
     ap.add_argument("--expected", type=Path, required=True, help="validation/published-wheel-chemistry-gates-expected-v<version>.json")
     ap.add_argument("--scope", required=True, help="label, e.g. published_pypi_v1.0.36_macos_arm64_cp312")
     ap.add_argument("--out-dir", type=Path, required=True)
+    ap.add_argument("--resume", action="store_true",
+                    help="skip steps whose output in --out-dir is already complete; rerun the same "
+                         "command on hosts that end long-lived processes until every step is done")
+    ap.add_argument("--corpus-shards", type=int, default=1,
+                    help="run the BioTransformer corpus as this many reactant shards (each its own "
+                         "process and resumable output), then add their counts up")
     args = ap.parse_args()
+    if args.corpus_shards < 1:
+        ap.error("--corpus-shards must be at least 1")
     # Steps run from the repository root; anchor the caller's paths first.
     args.wheel = args.wheel.resolve()
     args.expected = args.expected.resolve()
@@ -131,7 +192,9 @@ def main() -> int:
     out = args.out_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
     log = out / "gates.log"
-    log.write_text("", encoding="utf-8")
+    if not (args.resume and log.exists()):
+        log.write_text("", encoding="utf-8")
+    resume = args.resume
     cp, rp = args.chematic_python, args.rdkit_python
     version = subprocess.run(
         [cp, "-c", "import chematic; print(chematic.__version__)"], check=True, capture_output=True, text=True
@@ -139,18 +202,23 @@ def main() -> int:
 
     run([cp, str(SCRIPTS / "reaction_python_checked_candidates.py"), "--wheel", str(args.wheel),
          "--published-from", f"https://pypi.org/project/chematic/{version}/",
-         "--output", str(out / "reaction-candidates-83.json")], log)
+         "--output", str(out / "reaction-candidates-83.json")], log,
+        out / "reaction-candidates-83.json", resume)
     run([rp, str(SCRIPTS / "reaction_python_checked_provenance_gate.py"),
          "--candidates", str(out / "reaction-candidates-83.json"),
-         "--output", str(out / "reaction-checked-provenance-83.json")], log)
+         "--output", str(out / "reaction-checked-provenance-83.json")], log,
+        out / "reaction-checked-provenance-83.json", resume)
     run([cp, str(SCRIPTS / "check_python_smarts_parity_310k.py"), "--wheel", str(args.wheel),
          "--module-root", str(module_root(cp)), "--archived-oracle", "--scope", args.scope,
-         "--output", str(out / "smarts-optin-310k.json")], log)
+         "--output", str(out / "smarts-optin-310k.json")], log, out / "smarts-optin-310k.json", resume)
     for name, corpus in CORPORA.items():
+        result = out / f"chemistry-{name}.json"
+        if resume and finished(result):
+            continue
         run([cp, str(SCRIPTS / "chematic_chemistry_dump.py"), "--corpus", str(corpus),
              "--output", str(out / f"dump-{name}.jsonl")], log)
         run([rp, str(SCRIPTS / "compare_chemistry_dump_rdkit.py"), "--dump", str(out / f"dump-{name}.jsonl"),
-             "--output", str(out / f"chemistry-{name}.json")], log)
+             "--output", str(result)], log)
         (out / f"dump-{name}.jsonl").unlink()
     ran_corpus = False
     if args.rules_dir:
@@ -160,11 +228,31 @@ def main() -> int:
             if sha256(p) != digest:
                 raise SystemExit(f"{p} does not hash to the pinned {digest}")
             rules.append(str(p))
-        run([rp, str(SCRIPTS / "biotransformer_rule_corpus.py"), "--rules", *rules,
-             "--reactants", str(reactants(out / "bt_reactants_400.smi")),
-             "--chematic-python", cp,
-             "--output", str(out / "biotransformer-corpus.json"),
-             "--rows", str(out / "biotransformer-corpus-rows.jsonl")], log)
+        reactant_file = reactants(out / "bt_reactants_400.smi")
+        n_reactants = len(reactant_file.read_text(encoding="utf-8").splitlines())
+        if args.corpus_shards == 1:
+            run([rp, str(SCRIPTS / "biotransformer_rule_corpus.py"), "--rules", *rules,
+                 "--reactants", str(reactant_file),
+                 "--chematic-python", cp,
+                 "--output", str(out / "biotransformer-corpus.json"),
+                 "--rows", str(out / "biotransformer-corpus-rows.jsonl")], log,
+                out / "biotransformer-corpus.json", resume)
+        else:
+            shard_dir = out / "biotransformer-shards"
+            shard_dir.mkdir(exist_ok=True)
+            n = args.corpus_shards
+            shards = []
+            for k in range(n):
+                start, end = k * n_reactants // n, (k + 1) * n_reactants // n
+                summary_path = shard_dir / f"shard-{k + 1}-of-{n}.json"
+                rows_path = shard_dir / f"shard-{k + 1}-of-{n}-rows.jsonl"
+                run([rp, str(SCRIPTS / "biotransformer_rule_corpus.py"), "--rules", *rules,
+                     "--reactants", str(reactant_file), "--reactants-slice", f"{start}:{end}",
+                     "--chematic-python", cp,
+                     "--output", str(summary_path), "--rows", str(rows_path)], log, summary_path, resume)
+                shards.append((summary_path, rows_path))
+            merge_corpus_shards(shards, out / "biotransformer-corpus.json",
+                                out / "biotransformer-corpus-rows.jsonl")
         ran_corpus = True
 
     got = summarize(out, ran_corpus)

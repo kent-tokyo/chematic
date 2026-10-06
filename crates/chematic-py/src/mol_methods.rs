@@ -165,8 +165,23 @@ impl Mol {
     ///
     ///     coords = mol.generate_3d()
     ///     e = mol.mmff94_total_energy(coords)  # kcal/mol
-    fn mmff94_total_energy(&self, coords: Vec<[f64; 3]>) -> f64 {
-        chematic_ff::mmff94_total_energy(&self.inner, &coords).unwrap_or(0.0)
+    ///
+    /// ``ignore_interfrag_interactions`` as in :meth:`mmff94_energy_breakdown`.
+    #[pyo3(signature = (coords, ignore_interfrag_interactions = false))]
+    fn mmff94_total_energy(
+        &self,
+        coords: Vec<[f64; 3]>,
+        ignore_interfrag_interactions: bool,
+    ) -> f64 {
+        chematic_ff::mmff94_energy_breakdown_with_options(
+            &self.inner,
+            &coords,
+            chematic_ff::Mmff94Options {
+                ignore_interfragment_interactions: ignore_interfrag_interactions,
+            },
+        )
+        .map(|b| b.total)
+        .unwrap_or(0.0)
     }
 
     /// Per-atom MMFF94 force field type names.
@@ -1947,18 +1962,35 @@ impl Mol {
     /// The native :meth:`find_matches` contract is unchanged. In particular,
     /// ambiguous ring-count systems and bounded searches are never presented
     /// as an empty match set. This mode is not general RDKit SMARTS parity.
+    ///
+    /// ``profile="2026.09.1"`` counts ``[R<n>]`` rings in RDKit 2026.09.1's
+    /// ring list (all relevant cycles) instead of 2026.03.6's symmetrized
+    /// SSSR; nothing is then refused as ``ring_model_ambiguous``.
+    #[pyo3(signature = (smarts, profile = "2026.03.6"))]
     fn find_matches_rdkit_parity<'py>(
         &self,
         smarts: &str,
+        profile: &str,
         py: Python<'py>,
     ) -> PyResult<Bound<'py, PyDict>> {
-        use chematic_smarts::RdkitParityError;
+        use chematic_smarts::{RdkitParityError, RdkitRingCountModel};
+
+        let ring_count_model = match profile {
+            "2026.03.6" => RdkitRingCountModel::SymmetrizedSssr,
+            "2026.09.1" => RdkitRingCountModel::RelevantCycles,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "unknown profile '{other}': expected '2026.03.6' or '2026.09.1'"
+                )));
+            }
+        };
 
         let query = crate::misc::cached_smarts(smarts)
             .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
         let result = PyDict::new(py);
         let config = chematic_smarts::RdkitParityConfig {
             use_rdkit_parity_aromaticity: true,
+            ring_count_model,
             ..chematic_smarts::RdkitParityConfig::default()
         };
         match chematic_smarts::find_matches_rdkit_parity(&query, &self.inner, &config) {
@@ -3024,14 +3056,26 @@ impl Mol {
     /// ``torsion``, ``oop``, ``vdw``, ``electrostatic``, ``total`` (kcal/mol).
     ///
     /// ``coords``: ``[[x,y,z], ...]`` list (Å), one per heavy atom.
+    /// ``ignore_interfrag_interactions=True`` leaves out van der Waals and
+    /// electrostatic pairs between disconnected fragments, as RDKit's
+    /// ``MMFFGetMoleculeForceField`` does by default; chematic keeps them by
+    /// default.
     /// Raises ``ValueError`` for atoms not parameterised by MMFF94.
+    #[pyo3(signature = (coords, ignore_interfrag_interactions = false))]
     fn mmff94_energy_breakdown<'py>(
         &self,
         py: Python<'py>,
         coords: Vec<[f64; 3]>,
+        ignore_interfrag_interactions: bool,
     ) -> PyResult<Bound<'py, PyDict>> {
-        let b = chematic_ff::mmff94_energy_breakdown(&self.inner, &coords)
-            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        let b = chematic_ff::mmff94_energy_breakdown_with_options(
+            &self.inner,
+            &coords,
+            chematic_ff::Mmff94Options {
+                ignore_interfragment_interactions: ignore_interfrag_interactions,
+            },
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
         let d = PyDict::new(py);
         d.set_item("bond", b.bond)?;
         d.set_item("angle", b.angle)?;
@@ -3414,7 +3458,10 @@ impl Mol {
                     d.set_item("kekule_dependent", true)?;
                 }
                 if mode == "accurate"
-                    && matches!(code, CipCode::R | CipCode::S)
+                    && matches!(
+                        code,
+                        CipCode::R | CipCode::S | CipCode::LowerR | CipCode::LowerS
+                    )
                     && chematic_chem::cip_label_depends_on_smiles_spelling(&self.inner, *idx)
                 {
                     d.set_item("spelling_dependent", true)?;

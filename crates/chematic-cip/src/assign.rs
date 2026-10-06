@@ -318,7 +318,7 @@ fn apply_rule5_pass(
             skipped.push((idx, reason));
             continue;
         };
-        if stereo_order.len() != 4 {
+        if stereo_order.len() != 4 && stereo_order.len() != 3 {
             skipped.push((idx, reason));
             continue;
         }
@@ -363,7 +363,10 @@ fn assign_one_with_rule5(
     // `idx`/`mol` name the same atom identity regardless of Kekule respelling (`mol` is
     // always the original, pre-Kekule molecule here -- see `assign_one`'s own doc
     // comment), so this check is stable across resonance respellings by construction.
-    if mol.atom(idx).element == Element::P {
+    // A saturated ring phosphine (three single bonds, lone pair) is not that
+    // case: its label is checked against RDKit's over random spellings.
+    let lone_pair_centre = stereo_order.len() == 3;
+    if mol.atom(idx).element == Element::P && !label_follows_rdkit_smiles_reading(mol, idx) {
         return Err(SkipReason::Tied);
     }
 
@@ -475,7 +478,14 @@ fn assign_one_with_rule5(
         }
     }
 
-    let Some(is_r) = resolve_is_r_from_groups(&resolved_groups, &position_nodes, chirality) else {
+    let is_r = if lone_pair_centre {
+        let invert =
+            label_follows_rdkit_smiles_reading(mol, idx) && mol.smiles_ring_closure_count(idx) == 1;
+        lone_pair_is_r(&resolved_groups, &position_nodes, chirality, invert)?
+    } else {
+        resolve_is_r_from_groups(&resolved_groups, &position_nodes, chirality)
+    };
+    let Some(is_r) = is_r else {
         return Ok(None);
     };
     Ok(Some(if is_r {
@@ -585,6 +595,22 @@ fn assign_lone_pair_centre(
             return Err(SkipReason::Tied);
         }
     }
+    let invert = saturated_ring_centre && mol.smiles_ring_closure_count(idx) == 1;
+    Ok(lone_pair_is_r(&groups, &position_nodes, chirality, invert)?
+        .map(|r| if r { CipCode::R } else { CipCode::S }))
+}
+
+/// Whether a three-ligand centre with a lone pair is R, given its ligands'
+/// priority groups (highest first, each physical ligand in its own group).
+/// `invert` applies RDKit's SMILES reading (`chiralAtomNeedsTagInversion`:
+/// a saturated three-connected centre without H carrying exactly one
+/// ring-closure digit has its tag inverted).
+fn lone_pair_is_r(
+    groups: &[Vec<NodeId>],
+    position_nodes: &[NodeId],
+    chirality: Chirality,
+    invert: bool,
+) -> Result<Option<bool>, SkipReason> {
     // Highest group first: rank the three ligands 4, 3, 2; the lone pair is 1.
     let group_of = |node: NodeId| groups.iter().position(|g| g.contains(&node));
     let mut by_priority: Vec<(usize, usize)> = position_nodes
@@ -604,12 +630,7 @@ fn assign_lone_pair_centre(
     let lone_pair_slot = 1;
     let mut ranks = ranks3.to_vec();
     ranks.insert(lone_pair_slot, 1);
-    // RDKit's SMILES parser (`chiralAtomNeedsTagInversion`) inverts the tag
-    // of a saturated three-connected centre without H that carries exactly
-    // one ring-closure digit; its label is that of the inverted centre.
-    let invert = saturated_ring_centre && mol.smiles_ring_closure_count(idx) == 1;
-    Ok(is_r_from_ranks(&ranks, chirality)
-        .map(|r| if r != invert { CipCode::R } else { CipCode::S }))
+    Ok(is_r_from_ranks(&ranks, chirality).map(|r| r != invert))
 }
 
 /// Whether tetrahedral centre `atom` is a ring centre with three explicit

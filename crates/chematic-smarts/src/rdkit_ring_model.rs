@@ -190,6 +190,20 @@ impl RdkitParityRingModel {
         self.extra_ring_count
     }
 
+    /// A model with these per-atom ring counts and no extra rings.
+    pub(crate) fn from_counts(counts: &[usize]) -> Self {
+        Self {
+            ring_count_by_atom: counts
+                .iter()
+                .enumerate()
+                .filter(|&(_, &c)| c > 0)
+                .map(|(i, &c)| (AtomIdx(i as u32), u8::try_from(c).unwrap_or(u8::MAX)))
+                .collect(),
+            extra_rings: Vec::new(),
+            extra_ring_count: 0,
+        }
+    }
+
     pub(crate) fn has_extra_ring_of_size(&self, atom: AtomIdx, size: usize) -> bool {
         self.extra_rings
             .iter()

@@ -706,7 +706,7 @@ fn initial_invariant(mol: &Molecule, idx: AtomIdx) -> u64 {
 }
 
 /// Map a BondOrder to a stable integer for use in Morgan rank hashing.
-fn bond_order_value(order: BondOrder) -> u64 {
+pub(crate) fn bond_order_value(order: BondOrder) -> u64 {
     match order {
         BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
         BondOrder::Double => 2,

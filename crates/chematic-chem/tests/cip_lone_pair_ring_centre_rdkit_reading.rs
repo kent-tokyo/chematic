@@ -86,15 +86,31 @@ fn other_centres_are_not_spelling_dependent() {
 }
 
 #[test]
-fn pseudoasymmetric_ring_lone_pair_centre_stays_tied() {
-    // RDKit labels these `s`; Rule 5 is not applied to lone-pair centres,
-    // so the accurate engine abstains (typed `Tied`) instead of guessing.
-    for (smiles, atom) in [
-        ("C[C@@H]1C[P@](C)C[C@H](C)C1", 3u32),
-        ("O=C1C[N@]2CC[C@H]1CC2", 3),
+fn pseudoasymmetric_ring_lone_pair_centres_get_rdkits_r_s() {
+    // RDKit 2026.03.6 rdCIPLabeler; rule 5 between the two enantiomorphic
+    // ring arms, with RDKit's reading of the spelling (one ring-closure
+    // digit on the aziridine N). 1,080 of 1,120 RDKit spellings of ten such
+    // molecules agree; the other 40 are the quinuclidinone carbon below.
+    for (smiles, atom, want) in [
+        ("C[C@@H]1C[P@](C)C[C@H](C)C1", 3u32, CipCode::LowerS),
+        ("C[C@@H]1C[P@@](C)C[C@H](C)C1", 3, CipCode::LowerR),
+        ("C[C@@H]1[C@H](C)[N@]1C", 4, CipCode::LowerS),
+        ("C[C@@H]1[C@H](C)[N@@]1CC", 4, CipCode::LowerR),
+        ("C[C@@H]1C[S@+](C)C[C@H](C)C1", 3, CipCode::LowerS),
+        ("C[C@@H]1CC[P@](C)CC[C@H](C)C1", 4, CipCode::LowerS),
     ] {
-        let mol = parse(smiles).unwrap();
-        let r = assign_cip_with_mode(&mol, CipMode::Accurate).unwrap();
-        assert!(r.assignments.iter().all(|(i, _)| i.0 != atom), "{smiles}");
+        assert_eq!(accurate(smiles, atom), Some(want), "{smiles} atom {atom}");
     }
+}
+
+#[test]
+fn carbon_whose_rule5_needs_a_lone_pair_centre_stays_tied() {
+    // 3-quinuclidinone-like (RDKit: N s, C s): the N's arms are told apart
+    // through the carbon, which gets `s`; the carbon's arms differ only
+    // through the N's lone pair, which the auxiliary-descriptor pass does
+    // not model, so it abstains (typed `Tied`) in every spelling.
+    let mol = parse("O=C1C[N@]2CC[C@H]1CC2").unwrap();
+    let r = assign_cip_with_mode(&mol, CipMode::Accurate).unwrap();
+    assert_eq!(r.get(AtomIdx(3)), Some(CipCode::LowerS));
+    assert_eq!(r.get(AtomIdx(6)), None);
 }

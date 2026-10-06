@@ -479,7 +479,7 @@ fn cip_code_pairs_to_json(pairs: &[(chematic_core::AtomIdx, chematic_core::CipCo
 }
 
 /// [`cip_code_pairs_to_json`] with `"kekuleDependent": true` on the atoms
-/// `kekule_dependent` selects and `"spellingDependent": true` on the R/S
+/// `kekule_dependent` selects and `"spellingDependent": true` on the R/S/r/s
 /// atoms `spelling_dependent` selects.
 fn cip_code_pairs_to_json_marked(
     pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)],
@@ -501,7 +501,7 @@ fn cip_code_pairs_to_json_marked(
             if kekule_dependent(*idx) {
                 mark.push_str(",\"kekuleDependent\":true");
             }
-            if matches!(code, chematic_core::CipCode::R | chematic_core::CipCode::S)
+            if !matches!(code, chematic_core::CipCode::E | chematic_core::CipCode::Z)
                 && spelling_dependent(*idx)
             {
                 mark.push_str(",\"spellingDependent\":true");

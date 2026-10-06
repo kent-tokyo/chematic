@@ -169,8 +169,9 @@ use crate::etkdg_knowledge::{
     macrocycle_14_bound_adjustments, optimize_torsions,
 };
 use crate::minimize::{
-    ForceFieldBridgeError, ForceFieldPolicy, MAX_SANE_BOND_LENGTH, MinimizeConfig,
-    PolicyMinimizeResult, minimize_with_policy_gated, minimize_with_policy_gated_with_constraint,
+    ForceFieldBridgeError, ForceFieldPolicy, MAX_SANE_BOND_LENGTH, MinimizeConfig, Mmff94Minimizer,
+    PolicyMinimizeResult, minimize_with_policy_gated_using,
+    minimize_with_policy_gated_with_constraint,
 };
 use crate::stereo_constraints::{
     RepairRejectionReason, RepairedElement, StereoElement, StereoVerification, repair_stereo,
@@ -1095,15 +1096,16 @@ pub fn embed_pipeline_v2(
             // returned stereocenter geometrically unevaluable.
             && authoritative.n_unevaluable() == 0
     };
-    let minimize_force_field = |coords: Coords3D| {
+    let minimize_force_field_using = |coords: Coords3D, minimizer: Mmff94Minimizer| {
         if !reconcile_expanded_and_returned_stereo {
-            minimize_with_policy_gated(
+            minimize_with_policy_gated_using(
                 mol,
                 coords,
                 config.force_field_policy,
                 &ff_config,
                 config.gate_mmff94_torsion_oop,
                 config.gate_mmff94_stretch_bend,
+                minimizer,
             )
         } else {
             minimize_with_policy_gated_with_constraint(
@@ -1114,11 +1116,48 @@ pub fn embed_pipeline_v2(
                 config.gate_mmff94_torsion_oop,
                 config.gate_mmff94_stretch_bend,
                 &preserves_declared_stereo,
+                minimizer,
             )
         }
     };
+    // Batch 13: MMFF94 runs RDKit's dense BFGS, which reaches the residual-
+    // force threshold on about twice as many A6 rows within the iteration
+    // budget as the earlier L-BFGS. Its longer steps can relax a strained
+    // start (a beta-lactam ring fusion whose heavy-atom and explicit-H
+    // readings disagree, issue #291) into the other configuration, which
+    // the L-BFGS path relaxed back. When the BFGS result fails, or crosses a
+    // declared stereo boundary under a stereo policy, the earlier L-BFGS run
+    // from the same start is tried, and kept only if it fixes that.
+    let mmff94_policy = matches!(
+        config.force_field_policy,
+        ForceFieldPolicy::Mmff94BondAngleStrict | ForceFieldPolicy::Mmff94WithUffFallback
+    );
+    let violates_declared_stereo = |r: &PolicyMinimizeResult| {
+        config.stereo_policy != StereoPolicy::Ignore
+            && verify_authoritative_final_stereo(
+                orig_mol,
+                mol,
+                &r.coords,
+                use_expanded_geometry,
+                original_atom_count,
+            )
+            .n_violations()
+                > 0
+    };
+    let mut used_minimizer = Mmff94Minimizer::Bfgs;
     let t0 = Instant::now();
-    let force_field = match minimize_force_field(coords) {
+    let mut first = minimize_force_field_using(coords.clone(), Mmff94Minimizer::Bfgs);
+    if mmff94_policy
+        && first.as_ref().map_or(true, &violates_declared_stereo)
+        && let Ok(retry) = minimize_force_field_using(coords, Mmff94Minimizer::Lbfgs)
+        && (first.is_err() || !violates_declared_stereo(&retry))
+    {
+        first = Ok(retry);
+        used_minimizer = Mmff94Minimizer::Lbfgs;
+    }
+    let minimize_force_field =
+        |coords: Coords3D| minimize_force_field_using(coords, used_minimizer);
+    let force_field = match first {
         Ok(r) => r,
         Err(e) => {
             timings.force_field_ms = t0.elapsed().as_millis() as u64;
@@ -1514,6 +1553,7 @@ fn compute_final_validation(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::minimize::minimize_with_policy_gated;
     use chematic_smiles::parse;
 
     fn config_none() -> PipelineV2Config {

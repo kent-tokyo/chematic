@@ -2531,27 +2531,10 @@ fn search_table(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> TableSear
         .or_else(|| search(angle_type, type_k, type_i, Mmff94Resolution::DirectTable))
         .or_else(|| eq_level_search(1, 3))
         .or_else(|| eq_level_search(2, 4))
-        .or_else(|| eq_level_search(3, 5))
-        .or_else(|| {
-            if angle_type != 0 {
-                search(
-                    0,
-                    type_i,
-                    type_k,
-                    Mmff94Resolution::GenericAngleTypeFallback,
-                )
-                .or_else(|| {
-                    search(
-                        0,
-                        type_k,
-                        type_i,
-                        Mmff94Resolution::GenericAngleTypeFallback,
-                    )
-                })
-            } else {
-                None
-            }
-        });
+        // RDKit's `MMFFAngleCollection` stops here: no retry at angle type 0;
+        // an angle the four levels miss takes the empirical rule (a 4-ring
+        // 3-40-20 angle: theta0 90, not the open-chain type-0 row's 112).
+        .or_else(|| eq_level_search(3, 5));
     match hit {
         Some((ka, theta0, kind)) if ka != 0.0 => {
             TableSearch::Hit(AngleEnergyParams { ka, theta0 }, kind)

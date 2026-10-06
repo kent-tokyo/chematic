@@ -11,13 +11,14 @@
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
+use smallvec::SmallVec;
 
 /// RDKit `RingUtils::MAX_BFSQ_SIZE`.
 const MAX_BFSQ_SIZE: usize = 200_000;
 
 struct Graph {
     /// Per atom: (neighbour, bond index) in RDKit's bond creation order.
-    adj: Vec<Vec<(usize, usize)>>,
+    adj: Vec<SmallVec<[(usize, usize); 4]>>,
     /// Per bond (RDKit's index): its two atoms.
     ends: Vec<(usize, usize)>,
     /// Per bond (RDKit's index): its order.
@@ -188,7 +189,7 @@ impl Graph {
     /// a SMILES's ring-closure bonds come last), so neighbour lists and the
     /// searches that walk them visit atoms in RDKit's order.
     fn new(mol: &Molecule) -> Self {
-        let mut adj = vec![Vec::new(); mol.atom_count()];
+        let mut adj = vec![SmallVec::new(); mol.atom_count()];
         let mut ends = Vec::with_capacity(mol.bond_count());
         let mut orders = Vec::with_capacity(mol.bond_count());
         let dative = organometallic_dative_bonds(mol);
@@ -282,17 +283,57 @@ fn smallest_rings_bfs(
     active: &[bool],
     forbidden: &[usize],
 ) -> Result<Vec<Vec<usize>>, TooBig> {
+    BFS_SCRATCH.with(|scratch| {
+        let mut scratch = scratch.borrow_mut();
+        let BfsScratch {
+            done,
+            parents,
+            depths,
+            queue,
+        } = &mut *scratch;
+        smallest_rings_bfs_in(g, root, active, forbidden, done, parents, depths, queue)
+    })
+}
+
+/// Per-thread buffers for [`smallest_rings_bfs`], which runs once per ring
+/// candidate (thousands of times on a large ring system).
+#[derive(Default)]
+struct BfsScratch {
+    done: Vec<u8>,
+    parents: Vec<isize>,
+    depths: Vec<usize>,
+    queue: VecDeque<usize>,
+}
+
+thread_local! {
+    static BFS_SCRATCH: std::cell::RefCell<BfsScratch> = std::cell::RefCell::new(BfsScratch::default());
+}
+
+#[allow(clippy::too_many_arguments)]
+fn smallest_rings_bfs_in(
+    g: &Graph,
+    root: usize,
+    active: &[bool],
+    forbidden: &[usize],
+    done: &mut Vec<u8>,
+    parents: &mut Vec<isize>,
+    depths: &mut Vec<usize>,
+    queue: &mut VecDeque<usize>,
+) -> Result<Vec<Vec<usize>>, TooBig> {
     const WHITE: u8 = 0;
     const GRAY: u8 = 1;
     const BLACK: u8 = 2;
     let n = g.adj.len();
-    let mut done = vec![WHITE; n];
+    done.clear();
+    done.resize(n, WHITE);
     for &f in forbidden {
         done[f] = BLACK;
     }
-    let mut parents: Vec<isize> = vec![-1; n];
-    let mut depths = vec![0usize; n];
-    let mut queue = VecDeque::new();
+    parents.clear();
+    parents.resize(n, -1);
+    depths.clear();
+    depths.resize(n, 0);
+    queue.clear();
     queue.push_back(root);
     let mut rings: Vec<Vec<usize>> = Vec::new();
     let mut cur_size = usize::MAX;

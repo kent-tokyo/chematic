@@ -208,6 +208,33 @@ pub fn mmff94_energy_breakdown_json(mol: &MolHandle) -> String {
 /// falls back to a generated conformer.
 #[wasm_bindgen]
 pub fn mmff94_energy_breakdown_from_coords_json(mol: &MolHandle, coords_json: &str) -> String {
+    energy_breakdown_json(mol, coords_json, chematic_ff::Mmff94Options::default())
+}
+
+/// [`mmff94_energy_breakdown_from_coords_json`] with
+/// `ignore_interfrag_interactions`: `true` leaves out van der Waals and
+/// electrostatic pairs between disconnected fragments, as RDKit's
+/// `MMFFGetMoleculeForceField` does by default.
+#[wasm_bindgen]
+pub fn mmff94_energy_breakdown_from_coords_json_with_options(
+    mol: &MolHandle,
+    coords_json: &str,
+    ignore_interfrag_interactions: bool,
+) -> String {
+    energy_breakdown_json(
+        mol,
+        coords_json,
+        chematic_ff::Mmff94Options {
+            ignore_interfragment_interactions: ignore_interfrag_interactions,
+        },
+    )
+}
+
+fn energy_breakdown_json(
+    mol: &MolHandle,
+    coords_json: &str,
+    options: chematic_ff::Mmff94Options,
+) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
         return format!(
             r#"{{"error":"molecule too large (max {} atoms)"}}"#,
@@ -234,7 +261,7 @@ pub fn mmff94_energy_breakdown_from_coords_json(mol: &MolHandle, coords_json: &s
     if !coords_all_finite(&coords) {
         return r#"{"error":"coords contain a non-finite value (NaN or Infinity)"}"#.to_string();
     }
-    match chematic_ff::mmff94_energy_breakdown(&mol.inner, &coords) {
+    match chematic_ff::mmff94_energy_breakdown_with_options(&mol.inner, &coords, options) {
         Ok(bd) => {
             let vals = [
                 bd.bond,

@@ -56,6 +56,7 @@ use crate::canonical_partition::{CanonicalColoredGraph, Partition};
 const MAX_EXTEND_MAPPING_STEPS: usize = 200_000;
 const UNMAPPED: u32 = u32::MAX;
 
+#[cfg(test)]
 pub(crate) fn has_colored_automorphism_mapping(
     graph: &CanonicalColoredGraph,
     coloring: &Partition,
@@ -79,11 +80,61 @@ pub(crate) fn has_colored_automorphism_mapping(
     preimage[to.0 as usize] = from.0;
 
     let mut steps = 0usize;
-    if !extend_mapping(graph, coloring, &mut image, &mut preimage, &mut steps) {
+    if !extend_mapping(
+        graph,
+        coloring,
+        &mut image,
+        &mut preimage,
+        &mut steps,
+        MAX_EXTEND_MAPPING_STEPS,
+        None,
+    ) {
         return false;
     }
 
     verify_full_bijection(graph, &image)
+}
+
+/// [`has_colored_automorphism_mapping`] with at most `max_steps` search
+/// steps: `Some(answer)` when the search finished within them, `None` when
+/// it ran out (the answer is then unknown).
+pub(crate) fn colored_automorphism_mapping_within(
+    graph: &CanonicalColoredGraph,
+    coloring: &Partition,
+    from: AtomIdx,
+    to: AtomIdx,
+    max_steps: usize,
+) -> Option<bool> {
+    if from == to {
+        return Some(true);
+    }
+    if graph.vertex_color(from) != graph.vertex_color(to)
+        || coloring.cell_of[from.0 as usize] != coloring.cell_of[to.0 as usize]
+    {
+        return Some(false);
+    }
+    let n = graph.n();
+    let mut image: SmallVec<[u32; 64]> = smallvec![UNMAPPED; n];
+    let mut preimage: SmallVec<[u32; 64]> = smallvec![UNMAPPED; n];
+    image[from.0 as usize] = to.0;
+    preimage[to.0 as usize] = from.0;
+    let mut steps = 0usize;
+    let found = extend_mapping(
+        graph,
+        coloring,
+        &mut image,
+        &mut preimage,
+        &mut steps,
+        max_steps,
+        None,
+    );
+    if found {
+        Some(verify_full_bijection(graph, &image))
+    } else if steps > max_steps {
+        None
+    } else {
+        Some(false)
+    }
 }
 
 fn extend_mapping(
@@ -92,9 +143,11 @@ fn extend_mapping(
     image: &mut [u32],
     preimage: &mut [u32],
     steps: &mut usize,
+    max_steps: usize,
+    keys: Option<(&[u64], &[u64])>,
 ) -> bool {
     *steps += 1;
-    if *steps > MAX_EXTEND_MAPPING_STEPS {
+    if *steps > max_steps {
         return false;
     }
     let n = image.len();
@@ -143,6 +196,7 @@ fn extend_mapping(
         preimage[v as usize] == UNMAPPED
             && coloring.cell_of[v as usize] == cell
             && graph.vertex_color(AtomIdx(v)) == u_color
+            && keys.is_none_or(|(dom, cod)| dom[u] == cod[v as usize])
     };
     let candidates: SmallVec<[u32; 8]> = match anchor_image {
         Some(img) => graph
@@ -159,7 +213,7 @@ fn extend_mapping(
         }
         image[u] = v;
         preimage[v as usize] = u as u32;
-        if extend_mapping(graph, coloring, image, preimage, steps) {
+        if extend_mapping(graph, coloring, image, preimage, steps, max_steps, keys) {
             return true;
         }
         image[u] = UNMAPPED;
@@ -221,6 +275,60 @@ fn feasible(
 /// preservation checked from every vertex's own perspective (so both
 /// directions of every edge are independently checked). Never accepts a
 /// partial or subgraph match -- every vertex of the graph must be mapped.
+/// [`has_colored_automorphism_mapping`] restricted to maps that send every
+/// atom `u` to an atom `v` with `to_keys[v] == from_keys[u]`. With the
+/// refined ranks of the branches individualizing `from` and `to` as keys this
+/// loses no automorphism mapping `from` to `to` (refinement is invariant), and
+/// on vertex-transitive cages it cuts the search from seconds to
+/// microseconds.
+pub(crate) fn has_colored_automorphism_mapping_keyed(
+    graph: &CanonicalColoredGraph,
+    coloring: &Partition,
+    from: AtomIdx,
+    to: AtomIdx,
+    from_keys: &[u64],
+    to_keys: &[u64],
+) -> bool {
+    if from == to {
+        return true;
+    }
+    if graph.vertex_color(from) != graph.vertex_color(to)
+        || coloring.cell_of[from.0 as usize] != coloring.cell_of[to.0 as usize]
+        || from_keys[from.0 as usize] != to_keys[to.0 as usize]
+    {
+        return false;
+    }
+    let n = graph.n();
+    let mut image: SmallVec<[u32; 64]> = smallvec![UNMAPPED; n];
+    let mut preimage: SmallVec<[u32; 64]> = smallvec![UNMAPPED; n];
+    image[from.0 as usize] = to.0;
+    preimage[to.0 as usize] = from.0;
+    let mut steps = 0usize;
+    extend_mapping(
+        graph,
+        coloring,
+        &mut image,
+        &mut preimage,
+        &mut steps,
+        MAX_EXTEND_MAPPING_STEPS,
+        Some((from_keys, to_keys)),
+    ) && verify_full_bijection(graph, &image)
+}
+
+/// Whether `image` (a full map, atom -> atom) is an automorphism of the
+/// colored graph that also keeps every atom in its `coloring` cell.
+pub(crate) fn is_cell_preserving_automorphism(
+    graph: &CanonicalColoredGraph,
+    coloring: &Partition,
+    image: &[u32],
+) -> bool {
+    image.len() == graph.n()
+        && image.iter().enumerate().all(|(i, &v)| {
+            (v as usize) < image.len() && coloring.cell_of[i] == coloring.cell_of[v as usize]
+        })
+        && verify_full_bijection(graph, image)
+}
+
 fn verify_full_bijection(graph: &CanonicalColoredGraph, image: &[u32]) -> bool {
     let n = image.len();
     let mut seen: SmallVec<[bool; 64]> = smallvec![false; n];

@@ -20,6 +20,7 @@
 //! supplied by the caller (`chematic_core::kekulize`): every aromatic atom
 //! that holds a double bond there is one of RDKit's double-bond candidates.
 
+use smallvec::SmallVec;
 use std::collections::VecDeque;
 
 use chematic_core::{
@@ -54,7 +55,8 @@ struct CanonAtom {
     total_hs: u32,
     has_ring_nbr: bool,
     is_ring_stereo: bool,
-    nbr_ids: Vec<u32>,
+    // Inline for the usual degree <= 4 (no per-atom allocation).
+    nbr_ids: SmallVec<[u32; 4]>,
     bonds: Vec<BondHolder>,
     neighbor_num: Vec<i32>,
     revisited: Vec<i32>,
@@ -75,7 +77,7 @@ struct Input {
     chiral: Vec<u8>,
     nrings: Vec<u32>,
     /// Adjacency in bond insertion order.
-    nbrs: Vec<Vec<u32>>,
+    nbrs: Vec<SmallVec<[u32; 4]>>,
     bonds: Vec<InputBond>,
 }
 
@@ -977,7 +979,7 @@ fn build_input(mol: &Molecule, rings: &[Vec<usize>], ez: &[(BondIdx, bool)]) -> 
         map: Vec::with_capacity(n),
         chiral: Vec::with_capacity(n),
         nrings,
-        nbrs: vec![Vec::new(); n],
+        nbrs: vec![SmallVec::new(); n],
         bonds: Vec::with_capacity(mol.bond_count()),
     };
     for (idx, atom) in mol.atoms() {

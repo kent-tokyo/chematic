@@ -1359,36 +1359,62 @@ fn mmff_aromatic_pass(kmol: &Molecule, rings: &[Vec<AtomIdx>]) -> (Molecule, Vec
     // moment each ring's own check passed, above) makes this structurally
     // impossible instead of relying on a derived invariant that fused rings
     // can break.
-    let mut aromatic_bonds: std::collections::HashSet<(AtomIdx, AtomIdx)> =
-        std::collections::HashSet::new();
+    // The view is `kmol`'s atoms and bonds with these aromatic flags and
+    // bonds. When `kmol`'s adjacency is already in bond order, a clone
+    // changed in place has the neighbour order a rebuild would give, without
+    // re-adding every bond.
+    if !kmol.adjacency_in_bond_order() {
+        let mut aromatic_bond = vec![false; kmol.bond_count()];
+        for (ring_idx, ring) in rings.iter().enumerate() {
+            if ring_accepted[ring_idx] {
+                let len = ring.len();
+                for (j, &a) in ring.iter().enumerate() {
+                    if let Some((bond, _)) = kmol.bond_between(a, ring[(j + 1) % len]) {
+                        aromatic_bond[bond.0 as usize] = true;
+                    }
+                }
+            }
+        }
+        let mut builder = chematic_core::MoleculeBuilder::with_capacity(n, kmol.bond_count());
+        for (idx, atom) in kmol.atoms() {
+            let mut atom = atom.clone();
+            atom.aromatic = is_arom[idx.0 as usize];
+            builder.add_atom(atom);
+        }
+        for (bidx, bond) in kmol.bonds() {
+            let order = if aromatic_bond[bidx.0 as usize] {
+                BondOrder::Aromatic
+            } else {
+                bond.order
+            };
+            builder
+                .add_bond(bond.atom1, bond.atom2, order)
+                .expect("duplicate bond during MMFF94 aromaticity re-perception");
+        }
+        return (builder.build(), ring_accepted);
+    }
+    let mut view = kmol.clone();
+    for (idx, _) in kmol.atoms() {
+        if kmol.atom(idx).aromatic != is_arom[idx.0 as usize] {
+            view.set_atom_aromatic(idx, is_arom[idx.0 as usize]);
+        }
+    }
     for (ring_idx, ring) in rings.iter().enumerate() {
         if ring_accepted[ring_idx] {
             let len = ring.len();
             for (j, &a) in ring.iter().enumerate() {
                 let b = ring[(j + 1) % len];
-                aromatic_bonds.insert((a.min(b), a.max(b)));
+                let bond = kmol
+                    .bond_between(a, b)
+                    .expect("consecutive ring atoms are bonded")
+                    .0;
+                if view.bond(bond).order != BondOrder::Aromatic {
+                    view.set_bond_order(bond, BondOrder::Aromatic);
+                }
             }
         }
     }
-
-    let mut builder = chematic_core::MoleculeBuilder::new();
-    for (idx, atom) in kmol.atoms() {
-        let mut atom = atom.clone();
-        atom.aromatic = is_arom[idx.0 as usize];
-        builder.add_atom(atom);
-    }
-    for (_, bond) in kmol.bonds() {
-        let key = (bond.atom1.min(bond.atom2), bond.atom1.max(bond.atom2));
-        let order = if aromatic_bonds.contains(&key) {
-            BondOrder::Aromatic
-        } else {
-            bond.order
-        };
-        builder
-            .add_bond(bond.atom1, bond.atom2, order)
-            .expect("duplicate bond during MMFF94 aromaticity re-perception");
-    }
-    (builder.build(), ring_accepted)
+    (view, ring_accepted)
 }
 
 /// RDKit's `isAtomNOxide`: a >=3-connected nitrogen with a terminal
@@ -2572,7 +2598,13 @@ fn assign_oxygen_bound_h_type(mol: &Molecule, oxygen_idx: AtomIdx, oxygen_type: 
 /// carbon or phosphorus neighbor) and only 3 molecules combining nitro/
 /// azide/sulfoxide with the absent-from-switch types this fix's Step
 /// 1/Step 3 change directly affects.
-fn mmff_derived_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
+fn mmff_derived_formal_charge(
+    mol: &Molecule,
+    view: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    types: &[u8],
+    idx: AtomIdx,
+) -> f64 {
     match types[idx.0 as usize] {
         // "Non-complicated" +1/+2/+3/-1 atom types (`AtomTyper.cpp`'s
         // `computeMMFFCharges` switch, cases with a single hardcoded `fChg`
@@ -2583,48 +2615,94 @@ fn mmff_derived_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64
         35 | 62 | 89 | 90 | 91 => -1.0,
         // O2CM (32) / SM (72): formal charge shared/localized across
         // terminal O/S atoms bonded to a common neighbor.
-        32 | 72 => o2cm_sm_formal_charge(mol, types, idx),
+        32 | 72 => o2cm_sm_formal_charge(view, types, idx),
+        // N5M: -1 shared by the N5M nitrogens of the (first) ring holding it.
+        76 => rings
+            .iter()
+            .find(|r| r.contains(&idx))
+            .map(|r| r.iter().filter(|a| types[a.0 as usize] == 76).count())
+            .filter(|&k| k > 0)
+            .map_or(0.0, |k| -1.0 / k as f64),
+        // NIM+ / N5A+ / N5B+ / N5+: the formal charges of the nitrogens of
+        // these types conjugated through C5A/CIM+-type carbons (57, 80),
+        // shared evenly among them.
+        55 | 56 | 81 => conjugated_cation_formal_charge(mol, types, idx),
+        // N=N+ next to a diazonium N (42): +1.
+        61 if mol.neighbors(idx).any(|(nb, _)| types[nb.0 as usize] == 42) => 1.0,
         _ => 0.0,
     }
 }
 
-/// O2CM/SM formal-charge redistribution (`AtomTyper.cpp` lines ~3095-3168,
-/// `case 32: case 72:`). Reuses this module's existing terminal-O/S/deg-2-N
-/// neighbor counters (`count_terminal_o_neighbors`/`count_terminal_s_neighbors`/
-/// `count_deg2_n_neighbors`), the same helpers `classify_terminal_o` already
-/// uses to *assign* type 32 in the first place, rather than re-deriving the
-/// same counts a second way -- with one known, pre-existing divergence from
-/// RDKit's real `nSecNbondedToNbr` inherited by this reuse:
-/// `count_deg2_n_neighbors` omits RDKit's `!nbr2Atom->getIsAromatic()`
-/// condition (`AtomTyper.cpp` line ~3116), so a degree-2 AROMATIC nitrogen
-/// would be counted here where RDKit's real algorithm would not (this would
-/// flip the sulfonamide fixup and the type-18 branch's `total` by 1 for such
-/// a case). Not changed here (the shared helper's existing, already-shipped
-/// type-ASSIGNMENT behavior in `classify_terminal_o` is out of scope for a
-/// charge-calculation fix); the full-corpus, zero-regression per-atom join
-/// (`scripts/mmff94_provenance/PROVENANCE.md`) is the corpus-level evidence
-/// this reuse is safe for every type-18-neighbor atom actually measured.
-fn o2cm_sm_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
-    for nbr_bond in bonds_of(mol, idx) {
-        let nbr = nbr_bond.neighbor;
-        let nbr_elem = mol.atom(nbr).element;
+/// RDKit's `case 55: case 56: case 81:` in `computeMMFFCharges`.
+fn conjugated_cation_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
+    let n = mol.atom_count();
+    let mut conj = vec![false; n];
+    conj[idx.0 as usize] = true;
+    let mut total = f64::from(mol.atom(idx).charge);
+    let mut n_conj = 1usize;
+    let mut old = 0usize;
+    while n_conj > old {
+        old = n_conj;
+        for i in 0..n {
+            if !conj[i] {
+                continue;
+            }
+            for (nb, _) in mol.neighbors(AtomIdx(i as u32)) {
+                if !matches!(types[nb.0 as usize], 57 | 80) {
+                    continue;
+                }
+                for (nb2, _) in mol.neighbors(nb) {
+                    let j = nb2.0 as usize;
+                    if matches!(types[j], 55 | 56 | 81) && !conj[j] {
+                        conj[j] = true;
+                        total += f64::from(mol.atom(nb2).charge);
+                        n_conj += 1;
+                    }
+                }
+            }
+        }
+    }
+    total / n_conj as f64
+}
+
+/// O2CM/SM formal-charge redistribution, RDKit's `case 32: case 72:`: the
+/// first neighbour that matches a branch decides, from its terminal O/S
+/// (degree 1) and secondary nitrogen (degree 2, not aromatic) neighbours.
+fn o2cm_sm_formal_charge(view: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
+    for (nbr, _) in view.neighbors(idx) {
+        let nbr_elem = view.atom(nbr).element;
         let nbr_type = types[nbr.0 as usize];
-        let n_term_os = count_terminal_o_neighbors(mol, nbr) + count_terminal_s_neighbors(mol, nbr);
-        let mut n_sec_n = count_deg2_n_neighbors(mol, nbr);
+        let mut n_sec_n = 0usize;
+        let mut n_term_os = 0usize;
+        for (nb2, _) in view.neighbors(nbr) {
+            let a = view.atom(nb2);
+            if a.element == Element::N && view.degree(nb2) == 2 && !a.aromatic {
+                n_sec_n += 1;
+            }
+            if matches!(a.element, Element::O | Element::S) && view.degree(nb2) == 1 {
+                n_term_os += 1;
+            }
+        }
         // Deprotonated-sulfonamide fixup: a sulfur with 2 terminal O/S and 1
         // secondary N is not treated as having a "replaceable" secondary N.
         if nbr_elem == Element::S && n_term_os == 2 && n_sec_n == 1 {
             n_sec_n = 0;
         }
-        if nbr_elem == Element::C && n_term_os > 0 {
-            return if n_term_os == 1 {
-                -1.0
+        let shared = |k: usize, zero_at_one: bool| {
+            if k == 1 {
+                if zero_at_one { 0.0 } else { -1.0 }
             } else {
-                -((n_term_os - 1) as f64) / (n_term_os as f64)
-            };
+                -((k - 1) as f64) / (k as f64)
+            }
+        };
+        if nbr_elem == Element::C && n_term_os > 0 {
+            return shared(n_term_os, false);
         }
         if nbr_type == 45 && n_term_os == 3 {
             return -1.0 / 3.0;
+        }
+        if nbr_type == 25 && n_term_os > 0 {
+            return shared(n_term_os, true);
         }
         if nbr_type == 18 && n_term_os > 0 {
             let total = n_sec_n + n_term_os;
@@ -2634,9 +2712,12 @@ fn o2cm_sm_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
                 -((total as f64) - 2.0) / (n_term_os as f64)
             };
         }
-        // NOT ported: type-25 (phosphate/phosphonate/phosphine-oxide P) and
-        // type-77 (perchlorate Cl) neighbor branches, and type-73
-        // (thiosulfinate S) -- see `mmff_derived_formal_charge`'s doc.
+        if nbr_type == 73 && n_term_os > 0 {
+            return shared(n_term_os, true);
+        }
+        if nbr_type == 77 && n_term_os > 0 {
+            return -1.0 / n_term_os as f64;
+        }
     }
     0.0
 }
@@ -2668,8 +2749,13 @@ pub fn mmff94_charges_numeric(mol: &Molecule) -> Result<Vec<f64>, NumericTypeErr
     // -- NOT the molecule's raw/literal `atom.charge`. See
     // `mmff_derived_formal_charge`'s doc for why this distinction is load-
     // bearing (issue #227 Phase 2 Step 6 BCI residual fix).
+    let rings = chematic_perception::rdkit_sssr_ring_order(mol).unwrap_or_else(|| {
+        chematic_perception::find_symmetrized_sssr(mol)
+            .rings()
+            .to_vec()
+    });
     let fchg: Vec<f64> = (0..n)
-        .map(|i| mmff_derived_formal_charge(mol, &types, AtomIdx(i as u32)))
+        .map(|i| mmff_derived_formal_charge(mol, &mmff_mol, &rings, &types, AtomIdx(i as u32)))
         .collect();
 
     // Step 1: formal charge contribution (scaled by fcadj)
@@ -4225,8 +4311,8 @@ mod tests {
         // both bonded to the same carboxylate carbon.
         assert_eq!(m.atom(AtomIdx(2)).element, Element::O);
         assert_eq!(m.atom(AtomIdx(3)).element, Element::O);
-        let fchg_2 = mmff_derived_formal_charge(&m, &types, AtomIdx(2));
-        let fchg_3 = mmff_derived_formal_charge(&m, &types, AtomIdx(3));
+        let fchg_2 = mmff_derived_formal_charge(&m, &m, &[], &types, AtomIdx(2));
+        let fchg_3 = mmff_derived_formal_charge(&m, &m, &[], &types, AtomIdx(3));
         assert!(
             (fchg_2 - (-0.5)).abs() < 1e-9,
             "carboxylate O (idx 2): expected shared formal charge -0.5, got {fchg_2}"

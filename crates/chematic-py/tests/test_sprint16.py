@@ -355,6 +355,20 @@ def test_mmff94_bounded_analytic_gradient_matches_energy_difference():
     assert abs(gradient[0][0] - expected) < 4e-5 * (1.0 + abs(expected))
 
 
+def test_mmff94_ignore_interfrag_interactions_drops_salt_pair_terms():
+    """RDKit's MMFFGetMoleculeForceField default leaves out pairs between
+    fragments; the option reproduces it and changes only non-bonded terms."""
+    m = chematic.from_smiles("C[NH3+].[O-]C=O")
+    m = m.add_hydrogens()
+    coords = [[1.7 * i, 0.3 * (i % 3), 0.2 * (i % 2)] for i in range(len(m.formal_charge_per_atom()))]
+    full = m.mmff94_energy_breakdown(coords)
+    split = m.mmff94_energy_breakdown(coords, ignore_interfrag_interactions=True)
+    for term in ("bond", "angle", "stretch_bend", "torsion", "oop"):
+        assert abs(full[term] - split[term]) < 1e-12
+    assert abs(full["electrostatic"] - split["electrostatic"]) > 1e-6
+    assert abs(split["total"] - m.mmff94_total_energy(coords, ignore_interfrag_interactions=True)) < 1e-9
+
+
 def test_balaban_j_positive():
     """Balaban J should be positive for non-trivial graphs."""
     m = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")

@@ -22,8 +22,11 @@
 use chematic_core::{AtomIdx, Molecule};
 use smallvec::{SmallVec, smallvec};
 
-use crate::canonical::{CanonicalWriter, individualize, refine_ranks};
-use crate::canonical_automorphism::has_colored_automorphism_mapping;
+use crate::canonical::{CanonicalWriter, bond_order_value, individualize, refine_ranks};
+use crate::canonical_automorphism::{
+    colored_automorphism_mapping_within, has_colored_automorphism_mapping_keyed,
+    is_cell_preserving_automorphism,
+};
 use crate::canonical_partition::{
     CanonicalColoredGraph, Partition, exact_refine, initial_partition,
 };
@@ -358,7 +361,14 @@ fn search_canonical(
         vec![members[0]]
     } else {
         let partition = exact_refine(graph, initial_partition(graph, &ranks));
-        exact_orbit_representatives(graph, &partition, &members, limits, budget)?
+        exact_orbit_representatives(
+            graph,
+            &partition,
+            &members,
+            |atom| branch_signature(mol, &ranks, atom),
+            limits,
+            budget,
+        )?
     };
     stats::record_target_cell(members.len(), representatives.len());
 
@@ -431,13 +441,22 @@ fn search_canonical(
 /// -- documented here and in `docs/rfcs/canonical_automorphism_pruning.md`
 /// instead of silently left as an unqualified "structurally impossible"
 /// claim.
+///
+/// A pair a short automorphism search cannot settle has its two branch
+/// signatures ([`branch_signature`]) compared before the full search:
+/// members of one orbit always have equal signatures, so unequal ones are
+/// left in separate orbits. On rigid graphs with one large cell (random cubic
+/// carbon cages) every pairwise search ran to its step cap and dominated the
+/// run time (60 atoms: 8 s, now 5 ms).
 fn exact_orbit_representatives(
     graph: &CanonicalColoredGraph,
     coloring: &Partition,
     members: &[usize],
+    mut signature_of: impl FnMut(usize) -> BranchSignature,
     limits: &CanonicalizationLimits,
     budget: &mut SearchBudget,
 ) -> Result<Vec<usize>, CanonicalizationError> {
+    let mut signatures: Vec<Option<BranchSignature>> = (0..members.len()).map(|_| None).collect();
     // Union-Find is indexed by POSITION within `members` (0..members.len()),
     // not by atom index -- `members` are raw atom indices which may be
     // sparse/non-contiguous (e.g. a target cell of atoms 3 and 7), so
@@ -475,6 +494,7 @@ fn exact_orbit_representatives(
                 parent[ri] = rj;
                 continue;
             }
+            // One automorphism test per pair, however it is settled below.
             budget.automorphism_tests += 1;
             if let Some(max) = limits.max_automorphism_tests
                 && budget.automorphism_tests > max
@@ -485,11 +505,61 @@ fn exact_orbit_representatives(
                     automorphism_tests: budget.automorphism_tests,
                 });
             }
-            let equivalent = has_colored_automorphism_mapping(
+            // A short search settles most pairs (a real automorphism maps
+            // one atom per step); only when it runs out are the branch
+            // signatures computed.
+            let quick = if members.len() < SIGNATURE_FIRST_CELL_SIZE {
+                colored_automorphism_mapping_within(
+                    graph,
+                    coloring,
+                    AtomIdx(members[i] as u32),
+                    AtomIdx(members[j] as u32),
+                    QUICK_AUTOMORPHISM_STEPS_PER_ATOM * graph.n() + 64,
+                )
+            } else {
+                None
+            };
+            match quick {
+                Some(true) => {
+                    stats::record_orbit_test(true);
+                    parent[ri] = rj;
+                    continue;
+                }
+                Some(false) => {
+                    stats::record_orbit_test(false);
+                    continue;
+                }
+                None => {}
+            }
+            if signatures[i].is_none() {
+                signatures[i] = Some(signature_of(members[i]));
+            }
+            if signatures[j].is_none() {
+                signatures[j] = Some(signature_of(members[j]));
+            }
+            let (Some(si), Some(sj)) = (&signatures[i], &signatures[j]) else {
+                unreachable!("both signatures were just computed")
+            };
+            if si.quotient != sj.quotient {
+                continue;
+            }
+            // Both branches refine to a discrete partition with the same
+            // labelled quotient: the rank-matching map is the only
+            // candidate, so check it directly.
+            if let Some(image) = si.rank_matching_image(sj)
+                && is_cell_preserving_automorphism(graph, coloring, &image)
+            {
+                stats::record_orbit_test(true);
+                parent[ri] = rj;
+                continue;
+            }
+            let equivalent = has_colored_automorphism_mapping_keyed(
                 graph,
                 coloring,
                 AtomIdx(members[i] as u32),
                 AtomIdx(members[j] as u32),
+                &si.refined,
+                &sj.refined,
             );
             stats::record_orbit_test(equivalent);
             if equivalent {
@@ -515,6 +585,82 @@ fn exact_orbit_representatives(
     let mut reps: Vec<usize> = by_root.into_values().collect();
     reps.sort_unstable();
     Ok(reps)
+}
+
+/// Step budget per atom of the short automorphism search tried before
+/// branch signatures; see [`exact_orbit_representatives`].
+const QUICK_AUTOMORPHISM_STEPS_PER_ATOM: usize = 4;
+
+/// Target cells at least this large compare branch signatures before any
+/// automorphism search: the pairs grow quadratically with the cell while the
+/// signatures grow linearly. Smaller cells (the common case) try the short
+/// search first, which is cheaper than refining every member.
+const SIGNATURE_FIRST_CELL_SIZE: usize = 12;
+
+/// Isomorphism invariant of the search branch that individualizes `atom`:
+/// the refined ranks' labelled quotient, i.e. every atom's rank with its
+/// sorted (neighbour rank, bond order) list, sorted. `individualize` and
+/// `refine_ranks` derive ranks from invariants only (hash order, never atom
+/// index), so an automorphism mapping `a` to `b` maps the refined ranks of
+/// one branch onto the other's and the signatures are equal. Unequal
+/// signatures therefore prove different orbits.
+fn branch_signature(mol: &Molecule, ranks: &[u64], atom: usize) -> BranchSignature {
+    let refined = refine_ranks(mol, individualize(ranks, atom));
+    let mut rows: Vec<SmallVec<[u64; 8]>> = (0..mol.atom_count())
+        .map(|i| {
+            let mut row: SmallVec<[u64; 8]> = SmallVec::new();
+            row.push(refined[i]);
+            let start = row.len();
+            for (nb, bond) in mol.neighbors(AtomIdx(i as u32)) {
+                row.push(refined[nb.0 as usize] * 16 + bond_order_value(mol.bond(bond).order));
+            }
+            row[start..].sort_unstable();
+            row
+        })
+        .collect();
+    rows.sort_unstable();
+    let mut flat = Vec::with_capacity(rows.iter().map(|r| r.len() + 1).sum());
+    for row in rows {
+        flat.push(row.len() as u64);
+        flat.extend_from_slice(&row);
+    }
+    BranchSignature {
+        quotient: flat,
+        refined,
+    }
+}
+
+/// [`branch_signature`]'s result: the invariant compared between members,
+/// and the refined ranks it came from.
+struct BranchSignature {
+    quotient: Vec<u64>,
+    refined: Vec<u64>,
+}
+
+impl BranchSignature {
+    /// When both branches' refined ranks are discrete (every rank used
+    /// once), the map sending each atom to the atom with the same rank in
+    /// `other`.
+    fn rank_matching_image(&self, other: &Self) -> Option<Vec<u32>> {
+        let n = self.refined.len();
+        let mut by_rank = vec![u32::MAX; n];
+        for (atom, &rank) in other.refined.iter().enumerate() {
+            let slot = by_rank.get_mut(rank as usize)?;
+            if *slot != u32::MAX {
+                return None;
+            }
+            *slot = atom as u32;
+        }
+        let mut image = Vec::with_capacity(n);
+        for &rank in &self.refined {
+            let target = *by_rank.get(rank as usize)?;
+            if target == u32::MAX {
+                return None;
+            }
+            image.push(target);
+        }
+        Some(image)
+    }
 }
 
 /// Return whether swapping `a` and `b` while fixing every other vertex is an
