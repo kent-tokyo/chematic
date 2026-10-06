@@ -1014,6 +1014,32 @@ impl Molecule {
             .all(|(&k, list)| k == list.len())
     }
 
+    /// What re-adding every atom and bond to a [`MoleculeBuilder`] and then
+    /// copying the stereo neighbour orders and stereo groups gives (no atom
+    /// tags, R-group labels, stashed bond directions or SMILES ring-closure
+    /// record), without re-adding the bonds; `None` when the adjacency is not
+    /// in bond order ([`Self::adjacency_in_bond_order`]), where a rebuild
+    /// would reorder neighbours.
+    #[doc(hidden)]
+    pub fn atoms_bonds_and_stereo_copy(&self) -> Option<Molecule> {
+        if !self.adjacency_in_bond_order() {
+            return None;
+        }
+        Some(Molecule {
+            atoms: self.atoms.clone(),
+            atom_tags: Vec::new(),
+            bonds: self.bonds.clone(),
+            adjacency: self.adjacency.clone(),
+            r_groups: Default::default(),
+            stereo_groups: self.stereo_groups.clone(),
+            stereo_neighbor_order: self.stereo_neighbor_order.clone(),
+            bond_directions: Default::default(),
+            bond_direction_anchors: Default::default(),
+            smiles_ring_closure_keys: Default::default(),
+            derived: Default::default(),
+        })
+    }
+
     /// Set the bond order of bond `idx` in-place. Endpoints (`atom1`/
     /// `atom2`) and adjacency are untouched -- order alone doesn't affect
     /// connectivity, so unlike [`Self::remove_bond`] + [`Self::add_bond`],

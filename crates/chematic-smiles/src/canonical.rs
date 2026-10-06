@@ -1702,8 +1702,36 @@ impl<'a> CanonicalWriter<'a> {
         if expected.is_empty() {
             return None;
         }
-        let mut best: Option<String> = None;
+        // Every candidate is written first; they are then checked in
+        // ascending order, so the first that passes is the minimum the
+        // exhaustive check would select, and the costly re-parse runs only
+        // until it is found (row 4903 of the exposed 10k: 2,916 candidates).
+        // A double bond keeps its E/Z on reparse only when each end writes a
+        // directional token on one of its substituent bonds; an end whose
+        // substituent bonds are all slots and all left plain cannot, so such
+        // plans are not written at all.
+        let slot_index: HashMap<BondIdx, usize> =
+            slots.iter().enumerate().map(|(i, &b)| (b, i)).collect();
+        let marker_sets: Vec<Vec<usize>> = self
+            .extract_ez_geometry_facts()
+            .iter()
+            .flat_map(|fact| fact.ends.iter().map(|end| end.atom))
+            .filter_map(|end| {
+                Self::substituents(self.mol, end)
+                    .iter()
+                    .map(|&(_, bond)| slot_index.get(&bond).copied())
+                    .collect::<Option<Vec<usize>>>()
+            })
+            .collect();
+        let mut outputs: Vec<String> = Vec::new();
         for polarity_code in 0..polarity_plans {
+            let digit = |slot: usize| (polarity_code / 3usize.pow(slot as u32)) % 3;
+            if marker_sets
+                .iter()
+                .any(|set| set.iter().all(|&slot| digit(slot) == 0))
+            {
+                continue;
+            }
             let mut code = polarity_code;
             let orders: HashMap<BondIdx, BondOrder> = slots
                 .iter()
@@ -1727,22 +1755,17 @@ impl<'a> CanonicalWriter<'a> {
                     .enumerate()
                     .filter_map(|(index, &bond)| ((close_mask & (1 << index)) != 0).then_some(bond))
                     .collect();
-                let output = candidate.serialize_prepared();
-                let Ok(reparsed) = parse(&output) else {
-                    continue;
-                };
-                if !ez_direction_assignments_consistent(&reparsed) {
-                    continue;
-                }
-                if ez_semantic_signature(&reparsed) != expected {
-                    continue;
-                }
-                if best.as_ref().is_none_or(|current| output < *current) {
-                    best = Some(output);
-                }
+                outputs.push(candidate.serialize_prepared());
             }
         }
-        best
+        outputs.sort_unstable();
+        outputs.dedup();
+        outputs.into_iter().find(|output| {
+            parse(output).is_ok_and(|reparsed| {
+                ez_direction_assignments_consistent(&reparsed)
+                    && ez_semantic_signature(&reparsed) == expected
+            })
+        })
     }
 
     /// Read one rank-fixed reference substituent's side.  A monosubstituted

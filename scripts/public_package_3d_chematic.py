@@ -169,6 +169,7 @@ def run_best_of_n(mol: object, chematic: object, config: object) -> dict[str, ob
 
 
 def parse_args() -> argparse.Namespace:
+    global FORCE_FIELD_MAX_ITERATIONS
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--metadata-output", type=Path, required=True)
@@ -188,9 +189,16 @@ def parse_args() -> argparse.Namespace:
         choices=("published", "source_candidate"),
         default="published",
     )
+    parser.add_argument(
+        "--force-field-max-iterations",
+        type=int,
+        default=FORCE_FIELD_MAX_ITERATIONS,
+        help="MMFF94/UFF iteration budget; the A6 protocol uses RDKit's default 200",
+    )
     parser.add_argument("--source-revision")
     parser.add_argument("--source-diff-sha256")
     args = parser.parse_args()
+    FORCE_FIELD_MAX_ITERATIONS = args.force_field_max_iterations
     if args.start < 0 or (args.count is not None and args.count <= 0):
         parser.error("--start must be non-negative and --count must be positive")
     if args.wall_budget_seconds <= 0:

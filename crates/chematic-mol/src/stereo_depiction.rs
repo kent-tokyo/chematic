@@ -39,6 +39,16 @@ pub struct StereoDepiction {
 /// and no bond directions are kept; atoms and stereo neighbour orders are
 /// unchanged. Bond indices are preserved.
 fn without_bond_marks(mol: &Molecule, wedges: &HashMap<BondIdx, Wedge>) -> Molecule {
+    if wedges.is_empty()
+        && let Some(mut copy) = mol.atoms_bonds_and_stereo_copy()
+    {
+        for (idx, bond) in mol.bonds() {
+            if matches!(bond.order, BondOrder::Up | BondOrder::Down) {
+                copy.set_bond_order(idx, BondOrder::Single);
+            }
+        }
+        return copy;
+    }
     let mut b = MoleculeBuilder::new();
     for (_, atom) in mol.atoms() {
         b.add_atom(atom.clone());

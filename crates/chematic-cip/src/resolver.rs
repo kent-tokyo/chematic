@@ -122,8 +122,23 @@ pub(crate) fn resolve_chirality(
             return Ok(None);
         }
     };
-    let result =
-        resolve_is_r_from_groups(&final_groups, &position_nodes, mol.atom(atom_idx).chirality);
+    let chirality = mol.atom(atom_idx).chirality;
+    let result = if stereo_order.len() == 3 {
+        // A saturated ring centre with a lone pair (bridgehead amine,
+        // cyclic phosphine): its auxiliary sign with the lone pair as the
+        // lowest ligand, read from the spelling as RDKit reads it (as for
+        // its own label, `crate::assign::lone_pair_is_r`).
+        if crate::assign::label_follows_rdkit_smiles_reading(mol, atom_idx) {
+            let invert = mol.smiles_ring_closure_count(atom_idx) == 1;
+            crate::assign::lone_pair_is_r(&final_groups, &position_nodes, chirality, invert)
+                .ok()
+                .flatten()
+        } else {
+            None
+        }
+    } else {
+        resolve_is_r_from_groups(&final_groups, &position_nodes, chirality)
+    };
     cache.insert(node_id, result);
     Ok(result)
 }

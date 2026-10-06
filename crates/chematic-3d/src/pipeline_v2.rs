@@ -316,7 +316,10 @@ impl PipelineV2Config {
             stereo_policy: StereoPolicy::Ignore,
             fail_on_unevaluable_stereo: false,
             force_field_policy,
-            force_field_max_iterations: 300,
+            // Batch 14: the A6 molecules stop at the iteration limit, not at a
+            // stationary-point problem (265 rows: 300 -> 199 converged, 1000 ->
+            // 263, 23% more time); RDKit's own default is 200.
+            force_field_max_iterations: 1000,
             gate_mmff94_torsion_oop: false,
             gate_mmff94_stretch_bend: false,
             ring_torsion_policy: RingTorsionApplicationPolicy::FailClosed,

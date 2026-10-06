@@ -2799,21 +2799,18 @@ fn sanitizable_product(mol: &Molecule) -> bool {
     }
     // Kekulé orders of the aromatic bonds, read in place (the product is
     // not copied).
-    let kekule = if mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic) {
+    let mut orders: Vec<BondOrder> = mol.bonds().map(|(_, b)| b.order).collect();
+    if orders.contains(&BondOrder::Aromatic) {
         match chematic_core::kekulize_with(mol, |idx| rdkit_kekule_candidate(mol, idx)) {
-            Ok(k) => Some(k),
+            Ok(k) => {
+                for (b, order) in k {
+                    orders[b.0 as usize] = order;
+                }
+            }
             Err(_) => return false,
         }
-    } else {
-        None
-    };
-    let order_of = |b: BondIdx| {
-        let order = mol.bond(b).order;
-        match (&kekule, order) {
-            (Some(k), BondOrder::Aromatic) => k.get(&b).copied().unwrap_or(order),
-            _ => order,
-        }
-    };
+    }
+    let order_of = |b: BondIdx| orders[b.0 as usize];
     let explicit_valence = |idx: AtomIdx| -> i16 {
         let bonds: i16 = mol
             .neighbors(idx)
@@ -2925,12 +2922,14 @@ fn atoms_in_rings(mol: &Molecule) -> Vec<bool> {
     let mut low = vec![0usize; n];
     let mut in_ring = vec![false; n];
     let mut counter = 0usize;
+    // (atom, bond used to reach it, index of its next neighbour)
+    let mut stack: Vec<(usize, Option<BondIdx>, usize)> = Vec::with_capacity(n);
     for root in 0..n {
         if order[root] != usize::MAX {
             continue;
         }
-        // (atom, bond used to reach it, index of its next neighbour)
-        let mut stack: Vec<(usize, Option<BondIdx>, usize)> = vec![(root, None, 0)];
+        stack.clear();
+        stack.push((root, None, 0));
         order[root] = counter;
         low[root] = counter;
         counter += 1;

@@ -605,7 +605,7 @@ fn assign_lone_pair_centre(
 /// `invert` applies RDKit's SMILES reading (`chiralAtomNeedsTagInversion`:
 /// a saturated three-connected centre without H carrying exactly one
 /// ring-closure digit has its tag inverted).
-fn lone_pair_is_r(
+pub(crate) fn lone_pair_is_r(
     groups: &[Vec<NodeId>],
     position_nodes: &[NodeId],
     chirality: Chirality,

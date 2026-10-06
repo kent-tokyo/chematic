@@ -104,13 +104,13 @@ fn pseudoasymmetric_ring_lone_pair_centres_get_rdkits_r_s() {
 }
 
 #[test]
-fn carbon_whose_rule5_needs_a_lone_pair_centre_stays_tied() {
+fn carbon_whose_rule5_needs_a_lone_pair_centre_gets_rdkits_label() {
     // 3-quinuclidinone-like (RDKit: N s, C s): the N's arms are told apart
-    // through the carbon, which gets `s`; the carbon's arms differ only
-    // through the N's lone pair, which the auxiliary-descriptor pass does
-    // not model, so it abstains (typed `Tied`) in every spelling.
+    // through the carbon and the carbon's through the N's lone pair, which
+    // rule 5 now takes as an auxiliary descriptor (lone pair lowest, RDKit's
+    // reading of the spelling).
     let mol = parse("O=C1C[N@]2CC[C@H]1CC2").unwrap();
     let r = assign_cip_with_mode(&mol, CipMode::Accurate).unwrap();
     assert_eq!(r.get(AtomIdx(3)), Some(CipCode::LowerS));
-    assert_eq!(r.get(AtomIdx(6)), None);
+    assert_eq!(r.get(AtomIdx(6)), Some(CipCode::LowerS));
 }
