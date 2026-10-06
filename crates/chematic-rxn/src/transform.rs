@@ -433,10 +433,59 @@ pub fn run_reactants_traced_rdkit_2026_03_6(
 /// Prepared templates by SMIRKS text, for the free functions that take a
 /// SMIRKS string: a batch applies the same template to many molecules, and
 /// preparing it (parsing and normalizing every component) took about a
-/// third of a BioTransformer corpus run. Bounded; cleared when full.
-type PreparedCache =
-    std::sync::Mutex<std::collections::HashMap<(bool, String), std::sync::Arc<PreparedReaction>>>;
+/// third of a BioTransformer corpus run.
+///
+/// Bounded at [`PREPARED_CACHE_CAPACITY`] templates per reading (native and
+/// RDKit) in [`PREPARED_CACHE_SHARDS`] shards (threads applying different
+/// templates rarely share a lock), each evicting its least recently used
+/// template when full. The cache never empties at once: it was cleared whole
+/// when full, so every template was prepared again after each 2,048 new ones.
+struct PreparedShard {
+    entries: rustc_hash::FxHashMap<String, (std::sync::Arc<PreparedReaction>, u64)>,
+    clock: u64,
+}
+
 const PREPARED_CACHE_CAPACITY: usize = 2048;
+const PREPARED_CACHE_SHARDS: usize = 16;
+const PREPARED_SHARD_CAPACITY: usize = PREPARED_CACHE_CAPACITY / PREPARED_CACHE_SHARDS;
+
+/// Templates prepared because the cache did not hold them (for tests and
+/// load measurements).
+static PREPARED_CACHE_MISSES: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+
+#[doc(hidden)]
+pub fn prepared_cache_misses() -> usize {
+    PREPARED_CACHE_MISSES.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+impl PreparedShard {
+    fn get(&mut self, smirks: &str) -> Option<std::sync::Arc<PreparedReaction>> {
+        self.clock += 1;
+        let clock = self.clock;
+        self.entries.get_mut(smirks).map(|(hit, used)| {
+            *used = clock;
+            std::sync::Arc::clone(hit)
+        })
+    }
+
+    fn insert(&mut self, smirks: String, prepared: std::sync::Arc<PreparedReaction>) {
+        if self.entries.len() >= PREPARED_SHARD_CAPACITY && !self.entries.contains_key(&smirks) {
+            // A miss already costs a template preparation; a scan of the
+            // shard's entries is small beside it.
+            if let Some(oldest) = self
+                .entries
+                .iter()
+                .min_by_key(|(_, (_, used))| *used)
+                .map(|(key, _)| key.clone())
+            {
+                self.entries.remove(&oldest);
+            }
+        }
+        self.clock += 1;
+        self.entries.insert(smirks, (prepared, self.clock));
+    }
+}
 
 impl PreparedReaction {
     /// [`Self::new`], shared from a process-wide cache keyed by the SMIRKS.
@@ -448,18 +497,30 @@ impl PreparedReaction {
         smirks: &str,
         rdkit_reading: bool,
     ) -> Result<std::sync::Arc<Self>, TransformError> {
-        static CACHE: std::sync::OnceLock<PreparedCache> = std::sync::OnceLock::new();
-        let cache = CACHE.get_or_init(Default::default);
-        let key = (rdkit_reading, smirks.to_string());
-        if let Some(hit) = cache.lock().ok().and_then(|c| c.get(&key).cloned()) {
+        type Shards = [std::sync::Mutex<PreparedShard>; 2 * PREPARED_CACHE_SHARDS];
+        static CACHE: std::sync::OnceLock<Shards> = std::sync::OnceLock::new();
+        let shards = CACHE.get_or_init(|| {
+            std::array::from_fn(|_| {
+                std::sync::Mutex::new(PreparedShard {
+                    entries: Default::default(),
+                    clock: 0,
+                })
+            })
+        });
+        let hash = {
+            use std::hash::BuildHasher;
+            rustc_hash::FxBuildHasher.hash_one(smirks)
+        };
+        // One half of the shards per reading.
+        let shard = &shards[(hash as usize % PREPARED_CACHE_SHARDS)
+            + usize::from(rdkit_reading) * PREPARED_CACHE_SHARDS];
+        if let Some(hit) = shard.lock().ok().and_then(|mut s| s.get(smirks)) {
             return Ok(hit);
         }
+        PREPARED_CACHE_MISSES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let prepared = std::sync::Arc::new(Self::new_with_reading(smirks, rdkit_reading)?);
-        if let Ok(mut c) = cache.lock() {
-            if c.len() >= PREPARED_CACHE_CAPACITY {
-                c.clear();
-            }
-            c.insert(key, std::sync::Arc::clone(&prepared));
+        if let Ok(mut s) = shard.lock() {
+            s.insert(smirks.to_string(), std::sync::Arc::clone(&prepared));
         }
         Ok(prepared)
     }

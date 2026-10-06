@@ -345,6 +345,7 @@ dependencies = [
  "chematic-perception",
  "chematic-rxn",
  "chematic-smiles",
+ "rustc-hash",
  "serde",
  "serde_json",
  "svg2pdf",

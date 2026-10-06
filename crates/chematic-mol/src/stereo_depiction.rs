@@ -833,12 +833,10 @@ fn ring_bonds(mol: &Molecule) -> Vec<bool> {
         low[root] = counter;
         counter += 1;
         while let Some(&(v, parent, cursor)) = stack.last() {
-            let nbs: Vec<(AtomIdx, BondIdx)> = mol.neighbors(AtomIdx(v as u32)).collect();
-            if cursor < nbs.len() {
+            if let Some((w, b)) = mol.neighbors(AtomIdx(v as u32)).nth(cursor) {
                 if let Some(top) = stack.last_mut() {
                     top.2 += 1;
                 }
-                let (w, b) = nbs[cursor];
                 if Some(b) == parent {
                     continue;
                 }

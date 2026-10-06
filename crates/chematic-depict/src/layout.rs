@@ -14,10 +14,14 @@
 //! The algorithm prioritizes clarity (minimal crossing) over perfect physics simulation.
 //! Bond angles follow tetrahedral/trigonal rules where possible.
 
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
+
+// Output never depends on these maps' iteration order (the layout sorts
+// where order matters; see `compute_layout_is_deterministic_across_repeated_calls`),
+// so the faster non-keyed hasher gives the same coordinates.
+use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
-use chematic_perception::find_sssr;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -124,14 +128,15 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
     let mut all_coords: Vec<Option<Point>> = vec![None; n];
     let mut fragment_max_x = 0.0_f64;
 
+    // One SSSR for the whole molecule (memoized on it), filtered per component.
+    let ring_set = chematic_perception::find_sssr_shared(mol);
     for component_atoms in &components {
         let component_set: HashSet<AtomIdx> = component_atoms.iter().copied().collect();
 
         // Subsets: placed will hold the coordinates for this component.
         let mut placed: Vec<Option<Point>> = vec![None; n];
 
-        // Find SSSR for the whole molecule, then filter to this component.
-        let ring_set = find_sssr(mol);
+        // The rings of this component.
         let rings: Vec<Vec<AtomIdx>> = ring_set
             .rings()
             .iter()
@@ -142,7 +147,7 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
         // Group rings into ring systems (connected sets of rings sharing >= 1 atom).
         let ring_systems = group_ring_systems(&rings);
 
-        let mut atom_to_system: HashMap<AtomIdx, usize> = HashMap::new();
+        let mut atom_to_system: HashMap<AtomIdx, usize> = HashMap::default();
         for (sys_idx, system) in ring_systems.iter().enumerate() {
             for &a in system.iter().flatten() {
                 atom_to_system.insert(a, sys_idx);

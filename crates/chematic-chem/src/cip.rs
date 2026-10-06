@@ -1183,11 +1183,26 @@ fn double_bond_in_small_ring(mol: &Molecule, bond: BondIdx) -> bool {
     false
 }
 
+/// Whether `end` (double-bonded to `other`) has a substituent carrying a
+/// `/`/`\` marker: without one at both ends a double bond has no E/Z to
+/// read, so the ring and CIP checks can be skipped.
+fn end_has_marked_substituent(mol: &Molecule, end: AtomIdx, other: AtomIdx) -> bool {
+    mol.neighbors(end).any(|(nb, bidx)| {
+        nb != other
+            && mol.bond(bidx).order != BondOrder::Double
+            && substituent_is_up(mol, end, nb).is_some()
+    })
+}
+
 fn assign_ez(mol: &Molecule, bond_idx: BondIdx) -> Option<(AtomIdx, CipCode)> {
     let bond = mol.bond(bond_idx);
     // A ring of fewer than eight atoms holds its double bond cis: no E/Z
     // (RDKit drops such stereo too).
-    if bond.order != BondOrder::Double || double_bond_in_small_ring(mol, bond_idx) {
+    if bond.order != BondOrder::Double
+        || !end_has_marked_substituent(mol, bond.atom1, bond.atom2)
+        || !end_has_marked_substituent(mol, bond.atom2, bond.atom1)
+        || double_bond_in_small_ring(mol, bond_idx)
+    {
         return None;
     }
 
@@ -1248,6 +1263,15 @@ fn highest_stereo_sub(
     alkene_end: AtomIdx,
     subs: &[AtomIdx],
 ) -> Option<(AtomIdx, bool)> {
+    // Without a `/`/`\` marker on either substituent there is no E/Z to
+    // read, whatever the ranking: skip the CIP comparison (a carbonyl, an
+    // unmarked alkene).
+    if subs
+        .iter()
+        .all(|&sub| substituent_is_up(mol, alkene_end, sub).is_none())
+    {
+        return None;
+    }
     if let [a, b] = subs[..]
         && compare_branches(mol, alkene_end, a, b) == std::cmp::Ordering::Equal
     {
@@ -1283,7 +1307,11 @@ fn assign_ez_accurate(
     let bond = mol.bond(bond_idx);
     // A ring of fewer than eight atoms holds its double bond cis: no E/Z
     // (RDKit drops such stereo too).
-    if bond.order != BondOrder::Double || double_bond_in_small_ring(mol, bond_idx) {
+    if bond.order != BondOrder::Double
+        || !end_has_marked_substituent(mol, bond.atom1, bond.atom2)
+        || !end_has_marked_substituent(mol, bond.atom2, bond.atom1)
+        || double_bond_in_small_ring(mol, bond_idx)
+    {
         return None;
     }
     let a1 = bond.atom1;
@@ -1317,6 +1345,14 @@ fn highest_stereo_sub_accurate(
     subs: &[AtomIdx],
     ranker: &chematic_cip::SubstituentRanker,
 ) -> Option<(AtomIdx, bool)> {
+    // No marker on either substituent: nothing to read (see
+    // `highest_stereo_sub`).
+    if subs
+        .iter()
+        .all(|&sub| substituent_is_up(mol, alkene_end, sub).is_none())
+    {
+        return None;
+    }
     let (top, other) = match subs {
         [only] => (*only, None),
         [a, b] => match ranker.compare(mol, alkene_end, *a, *b).ok()?? {
