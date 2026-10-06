@@ -155,7 +155,14 @@ RDKit 2026.03.6 types a molecule, chematic's per-term energies equal RDKit's
 on the exposed 10k and ChEMBL 5k corpora; pairs between fragments are kept
 unless `ignore_interfragment_interactions` asks for RDKit's default. The
 minimizer is a port of RDKit's BFGS run to an absolute residual-force test,
-so minimized geometries and iteration counts are not RDKit's.
+so minimized geometries and iteration counts are not RDKit's. The pipeline's
+default budget is 1,000 iterations (RDKit's `MMFFOptimizeMolecule` default
+is 200); a geometry that stops at the budget is returned with the
+`iteration_limit` termination.
+
+2D layout is rule-based, not RDKit's `Compute2DCoords`: coordinates differ,
+and fused cages can still draw with a clash or crossing (on the exposed 10k
+and ChEMBL 5k, 212 of 531 bridged rows clash against RDKit's 102).
 
 ## Binding contract
 

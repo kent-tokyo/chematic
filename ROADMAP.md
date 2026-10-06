@@ -89,10 +89,14 @@ Exposed data are not sealed evidence.
    same-coordinate rows ([record](benchmarks/2026-10-06-734-754-followups-batch12.md))
    and on all 14,684 single-fragment rows of both corpora; the 3D pipeline
    minimizes with a port of RDKit's BFGS (A6: 135/265 converged, was 100;
-   [record](benchmarks/2026-10-07-734-754-followups-batch13.md)). **Exit:** rerun macOS on the `libm` build, then
-   bound convergence, timeout/cancellation,
-   geometry/stereo/clash and independent conformer quality on published and
-   candidate artifacts. No 3D speed claim before this exit.
+   [record](benchmarks/2026-10-07-734-754-followups-batch13.md)). With the
+   1,000-iteration pipeline default 263/265 converge; relaxed by RDKit's
+   MMFF94, 155/265 source conformers are within 1 kcal/mol of RDKit's best
+   of ten ETKDGv3 conformers (RDKit's first conformer: 125)
+   ([record](benchmarks/2026-10-07-734-754-followups-batch14.md)).
+   **Exit:** rerun macOS on the `libm` build, then bound convergence,
+   timeout/cancellation, geometry/stereo/clash and independent conformer
+   quality on published artifacts. No 3D speed claim before this exit.
 6. **P0.2 — Complete paired speed evidence after quality gates.** Extend
    equivalent-output, alternating-order, ≥20-block measurements beyond the
    finished lanes. Separate parse, perception, prepared/reused calls and memory
@@ -105,10 +109,11 @@ Exposed data are not sealed evidence.
    centres are labelled as RDKit's CIPLabeler does, and saturated ring
    lone-pair centres (bridgehead amines) get RDKit's label for the parsed
    spelling, marked spelling-dependent; none abstain on exposed 10k. P on
-   unsaturated rings gets RDKit's label, marked Kekulé-dependent. Remaining:
-   a carbon whose rule-5 arms differ only through a lone-pair centre (typed
-   `tied`); pseudo-asymmetric lone-pair centres get RDKit's `r`/`s`
-   ([record](benchmarks/2026-10-07-734-754-followups-batch13.md)). **Exit:**
+   unsaturated rings gets RDKit's label, marked Kekulé-dependent.
+   Pseudo-asymmetric lone-pair centres get RDKit's `r`/`s`
+   ([record](benchmarks/2026-10-07-734-754-followups-batch13.md)), and a
+   carbon whose rule 5 runs through a lone-pair centre gets RDKit's label
+   ([record](benchmarks/2026-10-07-734-754-followups-batch14.md)). **Exit:**
    complete outcome accounting and no wrong confident label.
 8. **P2 — Test representation limits separately.** Keep CDXML opaque
    preservation distinct from semantic editing, Markush/polymer expansion

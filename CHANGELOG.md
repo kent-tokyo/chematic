@@ -16,6 +16,31 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- 3D pipeline: the MMFF94 iteration budget defaults to 1,000 (Rust
+  `PipelineV2Config::minimal()` was 300; Python `safe`/`stereo_safe`
+  `force_field_max_iterations` was 200). A6 rows converged within the budget
+  263/265 (135 at 200), 265/265 sound, stereo-clean, clash-free; about 20%
+  more time. Pass the old value to keep the old behaviour. Record:
+  `benchmarks/2026-10-07-734-754-followups-batch14.md`.
+- 2D layout (depiction and MOL coordinates): three or more chain branches
+  spread evenly, bridged rings (norbornane, tropane, quinuclidine,
+  bicyclo[2.2.2]) drawn around their bridge, and acyclic branches mirrored
+  or turned to clear clashes and crossings. Exposed 10k + ChEMBL 5k rows
+  without a clash or crossing: 10,619 → 14,592 of 15,000 (RDKit
+  `Compute2DCoords` 14,504). Coordinates change; RDKit reads the written
+  stereo back as before.
+- Accurate CIP: a carbon whose rule-5 comparison runs through a lone-pair
+  centre (quinuclidinone C6 beside a stereo bridgehead N) gets RDKit's
+  label instead of none.
+- Performance: canonical SMILES with ring E/Z markers (worst exposed-10k row
+  63.5 → 6.3 ms; corpus −40% instructions, identical strings); `write_mol`
+  −2.2%; SMARTS `^n` matching −17%; `run_reactants` on Kekulé-written
+  reactants −10%.
+- New scripts: `scripts/layout_2d_quality_vs_rdkit.py` (clashes and
+  crossings against RDKit's layout) and
+  `scripts/a6_conformer_quality_vs_rdkit.py` (A6 conformers relaxed and
+  ranked by RDKit's MMFF94 against RDKit's best of 10 ETKDGv3 conformers);
+  `public_package_3d_chematic.py --force-field-max-iterations`.
 - MMFF94 energies match RDKit 2026.03.6 term by term on every
   single-fragment row of the exposed 10k and ChEMBL 5k (14,684): RDKit's
   formal-charge sharing for partial charges (carboxylate/sulfonate heads,
