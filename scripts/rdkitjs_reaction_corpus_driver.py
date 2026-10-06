@@ -64,10 +64,12 @@ def main() -> int:
             if rules[i]["id"] in done_rules:
                 continue
             skip: list[str] = []
+            start = 0
+            kept_rows: list[str] = []
             while True:
                 cmd = [args.node, str(script), "--rdkit", args.rdkit, "--rules", str(args.rules),
                        "--reactants", str(args.reactants), "--output", str(part),
-                       "--rule-index", str(i), "--progress", str(progress)]
+                       "--rule-index", str(i), "--progress", str(progress), "--start", str(start)]
                 if skip:
                     cmd += ["--skip", ",".join(skip)]
                 done = subprocess.run(cmd, capture_output=True, text=True)
@@ -76,16 +78,28 @@ def main() -> int:
                 row = progress.read_text().strip()
                 if not row or row in skip:
                     raise SystemExit(f"rule {i}: abort without progress\n{done.stderr[-2000:]}")
+                # Keep what this attempt wrote, then go on from the aborted row.
+                lines = part.read_text().splitlines()
+                if start == 0 and lines:
+                    header_line, lines = lines[0], lines[1:]
+                kept_rows.extend(lines if start == 0 else lines[1:])
                 skip.append(row)
+                start = int(row.split(":")[0])
                 aborts += 1
             lines = part.read_text().splitlines()
             if header is None:
                 header = json.loads(lines[0])
                 header["rules"] = len(rules)
                 out.write(json.dumps(header) + "\n")
-            for line in lines[1:]:
-                if '"seconds"' not in line:
-                    out.write(line + "\n")
+            rows = kept_rows + lines[1:]
+            # An aborted row's other mode ran in the rerun; its first mode's
+            # rows were kept from the aborted attempt.
+            seen = set()
+            for line in rows:
+                if '"seconds"' in line or line in seen:
+                    continue
+                seen.add(line)
+                out.write(line + "\n")
         out.write(json.dumps({"seconds": round(time.time() - started, 1), "aborted_rows": aborts}) + "\n")
     print(args.output, "aborted rows:", aborts)
     return 0

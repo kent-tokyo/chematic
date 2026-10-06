@@ -16,7 +16,7 @@
  *
  * Usage: node rdkitjs_reaction_corpus.mjs --rdkit DIST_DIR --rules RULES.json
  *          --reactants REACTANTS.json --output OUT.jsonl [--max-products 1000]
- *          [--rule-index I] [--skip r:mode,...] [--progress FILE]
+ *          [--rule-index I] [--start R] [--skip r:mode,...] [--progress FILE]
  *   RULES.json: [{"id", "smirks"}], REACTANTS.json: [smiles]
  *
  * RDKit.js can abort the WebAssembly instance on some inputs; the driver
@@ -43,6 +43,7 @@ const allRules = JSON.parse(fs.readFileSync(arg('--rules')));
 const ruleIndex = arg('--rule-index', null);
 const rules = ruleIndex === null ? allRules : [allRules[Number(ruleIndex)]];
 const skip = new Set((arg('--skip', '') || '').split(',').filter(Boolean));
+const startRow = Number(arg('--start', '0'));
 const progressPath = arg('--progress', null);
 const progressFd = progressPath ? fs.openSync(progressPath, 'w') : null;
 const reactants = JSON.parse(fs.readFileSync(arg('--reactants')));
@@ -100,8 +101,8 @@ for (const rule of rules) {
     out.write(JSON.stringify({ rule: rule.id, error: 'parse' }) + '\n');
     continue;
   }
-  out.write(JSON.stringify({ rule: rule.id, start: true }) + '\n');
-  for (let r = 0; r < reactants.length; r++) {
+  if (startRow === 0) out.write(JSON.stringify({ rule: rule.id, start: true }) + '\n');
+  for (let r = startRow; r < reactants.length; r++) {
     for (const mode of ['implicit', 'explicit_h']) {
       if (skip.has(`${r}:${mode}`)) {
         out.write(JSON.stringify({ rule: rule.id, r, mode, error: 'abort' }) + '\n');
