@@ -4,8 +4,8 @@ Follows [batch 10](2026-10-06-734-754-followups-batch10.md). v1.0.36 is the
 first release with the batch 6–10 fixes; this record reruns their evidence
 on the published artifacts and closes four follow-ups. One Linux x86-64
 host, RDKit 2026.03.6 (CPython 3.11), Node 22. Source lane: code revision
-`e4e2aa73` (the evidence commit that follows changes documents and result
-files only).
+`e4e2aa73`; the RDKit.js runner as of `43cb70c1` (resume after an abort),
+which changes harness scripts only.
 
 ## Published v1.0.36 artifacts
 
