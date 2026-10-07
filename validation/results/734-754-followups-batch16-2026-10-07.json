@@ -1,0 +1,166 @@
+{
+ "schema": "734-754-followups-batch16/v1",
+ "rdkit": "2026.03.6",
+ "layout_2d_as_drawn": {
+  "pypi_v1.0.36": {
+   "all": {
+    "clean": 10619,
+    "with_clash": 4174,
+    "with_crossing": 821,
+    "bond_dev_over_0.2": 272,
+    "with_narrow_branch": 9601,
+    "narrow_branch_atoms": 22264
+   },
+   "bridged": {
+    "clean": 48,
+    "with_clash": 469,
+    "with_crossing": 177,
+    "bond_dev_over_0.2": 250,
+    "with_narrow_branch": 248,
+    "narrow_branch_atoms": 637
+   }
+  },
+  "batch15": {
+   "clean": 14541,
+   "with_clash": 155,
+   "with_crossing": 359,
+   "bridged_clean": 262,
+   "bridged_with_clash": 42
+  },
+  "source": {
+   "all": {
+    "clean": 14669,
+    "with_clash": 53,
+    "with_crossing": 319,
+    "bond_dev_over_0.2": 278,
+    "with_narrow_branch": 320,
+    "narrow_branch_atoms": 2396
+   },
+   "bridged": {
+    "clean": 288,
+    "with_clash": 5,
+    "with_crossing": 243,
+    "bond_dev_over_0.2": 262,
+    "with_narrow_branch": 33,
+    "narrow_branch_atoms": 158
+   }
+  },
+  "rdkit": {
+   "all": {
+    "clean": 14504,
+    "with_clash": 276,
+    "with_crossing": 402,
+    "bond_dev_over_0.2": 540,
+    "with_narrow_branch": 0,
+    "narrow_branch_atoms": 0
+   },
+   "bridged": {
+    "clean": 232,
+    "with_clash": 102,
+    "with_crossing": 290,
+    "bond_dev_over_0.2": 337,
+    "with_narrow_branch": 0,
+    "narrow_branch_atoms": 0
+   }
+  },
+  "record": "validation/results/layout-2d-quality-vs-rdkit-batch16-2026-10-07.json"
+ },
+ "depiction_stereo": {
+  "rdkit-js-browser-10k-v1.smi": {
+   "stereo_rows": 1687,
+   "drawn_as_input": 1686,
+   "differs": 1,
+   "rdkit_unreadable": 0
+  },
+  "chembl_accuracy_corpus_4999.smi": {
+   "stereo_rows": 1670,
+   "drawn_as_input": 1670,
+   "differs": 0,
+   "rdkit_unreadable": 0
+  }
+ },
+ "write_mol_2000_rows_instructions": {
+  "batch15": 624711620,
+  "wide_forks_both_relieved": 1081118052,
+  "source": 665979495,
+  "byte_identical_blocks_after_speedups": 15000
+ },
+ "canonical_ez_pruning": {
+  "row_4111_explicit_h_ms": {
+   "before": 60.3,
+   "source": 2.3
+  },
+  "row_4384_explicit_h_ms": {
+   "before": 40,
+   "source": 0.4
+  },
+  "tbu_imine_leaves": {
+   "before": 18,
+   "source": 2
+  },
+  "audit_inputs": {
+   "rows": 30305,
+   "identical_strings": 30305,
+   "seconds": {
+    "before": 4.49,
+    "source": 3.21
+   }
+  },
+  "random_spellings": {
+   "rows": 13080,
+   "groups": 2180,
+   "identical_to_before": true,
+   "non_invariant_groups": 0,
+   "seconds": {
+    "before": 6.69,
+    "source": 3.52
+   }
+  }
+ },
+ "a6": {
+  "200": {
+   "converged": 135,
+   "iteration_limit": 130,
+   "sound": 265,
+   "stereo_clean": 265,
+   "gross_clash": 0,
+   "coords_identical_to_batch15": 265
+  },
+  "1000": {
+   "converged": 264,
+   "iteration_limit": 1,
+   "sound": 265,
+   "stereo_clean": 265,
+   "gross_clash": 0,
+   "coords_identical_to_batch15": 265
+  },
+  "row_0036": {
+   "energy_by_iteration": {
+    "200": -18.25,
+    "400": -22.006,
+    "600": -22.144,
+    "700": -22.175,
+    "800": -23.209,
+    "900": -26.93,
+    "1000": -27.091,
+    "1077": -27.095
+   },
+   "max_residual_by_iteration": {
+    "200": 3.768,
+    "400": 0.4354,
+    "600": 0.1455,
+    "700": 0.4262,
+    "800": 3.7603,
+    "900": 0.5802,
+    "1000": 0.1635,
+    "1077": 0.0001
+   },
+   "shanno_phua_at_1000": {
+    "termination": "iteration_limit",
+    "max_residual": 0.0634
+   },
+   "rdkit_own_embedding_converged_after_iterations": 1400,
+   "decision": "default stays 1000"
+  }
+ }
+}

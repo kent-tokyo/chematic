@@ -93,7 +93,10 @@ Exposed data are not sealed evidence.
    [record](benchmarks/2026-10-07-734-754-followups-batch13.md)). With the
    1,000-iteration pipeline default 264/265 converge (a minimization stopped
    by a stereo constraint re-embeds from another seed;
-   [record](benchmarks/2026-10-07-734-754-followups-batch15.md)); relaxed by RDKit's
+   [record](benchmarks/2026-10-07-734-754-followups-batch15.md); row 0036 moves to a
+   lower basin after iteration 700 and converges at 1,077, as RDKit's own run
+   needs about 1,400: decided,
+   [record](benchmarks/2026-10-07-734-754-followups-batch16.md)); relaxed by RDKit's
    MMFF94, 155/265 source conformers are within 1 kcal/mol of RDKit's best
    of ten ETKDGv3 conformers (RDKit's first conformer: 125)
    ([record](benchmarks/2026-10-07-734-754-followups-batch14.md)).
@@ -131,7 +134,11 @@ Exposed data are not sealed evidence.
    writer keeps returning the block (decided). SVG and depiction data draw
    the same stereo depiction (RDKit reads the drawings as the input on
    1,686/1,687 and 1,670/1,670 stereo rows; PyPI v1.0.36: 286 and 317;
-   [record](benchmarks/2026-10-07-734-754-followups-batch15.md)). **Exit:** cross-binding
+   [record](benchmarks/2026-10-07-734-754-followups-batch15.md)); every Python MOL block
+   carries 2D coordinates, reaction SVGs and similarity maps draw stereo, and
+   branch points are drawn 120° apart (15,000 rows as drawn: 14,669 clean,
+   53 with a clash; RDKit 14,504 and 276;
+   [record](benchmarks/2026-10-07-734-754-followups-batch16.md)). **Exit:** cross-binding
    fixtures with no silent information loss.
 9. **External — Complete RDKit 2026.09.1 rebaseline.** The official npm/WASM
    old/new lanes, published Python 2026.03.6 baseline, and independent C++

@@ -16,6 +16,27 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- 2D layout: a branch point's three bonds are drawn 120° apart (they were
+  150°/150°/60°, so an ester's C=O ran 60° from its C-C and the two aryl
+  rings of a tetrasubstituted alkene such as tamoxifen overlapped); where
+  that crowds a component, the narrower fork is kept. A stereocentre's
+  terminal neighbour is no longer moved onto another atom when its wedge is
+  placed. As drawn, 53 of 15,000 exposed-10k and ChEMBL-5k rows have a clash
+  (was 155; RDKit 276) and 14,669 are clean (was 14,541; RDKit 14,504).
+  `scripts/layout_2d_quality_vs_rdkit.py` counts narrow branch points.
+  Record: `benchmarks/2026-10-07-734-754-followups-batch16.md`.
+- Python `to_mol_block()` and `to_mol_block_with_report()` write 2D
+  coordinates for every molecule (a molecule without stereo was written with
+  every atom at the origin), as the WASM `to_mol_block` and RDKit do.
+- The reaction SVG (Python `reaction_svg`, WASM `depict_reaction_svg`),
+  similarity maps and the WASM depiction preflight draw the declared stereo
+  too. Rust: `chematic_depict::depict_reaction_svg_prepared`,
+  `similarity_map_options`.
+- Canonical SMILES: an E/Z mark pins only its double bond and that bond's
+  substituents for the symmetry search (it pinned the substituents'
+  neighbours too, so a tert-butyl's methyls on an imine were branched on):
+  explicit-H exposed-10k rows 4111 and 4384 take 2.3 ms and 0.4 ms (about
+  60 and 40 ms), strings unchanged on all 30,305 audit inputs.
 - Depictions draw the declared stereo: Python `svg()`, `depict_data()`,
   `to_eps()`, `to_pdf()`, highlighted/alert SVGs, `depict_grid()` and reports,
   and the WASM SVG, depict-data and grid functions draw E/Z double bonds with
