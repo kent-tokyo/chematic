@@ -87,7 +87,7 @@ cargo test -p chematic-inchi --features native-inchi --lib --quiet
 
 The [Coverage workflow](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
 measures Rust library and binary unit tests with `cargo-llvm-cov` and uploads
-LCOV to [Codecov](https://app.codecov.io/gh/kent-tokyo/chematic). It also saves
+LCOV to [Codecov](https://app.codecov.io/github/kent-tokyo/chematic). It also saves
 LCOV and an HTML report as the `rust-unit-coverage` Actions artifact.
 
 The initial scope uses default features and excludes `chematic-py`,
@@ -110,9 +110,10 @@ cargo llvm-cov report \
   --html --output-dir target/coverage
 ```
 
-Repository maintainers must enable `kent-tokyo/chematic` in Codecov using their
-GitHub account. Uploads use GitHub Actions OIDC (`id-token: write`), so no
-`CODECOV_TOKEN` secret is required. Fork pull requests use the Codecov action's
+Uploads use GitHub Actions OIDC (`id-token: write`), so no `CODECOV_TOKEN`
+secret is required. Public coverage results can be viewed without signing in;
+account and repository settings require a separate Codecov login.
+Fork pull requests use the Codecov action's
 public-repository tokenless upload path. Upload errors fail the Coverage job;
 the saved artifact helps distinguish measurement from upload problems.
 Dependabot pull requests still produce reports, but skip the Codecov upload
