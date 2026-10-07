@@ -101,11 +101,12 @@ To reproduce locally:
 ```bash
 rustup component add llvm-tools-preview
 cargo install cargo-llvm-cov --version 0.8.7 --locked
+mkdir -p target/coverage
 cargo llvm-cov --locked --workspace --lib --bins \
   --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
   --lcov --output-path target/coverage/lcov.info
-cargo llvm-cov report --workspace \
-  --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
+cargo llvm-cov report \
+  --ignore-filename-regex '(crates/(chematic-py|chematic-wasm)/|tools/gen_sa_table/)' \
   --html --output-dir target/coverage
 ```
 

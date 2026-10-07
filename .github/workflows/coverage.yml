@@ -46,14 +46,15 @@ jobs:
       # suites, integration tests, and optional features are separate CI lanes.
       - name: Measure Rust unit coverage
         id: measure
-        run: >-
-          cargo llvm-cov --locked --workspace --lib --bins
-          --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table
-          --lcov --output-path target/coverage/lcov.info
+        run: |
+          mkdir -p target/coverage
+          cargo llvm-cov --locked --workspace --lib --bins \
+            --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
+            --lcov --output-path target/coverage/lcov.info
       - name: Generate HTML report
         run: >-
-          cargo llvm-cov report --workspace
-          --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table
+          cargo llvm-cov report
+          --ignore-filename-regex '(crates/(chematic-py|chematic-wasm)/|tools/gen_sa_table/)'
           --html --output-dir target/coverage
       - name: Save coverage reports
         if: ${{ !cancelled() && steps.measure.outcome == 'success' }}
