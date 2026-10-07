@@ -185,6 +185,13 @@ error *kinds* (not just read a message) in Python or JS, you currently have
 to do it by matching on message text, which is a real limitation, not an
 oversight this page is hiding.
 
+The bounded nucleic-acid JSON API is an explicit exception to this legacy
+mapping. `nucleic_acid_validate_json` and
+`nucleic_acid_apply_json_command` return the same tagged envelope in Python
+and WASM/Node. Failures contain stable `error.code`, `error.path`, and
+`error.message` fields; callers never need to match display text. Its default
+limits are documented in [Semantic model API](semantic-model.md).
+
 ---
 
 ## Fail-closed writers

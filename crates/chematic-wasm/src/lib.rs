@@ -27,6 +27,7 @@ mod mol_edit;
 mod mol_fingerprints;
 mod mol_io;
 mod mol_reactions;
+mod nucleic_acid;
 mod pipeline_v2;
 #[cfg(test)]
 mod tests;
@@ -40,6 +41,7 @@ pub use mol_edit::*;
 pub use mol_fingerprints::*;
 pub use mol_io::*;
 pub use mol_reactions::*;
+pub use nucleic_acid::*;
 pub use pipeline_v2::embed_pipeline_v2_json;
 
 #[wasm_bindgen(start)]

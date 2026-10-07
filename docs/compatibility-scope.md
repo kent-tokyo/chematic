@@ -97,6 +97,21 @@ cross-linking, stochastic/nested/topology-changing polymer expansion, and
 flattening unsupported semantic objects into `Molecule` are not supported.
 Ambiguous or unsafe input returns typed `SemanticError`.
 
+## Nucleic-acid documents
+
+The separate `chematic.nucleic-acid.v1` contract preserves bounded, explicit
+DNA/RNA document metadata: ordered strands and residues, base/known
+modification identity, sugar identity, one-to-one atom references, adjacent
+linear phosphodiester linkages, and annotations. Rust, Python, WASM, and Node
+share the same validation envelope and typed error codes.
+
+This is not a sequence or biopolymer chemistry inference engine. It does not
+infer residues from a graph, create a molecular graph, silently flatten
+metadata, interpret PDB/mmCIF biopolymer records, or accept branching,
+cross-strand/cyclic linkages, and unknown modification semantics. Protein,
+peptide, carbohydrate, and unrestricted nucleic-acid semantics remain outside
+the v1.0 contract.
+
 ## RDKit and Morgan compatibility
 
 `chematic.rdkit_compat` is a selected 2D compatibility layer, not a full RDKit

@@ -12,6 +12,25 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [1.0.37] - 2026-10-07
 
+### Added
+
+- Added the versioned `chematic.nucleic-acid.v1` document model for bounded,
+  explicit DNA/RNA strand metadata. It preserves ordered residues, standard or
+  known modified-base identity, sugar identity, atom ownership, linear
+  phosphodiester linkage references, and annotations without inferring a
+  sequence or flattening the document into a molecule. Rust, Python, and
+  WASM/Node share validation and metadata-edit fixtures plus stable typed error
+  categories for ambiguous mapping, unsupported topology, unknown
+  modifications, and resource limits (#715).
+
+### Fixed
+
+- Aromaticity perception no longer treats a neutral O/S/Se/Te atom with more
+  than two coordinated neighbours (hydrogens included) as a lone-pair donor.
+  This corrects the hypercoordinate sulfur cases from #767 for both Kekulé
+  and explicit aromatic input while preserving thiophene, furan, pyridine
+  N-oxide, and the other reported controls.
+
 Published v1.0.36 reruns (PyPI Linux wheel, sdist, npm, crate) give the
 source's results on the BioTransformer corpus, the 83 reaction fixtures,
 xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
@@ -193,7 +212,6 @@ MOL writer and the WASM Node tests. Record:
   `chematic_chemistry_dump.py` / `compare_chemistry_dump_rdkit.py` do the
   same for CIP, hybridization, MMFF and the MOL writer;
   `rdkitjs_reaction_corpus.mjs` runs the corpus with RDKit.js.
-
 ## [1.0.36] - 2026-10-06
 
 Remaining #734 work: BioTransformer's public rule tables (983 rules, about

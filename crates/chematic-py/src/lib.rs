@@ -24,6 +24,7 @@ mod formats;
 mod lammps;
 mod misc;
 mod mol_methods;
+mod nucleic_acid;
 mod pipeline_v2;
 mod reactions;
 mod reports;
@@ -101,6 +102,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     similarity::register(m)?;
     reports::register(m)?;
     misc::register(m)?;
+    nucleic_acid::register(m)?;
     crystal::register(m)?;
     volumetric::register(m)?;
     lammps::register(m)?;
