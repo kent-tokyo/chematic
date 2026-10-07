@@ -271,12 +271,11 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
                     }
                 }
                 // The narrow forks opened to ±45° (90° between the two
-                // branches) when that does as well.
-                // A large component relieves the medium drawing only when,
-                // before relief, it does as well as the narrow one did.
+                // branches) when that does as well, after relief (large
+                // components included, now that the relief stops counting a
+                // move once it cannot win).
                 let mut medium = lay_with(&mask, std::f64::consts::PI / 4.0);
-                let medium_raw = defects(&medium);
-                if medium_raw > 0 && (component_atoms.len() <= 60 || medium_raw <= narrow_raw) {
+                if defects(&medium) > 0 {
                     relieve_clashes(mol, component_atoms, &mut medium, false);
                 }
                 // Kept when it has no more defects and no more clashes.
@@ -2611,13 +2610,15 @@ fn relieve_clashes_pass(
                         continue; // move the smaller side
                     }
                     let (pp, pr) = (at(pivot), at(root));
-                    let mut moves: Vec<Box<dyn Fn(Point) -> Point>> = Vec::new();
-                    moves.push(Box::new(move |q: Point| reflect_point(q, pp, pr)));
+                    // The mirror across the hinge bond, then turns about the
+                    // pivot (sin, cos), in this order.
+                    let mut turns = [(0.0f64, 1.0f64); 10];
+                    let mut n_turns = 0;
                     if !has_double(pivot) {
-                        // A one- or two-atom substituent may also swing
+                        // A substituent of up to three atoms may also swing
                         // further round its hinge (a bridge atom's methyls,
-                        // a tropane's N-methyl, into a free face).
-                        let wide: &[f64] = if moved.len() <= 2 {
+                        // a tropane's N-methyl, into a free face; a carboxyl).
+                        let wide: &[f64] = if moved.len() <= 3 {
                             &[
                                 30.0, -30.0, 60.0, -60.0, 90.0, -90.0, 120.0, -120.0, 150.0, -150.0,
                             ]
@@ -2625,15 +2626,21 @@ fn relieve_clashes_pass(
                             &[30.0, -30.0, 60.0, -60.0]
                         };
                         for &deg in wide {
-                            let (sin, cos) = deg.to_radians().sin_cos();
-                            moves.push(Box::new(move |q: Point| {
-                                let (dx, dy) = (q.x - pp.x, q.y - pp.y);
-                                Point::new(pp.x + dx * cos - dy * sin, pp.y + dx * sin + dy * cos)
-                            }));
+                            turns[n_turns] = deg.to_radians().sin_cos();
+                            n_turns += 1;
                         }
                     }
+                    let apply = |k: usize, q: Point| -> Point {
+                        if k == 0 {
+                            reflect_point(q, pp, pr)
+                        } else {
+                            let (sin, cos) = turns[k - 1];
+                            let (dx, dy) = (q.x - pp.x, q.y - pp.y);
+                            Point::new(pp.x + dx * cos - dy * sin, pp.y + dx * sin + dy * cos)
+                        }
+                    };
                     // The hinge's other bonds, for the turns' 30-degree check.
-                    let others: Vec<f64> = if moves.len() > 1 {
+                    let others: Vec<f64> = if n_turns > 0 {
                         mol.neighbors(pivot)
                             .filter(|&(nb, _)| nb != root)
                             .map(|(nb, _)| {
@@ -2644,44 +2651,38 @@ fn relieve_clashes_pass(
                     } else {
                         Vec::new()
                     };
-                    for (k, f) in moves.iter().enumerate() {
-                        new.clear();
-                        new.extend(moved.iter().map(|&m| (m, f(at(m)))));
+                    for k in 0..=n_turns {
                         if k > 0 {
-                            // A turn must leave the hinge's bonds 30 degrees apart.
-                            let np = new[0].1;
+                            // A turn must leave the hinge's bonds 30 degrees
+                            // apart (`moved` starts with the root).
+                            let np = apply(k, at(moved[0]));
                             let dir = (np.y - pp.y).atan2(np.x - pp.x);
-                            if min_angle_separation(dir, &others) < 30f64.to_radians() - 1e-9 {
+                            // A three-atom group (a carboxyl) turned past 60
+                            // degrees keeps them 60 degrees apart, so that it
+                            // does not open a narrow fork.
+                            let apart = if k > 4 && moved.len() == 3 {
+                                60f64
+                            } else {
+                                30f64
+                            };
+                            if min_angle_separation(dir, &others) < apart.to_radians() - 1e-9 {
                                 continue;
                             }
                         }
-                        // A move that stacks a moved atom on one that stays
-                        // (within a fifth of a bond) can lower the clash
-                        // count and still draw two atoms as one.
-                        for &(m, _) in new.iter() {
-                            in_moved[m.0 as usize] = true;
-                        }
-                        let stacked = new.iter().any(|&(_, q)| {
-                            let (cx, cy) = cell(q, CLASH_DIST);
-                            (-1..=1).any(|dx| {
-                                (-1..=1).any(|dy| {
-                                    index.atom_grid.get((cx + dx, cy + dy)).is_some_and(|list| {
-                                        list.iter().any(|&b| {
-                                            !in_moved[b.0 as usize]
-                                                && q.dist(&snapshot[b.0 as usize]) < 0.2 * BOND_LEN
-                                        })
-                                    })
-                                })
-                            })
-                        });
-                        for &(m, _) in new.iter() {
-                            in_moved[m.0 as usize] = false;
-                        }
-                        if stacked && no_stacking {
-                            continue;
-                        }
+                        new.clear();
+                        new.extend(moved.iter().map(|&m| (m, apply(k, at(m)))));
+                        // Only a move that beats the current drawing and the
+                        // best move so far can be kept, so the count stops
+                        // once it cannot.
+                        // (A move equal to the best one can still win on
+                        // size; one equal to the current drawing cannot.)
+                        let bound = match &best {
+                            Some((k0, _)) if (k0.0, k0.1) < current => (k0.0, k0.1, true),
+                            _ => (current.0, current.1, false),
+                        };
                         let (clashes, crossings) = defects_after_move(
                             current,
+                            bound,
                             &index,
                             &bonds,
                             &bonded,
@@ -2696,6 +2697,13 @@ fn relieve_clashes_pass(
                         if (clashes, crossings) < current {
                             let key = (clashes, crossings, moved.len());
                             if best.as_ref().is_none_or(|(k0, _)| key < *k0) {
+                                // A move that stacks a moved atom on one that
+                                // stays (within a fifth of a bond) can lower
+                                // the clash count and still draw two atoms as
+                                // one.
+                                if no_stacking && stacks(&index, &snapshot, &new, &mut in_moved) {
+                                    continue;
+                                }
                                 best = Some((key, new.clone()));
                             }
                         }
@@ -2712,6 +2720,35 @@ fn relieve_clashes_pass(
         current = (clashes, crossings);
     }
     current
+}
+
+/// Whether a moved atom of `new` lands within a fifth of a bond of an atom
+/// that stays.
+fn stacks(
+    index: &RoundIndex,
+    snapshot: &[Point],
+    new: &[(AtomIdx, Point)],
+    in_moved: &mut [bool],
+) -> bool {
+    for &(m, _) in new {
+        in_moved[m.0 as usize] = true;
+    }
+    let stacked = new.iter().any(|&(_, q)| {
+        let (cx, cy) = cell(q, CLASH_DIST);
+        (-1..=1).any(|dx| {
+            (-1..=1).any(|dy| {
+                index.atom_grid.get((cx + dx, cy + dy)).is_some_and(|list| {
+                    list.iter().any(|&b| {
+                        !in_moved[b.0 as usize] && q.dist(&snapshot[b.0 as usize]) < 0.2 * BOND_LEN
+                    })
+                })
+            })
+        })
+    });
+    for &(m, _) in new {
+        in_moved[m.0 as usize] = false;
+    }
+    stacked
 }
 
 /// One round's lookup tables for [`defects_after_move`]: every clash and
@@ -2869,6 +2906,7 @@ impl RoundIndex {
 #[allow(clippy::too_many_arguments)]
 fn defects_after_move(
     current: (usize, usize),
+    bound: (usize, usize, bool),
     index: &RoundIndex,
     bonds: &[(AtomIdx, AtomIdx)],
     bonded: &Bonded,
@@ -2891,7 +2929,13 @@ fn defects_after_move(
         .iter()
         .filter(|&&(a, b)| moved(a) != moved(b))
         .count() as i64;
+    // The clash count only grows from here: a move past `bound` stops early.
+    let mut over = false;
     for &(m, q) in new {
+        if clashes > bound.0 as i64 {
+            over = true;
+            break;
+        }
         let (cx, cy) = cell(q, CLASH_DIST);
         for dx in -1..=1 {
             for dy in -1..=1 {
@@ -2909,6 +2953,24 @@ fn defects_after_move(
             }
         }
     }
+    // A move with more clashes than `bound` cannot be kept: its crossings
+    // are not counted.
+    let restore = |in_moved: &mut [bool], new_pos: &mut [Point]| {
+        for &(m, _) in new {
+            in_moved[m.0 as usize] = false;
+            new_pos[m.0 as usize] = old[m.0 as usize];
+        }
+    };
+    if over || clashes > bound.0 as i64 {
+        restore(in_moved, new_pos);
+        return (usize::MAX, usize::MAX);
+    }
+    // With as many clashes as `bound`, the count stops once the crossings
+    // (which only grow from here) pass it (reach it, when a tie loses).
+    let at_bound = clashes == bound.0 as i64;
+    let lost = |crossings: i64| {
+        at_bound && (crossings > bound.1 as i64 || (!bound.2 && crossings >= bound.1 as i64))
+    };
     // Bonds on the branch: inside it, or the hinge into it.
     touched.clear();
     *epoch += 1;
@@ -2961,6 +3023,9 @@ fn defects_after_move(
                 }
             }
         }
+        if lost(crossings) {
+            break;
+        }
         // Against the other branch bonds, once per pair (two bonds inside
         // the branch move together).
         if !inside(k) {
@@ -2970,10 +3035,13 @@ fn defects_after_move(
                 }
             }
         }
+        if lost(crossings) {
+            break;
+        }
     }
-    for &(m, _) in new {
-        in_moved[m.0 as usize] = false;
-        new_pos[m.0 as usize] = old[m.0 as usize];
+    restore(in_moved, new_pos);
+    if lost(crossings) {
+        return (usize::MAX, usize::MAX);
     }
     (clashes.max(0) as usize, crossings.max(0) as usize)
 }
@@ -3399,6 +3467,49 @@ mod tests {
     }
 
     #[test]
+    fn large_components_open_their_forks_too() {
+        // A component of more than 60 atoms that needs narrow forks: its
+        // ±45° drawing is relieved as well, and keeps no fork under 90°.
+        use chematic_smiles::parse;
+        let smi = "CC(C)Cc1cccc(-c2ccccc2C(C)C)c1OC1CC(CNC(=O)c2ccc(C=C3SC(=O)NC3=O)cc2)N(C(=O)c2ccccc2C(=O)c2ccc(F)cc2F)C1";
+        let mol = parse(smi).unwrap();
+        assert!(mol.atom_count() > 60);
+        let layout = compute_layout(&mol);
+        let ring_atoms: std::collections::HashSet<AtomIdx> = chematic_perception::find_sssr(&mol)
+            .rings()
+            .iter()
+            .flatten()
+            .copied()
+            .collect();
+        let mut narrow = 0;
+        for i in 0..mol.atom_count() {
+            let atom = AtomIdx(i as u32);
+            if ring_atoms.contains(&atom) || mol.degree(atom) != 3 {
+                continue;
+            }
+            let c = layout.get(atom);
+            let mut angles: Vec<f64> = mol
+                .neighbors(atom)
+                .map(|(nb, _)| {
+                    let p = layout.get(nb);
+                    (p.y - c.y)
+                        .atan2(p.x - c.x)
+                        .rem_euclid(std::f64::consts::TAU)
+                })
+                .collect();
+            angles.sort_by(f64::total_cmp);
+            if (0..3).any(|k| {
+                (angles[(k + 1) % 3] - angles[k]).rem_euclid(std::f64::consts::TAU)
+                    < 90f64.to_radians() - 1e-6
+            }) {
+                narrow += 1;
+            }
+        }
+        assert_eq!(narrow, 0);
+        assert!(detect_crossings(&layout, &mol).is_empty());
+    }
+
+    #[test]
     fn crowded_forks_open_to_90_degrees_when_that_does_as_well() {
         // The carbonyl of a trityl phenyl ketone needs a narrower fork than
         // 120°; at ±30° its O ran 60° from a C-C, at ±45° 90°.
@@ -3490,6 +3601,12 @@ mod tests {
             // A ring-fusion atom's substituent goes into the exterior gap
             // (it went into a ring when the gap's direction passed 2π).
             ("CC1(C)OC2C3C(COC2(COS(N)(=O)=O)O1)C3(Cl)Cl", false),
+            // An aspartate carboxyl turned past 60° round its CH2, clear of
+            // the neighbouring residue (three-atom groups take the wide turns).
+            (
+                "CCCN(NC(=O)C1CCCN1C(=O)C(NC(=O)C(NC(=O)C(CC(=O)O)NC(=O)C(CCC(=O)O)NC(=O)C(NC(=O)C(CC(=O)O)NC(C)=O)C(C)O)C(C)C)C(C)C)C(=O)c1cc(C(F)(F)F)cc(C(F)(F)F)c1",
+                false,
+            ),
             (
                 "CC1(C)CCC2(C(=O)N3CCOCC3)CCC3(C)C(C(=O)C=C4C5(C)C=C(C#N)C(=O)C(C)(C)C5CCC43C)C2C1",
                 false,
