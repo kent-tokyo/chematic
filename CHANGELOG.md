@@ -8,6 +8,16 @@ benchmark claims remain scoped to their dated records.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Aromaticity perception no longer treats a neutral O/S/Se/Te atom with more
+  than two coordinated neighbours (hydrogens included) as a lone-pair donor.
+  This corrects the hypercoordinate sulfur cases from #767 for both Kekulé
+  and explicit aromatic input while preserving thiophene, furan, pyridine
+  N-oxide, and the other reported controls.
+
 ## [1.0.36] - 2026-10-06
 
 Remaining #734 work: BioTransformer's public rule tables (983 rules, about

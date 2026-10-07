@@ -211,6 +211,14 @@ fn count_atom_pi_electrons_in(
             view.order(mol, b)
         });
     let degree = mol.degree(atom_idx) + implicit_h as usize;
+    // A neutral group-16 atom can donate a lone pair only while it remains
+    // divalent.  Counting hydrogens matters here: thiophene-1-ol has two
+    // ring bonds, one O substituent and one implicit H.  Without this guard,
+    // both that atom and four-coordinate S(O)(O) are incorrectly classified
+    // as aromatic two-electron donors (#767).
+    if atom.charge == 0 && matches!(an, 8 | 16 | 34 | 52) && degree > 2 {
+        return None;
+    }
     if degree > 3 {
         return None;
     }
@@ -902,7 +910,8 @@ fn clear_aromatic_flags(mol: &Molecule) -> Molecule {
 }
 
 /// Preserve a parser-supplied aromatic representation when it is internally
-/// self-consistent. RDKit accepts some fused heteroaromatic SMILES whose
+/// self-consistent and contains no locally impossible neutral group-16 donor.
+/// RDKit accepts some fused heteroaromatic SMILES whose
 /// aromatic graph has no single Kekulé assignment under chematic's matching
 /// model; discarding that representation would reject a valid RDKit input.
 /// This path is deliberately limited to the literal aromatic bond/endpoint
@@ -911,6 +920,23 @@ fn clear_aromatic_flags(mol: &Molecule) -> Molecule {
 /// molecule has at least one aromatic bond and every aromatic bond's
 /// endpoints are flagged aromatic. Allocation-free.
 fn explicit_aromaticity_is_consistent(mol: &Molecule) -> bool {
+    // Parser-supplied lowercase flags are annotations, not an aromaticity
+    // oracle.  Reject the specific locally impossible donor state from
+    // #767 so it is Kekulized and re-perceived instead of taking the identity
+    // shortcut.  Other valid explicit aromatic representations retain the
+    // compatibility fallback below.
+    if mol.atoms().any(|(idx, atom)| {
+        atom.aromatic
+            && atom.charge == 0
+            && matches!(atom.element.atomic_number(), 8 | 16 | 34 | 52)
+            && {
+                let h = chematic_core::implicit_hcount(mol, idx) as usize;
+                mol.degree(idx) + h > 2
+            }
+    }) {
+        return false;
+    }
+
     let mut any = false;
     for (_, bond) in mol.bonds() {
         if bond.order == BondOrder::Aromatic {
@@ -1021,7 +1047,8 @@ struct ComponentInfo {
     edges: Vec<u32>,
     atoms: Vec<u32>,
     has_aromatic_bond: bool,
-    /// Every aromatic bond joins two flagged atoms (and one exists).
+    /// Every aromatic bond joins two flagged atoms (and one exists), and no
+    /// flagged neutral group-16 atom is hypercoordinate.
     explicit: bool,
     non_ring_aromatic_bond: bool,
     any_flagged: bool,
@@ -1076,6 +1103,13 @@ impl ComponentInfo {
         let mut any_flagged = false;
         for (idx, atom) in mol.atoms() {
             any_flagged |= atom.aromatic;
+            if atom.aromatic
+                && atom.charge == 0
+                && matches!(atom.element.atomic_number(), 8 | 16 | 34 | 52)
+                && mol.degree(idx) + chematic_core::implicit_hcount(mol, idx) as usize > 2
+            {
+                consistent = false;
+            }
             let r = root[idx.0 as usize];
             if r != u32::MAX {
                 atoms[r as usize] += 1;
@@ -1920,6 +1954,69 @@ mod tests {
             let mut got: Vec<u32> = atoms.iter().map(|a| a.0).collect();
             got.sort();
             assert_eq!(&got, expected, "{name} ({smi}): should match RDKit exactly");
+        }
+    }
+
+    #[test]
+    fn issue_767_neutral_hypercoordinate_ring_chalcogens_are_not_aromatic() {
+        for (name, smi) in [
+            (
+                "neutral sulfur with two exocyclic single bonds",
+                "C1=CS(O)(O)C=C1",
+            ),
+            (
+                "neutral sulfur with one exocyclic single bond",
+                "C1=CS(O)C=C1",
+            ),
+            (
+                "explicit aromatic spelling of hypercoordinate sulfur",
+                "c1s(O)(O)ccc1",
+            ),
+            ("explicit aromatic thiophene 1-oxide", "O=s1cccc1"),
+            ("explicit aromatic thiophene 1,1-dioxide", "O=s1(=O)cccc1"),
+        ] {
+            let mol = chematic_smiles::parse(smi).expect("valid issue #767 SMILES");
+            let applied = apply_aromaticity_rdkit_parity_experimental(&mol)
+                .expect("issue #767 input must be re-perceived");
+            assert_eq!(
+                applied.atoms().filter(|(_, atom)| atom.aromatic).count(),
+                0,
+                "{name}: {smi}"
+            );
+            assert_eq!(
+                applied
+                    .bonds()
+                    .filter(|(_, bond)| bond.order == BondOrder::Aromatic)
+                    .count(),
+                0,
+                "{name}: {smi}"
+            );
+        }
+    }
+
+    #[test]
+    fn issue_767_aromaticity_controls_remain_unchanged() {
+        let cases = [
+            ("thiophene", "C1=CC=CS1", 5),
+            ("thiophene 1-oxide", "C1=CS(C=C1)=O", 0),
+            ("thiophene 1,1-dioxide", "C1=CS(=O)(=O)C=C1", 0),
+            ("furan", "C1=CC=CO1", 5),
+            ("N-methylpyrrole", "Cn1cccc1", 5),
+            ("N-methylpyrrole N-oxide", "C1=C[N+](C)([O-])C=C1", 0),
+            ("pyridine", "C1=CC=NC=C1", 6),
+            ("pyridine N-oxide", "C1=C[N+]([O-])=CC=C1", 6),
+            ("isoxazole", "Cc1cc(N)no1", 5),
+        ];
+
+        for (name, smi, expected) in cases {
+            let mol = chematic_smiles::parse(smi).expect("valid control SMILES");
+            let applied = apply_aromaticity_rdkit_parity_experimental(&mol)
+                .expect("control must remain perceivable");
+            assert_eq!(
+                applied.atoms().filter(|(_, atom)| atom.aromatic).count(),
+                expected,
+                "{name}: {smi}"
+            );
         }
     }
 
