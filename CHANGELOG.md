@@ -16,6 +16,13 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- 2D layout: a ring atom with two ring bonds and two substituents draws
+  them 30° either side of the ring's outward bisector (phenytoin and
+  4,4-disubstituted glutarimides drew a crossing); as drawn, 277 of 15,000
+  rows have a crossing (was 300; RDKit 402). CI: the binding surface
+  inventory and the MMFF94 source-wheel gate are refreshed for this branch
+  (the gate pinned v1.0.36's 81 differing heavy atoms). Record:
+  `benchmarks/2026-10-07-734-754-followups-batch18.md`.
 - 2D layout of crowded molecules: the layout's clash relief may turn a
   branch about an atom whose double bonds are all in rings (a Kekulé-written
   aromatic ring, a ring P=N), and fused or spiro systems of three or more

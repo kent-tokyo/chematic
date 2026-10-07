@@ -178,11 +178,11 @@ is 200); a geometry that stops at the budget is returned with the
 2D layout is rule-based, not RDKit's `Compute2DCoords`: coordinates differ.
 Depictions and MOL blocks draw the declared stereo (E/Z geometry, one wedge
 per centre); every MOL block (Python `to_mol_block`, WASM `to_mol_block`,
-`SDWriter`) carries 2D coordinates in Å, with or without stereo. As drawn, 26
+`SDWriter`) carries 2D coordinates in Å, with or without stereo. As drawn, 28
 of the 15,000 exposed-10k and ChEMBL-5k rows have a clash (RDKit 276) and
 caged ring systems can cross themselves. A branch point is drawn with its
 bonds 120° apart unless that crowds the drawing, where the narrower fork of
-earlier releases is kept (320 rows have a branch atom with two bonds under
+earlier releases is kept (317 rows have a branch atom with two bonds under
 90° apart; RDKit none).
 
 ## Binding contract
