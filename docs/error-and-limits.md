@@ -201,24 +201,20 @@ binding and the WASM package
 
 | Family | Category probed | Python | WASM / Node |
 |---|---|---|---|
-| SMILES, SMARTS, MOL block, InChI parse | malformed | `ValueError`, message only | thrown string (not an `Error`), message only |
-| mmCIF parse past `max_input_bytes` | resource_limit | `ValueError`, message only | thrown string, message only |
+| SMILES, SMARTS, MOL block, InChI parse | malformed | `ChematicInputError(ValueError)`: `category`, `code` (`smiles_parse`, …), `format` | thrown string (not an `Error`), message only |
+| mmCIF parse past `max_input_bytes` | resource_limit | `ChematicInputError`: `category="resource_limit"`, `code="input_too_large"` | thrown string, message only |
 | SMIRKS (`run_smirks_checked` / `run_reactants_checked`) | malformed, unsupported | envelope `status: typed_refusal`, `reason` (`smirks_parse`, `reactant_count_mismatch`) | same envelope |
 | 3D pipeline v2 | unsupported (Pt complex, no MMFF94 type) | `PipelineV2Error(ValueError)` with `diagnostics.cause.kind` | envelope `ok: false`, `error.cause.kind` |
 | Nucleic-acid document | ambiguous, unsupported, resource_limit | envelope `ok: false`, `error.code`, `error.path` | same envelope |
 
 So the reaction, 3D and nucleic-acid APIs report a stable machine-readable
-kind in both bindings. The parsers report only text, and the WASM parsers
-throw strings. Giving them the four categories (`malformed`, `unsupported`,
-`ambiguous`, `resource_limit`) would mean the following changes:
-
-- Python: a `ValueError` subclass carrying `category` and `code`.
-  `except ValueError` keeps working.
-- WASM: thrown `Error` objects with the same fields. Code that compares the
-  thrown value with a string would see a different value.
-
-The WASM change changes the public error surface, so it waits for a
-decision.
+kind in both bindings. In Python, the parsers raise `ChematicInputError`, a
+`ValueError` subclass (`except ValueError` keeps working) whose `category`
+is one of `malformed`, `unsupported`, `ambiguous` and `resource_limit`, with
+a stable `code` and the `format`. The WASM parsers still throw strings:
+thrown `Error` objects with the same fields would change what code that
+compares the thrown value with a string sees, so that change is left for a
+release that may change the error surface.
 
 ---
 

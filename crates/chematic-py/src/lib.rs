@@ -19,6 +19,7 @@ type RdkitMorganDetail = (
 
 mod crystal;
 mod ensemble_v2;
+mod errors;
 mod fingerprint_similarity;
 mod formats;
 mod lammps;
@@ -78,6 +79,10 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "PipelineV2Error",
         m.py().get_type::<pipeline_v2::PipelineV2Error>(),
+    )?;
+    m.add(
+        "ChematicInputError",
+        m.py().get_type::<errors::ChematicInputError>(),
     )?;
     m.add(
         "StereoLossWarning",

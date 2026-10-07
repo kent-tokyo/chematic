@@ -1947,8 +1947,9 @@ impl Mol {
     ///
     /// Raises ``ValueError`` for invalid SMARTS.
     fn has_substructure(&self, smarts: &str) -> PyResult<bool> {
-        let query = crate::misc::cached_smarts(smarts)
-            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        let query = crate::misc::cached_smarts(smarts).map_err(|e| {
+            crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
+        })?;
         // Stop at the first embedding instead of enumerating every match — an
         // existence check doesn't need the full match set or the dedup pass.
         let config = chematic_smarts::MatchConfig {
@@ -1973,8 +1974,9 @@ impl Mol {
     /// Returns an empty list when there are no matches.
     /// Raises ``ValueError`` for invalid SMARTS.
     fn find_matches(&self, smarts: &str) -> PyResult<Vec<Vec<usize>>> {
-        let query = crate::misc::cached_smarts(smarts)
-            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        let query = crate::misc::cached_smarts(smarts).map_err(|e| {
+            crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
+        })?;
         Ok(chematic_smarts::find_match_atom_sets_perceived(
             &query,
             &self.inner,
@@ -2010,8 +2012,9 @@ impl Mol {
             }
         };
 
-        let query = crate::misc::cached_smarts(smarts)
-            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        let query = crate::misc::cached_smarts(smarts).map_err(|e| {
+            crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
+        })?;
         let result = PyDict::new(py);
         let config = chematic_smarts::RdkitParityConfig {
             use_rdkit_parity_aromaticity: true,

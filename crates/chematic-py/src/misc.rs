@@ -41,7 +41,8 @@ pub(crate) fn cached_smarts(
 ///         print("has hydroxyl")
 #[pyfunction]
 fn smarts_match(smarts: &str, mol: &Mol) -> PyResult<bool> {
-    let query = cached_smarts(smarts).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let query =
+        cached_smarts(smarts).map_err(|e| crate::errors::malformed("smarts", e.to_string()))?;
     // Stop at the first embedding instead of enumerating every match — an
     // existence check doesn't need the full match set or the dedup pass.
     let config = chematic_smarts::MatchConfig {
@@ -63,7 +64,8 @@ fn smarts_match(smarts: &str, mol: &Mol) -> PyResult<bool> {
 ///     # → [[3], [7], ...]   (one list per match; each element is a mol atom index)
 #[pyfunction]
 fn smarts_find(smarts: &str, mol: &Mol) -> PyResult<Vec<Vec<usize>>> {
-    let query = cached_smarts(smarts).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let query =
+        cached_smarts(smarts).map_err(|e| crate::errors::malformed("smarts", e.to_string()))?;
     let n = query.atom_count();
     Ok(chematic_smarts::find_matches_perceived(
         &query,

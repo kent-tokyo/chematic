@@ -16,6 +16,12 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- Python: the parsers (`from_smiles`, `from_inchi`, `from_mol_block`,
+  `from_mol_block_with_coords`, `parse_mmcif`, SMARTS patterns) raise
+  `chematic.ChematicInputError`, a `ValueError` subclass with `category`
+  (`malformed` / `resource_limit`), `code` (`smiles_parse`, `input_too_large`,
+  …) and `format`. `except ValueError` keeps working. Nucleic-acid edit
+  sequences are replayed with the same envelopes in Rust, Python and WASM.
 - 2D layout: porphyrins are drawn from a template (pentagons round the
   macrocycle, a central metal at the centre); perfluoroalkyl and other chains
   run straight through CF2/CMe2 atoms; a ring-fusion atom's substituent goes
