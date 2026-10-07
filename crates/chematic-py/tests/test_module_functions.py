@@ -1,4 +1,6 @@
 """Tests for module-level functions: SMARTS, InChI, depict_grid, run_smirks, find_mcs, B7."""
+import warnings
+
 import pytest
 import chematic
 
@@ -487,7 +489,9 @@ def test_reaction_smarts_invalid_rxn_smiles():
 def test_to_mol_block_stereo_report_and_strict():
     mol = chematic.from_smiles("N[C@@H](C)C(=O)O")
     block, report = mol.to_mol_block_with_report()
-    assert block == mol.to_mol_block() == mol.to_mol_block(strict=True)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # nothing lost: no warning
+        assert block == mol.to_mol_block() == mol.to_mol_block(strict=True)
     assert report == {
         "centres": [],
         "double_bonds": [],
@@ -496,14 +500,23 @@ def test_to_mol_block_stereo_report_and_strict():
     }
     # Every atom on one line: no wedge can express the centre.
     line = [[1.5 * i, 0.0] for i in range(mol.heavy_atoms)]
-    assert "M  END" in mol.to_mol_block_2d(line)
+    with pytest.warns(chematic.StereoLossWarning, match="without a wedge") as caught:
+        assert "M  END" in mol.to_mol_block_2d(line)
+    assert caught[0].filename == __file__  # points at the caller
+    with pytest.warns(chematic.StereoLossWarning):
+        assert "M  END" in mol.to_mol_v3000(line)
+    assert issubclass(chematic.StereoLossWarning, UserWarning)
     with pytest.raises(ValueError, match="without a wedge"):
         mol.to_mol_block_2d(line, strict=True)
     with pytest.raises(ValueError, match="without a wedge"):
         mol.to_mol_v3000(line, strict=True)
     square_planar = chematic.from_smiles("F[Pt@SP1](Cl)(Br)I")
-    _, report = square_planar.to_mol_block_with_report()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # the report call never warns
+        _, report = square_planar.to_mol_block_with_report()
     assert report["non_tetrahedral_centres"] == [1]
+    with pytest.warns(chematic.StereoLossWarning, match="square-planar"):
+        square_planar.to_mol_block()
     with pytest.raises(ValueError, match="square-planar"):
         square_planar.to_mol_block(strict=True)
 

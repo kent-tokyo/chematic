@@ -178,16 +178,20 @@ class Mol:
         ...
 
     def to_mol_block(self, strict: bool = False) -> str:
-        """Serialize to MDL MOL V2000 format (without 3D coordinates).
+        """Serialize to MDL MOL V2000 format with 2D coordinates.
 
-        Equivalent to RDKit's ``Chem.MolToMolBlock(mol)``. A molecule with
+        Equivalent to RDKit's ``Chem.MolToMolBlock(mol)``: every molecule is
+        written on a 2D layout in Å (1.5 Å bonds), as in RDKit's block and
+        :meth:`depict_data`. A molecule with
         stereo is written on a 2D layout with one wedge or hash per
         tetrahedral centre and E/Z set by the geometry; a centre the layout
         cannot draw unambiguously is left unwedged, and a stereo double bond
         that cannot be drawn (in a ring) or has no declared E/Z is written as
-        "either". Such a block loses that stereo: with ``strict=True`` this
+        "either". Such a block loses that stereo: it is returned with a
+        :class:`StereoLossWarning` naming what is lost, ``strict=True``
         raises ``ValueError`` instead, and :meth:`to_mol_block_with_report`
-        returns the block together with the lost centres and bonds.
+        returns the block together with the lost centres and bonds (without
+        warning).
         Use :meth:`to_mol2` for Tripos format or :meth:`to_pdb` for PDB with 3D.
 
         Example::
@@ -219,8 +223,8 @@ class Mol:
 
         Each element of ``coords`` is an ``[x, y]`` pair in Å.
         Designed for round-tripping with :func:`from_mol_block_with_coords`.
-        ``strict=True`` raises ``ValueError`` when the block would lose
-        stereo (see :meth:`to_mol_block`).
+        A block that loses stereo warns with :class:`StereoLossWarning`;
+        ``strict=True`` raises ``ValueError`` instead (see :meth:`to_mol_block`).
 
         Example::
 
@@ -241,8 +245,8 @@ class Mol:
         Accepts the same ``[[x, y], ...]`` coordinate format as :meth:`to_mol_block_2d`.
         Pass an empty list to have a molecule with stereo laid out with
         wedges (as :meth:`to_mol_block`); otherwise coordinates are zero.
-        ``strict=True`` raises ``ValueError`` when the block would lose
-        stereo (see :meth:`to_mol_block`).
+        A block that loses stereo warns with :class:`StereoLossWarning`;
+        ``strict=True`` raises ``ValueError`` instead (see :meth:`to_mol_block`).
 
         Equivalent to RDKit ``Chem.MolToV3KMolBlock(mol)``.
 
@@ -677,6 +681,10 @@ class Mol:
             (CSS hex string), ``charge``) and ``bonds`` (list of dicts:
             ``idx``, ``atom1``, ``atom2``, ``kind`` — one of ``"Single"``,
             ``"Double"``, ``"Triple"``, ``"Aromatic"``, ``"Up"``, ``"Down"``).
+            The coordinates are the stereo depiction (declared E/Z drawn as
+            declared); ``"Up"`` and ``"Down"`` are a wedge and a hash drawn
+            from ``atom1``, a tetrahedral centre (SMILES ``/`` ``\\`` marks
+            are drawn as plain single bonds).
 
         Example::
 
@@ -722,8 +730,14 @@ class Mol:
         """
         ...
 
-    def find_matches_rdkit_parity(self, smarts: str) -> SmartsParityResult:
+    def find_matches_rdkit_parity(
+        self, smarts: str, profile: Literal["2026.03.6", "2026.09.1"] = "2026.03.6"
+    ) -> SmartsParityResult:
         """Opt-in RDKit 2026.03.6-style match sets with explicit refusal.
+
+        ``profile="2026.09.1"`` counts ``[R<n>]`` rings in RDKit 2026.09.1's
+        ring list (all relevant cycles); nothing is then refused as
+        ``ring_model_ambiguous``. Any other profile raises ``ValueError``.
 
         ``status == "ok"`` provides sorted atom-index sets in ``matches``;
         an empty list means a completed search with no match. For
@@ -1055,7 +1069,9 @@ class Mol:
 
     # -- Force field analysis ------------------------------------------------
 
-    def mmff94_total_energy(self, coords: list[list[float]]) -> float:
+    def mmff94_total_energy(
+        self, coords: list[list[float]], ignore_interfrag_interactions: bool = False
+    ) -> float:
         """Total MMFF94 force field energy in kcal/mol for the given 3D coordinates.
 
         Returns ``0.0`` if MMFF94 typing fails. Complements :meth:`mmff94_energy_breakdown`.
@@ -1094,12 +1110,15 @@ class Mol:
         ...
 
     def mmff94_energy_breakdown(
-        self, coords: list[list[float]]
+        self, coords: list[list[float]], ignore_interfrag_interactions: bool = False
     ) -> dict[str, float]:
         """MMFF94 energy breakdown for given 3D coordinates.
 
         Returns a dict with keys: ``bond``, ``angle``, ``stretch_bend``,
         ``torsion``, ``oop``, ``vdw``, ``electrostatic``, ``total`` (kcal/mol).
+        ``ignore_interfrag_interactions=True`` leaves out van der Waals and
+        electrostatic pairs between disconnected fragments, as RDKit's
+        ``MMFFGetMoleculeForceField`` does by default.
 
         Raises:
             ValueError: for atoms not parameterised by MMFF94.
@@ -1268,10 +1287,25 @@ class Mol:
         """
         ...
 
-    def cip_stereo(self) -> list[dict]:
+    def cip_stereo(self, mode: str = "legacy") -> list[dict]:
         """CIP stereochemistry assignments — list of ``{"atom_idx": int, "descriptor": str}`` dicts.
 
-        ``descriptor`` is ``"R"``, ``"S"``, ``"E"``, or ``"Z"``.
+        ``descriptor`` is ``"R"``, ``"S"``, ``"E"``, ``"Z"``, ``"r"`` or ``"s"``;
+        E/Z entries also carry ``"bond_idx"`` and ``"bond_atoms"``.
+        ``mode="accurate"`` uses the hierarchical-digraph engine; its labels
+        that flip with the ring's Kekulé spelling carry ``"kekule_dependent":
+        True`` and those that follow RDKit's reading of the parsed SMILES
+        spelling (saturated ring lone-pair centres such as bridgehead amines)
+        carry ``"spelling_dependent": True``. Unresolved atoms are listed by
+        :meth:`cip_stereo_unresolved`.
+        """
+        ...
+
+    def cip_stereo_unresolved(self) -> list[dict]:
+        """Atoms ``cip_stereo(mode="accurate")`` leaves without an R/S label.
+
+        ``{"atom_idx": int, "reason": str}`` dicts; ``reason`` is ``"tied"``,
+        ``"budget_exceeded"``, ``"oracle_unstable"`` or ``"lone_pair_center"``.
         """
         ...
 
@@ -3350,7 +3384,7 @@ class PipelineV2Config:
         use_macrocycle_torsions: bool = False,
         use_macrocycle_14_bounds: bool = False,
         include_legacy_torsion_heuristic: bool = False,
-        force_field_max_iterations: int = 200,
+        force_field_max_iterations: int = 1000,
         gate_mmff94_torsion_oop: bool = False,
         gate_mmff94_stretch_bend: bool = False,
         total_timeout_ms: Optional[int] = None,
@@ -3378,7 +3412,7 @@ class PipelineV2Config:
         use_macrocycle_torsions: bool = False,
         use_macrocycle_14_bounds: bool = False,
         include_legacy_torsion_heuristic: bool = False,
-        force_field_max_iterations: int = 200,
+        force_field_max_iterations: int = 1000,
         gate_mmff94_torsion_oop: bool = False,
         gate_mmff94_stretch_bend: bool = False,
         total_timeout_ms: Optional[int] = None,
@@ -3438,6 +3472,17 @@ class PipelineV2Config:
     Rust ``PipelineV2Config`` default -- existing callers are unaffected."""
 
     def __repr__(self) -> str: ...
+
+class StereoLossWarning(UserWarning):
+    """A MOL block written without part of the molecule's stereo.
+
+    Emitted by :meth:`Mol.to_mol_block`, :meth:`Mol.to_mol_block_2d` and
+    :meth:`Mol.to_mol_v3000` when a tetrahedral centre is left unwedged, a
+    declared E/Z bond is written "either", a square-planar centre is
+    dropped or enhanced stereo groups do not fit V2000. The block is still
+    returned; filter with ``warnings.simplefilter("error",
+    chematic.StereoLossWarning)`` or pass ``strict=True`` to refuse it.
+    """
 
 class PipelineV2Error(ValueError):
     """A failed :meth:`Mol.embed_pipeline_v2` call.

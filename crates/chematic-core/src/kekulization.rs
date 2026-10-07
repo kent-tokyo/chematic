@@ -277,20 +277,50 @@ pub fn kekulize_with(
 
 /// Per-atom adjacency over aromatic bonds joining two `eligible` atoms, each
 /// list in aromatic-bond order (atom1's entry, then atom2's).
-fn matching_adjacency(
-    mol: &Molecule,
-    aromatic_bonds: &[BondIdx],
-    eligible: &[bool],
-) -> Vec<Vec<(AtomIdx, BondIdx)>> {
-    let mut adj: Vec<Vec<(AtomIdx, BondIdx)>> = vec![Vec::new(); mol.atom_count()];
-    for &bidx in aromatic_bonds {
+fn matching_adjacency(mol: &Molecule, aromatic_bonds: &[BondIdx], eligible: &[bool]) -> MatchAdj {
+    let n = mol.atom_count();
+    let joins = |bidx: BondIdx| {
         let bond = mol.bond(bidx);
-        if eligible[bond.atom1.0 as usize] && eligible[bond.atom2.0 as usize] {
-            adj[bond.atom1.0 as usize].push((bond.atom2, bidx));
-            adj[bond.atom2.0 as usize].push((bond.atom1, bidx));
+        (eligible[bond.atom1.0 as usize] && eligible[bond.atom2.0 as usize])
+            .then_some((bond.atom1, bond.atom2))
+    };
+    // Compressed rows, each atom's entries in the order the bonds are listed
+    // (the order a per-atom `Vec` push would give), in two allocations.
+    let mut start = vec![0u32; n + 1];
+    for &bidx in aromatic_bonds {
+        if let Some((a, b)) = joins(bidx) {
+            start[a.0 as usize + 1] += 1;
+            start[b.0 as usize + 1] += 1;
         }
     }
-    adj
+    for i in 0..n {
+        start[i + 1] += start[i];
+    }
+    let mut fill = start.clone();
+    let mut entries = vec![(AtomIdx(0), BondIdx(0)); start[n] as usize];
+    for &bidx in aromatic_bonds {
+        if let Some((a, b)) = joins(bidx) {
+            entries[fill[a.0 as usize] as usize] = (b, bidx);
+            fill[a.0 as usize] += 1;
+            entries[fill[b.0 as usize] as usize] = (a, bidx);
+            fill[b.0 as usize] += 1;
+        }
+    }
+    MatchAdj { start, entries }
+}
+
+/// Per-atom matching adjacency in compressed rows; `adj[atom]` is that
+/// atom's `(neighbour, bond)` slice.
+struct MatchAdj {
+    start: Vec<u32>,
+    entries: Vec<(AtomIdx, BondIdx)>,
+}
+
+impl std::ops::Index<usize> for MatchAdj {
+    type Output = [(AtomIdx, BondIdx)];
+    fn index(&self, atom: usize) -> &Self::Output {
+        &self.entries[self.start[atom] as usize..self.start[atom + 1] as usize]
+    }
 }
 
 /// [`build_kekule_result`] from a per-atom mate array.
@@ -433,7 +463,7 @@ impl Matcher {
 
     /// Run a single augmenting-path pass: for each unmatched atom (in the
     /// given order), try to find an augmenting path from it.
-    fn run_pass(&mut self, atoms: impl Iterator<Item = AtomIdx>, adj: &[Vec<(AtomIdx, BondIdx)>]) {
+    fn run_pass(&mut self, atoms: impl Iterator<Item = AtomIdx>, adj: &MatchAdj) {
         for start in atoms {
             if self.mate[start.0 as usize] != NO_MATE {
                 continue;
@@ -446,7 +476,7 @@ impl Matcher {
     /// the matching. Iterative BFS with parent-pointer path reconstruction
     /// (no recursion: wasm32's default stack is ~1 MB). Returns whether
     /// `start` is matched afterwards.
-    fn augment(&mut self, start: u32, adj: &[Vec<(AtomIdx, BondIdx)>]) -> bool {
+    fn augment(&mut self, start: u32, adj: &MatchAdj) -> bool {
         self.epoch = self.epoch.wrapping_add(1);
         if self.epoch == 0 {
             self.seen.iter_mut().for_each(|s| *s = 0);

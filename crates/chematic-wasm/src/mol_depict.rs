@@ -43,8 +43,16 @@ pub fn depict_svg_grid(smiles_block: &str, cols: usize) -> String {
         .filter(|s| !s.trim().is_empty())
         .filter_map(|s| chematic_smiles::parse(s.trim()).ok())
         .collect();
-    let refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
-    chematic_depict::depict_svg_grid(&refs, cols)
+    let (copies, layouts): (Vec<_>, Vec<chematic_depict::Layout>) = mols
+        .iter()
+        .map(chematic_mol::stereo_depiction::depiction_with_stereo)
+        .unzip();
+    let refs: Vec<&chematic_core::Molecule> = mols
+        .iter()
+        .zip(&copies)
+        .map(|(m, copy)| copy.as_ref().unwrap_or(m))
+        .collect();
+    chematic_depict::depict_svg_grid_with_layouts(&refs, &layouts, cols)
 }
 
 /// Find all substructure matches of a SMARTS pattern in `mol`.
@@ -363,16 +371,21 @@ pub fn depict_svg_grid_highlighted(smiles_block: &str, cols: usize, match_smarts
         })
         .collect();
 
+    let (copies, layouts): (Vec<_>, Vec<chematic_depict::Layout>) = mols
+        .iter()
+        .map(chematic_mol::stereo_depiction::depiction_with_stereo)
+        .unzip();
     let pairs: Vec<(
         &chematic_core::Molecule,
         Option<&chematic_depict::svg::RenderOptions>,
     )> = mols
         .iter()
+        .zip(&copies)
         .zip(cell_opts.iter())
-        .map(|(m, o)| (m, Some(o)))
+        .map(|((m, copy), o)| (copy.as_ref().unwrap_or(m), Some(o)))
         .collect();
 
-    chematic_depict::depict_svg_grid_with_opts(&pairs, cols)
+    chematic_depict::depict_svg_grid_with_opts_and_layouts(&pairs, &layouts, cols)
 }
 
 // ---------------------------------------------------------------------------
@@ -401,7 +414,10 @@ pub fn depict_svg_grid_highlighted(smiles_block: &str, cols: usize, match_smarts
 /// `kind` is one of `"Single"`, `"Double"`, `"Triple"`, `"Aromatic"`, `"Up"`, `"Down"`.
 #[wasm_bindgen]
 pub fn depict_data_json(mol: &MolHandle) -> String {
-    let data = chematic_depict::compute_depict_data(&mol.inner);
+    let data = chematic_mol::stereo_depiction::with_stereo_depiction(&mol.inner, |m, layout| {
+        let coords: Vec<(f64, f64)> = layout.coords.iter().map(|p| (p.x, p.y)).collect();
+        chematic_depict::depict_data_with_coords(m, &coords)
+    });
 
     let atoms: Vec<String> = data
         .atoms
@@ -483,14 +499,15 @@ pub fn preflight_smiles_json(smiles: &str, width: u32, height: u32) -> String {
     if mol.atom_count() > WASM_MAX_ATOMS {
         return format!(r#"{{"error":"molecule exceeds maximum atom count ({WASM_MAX_ATOMS})"}}"#);
     }
-    let layout = chematic_depict::compute_layout(&mol);
+    // What `depict_svg` draws: the stereo depiction.
+    let (copy, layout) = chematic_mol::stereo_depiction::depiction_with_stereo(&mol);
     let opts = chematic_depict::RenderOptions {
         width: Some(width),
         height: Some(height),
         ..Default::default()
     };
     chematic_depict::preflight_svg_json(
-        &mol,
+        copy.as_ref().unwrap_or(&mol),
         &layout,
         &opts,
         &chematic_depict::PreflightLimits::default(),
@@ -682,7 +699,7 @@ pub fn batch_report_html(smiles_lines: &str) -> String {
             let lip = mw <= 500.0 && hbd <= 5 && hba_lip <= 10 && logp <= 5.0;
             let pains_ok = pains_passes(&m);
             let brenk_ok = brenk_passes(&m);
-            let svg = chematic_depict::depict_svg(&m);
+            let svg = chematic_mol::stereo_depiction::with_stereo_depiction(&m, chematic_depict::render_svg);
 
             let lip_badge = if lip { r#"<span class="badge pass">Lipinski ✓</span>"# }
                             else   { r#"<span class="badge fail">Lipinski ✗</span>"# };

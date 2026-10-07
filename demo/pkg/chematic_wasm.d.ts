@@ -754,10 +754,16 @@ export function chematic_version(): string;
  * CIP stereo assignments via the accurate hierarchical-digraph engine, as a JSON
  * array of `{atomIdx, cipCode}` objects -- same shape as [`cip_assignments_json`],
  * but merges the accurate engine's tetrahedral R/S (~99.6% oracle-stable agreement,
- * see `docs/rfcs/cip_accurate_rfc.md`) with legacy's E/Z and allene answers (the accurate
- * engine computes neither). Atoms it can't resolve are omitted here -- see
- * [`cip_unresolved_json`] -- never a silently-guessed label. Returns `"null"` on an
- * internal engine error (budget-independent computations should not normally hit this).
+ * see `docs/rfcs/cip_accurate_rfc.md`), E/Z ranked by the same engine and legacy's
+ * allene answers. Atoms it can't resolve are omitted here -- see
+ * [`cip_unresolved_json`] -- never a silently-guessed label. A phosphorus on an
+ * unsaturated ring (cyclophosphazene) gets RDKit's CIPLabeler label, which flips
+ * with the ring's Kekulé spelling; its object carries `"kekuleDependent": true`.
+ * A ring centre with three single bonds and a lone pair (bridgehead amine)
+ * gets RDKit's label for the parsed SMILES spelling and carries
+ * `"spellingDependent": true`.
+ * Returns `"null"` on an internal engine error (budget-independent computations
+ * should not normally hit this).
  */
 export function cip_assignments_accurate_json(mol: MolHandle): string;
 
@@ -1673,6 +1679,14 @@ export function mmff94_charges_typed_json(mol: MolHandle): string;
 export function mmff94_energy_breakdown_from_coords_json(mol: MolHandle, coords_json: string): string;
 
 /**
+ * [`mmff94_energy_breakdown_from_coords_json`] with
+ * `ignore_interfrag_interactions`: `true` leaves out van der Waals and
+ * electrostatic pairs between disconnected fragments, as RDKit's
+ * `MMFFGetMoleculeForceField` does by default.
+ */
+export function mmff94_energy_breakdown_from_coords_json_with_options(mol: MolHandle, coords_json: string, ignore_interfrag_interactions: boolean): string;
+
+/**
  * Computes energy on an internally generated conformer.
  * `MolHandle` stores topology only; coordinates previously read from PDB/XYZ
  * are not used by this function.
@@ -1745,6 +1759,13 @@ export function mol_block_from_smiles(smiles: string): string;
  * for the reason vocabulary (kept identical across bindings).
  */
 export function mol_block_stereo_diagnostics_json(mol_block: string): string;
+
+/**
+ * The stereo [`to_mol_block`] does not carry, as JSON:
+ * `{"centres": [atom...], "double_bonds": [bond...],
+ * "non_tetrahedral_centres": [atom...], "stereo_groups_dropped": bool}`.
+ */
+export function mol_block_stereo_loss_json(mol: MolHandle): string;
 
 /**
  * Only the first molecular fragment in the document is returned.
@@ -2013,6 +2034,20 @@ export function normalize_cxsmiles(s: string): string;
  * Returns a JS error on parse failure.
  */
 export function normalize_reaction_smiles(rxn_smiles: string): string;
+
+/**
+ * Apply one bounded metadata edit without changing atom ownership or linkage
+ * topology. Returns the same tagged envelope as validation.
+ */
+export function nucleic_acid_apply_json_command(document_json: string, command_json: string): string;
+
+/**
+ * Validate and normalize a bounded `chematic.nucleic-acid.v1` document.
+ *
+ * Returns a stable JSON envelope with either `ok: true` and the normalized
+ * document or `ok: false` and a typed error category.
+ */
+export function nucleic_acid_validate_json(document_json: string): string;
 
 /**
  * Parse an OpenDX (APBS scalar-field subset) file and return its full
@@ -2458,10 +2493,12 @@ export function run_reactants(smirks: string, reactants_smiles: string): string;
  * Apply a SMIRKS template with explicit outcome accounting as a JSON string.
  *
  * `reactants_smiles` is pipe-separated, as for [`run_reactants`]. With
- * `rdkit_compat = true`, tetrahedral reactant-side `@`/`@@` templates that
- * differ from pinned RDKit 2026.03.6 return `typed_unsupported` and a stable
- * reason code instead of an apparently compatible product. Native semantics
- * and the existing [`run_reactants`] API are unchanged. Product graph/origin/
+ * `rdkit_compat = true`, matching and product stereochemistry follow pinned
+ * RDKit 2026.03.6; inputs it cannot reproduce return `typed_unsupported` and
+ * a stable reason code (`ambiguous_stereo_bond_order`,
+ * `ez_reactant_template_semantics`, `chiral_reactant_template_semantics`)
+ * instead of an apparently compatible product. Native semantics and the
+ * existing [`run_reactants`] API are unchanged. Product graph/origin/
  * template-map parity remains a separate oracle gate. Source indices and
  * product-template map labels are returned alongside the product SMILES;
  * their atom positions match the canonical SMILES parse order.
@@ -2825,8 +2862,19 @@ export function to_extxyz_json(mol: MolHandle, coords_json: string, options_json
  *
  * Atom positions are computed via the same layout engine used for SVG depiction
  * and converted to Ångström units (`1.5 Å` per bond).
+ *
+ * A molecule with stereo gets the MOL writer's stereo layout (E/Z set by
+ * the geometry, one checked wedge per centre); a centre or E/Z bond that
+ * layout cannot express is lost silently here. Use [`to_mol_block_strict`]
+ * to get an error instead, or [`mol_block_stereo_loss_json`] for the list.
  */
 export function to_mol_block(mol: MolHandle): string;
+
+/**
+ * [`to_mol_block`] that fails, naming the lost centres and bonds, when the
+ * block would not carry all of the molecule's stereo.
+ */
+export function to_mol_block_strict(mol: MolHandle): string;
 
 /**
  * Serialise a `MolHandle` to MOL V3000 format with 2D coordinates.
@@ -3173,6 +3221,7 @@ export interface InitOutput {
     readonly mmff94_charges_json: (a: number) => [number, number];
     readonly mmff94_charges_typed_json: (a: number) => [number, number];
     readonly mmff94_energy_breakdown_from_coords_json: (a: number, b: number, c: number) => [number, number];
+    readonly mmff94_energy_breakdown_from_coords_json_with_options: (a: number, b: number, c: number, d: number) => [number, number];
     readonly mmff94_energy_breakdown_json: (a: number) => [number, number];
     readonly mmff94_partial_charges_json: (a: number) => [number, number];
     readonly mmp_pairs_json: (a: number, b: number) => [number, number, number, number];
@@ -3180,6 +3229,7 @@ export interface InitOutput {
     readonly mol_block_coords_json: (a: number, b: number) => [number, number, number, number];
     readonly mol_block_from_smiles: (a: number, b: number) => [number, number, number, number];
     readonly mol_block_stereo_diagnostics_json: (a: number, b: number) => [number, number, number, number];
+    readonly mol_block_stereo_loss_json: (a: number) => [number, number];
     readonly mol_from_cdxml: (a: number, b: number) => [number, number, number];
     readonly mol_from_cjson: (a: number, b: number) => [number, number, number];
     readonly mol_from_cml: (a: number, b: number) => [number, number, number];
@@ -3288,6 +3338,8 @@ export interface InitOutput {
     readonly neutralize_charges: (a: number) => number;
     readonly normalize_cxsmiles: (a: number, b: number) => [number, number, number, number];
     readonly normalize_reaction_smiles: (a: number, b: number) => [number, number, number, number];
+    readonly nucleic_acid_apply_json_command: (a: number, b: number, c: number, d: number) => [number, number];
+    readonly nucleic_acid_validate_json: (a: number, b: number) => [number, number];
     readonly opendx_grid_json: (a: number, b: number) => [number, number, number, number];
     readonly opendx_shape_u32: (a: number, b: number) => [number, number, number];
     readonly opendx_values_f64: (a: number, b: number) => [number, number, number];
@@ -3391,6 +3443,7 @@ export interface InitOutput {
     readonly to_cml: (a: number) => [number, number];
     readonly to_extxyz_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly to_mol_block: (a: number) => [number, number];
+    readonly to_mol_block_strict: (a: number) => [number, number, number, number];
     readonly to_mol_v3000_block: (a: number) => [number, number];
     readonly to_moljson: (a: number) => [number, number];
     readonly to_qcschema_molecule_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number, number, number];

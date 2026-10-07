@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.37] - 2026-10-07
+
 ### Added
 
 - Added the versioned `chematic.nucleic-acid.v1` document model for bounded,
@@ -29,6 +31,187 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and explicit aromatic input while preserving thiophene, furan, pyridine
   N-oxide, and the other reported controls.
 
+Published v1.0.36 reruns (PyPI Linux wheel, sdist, npm, crate) give the
+source's results on the BioTransformer corpus, the 83 reaction fixtures,
+xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
+MOL writer and the WASM Node tests. Record:
+`benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
+
+- 2D layout of crowded molecules: the layout's clash relief may turn a
+  branch about an atom whose double bonds are all in rings (a Kekulé-written
+  aromatic ring, a ring P=N), and fused or spiro systems of three or more
+  rings that overlap are redrawn by stress majorization. As drawn, 26 of
+  15,000 exposed-10k and ChEMBL-5k rows have a clash (batch 16: 53; RDKit
+  276), 14,699 are clean (RDKit 14,504). `write_mol` layout work is
+  cheaper (byte-identical: flat grids, fewer square roots and allocations).
+  Record: `benchmarks/2026-10-07-734-754-followups-batch17.md`.
+- 2D layout: a branch point's three bonds are drawn 120° apart (they were
+  150°/150°/60°, so an ester's C=O ran 60° from its C-C and the two aryl
+  rings of a tetrasubstituted alkene such as tamoxifen overlapped); where
+  that crowds a component, the narrower fork is kept. A stereocentre's
+  terminal neighbour is no longer moved onto another atom when its wedge is
+  placed. As drawn, 53 of 15,000 exposed-10k and ChEMBL-5k rows have a clash
+  (was 155; RDKit 276) and 14,669 are clean (was 14,541; RDKit 14,504).
+  `scripts/layout_2d_quality_vs_rdkit.py` counts narrow branch points.
+  Record: `benchmarks/2026-10-07-734-754-followups-batch16.md`.
+- Python `to_mol_block()` and `to_mol_block_with_report()` write 2D
+  coordinates for every molecule (a molecule without stereo was written with
+  every atom at the origin), as the WASM `to_mol_block` and RDKit do.
+- The reaction SVG (Python `reaction_svg`, WASM `depict_reaction_svg`),
+  similarity maps and the WASM depiction preflight draw the declared stereo
+  too. Rust: `chematic_depict::depict_reaction_svg_prepared`,
+  `similarity_map_options`.
+- Canonical SMILES: an E/Z mark pins only its double bond and that bond's
+  substituents for the symmetry search (it pinned the substituents'
+  neighbours too, so a tert-butyl's methyls on an imine were branched on):
+  explicit-H exposed-10k rows 4111 and 4384 take 2.3 ms and 0.4 ms (about
+  60 and 40 ms), strings unchanged on all 30,305 audit inputs.
+- Depictions draw the declared stereo: Python `svg()`, `depict_data()`,
+  `to_eps()`, `to_pdf()`, highlighted/alert SVGs, `depict_grid()` and reports,
+  and the WASM SVG, depict-data and grid functions draw E/Z double bonds with
+  their declared geometry and one wedge or hash per stereocentre (the MOL
+  writer's depiction), and no longer draw SMILES `/` `\` marks as wedges.
+  Read back by RDKit, the drawings carry the input stereo on 1,686/1,687
+  exposed-10k and 1,670/1,670 ChEMBL-5k stereo rows (PyPI v1.0.36:
+  286 and 317). Rust: `chematic_mol::stereo_depiction::depiction_with_stereo`
+  and `with_stereo_depiction`; `chematic_depict::depict_svg_grid_with_layouts`,
+  `svg_to_pdf`, `relieve_layout_clashes`. Record:
+  `benchmarks/2026-10-07-734-754-followups-batch15.md`.
+- Python `SDWriter` writes Å coordinates with stereo (it wrote depiction
+  units, 40 Å bonds with y flipped, and E/Z as "either").
+- 2D layout: batch 14's clash relief made `write_mol` up to 20× slower; it is
+  now 1.8× batch 13 in instructions. Bridged ring systems that still
+  overlap are redrawn by stress majorization (bridged rows with a clash in
+  the layout: 212 → 5 of 531; RDKit 102), and the clash relief runs again
+  after the MOL writer's E/Z reflections. Two collinear bonds no longer
+  count as crossing.
+- 3D pipeline: a minimization stopped by a stereo constraint at its first
+  steps re-embeds from up to three other seeds (A6 row 0161 converges; A6
+  264/265 at the default budget).
+- 3D pipeline: the MMFF94 iteration budget defaults to 1,000 (Rust
+  `PipelineV2Config::minimal()` was 300; Python `safe`/`stereo_safe`
+  `force_field_max_iterations` was 200). A6 rows converged within the budget
+  263/265 (135 at 200), 265/265 sound, stereo-clean, clash-free; about 20%
+  more time. Pass the old value to keep the old behaviour. Record:
+  `benchmarks/2026-10-07-734-754-followups-batch14.md`.
+- 2D layout (depiction and MOL coordinates): three or more chain branches
+  spread evenly, bridged rings (norbornane, tropane, quinuclidine,
+  bicyclo[2.2.2]) drawn around their bridge, and acyclic branches mirrored
+  or turned to clear clashes and crossings. Exposed 10k + ChEMBL 5k rows
+  without a clash or crossing: 10,619 → 14,592 of 15,000 (RDKit
+  `Compute2DCoords` 14,504). Coordinates change; RDKit reads the written
+  stereo back as before.
+- Accurate CIP: a carbon whose rule-5 comparison runs through a lone-pair
+  centre (quinuclidinone C6 beside a stereo bridgehead N) gets RDKit's
+  label instead of none.
+- Performance: canonical SMILES with ring E/Z markers (worst exposed-10k row
+  63.5 → 6.3 ms; corpus −40% instructions, identical strings); `write_mol`
+  −2.2%; SMARTS `^n` matching −17%; `run_reactants` on Kekulé-written
+  reactants −10%.
+- New scripts: `scripts/layout_2d_quality_vs_rdkit.py` (clashes and
+  crossings against RDKit's layout) and
+  `scripts/a6_conformer_quality_vs_rdkit.py` (A6 conformers relaxed and
+  ranked by RDKit's MMFF94 against RDKit's best of 10 ETKDGv3 conformers);
+  `public_package_3d_chematic.py --force-field-max-iterations`.
+- MMFF94 energies match RDKit 2026.03.6 term by term on every
+  single-fragment row of the exposed 10k and ChEMBL 5k (14,684): RDKit's
+  formal-charge sharing for partial charges (carboxylate/sulfonate heads,
+  N5M rings, amidinium/imidazolium N, N=N+ next to diazonium), out-of-plane
+  terms on every RDKit-covered trigonal type, no angle-type-0 retry before
+  the empirical rule, and RDKit's 100 Å non-bonded threshold. New
+  `Mmff94Options { ignore_interfragment_interactions }` (Python/WASM
+  `ignore_interfrag_interactions`) leaves out pairs between fragments as
+  RDKit's `MMFFGetMoleculeForceField` does; the default keeps them. Record:
+  `benchmarks/2026-10-07-734-754-followups-batch13.md`.
+- `Mmff94EnergyModel::minimize_bfgs`: a port of RDKit's BFGS minimizer
+  (`Mmff94Convergence::Rdkit` follows RDKit's trajectory from the same
+  start; `MaxGradient` runs to chematic's absolute residual-force test). The
+  3D pipeline's MMFF94 step uses it (A6: 135 of 265 rows converged within
+  200 iterations, was 100; 265/265 sound, stereo-clean, clash-free) and
+  retries with the earlier L-BFGS when the result crosses declared stereo.
+- `find_matches_rdkit_parity(smarts, profile="2026.09.1")` (Rust
+  `RdkitRingCountModel::RelevantCycles`): `[R<n>]` counted over relevant
+  cycles as in RDKit 2026.09.1 (310,000/310,000 cells of the native
+  2026.09.1 grid; no `ring_model_ambiguous` refusals). New
+  `chematic_perception::relevant_cycles`.
+- Accurate CIP gives RDKit's `r`/`s` to pseudo-asymmetric saturated ring
+  lone-pair centres.
+- Performance: canonical SMILES of rigid symmetric graphs (a 60-atom random
+  cubic graph took seconds, now 3 ms; identical output on 30,305 inputs);
+  MMFF94 typing −22% instructions vs v1.0.36 on aromatic input, −0.6% on
+  Kekulé input (was +11%).
+- Harness: `published_wheel_chemistry_gates.py --resume --corpus-shards N`.
+- MMFF94 energies match RDKit 2026.03.6 term by term (within 1e-12 kcal/mol
+  on the 262 same-coordinate rows; the largest difference was 0.32): three
+  out-of-plane terms per trigonal centre (one was added), RDKit's unrounded
+  angle and stretch-bend constants and its linear-angle form, no 10 Å cutoff
+  on van der Waals in the default energy and gradient (the opt-in cutoff
+  path keeps it), RDKit's torsion lookup through equivalence levels with
+  Halgren's empirical rule as fallback (`mmff94_torsion_term_params`), `/`
+  `\` bonds read as single for torsion types, and RDKit's stretch-bend
+  orientation for equal end types. Minimized geometries change slightly.
+  Record: `benchmarks/2026-10-06-734-754-followups-batch12.md`.
+- `cip_stereo(mode="accurate")` labels saturated ring lone-pair centres
+  (bridgehead amines, cyclic phosphines, sulfonium) as RDKit reads the
+  parsed spelling (RDKit inverts `@`/`@@` when one ring-closure digit is on
+  the centre); such labels carry `spelling_dependent` (Python),
+  `spellingDependent` (WASM) and `cip_label_depends_on_smiles_spelling`
+  (Rust), and InChI identity checks refuse them. SMILES parsing is
+  unchanged. Exposed 10k: 4,395 agree, no abstention.
+- Python: `Mol.to_mol_block`, `to_mol_block_2d` and `to_mol_v3000` warn
+  with the new `chematic.StereoLossWarning` when the block loses stereo; the
+  returned block is unchanged.
+- `chematic_chem::rdkit_canonical_atom_ranks` and
+  `chematic_perception::rdkit_canonical_atom_ranks_with_bond_stereo`: RDKit's
+  canonical ranks including `STEREOE`/`STEREOZ` bonds (all E/Z rows of the
+  three corpora identical to `CanonicalRankAtoms`).
+- Performance: canonical SMILES of large explicit-H molecules in reaction
+  product atom order (the automorphism check extends from the mapped
+  region: 34 ms to 24 µs on a 117-atom product; output unchanged); MMFF94
+  typing reads atom adjacency instead of scanning bonds and skips RDKit's
+  canonical Kekulé ranking for isolated aromatic rings (−11% instructions
+  on aromatic input).
+- Harness: `published_wheel_chemistry_gates.py` resolves its path
+  arguments; `biotransformer_rule_corpus.py --rules-slice/--reactants-slice`.
+  The published v1.0.36 Linux aarch64 wheel gives every Linux x86-64 count.
+- MMFF94 typing matches RDKit 2026.03.6 on every heavy atom of the exposed
+  10k, ChEMBL 5k and Kekulé-written 15k corpora (81, 5 and 39 atoms differed
+  in v1.0.36): the aromaticity pass reads RDKit's canonical Kekulé structure
+  (new `chematic_perception::rdkit_canonical_kekule`, a port of RDKit's
+  canonical ranking and `kekulizeWorker`; fullerene cages), RDKit's ring
+  list, and RDKit's aromatic view of Kekulé-written input; non-aromatic
+  nitrogen is a literal port of RDKit's rules (NGD+, NCN+, NM, NSO, imine/azo
+  N next to sulfonyl) and imidazolium C2 is CIM+. Record:
+  `benchmarks/2026-10-06-734-754-followups-batch11.md`.
+- `rdkit_sssr_ring_order` gives RDKit's ring order on all 8,830 ring rows of
+  the exposed 10k (8,825): the SMILES parser records ring closures so
+  `Molecule::rdkit_bond_order` lists bonds as RDKit's parser creates them,
+  and metal bonds RDKit makes dative are skipped.
+- RDKit-parity aromaticity takes RDKit's symmetrized rings on cages (a
+  fullerene hexagon was missed); `^n` 135,000/135,000 cells.
+- MOL writer: a declared ring E/Z bond the first layout cannot draw is drawn
+  on the reversed-order layout (bryostatin; ChEMBL 5k 1,670/1,670 read back).
+- Docs: `cip_stereo(mode="accurate")` labels E/Z with the accurate engine
+  (it agrees with rdCIPLabeler on 780/780 and 678/678 bonds); the default
+  legacy mode is unchanged.
+- CI: `published-wheel-chemistry-gates.yml` runs the chemistry gates on the
+  published macOS and Windows wheels (`scripts/published_wheel_chemistry_gates.py`).
+- Dependencies: cc 1.5.1, jsonschema 0.58.4, pyo3 0.29.3, smallvec 1.16.2.
+- Performance: the SMIRKS template cache (`PreparedReaction::shared`) is 16
+  least-recently-used shards per reading instead of one map cleared whole
+  when full (a working set used to be prepared again after every 2,048 new
+  templates), and a hit no longer allocates.
+- Performance: `write_mol` on stereo molecules (12% fewer instructions,
+  same bytes): E/Z perception skips the CIP ranking and small-ring search
+  for double bonds without `/`/`\` markers, and the 2D layout reuses the
+  molecule's memoized SSSR.
+- `scripts/check_release_docs_consistency.py` fails on a `docs/` link that
+  leaves the MkDocs tree (the v1.0.36 Pages deploy failed on one).
+- Harness: `biotransformer_rule_corpus.py --chematic-python` runs chematic
+  under another interpreter (published CPython 3.9 wheels);
+  `chematic_chemistry_dump.py` / `compare_chemistry_dump_rdkit.py` do the
+  same for CIP, hybridization, MMFF and the MOL writer;
+  `rdkitjs_reaction_corpus.mjs` runs the corpus with RDKit.js.
 ## [1.0.36] - 2026-10-06
 
 Remaining #734 work: BioTransformer's public rule tables (983 rules, about

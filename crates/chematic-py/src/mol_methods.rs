@@ -165,8 +165,23 @@ impl Mol {
     ///
     ///     coords = mol.generate_3d()
     ///     e = mol.mmff94_total_energy(coords)  # kcal/mol
-    fn mmff94_total_energy(&self, coords: Vec<[f64; 3]>) -> f64 {
-        chematic_ff::mmff94_total_energy(&self.inner, &coords).unwrap_or(0.0)
+    ///
+    /// ``ignore_interfrag_interactions`` as in :meth:`mmff94_energy_breakdown`.
+    #[pyo3(signature = (coords, ignore_interfrag_interactions = false))]
+    fn mmff94_total_energy(
+        &self,
+        coords: Vec<[f64; 3]>,
+        ignore_interfrag_interactions: bool,
+    ) -> f64 {
+        chematic_ff::mmff94_energy_breakdown_with_options(
+            &self.inner,
+            &coords,
+            chematic_ff::Mmff94Options {
+                ignore_interfragment_interactions: ignore_interfrag_interactions,
+            },
+        )
+        .map(|b| b.total)
+        .unwrap_or(0.0)
     }
 
     /// Per-atom MMFF94 force field type names.
@@ -215,26 +230,33 @@ impl Mol {
         chematic_mol::write_mol2(&self.inner, &[])
     }
 
-    /// Serialize to MDL MOL V2000 format (without 3D coordinates).
+    /// Serialize to MDL MOL V2000 format with 2D coordinates (Å).
     ///
-    /// Equivalent to RDKit's ``Chem.MolToMolBlock(mol)``.
+    /// Equivalent to RDKit's ``Chem.MolToMolBlock(mol)``: every molecule is
+    /// written on a 2D layout, with stereo drawn as wedges and E/Z geometry.
     /// Use :meth:`to_mol2` for Tripos format, :meth:`to_pdb` for PDB with 3D coords.
     ///
     ///     block = mol.to_mol_block()
     ///     with open("molecule.mol", "w") as f:
     ///         f.write(block)
     ///
-    /// ``strict=True`` raises ``ValueError`` instead of returning a block that
-    /// loses stereo (a centre left unwedged, an E/Z bond written "either");
-    /// :meth:`to_mol_block_with_report` returns the block with the list.
+    /// A block that loses stereo (a centre left unwedged, an E/Z bond written
+    /// "either") is still returned, with a :class:`StereoLossWarning` naming
+    /// what is lost; ``strict=True`` raises ``ValueError`` instead.
+    /// :meth:`to_mol_block_with_report` returns the block with the list and
+    /// does not warn.
     #[pyo3(signature = (strict = false))]
-    fn to_mol_block(&self, strict: bool) -> PyResult<String> {
+    fn to_mol_block(&self, py: Python<'_>, strict: bool) -> PyResult<String> {
+        // Laid out like RDKit's MolToMolBlock (and the WASM binding): the
+        // stereo depiction, or the plain layout without stereo (this wrote
+        // every atom at the origin for a molecule without stereo).
+        let coords = chematic_mol::stereo_depiction::mol_block_coords(&self.inner);
         let (block, loss) = chematic_mol::write_mol_with_stereo_report(
             &self.inner,
             &chematic_mol::MolMetadata::default(),
-            &[],
+            &coords,
         );
-        strict_mol_block(block, &loss, strict)
+        strict_mol_block(py, block, &loss, strict)
     }
 
     /// :meth:`to_mol_block` plus what the block does not carry of the
@@ -251,10 +273,14 @@ impl Mol {
         &self,
         py: Python<'py>,
     ) -> PyResult<(String, Bound<'py, PyDict>)> {
+        // Laid out like RDKit's MolToMolBlock (and the WASM binding): the
+        // stereo depiction, or the plain layout without stereo (this wrote
+        // every atom at the origin for a molecule without stereo).
+        let coords = chematic_mol::stereo_depiction::mol_block_coords(&self.inner);
         let (block, loss) = chematic_mol::write_mol_with_stereo_report(
             &self.inner,
             &chematic_mol::MolMetadata::default(),
-            &[],
+            &coords,
         );
         Ok((block, stereo_loss_dict(py, &loss)?))
     }
@@ -267,11 +293,12 @@ impl Mol {
     ///     mol, name, coords_2d = chematic.from_mol_block_with_coords(block)
     ///     new_block = mol.to_mol_block_2d(coords_2d, name=name)
     ///
-    /// ``strict=True`` raises ``ValueError`` when the block would lose stereo
-    /// (see :meth:`to_mol_block`).
+    /// A block that loses stereo warns with :class:`StereoLossWarning`;
+    /// ``strict=True`` raises ``ValueError`` instead (see :meth:`to_mol_block`).
     #[pyo3(signature = (coords, name = None, strict = false))]
     fn to_mol_block_2d(
         &self,
+        py: Python<'_>,
         coords: Vec<[f64; 2]>,
         name: Option<&str>,
         strict: bool,
@@ -284,7 +311,7 @@ impl Mol {
         let coords_2d: Vec<(f64, f64)> = coords.iter().map(|c| (c[0], c[1])).collect();
         let (block, loss) =
             chematic_mol::write_mol_with_stereo_report(&self.inner, &metadata, &coords_2d);
-        strict_mol_block(block, &loss, strict)
+        strict_mol_block(py, block, &loss, strict)
     }
 
     /// Serialize this molecule to MDL MOL V3000 format with 2D layout coordinates.
@@ -297,11 +324,12 @@ impl Mol {
     ///
     ///     block = mol.to_mol_v3000(coords_2d, name="my_mol")
     ///
-    /// ``strict=True`` raises ``ValueError`` when the block would lose stereo
-    /// (see :meth:`to_mol_block`).
+    /// A block that loses stereo warns with :class:`StereoLossWarning`;
+    /// ``strict=True`` raises ``ValueError`` instead (see :meth:`to_mol_block`).
     #[pyo3(signature = (coords, name = None, strict = false))]
     fn to_mol_v3000(
         &self,
+        py: Python<'_>,
         coords: Vec<[f64; 2]>,
         name: Option<&str>,
         strict: bool,
@@ -314,7 +342,7 @@ impl Mol {
         let coords_2d: Vec<(f64, f64)> = coords.iter().map(|c| (c[0], c[1])).collect();
         let (block, loss) =
             chematic_mol::write_mol_v3000_with_stereo_report(&self.inner, &metadata, &coords_2d);
-        strict_mol_block(block, &loss, strict)
+        strict_mol_block(py, block, &loss, strict)
     }
 
     /// Serialize this molecule to Chemical Markup Language (CML) XML.
@@ -1716,7 +1744,10 @@ impl Mol {
     ///     from IPython.display import SVG
     ///     SVG(mol.svg())
     fn svg(&self) -> String {
-        chematic_depict::depict_svg(&self.inner)
+        chematic_mol::stereo_depiction::with_stereo_depiction(
+            &self.inner,
+            chematic_depict::render_svg,
+        )
     }
 
     /// Structured 2D depiction data (atoms + bonds with layout coordinates).
@@ -1739,7 +1770,11 @@ impl Mol {
     ///     for atom in data["atoms"]:
     ///         print(atom["element"], atom["x"], atom["y"])
     fn depict_data<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let data = chematic_depict::compute_depict_data(&self.inner);
+        let data =
+            chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+                let coords: Vec<(f64, f64)> = layout.coords.iter().map(|p| (p.x, p.y)).collect();
+                chematic_depict::depict_data_with_coords(m, &coords)
+            });
 
         let atoms = data
             .atoms
@@ -1793,7 +1828,10 @@ impl Mol {
     ///     eps_str = mol.to_eps()
     ///     open("molecule.eps", "w").write(eps_str)
     fn to_eps(&self) -> String {
-        chematic_depict::depict_eps(&self.inner)
+        chematic_mol::stereo_depiction::with_stereo_depiction(
+            &self.inner,
+            chematic_depict::render_eps,
+        )
     }
 
     /// Export as ChemicalJSON (.cjson) string.
@@ -1883,7 +1921,10 @@ impl Mol {
     ///     pdf_bytes = mol.to_pdf()
     ///     open("molecule.pdf", "wb").write(pdf_bytes)
     fn to_pdf(&self) -> Vec<u8> {
-        chematic_depict::depict_pdf(&self.inner)
+        chematic_depict::svg_to_pdf(&chematic_mol::stereo_depiction::with_stereo_depiction(
+            &self.inner,
+            chematic_depict::render_svg,
+        ))
     }
 
     /// Jupyter Notebook / JupyterLab の自動描画フック。
@@ -1891,7 +1932,10 @@ impl Mol {
     /// セルに ``mol`` と書くだけで 2D 構造が表示される。手動で
     /// ``IPython.display.SVG(mol.svg())`` と書く必要はない。
     fn _repr_svg_(&self) -> String {
-        chematic_depict::depict_svg(&self.inner)
+        chematic_mol::stereo_depiction::with_stereo_depiction(
+            &self.inner,
+            chematic_depict::render_svg,
+        )
     }
 
     /// Return ``True`` if this molecule matches the given SMARTS pattern.
@@ -1943,18 +1987,35 @@ impl Mol {
     /// The native :meth:`find_matches` contract is unchanged. In particular,
     /// ambiguous ring-count systems and bounded searches are never presented
     /// as an empty match set. This mode is not general RDKit SMARTS parity.
+    ///
+    /// ``profile="2026.09.1"`` counts ``[R<n>]`` rings in RDKit 2026.09.1's
+    /// ring list (all relevant cycles) instead of 2026.03.6's symmetrized
+    /// SSSR; nothing is then refused as ``ring_model_ambiguous``.
+    #[pyo3(signature = (smarts, profile = "2026.03.6"))]
     fn find_matches_rdkit_parity<'py>(
         &self,
         smarts: &str,
+        profile: &str,
         py: Python<'py>,
     ) -> PyResult<Bound<'py, PyDict>> {
-        use chematic_smarts::RdkitParityError;
+        use chematic_smarts::{RdkitParityError, RdkitRingCountModel};
+
+        let ring_count_model = match profile {
+            "2026.03.6" => RdkitRingCountModel::SymmetrizedSssr,
+            "2026.09.1" => RdkitRingCountModel::RelevantCycles,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "unknown profile '{other}': expected '2026.03.6' or '2026.09.1'"
+                )));
+            }
+        };
 
         let query = crate::misc::cached_smarts(smarts)
             .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
         let result = PyDict::new(py);
         let config = chematic_smarts::RdkitParityConfig {
             use_rdkit_parity_aromaticity: true,
+            ring_count_model,
             ..chematic_smarts::RdkitParityConfig::default()
         };
         match chematic_smarts::find_matches_rdkit_parity(&query, &self.inner, &config) {
@@ -2014,7 +2075,9 @@ impl Mol {
         for i in atom_indices {
             opts.highlight_atoms.insert(AtomIdx(i as u32));
         }
-        chematic_depict::depict_svg_opts(&self.inner, &opts)
+        chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+            chematic_depict::render_svg_opts(m, layout, &opts)
+        })
     }
 
     /// 2D SVG depiction with atoms coloured by LogP contribution.
@@ -2023,7 +2086,17 @@ impl Mol {
     /// zero-contribution atoms → white.  Uses :meth:`logp_per_atom` as weights.
     fn logp_map_svg(&self) -> String {
         let weights = chematic_chem::logp_crippen_per_atom(&self.inner);
-        chematic_depict::similarity_map_svg(&self.inner, &weights)
+        chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+            chematic_depict::render_svg_opts(
+                m,
+                layout,
+                &chematic_depict::similarity_map_options(
+                    &self.inner,
+                    &weights,
+                    &chematic_depict::RenderOptions::default(),
+                ),
+            )
+        })
     }
 
     /// 2D SVG depiction with atoms coloured by TPSA contribution.
@@ -2032,7 +2105,17 @@ impl Mol {
     /// atoms (C, halogens, …) remain white.  Uses :meth:`tpsa_per_atom` as weights.
     fn tpsa_map_svg(&self) -> String {
         let weights = chematic_chem::tpsa_per_atom(&self.inner);
-        chematic_depict::similarity_map_svg(&self.inner, &weights)
+        chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+            chematic_depict::render_svg_opts(
+                m,
+                layout,
+                &chematic_depict::similarity_map_options(
+                    &self.inner,
+                    &weights,
+                    &chematic_depict::RenderOptions::default(),
+                ),
+            )
+        })
     }
 
     /// 2D SVG depiction with atoms coloured by custom weights.
@@ -2040,7 +2123,17 @@ impl Mol {
     /// ``weights``: list of floats, one per heavy atom (length = :attr:`heavy_atoms`).
     /// Positive → blue, negative → red, zero → white.
     fn similarity_map_svg(&self, weights: Vec<f64>) -> String {
-        chematic_depict::similarity_map_svg(&self.inner, &weights)
+        chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+            chematic_depict::render_svg_opts(
+                m,
+                layout,
+                &chematic_depict::similarity_map_options(
+                    &self.inner,
+                    &weights,
+                    &chematic_depict::RenderOptions::default(),
+                ),
+            )
+        })
     }
 
     // -----------------------------------------------------------------------
@@ -3020,14 +3113,26 @@ impl Mol {
     /// ``torsion``, ``oop``, ``vdw``, ``electrostatic``, ``total`` (kcal/mol).
     ///
     /// ``coords``: ``[[x,y,z], ...]`` list (Å), one per heavy atom.
+    /// ``ignore_interfrag_interactions=True`` leaves out van der Waals and
+    /// electrostatic pairs between disconnected fragments, as RDKit's
+    /// ``MMFFGetMoleculeForceField`` does by default; chematic keeps them by
+    /// default.
     /// Raises ``ValueError`` for atoms not parameterised by MMFF94.
+    #[pyo3(signature = (coords, ignore_interfrag_interactions = false))]
     fn mmff94_energy_breakdown<'py>(
         &self,
         py: Python<'py>,
         coords: Vec<[f64; 3]>,
+        ignore_interfrag_interactions: bool,
     ) -> PyResult<Bound<'py, PyDict>> {
-        let b = chematic_ff::mmff94_energy_breakdown(&self.inner, &coords)
-            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        let b = chematic_ff::mmff94_energy_breakdown_with_options(
+            &self.inner,
+            &coords,
+            chematic_ff::Mmff94Options {
+                ignore_interfragment_interactions: ignore_interfrag_interactions,
+            },
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
         let d = PyDict::new(py);
         d.set_item("bond", b.bond)?;
         d.set_item("angle", b.angle)?;
@@ -3338,14 +3443,18 @@ impl Mol {
     ///   RDKit's modern ``rdCIPLabeler`` oracle. Unchanged from every prior release.
     /// - ``"accurate"`` — a hierarchical-digraph engine for tetrahedral R/S
     ///   (~99.6% oracle-agreement on the representation-stable subset; see
-    ///   ``docs/rfcs/cip_accurate_rfc.md``), merged with legacy's E/Z and allene answers
-    ///   (the accurate engine doesn't compute either). Atoms it explicitly can't
+    ///   ``docs/rfcs/cip_accurate_rfc.md``); E/Z from the same engine's substituent
+    ///   ranking, allenes from legacy. Atoms it explicitly can't
     ///   resolve (a genuine tie, or exceeding its computation budget) are omitted
     ///   here and reported instead via :meth:`cip_stereo_unresolved` — never a
     ///   silently-guessed label. A phosphorus on an unsaturated ring
     ///   (cyclophosphazene) gets RDKit's CIPLabeler label, which flips between
     ///   the ring's Kekulé spellings in both libraries; its entry carries
-    ///   ``"kekule_dependent": True``.
+    ///   ``"kekule_dependent": True``. A ring centre with three single bonds
+    ///   and a lone pair (bridgehead amine, cyclic phosphine or sulfonium)
+    ///   gets RDKit's label for the parsed SMILES spelling (RDKit inverts its
+    ///   ``@``/``@@`` when one ring-closure digit is on the centre); its entry
+    ///   carries ``"spelling_dependent": True``.
     #[pyo3(signature = (mode = "legacy"))]
     fn cip_stereo<'py>(&self, py: Python<'py>, mode: &str) -> PyResult<Vec<Bound<'py, PyDict>>> {
         use chematic_core::CipCode;
@@ -3405,6 +3514,15 @@ impl Mol {
                 {
                     d.set_item("kekule_dependent", true)?;
                 }
+                if mode == "accurate"
+                    && matches!(
+                        code,
+                        CipCode::R | CipCode::S | CipCode::LowerR | CipCode::LowerS
+                    )
+                    && chematic_chem::cip_label_depends_on_smiles_spelling(&self.inner, *idx)
+                {
+                    d.set_item("spelling_dependent", true)?;
+                }
                 Ok(d)
             })
             .collect()
@@ -3414,8 +3532,9 @@ impl Mol {
     /// R/S for — list of ``{"atom_idx": int, "reason": str}`` dicts, ``reason`` is
     /// ``"tied"`` (a genuine CIP-rule tie, not a missing rule),
     /// ``"budget_exceeded"``, ``"oracle_unstable"``, or ``"lone_pair_center"`` (a
-    /// stereo-tagged centre with three explicit ligands, e.g. a bridgehead amine,
-    /// whose fourth ligand would be a lone pair — not modelled).
+    /// stereo-tagged three-ligand centre on an aromatic ring, or one with a
+    /// hydrogen ligand; saturated ring centres such as bridgehead amines are
+    /// labelled, see :meth:`cip_stereo`).
     /// Always empty for ``mode="legacy"`` (that engine never reports "I don't know").
     fn cip_stereo_unresolved<'py>(&self, py: Python<'py>) -> PyResult<Vec<Bound<'py, PyDict>>> {
         let result =
@@ -3522,7 +3641,9 @@ impl Mol {
         for atom in pains.into_iter().chain(brenk).flat_map(|(_, atoms)| atoms) {
             opts.highlight_atoms.insert(AtomIdx(atom.0));
         }
-        chematic_depict::depict_svg_opts(&self.inner, &opts)
+        chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+            chematic_depict::render_svg_opts(m, layout, &opts)
+        })
     }
 
     /// Named functional groups detected in this molecule — list of group names.
@@ -4861,15 +4982,36 @@ fn bitvecn_to_bytes(fp: &chematic_fp::bitvec::BitVecN) -> Vec<u8> {
         .collect()
 }
 
-/// The block, or a `ValueError` naming what it loses when `strict`.
+pyo3::create_exception!(
+    chematic,
+    StereoLossWarning,
+    pyo3::exceptions::PyUserWarning,
+    "A MOL block written without part of the molecule's stereo (a centre \
+     left unwedged, a declared E/Z bond written \"either\"). The block is \
+     still returned; pass strict=True to raise instead, or call \
+     Mol.to_mol_block_with_report() for the lost atoms and bonds."
+);
+
+/// The block, with a [`StereoLossWarning`] naming what it loses, or a
+/// `ValueError` instead when `strict`.
 fn strict_mol_block(
+    py: Python<'_>,
     block: String,
     loss: &chematic_mol::MolStereoLoss,
     strict: bool,
 ) -> PyResult<String> {
-    if strict && !loss.is_empty() {
+    if loss.is_empty() {
+        return Ok(block);
+    }
+    if strict {
         return Err(PyValueError::new_err(loss.to_string()));
     }
+    PyErr::warn(
+        py,
+        py.get_type::<StereoLossWarning>().as_any(),
+        &std::ffi::CString::new(loss.to_string()).unwrap_or_default(),
+        1,
+    )?;
     Ok(block)
 }
 

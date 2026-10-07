@@ -134,12 +134,11 @@ pub fn assign_ez_bonds_with_mode(mol: &Molecule, mode: CipMode) -> Vec<(BondIdx,
 
 /// Which CIP engine [`assign_cip_with_mode`] uses.
 ///
-/// [`CipMode::Accurate`] only affects tetrahedral R/S -- [`assign_cip_accurate_experimental`]
-/// (`chematic-cip`) never computes E/Z or allene axial chirality (it iterates atoms
-/// with `chirality != None` and a 4-item `stereo_neighbor_order`; double-bond and
-/// allene stereo aren't represented that way), so `Accurate` mode merges the accurate
-/// engine's tetrahedral answers with [`LegacyFast`](CipMode::LegacyFast)'s E/Z and
-/// allene answers rather than replacing `assign_cip` outright.
+/// [`assign_cip_accurate_experimental`] (`chematic-cip`) labels tetrahedral centres
+/// only (it iterates atoms with `chirality != None` and a 4-item
+/// `stereo_neighbor_order`); `Accurate` mode labels double-bond E/Z by ranking each
+/// end's substituents with the same engine (`SubstituentRanker`, #634) and keeps
+/// [`LegacyFast`](CipMode::LegacyFast)'s allene answers.
 ///
 /// [`assign_cip_accurate_experimental`]: chematic_cip::assign_cip_accurate_experimental
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -152,7 +151,7 @@ pub enum CipMode {
     LegacyFast,
     /// Tetrahedral R/S (incl. Rule 5 pseudoasymmetric `r`/`s`) from the hierarchical
     /// digraph engine (~99.64% oracle-stable agreement, see `docs/rfcs/cip_accurate_rfc.md`),
-    /// merged with legacy's E/Z and allene answers. Atoms the accurate engine
+    /// E/Z ranked by the same engine, and legacy's allene answers. Atoms the accurate engine
     /// explicitly ties on or exceeds its budget on are never silently backfilled with
     /// legacy's (less rigorous) guess -- they surface via
     /// [`CipModeAssignment::unresolved`] instead.
@@ -220,6 +219,16 @@ impl std::error::Error for CipModeError {}
 /// compare them across inputs.
 pub fn cip_label_depends_on_kekule_spelling(mol: &Molecule, atom: AtomIdx) -> bool {
     chematic_cip::label_depends_on_kekule_spelling(mol, atom)
+}
+
+/// Whether [`CipMode::Accurate`]'s label of tetrahedral centre `atom` is
+/// RDKit's reading of the SMILES spelling it was parsed from rather than a
+/// property of the molecule: a ring centre with three single-bonded ligands
+/// and a lone pair (bridgehead amine, cyclic phosphine or sulfonium), whose
+/// `@`/`@@` RDKit inverts when one ring-closure digit is written on it
+/// (`chematic_cip::label_follows_rdkit_smiles_reading`).
+pub fn cip_label_depends_on_smiles_spelling(mol: &Molecule, atom: AtomIdx) -> bool {
+    chematic_cip::label_follows_rdkit_smiles_reading(mol, atom)
 }
 
 /// Run CIP assignment on `mol` using the requested engine. See [`CipMode`] for what
@@ -1183,11 +1192,26 @@ fn double_bond_in_small_ring(mol: &Molecule, bond: BondIdx) -> bool {
     false
 }
 
+/// Whether `end` (double-bonded to `other`) has a substituent carrying a
+/// `/`/`\` marker: without one at both ends a double bond has no E/Z to
+/// read, so the ring and CIP checks can be skipped.
+fn end_has_marked_substituent(mol: &Molecule, end: AtomIdx, other: AtomIdx) -> bool {
+    mol.neighbors(end).any(|(nb, bidx)| {
+        nb != other
+            && mol.bond(bidx).order != BondOrder::Double
+            && substituent_is_up(mol, end, nb).is_some()
+    })
+}
+
 fn assign_ez(mol: &Molecule, bond_idx: BondIdx) -> Option<(AtomIdx, CipCode)> {
     let bond = mol.bond(bond_idx);
     // A ring of fewer than eight atoms holds its double bond cis: no E/Z
     // (RDKit drops such stereo too).
-    if bond.order != BondOrder::Double || double_bond_in_small_ring(mol, bond_idx) {
+    if bond.order != BondOrder::Double
+        || !end_has_marked_substituent(mol, bond.atom1, bond.atom2)
+        || !end_has_marked_substituent(mol, bond.atom2, bond.atom1)
+        || double_bond_in_small_ring(mol, bond_idx)
+    {
         return None;
     }
 
@@ -1248,6 +1272,15 @@ fn highest_stereo_sub(
     alkene_end: AtomIdx,
     subs: &[AtomIdx],
 ) -> Option<(AtomIdx, bool)> {
+    // Without a `/`/`\` marker on either substituent there is no E/Z to
+    // read, whatever the ranking: skip the CIP comparison (a carbonyl, an
+    // unmarked alkene).
+    if subs
+        .iter()
+        .all(|&sub| substituent_is_up(mol, alkene_end, sub).is_none())
+    {
+        return None;
+    }
     if let [a, b] = subs[..]
         && compare_branches(mol, alkene_end, a, b) == std::cmp::Ordering::Equal
     {
@@ -1283,7 +1316,11 @@ fn assign_ez_accurate(
     let bond = mol.bond(bond_idx);
     // A ring of fewer than eight atoms holds its double bond cis: no E/Z
     // (RDKit drops such stereo too).
-    if bond.order != BondOrder::Double || double_bond_in_small_ring(mol, bond_idx) {
+    if bond.order != BondOrder::Double
+        || !end_has_marked_substituent(mol, bond.atom1, bond.atom2)
+        || !end_has_marked_substituent(mol, bond.atom2, bond.atom1)
+        || double_bond_in_small_ring(mol, bond_idx)
+    {
         return None;
     }
     let a1 = bond.atom1;
@@ -1317,6 +1354,14 @@ fn highest_stereo_sub_accurate(
     subs: &[AtomIdx],
     ranker: &chematic_cip::SubstituentRanker,
 ) -> Option<(AtomIdx, bool)> {
+    // No marker on either substituent: nothing to read (see
+    // `highest_stereo_sub`).
+    if subs
+        .iter()
+        .all(|&sub| substituent_is_up(mol, alkene_end, sub).is_none())
+    {
+        return None;
+    }
     let (top, other) = match subs {
         [only] => (*only, None),
         [a, b] => match ranker.compare(mol, alkene_end, *a, *b).ok()?? {
@@ -1467,6 +1512,22 @@ pub fn ez_completeness(mol: &Molecule) -> EzCompleteness {
     }
 }
 
+/// RDKit's canonical atom ranks (`Chem.CanonicalRankAtoms(mol,
+/// breakTies=True)`) including double-bond stereo: the E/Z labels of the
+/// legacy engine stand for RDKit's `STEREOE`/`STEREOZ` bond stereo (see
+/// [`chematic_perception::rdkit_canonical_atom_ranks_with_bond_stereo`]).
+pub fn rdkit_canonical_atom_ranks(mol: &Molecule) -> Vec<u32> {
+    let ez: Vec<(BondIdx, bool)> = assign_ez_bonds_with_mode(mol, CipMode::LegacyFast)
+        .into_iter()
+        .filter_map(|(b, code)| match code {
+            CipCode::E => Some((b, true)),
+            CipCode::Z => Some((b, false)),
+            _ => None,
+        })
+        .collect();
+    chematic_perception::rdkit_canonical_atom_ranks_with_bond_stereo(mol, &ez)
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -1499,7 +1560,8 @@ mod tests {
     use super::*;
 
     /// Accurate-mode tetrahedral labels, abstentions and bond-keyed E/Z do
-    /// not depend on input atom order (random SMILES now keep stereo).
+    /// not depend on input atom order (random SMILES now keep stereo), apart
+    /// from labels marked spelling-dependent.
     #[test]
     fn accurate_labels_and_abstentions_survive_atom_reordering() {
         use std::collections::BTreeMap;
@@ -1511,7 +1573,14 @@ mod tests {
             let mut out = BTreeMap::new();
             for (a, c) in &r.assignments {
                 if !matches!(c, CipCode::E | CipCode::Z) {
-                    out.insert(pos[&a.0], format!("{c:?}"));
+                    // A saturated ring lone-pair centre gets RDKit's label for
+                    // the spelling parsed, which a reordered spelling may flip.
+                    let label = if cip_label_depends_on_smiles_spelling(m, *a) {
+                        "spelling_dependent".to_string()
+                    } else {
+                        format!("{c:?}")
+                    };
+                    out.insert(pos[&a.0], label);
                 }
             }
             for (a, why) in &r.unresolved {
@@ -2423,16 +2492,16 @@ mod tests {
     #[test]
     fn cip_mode_accurate_reports_lone_pair_centres() {
         // Issue #634, rebaseline row 2960: a stereo-tagged bridgehead amine has
-        // three explicit ligands; its fourth would be a lone pair, which is not
-        // modelled. It is reported as unresolved (never silently dropped and
-        // never labelled), while the molecule's carbon centres keep their labels.
+        // three explicit ligands and a lone pair. It gets RDKit's label for this
+        // spelling (RDKit inverts `@@` here: one ring-closure digit on the
+        // centre), marked spelling-dependent; the carbon centres keep theirs.
         let mol = chematic_smiles::parse("Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21")
             .expect("valid SMILES");
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
-        assert_eq!(result.get(AtomIdx(9)), None);
-        assert!(result.unresolved.iter().any(|(idx, reason)| {
-            *idx == AtomIdx(9) && *reason == CipUnresolvedReason::LonePairCenter
-        }));
+        assert_eq!(result.get(AtomIdx(9)), Some(CipCode::S));
+        assert!(cip_label_depends_on_smiles_spelling(&mol, AtomIdx(9)));
+        assert!(!cip_label_depends_on_smiles_spelling(&mol, AtomIdx(7)));
+        assert!(result.unresolved.is_empty());
         assert_eq!(result.get(AtomIdx(7)), Some(CipCode::R));
         assert_eq!(result.get(AtomIdx(12)), Some(CipCode::R));
         // A centre outside rings (sulfoxide, phosphine) takes the lone pair as
@@ -2464,6 +2533,21 @@ mod tests {
         .expect("valid SMILES");
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
         assert_eq!(result.get(AtomIdx(13)), Some(CipCode::R));
+    }
+
+    #[test]
+    fn cip_mode_accurate_labels_ring_amidine_imine_like_rdkit() {
+        // Exposed 10k rows 1206/1213/1214/1287/1370/1371: an exocyclic imine
+        // on the ring-fusion carbon of an imidazo[1,2-a]pyridine. RDKit
+        // 2026.03.6 rdCIPLabeler and RDKit.js 2026.03.6/2026.09.1 label it Z;
+        // the accurate ranking does too. The legacy engine (the default
+        // mode, kept unchanged) says E.
+        let mol = chematic_smiles::parse("CCOC(=O)c1cc2ccccn2/c(=N/c2ccc(OC)cc2)n1")
+            .expect("valid SMILES");
+        let accurate = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        assert_eq!(accurate.get(AtomIdx(13)), Some(CipCode::Z));
+        let legacy = assign_cip_with_mode(&mol, CipMode::LegacyFast).expect("infallible");
+        assert_eq!(legacy.get(AtomIdx(13)), Some(CipCode::E));
     }
 
     #[test]

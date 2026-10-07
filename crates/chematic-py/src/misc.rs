@@ -88,7 +88,17 @@ fn smarts_find(smarts: &str, mol: &Mol) -> PyResult<Vec<Vec<usize>>> {
 ///     svg = chematic.similarity_map_svg(mol, weights)
 #[pyfunction]
 fn similarity_map_svg(mol: &Mol, weights: Vec<f64>) -> String {
-    chematic_depict::similarity_map_svg(&mol.inner, &weights)
+    chematic_mol::stereo_depiction::with_stereo_depiction(&mol.inner, |m, layout| {
+        chematic_depict::render_svg_opts(
+            m,
+            layout,
+            &chematic_depict::similarity_map_options(
+                &mol.inner,
+                &weights,
+                &chematic_depict::RenderOptions::default(),
+            ),
+        )
+    })
 }
 
 /// Return all known chemical abbreviations as a dict ``{symbol: SMILES}``.
@@ -205,8 +215,16 @@ fn atom_color_rgb(atomic_num: u8) -> (u8, u8, u8) {
 ///     svg = chematic.depict_grid([mol1, mol2, mol3], cols=3)
 #[pyfunction]
 fn depict_grid(mols: Vec<Mol>, cols: usize) -> String {
-    let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
-    chematic_depict::depict_svg_grid(&refs, cols)
+    let (copies, layouts): (Vec<_>, Vec<chematic_depict::Layout>) = mols
+        .iter()
+        .map(|m| chematic_mol::stereo_depiction::depiction_with_stereo(&m.inner))
+        .unzip();
+    let refs: Vec<&chematic_core::Molecule> = mols
+        .iter()
+        .zip(&copies)
+        .map(|(m, copy)| copy.as_ref().unwrap_or(m.inner.as_ref()))
+        .collect();
+    chematic_depict::depict_svg_grid_with_layouts(&refs, &layouts, cols)
 }
 
 /// Look up an element's atomic number by symbol (e.g. ``"O"`` → 8).

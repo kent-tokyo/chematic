@@ -16,9 +16,13 @@ pub mod svg;
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule};
 
 pub use eps::{render_eps, render_eps_opts};
-pub use grid::{depict_svg_grid, depict_svg_grid_with_opts};
+pub use grid::{
+    depict_svg_grid, depict_svg_grid_with_layouts, depict_svg_grid_with_opts,
+    depict_svg_grid_with_opts_and_layouts,
+};
 pub use layout::{
-    BOND_LEN, Layout, Point, compute_layout, detect_crossings, suggest_bond_direction,
+    BOND_LEN, Layout, Point, compute_layout, detect_crossings, relieve_layout_clashes,
+    suggest_bond_direction,
 };
 #[cfg(feature = "png")]
 pub use png::{render_png, render_png_opts};
@@ -26,7 +30,9 @@ pub use preflight::{
     PreflightCode, PreflightDiagnostic, PreflightLimits, PreflightReport, PreflightStyle,
     preflight_svg, preflight_svg_json,
 };
-pub use reaction_svg::{depict_reaction_svg, depict_reaction_svg_opts};
+pub use reaction_svg::{
+    depict_reaction_svg, depict_reaction_svg_opts, depict_reaction_svg_prepared,
+};
 pub use svg::{
     AtomLabel, HPosition, RenderOptions, atom_color, atom_color_rgb, atom_display_label,
     atom_label_with_h, render_svg, render_svg_highlighted, render_svg_opts,
@@ -35,7 +41,7 @@ pub use svg::{
 
 pub mod reaction_svg;
 
-pub use similarity_map::{similarity_map_svg, similarity_map_svg_opts};
+pub use similarity_map::{similarity_map_options, similarity_map_svg, similarity_map_svg_opts};
 
 // ---------------------------------------------------------------------------
 // DepictData — structured drawing data for egui/canvas renderers
@@ -184,6 +190,14 @@ pub fn depict_pdf(mol: &Molecule) -> Vec<u8> {
 pub fn depict_pdf_opts(mol: &Molecule, opts: &RenderOptions) -> Vec<u8> {
     let svg = depict_svg_opts(mol, opts);
     svg_bytes_to_pdf(&svg)
+}
+
+/// Convert an SVG produced by this crate's renderers to a PDF document.
+///
+/// Requires the `pdf` Cargo feature.
+#[cfg(feature = "pdf")]
+pub fn svg_to_pdf(svg: &str) -> Vec<u8> {
+    svg_bytes_to_pdf(svg)
 }
 
 #[cfg(feature = "pdf")]

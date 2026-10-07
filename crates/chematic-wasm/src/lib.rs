@@ -301,12 +301,18 @@ impl MolHandle {
 
     /// 2D SVG depiction of the molecule (CPK coloring).
     pub fn depict_svg(&self) -> String {
-        chematic_depict::depict_svg(&self.inner)
+        chematic_mol::stereo_depiction::with_stereo_depiction(
+            &self.inner,
+            chematic_depict::render_svg,
+        )
     }
 
     /// 2D SVG depiction with style options.
     pub fn depict_svg_opts(&self, opts: &DepictOptions) -> String {
-        chematic_depict::depict_svg_opts(&self.inner, &opts.to_render_options())
+        let opts = opts.to_render_options();
+        chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+            chematic_depict::render_svg_opts(m, layout, &opts)
+        })
     }
 
     /// 2D PNG depiction — not available in the WASM build (PNG stack disabled to reduce bundle size).

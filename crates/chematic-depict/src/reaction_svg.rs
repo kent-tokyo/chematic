@@ -22,6 +22,17 @@ pub fn depict_reaction_svg(rxn: &Reaction) -> String {
 /// the right.  Each component is laid out independently at the same vertical
 /// centre line.  A "+" separator is inserted between components on each side.
 pub fn depict_reaction_svg_opts(rxn: &Reaction, opts: &RenderOptions) -> String {
+    depict_reaction_svg_prepared(rxn, opts, &|mol| (None, compute_layout(mol)))
+}
+
+/// [`depict_reaction_svg_opts`] with each component drawn as `prepare`
+/// gives it: an optional replacement molecule (e.g. with stereo wedges) and
+/// its layout, in [`compute_layout`] units.
+pub fn depict_reaction_svg_prepared(
+    rxn: &Reaction,
+    opts: &RenderOptions,
+    prepare: &dyn Fn(&chematic_core::Molecule) -> (Option<chematic_core::Molecule>, crate::Layout),
+) -> String {
     let pad = BOND_LEN; // padding between components
     let arrow_w = BOND_LEN * 2.0; // width of the reaction arrow
     let sep_w = BOND_LEN; // width of the "+" separator
@@ -37,7 +48,8 @@ pub fn depict_reaction_svg_opts(rxn: &Reaction, opts: &RenderOptions) -> String 
     }
 
     let render_mol = |mol: &chematic_core::Molecule| -> Component {
-        let layout = compute_layout(mol);
+        let (copy, layout) = prepare(mol);
+        let mol = copy.as_ref().unwrap_or(mol);
         let (min_x, min_y, max_x, max_y) = layout.bounding_box();
         let (mw, mh) = ((max_x - min_x).max(1.0), (max_y - min_y).max(1.0));
         let mol_svg = render_svg_opts(mol, &layout, opts);

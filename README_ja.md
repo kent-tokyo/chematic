@@ -23,13 +23,14 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.0.36 の対応範囲
+### v1.0.37 の対応範囲
 
-v1.0.36では、BioTransformerの公開ルールを使ったRDKit反応互換プロファイルの検証を
-広げ、グラフ編集後のE/Z保持を修正しました。CIP、混成、MMFF94原子型、MOL立体出力も
-範囲を明示して改善しています。コーパス結果はv1.0.36公開パッケージで再測定するまで
-source測定です。詳しくは[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を
-参照してください。
+v1.0.37では、立体を保持するMOL・SVG描画、混雑した2Dレイアウト、canonical SMILESの
+最悪ケース、MMFF94の原子型とエネルギー項、孤立電子対を含むCIP、RDKit 2026.09.1向け
+SMARTS環プロファイルを改善しました。Rust・Python・WASM共通の制限付き核酸文書モデルも
+追加し、高配位カルコゲンの芳香族性判定を修正しています。日付付きsource測定、v1.0.36
+公開物の測定、v1.0.37公開物の確認は区別しています。詳しくは
+[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方
 

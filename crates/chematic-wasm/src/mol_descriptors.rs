@@ -420,21 +420,28 @@ pub fn cip_assignments_json(mol: &MolHandle) -> String {
 /// CIP stereo assignments via the accurate hierarchical-digraph engine, as a JSON
 /// array of `{atomIdx, cipCode}` objects -- same shape as [`cip_assignments_json`],
 /// but merges the accurate engine's tetrahedral R/S (~99.6% oracle-stable agreement,
-/// see `docs/rfcs/cip_accurate_rfc.md`) with legacy's E/Z and allene answers (the accurate
-/// engine computes neither). Atoms it can't resolve are omitted here -- see
+/// see `docs/rfcs/cip_accurate_rfc.md`), E/Z ranked by the same engine and legacy's
+/// allene answers. Atoms it can't resolve are omitted here -- see
 /// [`cip_unresolved_json`] -- never a silently-guessed label. A phosphorus on an
 /// unsaturated ring (cyclophosphazene) gets RDKit's CIPLabeler label, which flips
 /// with the ring's Kekulé spelling; its object carries `"kekuleDependent": true`.
+/// A ring centre with three single bonds and a lone pair (bridgehead amine)
+/// gets RDKit's label for the parsed SMILES spelling and carries
+/// `"spellingDependent": true`.
 /// Returns `"null"` on an internal engine error (budget-independent computations
 /// should not normally hit this).
 #[wasm_bindgen]
 pub fn cip_assignments_accurate_json(mol: &MolHandle) -> String {
     match chematic_chem::assign_cip_with_mode(&mol.inner, chematic_chem::CipMode::Accurate) {
-        Ok(result) => cip_code_pairs_to_json_marked(&result.assignments, |idx| {
-            // A cyclophosphazene P's label flips with the ring's Kekulé
-            // spelling (as RDKit's does).
-            chematic_chem::cip_label_depends_on_kekule_spelling(&mol.inner, idx)
-        }),
+        Ok(result) => cip_code_pairs_to_json_marked(
+            &result.assignments,
+            |idx| {
+                // A cyclophosphazene P's label flips with the ring's Kekulé
+                // spelling (as RDKit's does).
+                chematic_chem::cip_label_depends_on_kekule_spelling(&mol.inner, idx)
+            },
+            |idx| chematic_chem::cip_label_depends_on_smiles_spelling(&mol.inner, idx),
+        ),
         Err(_) => "null".to_string(),
     }
 }
@@ -468,14 +475,16 @@ pub fn cip_unresolved_json(mol: &MolHandle) -> String {
 }
 
 fn cip_code_pairs_to_json(pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)]) -> String {
-    cip_code_pairs_to_json_marked(pairs, |_| false)
+    cip_code_pairs_to_json_marked(pairs, |_| false, |_| false)
 }
 
 /// [`cip_code_pairs_to_json`] with `"kekuleDependent": true` on the atoms
-/// `kekule_dependent` selects.
+/// `kekule_dependent` selects and `"spellingDependent": true` on the R/S/r/s
+/// atoms `spelling_dependent` selects.
 fn cip_code_pairs_to_json_marked(
     pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)],
     kekule_dependent: impl Fn(chematic_core::AtomIdx) -> bool,
+    spelling_dependent: impl Fn(chematic_core::AtomIdx) -> bool,
 ) -> String {
     let parts: Vec<String> = pairs
         .iter()
@@ -488,11 +497,15 @@ fn cip_code_pairs_to_json_marked(
                 chematic_core::CipCode::LowerR => "r",
                 chematic_core::CipCode::LowerS => "s",
             };
-            let mark = if kekule_dependent(*idx) {
-                ",\"kekuleDependent\":true"
-            } else {
-                ""
-            };
+            let mut mark = String::new();
+            if kekule_dependent(*idx) {
+                mark.push_str(",\"kekuleDependent\":true");
+            }
+            if !matches!(code, chematic_core::CipCode::E | chematic_core::CipCode::Z)
+                && spelling_dependent(*idx)
+            {
+                mark.push_str(",\"spellingDependent\":true");
+            }
             format!(
                 "{{\"atomIdx\":{},\"cipCode\":\"{}\"{mark}}}",
                 idx.0, code_str

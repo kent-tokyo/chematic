@@ -1,0 +1,95 @@
+name: Published wheel chemistry gates
+
+# Runs the #734/#754 chemistry gates (83 reaction fixtures, the 310k SMARTS
+# opt-in profile, CIP / hybridization / MMFF94 / MOL stereo on the exposed 10k
+# and ChEMBL 5k corpora, and the BioTransformer rule corpus) on the published
+# PyPI wheels for macOS and Windows, and compares every count with the
+# published Linux numbers in validation/published-wheel-chemistry-gates-expected-v<version>.json.
+# The wheel is downloaded from PyPI as a binary only; a source-build fallback
+# would not be a published-wheel result.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published chematic version to install from PyPI
+        required: true
+        default: "1.0.36"
+        type: string
+      biotransformer_corpus:
+        description: Also run the BioTransformer rule corpus (about 15 minutes)
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  BIOTRANSFORMER_REPO: https://github.com/Wishartlab-openscience/Biotransformer.git
+  BIOTRANSFORMER_COMMIT: 7149f7ec
+
+jobs:
+  gates:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            label: macos-arm64-cp312
+            python-version: "3.12"
+          - os: macos-15-intel
+            label: macos-x86_64-cp312
+            python-version: "3.12"
+          - os: windows-latest
+            label: windows-amd64-cp312
+            python-version: "3.12"
+    steps:
+      - name: Keep pinned corpora byte-identical (no CRLF conversion)
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Download and install the published wheel
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check "rdkit==2026.3.6" "json5==0.15.0"
+          python -m pip download --disable-pip-version-check --only-binary=:all: --no-deps \
+            -d published-wheel "chematic==${{ inputs.version }}"
+          python -m pip install --disable-pip-version-check --no-deps published-wheel/chematic-*.whl
+          python -c "import chematic, rdkit; print(chematic.__version__, rdkit.__version__)"
+      - name: Fetch the pinned BioTransformer rule tables
+        if: ${{ inputs.biotransformer_corpus }}
+        shell: bash
+        run: |
+          git clone --filter=blob:none --no-checkout "$BIOTRANSFORMER_REPO" biotransformer-src
+          git -C biotransformer-src checkout --quiet "$BIOTRANSFORMER_COMMIT"
+          mkdir -p bt-rules
+          for f in database_metabolicReactions.json database_ENVMICRO_metabolicReactions.json \
+                   database_standardizationReactions.json; do
+            path=$(git -C biotransformer-src ls-files | grep -m1 -E "(^|/)$f\$")
+            cp "biotransformer-src/$path" "bt-rules/$f"
+          done
+      - name: Run the gates
+        shell: bash
+        run: |
+          rules=()
+          if [ "${{ inputs.biotransformer_corpus }}" = "true" ]; then rules=(--rules-dir bt-rules); fi
+          python scripts/published_wheel_chemistry_gates.py \
+            --wheel "$(ls published-wheel/chematic-*.whl)" \
+            --expected "validation/published-wheel-chemistry-gates-expected-v${{ inputs.version }}.json" \
+            --scope "published_pypi_v${{ inputs.version }}_${{ matrix.label }}" \
+            --out-dir "gates-${{ matrix.label }}" "${rules[@]}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: published-wheel-chemistry-gates-${{ inputs.version }}-${{ matrix.label }}
+          path: |
+            gates-${{ matrix.label }}/*.json
+            gates-${{ matrix.label }}/*.jsonl
+            gates-${{ matrix.label }}/gates.log
+          if-no-files-found: error

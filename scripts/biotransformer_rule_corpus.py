@@ -124,18 +124,19 @@ def rdkit_set(rxn, mol, max_products: int) -> tuple[set, int, list]:
     return values, len(raw), raw
 
 
-def to_rdkit(product):
-    """An RDKit copy of a chematic product. RDKit's SMILES reader drops `~`
-    on a ring closure, so order-less (zero-order) bonds are set from the MOL
-    block's type-8 bonds, mapped through the SMILES atom order."""
-    if "~" not in product.smiles:
-        return Chem.MolFromSmiles(product.smiles, sanitize=False)
-    smi, order = product.smiles_with_atom_order()
+def to_rdkit(product: dict):
+    """An RDKit copy of a chematic product record (see
+    ``chematic_reaction_worker.product_record``). RDKit's SMILES reader drops
+    `~` on a ring closure, so order-less (zero-order) bonds are set from the
+    MOL block's type-8 bonds, mapped through the SMILES atom order."""
+    if "~" not in product["smiles"]:
+        return Chem.MolFromSmiles(product["smiles"], sanitize=False)
+    smi, order = product["ordered"]
     mol = Chem.MolFromSmiles(smi, sanitize=False)
     if mol is None:
         return None
     rd_of = {chem: rd for rd, chem in enumerate(order)}
-    lines = product.to_mol_block().splitlines()
+    lines = product["molblock"].splitlines()
     natoms, nbonds = int(lines[3][0:3]), int(lines[3][3:6])
     rw = Chem.RWMol(mol)
     for line in lines[4 + natoms: 4 + natoms + nbonds]:
@@ -147,21 +148,46 @@ def to_rdkit(product):
     return rw.GetMol()
 
 
-def chematic_set(chematic, smirks: str, smiles: str) -> tuple[str, tuple | None, str | None]:
-    try:
-        reactant = chematic.from_smiles(smiles)
-    except ValueError as exc:
-        return "reactant_parse", None, str(exc)
-    try:
-        checked = chematic.run_smirks_checked(smirks, [reactant], rdkit_compat=True)
-    except ValueError as exc:
-        return "error", None, str(exc)
-    status = checked["status"]
-    if status in {"typed_refusal", "typed_unsupported"}:
-        return status, None, checked.get("reason")
+class InProcess:
+    """chematic imported into this interpreter."""
+
+    def __init__(self):
+        import chematic
+        import chematic_reaction_worker
+
+        self.version = chematic.__version__
+        self.file = chematic.__file__
+        self.run = chematic_reaction_worker.run
+
+
+class Worker:
+    """chematic in another interpreter (``--chematic-python``), for
+    published wheels built for a Python RDKit has no wheel for."""
+
+    def __init__(self, python: str):
+        import subprocess
+
+        script = Path(__file__).with_name("chematic_reaction_worker.py")
+        self.proc = subprocess.Popen(
+            [python, str(script)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
+        )
+        hello = json.loads(self.proc.stdout.readline())
+        self.version, self.file = hello["version"], hello["file"]
+
+    def run(self, request: dict) -> dict:
+        self.proc.stdin.write(json.dumps(request) + "\n")
+        self.proc.stdin.flush()
+        return json.loads(self.proc.stdout.readline())
+
+
+def chematic_set(backend, smirks: str, smiles: str) -> tuple[str, tuple | None, str | None]:
+    response = backend.run({"smirks": smirks, "smiles": smiles})
+    status = response["status"]
+    if response["products"] is None:
+        return status, None, response["detail"]
     values = set()
     single = set()
-    for product_set in checked.get("products", []):
+    for product_set in response["products"]:
         mols = [to_rdkit(p) for p in product_set]
         if any(m is None for m in mols):
             continue
@@ -182,17 +208,32 @@ def main() -> int:
     ap.add_argument("--every", type=int, default=1, help="take every n-th reactant row")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--max-products", type=int, default=1000)
+    ap.add_argument("--rules-slice", default=None,
+                    help="START:END, run only rules[START:END] (shards a run on hosts that "
+                         "limit how long one process may live; counts add up across shards)")
+    ap.add_argument("--reactants-slice", default=None,
+                    help="START:END, run only these reactant rows (after --every/--limit)")
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--rows", type=Path, required=True, help="JSONL of non-exact rows")
+    ap.add_argument("--chematic-python", default=None,
+                    help="run chematic under this interpreter (a published wheel for a "
+                         "Python RDKit 2026.03.6 has no wheel for); default: in process")
     args = ap.parse_args()
 
-    import chematic
+    sys.path.insert(0, str(Path(__file__).parent))
+    chematic = Worker(args.chematic_python) if args.chematic_python else InProcess()
 
     rules, sources = load_rules(args.rules)
+    if args.rules_slice:
+        start, _, end = args.rules_slice.partition(":")
+        rules = rules[int(start or 0): int(end) if end else None]
     lines = [l.split()[0] for l in args.reactants.read_text().splitlines() if l.strip()]
     lines = lines[:: args.every]
     if args.limit:
         lines = lines[: args.limit]
+    if args.reactants_slice:
+        start, _, end = args.reactants_slice.partition(":")
+        lines = lines[int(start or 0): int(end) if end else None]
     reactants = []
     for smi in lines:
         mol = Chem.MolFromSmiles(smi)
@@ -271,7 +312,8 @@ def main() -> int:
                       "sha256": hashlib.sha256(args.reactants.read_bytes()).hexdigest(),
                       "every": args.every, "limit": args.limit, "count": len(reactants)},
         "rdkit": rdBase.rdkitVersion,
-        "chematic": getattr(chematic, "__version__", None),
+        "chematic": chematic.version,
+        "chematic_module": chematic.file,
         "elapsed_seconds": round(time.time() - started, 1),
         "counts": dict(sorted(counts.items())),
         "per_rule": per_rule,

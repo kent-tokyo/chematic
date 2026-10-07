@@ -1,0 +1,75 @@
+{
+ "schema": "734-754-followups-batch17/v1",
+ "rdkit": "2026.03.6",
+ "stopped_early_for_release": true,
+ "layout_2d_as_drawn": {
+  "batch16": {
+   "clean": 14669,
+   "with_clash": 53,
+   "with_crossing": 319,
+   "bond_dev_over_0.2": 278,
+   "narrow_branch_atoms": 2396,
+   "with_narrow_branch": 320
+  },
+  "source": {
+   "clean": 14699,
+   "with_clash": 26,
+   "with_crossing": 300,
+   "bond_dev_over_0.2": 276,
+   "with_narrow_branch": 320,
+   "narrow_branch_atoms": 2291
+  },
+  "rdkit": {
+   "clean": 14504,
+   "with_clash": 276,
+   "with_crossing": 402,
+   "bond_dev_over_0.2": 540,
+   "with_narrow_branch": 0,
+   "narrow_branch_atoms": 0
+  },
+  "rows_worse_than_batch16": 0
+ },
+ "write_mol_2000_rows_instructions": {
+  "batch15": 624711620,
+  "batch16": 665979495,
+  "output_identical_speedups": 626699474,
+  "source": 653453915
+ },
+ "depiction_ms_exposed_10k": {
+  "svg": {
+   "source": 991,
+   "pypi_v1.0.36": 508,
+   "rdkit": 11762
+  },
+  "depict_data": {
+   "source": 631,
+   "pypi_v1.0.36": 323,
+   "rdkit_compute2dcoords": 2954
+  },
+  "to_mol_block": {
+   "source": 550,
+   "pypi_v1.0.36_no_layout_without_stereo": 181,
+   "rdkit": 4305
+  }
+ },
+ "depiction_stereo": {
+  "rdkit-js-browser-10k-v1.smi": {
+   "stereo_rows": 1687,
+   "drawn_as_input": 1686,
+   "differs": 1,
+   "rdkit_unreadable": 0
+  },
+  "chembl_accuracy_corpus_4999.smi": {
+   "stereo_rows": 1670,
+   "drawn_as_input": 1670,
+   "differs": 0,
+   "rdkit_unreadable": 0
+  }
+ },
+ "rdkit_2026_09_1_python_on_pypi": false,
+ "not_done": [
+  "unbridged crossings",
+  "SMARTS ^n speed",
+  "canonical worst-case audit after E/Z pruning"
+ ]
+}

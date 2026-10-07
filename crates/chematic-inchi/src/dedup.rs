@@ -807,7 +807,11 @@ fn accurate_stereo_supplement(mol: &Molecule) -> Result<Vec<(u64, CipCode)>, Ide
     for atom in unresolved {
         // A label that flips between Kekulé spellings of one molecule
         // (cyclophosphazene P) cannot tell two inputs apart.
-        if chematic_chem::cip_label_depends_on_kekule_spelling(mol, atom) {
+        // A label that follows RDKit's spelling-dependent SMILES reading
+        // (a bridgehead amine) cannot either.
+        if chematic_chem::cip_label_depends_on_kekule_spelling(mol, atom)
+            || chematic_chem::cip_label_depends_on_smiles_spelling(mol, atom)
+        {
             return Err(IdentityDiagnostic::AccurateCipOracleUnstable);
         }
         if let Some((_, reason)) = accurate.unresolved.iter().find(|(i, _)| *i == atom) {

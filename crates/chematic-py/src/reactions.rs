@@ -440,7 +440,11 @@ fn batch_query_reactions<'py>(
 fn reaction_svg(reaction_smiles: &str) -> PyResult<String> {
     let rxn = chematic_rxn::parse_reaction(reaction_smiles)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
-    Ok(chematic_depict::depict_reaction_svg(&rxn))
+    Ok(chematic_depict::depict_reaction_svg_prepared(
+        &rxn,
+        &chematic_depict::RenderOptions::default(),
+        &chematic_mol::stereo_depiction::depiction_with_stereo,
+    ))
 }
 
 /// Compute scaffold network statistics across a molecule library.

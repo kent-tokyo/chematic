@@ -23,6 +23,13 @@ const PADDING: f64 = 20.0;
 ///
 /// Returns an empty `<svg>` element when `mols` is empty or `cols` is 0.
 pub fn depict_svg_grid(mols: &[&Molecule], cols: usize) -> String {
+    let layouts: Vec<Layout> = mols.iter().map(|m| compute_layout(m)).collect();
+    depict_svg_grid_with_layouts(mols, &layouts, cols)
+}
+
+/// [`depict_svg_grid`] on caller-supplied layouts (`layouts[i]` for
+/// `mols[i]`, in [`compute_layout`] units), e.g. a stereo depiction.
+pub fn depict_svg_grid_with_layouts(mols: &[&Molecule], layouts: &[Layout], cols: usize) -> String {
     if mols.is_empty() || cols == 0 {
         return "<svg xmlns=\"http://www.w3.org/2000/svg\" \
                 width=\"0\" height=\"0\"></svg>"
@@ -31,9 +38,6 @@ pub fn depict_svg_grid(mols: &[&Molecule], cols: usize) -> String {
 
     let cols = cols.min(mols.len());
     let rows = mols.len().div_ceil(cols);
-
-    // Compute 2D layouts for all molecules.
-    let layouts: Vec<Layout> = mols.iter().map(|m| compute_layout(m)).collect();
 
     // Determine uniform cell size from the largest molecule bounding box.
     let (cell_w, cell_h) = layouts.iter().fold(
@@ -110,6 +114,16 @@ pub fn depict_svg_grid_with_opts(
     mols: &[(&Molecule, Option<&RenderOptions>)],
     cols: usize,
 ) -> String {
+    let layouts: Vec<Layout> = mols.iter().map(|(m, _)| compute_layout(m)).collect();
+    depict_svg_grid_with_opts_and_layouts(mols, &layouts, cols)
+}
+
+/// [`depict_svg_grid_with_opts`] on caller-supplied layouts.
+pub fn depict_svg_grid_with_opts_and_layouts(
+    mols: &[(&Molecule, Option<&RenderOptions>)],
+    layouts: &[Layout],
+    cols: usize,
+) -> String {
     if mols.is_empty() || cols == 0 {
         return "<svg xmlns=\"http://www.w3.org/2000/svg\" \
                 width=\"0\" height=\"0\"></svg>"
@@ -119,7 +133,6 @@ pub fn depict_svg_grid_with_opts(
     let default_opts = RenderOptions::default();
     let cols = cols.min(mols.len());
     let rows = mols.len().div_ceil(cols);
-    let layouts: Vec<Layout> = mols.iter().map(|(m, _)| compute_layout(m)).collect();
 
     let (cell_w, cell_h) = layouts.iter().fold(
         (

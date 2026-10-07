@@ -7,8 +7,8 @@ returns *an* answer, never "I don't know".
 
 `Mol.cip_stereo(mode="accurate")` uses a hierarchical-digraph engine instead
 for tetrahedral R/S (~99.6% oracle-stable agreement -- see
-docs/rfcs/cip_accurate_rfc.md), merged with legacy's E/Z and allene answers (the
-accurate engine doesn't compute either). It is strictly opt-in: nothing about
+docs/rfcs/cip_accurate_rfc.md) and for E/Z (the same engine ranks each end's
+substituents); allenes keep the legacy answer. It is strictly opt-in: nothing about
 your existing code changes unless you pass mode="accurate" explicitly.
 
 The accurate engine is honest about what it doesn't know: a genuine CIP-rule

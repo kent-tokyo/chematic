@@ -76,6 +76,12 @@ pub struct Molecule {
     /// aromatic bond. This preserves which endpoint introduced the marker
     /// when atom/bond indices are rebuilt during canonical search.
     bond_direction_anchors: std::collections::HashMap<u32, AtomIdx>,
+    /// SMILES ring-closure bonds, keyed by bond index: the ring label in the
+    /// high 32 bits and the label's occurrence in the low 32. Recorded by the
+    /// SMILES parser so [`Molecule::rdkit_bond_order`] can list bonds the way
+    /// RDKit's parser creates them; empty for other inputs and cleared by any
+    /// edit that renumbers bonds.
+    smiles_ring_closure_keys: std::collections::HashMap<u32, u64>,
     /// Memoized derived perception data (SSSR, aromatic view, ...). Cleared
     /// by every mutation and empty after `clone()`.
     derived: crate::derived_cache::DerivedCache,
@@ -691,6 +697,7 @@ impl Molecule {
     /// of atoms after the removed slot shift down by 1.
     pub fn remove_atom(&mut self, idx: AtomIdx) -> Vec<Option<AtomIdx>> {
         self.invalidate_derived();
+        self.smiles_ring_closure_keys.clear();
         let n = self.atoms.len();
         let removed = idx.0 as usize;
 
@@ -832,6 +839,7 @@ impl Molecule {
     /// surviving bonds shift down past the removed slot.
     pub fn remove_bond(&mut self, idx: BondIdx) {
         self.invalidate_derived();
+        self.smiles_ring_closure_keys.clear();
         let removed = idx.0 as usize;
         if removed >= self.bonds.len() {
             return;
@@ -1006,6 +1014,32 @@ impl Molecule {
             .all(|(&k, list)| k == list.len())
     }
 
+    /// What re-adding every atom and bond to a [`MoleculeBuilder`] and then
+    /// copying the stereo neighbour orders and stereo groups gives (no atom
+    /// tags, R-group labels, stashed bond directions or SMILES ring-closure
+    /// record), without re-adding the bonds; `None` when the adjacency is not
+    /// in bond order ([`Self::adjacency_in_bond_order`]), where a rebuild
+    /// would reorder neighbours.
+    #[doc(hidden)]
+    pub fn atoms_bonds_and_stereo_copy(&self) -> Option<Molecule> {
+        if !self.adjacency_in_bond_order() {
+            return None;
+        }
+        Some(Molecule {
+            atoms: self.atoms.clone(),
+            atom_tags: Vec::new(),
+            bonds: self.bonds.clone(),
+            adjacency: self.adjacency.clone(),
+            r_groups: Default::default(),
+            stereo_groups: self.stereo_groups.clone(),
+            stereo_neighbor_order: self.stereo_neighbor_order.clone(),
+            bond_directions: Default::default(),
+            bond_direction_anchors: Default::default(),
+            smiles_ring_closure_keys: Default::default(),
+            derived: Default::default(),
+        })
+    }
+
     /// Set the bond order of bond `idx` in-place. Endpoints (`atom1`/
     /// `atom2`) and adjacency are untouched -- order alone doesn't affect
     /// connectivity, so unlike [`Self::remove_bond`] + [`Self::add_bond`],
@@ -1033,6 +1067,40 @@ impl Molecule {
     pub fn add_stereo_group(&mut self, group: StereoGroup) {
         self.invalidate_derived();
         self.stereo_groups.push(group);
+    }
+
+    /// How many SMILES ring-closure digits were written on atom `idx` (the
+    /// ring-closure bonds it ends, see [`Molecule::rdkit_bond_order`]); 0 for
+    /// molecules not read from SMILES.
+    pub fn smiles_ring_closure_count(&self, idx: AtomIdx) -> usize {
+        if self.smiles_ring_closure_keys.is_empty() {
+            return 0;
+        }
+        self.neighbors(idx)
+            .filter(|(_, b)| self.smiles_ring_closure_keys.contains_key(&b.0))
+            .count()
+    }
+
+    /// Bond indices in the order RDKit's SMILES parser creates the bonds:
+    /// chain bonds as written, then every ring-closure bond, ordered by ring
+    /// label and, for a reused label, by occurrence (RDKit closes rings after
+    /// parsing). Per-atom neighbour order in RDKit follows the same sequence.
+    /// For molecules not read from SMILES this is the bond index order, which
+    /// is also RDKit's for MOL/SDF input.
+    pub fn rdkit_bond_order(&self) -> Vec<BondIdx> {
+        let mut order: Vec<BondIdx> = (0..self.bonds.len() as u32)
+            .filter(|b| !self.smiles_ring_closure_keys.contains_key(b))
+            .map(BondIdx)
+            .collect();
+        let mut closures: Vec<(u64, u32)> = self
+            .smiles_ring_closure_keys
+            .iter()
+            .filter(|(b, _)| (**b as usize) < self.bonds.len())
+            .map(|(&b, &k)| (k, b))
+            .collect();
+        closures.sort_unstable();
+        order.extend(closures.into_iter().map(|(_, b)| BondIdx(b)));
+        order
     }
 
     /// SMILES-text-order neighbor sequence for a chiral atom.
@@ -1226,6 +1294,7 @@ pub struct MoleculeBuilder {
     stereo_neighbor_order: std::collections::HashMap<u32, Vec<u32>>,
     bond_directions: std::collections::HashMap<u32, BondOrder>,
     bond_direction_anchors: std::collections::HashMap<u32, AtomIdx>,
+    smiles_ring_closure_keys: std::collections::HashMap<u32, u64>,
 }
 
 impl MoleculeBuilder {
@@ -1249,6 +1318,7 @@ impl MoleculeBuilder {
             stereo_neighbor_order: std::collections::HashMap::new(),
             bond_directions: std::collections::HashMap::new(),
             bond_direction_anchors: std::collections::HashMap::new(),
+            smiles_ring_closure_keys: std::collections::HashMap::new(),
         }
     }
 
@@ -1270,6 +1340,7 @@ impl MoleculeBuilder {
         b.stereo_neighbor_order = mol.stereo_neighbor_order.clone();
         b.bond_directions = mol.bond_directions.clone();
         b.bond_direction_anchors = mol.bond_direction_anchors.clone();
+        b.smiles_ring_closure_keys = mol.smiles_ring_closure_keys.clone();
         b
     }
 
@@ -1356,6 +1427,13 @@ impl MoleculeBuilder {
         self.bond_direction_anchors.insert(idx.0, atom);
     }
 
+    /// Record that bond `idx` closed SMILES ring label `label` at its
+    /// `occurrence`-th use (see [`Molecule::rdkit_bond_order`]).
+    pub fn set_smiles_ring_closure(&mut self, idx: BondIdx, label: u32, occurrence: u32) {
+        self.smiles_ring_closure_keys
+            .insert(idx.0, (u64::from(label) << 32) | u64::from(occurrence));
+    }
+
     /// Copy all bond-direction entries from `mol` into this builder verbatim.
     ///
     /// Only valid when bond indices are unchanged from `mol` (atoms/bonds
@@ -1364,6 +1442,7 @@ impl MoleculeBuilder {
     /// that removes or reorders bonds must remap directions bond-by-bond
     /// instead (see `Molecule::with_bond_removed`).
     pub fn copy_bond_directions_from(&mut self, mol: &Molecule) {
+        self.smiles_ring_closure_keys = mol.smiles_ring_closure_keys.clone();
         self.bond_directions = mol.bond_directions.clone();
         self.bond_direction_anchors = mol.bond_direction_anchors.clone();
     }
@@ -1450,6 +1529,7 @@ impl MoleculeBuilder {
             stereo_neighbor_order: self.stereo_neighbor_order,
             bond_directions: self.bond_directions,
             bond_direction_anchors: self.bond_direction_anchors,
+            smiles_ring_closure_keys: self.smiles_ring_closure_keys,
             derived: Default::default(),
         }
     }

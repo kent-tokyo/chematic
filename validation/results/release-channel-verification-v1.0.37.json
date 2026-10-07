@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "release": {
+    "version": "1.0.37",
+    "tag": "v1.0.37",
+    "commit": "pending_release_commit"
+  },
+  "checked_at": "2026-10-07T00:00:00+09:00",
+  "release_ready": false,
+  "channels": [
+    {
+      "id": "github_release",
+      "status": "not_measured",
+      "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.37",
+      "detail": "The release tag and GitHub Release do not exist before the release commit is merged."
+    },
+    {
+      "id": "npm",
+      "status": "not_measured",
+      "url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.0.37",
+      "detail": "The npm artifact must be verified directly after tag publication."
+    },
+    {
+      "id": "pypi",
+      "status": "not_measured",
+      "url": "https://pypi.org/pypi/chematic/1.0.37/json",
+      "detail": "The PyPI wheels and sdist must be verified directly after tag publication."
+    },
+    {
+      "id": "crates_io",
+      "status": "not_measured",
+      "url": "https://crates.io/crates/chematic/1.0.37",
+      "detail": "All version-pinned crate archives must be verified after dependency-ordered publication."
+    },
+    {
+      "id": "docs_rs",
+      "status": "not_measured",
+      "url": "https://docs.rs/chematic/1.0.37/chematic/",
+      "detail": "The version-pinned rustdoc endpoint must be checked after crates.io publication."
+    },
+    {
+      "id": "site",
+      "status": "not_measured",
+      "url": "https://kent-tokyo.github.io/chematic/",
+      "detail": "The deployed documentation must display v1.0.37 after the release commit reaches main."
+    }
+  ]
+}

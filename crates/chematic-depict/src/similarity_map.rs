@@ -43,6 +43,16 @@ pub fn similarity_map_svg(mol: &Molecule, weights: &[f64]) -> String {
 /// covered by `weights`.  Other rendering options (size, padding, dark mode, …)
 /// are respected as-is.
 pub fn similarity_map_svg_opts(mol: &Molecule, weights: &[f64], opts: &RenderOptions) -> String {
+    crate::depict_svg_opts(mol, &similarity_map_options(mol, weights, opts))
+}
+
+/// The render options [`similarity_map_svg_opts`] draws with (`opts` with
+/// each weighted atom's tint), for drawing on a caller's own layout.
+pub fn similarity_map_options(
+    mol: &Molecule,
+    weights: &[f64],
+    opts: &RenderOptions,
+) -> RenderOptions {
     let mut opts = opts.clone();
 
     // Find the maximum absolute weight for normalisation.
@@ -62,8 +72,7 @@ pub fn similarity_map_svg_opts(mol: &Molecule, weights: &[f64], opts: &RenderOpt
             opts.atom_color_map.insert(AtomIdx(i as u32), color);
         }
     }
-
-    crate::depict_svg_opts(mol, &opts)
+    opts
 }
 
 /// Map a normalised weight `t ∈ [-1, 1]` to a CSS hex colour.

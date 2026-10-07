@@ -1,0 +1,297 @@
+{
+ "schema": "734-754-followups-batch14/v1",
+ "rdkit": "2026.03.6",
+ "write_mol_stereo_rows_instructions": {
+  "batch13": 694475994,
+  "source": 679062887,
+  "byte_identical_inputs": 30070
+ },
+ "canonical": {
+  "row_4903_ms": {
+   "batch13": 63.5,
+   "source": 6.3
+  },
+  "row_4903_explicit_h_ms": {
+   "batch13": 104,
+   "source": 9.9
+  },
+  "corpus_30000_instructions": {
+   "batch13": 37420000000.0,
+   "source": 22560000000.0
+  },
+  "identical_strings": 30305
+ },
+ "a6_iteration_budget": {
+  "converged_by_budget": {
+   "200": 135,
+   "300": 199,
+   "400": 226,
+   "600": 256,
+   "1000": 263,
+   "2000": 264
+  },
+  "seconds_by_budget": {
+   "200": 5.1,
+   "300": 6.1,
+   "400": 6.9,
+   "600": 7.0,
+   "1000": 7.5,
+   "2000": 7.2
+  },
+  "pipeline_default": {
+   "rust_minimal": {
+    "before": 300,
+    "source": 1000
+   },
+   "python_safe_stereo_safe": {
+    "before": 200,
+    "source": 1000
+   }
+  },
+  "python_stereo_safe_at_1000": {
+   "converged": 263,
+   "sound": 265,
+   "stereo_clean": 265,
+   "gross_clash": 0,
+   "seconds": 8.28
+  },
+  "protocol_200_rerun": {
+   "success": 265,
+   "gradient_converged": 135,
+   "iteration_limit": 129,
+   "constraint_rejected_fallback": 1,
+   "coords_identical_to_batch13": 265
+  }
+ },
+ "conformer_quality_vs_rdkit": {
+  "it200": {
+   "rows": 265,
+   "scored": 265,
+   "statuses": {
+    "scored": 265
+   },
+   "chematic_relaxed_minus_rdkit_best_kcal_mol": {
+    "median": 0.5516611117683397,
+    "p90": 8.827481908889311,
+    "max": 25.571056054639357
+   },
+   "chematic_relaxed_within_1_kcal_mol_of_rdkit_best": 152,
+   "chematic_relaxed_at_or_below_rdkit_best": 101,
+   "rdkit_first_minus_rdkit_best_kcal_mol": {
+    "median": 1.410405829444116,
+    "p90": 11.551960545365532,
+    "max": 22.279465495118473
+   },
+   "rdkit_first_within_1_kcal_mol_of_rdkit_best": 125,
+   "chematic_fixed_minus_relaxed_kcal_mol": {
+    "median": 7.191328458652066,
+    "p90": 39.17062268405036,
+    "max": 168.4695089362477
+   },
+   "rmsd_to_own_minimum_angstrom": {
+    "median": 0.3217117182065452,
+    "p90": 1.5332185752840313,
+    "max": 3.6174656164557426
+   },
+   "rmsd_to_closest_rdkit_conformer_angstrom": {
+    "median": 0.725380349154273,
+    "p90": 2.40634480273416,
+    "max": 5.6743668959407145
+   }
+  },
+  "it1000": {
+   "rows": 265,
+   "scored": 265,
+   "statuses": {
+    "scored": 265
+   },
+   "chematic_relaxed_minus_rdkit_best_kcal_mol": {
+    "median": 0.48011996903956344,
+    "p90": 8.650352226983635,
+    "max": 25.571056054639357
+   },
+   "chematic_relaxed_within_1_kcal_mol_of_rdkit_best": 155,
+   "chematic_relaxed_at_or_below_rdkit_best": 105,
+   "rdkit_first_minus_rdkit_best_kcal_mol": {
+    "median": 1.410405829444116,
+    "p90": 11.551960545365532,
+    "max": 22.279465495118473
+   },
+   "rdkit_first_within_1_kcal_mol_of_rdkit_best": 125,
+   "chematic_fixed_minus_relaxed_kcal_mol": {
+    "median": 6.8869266256191395,
+    "p90": 36.61239674647224,
+    "max": 168.4695089362477
+   },
+   "rmsd_to_own_minimum_angstrom": {
+    "median": 0.28142492691533766,
+    "p90": 1.428565899474002,
+    "max": 3.7758082922637897
+   },
+   "rmsd_to_closest_rdkit_conformer_angstrom": {
+    "median": 0.7252747515558345,
+    "p90": 2.545054773688274,
+    "max": 6.35673687356259
+   }
+  }
+ },
+ "cip_rule5_lone_pair_centre": {
+  "spellings": 112,
+  "pseudoasymmetric_agree": 3136,
+  "pseudoasymmetric_total": 3136,
+  "synthetic_bridgehead_agree": 4256,
+  "synthetic_bridgehead_total": 4256
+ },
+ "layout_2d": {
+  "batch13": {
+   "clean": 10619,
+   "with_clash": 4174,
+   "with_crossing": 821,
+   "bridged_clean": 48,
+   "unbridged_with_clash": 3705,
+   "unbridged_with_crossing": 644
+  },
+  "source": {
+   "schema": "layout-2d-quality-vs-rdkit/v1",
+   "rdkit": "2026.03.6",
+   "chematic": "1.0.36",
+   "all": {
+    "rows": 15000,
+    "chematic": {
+     "clean": 14592,
+     "with_clash": 290,
+     "with_crossing": 316,
+     "bond_dev_over_0.2": 267
+    },
+    "rdkit": {
+     "clean": 14504,
+     "with_clash": 276,
+     "with_crossing": 402,
+     "bond_dev_over_0.2": 540
+    }
+   },
+   "bridged": {
+    "rows": 531,
+    "chematic": {
+     "clean": 245,
+     "with_clash": 212,
+     "with_crossing": 239,
+     "bond_dev_over_0.2": 251
+    },
+    "rdkit": {
+     "clean": 232,
+     "with_clash": 102,
+     "with_crossing": 290,
+     "bond_dev_over_0.2": 337
+    }
+   },
+   "not_bridged": {
+    "rows": 14469,
+    "chematic": {
+     "clean": 14347,
+     "with_clash": 78,
+     "with_crossing": 77,
+     "bond_dev_over_0.2": 16
+    },
+    "rdkit": {
+     "clean": 14272,
+     "with_clash": 174,
+     "with_crossing": 112,
+     "bond_dev_over_0.2": 203
+    }
+   }
+  }
+ },
+ "speed_instructions": {
+  "smarts_hybridization_2000x10_excluding_parse": {
+   "v1.0.34": 253800000.0,
+   "batch13": 356400000.0,
+   "source": 294100000.0,
+   "matches": {
+    "v1.0.34": 34320,
+    "source": 35176
+   }
+  },
+  "smarts_plain_2000x10_excluding_parse": {
+   "v1.0.34": 261100000.0,
+   "batch13": 264600000.0,
+   "source": 264600000.0
+  },
+  "run_reactants_11x100": {
+   "v1.0.34": 78500000.0,
+   "batch13": 180900000.0,
+   "source": 163800000.0,
+   "kekule_reactant_aromaticity": 41000000.0
+  },
+  "outputs_identical_to_batch13": {
+   "match_sets": 20000,
+   "product_sets": 1100
+  }
+ },
+ "gates": {
+  "smarts_310k": {
+   "exact": 309982,
+   "typed_refusals": 18,
+   "unexpected": 0
+  },
+  "smarts_310k_2026_09_1": {
+   "exact": 310000
+  },
+  "cip_accurate": {
+   "exposed_10k": 4395,
+   "chembl_5k": 4186,
+   "chembl_5k_kekule_dependent": 20
+  },
+  "hybridization": {
+   "exposed_10k": [
+    220015,
+    220015
+   ],
+   "chembl_5k": [
+    138655,
+    138655
+   ],
+   "kekule_15k": [
+    358670,
+    358670
+   ]
+  },
+  "mmff94_typing_differences": {
+   "exposed_10k": 0,
+   "chembl_5k": 0,
+   "kekule_15k": 0
+  },
+  "mol_writer_read_back": {
+   "exposed_10k": [
+    1686,
+    1687
+   ],
+   "chembl_5k": [
+    1670,
+    1670
+   ],
+   "kekule_15k": [
+    3356,
+    3357
+   ]
+  },
+  "reaction_83": {
+   "graph_origin_map_match": 80,
+   "joint_invalid_input": 3
+  },
+  "xsmarts_autoconf": {
+   "rdkit_value": 75,
+   "of": 83,
+   "unexpected": 0
+  },
+  "biotransformer_400": {
+   "implicit_exact": 1051,
+   "explicit_h_exact": 6604
+  }
+ },
+ "verification": {
+  "rust_tests": 5329,
+  "pytest": 1024,
+  "script_test_preexisting_failure": "test_a6_quality_matrix (Python 3.11 sum vs archived 3.12 summary)"
+ }
+}

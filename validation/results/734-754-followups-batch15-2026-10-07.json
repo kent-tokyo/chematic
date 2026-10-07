@@ -1,0 +1,250 @@
+{
+ "schema": "734-754-followups-batch15/v1",
+ "rdkit": "2026.03.6",
+ "depiction_stereo": {
+  "source": {
+   "rdkit-js-browser-10k-v1.smi": {
+    "stereo_rows": 1687,
+    "drawn_as_input": 1686,
+    "differs": 1,
+    "rdkit_unreadable": 0
+   },
+   "chembl_accuracy_corpus_4999.smi": {
+    "stereo_rows": 1670,
+    "drawn_as_input": 1670,
+    "differs": 0,
+    "rdkit_unreadable": 0
+   }
+  },
+  "pypi_v1.0.36": {
+   "rdkit-js-browser-10k-v1.smi": {
+    "stereo_rows": 1687,
+    "drawn_as_input": 286,
+    "differs": 1401,
+    "rdkit_unreadable": 0
+   },
+   "chembl_accuracy_corpus_4999.smi": {
+    "stereo_rows": 1670,
+    "drawn_as_input": 317,
+    "differs": 1353,
+    "rdkit_unreadable": 0
+   }
+  }
+ },
+ "sdwriter": {
+  "before": {
+   "bond_length_angstrom": 40.0,
+   "y_flipped": true,
+   "cis_written_as": "either"
+  },
+  "source": {
+   "bond_length_angstrom": 1.5,
+   "rdkit_reads_back": [
+    "F/C=C\\F",
+    "C[C@H](N)C(=O)O"
+   ]
+  }
+ },
+ "write_mol_2000_rows_instructions": {
+  "batch13": 352771760,
+  "batch14": 6959699804,
+  "source": 624711620,
+  "exposed_10k_wall_ms": {
+   "batch13": 135,
+   "batch14": 842,
+   "source": 300
+  },
+  "molecules_redrawn_by_collinear_fix": 32
+ },
+ "layout_2d": {
+  "batch14": {
+   "clean": 14592,
+   "with_clash": 290,
+   "with_crossing": 316,
+   "bridged_clean": 245,
+   "bridged_with_clash": 212
+  },
+  "source_layout": {
+   "clean": 14634,
+   "with_clash": 83,
+   "with_crossing": 324,
+   "bridged_clean": 287,
+   "bridged_with_clash": 5
+  },
+  "source_as_drawn": {
+   "schema": "layout-2d-quality-vs-rdkit/v1",
+   "rdkit": "2026.03.6",
+   "chematic": "1.0.36",
+   "all": {
+    "rows": 15000,
+    "chematic": {
+     "clean": 14541,
+     "with_clash": 155,
+     "with_crossing": 359,
+     "bond_dev_over_0.2": 278
+    },
+    "rdkit": {
+     "clean": 14504,
+     "with_clash": 276,
+     "with_crossing": 402,
+     "bond_dev_over_0.2": 540
+    }
+   },
+   "bridged": {
+    "rows": 531,
+    "chematic": {
+     "clean": 262,
+     "with_clash": 42,
+     "with_crossing": 243,
+     "bond_dev_over_0.2": 262
+    },
+    "rdkit": {
+     "clean": 232,
+     "with_clash": 102,
+     "with_crossing": 290,
+     "bond_dev_over_0.2": 337
+    }
+   },
+   "not_bridged": {
+    "rows": 14469,
+    "chematic": {
+     "clean": 14279,
+     "with_clash": 113,
+     "with_crossing": 116,
+     "bond_dev_over_0.2": 16
+    },
+    "rdkit": {
+     "clean": 14272,
+     "with_clash": 174,
+     "with_crossing": 112,
+     "bond_dev_over_0.2": 203
+    }
+   }
+  }
+ },
+ "a6": {
+  "protocol_200": {
+   "converged": 135,
+   "iteration_limit": 130,
+   "sound": 265,
+   "stereo_clean": 265,
+   "gross_clash": 0
+  },
+  "default_1000": {
+   "converged": 264,
+   "iteration_limit": 1,
+   "sound": 265,
+   "stereo_clean": 265,
+   "gross_clash": 0
+  },
+  "row_0161": {
+   "before": {
+    "termination": "constraint_rejected_fallback",
+    "residual": 59.24,
+    "energy": 187.8
+   },
+   "source": {
+    "termination": "gradient_converged",
+    "energy": 8.18
+   }
+  },
+  "row_0036_iterations_to_converge": 1077
+ },
+ "btmr1063_tridodecylthiomethane": {
+  "products": 4320,
+  "product_smiles_seconds": {
+   "pypi_v1.0.36": 162.6,
+   "source": 1.83,
+   "rdkit_mol_to_smiles": 1.05
+  }
+ },
+ "run_reactants_vs_v1_0_34": {
+  "aromatic_cases_equal_output_instructions": {
+   "v1.0.34": 57334252,
+   "source": 41183567
+  },
+  "reused_reactants_per_product": {
+   "v1.0.34": 55677,
+   "source": 40747
+  },
+  "products_11x100": {
+   "v1.0.34": 1400,
+   "source": 2700
+  }
+ },
+ "smarts_hybridization_2000x10_instructions_excl_parse": {
+  "v1.0.34": 253800000.0,
+  "batch14": 294100000.0,
+  "source": 294300000.0
+ },
+ "canonical_explicit_h_rows_4111_4384": {
+  "instructions": 906282666,
+  "note": "about 2,000 leaves serialized; left as is"
+ },
+ "gates": {
+  "smarts_310k": {
+   "exact": 309982,
+   "typed_refusals": 18,
+   "unexpected": 0
+  },
+  "smarts_310k_2026_09_1": {
+   "exact": 310000
+  },
+  "cip_accurate": {
+   "exposed_10k": 4395,
+   "chembl_5k": 4186,
+   "chembl_5k_kekule_dependent": 20
+  },
+  "hybridization": {
+   "exposed_10k": [
+    220015,
+    220015
+   ],
+   "chembl_5k": [
+    138655,
+    138655
+   ],
+   "kekule_15k": [
+    358670,
+    358670
+   ]
+  },
+  "mmff94_typing_differences": {
+   "exposed_10k": 0,
+   "chembl_5k": 0,
+   "kekule_15k": 0
+  },
+  "mol_writer_read_back": {
+   "exposed_10k": [
+    1686,
+    1687
+   ],
+   "chembl_5k": [
+    1670,
+    1670
+   ],
+   "kekule_15k": [
+    3356,
+    3357
+   ]
+  },
+  "reaction_83": {
+   "graph_origin_map_match": 80,
+   "joint_invalid_input": 3
+  },
+  "xsmarts_autoconf": {
+   "rdkit_value": 75,
+   "of": 83,
+   "unexpected": 0
+  },
+  "biotransformer_400": {
+   "implicit_exact": 1051,
+   "explicit_h_exact": 6604
+  }
+ },
+ "verification": {
+  "rust_tests": 5330,
+  "pytest": 1029,
+  "script_tests": 151
+ }
+}

@@ -136,10 +136,13 @@ bridgehead-N and other fused-ring gaps remain documented residuals. Accurate
 CIP labels acyclic phosphorus and acyclic lone-pair centres as RDKit's
 CIPLabeler does, and ring sulfoxides/selenoxides; phosphorus on an unsaturated
 ring (cyclophosphazene) gets RDKit's label, which flips with the ring's Kekulé
-spelling in both libraries and is marked as such; a ring lone-pair centre with three single bonds
-(bridgehead amine, cyclic phosphine or sulfonium) stays `LonePairCenter`:
-chematic reads its `@`/`@@` as OpenSMILES does (lone pair in the implicit-H
-position), RDKit's reading changes with the spelling.
+spelling in both libraries and is marked as such. A ring lone-pair centre with three single bonds
+(bridgehead amine, cyclic phosphine or sulfonium) gets RDKit's label for the
+spelling parsed and is marked spelling-dependent: chematic reads its `@`/`@@`
+as OpenSMILES does (lone pair in the implicit-H position), while RDKit inverts
+it when exactly one ring-closure digit is written on the centre; a
+pseudo-asymmetric one gets RDKit's `r`/`s`. An aromatic ring lone-pair centre
+stays `LonePairCenter`.
 
 The default CIP path remains the fast legacy assignment. Accurate hierarchical
 CIP is opt-in through `CipMode::Accurate` (and its named Python/WASM binding
@@ -162,7 +165,25 @@ typing, parameter coverage, charged/metal/fused-ring cases, and convergence
 remain incomplete. Missing parameters or failed minimization must remain
 observable as failure; callers must not interpret the presence of all seven
 term implementations as universal MMFF94 coverage. Use UFF or DREIDING when
-the selected molecule and policy require a different supported scope.
+the selected molecule and policy require a different supported scope. Where
+RDKit 2026.03.6 types a molecule, chematic's per-term energies equal RDKit's
+on the exposed 10k and ChEMBL 5k corpora; pairs between fragments are kept
+unless `ignore_interfragment_interactions` asks for RDKit's default. The
+minimizer is a port of RDKit's BFGS run to an absolute residual-force test,
+so minimized geometries and iteration counts are not RDKit's. The pipeline's
+default budget is 1,000 iterations (RDKit's `MMFFOptimizeMolecule` default
+is 200); a geometry that stops at the budget is returned with the
+`iteration_limit` termination.
+
+2D layout is rule-based, not RDKit's `Compute2DCoords`: coordinates differ.
+Depictions and MOL blocks draw the declared stereo (E/Z geometry, one wedge
+per centre); every MOL block (Python `to_mol_block`, WASM `to_mol_block`,
+`SDWriter`) carries 2D coordinates in Å, with or without stereo. As drawn, 26
+of the 15,000 exposed-10k and ChEMBL-5k rows have a clash (RDKit 276) and
+caged ring systems can cross themselves. A branch point is drawn with its
+bonds 120° apart unless that crowds the drawing, where the narrower fork of
+earlier releases is kept (320 rows have a branch atom with two bonds under
+90° apart; RDKit none).
 
 ## Binding contract
 

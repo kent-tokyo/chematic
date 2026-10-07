@@ -692,7 +692,12 @@ pub fn depict_reaction_svg(rxn_smiles: &str) -> Result<String, JsValue> {
             seps.push((cursor + SEP_PLUS / 2, "+"));
             cursor += SEP_PLUS;
         }
-        frags.push((cursor, chematic_depict::depict_svg_opts(mol, &opts)));
+        frags.push((
+            cursor,
+            chematic_mol::stereo_depiction::with_stereo_depiction(mol, |m, layout| {
+                chematic_depict::render_svg_opts(m, layout, &opts)
+            }),
+        ));
         cursor += MOL_W;
     }
 
@@ -704,7 +709,12 @@ pub fn depict_reaction_svg(rxn_smiles: &str) -> Result<String, JsValue> {
             seps.push((cursor + SEP_PLUS / 2, "+"));
             cursor += SEP_PLUS;
         }
-        frags.push((cursor, chematic_depict::depict_svg_opts(mol, &opts)));
+        frags.push((
+            cursor,
+            chematic_mol::stereo_depiction::with_stereo_depiction(mol, |m, layout| {
+                chematic_depict::render_svg_opts(m, layout, &opts)
+            }),
+        ));
         cursor += MOL_W;
     }
 

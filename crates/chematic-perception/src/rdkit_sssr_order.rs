@@ -10,30 +10,203 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
-use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
+use smallvec::SmallVec;
 
 /// RDKit `RingUtils::MAX_BFSQ_SIZE`.
 const MAX_BFSQ_SIZE: usize = 200_000;
 
 struct Graph {
-    /// Per atom: (neighbour, bond index) in bond insertion order.
-    adj: Vec<Vec<(usize, usize)>>,
-    /// Per bond: its two atoms.
+    /// Per atom: (neighbour, bond index) in RDKit's bond creation order.
+    adj: Vec<SmallVec<[(usize, usize); 4]>>,
+    /// Per bond (RDKit's index): its two atoms.
     ends: Vec<(usize, usize)>,
+    /// Per bond (RDKit's index): its order.
+    orders: Vec<BondOrder>,
+}
+
+/// RDKit's largest allowed valence per atomic number (`-1`: any).
+const MAX_VALENCE: [i8; 119] = [
+    -1, 1, 0, -1, 2, 3, 4, 3, 2, 1, 0, -1, -1, 3, 4, 5, 6, 1, 0, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, 3, 4, 5, 6, 1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 3, 4, 5, 6,
+    5, 6, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, 4, 5, 6, 5, 0, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+];
+
+/// RDKit `QueryOps::isMetal`.
+fn is_metal(z: u8) -> bool {
+    !matches!(
+        z,
+        0 | 1
+            | 2
+            | 5
+            | 6
+            | 7
+            | 8
+            | 9
+            | 10
+            | 14
+            | 15
+            | 16
+            | 17
+            | 18
+            | 33
+            | 34
+            | 35
+            | 36
+            | 52
+            | 53
+            | 54
+            | 85
+            | 86
+    )
+}
+
+/// The single bonds `SanitizeMol`'s `cleanUpOrganometallics` turns into
+/// dative bonds (which RDKit's ring perception skips): for each non-metal,
+/// in canonical-rank order, whose explicit valence is over the largest
+/// valence of its charge-shifted element (or equal to it on an aromatic
+/// atom of total degree four), the single bond to the bonded metal with the
+/// fewest dative bonds so far (higher canonical rank first on a tie).
+fn organometallic_dative_bonds(mol: &Molecule) -> Vec<bool> {
+    let n = mol.atom_count();
+    let mut dative = vec![false; mol.bond_count()];
+    let z = |a: usize| -> u8 {
+        let atom = mol.atom(AtomIdx(a as u32));
+        if atom.wildcard {
+            0
+        } else {
+            atom.element.atomic_number()
+        }
+    };
+    if !(0..n).any(|a| is_metal(z(a))) {
+        return dative;
+    }
+    let explicit_valence = |a: usize, dative: &[bool]| -> i32 {
+        let idx = AtomIdx(a as u32);
+        let mut accum = 0.0f64;
+        for (_, bi) in mol.neighbors(idx) {
+            let b = mol.bond(bi);
+            accum += if dative[bi.0 as usize] {
+                if b.atom2 == idx { 1.0 } else { 0.0 }
+            } else {
+                match b.order {
+                    BondOrder::Aromatic => 1.5,
+                    BondOrder::Dative => {
+                        if b.atom2 == idx {
+                            1.0
+                        } else {
+                            0.0
+                        }
+                    }
+                    o => f64::from(o.order_int()),
+                }
+            };
+        }
+        accum += f64::from(mol.atom(idx).hydrogen_count.unwrap_or(0));
+        (accum + 0.1).round() as i32
+    };
+    let hypervalent = |a: usize, dative: &[bool]| -> bool {
+        let za = z(a);
+        if is_metal(za) || matches!(za, 1 | 2 | 9 | 10) {
+            return false;
+        }
+        let atom = mol.atom(AtomIdx(a as u32));
+        let eff = i32::from(za) - i32::from(atom.charge);
+        if eff <= 0 || eff > 118 {
+            return false;
+        }
+        let max_v = i32::from(MAX_VALENCE[eff as usize]);
+        let ev = explicit_valence(a, dative);
+        let total_degree = mol.degree(AtomIdx(a as u32))
+            + usize::from(chematic_core::implicit_hcount(mol, AtomIdx(a as u32)));
+        max_v > 0 && (ev > max_v || (ev == max_v && atom.aromatic && total_degree == 4))
+    };
+    let single_metal = |a: usize, bi: BondIdx| -> Option<usize> {
+        let b = mol.bond(bi);
+        let other = if b.atom1.0 as usize == a {
+            b.atom2.0 as usize
+        } else {
+            b.atom1.0 as usize
+        };
+        (matches!(b.order, BondOrder::Single | BondOrder::Up | BondOrder::Down)
+            && is_metal(z(other)))
+        .then_some(other)
+    };
+    let needs = (0..n).any(|a| {
+        hypervalent(a, &dative)
+            && mol
+                .neighbors(AtomIdx(a as u32))
+                .any(|(_, bi)| single_metal(a, bi).is_some())
+    });
+    if !needs {
+        return dative;
+    }
+    // RDKit ranks here before any ring perception (`fastFindRings`); ring
+    // membership only breaks ties, so chematic's SSSR stands in for it.
+    let rings: Vec<Vec<usize>> = crate::find_sssr(mol)
+        .rings()
+        .iter()
+        .map(|r| r.iter().map(|a| a.0 as usize).collect())
+        .collect();
+    let ranks = crate::rdkit_canon::rank_with_rings(mol, &rings, &[]);
+    let mut by_rank: Vec<usize> = (0..n).collect();
+    by_rank.sort_by_key(|&a| ranks[a]);
+    for a in by_rank {
+        if !hypervalent(a, &dative) {
+            continue;
+        }
+        let mut metals: Vec<(usize, BondIdx)> = mol
+            .neighbors(AtomIdx(a as u32))
+            .filter_map(|(_, bi)| {
+                if dative[bi.0 as usize] {
+                    None
+                } else {
+                    single_metal(a, bi).map(|m| (m, bi))
+                }
+            })
+            .collect();
+        if metals.is_empty() {
+            continue;
+        }
+        let n_dative = |m: usize, dative: &[bool]| {
+            mol.neighbors(AtomIdx(m as u32))
+                .filter(|(_, bi)| dative[bi.0 as usize] || mol.bond(*bi).order == BondOrder::Dative)
+                .count()
+        };
+        metals.sort_by(|x, y| {
+            let (dx, dy) = (n_dative(x.0, &dative), n_dative(y.0, &dative));
+            dx.cmp(&dy).then(ranks[y.0].cmp(&ranks[x.0]))
+        });
+        dative[metals[0].1.0 as usize] = true;
+    }
+    dative
 }
 
 impl Graph {
+    /// Bonds are numbered as RDKit numbers them ([`Molecule::rdkit_bond_order`]:
+    /// a SMILES's ring-closure bonds come last), so neighbour lists and the
+    /// searches that walk them visit atoms in RDKit's order.
     fn new(mol: &Molecule) -> Self {
-        let mut adj = vec![Vec::new(); mol.atom_count()];
+        let mut adj = vec![SmallVec::new(); mol.atom_count()];
         let mut ends = Vec::with_capacity(mol.bond_count());
-        for (bidx, bond) in mol.bonds() {
+        let mut orders = Vec::with_capacity(mol.bond_count());
+        let dative = organometallic_dative_bonds(mol);
+        for bidx in mol.rdkit_bond_order() {
+            let bond = mol.bond(bidx);
             let (a, b) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
-            debug_assert_eq!(bidx.0 as usize, ends.len());
+            let k = ends.len();
             ends.push((a, b));
-            adj[a].push((b, bidx.0 as usize));
-            adj[b].push((a, bidx.0 as usize));
+            orders.push(if dative[bidx.0 as usize] {
+                BondOrder::Dative
+            } else {
+                bond.order
+            });
+            adj[a].push((b, k));
+            adj[b].push((a, k));
         }
-        Self { adj, ends }
+        Self { adj, ends, orders }
     }
 
     fn bond_between(&self, a: usize, b: usize) -> Option<usize> {
@@ -110,17 +283,57 @@ fn smallest_rings_bfs(
     active: &[bool],
     forbidden: &[usize],
 ) -> Result<Vec<Vec<usize>>, TooBig> {
+    BFS_SCRATCH.with(|scratch| {
+        let mut scratch = scratch.borrow_mut();
+        let BfsScratch {
+            done,
+            parents,
+            depths,
+            queue,
+        } = &mut *scratch;
+        smallest_rings_bfs_in(g, root, active, forbidden, done, parents, depths, queue)
+    })
+}
+
+/// Per-thread buffers for [`smallest_rings_bfs`], which runs once per ring
+/// candidate (thousands of times on a large ring system).
+#[derive(Default)]
+struct BfsScratch {
+    done: Vec<u8>,
+    parents: Vec<isize>,
+    depths: Vec<usize>,
+    queue: VecDeque<usize>,
+}
+
+thread_local! {
+    static BFS_SCRATCH: std::cell::RefCell<BfsScratch> = std::cell::RefCell::new(BfsScratch::default());
+}
+
+#[allow(clippy::too_many_arguments)]
+fn smallest_rings_bfs_in(
+    g: &Graph,
+    root: usize,
+    active: &[bool],
+    forbidden: &[usize],
+    done: &mut Vec<u8>,
+    parents: &mut Vec<isize>,
+    depths: &mut Vec<usize>,
+    queue: &mut VecDeque<usize>,
+) -> Result<Vec<Vec<usize>>, TooBig> {
     const WHITE: u8 = 0;
     const GRAY: u8 = 1;
     const BLACK: u8 = 2;
     let n = g.adj.len();
-    let mut done = vec![WHITE; n];
+    done.clear();
+    done.resize(n, WHITE);
     for &f in forbidden {
         done[f] = BLACK;
     }
-    let mut parents: Vec<isize> = vec![-1; n];
-    let mut depths = vec![0usize; n];
-    let mut queue = VecDeque::new();
+    parents.clear();
+    parents.resize(n, -1);
+    depths.clear();
+    depths.resize(n, 0);
+    queue.clear();
     queue.push_back(root);
     let mut rings: Vec<Vec<usize>> = Vec::new();
     let mut cur_size = usize::MAX;
@@ -599,7 +812,7 @@ fn ring_eligible(order: BondOrder) -> bool {
 pub fn rdkit_sssr_ring_order(mol: &Molecule) -> Option<Vec<Vec<AtomIdx>>> {
     let g = Graph::new(mol);
     let n = mol.atom_count();
-    let mut active: Vec<bool> = mol.bonds().map(|(_, b)| ring_eligible(b.order)).collect();
+    let mut active: Vec<bool> = g.orders.iter().map(|&o| ring_eligible(o)).collect();
     let mut degrees: Vec<i32> = (0..n)
         .map(|a| g.adj[a].iter().filter(|&&(_, bi)| active[bi]).count() as i32)
         .collect();
@@ -755,6 +968,46 @@ mod tests {
             .into_iter()
             .map(|r| r.into_iter().map(|a| a.0).collect())
             .collect()
+    }
+
+    #[test]
+    fn ring_closure_bonds_follow_rdkit_creation_order() {
+        // RDKit closes SMILES rings after parsing, so ring-closure bonds come
+        // last in its bond list and its SSSR search meets them last; the
+        // order of the last two rings depends on it (RDKit 2026.03.6).
+        assert_eq!(
+            order("CC(=O)OC1CCC2(C)C3(C1)C=CC4(C5CCC(C(C)=O)C5(C)CC6OC246)C7C3C(=O)OC7=O"),
+            vec![
+                vec![25, 24, 26],
+                vec![15, 14, 21, 17, 16],
+                vec![29, 28, 27, 32, 31],
+                vec![4, 10, 9, 7, 6, 5],
+                vec![11, 12, 13, 27, 28, 9],
+                vec![23, 24, 26, 13, 14, 21],
+                vec![7, 26, 13, 27, 28, 9],
+                vec![11, 12, 13, 26, 7, 9]
+            ]
+        );
+    }
+
+    #[test]
+    fn hypervalent_carbanion_metal_bond_is_dative_like_rdkit() {
+        // `cleanUpOrganometallics` makes the four-bonded C- to Fe bond dative,
+        // so RDKit finds nine rings, one of them four-membered.
+        assert_eq!(
+            order("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10"),
+            vec![
+                vec![5, 6, 9],
+                vec![8, 7, 9],
+                vec![6, 7, 9],
+                vec![10, 9, 11],
+                vec![10, 9, 14],
+                vec![11, 12, 9],
+                vec![14, 13, 9],
+                vec![9, 12, 13],
+                vec![4, 8, 9, 5]
+            ]
+        );
     }
 
     #[test]

@@ -3055,68 +3055,68 @@ fn test_mmff94_energy_breakdown_from_coords_json_matches_python_oracle_all_angle
         EnergyOracle {
             dihedral_deg: 0.0,
             bond: 0.8902727980430658,
-            angle_term: 0.00046499350423254214,
-            stretch_bend: -0.007350084252858442,
+            angle_term: 0.0004649961837240289,
+            stretch_bend: -0.007350072624349097,
             torsion: 0.43499994978247686,
             oop: 0.0,
             vdw: 4.86559715216583,
             electrostatic: 0.0,
-            total: 6.183984809242747,
+            total: 6.183984823550748,
         },
         EnergyOracle {
             dihedral_deg: 60.0,
             bond: 0.8948441183316793,
-            angle_term: 0.0004158023578226278,
-            stretch_bend: -0.006857208726671617,
+            angle_term: 0.00041580476809263646,
+            stretch_bend: -0.006857197877936216,
             torsion: 0.5878467445463341,
             oop: 0.0,
             vdw: 1.0696678488886122,
             electrostatic: 0.0,
-            total: 2.5459173053977766,
+            total: 2.545917318656782,
         },
         EnergyOracle {
             dihedral_deg: 120.0,
             bond: 0.8781955726317947,
-            angle_term: 0.0004982437526120773,
-            stretch_bend: -0.0076120012966454376,
+            angle_term: 0.0004982466029795419,
+            stretch_bend: -0.007611989253759238,
             torsion: 0.8684749102195811,
             oop: 0.0,
             vdw: -0.03318537256496447,
             electrostatic: 0.0,
-            total: 1.706371352742378,
+            total: 1.7063713676356318,
         },
         EnergyOracle {
             dihedral_deg: 180.0,
             bond: 0.8969756143810449,
-            angle_term: 0.0005974131500818183,
-            stretch_bend: -0.008439350718638324,
+            angle_term: 0.0005974164646993181,
+            stretch_bend: -0.008439337366809239,
             torsion: 0.0,
             oop: 0.0,
             vdw: -0.06743117218961744,
             electrostatic: 0.0,
-            total: 0.8217025046228709,
+            total: 0.8217025212893175,
         },
         EnergyOracle {
             dihedral_deg: 240.0,
             bond: 0.9063335706281842,
-            angle_term: 0.0007291729835570543,
-            stretch_bend: -0.009325393516517342,
+            angle_term: 0.0007291768258095559,
+            stretch_bend: -0.009325378762886576,
             torsion: 0.8683134139870532,
             oop: 0.0,
             vdw: -0.03340525116801534,
             electrostatic: 0.0,
-            total: 1.7326455129142615,
+            total: 1.732645531510145,
         },
         EnergyOracle {
             dihedral_deg: 300.0,
             bond: 0.9054704500796205,
-            angle_term: 0.0005632607553765077,
-            stretch_bend: -0.008219837248585977,
+            angle_term: 0.0005632639172512582,
+            stretch_bend: -0.008219824244046915,
             torsion: 0.5884635963691149,
             oop: 0.0,
             vdw: 1.068637661894278,
             electrostatic: 0.0,
-            total: 2.554915131849804,
+            total: 2.5549151480162178,
         },
     ];
 
@@ -3699,4 +3699,85 @@ fn test_to_extxyz_json_rejects_coords_atom_count_mismatch() {
     let mol = mol_from_extxyz(EXTXYZ_WATER_JSON_FIXTURE).expect("mol_from_extxyz");
     let err = extxyz_frame_from_json_args(&mol.inner, "[[0.0,0.0,0.0]]", "{}");
     assert!(err.is_err(), "expected error for 1 coord row vs 3 atoms");
+}
+
+/// Atom points and (first atom, kind) per bond of a depict-data JSON.
+type DepictionPoints = (Vec<(f64, f64)>, Vec<(usize, String)>);
+
+fn depiction_points(json: &str) -> DepictionPoints {
+    let data: serde_json::Value = serde_json::from_str(json).expect("depict data JSON");
+    let points = data["atoms"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| (a["x"].as_f64().unwrap(), a["y"].as_f64().unwrap()))
+        .collect();
+    let bonds = data["bonds"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|b| {
+            (
+                b["atom1"].as_u64().unwrap() as usize,
+                b["kind"].as_str().unwrap().to_string(),
+            )
+        })
+        .collect();
+    (points, bonds)
+}
+
+#[test]
+fn depict_data_json_draws_declared_ez_and_wedges() {
+    let side = |p: (f64, f64), a: (f64, f64), b: (f64, f64)| {
+        (b.0 - a.0) * (p.1 - a.1) - (b.1 - a.1) * (p.0 - a.0)
+    };
+    for (smi, cis) in [("F/C=C\\F", true), ("F/C=C/F", false)] {
+        let (p, bonds) = depiction_points(&depict_data_json(&parse(smi)));
+        assert_eq!(
+            side(p[0], p[1], p[2]) * side(p[3], p[1], p[2]) > 0.0,
+            cis,
+            "{smi}"
+        );
+        // SMILES `/` `\` marks are not drawn as wedges.
+        assert!(bonds.iter().all(|(_, k)| k != "Up" && k != "Down"), "{smi}");
+    }
+    let (_, bonds) = depiction_points(&depict_data_json(&parse("N[C@@H](C)C(=O)O")));
+    let wedges: Vec<usize> = bonds
+        .iter()
+        .filter(|(_, k)| k == "Up" || k == "Down")
+        .map(|(a, _)| *a)
+        .collect();
+    assert_eq!(wedges, vec![1], "one wedge, drawn from the centre");
+}
+
+#[test]
+fn svg_reaction_and_preflight_paths_draw_stereo() {
+    // A wedge is a filled polygon in the SVG.
+    assert!(parse("N[C@@H](C)C(=O)O").depict_svg().contains("<polygon"));
+    assert!(!parse("NC(C)C(=O)O").depict_svg().contains("<polygon"));
+    let rxn = depict_reaction_svg("N[C@@H](C)C(=O)O>>N[C@@H](C)C(=O)OC").unwrap();
+    assert!(rxn.contains("<polygon"));
+    let report: serde_json::Value =
+        serde_json::from_str(&preflight_smiles_json("N[C@@H](C)C(=O)O", 300, 200)).unwrap();
+    assert!(report.get("error").is_none(), "{report}");
+}
+
+#[test]
+fn to_mol_block_lays_out_molecules_without_stereo() {
+    let block = to_mol_block(&parse("CCO"));
+    let coords: Vec<(f64, f64)> = block
+        .lines()
+        .skip(4)
+        .take(3)
+        .map(|l| {
+            let f: Vec<f64> = l
+                .split_whitespace()
+                .take(2)
+                .map(|x| x.parse().unwrap())
+                .collect();
+            (f[0], f[1])
+        })
+        .collect();
+    let bond = ((coords[0].0 - coords[1].0).powi(2) + (coords[0].1 - coords[1].1).powi(2)).sqrt();
+    assert!((bond - 1.5).abs() < 1e-3, "{block}");
 }

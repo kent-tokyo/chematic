@@ -641,6 +641,29 @@ pub fn mmff94_stbn(
         .or_else(|| mmff94_dfsb_stbn(atomic_num_i, atomic_num_j, atomic_num_k))
 }
 
+/// [`mmff94_stbn`] oriented as RDKit's `getMMFFStbnParams` orients a table
+/// row: for equal end types the row's `kbaIJK` belongs to the end whose
+/// bond has the higher MMFF bond type, so the constants swap when
+/// `bond_type_ij < bond_type_kj` (a conjugated diene's 2-2-2 angle).
+#[allow(clippy::too_many_arguments)]
+pub fn mmff94_stbn_oriented(
+    stretch_bend_type: u8,
+    type_i: u8,
+    type_j: u8,
+    type_k: u8,
+    bond_type_ij: u8,
+    bond_type_kj: u8,
+    atomic_num_i: u8,
+    atomic_num_j: u8,
+    atomic_num_k: u8,
+) -> Option<(f64, f64)> {
+    match mmff94_stbn_type_only(stretch_bend_type, type_i, type_j, type_k) {
+        Some((a, b)) if type_i == type_k && bond_type_ij < bond_type_kj => Some((b, a)),
+        Some(kba) => Some(kba),
+        None => mmff94_dfsb_stbn(atomic_num_i, atomic_num_j, atomic_num_k),
+    }
+}
+
 #[cfg(test)]
 mod dfsb_tests {
     use super::*;
@@ -679,6 +702,22 @@ mod rdkit_step_down_tests {
         // Exact rows still win.
         assert_eq!(mmff94_oop(3, 1, 7, 10), Some(0.129));
         assert_eq!(mmff94_oop(3, 1, 1, 7), Some(0.146)); // acetone
+    }
+
+    /// RDKit 2026.03.6 `GetMMFFStretchBendParams` on penta-1,3-diene's
+    /// C2-C3-C4 (types 2-2-2, stretch-bend type 1): kbaIJK goes with the
+    /// single (bond type 1) side.
+    #[test]
+    fn equal_end_types_orient_by_bond_type() {
+        assert_eq!(mmff94_stbn_type_only(1, 2, 2, 2), Some((0.25, 0.219)));
+        assert_eq!(
+            mmff94_stbn_oriented(1, 2, 2, 2, 1, 0, 6, 6, 6),
+            Some((0.25, 0.219))
+        );
+        assert_eq!(
+            mmff94_stbn_oriented(1, 2, 2, 2, 0, 1, 6, 6, 6),
+            Some((0.219, 0.25))
+        );
     }
 
     #[test]

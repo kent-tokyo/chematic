@@ -22,8 +22,7 @@ use rayon::prelude::*;
 
 use crate::mmff94_energy::{
     AngleEnergyParams, BondEnergyParams, TorsionEnergyParams, mmff94_angle_energy_resolved,
-    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
-    mmff94_vdw_combined,
+    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn_oriented, mmff94_vdw_combined,
 };
 use crate::mmff94_numeric::{
     NumericTypeError, assign_mmff94_numeric_types_with_view, mmff94_charges_numeric,
@@ -32,6 +31,21 @@ use crate::mmff94_numeric::{
 type CoordVec = Vec<[f64; 3]>;
 type LbfgsHistory = VecDeque<(CoordVec, CoordVec, f64)>;
 const LBFGS_HISTORY_SIZE: usize = 80;
+
+/// RDKit's `MDYNE_A_TO_KCAL_MOL` (mdyn Å → kcal/mol).
+const MDYNE_A_TO_KCAL_MOL: f64 = 143.9325;
+const DEG2RAD: f64 = std::f64::consts::PI / 180.0;
+/// Angle and out-of-plane prefactor, `MDYNE_A_TO_KCAL_MOL * DEG2RAD^2`
+/// as RDKit computes it (0.0438438…; Halgren rounds it to 0.043844).
+const MMFF_ANGLE_CONV: f64 = MDYNE_A_TO_KCAL_MOL * DEG2RAD * DEG2RAD;
+/// Magnitude of the cubic angle-bend constant, −0.4 rad⁻¹ in degrees as
+/// RDKit writes it (`cb = -0.006981317`; Halgren rounds it to 0.007).
+const MMFF_ANGLE_CUBIC: f64 = 0.006981317;
+/// Stretch-bend prefactor, `MDYNE_A_TO_KCAL_MOL * DEG2RAD` (2.512076…).
+const MMFF_STBN_CONV: f64 = MDYNE_A_TO_KCAL_MOL * DEG2RAD;
+/// RDKit's `nonBondedThresh` default: nonbonded pairs farther apart than
+/// this (Å) contribute nothing.
+const NONBONDED_THRESH: f64 = 100.0;
 type VdwPairs = Vec<PreparedVdwPair>;
 type ElectrostaticPairs = Vec<PreparedElectrostaticPair>;
 
@@ -53,6 +67,8 @@ struct PreparedAngle {
     j: usize,
     k: usize,
     params: AngleEnergyParams,
+    /// Central atom of a linear MMFF type: `143.9325 ka (1 + cos θ)`.
+    linear: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -171,6 +187,42 @@ pub struct EnergyBreakdown {
     pub total: f64,
 }
 
+/// Options for building an MMFF94 energy model.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Mmff94Options {
+    /// Leave out van der Waals and electrostatic pairs between disconnected
+    /// fragments (a salt's ions, a solvent molecule), as RDKit's
+    /// `MMFFGetMoleculeForceField` does by default
+    /// (`ignoreInterfragInteractions=True`). Off by default: chematic's
+    /// minimizer keeps the fragments of a salt from overlapping through them.
+    pub ignore_interfragment_interactions: bool,
+}
+
+/// Connected-component id of every atom.
+fn fragment_ids(mol: &Molecule) -> Vec<usize> {
+    let n = mol.atom_count();
+    let mut id = vec![usize::MAX; n];
+    let mut next = 0;
+    for start in 0..n {
+        if id[start] != usize::MAX {
+            continue;
+        }
+        let mut stack = vec![start];
+        id[start] = next;
+        while let Some(a) = stack.pop() {
+            for (nb, _) in mol.neighbors(AtomIdx(a as u32)) {
+                let b = nb.0 as usize;
+                if id[b] == usize::MAX {
+                    id[b] = next;
+                    stack.push(b);
+                }
+            }
+        }
+        next += 1;
+    }
+    id
+}
+
 /// Reusable MMFF94 energy evaluator for one molecular topology.
 ///
 /// Atom typing, MMFF94's aromatic view, charges, and ring perception are
@@ -191,10 +243,23 @@ pub struct Mmff94EnergyModel {
 impl Mmff94EnergyModel {
     /// Prepare the topology-dependent MMFF94 state once.
     pub fn new(mol: &Molecule) -> Result<Self, MinimizerError> {
+        Self::new_with_options(mol, Mmff94Options::default())
+    }
+
+    /// [`Self::new`] with [`Mmff94Options`].
+    pub fn new_with_options(
+        mol: &Molecule,
+        options: Mmff94Options,
+    ) -> Result<Self, MinimizerError> {
         let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
         let charges = mmff94_charges_numeric(mol).map_err(MinimizerError::ChargeCalculation)?;
         let rings = find_sssr(mol).rings().to_vec();
-        let (vdw_pairs, electrostatic_pairs) = build_nonbonded_pairs(mol, &types, &charges);
+        let (mut vdw_pairs, mut electrostatic_pairs) = build_nonbonded_pairs(mol, &types, &charges);
+        if options.ignore_interfragment_interactions {
+            let frag = fragment_ids(mol);
+            vdw_pairs.retain(|p| frag[p.i] == frag[p.j]);
+            electrostatic_pairs.retain(|p| frag[p.i] == frag[p.j]);
+        }
         let bonds = build_bond_terms(&mmff_mol, &types);
         let angles = build_angle_terms(&mmff_mol, &types, &rings);
         let stretch_bends = build_stretch_bend_terms(&mmff_mol, &types, &rings);
@@ -272,7 +337,7 @@ impl Mmff94EnergyModel {
     /// same coordinate-dependent cutoff boundary.
     pub fn cutoff_nonbonded_energy(&self, coords: &[[f64; 3]]) -> (f64, f64) {
         (
-            vdw_energy_pairs(coords, &self.vdw_pairs),
+            vdw_energy_cutoff_pairs(coords, &self.vdw_pairs),
             electrostatic_energy_cutoff_pairs(coords, &self.electrostatic_pairs),
         )
     }
@@ -403,6 +468,47 @@ impl Mmff94EnergyModel {
         F: Fn(&[[f64; 3]]) -> bool,
     {
         minimize_mmff94_lbfgs_prepared_with_mode(self, coords, max_iter, true, false, accept)
+    }
+
+    /// Dense BFGS with RDKit's line search and gradient scaling
+    /// (`BFGSOpt::minimize` as called by `ForceField::minimize`).
+    ///
+    /// With [`Mmff94Convergence::Rdkit`] this is RDKit's minimizer: from the
+    /// same coordinates it follows RDKit's trajectory, so `MMFFOptimizeMolecule
+    /// (maxIters=n)` and this method with `max_iter = n` reach the same
+    /// geometry (to rounding). With [`Mmff94Convergence::MaxGradient`] it
+    /// runs the same algorithm to chematic's absolute residual-force test,
+    /// never accepts an energy increase and bounds each line search's first
+    /// trial by [`BFGS_MAX_COORDINATE_STEP`]. The inverse Hessian is a dense
+    /// `3N x 3N` matrix; above [`BFGS_DENSE_MAX_ATOMS`] atoms the call
+    /// delegates to [`Self::minimize_lbfgs_bounded_analytic`] (MaxGradient)
+    /// so memory stays bounded.
+    pub fn minimize_bfgs(
+        &self,
+        coords: &mut [[f64; 3]],
+        max_iter: usize,
+        convergence: Mmff94Convergence,
+    ) -> Result<MinimizeResult, MinimizerError> {
+        minimize_mmff94_bfgs_prepared(self, coords, max_iter, convergence, |_| true)
+    }
+
+    /// [`Self::minimize_bfgs`] with a caller-supplied acceptance constraint.
+    ///
+    /// A line-search proposal the predicate rejects is backtracked like one
+    /// that fails the sufficient-decrease test. If no admissible step is
+    /// left, the last accepted coordinates are kept and the run reports
+    /// [`Mmff94TerminationReason::ConstraintRejectedFallback`].
+    pub fn minimize_bfgs_with_constraint<F>(
+        &self,
+        coords: &mut [[f64; 3]],
+        max_iter: usize,
+        convergence: Mmff94Convergence,
+        accept: F,
+    ) -> Result<MinimizeResult, MinimizerError>
+    where
+        F: Fn(&[[f64; 3]]) -> bool,
+    {
+        minimize_mmff94_bfgs_prepared(self, coords, max_iter, convergence, accept)
     }
 
     /// Experimental analytic L-BFGS using the bounded 10 Å coordinate-
@@ -551,6 +657,16 @@ pub fn mmff94_energy_breakdown(
     coords: &[[f64; 3]],
 ) -> Result<EnergyBreakdown, MinimizerError> {
     Ok(Mmff94EnergyModel::new(mol)?.energy_breakdown(coords))
+}
+
+/// [`mmff94_energy_breakdown`] with [`Mmff94Options`] (e.g. RDKit's default
+/// of no interactions between fragments).
+pub fn mmff94_energy_breakdown_with_options(
+    mol: &Molecule,
+    coords: &[[f64; 3]],
+    options: Mmff94Options,
+) -> Result<EnergyBreakdown, MinimizerError> {
+    Ok(Mmff94EnergyModel::new_with_options(mol, options)?.energy_breakdown(coords))
 }
 
 /// Minimize molecular geometry using the full MMFF94 force field.
@@ -869,6 +985,390 @@ where
     })
 }
 
+/// Largest molecule (atoms, hydrogens included) for which
+/// [`Mmff94EnergyModel::minimize_bfgs`] keeps a dense inverse Hessian
+/// (1,500 x 1,500 doubles, 18 MB); larger molecules use L-BFGS.
+pub const BFGS_DENSE_MAX_ATOMS: usize = 500;
+
+/// Longest move (Å) along any coordinate that one line search of
+/// [`Mmff94EnergyModel::minimize_bfgs`] starts from under
+/// [`Mmff94Convergence::MaxGradient`]. RDKit's first steps can move an atom
+/// several Å, which on the A6 corpus carried strained stereocentres across
+/// their plane; 0.2-0.5 Å give the same successes and nearly the same
+/// converged rows, 0.3 is used.
+pub const BFGS_MAX_COORDINATE_STEP: f64 = 0.3;
+
+/// Convergence test for [`Mmff94EnergyModel::minimize_bfgs`].
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Mmff94Convergence {
+    /// Every gradient component below this value (kcal/mol/Å). chematic's
+    /// L-BFGS and the 3D pipeline use 1e-4.
+    MaxGradient(f64),
+    /// RDKit's `BFGSOpt` tests: the step test (`TOLX` = 1.2e-7, relative
+    /// to coordinates) or `max |g_i| max(|x_i|, 1) / max(|E| s, 1) <
+    /// grad_tol`, with `g` RDKit's scaled gradient and `s` its scale factor.
+    /// `MMFFOptimizeMolecule` passes `grad_tol = 1e-4`. A converged run can
+    /// keep residual forces well above 1e-4 kcal/mol/Å.
+    Rdkit {
+        /// RDKit's `forceTol` (1e-4 by default).
+        grad_tol: f64,
+    },
+}
+
+impl Default for Mmff94Convergence {
+    fn default() -> Self {
+        Mmff94Convergence::MaxGradient(1e-4)
+    }
+}
+
+/// RDKit `ForceFieldsHelper::calcGradient`: scales the gradient by 0.1 and,
+/// when a component still exceeds 10, halves the factor until none does.
+/// Returns (RDKit's returned scale, largest unscaled component).
+fn rdkit_scaled_gradient(model: &Mmff94EnergyModel, x: &[[f64; 3]], out: &mut [f64]) -> (f64, f64) {
+    let g = model.bounded_analytic_gradient(x);
+    let mut raw_max = 0.0_f64;
+    let mut scaled_max = 0.0_f64;
+    for (o, v) in out.iter_mut().zip(g.iter().flat_map(|v| v.iter())) {
+        raw_max = raw_max.max(v.abs());
+        *o = v * 0.1;
+        scaled_max = scaled_max.max(o.abs());
+    }
+    let mut scale = 0.1;
+    if scaled_max > 10.0 {
+        while scaled_max * scale > 10.0 {
+            scale *= 0.5;
+        }
+        for o in out.iter_mut() {
+            *o *= scale;
+        }
+    }
+    (scale, raw_max)
+}
+
+enum BfgsLineSearch {
+    /// Sufficient decrease met by an admissible point.
+    Accepted(f64),
+    /// RDKit's `resCode = 1`: the step fell below its position-scaled
+    /// minimum. Carries the last trial and whether it was admissible.
+    StepTooSmall(f64, bool),
+    /// The direction is not a descent direction.
+    BadDirection,
+}
+
+/// RDKit `BFGSOpt::linearSearch` (Numerical Recipes `lnsrch`): Armijo
+/// backtracking with quadratic then cubic interpolation. A point the caller's
+/// predicate rejects is treated as failing the decrease test and halves the
+/// step without entering the interpolation.
+#[allow(clippy::too_many_arguments)]
+fn bfgs_line_search<F>(
+    model: &Mmff94EnergyModel,
+    x3: &[[f64; 3]],
+    f0: f64,
+    g: &[f64],
+    dir: &mut [f64],
+    max_step: f64,
+    max_component: Option<f64>,
+    out3: &mut [[f64; 3]],
+    accept: &F,
+) -> BfgsLineSearch
+where
+    F: Fn(&[[f64; 3]]) -> bool,
+{
+    const FUNCTOL: f64 = 1e-4;
+    const MOVETOL: f64 = 1e-7;
+    const MAX_ITER: usize = 1000;
+    let x = x3.as_flattened();
+    let len = dir.iter().map(|d| d * d).sum::<f64>().sqrt();
+    if len > max_step {
+        for d in dir.iter_mut() {
+            *d *= max_step / len;
+        }
+    }
+    if let Some(cap) = max_component {
+        let big = dir.iter().fold(0.0_f64, |m, d| m.max(d.abs()));
+        if big > cap {
+            for d in dir.iter_mut() {
+                *d *= cap / big;
+            }
+        }
+    }
+    let slope: f64 = dir.iter().zip(g).map(|(d, gi)| d * gi).sum();
+    // Also rejects a NaN slope.
+    if slope.partial_cmp(&0.0) != Some(std::cmp::Ordering::Less) {
+        return BfgsLineSearch::BadDirection;
+    }
+    let test = dir
+        .iter()
+        .zip(x)
+        .map(|(d, xi)| d.abs() / xi.abs().max(1.0))
+        .fold(0.0_f64, f64::max);
+    let lambda_min = MOVETOL / test;
+    let mut lambda = 1.0_f64;
+    let mut lambda2 = 0.0_f64;
+    let mut f2 = 0.0_f64;
+    let mut have_previous = false;
+    let mut last = (f0, false);
+    for _ in 0..MAX_ITER {
+        if lambda < lambda_min {
+            return BfgsLineSearch::StepTooSmall(last.0, last.1);
+        }
+        for ((o, xi), d) in out3.as_flattened_mut().iter_mut().zip(x).zip(dir.iter()) {
+            *o = xi + lambda * d;
+        }
+        let f = model.energy(out3);
+        let admissible = f.is_finite() && accept(out3);
+        last = (f, admissible);
+        if admissible && f - f0 <= FUNCTOL * lambda * slope {
+            return BfgsLineSearch::Accepted(f);
+        }
+        let next = if !admissible {
+            0.5 * lambda
+        } else if !have_previous {
+            -slope / (2.0 * (f - f0 - slope))
+        } else {
+            let rhs1 = f - f0 - lambda * slope;
+            let rhs2 = f2 - f0 - lambda2 * slope;
+            let a = (rhs1 / (lambda * lambda) - rhs2 / (lambda2 * lambda2)) / (lambda - lambda2);
+            let b = (-lambda2 * rhs1 / (lambda * lambda) + lambda * rhs2 / (lambda2 * lambda2))
+                / (lambda - lambda2);
+            let t = if a == 0.0 {
+                -slope / (2.0 * b)
+            } else {
+                let disc = b * b - 3.0 * a * slope;
+                if disc < 0.0 {
+                    0.5 * lambda
+                } else if b <= 0.0 {
+                    (-b + disc.sqrt()) / (3.0 * a)
+                } else {
+                    -slope / (b + disc.sqrt())
+                }
+            };
+            t.min(0.5 * lambda)
+        };
+        if admissible {
+            lambda2 = lambda;
+            f2 = f;
+            have_previous = true;
+        }
+        // NaN-safe: a non-finite interpolant falls back to the 0.1 floor.
+        lambda = if next.is_nan() {
+            0.1 * lambda
+        } else {
+            next.max(0.1 * lambda)
+        };
+    }
+    out3.copy_from_slice(x3);
+    BfgsLineSearch::StepTooSmall(f0, false)
+}
+
+fn minimize_mmff94_bfgs_prepared<F>(
+    model: &Mmff94EnergyModel,
+    coords: &mut [[f64; 3]],
+    max_iter: usize,
+    convergence: Mmff94Convergence,
+    accept: F,
+) -> Result<MinimizeResult, MinimizerError>
+where
+    F: Fn(&[[f64; 3]]) -> bool,
+{
+    const EPS: f64 = 3e-8;
+    const TOLX: f64 = 4.0 * EPS;
+    const MAXSTEP: f64 = 100.0;
+
+    let n = model.mmff_mol.atom_count();
+    if n <= 1 {
+        return Ok(MinimizeResult {
+            energy: 0.0,
+            rmsd: 0.0,
+            converged: true,
+            iterations: 0,
+            termination: Mmff94TerminationReason::GradientConverged,
+        });
+    }
+    if n > BFGS_DENSE_MAX_ATOMS {
+        return minimize_mmff94_lbfgs_prepared_with_mode(
+            model, coords, max_iter, true, false, accept,
+        );
+    }
+    let abs_tol = match convergence {
+        Mmff94Convergence::MaxGradient(t) => Some(t),
+        Mmff94Convergence::Rdkit { .. } => None,
+    };
+
+    let dim = 3 * n;
+    // Under the absolute test each line search starts no farther than
+    // BFGS_MAX_COORDINATE_STEP along any coordinate (RDKit's only bound is
+    // the overall MAXSTEP); see that constant.
+    let max_component = abs_tol.map(|_| BFGS_MAX_COORDINATE_STEP);
+    let initial = coords.to_vec();
+    let mut x3: Vec<[f64; 3]> = coords.to_vec();
+    let mut g = vec![0.0; dim];
+    let mut dg = vec![0.0; dim];
+    let mut hdg = vec![0.0; dim];
+    let mut xi = vec![0.0; dim];
+    let mut trial3 = vec![[0.0; 3]; n];
+    let mut inv_h = vec![0.0; dim * dim];
+    let reset_inverse_hessian = |h: &mut [f64]| {
+        h.fill(0.0);
+        for i in 0..dim {
+            h[i * dim + i] = 1.0;
+        }
+    };
+    reset_inverse_hessian(&mut inv_h);
+    let mut hessian_is_identity = true;
+
+    let mut f0 = model.energy(coords);
+    let (_, mut raw_max) = rdkit_scaled_gradient(model, &x3, &mut g);
+    for (d, gi) in xi.iter_mut().zip(&g) {
+        *d = -gi;
+    }
+    let norm = x3.as_flattened().iter().map(|v| v * v).sum::<f64>().sqrt();
+    let max_step = MAXSTEP * norm.max(dim as f64);
+
+    let mut iters = 0usize;
+    let mut converged = false;
+    let mut termination = Mmff94TerminationReason::IterationLimit;
+
+    'outer: {
+        if abs_tol.is_some_and(|t| raw_max < t) {
+            converged = true;
+            termination = Mmff94TerminationReason::GradientConverged;
+            break 'outer;
+        }
+        for _ in 0..max_iter {
+            iters += 1;
+            let search = bfgs_line_search(
+                model,
+                &x3,
+                f0,
+                &g,
+                &mut xi,
+                max_step,
+                max_component,
+                &mut trial3,
+                &accept,
+            );
+            let f_new = match search {
+                BfgsLineSearch::Accepted(f) => f,
+                BfgsLineSearch::StepTooSmall(f, admissible) if abs_tol.is_none() && admissible => f,
+                BfgsLineSearch::BadDirection | BfgsLineSearch::StepTooSmall(..) => {
+                    if !hessian_is_identity {
+                        // Restart from steepest descent before giving up.
+                        reset_inverse_hessian(&mut inv_h);
+                        hessian_is_identity = true;
+                        for (d, gi) in xi.iter_mut().zip(&g) {
+                            *d = -gi;
+                        }
+                        continue;
+                    }
+                    if abs_tol.is_none() && matches!(search, BfgsLineSearch::StepTooSmall(..)) {
+                        // RDKit: a collapsed step on the steepest-descent
+                        // direction ends the run as converged (TOLX).
+                        converged = true;
+                        termination = Mmff94TerminationReason::GradientConverged;
+                        break 'outer;
+                    }
+                    termination = Mmff94TerminationReason::ConstraintRejectedFallback;
+                    break 'outer;
+                }
+            };
+            f0 = f_new;
+            let mut step_test = 0.0_f64;
+            let x = x3.as_flattened_mut();
+            let trial = trial3.as_flattened();
+            for i in 0..dim {
+                xi[i] = trial[i] - x[i];
+                x[i] = trial[i];
+                step_test = step_test.max(xi[i].abs() / x[i].abs().max(1.0));
+                dg[i] = g[i];
+            }
+            if abs_tol.is_none() && step_test < TOLX {
+                converged = true;
+                termination = Mmff94TerminationReason::GradientConverged;
+                break 'outer;
+            }
+            let (scale, raw) = rdkit_scaled_gradient(model, &x3, &mut g);
+            raw_max = raw;
+            match convergence {
+                Mmff94Convergence::MaxGradient(t) => {
+                    if raw_max < t {
+                        converged = true;
+                        termination = Mmff94TerminationReason::GradientConverged;
+                        break 'outer;
+                    }
+                }
+                Mmff94Convergence::Rdkit { grad_tol } => {
+                    let term = (f0.abs() * scale).max(1.0);
+                    let test = g
+                        .iter()
+                        .zip(x3.as_flattened())
+                        .map(|(gi, xi)| gi.abs() * xi.abs().max(1.0))
+                        .fold(0.0_f64, f64::max)
+                        / term;
+                    if test < grad_tol {
+                        converged = true;
+                        termination = Mmff94TerminationReason::GradientConverged;
+                        break 'outer;
+                    }
+                }
+            }
+            for i in 0..dim {
+                dg[i] = g[i] - dg[i];
+            }
+            // BFGS inverse-Hessian update (Numerical Recipes dfpmin).
+            let (mut fac, mut fae, mut sum_dg, mut sum_xi) = (0.0, 0.0, 0.0, 0.0);
+            for i in 0..dim {
+                let row = &inv_h[i * dim..(i + 1) * dim];
+                hdg[i] = row.iter().zip(&dg).map(|(h, d)| h * d).sum();
+                fac += dg[i] * xi[i];
+                fae += dg[i] * hdg[i];
+                sum_dg += dg[i] * dg[i];
+                sum_xi += xi[i] * xi[i];
+            }
+            if fac > (EPS * sum_dg * sum_xi).sqrt() {
+                let fac = 1.0 / fac;
+                let fad = 1.0 / fae;
+                for i in 0..dim {
+                    dg[i] = fac * xi[i] - fad * hdg[i];
+                }
+                for i in 0..dim {
+                    let (pxi, hdgi, dgi) = (fac * xi[i], fad * hdg[i], fae * dg[i]);
+                    for j in i..dim {
+                        let v = inv_h[i * dim + j] + pxi * xi[j] - hdgi * hdg[j] + dgi * dg[j];
+                        inv_h[i * dim + j] = v;
+                        inv_h[j * dim + i] = v;
+                    }
+                }
+                hessian_is_identity = false;
+            }
+            for i in 0..dim {
+                let row = &inv_h[i * dim..(i + 1) * dim];
+                xi[i] = -row.iter().zip(&g).map(|(h, gi)| h * gi).sum::<f64>();
+            }
+        }
+    }
+    let _ = raw_max;
+    coords.copy_from_slice(&x3);
+    let rmsd = {
+        let sum: f64 = coords
+            .iter()
+            .zip(initial.iter())
+            .map(|(c, i0)| {
+                let d = [c[0] - i0[0], c[1] - i0[1], c[2] - i0[2]];
+                dot3(d, d)
+            })
+            .sum();
+        (sum / n as f64).sqrt()
+    };
+    Ok(MinimizeResult {
+        energy: f0,
+        rmsd,
+        converged,
+        iterations: iters,
+        termination,
+    })
+}
+
 /// L-BFGS two-loop recursion: compute search direction p = -H_k × g.
 fn lbfgs_direction(g: &[[f64; 3]], history: &LbfgsHistory) -> Vec<[f64; 3]> {
     let m = history.len();
@@ -1062,6 +1562,7 @@ fn build_angle_terms(mol: &Molecule, types: &[u8], rings: &[Vec<AtomIdx>]) -> Ve
                         j: j_idx,
                         k,
                         params,
+                        linear: central_type_is_linear(types[j_idx]),
                     });
                 }
             }
@@ -1093,10 +1594,7 @@ fn build_torsion_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedTorsion> {
                 if l == j || l == i {
                     continue;
                 }
-                let tt = torsion_type_for(mol, i, j, k, l, types[i], types[j], types[k], types[l]);
-                if let Some(params) =
-                    mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l])
-                {
+                if let Some(params) = mmff94_torsion_term_params(mol, i, j, k, l, types) {
                     terms.push(PreparedTorsion { i, j, k, l, params });
                 }
             }
@@ -1124,16 +1622,21 @@ fn build_oop_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedOop> {
             types[neighbors[1]],
             types[neighbors[2]],
         ) {
-            terms.push(PreparedOop {
-                i: neighbors[0],
-                j,
-                k: neighbors[1],
-                l: neighbors[2],
-                koop,
-            });
+            // One Wilson angle per neighbour out of the plane of the other
+            // two, all with the centre's koop (MMFF eq. 6; RDKit adds the
+            // three contributions too).
+            for [i, k, l] in oop_permutations(&neighbors) {
+                terms.push(PreparedOop { i, j, k, l, koop });
+            }
         }
     }
     terms
+}
+
+/// The three (i, k, l) choices of a trigonal centre's out-of-plane terms,
+/// in RDKit's order: l = third, second, first neighbour.
+fn oop_permutations(n: &[usize]) -> [[usize; 3]; 3] {
+    [[n[0], n[1], n[2]], [n[0], n[2], n[1]], [n[1], n[2], n[0]]]
 }
 
 /// MMFF94 adds no stretch-bend term at a linear central atom (MMFFPROP
@@ -1162,11 +1665,13 @@ fn build_stretch_bend_terms(
                     bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
                 let bt_kj =
                     bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
-                let Some((kba_ij, kba_kj)) = mmff94_stbn(
+                let Some((kba_ij, kba_kj)) = mmff94_stbn_oriented(
                     stretch_bend_type_for(at, types[i], types[k], bt_ij, bt_kj),
                     types[i],
                     types[j_idx],
                     types[k],
+                    bt_ij,
+                    bt_kj,
                     mol.atom(AtomIdx(i as u32)).element.atomic_number(),
                     mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
                     mol.atom(AtomIdx(k as u32)).element.atomic_number(),
@@ -1210,7 +1715,7 @@ fn build_stretch_bend_terms(
 }
 
 fn prepared_bond_energy(coords: &[[f64; 3]], terms: &[PreparedBond]) -> f64 {
-    const KB_CONV: f64 = 143.9325;
+    const KB_CONV: f64 = MDYNE_A_TO_KCAL_MOL;
     const CS: f64 = 2.0;
     terms
         .iter()
@@ -1223,20 +1728,31 @@ fn prepared_bond_energy(coords: &[[f64; 3]], terms: &[PreparedBond]) -> f64 {
 }
 
 fn prepared_angle_energy(coords: &[[f64; 3]], terms: &[PreparedAngle]) -> f64 {
-    const KA_CONV: f64 = 0.043844;
-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     terms
         .iter()
         .map(|term| {
-            let dt = cos_angle(coords[term.i], coords[term.j], coords[term.k]).dacos() * RAD_TO_DEG
-                - term.params.theta0;
-            (KA_CONV * term.params.ka / 2.0) * dt * dt * (1.0 - 0.007 * dt)
+            angle_bend_energy(
+                cos_angle(coords[term.i], coords[term.j], coords[term.k]),
+                term.params.theta0,
+                term.params.ka,
+                term.linear,
+            )
         })
         .sum()
 }
 
+/// RDKit's `calcAngleBendEnergy`: `0.5 c2 ka Δθ² (1 + cb Δθ)` (Δθ in
+/// degrees), or `143.9325 ka (1 + cos θ)` at a linear central atom.
+fn angle_bend_energy(cos_theta: f64, theta0: f64, ka: f64, linear: bool) -> f64 {
+    if linear {
+        return MDYNE_A_TO_KCAL_MOL * ka * (1.0 + cos_theta);
+    }
+    let dt = cos_theta.dacos() / DEG2RAD - theta0;
+    0.5 * MMFF_ANGLE_CONV * ka * dt * dt * (1.0 - MMFF_ANGLE_CUBIC * dt)
+}
+
 fn prepared_stretch_bend_energy(coords: &[[f64; 3]], terms: &[PreparedStretchBend]) -> f64 {
-    const CONV: f64 = 2.51210;
+    const CONV: f64 = MMFF_STBN_CONV;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     terms
         .iter()
@@ -1303,7 +1819,7 @@ fn prepared_torsion_gradient(coords: &[[f64; 3]], terms: &[PreparedTorsion]) -> 
 }
 
 fn prepared_oop_energy(coords: &[[f64; 3]], terms: &[PreparedOop]) -> f64 {
-    const CONV: f64 = 0.043844;
+    const CONV: f64 = MMFF_ANGLE_CONV;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     terms
         .iter()
@@ -1325,7 +1841,7 @@ fn prepared_oop_energy(coords: &[[f64; 3]], terms: &[PreparedOop]) -> f64 {
 }
 
 fn prepared_oop_gradient(coords: &[[f64; 3]], terms: &[PreparedOop]) -> Vec<[f64; 3]> {
-    const CONV: f64 = 0.043844;
+    const CONV: f64 = MMFF_ANGLE_CONV;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     let mut gradient = vec![[0.0; 3]; coords.len()];
     for term in terms {
@@ -1500,7 +2016,25 @@ fn prepared_vdw_neighbor_list<'a>(
     active
 }
 
+/// vdW energy over every prepared pair within RDKit's `nonBondedThresh`
+/// (100 Å). The buffered 14-7 form is finite at any distance, coincident
+/// atoms included, as in RDKit.
 fn vdw_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedVdwPair]) -> f64 {
+    pairs
+        .iter()
+        .map(|pair| {
+            let r = dist(coords[pair.i], coords[pair.j]);
+            if r <= NONBONDED_THRESH {
+                mmff94_vdw_energy_value(r, pair.r_star, pair.epsilon)
+            } else {
+                0.0
+            }
+        })
+        .sum()
+}
+
+/// vdW energy over the pairs within the bounded 10 Å cutoff.
+fn vdw_energy_cutoff_pairs(coords: &[[f64; 3]], pairs: &[PreparedVdwPair]) -> f64 {
     let mut energy = 0.0;
     let mut add_pair = |pair: &PreparedVdwPair| {
         let r = dist(coords[pair.i], coords[pair.j]);
@@ -1529,7 +2063,12 @@ fn electrostatic_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedElectrostati
     pairs
         .iter()
         .map(|pair| {
-            pair.scale_charge_product * COULOMB / (dist(coords[pair.i], coords[pair.j]) + DELTA)
+            let r = dist(coords[pair.i], coords[pair.j]);
+            if r <= NONBONDED_THRESH {
+                pair.scale_charge_product * COULOMB / (r + DELTA)
+            } else {
+                0.0
+            }
         })
         .sum()
 }
@@ -1681,19 +2220,13 @@ fn prepared_nonbonded_gradient(
             coords[pair.i][2] - coords[pair.j][2],
         ];
         let r = dist(coords[pair.i], coords[pair.j]);
-        if r > 0.01 && r <= 10.0 {
+        if r <= NONBONDED_THRESH {
             let radial = mmff94_vdw_radial_derivative(r, pair.r_star, pair.epsilon);
             add_pair(&mut gradient, pair.i, pair.j, radial, delta, r);
         }
     };
-    if coords.len() <= DIRECT_VDW_ATOM_THRESHOLD {
-        for pair in vdw_pairs {
-            add_vdw(pair);
-        }
-    } else {
-        for pair in prepared_vdw_neighbor_list(coords, vdw_pairs) {
-            add_vdw(pair);
-        }
+    for pair in vdw_pairs {
+        add_vdw(pair);
     }
     for pair in electrostatic_pairs {
         let delta = [
@@ -1702,6 +2235,9 @@ fn prepared_nonbonded_gradient(
             coords[pair.i][2] - coords[pair.j][2],
         ];
         let r = dist(coords[pair.i], coords[pair.j]);
+        if r > NONBONDED_THRESH {
+            continue;
+        }
         let radial = -pair.scale_charge_product * COULOMB / (r + DELTA).powi(2);
         add_pair(&mut gradient, pair.i, pair.j, radial, delta, r);
     }
@@ -1713,9 +2249,9 @@ fn prepared_bond_angle_gradient(
     bonds: &[PreparedBond],
     angles: &[PreparedAngle],
 ) -> Vec<[f64; 3]> {
-    const KB_CONV: f64 = 143.9325;
+    const KB_CONV: f64 = MDYNE_A_TO_KCAL_MOL;
     const CS: f64 = 2.0;
-    const KA_CONV: f64 = 0.043844;
+    const KA_CONV: f64 = MMFF_ANGLE_CONV;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     let mut gradient = vec![[0.0; 3]; coords.len()];
     let add_pair =
@@ -1765,11 +2301,15 @@ fn prepared_bond_angle_gradient(
         if sin_theta <= 1e-12 {
             continue;
         }
-        let theta = cos_theta.dacos() * RAD_TO_DEG;
-        let dt = theta - term.params.theta0;
-        let prefactor = KA_CONV * term.params.ka / 2.0;
-        let d_e_d_theta = prefactor * (2.0 * dt - 3.0 * 0.007 * dt * dt);
-        let d_e_d_cos = -RAD_TO_DEG * d_e_d_theta / sin_theta;
+        let d_e_d_cos = if term.linear {
+            MDYNE_A_TO_KCAL_MOL * term.params.ka
+        } else {
+            let theta = cos_theta.dacos() * RAD_TO_DEG;
+            let dt = theta - term.params.theta0;
+            let prefactor = KA_CONV * term.params.ka / 2.0;
+            let d_e_d_theta = prefactor * (2.0 * dt - 3.0 * MMFF_ANGLE_CUBIC * dt * dt);
+            -RAD_TO_DEG * d_e_d_theta / sin_theta
+        };
         let inv = 1.0 / (lu * lv);
         let dcos_di = [
             v[0] * inv - cos_theta * u[0] / u2,
@@ -1796,7 +2336,7 @@ fn prepared_stretch_bend_gradient(
     coords: &[[f64; 3]],
     terms: &[PreparedStretchBend],
 ) -> Vec<[f64; 3]> {
-    const CONV: f64 = 2.51210;
+    const CONV: f64 = MMFF_STBN_CONV;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     let mut gradient = vec![[0.0; 3]; coords.len()];
     for term in terms {
@@ -1866,16 +2406,16 @@ fn total_energy(
 }
 
 /// Stretch-bend coupling (Halgren MMFF.V eq. 4)
-/// E_sb = 2.51210 × (kba_ijk × Δr_ij + kba_kji × Δr_kj) × Δθ   [kcal/mol, Δθ in degrees]
+/// E_sb = 2.512076 × (kba_ijk × Δr_ij + kba_kji × Δr_kj) × Δθ   [kcal/mol, Δθ in degrees]
 fn stretch_bend_energy(
     mol: &Molecule,
     coords: &[[f64; 3]],
     types: &[u8],
     rings: &[Vec<AtomIdx>],
 ) -> f64 {
-    const CONV: f64 = 2.51210; // md/Å → kcal/(mol·Å·deg)
+    const CONV: f64 = MMFF_STBN_CONV; // md/Å → kcal/(mol·Å·deg)
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
-    const KB_CONV: f64 = 143.9325;
+    const KB_CONV: f64 = MDYNE_A_TO_KCAL_MOL;
     const CS: f64 = 2.0;
     let mut energy = 0.0;
     for j_idx in 0..mol.atom_count() {
@@ -1892,11 +2432,13 @@ fn stretch_bend_energy(
                 let bt_kj =
                     bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
                 let sbt = stretch_bend_type_for(at, types[i], types[k], bt_ij, bt_kj);
-                if let Some((kba_ijk, kba_kji)) = mmff94_stbn(
+                if let Some((kba_ijk, kba_kji)) = mmff94_stbn_oriented(
                     sbt,
                     types[i],
                     types[j_idx],
                     types[k],
+                    bt_ij,
+                    bt_kj,
                     mol.atom(AtomIdx(i as u32)).element.atomic_number(),
                     mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
                     mol.atom(AtomIdx(k as u32)).element.atomic_number(),
@@ -1942,16 +2484,19 @@ fn stretch_bend_energy(
 /// [`oop_energy`] below. `pub` so downstream coverage-checkers (e.g.
 /// `chematic-3d`'s MMFF94 bridge) can mirror exactly which atoms this
 /// module's own energy loop would evaluate, instead of hand-copying this
-/// list and risking drift.
+/// list and risking drift. Every centre type with an MMFFOOP row is listed,
+/// as RDKit adds a term at any three-connected atom its table covers: NCN+
+/// (55) and the N-oxide nitrogen NPOX (69) carry barriers; NR (8), S=O (17),
+/// tricoordinate P (26) and SO2M (73) have zero rows.
 pub const OOP_SP2_TYPES: &[u8] = &[
-    2, 3, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57, 58, 59, 63, 64, 65, 66, 67, 76,
-    78, 79, 80, 81, 82,
+    2, 3, 8, 9, 10, 17, 26, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 55, 56, 57, 58, 59, 63, 64, 65,
+    66, 67, 69, 73, 76, 78, 79, 80, 81, 82,
 ];
 
 /// Out-of-plane bending for trigonal sp2 centers (Halgren MMFF.VI eq. 6)
 /// E_oop = (0.043844 × koop / 2) × χ²  (χ in degrees: Wilson angle of out-of-plane distortion)
 fn oop_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
-    const CONV: f64 = 0.043844;
+    const CONV: f64 = MMFF_ANGLE_CONV;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     let mut energy = 0.0;
     for j_idx in 0..mol.atom_count() {
@@ -1963,8 +2508,15 @@ fn oop_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
         if neighbors.len() != 3 {
             continue; // OOP only for exactly 3 substituents (trigonal)
         }
-        let [i, k, l] = [neighbors[0], neighbors[1], neighbors[2]];
-        if let Some(koop) = mmff94_oop(types[j_idx], types[i], types[k], types[l]) {
+        let Some(koop) = mmff94_oop(
+            types[j_idx],
+            types[neighbors[0]],
+            types[neighbors[1]],
+            types[neighbors[2]],
+        ) else {
+            continue;
+        };
+        for [i, k, l] in oop_permutations(&neighbors) {
             // Wilson out-of-plane angle: angle between j→l vector and plane (i,j,k)
             let pj = coords[j_idx];
             let pi = coords[i];
@@ -1990,7 +2542,7 @@ fn oop_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
 /// Bond stretching: cubic-corrected harmonic (Halgren MMFF.II eq. 1)
 /// E = (143.9325 × kb / 2) × ΔR² × (1 − cs×ΔR + (7/12)×cs²×ΔR²)
 fn bond_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
-    const KB_CONV: f64 = 143.9325;
+    const KB_CONV: f64 = MDYNE_A_TO_KCAL_MOL;
     const CS: f64 = 2.0;
     let mut energy = 0.0;
     for (_, bond) in mol.bonds() {
@@ -2008,10 +2560,9 @@ fn bond_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
 }
 
 /// Angle bending: cubic-corrected harmonic (Halgren MMFF.III eq. 2)
-/// E = (0.043844 × ka / 2) × Δθ² × (1 − 0.007×Δθ)   [Δθ in degrees]
+/// E = (0.043844 × ka / 2) × Δθ² × (1 − 0.007×Δθ)   [Δθ in degrees], with
+/// RDKit's unrounded constants; `143.9325 ka (1 + cos θ)` at a linear centre
 fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], rings: &[Vec<AtomIdx>]) -> f64 {
-    const KA_CONV: f64 = 0.043844;
-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     let mut energy = 0.0;
     for j_idx in 0..mol.atom_count() {
         let j = AtomIdx(j_idx as u32);
@@ -2042,10 +2593,12 @@ fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], rings: &[Vec<
                     ring_size,
                 ) {
                     let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
-                    let theta_deg = cos_t.dacos() * RAD_TO_DEG;
-                    let dt = theta_deg - p.theta0;
-                    let cubic = 1.0 - 0.007 * dt;
-                    energy += (KA_CONV * p.ka / 2.0) * dt * dt * cubic;
+                    energy += angle_bend_energy(
+                        cos_t,
+                        p.theta0,
+                        p.ka,
+                        central_type_is_linear(types[j_idx]),
+                    );
                 }
             }
         }
@@ -2078,8 +2631,7 @@ fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
                 if l == j || l == i {
                     continue;
                 }
-                let tt = torsion_type_for(mol, i, j, k, l, types[i], types[j], types[k], types[l]);
-                if let Some(p) = mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l]) {
+                if let Some(p) = mmff94_torsion_term_params(mol, i, j, k, l, types) {
                     let phi = dihedral(coords[i], coords[j], coords[k], coords[l]);
                     energy += 0.5 * p.v1 * (1.0 + phi.dcos())
                         + 0.5 * p.v2 * (1.0 - (2.0 * phi).dcos())
@@ -2109,7 +2661,6 @@ fn vdw_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
             excl.insert((i.min(nj), i.max(nj)));
         }
     }
-    let cutoff = 10.0_f64;
     let mut energy = 0.0;
     for i in 0..n {
         for j in (i + 1)..n {
@@ -2117,13 +2668,10 @@ fn vdw_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
                 continue;
             }
             let r = dist(coords[i], coords[j]);
-            if r > cutoff {
-                continue;
-            }
             if let Some((r_star, eps)) = mmff94_vdw_combined(types[i], types[j])
                 && r_star > 0.0
                 && eps > 0.0
-                && r > 0.01
+                && r <= NONBONDED_THRESH
             {
                 energy += mmff94_vdw_energy_value(r, r_star, eps);
             }
@@ -2179,6 +2727,9 @@ fn elec_energy(mol: &Molecule, coords: &[[f64; 3]], charges: &[f64]) -> f64 {
                 continue;
             }
             let r = dist(coords[i], coords[j]);
+            if r > NONBONDED_THRESH {
+                continue;
+            }
             let scale = if one_four.contains(&(i, j)) {
                 0.75
             } else {
@@ -2407,10 +2958,16 @@ pub const MLTB_TYPES: &[u8] = &[2, 3, 4, 9, 30, 37, 39, 54, 57, 58, 63, 64, 67, 
 /// Real bond order between two bonded atoms, defaulting to `Single` if no
 /// bond exists between them (defensive only — every call site here passes
 /// atom pairs already known to be bonded via `mol.neighbors`/`mol.bonds`).
+/// The bond's order, with a directional (`/`, `\`) single bond read as
+/// single: RDKit's MMFF typing sees `Bond::SINGLE` there.
 fn bond_order_between(mol: &Molecule, a: usize, b: usize) -> BondOrder {
-    mol.bond_between(AtomIdx(a as u32), AtomIdx(b as u32))
+    match mol
+        .bond_between(AtomIdx(a as u32), AtomIdx(b as u32))
         .map(|(_, bond)| bond.order)
-        .unwrap_or(BondOrder::Single)
+    {
+        Some(BondOrder::Up | BondOrder::Down) | None => BondOrder::Single,
+        Some(order) => order,
+    }
 }
 
 /// True if ALL of `atoms` belong to a single common SSSR ring of exactly
@@ -2719,6 +3276,24 @@ pub fn torsion_type_for(
     tk: u8,
     tl: u8,
 ) -> u8 {
+    torsion_type_pair_for(mol, i, j, k, l, ti, tj, tk, tl).0
+}
+
+/// RDKit's `getMMFFTorsionType`: the torsion type and, when a 4- or
+/// 5-membered ring sets it to 4 or 5, the type the bonds alone give
+/// (RDKit's second lookup pass uses it; 0 otherwise).
+#[allow(clippy::too_many_arguments)]
+pub fn torsion_type_pair_for(
+    mol: &Molecule,
+    i: usize,
+    j: usize,
+    k: usize,
+    l: usize,
+    ti: u8,
+    tj: u8,
+    tk: u8,
+    tl: u8,
+) -> (u8, u8) {
     let order_ij = bond_order_between(mol, i, j);
     let order_jk = bond_order_between(mol, j, k);
     let order_kl = bond_order_between(mol, k, l);
@@ -2741,13 +3316,214 @@ pub fn torsion_type_for(
         AtomIdx(l as u32),
     );
     let ring_size = ring_size_4_or_5(mol, ai, aj, ak, al);
+    let mut second = 0;
     if ring_size == 4 && mol.bond_between(ai, ak).is_none() && mol.bond_between(aj, al).is_none() {
+        second = torsion_type;
         torsion_type = 4;
     } else if ring_size == 5 && (ti == 1 || tj == 1 || tk == 1 || tl == 1) {
+        second = torsion_type;
         torsion_type = 5;
     }
 
-    torsion_type
+    (torsion_type, second)
+}
+
+/// MMFF94 torsion parameters of `i-j-k-l` as RDKit's force field takes
+/// them: the MMFFTOR table through RDKit's equivalence-level stages
+/// (`MMFFTorCollection::getMMFFTorParams`), else Halgren's empirical rule
+/// (`getMMFFTorsionEmpiricalRuleParams`). `None` when every barrier is zero
+/// (RDKit adds no term).
+pub fn mmff94_torsion_term_params(
+    mol: &Molecule,
+    i: usize,
+    j: usize,
+    k: usize,
+    l: usize,
+    types: &[u8],
+) -> Option<TorsionEnergyParams> {
+    let (ti, tj, tk, tl) = (types[i], types[j], types[k], types[l]);
+    let pair = torsion_type_pair_for(mol, i, j, k, l, ti, tj, tk, tl);
+    let p = torsion_table_lookup_rdkit(pair, ti, tj, tk, tl)
+        .unwrap_or_else(|| torsion_empirical_rule(mol, j, k, tj, tk));
+    (p.v1 != 0.0 || p.v2 != 0.0 || p.v3 != 0.0).then_some(p)
+}
+
+fn torsion_table_search(tt: u8, i: u8, j: u8, k: u8, l: u8) -> Option<TorsionEnergyParams> {
+    crate::mmff94_energy::MMFF94_TORSION_ENERGY
+        .binary_search_by_key(&(tt, i, j, k, l), |&(t0, t1, t2, t3, t4, _, _, _)| {
+            (t0, t1, t2, t3, t4)
+        })
+        .ok()
+        .map(|idx| {
+            let (_, _, _, _, _, v1, v2, v3) = crate::mmff94_energy::MMFF94_TORSION_ENERGY[idx];
+            TorsionEnergyParams { v1, v2, v3 }
+        })
+}
+
+/// RDKit's five-stage lookup: equivalence levels 1-1-1-1, 2-2-2-2, 3-2-2-5,
+/// 5-2-2-3, 5-2-2-5 on the torsion type, then again on the second type.
+fn torsion_table_lookup_rdkit(
+    (first, second): (u8, u8),
+    ti: u8,
+    tj: u8,
+    tk: u8,
+    tl: u8,
+) -> Option<TorsionEnergyParams> {
+    let eq = |t: u8| {
+        crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(t)
+            .map(|info| info.equivalence_levels)
+    };
+    let (eq_i, eq_l) = (eq(ti)?, eq(tl)?);
+    let mut found = None;
+    let mut iter = 0usize;
+    let mut max_iter = 5usize;
+    let mut tt = first;
+    while (iter < max_iter && (found.is_none() || max_iter == 4))
+        || (iter == 4 && first == 5 && second != 0)
+    {
+        if max_iter == 5 && iter == 4 {
+            max_iter = 4;
+            iter = 0;
+            tt = second;
+        }
+        let (wi, wl) = match iter {
+            1 => (1, 3),
+            2 => (3, 1),
+            n => (n, n),
+        };
+        // Level index 4 does not exist (RDKit reads past its array there).
+        let (Some(&ci), Some(&cl)) = (eq_i.get(wi), eq_l.get(wl)) else {
+            break;
+        };
+        let (mut ci, mut cj, mut ck, mut cl) = (ci, tj, tk, cl);
+        if cj > ck {
+            std::mem::swap(&mut cj, &mut ck);
+            std::mem::swap(&mut ci, &mut cl);
+        } else if cj == ck && ci > cl {
+            std::mem::swap(&mut ci, &mut cl);
+        }
+        if let Some(p) = torsion_table_search(tt, ci, cj, ck, cl) {
+            found = Some(p);
+            if max_iter == 4 {
+                break;
+            }
+        }
+        iter += 1;
+    }
+    found
+}
+
+/// Halgren's empirical torsion rule (MMFF.IV), as RDKit's
+/// `getMMFFTorsionEmpiricalRuleParams` writes it, for the central bond j-k.
+fn torsion_empirical_rule(
+    mol: &Molecule,
+    j: usize,
+    k: usize,
+    tj: u8,
+    tk: u8,
+) -> TorsionEnergyParams {
+    use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
+    let zero = TorsionEnergyParams {
+        v1: 0.0,
+        v2: 0.0,
+        v3: 0.0,
+    };
+    let (Some(pj), Some(pk)) = (mmff94_numeric_type_info(tj), mmff94_numeric_type_info(tk)) else {
+        return zero;
+    };
+    let order = bond_order_between(mol, j, k);
+    let z = [
+        mol.atom(AtomIdx(j as u32)).element.atomic_number(),
+        mol.atom(AtomIdx(k as u32)).element.atomic_number(),
+    ];
+    let (mut u, mut v, mut w) = ([0.0f64; 2], [0.0f64; 2], [0.0f64; 2]);
+    for n in 0..2 {
+        match z[n] {
+            6 => (u[n], v[n]) = (2.0, 2.12),
+            7 => (u[n], v[n]) = (2.0, 1.5),
+            8 => (u[n], v[n], w[n]) = (2.0, 0.2, 2.0),
+            14 => (u[n], v[n]) = (1.25, 1.22),
+            15 => (u[n], v[n]) = (1.25, 2.40),
+            16 => (u[n], v[n], w[n]) = (1.25, 0.49, 8.0),
+            _ => {}
+        }
+    }
+    // RDKit's `getPeriodicTableRow`: Li-Ne is row 1, Na-Ar row 2.
+    let row = |z: u8| match z {
+        3..=10 => 1,
+        11..=18 => 2,
+        19..=36 => 3,
+        37..=54 => 4,
+        _ => 0,
+    };
+    let n_jk = f64::from((pj.coordination - 1) * (pk.coordination - 1));
+    let (mltb_j, mltb_k) = (pj.multiple_bond_count, pk.multiple_bond_count);
+    let (pilp_j, pilp_k) = (pj.has_pi_lone_pair, pk.has_pi_lone_pair);
+    let v2 = |beta: f64, pi: f64| TorsionEnergyParams {
+        v1: 0.0,
+        v2: beta * pi * (u[0] * u[1]).sqrt(),
+        v3: 0.0,
+    };
+    let v3 = TorsionEnergyParams {
+        v1: 0.0,
+        v2: 0.0,
+        v3: (v[0] * v[1]).sqrt() / n_jk,
+    };
+    // A trigonal or digonal end that conjugates: no barrier across an sp3 one.
+    let conjugating = |p: &crate::mmff94_numeric_type_registry::Mmff94NumericTypeInfo| {
+        (p.coordination == 3 && (p.valence == 4 || p.valence == 34 || p.multiple_bond_count != 0))
+            || (p.coordination == 2 && (p.valence == 3 || p.multiple_bond_count != 0))
+    };
+    if pj.linear || pk.linear {
+        zero
+    } else if pj.aromatic && pk.aromatic && order == BondOrder::Aromatic {
+        let beta = if (pj.valence == 3 && pk.valence == 4) || (pj.valence == 4 && pk.valence == 3) {
+            3.0
+        } else {
+            6.0
+        };
+        v2(beta, if !pilp_j && !pilp_k { 0.5 } else { 0.3 })
+    } else if order == BondOrder::Double {
+        v2(6.0, if mltb_j == 2 && mltb_k == 2 { 1.0 } else { 0.4 })
+    } else if pj.coordination == 4 && pk.coordination == 4 {
+        v3
+    } else if pj.coordination == 4 {
+        if conjugating(pk) { zero } else { v3 }
+    } else if pk.coordination == 4 {
+        if conjugating(pj) { zero } else { v3 }
+    } else if (order == BondOrder::Single && mltb_j != 0 && mltb_k != 0)
+        || (mltb_j != 0 && pilp_k)
+        || (pilp_j && mltb_k != 0)
+    {
+        let pi_lp = |mltb_lp_side: u8| {
+            if mltb_lp_side == 1 {
+                0.5
+            } else if row(z[0]) == 2 && row(z[1]) == 2 {
+                0.3
+            } else {
+                0.15
+            }
+        };
+        if pilp_j && pilp_k {
+            zero
+        } else if pilp_j && mltb_k != 0 {
+            v2(6.0, pi_lp(mltb_j))
+        } else if pilp_k && mltb_j != 0 {
+            v2(6.0, pi_lp(mltb_k))
+        } else if (mltb_j == 1 || mltb_k == 1) && (z[0] != 6 || z[1] != 6) {
+            v2(6.0, 0.4)
+        } else {
+            v2(6.0, 0.15)
+        }
+    } else if matches!(z[0], 8 | 16) && matches!(z[1], 8 | 16) {
+        TorsionEnergyParams {
+            v1: 0.0,
+            v2: -(w[0] * w[1]).sqrt(),
+            v3: 0.0,
+        }
+    } else {
+        v3
+    }
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -2756,6 +3532,7 @@ pub fn torsion_type_for(
 mod tests {
     use super::*;
     use crate::mmff94_energy::mmff94_stbn_type_only;
+    use crate::mmff94_energy::mmff94_torsion_energy;
     use crate::mmff94_energy::{mmff94_angle_energy, mmff94_bond_energy};
     use crate::mmff94_numeric::{
         assign_mmff94_numeric_types, assign_mmff94_numeric_types_with_view,

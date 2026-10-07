@@ -98,22 +98,104 @@ fn default_valence(mol: &Molecule, idx: AtomIdx) -> i32 {
         .map_or(-1, |&v| i32::from(v))
 }
 
-fn total_hs(mol: &Molecule, idx: AtomIdx) -> i32 {
-    i32::from(implicit_hcount(mol, idx))
+/// Per-atom facts the model reads repeatedly, computed once per molecule
+/// (H counts, degrees) or on first use (conjugation candidacy, bond
+/// conjugation): a `^n` query asks for every candidate atom.
+struct Facts<'a> {
+    mol: &'a Molecule,
+    lazy: &'a LazyFacts,
 }
 
-fn heavy_degree(mol: &Molecule, idx: AtomIdx) -> i32 {
-    mol.neighbors(idx).count() as i32
+/// Per-atom and per-bond facts of one molecule, each computed on first use
+/// and memoized on the molecule with the codes (a `^n` query asks for the
+/// atoms that pass its other primitives, not every atom). Atomics so the
+/// memo is shareable; every value is a pure function of the molecule.
+pub(crate) struct LazyFacts {
+    /// Implicit-H count + 1 (0 = not yet known).
+    hs: Vec<std::sync::atomic::AtomicU8>,
+    /// 0 = not yet known, 1 = false, 2 = true.
+    candidate: Vec<std::sync::atomic::AtomicU8>,
+    conjugated: Vec<std::sync::atomic::AtomicU8>,
+    /// Hybridization code + 1, 255 = unspecified, 0 = not yet known.
+    codes: Vec<std::sync::atomic::AtomicU8>,
+    /// Total valence + 1 (0 = not yet known).
+    valence: Vec<std::sync::atomic::AtomicU8>,
+}
+
+impl LazyFacts {
+    fn new(mol: &Molecule) -> Self {
+        let zeros = |n: usize| {
+            (0..n)
+                .map(|_| std::sync::atomic::AtomicU8::new(0))
+                .collect()
+        };
+        Self {
+            hs: zeros(mol.atom_count()),
+            candidate: zeros(mol.atom_count()),
+            conjugated: zeros(mol.bond_count()),
+            codes: zeros(mol.atom_count()),
+            valence: zeros(mol.atom_count()),
+        }
+    }
+}
+
+fn memo(cell: &std::sync::atomic::AtomicU8, compute: impl FnOnce() -> bool) -> bool {
+    use std::sync::atomic::Ordering::Relaxed;
+    match cell.load(Relaxed) {
+        0 => {
+            let value = compute();
+            cell.store(if value { 2 } else { 1 }, Relaxed);
+            value
+        }
+        known => known == 2,
+    }
+}
+
+fn total_hs(f: &Facts, idx: AtomIdx) -> i32 {
+    use std::sync::atomic::Ordering::Relaxed;
+    let cell = &f.lazy.hs[idx.0 as usize];
+    match cell.load(Relaxed) {
+        0 => {
+            let hs = implicit_hcount(f.mol, idx);
+            // Counts above 254 are not cached (never seen; kept exact).
+            if hs < 255 {
+                cell.store(hs + 1, Relaxed);
+            }
+            i32::from(hs)
+        }
+        known => i32::from(known - 1),
+    }
+}
+
+/// `match_vf2::total_valence`, memoized.
+fn total_valence(f: &Facts, idx: AtomIdx) -> i32 {
+    use std::sync::atomic::Ordering::Relaxed;
+    let cell = &f.lazy.valence[idx.0 as usize];
+    match cell.load(Relaxed) {
+        0 => {
+            let v = crate::match_vf2::total_valence(f.mol, idx);
+            if v < 255 {
+                cell.store(v + 1, Relaxed);
+            }
+            i32::from(v)
+        }
+        known => i32::from(known - 1),
+    }
+}
+
+fn heavy_degree(f: &Facts, idx: AtomIdx) -> i32 {
+    f.mol.neighbors(idx).count() as i32
 }
 
 /// RDKit `countAtomElec`: electrons available to a pi system (`-1`: none).
-fn count_atom_elec(mol: &Molecule, idx: AtomIdx) -> i32 {
+fn count_atom_elec(f: &Facts, idx: AtomIdx) -> i32 {
+    let mol = f.mol;
     let atom = mol.atom(idx);
     let dv = default_valence(mol, idx);
     if dv <= 1 {
         return -1;
     }
-    let degree = heavy_degree(mol, idx) + total_hs(mol, idx);
+    let degree = heavy_degree(f, idx) + total_hs(f, idx);
     if degree > 3 {
         return -1;
     }
@@ -123,9 +205,8 @@ fn count_atom_elec(mol: &Molecule, idx: AtomIdx) -> i32 {
     let nlp = (nouter - dv - i32::from(atom.charge)).max(0);
     let mut res = (dv - degree) + nlp;
     if res > 1 {
-        let explicit_valence =
-            crate::match_vf2::total_valence(mol, idx) as i32 - total_hs(mol, idx);
-        if explicit_valence - heavy_degree(mol, idx) > 1 {
+        let explicit_valence = total_valence(f, idx) - total_hs(f, idx);
+        if explicit_valence - heavy_degree(f, idx) > 1 {
             res = 1;
         }
     }
@@ -133,13 +214,19 @@ fn count_atom_elec(mol: &Molecule, idx: AtomIdx) -> i32 {
 }
 
 /// RDKit `isAtomConjugCand`.
-fn conjugation_candidate(mol: &Molecule, idx: AtomIdx) -> bool {
-    let z = mol.atom(idx).element.atomic_number();
+fn conjugation_candidate(f: &Facts, idx: AtomIdx) -> bool {
+    memo(&f.lazy.candidate[idx.0 as usize], || {
+        conjugation_candidate_uncached(f, idx)
+    })
+}
+
+fn conjugation_candidate_uncached(f: &Facts, idx: AtomIdx) -> bool {
+    let z = f.mol.atom(idx).element.atomic_number();
     let nouter = outer_electrons(z).unwrap_or(0);
     // A group-16 atom beyond the first row only with one substituent
     // counting H (`C=C[S-]` conjugates, the thiol in `C=CS` does not).
-    (z <= 10 || (nouter != 5 && nouter != 6) || (nouter == 6 && substituents(mol, idx) < 2))
-        && count_atom_elec(mol, idx) > 0
+    (z <= 10 || (nouter != 5 && nouter != 6) || (nouter == 6 && substituents(f, idx) < 2))
+        && count_atom_elec(f, idx) > 0
 }
 
 fn valence_contrib(order: BondOrder) -> f32 {
@@ -152,23 +239,24 @@ fn valence_contrib(order: BondOrder) -> f32 {
     }
 }
 
-fn substituents(mol: &Molecule, idx: AtomIdx) -> i32 {
-    heavy_degree(mol, idx) + total_hs(mol, idx)
+fn substituents(f: &Facts, idx: AtomIdx) -> i32 {
+    heavy_degree(f, idx) + total_hs(f, idx)
 }
 
 /// Whether `markConjAtomBonds` run at `center` marks `bond`.
-fn marked_at(mol: &Molecule, center: AtomIdx, bond: BondIdx) -> bool {
-    if !conjugation_candidate(mol, center) {
+fn marked_at(f: &Facts, center: AtomIdx, bond: BondIdx) -> bool {
+    let mol = f.mol;
+    if !conjugation_candidate(f, center) {
         return false;
     }
-    let sbo = substituents(mol, center);
+    let sbo = substituents(f, center);
     if !(2..=3).contains(&sbo) {
         return false;
     }
     let other_ok = |b: BondIdx| {
         let e = mol.bond(b);
         let other = if e.atom1 == center { e.atom2 } else { e.atom1 };
-        substituents(mol, other) <= 3 && conjugation_candidate(mol, other)
+        substituents(f, other) <= 3 && conjugation_candidate(f, other)
     };
     // A multiple bond counts only toward a candidate atom: a double bond to
     // `[S+]`/`[Se+]` with two substituents conjugates nothing (RDKit 2026.03.6
@@ -177,7 +265,7 @@ fn marked_at(mol: &Molecule, center: AtomIdx, bond: BondIdx) -> bool {
     let multiple = |b: BondIdx| {
         let e = mol.bond(b);
         let other = if e.atom1 == center { e.atom2 } else { e.atom1 };
-        valence_contrib(e.order) >= 1.5 && conjugation_candidate(mol, other)
+        valence_contrib(e.order) >= 1.5 && conjugation_candidate(f, other)
     };
     let others = || {
         mol.neighbors(center)
@@ -190,9 +278,11 @@ fn marked_at(mol: &Molecule, center: AtomIdx, bond: BondIdx) -> bool {
         || (others().any(multiple) && other_ok(bond))
 }
 
-fn bond_is_conjugated(mol: &Molecule, bond: BondIdx) -> bool {
-    let e = mol.bond(bond);
-    e.order == BondOrder::Aromatic || marked_at(mol, e.atom1, bond) || marked_at(mol, e.atom2, bond)
+fn bond_is_conjugated(f: &Facts, bond: BondIdx) -> bool {
+    memo(&f.lazy.conjugated[bond.0 as usize], || {
+        let e = f.mol.bond(bond);
+        e.order == BondOrder::Aromatic || marked_at(f, e.atom1, bond) || marked_at(f, e.atom2, bond)
+    })
 }
 
 /// RDKit hybridization as the SMARTS `^n` code (0 = S, 1 = SP, 2 = SP2,
@@ -201,7 +291,38 @@ fn bond_is_conjugated(mol: &Molecule, bond: BondIdx) -> bool {
 /// Follows RDKit's `ConjugHybrid` model: orbital count = total degree plus
 /// lone pairs, and a four-orbital atom with fewer than four neighbours and
 /// a conjugated bond (amide N, aryl ether O, enamine N) is SP2.
+///
+/// The codes of every atom are computed together on the first call and
+/// memoized on `mol` (a `^n` query reads them once per candidate atom).
 pub fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
+    hybridization_from(mol, &lazy_facts(mol), idx)
+}
+
+/// The memo of [`rdkit_hybridization`] for `mol`.
+pub(crate) fn lazy_facts(mol: &Molecule) -> std::sync::Arc<LazyFacts> {
+    mol.derived(chematic_core::DerivedSlot::RdkitHybridization, || {
+        LazyFacts::new(mol)
+    })
+}
+
+/// [`rdkit_hybridization`] with its memo already looked up.
+pub(crate) fn hybridization_from(mol: &Molecule, lazy: &LazyFacts, idx: AtomIdx) -> Option<u8> {
+    use std::sync::atomic::Ordering::Relaxed;
+    let cell = lazy.codes.get(idx.0 as usize)?;
+    match cell.load(Relaxed) {
+        0 => {
+            let facts = Facts { mol, lazy };
+            let code = rdkit_hybridization_uncached(&facts, idx);
+            cell.store(code.map_or(255, |c| c + 1), Relaxed);
+            code
+        }
+        255 => None,
+        known => Some(known - 1),
+    }
+}
+
+fn rdkit_hybridization_uncached(f: &Facts, idx: AtomIdx) -> Option<u8> {
+    let mol = f.mol;
     let atom = mol.atom(idx);
     let z = atom.element.atomic_number();
     if atom.wildcard || z == 0 {
@@ -216,7 +337,7 @@ pub fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
         };
         return (!plain).then_some(0);
     }
-    let total_degree = heavy_degree(mol, idx) + total_hs(mol, idx);
+    let total_degree = heavy_degree(f, idx) + total_hs(f, idx);
     // An aromatic atom with two or three connections has three orbitals or
     // a conjugated lone pair: SP2 in RDKit's model. Answering here skips the
     // Kekulé valence lookup the general rule needs for aromatic atoms.
@@ -241,7 +362,7 @@ pub fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
     }
     let norbs = match outer_electrons(z) {
         Some(nouter) if z < 89 => {
-            let total_valence = crate::match_vf2::total_valence(mol, idx) as i32;
+            let total_valence = total_valence(f, idx);
             // Not clamped: RDKit lets a negative lone-pair count lower the
             // orbital count (`[Zn++]` with four bonds is SP).
             let chg = i32::from(atom.charge);
@@ -265,7 +386,7 @@ pub fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
         // neighbours (it decided nothing for an sp3 CH3/CH2, and was most
         // of a `[C^3]` match).
         4 => Some(
-            if total_degree < 4 && mol.neighbors(idx).any(|(_, b)| bond_is_conjugated(mol, b)) {
+            if total_degree < 4 && mol.neighbors(idx).any(|(_, b)| bond_is_conjugated(f, b)) {
                 2
             } else {
                 3

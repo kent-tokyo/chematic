@@ -24,8 +24,32 @@ DOCS = (
 )
 
 
+# A relative Markdown link (not an image, URL or anchor) in the MkDocs tree.
+LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)\)")
+
+
+def site_link_errors() -> list[str]:
+    """Links in docs/ (as MkDocs builds it, archive/ excluded) that leave
+    docs/: `mkdocs build --strict` fails on them (the v1.0.36 Pages run)."""
+    docs = ROOT / "docs"
+    errors = []
+    for path in sorted(docs.rglob("*.md")):
+        if path.relative_to(docs).parts[0] == "archive":
+            continue
+        for target in LINK.findall(path.read_text(encoding="utf-8")):
+            if "://" in target or target.startswith(("#", "mailto:")):
+                continue
+            resolved = (path.parent / target.split("#", 1)[0]).resolve()
+            if not resolved.is_relative_to(docs.resolve()):
+                errors.append(
+                    f"{path.relative_to(ROOT)}: link {target} leaves docs/ "
+                    "(MkDocs cannot resolve it; use the GitHub URL)"
+                )
+    return errors
+
+
 def main() -> int:
-    errors: list[str] = []
+    errors: list[str] = site_link_errors()
     cargo = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
     version_match = re.search(r'^version\s*=\s*"([^"]+)"\s*$', cargo, re.MULTILINE)
     if version_match is None:
@@ -80,7 +104,10 @@ def main() -> int:
         print("Release documentation consistency failures:", file=sys.stderr)
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print("Release documentation consistency OK: version, product name, key name, and gate references")
+    print(
+        "Release documentation consistency OK: version, product name, key name, gate "
+        "references and site-internal links"
+    )
     return 0
 
 

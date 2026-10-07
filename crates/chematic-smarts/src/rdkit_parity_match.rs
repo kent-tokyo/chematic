@@ -60,6 +60,27 @@ pub struct RdkitParityConfig {
     /// remains the SMARTS-specific selector because the two models differ on
     /// bridged-cage fixtures.
     pub use_shared_symmetrized_sssr: bool,
+    /// Which ring list `[R<n>]` counts rings in. The default is RDKit
+    /// 2026.03.6's symmetrized SSSR (with its `ring_model_ambiguous`
+    /// refusal for charged polycyclic macrocycles);
+    /// [`RdkitRingCountModel::RelevantCycles`] is RDKit 2026.09.1's.
+    pub ring_count_model: RdkitRingCountModel,
+}
+
+/// The ring list behind `[R<n>]` in [`find_matches_rdkit_parity`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum RdkitRingCountModel {
+    /// RDKit 2026.03.6: its symmetrized SSSR. Where that list depends on
+    /// atom order (two or more aromatic cations with replacement rings) the
+    /// call refuses with [`RdkitParityError::RingModelAmbiguous`].
+    #[default]
+    SymmetrizedSssr,
+    /// RDKit 2026.09.1: every relevant cycle (the union of all minimum cycle
+    /// bases, `chematic_perception::relevant_cycles`). Independent of atom
+    /// order, so nothing is refused as ambiguous; more relevant cycles than
+    /// [`RdkitRingModelBudget::max_candidates`] is
+    /// [`RdkitParityError::RingModelBudgetExceeded`].
+    RelevantCycles,
 }
 
 /// Find all non-overlapping (injective) embeddings of `query` in `mol` using
@@ -125,7 +146,18 @@ pub fn find_matches_rdkit_parity(
     } else {
         None
     };
-    let ring_model = if query_uses_ring_count(query) {
+    let ring_model = if query_uses_ring_count(query)
+        && config.ring_count_model == RdkitRingCountModel::RelevantCycles
+    {
+        let cap = config.ring_model_budget.max_candidates;
+        let counts = chematic_perception::relevant_cycle_counts(mol_ref, cap).map_err(|_| {
+            RdkitParityError::RingModelBudgetExceeded {
+                candidates_examined: cap.saturating_add(1),
+                cap,
+            }
+        })?;
+        Some(RdkitParityRingModel::from_counts(&counts))
+    } else if query_uses_ring_count(query) {
         let model = if config.use_shared_symmetrized_sssr {
             build_shared_symmetrized_ring_model(mol_ref, &rings, &config.ring_model_budget)?
         } else {

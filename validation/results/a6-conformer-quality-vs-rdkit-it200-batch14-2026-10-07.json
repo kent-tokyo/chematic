@@ -1,0 +1,43 @@
+{
+ "schema": "a6-conformer-quality-vs-rdkit/v1",
+ "rdkit": "2026.03.6",
+ "arm": "chematic_pipeline_v2_mmff94_strict_stereo_safe",
+ "n_conformers": 10,
+ "seed": 42,
+ "max_iters": 20000,
+ "summary": {
+  "rows": 265,
+  "scored": 265,
+  "statuses": {
+   "scored": 265
+  },
+  "chematic_relaxed_minus_rdkit_best_kcal_mol": {
+   "median": 0.5516611117683397,
+   "p90": 8.827481908889311,
+   "max": 25.571056054639357
+  },
+  "chematic_relaxed_within_1_kcal_mol_of_rdkit_best": 152,
+  "chematic_relaxed_at_or_below_rdkit_best": 101,
+  "rdkit_first_minus_rdkit_best_kcal_mol": {
+   "median": 1.410405829444116,
+   "p90": 11.551960545365532,
+   "max": 22.279465495118473
+  },
+  "rdkit_first_within_1_kcal_mol_of_rdkit_best": 125,
+  "chematic_fixed_minus_relaxed_kcal_mol": {
+   "median": 7.191328458652066,
+   "p90": 39.17062268405036,
+   "max": 168.4695089362477
+  },
+  "rmsd_to_own_minimum_angstrom": {
+   "median": 0.3217117182065452,
+   "p90": 1.5332185752840313,
+   "max": 3.6174656164557426
+  },
+  "rmsd_to_closest_rdkit_conformer_angstrom": {
+   "median": 0.725380349154273,
+   "p90": 2.40634480273416,
+   "max": 5.6743668959407145
+  }
+ }
+}

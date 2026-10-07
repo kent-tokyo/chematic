@@ -3,7 +3,7 @@
 //!
 //! **Most applications should use [`chematic_chem::assign_cip_with_mode`] rather
 //! than depending on this crate directly.** That's the stable, supported entry point
-//! (opt-in `CipMode::Accurate`, merged with legacy E/Z/allene handling; see
+//! (opt-in `CipMode::Accurate`: this engine's R/S and E/Z, legacy allenes; see
 //! `docs/rfcs/cip_accurate_rfc.md`'s Milestone 5A). This crate is the low-level engine
 //! behind it, published separately so `chematic-chem` can depend on it normally.
 //! The accurate engine remains experimental and may receive breaking API revisions
@@ -52,6 +52,7 @@ mod tests;
 pub use assign::{
     AccurateCipAssignment, SkipReason, assign_cip_accurate_experimental,
     assign_cip_accurate_experimental_without_mancude, label_depends_on_kekule_spelling,
+    label_follows_rdkit_smiles_reading,
 };
 pub use budget::CipBudget;
 pub use compare::{

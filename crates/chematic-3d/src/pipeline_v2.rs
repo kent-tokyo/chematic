@@ -169,8 +169,9 @@ use crate::etkdg_knowledge::{
     macrocycle_14_bound_adjustments, optimize_torsions,
 };
 use crate::minimize::{
-    ForceFieldBridgeError, ForceFieldPolicy, MAX_SANE_BOND_LENGTH, MinimizeConfig,
-    PolicyMinimizeResult, minimize_with_policy_gated, minimize_with_policy_gated_with_constraint,
+    ForceFieldBridgeError, ForceFieldPolicy, MAX_SANE_BOND_LENGTH, MinimizeConfig, Mmff94Minimizer,
+    PolicyMinimizeResult, minimize_with_policy_gated_using,
+    minimize_with_policy_gated_with_constraint,
 };
 use crate::stereo_constraints::{
     RepairRejectionReason, RepairedElement, StereoElement, StereoVerification, repair_stereo,
@@ -315,7 +316,10 @@ impl PipelineV2Config {
             stereo_policy: StereoPolicy::Ignore,
             fail_on_unevaluable_stereo: false,
             force_field_policy,
-            force_field_max_iterations: 300,
+            // Batch 14: the A6 molecules stop at the iteration limit, not at a
+            // stationary-point problem (265 rows: 300 -> 199 converged, 1000 ->
+            // 263, 23% more time); RDKit's own default is 200.
+            force_field_max_iterations: 1000,
             gate_mmff94_torsion_oop: false,
             gate_mmff94_stretch_bend: false,
             ring_torsion_policy: RingTorsionApplicationPolicy::FailClosed,
@@ -714,6 +718,54 @@ pub fn embed_pipeline_v2(
     mol: &Molecule,
     config: &PipelineV2Config,
 ) -> Result<PipelineV2Result, PipelineV2Failure> {
+    let first = embed_pipeline_v2_from_seed(mol, config)?;
+    if !minimization_stalled_on_constraint(&first) {
+        return Ok(first);
+    }
+    // A stereo constraint stopped minimization at its first step from this
+    // start (a strained embedding whose force field would cross a declared
+    // centre, e.g. a penam ring fusion; A6 row 0161 stopped at 59
+    // kcal/mol/Å). Embed again from other seeds, within the time budget,
+    // and keep the first run that minimizes past it with a sound geometry.
+    let mut used_ms = first.elapsed_ms_by_stage.total_ms;
+    for k in 1..=STALLED_MINIMIZATION_RESEEDS {
+        let mut retry = config.clone();
+        retry.embed.random_seed = config
+            .embed
+            .random_seed
+            .wrapping_add(k.wrapping_mul(0x9E37_79B9_7F4A_7C15));
+        if let Some(budget) = config.total_timeout_ms {
+            if used_ms >= budget {
+                break;
+            }
+            retry.total_timeout_ms = Some(budget - used_ms);
+        }
+        match embed_pipeline_v2_from_seed(mol, &retry) {
+            Ok(result) => {
+                used_ms += result.elapsed_ms_by_stage.total_ms;
+                if !minimization_stalled_on_constraint(&result) && result.final_validation.sound {
+                    return Ok(result);
+                }
+            }
+            Err(failure) => used_ms += failure.elapsed_ms_by_stage.total_ms,
+        }
+    }
+    Ok(first)
+}
+
+/// Extra embeddings tried when minimization stalls on a stereo constraint.
+const STALLED_MINIMIZATION_RESEEDS: u64 = 3;
+
+fn minimization_stalled_on_constraint(result: &PipelineV2Result) -> bool {
+    result.force_field.mmff94_termination
+        == Some(chematic_ff::Mmff94TerminationReason::ConstraintRejectedFallback)
+}
+
+#[allow(clippy::result_large_err)]
+fn embed_pipeline_v2_from_seed(
+    mol: &Molecule,
+    config: &PipelineV2Config,
+) -> Result<PipelineV2Result, PipelineV2Failure> {
     let overall_start = Instant::now();
     let mut timings = StageTimings::default();
     // Progressive diagnostic accumulator (see `Evidence`'s own doc comment): updated
@@ -1095,15 +1147,16 @@ pub fn embed_pipeline_v2(
             // returned stereocenter geometrically unevaluable.
             && authoritative.n_unevaluable() == 0
     };
-    let minimize_force_field = |coords: Coords3D| {
+    let minimize_force_field_using = |coords: Coords3D, minimizer: Mmff94Minimizer| {
         if !reconcile_expanded_and_returned_stereo {
-            minimize_with_policy_gated(
+            minimize_with_policy_gated_using(
                 mol,
                 coords,
                 config.force_field_policy,
                 &ff_config,
                 config.gate_mmff94_torsion_oop,
                 config.gate_mmff94_stretch_bend,
+                minimizer,
             )
         } else {
             minimize_with_policy_gated_with_constraint(
@@ -1114,11 +1167,48 @@ pub fn embed_pipeline_v2(
                 config.gate_mmff94_torsion_oop,
                 config.gate_mmff94_stretch_bend,
                 &preserves_declared_stereo,
+                minimizer,
             )
         }
     };
+    // Batch 13: MMFF94 runs RDKit's dense BFGS, which reaches the residual-
+    // force threshold on about twice as many A6 rows within the iteration
+    // budget as the earlier L-BFGS. Its longer steps can relax a strained
+    // start (a beta-lactam ring fusion whose heavy-atom and explicit-H
+    // readings disagree, issue #291) into the other configuration, which
+    // the L-BFGS path relaxed back. When the BFGS result fails, or crosses a
+    // declared stereo boundary under a stereo policy, the earlier L-BFGS run
+    // from the same start is tried, and kept only if it fixes that.
+    let mmff94_policy = matches!(
+        config.force_field_policy,
+        ForceFieldPolicy::Mmff94BondAngleStrict | ForceFieldPolicy::Mmff94WithUffFallback
+    );
+    let violates_declared_stereo = |r: &PolicyMinimizeResult| {
+        config.stereo_policy != StereoPolicy::Ignore
+            && verify_authoritative_final_stereo(
+                orig_mol,
+                mol,
+                &r.coords,
+                use_expanded_geometry,
+                original_atom_count,
+            )
+            .n_violations()
+                > 0
+    };
+    let mut used_minimizer = Mmff94Minimizer::Bfgs;
     let t0 = Instant::now();
-    let force_field = match minimize_force_field(coords) {
+    let mut first = minimize_force_field_using(coords.clone(), Mmff94Minimizer::Bfgs);
+    if mmff94_policy
+        && first.as_ref().map_or(true, violates_declared_stereo)
+        && let Ok(retry) = minimize_force_field_using(coords, Mmff94Minimizer::Lbfgs)
+        && (first.is_err() || !violates_declared_stereo(&retry))
+    {
+        first = Ok(retry);
+        used_minimizer = Mmff94Minimizer::Lbfgs;
+    }
+    let minimize_force_field =
+        |coords: Coords3D| minimize_force_field_using(coords, used_minimizer);
+    let force_field = match first {
         Ok(r) => r,
         Err(e) => {
             timings.force_field_ms = t0.elapsed().as_millis() as u64;
@@ -1514,6 +1604,7 @@ fn compute_final_validation(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::minimize::minimize_with_policy_gated;
     use chematic_smiles::parse;
 
     fn config_none() -> PipelineV2Config {

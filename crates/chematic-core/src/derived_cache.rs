@@ -52,9 +52,12 @@ pub enum DerivedSlot {
     /// Whether RDKit's ring models (symmetrized rings for `R<n>` and ring
     /// sizes) equal the SSSR for this molecule; `chematic-rxn`.
     RdkitRingModelIsSssr = 11,
+    /// RDKit hybridization code per atom (the SMARTS `^n` primitive);
+    /// `chematic-smarts`.
+    RdkitHybridization = 12,
 }
 
-const SLOT_COUNT: usize = 12;
+const SLOT_COUNT: usize = 13;
 
 /// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
 /// the unwind-safety traits so `Molecule` stays usable across
