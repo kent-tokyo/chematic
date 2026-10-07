@@ -230,9 +230,10 @@ impl Mol {
         chematic_mol::write_mol2(&self.inner, &[])
     }
 
-    /// Serialize to MDL MOL V2000 format (without 3D coordinates).
+    /// Serialize to MDL MOL V2000 format with 2D coordinates (Å).
     ///
-    /// Equivalent to RDKit's ``Chem.MolToMolBlock(mol)``.
+    /// Equivalent to RDKit's ``Chem.MolToMolBlock(mol)``: every molecule is
+    /// written on a 2D layout, with stereo drawn as wedges and E/Z geometry.
     /// Use :meth:`to_mol2` for Tripos format, :meth:`to_pdb` for PDB with 3D coords.
     ///
     ///     block = mol.to_mol_block()
@@ -246,10 +247,14 @@ impl Mol {
     /// does not warn.
     #[pyo3(signature = (strict = false))]
     fn to_mol_block(&self, py: Python<'_>, strict: bool) -> PyResult<String> {
+        // Laid out like RDKit's MolToMolBlock (and the WASM binding): the
+        // stereo depiction, or the plain layout without stereo (this wrote
+        // every atom at the origin for a molecule without stereo).
+        let coords = chematic_mol::stereo_depiction::mol_block_coords(&self.inner);
         let (block, loss) = chematic_mol::write_mol_with_stereo_report(
             &self.inner,
             &chematic_mol::MolMetadata::default(),
-            &[],
+            &coords,
         );
         strict_mol_block(py, block, &loss, strict)
     }
@@ -268,10 +273,14 @@ impl Mol {
         &self,
         py: Python<'py>,
     ) -> PyResult<(String, Bound<'py, PyDict>)> {
+        // Laid out like RDKit's MolToMolBlock (and the WASM binding): the
+        // stereo depiction, or the plain layout without stereo (this wrote
+        // every atom at the origin for a molecule without stereo).
+        let coords = chematic_mol::stereo_depiction::mol_block_coords(&self.inner);
         let (block, loss) = chematic_mol::write_mol_with_stereo_report(
             &self.inner,
             &chematic_mol::MolMetadata::default(),
-            &[],
+            &coords,
         );
         Ok((block, stereo_loss_dict(py, &loss)?))
     }
@@ -2077,7 +2086,17 @@ impl Mol {
     /// zero-contribution atoms → white.  Uses :meth:`logp_per_atom` as weights.
     fn logp_map_svg(&self) -> String {
         let weights = chematic_chem::logp_crippen_per_atom(&self.inner);
-        chematic_depict::similarity_map_svg(&self.inner, &weights)
+        chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+            chematic_depict::render_svg_opts(
+                m,
+                layout,
+                &chematic_depict::similarity_map_options(
+                    &self.inner,
+                    &weights,
+                    &chematic_depict::RenderOptions::default(),
+                ),
+            )
+        })
     }
 
     /// 2D SVG depiction with atoms coloured by TPSA contribution.
@@ -2086,7 +2105,17 @@ impl Mol {
     /// atoms (C, halogens, …) remain white.  Uses :meth:`tpsa_per_atom` as weights.
     fn tpsa_map_svg(&self) -> String {
         let weights = chematic_chem::tpsa_per_atom(&self.inner);
-        chematic_depict::similarity_map_svg(&self.inner, &weights)
+        chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+            chematic_depict::render_svg_opts(
+                m,
+                layout,
+                &chematic_depict::similarity_map_options(
+                    &self.inner,
+                    &weights,
+                    &chematic_depict::RenderOptions::default(),
+                ),
+            )
+        })
     }
 
     /// 2D SVG depiction with atoms coloured by custom weights.
@@ -2094,7 +2123,17 @@ impl Mol {
     /// ``weights``: list of floats, one per heavy atom (length = :attr:`heavy_atoms`).
     /// Positive → blue, negative → red, zero → white.
     fn similarity_map_svg(&self, weights: Vec<f64>) -> String {
-        chematic_depict::similarity_map_svg(&self.inner, &weights)
+        chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+            chematic_depict::render_svg_opts(
+                m,
+                layout,
+                &chematic_depict::similarity_map_options(
+                    &self.inner,
+                    &weights,
+                    &chematic_depict::RenderOptions::default(),
+                ),
+            )
+        })
     }
 
     // -----------------------------------------------------------------------

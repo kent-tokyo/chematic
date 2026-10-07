@@ -316,6 +316,30 @@ fn connected_without(mol: &Molecule, from: AtomIdx, to: AtomIdx, blocked: AtomId
     false
 }
 
+/// Non-bonded pairs closer than 0.45 bonds (0.675 Å) between `moved` and
+/// the other atoms.
+fn moved_clashes(mol: &Molecule, coords: &[(f64, f64)], moved: &[AtomIdx]) -> usize {
+    let mut in_moved = vec![false; coords.len()];
+    for a in moved {
+        in_moved[a.0 as usize] = true;
+    }
+    let limit = 0.675 * 0.675;
+    let mut count = 0;
+    for &a in moved {
+        let (x, y) = coords[a.0 as usize];
+        for (j, &(u, v)) in coords.iter().enumerate() {
+            if in_moved[j] {
+                continue;
+            }
+            let d2 = (x - u) * (x - u) + (y - v) * (y - v);
+            if d2 < limit && mol.bond_between(a, AtomIdx(j as u32)).is_none() {
+                count += 1;
+            }
+        }
+    }
+    count
+}
+
 fn reflect(coords: &mut [(f64, f64)], atoms: &[AtomIdx], p: (f64, f64), q: (f64, f64)) {
     let (dx, dy) = (q.0 - p.0, q.1 - p.1);
     let len2 = dx * dx + dy * dy;
@@ -540,12 +564,27 @@ fn depict_on(mol: &Molecule, layout: Vec<(f64, f64)>, given: bool) -> StereoDepi
             let e = mol.bond(bond);
             let sides = (side(mol, e.atom1, e.atom2), side(mol, e.atom2, e.atom1));
             if let (Some(a), Some(b)) = sides {
-                let atoms = if a.len() <= b.len() { a } else { b };
                 let (p, q) = (
                     out.coords[e.atom1.0 as usize],
                     out.coords[e.atom2.0 as usize],
                 );
-                reflect(&mut out.coords, &atoms, p, q);
+                // Either side gives the declared geometry; reflect the one
+                // that lands on fewer atoms (two aryl rings of a
+                // tetrasubstituted alkene end up side by side otherwise),
+                // the smaller one on a tie.
+                let mut with_a = out.coords.clone();
+                reflect(&mut with_a, &a, p, q);
+                let mut with_b = out.coords.clone();
+                reflect(&mut with_b, &b, p, q);
+                let (ca, cb) = (
+                    moved_clashes(mol, &with_a, &a),
+                    moved_clashes(mol, &with_b, &b),
+                );
+                out.coords = if ca < cb || (ca == cb && a.len() <= b.len()) {
+                    with_a
+                } else {
+                    with_b
+                };
             }
         }
         if !given {
@@ -656,6 +695,17 @@ fn widest_gap_direction(
     centre: AtomIdx,
     skip: AtomIdx,
 ) -> Option<f64> {
+    gap_directions(mol, coords, centre, skip).into_iter().next()
+}
+
+/// The middles of the gaps between `centre`'s bonds other than the one to
+/// `skip`, widest gap first.
+fn gap_directions(
+    mol: &Molecule,
+    coords: &[(f64, f64)],
+    centre: AtomIdx,
+    skip: AtomIdx,
+) -> Vec<f64> {
     use std::f64::consts::TAU;
     let c = coords[centre.0 as usize];
     let mut angles: Vec<f64> = mol
@@ -667,27 +717,53 @@ fn widest_gap_direction(
         })
         .collect();
     if angles.is_empty() {
-        return None;
+        return Vec::new();
     }
     angles.sort_by(f64::total_cmp);
-    let (mut best, mut gap) = (angles[0] + TAU / 2.0, 0.0);
-    for (i, &a) in angles.iter().enumerate() {
-        let next = if i + 1 < angles.len() {
-            angles[i + 1]
-        } else {
-            angles[0] + TAU
-        };
-        if next - a > gap {
-            gap = next - a;
-            best = a + gap / 2.0;
-        }
-    }
-    Some(best)
+    let mut gaps: Vec<(f64, f64)> = angles
+        .iter()
+        .enumerate()
+        .map(|(i, &a)| {
+            let next = angles.get(i + 1).copied().unwrap_or(angles[0] + TAU);
+            (next - a, a + (next - a) / 2.0)
+        })
+        .collect();
+    // Stable: equal gaps keep their angular order, as the widest-gap scan did.
+    gaps.sort_by(|a, b| b.0.total_cmp(&a.0));
+    gaps.into_iter().map(|(_, mid)| mid).collect()
+}
+
+/// Whether segments `a`-`b` and `c`-`d` cross properly.
+fn segments_cross(a: (f64, f64), b: (f64, f64), c: (f64, f64), d: (f64, f64)) -> bool {
+    let orient = |p: (f64, f64), q: (f64, f64), r: (f64, f64)| {
+        (q.0 - p.0) * (r.1 - p.1) - (q.1 - p.1) * (r.0 - p.0)
+    };
+    let (d1, d2) = (orient(c, d, a), orient(c, d, b));
+    let (d3, d4) = (orient(a, b, c), orient(a, b, d));
+    d1 * d2 < -1e-9 && d3 * d4 < -1e-9
+}
+
+/// Clashes (non-bonded atoms closer than 0.45 bonds) and bond crossings the
+/// terminal atom `t` at `coords[t]`, bonded to `centre`, makes.
+fn terminal_defects(mol: &Molecule, coords: &[(f64, f64)], centre: AtomIdx, t: AtomIdx) -> usize {
+    let (c, p) = (coords[centre.0 as usize], coords[t.0 as usize]);
+    let clashes = moved_clashes(mol, coords, &[t]);
+    let crossings = mol
+        .bonds()
+        .filter(|(_, b)| ![b.atom1, b.atom2].iter().any(|&a| a == centre || a == t))
+        .filter(|(_, b)| {
+            segments_cross(c, p, coords[b.atom1.0 as usize], coords[b.atom2.0 as usize])
+        })
+        .count();
+    clashes + crossings
 }
 
 /// Put each one-bond neighbour of a stereocentre (a methyl, OH, halogen,
 /// explicit H) in the middle of the widest gap between the centre's other
-/// bonds, so a wedge to it reads unambiguously.
+/// bonds, so a wedge to it reads unambiguously. When that spot lands on
+/// another atom or across a bond (a crowded fused ring), the next widest gap
+/// is tried, and the atom stays where the layout put it when no gap is
+/// clear and its own spot is.
 fn place_terminal_neighbours(mol: &Molecule, coords: &mut [(f64, f64)], centres: &[AtomIdx]) {
     for &centre in centres {
         let terminal: Vec<AtomIdx> = mol
@@ -696,10 +772,25 @@ fn place_terminal_neighbours(mol: &Molecule, coords: &mut [(f64, f64)], centres:
             .filter(|&nb| mol.degree(nb) == 1)
             .collect();
         for t in terminal {
-            if let Some(best) = widest_gap_direction(mol, coords, centre, t) {
-                let c = coords[centre.0 as usize];
-                coords[t.0 as usize] = (c.0 + 1.5 * best.cos(), c.1 + 1.5 * best.sin());
+            let c = coords[centre.0 as usize];
+            let original = coords[t.0 as usize];
+            let original_defects = terminal_defects(mol, coords, centre, t);
+            let mut best: Option<((f64, f64), usize)> = None;
+            for dir in gap_directions(mol, coords, centre, t) {
+                let spot = (c.0 + 1.5 * dir.cos(), c.1 + 1.5 * dir.sin());
+                coords[t.0 as usize] = spot;
+                let defects = terminal_defects(mol, coords, centre, t);
+                if best.is_none_or(|(_, d)| defects < d) {
+                    best = Some((spot, defects));
+                }
+                if defects == 0 {
+                    break;
+                }
             }
+            coords[t.0 as usize] = match best {
+                Some((spot, defects)) if defects <= original_defects => spot,
+                _ => original,
+            };
         }
     }
 }
@@ -1119,6 +1210,34 @@ mod tests {
 
     /// The depiction (SVG, depict data) shows the declared E/Z geometry and
     /// a wedge from the centre, and draws SMILES `/` `\` as plain bonds.
+    #[test]
+    fn stereo_depiction_does_not_stack_atoms() {
+        use chematic_core::AtomIdx;
+        // Tamoxifen's cis aryl rings (drawn on each other when the alkene's
+        // substituents were 60° apart) and a terminal OH of a fused-ring
+        // centre (moved into the widest gap, onto a ring atom).
+        for smi in [
+            "CC/C(=C(\\c1ccccc1)c1ccc(OCCN(C)C)cc1)c1ccccc1",
+            "Cc1cc(=O)n(C(=O)OC(C)(C)C)c2c3c(ccc12)OC(C)(C)[C@H](O)[C@@H]3O",
+        ] {
+            let mol = parse(smi).unwrap();
+            let d = super::stereo_depiction(&mol, &[]);
+            assert!(d.unexpressed_centres.is_empty() && d.unexpressed_double_bonds.is_empty());
+            let n = mol.atom_count();
+            for i in 0..n {
+                for j in i + 1..n {
+                    let (a, b) = (AtomIdx(i as u32), AtomIdx(j as u32));
+                    let (p, q) = (d.coords[i], d.coords[j]);
+                    let dist = ((p.0 - q.0).powi(2) + (p.1 - q.1).powi(2)).sqrt();
+                    assert!(
+                        mol.bond_between(a, b).is_some() || dist >= 0.6,
+                        "{smi}: atoms {i} and {j} {dist:.2} Å apart"
+                    );
+                }
+            }
+        }
+    }
+
     #[test]
     fn depiction_shows_declared_stereo() {
         use chematic_core::{AtomIdx, BondOrder};

@@ -45,3 +45,25 @@ def test_sdwriter_writes_angstrom_coordinates_and_ez(tmp_path):
     assert abs(bond - 1.5) < 1e-3
     back = chematic.from_mol_block(block.split("$$$$")[0])
     assert back.smiles == chematic.from_smiles("F/C=C\\F").smiles
+
+
+def test_mol_block_without_stereo_is_laid_out():
+    # Like RDKit's MolToMolBlock (and the WASM binding): a molecule without
+    # stereo used to be written with every atom at the origin.
+    block = chematic.from_smiles("CCO").to_mol_block()
+    lines = block.splitlines()[4:7]
+    xs = [float(line.split()[0]) for line in lines]
+    ys = [float(line.split()[1]) for line in lines]
+    bond = ((xs[0] - xs[1]) ** 2 + (ys[0] - ys[1]) ** 2) ** 0.5
+    assert abs(bond - 1.5) < 1e-3
+    report_block, _ = chematic.from_smiles("CCO").to_mol_block_with_report()
+    assert report_block == block
+
+
+def test_reaction_and_similarity_map_svgs_draw_wedges():
+    # A stereocentre is drawn with its wedge (a filled polygon) in the
+    # reaction and similarity-map SVGs too.
+    rxn = chematic.reaction_svg("N[C@@H](C)C(=O)O>>N[C@@H](C)C(=O)OC")
+    assert "<polygon" in rxn
+    mol = chematic.from_smiles("N[C@@H](C)C(=O)O")
+    assert "<polygon" in chematic.similarity_map_svg(mol, [0.1] * mol.heavy_atoms)

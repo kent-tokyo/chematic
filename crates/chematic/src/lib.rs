@@ -54,6 +54,18 @@
 //! let svg = depict::depict_svg(&mol);
 //! ```
 //!
+//! `depict::depict_svg` draws the plain 2D layout. To draw declared stereo
+//! (E/Z double bonds with their geometry, one wedge or hash per
+//! stereocentre), as the Python and WASM `svg()` do, draw the MOL writer's
+//! stereo depiction (features `mol` and `depict`):
+//!
+//! ```rust,ignore
+//! let svg = chematic::mol::stereo_depiction::with_stereo_depiction(
+//!     &mol,
+//!     chematic::depict::render_svg,
+//! );
+//! ```
+//!
 //! ## Feature flags
 //!
 //! | Flag | Includes |

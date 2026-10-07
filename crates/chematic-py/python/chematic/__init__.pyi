@@ -178,9 +178,11 @@ class Mol:
         ...
 
     def to_mol_block(self, strict: bool = False) -> str:
-        """Serialize to MDL MOL V2000 format (without 3D coordinates).
+        """Serialize to MDL MOL V2000 format with 2D coordinates.
 
-        Equivalent to RDKit's ``Chem.MolToMolBlock(mol)``. A molecule with
+        Equivalent to RDKit's ``Chem.MolToMolBlock(mol)``: every molecule is
+        written on a 2D layout in Å (1.5 Å bonds), as in RDKit's block and
+        :meth:`depict_data`. A molecule with
         stereo is written on a 2D layout with one wedge or hash per
         tetrahedral centre and E/Z set by the geometry; a centre the layout
         cannot draw unambiguously is left unwedged, and a stereo double bond
@@ -679,6 +681,10 @@ class Mol:
             (CSS hex string), ``charge``) and ``bonds`` (list of dicts:
             ``idx``, ``atom1``, ``atom2``, ``kind`` — one of ``"Single"``,
             ``"Double"``, ``"Triple"``, ``"Aromatic"``, ``"Up"``, ``"Down"``).
+            The coordinates are the stereo depiction (declared E/Z drawn as
+            declared); ``"Up"`` and ``"Down"`` are a wedge and a hash drawn
+            from ``atom1``, a tetrahedral centre (SMILES ``/`` ``\\`` marks
+            are drawn as plain single bonds).
 
         Example::
 

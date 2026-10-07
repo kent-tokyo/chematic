@@ -3700,3 +3700,84 @@ fn test_to_extxyz_json_rejects_coords_atom_count_mismatch() {
     let err = extxyz_frame_from_json_args(&mol.inner, "[[0.0,0.0,0.0]]", "{}");
     assert!(err.is_err(), "expected error for 1 coord row vs 3 atoms");
 }
+
+/// Atom points and (first atom, kind) per bond of a depict-data JSON.
+type DepictionPoints = (Vec<(f64, f64)>, Vec<(usize, String)>);
+
+fn depiction_points(json: &str) -> DepictionPoints {
+    let data: serde_json::Value = serde_json::from_str(json).expect("depict data JSON");
+    let points = data["atoms"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| (a["x"].as_f64().unwrap(), a["y"].as_f64().unwrap()))
+        .collect();
+    let bonds = data["bonds"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|b| {
+            (
+                b["atom1"].as_u64().unwrap() as usize,
+                b["kind"].as_str().unwrap().to_string(),
+            )
+        })
+        .collect();
+    (points, bonds)
+}
+
+#[test]
+fn depict_data_json_draws_declared_ez_and_wedges() {
+    let side = |p: (f64, f64), a: (f64, f64), b: (f64, f64)| {
+        (b.0 - a.0) * (p.1 - a.1) - (b.1 - a.1) * (p.0 - a.0)
+    };
+    for (smi, cis) in [("F/C=C\\F", true), ("F/C=C/F", false)] {
+        let (p, bonds) = depiction_points(&depict_data_json(&parse(smi)));
+        assert_eq!(
+            side(p[0], p[1], p[2]) * side(p[3], p[1], p[2]) > 0.0,
+            cis,
+            "{smi}"
+        );
+        // SMILES `/` `\` marks are not drawn as wedges.
+        assert!(bonds.iter().all(|(_, k)| k != "Up" && k != "Down"), "{smi}");
+    }
+    let (_, bonds) = depiction_points(&depict_data_json(&parse("N[C@@H](C)C(=O)O")));
+    let wedges: Vec<usize> = bonds
+        .iter()
+        .filter(|(_, k)| k == "Up" || k == "Down")
+        .map(|(a, _)| *a)
+        .collect();
+    assert_eq!(wedges, vec![1], "one wedge, drawn from the centre");
+}
+
+#[test]
+fn svg_reaction_and_preflight_paths_draw_stereo() {
+    // A wedge is a filled polygon in the SVG.
+    assert!(parse("N[C@@H](C)C(=O)O").depict_svg().contains("<polygon"));
+    assert!(!parse("NC(C)C(=O)O").depict_svg().contains("<polygon"));
+    let rxn = depict_reaction_svg("N[C@@H](C)C(=O)O>>N[C@@H](C)C(=O)OC").unwrap();
+    assert!(rxn.contains("<polygon"));
+    let report: serde_json::Value =
+        serde_json::from_str(&preflight_smiles_json("N[C@@H](C)C(=O)O", 300, 200)).unwrap();
+    assert!(report.get("error").is_none(), "{report}");
+}
+
+#[test]
+fn to_mol_block_lays_out_molecules_without_stereo() {
+    let block = to_mol_block(&parse("CCO"));
+    let coords: Vec<(f64, f64)> = block
+        .lines()
+        .skip(4)
+        .take(3)
+        .map(|l| {
+            let f: Vec<f64> = l
+                .split_whitespace()
+                .take(2)
+                .map(|x| x.parse().unwrap())
+                .collect();
+            (f[0], f[1])
+        })
+        .collect();
+    let bond = ((coords[0].0 - coords[1].0).powi(2) + (coords[0].1 - coords[1].1).powi(2)).sqrt();
+    assert!((bond - 1.5).abs() < 1e-3, "{block}");
+}

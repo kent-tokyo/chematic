@@ -7,7 +7,10 @@ molecule out; each layout is scaled to a median bond length of 1 and scored:
 
 * ``clashes``: non-bonded atom pairs closer than 0.4 bond lengths;
 * ``crossings``: pairs of bonds without a common atom that intersect;
-* ``bond_dev``: the largest |bond length - 1|.
+* ``bond_dev``: the largest |bond length - 1|;
+* ``narrow_branches``: acyclic atoms with three bonds, two of them drawn
+  less than 90 degrees apart (a branch point drawn as a fork rather than
+  with its bonds about 120 degrees apart).
 
 A row is *clean* with no clash and no crossing. Rows are split by whether
 the molecule has bridgehead atoms (bridged or cage ring systems).
@@ -17,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import statistics
 from pathlib import Path
 
@@ -27,10 +31,27 @@ from rdkit.Chem import rdDepictor, rdMolDescriptors
 RDLogger.DisableLog("rdApp.*")
 
 
-def score(points: list[tuple[float, float]], bonds: list[tuple[int, int]]) -> dict:
+def narrow_branches(points, bonds, branch_atoms) -> int:
+    neighbours: dict[int, list[int]] = {}
+    for a, b in bonds:
+        neighbours.setdefault(a, []).append(b)
+        neighbours.setdefault(b, []).append(a)
+    count = 0
+    for i in branch_atoms:
+        angles = sorted(
+            math.atan2(points[j][1] - points[i][1], points[j][0] - points[i][0]) % math.tau
+            for j in neighbours.get(i, [])
+        )
+        gaps = [(angles[(k + 1) % len(angles)] - angles[k]) % math.tau for k in range(len(angles))]
+        if gaps and min(gaps) < math.radians(90) - 1e-6:
+            count += 1
+    return count
+
+
+def score(points: list[tuple[float, float]], bonds: list[tuple[int, int]], branch_atoms=()) -> dict:
     lengths = [((points[a][0] - points[b][0]) ** 2 + (points[a][1] - points[b][1]) ** 2) ** 0.5 for a, b in bonds]
     if not lengths:
-        return {"clashes": 0, "crossings": 0, "bond_dev": 0.0}
+        return {"clashes": 0, "crossings": 0, "bond_dev": 0.0, "narrow_branches": 0}
     unit = statistics.median(lengths) or 1.0
     pts = [(x / unit, y / unit) for x, y in points]
     bonded = {frozenset(b) for b in bonds}
@@ -60,7 +81,8 @@ def score(points: list[tuple[float, float]], bonds: list[tuple[int, int]]) -> di
             if cross(pts[a], pts[b], pts[c], pts[d]):
                 crossings += 1
     dev = max(abs(l / unit - 1.0) for l in lengths)
-    return {"clashes": clashes, "crossings": crossings, "bond_dev": dev}
+    return {"clashes": clashes, "crossings": crossings, "bond_dev": dev,
+            "narrow_branches": narrow_branches(points, bonds, branch_atoms)}
 
 
 def main() -> int:
@@ -89,10 +111,11 @@ def main() -> int:
             conf = m.GetConformer()
             rpts = [(conf.GetAtomPosition(k).x, conf.GetAtomPosition(k).y) for k in range(m.GetNumAtoms())]
             rbonds = [(b.GetBeginAtomIdx(), b.GetEndAtomIdx()) for b in m.GetBonds()]
+            branch = [a.GetIdx() for a in m.GetAtoms() if a.GetDegree() == 3 and not a.IsInRing()]
             rows.append({
                 "corpus": corpus.name, "row": i, "smiles": smi,
                 "bridged": rdMolDescriptors.CalcNumBridgeheadAtoms(m) > 0,
-                "chematic": score(cpts, cbonds), "rdkit": score(rpts, rbonds),
+                "chematic": score(cpts, cbonds, branch), "rdkit": score(rpts, rbonds, branch),
             })
     args.rows_output.write_text("".join(json.dumps(r) + "\n" for r in rows))
 
@@ -105,6 +128,8 @@ def main() -> int:
                 "with_clash": sum(x["clashes"] > 0 for x in s),
                 "with_crossing": sum(x["crossings"] > 0 for x in s),
                 "bond_dev_over_0.2": sum(x["bond_dev"] > 0.2 for x in s),
+                "with_narrow_branch": sum(x["narrow_branches"] > 0 for x in s),
+                "narrow_branch_atoms": sum(x["narrow_branches"] for x in s),
             }
         return out
 

@@ -499,14 +499,15 @@ pub fn preflight_smiles_json(smiles: &str, width: u32, height: u32) -> String {
     if mol.atom_count() > WASM_MAX_ATOMS {
         return format!(r#"{{"error":"molecule exceeds maximum atom count ({WASM_MAX_ATOMS})"}}"#);
     }
-    let layout = chematic_depict::compute_layout(&mol);
+    // What `depict_svg` draws: the stereo depiction.
+    let (copy, layout) = chematic_mol::stereo_depiction::depiction_with_stereo(&mol);
     let opts = chematic_depict::RenderOptions {
         width: Some(width),
         height: Some(height),
         ..Default::default()
     };
     chematic_depict::preflight_svg_json(
-        &mol,
+        copy.as_ref().unwrap_or(&mol),
         &layout,
         &opts,
         &chematic_depict::PreflightLimits::default(),

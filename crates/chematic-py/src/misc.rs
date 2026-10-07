@@ -88,7 +88,17 @@ fn smarts_find(smarts: &str, mol: &Mol) -> PyResult<Vec<Vec<usize>>> {
 ///     svg = chematic.similarity_map_svg(mol, weights)
 #[pyfunction]
 fn similarity_map_svg(mol: &Mol, weights: Vec<f64>) -> String {
-    chematic_depict::similarity_map_svg(&mol.inner, &weights)
+    chematic_mol::stereo_depiction::with_stereo_depiction(&mol.inner, |m, layout| {
+        chematic_depict::render_svg_opts(
+            m,
+            layout,
+            &chematic_depict::similarity_map_options(
+                &mol.inner,
+                &weights,
+                &chematic_depict::RenderOptions::default(),
+            ),
+        )
+    })
 }
 
 /// Return all known chemical abbreviations as a dict ``{symbol: SMILES}``.

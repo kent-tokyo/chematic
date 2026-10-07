@@ -30,7 +30,9 @@ pub use preflight::{
     PreflightCode, PreflightDiagnostic, PreflightLimits, PreflightReport, PreflightStyle,
     preflight_svg, preflight_svg_json,
 };
-pub use reaction_svg::{depict_reaction_svg, depict_reaction_svg_opts};
+pub use reaction_svg::{
+    depict_reaction_svg, depict_reaction_svg_opts, depict_reaction_svg_prepared,
+};
 pub use svg::{
     AtomLabel, HPosition, RenderOptions, atom_color, atom_color_rgb, atom_display_label,
     atom_label_with_h, render_svg, render_svg_highlighted, render_svg_opts,
@@ -39,7 +41,7 @@ pub use svg::{
 
 pub mod reaction_svg;
 
-pub use similarity_map::{similarity_map_svg, similarity_map_svg_opts};
+pub use similarity_map::{similarity_map_options, similarity_map_svg, similarity_map_svg_opts};
 
 // ---------------------------------------------------------------------------
 // DepictData — structured drawing data for egui/canvas renderers

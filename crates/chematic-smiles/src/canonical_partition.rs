@@ -130,10 +130,18 @@ fn order_class(order: BondOrder) -> u8 {
 /// section 8/19: this is the sanctioned trade.
 fn stereo_sensitive_atoms(mol: &Molecule) -> SmallVec<[bool; 64]> {
     let mut sensitive: SmallVec<[bool; 64]> = smallvec::smallvec![false; mol.atom_count()];
+    // Atoms whose direct neighbours are pinned too.
+    let mut expand: SmallVec<[bool; 64]> = smallvec::smallvec![false; mol.atom_count()];
+    let double_bond_partner = |a: AtomIdx| {
+        mol.neighbors(a)
+            .find(|&(_, b)| mol.bond(b).order == BondOrder::Double)
+            .map(|(nb, _)| nb)
+    };
     for i in 0..mol.atom_count() {
         let idx = AtomIdx(i as u32);
         if mol.atom(idx).chirality != Chirality::None {
             sensitive[i] = true;
+            expand[i] = true;
         }
     }
     for bidx in 0..mol.bond_count() {
@@ -142,6 +150,26 @@ fn stereo_sensitive_atoms(mol: &Molecule) -> SmallVec<[bool; 64]> {
         if matches!(bond.order, BondOrder::Up | BondOrder::Down) {
             sensitive[bond.atom1.0 as usize] = true;
             sensitive[bond.atom2.0 as usize] = true;
+            // A `/` `\` mark sets the E/Z of the double bond at its
+            // endpoint(s); that geometry depends only on the double bond's
+            // two atoms and their direct substituents, so those are pinned
+            // and the marked substituent's own other neighbours are not (a
+            // tert-butyl on an imine N: its three methyls stay one orbit).
+            // A mark with no double bond at either end keeps both ends'
+            // neighbourhoods pinned.
+            let mut at_double_bond = false;
+            for end in [bond.atom1, bond.atom2] {
+                if let Some(partner) = double_bond_partner(end) {
+                    at_double_bond = true;
+                    sensitive[partner.0 as usize] = true;
+                    expand[end.0 as usize] = true;
+                    expand[partner.0 as usize] = true;
+                }
+            }
+            if !at_double_bond {
+                expand[bond.atom1.0 as usize] = true;
+                expand[bond.atom2.0 as usize] = true;
+            }
         } else if bond.order == BondOrder::Aromatic && mol.bond_direction(bidx).is_some() {
             // A direction stashed on an aromatic edge is only a carrier
             // spelling for an adjacent exocyclic double bond. Pinning the
@@ -157,17 +185,19 @@ fn stereo_sensitive_atoms(mol: &Molecule) -> SmallVec<[bool; 64]> {
                     .any(|(_, nb)| nb != bidx && mol.bond(nb).order == BondOrder::Double)
                 {
                     sensitive[endpoint.0 as usize] = true;
+                    expand[endpoint.0 as usize] = true;
                 }
             }
         } else if mol.bond_direction(bidx).is_some() {
             sensitive[bond.atom1.0 as usize] = true;
             sensitive[bond.atom2.0 as usize] = true;
+            expand[bond.atom1.0 as usize] = true;
+            expand[bond.atom2.0 as usize] = true;
         }
     }
 
-    let base = sensitive.clone();
-    for (i, &is_sensitive) in base.iter().enumerate() {
-        if !is_sensitive {
+    for (i, &e) in expand.iter().enumerate() {
+        if !e {
             continue;
         }
         let idx = AtomIdx(i as u32);
@@ -834,5 +864,25 @@ mod tests {
             classes[0], classes[7],
             "differently-mapped-but-otherwise-identical methyls must share a class: {classes:?}"
         );
+    }
+
+    #[test]
+    fn ez_mark_pins_the_double_bond_neighbourhood_only() {
+        // CC(C)(C)/N=C(/N)c1ccccc1: the imine's atoms and substituents are
+        // pinned; the tert-butyl's methyls (two bonds from the double bond)
+        // are not, so the search keeps them one orbit (rows 4111 and 4384
+        // of the exposed 10k, written with explicit H, branched on every
+        // methyl and took about 60 ms).
+        let mol = parse("CC(C)(C)/N=C(/N)c1ccccc1").unwrap();
+        let pinned = stereo_sensitive_atoms(&mol);
+        assert_eq!(
+            &pinned[..8],
+            &[false, true, false, false, true, true, true, true]
+        );
+        assert!(!pinned[9], "an ortho ring carbon is not pinned");
+        // Chirality keeps pinning its neighbours.
+        let mol = parse("C[C@H](N)C(C)(C)C").unwrap();
+        let pinned = stereo_sensitive_atoms(&mol);
+        assert!(pinned[0] && pinned[1] && pinned[2] && pinned[3] && !pinned[4]);
     }
 }
