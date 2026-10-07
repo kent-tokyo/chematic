@@ -17,12 +17,25 @@ import argparse
 import gzip
 import hashlib
 import json
+import subprocess
 from collections import Counter
 from pathlib import Path
 
 import chematic
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def source_revision() -> str | None:
+    """The checkout's commit (``+dirty`` with local changes), or None."""
+    try:
+        rev = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], check=True,
+                             capture_output=True, text=True).stdout.strip()
+        dirty = subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--untracked-files=no"],
+                               check=True, capture_output=True, text=True).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return rev + ("+dirty" if dirty else "")
 CORPUS = ROOT / "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi"
 QUERIES = ROOT / "validation/rdkit_rebaseline_smarts_queries.json"
 RESULTS = ROOT / "validation/results"
@@ -82,6 +95,9 @@ def main() -> int:
         "schema": "python-opt-in-smarts-parity-310k-rdkit-2026.09.1/v1",
         "scope": args.scope,
         "chematic_version": chematic.__version__,
+        # A source build carries the crate version it branched from; the
+        # revision says which source was measured.
+        "source_revision": source_revision(),
         "oracle": {"path": str(ORACLE.relative_to(ROOT)), "sha256": sha256(ORACLE),
                    "rdkit": "2026.09.1 native C++ build", "commit": summary["sources"]["new"]["commit"]},
         "input_cells": len(corpus) * len(queries),

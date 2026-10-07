@@ -55,28 +55,8 @@ from rdkit.Chem import AllChem
 
 RDLogger.DisableLog("rdApp.*")
 
-
-def load_rules(paths: list[Path]) -> tuple[list[dict], list[dict]]:
-    import json5
-
-    rules, sources = [], []
-    for path in paths:
-        raw = path.read_bytes()
-        sources.append({"path": path.name, "sha256": hashlib.sha256(raw).hexdigest()})
-        text = raw.decode("utf-8")
-        table = json5.loads(text[text.index("{"):], object_pairs_hook=lambda pairs: pairs)
-        top = dict(table)
-        entries = top.get("reactions", table)
-        for name, body in entries:
-            body = dict(body)
-            if body.get("smirks"):
-                rules.append({
-                    "table": path.name,
-                    "name": name,
-                    "id": body.get("btmrID") or name,
-                    "smirks": body["smirks"],
-                })
-    return rules, sources
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from biotransformer_rules import load_requests, load_rules  # noqa: E402
 
 
 def sanitized_key(mols) -> tuple[str, ...] | None:
@@ -180,6 +160,34 @@ class Worker:
         return json.loads(self.proc.stdout.readline())
 
 
+class Replay:
+    """chematic's responses recorded on another host by
+    ``biotransformer_chematic_responses.py`` (a published wheel on a platform
+    RDKit 2026.03.6 has no wheel for), looked up by rule SMIRKS and reactant
+    SMILES. A request with no recorded response stops the run."""
+
+    def __init__(self, responses: list[Path], rule_paths: list[Path], requests: Path):
+        import gzip
+
+        rules, _ = load_rules(rule_paths)
+        smiles = [s for pair in load_requests(requests) for s in pair]
+        self.table: dict = {}
+        for path in responses:
+            with gzip.open(path, "rt", encoding="utf-8") as f:
+                head = json.loads(f.readline())
+                self.version, self.file = head["version"], head["file"]
+                for line in f:
+                    rule, request, status, detail, products = json.loads(line)
+                    self.table[(rules[rule]["smirks"], smiles[request])] = (status, detail, products)
+
+    def run(self, request: dict) -> dict:
+        key = (request["smirks"], request["smiles"])
+        if key not in self.table:
+            raise SystemExit(f"no recorded chematic response for {key}")
+        status, detail, products = self.table[key]
+        return {"status": status, "detail": detail, "products": products}
+
+
 def chematic_set(backend, smirks: str, smiles: str) -> tuple[str, tuple | None, str | None]:
     response = backend.run({"smirks": smirks, "smiles": smiles})
     status = response["status"]
@@ -215,13 +223,25 @@ def main() -> int:
                     help="START:END, run only these reactant rows (after --every/--limit)")
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--rows", type=Path, required=True, help="JSONL of non-exact rows")
+    ap.add_argument("--replay", type=Path, nargs="+", default=None,
+                    help="chematic responses recorded by biotransformer_chematic_responses.py "
+                         "(needs --requests); chematic is not imported")
+    ap.add_argument("--requests", type=Path, default=None,
+                    help="validation/biotransformer-requests-400.tsv, for --replay")
     ap.add_argument("--chematic-python", default=None,
                     help="run chematic under this interpreter (a published wheel for a "
                          "Python RDKit 2026.03.6 has no wheel for); default: in process")
     args = ap.parse_args()
 
     sys.path.insert(0, str(Path(__file__).parent))
-    chematic = Worker(args.chematic_python) if args.chematic_python else InProcess()
+    if args.replay:
+        if not args.requests:
+            ap.error("--replay needs --requests")
+        chematic = Replay(args.replay, args.rules, args.requests)
+    elif args.chematic_python:
+        chematic = Worker(args.chematic_python)
+    else:
+        chematic = InProcess()
 
     rules, sources = load_rules(args.rules)
     if args.rules_slice:

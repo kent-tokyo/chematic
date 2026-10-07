@@ -1,0 +1,100 @@
+{
+  "schema": "published-wheel-chemistry-gates/v1",
+  "scope": "published_pypi_v1.0.37_linux_x86_64_cp39",
+  "chematic_version": "1.0.37",
+  "wheel": "chematic-1.0.37-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+  "wheel_sha256": "660e12e5292cbd82ce111583e27eba539cb72c30771a5777c909b979cabb38fe",
+  "host": {
+    "platform": "Linux-6.18.44-fc-v77-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "python": "3.11.15"
+  },
+  "rdkit_host": {
+    "platform": "Linux-6.18.44-fc-v77-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "python": "3.11.15"
+  },
+  "expected": "validation/published-wheel-chemistry-gates-expected-v1.0.36.json",
+  "gates": {
+    "reaction_83": {
+      "graph_origin_map_match": 80,
+      "joint_invalid_input": 3
+    },
+    "smarts_310k": {
+      "counts": {
+        "exact": 309982,
+        "fixed_original_boolean": 43,
+        "fixed_original_residual": 183,
+        "refused_original_correct": 1,
+        "refused_original_residual": 17
+      },
+      "unexpected_total": 0
+    },
+    "exposed_10k": {
+      "cip_accurate": {
+        "agree": 4395,
+        "kekule_dependent": 0
+      },
+      "hybridization": {
+        "atoms": 220015,
+        "agree": 220015
+      },
+      "mmff94": {
+        "compared_rows": 9796,
+        "heavy": 215565,
+        "hydrogen": 191148,
+        "rdkit_unsupported": 204
+      },
+      "mol_writer": {
+        "stereo_rows": 1687,
+        "read_back_as_input": 1686,
+        "strict_refused": 1
+      }
+    },
+    "chembl_5k": {
+      "cip_accurate": {
+        "agree": 4186,
+        "kekule_dependent": 20
+      },
+      "hybridization": {
+        "atoms": 138655,
+        "agree": 138655
+      },
+      "mmff94": {
+        "compared_rows": 4990,
+        "heavy": 138500,
+        "hydrogen": 116364,
+        "rdkit_unsupported": 10
+      },
+      "mol_writer": {
+        "stereo_rows": 1670,
+        "read_back_as_input": 1670,
+        "strict_refused": 0
+      }
+    },
+    "biotransformer_corpus": {
+      "explicit_h:both_none": 382090,
+      "explicit_h:both_none_refused": 673,
+      "explicit_h:differ": 35,
+      "explicit_h:exact": 6604,
+      "explicit_h:rdkit_raw_unsanitizable": 172,
+      "explicit_h:rdkit_resanitize_fails_same_products": 14,
+      "explicit_h:rdkit_truncated_subset": 12,
+      "implicit:both_none": 388406,
+      "implicit:both_none_refused": 143,
+      "implicit:exact": 1051,
+      "multi_reactant_rules_skipped": 6,
+      "rdkit_parse_error_rules": 3,
+      "rules_run": 974
+    }
+  },
+  "differences": [
+    "chembl_5k.mmff94.heavy_differing: expected 5, got None",
+    "chembl_5k.mol_writer.read_back_as_input: expected 1669, got 1670",
+    "chembl_5k.mol_writer.strict_refused: expected 1, got 0",
+    "exposed_10k.cip_accurate.abstain: expected 1, got None",
+    "exposed_10k.cip_accurate.agree: expected 4394, got 4395",
+    "exposed_10k.mmff94.heavy_differing: expected 81, got None"
+  ],
+  "pass": false
+}
