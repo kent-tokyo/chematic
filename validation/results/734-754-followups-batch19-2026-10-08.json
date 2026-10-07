@@ -1,0 +1,190 @@
+{
+ "schema": "734-754-followups-batch19/v1",
+ "rdkit": "2026.03.6",
+ "base_revision": "67296652",
+ "layout_2d_as_drawn": {
+  "batch18": {
+   "clean": 14722,
+   "with_clash": 28,
+   "with_crossing": 277,
+   "bond_dev_over_0.2": 276,
+   "with_narrow_branch": 317,
+   "narrow_branch_atoms": 2162,
+   "bridged_clean": 290,
+   "bridged_with_crossing": 241,
+   "bridged_more_crossings_than_rdkit": 42
+  },
+  "source": {
+   "clean": 14757,
+   "with_clash": 25,
+   "with_crossing": 242,
+   "bond_dev_over_0.2": 278,
+   "with_narrow_branch": 298,
+   "narrow_branch_atoms": 1876,
+   "bridged_clean": 324,
+   "bridged_with_crossing": 207,
+   "bridged_more_crossings_than_rdkit": 31
+  },
+  "rdkit": {
+   "clean": 14504,
+   "with_clash": 276,
+   "with_crossing": 402,
+   "bond_dev_over_0.2": 540,
+   "with_narrow_branch": 0,
+   "narrow_branch_atoms": 0,
+   "bridged_clean": 232,
+   "bridged_with_crossing": 290
+  },
+  "rows_better_than_batch18": 44,
+  "rows_worse_than_batch18": [
+   {
+    "smiles": "Oc1cccc(CCCCCC(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F)c1O",
+    "batch18": [
+     0,
+     0
+    ],
+    "source": [
+     0,
+     1
+    ]
+   },
+   {
+    "smiles": "FC(F)(F)C(F)(F)C(F)(F)C(F)(F)N(C(F)(F)C(F)(F)C(F)(F)C(F)(F)F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F",
+    "batch18": [
+     0,
+     2
+    ],
+    "source": [
+     2,
+     13
+    ]
+   }
+  ],
+  "rejected_variants": {
+   "wide_turns_up_to_12_atoms": {
+    "rows_better": 11,
+    "rows_worse": 2,
+    "narrow_rows": 313
+   },
+   "medium_forks_relieved_in_large_components": {
+    "narrow_branch_atoms": 936,
+    "write_mol_2000_rows_instructions": 809434272
+   },
+   "stacking_moves_with_fallback": {
+    "rows_better_vs_batch18": 43,
+    "rows_worse_vs_batch18": 0,
+    "write_mol_2000_rows_instructions": 706040306
+   }
+  },
+  "decided": [
+   "fullerene adducts (3 rows): sphere drawn flat; RDKit 1 near pair, 35-38 crossings, bonds up to 14x long",
+   "narrow forks in components > 60 atoms (1,745 of 1,876 atoms)"
+  ]
+ },
+ "instructions": {
+  "write_mol_2000_rows": {
+   "batch18": 678700858,
+   "source": 659584609
+  },
+  "depict_svg_2000_rows": {
+   "batch18": 1373844065,
+   "source": 1051969103
+  },
+  "canonical_30305_inputs": {
+   "batch18": 20697515512,
+   "source": 19343852177
+  },
+  "canonical_row_x10k_hrand_1144": {
+   "batch18": 26692832,
+   "source": 26696105
+  },
+  "canonical_row_c5k_hrand_2984": {
+   "batch18": 24506847,
+   "source": 24507201
+  }
+ },
+ "identical_output": {
+  "canonical_strings_30305": true,
+  "canonical_strings_30030_real": true,
+  "svg_f2_random_values": 400000
+ },
+ "gates": {
+  "smarts_310k_opt_in": {
+   "exact": 309982,
+   "typed_refusals": 18,
+   "unexpected": 0
+  },
+  "smarts_310k_2026_09_1": {
+   "exact": 310000
+  },
+  "cip_accurate": [
+   4395,
+   4186,
+   8581
+  ],
+  "hybridization": [
+   [
+    220015,
+    220015
+   ],
+   [
+    138655,
+    138655
+   ],
+   [
+    358670,
+    358670
+   ]
+  ],
+  "mmff94_differing": [
+   0,
+   0,
+   0
+  ],
+  "mol_writer_read_back": [
+   [
+    1686,
+    1687
+   ],
+   [
+    1670,
+    1670
+   ],
+   [
+    3356,
+    3357
+   ]
+  ],
+  "depiction_drawn_as_input": [
+   [
+    1686,
+    1687
+   ],
+   [
+    1670,
+    1670
+   ]
+  ],
+  "reaction_83": {
+   "graph_origin_map_match": 80,
+   "joint_invalid_input": 3
+  },
+  "autoconf": "75/83, 0 unexpected",
+  "biotransformer": {
+   "implicit_exact": 1051,
+   "explicit_h_exact": 6604
+  },
+  "a6": {
+   "200": {
+    "converged": 135
+   },
+   "1000": {
+    "converged": 264
+   },
+   "sound": 265,
+   "stereo_clean": 265,
+   "gross_clash": 0,
+   "coords_identical_to_batch18": true
+  }
+ }
+}

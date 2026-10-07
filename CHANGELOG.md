@@ -16,6 +16,15 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- 2D layout: adamantane-type cages (adamantane, hexamine) are drawn as
+  RDKit's projection instead of with a clash; a one- or two-atom substituent
+  may swing up to 150° round its hinge in the clash relief (a tropane's
+  N-methyl, a pinane's methyls go into a free face); crowded forks open to
+  90° where that does as well; the relief no longer stacks two atoms. As
+  drawn, 242 of 15,000 rows have a crossing (was 277; RDKit 402) and 25 a
+  clash (was 28); 14,757 are clean. SVG text and canonical SMILES are
+  faster (identical output). Record:
+  `benchmarks/2026-10-08-734-754-followups-batch19.md`.
 - 2D layout: a ring atom with two ring bonds and two substituents draws
   them 30° either side of the ring's outward bisector (phenytoin and
   4,4-disubstituted glutarimides drew a crossing); as drawn, 277 of 15,000
