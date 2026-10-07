@@ -1,0 +1,27 @@
+{
+ "schema": "depiction-speed/v1",
+ "engine": "chematic",
+ "chematic": "1.0.36",
+ "corpus": "rdkit-js-browser-10k-v1.smi",
+ "input_rows": 10000,
+ "repeats": 3,
+ "python": "3.11.15",
+ "machine": "x86_64",
+ "ops": {
+  "svg": {
+   "ms": 568.8,
+   "rows": 10000,
+   "output_size": 50943411
+  },
+  "depict_data": {
+   "ms": 627.7,
+   "rows": 10000,
+   "output_size": 220015
+  },
+  "mol_block": {
+   "ms": 494.3,
+   "rows": 10000,
+   "output_size": 18374243
+  }
+ }
+}
