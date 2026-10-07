@@ -618,3 +618,237 @@ fn mass_number_maps_to_isotope_both_directions() {
     let back = chematic_to_qc_molecule(&view.molecule, &view.coords, 0.0, 1).unwrap();
     assert_eq!(back.mass_numbers, Some(vec![13]));
 }
+
+#[test]
+fn optional_molecule_metadata_and_fragments_survive_round_trip() {
+    let mut original = water_molecule_json("qcschema_molecule");
+    let fields = json!({
+        "masses": [15.999, 1.008, 2.014],
+        "real": [true, true, false],
+        "atomic_numbers": [8, 1, 1],
+        "mass_numbers": [-1, -1, 2],
+        "atom_labels": ["oxygen", "hydrogen", "ghost deuterium"],
+        "comment": "fragment metadata must survive",
+        "fragments": [[0, 1], [2]],
+        "fragment_charges": [0.0, 0.0],
+        "fragment_multiplicities": [1, 2],
+        "fix_symmetry": "c1",
+        "id": "water-with-ghost",
+        "extras": {"source": {"isotopic": true}},
+        "vendor_metadata": [null, {"label": "preserve me"}]
+    });
+    original
+        .as_object_mut()
+        .unwrap()
+        .extend(fields.as_object().unwrap().clone());
+    original["provenance"]["vendor_revision"] = json!(7);
+    let parsed = parse_qcschema_molecule(&original.to_string()).unwrap();
+    assert_eq!(parsed.real, Some(vec![true, true, false]));
+    assert_eq!(parsed.fragments, Some(vec![vec![0, 1], vec![2]]));
+    assert_eq!(parsed.mass_numbers, Some(vec![-1, -1, 2]));
+    let written: Value = serde_json::from_str(&write_qcschema_molecule(&parsed)).unwrap();
+    assert_roundtrip_eq(&original, &written);
+    assert_eq!(
+        parse_qcschema_molecule(&written.to_string()).unwrap(),
+        parsed
+    );
+}
+
+#[test]
+fn per_atom_metadata_requires_one_entry_per_atom() {
+    for (key, value) in [
+        ("masses", json!([1.0])),
+        ("real", json!([true])),
+        ("atomic_numbers", json!([8])),
+        ("mass_numbers", json!([-1])),
+        ("atom_labels", json!(["O"])),
+    ] {
+        let mut input = water_molecule_json("qcschema_molecule");
+        input[key] = value;
+        let err = parse_qcschema_molecule(&input.to_string()).unwrap_err();
+        assert!(
+            matches!(err, QcSchemaError::LengthMismatch { ref detail } if detail.contains(key)),
+            "{key}: {err}"
+        );
+    }
+}
+
+#[test]
+fn malformed_molecule_fields_report_the_offending_field() {
+    for (key, value, expected_field) in [
+        ("schema_name", json!(1), "schema_name"),
+        ("schema_version", json!(1.5), "schema_version"),
+        ("molecular_charge", json!("zero"), "molecular_charge"),
+        ("fix_com", json!("true"), "fix_com"),
+        ("symbols", json!([8, "H", "H"]), "symbols[0]"),
+        ("geometry", json!(["zero"]), "geometry[0]"),
+        ("masses", json!(true), "masses"),
+        ("real", json!([1, true, true]), "real[0]"),
+        ("extras", json!([]), "extras"),
+    ] {
+        let mut input = water_molecule_json("qcschema_molecule");
+        input[key] = value;
+        let err = parse_qcschema_molecule(&input.to_string()).unwrap_err();
+        assert!(
+            matches!(err, QcSchemaError::WrongType { ref field, .. } if field == expected_field),
+            "{key}: {err}"
+        );
+    }
+}
+
+#[test]
+fn malformed_connectivity_reports_nested_field_paths() {
+    for (value, expected_field) in [
+        (json!(false), "connectivity"),
+        (json!([false]), "connectivity[0]"),
+        (json!([[0, 1]]), "connectivity[0]"),
+        (json!([[-1, 1, 1.0]]), "connectivity[0][0]"),
+        (json!([[0, 1.5, 1.0]]), "connectivity[0][1]"),
+        (json!([[0, 1, "single"]]), "connectivity[0][2]"),
+    ] {
+        let mut input = water_molecule_json("qcschema_molecule");
+        input["connectivity"] = value;
+        let err = parse_qcschema_molecule(&input.to_string()).unwrap_err();
+        assert!(
+            matches!(err, QcSchemaError::WrongType { ref field, .. } if field == expected_field),
+            "{err}"
+        );
+    }
+}
+
+#[test]
+fn malformed_fragments_are_rejected_before_acceptance() {
+    for (value, expected_field) in [
+        (json!("all"), "fragments"),
+        (json!([0]), "fragments[0]"),
+        (json!([[-1]]), "fragments[0][0]"),
+    ] {
+        let mut input = water_molecule_json("qcschema_molecule");
+        input["fragments"] = value;
+        let err = parse_qcschema_molecule(&input.to_string()).unwrap_err();
+        assert!(
+            matches!(err, QcSchemaError::WrongType { ref field, .. } if field == expected_field),
+            "{err}"
+        );
+    }
+    let mut input = water_molecule_json("qcschema_molecule");
+    input["fragments"] = json!([[0, 3]]);
+    assert!(matches!(
+        parse_qcschema_molecule(&input.to_string()),
+        Err(QcSchemaError::IndexOutOfRange { .. })
+    ));
+}
+
+#[test]
+fn atomic_input_drivers_and_structured_basis_preserve_extensions() {
+    for (driver_name, driver) in [
+        ("energy", Driver::Energy),
+        ("gradient", Driver::Gradient),
+        ("hessian", Driver::Hessian),
+        ("properties", Driver::Properties),
+    ] {
+        let mut input = atomic_input_json();
+        input["schema_name"] = json!("qc_schema_input");
+        input["driver"] = json!(driver_name);
+        input["model"] = json!({"method": "hf", "basis": {"center_data": {"H": [1.0, 0.5]}}, "vendor": "custom"});
+        input["protocols"] = json!({"wavefunction": "all"});
+        input["id"] = json!("job-1");
+        input["provenance"] =
+            json!({"creator": "fixture", "version": "1", "routine": "compute", "extra": true});
+        let parsed = parse_atomic_input(&input.to_string()).unwrap();
+        assert_eq!(parsed.driver, driver);
+        assert_eq!(parsed.driver.as_str(), driver_name);
+        assert!(matches!(parsed.model.basis, Some(Basis::Object(_))));
+        let written: Value = serde_json::from_str(&write_atomic_input(&parsed)).unwrap();
+        assert_roundtrip_eq(&input, &written);
+        assert_eq!(parse_atomic_input(&written.to_string()).unwrap(), parsed);
+    }
+    let mut input = atomic_input_json();
+    input["model"]["basis"] = Value::Null;
+    let parsed = parse_atomic_input(&input.to_string()).unwrap();
+    assert_eq!(parsed.model.basis, None);
+    let written: Value = serde_json::from_str(&write_atomic_input(&parsed)).unwrap();
+    assert!(written["model"].get("basis").is_none());
+}
+
+#[test]
+fn properties_results_preserve_wavefunction_and_native_files() {
+    let mut input = atomic_result_energy_json();
+    input["schema_name"] = json!("qc_schema_output");
+    input["driver"] = json!("properties");
+    input["return_result"] = json!({"dipole": [0.0, 0.0, 0.7], "vendor": {"converged": true}});
+    input["wavefunction"] = json!({"orbitals_a": [[0.2, 0.8]]});
+    input["native_files"] = json!({"output.dat": "energy = -76.4"});
+    input["stdout"] = json!("completed");
+    input["stderr"] = json!("");
+    input["protocols"] = json!({"native_files": "all"});
+    input["id"] = json!("result-1");
+    let parsed = parse_atomic_result(&input.to_string()).unwrap();
+    let Some(ReturnResult::Properties(properties)) = &parsed.return_result else {
+        panic!("expected properties result");
+    };
+    assert_eq!(properties.get("dipole"), Some(&json!([0.0, 0.0, 0.7])));
+    assert_eq!(
+        parsed.native_files.get("output.dat"),
+        Some(&json!("energy = -76.4"))
+    );
+    let written: Value = serde_json::from_str(&write_atomic_result(&parsed)).unwrap();
+    assert_roundtrip_eq(&input, &written);
+    assert_eq!(parse_atomic_result(&written.to_string()).unwrap(), parsed);
+}
+
+#[test]
+fn atomic_objects_reject_wrong_schema_and_model_types() {
+    let mut input = atomic_input_json();
+    input["schema_name"] = json!("qcschema_output");
+    assert!(matches!(
+        parse_atomic_input(&input.to_string()),
+        Err(QcSchemaError::InvalidSchemaName {
+            object: "AtomicInput",
+            ..
+        })
+    ));
+    let mut result = atomic_result_energy_json();
+    result["schema_name"] = json!("qcschema_input");
+    assert!(matches!(
+        parse_atomic_result(&result.to_string()),
+        Err(QcSchemaError::InvalidSchemaName {
+            object: "AtomicResult",
+            ..
+        })
+    ));
+    for (model, expected_field) in [
+        (json!([]), "model"),
+        (json!({"method": false}), "method"),
+        (json!({"method": "hf", "basis": []}), "model.basis"),
+    ] {
+        let mut input = atomic_input_json();
+        input["model"] = model;
+        let err = parse_atomic_input(&input.to_string()).unwrap_err();
+        assert!(
+            matches!(err, QcSchemaError::WrongType { ref field, .. } if field == expected_field),
+            "{err}"
+        );
+    }
+}
+
+#[test]
+fn invalid_result_values_report_the_precise_path() {
+    for (value, expected_field) in [
+        (json!(true), "return_result"),
+        (json!([[0.0, "bad"]]), "return_result[0][1]"),
+    ] {
+        let mut input = atomic_result_energy_json();
+        input["return_result"] = value;
+        let err = parse_atomic_result(&input.to_string()).unwrap_err();
+        assert!(
+            matches!(err, QcSchemaError::WrongType { ref field, .. } if field == expected_field),
+            "{err}"
+        );
+    }
+    let mut input = atomic_result_energy_json();
+    input["success"] = json!("yes");
+    assert!(
+        matches!(parse_atomic_result(&input.to_string()), Err(QcSchemaError::WrongType { field, .. }) if field == "success")
+    );
+}
