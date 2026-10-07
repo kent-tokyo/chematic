@@ -151,8 +151,8 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
             }
         }
         // Lays the component out with forks 60° either side of the chain
-        // direction, or 30° at the atoms `narrow` marks.
-        let lay_with = |narrow: &[bool], narrow_fork: f64| -> Vec<Option<Point>> {
+        // direction, or `forks[atom]` where that is not zero.
+        let lay_forks = |forks: &[f64]| -> Vec<Option<Point>> {
             let mut placed: Vec<Option<Point>> = vec![None; n];
             let mut system_placed: Vec<bool> = vec![false; ring_systems.len()];
 
@@ -180,10 +180,7 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
                 &atom_to_system,
                 &mut system_placed,
                 &mut placed,
-                NarrowForks {
-                    atoms: narrow,
-                    angle: narrow_fork,
-                },
+                NarrowForks { angles: forks },
             );
 
             // Defensive fallbacks -- should not fire for any connected
@@ -207,6 +204,13 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
             }
 
             placed
+        };
+        let lay_with = |narrow: &[bool], angle: f64| {
+            let forks: Vec<f64> = narrow
+                .iter()
+                .map(|&b| if b { angle } else { 0.0 })
+                .collect();
+            lay_forks(&forks)
         };
         let lay = |narrow: &[bool]| lay_with(narrow, std::f64::consts::PI / 6.0);
         // Forks are drawn 120° apart; where that leaves a clash or a
@@ -599,6 +603,32 @@ fn untangle_bridged_system(
             }
         }
     }
+    // Ring systems with a template (adamantane-type cages, porphyrins) are
+    // drawn from it, turned onto the polygon drawing. An anchored one keeps
+    // its entry atom where the bond to the already-placed chain put it.
+    // (Stress-majorized systems below keep the centred fit: shifting them
+    // onto their entry atom stacked a second artemisinin unit on the first.)
+    {
+        let old: Vec<Point> = atoms
+            .iter()
+            .map(|a| placed[a.0 as usize].unwrap())
+            .collect();
+        if let Some(t) =
+            adamantane_cage(mol, &atoms, &adj, &old).or_else(|| porphyrin_core(&adj, &old))
+        {
+            let mut aligned = turn_onto(&t, &old);
+            if let Some(k) = anchor.and_then(|a| atoms.binary_search(&a).ok()) {
+                let (sx, sy) = (old[k].x - aligned[k].x, old[k].y - aligned[k].y);
+                for p in &mut aligned {
+                    *p = Point::new(p.x + sx, p.y + sy);
+                }
+            }
+            for (k, a) in atoms.iter().enumerate() {
+                placed[a.0 as usize] = Some(aligned[k]);
+            }
+            return;
+        }
+    }
     // No overlapping pair (the usual case): nothing to redraw, and the
     // distance matrix below is not needed.
     let any_close = (0..n).any(|i| {
@@ -644,7 +674,6 @@ fn untangle_bridged_system(
     if before == 0.0 {
         return;
     }
-    let cage = adamantane_cage(mol, &atoms, &adj, &old);
     let target = |i: usize, j: usize| dist[i][j] as f64 * BOND_LEN;
     // Pair targets (graph distance in bonds) and d^-2 weights, flattened;
     // a weight of 0 marks a pair with no path.
@@ -785,10 +814,7 @@ fn untangle_bridged_system(
         }
     }
     let mut x = old.clone();
-    let cage_drawn = cage.is_some();
-    if let Some(t) = cage {
-        x = t;
-    } else {
+    {
         let mut best_key = (f64::MAX, f64::MAX);
         for start in starts {
             let result = smacof(start, 1.0, 60);
@@ -815,11 +841,182 @@ fn untangle_bridged_system(
         }
     }
     // Turn (no mirror) and shift back onto the polygon drawing.
+    let aligned = turn_onto(&x, &old);
+    if close_pairs(&aligned) < before {
+        for (k, a) in atoms.iter().enumerate() {
+            placed[a.0 as usize] = Some(aligned[k]);
+        }
+    }
+}
+
+/// The drawing of a porphyrin core: a ring system of four five-membered
+/// rings, each joined to the next through one atom (the meso carbons), with
+/// optionally one atom bonded to the four inner atoms (a metal). Each
+/// five-membered ring is a regular pentagon with its inner atom (N) facing
+/// the centre, every bond one bond length and the angles at the ring-fusion
+/// carbons and the meso carbons 126°; a central atom sits at the centre.
+/// The polygon placement and stress majorization drew the pentagons folded
+/// inside the macrocycle. Of the drawing and its mirror image, the one
+/// closer to `old` is returned. `None` for any other system.
+fn porphyrin_core(adj: &[Vec<usize>], old: &[Point]) -> Option<Vec<Point>> {
+    let n = adj.len();
+    if n != 24 && n != 25 {
+        return None;
+    }
+    // A central atom: bonded to exactly four atoms, each of which has two
+    // other neighbours.
+    let centre_atom = if n == 25 {
+        let c = (0..n).find(|&i| adj[i].len() == 4)?;
+        if adj[c].iter().any(|&j| adj[j].len() != 3) {
+            return None;
+        }
+        Some(c)
+    } else {
+        None
+    };
+    // Degrees within the core (without the central atom).
+    let core_nbs = |i: usize| -> Vec<usize> {
+        adj[i]
+            .iter()
+            .copied()
+            .filter(|&j| Some(j) != centre_atom)
+            .collect()
+    };
+    let deg = |i: usize| core_nbs(i).len();
+    // Pyrroles: an inner atom of core degree 2 whose two neighbours (core
+    // degree 3) each have a degree-2 neighbour, those two bonded.
+    let mut pyrroles: Vec<[usize; 5]> = Vec::new(); // [inner, a, b, beta_a, beta_b]
+    let mut used = vec![false; n];
+    for x in (0..n).filter(|&i| Some(i) != centre_atom && deg(i) == 2) {
+        let nb = core_nbs(x);
+        let (a, b) = (nb[0], nb[1]);
+        if deg(a) != 3 || deg(b) != 3 {
+            continue;
+        }
+        let mut found = None;
+        for ba in core_nbs(a).into_iter().filter(|&t| t != x && deg(t) == 2) {
+            for bb in core_nbs(b).into_iter().filter(|&t| t != x && deg(t) == 2) {
+                if ba != bb && adj[ba].contains(&bb) {
+                    found = Some((ba, bb));
+                }
+            }
+        }
+        let Some((ba, bb)) = found else { continue };
+        let ring = [x, a, b, ba, bb];
+        if ring.iter().any(|&t| used[t]) {
+            return None;
+        }
+        for &t in &ring {
+            used[t] = true;
+        }
+        pyrroles.push(ring);
+    }
+    if pyrroles.len() != 4 {
+        return None;
+    }
+    if let Some(c) = centre_atom {
+        // The central atom is bonded to the four inner atoms.
+        let mut inner: Vec<usize> = pyrroles.iter().map(|r| r[0]).collect();
+        let mut nbs = adj[c].clone();
+        inner.sort_unstable();
+        nbs.sort_unstable();
+        if inner != nbs {
+            return None;
+        }
+    }
+    // The meso atom beside a fusion carbon: its remaining core neighbour.
+    let meso_of = |p: &[usize; 5], side: usize| -> Option<usize> {
+        let (fusion, beta) = if side == 0 {
+            (p[1], p[3])
+        } else {
+            (p[2], p[4])
+        };
+        core_nbs(fusion)
+            .into_iter()
+            .find(|&t| t != p[0] && t != beta)
+    };
+    // Walk round the macrocycle: pyrrole k's side-1 fusion carbon, a meso
+    // atom, then the next pyrrole's side-0 fusion carbon.
+    let mut order: Vec<([usize; 5], bool)> = vec![(pyrroles[0], false)];
+    let mut mesos = Vec::new();
+    for _ in 0..4 {
+        let (p, flipped) = *order.last().unwrap();
+        let m = meso_of(&p, if flipped { 0 } else { 1 })?;
+        if deg(m) != 2 || used[m] {
+            return None;
+        }
+        let other = core_nbs(m)
+            .into_iter()
+            .find(|&t| t != p[if flipped { 1 } else { 2 }])?;
+        let next = *pyrroles.iter().find(|q| q[1] == other || q[2] == other)?;
+        mesos.push(m);
+        order.push((next, next[2] == other));
+    }
+    if order[4].0 != order[0].0 || order[4].1 != order[0].1 {
+        return None;
+    }
+    let mut seen_meso = mesos.clone();
+    seen_meso.sort_unstable();
+    seen_meso.dedup();
+    if seen_meso.len() != 4 {
+        return None;
+    }
+    // Coordinates in bond lengths.
+    let r5 = 1.0 / (2.0 * 36f64.to_radians().sin());
+    let (c72, s72) = (72f64.to_radians().cos(), 72f64.to_radians().sin());
+    let (c36, s36) = (36f64.to_radians().cos(), 36f64.to_radians().sin());
+    // Pentagon centre distance: the meso atom lies on the exterior bisector
+    // of the fusion carbon and on the 45° line.
+    let d = r5 * c72 + c72 + r5 * s72 + s72;
+    let draw = |mirror: f64| -> Vec<Point> {
+        let mut x = vec![Point::new(0.0, 0.0); n];
+        for (k, &(p, flipped)) in order[..4].iter().enumerate() {
+            let theta = k as f64 * std::f64::consts::FRAC_PI_2;
+            let (ux, uy) = (theta.cos(), theta.sin());
+            let (vx, vy) = (-uy, ux);
+            let at = |a: f64, b: f64| {
+                Point::new(
+                    (a * ux + b * vx) * BOND_LEN,
+                    mirror * (a * uy + b * vy) * BOND_LEN,
+                )
+            };
+            // Side 1 (the walk's exit) is +v.
+            let (s0, s1) = if flipped { (1.0, -1.0) } else { (-1.0, 1.0) };
+            x[p[0]] = at(d - r5, 0.0);
+            x[p[1]] = at(d - r5 * c72, s0 * r5 * s72);
+            x[p[2]] = at(d - r5 * c72, s1 * r5 * s72);
+            x[p[3]] = at(d + r5 * c36, s0 * r5 * s36);
+            x[p[4]] = at(d + r5 * c36, s1 * r5 * s36);
+            let m = mesos[k];
+            let phi = theta + std::f64::consts::FRAC_PI_4;
+            let rm = std::f64::consts::SQRT_2 * (d - r5 * c72 - c72);
+            x[m] = Point::new(
+                rm * phi.cos() * BOND_LEN,
+                mirror * rm * phi.sin() * BOND_LEN,
+            );
+        }
+        x
+    };
+    let fit = |x: &[Point]| {
+        let t = turn_onto(x, old);
+        t.iter()
+            .zip(old)
+            .map(|(a, b)| a.dist(b).powi(2))
+            .sum::<f64>()
+    };
+    let (a, b) = (draw(1.0), draw(-1.0));
+    Some(if fit(&b) < fit(&a) { b } else { a })
+}
+
+/// `x` turned (no mirror) about its centroid and shifted onto `old`'s
+/// centroid, at the turn that best fits it to `old`.
+fn turn_onto(x: &[Point], old: &[Point]) -> Vec<Point> {
+    let n = x.len();
     let centre = |pts: &[Point]| {
         let (sx, sy) = pts.iter().fold((0.0, 0.0), |(a, b), p| (a + p.x, b + p.y));
         Point::new(sx / n as f64, sy / n as f64)
     };
-    let (co, cx) = (centre(&old), centre(&x));
+    let (co, cx) = (centre(old), centre(x));
     let (mut num, mut den) = (0.0, 0.0);
     for i in 0..n {
         let (ax, ay) = (x[i].x - cx.x, x[i].y - cx.y);
@@ -829,31 +1026,12 @@ fn untangle_bridged_system(
     }
     let theta = num.atan2(den);
     let (sin, cos) = theta.sin_cos();
-    let mut aligned: Vec<Point> = x
-        .iter()
+    x.iter()
         .map(|p| {
             let (dx, dy) = (p.x - cx.x, p.y - cx.y);
             Point::new(co.x + dx * cos - dy * sin, co.y + dx * sin + dy * cos)
         })
-        .collect();
-    // An anchored cage drawn from the template keeps its entry atom where
-    // the bond to the already-placed chain put it. (Stress-majorized systems
-    // keep the centred fit: shifting them onto their entry atom stacked a
-    // second artemisinin unit on the first.)
-    if let (true, Some(k)) = (
-        cage_drawn,
-        anchor.and_then(|a| atoms.binary_search(&a).ok()),
-    ) {
-        let (sx, sy) = (old[k].x - aligned[k].x, old[k].y - aligned[k].y);
-        for p in &mut aligned {
-            *p = Point::new(p.x + sx, p.y + sy);
-        }
-    }
-    if close_pairs(&aligned) < before {
-        for (k, a) in atoms.iter().enumerate() {
-            placed[a.0 as usize] = Some(aligned[k]);
-        }
-    }
+        .collect()
 }
 
 /// RDKit's drawing of adamantane in bond lengths: the four bridgeheads, then
@@ -954,12 +1132,11 @@ fn adamantane_cage(
     best.map(|(_, x)| x)
 }
 
-/// The atoms whose forks are drawn narrower than 120°, and the angle each of
-/// their two branches then makes with the chain direction.
+/// Per atom, the angle each of a fork's two branches makes with the chain
+/// direction when it is drawn narrower than 120° (0 for the 60° default).
 #[derive(Clone, Copy)]
 struct NarrowForks<'a> {
-    atoms: &'a [bool],
-    angle: f64,
+    angles: &'a [f64],
 }
 
 /// Places the unplaced atoms of `ring` when its placed atoms form one path of
@@ -1638,7 +1815,11 @@ fn ranked_candidates(used_angles: &[f64]) -> Vec<f64> {
 fn min_angle_separation(angle: f64, used: &[f64]) -> f64 {
     used.iter()
         .map(|&u| {
-            let diff = (angle - u).abs();
+            // Reduced to [0, 2π) first: a candidate past 2π against a
+            // negative used angle gave a negative separation (the exterior
+            // gap of a ring-fusion atom ranked last, so a substituent went
+            // into a ring).
+            let diff = (angle - u).rem_euclid(2.0 * std::f64::consts::PI);
             if diff > std::f64::consts::PI {
                 2.0 * std::f64::consts::PI - diff
             } else {
@@ -1826,8 +2007,8 @@ fn dfs_zigzag(
             // peptide backbone does not curl).
             // Push in reverse so the first neighbor is popped first,
             // preserving DFS order.
-            let fork = if narrow.atoms[atom.0 as usize] {
-                narrow.angle
+            let fork = if narrow.angles[atom.0 as usize] != 0.0 {
+                narrow.angles[atom.0 as usize]
             } else {
                 2.0 * deflection
             };
@@ -1848,6 +2029,17 @@ fn dfs_zigzag(
             // directions away from the parent instead (a cross for three).
             let k = unplaced.len();
             let step = 2.0 * std::f64::consts::PI / (k as f64 + 1.0);
+            // Three neighbours of which only one continues (a CF2 or CMe2 in
+            // a chain): that one goes straight on, the terminal ones either
+            // side, so a perfluoroalkyl chain does not curl back on itself.
+            let mut unplaced = unplaced;
+            if k == 3 {
+                let going_on: Vec<usize> =
+                    (0..3).filter(|&i| mol.degree(unplaced[i]) > 1).collect();
+                if going_on.len() == 1 {
+                    unplaced.swap(going_on[0], 1);
+                }
+            }
             for (i, nb) in unplaced.into_iter().enumerate().rev() {
                 let offset = (i as f64 - (k as f64 - 1.0) / 2.0) * step;
                 let child_sign = if offset > 0.0 { 1.0 } else { -1.0 };
@@ -2142,6 +2334,57 @@ fn relieve_clashes(
     if atoms.len() < 4 || atoms.len() > 300 {
         return;
     }
+    // Moves that stack a moved atom on one that stays (within a fifth of a
+    // bond) are refused: they can lower the clash count and still draw two
+    // atoms as one. Some crowded chains (perfluorotributylamine) need such a
+    // step that a later move clears; when the relief leaves a clash, it is
+    // run again allowing them, and that drawing is kept when it has fewer
+    // defects and no more stacked atoms.
+    let before = placed.to_vec();
+    let (clashes, crossings) = relieve_clashes_pass(mol, atoms, placed, keep_double_bonds, true);
+    if clashes > 0 {
+        let mut retry = before.clone();
+        let (c2, x2) = relieve_clashes_pass(mol, atoms, &mut retry, keep_double_bonds, false);
+        if c2 + x2 < clashes + crossings
+            && c2 <= clashes
+            && stacked_pairs(mol, atoms, &retry) <= stacked_pairs(mol, atoms, &before)
+        {
+            placed.copy_from_slice(&retry);
+        }
+    }
+}
+
+/// Non-bonded pairs of `atoms` drawn within a fifth of a bond.
+fn stacked_pairs(mol: &Molecule, atoms: &[AtomIdx], placed: &[Option<Point>]) -> usize {
+    let mut by_x: Vec<(Point, AtomIdx)> = atoms
+        .iter()
+        .filter_map(|&a| placed[a.0 as usize].map(|p| (p, a)))
+        .collect();
+    by_x.sort_unstable_by(|p, q| p.0.x.total_cmp(&q.0.x));
+    let limit = 0.2 * BOND_LEN;
+    let mut count = 0;
+    for (k, &(p, a)) in by_x.iter().enumerate() {
+        for &(q, b) in &by_x[k + 1..] {
+            if q.x - p.x >= limit {
+                break;
+            }
+            if p.dist(&q) < limit && mol.bond_between(a, b).is_none() {
+                count += 1;
+            }
+        }
+    }
+    count
+}
+
+/// One clash relief run (see [`relieve_clashes`]); `no_stacking` refuses
+/// moves that stack atoms. Returns the clashes and crossings left.
+fn relieve_clashes_pass(
+    mol: &Molecule,
+    atoms: &[AtomIdx],
+    placed: &mut [Option<Point>],
+    keep_double_bonds: bool,
+    no_stacking: bool,
+) -> (usize, usize) {
     let mut atoms = atoms.to_vec();
     atoms.sort_unstable();
     let mut in_component = vec![false; mol.atom_count()];
@@ -2434,7 +2677,7 @@ fn relieve_clashes(
                         for &(m, _) in new.iter() {
                             in_moved[m.0 as usize] = false;
                         }
-                        if stacked {
+                        if stacked && no_stacking {
                             continue;
                         }
                         let (clashes, crossings) = defects_after_move(
@@ -2468,6 +2711,7 @@ fn relieve_clashes(
         }
         current = (clashes, crossings);
     }
+    current
 }
 
 /// One round's lookup tables for [`defects_after_move`]: every clash and
@@ -3144,6 +3388,17 @@ mod tests {
     }
 
     #[test]
+    fn angle_separation_wraps_past_two_pi() {
+        // 330° against -90° is 60° apart, not negative.
+        let sep = min_angle_separation(330f64.to_radians(), &[(-90f64).to_radians()]);
+        assert!(
+            (sep.to_degrees() - 60.0).abs() < 1e-9,
+            "{}",
+            sep.to_degrees()
+        );
+    }
+
+    #[test]
     fn crowded_forks_open_to_90_degrees_when_that_does_as_well() {
         // The carbonyl of a trityl phenyl ketone needs a narrower fork than
         // 120°; at ±30° its O ran 60° from a C-C, at ±45° 90°.
@@ -3211,6 +3466,34 @@ mod tests {
             ("C=CC[N+]12CN3CN(CN(C3)C1)C2", true),
             ("NC12CC3CC(CC(C3)C1)C2", true),
             ("OC1C2CC3CC(C2)CC1C3", true),
+            // Porphyrins (protoporphyrin IX, a zinc porphyrin): the pyrroles
+            // were folded inside the macrocycle.
+            (
+                "CC1=C2NC(=C1CCC(O)=O)C=C3N=C(C=C4NC(=CC5=NC(=C2)C(=C5C)C=C)C(=C4C)C=C)C(=C3CCC(O)=O)C",
+                false,
+            ),
+            (
+                "C1=CC2=CC3=CC=C4N3[Zn]35N2C1=CC1=CC=C(N13)C=C1C=CC(=N15)C=4",
+                false,
+            ),
+            // Perfluoroalkyl chains run straight through their CF2 atoms
+            // instead of curling back (perfluorotributylamine; a
+            // perfluorooctyl catechol).
+            (
+                "FC(F)(F)C(F)(F)C(F)(F)C(F)(F)N(C(F)(F)C(F)(F)C(F)(F)C(F)(F)F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F",
+                false,
+            ),
+            (
+                "Oc1cccc(CCCCCC(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F)c1O",
+                false,
+            ),
+            // A ring-fusion atom's substituent goes into the exterior gap
+            // (it went into a ring when the gap's direction passed 2π).
+            ("CC1(C)OC2C3C(COC2(COS(N)(=O)=O)O1)C3(Cl)Cl", false),
+            (
+                "CC1(C)CCC2(C(=O)N3CCOCC3)CCC3(C)C(C(=O)C=C4C5(C)C=C(C#N)C(=O)C(C)(C)C5CCC43C)C2C1",
+                false,
+            ),
         ] {
             let mol = parse(smi).unwrap();
             let layout = compute_layout(&mol);
