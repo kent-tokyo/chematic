@@ -136,8 +136,8 @@ Exposed data are not sealed evidence.
    1,686/1,687 and 1,670/1,670 stereo rows; PyPI v1.0.36: 286 and 317;
    [record](benchmarks/2026-10-07-734-754-followups-batch15.md)); every Python MOL block
    carries 2D coordinates, reaction SVGs and similarity maps draw stereo, and
-   branch points are drawn 120° apart (15,000 rows as drawn: 14,669 clean,
-   53 with a clash; RDKit 14,504 and 276;
+   branch points are drawn 120° apart (15,000 rows as drawn: 14,699 clean,
+   26 with a clash; RDKit 14,504 and 276;
    [record](benchmarks/2026-10-07-734-754-followups-batch16.md)). **Exit:** cross-binding
    fixtures with no silent information loss.
 9. **External — Complete RDKit 2026.09.1 rebaseline.** The official npm/WASM

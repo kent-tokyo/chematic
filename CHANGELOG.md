@@ -16,6 +16,14 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- 2D layout of crowded molecules: the layout's clash relief may turn a
+  branch about an atom whose double bonds are all in rings (a Kekulé-written
+  aromatic ring, a ring P=N), and fused or spiro systems of three or more
+  rings that overlap are redrawn by stress majorization. As drawn, 26 of
+  15,000 exposed-10k and ChEMBL-5k rows have a clash (batch 16: 53; RDKit
+  276), 14,699 are clean (RDKit 14,504). `write_mol` layout work is
+  cheaper (byte-identical: flat grids, fewer square roots and allocations).
+  Record: `benchmarks/2026-10-07-734-754-followups-batch17.md`.
 - 2D layout: a branch point's three bonds are drawn 120° apart (they were
   150°/150°/60°, so an ester's C=O ran 60° from its C-C and the two aryl
   rings of a tetrasubstituted alkene such as tamoxifen overlapped); where
