@@ -235,14 +235,20 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
             }
             // Where the narrow forks won, keep the wide ones away from the
             // wide drawing's defects when that does as well.
-            if narrow_chosen && component_atoms.len() <= 60 {
+            if narrow_chosen {
                 let wide = lay(&vec![false; n]);
                 let near = atoms_near_defects(mol, component_atoms, &wide);
                 let mut local = lay(&near);
-                relieve_clashes(mol, component_atoms, &mut local, false);
-                if component_defects(mol, component_atoms, &local)
-                    <= component_defects(mol, component_atoms, &placed)
-                {
+                if component_atoms.len() <= 60 {
+                    relieve_clashes(mol, component_atoms, &mut local, false);
+                    if component_defects(mol, component_atoms, &local)
+                        <= component_defects(mol, component_atoms, &placed)
+                    {
+                        placed = local;
+                    }
+                } else if component_defects(mol, component_atoms, &local) == 0 {
+                    // A large component (a long peptide) keeps the local
+                    // drawing only when it needs no relief at all.
                     placed = local;
                 }
             }
@@ -1260,13 +1266,45 @@ fn grow_layout(
             .collect();
         unplaced_neighbors.sort_unstable();
 
-        for nb in unplaced_neighbors {
+        // A ring atom with two ring bonds and two substituents (a
+        // gem-disubstituted carbon, phenytoin's C5) puts them 30° either
+        // side of the ring's outward bisector; taking the bisector for the
+        // first left the second against a ring bond, crossing the
+        // neighbour's substituent in five-membered rings.
+        let pair_dirs: Option<[f64; 2]> = (unplaced_neighbors.len() == 2
+            && atom_to_system.contains_key(&start))
+        .then(|| {
+            let origin = placed[start.0 as usize]?;
+            let ring_nbs: Vec<Point> = mol
+                .neighbors(start)
+                .filter_map(|(nb, _)| placed[nb.0 as usize])
+                .collect();
+            if ring_nbs.len() != 2 {
+                return None;
+            }
+            let (mx, my) = (
+                (ring_nbs[0].x + ring_nbs[1].x) / 2.0,
+                (ring_nbs[0].y + ring_nbs[1].y) / 2.0,
+            );
+            let (dx, dy) = (origin.x - mx, origin.y - my);
+            if dx * dx + dy * dy < 1e-6 {
+                return None;
+            }
+            let b = dy.atan2(dx);
+            let d = std::f64::consts::PI / 6.0;
+            Some([b - d, b + d])
+        })
+        .flatten();
+        for (k, nb) in unplaced_neighbors.into_iter().enumerate() {
             if placed[nb.0 as usize].is_some() {
                 continue; // Placed by an earlier neighbor this same pass (e.g. a shared spiro/fused atom).
             }
             // Determine outgoing direction from the already-placed atom.
             // Use a direction that avoids existing neighbors.
-            let dir = best_outgoing_direction(start, placed, mol);
+            let dir = match pair_dirs {
+                Some(dirs) if direction_is_free(start, dirs[k], placed) => dirs[k],
+                _ => best_outgoing_direction(start, placed, mol),
+            };
             let mut newly_ring_placed = Vec::new();
             dfs_zigzag(
                 mol,
@@ -1336,6 +1374,23 @@ fn best_outgoing_direction(atom: AtomIdx, placed: &[Option<Point>], mol: &Molecu
         .copied()
         .find(|&dir| !occupies(dir))
         .unwrap_or(ranked[0])
+}
+
+/// Whether one bond from `atom` along `dir` is clear: no placed atom
+/// within half a bond and not the middle of a placed ring.
+fn direction_is_free(atom: AtomIdx, dir: f64, placed: &[Option<Point>]) -> bool {
+    let Some(origin) = placed[atom.0 as usize] else {
+        return false;
+    };
+    let candidate = Point::new(
+        origin.x + BOND_LEN * dir.cos(),
+        origin.y + BOND_LEN * dir.sin(),
+    );
+    !placed
+        .iter()
+        .filter_map(|p| p.as_ref())
+        .any(|p| candidate.dist(p) < BOND_LEN / 2.0)
+        && !ring_centre(candidate, origin, placed)
 }
 
 /// Whether `candidate` sits in the middle of a placed ring: three or more
@@ -1473,7 +1528,55 @@ fn dfs_zigzag(
                 parent_pos.x + BOND_LEN * dir.cos(),
                 parent_pos.y + BOND_LEN * dir.sin(),
             );
-            place_ring_system(&ring_systems[sys_idx], Some((atom, entry_pos, dir)), placed);
+            // An entry atom with a second substituent (a 5,5-disubstituted
+            // hydantoin, a 4,4-disubstituted piperidine) turns its ring 30°
+            // so the two substituent bonds lie either side of the ring's
+            // outward bisector instead of one on it; the side whose new
+            // atoms land on fewer placed atoms is kept.
+            let in_system = |a: AtomIdx| atom_to_system.get(&a).is_some_and(|&k| k == sys_idx);
+            let (ring_nbs, outside) = mol.neighbors(atom).fold((0, 0), |(r, o), (nb, _)| {
+                if in_system(nb) {
+                    (r + 1, o)
+                } else {
+                    (r, o + 1)
+                }
+            });
+            if ring_nbs == 2 && outside == 2 {
+                let before: Vec<Option<Point>> = placed.to_vec();
+                let mut best: Option<(usize, Vec<Option<Point>>)> = None;
+                for turn in [std::f64::consts::PI / 6.0, -std::f64::consts::PI / 6.0] {
+                    let mut trial = before.clone();
+                    place_ring_system(
+                        &ring_systems[sys_idx],
+                        Some((atom, entry_pos, dir + turn)),
+                        &mut trial,
+                    );
+                    let new_atoms: Vec<Point> = trial
+                        .iter()
+                        .zip(&before)
+                        .filter(|(t, b)| t.is_some() && b.is_none())
+                        .filter_map(|(t, _)| *t)
+                        .collect();
+                    let crowded = new_atoms
+                        .iter()
+                        .map(|q| {
+                            before
+                                .iter()
+                                .flatten()
+                                .filter(|p| p.dist(q) < BOND_LEN)
+                                .count()
+                        })
+                        .sum::<usize>();
+                    if best.as_ref().is_none_or(|(c, _)| crowded < *c) {
+                        best = Some((crowded, trial));
+                    }
+                }
+                if let Some((_, trial)) = best {
+                    placed.copy_from_slice(&trial);
+                }
+            } else {
+                place_ring_system(&ring_systems[sys_idx], Some((atom, entry_pos, dir)), placed);
+            }
             system_placed[sys_idx] = true;
             newly_ring_placed.extend(ring_systems[sys_idx].iter().flatten().copied());
             continue; // Further growth from this ring's atoms is grow_layout's job.
@@ -1685,21 +1788,38 @@ const CLASH_DIST: f64 = 0.45 * BOND_LEN;
 fn atoms_near_defects(mol: &Molecule, atoms: &[AtomIdx], placed: &[Option<Point>]) -> Vec<bool> {
     let at = |a: AtomIdx| placed[a.0 as usize].unwrap_or(Point::new(0.0, 0.0));
     let mut hit = vec![false; mol.atom_count()];
-    for (k, &a) in atoms.iter().enumerate() {
-        for &b in &atoms[k + 1..] {
+    // The same sweeps along x as `layout_defects`.
+    let mut by_x: Vec<(f64, AtomIdx)> = atoms.iter().map(|&a| (at(a).x, a)).collect();
+    by_x.sort_unstable_by(|p, q| p.0.total_cmp(&q.0));
+    for (k, &(x, a)) in by_x.iter().enumerate() {
+        for &(x2, b) in &by_x[k + 1..] {
+            if x2 - x >= CLASH_DIST {
+                break;
+            }
             if at(a).dist(&at(b)) < CLASH_DIST && mol.bond_between(a, b).is_none() {
                 hit[a.0 as usize] = true;
                 hit[b.0 as usize] = true;
             }
         }
     }
-    let bonds: Vec<(AtomIdx, AtomIdx)> = mol
+    let mut in_component = vec![false; mol.atom_count()];
+    for &a in atoms {
+        in_component[a.0 as usize] = true;
+    }
+    let mut spans: Vec<(f64, f64, AtomIdx, AtomIdx)> = mol
         .bonds()
-        .filter(|(_, e)| atoms.contains(&e.atom1))
-        .map(|(_, e)| (e.atom1, e.atom2))
+        .filter(|(_, e)| in_component[e.atom1.0 as usize])
+        .map(|(_, e)| {
+            let (xa, xb) = (at(e.atom1).x, at(e.atom2).x);
+            (xa.min(xb), xa.max(xb), e.atom1, e.atom2)
+        })
         .collect();
-    for (k, &(a, b)) in bonds.iter().enumerate() {
-        for &(c, d) in &bonds[k + 1..] {
+    spans.sort_unstable_by(|p, q| p.0.total_cmp(&q.0));
+    for (k, &(_, hi, a, b)) in spans.iter().enumerate() {
+        for &(lo2, _, c, d) in &spans[k + 1..] {
+            if lo2 > hi + 1e-9 {
+                break;
+            }
             if a != c
                 && a != d
                 && b != c
@@ -2808,6 +2928,10 @@ mod tests {
             // as polygons (cephalotaxine core, spiro naphthodioxin).
             ("COC1=CC23CCCN2CCc2cc4c(cc2C3C1O)OCO4", false),
             ("O=C1C(O)=CC2(Oc3cccc4cccc(c34)O2)C23OC12C(O)CCC3O", false),
+            // Gem-disubstituted ring entry atoms: phenytoin, a
+            // 3,3-disubstituted glutarimide.
+            ("O=C1NC(=O)C(c2ccccc2)(c2ccccc2)N1", false),
+            ("O=C1CCC(c2ccccc2)(C2CCN(C)CC2)C(=O)N1", false),
         ] {
             let mol = parse(smi).unwrap();
             let layout = compute_layout(&mol);
