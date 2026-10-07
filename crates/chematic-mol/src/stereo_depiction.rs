@@ -502,6 +502,21 @@ fn layout_angstrom(mol: &Molecule, reversed: bool) -> Vec<(f64, f64)> {
         .collect()
 }
 
+/// [`chematic_depict::relieve_layout_clashes`] on Å coordinates (y up).
+fn relieve_after_reflection(mol: &Molecule, coords: &mut [(f64, f64)]) {
+    let scale = 1.5 / chematic_depict::layout::BOND_LEN;
+    let mut layout = chematic_depict::Layout {
+        coords: coords
+            .iter()
+            .map(|&(x, y)| chematic_depict::Point::new(x / scale, -y / scale))
+            .collect(),
+    };
+    chematic_depict::relieve_layout_clashes(mol, &mut layout);
+    for (c, p) in coords.iter_mut().zip(&layout.coords) {
+        *c = (p.x * scale, -p.y * scale);
+    }
+}
+
 /// The E/Z reflection, terminal-neighbour placement and wedge choice on
 /// `layout`; `given` coordinates are kept as they are.
 fn depict_on(mol: &Molecule, layout: Vec<(f64, f64)>, given: bool) -> StereoDepiction {
@@ -535,6 +550,9 @@ fn depict_on(mol: &Molecule, layout: Vec<(f64, f64)>, given: bool) -> StereoDepi
         }
         if !given {
             flip_ring_double_bonds(mol, &mut out.coords, &bonds);
+            // A reflected side can land on the rest of the drawing; clear
+            // such clashes again (moves that keep every E/Z geometry).
+            relieve_after_reflection(mol, &mut out.coords);
         }
         out.unexpressed_double_bonds = bonds
             .into_iter()
@@ -880,6 +898,45 @@ fn ring_bonds(mol: &Molecule) -> Vec<bool> {
 /// centre, or SMILES-style `/`/`\\` markers next to a double bond that only
 /// coordinates can express. A wedge/hash on a molecule with neither (e.g. a
 /// MOL record whose wedges assign no centre) is written as read.
+/// What to draw for `mol`: a copy with the MOL writer's wedges (SMILES `/`
+/// `\` marks become plain bonds) and its stereo layout in depiction units
+/// (E/Z double bonds drawn with their declared geometry), or `mol` itself
+/// with the ordinary layout when it has no stereo.
+pub fn depiction_with_stereo(mol: &Molecule) -> (Option<Molecule>, chematic_depict::Layout) {
+    if !needs_stereo_depiction(mol) {
+        return (None, chematic_depict::compute_layout(mol));
+    }
+    let depiction = stereo_depiction(mol, &[]);
+    let scale = 1.5 / chematic_depict::layout::BOND_LEN;
+    let layout = chematic_depict::Layout {
+        coords: depiction
+            .coords
+            .iter()
+            .map(|&(x, y)| chematic_depict::Point::new(x / scale, -y / scale))
+            .collect(),
+    };
+    (Some(without_bond_marks(mol, &depiction.wedges)), layout)
+}
+
+/// Runs `draw` on what [`depiction_with_stereo`] gives for `mol`.
+pub fn with_stereo_depiction<R>(
+    mol: &Molecule,
+    draw: impl FnOnce(&Molecule, &chematic_depict::Layout) -> R,
+) -> R {
+    let (copy, layout) = depiction_with_stereo(mol);
+    draw(copy.as_ref().unwrap_or(mol), &layout)
+}
+
+/// 2D coordinates (Å, y up) for writing `mol` to a MOL block: its stereo
+/// depiction when it has stereo, the ordinary layout otherwise.
+pub fn mol_block_coords(mol: &Molecule) -> Vec<(f64, f64)> {
+    if needs_stereo_depiction(mol) {
+        stereo_depiction(mol, &[]).coords
+    } else {
+        layout_angstrom(mol, false)
+    }
+}
+
 pub(crate) fn needs_stereo_depiction(mol: &Molecule) -> bool {
     let next_to_double = |a: AtomIdx| {
         mol.neighbors(a)
@@ -1058,5 +1115,46 @@ mod tests {
         assert_eq!(wedged.len(), 1, "{v2}");
         // drawn from the stereocentre (atom 2, 1-based)
         assert_eq!(wedged[0][0..3].trim(), "2", "{v2}");
+    }
+
+    /// The depiction (SVG, depict data) shows the declared E/Z geometry and
+    /// a wedge from the centre, and draws SMILES `/` `\` as plain bonds.
+    #[test]
+    fn depiction_shows_declared_stereo() {
+        use chematic_core::{AtomIdx, BondOrder};
+        let side =
+            |q: chematic_depict::Point, a: chematic_depict::Point, b: chematic_depict::Point| {
+                (b.x - a.x) * (q.y - a.y) - (b.y - a.y) * (q.x - a.x)
+            };
+        for (smi, cis) in [("F/C=C\\F", true), ("F/C=C/F", false)] {
+            let mol = parse(smi).unwrap();
+            let (copy, layout) = super::depiction_with_stereo(&mol);
+            let copy = copy.unwrap();
+            let p = |i: u32| layout.coords[i as usize];
+            assert_eq!(
+                side(p(0), p(1), p(2)) * side(p(3), p(1), p(2)) > 0.0,
+                cis,
+                "{smi}"
+            );
+            assert!(
+                copy.bonds()
+                    .all(|(_, b)| !matches!(b.order, BondOrder::Up | BondOrder::Down)),
+                "{smi}"
+            );
+        }
+        let mol = parse("N[C@@H](C)C(=O)O").unwrap();
+        let (copy, _) = super::depiction_with_stereo(&mol);
+        let wedges: Vec<_> = copy
+            .unwrap()
+            .bonds()
+            .filter(|(_, b)| matches!(b.order, BondOrder::Up | BondOrder::Down))
+            .map(|(_, b)| b.atom1)
+            .collect();
+        assert_eq!(wedges, vec![AtomIdx(1)]);
+        assert!(
+            super::depiction_with_stereo(&parse("CCO").unwrap())
+                .0
+                .is_none()
+        );
     }
 }

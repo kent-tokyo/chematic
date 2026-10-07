@@ -1735,7 +1735,10 @@ impl Mol {
     ///     from IPython.display import SVG
     ///     SVG(mol.svg())
     fn svg(&self) -> String {
-        chematic_depict::depict_svg(&self.inner)
+        chematic_mol::stereo_depiction::with_stereo_depiction(
+            &self.inner,
+            chematic_depict::render_svg,
+        )
     }
 
     /// Structured 2D depiction data (atoms + bonds with layout coordinates).
@@ -1758,7 +1761,11 @@ impl Mol {
     ///     for atom in data["atoms"]:
     ///         print(atom["element"], atom["x"], atom["y"])
     fn depict_data<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let data = chematic_depict::compute_depict_data(&self.inner);
+        let data =
+            chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+                let coords: Vec<(f64, f64)> = layout.coords.iter().map(|p| (p.x, p.y)).collect();
+                chematic_depict::depict_data_with_coords(m, &coords)
+            });
 
         let atoms = data
             .atoms
@@ -1812,7 +1819,10 @@ impl Mol {
     ///     eps_str = mol.to_eps()
     ///     open("molecule.eps", "w").write(eps_str)
     fn to_eps(&self) -> String {
-        chematic_depict::depict_eps(&self.inner)
+        chematic_mol::stereo_depiction::with_stereo_depiction(
+            &self.inner,
+            chematic_depict::render_eps,
+        )
     }
 
     /// Export as ChemicalJSON (.cjson) string.
@@ -1902,7 +1912,10 @@ impl Mol {
     ///     pdf_bytes = mol.to_pdf()
     ///     open("molecule.pdf", "wb").write(pdf_bytes)
     fn to_pdf(&self) -> Vec<u8> {
-        chematic_depict::depict_pdf(&self.inner)
+        chematic_depict::svg_to_pdf(&chematic_mol::stereo_depiction::with_stereo_depiction(
+            &self.inner,
+            chematic_depict::render_svg,
+        ))
     }
 
     /// Jupyter Notebook / JupyterLab の自動描画フック。
@@ -1910,7 +1923,10 @@ impl Mol {
     /// セルに ``mol`` と書くだけで 2D 構造が表示される。手動で
     /// ``IPython.display.SVG(mol.svg())`` と書く必要はない。
     fn _repr_svg_(&self) -> String {
-        chematic_depict::depict_svg(&self.inner)
+        chematic_mol::stereo_depiction::with_stereo_depiction(
+            &self.inner,
+            chematic_depict::render_svg,
+        )
     }
 
     /// Return ``True`` if this molecule matches the given SMARTS pattern.
@@ -2050,7 +2066,9 @@ impl Mol {
         for i in atom_indices {
             opts.highlight_atoms.insert(AtomIdx(i as u32));
         }
-        chematic_depict::depict_svg_opts(&self.inner, &opts)
+        chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+            chematic_depict::render_svg_opts(m, layout, &opts)
+        })
     }
 
     /// 2D SVG depiction with atoms coloured by LogP contribution.
@@ -3584,7 +3602,9 @@ impl Mol {
         for atom in pains.into_iter().chain(brenk).flat_map(|(_, atoms)| atoms) {
             opts.highlight_atoms.insert(AtomIdx(atom.0));
         }
-        chematic_depict::depict_svg_opts(&self.inner, &opts)
+        chematic_mol::stereo_depiction::with_stereo_depiction(&self.inner, |m, layout| {
+            chematic_depict::render_svg_opts(m, layout, &opts)
+        })
     }
 
     /// Named functional groups detected in this molecule — list of group names.

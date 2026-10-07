@@ -576,3 +576,32 @@ def test_pyi_declares_the_new_public_surface():
     }
     assert "embed_pipeline_v2" in mol_methods
     assert hasattr(chematic.Mol, "embed_pipeline_v2")
+
+
+def test_minimization_stalled_on_a_stereo_constraint_reembeds():
+    # A6 row 0161 (a penam sulfoxide): the first embedding's minimization
+    # stopped at its first constraint-rejected step (59 kcal/mol/Å); the
+    # pipeline now embeds again from another seed and minimizes to the end.
+    mol = chematic.from_smiles(
+        "CON(C)C(=O)/C=C/CC1C(=O)N2[C@@H]1[S+]([O-])C(C)(C)[C@@H]2C(=O)O"
+    )
+    # The A6 stereo-safe arm's configuration.
+    config = chematic.PipelineV2Config.stereo_safe(
+        force_field="mmff94_bond_angle_strict",
+        ring_torsion_policy="diagnostic_only",
+        fail_on_unevaluable_stereo=False,
+        embed_seed=20260801,
+        max_attempts=8,
+        use_exp_torsions=True,
+        use_small_ring_torsions=True,
+        use_macrocycle_torsions=True,
+        use_macrocycle_14_bounds=True,
+        include_legacy_torsion_heuristic=False,
+        force_field_max_iterations=1000,
+        gate_mmff94_torsion_oop=False,
+        gate_mmff94_stretch_bend=False,
+        total_timeout_ms=20000,
+    )
+    result = mol.embed_pipeline_v2(config)
+    assert result["force_field"]["mmff94_termination"] == "gradient_converged"
+    assert result["final_validation"]["sound"]

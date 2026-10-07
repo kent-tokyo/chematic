@@ -321,7 +321,7 @@ fn report(
                 .and_then(|n| n.as_deref())
                 .unwrap_or("");
 
-            let svg = chematic_depict::depict_svg(m);
+            let svg = chematic_mol::stereo_depiction::with_stereo_depiction(m, chematic_depict::render_svg);
 
             let lip_badge = if lip {
                 r#"<span class="badge pass">Lipinski ✓</span>"#
@@ -418,8 +418,10 @@ fn compare(mol1: &Mol, mol2: &Mol, names: Option<(String, String)>, title: Optio
         .map(|t| t.to_string())
         .unwrap_or_else(|| format!("{name1} vs {name2}"));
 
-    let svg1 = chematic_depict::depict_svg(m1);
-    let svg2 = chematic_depict::depict_svg(m2);
+    let svg1 =
+        chematic_mol::stereo_depiction::with_stereo_depiction(m1, chematic_depict::render_svg);
+    let svg2 =
+        chematic_mol::stereo_depiction::with_stereo_depiction(m2, chematic_depict::render_svg);
 
     let mw1 = molecular_weight(m1);
     let mw2 = molecular_weight(m2);

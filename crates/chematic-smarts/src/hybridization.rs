@@ -103,35 +103,48 @@ fn default_valence(mol: &Molecule, idx: AtomIdx) -> i32 {
 /// conjugation): a `^n` query asks for every candidate atom.
 struct Facts<'a> {
     mol: &'a Molecule,
-    hs: Vec<i32>,
-    degree: Vec<i32>,
-    /// 0 = not yet known, 1 = false, 2 = true.
-    candidate: Vec<std::cell::Cell<u8>>,
-    conjugated: Vec<std::cell::Cell<u8>>,
+    lazy: &'a LazyFacts,
 }
 
-impl<'a> Facts<'a> {
-    fn new(mol: &'a Molecule) -> Self {
-        let n = mol.atom_count();
+/// Per-atom and per-bond facts of one molecule, each computed on first use
+/// and memoized on the molecule with the codes (a `^n` query asks for the
+/// atoms that pass its other primitives, not every atom). Atomics so the
+/// memo is shareable; every value is a pure function of the molecule.
+pub(crate) struct LazyFacts {
+    /// Implicit-H count + 1 (0 = not yet known).
+    hs: Vec<std::sync::atomic::AtomicU8>,
+    /// 0 = not yet known, 1 = false, 2 = true.
+    candidate: Vec<std::sync::atomic::AtomicU8>,
+    conjugated: Vec<std::sync::atomic::AtomicU8>,
+    /// Hybridization code + 1, 255 = unspecified, 0 = not yet known.
+    codes: Vec<std::sync::atomic::AtomicU8>,
+    /// Total valence + 1 (0 = not yet known).
+    valence: Vec<std::sync::atomic::AtomicU8>,
+}
+
+impl LazyFacts {
+    fn new(mol: &Molecule) -> Self {
+        let zeros = |n: usize| {
+            (0..n)
+                .map(|_| std::sync::atomic::AtomicU8::new(0))
+                .collect()
+        };
         Self {
-            mol,
-            hs: (0..n)
-                .map(|i| i32::from(implicit_hcount(mol, AtomIdx(i as u32))))
-                .collect(),
-            degree: (0..n)
-                .map(|i| mol.neighbors(AtomIdx(i as u32)).count() as i32)
-                .collect(),
-            candidate: vec![std::cell::Cell::new(0); n],
-            conjugated: vec![std::cell::Cell::new(0); mol.bond_count()],
+            hs: zeros(mol.atom_count()),
+            candidate: zeros(mol.atom_count()),
+            conjugated: zeros(mol.bond_count()),
+            codes: zeros(mol.atom_count()),
+            valence: zeros(mol.atom_count()),
         }
     }
 }
 
-fn memo(cell: &std::cell::Cell<u8>, compute: impl FnOnce() -> bool) -> bool {
-    match cell.get() {
+fn memo(cell: &std::sync::atomic::AtomicU8, compute: impl FnOnce() -> bool) -> bool {
+    use std::sync::atomic::Ordering::Relaxed;
+    match cell.load(Relaxed) {
         0 => {
             let value = compute();
-            cell.set(if value { 2 } else { 1 });
+            cell.store(if value { 2 } else { 1 }, Relaxed);
             value
         }
         known => known == 2,
@@ -139,11 +152,39 @@ fn memo(cell: &std::cell::Cell<u8>, compute: impl FnOnce() -> bool) -> bool {
 }
 
 fn total_hs(f: &Facts, idx: AtomIdx) -> i32 {
-    f.hs[idx.0 as usize]
+    use std::sync::atomic::Ordering::Relaxed;
+    let cell = &f.lazy.hs[idx.0 as usize];
+    match cell.load(Relaxed) {
+        0 => {
+            let hs = implicit_hcount(f.mol, idx);
+            // Counts above 254 are not cached (never seen; kept exact).
+            if hs < 255 {
+                cell.store(hs + 1, Relaxed);
+            }
+            i32::from(hs)
+        }
+        known => i32::from(known - 1),
+    }
+}
+
+/// `match_vf2::total_valence`, memoized.
+fn total_valence(f: &Facts, idx: AtomIdx) -> i32 {
+    use std::sync::atomic::Ordering::Relaxed;
+    let cell = &f.lazy.valence[idx.0 as usize];
+    match cell.load(Relaxed) {
+        0 => {
+            let v = crate::match_vf2::total_valence(f.mol, idx);
+            if v < 255 {
+                cell.store(v + 1, Relaxed);
+            }
+            i32::from(v)
+        }
+        known => i32::from(known - 1),
+    }
 }
 
 fn heavy_degree(f: &Facts, idx: AtomIdx) -> i32 {
-    f.degree[idx.0 as usize]
+    f.mol.neighbors(idx).count() as i32
 }
 
 /// RDKit `countAtomElec`: electrons available to a pi system (`-1`: none).
@@ -164,7 +205,7 @@ fn count_atom_elec(f: &Facts, idx: AtomIdx) -> i32 {
     let nlp = (nouter - dv - i32::from(atom.charge)).max(0);
     let mut res = (dv - degree) + nlp;
     if res > 1 {
-        let explicit_valence = crate::match_vf2::total_valence(mol, idx) as i32 - total_hs(f, idx);
+        let explicit_valence = total_valence(f, idx) - total_hs(f, idx);
         if explicit_valence - heavy_degree(f, idx) > 1 {
             res = 1;
         }
@@ -174,7 +215,7 @@ fn count_atom_elec(f: &Facts, idx: AtomIdx) -> i32 {
 
 /// RDKit `isAtomConjugCand`.
 fn conjugation_candidate(f: &Facts, idx: AtomIdx) -> bool {
-    memo(&f.candidate[idx.0 as usize], || {
+    memo(&f.lazy.candidate[idx.0 as usize], || {
         conjugation_candidate_uncached(f, idx)
     })
 }
@@ -238,7 +279,7 @@ fn marked_at(f: &Facts, center: AtomIdx, bond: BondIdx) -> bool {
 }
 
 fn bond_is_conjugated(f: &Facts, bond: BondIdx) -> bool {
-    memo(&f.conjugated[bond.0 as usize], || {
+    memo(&f.lazy.conjugated[bond.0 as usize], || {
         let e = f.mol.bond(bond);
         e.order == BondOrder::Aromatic || marked_at(f, e.atom1, bond) || marked_at(f, e.atom2, bond)
     })
@@ -254,13 +295,30 @@ fn bond_is_conjugated(f: &Facts, bond: BondIdx) -> bool {
 /// The codes of every atom are computed together on the first call and
 /// memoized on `mol` (a `^n` query reads them once per candidate atom).
 pub fn rdkit_hybridization(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
-    let codes = mol.derived(chematic_core::DerivedSlot::RdkitHybridization, || {
-        let facts = Facts::new(mol);
-        (0..mol.atom_count())
-            .map(|i| rdkit_hybridization_uncached(&facts, AtomIdx(i as u32)))
-            .collect::<Vec<Option<u8>>>()
-    });
-    codes.get(idx.0 as usize).copied().flatten()
+    hybridization_from(mol, &lazy_facts(mol), idx)
+}
+
+/// The memo of [`rdkit_hybridization`] for `mol`.
+pub(crate) fn lazy_facts(mol: &Molecule) -> std::sync::Arc<LazyFacts> {
+    mol.derived(chematic_core::DerivedSlot::RdkitHybridization, || {
+        LazyFacts::new(mol)
+    })
+}
+
+/// [`rdkit_hybridization`] with its memo already looked up.
+pub(crate) fn hybridization_from(mol: &Molecule, lazy: &LazyFacts, idx: AtomIdx) -> Option<u8> {
+    use std::sync::atomic::Ordering::Relaxed;
+    let cell = lazy.codes.get(idx.0 as usize)?;
+    match cell.load(Relaxed) {
+        0 => {
+            let facts = Facts { mol, lazy };
+            let code = rdkit_hybridization_uncached(&facts, idx);
+            cell.store(code.map_or(255, |c| c + 1), Relaxed);
+            code
+        }
+        255 => None,
+        known => Some(known - 1),
+    }
 }
 
 fn rdkit_hybridization_uncached(f: &Facts, idx: AtomIdx) -> Option<u8> {
@@ -304,7 +362,7 @@ fn rdkit_hybridization_uncached(f: &Facts, idx: AtomIdx) -> Option<u8> {
     }
     let norbs = match outer_electrons(z) {
         Some(nouter) if z < 89 => {
-            let total_valence = crate::match_vf2::total_valence(mol, idx) as i32;
+            let total_valence = total_valence(f, idx);
             // Not clamped: RDKit lets a negative lone-pair count lower the
             // orbital count (`[Zn++]` with four bonds is SP).
             let chg = i32::from(atom.charge);

@@ -718,6 +718,54 @@ pub fn embed_pipeline_v2(
     mol: &Molecule,
     config: &PipelineV2Config,
 ) -> Result<PipelineV2Result, PipelineV2Failure> {
+    let first = embed_pipeline_v2_from_seed(mol, config)?;
+    if !minimization_stalled_on_constraint(&first) {
+        return Ok(first);
+    }
+    // A stereo constraint stopped minimization at its first step from this
+    // start (a strained embedding whose force field would cross a declared
+    // centre, e.g. a penam ring fusion; A6 row 0161 stopped at 59
+    // kcal/mol/Å). Embed again from other seeds, within the time budget,
+    // and keep the first run that minimizes past it with a sound geometry.
+    let mut used_ms = first.elapsed_ms_by_stage.total_ms;
+    for k in 1..=STALLED_MINIMIZATION_RESEEDS {
+        let mut retry = config.clone();
+        retry.embed.random_seed = config
+            .embed
+            .random_seed
+            .wrapping_add(k.wrapping_mul(0x9E37_79B9_7F4A_7C15));
+        if let Some(budget) = config.total_timeout_ms {
+            if used_ms >= budget {
+                break;
+            }
+            retry.total_timeout_ms = Some(budget - used_ms);
+        }
+        match embed_pipeline_v2_from_seed(mol, &retry) {
+            Ok(result) => {
+                used_ms += result.elapsed_ms_by_stage.total_ms;
+                if !minimization_stalled_on_constraint(&result) && result.final_validation.sound {
+                    return Ok(result);
+                }
+            }
+            Err(failure) => used_ms += failure.elapsed_ms_by_stage.total_ms,
+        }
+    }
+    Ok(first)
+}
+
+/// Extra embeddings tried when minimization stalls on a stereo constraint.
+const STALLED_MINIMIZATION_RESEEDS: u64 = 3;
+
+fn minimization_stalled_on_constraint(result: &PipelineV2Result) -> bool {
+    result.force_field.mmff94_termination
+        == Some(chematic_ff::Mmff94TerminationReason::ConstraintRejectedFallback)
+}
+
+#[allow(clippy::result_large_err)]
+fn embed_pipeline_v2_from_seed(
+    mol: &Molecule,
+    config: &PipelineV2Config,
+) -> Result<PipelineV2Result, PipelineV2Failure> {
     let overall_start = Instant::now();
     let mut timings = StageTimings::default();
     // Progressive diagnostic accumulator (see `Evidence`'s own doc comment): updated

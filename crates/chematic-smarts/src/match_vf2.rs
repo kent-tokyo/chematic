@@ -41,6 +41,8 @@ struct EvalCtx<'a> {
     /// SSSR ring exactly when it lies on a cycle, so this avoids building the
     /// SSSR for ring-membership-only queries without changing results.
     ring_atoms_lazy: std::cell::OnceCell<Vec<bool>>,
+    /// The target's hybridization memo, looked up once per match call.
+    hybridization_lazy: std::cell::OnceCell<std::sync::Arc<crate::hybridization::LazyFacts>>,
     config: &'a MatchConfig,
     /// Remaining visit budget shared across all recursive calls (including nested
     /// recursive-SMARTS `$(...)`).  Decremented on every `match_recursive` /
@@ -399,6 +401,7 @@ pub fn for_each_embedding(
         rings_given: None,
         rings_lazy: std::cell::OnceCell::new(),
         ring_atoms_lazy: std::cell::OnceCell::new(),
+        hybridization_lazy: std::cell::OnceCell::new(),
         config,
         visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
         budget_exhausted: std::cell::Cell::new(false),
@@ -552,6 +555,7 @@ fn exists_match(
         rings_given: rings,
         rings_lazy: std::cell::OnceCell::new(),
         ring_atoms_lazy: std::cell::OnceCell::new(),
+        hybridization_lazy: std::cell::OnceCell::new(),
         config,
         visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
         budget_exhausted: std::cell::Cell::new(false),
@@ -640,6 +644,7 @@ pub fn first_anchored_match_per_atom(
         rings_given: Some(rings),
         rings_lazy: std::cell::OnceCell::new(),
         ring_atoms_lazy: std::cell::OnceCell::new(),
+        hybridization_lazy: std::cell::OnceCell::new(),
         config: &config,
         visit_budget: std::cell::Cell::new(u64::MAX),
         budget_exhausted: std::cell::Cell::new(false),
@@ -674,6 +679,7 @@ fn run_match_recursive(
         rings_given: rings,
         rings_lazy: std::cell::OnceCell::new(),
         ring_atoms_lazy: std::cell::OnceCell::new(),
+        hybridization_lazy: std::cell::OnceCell::new(),
         config,
         visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
         budget_exhausted: std::cell::Cell::new(false),
@@ -1226,7 +1232,10 @@ fn eval_ring_bond_count(idx: AtomIdx, ctx: &EvalCtx<'_>, x: u8) -> bool {
 /// Inferred hybridization: aromatic→sp2, triple→sp, double→sp2, else→sp3.
 /// RDKit's hybridization (`^n`), see [`crate::hybridization`].
 fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
-    crate::hybridization::rdkit_hybridization(ctx.mol, idx) == Some(h)
+    let lazy = ctx
+        .hybridization_lazy
+        .get_or_init(|| crate::hybridization::lazy_facts(ctx.mol));
+    crate::hybridization::hybridization_from(ctx.mol, lazy, idx) == Some(h)
 }
 
 /// Chirality primitive: ignored when use_chirality is false.

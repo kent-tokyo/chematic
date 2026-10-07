@@ -719,8 +719,10 @@ impl SdWriter {
             .as_mut()
             .ok_or_else(|| pyo3::exceptions::PyValueError::new_err("SDWriter is already closed"))?;
         let coords: Vec<(f64, f64)> = if self.compute_2d {
-            let layout = chematic_depict::compute_layout(&mol.inner);
-            layout.coords.iter().map(|p| (p.x, p.y)).collect()
+            // Å with y up, and the stereo depiction when there is stereo
+            // (depiction-unit coordinates here wrote 40 Å bonds and lost
+            // E/Z geometry).
+            chematic_mol::stereo_depiction::mol_block_coords(&mol.inner)
         } else {
             Vec::new()
         };

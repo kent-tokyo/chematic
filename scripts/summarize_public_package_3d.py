@@ -92,7 +92,9 @@ def timing_summary(rows: list[dict[str, object]]) -> dict[str, object]:
         "all_rows": {
             "p50_ms": percentile(elapsed, 0.5),
             "p95_ms": percentile(elapsed, 0.95),
-            "total_ms": sum(elapsed),
+            # Correctly rounded, so every Python gives the same total
+            # (3.12 made `sum` compensated, 3.11 is not).
+            "total_ms": math.fsum(elapsed),
         },
         "successful_rows": {
             "count": len(successful),
