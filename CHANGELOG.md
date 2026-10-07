@@ -16,6 +16,12 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- 2D layout: the clash relief stops counting a move once it cannot win
+  (identical drawings, `write_mol` 652M → 589M instructions on 2,000 rows),
+  so components of more than 60 atoms now also get their ±45° forks
+  relieved: narrow branch atoms 1,757 → 916 of 15,000 rows; three-atom
+  groups take the wide turns. Record:
+  `benchmarks/2026-10-08-734-754-followups-batch22.md`.
 - Python: the parsers (`from_smiles`, `from_inchi`, `from_mol_block`,
   `from_mol_block_with_coords`, `parse_mmcif`, SMARTS patterns) raise
   `chematic.ChematicInputError`, a `ValueError` subclass with `category`
