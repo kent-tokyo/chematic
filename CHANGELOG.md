@@ -10,6 +10,17 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added the versioned `chematic.nucleic-acid.v1` document model for bounded,
+  explicit DNA/RNA strand metadata. It preserves ordered residues, standard or
+  known modified-base identity, sugar identity, atom ownership, linear
+  phosphodiester linkage references, and annotations without inferring a
+  sequence or flattening the document into a molecule. Rust, Python, and
+  WASM/Node share validation and metadata-edit fixtures plus stable typed error
+  categories for ambiguous mapping, unsupported topology, unknown
+  modifications, and resource limits (#715).
+
 ### Fixed
 
 - Aromaticity perception no longer treats a neutral O/S/Se/Te atom with more
