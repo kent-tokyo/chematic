@@ -1,0 +1,22 @@
+coverage:
+  precision: 2
+  round: down
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: true
+    patch:
+      default:
+        target: auto
+        informational: true
+
+flags:
+  rust-unit:
+    paths:
+      - crates/
+    carryforward: false
+
+# Keep coverage visible as checks and badges without adding PR comments.
+comment: false
