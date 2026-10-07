@@ -35,6 +35,7 @@ pub mod mol2_tripos;
 pub mod mol3000;
 pub mod moljson;
 pub mod mrv;
+pub mod nucleic_acid;
 pub mod opendx;
 pub mod orca;
 pub mod pdbqt;
@@ -125,6 +126,12 @@ pub use moljson::{
 };
 pub use mrv::{
     MrvError, MrvParseLimits, MrvWriteOptions, parse_mrv, parse_mrv_with_limits, write_mrv,
+};
+pub use nucleic_acid::{
+    NUCLEIC_ACID_SCHEMA, NUCLEIC_ACID_VALIDATION_SCHEMA, NucleicAcidAnnotationTarget,
+    NucleicAcidBase, NucleicAcidCommand, NucleicAcidDocument, NucleicAcidError, NucleicAcidLimits,
+    NucleicAcidLinkage, NucleicAcidResidue, NucleicAcidStrand, NucleicAcidStrandKind,
+    NucleicAcidSugar, apply_nucleic_acid_json_command, validate_nucleic_acid_json,
 };
 pub use opendx::{
     OpenDxError, OpenDxParseLimits, parse_opendx, parse_opendx_with_limits, write_opendx,

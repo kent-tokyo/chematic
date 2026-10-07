@@ -2178,6 +2178,23 @@ def from_cdxml(cdxml_str: str) -> Mol:
     """
     ...
 
+def nucleic_acid_validate_json(document_json: str) -> str:
+    """Validate and normalize a bounded nucleic-acid document.
+
+    Returns a ``chematic.nucleic-acid-validation.v1`` JSON envelope. On
+    success it contains the lossless normalized ``document``; on failure it
+    contains a typed ``error`` with ``code``, ``path``, and ``message``.
+    """
+    ...
+
+def nucleic_acid_apply_json_command(document_json: str, command_json: str) -> str:
+    """Apply a bounded annotation or residue-identity edit.
+
+    Atom ownership and linkage topology are immutable through this API. The
+    return value uses the same envelope as :func:`nucleic_acid_validate_json`.
+    """
+    ...
+
 def from_mol_v3000(block: str) -> Mol:
     """Parse an MDL MOL V3000 block and return a :class:`Mol`.
 
