@@ -10,6 +10,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added Rust unit-test coverage reporting with `cargo-llvm-cov`, Codecov OIDC
+  uploads, and downloadable LCOV/HTML reports in GitHub Actions.
+
 ## [1.0.37] - 2026-10-07
 
 ### Added
