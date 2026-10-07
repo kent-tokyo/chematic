@@ -85,7 +85,10 @@ fn ownership(document: &Value) -> std::collections::BTreeMap<String, String> {
         }
     }
     for atom in document["atom_ids"].as_array().unwrap() {
-        assert!(owner.contains_key(atom.as_str().unwrap()), "atom {atom} unowned");
+        assert!(
+            owner.contains_key(atom.as_str().unwrap()),
+            "atom {atom} unowned"
+        );
     }
     owner
 }
