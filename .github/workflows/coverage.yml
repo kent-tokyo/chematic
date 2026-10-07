@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   coverage:
-    name: Rust unit coverage
+    name: Rust coverage
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -42,13 +42,14 @@ jobs:
             ${{ runner.os }}-cargo-coverage-
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --version 0.8.7 --locked
-      # Matches the Rust unit-test lane, plus binary unit tests. Binding runtime
-      # suites, integration tests, and optional features are separate CI lanes.
-      - name: Measure Rust unit coverage
+      # Include public format contracts as well as library and binary unit tests.
+      # Binding runtimes and optional features remain separate CI lanes.
+      - name: Measure Rust coverage
         id: measure
         run: |
           mkdir -p target/coverage
           cargo llvm-cov --locked --workspace --lib --bins \
+            --test qcschema --test nucleic_acid_contract --test v3000_semantic_interop \
             --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
             --lcov --output-path target/coverage/lcov.info
       - name: Generate HTML report
@@ -73,6 +74,7 @@ jobs:
           use_oidc: true
           files: target/coverage/lcov.info
           disable_search: true
+          # Retain the original flag so Codecov compares successive reports.
           flags: rust-unit
           name: rust-unit-llvm-cov
           fail_ci_if_error: true
