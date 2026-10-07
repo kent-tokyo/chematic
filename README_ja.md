@@ -27,9 +27,10 @@ Python wheelはC/C++コンパイラを必要とせず、各バインディング
 
 v1.0.37では、立体を保持するMOL・SVG描画、混雑した2Dレイアウト、canonical SMILESの
 最悪ケース、MMFF94の原子型とエネルギー項、孤立電子対を含むCIP、RDKit 2026.09.1向け
-SMARTS環プロファイルを改善しました。日付付きsource測定、v1.0.36公開物の測定、
-v1.0.37公開物の確認は区別しています。詳しくは[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を
-参照してください。
+SMARTS環プロファイルを改善しました。Rust・Python・WASM共通の制限付き核酸文書モデルも
+追加し、高配位カルコゲンの芳香族性判定を修正しています。日付付きsource測定、v1.0.36
+公開物の測定、v1.0.37公開物の確認は区別しています。詳しくは
+[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方
 

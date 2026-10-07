@@ -25,8 +25,10 @@ Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
 v1.0.37 improves stereo-aware MOL and SVG depiction, crowded 2D layouts,
 canonical SMILES worst cases, MMFF94 typing and energy terms, lone-pair CIP,
-and the opt-in RDKit 2026.09.1 SMARTS ring profile. Dated source and v1.0.36
-package measurements remain separate from v1.0.37 package verification. See
+and the opt-in RDKit 2026.09.1 SMARTS ring profile. It also adds a bounded
+nucleic-acid document model across Rust, Python, and WASM, and fixes
+hypercoordinate-chalcogen aromaticity. Dated source and v1.0.36 package
+measurements remain separate from v1.0.37 package verification. See
 [validation](docs/validation.md) and [CHANGELOG](CHANGELOG.md).
 
 ## Use it

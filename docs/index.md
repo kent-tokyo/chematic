@@ -82,8 +82,10 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 v1.0.37 improves stereo-aware MOL and SVG depiction, crowded 2D layouts,
 canonical SMILES worst cases, MMFF94 typing and energy terms, lone-pair CIP,
-and the opt-in RDKit 2026.09.1 SMARTS ring profile. Release availability is
-not an accuracy or speed result; package-output reruns remain separate.
+and the opt-in RDKit 2026.09.1 SMARTS ring profile. It also adds the bounded
+`chematic.nucleic-acid.v1` document model across Rust, Python, and WASM, and
+fixes hypercoordinate-chalcogen aromaticity. Release availability is not an
+accuracy or speed result; package-output reruns remain separate.
 
 The latest published-package comparison packet is for v1.0.30. It records
 20 exact-output, favorable paired-interval Python operations on one host;

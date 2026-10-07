@@ -27,8 +27,9 @@ Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
 v1.0.37 改进了保留立体信息的 MOL 与 SVG 绘制、拥挤分子的二维布局、canonical
 SMILES 最坏情况、MMFF94 原子类型与能量项、孤对电子 CIP，以及可选的 RDKit
-2026.09.1 SMARTS 环模型。带日期的源码测量、v1.0.36 已发布包测量与 v1.0.37
-发布验证保持分离。详情见
+2026.09.1 SMARTS 环模型。它还为 Rust、Python 和 WASM 增加了有明确边界的核酸
+文档模型，并修正了高配位硫族元素的芳香性判断。带日期的源码测量、v1.0.36
+已发布包测量与 v1.0.37 发布验证保持分离。详情见
 [验证报告](docs/validation.md)，变更见 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用
