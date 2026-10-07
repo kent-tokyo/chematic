@@ -9,6 +9,7 @@
 [![crates.io](https://img.shields.io/crates/v/chematic?logo=rust)](https://crates.io/crates/chematic)
 [![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic?logo=npm)](https://www.npmjs.com/package/@kent-tokyo/chematic)
 [![许可证](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
 面向 Python、Rust 和浏览器的纯 Rust 化学信息学工具包：本地优先、输入受限，并为不支持的
 化学表达提供明确错误。
