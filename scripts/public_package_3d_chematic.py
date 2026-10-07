@@ -37,6 +37,10 @@ STEREO_SAFE_ARM_FORCE_FIELDS = {
     "chematic_pipeline_v2_mmff94_strict_stereo_safe": "mmff94_bond_angle_strict",
 }
 BEST_OF_N_ARM = "chematic_pipeline_v2_uff_best_of_10"
+# Ten stereo-safe MMFF94 attempts (seeds base, base+1, ...), the kept
+# conformer of lowest MMFF94 energy returned: the quality tier against
+# RDKit's best of ten ETKDG conformers, at about ten times the cost.
+LOWEST_OF_N_ARM = "chematic_pipeline_v2_mmff94_stereo_safe_lowest_of_10"
 
 
 def sha256(path: Path) -> str:
@@ -128,7 +132,17 @@ def run_pipeline(mol: object, config: object) -> dict[str, object]:
     }
 
 
-def run_best_of_n(mol: object, chematic: object, config: object) -> dict[str, object]:
+def run_lowest_of_n(mol: object, chematic: object, config: object) -> dict[str, object]:
+    """The lowest-energy kept conformer of a stereo-safe MMFF94 ensemble."""
+    result = run_best_of_n(mol, chematic, config, pick_lowest=True)
+    if result.get("status") == "success":
+        result["force_field"] = "mmff94"
+    return result
+
+
+def run_best_of_n(
+    mol: object, chematic: object, config: object, pick_lowest: bool = False
+) -> dict[str, object]:
     ensemble_config = chematic.EnsembleV2Config(
         per_conformer=config,
         count=BEST_OF_N,
@@ -157,10 +171,21 @@ def run_best_of_n(mol: object, chematic: object, config: object) -> dict[str, ob
             "attempts": result.get("attempts"),
         }
     provenance = result.get("conformer_provenance", [])
+    chosen = 0
+    if pick_lowest:
+        energies = {}
+        for attempt in result.get("attempts", []):
+            success = attempt.get("success") or {}
+            disposition = success.get("disposition") or {}
+            if disposition.get("kind") == "kept" and success.get("energy") is not None:
+                energies[disposition["conformer_index"]] = success["energy"]
+        if energies:
+            chosen = min(energies, key=lambda k: (energies[k], k))
     return {
         "status": "success",
         "elapsed_ms": elapsed_ms,
-        "coords": conformers[0],
+        "coords": conformers[chosen],
+        "chosen_conformer": chosen,
         "force_field": "uff",
         "conformers_kept": len(conformers),
         "conformer_provenance": provenance,
@@ -180,7 +205,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--arms",
         nargs="+",
-        choices=(*ARM_FORCE_FIELDS, *STEREO_SAFE_ARM_FORCE_FIELDS, BEST_OF_N_ARM),
+        choices=(*ARM_FORCE_FIELDS, *STEREO_SAFE_ARM_FORCE_FIELDS, BEST_OF_N_ARM, LOWEST_OF_N_ARM),
         default=[*ARM_FORCE_FIELDS, BEST_OF_N_ARM],
     )
     parser.add_argument("--wall-budget-seconds", type=float, default=3300.0)
@@ -243,6 +268,11 @@ def main() -> int:
     best_config = (
         pipeline_config(chematic, "uff_only") if BEST_OF_N_ARM in args.arms else None
     )
+    lowest_config = (
+        pipeline_config(chematic, "mmff94_bond_angle_strict", stereo_safe=True)
+        if LOWEST_OF_N_ARM in args.arms
+        else None
+    )
     session_started = time.monotonic()
     emitted = 0
     termination = "completed"
@@ -272,6 +302,8 @@ def main() -> int:
                         **(
                             run_best_of_n(mol, chematic, best_config)
                             if arm == BEST_OF_N_ARM
+                            else run_lowest_of_n(mol, chematic, lowest_config)
+                            if arm == LOWEST_OF_N_ARM
                             else run_pipeline(mol, configs[arm])
                         ),
                     }

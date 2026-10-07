@@ -175,15 +175,24 @@ default budget is 1,000 iterations (RDKit's `MMFFOptimizeMolecule` default
 is 200); a geometry that stops at the budget is returned with the
 `iteration_limit` termination.
 
+A single `embed_pipeline_v2` conformer is one basin, not a search. On the
+265 A6 molecules, relaxed by RDKit's MMFF94, it is a median 0.48 and p90
+8.65 kcal/mol above RDKit's best of ten ETKDGv3 conformers (155 within
+1 kcal/mol; about 0.03 s per molecule). The lowest-energy kept conformer of
+a ten-attempt `conformer_ensemble_v2` with the stereo-safe MMFF94 config is
+a median 0.00 and p90 3.69 kcal/mol above it (198 within 1 kcal/mol; about
+0.28 s per molecule); both stay 265/265 sound, stereo-clean and clash-free
+on the external scorer.
+
 2D layout is rule-based, not RDKit's `Compute2DCoords`: coordinates differ.
 Depictions and MOL blocks draw the declared stereo (E/Z geometry, one wedge
 per centre); every MOL block (Python `to_mol_block`, WASM `to_mol_block`,
-`SDWriter`) carries 2D coordinates in Å, with or without stereo. As drawn, 25
+`SDWriter`) carries 2D coordinates in Å, with or without stereo. As drawn, 23
 of the 15,000 exposed-10k and ChEMBL-5k rows have a clash (RDKit 276) and
 caged ring systems can cross themselves (adamantane-type cages are drawn as
-RDKit's projection, with its one crossing). A branch point is drawn with its
+RDKit's projection, with its one crossing; porphyrins from a template). A branch point is drawn with its
 bonds 120° apart unless that crowds the drawing, where a fork of 90°, or the
-narrower fork of earlier releases, is kept (298 rows have a branch atom with
+narrower fork of earlier releases, is kept (251 rows have a branch atom with
 two bonds under 90° apart; RDKit none).
 
 ## Binding contract

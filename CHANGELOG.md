@@ -16,6 +16,18 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- 2D layout: porphyrins are drawn from a template (pentagons round the
+  macrocycle, a central metal at the centre); perfluoroalkyl and other chains
+  run straight through CF2/CMe2 atoms; a ring-fusion atom's substituent goes
+  into the exterior gap (an angle comparison past 2π sent it into a ring).
+  As drawn, 232 of 15,000 rows have a crossing (was 242) and 23 a clash.
+  CI: the published-wheel chemistry gates record chematic's outputs on macOS
+  and Windows without RDKit and compare them on Linux against a hash-pinned
+  RDKit wheel (the first runs failed on a missing macOS x86-64 RDKit wheel
+  and on wrong rule-table paths). Published v1.0.37: Linux wheel, npm, crate
+  and sdist give the gate counts (`validation/published-wheel-chemistry-gates-expected-v1.0.37.json`).
+  A6 harness: a lowest-of-10 stereo-safe MMFF94 arm. Record:
+  `benchmarks/2026-10-08-734-754-followups-batch20.md`.
 - 2D layout: adamantane-type cages (adamantane, hexamine) are drawn as
   RDKit's projection instead of with a clash; a one- or two-atom substituent
   may swing up to 150° round its hinge in the clash relief (a tropane's

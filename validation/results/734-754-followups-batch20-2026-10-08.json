@@ -1,0 +1,93 @@
+{
+ "schema": "734-754-followups-batch20/v1",
+ "rdkit": "2026.03.6",
+ "base_revision": "39187241",
+ "published_wheel_gates": {
+  "failures_diagnosed": [
+   "rdkit 2026.3.6 has no macOS x86-64 wheel",
+   "rule tables looked up as database_<table>.json; stored as database/[ENVMICRO/]<table>.json"
+  ],
+  "rdkit_wheel": "rdkit-2026.3.6-cp312-cp312-manylinux_2_28_x86_64.whl",
+  "rdkit_wheel_sha256": "9f97b58f1962df73bdacf44347bfa013f4fcb9896e049f98af2183e70e7aab46"
+ },
+ "published_v1_0_37": {
+  "pypi_linux_cp39_wheel": {
+   "sha256": "660e12e5292cbd82ce111583e27eba539cb72c30771a5777c909b979cabb38fe",
+   "gates": "validation/results/v1.0.37-published-pypi-linux-cp39-wheel-gates.json"
+  },
+  "npm": {
+   "integrity": "sha512-IKLCwwBNCqoBnmEJYmlAbUliBqZId2N6xS5Lkyspc+4sYwSfyX1d/rmHuRWfjKF80UQlTKs6XkSRAn77YLnT+g==",
+   "reaction_83": {
+    "graph_origin_map_match": 80,
+    "joint_invalid_input": 3
+   },
+   "wasm_node_tests": "21/21"
+  },
+  "crate": {
+   "checksum": "570a7d46e054bd3010d655ab5fcea2fdae7d979dd77f64c660a04fe12c20a8de",
+   "reaction_83": {
+    "graph_origin_map_match": 80,
+    "joint_invalid_input": 3
+   }
+  },
+  "sdist_autoconf": "75/83, 0 unexpected",
+  "a6": {
+   "200": {
+    "converged": 135
+   },
+   "1000": {
+    "converged": 264
+   },
+   "sound": 265,
+   "stereo_clean": 265,
+   "gross_clash": 0,
+   "coords_identical_to_source": true
+  }
+ },
+ "layout_2d_as_drawn": {
+  "batch19": {
+   "clean": 14757,
+   "with_clash": 25,
+   "with_crossing": 242,
+   "narrow_branch_atoms": 1876,
+   "with_narrow_branch": 298
+  },
+  "source": {
+   "clean": 14767,
+   "with_clash": 23,
+   "with_crossing": 232,
+   "narrow_branch_atoms": 1757,
+   "with_narrow_branch": 251,
+   "bridged_clean": 325,
+   "bridged_more_crossings_than_rdkit": 14
+  },
+  "rows_better": 29,
+  "rows_worse": 2
+ },
+ "write_mol_2000_rows_instructions": {
+  "batch19": 659584609,
+  "source": 647269819
+ },
+ "a6_quality_vs_rdkit_best_of_10": {
+  "single_1000": {
+   "median": 0.48011996903956344,
+   "p90": 8.650352226983635,
+   "max": 25.571056054639357,
+   "within_1": 155,
+   "at_or_below": 105,
+   "seconds": 7.52
+  },
+  "lowest_of_10": {
+   "median": 2.759837514076935e-08,
+   "p90": 3.6918431770655786,
+   "max": 11.918073769790297,
+   "within_1": 198,
+   "at_or_below": 158,
+   "seconds": 74.6,
+   "sound": 265,
+   "stereo_clean": 265,
+   "gross_clash": 0
+  }
+ },
+ "rdkit_2026_09_1_python": "not on PyPI (2026-10-08)"
+}
