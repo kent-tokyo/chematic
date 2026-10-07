@@ -171,6 +171,14 @@ fn unspecified_double_bonds(
     out
 }
 
+/// Double bonds of a molecule without declared stereo that a reader would
+/// take as E/Z from drawn coordinates. Writers mark them "either" (V2000
+/// stereo 3 / V3000 `CFG=2`) whenever they write real coordinates, so a
+/// layout never invents a configuration the input did not have.
+pub(crate) fn undeclared_stereo_double_bonds(mol: &Molecule) -> Vec<BondIdx> {
+    unspecified_double_bonds(mol, &HashMap::new())
+}
+
 /// Whether `bond` lies on a ring of fewer than `size` atoms.
 fn in_ring_smaller_than(mol: &Molecule, bond: BondIdx, size: usize) -> bool {
     let (start, goal) = (mol.bond(bond).atom1, mol.bond(bond).atom2);
@@ -1179,6 +1187,45 @@ mod tests {
         let v2 = write_mol(&mol, &MolMetadata::default());
         let back = read_mol_with_diagnostics(&v2).unwrap().mol;
         assert_eq!(canonical_smiles(&back), canonical_smiles(&mol), "{v2}");
+    }
+
+    #[test]
+    fn laid_out_molecule_without_stereo_marks_undeclared_double_bonds_either() {
+        // A molecule with no stereo at all takes the plain layout, which
+        // still draws each double bond cis or trans. Readers (RDKit among
+        // them) take that drawn geometry as E/Z unless the bond is "either":
+        // 533 of the exposed 10k rows read back with an invented E/Z.
+        use crate::mol2000::{write_laid_out_mol, write_mol_with_coords};
+        for smi in [
+            "CC=CC",
+            "CN(C)N=Nc1ccccc1",
+            "O=C(Nc1ccccc1)C(=NNc1ccccc1)N=Nc1ccccc1",
+        ] {
+            let mol = parse(smi).unwrap();
+            assert!(!super::needs_stereo_depiction(&mol));
+            let (v2, loss) = write_laid_out_mol(&mol, &MolMetadata::default());
+            assert!(loss.is_empty(), "{smi}");
+            let either = super::undeclared_stereo_double_bonds(&mol);
+            assert!(!either.is_empty(), "{smi}");
+            for &b in &either {
+                let line = v2.lines().nth(4 + mol.atom_count() + b.0 as usize).unwrap();
+                assert_eq!(line[9..12].trim(), "3", "{v2}");
+            }
+            let back = read_mol_with_diagnostics(&v2).unwrap().mol;
+            assert_eq!(canonical_smiles(&back), canonical_smiles(&mol), "{v2}");
+            // Caller-supplied coordinates are data: that contract is unchanged.
+            let coords = super::mol_block_coords(&mol);
+            let plain = write_mol_with_coords(&mol, &MolMetadata::default(), &coords);
+            for &b in &either {
+                let line = plain.lines().nth(4 + mol.atom_count() + b.0 as usize).unwrap();
+                assert_eq!(line[9..12].trim(), "0", "{plain}");
+            }
+        }
+        // Symmetric ends and small rings are not stereo bonds.
+        for smi in ["CC(C)=C(C)C", "C1=CCCCC1", "C=CC"] {
+            let mol = parse(smi).unwrap();
+            assert!(super::undeclared_stereo_double_bonds(&mol).is_empty(), "{smi}");
+        }
     }
 
     #[test]

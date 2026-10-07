@@ -718,7 +718,7 @@ impl SdWriter {
             .writer
             .as_mut()
             .ok_or_else(|| pyo3::exceptions::PyValueError::new_err("SDWriter is already closed"))?;
-        let coords: Vec<(f64, f64)> = if self.compute_2d {
+        let coords: Vec<(f64, f64)> = if self.compute_2d && self.force_v3000 {
             // Å with y up, and the stereo depiction when there is stereo
             // (depiction-unit coordinates here wrote 40 Å bonds and lost
             // E/Z geometry).
@@ -741,6 +741,14 @@ impl SdWriter {
         if self.force_v3000 {
             self.record_buffer =
                 chematic_mol::write_sdf_record_v3000(&mol.inner, &meta, &coords, props);
+        } else if self.compute_2d {
+            // The same layout and "either" marking as `Mol.to_mol_block`.
+            chematic_mol::write_laid_out_sdf_record_into(
+                &mut self.record_buffer,
+                &mol.inner,
+                &meta,
+                props,
+            );
         } else {
             chematic_mol::mol2000::write_sdf_record_into(
                 &mut self.record_buffer,

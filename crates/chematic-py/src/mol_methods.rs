@@ -250,12 +250,10 @@ impl Mol {
         // Laid out like RDKit's MolToMolBlock (and the WASM binding): the
         // stereo depiction, or the plain layout without stereo (this wrote
         // every atom at the origin for a molecule without stereo).
-        let coords = chematic_mol::stereo_depiction::mol_block_coords(&self.inner);
-        let (block, loss) = chematic_mol::write_mol_with_stereo_report(
-            &self.inner,
-            &chematic_mol::MolMetadata::default(),
-            &coords,
-        );
+        // Undeclared E/Z double bonds are written "either", so the layout
+        // never reads back as a configuration the molecule does not have.
+        let (block, loss) =
+            chematic_mol::write_laid_out_mol(&self.inner, &chematic_mol::MolMetadata::default());
         strict_mol_block(py, block, &loss, strict)
     }
 
@@ -276,12 +274,10 @@ impl Mol {
         // Laid out like RDKit's MolToMolBlock (and the WASM binding): the
         // stereo depiction, or the plain layout without stereo (this wrote
         // every atom at the origin for a molecule without stereo).
-        let coords = chematic_mol::stereo_depiction::mol_block_coords(&self.inner);
-        let (block, loss) = chematic_mol::write_mol_with_stereo_report(
-            &self.inner,
-            &chematic_mol::MolMetadata::default(),
-            &coords,
-        );
+        // Undeclared E/Z double bonds are written "either", so the layout
+        // never reads back as a configuration the molecule does not have.
+        let (block, loss) =
+            chematic_mol::write_laid_out_mol(&self.inner, &chematic_mol::MolMetadata::default());
         Ok((block, stereo_loss_dict(py, &loss)?))
     }
 

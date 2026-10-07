@@ -8,7 +8,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use std::sync::OnceLock;
 
 use chematic_core::{
-    AtomIdx, BondIdx, BondOrder, Element, Molecule, bond_order_sum, implicit_hcount,
+    AtomIdx, BondIdx, BondOrder, Element, Molecule, implicit_hcount,
 };
 use chematic_perception::{
     all_ring_list, aromatic_ring_list, find_ring_families, find_sssr, ring_bonds_all_aromatic,
@@ -21,45 +21,6 @@ fn has_double_bond_to(mol: &Molecule, idx: AtomIdx, target_an: u8) -> bool {
         mol.bond(bidx).order == BondOrder::Double
             && mol.atom(nb).element.atomic_number() == target_an
     })
-}
-
-/// Returns true if `idx` is in a ring.
-///
-/// For degree-2 atoms one BFS suffices. For degree-3 atoms (e.g. N with two ring
-/// bonds + one exocyclic substituent) the first neighbor may be exocyclic — a dead
-/// end that makes the single-pair BFS return false even though `idx` is in a ring.
-/// This version tries each neighbor as the BFS start and returns true as soon as
-/// any other neighbor is found reachable without going through `idx`.
-fn is_atom_in_ring(mol: &Molecule, idx: AtomIdx) -> bool {
-    let nbs: Vec<AtomIdx> = mol.neighbors(idx).map(|(nb, _)| nb).collect();
-    if nbs.len() < 2 {
-        return false;
-    }
-    for start_i in 0..nbs.len() {
-        let start = nbs[start_i];
-        let targets: FxHashSet<AtomIdx> = nbs
-            .iter()
-            .enumerate()
-            .filter(|(j, _)| *j != start_i)
-            .map(|(_, &nb)| nb)
-            .collect();
-        let mut visited = FxHashSet::default();
-        visited.insert(idx);
-        visited.insert(start);
-        let mut queue = std::collections::VecDeque::new();
-        queue.push_back(start);
-        while let Some(curr) = queue.pop_front() {
-            if targets.contains(&curr) {
-                return true;
-            }
-            for (nb, _) in mol.neighbors(curr) {
-                if visited.insert(nb) {
-                    queue.push_back(nb);
-                }
-            }
-        }
-    }
-    false
 }
 
 // --- Element Detection Helpers ---
@@ -78,11 +39,6 @@ fn is_nitrogen(an: u8) -> bool {
 #[inline]
 fn is_oxygen(an: u8) -> bool {
     an == 8
-}
-
-#[inline]
-fn is_sulfur(an: u8) -> bool {
-    an == 16
 }
 
 #[inline]
@@ -281,155 +237,139 @@ fn rdkit_isotope_mass(element: Element, isotope: u16) -> f64 {
         .unwrap_or(isotope as f64)
 }
 
-/// High-precision nuclide masses for explicit labels common in descriptor
-/// fixtures. The complete pinned isotope table is used for every other known
-/// label before falling back to its mass number.
+/// Mass of an explicitly labelled isotope: RDKit's `GetMassForIsotope`,
+/// with its mass-number fallback for unknown labels.
 fn exact_mass_isotope(element: Element, isotope: u16) -> f64 {
-    match (element.atomic_number(), isotope) {
-        (1, 2) => 2.01410177812,
-        (1, 3) => 3.01604928199,
-        (6, 12) => 12.0,
-        (6, 13) => 13.00335483507,
-        (6, 14) => 14.0032419884,
-        (7, 15) => 15.00010889888,
-        (8, 17) => 16.9991317565,
-        (8, 18) => 17.99915961286,
-        (9, 18) => 18.0009373,
-        (15, 32) => 31.973907643,
-        (16, 33) => 32.9714589098,
-        (16, 34) => 33.967867004,
-        (17, 37) => 36.965902602,
-        (35, 81) => 80.9162897,
-        _ => rdkit_isotope_mass(element, isotope),
-    }
+    rdkit_isotope_mass(element, isotope)
 }
 
 /// Monoisotopic (most-abundant-isotope) mass table (Da), indexed the same
-/// way as [`AVG_MASS_TABLE`]. Exact mass keeps a separate, high-precision
-/// contract from average molecular weight, so common descriptor elements use
-/// their nuclide masses rather than rounded display values.
+/// way as [`AVG_MASS_TABLE`]: RDKit 2026.03's `GetMostCommonIsotopeMass`
+/// for every element, so exact mass is bit-identical to `ExactMolWt`.
+/// (The table used to mix more precise nuclide masses for H, N, O with
+/// rounded 4-5 decimal values for halogens, Si and metals: up to 4.7e-5 Da
+/// off per Cl.) Generated with RDKit 2026.03.1; do not edit by hand.
 static MONO_MASS_TABLE: [f64; 118] = [
-    1.00782503223,  // 1 H; 1H nuclide mass
-    4.00260,        // 2 He (RDKit)
-    7.01600,        // 3 Li (RDKit)
-    9.01218,        // 4 Be (RDKit)
-    11.00930536,    // 5 B; 11B nuclide mass
-    12.00000,       // 6 C (pre-existing)
-    14.00307400443, // 7 N; 14N nuclide mass
-    15.99491461957, // 8 O; 16O nuclide mass
-    18.99840,       // 9 F (pre-existing)
-    19.99244,       // 10 Ne (RDKit)
-    22.98977,       // 11 Na (RDKit)
-    23.98504,       // 12 Mg (RDKit)
-    26.98154,       // 13 Al (RDKit)
-    27.97690,       // 14 Si (pre-existing)
-    30.97376199842, // 15 P; 31P nuclide mass
-    31.9720711744,  // 16 S; 32S nuclide mass
-    34.96890,       // 17 Cl (pre-existing)
-    39.96238,       // 18 Ar (RDKit)
-    38.96371,       // 19 K (RDKit)
-    39.96259,       // 20 Ca (RDKit)
-    44.95591,       // 21 Sc (RDKit)
-    47.94795,       // 22 Ti (RDKit)
-    50.94396,       // 23 V (RDKit)
-    51.94051,       // 24 Cr (RDKit)
-    54.93805,       // 25 Mn (RDKit)
-    55.93494,       // 26 Fe (RDKit)
-    58.93319,       // 27 Co (RDKit)
-    57.93534,       // 28 Ni (RDKit)
-    62.92960,       // 29 Cu (RDKit)
-    63.92914,       // 30 Zn (RDKit)
-    68.92557,       // 31 Ga (RDKit)
-    73.92118,       // 32 Ge (RDKit)
-    74.92160,       // 33 As (RDKit)
-    79.9165218,     // 34 Se; 80Se nuclide mass
-    78.91830,       // 35 Br (pre-existing)
-    83.91151,       // 36 Kr (RDKit)
-    84.91179,       // 37 Rb (RDKit)
-    87.90561,       // 38 Sr (RDKit)
-    88.90585,       // 39 Y (RDKit)
-    89.90470,       // 40 Zr (RDKit)
-    92.90638,       // 41 Nb (RDKit)
-    97.90541,       // 42 Mo (RDKit)
-    96.90636,       // 43 Tc (RDKit)
-    101.90435,      // 44 Ru (RDKit)
-    102.90550,      // 45 Rh (RDKit)
-    105.90349,      // 46 Pd (RDKit)
-    106.90510,      // 47 Ag (RDKit)
-    113.90336,      // 48 Cd (RDKit)
-    114.90388,      // 49 In (RDKit)
-    119.90219,      // 50 Sn (RDKit)
-    120.90382,      // 51 Sb (RDKit)
-    129.90622,      // 52 Te (RDKit)
-    126.90450,      // 53 I (pre-existing)
-    131.90415,      // 54 Xe (RDKit)
-    132.90545,      // 55 Cs (RDKit)
-    137.90525,      // 56 Ba (RDKit)
-    138.90635,      // 57 La (RDKit)
-    139.90544,      // 58 Ce (RDKit)
-    140.90765,      // 59 Pr (RDKit)
-    141.90772,      // 60 Nd (RDKit)
-    144.91275,      // 61 Pm (RDKit)
-    151.91973,      // 62 Sm (RDKit)
-    152.92123,      // 63 Eu (RDKit)
-    157.92410,      // 64 Gd (RDKit)
-    158.92535,      // 65 Tb (RDKit)
-    163.92917,      // 66 Dy (RDKit)
-    164.93032,      // 67 Ho (RDKit)
-    165.93029,      // 68 Er (RDKit)
-    168.93421,      // 69 Tm (RDKit)
-    173.93886,      // 70 Yb (RDKit)
-    174.94077,      // 71 Lu (RDKit)
-    179.94655,      // 72 Hf (RDKit)
-    180.94800,      // 73 Ta (RDKit)
-    183.95093,      // 74 W (RDKit)
-    186.95575,      // 75 Re (RDKit)
-    191.96148,      // 76 Os (RDKit)
-    192.96293,      // 77 Ir (RDKit)
-    194.96479,      // 78 Pt (RDKit)
-    196.96657,      // 79 Au (RDKit)
-    201.97064,      // 80 Hg (RDKit)
-    204.97443,      // 81 Tl (RDKit)
-    207.97665,      // 82 Pb (RDKit)
-    208.98040,      // 83 Bi (RDKit)
-    208.98243,      // 84 Po (RDKit)
-    209.98715,      // 85 At (RDKit)
-    222.01757,      // 86 Rn (RDKit)
-    223.01974,      // 87 Fr (RDKit)
-    226.02540,      // 88 Ra (RDKit)
-    227.02775,      // 89 Ac (RDKit)
-    232.03806,      // 90 Th (RDKit)
-    231.03588,      // 91 Pa (RDKit)
-    238.05079,      // 92 U (RDKit)
-    236.04657,      // 93 Np (RDKit)
-    238.04956,      // 94 Pu (RDKit)
-    241.05683,      // 95 Am (RDKit)
-    243.06139,      // 96 Cm (RDKit)
-    247.07031,      // 97 Bk (RDKit)
-    249.07485,      // 98 Cf (RDKit)
-    252.08298,      // 99 Es (RDKit)
-    257.09510,      // 100 Fm (RDKit)
-    258.09843,      // 101 Md (RDKit)
-    259.10103,      // 102 No (RDKit)
-    262.10963,      // 103 Lr (RDKit)
-    267.12153,      // 104 Rf (RDKit)
-    268.12545,      // 105 Db (RDKit)
-    271.13347,      // 106 Sg (RDKit)
-    270.13362,      // 107 Bh (RDKit)
-    269.13406,      // 108 Hs (RDKit)
-    278.15481,      // 109 Mt (RDKit)
-    281.16206,      // 110 Ds (RDKit)
-    281.16537,      // 111 Rg (RDKit)
-    285.17411,      // 112 Cn (RDKit)
-    284.17873,      // 113 Nh (RDKit)
-    289.19042,      // 114 Fl (RDKit)
-    288.19274,      // 115 Mc (RDKit)
-    293.20449,      // 116 Lv (RDKit)
-    292.20746,      // 117 Ts (RDKit)
-    294.21392,      // 118 Og (RDKit)
+    1.007825032,    // 1 H (1H)
+    4.002603254,    // 2 He (4He)
+    7.01600455,     // 3 Li (7Li)
+    9.0121822,      // 4 Be (9Be)
+    11.0093054,     // 5 B (11B)
+    12.0,           // 6 C (12C)
+    14.003074,      // 7 N (14N)
+    15.99491462,    // 8 O (16O)
+    18.99840322,    // 9 F (19F)
+    19.99244018,    // 10 Ne (20Ne)
+    22.98976928,    // 11 Na (23Na)
+    23.9850417,     // 12 Mg (24Mg)
+    26.98153863,    // 13 Al (27Al)
+    27.97692653,    // 14 Si (28Si)
+    30.97376163,    // 15 P (31P)
+    31.972071,      // 16 S (32S)
+    34.96885268,    // 17 Cl (35Cl)
+    39.96238312,    // 18 Ar (40Ar)
+    38.96370668,    // 19 K (39K)
+    39.96259098,    // 20 Ca (40Ca)
+    44.9559119,     // 21 Sc (45Sc)
+    47.9479463,     // 22 Ti (48Ti)
+    50.9439595,     // 23 V (51V)
+    51.9405075,     // 24 Cr (52Cr)
+    54.9380451,     // 25 Mn (55Mn)
+    55.9349375,     // 26 Fe (56Fe)
+    58.933195,      // 27 Co (59Co)
+    57.9353429,     // 28 Ni (58Ni)
+    62.9295975,     // 29 Cu (63Cu)
+    63.9291422,     // 30 Zn (64Zn)
+    68.9255736,     // 31 Ga (69Ga)
+    73.9211778,     // 32 Ge (74Ge)
+    74.9215965,     // 33 As (75As)
+    79.9165213,     // 34 Se (80Se)
+    78.9183371,     // 35 Br (79Br)
+    83.911507,      // 36 Kr (84Kr)
+    84.91178974,    // 37 Rb (85Rb)
+    87.9056121,     // 38 Sr (88Sr)
+    88.9058483,     // 39 Y (89Y)
+    89.9047044,     // 40 Zr (90Zr)
+    92.9063781,     // 41 Nb (93Nb)
+    97.9054082,     // 42 Mo (98Mo)
+    96.906365,      // 43 Tc (97Tc)
+    101.9043493,    // 44 Ru (102Ru)
+    102.905504,     // 45 Rh (103Rh)
+    105.903486,     // 46 Pd (106Pd)
+    106.905097,     // 47 Ag (107Ag)
+    113.9033585,    // 48 Cd (114Cd)
+    114.903878,     // 49 In (115In)
+    119.9021947,    // 50 Sn (120Sn)
+    120.9038157,    // 51 Sb (121Sb)
+    129.9062244,    // 52 Te (130Te)
+    126.904473,     // 53 I (127I)
+    131.9041535,    // 54 Xe (132Xe)
+    132.9054519,    // 55 Cs (133Cs)
+    137.9052472,    // 56 Ba (138Ba)
+    138.9063533,    // 57 La (139La)
+    139.9054387,    // 58 Ce (140Ce)
+    140.9076528,    // 59 Pr (141Pr)
+    141.9077233,    // 60 Nd (142Nd)
+    144.912749,     // 61 Pm (145Pm)
+    151.9197324,    // 62 Sm (152Sm)
+    152.9212303,    // 63 Eu (153Eu)
+    157.9241039,    // 64 Gd (158Gd)
+    158.9253468,    // 65 Tb (159Tb)
+    163.9291748,    // 66 Dy (164Dy)
+    164.9303221,    // 67 Ho (165Ho)
+    165.9302931,    // 68 Er (166Er)
+    168.9342133,    // 69 Tm (169Tm)
+    173.9388621,    // 70 Yb (174Yb)
+    174.9407718,    // 71 Lu (175Lu)
+    179.94655,      // 72 Hf (180Hf)
+    180.9479958,    // 73 Ta (181Ta)
+    183.9509312,    // 74 W (184W)
+    186.9557531,    // 75 Re (187Re)
+    191.9614807,    // 76 Os (192Os)
+    192.9629264,    // 77 Ir (193Ir)
+    194.9647911,    // 78 Pt (195Pt)
+    196.9665687,    // 79 Au (197Au)
+    201.970643,     // 80 Hg (202Hg)
+    204.9744275,    // 81 Tl (205Tl)
+    207.9766521,    // 82 Pb (208Pb)
+    208.9803987,    // 83 Bi (209Bi)
+    208.9824304,    // 84 Po (209Po)
+    209.987148,     // 85 At (210At)
+    222.0175706,    // 86 Rn (222Rn)
+    223.0197359,    // 87 Fr (223Fr)
+    226.0254026,    // 88 Ra (226Ra)
+    227.0277521,    // 89 Ac (227Ac)
+    232.0380553,    // 90 Th (232Th)
+    231.035884,     // 91 Pa (231Pa)
+    238.0507882,    // 92 U (238U)
+    236.04657,      // 93 Np (236Np)
+    238.0495599,    // 94 Pu (238Pu)
+    241.0568291,    // 95 Am (241Am)
+    243.0613891,    // 96 Cm (243Cm)
+    247.070307,     // 97 Bk (247Bk)
+    249.0748535,    // 98 Cf (249Cf)
+    252.08298,      // 99 Es (252Es)
+    257.095105,     // 100 Fm (257Fm)
+    258.098431,     // 101 Md (258Md)
+    259.10103,      // 102 No (259No)
+    262.10963,      // 103 Lr (262Lr)
+    267.12153,      // 104 Rf (267Rf)
+    268.12545,      // 105 Db (268Db)
+    271.13347,      // 106 Sg (271Sg)
+    270.13362,      // 107 Bh (270Bh)
+    269.13406,      // 108 Hs (269Hs)
+    278.15481,      // 109 Mt (278Mt)
+    281.16206,      // 110 Ds (281Ds)
+    281.16537,      // 111 Rg (281Rg)
+    285.17411,      // 112 Cn (285Cn)
+    284.17873,      // 113 Nh (284Nh)
+    289.19042,      // 114 Fl (289Fl)
+    288.19274,      // 115 Mc (288Mc)
+    293.20449,      // 116 Lv (293Lv)
+    292.20746,      // 117 Ts (292Ts)
+    294.21392,      // 118 Og (294Og)
 ];
 
-/// See [`avg_mass`]'s doc comment for the fallback rationale.
 fn mono_mass(element: Element) -> f64 {
     let an = element.atomic_number();
     MONO_MASS_TABLE
@@ -493,23 +433,23 @@ pub fn rdkit_molecular_weight(mol: &Molecule) -> f64 {
 /// mass. Formal charge adjusts the neutral-atom sum by the electron rest mass,
 /// matching RDKit's `ExactMolWt` convention.
 pub fn exact_mass(mol: &Molecule) -> f64 {
-    const ELECTRON_MASS: f64 = 0.000_548_579_909_065;
+    // RDKit's getExactMolWt, operation for operation: each atom's mass, then
+    // its charge as electrons; the hydrogens are added once at the end.
+    const ELECTRON_MASS: f64 = 0.000_548_579_91;
     let mut mass = 0.0f64;
-    let mut formal_charge = 0i32;
+    let mut hydrogens = 0u32;
     for (idx, atom) in mol.atoms() {
         if atom.wildcard {
             continue;
         }
-        let m = match atom.isotope {
+        mass += match atom.isotope {
             Some(iso) => exact_mass_isotope(atom.element, iso),
             None => mono_mass(atom.element),
         };
-        mass += m;
-        let h = implicit_hcount(mol, idx);
-        mass += h as f64 * mono_mass(Element::H);
-        formal_charge += i32::from(atom.charge);
+        mass -= f64::from(atom.charge) * ELECTRON_MASS;
+        hydrogens += u32::from(implicit_hcount(mol, idx));
     }
-    mass - f64::from(formal_charge) * ELECTRON_MASS
+    mass + f64::from(hydrogens) * mono_mass(Element::H)
 }
 
 // ---------------------------------------------------------------------------
@@ -545,414 +485,104 @@ fn descriptor_attached_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
 // 4. Hydrogen bond donor count
 // ---------------------------------------------------------------------------
 
-/// Count Lipinski hydrogen bond donors (N-H, O-H, or S-H groups).
-///
-/// Each heavy atom with element N or O that has at least one attached H
-/// counts as one donor (not per H — donors are counted per heavy atom). An
-/// isolated implicit-water oxygen is not a Lipinski donor: RDKit's
-/// `CalcNumHBD` and `Lipinski.NumHDonors` both return zero for the standalone
-/// SMILES `O`, while ordinary hydroxyl groups remain donors.
+/// RDKit's `CalcNumHBD` pattern (Lipinski.cpp, version 2.0.1).
+const RDKIT_HBD_SMARTS: &str = "[N&!H0&v3,N&!H0&+1&v4,O&H1&+0,S&H1&+0,n&H1&+0]";
+/// RDKit's `CalcNumHBA` pattern (Lipinski.cpp, version 2.0.2).
+const RDKIT_HBA_SMARTS: &str = "[$([O,S;H1;v2]-[!$(*=[O,N,P,S])]),$([O,S;H0;v2]),$([O,S;-]),\
+$([N;v3;!$(N-*=!@[O,N,P,S])]),$([nH0X2,o,s;+0])]";
+
+/// Unique matches of an RDKit descriptor pattern, as RDKit's
+/// `countMatches` counts them.
+fn count_rdkit_pattern(
+    cell: &'static std::sync::OnceLock<chematic_smarts::QueryMolecule>,
+    smarts: &str,
+    mol: &Molecule,
+) -> usize {
+    let query = cell.get_or_init(|| {
+        chematic_smarts::parse_smarts(smarts).expect("RDKit descriptor SMARTS is valid")
+    });
+    chematic_smarts::find_match_atom_sets_perceived(
+        query,
+        mol,
+        &chematic_smarts::MatchConfig::default(),
+    )
+    .len()
+}
+
+/// Count hydrogen-bond donors: RDKit's `CalcNumHBD`, matched with its own
+/// SMARTS (N-H on trivalent or protonated N, neutral O-H and S-H, aromatic
+/// N-H). The former hand-written rule counted O-H/S-H on charged or
+/// metal-bound atoms (7 exposed-10k rows).
 pub fn hbd_count(mol: &Molecule) -> usize {
-    mol.atoms()
-        .filter(|(idx, atom)| {
-            let an = atom.element.atomic_number();
-            if !(is_nitrogen(an) || is_oxygen(an) || an == 16)
-                || descriptor_attached_hcount(mol, *idx) == 0
-            {
-                return false;
-            }
-            // A bare `O` is water in the SMILES model. Retain donor behavior
-            // for O-H attached to any heavy atom (alcohols, acids, hydroxylamine,
-            // and related functional groups).
-            an != 8
-                || mol
-                    .neighbors(*idx)
-                    .any(|(neighbor, _)| mol.atom(neighbor).element.atomic_number() != 1)
-        })
-        .count()
+    static QUERY: std::sync::OnceLock<chematic_smarts::QueryMolecule> = std::sync::OnceLock::new();
+    count_rdkit_pattern(&QUERY, RDKIT_HBD_SMARTS, mol)
 }
 
 // ---------------------------------------------------------------------------
 // 5. Hydrogen bond acceptor count (Ertl / RDKit-aligned definition)
 // ---------------------------------------------------------------------------
 
-/// Count hydrogen bond acceptors using the Ertl (2000) definition as implemented
-/// by RDKit 2026.03.6's `rdMolDescriptors.CalcNumHBA`.
-///
-/// Counts N, O, and divalent S atoms, with the following exclusions:
-/// - Aromatic N with H (pyrrole-type `[nH]`): lone pair participates in aromaticity.
-/// - Non-aromatic N bonded to C=O (amide N): lone pair delocalized into carbonyl.
-/// - O with H bonded to a C=O carbon (carboxylic/ester OH).
-/// - O with H bonded to oxidized S with S=O (sulfonic/sulfonamide acid OH).
-/// - Oxidized S (degree > 2 or has S=O bonds): lone pair engaged in S=O resonance.
-fn hba_count_from_set(mol: &Molecule, ring_bonds: &FxHashSet<BondIdx>) -> usize {
-    mol.atoms()
-        .filter(|(idx, atom)| {
-            let an = atom.element.atomic_number();
-            if is_nitrogen(an) {
-                // Nitrogen: charged N (N+ in nitro, quaternary, n+ in thiazolium) is never HBA.
-                if atom.charge != 0 {
-                    return false;
-                }
-                let h = implicit_hcount(mol, *idx);
-                if atom.aromatic {
-                    // Pyridine-type aromatic N (lone pair orthogonal to pi) IS an HBA.
-                    // Excluded case:
-                    //   h > 0 → [nH] pyrrole-type: lone pair participates in the
-                    //           aromatic pi system.
-                    // Only pyridine-like aromatic nitrogen is an acceptor.
-                    // RDKit 2026.03 restricts this branch to two-neighbor
-                    // aromatic N. Its older rule counted neutral, substituted
-                    // three-neighbor aromatic N as acceptors too (#8997).
-                    h == 0 && mol.degree(*idx) == 2
-                } else {
-                    // Non-aromatic N: must have formal valence 3 ([N;v3] in SMARTS);
-                    // this excludes radical N (C[N]C, valence 2) and unusual species.
-                    let bov = bond_order_sum(mol, *idx) as usize + h as usize;
-                    if bov != 3 {
-                        return false;
-                    }
-                    // Exclude N with single bond to any atom that itself has a
-                    // NON-RING pi bond to O/N/P/S: amide, sulfonamide, phosphonamide,
-                    // thioamide, etc.  Ring pi bonds (e.g. ring C=N in guanidinium)
-                    // do NOT trigger the exclusion — matching SMARTS !@ semantics.
-                    !n_adjacent_to_pi_center(mol, *idx, ring_bonds)
-                }
-            } else if is_oxygen(an) {
-                if atom.charge > 0 {
-                    return false;
-                } // O+ (oxonium) never HBA
-                if atom.charge < 0 {
-                    return true;
-                } // [O-] (carboxylate etc.) always HBA
-                // Total H = implicit + explicit isotopic H (e.g. [2H]O[2H] = D2O)
-                let impl_h = implicit_hcount(mol, *idx);
-                let expl_h = mol
-                    .neighbors(*idx)
-                    .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
-                    .count() as u8;
-                match impl_h + expl_h {
-                    // H0: ether, carbonyl, epoxide — divalent check excludes radical [O]
-                    0 => bond_order_sum(mol, *idx) == 2,
-                    // H1: alcohol/phenol OH — exclude if neighbor has =O/=N/=P/=S
-                    1 => !neighbor_has_pi_bond_to_onps(mol, *idx),
-                    // H2+ (H2O, D2O, etc.) — not HBA
-                    _ => false,
-                }
-            } else if is_sulfur(an) {
-                if atom.charge < 0 {
-                    return true;
-                } // [S-] always HBA
-                if atom.charge != 0 {
-                    return false;
-                } // S+/S2+ etc. never HBA
-                if atom.aromatic {
-                    // Aromatic s (thiophene-type): lone pair available
-                    true
-                } else {
-                    // Total H = implicit + explicit isotopic H (handles [2H]S[2H] = D2S)
-                    let impl_h = implicit_hcount(mol, *idx);
-                    let expl_h = mol
-                        .neighbors(*idx)
-                        .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
-                        .count() as u8;
-                    let total_h = impl_h + expl_h;
-                    // Formal valence = bond-order sum + implicit H (handles S=C case)
-                    let bos = bond_order_sum(mol, *idx) as usize + impl_h as usize;
-                    if bos != 2 {
-                        return false;
-                    } // not divalent (sulfoxide/sulfone etc.)
-                    match total_h {
-                        // SH: thiol — exclude if neighbor has =O/=N/=P/=S (thio-acid)
-                        1 => !neighbor_has_pi_bond_to_onps(mol, *idx),
-                        // S with 0H: sulfide, thioketone — HBA
-                        0 => true,
-                        // H2S or higher — not HBA
-                        _ => false,
-                    }
-                }
-            } else {
-                false
-            }
-        })
-        .count()
-}
-
+/// Count hydrogen-bond acceptors: RDKit 2026.03's `CalcNumHBA`, matched
+/// with its own SMARTS. The former hand-written rules disagreed on 277
+/// exposed-10k rows (tetrazoles, enol/amidine tautomers, hypervalent
+/// centres).
 pub fn hba_count(mol: &Molecule) -> usize {
-    hba_count_from_set(mol, &ring_bond_indices(mol))
+    static QUERY: std::sync::OnceLock<chematic_smarts::QueryMolecule> = std::sync::OnceLock::new();
+    count_rdkit_pattern(&QUERY, RDKIT_HBA_SMARTS, mol)
 }
 
-/// Count hydrogen-bond acceptors using the RDKit 2026.03.6 profile.
-///
-/// This named API now shares the native rule. Before this correction it used
-/// the pre-2026.03 aromatic-N rule and overcounted substituted aromatic N;
-/// that historical behavior is not the current RDKit compatibility contract.
+/// Count hydrogen-bond acceptors using the RDKit 2026.03 profile; the same
+/// value as [`hba_count`].
 pub fn rdkit_hba_count(mol: &Molecule) -> usize {
     hba_count(mol)
-}
-
-/// True if any heavy-atom neighbor of `idx` itself carries a double bond to
-/// N, O, P, or S.  Used to exclude OH/SH groups from the HBA count when the
-/// attached heavy atom has such a π-bond (e.g. C=O, C=N, As=O, P=O, S=O).
-/// Matches the `[!$(*=[O,N,P,S])]` exclusion in the RDKit HBA SMARTS.
-fn neighbor_has_pi_bond_to_onps(mol: &Molecule, idx: AtomIdx) -> bool {
-    mol.neighbors(idx).any(|(nb_idx, _)| {
-        has_double_bond_to(mol, nb_idx, 7)   // =N
-            || has_double_bond_to(mol, nb_idx, 8)  // =O
-            || has_double_bond_to(mol, nb_idx, 15) // =P
-            || has_double_bond_to(mol, nb_idx, 16) // =S
-    })
-}
-
-/// True if `nb_idx` has a **non-ring** double bond to an atom with atomic
-/// number `target_an`.  Implements the SMARTS `!@` (non-ring bond) constraint:
-/// ring double bonds (e.g. C=N inside a cyclic amidine) do NOT trigger the
-/// N-exclusion and must not be treated as π-centres.
-fn has_nonring_double_bond_to(
-    mol: &Molecule,
-    nb_idx: AtomIdx,
-    target_an: u8,
-    ring_bonds: &FxHashSet<BondIdx>,
-) -> bool {
-    mol.neighbors(nb_idx).any(|(far, bidx)| {
-        mol.bond(bidx).order == BondOrder::Double
-            && mol.atom(far).element.atomic_number() == target_an
-            && !ring_bonds.contains(&bidx)
-    })
-}
-
-/// True if `idx` (an N atom) has a **single-like** bond (including `/`/`\`
-/// stereo bonds stored as `BondOrder::Up`/`Down`) to any neighbor that itself
-/// carries a **non-ring** double bond to O, N, P, or S.
-///
-/// Matches the RDKit HBA SMARTS exclusion `!$(N-*=!@[O,N,P,S])` where:
-/// - `*` is any atom — C (amide, thioamide, guanidine), S (sulfonamide),
-///   P (phosphonamide), N (nitroso-adjacent), etc.
-/// - `-` includes stereo-direction bonds (`/`, `\` → `Up`/`Down`)
-/// - `=!@` means double bond that is NOT a ring bond
-fn n_adjacent_to_pi_center(mol: &Molecule, idx: AtomIdx, ring_bonds: &FxHashSet<BondIdx>) -> bool {
-    mol.neighbors(idx).any(|(nb_idx, bidx)| {
-        // Accept single, E/Z stereo, and aromatic bonds as "single-like"
-        matches!(
-            mol.bond(bidx).order,
-            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic
-        ) && (has_nonring_double_bond_to(mol, nb_idx, 8, ring_bonds)   // *=O
-                || has_nonring_double_bond_to(mol, nb_idx, 7, ring_bonds)  // *=N
-                || has_nonring_double_bond_to(mol, nb_idx, 16, ring_bonds) // *=S
-                || has_nonring_double_bond_to(mol, nb_idx, 15, ring_bonds)) // *=P
-    })
 }
 
 // ---------------------------------------------------------------------------
 // 6. Rotatable bond count
 // ---------------------------------------------------------------------------
 
-/// Count rotatable bonds (RDKit-compatible strict definition).
-///
-/// A bond is rotatable when all of the following hold:
-/// - It is a single bond (or a stereo bond Up/Down, which is single).
-/// - Neither endpoint is terminal (degree > 1 in the heavy-atom graph).
-/// - It is not part of any ring (SSSR membership).
-/// - It is not an amide bond (C–N where C has a C=O).
-/// - Neither endpoint carries a triple bond (excludes propargylic C–C in alkynes).
-/// - Neither endpoint is a cumulated-double-bond centre (excludes allene C=C=C bonds).
-fn is_rotatable_bond(
-    mol: &Molecule,
-    ring_bond_set: &FxHashSet<BondIdx>,
-    bidx: BondIdx,
-    atom1: AtomIdx,
-    atom2: AtomIdx,
-    order: BondOrder,
-) -> bool {
-    let is_single = matches!(order, BondOrder::Single | BondOrder::Up | BondOrder::Down);
-    is_single
-        && !ring_bond_set.contains(&bidx)
-        && mol.degree(atom1) > 1
-        && mol.degree(atom2) > 1
-        && !is_carbonyl_hetero_bond(mol, atom1, atom2)
-        && !is_diacyl_cc_bond(mol, atom1, atom2)
-        && !is_neopentyl_like(mol, atom1, atom2)
-        && !has_triple_bond(mol, atom1)
-        && !has_triple_bond(mol, atom2)
-        && !is_cumulated_double(mol, atom1)
-        && !is_cumulated_double(mol, atom2)
+/// RDKit's `NumRotatableBondsOptions::Strict` pattern (Lipinski.cpp),
+/// matched with chematic's SMARTS engine. The former hand-written rules
+/// disagreed with RDKit on 97 of the exposed 10k rows (oxime ethers,
+/// N-acyl hydroxylamines, imine-aryl bonds, disulfides).
+const STRICT_ROTATABLE_SMARTS: &str = "[!$(*#*)&!D1&!$(C(F)(F)F)&!$(C(Cl)(Cl)Cl)&!$(C(Br)(Br)Br)\
+&!$(C([CH3])([CH3])[CH3])&!$([CD3](=[N,O,S])-!@[#7,O,S!D1])&!$([#7,O,S!D1]-!@[CD3]=[N,O,S])\
+&!$([CD3](=[N+])-!@[#7!D1])&!$([#7!D1]-!@[CD3]=[N+])]-,:;!@[!$(*#*)&!D1&!$(C(F)(F)F)\
+&!$(C(Cl)(Cl)Cl)&!$(C(Br)(Br)Br)&!$(C([CH3])([CH3])[CH3])]";
+
+fn strict_rotatable_query() -> &'static chematic_smarts::QueryMolecule {
+    static QUERY: std::sync::OnceLock<chematic_smarts::QueryMolecule> = std::sync::OnceLock::new();
+    QUERY.get_or_init(|| {
+        chematic_smarts::parse_smarts(STRICT_ROTATABLE_SMARTS)
+            .expect("the strict rotatable-bond SMARTS is valid")
+    })
 }
 
-fn rotatable_bond_count_from_set(mol: &Molecule, ring_bond_set: &FxHashSet<BondIdx>) -> usize {
-    mol.bonds()
-        .filter(|(bidx, bond)| {
-            is_rotatable_bond(
-                mol,
-                ring_bond_set,
-                *bidx,
-                bond.atom1,
-                bond.atom2,
-                bond.order,
-            )
-        })
-        .count()
-}
-
-pub fn rotatable_bond_count(mol: &Molecule) -> usize {
-    rotatable_bond_count_from_set(mol, &ring_bond_indices(mol))
-}
-
-/// The atom-index pairs of every rotatable bond, same definition as
-/// [`rotatable_bond_count`] (RDKit-compatible strict definition: excludes
-/// ring/amide/allene/alkyne-adjacent bonds). Used by `chematic-3d`'s torsion
-/// motif extraction so the two crates never define "rotatable" differently.
+/// The atom-index pairs of every rotatable bond (RDKit strict definition),
+/// sorted, one per bond. Used by [`rotatable_bond_count`] and by
+/// `chematic-3d`'s torsion motif extraction so the two crates never define
+/// "rotatable" differently.
 pub fn rotatable_bond_atom_pairs(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx)> {
-    let ring_bond_set = ring_bond_indices(mol);
-    mol.bonds()
-        .filter(|(bidx, bond)| {
-            is_rotatable_bond(
-                mol,
-                &ring_bond_set,
-                *bidx,
-                bond.atom1,
-                bond.atom2,
-                bond.order,
-            )
-        })
-        .map(|(_, bond)| (bond.atom1, bond.atom2))
-        .collect()
+    let mut pairs: Vec<(AtomIdx, AtomIdx)> = chematic_smarts::find_match_atom_sets_perceived(
+        strict_rotatable_query(),
+        mol,
+        &chematic_smarts::MatchConfig::default(),
+    )
+    .into_iter()
+    .filter_map(|set| match set.as_slice() {
+        &[a, b] => Some((AtomIdx(a.min(b) as u32), AtomIdx(a.max(b) as u32))),
+        _ => None,
+    })
+    .collect();
+    pairs.sort_unstable_by_key(|&(a, b)| (a.0, b.0));
+    pairs.dedup();
+    pairs
 }
 
-/// True if atom `idx` has at least one triple bond.
-fn has_triple_bond(mol: &Molecule, idx: AtomIdx) -> bool {
-    mol.neighbors(idx)
-        .any(|(_, bidx)| mol.bond(bidx).order == BondOrder::Triple)
-}
-
-/// True if atom `idx` is the centre of a cumulated double-bond system (≥2 double bonds),
-/// as found in allenes (C=C=C) and ketenes (C=C=O).
-/// Restricted to carbon: sulfone S(=O)(=O) and phosphate P(=O) are not allene-like
-/// and their bonds must not be excluded from the rotatable-bond count.
-fn is_cumulated_double(mol: &Molecule, idx: AtomIdx) -> bool {
-    mol.atom(idx).element.atomic_number() == 6
-        && mol
-            .neighbors(idx)
-            .filter(|(_, bidx)| mol.bond(*bidx).order == BondOrder::Double)
-            .count()
-            >= 2
-}
-
-/// Build the ring-bond set from a pre-computed rings slice.
-fn ring_bond_indices_from_rings(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> FxHashSet<BondIdx> {
-    let mut set = FxHashSet::default();
-    for ring in rings {
-        for i in 0..ring.len() {
-            let a = ring[i];
-            let b = ring[(i + 1) % ring.len()];
-            if let Some((bidx, _)) = mol.bond_between(a, b) {
-                set.insert(bidx);
-            }
-        }
-    }
-    set
-}
-
-/// Indices of all bonds participating in at least one SSSR ring.
-///
-/// The SSSR is a cycle basis, so every cyclic (non-bridge, ring-eligible)
-/// bond lies on some selected ring and no other bond does: this equals
-/// `ring_bond_indices_from_rings(mol, find_sssr(mol).rings())`, computed from
-/// the linear-time bridge flags instead of the ring basis.
-fn ring_bond_indices(mol: &Molecule) -> FxHashSet<BondIdx> {
-    chematic_perception::ring_bond_flags_shared(mol)
-        .iter()
-        .enumerate()
-        .filter(|&(_, &cyclic)| cyclic)
-        .map(|(i, _)| BondIdx(i as u32))
-        .collect()
-}
-
-/// True if the bond between `a` and `b` is an amide-like C-N bond
-/// (one atom is N, the other is C with a double bond to O).
-/// RDKit strict: exclude bond A-B when A is a quaternary C (degree 4, no H) whose only
-/// non-terminal heavy-atom neighbor is B.  Covers tert-butyl (CC(C)(C)-X), neopentyl, Boc groups.
-fn is_neopentyl_like(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
-    is_neopentyl_center(mol, a, b) || is_neopentyl_center(mol, b, a)
-}
-
-fn is_neopentyl_center(mol: &Molecule, center: AtomIdx, other: AtomIdx) -> bool {
-    if mol.atom(center).element.atomic_number() != 6 {
-        return false;
-    }
-    if mol.degree(center) != 4 {
-        return false;
-    }
-    let others: Vec<AtomIdx> = mol
-        .neighbors(center)
-        .filter(|(nb, _)| *nb != other)
-        .map(|(nb, _)| nb)
-        .collect();
-    // All 3 non-target neighbors must be terminal (degree 1)
-    if !others.iter().all(|&nb| mol.degree(nb) == 1) {
-        return false;
-    }
-    // All must share the same atomic number (e.g. all CH3, or all F)
-    // This prevents false positives for C(CH3)(OH)(CH3)-X cases.
-    let an0 = mol.atom(others[0]).element.atomic_number();
-    others
-        .iter()
-        .all(|&nb| mol.atom(nb).element.atomic_number() == an0)
-}
-
-/// True for C–C bonds between two "acyl" carbons (each has C=O AND a single bond to
-/// N/O/S), e.g. ester–amide, acid–amide, amide–amide alpha-diketo pairs.
-/// Ketone carbons (C=O but only C–C single bonds) are not acyl and are not excluded.
-fn is_diacyl_cc_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
-    if mol.atom(a).element.atomic_number() != 6 || mol.atom(b).element.atomic_number() != 6 {
-        return false;
-    }
-    let is_acyl = |idx: AtomIdx| {
-        has_double_bond_to(mol, idx, 8)
-            && mol.neighbors(idx).any(|(nb, bidx)| {
-                mol.bond(bidx).order == BondOrder::Single
-                    && matches!(mol.atom(nb).element.atomic_number(), 7 | 8 | 16)
-            })
-    };
-    is_acyl(a) && is_acyl(b)
-}
-
-/// RDKit strict definition excludes C–N/O/S single bonds when C carries a pi-bond to
-/// O, N, or S.  Covers amide C(=O)–N, ester C(=O)–O, thioester C(=O)–S,
-/// guanidine/amidine C(=N)–N, thioamide/thiourea C(=S)–N.
-/// Also excludes N–N bonds when either N is adjacent to C=O (hydrazide/semicarbazide).
-/// Formyl exemption: C(=O) with degree 2 (N–CHO, O–CHO) is rotatable per RDKit.
-fn is_carbonyl_hetero_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
-    let an_a = mol.atom(a).element.atomic_number();
-    let an_b = mol.atom(b).element.atomic_number();
-
-    // N–N bond: exclude only when BOTH N are adjacent to C=O (hydrazide/diacylhydrazine).
-    // If only one N is adjacent (phenylhydrazine, hydrazone, N-nitroso), the bond is rotatable.
-    if an_a == 7 && an_b == 7 {
-        let adj_carbonyl = |n: AtomIdx| {
-            mol.neighbors(n).any(|(nb, _)| {
-                mol.atom(nb).element.atomic_number() == 6 && has_double_bond_to(mol, nb, 8)
-            })
-        };
-        return adj_carbonyl(a)
-            && adj_carbonyl(b)
-            && !(is_atom_in_ring(mol, a) && is_atom_in_ring(mol, b));
-    }
-
-    let c_idx = match (an_a, an_b) {
-        (6, 7) | (6, 8) | (6, 16) => a, // C–N, C–O, or C–S
-        (7, 6) | (8, 6) | (16, 6) => b, // N–C, O–C, or S–C
-        _ => return false,
-    };
-
-    // Formyl exemption: C has only 2 heavy-atom neighbors (the heteroatom + =O/=N/=S),
-    // so there is no real substituent — RDKit counts this bond as rotatable.
-    if mol.degree(c_idx) <= 2 {
-        return false;
-    }
-
-    has_double_bond_to(mol, c_idx, 8)   // C=O  (amide / ester / thioester)
-        || has_double_bond_to(mol, c_idx, 7)  // C=N  (guanidine / amidine)
-        || has_double_bond_to(mol, c_idx, 16) // C=S  (thioamide / thiourea)
+/// Count rotatable bonds: RDKit's `CalcNumRotatableBonds` with the
+/// (default) strict definition.
+pub fn rotatable_bond_count(mol: &Molecule) -> usize {
+    rotatable_bond_atom_pairs(mol).len()
 }
 
 // ---------------------------------------------------------------------------
@@ -1429,20 +1059,25 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
             let heavy = anchor_types[idx.0 as usize]
                 .map(|t| queries[t].1)
                 .unwrap_or(0.0);
-            let h_contrib = if h_count == 0 {
-                0.0
-            } else {
-                h_logp_for_parent(
-                    &mol_arom,
-                    idx,
-                    atom.element.atomic_number(),
-                    // Hydrogen typing sees the RDKit-perceived environment, like
-                    // the heavy-atom SMARTS typing (Kekule phenol OH is H2, not H4).
-                    mol_arom.atom(idx).aromatic,
-                    h_fallback,
-                ) * h_count as f64
-            };
-            heavy + h_contrib
+            // RDKit adds each hydrogen's contribution to its heavy atom one
+            // at a time (getCrippenAtomContribs folds the added H atoms
+            // back); a single multiplication rounds differently.
+            let mut contrib = heavy;
+            if h_count > 0 {
+                let h = h_logp_for_parent(
+                &mol_arom,
+                idx,
+                atom.element.atomic_number(),
+                // Hydrogen typing sees the RDKit-perceived environment, like
+                // the heavy-atom SMARTS typing (Kekule phenol OH is H2, not H4).
+                mol_arom.atom(idx).aromatic,
+                h_fallback,
+            );
+                for _ in 0..h_count {
+                    contrib += h;
+                }
+            }
+            contrib
         })
         .collect()
 }
@@ -1505,9 +1140,10 @@ fn h_logp_for_parent(
 
 /// Compute the Crippen log P (octanol/water partition coefficient) of `mol`.
 ///
-/// Sums per-atom contributions from [`logp_crippen_per_atom`].
+/// The per-atom contributions of [`logp_crippen_per_atom`], summed in RDKit's
+/// order so the value is bit-identical to `Crippen.MolLogP`.
 pub fn logp_crippen(mol: &Molecule) -> f64 {
-    logp_crippen_per_atom(mol).iter().sum()
+    crippen_totals(mol).0
 }
 
 // ---------------------------------------------------------------------------
@@ -1672,20 +1308,25 @@ pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
             let heavy = anchor_types[idx.0 as usize]
                 .map(|t| queries[t].2)
                 .unwrap_or(0.0);
-            let h_contrib = if h_count == 0 {
-                0.0
-            } else {
-                h_mr_for_parent(
-                    &mol_arom,
-                    idx,
-                    atom.element.atomic_number(),
-                    // Hydrogen typing sees the RDKit-perceived environment, like
-                    // the heavy-atom SMARTS typing (Kekule phenol OH is H2, not H4).
-                    mol_arom.atom(idx).aromatic,
-                    h_fallback,
-                ) * h_count as f64
-            };
-            heavy + h_contrib
+            // RDKit adds each hydrogen's contribution to its heavy atom one
+            // at a time (getCrippenAtomContribs folds the added H atoms
+            // back); a single multiplication rounds differently.
+            let mut contrib = heavy;
+            if h_count > 0 {
+                let h = h_mr_for_parent(
+                &mol_arom,
+                idx,
+                atom.element.atomic_number(),
+                // Hydrogen typing sees the RDKit-perceived environment, like
+                // the heavy-atom SMARTS typing (Kekule phenol OH is H2, not H4).
+                mol_arom.atom(idx).aromatic,
+                h_fallback,
+            );
+                for _ in 0..h_count {
+                    contrib += h;
+                }
+            }
+            contrib
         })
         .collect()
 }
@@ -1695,7 +1336,7 @@ pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
 /// Uses the same atom-type framework as `logp_crippen` but with MR contributions
 /// from Wildman & Crippen 1999 (J. Chem. Inf. Comput. Sci. 39, 868-873).
 pub fn molar_refractivity(mol: &Molecule) -> f64 {
-    mr_per_atom(mol).iter().sum()
+    crippen_totals(mol).1
 }
 
 /// Compute both LogP and MR from a single Crippen anchor-set pass.
@@ -1704,66 +1345,72 @@ pub fn molar_refractivity(mol: &Molecule) -> f64 {
 /// sequence but shares the 117-pattern SMARTS matching (including the single SSSR
 /// computation), making it roughly 2× faster when both values are needed.
 pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
+    crippen_totals(mol)
+}
+
+/// Crippen LogP and MR totals, summed in the order RDKit's
+/// `calcCrippenDescriptors` sums them, so the totals are bit-identical:
+/// RDKit adds hydrogens (`AddHs` appends them after every graph atom, atom
+/// by atom) and sums every atom's contribution in index order. So the graph
+/// atoms come first (an explicit hydrogen typed by its neighbour), then each
+/// heavy atom's implicit hydrogens in heavy-atom order.
+fn crippen_totals(mol: &Molecule) -> (f64, f64) {
     let queries = get_crippen_queries();
     let mol_arom = descriptor_aromaticity(mol);
     let anchor_types = crippen_anchor_types(&mol_arom, queries);
-
-    let h_logp_fallback = CRIPPEN_SMARTS
+    let (h_logp_fallback, h_mr_fallback) = CRIPPEN_SMARTS
         .iter()
         .find(|(sma, _, _)| *sma == "[#1]")
-        .map(|e| e.1)
-        .unwrap_or(0.1125);
-    let h_mr_fallback = CRIPPEN_SMARTS
-        .iter()
-        .find(|(sma, _, _)| *sma == "[#1]")
-        .map(|e| e.2)
-        .unwrap_or(1.112);
+        .map(|e| (e.1, e.2))
+        .unwrap_or((0.1125, 1.112));
+    // Contribution of one hydrogen on `parent`.
+    let h_on = |parent: AtomIdx| {
+        let an = mol.atom(parent).element.atomic_number();
+        // Hydrogen typing sees the RDKit-perceived environment, like the
+        // heavy-atom SMARTS typing (Kekule phenol OH is H2, not H4).
+        let aromatic = mol_arom.atom(parent).aromatic;
+        (
+            h_logp_for_parent(&mol_arom, parent, an, aromatic, h_logp_fallback),
+            h_mr_for_parent(&mol_arom, parent, an, aromatic, h_mr_fallback),
+        )
+    };
 
-    let mut logp_sum = 0.0f64;
-    let mut mr_sum = 0.0f64;
-
+    let (mut logp, mut mr) = (0.0f64, 0.0f64);
+    for (idx, atom) in mol.atoms() {
+        if atom.element.atomic_number() == 1 {
+            // A graph hydrogen keeps its own slot (0.0 when unattached, as
+            // the per-atom API reports it).
+            if let Some((parent, _)) = mol
+                .neighbors(idx)
+                .find(|(nb, _)| mol.atom(*nb).element.atomic_number() != 1)
+            {
+                let (l, m) = h_on(parent);
+                logp += l;
+                mr += m;
+            }
+            continue;
+        }
+        logp += anchor_types[idx.0 as usize]
+            .map(|t| queries[t].1)
+            .unwrap_or(0.0);
+        mr += anchor_types[idx.0 as usize]
+            .map(|t| queries[t].2)
+            .unwrap_or(0.0);
+    }
     for (idx, atom) in mol.atoms() {
         if atom.element.atomic_number() == 1 {
             continue;
         }
-        let h_count = implicit_hcount(mol, idx);
-
-        // LogP heavy-atom contribution
-        let logp_heavy = anchor_types[idx.0 as usize]
-            .map(|t| queries[t].1)
-            .unwrap_or(0.0);
-
-        // MR heavy-atom contribution
-        let mr_heavy = anchor_types[idx.0 as usize]
-            .map(|t| queries[t].2)
-            .unwrap_or(0.0);
-
-        logp_sum += logp_heavy;
-        mr_sum += mr_heavy;
-
-        if h_count > 0 {
-            logp_sum += h_logp_for_parent(
-                &mol_arom,
-                idx,
-                atom.element.atomic_number(),
-                // Hydrogen typing sees the RDKit-perceived environment, like
-                // the heavy-atom SMARTS typing (Kekule phenol OH is H2, not H4).
-                mol_arom.atom(idx).aromatic,
-                h_logp_fallback,
-            ) * h_count as f64;
-            mr_sum += h_mr_for_parent(
-                &mol_arom,
-                idx,
-                atom.element.atomic_number(),
-                // Hydrogen typing sees the RDKit-perceived environment, like
-                // the heavy-atom SMARTS typing (Kekule phenol OH is H2, not H4).
-                mol_arom.atom(idx).aromatic,
-                h_mr_fallback,
-            ) * h_count as f64;
+        let n = implicit_hcount(mol, idx);
+        if n > 0 {
+            let (l, m) = h_on(idx);
+            for _ in 0..n {
+                logp += l;
+                mr += m;
+            }
         }
     }
-
-    (logp_sum, mr_sum)
+    (logp, mr)
 }
 
 // ---------------------------------------------------------------------------
@@ -2061,14 +1708,11 @@ pub fn ring_bundle(mol: &Molecule) -> RingBundle {
     let rings = sssr.rings();
     let all_rings = all_ring_list(mol);
 
-    // ring_bonds from raw SSSR — rotatable bonds and HBA must not change.
-    let ring_bonds = ring_bond_indices_from_rings(mol, rings);
-
     // Aromatic ring count: use aromatic_ring_list (augmented + envelope-stripped).
     let aromatic_ring_count = aromatic_ring_list(mol).len();
 
-    let rotatable_bond_count = rotatable_bond_count_from_set(mol, &ring_bonds);
-    let hba_count = hba_count_from_set(mol, &ring_bonds);
+    let rotatable_bond_count = rotatable_bond_count(mol);
+    let hba_count = hba_count(mol);
     let hac = heavy_atom_count(mol);
     let fraction_rotatable_bonds = if hac == 0 {
         0.0
@@ -3310,14 +2954,23 @@ pub fn num_ester_bonds(mol: &Molecule) -> usize {
 /// Generate molecular formula in Hill notation (C first, H second, then alphabetical).
 ///
 /// Example: "C6H12O2" for acetic acid derivative, "H2O" for water (no carbon).
-/// Standard RDKit/chemical notation for composition display.
+/// As RDKit's `CalcMolFormula`: a net charge is appended (`"C2H3O2-"`,
+/// `"O4S-2"`, `"H4N+"`) and dummy atoms are written as `*`.
 pub fn calc_mol_formula(mol: &Molecule) -> String {
     use std::collections::BTreeMap;
 
     // Count atoms by element
     let mut counts: BTreeMap<String, usize> = BTreeMap::new();
 
+    let mut wildcards = 0usize;
+    let mut charge = 0i32;
     for (_, atom) in mol.atoms() {
+        charge += i32::from(atom.charge);
+        if atom.wildcard {
+            // RDKit writes dummy atoms as `*` after the elements.
+            wildcards += 1;
+            continue;
+        }
         let symbol = atom.element.symbol().to_string();
         *counts.entry(symbol).or_insert(0) += 1;
     }
@@ -3361,9 +3014,22 @@ pub fn calc_mol_formula(mol: &Molecule) -> String {
         }
     }
 
+    for _ in 0..wildcards {
+        formula.push('*');
+    }
+
     // If no atoms at all, return empty
     if formula.is_empty() {
         formula.push_str("H0"); // or empty string, depending on convention
+    }
+
+    // Net charge as RDKit's CalcMolFormula writes it: `+`, `-`, `+2`, `-3`.
+    match charge {
+        0 => {}
+        1 => formula.push('+'),
+        -1 => formula.push('-'),
+        q if q > 0 => formula.push_str(&format!("+{q}")),
+        q => formula.push_str(&format!("-{}", -q)),
     }
 
     formula
@@ -4371,33 +4037,30 @@ mod tests {
     }
 
     #[test]
-    fn exact_mass_uses_nuclide_mass_and_rdkit_mass_number_fallback() {
-        let carbon13 = mol("[13C]");
-        assert!(approx(exact_mass(&carbon13), 13.00335483507, 1e-10));
-
-        // The complete isotope table also covers nuclides beyond the former
-        // hand-written list. RDKit ExactMolWt([11CH3]CO) = 45.053298412.
-        let carbon11_ethanol = mol("[11CH3]CO");
-        assert!(approx(exact_mass(&carbon11_ethanol), 45.053298412, 1e-9));
-
-        let deuterium = mol("[2H]");
-        assert!(approx(exact_mass(&deuterium), 2.01410177812, 1e-10));
-
-        let unknown = mol("[99C]");
-        assert!(approx(exact_mass(&unknown), 99.0, 1e-12));
+    fn exact_mass_is_bit_identical_to_rdkit_exact_mol_wt() {
+        // RDKit 2026.03.1 Descriptors.ExactMolWt, compared exactly: isotope
+        // labels (known and unknown), halogens and other elements that used
+        // to carry rounded masses, and formal charges (electrons).
+        for (smiles, expected) in [
+            ("[13C]", 13.00335484),
+            ("[11CH3]CO", 45.053298412),
+            ("[2H]", 2.014101778),
+            ("[99C]", 99.0),
+            ("CCl", 49.992327775999996),
+            ("CBr", 93.941812196),
+            ("CI", 141.927948096),
+            ("CF", 34.021878316),
+            ("C[Si](C)(C)C", 88.070826914),
+            ("[Na+].[Cl-]", 57.95862196),
+            ("CP(C)C", 76.044186918),
+            ("CS(C)=O", 78.013935812),
+            ("CC(=O)[O-]", 59.01385291591001),
+            ("C[N+](C)(C)C", 74.09642580408999),
+        ] {
+            assert_eq!(exact_mass(&mol(smiles)), expected, "{smiles}");
+        }
     }
 
-    #[test]
-    fn exact_mass_accounts_for_formal_charge_electrons() {
-        // RDKit ExactMolWt adds one electron to a carboxylate and removes one
-        // from a quaternary ammonium relative to neutral-atom masses.
-        assert!(approx(exact_mass(&mol("CC(=O)[O-]")), 59.01385291591, 1e-9));
-        assert!(approx(
-            exact_mass(&mol("C[N+](C)(C)C")),
-            74.09642580409,
-            1e-8
-        ));
-    }
 
     // Aspirin logp and Lipinski components
     #[test]
@@ -5341,6 +5004,22 @@ mod tests {
         // Cyclohexane has no spiro atoms
         let m = mol("C1CCCCC1");
         assert_eq!(num_spiro_atoms(&m), 0);
+    }
+
+    #[test]
+    fn test_calc_mol_formula_charge_and_dummy_atoms_match_rdkit() {
+        // RDKit 2026.03.1 CalcMolFormula.
+        for (smiles, expected) in [
+            ("[NH4+]", "H4N+"),
+            ("CC(=O)[O-]", "C2H3O2-"),
+            ("[O-]S(=O)(=O)[O-]", "O4S-2"),
+            ("[Fe+3]", "Fe+3"),
+            ("O=[N+]([O-])c1ccccc1", "C6H5NO2"),
+            ("[Na+].[Cl-]", "ClNa"),
+            ("*C", "CH3*"),
+        ] {
+            assert_eq!(calc_mol_formula(&mol(smiles)), expected, "{smiles}");
+        }
     }
 
     #[test]
