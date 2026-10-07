@@ -3,6 +3,34 @@
 The semantic API is an explicit, loss-aware layer for structures that cannot
 be represented safely as an ordinary `Molecule`.
 
+## Bounded nucleic-acid documents
+
+`NucleicAcidDocument` is a separate versioned contract with schema marker
+`chematic.nucleic-acid.v1`. It preserves one or more ordered DNA/RNA strands,
+explicit residue IDs, base and known modification identity, ribose or
+deoxyribose identity, atom references, linear 3'-to-5' phosphodiester linkage
+references, and JSON annotations. Every declared atom belongs to exactly one
+residue, and each linkage must connect adjacent residues in one strand.
+
+The first slice does not infer a sequence from a molecular graph, create a
+molecular graph, support cross-strand/cyclic/branched linkage topology, or
+accept unknown modification semantics. Those cases return a typed
+`NucleicAcidError`. `NucleicAcidCommand` permits bounded annotation edits and
+explicit residue-identity replacement while leaving topology and atom
+ownership immutable.
+
+Rust uses `NucleicAcidDocument::from_json[_str]`, `validate`, `apply`, and the
+`*_with_limits` variants. Python and WASM/Node expose
+`nucleic_acid_validate_json` and `nucleic_acid_apply_json_command`. Both return
+`chematic.nucleic-acid-validation.v1` envelopes containing either the
+normalized lossless document or an error with stable `code`, `path`, and
+`message` fields.
+
+Default limits are 1 MiB input, 64 strands, 10,000 residues, 100,000 declared
+atoms, 512 atom references per residue, 10,000 linkages, 10,000 annotation
+entries, 256 KiB of annotation JSON, and 256-byte IDs. Rust callers may lower
+these through `NucleicAcidLimits`.
+
 ## Stability contract
 
 The schema marker `chematic.semantic.v1` is the public interchange contract.

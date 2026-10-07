@@ -472,6 +472,24 @@ pub fn apply_aromaticity(mol: &Molecule) -> Molecule {
 /// pre-K2b (see [`build_molecule_from_model`]'s doc comment). See
 /// [`apply_aromaticity_authoritative_experimental`] for the opt-in variant.
 pub fn apply_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> Molecule {
+    // Lowercase aromatic input is normally preserved for compatibility, but
+    // a neutral group-16 atom with more than two coordinated neighbours
+    // cannot be a lone-pair donor.  Rebuild that narrow invalid case from a
+    // Kekule form so stale parser flags do not survive the corrected #767
+    // donor verdict.  If the input cannot be Kekulized, retain the historical
+    // infallible fallback rather than inventing a partial bond assignment.
+    let has_invalid_explicit_chalcogen = mol.atoms().any(|(idx, atom)| {
+        atom.aromatic
+            && atom.charge == 0
+            && matches!(atom.element.atomic_number(), 8 | 16 | 34 | 52)
+            && mol.degree(idx) + implicit_hcount(mol, idx) as usize > 2
+    });
+    if has_invalid_explicit_chalcogen && let Ok(kekule) = chematic_core::kekulize(mol) {
+        let kekulized = chematic_core::apply_kekule(mol, &kekule);
+        let model = assign_aromaticity_ex(&kekulized, algo);
+        return build_molecule_from_model_authoritative(&kekulized, &model);
+    }
+
     let model = assign_aromaticity_ex(mol, algo);
     build_molecule_from_model(mol, &model)
 }
@@ -1391,6 +1409,7 @@ fn ring_pi_electrons(
             .count();
 
         let total_degree = mol.degree(atom_idx);
+        let total_coordination = total_degree + implicit_hcount(mol, atom_idx) as usize;
 
         // Explicit Double bond anywhere (not counting Aromatic).
         let has_explicit_double = mol
@@ -1516,7 +1535,7 @@ fn ring_pi_electrons(
                         return None;
                     }
                 } else {
-                    if ring_degree != 2 {
+                    if ring_degree != 2 || (atom.charge == 0 && total_coordination > 2) {
                         return None;
                     }
                     // Sulfoxide/sulfone: exocyclic S=O ties up the lone pair; cannot donate 2π
@@ -1541,7 +1560,9 @@ fn ring_pi_electrons(
                 if algo != AromaticityAlgorithm::RdkitLike {
                     return None;
                 }
-                if ring_degree != 2 {
+                if ring_degree != 2
+                    || (matches!(an, 34 | 52) && atom.charge == 0 && total_coordination > 2)
+                {
                     return None;
                 }
                 // Exocyclic Se=O / Te=O ties up the lone pair.
@@ -1844,6 +1865,7 @@ fn evaluate_atom_pi_contribution_inner(
         .filter(|(nb, _)| ring_atom_set.contains(nb))
         .count();
     let total_degree = mol.degree(atom_idx);
+    let total_coordination = total_degree + implicit_hcount(mol, atom_idx) as usize;
 
     let has_explicit_double = mol
         .neighbors(atom_idx)
@@ -1920,7 +1942,10 @@ fn evaluate_atom_pi_contribution_inner(
                     && mol.neighbors(atom_idx).any(|(nb, bidx)| {
                         !ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
                     });
-                if ring_degree != 2 || exocyclic_double {
+                if ring_degree != 2
+                    || (atom.charge == 0 && total_coordination > 2)
+                    || exocyclic_double
+                {
                     (None, ContributionReason::ChalcogenIneligible)
                 } else {
                     (Some(2), ContributionReason::ChalcogenLonePair)
@@ -1931,7 +1956,11 @@ fn evaluate_atom_pi_contribution_inner(
             let exocyclic_double = mol.neighbors(atom_idx).any(|(nb, bidx)| {
                 !ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
             });
-            if algo != AromaticityAlgorithm::RdkitLike || ring_degree != 2 || exocyclic_double {
+            if algo != AromaticityAlgorithm::RdkitLike
+                || ring_degree != 2
+                || (matches!(an, 34 | 52) && atom.charge == 0 && total_coordination > 2)
+                || exocyclic_double
+            {
                 (None, ContributionReason::ChalcogenIneligible)
             } else {
                 (Some(2), ContributionReason::PnictogenOrChalcogenLonePair)
@@ -2639,6 +2668,33 @@ mod tests {
         let model = assign_aromaticity(&mol);
         assert_eq!(model.aromatic_atom_count(), 5);
         assert_eq!(model.ring_classifications()[0].2, 6);
+    }
+
+    #[test]
+    fn issue_767_default_api_rejects_neutral_hypercoordinate_chalcogen_donors() {
+        for smi in [
+            "C1=CS(O)(O)C=C1",
+            "C1=CS(O)C=C1",
+            "c1s(O)(O)ccc1",
+            "O=s1cccc1",
+            "O=s1(=O)cccc1",
+        ] {
+            let mol = mol_aromatic(smi);
+            let perceived = apply_aromaticity(&mol);
+            assert_eq!(
+                perceived.atoms().filter(|(_, atom)| atom.aromatic).count(),
+                0,
+                "{smi}: stale aromatic atom flags must not survive"
+            );
+            assert_eq!(
+                perceived
+                    .bonds()
+                    .filter(|(_, bond)| bond.order == BondOrder::Aromatic)
+                    .count(),
+                0,
+                "{smi}: stale aromatic bond orders must not survive"
+            );
+        }
     }
 
     #[test]
