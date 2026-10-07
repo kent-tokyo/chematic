@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.37] - 2026-10-07
+
 Published v1.0.36 reruns (PyPI Linux wheel, sdist, npm, crate) give the
 source's results on the BioTransformer corpus, the 83 reaction fixtures,
 xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the

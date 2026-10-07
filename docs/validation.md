@@ -1,9 +1,9 @@
 # Validation report
 
-Updated 2026-10-06 for **v1.0.36**. The broad chemistry
-and speed packet remains pinned to published v1.0.30; the separately named A6
-quality rows use published v1.0.31 artifacts. v1.0.36 package-output reruns
-remain open. Every
+Updated 2026-10-07 for **v1.0.37**. The broad chemistry and speed packet
+remains pinned to published v1.0.30; separately named records cover later
+v1.0.31 and v1.0.36 artifacts plus v1.0.37 source. v1.0.37 package-output
+reruns remain open. Every
 comparison is limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
@@ -16,8 +16,8 @@ comparison is limited to its recorded artifact, comparator, corpus and operation
 | RDKit-compatible HBA | The hash-verified published v1.0.30 macOS arm64 wheel matches RDKit 2026.03.6 on 5,000/5,000 exposed ChEMBL rows; published v1.0.29 matched 3,641/5,000. HBA only. | [Release-channel evidence](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.30.json) |
 | Paired speed (P0.2) | Published Python: 20 operations pass exact-output and paired-interval gates in 20 alternating blocks on one host. Isolated Python and Rust lanes split parse-inclusive, first-use and precomputed calls. Whole-process RSS is not library allocation; changed HBA output is not an equivalent-output speed win. | [Python matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) · [isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) · [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) |
 | Published browser Morgan | On Ubuntu 24.04, Chromium, Firefox and WebKit each have 250/250 direct and prepared bit parity and favorable 20-block speed intervals versus official RDKit.js (smallest lower bound 1.63×). A separate Chromium 10k lane has 9,999 exact and one typed Fe refusal. No universal browser or memory claim. | [Three-browser record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) · [M4 Chromium](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md) |
-| Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.30 Rust: 73/83 graph/origin/map exact. PR #755 release-profile **source** wheels on Linux/macOS: 80/83 exact and three jointly invalid; the WASM Node 83-row test passed. Published v1.0.34 packages need their own rerun. No general SMIRKS parity claim. | [Published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md) · [PR #755 and CI](https://github.com/kent-tokyo/chematic/pull/755) |
-| Release channels | v1.0.35 GitHub Release, npm, PyPI, all 20 crates.io archives, docs.rs and Pages were directly verified against main commit `ae02d7b4`. Availability does not establish chemical accuracy. | [v1.0.35 record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.35.json) |
+| Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.36 Python, npm and Rust artifacts classify the 83-row graph/origin/map gate as 80 exact and three jointly invalid. BioTransformer results are separately classified; this is not general SMIRKS parity. v1.0.37 packages need their own rerun. | [v1.0.36 published reruns](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-06-v1036-published-reruns-and-followups.md) |
+| Release channels | v1.0.36 GitHub Release, npm, PyPI, all 20 crates.io archives, docs.rs and Pages were directly verified against main commit `70f36b00`. Availability does not establish chemical accuracy. | [v1.0.36 record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.36.json) |
 
 ## Other bounded results
 
