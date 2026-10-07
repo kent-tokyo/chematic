@@ -1,0 +1,19 @@
+{
+ "schema": "depiction-stereo-vs-rdkit/v1",
+ "rdkit": "2026.03.6",
+ "chematic": "1.0.36",
+ "summary": {
+  "rdkit-js-browser-10k-v1.smi": {
+   "stereo_rows": 1687,
+   "drawn_as_input": 286,
+   "differs": 1401,
+   "rdkit_unreadable": 0
+  },
+  "chembl_accuracy_corpus_4999.smi": {
+   "stereo_rows": 1670,
+   "drawn_as_input": 317,
+   "differs": 1353,
+   "rdkit_unreadable": 0
+  }
+ }
+}

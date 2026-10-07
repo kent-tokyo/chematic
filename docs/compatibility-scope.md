@@ -160,9 +160,11 @@ default budget is 1,000 iterations (RDKit's `MMFFOptimizeMolecule` default
 is 200); a geometry that stops at the budget is returned with the
 `iteration_limit` termination.
 
-2D layout is rule-based, not RDKit's `Compute2DCoords`: coordinates differ,
-and fused cages can still draw with a clash or crossing (on the exposed 10k
-and ChEMBL 5k, 212 of 531 bridged rows clash against RDKit's 102).
+2D layout is rule-based, not RDKit's `Compute2DCoords`: coordinates differ.
+Depictions and MOL blocks draw the declared stereo (E/Z geometry, one wedge
+per centre); setting that geometry can put a reflected side against the rest
+of the drawing (155 of 15,000 exposed-10k and ChEMBL-5k rows have a clash as
+drawn, RDKit 276), and caged ring systems can cross themselves.
 
 ## Binding contract
 

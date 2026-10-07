@@ -70,7 +70,8 @@ Exposed data are not sealed evidence.
    all 143,375 cells of an independent ChEMBL corpus (PyPI v1.0.34 and
    source); its 18 typed refusals are exactly the cells whose RDKit answer
    changes with input atom order, so they stay refusals. `^n` follows RDKit's
-   hybridization model (99.94% per-atom agreement). The published PyPI
+   hybridization model (every atom of the exposed 10k, ChEMBL 5k and
+   Kekulé-written 15k corpora agrees). The published PyPI
    v1.0.36 Linux wheel passes the pinned 310k gate (309,982 exact, 18 typed
    refusals, none unexpected). **Exit:** the same rerun on the macOS and
    Windows wheels; native SSSR is preserved.
@@ -90,7 +91,9 @@ Exposed data are not sealed evidence.
    and on all 14,684 single-fragment rows of both corpora; the 3D pipeline
    minimizes with a port of RDKit's BFGS (A6: 135/265 converged, was 100;
    [record](benchmarks/2026-10-07-734-754-followups-batch13.md)). With the
-   1,000-iteration pipeline default 263/265 converge; relaxed by RDKit's
+   1,000-iteration pipeline default 264/265 converge (a minimization stopped
+   by a stereo constraint re-embeds from another seed;
+   [record](benchmarks/2026-10-07-734-754-followups-batch15.md)); relaxed by RDKit's
    MMFF94, 155/265 source conformers are within 1 kcal/mol of RDKit's best
    of ten ETKDGv3 conformers (RDKit's first conformer: 125)
    ([record](benchmarks/2026-10-07-734-754-followups-batch14.md)).
@@ -125,7 +128,10 @@ Exposed data are not sealed evidence.
    cannot carry (the bridgehead amine chematic reads as OpenSMILES does) is reported by
    `write_mol_with_stereo_report`, Python warns (`StereoLossWarning`), and
    Python `strict=True` / WASM `to_mol_block_strict` refuse it; the default
-   writer keeps returning the block (decided). **Exit:** cross-binding
+   writer keeps returning the block (decided). SVG and depiction data draw
+   the same stereo depiction (RDKit reads the drawings as the input on
+   1,686/1,687 and 1,670/1,670 stereo rows; PyPI v1.0.36: 286 and 317;
+   [record](benchmarks/2026-10-07-734-754-followups-batch15.md)). **Exit:** cross-binding
    fixtures with no silent information loss.
 9. **External — Complete RDKit 2026.09.1 rebaseline.** The official npm/WASM
    old/new lanes, published Python 2026.03.6 baseline, and independent C++

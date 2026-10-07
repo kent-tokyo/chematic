@@ -16,6 +16,28 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- Depictions draw the declared stereo: Python `svg()`, `depict_data()`,
+  `to_eps()`, `to_pdf()`, highlighted/alert SVGs, `depict_grid()` and reports,
+  and the WASM SVG, depict-data and grid functions draw E/Z double bonds with
+  their declared geometry and one wedge or hash per stereocentre (the MOL
+  writer's depiction), and no longer draw SMILES `/` `\` marks as wedges.
+  Read back by RDKit, the drawings carry the input stereo on 1,686/1,687
+  exposed-10k and 1,670/1,670 ChEMBL-5k stereo rows (PyPI v1.0.36:
+  286 and 317). Rust: `chematic_mol::stereo_depiction::depiction_with_stereo`
+  and `with_stereo_depiction`; `chematic_depict::depict_svg_grid_with_layouts`,
+  `svg_to_pdf`, `relieve_layout_clashes`. Record:
+  `benchmarks/2026-10-07-734-754-followups-batch15.md`.
+- Python `SDWriter` writes Å coordinates with stereo (it wrote depiction
+  units, 40 Å bonds with y flipped, and E/Z as "either").
+- 2D layout: batch 14's clash relief made `write_mol` up to 20× slower; it is
+  now 1.8× batch 13 in instructions. Bridged ring systems that still
+  overlap are redrawn by stress majorization (bridged rows with a clash in
+  the layout: 212 → 5 of 531; RDKit 102), and the clash relief runs again
+  after the MOL writer's E/Z reflections. Two collinear bonds no longer
+  count as crossing.
+- 3D pipeline: a minimization stopped by a stereo constraint at its first
+  steps re-embeds from up to three other seeds (A6 row 0161 converges; A6
+  264/265 at the default budget).
 - 3D pipeline: the MMFF94 iteration budget defaults to 1,000 (Rust
   `PipelineV2Config::minimal()` was 300; Python `safe`/`stereo_safe`
   `force_field_max_iterations` was 200). A6 rows converged within the budget
