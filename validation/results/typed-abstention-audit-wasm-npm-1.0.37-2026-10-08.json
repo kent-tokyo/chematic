@@ -1,0 +1,93 @@
+{
+ "schema": "typed-abstention-audit/v1",
+ "binding": "wasm",
+ "chematic_version": "1.0.37",
+ "probes": [
+  {
+   "family": "smiles",
+   "category": "malformed",
+   "outcome": "raised",
+   "class": "String",
+   "fields": {},
+   "message": "mismatched parenthesis at position 5"
+  },
+  {
+   "family": "smarts",
+   "category": "malformed",
+   "outcome": "raised",
+   "class": "String",
+   "fields": {},
+   "message": "UnexpectedEnd"
+  },
+  {
+   "family": "mol_block",
+   "category": "malformed",
+   "outcome": "raised",
+   "class": "String",
+   "fields": {},
+   "message": "unexpected end of input"
+  },
+  {
+   "family": "smirks",
+   "category": "malformed",
+   "outcome": "envelope",
+   "fields": {
+    "status": "typed_refusal",
+    "reason": "smirks_parse"
+   }
+  },
+  {
+   "family": "smirks",
+   "category": "unsupported",
+   "outcome": "envelope",
+   "fields": {
+    "status": "typed_refusal",
+    "reason": "reactant_count_mismatch"
+   }
+  },
+  {
+   "family": "3d",
+   "category": "unsupported",
+   "outcome": "envelope",
+   "fields": {
+    "ok": false,
+    "error.code": "force_field"
+   }
+  },
+  {
+   "family": "nucleic_acid",
+   "category": "ambiguous",
+   "outcome": "envelope",
+   "fields": {
+    "ok": false,
+    "error.code": "ambiguous_atom_mapping"
+   }
+  },
+  {
+   "family": "nucleic_acid",
+   "category": "unsupported",
+   "outcome": "envelope",
+   "fields": {
+    "ok": false,
+    "error.code": "unsupported_linkage_topology"
+   }
+  },
+  {
+   "family": "nucleic_acid",
+   "category": "resource_limit",
+   "outcome": "envelope",
+   "fields": {
+    "ok": false,
+    "error.code": "resource_limit"
+   }
+  },
+  {
+   "family": "mmcif",
+   "category": "resource_limit",
+   "outcome": "raised",
+   "class": "String",
+   "fields": {},
+   "message": "mmCIF input exceeds maximum input size (2800000 > 1000000 bytes)"
+  }
+ ]
+}
