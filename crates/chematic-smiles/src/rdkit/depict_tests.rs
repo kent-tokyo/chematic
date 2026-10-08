@@ -202,8 +202,9 @@ fn v3000_and_unsupported_inputs_are_refused() {
     assert!(block.contains("999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 5 4 0 0 0\n"));
     // Non-tetrahedral centres take RDKit's fixed templates.
     let xy = rdkit_2d_coords(&parse("[Pt@SP1](Cl)(Cl)(N)N").unwrap()).unwrap();
-    let r = 0.707107 * 1.5;
-    assert_eq!(xy[0], [0.0, 0.0]);
-    assert_eq!(xy[1], [-r, -r]);
-    assert_eq!(xy[3], [r, r]);
+    let r = 1.060_660_5; // RDKit's ISQRT2 (0.707107) * BOND_LEN (1.5)
+    let close = |p: [f64; 2], q: [f64; 2]| (p[0] - q[0]).abs() < 1e-9 && (p[1] - q[1]).abs() < 1e-9;
+    assert!(close(xy[0], [0.0, 0.0]));
+    assert!(close(xy[1], [-r, -r]));
+    assert!(close(xy[3], [r, r]));
 }

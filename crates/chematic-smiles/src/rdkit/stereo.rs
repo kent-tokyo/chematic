@@ -416,9 +416,12 @@ fn requested_neighbor_dirs(
     ranks: &[u32],
 ) -> DoubleBondNeighborDirections {
     let side = |a: usize, stereo_atom: usize, dir: BondDir| {
+        // Only single and aromatic bonds take a direction.
         let mut out: Vec<(usize, BondDir)> = mol.atom_bonds[a]
             .iter()
-            .filter(|&&nb| nb != b)
+            .filter(|&&nb| {
+                nb != b && matches!(mol.bonds[nb].bt, BondType::Single | BondType::Aromatic)
+            })
             .map(|&nb| {
                 let o = mol.bonds[nb].other(a);
                 (o, if o == stereo_atom { dir } else { dir.flipped() })

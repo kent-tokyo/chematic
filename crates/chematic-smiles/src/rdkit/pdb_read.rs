@@ -567,12 +567,24 @@ fn connect_the_dots(pdb: &mut PdbMol) {
                 best_idx = nb;
             }
         }
-        for &nb in &nbrs {
-            let b = pdb.mol.bond_between(i, nb).expect("bonded");
+        // RDKit removes bonds while walking the atom's (vector) adjacency
+        // list with iterators taken beforehand: an erase shifts the later
+        // neighbours left (the walk then skips one) and leaves the vacated
+        // tail slots holding their old values (which the walk still reads).
+        let mut buf = nbrs.clone();
+        let mut live = buf.len();
+        for p in 0..buf.len() {
+            let nb = buf[p];
             if nb == best_idx {
-                pdb.mol.bonds[b].bt = BondType::Single;
-            } else {
+                if let Some(b) = pdb.mol.bond_between(i, nb) {
+                    pdb.mol.bonds[b].bt = BondType::Single;
+                }
+            } else if let Some(b) = pdb.mol.bond_between(i, nb) {
                 pdb.mol.remove_bond(b);
+                if let Some(k) = buf[..live].iter().position(|&x| x == nb) {
+                    buf.copy_within(k + 1..live, k);
+                    live -= 1;
+                }
             }
         }
     }

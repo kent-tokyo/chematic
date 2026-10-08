@@ -690,8 +690,10 @@ impl EFrag {
     fn compute_nbrs_and_ang(&mut self, ctx: &Ctx, aid: usize, done: &[usize]) -> DResult<()> {
         let center = self.loc(aid)?;
         let mut pairs: Vec<(f64, (usize, usize))> = Vec::new();
+        // RDKit's inner loop starts at `nbi3++` (a post-increment), so it
+        // pairs every neighbour with itself too.
         for i in 0..done.len() {
-            for j in i + 1..done.len() {
+            for j in i..done.len() {
                 let ang = compute_angle(center, self.loc(done[i])?, self.loc(done[j])?)?;
                 pairs.push((ang, (done[i], done[j])));
             }
@@ -2115,10 +2117,11 @@ fn embed_nontetrahedral_stereo(
 /// RDKit molecule as `MolFromSmiles` leaves it; `cip` holds the atoms'
 /// `_CIPRank` values (empty when unset).
 pub(crate) fn compute_2d_coords(mol: &Mol, cip: &[u32]) -> Result<Vec<[f64; 2]>, RdkitSmilesError> {
-    compute(mol, cip).map_err(|e| RdkitSmilesError::Unsupported(format!("depiction: {}", e.0)))
+    compute(mol, cip, true)
+        .map_err(|e| RdkitSmilesError::Unsupported(format!("depiction: {}", e.0)))
 }
 
-fn compute(mol_in: &Mol, cip: &[u32]) -> DResult<Vec<[f64; 2]>> {
+fn compute(mol_in: &Mol, cip: &[u32], canon_orient: bool) -> DResult<Vec<[f64; 2]>> {
     let n = mol_in.atoms.len();
     // symmetrizeSSSR(mol, arings, includeDativeBonds=true) on the copy.
     let mut mol = mol_in.clone();
@@ -2205,8 +2208,10 @@ fn compute(mol_in: &Mol, cip: &[u32]) -> DResult<Vec<[f64; 2]>> {
         f.remove_collisions_open_angles(&ctx)?;
         f.remove_collisions_shorten_bonds(&ctx)?;
     }
-    for f in efrags.iter_mut().filter(|f| !f.dead) {
-        f.canonicalize_orientation()?;
+    if canon_orient {
+        for f in efrags.iter_mut().filter(|f| !f.dead) {
+            f.canonicalize_orientation()?;
+        }
     }
     shift_coords(&mut efrags);
     let mut out = vec![[0.0f64; 2]; n];
