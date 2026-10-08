@@ -10,7 +10,9 @@
 use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
 
 use super::RdkitSmilesError;
-use super::mol::{Atom, Bond, BondDir, BondType, ChiralTag, Mol, count_swaps};
+use super::mol::{
+    Atom, Bond, BondDir, BondType, ChiralTag, Mol, count_swaps, insert_implicit_nbors,
+};
 
 fn unsupported(what: impl Into<String>) -> RdkitSmilesError {
     RdkitSmilesError::Unsupported(what.into())
@@ -35,7 +37,10 @@ pub(crate) fn from_chematic_ordered(
             "stereo stored as CIP labels (molecule not read from SMILES)",
         ));
     }
-    for (_, atom) in mol.atoms() {
+    out.atoms.reserve(mol.atom_count());
+    out.atom_bonds.reserve(mol.atom_count());
+    out.bonds.reserve(mol.bond_count());
+    for (aidx, atom) in mol.atoms() {
         let anum = if atom.wildcard {
             0
         } else {
@@ -56,7 +61,8 @@ pub(crate) fn from_chematic_ordered(
             a.num_explicit_hs = u32::from(atom.hydrogen_count.unwrap_or(0));
             a.no_implicit = true;
         }
-        out.add_atom(a);
+        let idx = out.add_atom(a);
+        out.atom_bonds[idx].reserve_exact(mol.neighbors(aidx).count());
     }
 
     // RDKit's bond numbering: chain bonds as written, then ring closures.
@@ -132,13 +138,63 @@ pub(crate) fn from_chematic_ordered(
             Chirality::None => continue,
             Chirality::CounterClockwise => ChiralTag::Ccw,
             Chirality::Clockwise => ChiralTag::Cw,
-            Chirality::SquarePlanar(_) => {
-                return Err(unsupported("non-tetrahedral chirality"));
-            }
+            other => ChiralTag::of_class(other.nontetrahedral().expect("non-tetrahedral").0),
         };
         let text = mol
             .stereo_neighbor_order(aidx)
             .ok_or_else(|| unsupported("chiral atom without SMILES neighbour order"))?;
+        if let Some((class, perm)) = atom.chirality.nontetrahedral() {
+            // `AdjustAtomChiralityFlags`: the permutation relative to the
+            // bond order, from the SMILES order (`GetBondOrdering`) padded
+            // with implicit ligands.
+            // `GetBondOrdering`: the non-ring-closure neighbours by atom
+            // index, with the atom's ring-closure bonds (in digit order) at
+            // the atom's own position.
+            let mut closures: Vec<usize> = Vec::new();
+            for &nb in text {
+                if nb == STEREO_H_SENTINEL {
+                    continue;
+                }
+                let (bidx, _) = mol
+                    .bond_between(aidx, AtomIdx(nb))
+                    .ok_or_else(|| unsupported("stereo neighbour order out of sync"))?;
+                if is_closure[bidx.0 as usize] {
+                    closures.push(rd_index[bidx.0 as usize]);
+                }
+            }
+            let mut chain: Vec<(usize, usize)> = mol
+                .neighbors(aidx)
+                .filter(|(_, b)| !is_closure[b.0 as usize])
+                .map(|(nb, b)| (nb.0 as usize, rd_index[b.0 as usize]))
+                .collect();
+            chain.sort_unstable();
+            let mut bonds: Vec<Option<usize>> = Vec::with_capacity(text.len());
+            bonds.extend(
+                chain
+                    .iter()
+                    .filter(|&&(nb, _)| nb < a)
+                    .map(|&(_, b)| Some(b)),
+            );
+            bonds.extend(closures.iter().map(|&b| Some(b)));
+            bonds.extend(
+                chain
+                    .iter()
+                    .filter(|&&(nb, _)| nb > a)
+                    .map(|&(_, b)| Some(b)),
+            );
+            if bonds.len() != out.degree(a) {
+                return Err(unsupported("stereo neighbour order out of sync"));
+            }
+            let is_start = !mol
+                .neighbors(aidx)
+                .any(|(nb, b)| (nb.0 as usize) < a && !is_closure[b.0 as usize]);
+            insert_implicit_nbors(&mut bonds, class, is_start);
+            out.atoms[a].chiral = written;
+            out.atoms[a].chiral_perm = perm;
+            let p = out.chiral_permutation(a, &bonds, true);
+            out.atoms[a].chiral_perm = p;
+            continue;
+        }
         // SMILES bond order (`GetBondOrdering`): the written neighbours
         // without the bracket H.
         let mut smiles_bonds = Vec::with_capacity(text.len());

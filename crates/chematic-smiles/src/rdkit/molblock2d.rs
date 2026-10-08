@@ -333,17 +333,14 @@ pub(crate) fn mol_block_2d(
 ) -> Result<String, RdkitSmilesError> {
     let n_atoms = mol.atoms.len();
     let n_bonds = mol.bonds.len();
-    if n_atoms > 999 || n_bonds > 999 {
-        return Err(unsupported("V3000 output (more than 999 atoms or bonds)"));
-    }
-    if mol.bonds.iter().any(|b| b.bt == BondType::Dative) {
-        return Err(unsupported("V3000 output (dative bonds)"));
-    }
-    for p in xy {
-        if p[0] >= 100_000.0 || p[0] <= -10_000.0 || p[1] >= 100_000.0 || p[1] <= -10_000.0 {
-            return Err(unsupported("V3000 output (coordinates out of V2000 range)"));
-        }
-    }
+    // outputMolToMolBlock picks V3000 for dative bonds, more than 999 atoms
+    // or bonds, or coordinates outside the V2000 field widths.
+    let v3000 = n_atoms > 999
+        || n_bonds > 999
+        || mol.bonds.iter().any(|b| b.bt == BondType::Dative)
+        || xy.iter().any(|p| {
+            p[0] >= 100_000.0 || p[0] <= -10_000.0 || p[1] >= 100_000.0 || p[1] <= -10_000.0
+        });
     // prepareMol: remember aromatic bonds, then Kekulize.
     let mut t = mol.clone();
     let mut was_aromatic = vec![false; n_bonds];
@@ -359,11 +356,18 @@ pub(crate) fn mol_block_2d(
     out.push('\n');
     out.push_str("     RDKit          2D\n");
     out.push('\n');
-    let _ = writeln!(
-        out,
-        "{:3}{:3}{:3}{:3}{:3}{:3}{:3}{:3}{:3}{:3}999 V2000",
-        n_atoms, n_bonds, 0, 0, 0, 0, 0, 0, 0, 0
-    );
+    if v3000 {
+        out.push_str("  0  0  0  0  0  0  0  0  0  0999 V3000\n");
+        out.push_str("M  V30 BEGIN CTAB\n");
+        let _ = writeln!(out, "M  V30 COUNTS {n_atoms} {n_bonds} 0 0 0");
+        out.push_str("M  V30 BEGIN ATOM\n");
+    } else {
+        let _ = writeln!(
+            out,
+            "{:3}{:3}{:3}{:3}{:3}{:3}{:3}{:3}{:3}{:3}999 V2000",
+            n_atoms, n_bonds, 0, 0, 0, 0, 0, 0, 0, 0
+        );
+    }
     for a in 0..n_atoms {
         let atom = &t.atoms[a];
         let map = atom.map.unwrap_or(0);
@@ -380,10 +384,38 @@ pub(crate) fn mol_block_2d(
         } else {
             periodic::symbol(atom.anum).to_string()
         };
+        let [x, y] = xy[a];
+        if v3000 {
+            // GetV3000MolFileAtomLine (precision 6, no parity from SMILES).
+            let _ = write!(
+                out,
+                "M  V30 {} {symbol} {x:.6} {y:.6} {z:.6} {map}",
+                a + 1,
+                z = 0.0f64
+            );
+            if atom.charge != 0 {
+                let _ = write!(out, " CHG={}", atom.charge);
+            }
+            if atom.isotope != 0 {
+                let _ = write!(out, " MASS={}", atom.isotope);
+            }
+            if atom.radicals != 0 && t.total_degree(a) != 0 {
+                let code = if atom.radicals % 2 == 1 { 2 } else { 3 };
+                let _ = write!(out, " RAD={code}");
+            }
+            if tot_valence != 0 {
+                if tot_valence == 15 {
+                    out.push_str(" VAL=-1");
+                } else {
+                    let _ = write!(out, " VAL={tot_valence}");
+                }
+            }
+            out.push('\n');
+            continue;
+        }
         while symbol.len() < 3 {
             symbol.push(' ');
         }
-        let [x, y] = xy[a];
         let _ = writeln!(
             out,
             "{x:10.4}{y:10.4}{z:10.4} {symbol:>3}{:2}{:3}{:3}{:3}{:3}{tot_valence:3}  0{:3}{:3}{map:3}{:3}{:3}",
@@ -398,6 +430,12 @@ pub(crate) fn mol_block_2d(
             0,
             z = 0.0f64
         );
+    }
+    if v3000 {
+        out.push_str("M  V30 END ATOM\n");
+        if n_bonds > 0 {
+            out.push_str("M  V30 BEGIN BOND\n");
+        }
     }
     let wedge = pick_bonds_to_wedge(&t);
     for (bid, bond) in t.bonds.iter().enumerate() {
@@ -432,7 +470,28 @@ pub(crate) fn mol_block_2d(
         } else {
             (bond.begin, bond.end)
         };
+        if v3000 {
+            let _ = write!(out, "M  V30 {} {symbol} {} {}", bid + 1, b1 + 1, b2 + 1);
+            let cfg = match dir_code {
+                1 => 1,
+                3 | 4 => 2,
+                6 => 3,
+                _ => 0,
+            };
+            if dir_code != 0 {
+                let _ = write!(out, " CFG={cfg}");
+            }
+            out.push('\n');
+            continue;
+        }
         let _ = writeln!(out, "{:3}{:3}{symbol:3} {dir_code:2}", b1 + 1, b2 + 1);
+    }
+    if v3000 {
+        if n_bonds > 0 {
+            out.push_str("M  V30 END BOND\n");
+        }
+        out.push_str("M  V30 END CTAB\nM  END\n");
+        return Ok(out);
     }
     // GetMolFileChargeInfo: full lines of 8 are flushed as they fill.
     let mut chg = String::new();

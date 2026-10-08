@@ -23,6 +23,7 @@ pub mod extension;
 pub mod ez_markers;
 pub mod kekulization;
 pub mod molecule;
+pub mod nontetrahedral;
 pub mod stereo_geometry;
 pub mod stereo_group;
 pub mod valence;
@@ -38,6 +39,7 @@ pub use kekulization::{
     KekuleError, KekuleResult, apply_kekule, atom_must_be_matched, kekulize, kekulize_with,
 };
 pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};
+pub use nontetrahedral::NonTetrahedralClass;
 // `StereoConfiguration`/`CanonicalStereoConfiguration`/`canonicalize_configuration`/
 // `equivalent_under_rotation` are deliberately `pub(crate)`, not re-exported
 // here: all four are hardcoded to `[u32; 4]`, which only fits today's two

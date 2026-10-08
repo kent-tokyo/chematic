@@ -18,9 +18,11 @@ pub struct RdkitViewAtom {
     pub formal_charge: i32,
     pub is_aromatic: bool,
     /// `Atom::HybridizationType`: 0 unspecified, 1 S, 2 SP, 3 SP2, 4 SP3,
-    /// 5 SP3D, 6 SP3D2 (RDKit's enum values).
+    /// 5 SP3D, 6 SP3D2, 7 SP2D (5 and 6 are shifted from RDKit's enum,
+    /// which puts SP2D at 5, so that SMARTS `^n` maps to n + 1).
     pub hybridization: u8,
-    /// 0 unspecified, 1 CW, 2 CCW (RDKit's `ChiralType`).
+    /// 0 unspecified, 1 CW, 2 CCW, 6 square planar, 7 trigonal
+    /// bipyramidal, 8 octahedral (RDKit's `ChiralType`).
     pub chiral_tag: u8,
     /// `getTotalNumHs(includeNeighbors=true)`.
     pub total_num_hs_with_neighbors: u32,
@@ -284,12 +286,20 @@ pub fn rdkit_mol_view(mol: &Molecule) -> Result<RdkitMolView, RdkitSmilesError> 
                         Hybridization::Sp3 => 4,
                         Hybridization::Sp3d => 5,
                         Hybridization::Sp3d2 => 6,
+                        // RDKit's SP2D (square planar); no SMARTS `^n`
+                        // in the embedding tables selects it.
+                        Hybridization::Sp2d => 7,
                     }
                 },
                 chiral_tag: match at.chiral {
                     ChiralTag::Unspecified => 0,
                     ChiralTag::Cw => 1,
                     ChiralTag::Ccw => 2,
+                    // RDKit's CHI_SQUAREPLANAR / TRIGONALBIPYRAMIDAL /
+                    // OCTAHEDRAL; the embedder only constrains CW/CCW.
+                    ChiralTag::SquarePlanar => 6,
+                    ChiralTag::TrigonalBipyramidal => 7,
+                    ChiralTag::Octahedral => 8,
                 },
                 total_num_hs_with_neighbors: m.total_num_hs(a) + h_nbrs,
                 total_num_hs: m.total_num_hs(a),

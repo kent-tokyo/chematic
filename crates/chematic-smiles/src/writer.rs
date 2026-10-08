@@ -217,6 +217,25 @@ pub(crate) fn square_planar_token(p: chematic_core::SquarePlanarPermutation) -> 
     }
 }
 
+/// A non-tetrahedral tag (other than numbered `@SP`) carried from the
+/// stored ligand order `original` to the written order `written`, with
+/// RDKit's permutation tables; `None` when the orders do not hold the same
+/// ligands.
+pub(crate) fn remap_nontetrahedral(
+    stored: chematic_core::Chirality,
+    original: &[u32],
+    written: &[u32],
+) -> chematic_core::Chirality {
+    let Some((class, perm)) = stored.nontetrahedral() else {
+        return chematic_core::Chirality::None;
+    };
+    let o: Vec<Option<usize>> = original.iter().map(|&x| Some(x as usize)).collect();
+    let w: Vec<Option<usize>> = written.iter().map(|&x| Some(x as usize)).collect();
+    chematic_core::nontetrahedral::permute(class, perm, &o, &w)
+        .and_then(|p| chematic_core::Chirality::from_nontetrahedral(class, p))
+        .unwrap_or(chematic_core::Chirality::None)
+}
+
 /// Write a [`Molecule`] to a SMILES string.
 ///
 /// Disconnected fragments are joined with `.`.
@@ -558,6 +577,7 @@ impl<'a> SmilesWriter<'a> {
                 _ => Chirality::None,
             },
             Chirality::None => Chirality::None,
+            other => remap_nontetrahedral(other, original, &written),
         }
     }
 
@@ -598,6 +618,7 @@ impl<'a> SmilesWriter<'a> {
                 chematic_core::Chirality::SquarePlanar(p) => {
                     self.out.push_str(square_planar_token(p))
                 }
+                other => self.out.push_str(&other.smiles_token()),
             }
 
             emit_bracket_hydrogens(&mut self.out, self.mol, idx);
