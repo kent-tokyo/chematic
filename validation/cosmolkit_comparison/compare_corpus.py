@@ -37,6 +37,14 @@ def close(a, b) -> bool:
     return a == b
 
 
+def same_kind(a, b) -> bool:
+    """Equal values of comparable kinds: an int and a float are both numbers
+    (RDKit's Python descriptors return the int 0 for some edge cases), but a
+    bool never stands in for a number and a list never for a scalar."""
+    num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool)  # noqa: E731
+    return (num(a) and num(b)) or type(a) is type(b)
+
+
 def score(ref_rows, rows, max_examples=8):
     ops = sorted({op for r in ref_rows.values() for op in r["ops"]} - {"cip_abstain", "input_canonical"})
     counts = defaultdict(Counter)
@@ -61,7 +69,7 @@ def score(ref_rows, rows, max_examples=8):
             if e["status"] != "ok":
                 counts[op][e["status"]] += 1
                 continue
-            if e["value"] == r["value"] and type(e["value"]) is type(r["value"]):
+            if e["value"] == r["value"] and same_kind(e["value"], r["value"]):
                 counts[op]["match"] += 1
                 counts[op]["match_1e-9"] += 1
             elif close(e["value"], r["value"]):
