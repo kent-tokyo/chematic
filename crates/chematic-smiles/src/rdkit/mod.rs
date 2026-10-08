@@ -247,7 +247,9 @@ pub fn rdkit_stereoisomer_smiles(
 ///
 /// `MolFromSmiles` is modelled as in [`rdkit_canonical_smiles`]; the
 /// depiction is a port of RDKit's `compute2DCoords` that reproduces its
-/// floating-point operations in order.
+/// floating-point operations in order. Exact bits are platform-dependent
+/// because RDKit and chematic call the host libm; portable validation uses an
+/// absolute coordinate tolerance of `1e-12`.
 ///
 /// ```
 /// let mol = chematic_smiles::parse("CCO").unwrap();

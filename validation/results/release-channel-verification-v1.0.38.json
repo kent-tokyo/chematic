@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "release": {"version": "1.0.38", "tag": "v1.0.38", "commit": "55b22d6566031c28956a85ee11593d3fea3b46b5"},
+  "checked_at": "2026-10-08T21:19:42+09:00",
+  "release_ready": true,
+  "channels": [
+    {"id": "github_release", "status": "verified", "observed_version": "1.0.38", "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.38", "detail": "Published Release and attached metadata both identify tag v1.0.38 at commit 55b22d6566031c28956a85ee11593d3fea3b46b5."},
+    {"id": "npm", "status": "verified", "observed_version": "1.0.38", "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.38", "detail": "Registry returned @kent-tokyo/chematic 1.0.38 with tarball and integrity metadata."},
+    {"id": "pypi", "status": "verified", "observed_version": "1.0.38", "url": "https://pypi.org/pypi/chematic/1.0.38/json", "detail": "PyPI JSON returned 17 wheels and one source distribution for 1.0.38."},
+    {"id": "crates_io", "status": "verified", "observed_version": "1.0.38", "url": "https://crates.io/crates/chematic/1.0.38", "detail": "Direct crates.io API checks returned HTTP 200 for all 20 publishable workspace crates at 1.0.38."},
+    {"id": "docs_rs", "status": "verified", "observed_version": "1.0.38", "url": "https://docs.rs/chematic/1.0.38/chematic/", "detail": "Direct request returned HTTP 200 and the generated rustdoc identifies 1.0.38."},
+    {"id": "site", "status": "verified", "observed_version": "1.0.38", "url": "https://kent-tokyo.github.io/chematic/", "detail": "Pages deployment succeeded; a direct request returned HTTP 200 and the site displays v1.0.38."}
+  ]
+}

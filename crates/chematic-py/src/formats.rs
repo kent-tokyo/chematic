@@ -66,7 +66,10 @@ pub(crate) fn flat_to_coords3d(coords: &[[f64; 3]]) -> chematic_3d::Coords3D {
 
 /// Parse a SMILES string and return a Mol.
 ///
-/// Raises ``ValueError`` on invalid SMILES.
+/// Raises :class:`ChematicInputError` (a ``ValueError``; ``category``
+/// ``"malformed"``, ``code`` ``"smiles_parse"``) on invalid SMILES, and
+/// with ``code`` ``"smiles_valence"`` when the graph gives a neutral oxygen
+/// or fluorine more bonds than it permits (``CO(C)C``).
 #[pyfunction]
 fn from_smiles(smiles: &str) -> PyResult<Mol> {
     chematic_smiles::parse(smiles)
@@ -74,7 +77,12 @@ fn from_smiles(smiles: &str) -> PyResult<Mol> {
             inner: Arc::new(mol),
             props: Default::default(),
         })
-        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map_err(|e| match e {
+            chematic_smiles::SmilesError::InvalidValence { .. } => {
+                crate::errors::input_error("malformed", "smiles_valence", "smiles", e.to_string())
+            }
+            e => crate::errors::malformed("smiles", e.to_string()),
+        })
 }
 
 /// Canonicalize a list of SMILES without aborting on an invalid record.
@@ -297,7 +305,8 @@ fn from_condensed(formula: &str) -> Option<Mol> {
     })
 }
 
-/// Raises ``ValueError`` on parse failure.
+/// Raises :class:`ChematicInputError` (a ``ValueError``; ``code``
+/// ``"mol_block_parse"``) on parse failure.
 #[pyfunction]
 fn from_mol_block(block: &str) -> PyResult<Mol> {
     chematic_mol::parse_mol(block)
@@ -305,7 +314,7 @@ fn from_mol_block(block: &str) -> PyResult<Mol> {
             inner: Arc::new(mol),
             props: Default::default(),
         })
-        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map_err(|e| crate::errors::malformed("mol_block", e.to_string()))
 }
 
 /// Parse a MDL MOL V2000 block and return the molecule with its 2D layout coordinates.
@@ -338,7 +347,7 @@ fn from_mol_block_with_coords(block: &str) -> PyResult<(Mol, String, Vec<Vec<f64
                 py_coords,
             )
         })
-        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map_err(|e| crate::errors::malformed("mol_block", e.to_string()))
 }
 
 /// Parse a MDL MOL V2000 block, returning stereo-perception diagnostics
@@ -933,7 +942,8 @@ fn is_valid_smarts(smarts: &str) -> bool {
 /// is reconstructed like RDKit's ``Chem.MolFromInchi``; otherwise (or if the
 /// library rejects the string) the pure-Rust parser is used.
 ///
-/// Raises ``ValueError`` on parse failure.
+/// Raises :class:`ChematicInputError` (a ``ValueError``; ``code``
+/// ``"inchi_parse"``) on parse failure.
 ///
 ///     mol = chematic.from_inchi("InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3")
 #[pyfunction]
@@ -950,7 +960,7 @@ fn from_inchi(inchi: &str) -> PyResult<Mol> {
             inner: Arc::new(mol),
             props: Default::default(),
         })
-        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map_err(|e| crate::errors::malformed("inchi", e.to_string()))
 }
 
 /// Parse a PDB string and return ``(Mol, coords)`` where coords is a list of ``[x,y,z]``.
@@ -1716,8 +1726,21 @@ fn parse_mmcif<'py>(
     if let Some(v) = max_line_len {
         limits.max_line_len = v;
     }
-    let result = chematic_mol::parse_mmcif_with_limits(text, &limits)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let result = chematic_mol::parse_mmcif_with_limits(text, &limits).map_err(|e| {
+        use chematic_mol::MmcifError as E;
+        let code = match &e {
+            E::InputTooLarge { .. } => Some("input_too_large"),
+            E::LineTooLong { .. } => Some("line_too_long"),
+            E::TooManyAtoms { .. } => Some("too_many_atoms"),
+            _ => None,
+        };
+        match code {
+            Some(code) => {
+                crate::errors::input_error("resource_limit", code, "mmcif", e.to_string())
+            }
+            None => crate::errors::malformed("mmcif", e.to_string()),
+        }
+    })?;
     let (mol, coords) = result.to_molecule();
 
     let d = PyDict::new(py);

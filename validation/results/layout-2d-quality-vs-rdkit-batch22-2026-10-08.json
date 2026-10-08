@@ -1,0 +1,62 @@
+{
+ "schema": "layout-2d-quality-vs-rdkit/v1",
+ "rdkit": "2026.03.6",
+ "chematic": "1.0.36",
+ "all": {
+  "rows": 15000,
+  "chematic": {
+   "clean": 14769,
+   "with_clash": 23,
+   "with_crossing": 230,
+   "bond_dev_over_0.2": 278,
+   "with_narrow_branch": 231,
+   "narrow_branch_atoms": 916
+  },
+  "rdkit": {
+   "clean": 14504,
+   "with_clash": 276,
+   "with_crossing": 402,
+   "bond_dev_over_0.2": 540,
+   "with_narrow_branch": 0,
+   "narrow_branch_atoms": 0
+  }
+ },
+ "bridged": {
+  "rows": 531,
+  "chematic": {
+   "clean": 325,
+   "with_clash": 2,
+   "with_crossing": 206,
+   "bond_dev_over_0.2": 264,
+   "with_narrow_branch": 12,
+   "narrow_branch_atoms": 20
+  },
+  "rdkit": {
+   "clean": 232,
+   "with_clash": 102,
+   "with_crossing": 290,
+   "bond_dev_over_0.2": 337,
+   "with_narrow_branch": 0,
+   "narrow_branch_atoms": 0
+  }
+ },
+ "not_bridged": {
+  "rows": 14469,
+  "chematic": {
+   "clean": 14444,
+   "with_clash": 21,
+   "with_crossing": 24,
+   "bond_dev_over_0.2": 14,
+   "with_narrow_branch": 219,
+   "narrow_branch_atoms": 896
+  },
+  "rdkit": {
+   "clean": 14272,
+   "with_clash": 174,
+   "with_crossing": 112,
+   "bond_dev_over_0.2": 203,
+   "with_narrow_branch": 0,
+   "narrow_branch_atoms": 0
+  }
+ }
+}

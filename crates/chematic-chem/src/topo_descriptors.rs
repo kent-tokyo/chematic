@@ -631,9 +631,6 @@ pub fn labute_asa_per_atom(mol: &Molecule) -> Vec<f64> {
     labute_asa_parts(mol).0
 }
 
-/// Pooled implicit-hydrogen area term (Å²) excluded from
-/// [`labute_asa_per_atom`] but included in [`labute_asa`]'s total.
-/// Only used by `vsa.rs` tests that check the VSA-sum-vs-total invariant.
 // ─── RDKit-exact path enumeration and valence connectivity ───────────────────
 
 /// RDKit's `PeriodicTable::getNouterElecs`, indexed by atomic number - 1.
@@ -690,11 +687,9 @@ pub(crate) fn rdkit_paths_of_length(
         for path in &paths {
             let end = *path.last().expect("paths are never empty") as usize;
             for &other in &adj[end] {
-                if !path.contains(&other) {
-                    let mut p = path.clone();
-                    p.push(other);
-                    next.push(p);
-                } else if upper > 2 && path.len() == upper - 1 && path[path.len() - 2] != other {
+                if !path.contains(&other)
+                    || (upper > 2 && path.len() == upper - 1 && path[path.len() - 2] != other)
+                {
                     let mut p = path.clone();
                     p.push(other);
                     next.push(p);

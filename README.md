@@ -1,10 +1,13 @@
 # chematic
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
+[![Coverage](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
+[![codecov](https://codecov.io/gh/kent-tokyo/chematic/branch/main/graph/badge.svg)](https://app.codecov.io/github/kent-tokyo/chematic)
 [![PyPI](https://img.shields.io/pypi/v/chematic?logo=pypi)](https://pypi.org/project/chematic/)
 [![crates.io](https://img.shields.io/crates/v/chematic?logo=rust)](https://crates.io/crates/chematic)
 [![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic?logo=npm)](https://www.npmjs.com/package/@kent-tokyo/chematic)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
+[![Ask DeepWiki](docs/assets/ask-deepwiki.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
 Pure-Rust cheminformatics for Python, Rust, and the browser: local-first,
 bounded, and explicit about unsupported chemistry.
@@ -21,12 +24,14 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.0.36 release boundary
+### v1.0.38 release boundary
 
-v1.0.36 expands the checked RDKit reaction profile over BioTransformer's
-public rules, fixes E/Z preservation across graph edits, and improves scoped
-CIP, hybridization, MMFF94 typing, and MOL stereo output. The corpus results
-are source measurements until v1.0.36 packages are rerun. See
+v1.0.38 adds explicitly named RDKit-compatible APIs for SMILES, InChI,
+fingerprints, stereoisomer enumeration, 2D coordinates, MOL blocks, and
+MMFF94/MMFF94s/UFF calculations. It also aligns the documented descriptor
+profile and improves bounded parsing, stereo-safe 3D retries, and crowded 2D
+layouts. Dated source and older-package measurements remain separate from
+v1.0.38 package verification. See
 [validation](docs/validation.md) and [CHANGELOG](CHANGELOG.md).
 
 ## Use it

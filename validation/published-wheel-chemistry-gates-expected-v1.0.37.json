@@ -75,5 +75,15 @@
    "rdkit_parse_error_rules": 3,
    "rules_run": 974
   }
+ },
+ "a6": {
+  "note": "#739. The 265 A6 rows, arm chematic_pipeline_v2_mmff94_strict_stereo_safe at the harness default of 200 iterations (seed 20260801, 8 attempts), scored by pipeline_v2_vs_rdkit_common_scorer and gated by scripts/a6_platform_gate.py. coordinates_sha256 is the published Linux x86-64 CPython 3.9 wheel's; another platform's rows are reported against it, not gated on it.",
+  "arm": "chematic_pipeline_v2_mmff94_strict_stereo_safe",
+  "rows": 265,
+  "successes": 265,
+  "independently_sound": 265,
+  "stereo_clean": 265,
+  "with_gross_clash": 0,
+  "coordinates_sha256": "b1ce930f542ee3ac7a674acadc4caa43bc2d63df570381557db76fb5fd9de804"
  }
 }

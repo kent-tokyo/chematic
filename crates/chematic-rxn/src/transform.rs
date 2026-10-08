@@ -10,7 +10,7 @@ use chematic_smarts::{
     find_matches_with_config, find_matches_with_rings_and_config,
 };
 
-use crate::reaction::{RxnError, parse_reaction};
+use crate::reaction::{RxnError, parse_reaction_template};
 use crate::requirements::ReactionRequirements;
 
 /// Error type for SMIRKS transformation.
@@ -1348,14 +1348,14 @@ fn parse_smirks_templates(
     // Agents take no part in template application (RDKit ignores them too)
     // and may be SMARTS (`>[O;X2]>`); when they are not SMILES they are
     // dropped rather than failing the whole template.
-    let mut rxn = parse_reaction(&format!(">{}>{}", parts[1], ungrouped))
-        .or_else(|_| parse_reaction(&format!(">>{ungrouped}")))?;
+    let mut rxn = parse_reaction_template(&format!(">{}>{}", parts[1], ungrouped))
+        .or_else(|_| parse_reaction_template(&format!(">>{ungrouped}")))?;
     let components: Vec<String> = match grouped {
         Some(components) => {
             rxn.products = components
                 .iter()
                 .map(|c| {
-                    chematic_smiles::parse(c).map_err(|e| {
+                    chematic_smiles::parse_template(c).map_err(|e| {
                         TransformError::SmirksParse(RxnError::SmilesParse {
                             part: c.clone(),
                             source: e.to_string(),
@@ -1477,7 +1477,7 @@ fn parse_reactant_templates(
     let mut reactants = Vec::with_capacity(components.len());
     let mut queries = Vec::with_capacity(components.len());
     for part in components {
-        let (mol, query) = match chematic_smiles::parse(part) {
+        let (mol, query) = match chematic_smiles::parse_template(part) {
             // Stereo templates keep the SMILES reading: the `@`/`@@` and
             // `/`/`\` post-checks read the template molecule.
             Ok(mol) if has_stereo(&mol) => {

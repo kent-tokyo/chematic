@@ -1009,6 +1009,32 @@ export class MolHandle {
         return ret;
     }
     /**
+     * Canonical SMILES exactly as RDKit 2026.03.1 writes it
+     * (`Chem.MolToSmiles(Chem.MolFromSmiles(s))` for a molecule parsed
+     * from the SMILES `s`). Throws instead of returning a string for
+     * inputs the RDKit port does not model or that RDKit's sanitization
+     * rejects; `canonical_smiles` is unchanged.
+     * @returns {string}
+     */
+    rdkit_smiles() {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_rdkit_smiles(this.__wbg_ptr);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
      * Returns `true` if the molecule passes the REOS (Rapid Elimination Of Swill) filter.
      * @returns {boolean}
      */
@@ -1889,10 +1915,16 @@ export function chematic_version() {
  * CIP stereo assignments via the accurate hierarchical-digraph engine, as a JSON
  * array of `{atomIdx, cipCode}` objects -- same shape as [`cip_assignments_json`],
  * but merges the accurate engine's tetrahedral R/S (~99.6% oracle-stable agreement,
- * see `docs/rfcs/cip_accurate_rfc.md`) with legacy's E/Z and allene answers (the accurate
- * engine computes neither). Atoms it can't resolve are omitted here -- see
- * [`cip_unresolved_json`] -- never a silently-guessed label. Returns `"null"` on an
- * internal engine error (budget-independent computations should not normally hit this).
+ * see `docs/rfcs/cip_accurate_rfc.md`), E/Z ranked by the same engine and legacy's
+ * allene answers. Atoms it can't resolve are omitted here -- see
+ * [`cip_unresolved_json`] -- never a silently-guessed label. A phosphorus on an
+ * unsaturated ring (cyclophosphazene) gets RDKit's CIPLabeler label, which flips
+ * with the ring's Kekulé spelling; its object carries `"kekuleDependent": true`.
+ * A ring centre with three single bonds and a lone pair (bridgehead amine)
+ * gets RDKit's label for the parsed SMILES spelling and carries
+ * `"spellingDependent": true`.
+ * Returns `"null"` on an internal engine error (budget-independent computations
+ * should not normally hit this).
  * @param {MolHandle} mol
  * @returns {string}
  */
@@ -4224,6 +4256,32 @@ export function mmff94_energy_breakdown_from_coords_json(mol, coords_json) {
 }
 
 /**
+ * [`mmff94_energy_breakdown_from_coords_json`] with
+ * `ignore_interfrag_interactions`: `true` leaves out van der Waals and
+ * electrostatic pairs between disconnected fragments, as RDKit's
+ * `MMFFGetMoleculeForceField` does by default.
+ * @param {MolHandle} mol
+ * @param {string} coords_json
+ * @param {boolean} ignore_interfrag_interactions
+ * @returns {string}
+ */
+export function mmff94_energy_breakdown_from_coords_json_with_options(mol, coords_json, ignore_interfrag_interactions) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.mmff94_energy_breakdown_from_coords_json_with_options(mol.__wbg_ptr, ptr0, len0, ignore_interfrag_interactions);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Computes energy on an internally generated conformer.
  * `MolHandle` stores topology only; coordinates previously read from PDB/XYZ
  * are not used by this function.
@@ -4421,6 +4479,27 @@ export function mol_block_stereo_diagnostics_json(mol_block) {
         return getStringFromWasm0(ptr2, len2);
     } finally {
         wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * The stereo [`to_mol_block`] does not carry, as JSON:
+ * `{"centres": [atom...], "double_bonds": [bond...],
+ * "non_tetrahedral_centres": [atom...], "stereo_groups_dropped": bool}`.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function mol_block_stereo_loss_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.mol_block_stereo_loss_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
 }
 
@@ -5086,6 +5165,53 @@ export function normalize_reaction_smiles(rxn_smiles) {
         return getStringFromWasm0(ptr2, len2);
     } finally {
         wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Apply one bounded metadata edit without changing atom ownership or linkage
+ * topology. Returns the same tagged envelope as validation.
+ * @param {string} document_json
+ * @param {string} command_json
+ * @returns {string}
+ */
+export function nucleic_acid_apply_json_command(document_json, command_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(document_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(command_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.nucleic_acid_apply_json_command(ptr0, len0, ptr1, len1);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Validate and normalize a bounded `chematic.nucleic-acid.v1` document.
+ *
+ * Returns a stable JSON envelope with either `ok: true` and the normalized
+ * document or `ok: false` and a typed error category.
+ * @param {string} document_json
+ * @returns {string}
+ */
+export function nucleic_acid_validate_json(document_json) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(document_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.nucleic_acid_validate_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
 }
 
@@ -6315,10 +6441,12 @@ export function run_reactants(smirks, reactants_smiles) {
  * Apply a SMIRKS template with explicit outcome accounting as a JSON string.
  *
  * `reactants_smiles` is pipe-separated, as for [`run_reactants`]. With
- * `rdkit_compat = true`, tetrahedral reactant-side `@`/`@@` templates that
- * differ from pinned RDKit 2026.03.6 return `typed_unsupported` and a stable
- * reason code instead of an apparently compatible product. Native semantics
- * and the existing [`run_reactants`] API are unchanged. Product graph/origin/
+ * `rdkit_compat = true`, matching and product stereochemistry follow pinned
+ * RDKit 2026.03.6; inputs it cannot reproduce return `typed_unsupported` and
+ * a stable reason code (`ambiguous_stereo_bond_order`,
+ * `ez_reactant_template_semantics`, `chiral_reactant_template_semantics`)
+ * instead of an apparently compatible product. Native semantics and the
+ * existing [`run_reactants`] API are unchanged. Product graph/origin/
  * template-map parity remains a separate oracle gate. Source indices and
  * product-template map labels are returned alongside the product SMILES;
  * their atom positions match the canonical SMILES parse order.
@@ -7425,6 +7553,11 @@ export function to_extxyz_json(mol, coords_json, options_json) {
  *
  * Atom positions are computed via the same layout engine used for SVG depiction
  * and converted to Ångström units (`1.5 Å` per bond).
+ *
+ * A molecule with stereo gets the MOL writer's stereo layout (E/Z set by
+ * the geometry, one checked wedge per centre); a centre or E/Z bond that
+ * layout cannot express is lost silently here. Use [`to_mol_block_strict`]
+ * to get an error instead, or [`mol_block_stereo_loss_json`] for the list.
  * @param {MolHandle} mol
  * @returns {string}
  */
@@ -7439,6 +7572,32 @@ export function to_mol_block(mol) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * [`to_mol_block`] that fails, naming the lost centres and bonds, when the
+ * block would not carry all of the molecule's stereo.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function to_mol_block_strict(mol) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.to_mol_block_strict(mol.__wbg_ptr);
+        var ptr1 = ret[0];
+        var len1 = ret[1];
+        if (ret[3]) {
+            ptr1 = 0; len1 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred2_0 = ptr1;
+        deferred2_1 = len1;
+        return getStringFromWasm0(ptr1, len1);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
 }
 

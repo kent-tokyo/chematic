@@ -1,0 +1,27 @@
+{
+ "schema": "depiction-speed/v1",
+ "engine": "rdkit",
+ "rdkit": "2026.03.6",
+ "corpus": "rdkit-js-browser-10k-v1.smi",
+ "input_rows": 10000,
+ "repeats": 3,
+ "python": "3.11.15",
+ "machine": "x86_64",
+ "ops": {
+  "svg": {
+   "ms": 9654.6,
+   "rows": 10000,
+   "output_size": 134910257
+  },
+  "depict_data": {
+   "ms": 2741.7,
+   "rows": 10000,
+   "output_size": 220015
+  },
+  "mol_block": {
+   "ms": 3869.1,
+   "rows": 10000,
+   "output_size": 19179848
+  }
+ }
+}

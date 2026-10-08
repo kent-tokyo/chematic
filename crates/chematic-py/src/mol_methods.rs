@@ -15,6 +15,8 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 use std::sync::Arc;
 
+type PyUffTerm = (String, Vec<usize>, Vec<f64>);
+
 #[pymethods]
 impl Mol {
     // -----------------------------------------------------------------------
@@ -477,11 +479,7 @@ impl Mol {
     /// Diagnostic: the RDKit UFF terms ``(kind, atoms, params)`` in RDKit's
     /// contribution order.
     #[pyo3(signature = (coords, vdw_thresh = 10.0))]
-    fn _rdkit_uff_terms(
-        &self,
-        coords: Vec<[f64; 3]>,
-        vdw_thresh: f64,
-    ) -> PyResult<Vec<(String, Vec<usize>, Vec<f64>)>> {
+    fn _rdkit_uff_terms(&self, coords: Vec<[f64; 3]>, vdw_thresh: f64) -> PyResult<Vec<PyUffTerm>> {
         let ff = rdkit_uff_field(&self.inner, &coords, vdw_thresh, true)?;
         Ok(ff
             .debug_terms()
@@ -2329,8 +2327,9 @@ impl Mol {
     ///
     /// Raises ``ValueError`` for invalid SMARTS.
     fn has_substructure(&self, smarts: &str) -> PyResult<bool> {
-        let query = crate::misc::cached_smarts(smarts)
-            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        let query = crate::misc::cached_smarts(smarts).map_err(|e| {
+            crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
+        })?;
         // Stop at the first embedding instead of enumerating every match — an
         // existence check doesn't need the full match set or the dedup pass.
         let config = chematic_smarts::MatchConfig {
@@ -2355,8 +2354,9 @@ impl Mol {
     /// Returns an empty list when there are no matches.
     /// Raises ``ValueError`` for invalid SMARTS.
     fn find_matches(&self, smarts: &str) -> PyResult<Vec<Vec<usize>>> {
-        let query = crate::misc::cached_smarts(smarts)
-            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        let query = crate::misc::cached_smarts(smarts).map_err(|e| {
+            crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
+        })?;
         Ok(chematic_smarts::find_match_atom_sets_perceived(
             &query,
             &self.inner,
@@ -2395,8 +2395,9 @@ impl Mol {
             }
         };
 
-        let query = crate::misc::cached_smarts(smarts)
-            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        let query = crate::misc::cached_smarts(smarts).map_err(|e| {
+            crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
+        })?;
         let result = PyDict::new(py);
         let config = chematic_smarts::RdkitParityConfig {
             use_rdkit_parity_aromaticity: true,

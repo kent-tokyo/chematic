@@ -184,15 +184,23 @@ a median 0.00 and p90 3.69 kcal/mol above it (198 within 1 kcal/mol; about
 0.28 s per molecule); both stay 265/265 sound, stereo-clean and clash-free
 on the external scorer.
 
+A stereo-safe (`RepairAndVerify`) run whose minimization relaxes a declared
+centre through inversion embeds again from up to seven other seeds before
+it returns `FinalStereoViolation` (#739); a run that succeeds at its own
+seed is unchanged. Penam bridgeheads inverted from about a quarter of
+seeds, on every platform; over ten seeds of the 265 A6 rows, 32 of 2,650
+runs failed this way before and none now.
+
 2D layout is rule-based, not RDKit's `Compute2DCoords`: coordinates differ.
 Depictions and MOL blocks draw the declared stereo (E/Z geometry, one wedge
 per centre); every MOL block (Python `to_mol_block`, WASM `to_mol_block`,
-`SDWriter`) carries 2D coordinates in Å, with or without stereo. As drawn, 23
+`SDWriter`) carries 2D coordinates in Å, with or without stereo. As drawn, 5
 of the 15,000 exposed-10k and ChEMBL-5k rows have a clash (RDKit 276) and
 caged ring systems can cross themselves (adamantane-type cages are drawn as
-RDKit's projection, with its one crossing; porphyrins from a template). A branch point is drawn with its
+RDKit's projection, with its one crossing; porphyrins from a template; the
+rings on an octahedral metal hang 1.5 bonds out). A branch point is drawn with its
 bonds 120° apart unless that crowds the drawing, where a fork of 90°, or the
-narrower fork of earlier releases, is kept (251 rows have a branch atom with
+narrower fork of earlier releases, is kept (231 rows have a branch atom with
 two bonds under 90° apart; RDKit none).
 
 ## Binding contract

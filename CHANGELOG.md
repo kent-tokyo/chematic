@@ -10,12 +10,80 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.38] - 2026-10-08
+
+### Added
+
+- Added Rust unit-test coverage reporting with `cargo-llvm-cov`, Codecov OIDC
+  uploads, and downloadable LCOV/HTML reports in GitHub Actions.
+- Added RDKit 2026.03.1-compatible APIs alongside chematic's own (existing APIs are
+  unchanged): `Mol.rdkit_smiles` (RDKit canonical SMILES),
+  `Mol.rdkit_smiles_with(...)` (MolToSmiles writer options), `rdkit_avalon_fp`,
+  explicit-hydrogen SMILES after `add_hydrogens()`, `from_inchi` read-back that
+  follows `MolFromInchi` when built with `native-inchi` (the default wheel),
+  Morgan `include_chirality` / `count_simulation`, `rdkit_atom_pair_counts`,
+  `rdkit_torsion_counts`, `rdkit_stereoisomers()` (EnumerateStereoisomers
+  defaults, including its seeded sampling above 1024 isomers),
+  `rdkit_2d_coords()` / `rdkit_mol_block_2d()` (Compute2DCoords and
+  MolToMolBlock), and `rdkit_mmff_energy` / `rdkit_mmff_optimize` (MMFF94 and
+  MMFF94s) plus `rdkit_uff_energy` / `rdkit_uff_gradient` /
+  `rdkit_uff_optimize` / `rdkit_uff_has_all_params`.
+  Bit-identical numeric claims are limited to the recorded Linux comparison
+  lane; portable tests allow documented last-bit coordinate and minimizer
+  differences from the host math library.
+- Added the corpus-scale COSMolKit comparison harness under
+  `validation/cosmolkit_comparison/`; results are recorded in
+  [benchmarks/2026-10-08-cosmolkit-parity.md](benchmarks/2026-10-08-cosmolkit-parity.md).
+
+### Changed
+
+- Descriptors now follow RDKit's operation order and SMARTS definitions, so
+  exact mass, Crippen logP/MR, HBA/HBD, rotatable bonds, ring counts, MQN,
+  Chi/Kappa, Labute ASA, QED, BalabanJ, BertzCT, PEOE_VSA, SlogP_VSA and
+  SMR_VSA equal RDKit's values bit for bit on the recorded ChEMBL 5k and
+  RDKit.js 10k comparison lane (Ipc differs on 0.3% of rows because RDKit's value is
+  BLAS-dependent). `Mol.mqn` now returns RDKit's 42-element layout.
+- The published Python wheels enable the IUPAC `native-inchi` feature.
+- Laid-out MOL V2000 output marks undeclared stereo double bonds as "either"
+  and writes the valence field as RDKit does.
+
 Published v1.0.36 reruns (PyPI Linux wheel, sdist, npm, crate) give the
 source's results on the BioTransformer corpus, the 83 reaction fixtures,
 xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- SMILES (#769): a neutral oxygen with more than two bonds or a neutral
+  fluorine with more than one (`O=O1C=CC=C1`, `CO(C)C`) is a typed
+  `SmilesError::InvalidValence` error instead of a molecule that
+  aromaticity perception then aromatized; Python raises
+  `ChematicInputError` with code `smiles_valence`. Charged and hypervalent
+  atoms are unchanged; SMIRKS templates are read without the check
+  (`chematic_smiles::parse_template`). New public enum variant.
+- 3D (#739): a stereo-safe (`RepairAndVerify`) pipeline run that ends in
+  `FinalStereoViolation` embeds again from up to seven other seeds before
+  returning the failure. MMFF94 relaxed penam bridgeheads through inversion
+  from about a quarter of seeds on every platform (the `libm` change had
+  only moved which seeds); over ten seeds of the 265 A6 rows, 32 of 2,650
+  runs failed and none now. A run that succeeds at its own seed is
+  unchanged. CI gates the A6 rows on the independent scorer on Linux, macOS
+  and Windows. Record: `benchmarks/2026-10-08-issues-769-739.md`.
+- 2D layout: a ring hung on an atom with six or more bonds (an octahedral
+  metal with pyridines) is drawn 1.5 bonds out; as drawn, 5 of 15,000 rows
+  have a clash (was 23; RDKit 276) and 213 a crossing. Record:
+  `benchmarks/2026-10-08-734-754-followups-batch23.md`.
+- 2D layout: the clash relief stops counting a move once it cannot win
+  (identical drawings, `write_mol` 652M → 589M instructions on 2,000 rows),
+  so components of more than 60 atoms now also get their ±45° forks
+  relieved: narrow branch atoms 1,757 → 916 of 15,000 rows; three-atom
+  groups take the wide turns. Record:
+  `benchmarks/2026-10-08-734-754-followups-batch22.md`.
+- Python: the parsers (`from_smiles`, `from_inchi`, `from_mol_block`,
+  `from_mol_block_with_coords`, `parse_mmcif`, SMARTS patterns) raise
+  `chematic.ChematicInputError`, a `ValueError` subclass with `category`
+  (`malformed` / `resource_limit`), `code` (`smiles_parse`, `input_too_large`,
+  …) and `format`. `except ValueError` keeps working. Nucleic-acid edit
+  sequences are replayed with the same envelopes in Rust, Python and WASM.
 - 2D layout: porphyrins are drawn from a template (pentagons round the
   macrocycle, a central metal at the centre); perfluoroalkyl and other chains
   run straight through CF2/CMe2 atoms; a ring-fusion atom's substituent goes
@@ -219,6 +287,7 @@ MOL writer and the WASM Node tests. Record:
   `chematic_chemistry_dump.py` / `compare_chemistry_dump_rdkit.py` do the
   same for CIP, hybridization, MMFF and the MOL writer;
   `rdkitjs_reaction_corpus.mjs` runs the corpus with RDKit.js.
+## [1.0.37] - 2026-10-07
 
 ### Added
 

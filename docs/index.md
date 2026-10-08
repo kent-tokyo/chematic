@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.36</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.38</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,10 +80,12 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.0.36 expands the checked RDKit reaction profile over BioTransformer's
-public rules, fixes E/Z preservation across graph edits, and improves scoped
-CIP, hybridization, MMFF94 typing, and MOL stereo output. Release availability
-is not an accuracy or speed result; package-output reruns remain separate.
+v1.0.38 adds named RDKit-compatible APIs and improves stereo-aware MOL and SVG depiction, crowded 2D layouts,
+canonical SMILES worst cases, MMFF94 typing and energy terms, lone-pair CIP,
+and the opt-in RDKit 2026.09.1 SMARTS ring profile. It also adds the bounded
+`chematic.nucleic-acid.v1` document model across Rust, Python, and WASM, and
+fixes hypercoordinate-chalcogen aromaticity. Release availability is not an
+accuracy or speed result; package-output reruns remain separate.
 
 The latest published-package comparison packet is for v1.0.30. It records
 20 exact-output, favorable paired-interval Python operations on one host;

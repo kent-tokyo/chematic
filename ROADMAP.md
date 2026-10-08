@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-04. Release line: **v1.0.34**. Release-source and
+> Updated 2026-10-08. Release line: **v1.0.38**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -16,7 +16,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 | P1 reactions | Published v1.0.34 PyPI Linux wheel, npm package and crates.io crate: 80 exact graph/origin/map, 3 jointly invalid, no typed unsupported (v1.0.30: 73/83). | Rerun the macOS and Windows wheels; refusals are not matches. |
 | P1 SMARTS/SMIRKS dialect ([#734](https://github.com/kent-tokyo/chematic/issues/734), [#754](https://github.com/kent-tokyo/chematic/issues/754)) | Contributor's [xsmarts-autoconf](https://github.com/swamidasslab/xsmarts-autoconf): published v1.0.35 75/83 behaviour flags give RDKit 2026.03.6's value (v1.0.30: 42/83), with a decided outcome for each of the 8 others. BioTransformer public rules: the unreleased source gives RDKit's product sets for 1,051/1,051 implicit-H and 6,604/6,652 explicit-H pairs where RDKit has a product (v1.0.35: 775 and 3,807). [Record](benchmarks/2026-10-05-biotransformer-corpus-followups-2.md). | Release the corpus fixes (canonical E/Z writer fixes, RDKit-profile ring model, dummy atoms, E/Z rules, kekulization, MOL wedge reading, template cache); rerun the corpus on the published package. |
 | P1 SMARTS | Published v1.0.30: 200/310k match-set differences. Opt-in profile: 309,982/310k exact with 18 typed refusals, which are exactly the cells whose RDKit answer changes with atom order; independent ChEMBL 4,625 rows: 143,375/143,375 exact on PyPI v1.0.34 and source; the published PyPI v1.0.34 Linux wheel passes the 310k opt-in gate. [Record](benchmarks/2026-10-04-stereo-integrity-smarts-a6-followups.md), [310k](benchmarks/2026-10-05-mol-stereo-cip-mmff-followups.md). | macOS/Windows wheel reruns; retain native SSSR. |
-| P2 A6 quality | Published v1.0.31 macOS: 265/265 geometry/stereo/clash, 100/265 converged. Published Linux wheels: 263/265 ([#739](https://github.com/kent-tokyo/chematic/issues/739)); source with `libm` math: 265/265 on Linux from a clean commit, 265/265 sound/stereo-clean/clash-free on the external scorer ([record](benchmarks/2026-10-05-mol-stereo-loss-and-clean-a6.md)). | Rerun macOS and Windows (CI jobs) on the `libm` build; per-term energy, convergence and independent conformer quality before speed claims. |
+| P2 A6 quality | Published v1.0.31 Linux 263/265 (rows 53/246 `FinalStereoViolation`, [#739](https://github.com/kent-tokyo/chematic/issues/739)), published v1.0.37 Linux 265/265. The `libm` change only moved which seeds invert a penam bridgehead (v1.0.37: 32 of 2,650 seeded runs fail); a stereo-safe run now re-embeds after a final stereo violation: 0 / 2,650, and 265/265 with glibc math too ([record](benchmarks/2026-10-08-issues-769-739.md)). CI gates A6 on the independent scorer on Linux, macOS and Windows. | Read the macOS/Windows CI gates; conformer quality on published artifacts before speed claims. |
 
 Detailed versions, hashes and denominators are in [validation](docs/validation.md)
 and the [benchmark index](benchmarks/README.md). v1.0.32 publication and
@@ -24,7 +24,7 @@ published-package reruns are tracked separately. The v1.0.31 WASM formula
 and E/Z JSON fixes are confirmed on the published v1.0.34 npm package.
 Exposed data are not sealed evidence.
 
-## Priority order and acceptance gates
+## Priority order
 
 1. **P1 / A4 — BioTransformer-corpus SMIRKS fixes (#734): released.**
    v1.0.36 ships them. The published PyPI Linux wheel gives the source's
@@ -78,10 +78,13 @@ Exposed data are not sealed evidence.
 5. **P2 / A6 — Gate 3D quality before speed.** Published v1.0.31 macOS
    passes 265/265 geometry/stereo/clash but converges on only 100/265.
    Published Linux wheels failed stereo on rows 53/246
-   ([#739](https://github.com/kent-tokyo/chematic/issues/739)); the cause was
-   host-libm last-bit differences amplified by the minimiser, and the source
-   now uses the `libm` crate (as WASM already did): Linux 265/265, and
-   265/265 sound, stereo-clean and clash-free on the external scorer.
+   ([#739](https://github.com/kent-tokyo/chematic/issues/739)). Host-libm
+   last-bit differences decided which embedding MMFF94 started from, but the
+   defect was that a stereo-safe run could not recover once MMFF94 relaxed
+   a penam bridgehead through inversion, from about a quarter of seeds on
+   every platform. Such a run now re-embeds from other seeds: 0 of 2,650
+   seeded A6 runs fail (32 before), with `libm` or glibc math
+   ([record](benchmarks/2026-10-08-issues-769-739.md)).
    Source MMFF94 typing matches RDKit on every heavy atom of the exposed 10k,
    ChEMBL 5k and Kekulé-written 15k corpora (v1.0.36: 81, 5 and 39 differ),
    reading RDKit's canonical Kekulé structure and ring list
@@ -136,8 +139,8 @@ Exposed data are not sealed evidence.
    1,686/1,687 and 1,670/1,670 stereo rows; PyPI v1.0.36: 286 and 317;
    [record](benchmarks/2026-10-07-734-754-followups-batch15.md)); every Python MOL block
    carries 2D coordinates, reaction SVGs and similarity maps draw stereo, and
-   branch points are drawn 120° apart (15,000 rows as drawn: 14,767 clean,
-   23 with a clash, 232 with a crossing; RDKit 14,504, 276 and 402;
+   branch points are drawn 120° apart (15,000 rows as drawn: 14,787 clean,
+   5 with a clash, 213 with a crossing; RDKit 14,504, 276 and 402;
    [record](benchmarks/2026-10-07-734-754-followups-batch16.md)). **Exit:** cross-binding
    fixtures with no silent information loss.
 9. **External — Complete RDKit 2026.09.1 rebaseline.** The official npm/WASM
@@ -164,6 +167,18 @@ criteria; the [open-work ledger](docs/roadmap-open-work.md) tracks dependencies.
 
 The [Trust Release plan](docs/trust-release-plan.md) tracks the cross-cutting
 version, runtime, security and review workstreams without repeating this queue.
+
+## Accuracy packages
+
+| Package | State | Current boundary |
+|---|---|---|
+| A0 Evaluation contract | Complete | Preserve frozen and exposed-cohort accounting |
+| A1 Perception and descriptors | Open | Representation and descriptor boundaries |
+| A2 Stereo and identity | Active | CIP, E/Z and round-trip invariance |
+| A3 Fingerprints and retrieval | Open | Compatible-Morgan and holdout gates |
+| A4 Workflows and interchange | Active | Reactions, SMARTS and format semantics |
+| A5 Independent adjudication | External | Gold data and non-maintainer review |
+| A6 3D and force fields | Active | Quality and failure reasons before speed |
 
 ## Product phases
 

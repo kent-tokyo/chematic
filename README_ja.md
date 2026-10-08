@@ -3,10 +3,13 @@
 [English](README.md) | [中文](README_zh.md)
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
+[![Coverage](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
+[![codecov](https://codecov.io/gh/kent-tokyo/chematic/branch/main/graph/badge.svg)](https://app.codecov.io/github/kent-tokyo/chematic)
 [![PyPI](https://img.shields.io/pypi/v/chematic?logo=pypi)](https://pypi.org/project/chematic/)
 [![crates.io](https://img.shields.io/crates/v/chematic?logo=rust)](https://crates.io/crates/chematic)
 [![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic?logo=npm)](https://www.npmjs.com/package/@kent-tokyo/chematic)
 [![ライセンス](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
+[![Ask DeepWiki](docs/assets/ask-deepwiki.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
 Python、Rust、ブラウザ向けのPure Rustケモインフォマティクスです。ローカルで動作し、
 入力上限と型付きエラーにより、未対応の化学表現を曖昧に処理しません。
@@ -23,13 +26,14 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.0.36 の対応範囲
+### v1.0.38 の対応範囲
 
-v1.0.36では、BioTransformerの公開ルールを使ったRDKit反応互換プロファイルの検証を
-広げ、グラフ編集後のE/Z保持を修正しました。CIP、混成、MMFF94原子型、MOL立体出力も
-範囲を明示して改善しています。コーパス結果はv1.0.36公開パッケージで再測定するまで
-source測定です。詳しくは[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を
-参照してください。
+v1.0.38では、SMILES、InChI、指紋、立体異性体列挙、2D座標、MOLブロック、
+MMFF94／MMFF94s／UFFについて、明示的なRDKit互換APIを追加しました。記述子の
+定義も文書化した互換プロファイルへ揃え、入力境界、立体を守る3D再試行、混雑した
+2Dレイアウトを改善しています。日付付きsource測定や旧版公開物の測定と、v1.0.38
+公開物の確認は区別しています。詳しくは
+[検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方
 

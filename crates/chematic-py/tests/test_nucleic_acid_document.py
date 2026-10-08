@@ -66,3 +66,38 @@ def test_nucleic_acid_binding_enforces_collection_limits():
     assert envelope["ok"] is False
     assert envelope["error"]["code"] == "resource_limit"
     assert envelope["error"]["path"] == "/strands"
+
+
+SEQUENCES = json.loads((ROOT / "validation/nucleic_acid_edit_sequences.json").read_text())
+
+
+def _ownership(document):
+    owner = {}
+    for strand in document["strands"]:
+        for residue in strand["residues"]:
+            for atom in residue["atom_refs"]:
+                assert atom not in owner, f"atom {atom} owned twice"
+                owner[atom] = residue["id"]
+    assert set(document["atom_ids"]) <= set(owner)
+    return owner
+
+
+def test_nucleic_acid_edit_sequences_reload_and_keep_atom_ownership():
+    starts = {case["id"]: case["document"] for case in FIXTURE["valid_cases"]}
+    for sequence in SEQUENCES["sequences"]:
+        document = starts[sequence["start"]]
+        owners = _ownership(document)
+        for k, step in enumerate(sequence["steps"]):
+            envelope = json.loads(
+                chematic.nucleic_acid_apply_json_command(json.dumps(document), json.dumps(step["command"]))
+            )
+            assert envelope["ok"] is step["ok"], (sequence["id"], k, envelope)
+            if step["ok"]:
+                assert envelope["document"] == step["document"], (sequence["id"], k)
+                document = envelope["document"]
+                reread = json.loads(chematic.nucleic_acid_validate_json(json.dumps(document)))
+                assert reread["ok"] is True and reread["document"] == document, (sequence["id"], k)
+                assert _ownership(document) == owners, (sequence["id"], k)
+            else:
+                assert envelope["error"]["code"] == step["code"], (sequence["id"], k)
+                assert envelope["error"]["path"] == step["path"], (sequence["id"], k)

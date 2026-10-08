@@ -83,6 +83,46 @@ cargo test -p chematic-chem --lib -- hba_count
 cargo test -p chematic-inchi --features native-inchi --lib --quiet
 ```
 
+## Code coverage
+
+The [Coverage workflow](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
+measures Rust library and binary unit tests with `cargo-llvm-cov` and uploads
+LCOV to [Codecov](https://app.codecov.io/github/kent-tokyo/chematic). It also saves
+LCOV and an HTML report as the `rust-unit-coverage` Actions artifact.
+
+The initial scope uses default features and excludes `chematic-py`,
+`chematic-wasm`, and the offline `gen-sa-table` tool. Integration tests,
+Python/WASM runtime tests, doctests, and optional-feature lanes are not part of
+this percentage. Coverage describes executed code; chemistry correctness and
+cross-engine compatibility still depend on their separate validation gates.
+
+To reproduce locally:
+
+```bash
+rustup component add llvm-tools-preview
+cargo install cargo-llvm-cov --version 0.8.7 --locked
+mkdir -p target/coverage
+cargo llvm-cov --locked --workspace --lib --bins \
+  --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
+  --lcov --output-path target/coverage/lcov.info
+cargo llvm-cov report \
+  --ignore-filename-regex '(crates/(chematic-py|chematic-wasm)/|tools/gen_sa_table/)' \
+  --html --output-dir target/coverage
+```
+
+Uploads use GitHub Actions OIDC (`id-token: write`), so no `CODECOV_TOKEN`
+secret is required. Public coverage results can be viewed without signing in;
+account and repository settings require a separate Codecov login.
+Fork pull requests use the Codecov action's
+public-repository tokenless upload path. Upload errors fail the Coverage job;
+the saved artifact helps distinguish measurement from upload problems.
+Dependabot pull requests still produce reports, but skip the Codecov upload
+because their read-only workflow permissions cannot request an OIDC token.
+
+Project and patch coverage checks are initially informational in `codecov.yml`.
+They show changes without imposing a minimum percentage before a baseline is
+available. The existing test and compatibility checks remain required.
+
 ## Code style
 
 - **No unsafe code** — `#![forbid(unsafe_code)]` is enforced in all crates, except the `native-inchi` feature's C FFI boundary (`crates/chematic-inchi/src/native/`).

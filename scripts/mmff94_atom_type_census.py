@@ -46,7 +46,7 @@ def main() -> int:
     parser.add_argument("--module-root", type=Path, help="installation root for the source wheel")
     parser.add_argument(
         "--source-wheel-gate", action="store_true",
-        help="require the predeclared v1.0.31-source MMFF94 typing profile",
+        help="require the predeclared v1.0.37-source MMFF94 typing profile",
     )
     parser.add_argument("--examples", type=int, default=1, help="example rows kept per key")
     parser.add_argument(
