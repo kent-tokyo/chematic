@@ -416,7 +416,23 @@ mod tests {
     // Reference values: RDKit 2026.03.1 `GraphDescriptors`.
     #[test]
     fn balaban_j_matches_rdkit() {
-        assert_eq!(balaban_j(&mol("c1ccccc1")), 3.0);
+        assert_eq!(balaban_j(&mol("c1ccccc1")), 3.000000000000001);
         assert_eq!(balaban_j(&mol("C1CCCCC1")), 2.0);
+        assert_eq!(balaban_j(&mol("CCC")), 1.6329931618554523);
+        assert_eq!(balaban_j(&mol("C")), 0.0);
+        assert_eq!(balaban_j(&mol("CC(=O)Oc1ccccc1C(=O)O")), 3.0435273546341013);
+    }
+
+    #[test]
+    fn ipc_matches_rdkit() {
+        assert_eq!(ipc(&mol("c1ccccc1")), 34.3994618804395);
+        assert_eq!(ipc(&mol("CC")), 2.0);
+        assert_eq!(ipc(&mol("C")), 0.0);
+        assert_eq!(ipc(&mol("CC(=O)Oc1ccccc1C(=O)O")), 729.6807528797516);
+    }
+
+    #[test]
+    fn bertz_ct_charged_amidine_matches_rdkit() {
+        assert_eq!(bertz_ct(&mol("C[NH+]=C(N)c1ccccc1")), 226.27272407307768);
     }
 }

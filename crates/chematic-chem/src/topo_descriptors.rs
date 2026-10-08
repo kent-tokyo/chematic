@@ -1470,21 +1470,22 @@ mod tests {
         assert!(bz < asp, "benzene BertzCT {bz} should be < aspirin {asp}");
     }
 
+    // Reference values: RDKit 2026.03.1 `GraphDescriptors.BertzCT`.
     #[test]
-    fn bertz_ct_ethane_less_than_propane() {
-        assert!(bertz_ct(&mol("CC")) < bertz_ct(&mol("CCC")));
-    }
-
-    #[test]
-    fn bertz_ct_methane() {
-        // C: deg=0, h=4, total=4, C(4,2)=6; m=4 H bonds → CT = 6+4 = 10
-        assert!(close(bertz_ct(&mol("C")), 10.0, 0.01));
+    fn bertz_ct_small_molecules_match_rdkit() {
+        assert_eq!(bertz_ct(&mol("C")), 0.0);
+        assert_eq!(bertz_ct(&mol("CC")), 0.0);
+        assert_eq!(bertz_ct(&mol("CCO")), 2.7548875021634682);
     }
 
     #[test]
     fn bertz_ct_benzene() {
-        // 6 C with total_deg=3: 6·C(3,2)=18; bonds=6+6=12 → CT = 18+12 = 30
-        assert!(close(bertz_ct(&mol("c1ccccc1")), 30.0, 0.01));
+        assert_eq!(bertz_ct(&mol("c1ccccc1")), 71.96100505779535);
+    }
+
+    #[test]
+    fn bertz_ct_aspirin() {
+        assert_eq!(bertz_ct(&mol("CC(=O)Oc1ccccc1C(=O)O")), 343.2228677267164);
     }
 
     // ── LabuteASA ─────────────────────────────────────────────────────────────
