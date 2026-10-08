@@ -1159,15 +1159,27 @@ impl<'a> Parser<'a> {
         let aromatic = first.is_ascii_lowercase();
         let upper_first = first.to_ascii_uppercase();
 
-        // Try two-character symbol first (e.g. `Cl`, `Br`).
+        // Two-character symbols. An uppercase first letter takes the next
+        // lowercase letter when they spell an element (`Cl`, `Na`). A
+        // lowercase first letter spells only the aromatic `se`, `as`, `te`
+        // and `si`, as in RDKit; otherwise it is the one-letter aromatic atom
+        // and the next letter is the next primitive: `[ca]` is aromatic
+        // carbon and aromatic (not calcium), `[nr6]` aromatic nitrogen in a
+        // six-membered ring, `[cl]` an error.
         if let Some(second) = self.peek()
             && second.is_ascii_lowercase()
         {
             let candidate = format!("{upper_first}{}", second as char);
-            if chematic_core::Element::from_symbol(&candidate).is_some() {
+            if !aromatic && chematic_core::Element::from_symbol(&candidate).is_some() {
                 self.advance();
-                // Two-character symbols are never written as aromatic in SMARTS.
                 return Ok(AtomQuery::Primitive(AtomPrimitive::Symbol(candidate)));
+            }
+            if aromatic && matches!(candidate.as_str(), "Se" | "As" | "Te" | "Si") {
+                self.advance();
+                return Ok(AtomQuery::And(
+                    Box::new(AtomQuery::Primitive(AtomPrimitive::Symbol(candidate))),
+                    Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(true))),
+                ));
             }
         }
 
