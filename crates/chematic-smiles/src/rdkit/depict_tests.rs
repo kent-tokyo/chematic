@@ -197,6 +197,8 @@ fn mol_blocks_match_rdkit() {
 
 #[test]
 fn v3000_and_unsupported_inputs_are_refused() {
-    assert!(rdkit_mol_block_2d(&parse("[NH3]->[Pt](Cl)(Cl)<-[NH3]").unwrap()).is_err());
+    // Dative bonds switch RDKit's writer to V3000 (written, not refused).
+    let block = rdkit_mol_block_2d(&parse("[NH3]->[Pt](Cl)(Cl)<-[NH3]").unwrap()).unwrap();
+    assert!(block.contains("999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 5 4 0 0 0\n"));
     assert!(rdkit_2d_coords(&parse("[Pt@SP1](Cl)(Cl)(N)N").unwrap()).is_err());
 }

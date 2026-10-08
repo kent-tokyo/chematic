@@ -383,8 +383,9 @@ pub fn rdkit_2d_coords(mol: &Molecule) -> Result<Vec<[f64; 2]>, RdkitSmilesError
 /// [`rdkit_2d_coords`], RDKit's kekulization, wedge/hash bonds chosen by
 /// `pickBondsToWedge`, crossed double bonds and `M  CHG`/`RAD`/`ISO` lines.
 ///
-/// Molecules RDKit would write as V3000 (dative bonds, more than 999 atoms
-/// or bonds) are refused. A dummy atom without map number, isotope, charge
+/// Where RDKit switches to V3000 (dative bonds, more than 999 atoms or
+/// bonds, coordinates outside the V2000 fields) the V3000 CTAB is written
+/// as RDKit writes it. A dummy atom without map number, isotope, charge
 /// or hydrogens is written as RDKit writes a bare `*` (chematic does not
 /// keep whether it was bracketed).
 ///

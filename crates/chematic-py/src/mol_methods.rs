@@ -109,12 +109,12 @@ impl Mol {
     /// The MOL block RDKit 2026.03.1 writes for this molecule with its
     /// default 2D depiction: ``Chem.MolToMolBlock(m)`` after
     /// ``m = Chem.MolFromSmiles(s); rdDepictor.Compute2DCoords(m)`` for the
-    /// SMILES ``s`` the molecule was read from (V2000, coordinates of
-    /// :meth:`rdkit_2d_coords`, RDKit's kekulization and wedge bonds).
+    /// SMILES ``s`` the molecule was read from (V2000, or V3000 where RDKit
+    /// switches to it: dative bonds, more than 999 atoms or bonds;
+    /// coordinates of :meth:`rdkit_2d_coords`, RDKit's kekulization and
+    /// wedge bonds).
     ///
-    /// Raises ``ValueError`` like :attr:`rdkit_smiles`, and for molecules
-    /// RDKit would write as V3000 (dative bonds, more than 999 atoms or
-    /// bonds).
+    /// Raises ``ValueError`` like :attr:`rdkit_smiles`.
     ///
     ///     print(chematic.from_smiles("C[C@H](O)F").rdkit_mol_block_2d())
     fn rdkit_mol_block_2d(&self) -> PyResult<String> {

@@ -413,3 +413,19 @@ fn stereoisomer_count_uses_find_potential_stereo() {
         );
     }
 }
+
+/// RDKit 2026.03.1 `MolToMolBlock` switches to V3000 for a dative bond.
+#[test]
+fn mol_block_2d_writes_v3000_for_dative_bonds() {
+    let mol = crate::parse("C[13CH2]O->[Fe]").expect("parses");
+    let block = super::rdkit_mol_block_2d(&mol).unwrap();
+    let want = "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+                M  V30 BEGIN CTAB\nM  V30 COUNTS 4 3 0 0 0\nM  V30 BEGIN ATOM\n\
+                M  V30 1 C -1.979613 -0.136500 0.000000 0\n\
+                M  V30 2 C -0.599379 0.450827 0.000000 0 MASS=13\n\
+                M  V30 3 O 0.599379 -0.450827 0.000000 0\n\
+                M  V30 4 Fe 1.979613 0.136500 0.000000 0 VAL=1\n\
+                M  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\n\
+                M  V30 3 9 3 4\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n";
+    assert_eq!(block, want);
+}
