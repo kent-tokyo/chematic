@@ -153,6 +153,16 @@ impl MolHandle {
         chematic_smiles::canonical_smiles(&self.inner)
     }
 
+    /// Canonical SMILES exactly as RDKit 2026.03.1 writes it
+    /// (`Chem.MolToSmiles(Chem.MolFromSmiles(s))` for a molecule parsed
+    /// from the SMILES `s`). Throws instead of returning a string for
+    /// inputs the RDKit port does not model or that RDKit's sanitization
+    /// rejects; `canonical_smiles` is unchanged.
+    pub fn rdkit_smiles(&self) -> Result<String, JsValue> {
+        chematic_smiles::rdkit_canonical_smiles(&self.inner)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
     /// Average molecular weight (Da).
     pub fn molecular_weight(&self) -> f64 {
         chematic_chem::molecular_weight(&self.inner)

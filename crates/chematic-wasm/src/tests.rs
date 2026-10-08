@@ -192,6 +192,13 @@ fn canonical_smiles_benzene() {
 }
 
 #[test]
+fn rdkit_smiles_matches_rdkit() {
+    // RDKit 2026.03.1: Chem.MolToSmiles(Chem.MolFromSmiles("OC(=O)[C@@H]1CCCN1"))
+    let mol = parse("OC(=O)[C@@H]1CCCN1");
+    assert_eq!(mol.rdkit_smiles().unwrap(), "O=C(O)[C@@H]1CCCN1");
+}
+
+#[test]
 fn parse_cxsmiles_json_preserves_metadata() {
     let json = parse_cxsmiles_json("C~O |$C1;O2$,atomProp:1.role.acceptor,^2:0,Z:0|").unwrap();
     assert!(json.contains(r#""atomLabels":["C1","O2"]"#), "{json}");

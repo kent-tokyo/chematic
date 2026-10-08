@@ -50,6 +50,14 @@ class Mol:
         """Canonical SMILES string."""
         ...
 
+    @property
+    def rdkit_smiles(self) -> str:
+        """Canonical SMILES exactly as RDKit 2026.03.1 writes it
+        (``Chem.MolToSmiles(Chem.MolFromSmiles(s))`` for a molecule read with
+        :func:`from_smiles`). Raises ``ValueError`` for unsupported inputs or
+        molecules RDKit's sanitization rejects; never returns a wrong string."""
+        ...
+
     def smiles_with_atom_order(self) -> tuple[str, list[int]]:
         """Canonical SMILES and ``order``: ``order[k]`` is the index of the
         ``k``-th atom written (its index after re-parsing the string)."""

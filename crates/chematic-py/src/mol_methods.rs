@@ -27,6 +27,30 @@ impl Mol {
         chematic_smiles::canonical_smiles(&self.inner)
     }
 
+    /// Canonical SMILES exactly as RDKit 2026.03.1 writes it.
+    ///
+    /// For a molecule read with :func:`from_smiles` this is the string
+    /// ``Chem.MolToSmiles(Chem.MolFromSmiles(s))`` returns (isomeric,
+    /// canonical, default parameters) — a port of RDKit's parse,
+    /// sanitization, legacy stereo perception and canonical SMILES writer.
+    /// It is separate from :attr:`smiles` (chematic's own canonical SMILES),
+    /// which it does not change.
+    ///
+    /// Raises ``ValueError`` instead of returning a string when the molecule
+    /// uses a feature the port does not model (message starting
+    /// ``"RDKit-compatible SMILES: unsupported input"``, e.g. non-tetrahedral
+    /// chirality or a molecule not read from SMILES) or when RDKit's
+    /// sanitization would reject it (``"RDKit-compatible SMILES:
+    /// sanitization failed"``; ``Chem.MolFromSmiles`` returns ``None``).
+    ///
+    ///     chematic.from_smiles("OC(=O)[C@@H]1CCCN1").rdkit_smiles
+    ///     # 'O=C(O)[C@@H]1CCCN1'
+    #[getter]
+    fn rdkit_smiles(&self) -> PyResult<String> {
+        chematic_smiles::rdkit_canonical_smiles(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// Canonical SMILES together with the atom output order.
     ///
     /// Returns ``(smiles, order)`` where ``smiles`` equals :attr:`smiles` and
