@@ -495,27 +495,13 @@ pub fn topology_bundle(mol: &Molecule) -> TopologyBundle {
 
 // ─── Bertz Complexity ────────────────────────────────────────────────────────
 
-/// Simplified Bertz CT molecular complexity index.
+/// Bertz CT molecular complexity index (Bertz, *J. Am. Chem. Soc.* **103**,
+/// 3599–3601, 1981), bit-identical to RDKit's `GraphDescriptors.BertzCT`
+/// (default `cutoff=100`; aromatic bonds as order 1.5).
 ///
-/// CT = m_total + Σᵢ C(deg_total_i, 2)
-///
-/// where m_total = total bond count including implicit C-H bonds,
-/// deg_total_i = heavy-atom degree + implicit H count for atom i, and
-/// C(n, 2) = n·(n−1)/2.  This is the additive topology formula from
-/// Bertz (1981) JACS 103, 3599 without logarithmic weighting.
+/// Returns 0.0 for fewer than two atoms or more than 1000 atoms.
 pub fn bertz_ct(mol: &Molecule) -> f64 {
-    let mut total_h_bonds = 0u64;
-    let mut complexity = 0.0f64;
-    for (idx, _) in mol.atoms() {
-        let heavy_deg = mol.degree(idx);
-        let h = implicit_hcount(mol, idx) as usize;
-        total_h_bonds += h as u64;
-        let total_deg = heavy_deg + h;
-        complexity += (total_deg * total_deg.saturating_sub(1) / 2) as f64;
-    }
-    let heavy_bonds = mol.bond_count() as u64;
-    let m_total = heavy_bonds + total_h_bonds;
-    complexity + m_total as f64
+    crate::rdkit_graph::bertz_ct(mol)
 }
 
 // ─── Labute ASA ─────────────────────────────────────────────────────────────
@@ -1484,21 +1470,22 @@ mod tests {
         assert!(bz < asp, "benzene BertzCT {bz} should be < aspirin {asp}");
     }
 
+    // Reference values: RDKit 2026.03.1 `GraphDescriptors.BertzCT`.
     #[test]
-    fn bertz_ct_ethane_less_than_propane() {
-        assert!(bertz_ct(&mol("CC")) < bertz_ct(&mol("CCC")));
-    }
-
-    #[test]
-    fn bertz_ct_methane() {
-        // C: deg=0, h=4, total=4, C(4,2)=6; m=4 H bonds → CT = 6+4 = 10
-        assert!(close(bertz_ct(&mol("C")), 10.0, 0.01));
+    fn bertz_ct_small_molecules_match_rdkit() {
+        assert_eq!(bertz_ct(&mol("C")), 0.0);
+        assert_eq!(bertz_ct(&mol("CC")), 0.0);
+        assert_eq!(bertz_ct(&mol("CCO")), 2.7548875021634682);
     }
 
     #[test]
     fn bertz_ct_benzene() {
-        // 6 C with total_deg=3: 6·C(3,2)=18; bonds=6+6=12 → CT = 18+12 = 30
-        assert!(close(bertz_ct(&mol("c1ccccc1")), 30.0, 0.01));
+        assert_eq!(bertz_ct(&mol("c1ccccc1")), 71.96100505779535);
+    }
+
+    #[test]
+    fn bertz_ct_aspirin() {
+        assert_eq!(bertz_ct(&mol("CC(=O)Oc1ccccc1C(=O)O")), 343.2228677267164);
     }
 
     // ── LabuteASA ─────────────────────────────────────────────────────────────
