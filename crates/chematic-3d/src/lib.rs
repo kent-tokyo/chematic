@@ -35,6 +35,7 @@ pub mod pdb;
 pub mod pharmacophore_fp_3d;
 pub mod pipeline_v2;
 pub(crate) mod prng;
+pub mod rdkit_embed;
 pub mod rdkit_shape_descriptors;
 pub mod sasa;
 pub mod shape_descriptors;
