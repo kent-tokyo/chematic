@@ -214,6 +214,71 @@ mod tests {
     use super::*;
     use chematic_smiles::parse;
 
+    /// Reference: RDKit 2026.03.1 `ComputeGasteigerCharges` (`_GasteigerCharge`),
+    /// compared bit for bit. Covers charge splitting over a conjugated
+    /// amidinium and carboxylate, sulfonyl `so2` mode and a nitro group.
+    #[test]
+    fn charges_match_rdkit_exactly() {
+        let cases: [(&str, &[f64]); 4] = [
+            (
+                "C[NH+]=C(N)c1ccccc1",
+                &[
+                    0.07215551602567336,
+                    -0.2771338393004865,
+                    0.2720715966029391,
+                    -0.2869310585025476,
+                    0.06286713146056176,
+                    -0.046773743793832666,
+                    -0.061366422175682056,
+                    -0.06221591245877897,
+                    -0.061366422175682056,
+                    -0.046773743793832666,
+                ],
+            ),
+            (
+                "CC(=O)[O-]",
+                &[
+                    -0.02496536893238246,
+                    0.03827859892113979,
+                    -0.5504770280073037,
+                    -0.5504770280073037,
+                ],
+            ),
+            (
+                "c1ccsc1S(=O)(=O)N",
+                &[
+                    -0.031117254920057964,
+                    -0.050102663706403726,
+                    -0.007900599221896128,
+                    -0.13100828577209192,
+                    0.13414824857655913,
+                    0.2470289930063984,
+                    -0.20647805897111213,
+                    -0.20647805897111213,
+                    -0.22392952188652163,
+                ],
+            ),
+            (
+                "O=[N+]([O-])c1ccccc1",
+                &[
+                    -0.2583096384435056,
+                    0.06218339391776295,
+                    -0.2583096384435056,
+                    0.2689216270439583,
+                    0.015874619206005438,
+                    -0.05543595891821206,
+                    -0.061769815628152806,
+                    -0.05543595891821206,
+                    0.015874619206005438,
+                ],
+            ),
+        ];
+        for (smiles, want) in cases {
+            let got = gasteiger_charges(&parse(smiles).unwrap());
+            assert_eq!(got, want, "{smiles}");
+        }
+    }
+
     #[test]
     fn methanol_oxygen_more_negative_than_carbon() {
         let mol = parse("CO").unwrap();
