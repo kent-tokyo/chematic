@@ -16,6 +16,21 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- SMILES (#769): a neutral oxygen with more than two bonds or a neutral
+  fluorine with more than one (`O=O1C=CC=C1`, `CO(C)C`) is a typed
+  `SmilesError::InvalidValence` error instead of a molecule that
+  aromaticity perception then aromatized; Python raises
+  `ChematicInputError` with code `smiles_valence`. Charged and hypervalent
+  atoms are unchanged; SMIRKS templates are read without the check
+  (`chematic_smiles::parse_template`). New public enum variant.
+- 3D (#739): a stereo-safe (`RepairAndVerify`) pipeline run that ends in
+  `FinalStereoViolation` embeds again from up to seven other seeds before
+  returning the failure. MMFF94 relaxed penam bridgeheads through inversion
+  from about a quarter of seeds on every platform (the `libm` change had
+  only moved which seeds); over ten seeds of the 265 A6 rows, 32 of 2,650
+  runs failed and none now. A run that succeeds at its own seed is
+  unchanged. CI gates the A6 rows on the independent scorer on Linux, macOS
+  and Windows. Record: `benchmarks/2026-10-08-issues-769-739.md`.
 - 2D layout: a ring hung on an atom with six or more bonds (an octahedral
   metal with pyridines) is drawn 1.5 bonds out; as drawn, 5 of 15,000 rows
   have a clash (was 23; RDKit 276) and 213 a crossing. Record:

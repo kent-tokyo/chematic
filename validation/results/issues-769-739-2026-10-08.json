@@ -1,0 +1,502 @@
+{
+ "schema": "chematic.issues-769-739.v1",
+ "date": "2026-10-08",
+ "issues": [
+  "https://github.com/kent-tokyo/chematic/issues/769",
+  "https://github.com/kent-tokyo/chematic/issues/739"
+ ],
+ "host": "Linux x86-64 (glibc), CPython 3.9.23 for the A6 lanes, 3.11 for the chemistry gates",
+ "a6_protocol": {
+  "arm": "chematic_pipeline_v2_mmff94_strict_stereo_safe",
+  "seed": 20260801,
+  "attempts": 8,
+  "force_field_max_iterations": 200,
+  "row_timeout_ms": 20000,
+  "scorer": "pipeline_v2_vs_rdkit_common_scorer + scripts/a6_platform_gate.py"
+ },
+ "wheels": {
+  "published_v1.0.31_linux_cp39": "3bcecd14c121a2ee7c53428fa4c2938998d5252763d17926b8efc8566e15268a",
+  "published_v1.0.37_linux_cp39": "660e12e5292cbd82ce111583e27eba539cb72c30771a5777c909b979cabb38fe"
+ },
+ "a6_gates": {
+  "published_v1.0.31": {
+   "scope": "v31-linux",
+   "rows": 265,
+   "successes": 263,
+   "independently_sound": 263,
+   "stereo_clean": 263,
+   "with_gross_clash": 0,
+   "passed": false,
+   "coordinates_sha256": "ef9310edc209813c50256203be768e34c699828a51705045cb3251a1f2707dcf",
+   "failed_rows": [
+    53,
+    246
+   ],
+   "rows_identical_to_reference": 0
+  },
+  "published_v1.0.37": {
+   "scope": "v37-linux",
+   "rows": 265,
+   "successes": 265,
+   "independently_sound": 265,
+   "stereo_clean": 265,
+   "with_gross_clash": 0,
+   "passed": true,
+   "coordinates_sha256": "b1ce930f542ee3ac7a674acadc4caa43bc2d63df570381557db76fb5fd9de804",
+   "rows_identical_to_reference": 265
+  },
+  "source_glibc_math": {
+   "scope": "source-hostmath-linux",
+   "rows": 265,
+   "successes": 263,
+   "independently_sound": 263,
+   "stereo_clean": 263,
+   "with_gross_clash": 0,
+   "passed": false,
+   "coordinates_sha256": "7156784cb1e34e1f2a070e103a859295d9837bcc73d0f97efe107647812bedd7",
+   "failed_rows": [
+    53,
+    246
+   ],
+   "rows_identical_to_reference": 0
+  },
+  "source_glibc_math_with_reseed": {
+   "scope": "source-hostmath-reseed-linux",
+   "rows": 265,
+   "successes": 265,
+   "independently_sound": 265,
+   "stereo_clean": 265,
+   "with_gross_clash": 0,
+   "passed": true,
+   "coordinates_sha256": "88894f2e499971b6cb591f94fadbc32e5733a10514c59ade7851aa76fcfe78a1",
+   "rows_identical_to_reference": 263
+  },
+  "source_with_reseed": {
+   "scope": "source-linux-cp39",
+   "rows": 265,
+   "successes": 265,
+   "independently_sound": 265,
+   "stereo_clean": 265,
+   "with_gross_clash": 0,
+   "passed": true,
+   "coordinates_sha256": "b1ce930f542ee3ac7a674acadc4caa43bc2d63df570381557db76fb5fd9de804",
+   "rows_identical_to_reference": 265
+  },
+  "note": "rows_identical_to_reference: published v1.0.31, v1.0.37 and the glibc-math build against v1.0.37's rows; the glibc-math build with the reseed against the glibc-math build without it; the source with the reseed against v1.0.37."
+ },
+ "matched_host_stage_comparison_rows_53_246": {
+  "note": "Same Linux host; v1.0.31 and the glibc-math source build (fmath switched to f64::sin etc.) use glibc's transcendental functions, v1.0.37 the libm crate. Types and charges: mmff94_numeric_atom_types and mmff94_charges_numeric identical across the three.",
+  "by_build": {
+   "v31": {
+    "53": {
+     "status": "FinalStereoViolation",
+     "embed_attempts": 1,
+     "torsion_opt_energy_after": 31.468529768462407,
+     "stereo_before": [
+      [
+       4,
+       "satisfied"
+      ],
+      [
+       5,
+       "satisfied"
+      ],
+      [
+       13,
+       "satisfied"
+      ]
+     ],
+     "stereo_after_repair": [
+      [
+       4,
+       "satisfied"
+      ],
+      [
+       5,
+       "satisfied"
+      ],
+      [
+       13,
+       "satisfied"
+      ]
+     ],
+     "mmff_energy_before": 729.0885440052621,
+     "mmff_energy_after": 139.13231072390838,
+     "mmff_iterations": 44,
+     "mmff94_termination": null,
+     "final_stereo": [
+      [
+       4,
+       "violated"
+      ],
+      [
+       5,
+       "satisfied"
+      ],
+      [
+       13,
+       "satisfied"
+      ]
+     ]
+    },
+    "246": {
+     "status": "FinalStereoViolation",
+     "embed_attempts": 1,
+     "torsion_opt_energy_after": 36.46043657196597,
+     "stereo_before": [
+      [
+       3,
+       "satisfied"
+      ],
+      [
+       10,
+       "satisfied"
+      ],
+      [
+       24,
+       "satisfied"
+      ]
+     ],
+     "stereo_after_repair": [
+      [
+       3,
+       "satisfied"
+      ],
+      [
+       10,
+       "satisfied"
+      ],
+      [
+       24,
+       "satisfied"
+      ]
+     ],
+     "mmff_energy_before": 786.4357298950932,
+     "mmff_energy_after": 178.3277828963802,
+     "mmff_iterations": 41,
+     "mmff94_termination": null,
+     "final_stereo": [
+      [
+       3,
+       "satisfied"
+      ],
+      [
+       10,
+       "satisfied"
+      ],
+      [
+       24,
+       "violated"
+      ]
+     ]
+    }
+   },
+   "vstd": {
+    "53": {
+     "status": "FinalStereoViolation",
+     "embed_attempts": 1,
+     "torsion_opt_energy_after": 31.468529768462407,
+     "stereo_before": [
+      [
+       4,
+       "satisfied"
+      ],
+      [
+       5,
+       "satisfied"
+      ],
+      [
+       13,
+       "satisfied"
+      ]
+     ],
+     "stereo_after_repair": [
+      [
+       4,
+       "satisfied"
+      ],
+      [
+       5,
+       "satisfied"
+      ],
+      [
+       13,
+       "satisfied"
+      ]
+     ],
+     "mmff_energy_before": 736.3154757986516,
+     "mmff_energy_after": 237.1707027820982,
+     "mmff_iterations": 39,
+     "mmff94_termination": "constraint_rejected_fallback",
+     "final_stereo": [
+      [
+       4,
+       "violated"
+      ],
+      [
+       5,
+       "satisfied"
+      ],
+      [
+       13,
+       "violated"
+      ]
+     ]
+    },
+    "246": {
+     "status": "FinalStereoViolation",
+     "embed_attempts": 1,
+     "torsion_opt_energy_after": 36.46043657196597,
+     "stereo_before": [
+      [
+       3,
+       "satisfied"
+      ],
+      [
+       10,
+       "satisfied"
+      ],
+      [
+       24,
+       "satisfied"
+      ]
+     ],
+     "stereo_after_repair": [
+      [
+       3,
+       "satisfied"
+      ],
+      [
+       10,
+       "satisfied"
+      ],
+      [
+       24,
+       "satisfied"
+      ]
+     ],
+     "mmff_energy_before": 801.4825745504895,
+     "mmff_energy_after": 124.87964691501837,
+     "mmff_iterations": 97,
+     "mmff94_termination": "constraint_rejected_fallback",
+     "final_stereo": [
+      [
+       3,
+       "satisfied"
+      ],
+      [
+       10,
+       "satisfied"
+      ],
+      [
+       24,
+       "violated"
+      ]
+     ]
+    }
+   },
+   "v37": {
+    "53": {
+     "status": "success",
+     "embed_attempts": 1,
+     "torsion_opt_energy_after": 34.23851972876072,
+     "stereo_before": [
+      [
+       4,
+       "satisfied"
+      ],
+      [
+       5,
+       "satisfied"
+      ],
+      [
+       13,
+       "satisfied"
+      ]
+     ],
+     "stereo_after_repair": [
+      [
+       4,
+       "satisfied"
+      ],
+      [
+       5,
+       "satisfied"
+      ],
+      [
+       13,
+       "satisfied"
+      ]
+     ],
+     "mmff_energy_before": 186.82144644633948,
+     "mmff_energy_after": 8.703797983582298,
+     "mmff_iterations": 172,
+     "mmff94_termination": "gradient_converged",
+     "final_stereo": [
+      [
+       4,
+       "satisfied"
+      ],
+      [
+       5,
+       "satisfied"
+      ],
+      [
+       13,
+       "satisfied"
+      ]
+     ]
+    },
+    "246": {
+     "status": "success",
+     "embed_attempts": 1,
+     "torsion_opt_energy_after": 21.879055544580904,
+     "stereo_before": [
+      [
+       3,
+       "satisfied"
+      ],
+      [
+       10,
+       "satisfied"
+      ],
+      [
+       24,
+       "satisfied"
+      ]
+     ],
+     "stereo_after_repair": [
+      [
+       3,
+       "satisfied"
+      ],
+      [
+       10,
+       "satisfied"
+      ],
+      [
+       24,
+       "satisfied"
+      ]
+     ],
+     "mmff_energy_before": 749.3308913170546,
+     "mmff_energy_after": 21.534023827166692,
+     "mmff_iterations": 200,
+     "mmff94_termination": "iteration_limit",
+     "final_stereo": [
+      [
+       3,
+       "satisfied"
+      ],
+      [
+       10,
+       "satisfied"
+      ],
+      [
+       24,
+       "satisfied"
+      ]
+     ]
+    }
+   }
+  }
+ },
+ "seed_scans": {
+  "beta_lactams_300_seeds_200_iterations": {
+   "published_v1.0.37": {
+    "penicillin_core": 69,
+    "chembl_tier_b_0181": 85
+   },
+   "source_glibc_math": {
+    "penicillin_core": 64,
+    "chembl_tier_b_0181": 91
+   },
+   "source_glibc_math_with_reseed": {
+    "penicillin_core": 0,
+    "chembl_tier_b_0181": 0
+   },
+   "source_with_reseed": {
+    "penicillin_core": 0,
+    "chembl_tier_b_0181": 0
+   }
+  },
+  "a6_265_rows_x_10_seeds": {
+   "seeds": [
+    20260801,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "published_v1.0.37": {
+    "runs": 2650,
+    "final_stereo_violation": 32,
+    "rows": 15
+   },
+   "source_glibc_math_with_reseed": {
+    "runs": 2650,
+    "final_stereo_violation": 0
+   },
+   "source_with_reseed": {
+    "runs": 2650,
+    "final_stereo_violation": 0
+   }
+  }
+ },
+ "a6_1000_iterations": {
+  "single_conformer_rows_identical_to_v1.0.37": 265,
+  "lowest_of_10_rows_changed": [
+   "chembl_tier_b_0163",
+   "chembl_tier_b_0181"
+  ],
+  "lowest_of_10_quality": {
+   "rows": 265,
+   "scored": 265,
+   "statuses": {
+    "scored": 265
+   },
+   "chematic_relaxed_minus_rdkit_best_kcal_mol": {
+    "median": 2.5322524521698142e-08,
+    "p90": 3.6918431770655786,
+    "max": 11.918073769790297
+   },
+   "chematic_relaxed_within_1_kcal_mol_of_rdkit_best": 198,
+   "chematic_relaxed_at_or_below_rdkit_best": 159,
+   "rdkit_first_minus_rdkit_best_kcal_mol": {
+    "median": 1.410405829444116,
+    "p90": 11.551960545365532,
+    "max": 22.279465495118473
+   },
+   "rdkit_first_within_1_kcal_mol_of_rdkit_best": 125,
+   "chematic_fixed_minus_relaxed_kcal_mol": {
+    "median": 6.136668831113504,
+    "p90": 34.752830211293315,
+    "max": 61.924031485399354
+   },
+   "rmsd_to_own_minimum_angstrom": {
+    "median": 0.2796770231822249,
+    "p90": 0.862070673714743,
+    "max": 3.2037385322050658
+   },
+   "rmsd_to_closest_rdkit_conformer_angstrom": {
+    "median": 0.6318490608843401,
+    "p90": 2.0774407120874576,
+    "max": 6.1342379921364625
+   }
+  }
+ },
+ "issue_769": {
+  "repository_smiles_scanned": 226477,
+  "newly_rejected": [
+   "CCO1=O=C1C2=CC=C(O2)C(C)(C)C (scripts/nci_first_5k_smiles_only.smi, rdkit-js-browser-candidates-v1.smi; RDKit rejects it)"
+  ],
+  "chemistry_gates_vs_v1.0.37_expected": "pass, no differences (reaction 83, SMARTS 310k, CIP, hybridization, MMFF94 typing, MOL writer, BioTransformer 400-reactant corpus)",
+  "xsmarts_autoconf": "75/83, 0 unexpected",
+  "template_regression_found_and_fixed": "BTMR0839's product template has an oxygen with H1X2 and two ring bonds; read as a molecule it now failed with InvalidValence and the rule refused 400 reactants. SMIRKS templates are read with parse_template (no valence check); the counts are back to the expected ones."
+ }
+}

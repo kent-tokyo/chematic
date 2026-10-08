@@ -207,6 +207,15 @@ binding and the WASM package
 | 3D pipeline v2 | unsupported (Pt complex, no MMFF94 type) | `PipelineV2Error(ValueError)` with `diagnostics.cause.kind` | envelope `ok: false`, `error.cause.kind` |
 | Nucleic-acid document | ambiguous, unsupported, resource_limit | envelope `ok: false`, `error.code`, `error.path` | same envelope |
 
+A SMILES whose graph gives a neutral oxygen more than two bonds or a neutral
+fluorine more than one (`O=O1C=CC=C1`, `CO(C)C`, `F(C)C`; #769) is not a
+molecule: the Rust parser returns `SmilesError::InvalidValence { element,
+atom, valence, max }` and Python raises `ChematicInputError` with
+`code="smiles_valence"`. The valence counts bond orders and explicit
+hydrogens (an aromatic bond counts one, a dative bond only at its acceptor).
+Charged atoms (`[O+]`, `[o+]`) and the hypervalent states of S, P, N and the
+heavier halogens are not checked.
+
 So the reaction, 3D and nucleic-acid APIs report a stable machine-readable
 kind in both bindings. In Python, the parsers raise `ChematicInputError`, a
 `ValueError` subclass (`except ValueError` keeps working) whose `category`
