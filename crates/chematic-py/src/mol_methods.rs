@@ -2710,6 +2710,53 @@ impl Mol {
             .collect()
     }
 
+    /// RDKit-compatible ``Chem.MolToSmarts(m, isomericSmiles=isomeric,
+    /// rootedAtAtom=rooted_at_atom)`` (input atom order, every atom
+    /// bracketed, every bond explicit).
+    #[pyo3(signature = (isomeric = true, rooted_at_atom = None))]
+    fn rdkit_smarts(&self, isomeric: bool, rooted_at_atom: Option<usize>) -> PyResult<String> {
+        chematic_smiles::rdkit_smarts(&self.inner, isomeric, rooted_at_atom)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit-compatible ``Chem.MolToPDBBlock(m)``; ``coords`` (one
+    /// ``[x, y, z]`` per atom) stands for a conformer, otherwise zero
+    /// coordinates are written as RDKit does.
+    #[pyo3(signature = (coords = None))]
+    fn rdkit_pdb_block(&self, coords: Option<Vec<[f64; 3]>>) -> PyResult<String> {
+        chematic_smiles::rdkit_pdb_block(&self.inner, coords.as_deref())
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit-compatible ``Chem.MolToCXSmarts(m)``.
+    fn rdkit_cx_smarts(&self) -> PyResult<String> {
+        chematic_smiles::rdkit_cx_smarts(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit-compatible Bemis-Murcko scaffold:
+    /// ``Chem.MolToSmiles(MurckoScaffold.GetScaffoldForMol(m))``.
+    fn rdkit_murcko_scaffold(&self) -> PyResult<String> {
+        chematic_smiles::rdkit_murcko_scaffold(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit-compatible ``EnumerateStereoisomers.GetStereoisomerCount(m)``
+    /// (default options): ``2 ** (number of flippable centres/bonds)``.
+    fn rdkit_stereoisomer_count(&self) -> PyResult<u128> {
+        chematic_smiles::rdkit_stereoisomer_count(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit-compatible ``Chem.FindMolChiralCenters(m, force=True,
+    /// includeUnassigned=include_unassigned)`` (legacy stereo perception,
+    /// RDKit 2026.03's default): ``[(atom_index, "R" | "S" | "?")]``.
+    #[pyo3(signature = (include_unassigned = true))]
+    fn rdkit_chiral_centers(&self, include_unassigned: bool) -> PyResult<Vec<(usize, String)>> {
+        chematic_smiles::rdkit_chiral_centers(&self.inner, include_unassigned)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// Return a copy with all implicit hydrogens made explicit.
     fn add_hydrogens(&self) -> Mol {
         Mol {

@@ -44,6 +44,10 @@ API_NOTES = {
         "mol_wt": "Mol.rdkit_mw", "tpsa": "Mol.rdkit_tpsa",
         "aromatic_rings": "Mol.rdkit_aromatic_ring_count",
         "molblock_rt": "Mol.to_mol_block() (default writer)",
+        "murcko_scaffold": "Mol.rdkit_murcko_scaffold (RDKit MurckoDecompose on the RDKit model)",
+        "smarts_write": "Mol.rdkit_smarts", "cx_smarts": "Mol.rdkit_cx_smarts",
+        "pdb_block": "Mol.rdkit_pdb_block", "stereoisomer_count": "Mol.rdkit_stereoisomer_count",
+        "chiral_centers": "Mol.rdkit_chiral_centers(include_unassigned=True)",
         "inchi": "Mol.standard_inchi (needs the native-inchi build feature)",
     },
     "cosmolkit": {
@@ -138,7 +142,7 @@ def rdkit_engine():
         ops["smarts:" + q] = (lambda qm: lambda m: _smarts_sets(m.GetSubstructMatches(qm, maxMatches=100000)))(qm)
     from rdkit.Avalon import pyAvalonTools
     from rdkit.Chem import GraphDescriptors, rdMolDescriptors as RD
-    from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers
+    from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers, GetStereoisomerCount
     from rdkit.Chem.Scaffolds import MurckoScaffold
     gen3 = rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=2048)
     gen_chiral = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048, includeChirality=True)
@@ -156,6 +160,12 @@ def rdkit_engine():
         "smiles_addhs": lambda m: Chem.MolToSmiles(Chem.AddHs(m)),
         "inchi_read": inchi_rt,
         "murcko_scaffold": lambda m: Chem.MolToSmiles(MurckoScaffold.GetScaffoldForMol(m)),
+        "smarts_write": lambda m: Chem.MolToSmarts(m),
+        "cx_smarts": lambda m: Chem.MolToCXSmarts(m),
+        "pdb_block": lambda m: Chem.MolToPDBBlock(m),
+        "stereoisomer_count": lambda m: GetStereoisomerCount(m),
+        "chiral_centers": lambda m: [list(c) for c in
+                                     Chem.FindMolChiralCenters(Chem.Mol(m), includeUnassigned=True)],
         "morgan3_2048": lambda m: list(gen3.GetFingerprint(m).GetOnBits()),
         "morgan2_chiral": lambda m: list(gen_chiral.GetFingerprint(m).GetOnBits()),
         "morgan2_countsim": lambda m: list(gen_count.GetFingerprint(m).GetOnBits()),
@@ -301,7 +311,12 @@ def chematic_engine():
         "ipc": lambda m: m.ipc,
         "smiles_addhs": lambda m: m.add_hydrogens().rdkit_smiles,
         "inchi_read": lambda m: _inchi_read(m),
-        "murcko_scaffold": lambda m: m.scaffold().rdkit_smiles,
+        "murcko_scaffold": lambda m: m.rdkit_murcko_scaffold(),
+        "smarts_write": lambda m: m.rdkit_smarts(),
+        "cx_smarts": lambda m: m.rdkit_cx_smarts(),
+        "pdb_block": lambda m: m.rdkit_pdb_block(),
+        "stereoisomer_count": lambda m: m.rdkit_stereoisomer_count(),
+        "chiral_centers": lambda m: [list(c) for c in m.rdkit_chiral_centers(include_unassigned=True)],
         "morgan3_2048": lambda m: _bits(m.rdkit_ecfp_config(3, 2048)),
         "morgan2_chiral": lambda m: _bits(m.rdkit_ecfp_config(2, 2048, include_chirality=True)),
         "morgan2_countsim": lambda m: _bits(m.rdkit_ecfp_config(2, 2048, count_simulation=True)),
@@ -402,6 +417,11 @@ def cosmolkit_engine():
         "inchi_read": lambda m: (lambda i: ck.Molecule.from_inchi(i).to_smiles() if i else None)(
             rdkit_inchi_of(rdkit_readback(m.to_smiles(), "smiles"))),
         "murcko_scaffold": lambda m: m.murcko_scaffold().to_smiles(),
+        "smarts_write": lambda m: m.to_smarts(),
+        "cx_smarts": lambda m: m.to_cx_smarts(),
+        "pdb_block": lambda m: m.to_pdb_block(),
+        "stereoisomer_count": lambda m: m.stereoisomer_count(),
+        "chiral_centers": lambda m: [list(c) for c in m.find_chiral_centers(include_unassigned=True)],
         "morgan3_2048": lambda m: on(m.fingerprint_morgan(radius=3, n_bits=2048)),
         "morgan2_chiral": lambda m: on(m.fingerprint_morgan(radius=2, n_bits=2048, include_chirality=True)),
         "morgan2_countsim": lambda m: on(m.fingerprint_morgan(radius=2, n_bits=2048, count_simulation=True)),

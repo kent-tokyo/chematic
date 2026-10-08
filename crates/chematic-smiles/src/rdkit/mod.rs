@@ -41,11 +41,14 @@ mod kekulize;
 mod mol;
 mod molblock;
 mod molblock2d;
+mod murcko;
 mod parse;
+mod pdb;
 mod periodic;
 mod pyrandom;
 mod rank;
 mod sanitize;
+mod smarts_write;
 mod stereo;
 mod write;
 
@@ -233,6 +236,119 @@ pub fn rdkit_stereoisomer_smiles(
         a.cip_code = None;
     }
     enumerate::enumerate(&m, max_isomers)
+}
+
+/// `Chem.MolToPDBBlock(m)` for `m = Chem.MolFromSmiles(s)` (RDKit
+/// 2026.03.1, default flavor): `HETATM` lines named per element (`C1`,
+/// `C2`, ...) in residue `UNL`, then `CONECT` records of the canonical
+/// Kekulé structure (bond orders as repeated entries). `coords` (one per
+/// atom of RDKit's molecule) stands for a conformer; without it RDKit
+/// writes zero coordinates.
+pub fn rdkit_pdb_block(
+    mol: &Molecule,
+    coords: Option<&[[f64; 3]]>,
+) -> Result<String, RdkitSmilesError> {
+    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    pdb::mol_to_pdb_block(&m, coords)
+}
+
+/// `Chem.MolToSmarts(m, isomericSmiles, rootedAtAtom)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1): atoms as `[#n]`/`[Sym]`
+/// with isotope, chirality (and `H` on chiral atoms with one explicit H),
+/// charge and map number, every bond explicit, input atom order (no
+/// canonicalization).
+pub fn rdkit_smarts(
+    mol: &Molecule,
+    isomeric: bool,
+    rooted_at_atom: Option<usize>,
+) -> Result<String, RdkitSmilesError> {
+    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    Ok(smarts_write::mol_to_smarts(&m, isomeric, rooted_at_atom, true)?.0)
+}
+
+/// `Chem.MolToCXSmarts(m)` for `m = Chem.MolFromSmiles(s)` (RDKit
+/// 2026.03.1): [`rdkit_smarts`] with dative bonds written as `-` plus the
+/// CXSMILES extension (radicals `^n:`, coordinate bonds `C:`). Molecules
+/// with enhanced stereo groups are refused.
+pub fn rdkit_cx_smarts(mol: &Molecule) -> Result<String, RdkitSmilesError> {
+    if !mol.stereo_groups().is_empty() {
+        return Err(RdkitSmilesError::Unsupported(
+            "enhanced stereo groups".into(),
+        ));
+    }
+    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    let (mut res, atoms, bonds) = smarts_write::mol_to_smarts(&m, true, None, false)?;
+    if !res.is_empty() {
+        let ext = smarts_write::cx_extensions(&m, &atoms, &bonds);
+        if !ext.is_empty() {
+            res.push(' ');
+            res.push_str(&ext);
+        }
+    }
+    Ok(res)
+}
+
+/// `Chem.MolToSmiles(MurckoScaffold.GetScaffoldForMol(m))` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1): `MurckoDecompose` keeps
+/// ring atoms, linkers between ring systems and atoms doubly bonded to
+/// them, fixes the hydrogens of the atoms that lose a neighbour as RDKit
+/// does (aromatic heteroatoms and aromatic carbocations get one explicit H;
+/// bracket or chiral atoms get their implicit hydrogens back and lose their
+/// chiral tag), then the scaffold's stereo is re-perceived by `MolToSmiles`.
+pub fn rdkit_murcko_scaffold(mol: &Molecule) -> Result<String, RdkitSmilesError> {
+    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    let mut scaffold = murcko::murcko_decompose(&m)?;
+    stereo::legacy_stereo_perception(&mut scaffold, true, false);
+    write::mol_to_smiles(&scaffold, &RdkitSmilesParams::default())
+}
+
+/// `EnumerateStereoisomers.GetStereoisomerCount(m)` (default options) for
+/// `m = Chem.MolFromSmiles(s)`: `2 ** len(flippers)`. `Err` where the port
+/// cannot model the molecule (including enhanced stereo groups).
+pub fn rdkit_stereoisomer_count(mol: &Molecule) -> Result<u128, RdkitSmilesError> {
+    if !mol.stereo_groups().is_empty() {
+        return Err(RdkitSmilesError::Unsupported(
+            "enhanced stereo groups".into(),
+        ));
+    }
+    let mut m = parse::from_chematic(mol)?;
+    sanitize::remove_hs_and_sanitize(&mut m)?;
+    stereo::legacy_stereo_perception(&mut m, true, true);
+    for a in &mut m.atoms {
+        a.cip_code = None;
+    }
+    let (atoms, bonds) = enumerate::flippers(&m);
+    let n = atoms.len() + bonds.len();
+    if n >= 128 {
+        return Err(RdkitSmilesError::Unsupported(format!(
+            "2^{n} stereoisomers"
+        )));
+    }
+    Ok(1u128 << n)
+}
+
+/// `Chem.FindMolChiralCenters(m, force=True, includeUnassigned=...)` for
+/// `m = Chem.MolFromSmiles(s)` with RDKit 2026.03's default (legacy) stereo
+/// perception: `(atom index, "R" | "S" | "?")` in atom order, indices in
+/// RDKit's atom numbering.
+pub fn rdkit_chiral_centers(
+    mol: &Molecule,
+    include_unassigned: bool,
+) -> Result<Vec<(usize, String)>, RdkitSmilesError> {
+    let (mut m, _) = rdkit_mol_from_smiles(mol)?;
+    for a in &mut m.atoms {
+        a.chirality_possible = false;
+    }
+    stereo::legacy_stereo_perception(&mut m, true, include_unassigned);
+    Ok(m.atoms
+        .iter()
+        .enumerate()
+        .filter_map(|(i, a)| match a.cip_code {
+            Some(c) => Some((i, (c as char).to_string())),
+            None if include_unassigned && a.chirality_possible => Some((i, "?".to_string())),
+            None => None,
+        })
+        .collect())
 }
 
 /// The 2D coordinates RDKit 2026.03.1's default depiction gives the atoms

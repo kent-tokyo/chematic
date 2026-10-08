@@ -225,7 +225,7 @@ fn fragment_smiles_construct(
 
 /// `MolOps::getMolFrags`: atom lists of the connected components, numbered
 /// from the lowest atom index, each list ascending.
-fn mol_frags(mol: &Mol) -> Vec<Vec<usize>> {
+pub(crate) fn mol_frags(mol: &Mol) -> Vec<Vec<usize>> {
     let n = mol.atoms.len();
     let mut frag_of = vec![usize::MAX; n];
     let mut frags: Vec<Vec<usize>> = Vec::new();
@@ -255,7 +255,7 @@ fn mol_frags(mol: &Mol) -> Vec<Vec<usize>> {
 
 /// The fragment of `mol` on `atoms` (ascending), keeping atom and bond
 /// order, properties and the rings inside it.
-fn fragment(mol: &Mol, atoms: &[usize]) -> Mol {
+pub(crate) fn fragment(mol: &Mol, atoms: &[usize]) -> Mol {
     let mut new_idx = vec![usize::MAX; mol.atoms.len()];
     for (k, &a) in atoms.iter().enumerate() {
         new_idx[a] = k;

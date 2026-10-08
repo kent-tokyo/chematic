@@ -80,19 +80,14 @@ fn assign(
     m
 }
 
-/// The distinct canonical SMILES `EnumerateStereoisomers` yields for the
-/// sanitized, stereo-perceived `base` (sorted), including RDKit's
-/// deterministic default random sample when there are more than
-/// `max_isomers` flip combinations; `Err` only for `max_isomers == 0` with
-/// more than 16 flips.
-pub(crate) fn enumerate(base: &Mol, max_isomers: usize) -> Result<Vec<String>, RdkitSmilesError> {
+/// The centres and double bonds `EnumerateStereoisomers` flips (its
+/// `_getFlippers`): RDKit's candidates that the perception retains under a
+/// few assignments (a pseudo-asymmetric centre survives only for some).
+pub(crate) fn flippers(base: &Mol) -> (Vec<usize>, Vec<(usize, usize, usize)>) {
     let (atoms, bonds) = candidates(base);
-    let n = atoms.len() + bonds.len();
-    if n == 0 {
-        return Ok(vec![mol_to_smiles(base, &RdkitSmilesParams::default())?]);
+    if atoms.is_empty() && bonds.is_empty() {
+        return (atoms, bonds);
     }
-    // Keep the candidates the perception retains under a few assignments
-    // (a pseudo-asymmetric centre survives only for some of them).
     let mut keep_atom = vec![false; atoms.len()];
     let mut keep_bond = vec![false; bonds.len()];
     let probes: [fn(usize) -> bool; 4] = [|_| true, |_| false, |i| i % 2 == 0, |i| i % 3 == 0];
@@ -117,6 +112,20 @@ pub(crate) fn enumerate(base: &Mol, max_isomers: usize) -> Result<Vec<String>, R
         .filter(|&(_, &k)| k)
         .map(|(&b, _)| b)
         .collect();
+    (atoms, bonds)
+}
+
+/// The distinct canonical SMILES `EnumerateStereoisomers` yields for the
+/// sanitized, stereo-perceived `base` (sorted), including RDKit's
+/// deterministic default random sample when there are more than
+/// `max_isomers` flip combinations; `Err` only for `max_isomers == 0` with
+/// more than 16 flips.
+pub(crate) fn enumerate(base: &Mol, max_isomers: usize) -> Result<Vec<String>, RdkitSmilesError> {
+    let (atoms, bonds) = candidates(base);
+    if atoms.is_empty() && bonds.is_empty() {
+        return Ok(vec![mol_to_smiles(base, &RdkitSmilesParams::default())?]);
+    }
+    let (atoms, bonds) = flippers(base);
     let n = atoms.len() + bonds.len();
     if n == 0 {
         let m = assign(base, &[], &[], |_| false);
