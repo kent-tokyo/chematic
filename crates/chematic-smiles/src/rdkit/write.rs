@@ -46,10 +46,11 @@ fn atom_needs_bracket(mol: &Mol, a: usize, at_string: &str, isomeric: bool) -> b
     mol.nbrs(a).any(|nb| periodic::is_metal(mol.atoms[nb].anum))
 }
 
-/// `SmilesWrite::GetAtomSmiles`.
-fn atom_smiles(mol: &Mol, a: usize, p: &RdkitSmilesParams) -> String {
+/// `SmilesWrite::GetAtomSmiles`, appended to `res`.
+fn atom_smiles(res: &mut String, mol: &Mol, a: usize, p: &RdkitSmilesParams) {
+    use std::fmt::Write;
     let atom = &mol.atoms[a];
-    let mut symb = periodic::symbol(atom.anum).to_string();
+    let symb = periodic::symbol(atom.anum);
     let at_string = match atom.chiral {
         _ if !p.isomeric => "",
         ChiralTag::Cw => "@@",
@@ -57,51 +58,49 @@ fn atom_smiles(mol: &Mol, a: usize, p: &RdkitSmilesParams) -> String {
         ChiralTag::Unspecified => "",
     };
     let needs_bracket = p.all_hs_explicit || atom_needs_bracket(mol, a, at_string, p.isomeric);
-    let mut res = String::new();
     if needs_bracket {
         res.push('[');
     }
     if atom.isotope != 0 && p.isomeric {
-        res.push_str(&atom.isotope.to_string());
+        let _ = write!(res, "{}", atom.isotope);
     }
     if !p.kekule
         && atom.aromatic
         && symb.as_bytes()[0].is_ascii_uppercase()
         && matches!(atom.anum, 5 | 6 | 7 | 8 | 14 | 15 | 16 | 33 | 34 | 52)
     {
-        let lower = symb[..1].to_ascii_lowercase();
-        symb.replace_range(..1, &lower);
+        res.push(char::from(symb.as_bytes()[0].to_ascii_lowercase()));
+        res.push_str(&symb[1..]);
+    } else {
+        res.push_str(symb);
     }
-    res.push_str(&symb);
     res.push_str(at_string);
     if needs_bracket {
         let tot_hs = mol.total_num_hs(a);
         if tot_hs > 0 {
             res.push('H');
             if tot_hs > 1 {
-                res.push_str(&tot_hs.to_string());
+                let _ = write!(res, "{tot_hs}");
             }
         }
         let fc = atom.charge;
         if fc > 0 {
             res.push('+');
             if fc > 1 {
-                res.push_str(&fc.to_string());
+                let _ = write!(res, "{fc}");
             }
         } else if fc < 0 {
             if fc < -1 {
-                res.push_str(&fc.to_string());
+                let _ = write!(res, "{fc}");
             } else {
                 res.push('-');
             }
         }
         if let Some(m) = atom.map {
-            res.push(':');
-            res.push_str(&m.to_string());
+            let _ = write!(res, ":{m}");
         }
         res.push(']');
     }
-    res
 }
 
 /// `SmilesWrite::GetBondSmiles`.
@@ -181,7 +180,7 @@ fn fragment_smiles_construct(
         kekulize_ranked(mol, Some(&kek_ranks))?;
     }
     let canon = canonicalize_fragment(mol, start, ranks, p.isomeric)?;
-    let mut res = String::new();
+    let mut res = String::with_capacity(2 * canon.stack.len());
     let mut ring_closure_map: BTreeMap<u32, u32> = BTreeMap::new();
     let mut to_erase: Vec<u32> = Vec::new();
     for e in &canon.stack {
@@ -190,7 +189,7 @@ fn fragment_smiles_construct(
                 for r in to_erase.drain(..) {
                     ring_closure_map.remove(&r);
                 }
-                res.push_str(&atom_smiles(mol, a, p));
+                atom_smiles(&mut res, mol, a, p);
             }
             StackElem::Bond(b, left) => res.push_str(bond_smiles(mol, b, left, p)),
             StackElem::Ring(ring_idx) => {

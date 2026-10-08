@@ -300,6 +300,12 @@ fn no_dative(mol: &Mol, a: usize) -> bool {
 
 /// `cleanUpOrganometallics`.
 fn clean_up_organometallics(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+    // Only a single bond to a metal needs fixing. Without a metal the scan
+    // below would only refresh property caches (non-strictly, which cannot
+    // fail), and `sanitize_mol` recomputes every one of them next.
+    if !mol.atoms.iter().any(|atom| periodic::is_metal(atom.anum)) {
+        return Ok(());
+    }
     let mut needs_fixing = false;
     for a in 0..mol.atoms.len() {
         if is_hypervalent_non_metal(mol, a)? && !no_dative(mol, a) {
@@ -441,14 +447,16 @@ fn set_conjugation(mol: &mut Mol) {
         if !(2..=3).contains(&sbo) {
             continue;
         }
-        let bonds = mol.atom_bonds[a].clone();
-        for &b1 in &bonds {
+        let degree = mol.atom_bonds[a].len();
+        for i1 in 0..degree {
+            let b1 = mol.atom_bonds[a][i1];
             if mol.bonds[b1].valence_contrib(a) < 1.5
                 || !is_atom_conjug_cand(mol, mol.bonds[b1].other(a))
             {
                 continue;
             }
-            for &b2 in &bonds {
+            for i2 in 0..degree {
+                let b2 = mol.atom_bonds[a][i2];
                 if b1 == b2 {
                     continue;
                 }
