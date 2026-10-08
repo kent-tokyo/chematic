@@ -436,7 +436,13 @@ jobs:
           .venv/Scripts/maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter .venv/Scripts/python.exe --out dist/source-wheel
           .venv/Scripts/python -m pip install --no-deps dist/source-wheel/chematic-*.whl
       - name: Run pytest (chematic-py)
-        run: .venv/Scripts/python -m pytest crates/chematic-py/tests/ -q
+        run: |
+          .venv/Scripts/python -m pytest crates/chematic-py/tests/ -q
+          # The differential suite intentionally rewrites its checked-in
+          # report. Keep the source checkout pristine for the A6 provenance
+          # assertion; the platform-specific test result is already visible
+          # in the pytest log.
+          git restore validation/results/rdkit_diff.jsonl
       - name: Reaction 83-row and SMARTS 310k gates
         run: |
           .venv/Scripts/python scripts/run_reaction_compatibility_v2.py --artifact dist/source-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-windows.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":80,"joint_invalid_input":3}'
