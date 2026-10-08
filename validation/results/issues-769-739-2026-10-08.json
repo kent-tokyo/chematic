@@ -498,5 +498,48 @@
   "chemistry_gates_vs_v1.0.37_expected": "pass, no differences (reaction 83, SMARTS 310k, CIP, hybridization, MMFF94 typing, MOL writer, BioTransformer 400-reactant corpus)",
   "xsmarts_autoconf": "75/83, 0 unexpected",
   "template_regression_found_and_fixed": "BTMR0839's product template has an oxygen with H1X2 and two ring bonds; read as a molecule it now failed with InvalidValence and the rule refused 400 reactants. SMIRKS templates are read with parse_template (no valence check); the counts are back to the expected ones."
+ },
+ "other_platforms_published_v1.0.37": {
+  "note": "Run on this host: Linux aarch64 wheel under qemu-aarch64-static 8.2.2, Windows amd64 wheel under Wine 9.0; CPython 3.9.23 (python-build-standalone).",
+  "wheels": {
+   "linux_aarch64_cp39": "7637be95e7948c84ced4a0928745ae5cff93484c347470e75aaaed6ccea20609",
+   "windows_amd64_cp39": "d3d21fa07426470d1af0c33dae2156e2290a703f612c4cc485bce77efafa00d1"
+  },
+  "a6_gates": {
+   "linux_aarch64": {
+    "scope": "published-v1.0.37-linux-aarch64-qemu",
+    "rows": 265,
+    "successes": 265,
+    "independently_sound": 265,
+    "stereo_clean": 265,
+    "with_gross_clash": 0,
+    "passed": true,
+    "coordinates_sha256": "b1ce930f542ee3ac7a674acadc4caa43bc2d63df570381557db76fb5fd9de804",
+    "rows_identical_to_linux_x86_64": 265
+   },
+   "windows_amd64": {
+    "scope": "published-v1.0.37-windows-amd64-wine",
+    "rows": 265,
+    "successes": 265,
+    "independently_sound": 265,
+    "stereo_clean": 265,
+    "with_gross_clash": 0,
+    "passed": true,
+    "coordinates_sha256": "b1ce930f542ee3ac7a674acadc4caa43bc2d63df570381557db76fb5fd9de804",
+    "rows_identical_to_linux_x86_64": 265
+   }
+  },
+  "seed_scan_10x265": {
+   "linux_aarch64": {
+    "runs": 2650,
+    "final_stereo_violation": 32,
+    "same_runs_as_linux_x86_64": true
+   },
+   "windows_amd64": {
+    "runs": 2650,
+    "final_stereo_violation": 32,
+    "same_runs_as_linux_x86_64": true
+   }
+  }
  }
 }
