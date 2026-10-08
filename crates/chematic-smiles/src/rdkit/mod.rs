@@ -34,6 +34,7 @@
 
 mod aromaticity;
 mod canon;
+mod inchi_read;
 mod kekulize;
 mod mol;
 mod molblock;
@@ -46,6 +47,7 @@ mod write;
 
 use chematic_core::Molecule;
 
+pub use inchi_read::{InchiOutputAtom, InchiOutputStereo0D, rdkit_molecule_from_inchi_output};
 pub use molblock::{RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, rdkit_mol_block};
 
 /// Why [`rdkit_canonical_smiles`] produced no string.
