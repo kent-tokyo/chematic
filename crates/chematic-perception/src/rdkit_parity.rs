@@ -1015,6 +1015,11 @@ enum ParityShortcut {
 /// explicit representation is kept ([`unchanged_without_kekulization_with`]).
 fn parity_shortcut(mol: &Molecule) -> ParityShortcut {
     *mol.derived(chematic_core::DerivedSlot::RdkitParityShortcut, || {
+        // RDKit's sanitization rewrites some graphs (perchlorate,
+        // organometallic dative bonds); the view is then never `mol`.
+        if crate::rdkit_cleanup::rdkit_sanitize_cleanup_needed(mol) {
+            return ParityShortcut::Full;
+        }
         let info = ComponentInfo::new(mol);
         match preperceived_kind_with(mol, &info) {
             Some(kind) => kind,
@@ -1785,7 +1790,11 @@ pub fn apply_aromaticity_rdkit_parity_experimental(
 ) -> Result<Molecule, AromaticityError> {
     // Memoized on `mol`: descriptors and the RDKit-compatible fingerprints
     // all start from this perceived copy.
-    (*apply_aromaticity_rdkit_parity_shared(mol)).clone()
+    let view = (*apply_aromaticity_rdkit_parity_shared(mol)).clone()?;
+    // Clones start with an empty cache: re-mark the copy as already holding
+    // RDKit's dative bonds.
+    crate::rdkit_sssr_order::seed_no_further_dative_bonds(&view);
+    Ok(view)
 }
 
 /// Shared, memoized [`apply_aromaticity_rdkit_parity_experimental`] result
@@ -1815,7 +1824,14 @@ pub fn with_rdkit_parity_view<R>(
 }
 
 fn apply_aromaticity_rdkit_parity_uncached(mol: &Molecule) -> Result<Molecule, AromaticityError> {
+    if let Some(cleaned) = crate::rdkit_cleanup::rdkit_sanitize_cleanup(mol) {
+        // The view of RDKit's sanitized graph; its ring data is its own.
+        let view = apply_aromaticity_rdkit_parity_unseeded(&cleaned)?;
+        crate::rdkit_sssr_order::seed_no_further_dative_bonds(&view);
+        return Ok(view);
+    }
     let view = apply_aromaticity_rdkit_parity_unseeded(mol)?;
+    crate::rdkit_sssr_order::seed_no_further_dative_bonds(&view);
     // Same graph with the same ring-eligible bonds (the view only changes
     // aromatic flags and turns bonds aromatic, single or double), so the
     // cyclic-bond flags carry over.

@@ -511,11 +511,6 @@ pub fn hbd_count(mol: &Molecule) -> usize {
 /// centres).
 pub fn hba_count(mol: &Molecule) -> usize {
     static QUERY: std::sync::OnceLock<chematic_smarts::QueryMolecule> = std::sync::OnceLock::new();
-    // RDKit matches on its sanitized form, where perchlorate is
-    // `[Cl+3]([O-])([O-])([O-])O`.
-    if needs_rdkit_halogen_cleanup(mol) {
-        return count_rdkit_pattern(&QUERY, RDKIT_HBA_SMARTS, &rdkit_halogen_cleanup(mol));
-    }
     count_rdkit_pattern(&QUERY, RDKIT_HBA_SMARTS, mol)
 }
 
@@ -743,125 +738,23 @@ fn use_perceived_nitrogen_environment(mol: &Molecule, mol_arom: &Molecule, idx: 
 pub(crate) fn descriptor_aromaticity(mol: &Molecule) -> DescriptorView<'_> {
     // The RDKit-parity view is often an exact copy of `mol`; use `mol` (and
     // its caches) directly then.
-    let needs_cleanup = needs_rdkit_halogen_cleanup(mol) || has_metal(mol);
-    if !needs_cleanup && chematic_perception::rdkit_parity_view_is_identity(mol) {
+    // The view also carries RDKit's sanitization rewrites (perchlorate,
+    // organometallic dative bonds), so it is never `mol` when those apply.
+    if chematic_perception::rdkit_parity_view_is_identity(mol) {
         return DescriptorView::Same(mol);
     }
     // Memoized on `mol`: TPSA, Crippen LogP/MR, HBA and friends all start from
     // the same perceived copy, and that copy carries its own SSSR cache.
     DescriptorView::Perceived(
         mol.derived(chematic_core::DerivedSlot::DescriptorAromatic, || {
-            let cleaned;
-            let src = if needs_cleanup {
-                cleaned = rdkit_sanitize_cleanup(mol);
-                &cleaned
-            } else {
-                mol
-            };
-            chematic_perception::apply_aromaticity_rdkit_parity_experimental(src)
-                .unwrap_or_else(|_| chematic_perception::apply_aromaticity(src))
+            chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).unwrap_or_else(
+                |_| {
+                    let cleaned = chematic_perception::rdkit_sanitize_cleanup(mol);
+                    chematic_perception::apply_aromaticity(cleaned.as_ref().unwrap_or(mol))
+                },
+            )
         }),
     )
-}
-
-/// Whether RDKit's sanitization clean-up (`MolOps::cleanUp`,
-/// `halogenCleanup`) would rewrite a halogen oxoacid group of `mol`.
-fn needs_rdkit_halogen_cleanup(mol: &Molecule) -> bool {
-    mol.atoms()
-        .any(|(idx, _)| rdkit_halogen_cleanup_applies(mol, idx))
-}
-
-/// RDKit `halogenCleanup` precondition: a neutral Cl/Br/I of explicit
-/// valence 3, 5 or 7 bonded only to oxygen, with at least one `=O` (without
-/// one the rewrite is a no-op).
-fn rdkit_halogen_cleanup_applies(mol: &Molecule, idx: AtomIdx) -> bool {
-    let atom = mol.atom(idx);
-    if atom.wildcard || atom.charge != 0 || !matches!(atom.element.atomic_number(), 17 | 35 | 53) {
-        return false;
-    }
-    let mut ev = 0.0f64;
-    let mut has_double = false;
-    for (nb, b) in mol.neighbors(idx) {
-        if mol.atom(nb).element.atomic_number() != 8 || mol.atom(nb).wildcard {
-            return false;
-        }
-        let order = mol.bond(b).order;
-        has_double |= order == BondOrder::Double;
-        ev += match order {
-            BondOrder::Double => 2.0,
-            BondOrder::Triple => 3.0,
-            BondOrder::Quadruple => 4.0,
-            BondOrder::Aromatic => 1.5,
-            BondOrder::Zero => 0.0,
-            _ => 1.0,
-        };
-    }
-    ev += f64::from(atom.hydrogen_count.unwrap_or(0));
-    let ev = (ev + 0.1) as i32;
-    has_double && matches!(ev, 3 | 5 | 7)
-}
-
-/// Whether `mol` has a metal atom (RDKit's `QueryOps::isMetal`), the
-/// precondition of `cleanUpOrganometallics`.
-fn has_metal(mol: &Molecule) -> bool {
-    mol.atoms().any(|(idx, _)| has_metal_atom(mol, idx))
-}
-
-/// `mol` as RDKit's `MolFromSmiles` sanitization leaves it, for the parts
-/// that change descriptor typing: [`rdkit_halogen_cleanup`], then
-/// `cleanUpOrganometallics`, which turns the single bond from a
-/// hypervalent non-metal to a metal into a dative bond
-/// ([`chematic_perception::rdkit_organometallic_dative_bonds`]).
-fn rdkit_sanitize_cleanup(mol: &Molecule) -> Molecule {
-    let mut out = if needs_rdkit_halogen_cleanup(mol) {
-        rdkit_halogen_cleanup(mol)
-    } else {
-        mol.clone()
-    };
-    if has_metal(&out) {
-        let dative = chematic_perception::rdkit_organometallic_dative_bonds(&out);
-        for (i, &d) in dative.iter().enumerate() {
-            let b = BondIdx(i as u32);
-            // chematic stores a dative bond donor → acceptor; the donor is
-            // the non-metal end.
-            if d && !has_metal_atom(&out, out.bond(b).atom1) {
-                out.set_bond_order(b, BondOrder::Dative);
-            }
-        }
-    }
-    out
-}
-
-fn has_metal_atom(mol: &Molecule, idx: AtomIdx) -> bool {
-    let a = mol.atom(idx);
-    !a.wildcard
-        && !matches!(
-            a.element.atomic_number(),
-            1 | 2 | 5..=10 | 14..=18 | 33..=36 | 52..=54 | 85 | 86
-        )
-}
-
-/// Copy of `mol` with RDKit's `halogenCleanup` applied, as RDKit's
-/// `MolFromSmiles` sanitization does: `X(=O)(=O)(=O)O` becomes
-/// `[X+3]([O-])([O-])([O-])O` (likewise chlorate, chlorite). Only the
-/// descriptor view sees this form; the user's molecule is unchanged.
-fn rdkit_halogen_cleanup(mol: &Molecule) -> Molecule {
-    let mut out = mol.clone();
-    for (idx, _) in mol.atoms() {
-        if !rdkit_halogen_cleanup_applies(mol, idx) {
-            continue;
-        }
-        let mut charge = 0i8;
-        for (nb, b) in mol.neighbors(idx) {
-            if mol.bond(b).order == BondOrder::Double {
-                out.set_bond_order(b, BondOrder::Single);
-                out.set_charge(nb, -1);
-                charge += 1;
-            }
-        }
-        out.set_charge(idx, charge);
-    }
-    out
 }
 
 /// The descriptor aromatic view: `mol` itself or a perceived copy.
