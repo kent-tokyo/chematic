@@ -519,7 +519,7 @@ pub struct RdkitPdbMolecule {
 /// `Chem.MolFromPDBBlock(text, sanitize, removeHs, flavor,
 /// proximityBonding)` (RDKit 2026.03.1): `None` where RDKit returns no
 /// molecule. `Err` where RDKit would fail (or the port cannot model the
-/// result, such as zero-order bonds or non-tetrahedral 3D stereo).
+/// result, such as zero-order bonds).
 pub fn rdkit_mol_from_pdb_block(
     text: &str,
     sanitize: bool,
@@ -573,7 +573,7 @@ pub struct RdkitMol2Molecule {
 /// double-bond stereo from the 3D coordinates. `Err` with
 /// [`RdkitSmilesError::Sanitization`] where RDKit returns no molecule;
 /// [`RdkitSmilesError::Unsupported`] for features the port does not model
-/// (Tripos query atoms, `du`/`un` bonds, non-tetrahedral stereo).
+/// (Tripos query atoms, `du`/`un` bonds).
 pub fn rdkit_mol_from_mol2_block(
     text: &str,
     sanitize: bool,

@@ -993,9 +993,10 @@ fn from_pdb(pdb_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
 /// order, or ``None`` where RDKit returns no molecule (including parse and
 /// sanitization failures). Bonds come from
 /// CONECT records and RDKit's proximity bonding, chirality from the 3D
-/// coordinates; ``mol.rdkit_smiles`` is ``Chem.MolToSmiles`` of RDKit's
+/// coordinates (tetrahedral, square-planar, trigonal-bipyramidal and
+/// octahedral); ``mol.rdkit_smiles`` is ``Chem.MolToSmiles`` of RDKit's
 /// molecule. Raises ``ValueError`` for features the port does not model
-/// (zero-order bonds, non-tetrahedral stereo).
+/// (zero-order bonds).
 #[pyfunction]
 #[pyo3(signature = (text, sanitize = true, remove_hs = true, proximity_bonding = true, flavor = 0))]
 fn rdkit_from_pdb_block(
