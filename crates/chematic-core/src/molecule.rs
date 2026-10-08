@@ -1081,6 +1081,14 @@ impl Molecule {
             .count()
     }
 
+    /// Whether bond `idx` was written as a SMILES ring closure (a digit
+    /// pair). Such a bond is stored opening atom -> closing atom; RDKit's
+    /// parser makes the closing atom its begin atom (unless the opening
+    /// digit carried an explicit bond symbol).
+    pub fn is_smiles_ring_closure(&self, idx: BondIdx) -> bool {
+        self.smiles_ring_closure_keys.contains_key(&idx.0)
+    }
+
     /// Bond indices in the order RDKit's SMILES parser creates the bonds:
     /// chain bonds as written, then every ring-closure bond, ordered by ring
     /// label and, for a reused label, by occurrence (RDKit closes rings after

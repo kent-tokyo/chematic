@@ -2850,6 +2850,64 @@ pub fn mmff94_charges_numeric(mol: &Molecule) -> Result<Vec<f64>, NumericTypeErr
     Ok(charges)
 }
 
+/// MMFF94 partial charges evaluated in RDKit's exact floating-point order
+/// (`MMFFMolProperties::computeMMFFCharges`): per atom, neighbours are
+/// visited in `adj` order (RDKit's bond-creation adjacency order) and the
+/// charge is `(1 - M*v)*q0 + v*sumFormalCharge + sumPartialCharge`.
+pub(crate) fn mmff94_charges_rdkit_order(
+    mol: &Molecule,
+    adj: &[Vec<usize>],
+) -> Result<Vec<f64>, NumericTypeError> {
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
+    let n = mol.atom_count();
+    let rings = chematic_perception::rdkit_sssr_ring_order(mol).unwrap_or_else(|| {
+        chematic_perception::find_symmetrized_sssr(mol)
+            .rings()
+            .to_vec()
+    });
+    let fchg: Vec<f64> = (0..n)
+        .map(|i| mmff_derived_formal_charge(mol, &mmff_mol, &rings, &types, AtomIdx(i as u32)))
+        .collect();
+    let mut charges = vec![0.0f64; n];
+    for i in 0..n {
+        let ti = types[i];
+        let (pbci_i, v) = pbci_for(ti);
+        let m = adj[i].len() as f64;
+        let mut q0 = fchg[i];
+        if v < 1.0e-10 && v > -1.0e-10 {
+            for &j in &adj[i] {
+                let nf = fchg[j];
+                if nf < 0.0 {
+                    q0 += nf / (2.0 * adj[j].len() as f64);
+                }
+            }
+        }
+        if ti == 62 {
+            for &j in &adj[i] {
+                let nf = fchg[j];
+                if nf > 0.0 {
+                    q0 -= nf / 2.0;
+                }
+            }
+        }
+        let mut sum_formal = 0.0f64;
+        let mut sum_partial = 0.0f64;
+        for &j in &adj[i] {
+            let tj = types[j];
+            let order = mmff_mol
+                .bond_between(AtomIdx(i as u32), AtomIdx(j as u32))
+                .map(|(_, b)| b.order)
+                .unwrap_or(BondOrder::Single);
+            let bt = crate::mmff94_minimizer::bond_type_for(ti, tj, order);
+            sum_partial +=
+                lookup_chg_contribution(bt, ti, tj).unwrap_or_else(|| pbci_i - pbci_for(tj).0);
+            sum_formal += fchg[j];
+        }
+        charges[i] = (1.0 - m * v) * q0 + v * sum_formal + sum_partial;
+    }
+    Ok(charges)
+}
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]

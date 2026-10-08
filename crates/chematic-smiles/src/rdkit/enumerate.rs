@@ -10,13 +10,13 @@
 //! are all specified; flipping a candidate it would drop only produces
 //! duplicates, which uniqueness removes.
 
-use super::{RdkitSmilesError, RdkitSmilesParams};
 use super::mol::{BondStereo, BondType, ChiralTag, Mol};
 use super::stereo::{
     is_atom_potential_tetrahedral_center, legacy_stereo_perception,
     should_detect_double_bond_stereo,
 };
 use super::write::mol_to_smiles;
+use super::{RdkitSmilesError, RdkitSmilesParams};
 
 /// Unspecified candidate centres and double bonds of `m` (after perception).
 fn candidates(m: &Mol) -> (Vec<usize>, Vec<(usize, usize, usize)>) {

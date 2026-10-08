@@ -286,20 +286,6 @@ impl Mmff94EnergyModel {
                 .iter()
                 .map(|b| (b.i, b.j, b.params.r0, b.params.kb))
                 .collect(),
-            angles: self
-                .angles
-                .iter()
-                .map(|a| (a.i, a.j, a.k, a.params.theta0, a.params.ka, a.linear))
-                .collect(),
-            stretch_bends: self
-                .stretch_bends
-                .iter()
-                .map(|t| {
-                    (
-                        t.i, t.j, t.k, t.r0_ij, t.r0_kj, t.theta0, t.kba_ij, t.kba_kj,
-                    )
-                })
-                .collect(),
             oops: self.oops.iter().map(|o| (o.j, o.koop)).collect(),
             torsions: self
                 .torsions
@@ -1559,11 +1545,62 @@ fn build_bond_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedBond> {
         .collect()
 }
 
+fn mol_neighbors(mol: &Molecule) -> Vec<Vec<usize>> {
+    (0..mol.atom_count())
+        .map(|j| {
+            mol.neighbors(AtomIdx(j as u32))
+                .map(|(nb, _)| nb.0 as usize)
+                .collect()
+        })
+        .collect()
+}
+
+/// Angle-bend and stretch-bend parameter lists in RDKit's builder order and
+/// orientation: centre `j` ascending, neighbour pairs `(i, k)` taken in the
+/// order of `adj[j]` (RDKit's adjacency order). The empirical-rule angle
+/// constants are not symmetric in floating point under `i <-> k`, so the
+/// orientation must be RDKit's.
+#[allow(clippy::type_complexity)]
+pub(crate) fn rdkit_angle_parts(
+    mol: &Molecule,
+    adj: &[Vec<usize>],
+) -> Result<
+    (
+        Vec<(usize, usize, usize, f64, f64, bool)>,
+        Vec<(usize, usize, usize, f64, f64, f64, f64, f64)>,
+    ),
+    MinimizerError,
+> {
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
+    let rings = find_sssr(mol).rings().to_vec();
+    let angles = build_angle_terms_with(&mmff_mol, &types, &rings, adj)
+        .into_iter()
+        .map(|a| (a.i, a.j, a.k, a.params.theta0, a.params.ka, a.linear))
+        .collect();
+    let stbn = build_stretch_bend_terms_with(&mmff_mol, &types, &rings, adj)
+        .into_iter()
+        .map(|t| {
+            (
+                t.i, t.j, t.k, t.r0_ij, t.r0_kj, t.theta0, t.kba_ij, t.kba_kj,
+            )
+        })
+        .collect();
+    Ok((angles, stbn))
+}
+
 fn build_angle_terms(mol: &Molecule, types: &[u8], rings: &[Vec<AtomIdx>]) -> Vec<PreparedAngle> {
+    build_angle_terms_with(mol, types, rings, &mol_neighbors(mol))
+}
+
+fn build_angle_terms_with(
+    mol: &Molecule,
+    types: &[u8],
+    rings: &[Vec<AtomIdx>],
+    adj: &[Vec<usize>],
+) -> Vec<PreparedAngle> {
     let mut terms = Vec::new();
     for j_idx in 0..mol.atom_count() {
-        let j = AtomIdx(j_idx as u32);
-        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+        let neighbors = &adj[j_idx];
         for (ii, &i) in neighbors.iter().enumerate() {
             for &k in &neighbors[ii + 1..] {
                 let at = angle_type_for(mol, rings, i, j_idx, k, types);
@@ -1683,13 +1720,21 @@ fn build_stretch_bend_terms(
     types: &[u8],
     rings: &[Vec<AtomIdx>],
 ) -> Vec<PreparedStretchBend> {
+    build_stretch_bend_terms_with(mol, types, rings, &mol_neighbors(mol))
+}
+
+fn build_stretch_bend_terms_with(
+    mol: &Molecule,
+    types: &[u8],
+    rings: &[Vec<AtomIdx>],
+    adj: &[Vec<usize>],
+) -> Vec<PreparedStretchBend> {
     let mut terms = Vec::new();
     for j_idx in 0..mol.atom_count() {
         if central_type_is_linear(types[j_idx]) {
             continue;
         }
-        let j = AtomIdx(j_idx as u32);
-        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+        let neighbors = &adj[j_idx];
         for (ii, &i) in neighbors.iter().enumerate() {
             for &k in &neighbors[ii + 1..] {
                 let at = angle_type_for(mol, rings, i, j_idx, k, types);
@@ -3373,21 +3418,49 @@ pub fn mmff94_torsion_term_params(
     l: usize,
     types: &[u8],
 ) -> Option<TorsionEnergyParams> {
+    mmff_torsion_term_params_variant(mol, i, j, k, l, types, false)
+}
+
+/// [`mmff94_torsion_term_params`] with the MMFF94s torsion table when
+/// `mmffs` is set (RDKit `mmffVariant="MMFF94s"`).
+pub(crate) fn mmff_torsion_term_params_variant(
+    mol: &Molecule,
+    i: usize,
+    j: usize,
+    k: usize,
+    l: usize,
+    types: &[u8],
+    mmffs: bool,
+) -> Option<TorsionEnergyParams> {
     let (ti, tj, tk, tl) = (types[i], types[j], types[k], types[l]);
     let pair = torsion_type_pair_for(mol, i, j, k, l, ti, tj, tk, tl);
-    let p = torsion_table_lookup_rdkit(pair, ti, tj, tk, tl)
+    let table = if mmffs {
+        crate::mmff94_energy::MMFF94S_TORSION_ENERGY
+    } else {
+        crate::mmff94_energy::MMFF94_TORSION_ENERGY
+    };
+    let p = torsion_table_lookup_rdkit(table, pair, ti, tj, tk, tl)
         .unwrap_or_else(|| torsion_empirical_rule(mol, j, k, tj, tk));
     (p.v1 != 0.0 || p.v2 != 0.0 || p.v3 != 0.0).then_some(p)
 }
 
-fn torsion_table_search(tt: u8, i: u8, j: u8, k: u8, l: u8) -> Option<TorsionEnergyParams> {
-    crate::mmff94_energy::MMFF94_TORSION_ENERGY
+type TorsionTable = [(u8, u8, u8, u8, u8, f64, f64, f64)];
+
+fn torsion_table_search(
+    table: &TorsionTable,
+    tt: u8,
+    i: u8,
+    j: u8,
+    k: u8,
+    l: u8,
+) -> Option<TorsionEnergyParams> {
+    table
         .binary_search_by_key(&(tt, i, j, k, l), |&(t0, t1, t2, t3, t4, _, _, _)| {
             (t0, t1, t2, t3, t4)
         })
         .ok()
         .map(|idx| {
-            let (_, _, _, _, _, v1, v2, v3) = crate::mmff94_energy::MMFF94_TORSION_ENERGY[idx];
+            let (_, _, _, _, _, v1, v2, v3) = table[idx];
             TorsionEnergyParams { v1, v2, v3 }
         })
 }
@@ -3395,6 +3468,7 @@ fn torsion_table_search(tt: u8, i: u8, j: u8, k: u8, l: u8) -> Option<TorsionEne
 /// RDKit's five-stage lookup: equivalence levels 1-1-1-1, 2-2-2-2, 3-2-2-5,
 /// 5-2-2-3, 5-2-2-5 on the torsion type, then again on the second type.
 fn torsion_table_lookup_rdkit(
+    table: &TorsionTable,
     (first, second): (u8, u8),
     ti: u8,
     tj: u8,
@@ -3434,7 +3508,7 @@ fn torsion_table_lookup_rdkit(
         } else if cj == ck && ci > cl {
             std::mem::swap(&mut ci, &mut cl);
         }
-        if let Some(p) = torsion_table_search(tt, ci, cj, ck, cl) {
+        if let Some(p) = torsion_table_search(table, tt, ci, cj, ck, cl) {
             found = Some(p);
             if max_iter == 4 {
                 break;

@@ -14,22 +14,22 @@ use chematic_core::{AtomIdx, BondOrder, Molecule};
 use std::collections::HashMap;
 
 use crate::mmff94_minimizer::{MinimizerError, Mmff94EnergyModel};
-use crate::mmff94_numeric::{assign_mmff94_numeric_types_with_view, mmff94_charges_numeric};
+use crate::mmff94_numeric::{assign_mmff94_numeric_types_with_view, mmff94_charges_rdkit_order};
 
 const MDYNE_A_TO_KCAL_MOL: f64 = 143.9325;
 const DEG2RAD: f64 = std::f64::consts::PI / 180.0;
 const RAD2DEG: f64 = 180.0 / std::f64::consts::PI;
 
-fn clip_to_one(x: f64) -> f64 {
+pub(crate) fn clip_to_one(x: f64) -> f64 {
     x.clamp(-1.0, 1.0)
 }
 
 /// `std::max(a, b)`: `b` only when `a < b` (keeps a NaN `a`).
-fn smax(a: f64, b: f64) -> f64 {
+pub(crate) fn smax(a: f64, b: f64) -> f64 {
     if a < b { b } else { a }
 }
 
-fn is_double_zero(x: f64) -> bool {
+pub(crate) fn is_double_zero(x: f64) -> bool {
     x < 1.0e-10 && x > -1.0e-10
 }
 
@@ -37,10 +37,6 @@ fn is_double_zero(x: f64) -> bool {
 pub(crate) struct PreparedParts {
     /// (i, j, r0, kb)
     pub bonds: Vec<(usize, usize, f64, f64)>,
-    /// (i, j, k, theta0, ka, linear)
-    pub angles: Vec<(usize, usize, usize, f64, f64, bool)>,
-    /// (i, j, k, r0_ij, r0_kj, theta0, kba_ij, kba_kj)
-    pub stretch_bends: Vec<(usize, usize, usize, f64, f64, f64, f64, f64)>,
     /// (central atom, koop), one entry per out-of-plane term
     pub oops: Vec<(usize, f64)>,
     /// (i, j, k, l, v1, v2, v3)
@@ -50,48 +46,48 @@ pub(crate) struct PreparedParts {
 // ─── Point3D arithmetic as RDKit's `RDGeom::Point3D` ─────────────────────────
 
 #[derive(Clone, Copy, Debug, Default)]
-struct P3 {
-    x: f64,
-    y: f64,
-    z: f64,
+pub(crate) struct P3 {
+    pub(crate) x: f64,
+    pub(crate) y: f64,
+    pub(crate) z: f64,
 }
 
 impl P3 {
-    fn at(pos: &[f64], i: usize) -> P3 {
+    pub(crate) fn at(pos: &[f64], i: usize) -> P3 {
         P3 {
             x: pos[3 * i],
             y: pos[3 * i + 1],
             z: pos[3 * i + 2],
         }
     }
-    fn sub(self, o: P3) -> P3 {
+    pub(crate) fn sub(self, o: P3) -> P3 {
         P3 {
             x: self.x - o.x,
             y: self.y - o.y,
             z: self.z - o.z,
         }
     }
-    fn div(self, v: f64) -> P3 {
+    pub(crate) fn div(self, v: f64) -> P3 {
         P3 {
             x: self.x / v,
             y: self.y / v,
             z: self.z / v,
         }
     }
-    fn neg(self) -> P3 {
+    pub(crate) fn neg(self) -> P3 {
         P3 {
             x: self.x * -1.0,
             y: self.y * -1.0,
             z: self.z * -1.0,
         }
     }
-    fn dot(self, o: P3) -> f64 {
+    pub(crate) fn dot(self, o: P3) -> f64 {
         self.x * o.x + self.y * o.y + self.z * o.z
     }
-    fn length(self) -> f64 {
+    pub(crate) fn length(self) -> f64 {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
-    fn cross(self, o: P3) -> P3 {
+    pub(crate) fn cross(self, o: P3) -> P3 {
         P3 {
             x: self.y * o.z - self.z * o.y,
             y: -self.x * o.z + self.z * o.x,
@@ -101,7 +97,7 @@ impl P3 {
 }
 
 /// `ForceField::distance` on a flat position array.
-fn distance(pos: &[f64], i: usize, j: usize) -> f64 {
+pub(crate) fn distance(pos: &[f64], i: usize, j: usize) -> f64 {
     let (i, j) = if j < i { (j, i) } else { (i, j) };
     let mut res = 0.0;
     for d in 0..3 {
@@ -136,6 +132,15 @@ pub struct RdkitMmffField {
     terms: [bool; 7],
 }
 
+/// MMFF parameter set (RDKit `mmffVariant`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MmffVariant {
+    /// `"MMFF94"`.
+    Mmff94,
+    /// `"MMFF94s"`: MMFF94 with the MMFF94s out-of-plane and torsion tables.
+    Mmff94s,
+}
+
 /// Term classes of [`RdkitMmffField`], in RDKit's contribution order.
 pub const RDKIT_MMFF_TERMS: [&str; 7] = [
     "bond",
@@ -158,23 +163,31 @@ impl RdkitMmffField {
         non_bonded_thresh: f64,
         ignore_interfrag: bool,
     ) -> Result<Self, MinimizerError> {
-        Self::with_terms(mol, coords, non_bonded_thresh, ignore_interfrag, [true; 7])
+        Self::with_terms(
+            mol,
+            coords,
+            MmffVariant::Mmff94,
+            non_bonded_thresh,
+            ignore_interfrag,
+            [true; 7],
+        )
     }
 
-    /// [`Self::new`] with only the selected term classes
-    /// (see [`RDKIT_MMFF_TERMS`]).
+    /// [`Self::new`] for the given MMFF variant and only the selected term
+    /// classes (see [`RDKIT_MMFF_TERMS`]).
     pub fn with_terms(
         mol: &Molecule,
         coords: &[[f64; 3]],
+        variant: MmffVariant,
         non_bonded_thresh: f64,
         ignore_interfrag: bool,
         terms: [bool; 7],
     ) -> Result<Self, MinimizerError> {
+        let mmffs = variant == MmffVariant::Mmff94s;
         let n = mol.atom_count();
         let model = Mmff94EnergyModel::new(mol)?;
         let parts = model.rdkit_parts();
         let (types, view) = assign_mmff94_numeric_types_with_view(mol)?;
-        let charges = mmff94_charges_numeric(mol).map_err(MinimizerError::ChargeCalculation)?;
 
         // Neighbour lists in RDKit's adjacency order (bond creation order).
         let order = rdkit_bond_order_with_added_hs(mol);
@@ -185,6 +198,12 @@ impl RdkitMmffField {
             adj[a1].push((a2, b.0 as usize));
             adj[a2].push((a1, b.0 as usize));
         }
+        let nbrs: Vec<Vec<usize>> = adj
+            .iter()
+            .map(|v| v.iter().map(|&(a, _)| a).collect())
+            .collect();
+        let charges =
+            mmff94_charges_rdkit_order(mol, &nbrs).map_err(MinimizerError::ChargeCalculation)?;
 
         let mut field = RdkitMmffField {
             n,
@@ -211,50 +230,11 @@ impl RdkitMmffField {
             }
         }
 
-        // Angle bend and stretch-bend: centre j, neighbour pairs in order.
-        let angle_params: HashMap<(usize, usize, usize), (f64, f64, bool)> = parts
-            .angles
-            .iter()
-            .map(|&(i, j, k, t0, ka, lin)| ((j, i.min(k), i.max(k)), (t0, ka, lin)))
-            .collect();
-        let stbn_params: HashMap<(usize, usize, usize), (usize, f64, f64, f64, f64, f64)> = parts
-            .stretch_bends
-            .iter()
-            .map(|&(i, j, k, r1, r2, t0, k1, k2)| {
-                ((j, i.min(k), i.max(k)), (i, r1, r2, t0, k1, k2))
-            })
-            .collect();
-        for j in 0..n {
-            if adj[j].len() == 1 {
-                continue;
-            }
-            for (a, &(i, _)) in adj[j].iter().enumerate() {
-                for &(k, _) in &adj[j][a + 1..] {
-                    if let Some(&(t0, ka, lin)) = angle_params.get(&(j, i.min(k), i.max(k))) {
-                        field.angles.push((i, j, k, t0, ka, lin));
-                    }
-                }
-            }
-        }
-        for j in 0..n {
-            if adj[j].len() == 1 {
-                continue;
-            }
-            for (a, &(i, _)) in adj[j].iter().enumerate() {
-                for &(k, _) in &adj[j][a + 1..] {
-                    if let Some(&(ci, r1, r2, t0, k1, k2)) =
-                        stbn_params.get(&(j, i.min(k), i.max(k)))
-                    {
-                        let term = if ci == i {
-                            (i, j, k, r1, r2, t0, k1, k2)
-                        } else {
-                            (i, j, k, r2, r1, t0, k2, k1)
-                        };
-                        field.stretch_bends.push(term);
-                    }
-                }
-            }
-        }
+        // Angle bend and stretch-bend: centre j, neighbour pairs in order,
+        // parameters evaluated in RDKit's (i, j, k) orientation.
+        let (angles, stretch_bends) = crate::mmff94_minimizer::rdkit_angle_parts(mol, &nbrs)?;
+        field.angles = angles;
+        field.stretch_bends = stretch_bends;
 
         // Out-of-plane: trivalent centres, three terms each.
         let oop_params: HashMap<usize, f64> = parts.oops.iter().copied().collect();
@@ -264,6 +244,19 @@ impl RdkitMmffField {
             }
             let Some(&koop) = oop_params.get(&j) else {
                 continue;
+            };
+            let koop = if mmffs {
+                let Some(k) = crate::mmff94_energy::mmff94s_oop(
+                    types[j],
+                    types[adj[j][0].0],
+                    types[adj[j][1].0],
+                    types[adj[j][2].0],
+                ) else {
+                    continue;
+                };
+                k
+            } else {
+                koop
             };
             let idx = [adj[j][0].0, j, adj[j][1].0, adj[j][2].0];
             for perm in [[0, 1, 2, 3], [0, 1, 3, 2], [2, 1, 3, 0]] {
@@ -314,7 +307,15 @@ impl RdkitMmffField {
                         if b2 == bond || b2 == b1 || l == i {
                             continue;
                         }
-                        if let Some(&(v1, v2, v3)) = tor_params.get(&(i, j, k, l)) {
+                        if mmffs {
+                            if let Some(p) =
+                                crate::mmff94_minimizer::mmff_torsion_term_params_variant(
+                                    &view, i, j, k, l, &types, true,
+                                )
+                            {
+                                field.torsions.push((i, j, k, l, p.v1, p.v2, p.v3));
+                            }
+                        } else if let Some(&(v1, v2, v3)) = tor_params.get(&(i, j, k, l)) {
                             field.torsions.push((i, j, k, l, v1, v2, v3));
                         }
                     }
@@ -866,23 +867,7 @@ impl RdkitMmffField {
             *g = 0.0;
         }
         self.gradient(pos, grad);
-        let mut max_grad = -1e8_f64;
-        let mut grad_scale = 0.1;
-        for g in grad.iter_mut() {
-            *g *= grad_scale;
-            if g.abs() > max_grad {
-                max_grad = g.abs();
-            }
-        }
-        if max_grad > 10.0 {
-            while max_grad * grad_scale > 10.0 {
-                grad_scale *= 0.5;
-            }
-            for g in grad.iter_mut() {
-                *g *= grad_scale;
-            }
-        }
-        grad_scale
+        crate::rdkit_bfgs::scale_gradient(grad)
     }
 
     /// `ForceField::minimize(maxIts, forceTol, energyTol)` from the flat
@@ -892,7 +877,7 @@ impl RdkitMmffField {
         if self.is_empty() {
             return 0;
         }
-        bfgs_minimize(
+        crate::rdkit_bfgs::bfgs_minimize(
             pos,
             force_tol,
             max_its,
@@ -1018,7 +1003,7 @@ pub(crate) fn rdkit_bond_order_with_added_hs(mol: &Molecule) -> Vec<chematic_cor
 
 /// Topological distances (`n * n`, 0 on the diagonal, `u32::MAX` between
 /// fragments).
-fn topological_distances(n: usize, adj: &[Vec<(usize, usize)>]) -> Vec<u32> {
+pub(crate) fn topological_distances(n: usize, adj: &[Vec<(usize, usize)>]) -> Vec<u32> {
     let mut d = vec![u32::MAX; n * n];
     for s in 0..n {
         let row = &mut d[s * n..(s + 1) * n];
@@ -1036,7 +1021,7 @@ fn topological_distances(n: usize, adj: &[Vec<(usize, usize)>]) -> Vec<u32> {
     d
 }
 
-fn fragments(n: usize, adj: &[Vec<(usize, usize)>]) -> Vec<usize> {
+pub(crate) fn fragments(n: usize, adj: &[Vec<(usize, usize)>]) -> Vec<usize> {
     let mut id = vec![usize::MAX; n];
     let mut next = 0;
     for s in 0..n {
@@ -1058,194 +1043,86 @@ fn fragments(n: usize, adj: &[Vec<(usize, usize)>]) -> Vec<usize> {
     id
 }
 
-/// `BFGSOpt::minimize` (RDKit 2026.03, Numerical Recipes `dfpmin`) with
-/// `BFGSOpt::linearSearch`, constant for constant and operation for
-/// operation. `grad_fn` fills the (scaled) gradient and returns its scale.
-pub(crate) fn bfgs_minimize(
-    pos: &mut [f64],
-    grad_tol: f64,
-    max_its: u32,
-    func: impl Fn(&[f64]) -> f64,
-    grad_fn: impl Fn(&[f64], &mut [f64]) -> f64,
-) -> i32 {
-    const EPS: f64 = 3e-8;
-    const TOLX: f64 = 4.0 * EPS;
-    const MAXSTEP: f64 = 100.0;
-    let dim = pos.len();
-    let mut grad = vec![0.0; dim];
-    let mut dgrad = vec![0.0; dim];
-    let mut hess_dgrad = vec![0.0; dim];
-    let mut xi = vec![0.0; dim];
-    let mut inv_hessian = vec![0.0; dim * dim];
-    let mut new_pos = vec![0.0; dim];
-    let mut fp = func(pos);
-    grad_fn(pos, &mut grad);
-    let mut sum = 0.0;
-    for i in 0..dim {
-        inv_hessian[i * dim + i] = 1.0;
-        xi[i] = -grad[i];
-        sum += pos[i] * pos[i];
-    }
-    let max_step = MAXSTEP * smax(sum.sqrt(), dim as f64);
-    for _iter in 1..=max_its {
-        let (status, func_val) =
-            linear_search(pos, fp, &grad, &mut xi, &mut new_pos, &func, max_step);
-        if status < 0 {
-            // RDKit's CHECK_INVARIANT("bad direction in linearSearch").
-            return -1;
-        }
-        fp = func_val;
-        let mut test = 0.0_f64;
-        for i in 0..dim {
-            xi[i] = new_pos[i] - pos[i];
-            pos[i] = new_pos[i];
-            let temp = xi[i].abs() / smax(pos[i].abs(), 1.0);
-            if temp > test {
-                test = temp;
-            }
-            dgrad[i] = grad[i];
-        }
-        if test < TOLX {
-            return 0;
-        }
-        let grad_scale = grad_fn(pos, &mut grad);
-        test = 0.0;
-        let term = smax(func_val * grad_scale, 1.0);
-        for i in 0..dim {
-            let temp = grad[i].abs() * smax(pos[i].abs(), 1.0);
-            test = smax(test, temp);
-            dgrad[i] = grad[i] - dgrad[i];
-        }
-        test /= term;
-        if test < grad_tol {
-            return 0;
-        }
-        let (mut fac, mut fae, mut sum_dgrad, mut sum_xi) = (0.0, 0.0, 0.0, 0.0);
-        for i in 0..dim {
-            let row = &inv_hessian[i * dim..(i + 1) * dim];
-            let mut h = 0.0;
-            for (iv, dg) in row.iter().zip(&dgrad) {
-                h += iv * dg;
-            }
-            hess_dgrad[i] = h;
-            fac += dgrad[i] * xi[i];
-            fae += dgrad[i] * hess_dgrad[i];
-            sum_dgrad += dgrad[i] * dgrad[i];
-            sum_xi += xi[i] * xi[i];
-        }
-        if fac > (EPS * sum_dgrad * sum_xi).sqrt() {
-            fac = 1.0 / fac;
-            let fad = 1.0 / fae;
-            for i in 0..dim {
-                dgrad[i] = fac * xi[i] - fad * hess_dgrad[i];
-            }
-            for i in 0..dim {
-                let pxi = fac * xi[i];
-                let hdgi = fad * hess_dgrad[i];
-                let dgi = fae * dgrad[i];
-                for j in i..dim {
-                    inv_hessian[i * dim + j] += pxi * xi[j] - hdgi * hess_dgrad[j] + dgi * dgrad[j];
-                    inv_hessian[j * dim + i] = inv_hessian[i * dim + j];
-                }
-            }
-        }
-        for i in 0..dim {
-            let row = &inv_hessian[i * dim..(i + 1) * dim];
-            let mut p = 0.0;
-            for (iv, g) in row.iter().zip(&grad) {
-                p -= iv * g;
-            }
-            xi[i] = p;
-        }
-    }
-    1
-}
+#[cfg(test)]
+pub(crate) mod tests {
+    use super::*;
 
-/// `BFGSOpt::linearSearch`: (resCode, newVal).
-fn linear_search(
-    old_pt: &[f64],
-    old_val: f64,
-    grad: &[f64],
-    dir: &mut [f64],
-    new_pt: &mut [f64],
-    func: &impl Fn(&[f64]) -> f64,
-    max_step: f64,
-) -> (i32, f64) {
-    const FUNCTOL: f64 = 1e-4;
-    const MOVETOL: f64 = 1e-7;
-    const MAX_ITER_LINEAR_SEARCH: u32 = 1000;
-    let dim = old_pt.len();
-    let mut new_val = 0.0;
-    let mut sum = 0.0;
-    for d in dir.iter() {
-        sum += d * d;
+    /// `CC(=O)Nc1ccc(O)cc1` after `AddHs`, RDKit 2026.03.1
+    /// `EmbedMolecule(randomSeed=42)` coordinates.
+    pub(crate) const PARACETAMOL: &str = "CC(=O)Nc1ccc(O)cc1";
+    pub(crate) const COORDS: [[f64; 3]; 20] = [
+        [3.762175028044453, 0.30538563337732244, -0.09745815343294277],
+        [2.3329369300899403, 0.11610000936619912, -0.5176254421062628],
+        [
+            2.1306032462731035,
+            -0.09593752049575305,
+            -1.7310611678300563,
+        ],
+        [1.3484147775946786, 0.19222362621777822, 0.4794175681721041],
+        [
+            -0.04651062589597437,
+            0.03729534973500948,
+            0.2549743150386899,
+        ],
+        [-0.6601760831775039, -1.210120317536445, 0.3277557282622417],
+        [-2.027875532733807, -1.3550238887272026, 0.10667566446336685],
+        [-2.822456517029374, -0.2670983319336878, -0.1922446077538659],
+        [-4.187714927031642, -0.3854347185261268, -0.416753109003994],
+        [-2.215264059602086, 0.990686079372787, -0.2676816459777285],
+        [
+            -0.8506489653837782,
+            1.1179323355827404,
+            -0.04458045101770329,
+        ],
+        [3.8141231841990857, 1.3434050655543417, 0.3024234778452463],
+        [4.477057254518884, 0.10425801972676844, -0.9145679992818092],
+        [3.909133114355366, -0.42656371299342444, 0.7351586531314641],
+        [1.6266288380623064, 0.37726586194308837, 1.4846206751064692],
+        [
+            -0.03711779601633895,
+            -2.0820010342352497,
+            0.5648832746587801,
+        ],
+        [-2.5130630664729114, -2.314409067782831, 0.16030971994515217],
+        [-4.834672252546139, -0.3986600801567403, 0.37067475360645646],
+        [-2.8406901294426152, 1.8542155191372227, -0.5040194618516627],
+        [-0.3648824178056287, 2.096481172374245, -0.10090179197395394],
+    ];
+
+    pub(crate) fn paracetamol() -> Molecule {
+        chematic_chem::add_hydrogens(&chematic_smiles::parse(PARACETAMOL).unwrap())
     }
-    sum = sum.sqrt();
-    if sum > max_step {
-        for d in dir.iter_mut() {
-            *d *= max_step / sum;
-        }
+
+    fn check(variant: MmffVariant, energy: f64, opt_energy: f64, x0: f64) {
+        let mol = paracetamol();
+        let ff =
+            RdkitMmffField::with_terms(&mol, &COORDS, variant, 100.0, true, [true; 7]).unwrap();
+        let mut pos = COORDS.as_flattened().to_vec();
+        assert_eq!(ff.energy(&pos), energy);
+        let (status, e) = ff.optimize(&mut pos, 200);
+        assert_eq!((status, e), (0, opt_energy));
+        assert_eq!(pos[0], x0);
     }
-    let mut slope = 0.0;
-    for i in 0..dim {
-        slope += dir[i] * grad[i];
+
+    /// RDKit 2026.03.1: `MMFFGetMoleculeForceField(...).CalcEnergy()` and
+    /// `Minimize(maxIts=200)` (status, energy, first coordinate).
+    #[test]
+    fn mmff94_matches_rdkit_bitwise() {
+        check(
+            MmffVariant::Mmff94,
+            22.565180175565263,
+            -12.775974493568183,
+            3.6705868960020265,
+        );
     }
-    if slope >= 0.0 {
-        return (-1, new_val);
+
+    #[test]
+    fn mmff94s_matches_rdkit_bitwise() {
+        check(
+            MmffVariant::Mmff94s,
+            22.959370426002092,
+            -11.453744586799015,
+            3.66682072353845,
+        );
     }
-    let mut test = 0.0;
-    for i in 0..dim {
-        let temp = dir[i].abs() / smax(old_pt[i].abs(), 1.0);
-        if temp > test {
-            test = temp;
-        }
-    }
-    let lambda_min = MOVETOL / test;
-    let mut lambda = 1.0_f64;
-    let mut lambda2 = 0.0_f64;
-    let mut val2 = 0.0_f64;
-    let mut tmp_lambda;
-    let mut it = 0;
-    while it < MAX_ITER_LINEAR_SEARCH {
-        if lambda < lambda_min {
-            return (1, new_val);
-        }
-        for i in 0..dim {
-            new_pt[i] = old_pt[i] + lambda * dir[i];
-        }
-        new_val = func(new_pt);
-        if new_val - old_val <= FUNCTOL * lambda * slope {
-            return (0, new_val);
-        }
-        if it == 0 {
-            tmp_lambda = -slope / (2.0 * (new_val - old_val - slope));
-        } else {
-            let rhs1 = new_val - old_val - lambda * slope;
-            let rhs2 = val2 - old_val - lambda2 * slope;
-            let a = (rhs1 / (lambda * lambda) - rhs2 / (lambda2 * lambda2)) / (lambda - lambda2);
-            let b = (-lambda2 * rhs1 / (lambda * lambda) + lambda * rhs2 / (lambda2 * lambda2))
-                / (lambda - lambda2);
-            if a == 0.0 {
-                tmp_lambda = -slope / (2.0 * b);
-            } else {
-                let disc = b * b - 3.0 * a * slope;
-                if disc < 0.0 {
-                    tmp_lambda = 0.5 * lambda;
-                } else if b <= 0.0 {
-                    tmp_lambda = (-b + disc.sqrt()) / (3.0 * a);
-                } else {
-                    tmp_lambda = -slope / (b + disc.sqrt());
-                }
-            }
-            if tmp_lambda > 0.5 * lambda {
-                tmp_lambda = 0.5 * lambda;
-            }
-        }
-        lambda2 = lambda;
-        val2 = new_val;
-        lambda = smax(tmp_lambda, 0.1 * lambda);
-        it += 1;
-    }
-    new_pt.copy_from_slice(old_pt);
-    (-1, new_val)
 }
