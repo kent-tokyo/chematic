@@ -6,6 +6,7 @@
 
 use crate::EcfpBitInfo;
 use crate::Mol;
+use crate::RdkitBestAlignment;
 use crate::RdkitMorganDetail;
 use crate::formats::{bitvec2048_to_bytes, flat_to_coords3d};
 use ndarray::Array1;
@@ -2008,6 +2009,31 @@ impl Mol {
         ))
     }
 
+    /// RDKit's Morgan ``bitInfo`` for ``n_bits``-bit fingerprints of radius
+    /// ``radius`` (``rdFingerprintGenerator.GetMorganGenerator(radius=radius,
+    /// fpSize=n_bits, includeChirality=include_chirality)`` with
+    /// ``AdditionalOutput.GetBitInfoMap()``): ``{bit: [(atom, radius), ...]}``
+    /// with each list sorted.
+    #[pyo3(signature = (radius = 2, n_bits = 2048, include_chirality = false))]
+    fn rdkit_morgan_bit_info(
+        &self,
+        radius: u32,
+        n_bits: usize,
+        include_chirality: bool,
+    ) -> PyResult<std::collections::BTreeMap<usize, Vec<(u32, u32)>>> {
+        let config = python_rdkit_morgan_config(radius, n_bits, include_chirality)?;
+        let result = chematic_fp::rdkit_morgan_fingerprint(&self.inner, &config)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(result
+            .folded_bit_info
+            .into_iter()
+            .map(|(bit, mut env)| {
+                env.sort_unstable();
+                (bit, env)
+            })
+            .collect())
+    }
+
     /// MACCS 166-bit keys as bytes (21 bytes, LSB-first).
     fn maccs(&self) -> Vec<u8> {
         let fp = chematic_fp::maccs(&self.inner);
@@ -2715,6 +2741,106 @@ impl Mol {
     fn rdkit_pdb_block(&self, coords: Option<Vec<[f64; 3]>>) -> PyResult<String> {
         chematic_smiles::rdkit_pdb_block(&self.inner, coords.as_deref())
             .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// ``rdMolAlign.GetAlignmentTransform`` / ``AlignMol`` (RDKit 2026.03.1)
+    /// for two conformers of this molecule (coordinates in
+    /// ``Chem.MolFromSmiles`` atom order): ``(rmsd, transform)`` with the
+    /// 4x4 transform (rows) taking ``probe_coords`` onto ``ref_coords``.
+    /// ``atom_map`` is a list of ``(probe atom, reference atom)`` pairs;
+    /// without it the first substructure match is used.
+    #[pyo3(signature = (probe_coords, ref_coords, atom_map = None, weights = None, reflect = false, max_iterations = 50))]
+    fn rdkit_align(
+        &self,
+        probe_coords: Vec<[f64; 3]>,
+        ref_coords: Vec<[f64; 3]>,
+        atom_map: Option<Vec<(usize, usize)>>,
+        weights: Option<Vec<f64>>,
+        reflect: bool,
+        max_iterations: u32,
+    ) -> PyResult<(f64, [[f64; 4]; 4])> {
+        let res = chematic_smiles::rdkit_align_mol(
+            &self.inner,
+            &probe_coords,
+            &ref_coords,
+            atom_map.as_deref(),
+            weights.as_deref(),
+            reflect,
+            max_iterations,
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok((res.rmsd, res.transform.rows()))
+    }
+
+    /// ``rdMolAlign.GetBestRMS(prb, ref, maxMatches=max_matches,
+    /// symmetrizeConjugatedTerminalGroups=..., weights=weights)`` (RDKit
+    /// 2026.03.1) for two conformers of this molecule.
+    #[pyo3(signature = (probe_coords, ref_coords, max_matches = 1_000_000, symmetrize_conjugated_terminal_groups = true, weights = None))]
+    fn rdkit_best_rms(
+        &self,
+        probe_coords: Vec<[f64; 3]>,
+        ref_coords: Vec<[f64; 3]>,
+        max_matches: usize,
+        symmetrize_conjugated_terminal_groups: bool,
+        weights: Option<Vec<f64>>,
+    ) -> PyResult<f64> {
+        chematic_smiles::rdkit_best_rms(
+            &self.inner,
+            &probe_coords,
+            &ref_coords,
+            max_matches,
+            symmetrize_conjugated_terminal_groups,
+            weights.as_deref(),
+        )
+        .map(|res| res.rmsd)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// ``rdMolAlign.GetBestAlignmentTransform`` (RDKit 2026.03.1):
+    /// ``(rmsd, transform, atom_map)`` of the best fit over all matches,
+    /// ``atom_map`` as ``(probe atom, reference atom)`` pairs.
+    #[pyo3(signature = (probe_coords, ref_coords, max_matches = 1_000_000, symmetrize_conjugated_terminal_groups = true, weights = None))]
+    fn rdkit_best_alignment(
+        &self,
+        probe_coords: Vec<[f64; 3]>,
+        ref_coords: Vec<[f64; 3]>,
+        max_matches: usize,
+        symmetrize_conjugated_terminal_groups: bool,
+        weights: Option<Vec<f64>>,
+    ) -> PyResult<RdkitBestAlignment> {
+        let res = chematic_smiles::rdkit_best_rms(
+            &self.inner,
+            &probe_coords,
+            &ref_coords,
+            max_matches,
+            symmetrize_conjugated_terminal_groups,
+            weights.as_deref(),
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok((res.rmsd, res.transform.rows(), res.atom_map))
+    }
+
+    /// ``rdMolAlign.CalcRMS(prb, ref, maxMatches=max_matches,
+    /// symmetrizeConjugatedTerminalGroups=..., weights=weights)`` (RDKit
+    /// 2026.03.1): the smallest RMSD over all matches, without aligning.
+    #[pyo3(signature = (probe_coords, ref_coords, max_matches = 1_000_000, symmetrize_conjugated_terminal_groups = true, weights = None))]
+    fn rdkit_calc_rms(
+        &self,
+        probe_coords: Vec<[f64; 3]>,
+        ref_coords: Vec<[f64; 3]>,
+        max_matches: usize,
+        symmetrize_conjugated_terminal_groups: bool,
+        weights: Option<Vec<f64>>,
+    ) -> PyResult<f64> {
+        chematic_smiles::rdkit_calc_rms(
+            &self.inner,
+            &probe_coords,
+            &ref_coords,
+            max_matches,
+            symmetrize_conjugated_terminal_groups,
+            weights.as_deref(),
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
     /// RDKit-compatible ``Chem.MolToCXSmarts(m)``.

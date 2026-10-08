@@ -17,6 +17,9 @@ type RdkitMorganDetail = (
     std::collections::HashMap<usize, Vec<(u32, u32)>>,
 );
 
+/// `(rmsd, 4x4 transform rows, [(probe atom, reference atom)])`.
+type RdkitBestAlignment = (f64, [[f64; 4]; 4], Vec<(usize, usize)>);
+
 mod crystal;
 mod ensemble_v2;
 mod errors;

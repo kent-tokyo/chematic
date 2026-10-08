@@ -32,6 +32,7 @@
 // arms share a body) so it reads side by side with the C++.
 #![allow(clippy::needless_range_loop, clippy::if_same_then_else)]
 
+mod align;
 mod aromaticity;
 mod canon;
 mod depict;
@@ -51,6 +52,7 @@ mod rank;
 mod sanitize;
 mod smarts_write;
 mod stereo;
+mod substruct;
 mod write;
 
 use chematic_core::Molecule;
@@ -414,6 +416,92 @@ pub fn rdkit_mol_block_2d(mol: &Molecule) -> Result<String, RdkitSmilesError> {
 
 /// `Chem.MolFromSmiles(s)` for the SMILES `s` chematic parsed `mol` from,
 /// with the atoms' `_CIPRank` values (empty when RDKit sets none).
+pub use align::{RdkitAlignment, Transform3D};
+
+/// The sanitized RDKit molecule `Chem.MolFromSmiles` builds for `mol`
+/// (no stereo perception: alignment does not use it).
+fn rdkit_mol_sanitized(mol: &Molecule) -> Result<mol::Mol, RdkitSmilesError> {
+    let mut m = parse::from_chematic(mol)?;
+    if has_added_hydrogens(mol) {
+        sanitize::sanitize_keeping_hs(&mut m)?;
+    } else {
+        sanitize::remove_hs_and_sanitize(&mut m)?;
+    }
+    Ok(m)
+}
+
+/// `rdMolAlign.GetAlignmentTransform` / `AlignMol(prb, ref, atomMap,
+/// weights, reflect, maxIters)` for two conformers of `mol` (as
+/// `Chem.MolFromSmiles` numbers its atoms): the RMSD after the best fit of
+/// `probe` onto `reference` and its transform. Without an atom map
+/// (`(probe atom, reference atom)` pairs) the first substructure match is
+/// used, as RDKit does.
+pub fn rdkit_align_mol(
+    mol: &Molecule,
+    probe: &[[f64; 3]],
+    reference: &[[f64; 3]],
+    atom_map: Option<&[(usize, usize)]>,
+    weights: Option<&[f64]>,
+    reflect: bool,
+    max_iterations: u32,
+) -> Result<RdkitAlignment, RdkitSmilesError> {
+    let m = rdkit_mol_sanitized(mol)?;
+    align::align_mol(
+        &m,
+        probe,
+        reference,
+        atom_map,
+        weights,
+        reflect,
+        max_iterations,
+    )
+}
+
+/// `rdMolAlign.GetBestRMS(prb, ref, maxMatches=max_matches,
+/// symmetrizeConjugatedTerminalGroups=symmetrize, weights)` for two
+/// conformers of `mol`: the smallest RMSD over the best fits of every
+/// substructure match (RDKit's enumeration order, `uniquify=False`), with
+/// that fit's transform and match.
+pub fn rdkit_best_rms(
+    mol: &Molecule,
+    probe: &[[f64; 3]],
+    reference: &[[f64; 3]],
+    max_matches: usize,
+    symmetrize: bool,
+    weights: Option<&[f64]>,
+) -> Result<RdkitAlignment, RdkitSmilesError> {
+    let m = rdkit_mol_sanitized(mol)?;
+    align::best_rms(&m, probe, reference, max_matches, symmetrize, weights)
+}
+
+/// `rdMolAlign.CalcRMS(prb, ref, maxMatches=max_matches,
+/// symmetrizeConjugatedTerminalGroups=symmetrize, weights)`: the smallest
+/// RMSD over all matches without moving the probe.
+pub fn rdkit_calc_rms(
+    mol: &Molecule,
+    probe: &[[f64; 3]],
+    reference: &[[f64; 3]],
+    max_matches: usize,
+    symmetrize: bool,
+    weights: Option<&[f64]>,
+) -> Result<f64, RdkitSmilesError> {
+    let m = rdkit_mol_sanitized(mol)?;
+    align::calc_rms(&m, probe, reference, max_matches, symmetrize, weights)
+}
+
+/// `RDNumeric::Alignments::AlignPoints(refPoints, probePoints, weights,
+/// reflect, maxIterations)`: the sum of squared residuals of the best fit
+/// and its transform.
+pub fn rdkit_align_points(
+    reference: &[[f64; 3]],
+    probe: &[[f64; 3]],
+    weights: Option<&[f64]>,
+    reflect: bool,
+    max_iterations: u32,
+) -> Result<(f64, Transform3D), RdkitSmilesError> {
+    align::align_points(reference, probe, weights, reflect, max_iterations)
+}
+
 /// [`rdkit_mol_from_smiles`]'s molecule for writers, which read neither
 /// `chirality_possible` nor the CIP ranks.
 fn rdkit_mol_for_writing(mol: &Molecule) -> Result<mol::Mol, RdkitSmilesError> {
