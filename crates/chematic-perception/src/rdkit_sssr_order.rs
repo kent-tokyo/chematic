@@ -69,7 +69,7 @@ fn is_metal(z: u8) -> bool {
 /// valence of its charge-shifted element (or equal to it on an aromatic
 /// atom of total degree four), the single bond to the bonded metal with the
 /// fewest dative bonds so far (higher canonical rank first on a tie).
-fn organometallic_dative_bonds(mol: &Molecule) -> Vec<bool> {
+pub fn organometallic_dative_bonds(mol: &Molecule) -> Vec<bool> {
     let n = mol.atom_count();
     let mut dative = vec![false; mol.bond_count()];
     let z = |a: usize| -> u8 {

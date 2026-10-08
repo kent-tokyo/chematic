@@ -409,6 +409,9 @@ fn assign_atom_chiral_codes(
         if legal {
             unassigned += 1;
         }
+        if legal && !dupes && flag_possible {
+            mol.atoms[a].chirality_possible = true;
+        }
         if legal && !dupes && tag != ChiralTag::Unspecified {
             atom_changed = true;
             unassigned -= 1;
@@ -693,6 +696,7 @@ pub(crate) fn legacy_stereo_perception(mol: &mut Mol, clean_it: bool, flag_possi
     for a in 0..mol.atoms.len() {
         if clean_it {
             mol.atoms[a].cip_code = None;
+            mol.atoms[a].chirality_possible = false;
         }
         if !has_stereo_atoms && mol.atoms[a].chiral != ChiralTag::Unspecified {
             has_stereo_atoms = true;

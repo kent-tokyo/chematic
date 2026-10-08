@@ -42,7 +42,10 @@ pub use rdkit_parity::{
     apply_aromaticity_rdkit_parity_shared, assign_aromaticity_rdkit_parity_experimental,
     rdkit_parity_view_is_identity, with_rdkit_parity_view,
 };
-pub use rdkit_sssr_order::{rdkit_sssr_ring_order, rdkit_symmetrized_sssr};
+pub use rdkit_sssr_order::{
+    organometallic_dative_bonds as rdkit_organometallic_dative_bonds, rdkit_sssr_ring_order,
+    rdkit_symmetrized_sssr,
+};
 pub use relevant_cycles::{RelevantCyclesTooMany, relevant_cycle_counts, relevant_cycles};
 pub use ring_family::{RingFamily, RingSystemKind, find_ring_families, find_ring_families_over};
 

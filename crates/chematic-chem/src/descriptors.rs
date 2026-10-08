@@ -743,7 +743,7 @@ fn use_perceived_nitrogen_environment(mol: &Molecule, mol_arom: &Molecule, idx: 
 pub(crate) fn descriptor_aromaticity(mol: &Molecule) -> DescriptorView<'_> {
     // The RDKit-parity view is often an exact copy of `mol`; use `mol` (and
     // its caches) directly then.
-    let needs_cleanup = needs_rdkit_halogen_cleanup(mol);
+    let needs_cleanup = needs_rdkit_halogen_cleanup(mol) || has_metal(mol);
     if !needs_cleanup && chematic_perception::rdkit_parity_view_is_identity(mol) {
         return DescriptorView::Same(mol);
     }
@@ -753,7 +753,7 @@ pub(crate) fn descriptor_aromaticity(mol: &Molecule) -> DescriptorView<'_> {
         mol.derived(chematic_core::DerivedSlot::DescriptorAromatic, || {
             let cleaned;
             let src = if needs_cleanup {
-                cleaned = rdkit_halogen_cleanup(mol);
+                cleaned = rdkit_sanitize_cleanup(mol);
                 &cleaned
             } else {
                 mol
@@ -799,6 +799,46 @@ fn rdkit_halogen_cleanup_applies(mol: &Molecule, idx: AtomIdx) -> bool {
     ev += f64::from(atom.hydrogen_count.unwrap_or(0));
     let ev = (ev + 0.1) as i32;
     has_double && matches!(ev, 3 | 5 | 7)
+}
+
+/// Whether `mol` has a metal atom (RDKit's `QueryOps::isMetal`), the
+/// precondition of `cleanUpOrganometallics`.
+fn has_metal(mol: &Molecule) -> bool {
+    mol.atoms().any(|(idx, _)| has_metal_atom(mol, idx))
+}
+
+/// `mol` as RDKit's `MolFromSmiles` sanitization leaves it, for the parts
+/// that change descriptor typing: [`rdkit_halogen_cleanup`], then
+/// `cleanUpOrganometallics`, which turns the single bond from a
+/// hypervalent non-metal to a metal into a dative bond
+/// ([`chematic_perception::rdkit_organometallic_dative_bonds`]).
+fn rdkit_sanitize_cleanup(mol: &Molecule) -> Molecule {
+    let mut out = if needs_rdkit_halogen_cleanup(mol) {
+        rdkit_halogen_cleanup(mol)
+    } else {
+        mol.clone()
+    };
+    if has_metal(&out) {
+        let dative = chematic_perception::rdkit_organometallic_dative_bonds(&out);
+        for (i, &d) in dative.iter().enumerate() {
+            let b = BondIdx(i as u32);
+            // chematic stores a dative bond donor → acceptor; the donor is
+            // the non-metal end.
+            if d && !has_metal_atom(&out, out.bond(b).atom1) {
+                out.set_bond_order(b, BondOrder::Dative);
+            }
+        }
+    }
+    out
+}
+
+fn has_metal_atom(mol: &Molecule, idx: AtomIdx) -> bool {
+    let a = mol.atom(idx);
+    !a.wildcard
+        && !matches!(
+            a.element.atomic_number(),
+            1 | 2 | 5..=10 | 14..=18 | 33..=36 | 52..=54 | 85 | 86
+        )
 }
 
 /// Copy of `mol` with RDKit's `halogenCleanup` applied, as RDKit's
@@ -1143,6 +1183,28 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
         .collect()
 }
 
+/// Whether a hydrogen on the (non-aromatic) oxygen `parent` is Crippen type
+/// H2 by one of RDKit's first-listed patterns, `[#1]O[CX4,c]` or
+/// `[#1]O[!#6;!#7;!#8;!#16]`. RDKit takes the first matching type in table
+/// order, so these win over H3 (`[#1]O[#7]`) and H4 (`[#1]OC=[#6,#7,O,S]`)
+/// when the oxygen has several neighbours, e.g. a metal-bound `[OH+]`
+/// of a carboxylate.
+fn oh_hydrogen_is_h2(mol: &Molecule, parent: AtomIdx) -> bool {
+    mol.neighbors(parent).any(|(nb, _)| {
+        let a = mol.atom(nb);
+        let z = if a.wildcard {
+            0
+        } else {
+            a.element.atomic_number()
+        };
+        match z {
+            6 => a.aromatic || mol.degree(nb) + usize::from(implicit_hcount(mol, nb)) == 4,
+            7 | 8 | 16 => false,
+            _ => true,
+        }
+    })
+}
+
 /// Determine the LogP contribution per implicit-H attached to `parent_idx`.
 /// Matches against H-type SMARTS by looking at the parent atom's environment.
 fn h_logp_for_parent(
@@ -1167,6 +1229,8 @@ fn h_logp_for_parent(
         8 => {
             if parent_aromatic {
                 fallback // aromatic O (furan-type) — HS fallback
+            } else if oh_hydrogen_is_h2(mol, parent_idx) {
+                -0.2677
             } else if mol.neighbors(parent_idx).any(|(nb, _)| {
                 // H4: O bonded to C, and that C has a double bond to C/N/O/S
                 // Matches RDKit [#1]OC=[#6,#7,O,S]: covers carboxylic, enol, vinylogous OH
@@ -1351,6 +1415,8 @@ fn h_mr_for_parent(
         8 => {
             if parent_aromatic {
                 fallback // aromatic O — HS fallback
+            } else if oh_hydrogen_is_h2(mol, parent_idx) {
+                1.395
             } else if mol.neighbors(parent_idx).any(|(nb, _)| {
                 // [#1]O[#7]: N-O-H (hydroxamate, oxime) → same MR as H on N
                 mol.atom(nb).element.atomic_number() == 7
@@ -1882,7 +1948,14 @@ pub fn ring_bundle(mol: &Molecule) -> RingBundle {
 /// for their four substituents are all distinct, regardless of whether @/@@ is
 /// specified in the input SMILES.
 pub fn num_stereocenters(mol: &Molecule) -> usize {
-    potential_stereocenter_indices(mol).len()
+    // RDKit's count (`CalcNumAtomStereoCenters`) comes from its legacy
+    // stereo perception, which e.g. leaves symmetric bridgehead amines
+    // unflagged; use the port of it, falling back to the CIP-based
+    // potential centers if the molecule is outside the port's scope.
+    match chematic_smiles::rdkit_atom_stereocenter_counts(mol) {
+        Ok((total, _)) => total,
+        Err(_) => potential_stereocenter_indices(mol).len(),
+    }
 }
 
 /// Return the atom indices of potential tetrahedral stereocenters.
@@ -1916,6 +1989,10 @@ pub fn potential_stereocenter_indices(mol: &Molecule) -> Vec<AtomIdx> {
 /// repeated substituents are not counted as stereocenters.
 pub fn num_unspecified_stereocenters(mol: &Molecule) -> usize {
     use chematic_core::Chirality;
+    // As [`num_stereocenters`]: RDKit's legacy perception when possible.
+    if let Ok((_, unspecified)) = chematic_smiles::rdkit_atom_stereocenter_counts(mol) {
+        return unspecified;
+    }
     potential_stereocenter_indices(mol)
         .into_iter()
         .filter(|idx| mol.atom(*idx).chirality == Chirality::None)
@@ -3368,6 +3445,37 @@ mod tests {
             3
         );
         assert_eq!(m.atoms().filter(|(_, a)| a.charge != 0).count(), 0);
+    }
+
+    /// Crippen H typing takes RDKit's first matching type: an `[OH+]` bound
+    /// to a metal and to a carboxyl carbon is H2 (`[#1]O[!#6;!#7;!#8;!#16]`),
+    /// not H4. Values from RDKit 2026.03.1.
+    #[test]
+    fn metal_bound_oh_hydrogen_is_h2() {
+        let m = mol("N[Co+3](N)(N)(N)(N)[OH+]C(=O)C(F)(F)F");
+        assert_eq!(logp_crippen(&m), -2.887899999999999);
+        assert_eq!(logp_and_mr(&m).1, 34.21780000000002);
+    }
+
+    /// `cleanUpOrganometallics` makes the four-bonded `[C-]`–Fe bond dative
+    /// in RDKit's sanitized ferrocene; Crippen typing sees that form.
+    #[test]
+    fn ferrocene_dative_bond_matches_rdkit_crippen() {
+        let m = mol("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10");
+        assert_eq!(logp_crippen(&m), 1.4556799999999999);
+        assert_eq!(logp_and_mr(&m).1, 53.144000000000005);
+    }
+
+    /// RDKit's `CalcNumAtomStereoCenters` uses legacy stereo perception: the
+    /// bridgehead nitrogens of this symmetric cage have tied neighbours.
+    #[test]
+    fn cage_amine_has_no_rdkit_stereocenters() {
+        let m = mol("C1CN2CN1CN3CCN(C2)C3");
+        assert_eq!(num_stereocenters(&m), 0);
+        assert_eq!(num_unspecified_stereocenters(&m), 0);
+        assert_eq!(num_stereocenters(&mol("CC(O)CC")), 1);
+        assert_eq!(num_unspecified_stereocenters(&mol("C[C@H](O)CC")), 0);
+        assert_eq!(num_stereocenters(&mol("CC1CCC(C)CC1")), 0);
     }
 
     /// RDKit 2026.03's strict rotor pattern excludes `[CH3]`, including a

@@ -117,6 +117,8 @@ pub(crate) struct Atom {
     pub ring_stereo_atoms: Option<Vec<i32>>,
     /// `_ringStereochemCand`.
     pub ring_stereochem_cand: Option<bool>,
+    /// `_ChiralityPossible`.
+    pub chirality_possible: bool,
 }
 
 impl Atom {
@@ -137,6 +139,7 @@ impl Atom {
             cip_code: None,
             ring_stereo_atoms: None,
             ring_stereochem_cand: None,
+            chirality_possible: false,
         }
     }
 

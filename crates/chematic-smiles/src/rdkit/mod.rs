@@ -91,5 +91,22 @@ pub fn rdkit_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError
     write::mol_to_smiles(&m)
 }
 
+/// RDKit's `CalcNumAtomStereoCenters` and
+/// `CalcNumUnspecifiedAtomStereoCenters` for `mol` as `MolFromSmiles`
+/// leaves it: atoms flagged `_ChiralityPossible` by RDKit's legacy stereo
+/// perception (RDKit 2026.03's default), and those of them without a
+/// chiral tag.
+pub fn rdkit_atom_stereocenter_counts(mol: &Molecule) -> Result<(usize, usize), RdkitSmilesError> {
+    let mut m = parse::from_chematic(mol)?;
+    sanitize::remove_hs_and_sanitize(&mut m)?;
+    stereo::legacy_stereo_perception(&mut m, true, true);
+    let possible = m.atoms.iter().filter(|a| a.chirality_possible);
+    let total = possible.clone().count();
+    let unspecified = possible
+        .filter(|a| a.chiral == mol::ChiralTag::Unspecified)
+        .count();
+    Ok((total, unspecified))
+}
+
 #[cfg(test)]
 mod tests;
