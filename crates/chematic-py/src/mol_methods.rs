@@ -2741,6 +2741,17 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// The RDKit canonical SMILES (``Chem.MolToSmiles(isomer)``) of the
+    /// isomers :meth:`rdkit_stereoisomers` returns, sorted. Unlike
+    /// re-reading them (``MolFromSmiles`` drops e.g. the chirality RDKit
+    /// gives an aromatic ``[s+]([O-])``), these are RDKit's strings as
+    /// written.
+    #[pyo3(signature = (max_isomers = 1024))]
+    fn rdkit_stereoisomer_smiles(&self, max_isomers: usize) -> PyResult<Vec<String>> {
+        chematic_smiles::rdkit_stereoisomer_smiles(&self.inner, max_isomers)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// RDKit-compatible ``EnumerateStereoisomers.GetStereoisomerCount(m)``
     /// (default options): ``2 ** (number of flippable centres/bonds)``.
     fn rdkit_stereoisomer_count(&self) -> PyResult<u128> {

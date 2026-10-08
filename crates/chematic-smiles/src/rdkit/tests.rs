@@ -327,3 +327,68 @@ fn explicit_hydrogen_atoms_are_written_like_rdkit_add_hs() {
         assert_eq!(rdkit_canonical_smiles(&mol).as_deref(), Ok(want), "{input}");
     }
 }
+
+/// RDKit 2026.03.1 `MolToSmarts`, `MolToCXSmarts`,
+/// `MurckoScaffold.GetScaffoldForMol`, `GetStereoisomerCount`,
+/// `FindMolChiralCenters(includeUnassigned=True)` and `MolToPDBBlock`.
+#[test]
+fn rdkit_writers_match_rdkit() {
+    let p = |s: &str| crate::parse(s).expect("parses");
+    let cases: &[(&str, &str, &str, &str)] = &[
+        (
+            "C[C@H](N)C(=O)O",
+            "[#6]-[#6@H](-[#7])-[#6](=[#8])-[#8]",
+            "[#6]-[#6@H](-[#7])-[#6](=[#8])-[#8]",
+            "",
+        ),
+        ("N->[Cu]", "[#7]->[Cu]", "[#7]-[Cu] |C:0.0|", ""),
+        (
+            "CCCCOC1=CC=C(NC[S](=O)=O)C=N1",
+            "[#6]-[#6]-[#6]-[#6]-[#8]-[#6]1:[#6]:[#6]:[#6](-[#7]-[#6]-[#16](=[#8])=[#8]):[#6]:[#7]:1",
+            "[#6]-[#6]-[#6]-[#6]-[#8]-[#6]1:[#6]:[#6]:[#6](-[#7]-[#6]-[#16](=[#8])=[#8]):[#6]:[#7]:1 |^1:11|",
+            "c1ccncc1",
+        ),
+        (
+            "Cn1cccc1CC1CCC1",
+            "[#6]-[#7]1:[#6]:[#6]:[#6]:[#6]:1-[#6]-[#6]1-[#6]-[#6]-[#6]-1",
+            "[#6]-[#7]1:[#6]:[#6]:[#6]:[#6]:1-[#6]-[#6]1-[#6]-[#6]-[#6]-1",
+            "c1c[nH]c(CC2CCC2)c1",
+        ),
+        (
+            "O=C1CC[C@H](C)N1CCc1ccccc1",
+            "[#8]=[#6]1-[#6]-[#6]-[#6@H](-[#6])-[#7]-1-[#6]-[#6]-[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1",
+            "[#8]=[#6]1-[#6]-[#6]-[#6@H](-[#6])-[#7]-1-[#6]-[#6]-[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1",
+            "O=C1CCCN1CCc1ccccc1",
+        ),
+    ];
+    for &(input, smarts, cx, scaffold) in cases {
+        let m = p(input);
+        assert_eq!(
+            super::rdkit_smarts(&m, true, None).unwrap(),
+            smarts,
+            "{input}"
+        );
+        assert_eq!(super::rdkit_cx_smarts(&m).unwrap(), cx, "{input}");
+        assert_eq!(
+            super::rdkit_murcko_scaffold(&m).unwrap(),
+            scaffold,
+            "{input}"
+        );
+    }
+    assert_eq!(
+        super::rdkit_chiral_centers(&p("O=C1CC[C@H](C)N1CCc1ccccc1"), true).unwrap(),
+        [(4, "S".to_string())]
+    );
+    assert_eq!(
+        super::rdkit_stereoisomer_count(&p("CC(F)C(Cl)Br")).unwrap(),
+        4
+    );
+    assert_eq!(
+        super::rdkit_pdb_block(&p("CC(=O)[O-]"), None).unwrap(),
+        "HETATM    1  C1  UNL     1       0.000   0.000   0.000  1.00  0.00           C  \n\
+         HETATM    2  C2  UNL     1       0.000   0.000   0.000  1.00  0.00           C  \n\
+         HETATM    3  O1  UNL     1       0.000   0.000   0.000  1.00  0.00           O  \n\
+         HETATM    4  O2  UNL     1       0.000   0.000   0.000  1.00  0.00           O1-\n\
+         CONECT    1    2\nCONECT    2    3    3    4\nEND\n"
+    );
+}
