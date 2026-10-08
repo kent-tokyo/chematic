@@ -6,9 +6,10 @@
   "official_conformance_suite": {
     "checked": true,
     "repo": "modelcontextprotocol/conformance",
-    "finding": "unsupported",
-    "reason": "The official suite's server-testing mode (`npx @modelcontextprotocol/conformance server --url <url>`) requires an HTTP URL -- it acts as an HTTP client against a running Streamable HTTP endpoint. There is no `--command`/stdio option for server-mode testing (README.md and SDK_INTEGRATION.md both fetched at repo HEAD, 2026-07-24; grepped for 'stdio'/'transport', no stdio server-testing path exists). This PR implements stdio only (HTTP is explicitly deferred per task brief section 11), so the official suite genuinely cannot be pointed at this server in its current form -- not a capability gap this PR is hiding, a transport this PR does not have yet.",
-    "action_taken": "Not run. Documented here as unsupported rather than fabricating a result or silently omitting the attempt."
+    "finding": "run_over_streamable_http",
+    "history": "Through v1.0.38 this was 'unsupported': the suite's server mode needs an HTTP URL and chematic-mcp was stdio-only (README.md and SDK_INTEGRATION.md fetched 2026-07-24; no stdio server-testing path).",
+    "now": "#779 added an opt-in Streamable HTTP transport (`chematic-mcp --transport streamable-http`) in front of the same protocol/server/tool layers, and the suite (0.2.0-alpha.12, the first release with 2026-07-28 server scenarios) was run against it for every 2026-07-28 server scenario. Results, with every failure classified (capability not implemented, or needs the suite's fixture tools), are in validation/results/mcp_2026_07_28_http_conformance.json and benchmarks/2026-10-09-issues-769-779.md. The stdio-side results in this file are unchanged.",
+    "action_taken": "Run; three real defects it found (missing-_meta error code over HTTP, clientInfo treated as required, loopback Origin refused) fixed before the recorded run."
   },
   "legacy_scenarios": [
     {

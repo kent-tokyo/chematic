@@ -26,8 +26,11 @@ Then point the MCP client at the resulting local binary:
 }
 ```
 
-The server uses newline-delimited JSON-RPC over stdio. It has no HTTP
-endpoint, authentication layer, or hosted SLA. See the
+By default the server uses newline-delimited JSON-RPC over stdio.
+`chematic-mcp --transport streamable-http` serves the same tools at
+`http://127.0.0.1:3000/mcp` instead. That adapter is self-hosted and
+loopback-only by default, and it has no authentication layer. There is no
+hosted endpoint and no SLA. See the
 [`chematic-mcp` README](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mcp/README.md) for the legacy
 and modern protocol envelopes.
 

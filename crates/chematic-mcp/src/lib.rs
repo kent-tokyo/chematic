@@ -34,12 +34,14 @@
 // literal, not evidence of unbounded/runaway recursion in actual logic.
 #![recursion_limit = "256"]
 
+pub mod http;
 mod protocol;
 mod schema;
 mod server;
 mod tools;
 mod transport;
 
+pub use http::{HttpConfig, HttpServer, run_http};
 pub use protocol::{
     ClientMeta, HEADER_MISMATCH, INTERNAL_ERROR, INVALID_PARAMS, INVALID_REQUEST, JsonRpcRequest,
     METHOD_NOT_FOUND, MISSING_REQUIRED_CLIENT_CAPABILITY, PARSE_ERROR, ProtocolEra, RequestContext,
@@ -262,9 +264,22 @@ mod tests {
 
     #[test]
     fn test_modern_missing_required_metadata_is_typed_error() {
-        // _meta present but missing clientInfo
+        // _meta present but missing clientCapabilities (required); a
+        // missing clientInfo is allowed (it is a SHOULD for clients).
         let req = json!({
             "jsonrpc": "2.0", "id": 1, "method": "server/discover",
+            "params": {
+                "_meta": {
+                    "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                    "io.modelcontextprotocol/clientInfo": { "name": "t", "version": "1" }
+                }
+            }
+        });
+        let resp = handle_line(&req.to_string()).unwrap();
+        assert_eq!(resp["error"]["code"], -32602);
+
+        let req = json!({
+            "jsonrpc": "2.0", "id": 2, "method": "server/discover",
             "params": {
                 "_meta": {
                     "io.modelcontextprotocol/protocolVersion": "2026-07-28",
@@ -273,7 +288,7 @@ mod tests {
             }
         });
         let resp = handle_line(&req.to_string()).unwrap();
-        assert_eq!(resp["error"]["code"], -32602);
+        assert!(resp["result"]["supportedVersions"].is_array(), "{resp}");
     }
 
     #[test]

@@ -1,0 +1,664 @@
+{
+  "_comment": "Official MCP conformance suite run against chematic-mcp's opt-in Streamable HTTP adapter (#779). Every number below comes from an actual run; the raw per-scenario logs were summarized by the check ids and errors they print. 'failed' counts are the suite's own; each failure is classified, and none is classified as a chematic-mcp defect.",
+  "generated_at_utc": "2026-10-09",
+  "suite": {
+    "package": "@modelcontextprotocol/conformance",
+    "version": "0.2.0-alpha.12",
+    "spec_version": "2026-07-28",
+    "command": "npx -y @modelcontextprotocol/conformance@0.2.0-alpha.12 server --url http://127.0.0.1:<port>/mcp --scenario <name> --spec-version 2026-07-28",
+    "scenarios_run": "every server scenario `list --server` tags 2026-07-28 (40), each on its own"
+  },
+  "server": {
+    "command": "target/debug/chematic-mcp --transport streamable-http --port 0",
+    "bind": "127.0.0.1",
+    "branch": "fix/769-779",
+    "host": "Linux x86-64"
+  },
+  "defects_found_and_fixed_before_this_run": [
+    {
+      "check": "sep-2575-request-meta-invalid-missing-meta / -missing-protocol-version",
+      "was": "400 with -32020 HeaderMismatch",
+      "now": "400 with -32602 Invalid params (missing required _meta field)"
+    },
+    {
+      "check": "sep-2575-request-meta-client-info-optional",
+      "was": "-32602: clientInfo treated as required (stdio too)",
+      "now": "clientInfo optional per RequestMetaObject; malformed clientInfo still -32602"
+    },
+    {
+      "check": "localhost-host-valid-accepted (dns-rebinding-protection)",
+      "was": "403 for a loopback Origin",
+      "now": "loopback Origin accepted on a loopback bind; other origins only via --allowed-origin"
+    }
+  ],
+  "before_fixes": {
+    "server-stateless": "17/24",
+    "dns-rebinding-protection": "1/2",
+    "http-header-validation": "13/14"
+  },
+  "classification_legend": {
+    "not_applicable_capability_not_implemented": "the scenario exercises prompts, resources or completion; chematic-mcp implements none and advertises none in server/discover, so -32601 (404) is the correct answer",
+    "not_applicable_needs_suite_fixture": "the scenario needs the suite's own fixture tools (test_*, json_schema_2020_12_tool, tools with x-mcp-header, input-required-result tools); the suite itself reports most of these as 'Not testable' or 'Unknown tool'",
+    "not_applicable_first_tool_called_with_empty_arguments": "ServerAcceptsWhitespaceHeaderValue calls the first listed tool (parse_smiles) with arguments {}; the padded Mcp-Name passed header validation and the request reached the tool's input-schema check (-32602, missing smiles). The same padding with valid arguments returns 200 in tests/streamable_http.rs"
+  },
+  "remaining_warnings_note": "sep-2575-server-identifies-in-result-meta (SHOULD): server/discover keeps serverInfo as a top-level field per the pinned RC shape (see validation/manifests/mcp_2026_07_28_rc.json); results carry no _meta serverInfo. sep-2164-* (SHOULD) and sep-2322-* warnings concern resources and input-required results, which are not implemented.",
+  "scenarios": [
+    {
+      "scenario": "caching",
+      "passed": 4,
+      "total": 7,
+      "failed": 3,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "PromptsListCachingHints",
+          "error": "prompts/list returned JSON-RPC error -32601: Method not found: prompts/list",
+          "classification": "not_applicable_capability_not_implemented"
+        },
+        {
+          "check": "ResourcesListCachingHints",
+          "error": "resources/list returned JSON-RPC error -32601: Method not found: resources/list",
+          "classification": "not_applicable_capability_not_implemented"
+        },
+        {
+          "check": "ResourcesTemplatesListCachingHints",
+          "error": "resources/templates/list returned JSON-RPC error -32601: Method not found: resources/templates/list",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "completion-complete",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "CompletionComplete",
+          "error": "Failed: Method not found: completion/complete",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "dns-rebinding-protection",
+      "passed": 2,
+      "total": 2,
+      "failed": 0,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": []
+    },
+    {
+      "scenario": "http-custom-header-server-validation",
+      "passed": 1,
+      "total": 6,
+      "failed": 5,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "HttpCustomHeaderServerNoTool",
+          "error": "Not testable: server exposes no tool with x-mcp-header annotations, so none of the custom-header validation requirements could be exercised",
+          "classification": "not_applicable_needs_suite_fixture"
+        },
+        {
+          "check": "NotTestable",
+          "error": "Not testable: server exposes no tool with x-mcp-header annotations",
+          "classification": "not_applicable_needs_suite_fixture"
+        },
+        {
+          "check": "NotTestable",
+          "error": "Not testable: server exposes no tool with x-mcp-header annotations",
+          "classification": "not_applicable_needs_suite_fixture"
+        },
+        {
+          "check": "NotTestable",
+          "error": "Not testable: server exposes no tool with x-mcp-header annotations",
+          "classification": "not_applicable_needs_suite_fixture"
+        },
+        {
+          "check": "NotTestable",
+          "error": "Not testable: server exposes no tool with x-mcp-header annotations",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "http-header-validation",
+      "passed": 13,
+      "total": 14,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ServerAcceptsWhitespaceHeaderValue",
+          "error": "Expected successful response, got HTTP 400. Server MUST accept this request.; Expected successful response, but body contains JSON-RPC error {\"code\":-32602,\"message\":\"invalid arguments for tool 'parse_smiles': missing required property: smiles\"}.",
+          "classification": "not_applicable_first_tool_called_with_empty_arguments"
+        }
+      ]
+    },
+    {
+      "scenario": "input-required-result-basic-elicitation",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "InputRequiredResultElicitationIncomplete",
+          "error": "JSON-RPC error: Unknown tool: test_input_required_result_elicitation",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "input-required-result-basic-list-roots",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "InputRequiredResultListRootsIncomplete",
+          "error": "JSON-RPC error: Unknown tool: test_input_required_result_list_roots",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "input-required-result-basic-sampling",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "InputRequiredResultSamplingIncomplete",
+          "error": "JSON-RPC error: Unknown tool: test_input_required_result_sampling",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "input-required-result-capability-check",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "RespectClientCapabilities",
+          "error": "JSON-RPC error: Unknown tool: test_input_required_result_capabilities",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "input-required-result-ignore-extra-params",
+      "passed": 1,
+      "total": 1,
+      "failed": 0,
+      "warnings": 1,
+      "warning_checks": [
+        "sep-2322-ignore-unexpected-params"
+      ],
+      "failed_checks": []
+    },
+    {
+      "scenario": "input-required-result-missing-input-response",
+      "passed": 1,
+      "total": 1,
+      "failed": 0,
+      "warnings": 1,
+      "warning_checks": [
+        "sep-2322-missing-response-rerequests"
+      ],
+      "failed_checks": []
+    },
+    {
+      "scenario": "input-required-result-multi-round",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "InputRequiredResultMultiRoundR1",
+          "error": "Expected InputRequiredResult with inputRequests and requestState",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "input-required-result-multiple-input-requests",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "InputRequiredResultMultipleInputsIncomplete",
+          "error": "JSON-RPC error: Unknown tool: test_input_required_result_multiple_inputs",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "input-required-result-non-tool-request",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "InputRequiredResultNonToolIncomplete",
+          "error": "JSON-RPC error: Method not found: prompts/get",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "input-required-result-request-state",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "InputRequiredResultRequestStateIncomplete",
+          "error": "JSON-RPC error: Unknown tool: test_input_required_result_request_state",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "input-required-result-result-type",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ResultTypeIncluded",
+          "error": "JSON-RPC error: Unknown tool: test_input_required_result_elicitation",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "input-required-result-tampered-state",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "RejectTamperedState",
+          "error": "Prerequisite failed: could not get initial InputRequiredResult with requestState",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "input-required-result-unsupported-methods",
+      "passed": 2,
+      "total": 2,
+      "failed": 0,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": []
+    },
+    {
+      "scenario": "input-required-result-validate-input",
+      "passed": 3,
+      "total": 3,
+      "failed": 0,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": []
+    },
+    {
+      "scenario": "json-schema-2020-12",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "JsonSchema2020_12ToolFound",
+          "error": "Tool 'json_schema_2020_12_tool' not found. Available tools: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "prompts-get-embedded-resource",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "PromptsGetEmbeddedResource",
+          "error": "Failed: Method not found: prompts/get",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "prompts-get-simple",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "PromptsGetSimple",
+          "error": "Failed: Method not found: prompts/get",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "prompts-get-with-args",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "PromptsGetWithArgs",
+          "error": "Failed: Method not found: prompts/get",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "prompts-get-with-image",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "PromptsGetWithImage",
+          "error": "Failed: Method not found: prompts/get",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "prompts-list",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "PromptsList",
+          "error": "Failed: Method not found: prompts/list",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "resources-list",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ResourcesList",
+          "error": "Failed: Method not found: resources/list",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "resources-read-binary",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ResourcesReadBinary",
+          "error": "Failed: Method not found: resources/read",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "resources-read-text",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ResourcesReadText",
+          "error": "Failed: Method not found: resources/read",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "resources-templates-read",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ResourcesTemplateRead",
+          "error": "Failed: Method not found: resources/read",
+          "classification": "not_applicable_capability_not_implemented"
+        }
+      ]
+    },
+    {
+      "scenario": "sep-2164-resource-not-found",
+      "passed": 2,
+      "total": 2,
+      "failed": 0,
+      "warnings": 2,
+      "warning_checks": [
+        "sep-2164-error-code",
+        "sep-2164-data-uri"
+      ],
+      "failed_checks": []
+    },
+    {
+      "scenario": "server-sse-multiple-streams",
+      "passed": 1,
+      "total": 1,
+      "failed": 0,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": []
+    },
+    {
+      "scenario": "server-stateless",
+      "passed": 20,
+      "total": 24,
+      "failed": 4,
+      "warnings": 1,
+      "warning_checks": [
+        "sep-2575-server-identifies-in-result-meta"
+      ],
+      "failed_checks": [
+        {
+          "check": "ServerRejectsUndeclaredCapability",
+          "error": "Not testable: server does not list the diagnostic tool 'test_missing_capability' in tools/list and the probe call did not exercise it (required for the undeclared-capability rejection)",
+          "classification": "not_applicable_needs_suite_fixture"
+        },
+        {
+          "check": "MissingCapabilityHttp400",
+          "error": "Not testable: server does not list the diagnostic tool 'test_missing_capability' in tools/list, so the -32021 HTTP status could not be validated",
+          "classification": "not_applicable_needs_suite_fixture"
+        },
+        {
+          "check": "HttpServerNoIndependentRequestsOnStream",
+          "error": "Not testable: server does not list the diagnostic tool 'test_streaming_elicitation' in tools/list, so the response stream could not be exercised",
+          "classification": "not_applicable_needs_suite_fixture"
+        },
+        {
+          "check": "ServerNoLogWithoutLogLevel",
+          "error": "Not testable: server does not list the diagnostic tool 'test_logging_tool' in tools/list, so the no-log-without-logLevel requirement could not be exercised",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "tools-call-audio",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ToolsCallAudio",
+          "error": "Failed: Unknown tool: test_audio_content",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "tools-call-embedded-resource",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ToolsCallEmbeddedResource",
+          "error": "Failed: Unknown tool: test_embedded_resource",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "tools-call-error",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ToolsCallError",
+          "error": "Failed: Unknown tool: test_error_handling",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "tools-call-image",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ToolsCallImage",
+          "error": "Failed: Unknown tool: test_image_content",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "tools-call-mixed-content",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ToolsCallMixedContent",
+          "error": "Failed: Unknown tool: test_multiple_content_types",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "tools-call-simple-text",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ToolsCallSimpleText",
+          "error": "Failed: Unknown tool: test_simple_text",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "tools-call-with-progress",
+      "passed": 1,
+      "total": 2,
+      "failed": 1,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": [
+        {
+          "check": "ToolsCallWithProgress",
+          "error": "Failed: Unknown tool: test_tool_with_progress",
+          "classification": "not_applicable_needs_suite_fixture"
+        }
+      ]
+    },
+    {
+      "scenario": "tools-list",
+      "passed": 4,
+      "total": 4,
+      "failed": 0,
+      "warnings": 0,
+      "warning_checks": [],
+      "failed_checks": []
+    }
+  ],
+  "totals": {
+    "success": 82,
+    "failure": 41,
+    "warning": 5,
+    "skipped": 6
+  },
+  "failed_by_classification": {
+    "not_applicable_capability_not_implemented": 14,
+    "not_applicable_needs_suite_fixture": 26,
+    "not_applicable_first_tool_called_with_empty_arguments": 1
+  }
+}

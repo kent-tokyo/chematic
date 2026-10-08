@@ -94,7 +94,11 @@ pub enum ProtocolEra {
 #[derive(Debug, Clone)]
 pub struct ClientMeta {
     pub protocol_version: String,
-    pub client_info: Value,
+    /// `io.modelcontextprotocol/clientInfo` when the client sent it. The
+    /// spec makes it a SHOULD for clients (optional on `RequestMetaObject`),
+    /// so a request without it is served; a present but malformed value is
+    /// still rejected.
+    pub client_info: Option<Value>,
     pub client_capabilities: Value,
     pub log_level: Option<Value>,
 }
@@ -153,7 +157,7 @@ pub fn result_response(id: &Value, result: Value) -> Value {
 ///   entirely absent — this request is not modern-shaped.
 /// - `Err(message)` if `_meta.protocolVersion` is present (so the caller is
 ///   clearly attempting the modern dialect) but the triple is malformed —
-///   e.g. `clientInfo`/`clientCapabilities` missing or wrong-typed. This is
+///   e.g. `clientCapabilities` missing, or `clientInfo` (optional) wrong-typed. This is
 ///   an argument-shape problem, mapped to `-32602` by the caller.
 pub fn parse_client_meta(params: &Value) -> Result<Option<ClientMeta>, String> {
     let meta = match params.get("_meta") {
@@ -171,15 +175,14 @@ pub fn parse_client_meta(params: &Value) -> Result<Option<ClientMeta>, String> {
         .ok_or_else(|| format!("{META_PROTOCOL_VERSION} must be a string"))?
         .to_string();
 
-    let client_info = meta
-        .get(META_CLIENT_INFO)
-        .ok_or_else(|| format!("missing required _meta key: {META_CLIENT_INFO}"))?;
-    if !client_info.is_object()
-        || client_info.get("name").and_then(|v| v.as_str()).is_none()
-        || client_info
-            .get("version")
-            .and_then(|v| v.as_str())
-            .is_none()
+    let client_info = meta.get(META_CLIENT_INFO);
+    if let Some(client_info) = client_info
+        && (!client_info.is_object()
+            || client_info.get("name").and_then(|v| v.as_str()).is_none()
+            || client_info
+                .get("version")
+                .and_then(|v| v.as_str())
+                .is_none())
     {
         return Err(format!(
             "{META_CLIENT_INFO} must be an object with string `name` and `version`"
@@ -197,7 +200,7 @@ pub fn parse_client_meta(params: &Value) -> Result<Option<ClientMeta>, String> {
 
     Ok(Some(ClientMeta {
         protocol_version,
-        client_info: client_info.clone(),
+        client_info: client_info.cloned(),
         client_capabilities: client_capabilities.clone(),
         log_level,
     }))
@@ -412,10 +415,24 @@ mod tests {
     }
 
     #[test]
-    fn parse_client_meta_missing_client_info_errors() {
+    fn parse_client_meta_client_info_is_optional() {
+        // Optional on `RequestMetaObject` (clients SHOULD send it).
         let params = json!({
             "_meta": {
                 META_PROTOCOL_VERSION: MODERN_PROTOCOL_VERSION,
+                META_CLIENT_CAPABILITIES: {}
+            }
+        });
+        let meta = parse_client_meta(&params).unwrap().unwrap();
+        assert!(meta.client_info.is_none());
+    }
+
+    #[test]
+    fn parse_client_meta_malformed_client_info_errors() {
+        let params = json!({
+            "_meta": {
+                META_PROTOCOL_VERSION: MODERN_PROTOCOL_VERSION,
+                META_CLIENT_INFO: { "name": "no-version" },
                 META_CLIENT_CAPABILITIES: {}
             }
         });

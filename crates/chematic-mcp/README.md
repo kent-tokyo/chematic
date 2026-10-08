@@ -1,28 +1,34 @@
 # chematic-mcp
 
-**MCP 2026-07-28 tools-only stateless stdio server** for chematic — call
-cheminformatics tools from AI agents. Also speaks the legacy
-(`2024-11-05`-style) stdio dialect on the same connection, byte-compatible
-with earlier `chematic-mcp` releases.
+**MCP 2026-07-28 tools-only stateless server** for chematic — call
+cheminformatics tools from AI agents. stdio by default; an opt-in,
+self-hosted Streamable HTTP transport is available with
+`--transport streamable-http` (see "Streamable HTTP" below). Over stdio it
+also speaks the legacy (`2024-11-05`-style) dialect on the same connection,
+byte-compatible with earlier `chematic-mcp` releases.
 
 ## Overview
 
-`chematic-mcp` exposes 20 cheminformatics tools via JSON-RPC 2.0 over stdio,
+`chematic-mcp` exposes 20 cheminformatics tools via JSON-RPC 2.0 over stdio (or, opt-in, Streamable HTTP),
 making them directly callable by Claude and other MCP-compatible AI agents.
 
-**Transport status**: stdio only. The server runs as a local OS process reading
-newline-delimited JSON-RPC 2.0 from stdin and writing responses to stdout.
-The transport/protocol-codec/server-core/tool-registry layering exists so a
-Streamable HTTP adapter *could* be added later without rewriting tool logic,
-but no HTTP code exists in this crate today — there is no hosted Remote MCP
-endpoint, no authentication, and no public service SLA. Nothing here is
-reachable over the network except the one tool noted below.
+**Transport status**: stdio is the default, and running `chematic-mcp`
+with no arguments behaves exactly as before. The server then runs as a local
+OS process reading newline-delimited JSON-RPC 2.0 from stdin and writing
+responses to stdout. `chematic-mcp --transport streamable-http` instead
+serves the same protocol, server and tool registry over HTTP at `/mcp`,
+bound to `127.0.0.1:3000` by default. That adapter is something you run
+yourself: **there is no hosted Remote MCP endpoint, no authentication or
+OAuth, and no service SLA.** Apart from the HTTP listener you start
+yourself, nothing here is reachable over the network except the one tool
+noted under "Network & privacy".
 
 | Capability | Status |
 |---|---|
 | Legacy stdio (`2024-11-05`-style `initialize` handshake) | **Supported**, byte-compatible |
 | 2026-07-28 stateless stdio (`server/discover`, per-request `_meta`) | **Supported** |
-| Remote HTTP (Streamable HTTP) | **Unsupported** |
+| Streamable HTTP, 2026-07-28 stateless dialect (`--transport streamable-http`, self-hosted, loopback by default) | **Supported**, opt-in — no hosted endpoint |
+| Legacy dialect or sessions over HTTP (`initialize`, `Mcp-Session-Id`, GET stream) | **Unsupported** — HTTP serves 2026-07-28 only |
 | Authentication / OAuth | **Unsupported** |
 | Tasks extension | **Unsupported** |
 | MCP Apps | **Unsupported** |
@@ -121,6 +127,12 @@ client can see what went wrong and retry. An argument-shape/schema
 violation (missing/wrong-typed argument, unknown tool) *is* a JSON-RPC
 error, `-32602 Invalid Params`.
 
+`io.modelcontextprotocol/protocolVersion` and
+`io.modelcontextprotocol/clientCapabilities` are required on every request.
+`io.modelcontextprotocol/clientInfo` is optional: clients SHOULD send it, but
+a request without it is served. A `clientInfo` that is present but malformed
+is still rejected with `-32602`.
+
 ### Tool registry caching
 
 The modern `tools/list` result carries a cache hint:
@@ -135,6 +147,109 @@ the registry ever changes, it changes as part of a new `chematic-mcp`
 release (a new process) — a client restarting the server always gets a
 fresh response regardless of a previously-cached TTL window; there is no
 runtime path that mutates the registry mid-process.
+
+## Streamable HTTP (opt-in)
+
+```bash
+chematic-mcp --transport streamable-http                 # http://127.0.0.1:3000/mcp
+chematic-mcp --transport streamable-http --port 8080
+chematic-mcp --transport streamable-http --port 0        # any free port, printed to stderr
+```
+
+The HTTP transport serves the **2026-07-28 stateless dialect only**. It reuses
+the stdio stack: every HTTP request becomes one JSON-RPC message, which the
+same codec, `McpServer` and tool registry answer. Tool schemas,
+`structuredContent` and the typed errors are therefore exactly the ones stdio
+returns, and the integration tests compare the two byte for byte. There are
+no sessions, no GET stream and no SSE. Each POST gets one `application/json`
+answer, and the connection closes after it.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--transport stdio\|streamable-http` | `stdio` | Which transport to serve |
+| `--bind <ip>` | `127.0.0.1` | Address to listen on |
+| `--port <n>` | `3000` | Port (`0` picks a free one) |
+| `--allow-non-loopback` | off | Required to bind any non-loopback address |
+| `--allowed-origin <origin>` | none | Extra browser `Origin` allowed (repeatable, exact `scheme://host[:port]`) |
+| `--max-concurrency <n>` | `16` | Connections served at once; more get `503` with `Retry-After: 1` |
+
+HTTP-only options given together with `--transport stdio` are rejected, as
+are unknown options (exit status 2).
+
+**Requests.** Send `POST /mcp` with `Content-Type: application/json` and an
+`Accept` that admits `application/json`. Each request also carries the
+mirrored metadata headers the transport requires:
+
+- `MCP-Protocol-Version: 2026-07-28`
+- `Mcp-Method: <method>`
+- for `tools/call` only, `Mcp-Name: <tool name>` (the `=?base64?…?=` form is
+  decoded)
+
+```bash
+curl -s http://127.0.0.1:3000/mcp \
+  -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+  -H 'MCP-Protocol-Version: 2026-07-28' -H 'Mcp-Method: tools/call' -H 'Mcp-Name: parse_smiles' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}},"name":"parse_smiles","arguments":{"smiles":"c1ccccc1"}}}'
+```
+
+**Status codes.**
+
+| Status | When |
+|---|---|
+| `200` | A result. This includes a tool's typed chemistry error, which is a result with `isError: true`, as on stdio. |
+| `202` | A notification. The body is empty. |
+| `400` | One of the following: malformed JSON (`-32700`); not one JSON-RPC object, including batches (`-32600`); `_meta` without `protocolVersion`, or arguments that fail the tool's input schema (`-32602`); a mirrored header that is missing or does not match the body (`-32020`); an unsupported protocol version (`-32022`, with the supported list). |
+| `403` | A `Host` that is not loopback on a loopback bind, or an `Origin` that is not allowed. |
+| `404` | Any path other than `/mcp`, or an unknown method (`-32601`). This includes `initialize`, `ping`, `resources/*` and `prompts/*`. |
+| `405` | Any method other than POST. The response carries `Allow: POST`. |
+| `406` | An `Accept` header that does not admit `application/json`. |
+| `408` | The client was too slow to send the request. |
+| `411` | No `Content-Length`. Chunked bodies are not read. |
+| `413` | A body over 1 MiB. This is the same limit as stdio's `MAX_REQUEST_BYTES`. |
+| `415` | A `Content-Type` other than `application/json`. |
+| `431` | Request headers that are too large. |
+| `503` | The concurrency limit is reached. |
+
+**Limits.**
+
+- Bodies are bounded at 1 MiB, and the same depth and size checks as stdio
+  apply.
+- Request headers are bounded at 8 KiB for the request line, 32 KiB in
+  total, and 100 fields.
+- Every connection has a 30 s read/write timeout.
+- At most `--max-concurrency` connections are served at once.
+
+**Security.**
+
+- **Authentication.** There is none. Anyone who can reach the port can call
+  every tool, including `name_to_smiles`, which makes outbound requests to
+  PubChem.
+- **Loopback by default.** The server binds `127.0.0.1` unless told
+  otherwise. On a loopback bind it requires a loopback `Host` header, and
+  accepts an `Origin` only if it is loopback
+  (`http(s)://localhost|127.0.0.1|[::1][:port]`) or listed with
+  `--allowed-origin`. Everything else gets `403`, which blocks DNS rebinding.
+  No CORS headers are ever sent, and `OPTIONS` gets `405`, so a browser page
+  on another origin cannot read responses.
+- **Binding outside loopback.** Binding to a non-loopback address (for
+  example `--bind 0.0.0.0`) is refused unless you also pass
+  `--allow-non-loopback`. If you do, put the server behind your own TLS and
+  authentication (a reverse proxy, a VPN, a firewall rule). This crate
+  provides neither, and there is no OAuth flow.
+- **No hosted service.** This is not a hosted chematic service and carries
+  no SLA.
+
+**Conformance.** The official MCP conformance suite
+(`@modelcontextprotocol/conformance` 0.2.0-alpha.12) was run against this
+adapter for every 2026-07-28 server scenario; see
+`validation/results/mcp_2026_07_28_http_conformance.json` for the results.
+Every check that applies to a tools-only server passes. The checks that do
+not pass fall into two groups:
+
+- checks that need the suite's own fixture tools (`test_*`, a
+  `json_schema_2020_12_tool`, tools with `x-mcp-header`);
+- checks that exercise capabilities this server does not implement or
+  advertise (resources, prompts, completion, input-required results).
 
 ## Available tools (20)
 
@@ -249,9 +364,13 @@ Response — same `content`, plus `resultType`/`structuredContent`:
 ## Design
 
 - **No unsafe code** — `#![forbid(unsafe_code)]` enforced.
-- **WASM-incompatible** — stdio transport requires OS process; use `chematic-wasm` for browser.
+- **WASM-incompatible** — both transports need an OS process (stdio, or a
+  TCP listener for the opt-in HTTP adapter); use `chematic-wasm` for browser.
+- **No new dependencies for HTTP** — the Streamable HTTP adapter
+  (`src/http.rs`) uses only `std::net`; it is a thin framing layer in front
+  of the same `Connection`/`McpServer` the stdio transport uses.
 - **Layered core**: `transport` (stdio framing + connection-pinned protocol
-  era) → `protocol` (JSON-RPC codec, `_meta` parsing, error vocabulary,
+  era; `http` adds HTTP framing in front of a fresh connection per request) → `protocol` (JSON-RPC codec, `_meta` parsing, error vocabulary,
   adversarial-input limits) → `server` (method dispatch + per-era response
   shaping) → `tools` (chemistry, protocol-agnostic). Every tool computes its
   result exactly once; the presentation layer decides how to wrap it per
