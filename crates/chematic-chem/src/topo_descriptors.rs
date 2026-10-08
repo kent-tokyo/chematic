@@ -495,27 +495,13 @@ pub fn topology_bundle(mol: &Molecule) -> TopologyBundle {
 
 // ─── Bertz Complexity ────────────────────────────────────────────────────────
 
-/// Simplified Bertz CT molecular complexity index.
+/// Bertz CT molecular complexity index (Bertz, *J. Am. Chem. Soc.* **103**,
+/// 3599–3601, 1981), bit-identical to RDKit's `GraphDescriptors.BertzCT`
+/// (default `cutoff=100`; aromatic bonds as order 1.5).
 ///
-/// CT = m_total + Σᵢ C(deg_total_i, 2)
-///
-/// where m_total = total bond count including implicit C-H bonds,
-/// deg_total_i = heavy-atom degree + implicit H count for atom i, and
-/// C(n, 2) = n·(n−1)/2.  This is the additive topology formula from
-/// Bertz (1981) JACS 103, 3599 without logarithmic weighting.
+/// Returns 0.0 for fewer than two atoms or more than 1000 atoms.
 pub fn bertz_ct(mol: &Molecule) -> f64 {
-    let mut total_h_bonds = 0u64;
-    let mut complexity = 0.0f64;
-    for (idx, _) in mol.atoms() {
-        let heavy_deg = mol.degree(idx);
-        let h = implicit_hcount(mol, idx) as usize;
-        total_h_bonds += h as u64;
-        let total_deg = heavy_deg + h;
-        complexity += (total_deg * total_deg.saturating_sub(1) / 2) as f64;
-    }
-    let heavy_bonds = mol.bond_count() as u64;
-    let m_total = heavy_bonds + total_h_bonds;
-    complexity + m_total as f64
+    crate::rdkit_graph::bertz_ct(mol)
 }
 
 // ─── Labute ASA ─────────────────────────────────────────────────────────────

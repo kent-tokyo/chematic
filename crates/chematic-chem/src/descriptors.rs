@@ -2493,113 +2493,30 @@ pub fn distance_descriptor_bundle(mol: &Molecule) -> DistanceDescriptorBundle {
 // BalabanJ — graph connectivity descriptor
 // ---------------------------------------------------------------------------
 
-/// Balaban J index (Balaban, *Chem. Phys. Lett.* **89**, 399–404, 1982).
+/// Balaban J index (Balaban, *Chem. Phys. Lett.* **89**, 399–404, 1982),
+/// bit-identical to RDKit's `GraphDescriptors.BalabanJ`.
 ///
-/// J = (m / (μ+1)) · Σ_{bonds (i,j)} 1/√(Sᵢ·Sⱼ)
+/// J = (m / (μ+1)) · Σ_{bonds (i,j)} 1/√(Sᵢ·Sⱼ), with m the bond count,
+/// μ = m − n + 1 and Sᵢ the row sum of the bond-order-weighted distance
+/// matrix (edge weight 1/bond order, aromatic 2/3).
 ///
-/// where m = bond count, μ = m − n + 1 (cyclomatic number), and Sᵢ = Σⱼ d(i,j)
-/// is the row sum of the bond-order-weighted shortest-path distance matrix
-/// (edge weight = 1/bond_order; aromatic bonds use order 1.5). This matches
-/// RDKit's `Chem.GetDistanceMatrix(mol, useBO=1)` convention used by
-/// `Descriptors.BalabanJ`.
-///
-/// Returns 0.0 if fewer than 2 atoms, or for molecules larger than 1000 atoms
-/// (the O(n³) all-pairs weighted shortest path is impractical at that scale).
+/// Returns 0.0 for molecules larger than 1000 atoms.
 pub fn balaban_j(mol: &Molecule) -> f64 {
-    let n = mol.atom_count();
-    if !(2..=1000).contains(&n) {
-        return 0.0;
-    }
-    let m = mol.bond_count() as f64;
-    let mu = m - n as f64 + 1.0;
-    if mu + 1.0 == 0.0 {
-        return 0.0;
-    }
-
-    let mut adj: Vec<Vec<(usize, f64)>> = vec![Vec::new(); n];
-    for (_, bond) in mol.bonds() {
-        let i = bond.atom1.0 as usize;
-        let j = bond.atom2.0 as usize;
-        let order = bond.order.order_value().map(|v| v as f64).unwrap_or(1.5);
-        let w = 1.0 / order;
-        adj[i].push((j, w));
-        adj[j].push((i, w));
-    }
-
-    let s: Vec<f64> = (0..n).map(|i| balaban_distance_sum(&adj, i, n)).collect();
-
-    let mut total = 0.0;
-    for (_, bond) in mol.bonds() {
-        let i = bond.atom1.0 as usize;
-        let j = bond.atom2.0 as usize;
-        if s[i] > 0.0 && s[j] > 0.0 {
-            total += 1.0 / (s[i] * s[j]).sqrt();
-        }
-    }
-
-    (m / (mu + 1.0)) * total
-}
-
-/// Sum of shortest-path distances from `start` to every other atom in a
-/// bond-order-weighted graph (plain O(n²) Dijkstra, no heap — molecules are
-/// small enough that this is faster than the bookkeeping a heap needs).
-fn balaban_distance_sum(adj: &[Vec<(usize, f64)>], start: usize, n: usize) -> f64 {
-    let mut dist = vec![f64::INFINITY; n];
-    let mut visited = vec![false; n];
-    dist[start] = 0.0;
-    for _ in 0..n {
-        let mut u = usize::MAX;
-        let mut best = f64::INFINITY;
-        for v in 0..n {
-            if !visited[v] && dist[v] < best {
-                best = dist[v];
-                u = v;
-            }
-        }
-        if u == usize::MAX {
-            break;
-        }
-        visited[u] = true;
-        for &(v, w) in &adj[u] {
-            let nd = dist[u] + w;
-            if nd < dist[v] {
-                dist[v] = nd;
-            }
-        }
-    }
-    dist.iter().filter(|d| d.is_finite()).sum()
+    crate::rdkit_graph::balaban_j(mol)
 }
 
 // ---------------------------------------------------------------------------
 // Ipc — information path count
 // ---------------------------------------------------------------------------
 
-/// Information Path Count: topological descriptor based on path multiplicities.
+/// Ipc: information content of the coefficients of the characteristic
+/// polynomial of the hydrogen-suppressed adjacency matrix (Bonchev &
+/// Trinajstić, *J. Chem. Phys.* **67**, 4517–4533, 1977), as RDKit's
+/// `GraphDescriptors.Ipc`.
 ///
-/// Sums the reciprocals of path counts weighted by vertex degrees.
-/// Returns 0.0 for single-atom molecules.
+/// Returns 0.0 for molecules larger than 1000 atoms.
 pub fn ipc(mol: &Molecule) -> f64 {
-    let heavy = distance_heavy_atoms(mol);
-    let n = heavy.len();
-    if n < 2 {
-        return 0.0;
-    }
-
-    let dist = topo_dist_usize(mol);
-    let mut result = 0.0;
-
-    for (i, row) in dist.iter().enumerate().take(n) {
-        for (j, &distance) in row.iter().enumerate().take(n).skip(i + 1) {
-            let d = distance as f64;
-            if d > 0.0 {
-                let deg_i = mol.degree(heavy[i]) as f64;
-                let deg_j = mol.degree(heavy[j]) as f64;
-                result += (deg_i * deg_j) / (d * d);
-            }
-        }
-    }
-
-    result
+    crate::rdkit_graph::ipc(mol)
 }
 
 // ---------------------------------------------------------------------------
