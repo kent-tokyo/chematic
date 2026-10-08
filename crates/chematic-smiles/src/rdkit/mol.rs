@@ -163,6 +163,11 @@ pub(crate) struct Bond {
     pub dir: BondDir,
     pub stereo: BondStereo,
     pub stereo_atoms: Vec<usize>,
+    /// A requested cis/trans configuration `(stereo atom at begin, stereo
+    /// atom at end, trans)`, as `STEREOCIS`/`STEREOTRANS` with stereo atoms
+    /// set before `SetDoubleBondNeighborDirections` (stereoisomer
+    /// enumeration); legacy perception reads it like neighbour directions.
+    pub requested: Option<(usize, usize, bool)>,
 }
 
 impl Bond {
@@ -176,6 +181,7 @@ impl Bond {
             dir: BondDir::None,
             stereo: BondStereo::None,
             stereo_atoms: Vec::new(),
+            requested: None,
         }
     }
 

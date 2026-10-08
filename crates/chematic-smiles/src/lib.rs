@@ -61,6 +61,7 @@ pub use random_smiles::{random_smiles, random_smiles_vect};
 pub use rdkit::{
     RdkitLegacyStereo, RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, RdkitSmilesError,
     rdkit_atom_stereocenter_counts, rdkit_canonical_smiles, rdkit_legacy_stereo, rdkit_mol_block,
+    rdkit_stereoisomer_smiles,
 };
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,

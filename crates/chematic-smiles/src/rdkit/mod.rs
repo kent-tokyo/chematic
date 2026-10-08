@@ -34,6 +34,7 @@
 
 mod aromaticity;
 mod canon;
+mod enumerate;
 mod kekulize;
 mod mol;
 mod molblock;
@@ -145,6 +146,32 @@ pub fn rdkit_legacy_stereo(mol: &Molecule) -> Result<RdkitLegacyStereo, RdkitSmi
         atom_cip: m.atoms.iter().map(|a| a.cip_code).collect(),
         bond_stereo,
     })
+}
+
+/// The stereoisomers `rdkit.Chem.EnumerateStereoisomers.EnumerateStereoisomers`
+/// yields for `mol` (as `MolFromSmiles` reads it) with options
+/// `onlyUnassigned=True, unique=True, maxIsomers=max_isomers,
+/// tryEmbedding=False`: their sorted, distinct RDKit canonical SMILES.
+///
+/// `Err` where the port cannot model the molecule (including enhanced
+/// stereo groups), or where RDKit would pick a random sample because there
+/// are more flip combinations than `max_isomers`.
+pub fn rdkit_stereoisomer_smiles(
+    mol: &Molecule,
+    max_isomers: usize,
+) -> Result<Vec<String>, RdkitSmilesError> {
+    if !mol.stereo_groups().is_empty() {
+        return Err(RdkitSmilesError::Unsupported(
+            "enhanced stereo groups".into(),
+        ));
+    }
+    let mut m = parse::from_chematic(mol)?;
+    sanitize::remove_hs_and_sanitize(&mut m)?;
+    stereo::legacy_stereo_perception(&mut m, true, true);
+    for a in &mut m.atoms {
+        a.cip_code = None;
+    }
+    enumerate::enumerate(&m, max_isomers)
 }
 
 #[cfg(test)]

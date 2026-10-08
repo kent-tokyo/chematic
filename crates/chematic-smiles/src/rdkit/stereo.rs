@@ -14,7 +14,7 @@ use super::sanitize::atom_has_conjugated_bond;
 const MIN_RING_SIZE_FOR_DOUBLE_BOND_STEREO: usize = 8;
 
 /// `shouldDetectDoubleBondStereo`.
-fn should_detect_double_bond_stereo(mol: &Mol, b: usize) -> bool {
+pub(crate) fn should_detect_double_bond_stereo(mol: &Mol, b: usize) -> bool {
     let ri = mol.ring_info();
     ri.num_bond_rings(b) == 0 || ri.min_bond_ring_size(b) >= MIN_RING_SIZE_FOR_DOUBLE_BOND_STEREO
 }
@@ -385,6 +385,39 @@ fn find_atom_neighbor_dir_helper(
     neighbors
 }
 
+/// Neighbour directions for a double bond with a requested cis/trans
+/// configuration, as `SetDoubleBondNeighborDirections` would set them and
+/// [`find_atom_neighbor_dir_helper`] would then read them: the requested
+/// stereo atoms get one direction (the same one for cis), the other
+/// neighbour on each end the opposite.
+fn requested_neighbor_dirs(
+    mol: &Mol,
+    b: usize,
+    (stereo_begin, stereo_end, trans): (usize, usize, bool),
+    ranks: &[u32],
+) -> (Vec<(usize, BondDir)>, Vec<(usize, BondDir)>) {
+    let side = |a: usize, stereo_atom: usize, dir: BondDir| {
+        let mut out: Vec<(usize, BondDir)> = mol.atom_bonds[a]
+            .iter()
+            .filter(|&&nb| nb != b)
+            .map(|&nb| {
+                let o = mol.bonds[nb].other(a);
+                (o, if o == stereo_atom { dir } else { dir.flipped() })
+            })
+            .collect();
+        if out.len() == 2 && ranks[out[0].0] == ranks[out[1].0] {
+            out.clear();
+        }
+        out
+    };
+    let (beg, end) = (mol.bonds[b].begin, mol.bonds[b].end);
+    let up = BondDir::EndUpRight;
+    (
+        side(beg, stereo_begin, up),
+        side(end, stereo_end, if trans { up.flipped() } else { up }),
+    )
+}
+
 /// `assignAtomChiralCodes`: (unassigned atoms remain, any assigned).
 fn assign_atom_chiral_codes(
     mol: &mut Mol,
@@ -458,8 +491,13 @@ fn assign_bond_stereo_codes(mol: &mut Mol, ranks: &mut Vec<u32>) -> (bool, bool)
             continue;
         }
         unassigned += 1;
-        let beg_n = find_atom_neighbor_dir_helper(mol, beg, b, ranks);
-        let end_n = find_atom_neighbor_dir_helper(mol, end, b, ranks);
+        let (beg_n, end_n) = match mol.bonds[b].requested {
+            Some(req) => requested_neighbor_dirs(mol, b, req, ranks),
+            None => (
+                find_atom_neighbor_dir_helper(mol, beg, b, ranks),
+                find_atom_neighbor_dir_helper(mol, end, b, ranks),
+            ),
+        };
         if beg_n.is_empty() || end_n.is_empty() {
             continue;
         }
@@ -725,6 +763,10 @@ pub(crate) fn legacy_stereo_perception(mol: &mut Mol, clean_it: bool, flag_possi
         }
         if !has_stereo_bonds && mol.bonds[b].bt == BondType::Double {
             let mut is_specified = false;
+            if mol.bonds[b].requested.is_some() {
+                has_stereo_bonds = true;
+                is_specified = true;
+            }
             for end in [mol.bonds[b].begin, mol.bonds[b].end] {
                 if mol.atom_bonds[end]
                     .iter()

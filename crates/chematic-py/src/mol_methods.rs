@@ -2413,6 +2413,40 @@ impl Mol {
             .collect()
     }
 
+    /// RDKit-compatible stereoisomer enumeration: the isomers
+    /// ``rdkit.Chem.EnumerateStereoisomers.EnumerateStereoisomers`` yields
+    /// with ``StereoEnumerationOptions(onlyUnassigned=True, unique=True,
+    /// maxIsomers=max_isomers, tryEmbedding=False)``, as Mols parsed from
+    /// their RDKit canonical SMILES, sorted by that SMILES.
+    ///
+    /// Only ``only_unassigned=True`` and ``unique=True`` are supported.
+    /// Raises ``ValueError`` where RDKit would pick a random sample (more flip
+    /// combinations than ``max_isomers``) or the molecule is outside the
+    /// RDKit-compatible model (e.g. enhanced stereo groups).
+    #[pyo3(signature = (only_unassigned = true, unique = true, max_isomers = 1024))]
+    fn rdkit_stereoisomers(
+        &self,
+        only_unassigned: bool,
+        unique: bool,
+        max_isomers: usize,
+    ) -> PyResult<Vec<Mol>> {
+        if !only_unassigned || !unique {
+            return Err(PyValueError::new_err(
+                "only only_unassigned=True and unique=True are supported",
+            ));
+        }
+        let smiles = chematic_smiles::rdkit_stereoisomer_smiles(&self.inner, max_isomers)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        smiles
+            .iter()
+            .map(|s| {
+                chematic_smiles::parse(s)
+                    .map(Mol::bare)
+                    .map_err(|e| PyValueError::new_err(format!("{s}: {e}")))
+            })
+            .collect()
+    }
+
     /// Return a copy with all implicit hydrogens made explicit.
     fn add_hydrogens(&self) -> Mol {
         Mol {
