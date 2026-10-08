@@ -18,10 +18,10 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 libm = "0.2"
-chematic-core       = { path = "../chematic-core",       version = "1.0.36" }
+chematic-core       = { path = "../chematic-core",       version = "1.0.37" }
 rayon                = "1"
-chematic-perception = { path = "../chematic-perception", version = "1.0.36" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.36" }
+chematic-perception = { path = "../chematic-perception", version = "1.0.37" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.37" }
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

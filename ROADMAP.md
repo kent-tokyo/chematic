@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-04. Release line: **v1.0.34**. Release-source and
+> Updated 2026-10-07. Release line: **v1.0.37**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -24,7 +24,7 @@ published-package reruns are tracked separately. The v1.0.31 WASM formula
 and E/Z JSON fixes are confirmed on the published v1.0.34 npm package.
 Exposed data are not sealed evidence.
 
-## Priority order and acceptance gates
+## Priority order
 
 1. **P1 / A4 — BioTransformer-corpus SMIRKS fixes (#734): released.**
    v1.0.36 ships them. The published PyPI Linux wheel gives the source's
@@ -164,6 +164,18 @@ criteria; the [open-work ledger](docs/roadmap-open-work.md) tracks dependencies.
 
 The [Trust Release plan](docs/trust-release-plan.md) tracks the cross-cutting
 version, runtime, security and review workstreams without repeating this queue.
+
+## Accuracy packages
+
+| Package | State | Current boundary |
+|---|---|---|
+| A0 Evaluation contract | Complete | Preserve frozen and exposed-cohort accounting |
+| A1 Perception and descriptors | Open | Representation and descriptor boundaries |
+| A2 Stereo and identity | Active | CIP, E/Z and round-trip invariance |
+| A3 Fingerprints and retrieval | Open | Compatible-Morgan and holdout gates |
+| A4 Workflows and interchange | Active | Reactions, SMARTS and format semantics |
+| A5 Independent adjudication | External | Gold data and non-maintainer review |
+| A6 3D and force fields | Active | Quality and failure reasons before speed |
 
 ## Product phases
 

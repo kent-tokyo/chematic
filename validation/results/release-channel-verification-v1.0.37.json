@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "release": {
+    "version": "1.0.37",
+    "tag": "v1.0.37",
+    "commit": "0cbf01d1e7736bb95040aa0406a991a3701cc489"
+  },
+  "checked_at": "2026-10-07T14:27:48Z",
+  "release_ready": true,
+  "channels": [
+    {
+      "id": "github_release",
+      "status": "verified",
+      "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.37",
+      "observed_version": "1.0.37",
+      "detail": "Published non-draft release at commit 0cbf01d1e7736bb95040aa0406a991a3701cc489; release metadata asset SHA-256 faa897c99d8c18f4d9dba91ea97dd159e95dfa4f114a1e0771703b6e2e7d2d89."
+    },
+    {
+      "id": "npm",
+      "status": "verified",
+      "url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.0.37",
+      "observed_version": "1.0.37",
+      "detail": "Registry metadata reports gitHead 0cbf01d1e7736bb95040aa0406a991a3701cc489 and tarball SHA-1 e5c0d3edf82ba9d5f319b29fde8359881998be52."
+    },
+    {
+      "id": "pypi",
+      "status": "verified",
+      "url": "https://pypi.org/pypi/chematic/1.0.37/json",
+      "observed_version": "1.0.37",
+      "detail": "PyPI JSON exposes 17 wheels and one sdist; sdist SHA-256 3859d696c42d1d76d1f3d019867d2c1eb753c673f1223c4af460b05bf51670ee."
+    },
+    {
+      "id": "crates_io",
+      "status": "verified",
+      "url": "https://crates.io/crates/chematic/1.0.37",
+      "observed_version": "1.0.37",
+      "detail": "All 20 publishable workspace crates return version 1.0.37 from crates.io; top-level chematic checksum 570a7d46e054bd3010d655ab5fcea2fdae7d979dd77f64c660a04fe12c20a8de."
+    },
+    {
+      "id": "docs_rs",
+      "status": "verified",
+      "url": "https://docs.rs/chematic/1.0.37/chematic/",
+      "observed_version": "1.0.37",
+      "detail": "The version-pinned rustdoc endpoint returned HTTP 200 after crates.io publication."
+    },
+    {
+      "id": "site",
+      "status": "verified",
+      "url": "https://kent-tokyo.github.io/chematic/",
+      "observed_version": "1.0.37",
+      "detail": "GitHub Pages deployment run 37633709500 succeeded from the release commit and the deployed page displays v1.0.37."
+    }
+  ]
+}

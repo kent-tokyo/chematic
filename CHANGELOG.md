@@ -10,6 +10,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added Rust unit-test coverage reporting with `cargo-llvm-cov`, Codecov OIDC
+  uploads, and downloadable LCOV/HTML reports in GitHub Actions.
+
 Published v1.0.36 reruns (PyPI Linux wheel, sdist, npm, crate) give the
 source's results on the BioTransformer corpus, the 83 reaction fixtures,
 xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
@@ -219,6 +224,7 @@ MOL writer and the WASM Node tests. Record:
   `chematic_chemistry_dump.py` / `compare_chemistry_dump_rdkit.py` do the
   same for CIP, hybridization, MMFF and the MOL writer;
   `rdkitjs_reaction_corpus.mjs` runs the corpus with RDKit.js.
+## [1.0.37] - 2026-10-07
 
 ### Added
 

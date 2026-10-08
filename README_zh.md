@@ -3,10 +3,13 @@
 [English](README.md) | [日本語](README_ja.md)
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
+[![Coverage](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
+[![codecov](https://codecov.io/gh/kent-tokyo/chematic/branch/main/graph/badge.svg)](https://app.codecov.io/github/kent-tokyo/chematic)
 [![PyPI](https://img.shields.io/pypi/v/chematic?logo=pypi)](https://pypi.org/project/chematic/)
 [![crates.io](https://img.shields.io/crates/v/chematic?logo=rust)](https://crates.io/crates/chematic)
 [![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic?logo=npm)](https://www.npmjs.com/package/@kent-tokyo/chematic)
 [![许可证](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
+[![Ask DeepWiki](docs/assets/ask-deepwiki.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
 面向 Python、Rust 和浏览器的纯 Rust 化学信息学工具包：本地优先、输入受限，并为不支持的
 化学表达提供明确错误。
@@ -23,11 +26,13 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.36 范围
+### v1.0.37 范围
 
-v1.0.36 使用 BioTransformer 公共规则扩展了受检的 RDKit 反应兼容配置，并修复了
-图编辑后的 E/Z 保留。CIP、杂化、MMFF94 原子类型和 MOL 立体写出也在明确范围内得到
-改进。在 v1.0.36 已发布包完成复测前，语料结果仍属于源码测量。详情见
+v1.0.37 改进了保留立体信息的 MOL 与 SVG 绘制、拥挤分子的二维布局、canonical
+SMILES 最坏情况、MMFF94 原子类型与能量项、孤对电子 CIP，以及可选的 RDKit
+2026.09.1 SMARTS 环模型。它还为 Rust、Python 和 WASM 增加了有明确边界的核酸
+文档模型，并修正了高配位硫族元素的芳香性判断。带日期的源码测量、v1.0.36
+已发布包测量与 v1.0.37 发布验证保持分离。详情见
 [验证报告](docs/validation.md)，变更见 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用

@@ -1199,7 +1199,7 @@ fn embed_pipeline_v2_from_seed(
     let t0 = Instant::now();
     let mut first = minimize_force_field_using(coords.clone(), Mmff94Minimizer::Bfgs);
     if mmff94_policy
-        && first.as_ref().map_or(true, &violates_declared_stereo)
+        && first.as_ref().map_or(true, violates_declared_stereo)
         && let Ok(retry) = minimize_force_field_using(coords, Mmff94Minimizer::Lbfgs)
         && (first.is_err() || !violates_declared_stereo(&retry))
     {

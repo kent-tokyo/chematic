@@ -10,11 +10,11 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.0.36 release** includes bounded RDKit 2026.03.6 reaction, E/Z,
-MOL-stereo, hybridization, MMFF94 typing, and CIP follow-up work. The latest
+The **v1.0.37 release** includes bounded RDKit reaction, E/Z, MOL-stereo,
+hybridization, MMFF94, CIP, and RDKit 2026.09.1 ring-profile follow-up work. The latest
 published-package chemistry and speed comparison packet is pinned to
-**v1.0.30** against RDKit 2026.03.6. v1.0.36 needs its own channel and
-package-output verification.
+**v1.0.30** against RDKit 2026.03.6. Later dated records cover v1.0.36
+packages and v1.0.37 source; v1.0.37 still needs its own channel and package-output verification.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|
