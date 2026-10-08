@@ -14,7 +14,9 @@
 //! membership in RDKit's SSSR). Double-bond stereo enters only through
 //! [`rdkit_canonical_atom_ranks_with_bond_stereo`], whose caller supplies
 //! RDKit's `STEREOE`/`STEREOZ` labels; RDKit's ring-stereo atom property is
-//! not modelled.
+//! not modelled there. [`rdkit_rank_mol_atoms`] takes every invariant in
+//! RDKit's own terms (including `_ringStereoAtoms` and cis/trans stereo
+//! atoms) for callers that model RDKit's molecule themselves.
 //!
 //! Which atoms must take a double bond is read from a valid Kekulé structure
 //! supplied by the caller (`chematic_core::kekulize`): every aromatic atom
@@ -76,6 +78,8 @@ struct Input {
     /// `nbrs` order), 3 any other tag.
     chiral: Vec<u8>,
     nrings: Vec<u32>,
+    /// RDKit's `_ringStereoAtoms` on a `CW`/`CCW` atom (ring stereo).
+    ring_stereo: Vec<bool>,
     /// Adjacency in bond insertion order.
     nbrs: Vec<SmallVec<[u32; 4]>>,
     bonds: Vec<InputBond>,
@@ -133,11 +137,10 @@ impl Ranker<'_> {
                 ..CanonAtom::default()
             })
             .collect();
-        // The ring-stereo atom property is not modelled (see module docs).
+        // `isRingStereoAtom` / `hasRingNbr` (`advancedInitCanonAtom`).
         for (i, atom) in atoms.iter_mut().enumerate() {
-            atom.is_ring_stereo = false;
-            atom.has_ring_nbr = false;
-            let _ = i;
+            atom.is_ring_stereo = inp.ring_stereo[i];
+            atom.has_ring_nbr = inp.nbrs[i].iter().any(|&nb| inp.ring_stereo[nb as usize]);
         }
         let mut ranker = Ranker {
             inp,
@@ -979,6 +982,7 @@ fn build_input(mol: &Molecule, rings: &[Vec<usize>], ez: &[(BondIdx, bool)]) -> 
         map: Vec::with_capacity(n),
         chiral: Vec::with_capacity(n),
         nrings,
+        ring_stereo: vec![false; n],
         nbrs: vec![SmallVec::new(); n],
         bonds: Vec::with_capacity(mol.bond_count()),
     };
@@ -1040,6 +1044,76 @@ pub(crate) fn rank_with_rings(
     let mut ranker = Ranker::new(&inp);
     for i in 0..inp.anum.len() {
         ranker.atoms[i].total_hs = u32::from(implicit_hcount(mol, AtomIdx(i as u32)));
+    }
+    ranker.rank()
+}
+
+/// One atom as RDKit's `Canon::rankMolAtoms` sees it (see [`rdkit_rank_mol_atoms`]).
+#[derive(Debug, Clone, Default)]
+pub struct RdkitRankAtom {
+    /// `getAtomicNum()` (0 for dummies).
+    pub atomic_num: u32,
+    /// `getIsotope()` (0: none).
+    pub isotope: u32,
+    /// `getFormalCharge()`.
+    pub formal_charge: i32,
+    /// `molAtomMapNumber` (0: none).
+    pub atom_map: i32,
+    /// 0 `CHI_UNSPECIFIED`, 1 `CHI_TETRAHEDRAL_CW`, 2 `CHI_TETRAHEDRAL_CCW`
+    /// (relative to the atom's bonds in bond-index order), 3 any other tag.
+    pub chiral_tag: u8,
+    /// `getTotalNumHs()`.
+    pub total_num_hs: u32,
+    /// `RingInfo::numAtomRings`.
+    pub num_rings: u32,
+    /// A `CW`/`CCW` atom carrying `_ringStereoAtoms`.
+    pub ring_stereo: bool,
+}
+
+/// One bond as RDKit's `Canon::rankMolAtoms` sees it.
+#[derive(Debug, Clone, Default)]
+pub struct RdkitRankBond {
+    /// Begin atom index.
+    pub begin: u32,
+    /// End atom index.
+    pub end: u32,
+    /// RDKit `Bond::BondType` value (`AROMATIC` = 12 for aromatic bonds).
+    pub bond_type: u32,
+    /// RDKit `Bond::BondStereo` value.
+    pub stereo: u32,
+    /// `getStereoAtoms()` (begin side, end side) for cis/trans stereo.
+    pub stereo_atoms: Option<(u32, u32)>,
+}
+
+/// RDKit `Canon::rankMolAtoms(mol, ranks, breakTies=true, includeChirality=true,
+/// includeIsotopes=true, includeAtomMaps=true, includeChiralPresence=false,
+/// includeStereoGroups=true, useNonStereoRanks=false)` for a molecule without
+/// stereo groups, described directly in RDKit's terms. Bonds are listed in
+/// bond-index order; every atom's neighbour order follows it.
+pub fn rdkit_rank_mol_atoms(atoms: &[RdkitRankAtom], bonds: &[RdkitRankBond]) -> Vec<u32> {
+    let n = atoms.len();
+    let mut nbrs: Vec<SmallVec<[u32; 4]>> = vec![SmallVec::new(); n];
+    for b in bonds {
+        nbrs[b.begin as usize].push(b.end);
+        nbrs[b.end as usize].push(b.begin);
+    }
+    let inp = Input {
+        anum: atoms.iter().map(|a| a.atomic_num).collect(),
+        isotope: atoms.iter().map(|a| a.isotope).collect(),
+        charge: atoms.iter().map(|a| a.formal_charge).collect(),
+        map: atoms.iter().map(|a| a.atom_map).collect(),
+        chiral: atoms.iter().map(|a| a.chiral_tag).collect(),
+        nrings: atoms.iter().map(|a| a.num_rings).collect(),
+        ring_stereo: atoms.iter().map(|a| a.ring_stereo).collect(),
+        nbrs,
+        bonds: bonds
+            .iter()
+            .map(|b| (b.begin, b.end, b.bond_type, b.stereo, b.stereo_atoms))
+            .collect(),
+    };
+    let mut ranker = Ranker::new(&inp);
+    for (i, a) in atoms.iter().enumerate() {
+        ranker.atoms[i].total_hs = a.total_num_hs;
     }
     ranker.rank()
 }
