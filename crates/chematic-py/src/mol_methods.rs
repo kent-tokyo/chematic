@@ -2644,9 +2644,12 @@ impl Mol {
     /// their RDKit canonical SMILES, sorted by that SMILES.
     ///
     /// Only ``only_unassigned=True`` and ``unique=True`` are supported.
-    /// Raises ``ValueError`` where RDKit would pick a random sample (more flip
-    /// combinations than ``max_isomers``) or the molecule is outside the
-    /// RDKit-compatible model (e.g. enhanced stereo groups).
+    /// With more flip combinations than ``max_isomers`` RDKit yields a random
+    /// sample seeded deterministically from the molecule (``rand=None``);
+    /// that sample is reproduced (CPython ``hash`` + ``random.Random``).
+    /// Raises ``ValueError`` when the molecule is outside the
+    /// RDKit-compatible model (e.g. enhanced stereo groups), or for
+    /// ``max_isomers=0`` with more than 16 flips.
     #[pyo3(signature = (only_unassigned = true, unique = true, max_isomers = 1024))]
     fn rdkit_stereoisomers(
         &self,

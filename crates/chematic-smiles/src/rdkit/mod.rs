@@ -41,6 +41,7 @@ mod mol;
 mod molblock;
 mod parse;
 mod periodic;
+mod pyrandom;
 mod rank;
 mod sanitize;
 mod stereo;

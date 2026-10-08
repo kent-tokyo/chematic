@@ -11,6 +11,7 @@
 //! duplicates, which uniqueness removes.
 
 use super::mol::{BondStereo, BondType, ChiralTag, Mol};
+use super::pyrandom::{PyRandom, hash_pair_tuple};
 use super::stereo::{
     is_atom_potential_tetrahedral_center, legacy_stereo_perception,
     should_detect_double_bond_stereo,
@@ -80,8 +81,10 @@ fn assign(
 }
 
 /// The distinct canonical SMILES `EnumerateStereoisomers` yields for the
-/// sanitized, stereo-perceived `base`, or `Err` where RDKit would sample at
-/// random (more than `max_isomers` flip combinations).
+/// sanitized, stereo-perceived `base` (sorted), including RDKit's
+/// deterministic default random sample when there are more than
+/// `max_isomers` flip combinations; `Err` only for `max_isomers == 0` with
+/// more than 16 flips.
 pub(crate) fn enumerate(base: &Mol, max_isomers: usize) -> Result<Vec<String>, RdkitSmilesError> {
     let (atoms, bonds) = candidates(base);
     let n = atoms.len() + bonds.len();
@@ -120,27 +123,52 @@ pub(crate) fn enumerate(base: &Mol, max_isomers: usize) -> Result<Vec<String>, R
         return Ok(vec![mol_to_smiles(&m, &RdkitSmilesParams::default())?]);
     }
     // RDKit enumerates every flip combination when there are at most
-    // `max_isomers`; otherwise it draws combinations at random until it has
-    // `max_isomers` distinct isomers or has seen every combination. Either
-    // way it yields every distinct isomer when there are at most
-    // `max_isomers` of them, which full enumeration reproduces; beyond that
-    // its random sample is not reproduced.
-    const MAX_FULL_ENUMERATION_FLIPS: usize = 16;
-    if n > MAX_FULL_ENUMERATION_FLIPS {
-        return Err(RdkitSmilesError::Unsupported(format!(
-            "{n} stereo flips: RDKit samples {max_isomers} of 2^{n} at random"
-        )));
+    // `max_isomers` of them (or `max_isomers == 0`); otherwise it draws
+    // combinations with `random.Random(hash(tuple(sorted((degree, Z)))))`
+    // `.getrandbits(n)`, skipping repeats, until it has yielded
+    // `max_isomers` distinct isomers or seen every combination.
+    let full = max_isomers == 0 || (n < 64 && (1u64 << n) <= max_isomers as u64);
+    if full {
+        const MAX_FULL_ENUMERATION_FLIPS: usize = 16;
+        if n > MAX_FULL_ENUMERATION_FLIPS {
+            return Err(RdkitSmilesError::Unsupported(format!(
+                "{n} stereo flips: 2^{n} isomers requested"
+            )));
+        }
+        let mut seen = std::collections::BTreeSet::new();
+        for bitflag in 0..(1usize << n) {
+            let m = assign(base, &atoms, &bonds, |i| bitflag & (1 << i) != 0);
+            seen.insert(mol_to_smiles(&m, &RdkitSmilesParams::default())?);
+        }
+        return Ok(seen.into_iter().collect());
     }
+    let mut key: Vec<(i64, i64)> = (0..base.atoms.len())
+        .map(|a| (base.degree(a) as i64, base.atoms[a].anum as i64))
+        .collect();
+    key.sort_unstable();
+    let mut rng = PyRandom::from_int_seed(hash_pair_tuple(&key));
+    let combos: Option<u128> = (n < 128).then(|| 1u128 << n);
+    let mut tried = std::collections::HashSet::new();
     let mut seen = std::collections::BTreeSet::new();
-    for bitflag in 0..(1usize << n) {
-        let m = assign(base, &atoms, &bonds, |i| bitflag & (1 << i) != 0);
-        seen.insert(mol_to_smiles(&m, &RdkitSmilesParams::default())?);
-    }
-    if seen.len() > max_isomers {
-        return Err(RdkitSmilesError::Unsupported(format!(
-            "{} distinct stereoisomers: RDKit yields a random sample of {max_isomers}",
-            seen.len()
-        )));
+    // RDKit keeps drawing until every combination has been seen; refuse
+    // rather than loop for an astronomically long time.
+    const MAX_DRAWS: usize = 1 << 20;
+    while combos.is_none_or(|c| (tried.len() as u128) < c) {
+        if tried.len() >= MAX_DRAWS {
+            return Err(RdkitSmilesError::Unsupported(format!(
+                "{n} stereo flips: fewer than {max_isomers} distinct isomers in {MAX_DRAWS} draws"
+            )));
+        }
+        let bits = rng.getrandbits(n);
+        if !tried.insert(bits.clone()) {
+            continue;
+        }
+        let m = assign(base, &atoms, &bonds, |i| bits[i / 32] >> (i % 32) & 1 != 0);
+        if seen.insert(mol_to_smiles(&m, &RdkitSmilesParams::default())?)
+            && seen.len() >= max_isomers
+        {
+            break;
+        }
     }
     Ok(seen.into_iter().collect())
 }
@@ -189,8 +217,11 @@ mod tests {
     }
 
     #[test]
-    fn random_sampling_is_refused() {
+    fn random_sampling_follows_cpython_random() {
         let mol = crate::parse(&format!("Br{}F", "[CH](Cl)".repeat(20))).unwrap();
-        assert!(rdkit_stereoisomer_smiles(&mol, 1024).is_err());
+        let got = rdkit_stereoisomer_smiles(&mol, 1024).unwrap();
+        assert_eq!(got.len(), 1024);
+        let unlimited = rdkit_stereoisomer_smiles(&mol, 0);
+        assert!(unlimited.is_err());
     }
 }
