@@ -49,6 +49,27 @@ impl Default for SmilesParseLimits {
 
 /// Parse an OpenSMILES string while enforcing input and graph-size limits.
 pub fn parse_with_limits(input: &str, limits: &SmilesParseLimits) -> Result<Molecule, SmilesError> {
+    parse_checked(input, limits, true)
+}
+
+/// Parse one side of a reaction template (SMIRKS or reaction SMARTS read as
+/// SMILES) into its template graph.
+///
+/// The same grammar and limits as [`parse`], without the check that rejects
+/// a neutral oxygen or fluorine with too many bonds
+/// ([`SmilesError::InvalidValence`], #769): a template atom is a pattern, not
+/// an atom of a molecule (RDKit does not sanitize templates either), and a
+/// product it would write with an impossible valence is refused when the
+/// template is applied.
+pub fn parse_template(input: &str) -> Result<Molecule, SmilesError> {
+    parse_checked(input, &SmilesParseLimits::default(), false)
+}
+
+fn parse_checked(
+    input: &str,
+    limits: &SmilesParseLimits,
+    check_valence: bool,
+) -> Result<Molecule, SmilesError> {
     if input.len() > limits.max_input_bytes {
         return Err(SmilesError::ResourceLimit {
             resource: "input bytes",
@@ -71,6 +92,9 @@ pub fn parse_with_limits(input: &str, limits: &SmilesParseLimits) -> Result<Mole
             limit: limits.max_bonds,
         });
     }
+    if check_valence {
+        check_neutral_valence(&mol)?;
+    }
     Ok(mol)
 }
 
@@ -81,9 +105,7 @@ fn parse_unbounded(input: &str) -> Result<Molecule, SmilesError> {
     }
     let bytes = input.as_bytes();
     let mut p = Parser::new(bytes);
-    let mol = p.parse_smiles()?;
-    check_neutral_valence(&mol)?;
-    Ok(mol)
+    p.parse_smiles()
 }
 
 /// Reject a neutral oxygen with explicit valence above 2 or a neutral

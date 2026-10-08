@@ -248,7 +248,7 @@ mod tests {
 
     #[test]
     fn reports_bifunctional_sites_with_bounded_topological_spacer() {
-        let report = genotox_reactivity(&parse("C1CO1CC2CO2").unwrap());
+        let report = genotox_reactivity(&parse("C1OC1CC1OC1").unwrap());
         let finding = report
             .findings
             .iter()
