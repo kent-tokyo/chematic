@@ -511,6 +511,11 @@ pub fn hbd_count(mol: &Molecule) -> usize {
 /// centres).
 pub fn hba_count(mol: &Molecule) -> usize {
     static QUERY: std::sync::OnceLock<chematic_smarts::QueryMolecule> = std::sync::OnceLock::new();
+    // RDKit matches on its sanitized form, where perchlorate is
+    // `[Cl+3]([O-])([O-])([O-])O`.
+    if needs_rdkit_halogen_cleanup(mol) {
+        return count_rdkit_pattern(&QUERY, RDKIT_HBA_SMARTS, &rdkit_halogen_cleanup(mol));
+    }
     count_rdkit_pattern(&QUERY, RDKIT_HBA_SMARTS, mol)
 }
 
@@ -528,10 +533,15 @@ pub fn rdkit_hba_count(mol: &Molecule) -> usize {
 /// matched with chematic's SMARTS engine. The former hand-written rules
 /// disagreed with RDKit on 97 of the exposed 10k rows (oxime ethers,
 /// N-acyl hydroxylamines, imine-aryl bonds, disulfides).
+///
+/// RDKit 2026.03 also excludes `[CH3]` on both ends: a methyl written with
+/// explicit isotopic hydrogens (`[2H]C([2H])([2H])N`) has degree 4 but is
+/// still not a rotor.
 const STRICT_ROTATABLE_SMARTS: &str = "[!$(*#*)&!D1&!$(C(F)(F)F)&!$(C(Cl)(Cl)Cl)&!$(C(Br)(Br)Br)\
-&!$(C([CH3])([CH3])[CH3])&!$([CD3](=[N,O,S])-!@[#7,O,S!D1])&!$([#7,O,S!D1]-!@[CD3]=[N,O,S])\
-&!$([CD3](=[N+])-!@[#7!D1])&!$([#7!D1]-!@[CD3]=[N+])]-,:;!@[!$(*#*)&!D1&!$(C(F)(F)F)\
-&!$(C(Cl)(Cl)Cl)&!$(C(Br)(Br)Br)&!$(C([CH3])([CH3])[CH3])]";
+&!$(C([CH3])([CH3])[CH3])&!$([CH3])&!$([CD3](=[N,O,S])-!@[#7,O,S!D1])\
+&!$([#7,O,S!D1]-!@[CD3]=[N,O,S])&!$([CD3](=[N+])-!@[#7!D1])&!$([#7!D1]-!@[CD3]=[N+])]\
+-,:;!@[!$(*#*)&!D1&!$(C(F)(F)F)&!$(C(Cl)(Cl)Cl)&!$(C(Br)(Br)Br)&!$(C([CH3])([CH3])[CH3])\
+&!$([CH3])]";
 
 fn strict_rotatable_query() -> &'static chematic_smarts::QueryMolecule {
     static QUERY: std::sync::OnceLock<chematic_smarts::QueryMolecule> = std::sync::OnceLock::new();
@@ -733,17 +743,85 @@ fn use_perceived_nitrogen_environment(mol: &Molecule, mol_arom: &Molecule, idx: 
 pub(crate) fn descriptor_aromaticity(mol: &Molecule) -> DescriptorView<'_> {
     // The RDKit-parity view is often an exact copy of `mol`; use `mol` (and
     // its caches) directly then.
-    if chematic_perception::rdkit_parity_view_is_identity(mol) {
+    let needs_cleanup = needs_rdkit_halogen_cleanup(mol);
+    if !needs_cleanup && chematic_perception::rdkit_parity_view_is_identity(mol) {
         return DescriptorView::Same(mol);
     }
     // Memoized on `mol`: TPSA, Crippen LogP/MR, HBA and friends all start from
     // the same perceived copy, and that copy carries its own SSSR cache.
     DescriptorView::Perceived(
         mol.derived(chematic_core::DerivedSlot::DescriptorAromatic, || {
-            chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
-                .unwrap_or_else(|_| chematic_perception::apply_aromaticity(mol))
+            let cleaned;
+            let src = if needs_cleanup {
+                cleaned = rdkit_halogen_cleanup(mol);
+                &cleaned
+            } else {
+                mol
+            };
+            chematic_perception::apply_aromaticity_rdkit_parity_experimental(src)
+                .unwrap_or_else(|_| chematic_perception::apply_aromaticity(src))
         }),
     )
+}
+
+/// Whether RDKit's sanitization clean-up (`MolOps::cleanUp`,
+/// `halogenCleanup`) would rewrite a halogen oxoacid group of `mol`.
+fn needs_rdkit_halogen_cleanup(mol: &Molecule) -> bool {
+    mol.atoms()
+        .any(|(idx, _)| rdkit_halogen_cleanup_applies(mol, idx))
+}
+
+/// RDKit `halogenCleanup` precondition: a neutral Cl/Br/I of explicit
+/// valence 3, 5 or 7 bonded only to oxygen, with at least one `=O` (without
+/// one the rewrite is a no-op).
+fn rdkit_halogen_cleanup_applies(mol: &Molecule, idx: AtomIdx) -> bool {
+    let atom = mol.atom(idx);
+    if atom.wildcard || atom.charge != 0 || !matches!(atom.element.atomic_number(), 17 | 35 | 53) {
+        return false;
+    }
+    let mut ev = 0.0f64;
+    let mut has_double = false;
+    for (nb, b) in mol.neighbors(idx) {
+        if mol.atom(nb).element.atomic_number() != 8 || mol.atom(nb).wildcard {
+            return false;
+        }
+        let order = mol.bond(b).order;
+        has_double |= order == BondOrder::Double;
+        ev += match order {
+            BondOrder::Double => 2.0,
+            BondOrder::Triple => 3.0,
+            BondOrder::Quadruple => 4.0,
+            BondOrder::Aromatic => 1.5,
+            BondOrder::Zero => 0.0,
+            _ => 1.0,
+        };
+    }
+    ev += f64::from(atom.hydrogen_count.unwrap_or(0));
+    let ev = (ev + 0.1) as i32;
+    has_double && matches!(ev, 3 | 5 | 7)
+}
+
+/// Copy of `mol` with RDKit's `halogenCleanup` applied, as RDKit's
+/// `MolFromSmiles` sanitization does: `X(=O)(=O)(=O)O` becomes
+/// `[X+3]([O-])([O-])([O-])O` (likewise chlorate, chlorite). Only the
+/// descriptor view sees this form; the user's molecule is unchanged.
+fn rdkit_halogen_cleanup(mol: &Molecule) -> Molecule {
+    let mut out = mol.clone();
+    for (idx, _) in mol.atoms() {
+        if !rdkit_halogen_cleanup_applies(mol, idx) {
+            continue;
+        }
+        let mut charge = 0i8;
+        for (nb, b) in mol.neighbors(idx) {
+            if mol.bond(b).order == BondOrder::Double {
+                out.set_bond_order(b, BondOrder::Single);
+                out.set_charge(nb, -1);
+                charge += 1;
+            }
+        }
+        out.set_charge(idx, charge);
+    }
+    out
 }
 
 /// The descriptor aromatic view: `mol` itself or a perceived copy.
@@ -3271,6 +3349,33 @@ mod tests {
     /// Parse a SMILES string, panicking on failure.
     fn mol(smiles: &str) -> Molecule {
         parse(smiles).unwrap_or_else(|e| panic!("failed to parse {smiles:?}: {e}"))
+    }
+
+    /// RDKit sanitization rewrites perchloric acid as
+    /// `[Cl+3]([O-])([O-])([O-])O`; descriptors see that form (values from
+    /// RDKit 2026.03.1) while the user's molecule keeps its double bonds.
+    #[test]
+    fn perchlorate_descriptors_use_rdkit_cleanup() {
+        let m = mol("OCl(=O)(=O)=O");
+        assert!((tpsa(&m) - 89.41).abs() < 1e-9);
+        assert_eq!(hba_count(&m), 4);
+        assert!((logp_crippen(&m) - -4.124).abs() < 1e-9);
+        assert_eq!(rotatable_bond_count(&m), 0);
+        assert_eq!(
+            m.bonds()
+                .filter(|(_, b)| b.order == BondOrder::Double)
+                .count(),
+            3
+        );
+        assert_eq!(m.atoms().filter(|(_, a)| a.charge != 0).count(), 0);
+    }
+
+    /// RDKit 2026.03's strict rotor pattern excludes `[CH3]`, including a
+    /// methyl spelled with explicit deuterium.
+    #[test]
+    fn deuterated_methyl_is_not_a_rotor() {
+        assert_eq!(rotatable_bond_count(&mol("[2H]C([2H])([2H])NC=O")), 1);
+        assert_eq!(rotatable_bond_count(&mol("[2H]CNC=O")), 1);
     }
 
     /// Deterministically relabel a graph while preserving original atom
