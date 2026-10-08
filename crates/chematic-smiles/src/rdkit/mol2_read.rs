@@ -975,4 +975,28 @@ mod tests {
         assert_eq!(m.atoms[2].charge, -1);
         assert_eq!(m.atoms[3].charge, 0);
     }
+
+    #[test]
+    fn corina_groups_and_3d_double_bond_stereo() {
+        // Embedded by RDKit, typed Corina-style; expected `Chem.MolToSmiles`.
+        let cases: [(&str, &str); 3] = [
+            (
+                "C/C=C/C",
+                "@<TRIPOS>MOLECULE\ne_butene\n 12 11 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n      1 C1          1.8942    0.1555   -0.0535 C.3       1 UNL1      0.0000\n      2 C2          0.4521    0.2141   -0.4705 C.2       1 UNL1      0.0000\n      3 C3         -0.4317   -0.2179    0.4371 C.2       1 UNL1      0.0000\n      4 C4         -1.8978   -0.1863    0.0827 C.3       1 UNL1      0.0000\n      5 H5          2.1727   -0.9057    0.0325 H         1 UNL1      0.0000\n      6 H6          2.0937    0.7474    0.8581 H         1 UNL1      0.0000\n      7 H7          2.4750    0.6300   -0.8772 H         1 UNL1      0.0000\n      8 H8          0.1385    0.5805   -1.4403 H         1 UNL1      0.0000\n      9 H9         -0.1457   -0.5880    1.4107 H         1 UNL1      0.0000\n     10 H10        -2.3782    0.3239    0.9401 H         1 UNL1      0.0000\n     11 H11        -2.3023   -1.1942   -0.1070 H         1 UNL1      0.0000\n     12 H12        -2.0704    0.4406   -0.8127 H         1 UNL1      0.0000\n@<TRIPOS>BOND\n     1     1     2 1\n     2     2     3 2\n     3     3     4 1\n     4     1     5 1\n     5     1     6 1\n     6     1     7 1\n     7     2     8 1\n     8     3     9 1\n     9     4    10 1\n    10     4    11 1\n    11     4    12 1\n",
+            ),
+            (
+                "C[N+](=O)[O-]",
+                "@<TRIPOS>MOLECULE\nnitro_corina\n 7 6 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n      1 C1         -0.6379   -0.0863    0.0110 C.3       1 UNL1      0.0000\n      2 N2          0.7988    0.0213    0.0036 N.pl3     1 UNL1      0.0000\n      3 O3          1.5382   -0.9813   -0.0305 O.2       1 UNL1      0.0000\n      4 O4          1.3507    1.3008    0.0363 O.3       1 UNL1      0.0000\n      5 H5         -1.0679    0.2784    0.9707 H         1 UNL1      0.0000\n      6 H6         -0.9288   -1.1197   -0.1997 H         1 UNL1      0.0000\n      7 H7         -1.0531    0.5868   -0.7913 H         1 UNL1      0.0000\n@<TRIPOS>BOND\n     1     1     2 1\n     2     2     3 2\n     3     2     4 2\n     4     1     5 1\n     5     1     6 1\n     6     1     7 1\n",
+            ),
+            (
+                "NC(N)=[NH2+]",
+                "@<TRIPOS>MOLECULE\nguanidinium\n 10 9 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n      1 N1          0.3505    1.2992    0.4095 N.pl3     1 UNL1      0.0000\n      2 C2         -0.0630   -0.0100    0.0034 C.cat     1 UNL1      0.0000\n      3 N3          0.9472   -0.9234   -0.4090 N.pl3     1 UNL1      0.0000\n      4 N4         -1.3062   -0.3611    0.0072 N.pl3     1 UNL1      0.0000\n      5 H5          0.0264    1.7334    1.3081 H         1 UNL1      0.0000\n      6 H6          1.0064    1.8038   -0.2561 H         1 UNL1      0.0000\n      7 H7          1.6142   -1.3441    0.3054 H         1 UNL1      0.0000\n      8 H8          1.0870   -1.2228   -1.4009 H         1 UNL1      0.0000\n      9 H9         -1.6389   -1.3070   -0.2829 H         1 UNL1      0.0000\n     10 H10        -2.0236    0.3319    0.3153 H         1 UNL1      0.0000\n@<TRIPOS>BOND\n     1     1     2 ar\n     2     2     3 ar\n     3     2     4 ar\n     4     1     5 1\n     5     1     6 1\n     6     3     7 1\n     7     3     8 1\n     8     4     9 1\n     9     4    10 1\n",
+            ),
+        ];
+        for (smiles, block) in cases {
+            let r = crate::rdkit_mol_from_mol2_block(block, true, true, true).unwrap();
+            assert_eq!(r.smiles, smiles);
+            assert_eq!(crate::rdkit_canonical_smiles(&r.molecule).unwrap(), smiles);
+        }
+    }
 }

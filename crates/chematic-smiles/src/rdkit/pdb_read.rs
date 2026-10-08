@@ -691,28 +691,33 @@ fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
     ]
 }
 
-/// Whether `assignNontetrahedralChiralTypeFrom3D` would tag the atom.
-fn nontetrahedral_from_3d(mol: &Mol, coords: &[[f64; 3]], a: usize) -> bool {
+/// Whether `assignNontetrahedralChiralTypeFrom3D` would tag the atom
+/// (`Err` where its `normalize` throws on a neighbour at the atom's
+/// position).
+fn nontetrahedral_from_3d(
+    mol: &Mol,
+    coords: &[[f64; 3]],
+    a: usize,
+) -> Result<bool, RdkitSmilesError> {
     if mol.atoms[a].anum < 15 {
-        return false;
+        return Ok(false);
     }
     let cen = coords[a];
     let mut v: Vec<[f64; 3]> = Vec::new();
     for nb in mol.nbrs(a) {
         if v.len() == 6 {
-            return false;
+            return Ok(false);
         }
         let d = sub(coords[nb], cen);
         let l = dot(d, d).sqrt();
         if l < 1.0e-16 {
-            // `normalize` throws on a zero-length vector.
-            return false;
+            return Err(rdkit_fails("Cannot normalize a zero length vector"));
         }
         v.push([d[0] / l, d[1] / l, d[2] / l]);
     }
     let count = v.len();
     if count < 3 {
-        return false;
+        return Ok(false);
     }
     let mut pair = [0usize; 6];
     let mut pairs = 0;
@@ -720,7 +725,7 @@ fn nontetrahedral_from_3d(mol: &Mol, coords: &[[f64; 3]], a: usize) -> bool {
         for j in i + 1..count {
             if dot(v[i], v[j]) < -(1.0 - 0.1) {
                 if pair[i] != 0 || pair[j] != 0 {
-                    return false;
+                    return Ok(false);
                 }
                 pair[i] = j + 1;
                 pair[j] = i + 1;
@@ -728,10 +733,10 @@ fn nontetrahedral_from_3d(mol: &Mol, coords: &[[f64; 3]], a: usize) -> bool {
             }
         }
     }
-    matches!(
+    Ok(matches!(
         (pairs, count),
         (1, 3) | (1, 4) | (1, 5) | (2, 4) | (2, 5) | (3, 6)
-    )
+    ))
 }
 
 /// `MolOps::assignChiralTypesFrom3D(mol, -1, replaceExistingTags=true)`.
@@ -753,7 +758,7 @@ pub(crate) fn assign_chiral_types_from_3d(
         if nz_degree < 3 || tnz_degree > 6 {
             continue;
         }
-        if nontetrahedral_from_3d(mol, coords, a) {
+        if nontetrahedral_from_3d(mol, coords, a)? {
             return Err(parse_error("non-tetrahedral stereo from 3D coordinates"));
         }
         if tnz_degree > 4 {
