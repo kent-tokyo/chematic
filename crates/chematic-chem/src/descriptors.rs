@@ -1339,29 +1339,18 @@ pub fn lipinski_passes(mol: &Molecule) -> bool {
 /// not count zero-valence carbon radicals as CSP3.
 /// Returns 0.0 if the molecule contains no carbon atoms.
 pub fn fsp3(mol: &Molecule) -> f64 {
-    let c_total = mol
-        .atoms()
-        .filter(|(_, a)| a.element.atomic_number() == 6)
-        .count();
+    // RDKit `calcFractionCSP3`: carbons whose total degree (neighbours plus
+    // hydrogens) is four, over all carbons. A four-bonded carbanion (the
+    // ring carbon of a ferrocenyl `[C-]` bonded to Fe) counts.
+    let is_c = |a: &chematic_core::Atom| !a.wildcard && a.element.atomic_number() == 6;
+    let c_total = mol.atoms().filter(|(_, a)| is_c(a)).count();
     if c_total == 0 {
         return 0.0;
     }
     let sp3 = mol
         .atoms()
         .filter(|(idx, a)| {
-            if a.element.atomic_number() != 6 || a.aromatic || a.charge != 0 {
-                return false;
-            }
-            if mol.neighbors(*idx).any(|(_, bidx)| {
-                matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
-            }) {
-                return false;
-            }
-            let bond_order_sum: u8 = mol
-                .neighbors(*idx)
-                .map(|(_, bidx)| mol.bond(bidx).order.order_int())
-                .sum();
-            mol.implicit_hydrogen_count(*idx) + bond_order_sum == 4
+            is_c(a) && mol.degree(*idx) + usize::from(mol.implicit_hydrogen_count(*idx)) == 4
         })
         .count();
     sp3 as f64 / c_total as f64
@@ -3464,6 +3453,13 @@ mod tests {
         let m = mol("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10");
         assert_eq!(logp_crippen(&m), 1.4556799999999999);
         assert_eq!(logp_and_mr(&m).1, 53.144000000000005);
+    }
+
+    /// RDKit `CalcFractionCSP3` counts carbons of total degree four.
+    #[test]
+    fn fsp3_counts_four_connected_carbanion() {
+        let m = mol("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10");
+        assert_eq!(fsp3(&m), 4.0 / 13.0);
     }
 
     /// RDKit's `CalcNumAtomStereoCenters` uses legacy stereo perception: the
