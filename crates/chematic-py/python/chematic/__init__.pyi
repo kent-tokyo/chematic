@@ -3541,6 +3541,26 @@ class PipelineV2Error(ValueError):
 
     diagnostics: dict[str, object]
 
+class ChematicInputError(ValueError):
+    """Input a parser could not read (:func:`from_smiles`, :func:`from_inchi`,
+    :func:`from_mol_block`, :func:`from_mol_block_with_coords`,
+    :func:`parse_mmcif`, SMARTS patterns).
+
+    A ``ValueError``, so ``except ValueError`` keeps working; the attributes
+    say why without matching message text.
+    """
+
+    category: Literal["malformed", "unsupported", "ambiguous", "resource_limit"]
+    """``"malformed"`` for input that is not the format; ``"resource_limit"``
+    for input past a declared limit (e.g. ``parse_mmcif(max_input_bytes=...)``)."""
+    code: str
+    """Stable identifier: ``"smiles_parse"``, ``"smiles_valence"``, ``"smarts_parse"``,
+    ``"mol_block_parse"``, ``"inchi_parse"``, ``"mmcif_parse"``,
+    ``"input_too_large"``, ``"line_too_long"``, ``"too_many_atoms"``."""
+    format: str
+    """The format being read: ``"smiles"``, ``"smarts"``, ``"mol_block"``,
+    ``"inchi"`` or ``"mmcif"``."""
+
 # ---------------------------------------------------------------------------
 # SimilarityIndex (MHFP LSH)
 # ---------------------------------------------------------------------------

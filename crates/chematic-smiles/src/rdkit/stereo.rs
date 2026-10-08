@@ -390,12 +390,15 @@ fn find_atom_neighbor_dir_helper(
 /// [`find_atom_neighbor_dir_helper`] would then read them: the requested
 /// stereo atoms get one direction (the same one for cis), the other
 /// neighbour on each end the opposite.
+type NeighborDirections = Vec<(usize, BondDir)>;
+type DoubleBondNeighborDirections = (NeighborDirections, NeighborDirections);
+
 fn requested_neighbor_dirs(
     mol: &Mol,
     b: usize,
     (stereo_begin, stereo_end, trans): (usize, usize, bool),
     ranks: &[u32],
-) -> (Vec<(usize, BondDir)>, Vec<(usize, BondDir)>) {
+) -> DoubleBondNeighborDirections {
     let side = |a: usize, stereo_atom: usize, dir: BondDir| {
         let mut out: Vec<(usize, BondDir)> = mol.atom_bonds[a]
             .iter()

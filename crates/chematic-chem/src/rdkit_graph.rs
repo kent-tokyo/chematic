@@ -367,12 +367,12 @@ pub fn ipc(mol: &Molecule) -> f64 {
     }
     let mut diag = vec![0.0f64; n];
     let mut bn = vec![0.0f64; n * n];
-    for step in 1..=n {
+    for (step, res_step) in res.iter_mut().enumerate().take(n + 1).skip(1) {
         for (i, di) in diag.iter_mut().enumerate() {
             *di = an[i * n + i];
         }
         let c = 1.0 / step as f64 * numpy_pairwise_sum(&diag);
-        res[step] = c;
+        *res_step = c;
         if step == n {
             break;
         }

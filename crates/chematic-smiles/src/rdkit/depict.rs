@@ -62,7 +62,7 @@ impl P {
     }
     /// `operator-()`: multiplies by -1.0.
     fn neg(self) -> P {
-        P::new(self.x * -1.0, self.y * -1.0)
+        P::new(-self.x, -self.y)
     }
     fn length_sq(self) -> f64 {
         self.x * self.x + self.y * self.y
@@ -153,12 +153,7 @@ impl T2 {
         if lp <= 0.0 {
             return T2::identity();
         }
-        let mut cval = dp / lp;
-        if cval < -1.0 {
-            cval = -1.0;
-        } else if cval > 1.0 {
-            cval = 1.0;
-        }
+        let cval = (dp / lp).clamp(-1.0, 1.0);
         let mut ang = cval.acos();
         let cross = pvec.x * rvec.y - pvec.y * rvec.x;
         if cross < 0.0 {
@@ -1176,10 +1171,10 @@ impl EFrag {
             let mut other = std::mem::take(&mut efrags[i]);
             self.merge_with_common(ctx, &mut other, &mut comm)?;
             for &c in &comm {
-                if self.get(c)?.neighs.is_empty() {
-                    if let Some(p) = self.attach.iter().position(|&x| x == c) {
-                        self.attach.remove(p);
-                    }
+                if self.get(c)?.neighs.is_empty()
+                    && let Some(p) = self.attach.iter().position(|&x| x == c)
+                {
+                    self.attach.remove(p);
                 }
             }
             efrags[i].dead = true;
@@ -1211,10 +1206,10 @@ impl EFrag {
                     if let Some(i) = nfri {
                         let mut other = std::mem::take(&mut efrags[i]);
                         self.merge_no_common(ctx, &mut other, aid, nbri)?;
-                        if self.get(nbri)?.neighs.is_empty() {
-                            if let Some(p) = self.attach.iter().position(|&x| x == nbri) {
-                                self.attach.remove(p);
-                            }
+                        if self.get(nbri)?.neighs.is_empty()
+                            && let Some(p) = self.attach.iter().position(|&x| x == nbri)
+                        {
+                            self.attach.remove(p);
                         }
                         efrags[i].dead = true;
                     }
@@ -1361,7 +1356,7 @@ impl EFrag {
     fn total_density(&self) -> f64 {
         let mut acc = 0.0f64;
         for a in self.ea.values() {
-            acc = a.density + acc;
+            acc += a.density;
         }
         acc
     }
@@ -1442,7 +1437,7 @@ impl EFrag {
                     angle *= -1.0;
                 }
                 let t1 = T2::rotation_about(self.at(aid_a).loc, angle);
-                let t2 = T2::rotation_about(self.at(aid_b).loc, -1.0 * angle);
+                let t2 = T2::rotation_about(self.at(aid_b).loc, -angle);
                 t1.apply(&mut self.at(aid1).loc);
                 t2.apply(&mut self.at(aid2).loc);
             }
@@ -1704,13 +1699,9 @@ fn find_next_ring_to_embed(
     }
     if cmn_lst > 0 && cmn_lst < res.len() {
         let temp = res.clone();
-        for i in cmn_lst..n_cmn {
-            res[i - cmn_lst] = temp[i];
-        }
         let n_mov = n_cmn - cmn_lst;
-        for i in 0..cmn_lst {
-            res[n_mov + i] = temp[i];
-        }
+        res[..n_mov].copy_from_slice(&temp[cmn_lst..n_cmn]);
+        res[n_mov..n_cmn].copy_from_slice(&temp[..cmn_lst]);
     }
     if res.is_empty() {
         return derr("findNextRingToEmbed: empty result");

@@ -24,7 +24,7 @@ fn unsupported(what: &str) -> RdkitSmilesError {
 
 /// `Point3D::directionVector` of two in-plane points (`z = 0`).
 fn direction_vector(from: [f64; 2], to: [f64; 2]) -> Option<[f64; 3]> {
-    let mut r = [to[0] - from[0], to[1] - from[1], 0.0 - 0.0];
+    let mut r = [to[0] - from[0], to[1] - from[1], 0.0];
     let l = (r[0] * r[0] + r[1] * r[1] + r[2] * r[2]).sqrt();
     if l < ZERO_TOLERANCE {
         return None;
@@ -404,12 +404,12 @@ pub(crate) fn mol_block_2d(
         let mut dir_code = 0u8;
         let mut reverse = false;
         if matches!(bond.bt, BondType::Single | BondType::Aromatic) {
-            if let Some(&from) = wedge.get(&bid) {
-                if let Some(code) = determine_bond_wedge_state(&t, bid, from, xy) {
-                    dir_code = code;
-                    if from != bond.begin {
-                        reverse = true;
-                    }
+            if let Some(&from) = wedge.get(&bid)
+                && let Some(code) = determine_bond_wedge_state(&t, bid, from, xy)
+            {
+                dir_code = code;
+                if from != bond.begin {
+                    reverse = true;
                 }
             }
         } else if bond.bt == BondType::Double && should_be_a_crossed_bond(&t, bid, cip) {

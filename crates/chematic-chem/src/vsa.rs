@@ -36,7 +36,7 @@ const ESTATE_CUTS: &[f64] = &[
 /// `std::upper_bound(cuts, value)`, as RDKit's `assignContribsToBins`
 /// (a NaN value lands in the last bin).
 fn bin_idx(value: f64, cuts: &[f64]) -> usize {
-    cuts.partition_point(|&c| !(value < c))
+    cuts.partition_point(|&c| !matches!(value.partial_cmp(&c), Some(std::cmp::Ordering::Less)))
 }
 
 fn vsa_bins(mol: &Molecule, contrib: &[f64], cuts: &[f64]) -> Vec<f64> {

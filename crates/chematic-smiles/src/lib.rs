@@ -56,7 +56,7 @@ pub use canonical_search::{
 };
 pub use cx::{CxAtomProp, CxSmiles, attachment_point_label_number, parse_cxsmiles, write_cxsmiles};
 pub use error::SmilesError;
-pub use parser::{SmilesParseLimits, parse, parse_with_limits};
+pub use parser::{SmilesParseLimits, parse, parse_template, parse_with_limits};
 pub use random_smiles::{random_smiles, random_smiles_vect};
 pub use rdkit::{
     InchiOutputAtom, InchiOutputStereo0D, RdkitLegacyStereo, RdkitMolBlock, RdkitMolBlockAtom,

@@ -48,6 +48,37 @@ xsmarts-autoconf, the 310k SMARTS gate, CIP, hybridization, MMFF typing, the
 MOL writer and the WASM Node tests. Record:
 `benchmarks/2026-10-06-v1036-published-reruns-and-followups.md`.
 
+- SMILES (#769): a neutral oxygen with more than two bonds or a neutral
+  fluorine with more than one (`O=O1C=CC=C1`, `CO(C)C`) is a typed
+  `SmilesError::InvalidValence` error instead of a molecule that
+  aromaticity perception then aromatized; Python raises
+  `ChematicInputError` with code `smiles_valence`. Charged and hypervalent
+  atoms are unchanged; SMIRKS templates are read without the check
+  (`chematic_smiles::parse_template`). New public enum variant.
+- 3D (#739): a stereo-safe (`RepairAndVerify`) pipeline run that ends in
+  `FinalStereoViolation` embeds again from up to seven other seeds before
+  returning the failure. MMFF94 relaxed penam bridgeheads through inversion
+  from about a quarter of seeds on every platform (the `libm` change had
+  only moved which seeds); over ten seeds of the 265 A6 rows, 32 of 2,650
+  runs failed and none now. A run that succeeds at its own seed is
+  unchanged. CI gates the A6 rows on the independent scorer on Linux, macOS
+  and Windows. Record: `benchmarks/2026-10-08-issues-769-739.md`.
+- 2D layout: a ring hung on an atom with six or more bonds (an octahedral
+  metal with pyridines) is drawn 1.5 bonds out; as drawn, 5 of 15,000 rows
+  have a clash (was 23; RDKit 276) and 213 a crossing. Record:
+  `benchmarks/2026-10-08-734-754-followups-batch23.md`.
+- 2D layout: the clash relief stops counting a move once it cannot win
+  (identical drawings, `write_mol` 652M → 589M instructions on 2,000 rows),
+  so components of more than 60 atoms now also get their ±45° forks
+  relieved: narrow branch atoms 1,757 → 916 of 15,000 rows; three-atom
+  groups take the wide turns. Record:
+  `benchmarks/2026-10-08-734-754-followups-batch22.md`.
+- Python: the parsers (`from_smiles`, `from_inchi`, `from_mol_block`,
+  `from_mol_block_with_coords`, `parse_mmcif`, SMARTS patterns) raise
+  `chematic.ChematicInputError`, a `ValueError` subclass with `category`
+  (`malformed` / `resource_limit`), `code` (`smiles_parse`, `input_too_large`,
+  …) and `format`. `except ValueError` keeps working. Nucleic-acid edit
+  sequences are replayed with the same envelopes in Rust, Python and WASM.
 - 2D layout: porphyrins are drawn from a template (pentagons round the
   macrocycle, a central metal at the centre); perfluoroalkyl and other chains
   run straight through CF2/CMe2 atoms; a ring-fusion atom's substituent goes

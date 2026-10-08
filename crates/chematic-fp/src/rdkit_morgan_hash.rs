@@ -355,10 +355,11 @@ pub(crate) fn expand_one_pass_with_chirality_into<F>(
             let mut previous_neighbor: Option<u32> = None;
             for &(bond_inv, nb_inv) in &pairs {
                 invar = hash_combine(invar, hash_pair(bond_inv, nb_inv));
-                if looks_chiral && !chiral_atoms[i] {
-                    if bond_inv != 1 || previous_neighbor == Some(nb_inv) {
-                        looks_chiral = false;
-                    }
+                if looks_chiral
+                    && !chiral_atoms[i]
+                    && (bond_inv != 1 || previous_neighbor == Some(nb_inv))
+                {
+                    looks_chiral = false;
                 }
                 previous_neighbor = Some(nb_inv);
             }

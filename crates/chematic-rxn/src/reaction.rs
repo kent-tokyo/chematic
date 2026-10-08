@@ -270,7 +270,7 @@ fn product_atom_spec(atom: &str, rdkit_reading: bool) -> Result<String, RxnError
     }
 
     // SMILES-valid atoms are already specifications.
-    if parse_smiles(atom).is_ok() {
+    if chematic_smiles::parse_template(atom).is_ok() {
         return Ok(atom.to_string());
     }
     let unsupported = || RxnError::UnsupportedProductPrimitive {
@@ -744,6 +744,26 @@ pub fn parse_reaction(s: &str) -> Result<Reaction, RxnError> {
 pub fn parse_reaction_with_limits(
     s: &str,
     limits: &ReactionParseLimits,
+) -> Result<Reaction, RxnError> {
+    parse_reaction_sides(s, limits, parse_smiles)
+}
+
+/// [`parse_reaction`] for the sides of a SMIRKS template: components are
+/// read with [`chematic_smiles::parse_template`], which keeps a template
+/// atom that no molecule could have (#769); applying the template refuses
+/// such a product instead.
+pub(crate) fn parse_reaction_template(s: &str) -> Result<Reaction, RxnError> {
+    parse_reaction_sides(
+        s,
+        &ReactionParseLimits::default(),
+        chematic_smiles::parse_template,
+    )
+}
+
+fn parse_reaction_sides(
+    s: &str,
+    limits: &ReactionParseLimits,
+    parse_smiles: fn(&str) -> Result<Molecule, chematic_smiles::SmilesError>,
 ) -> Result<Reaction, RxnError> {
     if s.len() > limits.max_input_bytes {
         return Err(RxnError::ResourceLimit {
