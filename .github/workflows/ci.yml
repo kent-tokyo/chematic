@@ -433,7 +433,7 @@ jobs:
         run: |
           python -m venv .venv
           .venv/Scripts/python -m pip install maturin 'pytest<9' 'pytest-asyncio>=0.23,<1' numpy 'rdkit==2026.3.6' --quiet
-          .venv/Scripts/maturin build --release -m crates/chematic-py/Cargo.toml --interpreter .venv/Scripts/python.exe --out dist/source-wheel
+          .venv/Scripts/maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter .venv/Scripts/python.exe --out dist/source-wheel
           .venv/Scripts/python -m pip install --no-deps dist/source-wheel/chematic-*.whl
       - name: Run pytest (chematic-py)
         run: .venv/Scripts/python -m pytest crates/chematic-py/tests/ -q
@@ -443,6 +443,7 @@ jobs:
           .venv/Scripts/python scripts/check_python_smarts_parity_310k.py --wheel dist/source-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-windows.json
       - name: Diagnose A6 optimized source wheel (Windows)
         run: |
+          git status --short
           git diff --quiet
           .venv/Scripts/python scripts/public_package_3d_chematic.py --wheel dist/source-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-windows.jsonl --metadata-output validation/results/a6-source-265-windows.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
           .venv/Scripts/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-windows.jsonl --metadata validation/results/a6-source-265-windows.meta.json --output validation/results/a6-source-265-windows.summary.json --build-profile release
