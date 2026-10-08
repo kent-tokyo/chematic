@@ -26,7 +26,7 @@ fn bond_affects_atom_chirality(mol: &Mol, b: usize, a: usize) -> bool {
 }
 
 /// `Chirality::detail::getAtomNonzeroDegree`.
-fn atom_nonzero_degree(mol: &Mol, a: usize) -> usize {
+pub(crate) fn atom_nonzero_degree(mol: &Mol, a: usize) -> usize {
     mol.atom_bonds[a]
         .iter()
         .filter(|&&b| bond_affects_atom_chirality(mol, b, a))

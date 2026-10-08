@@ -46,6 +46,8 @@ struct BondHolder {
     nbr_idx: u32,
     stype: u32,
     ctrl: [Option<u32>; 4],
+    /// Bond index (for `Input::bond_symbols`).
+    bidx: u32,
 }
 
 #[derive(Default)]
@@ -83,6 +85,15 @@ struct Input {
     /// Adjacency in bond insertion order.
     nbrs: Vec<SmallVec<[u32; 4]>>,
     bonds: Vec<InputBond>,
+    /// `rankFragmentAtoms`' `atomSymbols` / `bondSymbols`: when given, atoms
+    /// compare by (class, degree, symbol) only and bonds by symbol first.
+    atom_symbols: Option<Vec<String>>,
+    bond_symbols: Option<Vec<String>>,
+    /// `breakTies`.
+    break_ties: bool,
+    /// Run the special-chirality refinement on ties (`useChirality &&
+    /// includeRingStereo`).
+    special_chirality: bool,
 }
 
 fn sign(v: i64) -> i32 {
@@ -180,6 +191,7 @@ impl Ranker<'_> {
             nbr_idx: other,
             stype: st,
             ctrl: [None; 4],
+            bidx: bidx as u32,
         };
         if (st == STEREOCIS || st == STEREOTRANS)
             && let Some((s0, s1)) = satoms
@@ -249,6 +261,13 @@ impl Ranker<'_> {
     }
 
     fn bh_compare(&self, x: &BondHolder, y: &BondHolder) -> i32 {
+        if let Some(sym) = &self.inp.bond_symbols {
+            match sym[x.bidx as usize].cmp(&sym[y.bidx as usize]) {
+                std::cmp::Ordering::Less => return -1,
+                std::cmp::Ordering::Greater => return 1,
+                std::cmp::Ordering::Equal => {}
+            }
+        }
         let c = cmp_u(x.bond_type, y.bond_type);
         if c != 0 {
             return c;
@@ -346,6 +365,22 @@ impl Ranker<'_> {
     fn basecomp(&self, i: usize, j: usize) -> i32 {
         let (a, b) = (&self.atoms[i], &self.atoms[j]);
         let inp = self.inp;
+        if let Some(sym) = &inp.atom_symbols {
+            for c in [
+                cmp_u(a.index, b.index),
+                sign(i64::from(inp.map[i]) - i64::from(inp.map[j])),
+                cmp_u(a.degree, b.degree),
+            ] {
+                if c != 0 {
+                    return c;
+                }
+            }
+            return match sym[i].cmp(&sym[j]) {
+                std::cmp::Ordering::Less => -1,
+                std::cmp::Ordering::Greater => 1,
+                std::cmp::Ordering::Equal => 0,
+            };
+        }
         let checks = [
             cmp_u(a.index, b.index),
             sign(i64::from(inp.map[i]) - i64::from(inp.map[j])),
@@ -855,7 +890,7 @@ impl Ranker<'_> {
             &mut changed,
             &mut touched,
         );
-        if count.contains(&0) {
+        if self.inp.special_chirality && count.contains(&0) {
             Self::activate(&order, &count, &mut activeset, &mut next, &mut changed);
             self.refine(
                 Functor::SpecialChirality,
@@ -899,14 +934,16 @@ impl Ranker<'_> {
                 &mut touched,
             );
         }
-        self.break_ties(
-            &mut order,
-            &mut count,
-            &mut activeset,
-            &mut next,
-            &mut changed,
-            &mut touched,
-        );
+        if self.inp.break_ties {
+            self.break_ties(
+                &mut order,
+                &mut count,
+                &mut activeset,
+                &mut next,
+                &mut changed,
+                &mut touched,
+            );
+        }
         let mut res = vec![0u32; n];
         for &o in &order {
             res[o as usize] = self.atoms[o as usize].index;
@@ -985,6 +1022,10 @@ fn build_input(mol: &Molecule, rings: &[Vec<usize>], ez: &[(BondIdx, bool)]) -> 
         ring_stereo: vec![false; n],
         nbrs: vec![SmallVec::new(); n],
         bonds: Vec::with_capacity(mol.bond_count()),
+        atom_symbols: None,
+        bond_symbols: None,
+        break_ties: true,
+        special_chirality: true,
     };
     for (idx, atom) in mol.atoms() {
         inp.anum.push(if atom.wildcard {
@@ -1110,6 +1151,55 @@ pub fn rdkit_rank_mol_atoms(atoms: &[RdkitRankAtom], bonds: &[RdkitRankBond]) ->
             .iter()
             .map(|b| (b.begin, b.end, b.bond_type, b.stereo, b.stereo_atoms))
             .collect(),
+        atom_symbols: None,
+        bond_symbols: None,
+        break_ties: true,
+        special_chirality: true,
+    };
+    let mut ranker = Ranker::new(&inp);
+    for (i, a) in atoms.iter().enumerate() {
+        ranker.atoms[i].total_hs = a.total_num_hs;
+    }
+    ranker.rank()
+}
+
+/// `Canon::rankFragmentAtoms(mol, ranks, all atoms, all bonds, &atomSymbols,
+/// &bondSymbols, breakTies=false, includeChirality=false,
+/// includeIsotopes=false, includeAtomMaps=false, includeChiralPresence=false,
+/// includeRingStereo=false)`, the symmetry classes
+/// `Chirality::findPotentialStereo` ranks with: atoms compare by degree and
+/// `atom_symbols`, bonds by `bond_symbols` and type. Only `begin`, `end`,
+/// `bond_type` of the bonds and `num_rings`, `total_num_hs` of the atoms are
+/// read.
+pub fn rdkit_rank_fragment_atoms_with_symbols(
+    atoms: &[RdkitRankAtom],
+    bonds: &[RdkitRankBond],
+    atom_symbols: &[String],
+    bond_symbols: &[String],
+) -> Vec<u32> {
+    let n = atoms.len();
+    let mut nbrs: Vec<SmallVec<[u32; 4]>> = vec![SmallVec::new(); n];
+    for b in bonds {
+        nbrs[b.begin as usize].push(b.end);
+        nbrs[b.end as usize].push(b.begin);
+    }
+    let inp = Input {
+        anum: atoms.iter().map(|a| a.atomic_num).collect(),
+        isotope: vec![0; n],
+        charge: atoms.iter().map(|a| a.formal_charge).collect(),
+        map: vec![0; n],
+        chiral: vec![0; n],
+        nrings: atoms.iter().map(|a| a.num_rings).collect(),
+        ring_stereo: vec![false; n],
+        nbrs,
+        bonds: bonds
+            .iter()
+            .map(|b| (b.begin, b.end, b.bond_type, STEREONONE, None))
+            .collect(),
+        atom_symbols: Some(atom_symbols.to_vec()),
+        bond_symbols: Some(bond_symbols.to_vec()),
+        break_ties: false,
+        special_chirality: false,
     };
     let mut ranker = Ranker::new(&inp);
     for (i, a) in atoms.iter().enumerate() {

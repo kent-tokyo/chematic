@@ -3,56 +3,16 @@
 //! `maxIsomers=1024`, `tryEmbedding=False`) on the RDKit-model molecule.
 //!
 //! RDKit flips every unspecified centre and double bond that
-//! `FindPotentialStereo` reports, re-runs the (legacy) stereo perception on
-//! each isomer and keeps the distinct canonical SMILES. Here the flipped
-//! centres are RDKit's own candidates (`isAtomPotentialTetrahedralCenter`,
-//! stereo-capable double bonds) that the legacy perception keeps when they
-//! are all specified; flipping a candidate it would drop only produces
-//! duplicates, which uniqueness removes.
+//! `FindPotentialStereo` reports (ported in `findstereo`), re-runs the
+//! (legacy) stereo perception on each isomer and keeps the distinct
+//! canonical SMILES.
 
-use super::mol::{BondStereo, BondType, ChiralTag, Mol};
+use super::findstereo::{NOATOM, Specified, StereoType, find_potential_stereo};
+use super::mol::{ChiralTag, Mol};
 use super::pyrandom::{PyRandom, hash_pair_tuple};
-use super::stereo::{
-    is_atom_potential_tetrahedral_center, legacy_stereo_perception,
-    should_detect_double_bond_stereo,
-};
+use super::stereo::legacy_stereo_perception;
 use super::write::mol_to_smiles;
 use super::{RdkitSmilesError, RdkitSmilesParams};
-
-/// Unspecified candidate centres and double bonds of `m` (after perception).
-fn candidates(m: &Mol) -> (Vec<usize>, Vec<(usize, usize, usize)>) {
-    let atoms: Vec<usize> = (0..m.atoms.len())
-        .filter(|&a| {
-            m.atoms[a].chiral == ChiralTag::Unspecified
-                && is_atom_potential_tetrahedral_center(m, a)
-        })
-        .collect();
-    let mut bonds = Vec::new();
-    for b in 0..m.bonds.len() {
-        let bond = &m.bonds[b];
-        if bond.bt != BondType::Double
-            || bond.aromatic
-            || !matches!(bond.stereo, BondStereo::None | BondStereo::Any)
-            || !should_detect_double_bond_stereo(m, b)
-        {
-            continue;
-        }
-        let (beg, end) = (bond.begin, bond.end);
-        if !matches!(m.degree(beg), 2 | 3) || !matches!(m.degree(end), 2 | 3) {
-            continue;
-        }
-        let first = |x: usize| {
-            m.atom_bonds[x]
-                .iter()
-                .find(|&&nb| nb != b)
-                .map(|&nb| m.bonds[nb].other(x))
-        };
-        if let (Some(sa), Some(sb)) = (first(beg), first(end)) {
-            bonds.push((b, sa, sb));
-        }
-    }
-    (atoms, bonds)
-}
 
 /// Apply one flip assignment: bit `i` of `bits` set = `CW` / cis.
 fn assign(
@@ -80,38 +40,32 @@ fn assign(
     m
 }
 
-/// The centres and double bonds `EnumerateStereoisomers` flips (its
-/// `_getFlippers`): RDKit's candidates that the perception retains under a
-/// few assignments (a pseudo-asymmetric centre survives only for some).
+/// The centres and double bonds `EnumerateStereoisomers` flips
+/// (`_getFlippers` with `onlyUnassigned=True`): the unspecified (or
+/// unknown) tetrahedral atoms and double bonds `Chem.FindPotentialStereo`
+/// reports, in its order. A double bond's flip is relative to its first
+/// controlling atom on each side (ordered by RDKit's symmetry ranks).
 pub(crate) fn flippers(base: &Mol) -> (Vec<usize>, Vec<(usize, usize, usize)>) {
-    let (atoms, bonds) = candidates(base);
-    if atoms.is_empty() && bonds.is_empty() {
-        return (atoms, bonds);
-    }
-    let mut keep_atom = vec![false; atoms.len()];
-    let mut keep_bond = vec![false; bonds.len()];
-    let probes: [fn(usize) -> bool; 4] = [|_| true, |_| false, |i| i % 2 == 0, |i| i % 3 == 0];
-    for probe in probes {
-        let m = assign(base, &atoms, &bonds, probe);
-        for (i, &a) in atoms.iter().enumerate() {
-            keep_atom[i] |= m.atoms[a].chiral != ChiralTag::Unspecified;
+    let mut atoms = Vec::new();
+    let mut bonds = Vec::new();
+    for info in find_potential_stereo(base) {
+        if !matches!(info.specified, Specified::Unspecified | Specified::Unknown) {
+            continue;
         }
-        for (j, &(b, ..)) in bonds.iter().enumerate() {
-            keep_bond[j] |= matches!(m.bonds[b].stereo, BondStereo::E | BondStereo::Z);
+        match info.kind {
+            StereoType::AtomTetrahedral => atoms.push(info.centered_on),
+            StereoType::BondDouble => {
+                let b = info.centered_on;
+                let sa = &base.bonds[b].stereo_atoms;
+                if sa.len() == 2 {
+                    bonds.push((b, sa[0], sa[1]));
+                } else if info.controlling[0] != NOATOM && info.controlling[2] != NOATOM {
+                    bonds.push((b, info.controlling[0], info.controlling[2]));
+                }
+            }
+            _ => {}
         }
     }
-    let atoms: Vec<usize> = atoms
-        .iter()
-        .zip(&keep_atom)
-        .filter(|&(_, &k)| k)
-        .map(|(&a, _)| a)
-        .collect();
-    let bonds: Vec<(usize, usize, usize)> = bonds
-        .iter()
-        .zip(&keep_bond)
-        .filter(|&(_, &k)| k)
-        .map(|(&b, _)| b)
-        .collect();
     (atoms, bonds)
 }
 
@@ -121,15 +75,10 @@ pub(crate) fn flippers(base: &Mol) -> (Vec<usize>, Vec<(usize, usize, usize)>) {
 /// `max_isomers` flip combinations; `Err` only for `max_isomers == 0` with
 /// more than 16 flips.
 pub(crate) fn enumerate(base: &Mol, max_isomers: usize) -> Result<Vec<String>, RdkitSmilesError> {
-    let (atoms, bonds) = candidates(base);
-    if atoms.is_empty() && bonds.is_empty() {
-        return Ok(vec![mol_to_smiles(base, &RdkitSmilesParams::default())?]);
-    }
     let (atoms, bonds) = flippers(base);
     let n = atoms.len() + bonds.len();
     if n == 0 {
-        let m = assign(base, &[], &[], |_| false);
-        return Ok(vec![mol_to_smiles(&m, &RdkitSmilesParams::default())?]);
+        return Ok(vec![mol_to_smiles(base, &RdkitSmilesParams::default())?]);
     }
     // RDKit enumerates every flip combination when there are at most
     // `max_isomers` of them (or `max_isomers == 0`); otherwise it draws

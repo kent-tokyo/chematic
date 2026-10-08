@@ -36,6 +36,7 @@ mod aromaticity;
 mod canon;
 mod depict;
 mod enumerate;
+mod findstereo;
 mod inchi_read;
 mod kekulize;
 mod mol;

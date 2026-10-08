@@ -392,3 +392,24 @@ fn rdkit_writers_match_rdkit() {
          CONECT    1    2\nCONECT    2    3    3    4\nEND\n"
     );
 }
+
+/// `GetStereoisomerCount` cases that need `FindPotentialStereo`'s
+/// dependent ("possible") stereo (RDKit 2026.03.1).
+#[test]
+fn stereoisomer_count_uses_find_potential_stereo() {
+    for (smiles, want) in [
+        ("CC(C(=O)O)=C1CCC(C)CC1", 4),
+        ("O[As]=O", 2),
+        ("ON=C1C=CC(C=C1)=NO", 4),
+        ("C1C[S+]2CC[S+]1CC2", 4),
+        ("C12C3=C4C5=C1[Fe]23456789C%10C6=C7C8=C9%10", 1),
+        ("BrCC(Br)COP(=O)(OCC(Br)CBr)OCC(Br)CBr", 16),
+    ] {
+        let mol = crate::parse(smiles).expect("parses");
+        assert_eq!(
+            super::rdkit_stereoisomer_count(&mol).unwrap(),
+            want,
+            "{smiles}"
+        );
+    }
+}
