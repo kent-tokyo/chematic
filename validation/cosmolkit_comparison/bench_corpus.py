@@ -30,36 +30,50 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 OPS = ["parse", "canonical_smiles", "formula", "mol_wt", "tpsa", "logp", "qed",
-       "morgan2_2048", "maccs", "cip", "smarts_31", "molblock", "inchi"]
+       "morgan2_2048", "maccs", "cip", "smarts_31", "molblock", "inchi",
+       "smarts_write", "murcko", "stereoisomers"]
 
 
 def table(engine: str):
     from corpus_engines import SMARTS_QUERIES
     if engine == "rdkit":
         from rdkit import Chem, RDLogger
-        from rdkit.Chem import QED, Crippen, Descriptors, MACCSkeys, rdCIPLabeler, rdFingerprintGenerator
+        from rdkit.Chem import QED, Crippen, Descriptors, MACCSkeys, rdCIPLabeler, rdDepictor, rdFingerprintGenerator
         from rdkit.Chem import rdMolDescriptors as D
+        from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers
+        from rdkit.Chem.Scaffolds import MurckoScaffold
         RDLogger.DisableLog("rdApp.*")
         gen = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
         qs = [Chem.MolFromSmarts(q) for q in SMARTS_QUERIES]
+
+        def molblock_2d(m):
+            # 2D layout + MOL block, as chematic's rdkit_mol_block_2d and
+            # COSMolKit's to_2d_sdf_string do (MolToMolBlock alone writes zeros).
+            rdDepictor.Compute2DCoords(m)
+            return Chem.MolToMolBlock(m)
+
         return Chem.MolFromSmiles, {
             "canonical_smiles": Chem.MolToSmiles, "formula": D.CalcMolFormula,
             "mol_wt": Descriptors.MolWt, "tpsa": D.CalcTPSA, "logp": Crippen.MolLogP,
             "qed": QED.qed, "morgan2_2048": gen.GetFingerprint, "maccs": MACCSkeys.GenMACCSKeys,
             "cip": rdCIPLabeler.AssignCIPLabels,
             "smarts_31": lambda m: [m.GetSubstructMatches(q, maxMatches=100000) for q in qs],
-            "molblock": Chem.MolToMolBlock, "inchi": Chem.MolToInchi,
+            "molblock": molblock_2d, "inchi": Chem.MolToInchi,
+            "smarts_write": Chem.MolToSmarts, "murcko": MurckoScaffold.GetScaffoldForMol,
+            "stereoisomers": lambda m: sorted(Chem.MolToSmiles(x) for x in EnumerateStereoisomers(m)),
         }
     if engine == "chematic":
         import chematic as c
         return c.from_smiles, {
-            "canonical_smiles": lambda m: m.smiles, "formula": lambda m: m.formula,
+            "canonical_smiles": lambda m: m.rdkit_smiles, "formula": lambda m: m.formula,
             "mol_wt": lambda m: m.rdkit_mw, "tpsa": lambda m: m.rdkit_tpsa,
             "logp": lambda m: m.logp, "qed": lambda m: m.qed,
             "morgan2_2048": lambda m: m.rdkit_ecfp_config(2, 2048), "maccs": lambda m: m.maccs(),
             "cip": lambda m: m.cip_stereo(mode="accurate"),
             "smarts_31": lambda m: [m.find_matches_rdkit_parity(q) for q in SMARTS_QUERIES],
-            "molblock": lambda m: m.to_mol_block(),
+            "molblock": lambda m: m.rdkit_mol_block_2d(), "inchi": lambda m: m.standard_inchi,
+            "smarts_write": lambda m: m.rdkit_smarts(), "murcko": lambda m: m.rdkit_murcko_scaffold(),
+            "stereoisomers": lambda m: m.rdkit_stereoisomer_smiles(),
         }
     import cosmolkit as ck
     qs = [ck.parse_smarts(q) for q in SMARTS_QUERIES]
@@ -71,6 +85,8 @@ def table(engine: str):
         "maccs": lambda m: m.maccs_fingerprint(), "cip": lambda m: m.with_cip_labels(),
         "smarts_31": lambda m: [ck.get_substruct_matches(m, q, max_matches=100000) for q in qs],
         "molblock": lambda m: m.to_2d_sdf_string(), "inchi": lambda m: m.to_inchi(),
+        "smarts_write": lambda m: m.to_smarts(), "murcko": lambda m: m.murcko_scaffold(),
+        "stereoisomers": lambda m: sorted(x.to_smiles() for x in m.stereoisomers()),
     }
 
 
