@@ -67,7 +67,9 @@ pub(crate) fn flat_to_coords3d(coords: &[[f64; 3]]) -> chematic_3d::Coords3D {
 /// Parse a SMILES string and return a Mol.
 ///
 /// Raises :class:`ChematicInputError` (a ``ValueError``; ``category``
-/// ``"malformed"``, ``code`` ``"smiles_parse"``) on invalid SMILES.
+/// ``"malformed"``, ``code`` ``"smiles_parse"``) on invalid SMILES, and
+/// with ``code`` ``"smiles_valence"`` when the graph gives a neutral oxygen
+/// or fluorine more bonds than it permits (``CO(C)C``).
 #[pyfunction]
 fn from_smiles(smiles: &str) -> PyResult<Mol> {
     chematic_smiles::parse(smiles)
@@ -75,7 +77,12 @@ fn from_smiles(smiles: &str) -> PyResult<Mol> {
             inner: Arc::new(mol),
             props: Default::default(),
         })
-        .map_err(|e| crate::errors::malformed("smiles", e.to_string()))
+        .map_err(|e| match e {
+            chematic_smiles::SmilesError::InvalidValence { .. } => {
+                crate::errors::input_error("malformed", "smiles_valence", "smiles", e.to_string())
+            }
+            e => crate::errors::malformed("smiles", e.to_string()),
+        })
 }
 
 /// Canonicalize a list of SMILES without aborting on an invalid record.

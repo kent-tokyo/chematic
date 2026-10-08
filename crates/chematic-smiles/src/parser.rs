@@ -81,7 +81,53 @@ fn parse_unbounded(input: &str) -> Result<Molecule, SmilesError> {
     }
     let bytes = input.as_bytes();
     let mut p = Parser::new(bytes);
-    p.parse_smiles()
+    let mol = p.parse_smiles()?;
+    check_neutral_valence(&mol)?;
+    Ok(mol)
+}
+
+/// Reject a neutral oxygen with explicit valence above 2 or a neutral
+/// fluorine above 1 (#769). Neither element has a hypervalent neutral state,
+/// so such a graph (`O=O1C=CC=C1`, `CO(C)C`, `F(C)C`) cannot be a molecule;
+/// accepting it let aromaticity perception aromatize the ring through the
+/// invalid oxygen. The valence is the sum of bond orders plus explicit
+/// hydrogens. An aromatic bond counts 1 (an aromatic oxygen or furan-type
+/// atom has two sigma bonds), a dative bond counts only at its acceptor, and
+/// zero-order and query bonds count nothing. Charged atoms and the
+/// hypervalent states of S, P, N and the heavier halogens are left to the
+/// existing contracts.
+fn check_neutral_valence(mol: &Molecule) -> Result<(), SmilesError> {
+    for (idx, atom) in mol.atoms() {
+        if atom.charge != 0 || atom.wildcard {
+            continue;
+        }
+        let max = match atom.element {
+            Element::O => 2,
+            Element::F => 1,
+            _ => continue,
+        };
+        let mut valence = u32::from(atom.hydrogen_count.unwrap_or(0));
+        for (_, bond) in mol.neighbors(idx) {
+            let entry = mol.bond(bond);
+            valence += match entry.order {
+                BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic => 1,
+                BondOrder::Double => 2,
+                BondOrder::Triple => 3,
+                BondOrder::Quadruple => 4,
+                BondOrder::Dative => u32::from(entry.atom2 == idx),
+                _ => 0,
+            };
+        }
+        if valence > max {
+            return Err(SmilesError::InvalidValence {
+                element: atom.element.symbol(),
+                atom: idx.0 as usize,
+                valence,
+                max,
+            });
+        }
+    }
+    Ok(())
 }
 
 const MAX_BRANCH_DEPTH: usize = 500;

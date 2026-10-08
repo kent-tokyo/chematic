@@ -3508,7 +3508,7 @@ class ChematicInputError(ValueError):
     """``"malformed"`` for input that is not the format; ``"resource_limit"``
     for input past a declared limit (e.g. ``parse_mmcif(max_input_bytes=...)``)."""
     code: str
-    """Stable identifier: ``"smiles_parse"``, ``"smarts_parse"``,
+    """Stable identifier: ``"smiles_parse"``, ``"smiles_valence"``, ``"smarts_parse"``,
     ``"mol_block_parse"``, ``"inchi_parse"``, ``"mmcif_parse"``,
     ``"input_too_large"``, ``"line_too_long"``, ``"too_many_atoms"``."""
     format: str
