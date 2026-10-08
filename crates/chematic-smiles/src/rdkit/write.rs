@@ -127,13 +127,8 @@ fn bond_smiles(mol: &Mol, b: usize, atom_to_left: usize, p: &RdkitSmilesParams) 
     };
     match bond.bt {
         BondType::Single => match bond.dir {
-            BondDir::None => {
-                if p.all_bonds_explicit || (aromatic && !bond.aromatic) {
-                    "-"
-                } else {
-                    ""
-                }
-            }
+            BondDir::None if p.all_bonds_explicit || (aromatic && !bond.aromatic) => "-",
+            BondDir::None => "",
             dir if write_dir => slash(dir),
             _ => "",
         },
@@ -147,13 +142,8 @@ fn bond_smiles(mol: &Mol, b: usize, atom_to_left: usize, p: &RdkitSmilesParams) 
         BondType::Triple => "#",
         BondType::Quadruple => "$",
         BondType::Aromatic => match bond.dir {
-            BondDir::None => {
-                if p.all_bonds_explicit || !aromatic {
-                    ":"
-                } else {
-                    ""
-                }
-            }
+            BondDir::None if p.all_bonds_explicit || !aromatic => ":",
+            BondDir::None => "",
             dir if write_dir => slash(dir),
             _ => "",
         },
