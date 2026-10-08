@@ -1046,6 +1046,57 @@ fn rdkit_from_xyz_block(text: &str) -> PyResult<Option<(Mol, Vec<[f64; 3]>)>> {
     }
 }
 
+/// RDKit-compatible ``Chem.MolFromMol2Block(text, sanitize, removeHs,
+/// cleanupSubstructures)`` (RDKit 2026.03.1): ``(mol, coords)`` in RDKit's
+/// atom order, or ``None`` where RDKit returns no molecule (parse errors,
+/// failed Corina substructure cleanup, sanitization failures). Formal
+/// charges come from the Tripos atom types (``N.4``, ``O.co2``, ``C.cat``
+/// and RDKit's valence-based guess) or ``UNITY_ATOM_ATTR`` records;
+/// tetrahedral and double-bond stereo from the 3D coordinates. Raises
+/// ``ValueError`` for features the port does not model (Tripos query atoms
+/// ``Du``/``ANY``/``HEV``/``HET``/``HAL``, ``du``/``un`` bonds).
+#[pyfunction]
+#[pyo3(signature = (text, sanitize = true, remove_hs = true, cleanup_substructures = true))]
+fn rdkit_from_mol2_block(
+    text: &str,
+    sanitize: bool,
+    remove_hs: bool,
+    cleanup_substructures: bool,
+) -> PyResult<Option<(Mol, Vec<[f64; 3]>)>> {
+    match chematic_smiles::rdkit_mol_from_mol2_block(
+        text,
+        sanitize,
+        remove_hs,
+        cleanup_substructures,
+    ) {
+        Ok(r) => Ok(Some((
+            Mol {
+                inner: Arc::new(r.molecule),
+                props: Default::default(),
+            },
+            r.coords,
+        ))),
+        Err(chematic_smiles::RdkitSmilesError::Sanitization(_)) => Ok(None),
+        Err(e) => Err(PyValueError::new_err(e.to_string())),
+    }
+}
+
+/// ``Chem.MolToSmiles(Chem.MolFromMol2Block(text, ...))`` (RDKit
+/// 2026.03.1), or ``None`` where RDKit returns no molecule.
+#[pyfunction]
+#[pyo3(signature = (text, remove_hs = true, cleanup_substructures = true))]
+fn rdkit_mol2_block_to_smiles(
+    text: &str,
+    remove_hs: bool,
+    cleanup_substructures: bool,
+) -> PyResult<Option<String>> {
+    match chematic_smiles::rdkit_mol_from_mol2_block(text, true, remove_hs, cleanup_substructures) {
+        Ok(r) => Ok(Some(r.smiles)),
+        Err(chematic_smiles::RdkitSmilesError::Sanitization(_)) => Ok(None),
+        Err(e) => Err(PyValueError::new_err(e.to_string())),
+    }
+}
+
 /// ``Chem.MolToSmiles(Chem.MolFromPDBBlock(text, ...))`` (RDKit 2026.03.1),
 /// or ``None`` where RDKit returns no molecule.
 #[pyfunction]
@@ -2715,6 +2766,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rdkit_from_pdb_block, m)?)?;
     m.add_function(wrap_pyfunction!(rdkit_pdb_block_to_smiles, m)?)?;
     m.add_function(wrap_pyfunction!(rdkit_from_xyz_block, m)?)?;
+    m.add_function(wrap_pyfunction!(rdkit_from_mol2_block, m)?)?;
+    m.add_function(wrap_pyfunction!(rdkit_mol2_block_to_smiles, m)?)?;
     m.add_function(wrap_pyfunction!(from_xyz, m)?)?;
     m.add_function(wrap_pyfunction!(from_extxyz, m)?)?;
     m.add_function(wrap_pyfunction!(from_extxyz_all, m)?)?;

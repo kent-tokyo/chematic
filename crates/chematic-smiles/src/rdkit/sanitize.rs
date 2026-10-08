@@ -21,6 +21,17 @@ pub(crate) fn remove_hs(
     mol: &mut Mol,
     update_explicit_count: bool,
 ) -> Result<Vec<usize>, RdkitSmilesError> {
+    remove_hs_with(mol, update_explicit_count, true)
+}
+
+/// `MolOps::removeHs(mol, ps, sanitize)` with the default
+/// `RemoveHsParameters` but `updateExplicitCount`; returns the original
+/// index of every atom kept.
+pub(crate) fn remove_hs_with(
+    mol: &mut Mol,
+    update_explicit_count: bool,
+    sanitize: bool,
+) -> Result<Vec<usize>, RdkitSmilesError> {
     for a in 0..mol.atoms.len() {
         mol.update_atom_property_cache(a, false)?;
     }
@@ -34,7 +45,9 @@ pub(crate) fn remove_hs(
     }
     // `atomsToRemove` is never empty for a non-empty molecule.
     if !mol.atoms.is_empty() {
-        sanitize_mol(mol)?;
+        if sanitize {
+            sanitize_mol(mol)?;
+        }
         for a in 0..mol.atoms.len() {
             if !mol.atoms[a].no_implicit
                 && mol.atoms[a].chiral != ChiralTag::Unspecified
@@ -177,8 +190,19 @@ fn mol_remove_h(mol: &mut Mol, idx: usize, update_explicit_count: bool) {
 
 /// `MolOps::sanitizeMol` (all operations).
 pub(crate) fn sanitize_mol(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+    sanitize_mol_with(mol, true)
+}
+
+/// `MolOps::sanitizeMol` with every operation, or every operation but
+/// `SANITIZE_CLEANUP_ORGANOMETALLICS`.
+pub(crate) fn sanitize_mol_with(
+    mol: &mut Mol,
+    organometallics: bool,
+) -> Result<(), RdkitSmilesError> {
     clean_up(mol)?;
-    clean_up_organometallics(mol)?;
+    if organometallics {
+        clean_up_organometallics(mol)?;
+    }
     mol.update_property_cache(true)?;
     mol.find_rings()?;
     kekulize(mol)?;
@@ -193,7 +217,7 @@ pub(crate) fn sanitize_mol(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
 }
 
 /// `cleanUp`: nitro-like nitrogens, P(=O)=C/N, halogen oxides.
-fn clean_up(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+pub(crate) fn clean_up(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
     // nitrogensCleanup
     let mut to_consider = vec![false; mol.atoms.len()];
     for a in 0..mol.atoms.len() {

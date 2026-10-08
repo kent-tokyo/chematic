@@ -41,6 +41,7 @@ mod findstereo;
 mod inchi_read;
 mod kekulize;
 mod mol;
+mod mol2_read;
 mod molblock;
 mod molblock2d;
 mod murcko;
@@ -553,6 +554,46 @@ pub fn rdkit_mol_from_pdb_block(
 pub fn rdkit_mol_from_xyz_block(text: &str) -> Result<(Molecule, Vec<[f64; 3]>), RdkitSmilesError> {
     let (m, coords) = xyz_read::mol_from_xyz_block(text)?;
     Ok((pdb_read::to_chematic(&m, false)?, coords))
+}
+
+/// A molecule read by [`rdkit_mol_from_mol2_block`].
+#[derive(Clone)]
+pub struct RdkitMol2Molecule {
+    /// The molecule, in RDKit's atom order.
+    pub molecule: Molecule,
+    /// One position per atom.
+    pub coords: Vec<[f64; 3]>,
+    /// `Chem.MolToSmiles` of RDKit's molecule (empty when not sanitized).
+    pub smiles: String,
+}
+
+/// `Chem.MolFromMol2Block(text, sanitize, removeHs, cleanupSubstructures)`
+/// (RDKit 2026.03.1): Tripos atom types, Corina-style substructure cleanup
+/// and formal-charge guessing (or `UNITY_ATOM_ATTR` charges), chirality and
+/// double-bond stereo from the 3D coordinates. `Err` with
+/// [`RdkitSmilesError::Sanitization`] where RDKit returns no molecule;
+/// [`RdkitSmilesError::Unsupported`] for features the port does not model
+/// (Tripos query atoms, `du`/`un` bonds, non-tetrahedral stereo).
+pub fn rdkit_mol_from_mol2_block(
+    text: &str,
+    sanitize: bool,
+    remove_hs: bool,
+    cleanup_substructures: bool,
+) -> Result<RdkitMol2Molecule, RdkitSmilesError> {
+    let (m, coords) =
+        mol2_read::mol_from_mol2_block(text, sanitize, remove_hs, cleanup_substructures)?;
+    let molecule = pdb_read::to_chematic(&m, sanitize)?;
+    let smiles = if sanitize {
+        // Stereochemistry is already assigned (`_StereochemDone`).
+        write::mol_to_smiles_owned(m, &RdkitSmilesParams::default())?
+    } else {
+        String::new()
+    };
+    Ok(RdkitMol2Molecule {
+        molecule,
+        coords,
+        smiles,
+    })
 }
 
 /// [`rdkit_mol_from_smiles`]'s molecule for writers, which read neither

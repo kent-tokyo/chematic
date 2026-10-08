@@ -4,7 +4,7 @@
 //! standard residue bond orders, sanitization and 3D chirality.
 
 use super::RdkitSmilesError;
-use super::mol::{Atom, Bond, BondType, ChiralTag, Mol};
+use super::mol::{Atom, Bond, BondDir, BondType, ChiralTag, Mol};
 use super::periodic;
 use super::sanitize;
 
@@ -735,7 +735,10 @@ fn nontetrahedral_from_3d(mol: &Mol, coords: &[[f64; 3]], a: usize) -> bool {
 }
 
 /// `MolOps::assignChiralTypesFrom3D(mol, -1, replaceExistingTags=true)`.
-fn assign_chiral_types_from_3d(mol: &mut Mol, coords: &[[f64; 3]]) -> Result<(), RdkitSmilesError> {
+pub(crate) fn assign_chiral_types_from_3d(
+    mol: &mut Mol,
+    coords: &[[f64; 3]],
+) -> Result<(), RdkitSmilesError> {
     const ZERO_VOLUME_TOL: f64 = 0.1;
     for a in 0..mol.atoms.len() {
         mol.atoms[a].chiral = ChiralTag::Unspecified;
@@ -923,9 +926,14 @@ pub(crate) fn to_chematic(
     let mut b = MoleculeBuilder::new();
     let mut orders: Vec<(AtomIdx, Vec<u32>)> = Vec::new();
     for (i, a) in m.atoms.iter().enumerate() {
-        let element = Element::from_symbol(periodic::symbol(a.anum))
-            .ok_or_else(|| parse_error(format!("element {}", a.anum)))?;
-        let mut atom = CAtom::new(element);
+        let mut atom = if a.anum == 0 {
+            CAtom::wildcard()
+        } else {
+            CAtom::new(
+                Element::from_symbol(periodic::symbol(a.anum))
+                    .ok_or_else(|| parse_error(format!("element {}", a.anum)))?,
+            )
+        };
         atom.isotope = (a.isotope != 0).then_some(a.isotope as u16);
         atom.charge = a.charge as i8;
         atom.aromatic = a.aromatic;
@@ -946,7 +954,8 @@ pub(crate) fn to_chematic(
                 "explicit hydrogen count on an unsanitized atom",
             ));
         };
-        if a.radicals != 0 {
+        // A bracket atom's radicals follow from its hydrogen count.
+        if a.radicals != 0 && atom.hydrogen_count.is_none() {
             return Err(parse_error("radical"));
         }
         if a.chiral != ChiralTag::Unspecified {
@@ -972,8 +981,21 @@ pub(crate) fn to_chematic(
         }
         b.add_atom(atom);
     }
-    for bond in &m.bonds {
+    let mut aromatic_dirs = Vec::new();
+    for (bi, bond) in m.bonds.iter().enumerate() {
+        // `/` `\` directions relative to the begin atom (the first atom).
+        let dir = match bond.dir {
+            BondDir::None => None,
+            BondDir::EndUpRight => Some(BondOrder::Up),
+            BondDir::EndDownRight => Some(BondOrder::Down),
+        };
         let order = match bond.bt {
+            BondType::Single if dir.is_some() => dir.expect("set"),
+            BondType::Aromatic if dir.is_some() => {
+                aromatic_dirs.push((bi, dir.expect("set")));
+                BondOrder::Aromatic
+            }
+            _ if dir.is_some() => return Err(parse_error("direction on a multiple bond")),
             BondType::Single => BondOrder::Single,
             BondType::Double => BondOrder::Double,
             BondType::Triple => BondOrder::Triple,
@@ -986,6 +1008,9 @@ pub(crate) fn to_chematic(
     }
     for (idx, order) in orders {
         b.set_stereo_neighbor_order(idx, order);
+    }
+    for (bi, dir) in aromatic_dirs {
+        b.set_bond_direction(chematic_core::BondIdx(bi as u32), dir);
     }
     Ok(b.build())
 }

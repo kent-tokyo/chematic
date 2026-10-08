@@ -871,7 +871,34 @@ pub fn rdkit_symmetrized_sssr(
     symmetrized_sssr(&Graph { adj, ends, orders }, n_atoms)
 }
 
+/// RDKit's plain SSSR (`MolOps::findSSSR`, without the symmetrization
+/// extras) for a graph given as for [`rdkit_symmetrized_sssr`].
+pub fn rdkit_sssr(n_atoms: usize, bonds: &[(usize, usize, bool)]) -> Option<Vec<Vec<usize>>> {
+    let mut adj = vec![SmallVec::new(); n_atoms];
+    let mut ends = Vec::with_capacity(bonds.len());
+    let mut orders = Vec::with_capacity(bonds.len());
+    for (k, &(a, b, eligible)) in bonds.iter().enumerate() {
+        ends.push((a, b));
+        orders.push(if eligible {
+            BondOrder::Single
+        } else {
+            BondOrder::Zero
+        });
+        adj[a].push((b, k));
+        adj[b].push((a, k));
+    }
+    sssr_with_extras(&Graph { adj, ends, orders }, n_atoms).map(|(res, _)| res)
+}
+
 fn symmetrized_sssr(g: &Graph, n: usize) -> Option<Vec<Vec<usize>>> {
+    let (res, extras_all) = sssr_with_extras(g, n)?;
+    symmetrize(g, res, &extras_all)
+}
+
+/// `findSSSR`: the SSSR rings and the extra rings found on the way.
+type SssrWithExtras = (Vec<Vec<usize>>, Vec<Vec<usize>>);
+
+fn sssr_with_extras(g: &Graph, n: usize) -> Option<SssrWithExtras> {
     let mut active: Vec<bool> = g.orders.iter().map(|&o| ring_eligible(o)).collect();
     let mut degrees: Vec<i32> = (0..n)
         .map(|a| g.adj[a].iter().filter(|&&(_, bi)| active[bi]).count() as i32)
@@ -976,7 +1003,14 @@ fn symmetrized_sssr(g: &Graph, n: usize) -> Option<Vec<Vec<usize>>> {
         }
         res.extend(frag_res);
     }
+    Some((res, extras_all))
+}
 
+fn symmetrize(
+    g: &Graph,
+    res: Vec<Vec<usize>>,
+    extras_all: &[Vec<usize>],
+) -> Option<Vec<Vec<usize>>> {
     // symmetrizeSSSR: an extra ring that can stand in for one SSSR ring of
     // the same size without dropping a bond only that ring provides.
     let bond_rings: Vec<Vec<usize>> = res.iter().map(|r| ring_bond_set(g, r)).collect();
@@ -987,7 +1021,7 @@ fn symmetrized_sssr(g: &Graph, n: usize) -> Option<Vec<Vec<usize>>> {
         }
     }
     let mut out = res.clone();
-    for extra in &extras_all {
+    for extra in extras_all {
         let extra_bonds = ring_bond_set(g, extra);
         for ring in &bond_rings {
             if ring.len() != extra_bonds.len() {
