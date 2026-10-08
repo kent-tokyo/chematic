@@ -46,6 +46,7 @@ mod molblock2d;
 mod murcko;
 mod parse;
 mod pdb;
+mod pdb_read;
 mod periodic;
 mod pyrandom;
 mod rank;
@@ -54,6 +55,7 @@ mod smarts_write;
 mod stereo;
 mod substruct;
 mod write;
+mod xyz_read;
 
 use chematic_core::Molecule;
 
@@ -500,6 +502,57 @@ pub fn rdkit_align_points(
     max_iterations: u32,
 ) -> Result<(f64, Transform3D), RdkitSmilesError> {
     align::align_points(reference, probe, weights, reflect, max_iterations)
+}
+
+/// A molecule read by [`rdkit_mol_from_pdb_block`].
+#[derive(Clone)]
+pub struct RdkitPdbMolecule {
+    /// The molecule, in RDKit's atom order.
+    pub molecule: Molecule,
+    /// One position per atom (the first model).
+    pub coords: Vec<[f64; 3]>,
+    /// `Chem.MolToSmiles` of RDKit's molecule.
+    pub smiles: String,
+}
+
+/// `Chem.MolFromPDBBlock(text, sanitize, removeHs, flavor,
+/// proximityBonding)` (RDKit 2026.03.1): `None` where RDKit returns no
+/// molecule. `Err` where RDKit would fail (or the port cannot model the
+/// result, such as zero-order bonds or non-tetrahedral 3D stereo).
+pub fn rdkit_mol_from_pdb_block(
+    text: &str,
+    sanitize: bool,
+    remove_hs: bool,
+    flavor: u32,
+    proximity_bonding: bool,
+) -> Result<Option<RdkitPdbMolecule>, RdkitSmilesError> {
+    let Some(pdb) =
+        pdb_read::mol_from_pdb_block(text, sanitize, remove_hs, flavor, proximity_bonding)?
+    else {
+        return Ok(None);
+    };
+    let molecule = pdb_read::to_chematic(&pdb.mol, sanitize)?;
+    let mut m = pdb.mol;
+    let smiles = if sanitize {
+        // `MolToSmiles` runs `assignStereochemistry(cleanIt=true)` first.
+        stereo::legacy_stereo_perception(&mut m, true, false);
+        write::mol_to_smiles_owned(m, &RdkitSmilesParams::default())?
+    } else {
+        String::new()
+    };
+    Ok(Some(RdkitPdbMolecule {
+        molecule,
+        coords: pdb.coords,
+        smiles,
+    }))
+}
+
+/// `Chem.MolFromXYZBlock(text)` (RDKit 2026.03.1): the atoms (no bonds)
+/// and their positions. `Err` with
+/// [`RdkitSmilesError::Sanitization`] where RDKit's parser fails.
+pub fn rdkit_mol_from_xyz_block(text: &str) -> Result<(Molecule, Vec<[f64; 3]>), RdkitSmilesError> {
+    let (m, coords) = xyz_read::mol_from_xyz_block(text)?;
+    Ok((pdb_read::to_chematic(&m, false)?, coords))
 }
 
 /// [`rdkit_mol_from_smiles`]'s molecule for writers, which read neither

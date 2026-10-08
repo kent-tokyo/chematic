@@ -660,6 +660,21 @@ impl Mol {
         self.rings = None;
     }
 
+    /// `RWMol::removeBond`: drops bond `b`, renumbering the later bonds.
+    /// Ring information is reset.
+    pub(crate) fn remove_bond(&mut self, b: usize) {
+        self.bonds.remove(b);
+        for list in &mut self.atom_bonds {
+            list.retain(|&x| x != b);
+            for x in list.iter_mut() {
+                if *x > b {
+                    *x -= 1;
+                }
+            }
+        }
+        self.rings = None;
+    }
+
     /// [`Mol::remove_atom`] on each of `removed` (ascending, distinct) from
     /// the last to the first, in one pass.
     pub(crate) fn remove_atoms(&mut self, removed: &[usize]) {

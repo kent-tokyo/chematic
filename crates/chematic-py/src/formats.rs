@@ -988,6 +988,87 @@ fn from_pdb(pdb_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
     ))
 }
 
+/// RDKit-compatible ``Chem.MolFromPDBBlock(text, sanitize, removeHs, flavor,
+/// proximityBonding)`` (RDKit 2026.03.1): ``(mol, coords)`` in RDKit's atom
+/// order, or ``None`` where RDKit returns no molecule (including parse and
+/// sanitization failures). Bonds come from
+/// CONECT records and RDKit's proximity bonding, chirality from the 3D
+/// coordinates; ``mol.rdkit_smiles`` is ``Chem.MolToSmiles`` of RDKit's
+/// molecule. Raises ``ValueError`` for features the port does not model
+/// (zero-order bonds, non-tetrahedral stereo).
+#[pyfunction]
+#[pyo3(signature = (text, sanitize = true, remove_hs = true, proximity_bonding = true, flavor = 0))]
+fn rdkit_from_pdb_block(
+    text: &str,
+    sanitize: bool,
+    remove_hs: bool,
+    proximity_bonding: bool,
+    flavor: u32,
+) -> PyResult<Option<(Mol, Vec<[f64; 3]>)>> {
+    let res = match chematic_smiles::rdkit_mol_from_pdb_block(
+        text,
+        sanitize,
+        remove_hs,
+        flavor,
+        proximity_bonding,
+    ) {
+        Ok(res) => res,
+        // RDKit logs the failure and returns None.
+        Err(chematic_smiles::RdkitSmilesError::Sanitization(_)) => None,
+        Err(e) => return Err(PyValueError::new_err(e.to_string())),
+    };
+    Ok(res.map(|r| {
+        (
+            Mol {
+                inner: Arc::new(r.molecule),
+                props: Default::default(),
+            },
+            r.coords,
+        )
+    }))
+}
+
+/// RDKit-compatible ``Chem.MolFromXYZBlock(text)`` (RDKit 2026.03.1):
+/// ``(mol, coords)`` with the atoms in file order and no bonds, or ``None``
+/// where RDKit's parser fails.
+#[pyfunction]
+fn rdkit_from_xyz_block(text: &str) -> PyResult<Option<(Mol, Vec<[f64; 3]>)>> {
+    match chematic_smiles::rdkit_mol_from_xyz_block(text) {
+        Ok((m, coords)) => Ok(Some((
+            Mol {
+                inner: Arc::new(m),
+                props: Default::default(),
+            },
+            coords,
+        ))),
+        Err(chematic_smiles::RdkitSmilesError::Sanitization(_)) => Ok(None),
+        Err(e) => Err(PyValueError::new_err(e.to_string())),
+    }
+}
+
+/// ``Chem.MolToSmiles(Chem.MolFromPDBBlock(text, ...))`` (RDKit 2026.03.1),
+/// or ``None`` where RDKit returns no molecule.
+#[pyfunction]
+#[pyo3(signature = (text, remove_hs = true, proximity_bonding = true, flavor = 0))]
+fn rdkit_pdb_block_to_smiles(
+    text: &str,
+    remove_hs: bool,
+    proximity_bonding: bool,
+    flavor: u32,
+) -> PyResult<Option<String>> {
+    match chematic_smiles::rdkit_mol_from_pdb_block(
+        text,
+        true,
+        remove_hs,
+        flavor,
+        proximity_bonding,
+    ) {
+        Ok(r) => Ok(r.map(|r| r.smiles)),
+        Err(chematic_smiles::RdkitSmilesError::Sanitization(_)) => Ok(None),
+        Err(e) => Err(PyValueError::new_err(e.to_string())),
+    }
+}
+
 /// Parse a PDB string with fixed-column validation and return ``(Mol, coords)``.
 ///
 /// Unlike :func:`from_pdb`, this opt-in API rejects ATOM/HETATM records with
@@ -2631,6 +2712,9 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_inchi, m)?)?;
     m.add_function(wrap_pyfunction!(from_pdb, m)?)?;
     m.add_function(wrap_pyfunction!(from_pdb_strict, m)?)?;
+    m.add_function(wrap_pyfunction!(rdkit_from_pdb_block, m)?)?;
+    m.add_function(wrap_pyfunction!(rdkit_pdb_block_to_smiles, m)?)?;
+    m.add_function(wrap_pyfunction!(rdkit_from_xyz_block, m)?)?;
     m.add_function(wrap_pyfunction!(from_xyz, m)?)?;
     m.add_function(wrap_pyfunction!(from_extxyz, m)?)?;
     m.add_function(wrap_pyfunction!(from_extxyz_all, m)?)?;

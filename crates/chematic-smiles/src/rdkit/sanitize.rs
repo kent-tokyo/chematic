@@ -11,6 +11,16 @@ use super::rank::rank_mol_atoms;
 /// `MolOps::removeHs(mol, ps, sanitize=true)` with the parameters
 /// `MolFromSmiles` uses (defaults plus `updateExplicitCount=true`).
 pub(crate) fn remove_hs_and_sanitize(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+    remove_hs(mol, true).map(|_| ())
+}
+
+/// `MolOps::removeHs(mol, ps, sanitize=true)` with the default
+/// `RemoveHsParameters` but `updateExplicitCount`; returns the original
+/// index of every atom kept.
+pub(crate) fn remove_hs(
+    mol: &mut Mol,
+    update_explicit_count: bool,
+) -> Result<Vec<usize>, RdkitSmilesError> {
     for a in 0..mol.atoms.len() {
         mol.update_atom_property_cache(a, false)?;
     }
@@ -19,7 +29,7 @@ pub(crate) fn remove_hs_and_sanitize(mol: &mut Mol) -> Result<(), RdkitSmilesErr
         .collect();
     for idx in (0..mol.atoms.len()).rev() {
         if to_remove[idx] {
-            mol_remove_h(mol, idx);
+            mol_remove_h(mol, idx, update_explicit_count);
         }
     }
     // `atomsToRemove` is never empty for a non-empty molecule.
@@ -35,7 +45,7 @@ pub(crate) fn remove_hs_and_sanitize(mol: &mut Mol) -> Result<(), RdkitSmilesErr
             }
         }
     }
-    Ok(())
+    Ok((0..to_remove.len()).filter(|&i| !to_remove[i]).collect())
 }
 
 /// `sanitizeMol` on a molecule whose hydrogen atoms all stay graph atoms
@@ -84,12 +94,43 @@ fn should_remove_h(mol: &Mol, a: usize) -> bool {
     !only_h_neighbors
 }
 
-/// `molRemoveH(mol, idx, updateExplicitCount=true)`.
-fn mol_remove_h(mol: &mut Mol, idx: usize) {
+/// `may_need_extra_H`: one single and two aromatic bonds, valence three.
+fn may_need_extra_h(mol: &Mol, a: usize) -> bool {
+    let mut single = 0;
+    let mut aromatic = 0;
+    for &b in &mol.atom_bonds[a] {
+        match mol.bonds[b].bt {
+            BondType::Single => single += 1,
+            BondType::Aromatic => aromatic += 1,
+            _ => return false,
+        }
+    }
+    single == 1 && aromatic == 2 && mol.total_valence(a) == 3
+}
+
+/// `molRemoveH(mol, idx, updateExplicitCount)`.
+fn mol_remove_h(mol: &mut Mol, idx: usize, update_explicit_count: bool) {
     let bonds = mol.atom_bonds[idx].clone();
     for b in bonds {
         let heavy = mol.bonds[b].other(idx);
-        mol.atoms[heavy].num_explicit_hs += 1;
+        let atom = &mol.atoms[heavy];
+        let bump =
+            if update_explicit_count || atom.no_implicit || atom.chiral != ChiralTag::Unspecified {
+                true
+            } else {
+                // Issue 228: an H on an aromatic N or P, or on an atom outside
+                // its default valence state, must stay counted.
+                let anum = atom.anum;
+                ((anum == 7 || anum == 15 || may_need_extra_h(mol, heavy))
+                    && mol.is_aromatic_atom(heavy))
+                    || periodic::valence_list(anum)
+                        .iter()
+                        .skip(1)
+                        .any(|&v| i32::from(v) == mol.total_valence(heavy))
+            };
+        if bump {
+            mol.atoms[heavy].num_explicit_hs += 1;
+        }
         if mol.atoms[heavy].chiral != ChiralTag::Unspecified {
             let mut probe: Vec<usize> = mol.atom_bonds[heavy]
                 .iter()
