@@ -202,6 +202,8 @@ fn reaction_mass_efficiency(reactant_masses: Vec<f64>, product_mass: f64) -> f64
     chematic_rxn::reaction_mass_efficiency(&reactant_masses, product_mass)
 }
 
+/// Compute atom economy of a reaction (green chemistry metric).
+///
 /// A value of 100% means all atoms in reactants appear in the product.
 ///
 ///     ae = chematic.atom_economy("CC(=O)Cl.[NH3]>>CC(=O)N.HCl")

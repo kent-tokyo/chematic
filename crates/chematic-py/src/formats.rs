@@ -1417,20 +1417,15 @@ fn parse_formula<'py>(formula: &str, py: Python<'py>) -> PyResult<Bound<'py, PyD
     Ok(d)
 }
 
-/// Compute atom economy of a reaction (green chemistry metric).
-/// E-factor (Environmental Factor) — waste-to-product mass ratio.
+/// Fast 64-bit structural hash for deduplication: FNV-1a of chematic's own
+/// canonical SMILES (:attr:`Mol.smiles`).
 ///
-/// E-factor = waste_mass / product_mass.  Lower is greener.
-/// Fine chemicals typically E=5–50; pharmaceuticals E=25–100.
-///
-///     ef = chematic.e_factor(waste_kg=90.0, product_kg=10.0)  # → 9.0
-/// Fast structural hash for deduplication — one int per molecule.
-///
-/// Molecules with the same canonical graph return identical hashes.
-/// This is a fast screening hash only. Hash collisions and canonical residuals
-/// are possible; do not treat it as a definitive identity key.
-///
-/// Equivalent to RDKit's ``rdMolHash.MolHash()``.
+/// Molecules with the same chematic canonical SMILES get the same integer.
+/// It is a screening hash, not an identity key: collisions are possible,
+/// and so are canonicalization residuals (two depictions of one molecule
+/// with different canonical SMILES). It is not RDKit's
+/// ``rdMolHash.MolHash`` (which returns strings such as scaffolds or
+/// tautomer hashes); for that, use :meth:`Mol.rdkit_mol_hash`.
 ///
 ///     seen = set()
 ///     unique = [m for m in mols if (h := chematic.mol_hash(m)) not in seen and not seen.add(h)]
