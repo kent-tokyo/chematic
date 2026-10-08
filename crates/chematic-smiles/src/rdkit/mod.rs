@@ -428,4 +428,6 @@ fn rdkit_mol_from_smiles(mol: &Molecule) -> Result<(mol::Mol, Vec<u32>), RdkitSm
 #[cfg(test)]
 mod depict_tests;
 #[cfg(test)]
+mod profile_tests;
+#[cfg(test)]
 mod tests;

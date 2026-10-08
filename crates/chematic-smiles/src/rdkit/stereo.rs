@@ -273,7 +273,14 @@ fn iterate_cip_ranks(mol: &Mol, invars: &[i64], ranks: &mut Vec<u32>, seed_with_
     if n == 0 {
         return;
     }
-    let mut cip: Vec<Vec<i32>> = invars.iter().map(|&v| vec![v as i32]).collect();
+    let mut cip: Vec<Vec<i32>> = invars
+        .iter()
+        .map(|&v| {
+            let mut e = Vec::with_capacity(16);
+            e.push(v as i32);
+            e
+        })
+        .collect();
     let mut sorted: Vec<usize> = (0..n).collect();
     sorted.sort_by(|&x, &y| cip[x].cmp(&cip[y]));
     let mut curr_rank = vec![0u32; n];
@@ -308,12 +315,14 @@ fn iterate_cip_ranks(mol: &Mol, invars: &[i64], ranks: &mut Vec<u32>, seed_with_
                 .collect()
         })
         .collect();
+    let total_hs: Vec<usize> = (0..n).map(|a| mol.total_num_hs(a) as usize).collect();
+    let mut vals: Vec<i32> = Vec::with_capacity(16);
     while !needs_sorting.is_empty()
         && num_its < max_its
         && (last_num_ranks < 0 || (last_num_ranks as usize) < num_ranks)
     {
         for index in 0..n {
-            let mut vals: Vec<i32> = Vec::new();
+            vals.clear();
             for &(count, nbr) in &features[index] {
                 for _ in 0..count {
                     vals.push(ranks[nbr] as i32 + 1);
@@ -321,10 +330,9 @@ fn iterate_cip_ranks(mol: &Mol, invars: &[i64], ranks: &mut Vec<u32>, seed_with_
             }
             vals.sort_unstable_by(|x, y| y.cmp(x));
             let entry = &mut cip[index];
-            entry.extend(vals);
-            for _ in 0..mol.total_num_hs(index) {
-                entry.push(0);
-            }
+            entry.reserve(vals.len() + total_hs[index]);
+            entry.extend_from_slice(&vals);
+            entry.resize(entry.len() + total_hs[index], 0);
         }
         last_num_ranks = num_ranks as i64;
         for &(first, last) in &needs_sorting {
