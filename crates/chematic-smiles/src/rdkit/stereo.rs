@@ -728,7 +728,14 @@ fn find_chiral_atom_special_cases(mol: &mut Mol, ranks: &[u32]) -> Vec<bool> {
 }
 
 /// `legacyStereoPerception(mol, cleanIt, flagPossibleStereoCenters)`.
-pub(crate) fn legacy_stereo_perception(mol: &mut Mol, clean_it: bool, flag_possible: bool) {
+///
+/// Returns the atoms' final `_CIPRank` values (empty where RDKit sets no
+/// `_CIPRank`: no CIP ranking was needed).
+pub(crate) fn legacy_stereo_perception(
+    mol: &mut Mol,
+    clean_it: bool,
+    flag_possible: bool,
+) -> Vec<u32> {
     let mut has_stereo_atoms = false;
     let mut has_potential_stereo_atoms = false;
     for a in 0..mol.atoms.len() {
@@ -816,7 +823,7 @@ pub(crate) fn legacy_stereo_perception(mol: &mut Mol, clean_it: bool, flag_possi
         }
     }
     if !clean_it {
-        return;
+        return ranks;
     }
     for atom in &mut mol.atoms {
         atom.ring_stereochem_cand = None;
@@ -888,4 +895,5 @@ pub(crate) fn legacy_stereo_perception(mol: &mut Mol, clean_it: bool, flag_possi
             }
         }
     }
+    ranks
 }

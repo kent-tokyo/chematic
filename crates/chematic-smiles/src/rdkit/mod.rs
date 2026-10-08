@@ -34,6 +34,7 @@
 
 mod aromaticity;
 mod canon;
+mod depict;
 mod enumerate;
 mod inchi_read;
 mod kekulize;
@@ -230,6 +231,35 @@ pub fn rdkit_stereoisomer_smiles(
         a.cip_code = None;
     }
     enumerate::enumerate(&m, max_isomers)
+}
+
+/// The 2D coordinates RDKit 2026.03.1's default depiction gives the atoms
+/// of `Chem.MolFromSmiles(s)`: `rdDepictor.Compute2DCoords(mol)` (RDKit's
+/// own depictor, not CoordGen; `canonOrient=True`, no coordinate map, no
+/// random sampling, no ring templates), for the SMILES `s` chematic parsed
+/// `mol` from. One `[x, y]` per atom of RDKit's molecule, in RDKit's atom
+/// order (chematic's atom order when `MolFromSmiles` removes no hydrogen
+/// atoms).
+///
+/// `MolFromSmiles` is modelled as in [`rdkit_canonical_smiles`]; the
+/// depiction is a port of RDKit's `compute2DCoords` that reproduces its
+/// floating-point operations in order.
+///
+/// ```
+/// let mol = chematic_smiles::parse("CCO").unwrap();
+/// let xy = chematic_smiles::rdkit_2d_coords(&mol).unwrap();
+/// assert_eq!(xy.len(), 3);
+/// assert_eq!(xy[1], [0.0, 0.7500000000000001]);
+/// ```
+pub fn rdkit_2d_coords(mol: &Molecule) -> Result<Vec<[f64; 2]>, RdkitSmilesError> {
+    let mut m = parse::from_chematic(mol)?;
+    if has_added_hydrogens(mol) {
+        sanitize::sanitize_keeping_hs(&mut m)?;
+    } else {
+        sanitize::remove_hs_and_sanitize(&mut m)?;
+    }
+    let cip = stereo::legacy_stereo_perception(&mut m, true, true);
+    depict::compute_2d_coords(&m, &cip)
 }
 
 #[cfg(test)]
