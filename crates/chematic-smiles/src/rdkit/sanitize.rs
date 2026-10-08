@@ -38,6 +38,18 @@ pub(crate) fn remove_hs_and_sanitize(mol: &mut Mol) -> Result<(), RdkitSmilesErr
     Ok(())
 }
 
+/// `sanitizeMol` on a molecule whose hydrogen atoms all stay graph atoms
+/// (RDKit's state after `Chem.AddHs`).
+pub(crate) fn sanitize_keeping_hs(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+    for a in 0..mol.atoms.len() {
+        mol.update_atom_property_cache(a, false)?;
+    }
+    if !mol.atoms.is_empty() {
+        sanitize_mol(mol)?;
+    }
+    Ok(())
+}
+
 /// `shouldRemoveH` with the default `RemoveHsParameters`.
 fn should_remove_h(mol: &Mol, a: usize) -> bool {
     let atom = &mol.atoms[a];

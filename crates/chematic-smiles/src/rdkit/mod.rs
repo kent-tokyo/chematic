@@ -126,9 +126,25 @@ pub fn rdkit_smiles(
     params: &RdkitSmilesParams,
 ) -> Result<String, RdkitSmilesError> {
     let mut m = parse::from_chematic(mol)?;
-    sanitize::remove_hs_and_sanitize(&mut m)?;
+    if has_added_hydrogens(mol) {
+        sanitize::sanitize_keeping_hs(&mut m)?;
+    } else {
+        sanitize::remove_hs_and_sanitize(&mut m)?;
+    }
     stereo::legacy_stereo_perception(&mut m, true, true);
     write::mol_to_smiles(&m, params)
+}
+
+/// Whether `mol` carries hydrogen atoms the SMILES parser cannot produce:
+/// an H outside brackets (no H count), as `add_hydrogens` adds them. Such a
+/// molecule stands for RDKit's molecule after `Chem.AddHs`, whose hydrogen
+/// atoms are graph atoms that `MolToSmiles` writes; a molecule read from
+/// SMILES only has bracket `[H]` atoms, which `MolFromSmiles` removes by
+/// its `removeHs` rules.
+fn has_added_hydrogens(mol: &Molecule) -> bool {
+    mol.atoms().any(|(_, a)| {
+        !a.wildcard && a.element == chematic_core::Element::H && a.hydrogen_count.is_none()
+    })
 }
 
 /// RDKit's `CalcNumAtomStereoCenters` and
