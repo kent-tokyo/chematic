@@ -667,25 +667,21 @@ impl DgField {
         }
     }
 
-    /// `ForceField::minimize(maxIts, forceTol)`.
-    pub(crate) fn minimize(
-        &self,
-        pos: &mut [f64],
-        max_its: u32,
-        force_tol: f64,
-    ) -> Result<i32, super::bfgs::BadDirection> {
+    /// `ForceField::minimize(maxIts, forceTol)`: 0 converged, 1 more
+    /// iterations needed, -1 line-search failure (RDKit throws).
+    pub(crate) fn minimize(&self, pos: &mut [f64], max_its: u32, force_tol: f64) -> i32 {
         if self.is_empty() {
-            return Ok(0);
+            return 0;
         }
-        super::bfgs::minimize(
+        chematic_ff::rdkit_bfgs::bfgs_minimize(
             pos,
             force_tol,
             max_its,
             |p| self.energy(p),
             |p, g| {
-                g.iter_mut().for_each(|x| *x = 0.0);
+                g.fill(0.0);
                 self.grad(p, g);
-                super::bfgs::scale_gradient(g)
+                chematic_ff::rdkit_bfgs::scale_gradient(g)
             },
         )
     }

@@ -60,9 +60,12 @@ pub enum EmbedError {
     ZeroLengthVector,
 }
 
-impl From<super::bfgs::BadDirection> for EmbedError {
-    fn from(_: super::bfgs::BadDirection) -> Self {
-        EmbedError::BadDirection
+/// Map RDKit's minimizer status, turning its thrown invariant into an error.
+pub(crate) fn check_status(status: i32) -> Result<i32, EmbedError> {
+    if status < 0 {
+        Err(EmbedError::BadDirection)
+    } else {
+        Ok(status)
     }
 }
 
@@ -184,7 +187,7 @@ fn first_minimization(
     if field.energy(pos) > ERROR_TOL {
         let mut need_more = 1;
         while need_more != 0 {
-            need_more = field.minimize(pos, 400, p.optimizer_force_tol)?;
+            need_more = check_status(field.minimize(pos, 400, p.optimizer_force_tol))?;
         }
     }
     let local_e = field.energy(pos);
@@ -209,7 +212,7 @@ fn minimize_fourth_dimension(
     if field.energy(pos) > ERROR_TOL {
         let mut need_more = 1;
         while need_more != 0 {
-            need_more = field.minimize(pos, 200, p.optimizer_force_tol)?;
+            need_more = check_status(field.minimize(pos, 200, p.optimizer_force_tol))?;
         }
     }
     Ok(true)

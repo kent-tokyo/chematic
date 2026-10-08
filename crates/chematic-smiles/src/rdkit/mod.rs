@@ -35,6 +35,7 @@
 mod aromaticity;
 mod canon;
 mod depict;
+mod embed_view;
 mod enumerate;
 mod inchi_read;
 mod kekulize;
@@ -51,6 +52,7 @@ mod write;
 
 use chematic_core::Molecule;
 
+pub use embed_view::{RdkitMolView, RdkitViewAtom, RdkitViewBond, rdkit_mol_view};
 pub use inchi_read::{InchiOutputAtom, InchiOutputStereo0D, rdkit_molecule_from_inchi_output};
 pub use molblock::{RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, rdkit_mol_block};
 

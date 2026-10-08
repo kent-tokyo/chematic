@@ -18,6 +18,15 @@ fn unsupported(what: impl Into<String>) -> RdkitSmilesError {
 
 /// The parser-state molecule (before `removeHs`/sanitization).
 pub(crate) fn from_chematic(mol: &Molecule) -> Result<Mol, RdkitSmilesError> {
+    from_chematic_ordered(mol, &mol.rdkit_bond_order())
+}
+
+/// [`from_chematic`] with an explicit RDKit bond order (`order[k]` is the
+/// chematic bond that becomes RDKit bond `k`).
+pub(crate) fn from_chematic_ordered(
+    mol: &Molecule,
+    order: &[chematic_core::BondIdx],
+) -> Result<Mol, RdkitSmilesError> {
     let mut out = Mol::default();
     // Stereo stored as CIP labels comes from other formats (MOL files,
     // perception); the SMILES model carries it as tags and directions.
@@ -51,17 +60,11 @@ pub(crate) fn from_chematic(mol: &Molecule) -> Result<Mol, RdkitSmilesError> {
     }
 
     // RDKit's bond numbering: chain bonds as written, then ring closures.
-    let order = mol.rdkit_bond_order();
-    let n_closure_ends: usize = (0..mol.atom_count())
-        .map(|a| mol.smiles_ring_closure_count(AtomIdx(a as u32)))
-        .sum();
-    let n_closures = n_closure_ends / 2;
-    let first_closure = order.len() - n_closures;
     let mut is_closure = vec![false; mol.bond_count()];
     let mut rd_index = vec![usize::MAX; mol.bond_count()];
     for (k, &bidx) in order.iter().enumerate() {
         rd_index[bidx.0 as usize] = k;
-        if k >= first_closure {
+        if mol.is_smiles_ring_closure(bidx) {
             is_closure[bidx.0 as usize] = true;
         }
     }

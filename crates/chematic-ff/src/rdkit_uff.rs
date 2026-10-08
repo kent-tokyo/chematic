@@ -244,6 +244,15 @@ fn rdkit_view(mol: &Molecule) -> Molecule {
     })
 }
 
+/// RDKit `UFF::Utils::calcBondRestLength(bondOrder, params(label_i),
+/// params(label_j))`; `None` when either label has no UFF parameters (RDKit's
+/// `getAtomTypes` then yields a null parameter pointer).
+pub fn rdkit_uff_bond_rest_length(bond_order: f64, label_i: &str, label_j: &str) -> Option<f64> {
+    let pi = params_for(label_i)?;
+    let pj = params_for(label_j)?;
+    Some(calc_bond_rest_length(bond_order, &pi, &pj))
+}
+
 // ─── Parameter formulas (`Code/ForceField/UFF/*.cpp` `Utils`) ───────────────
 
 fn calc_bond_rest_length(bond_order: f64, p1: &AtomicParams, p2: &AtomicParams) -> f64 {
