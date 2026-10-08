@@ -388,7 +388,11 @@ fn python_float_sum(values: impl IntoIterator<Item = f64>) -> f64 {
         }
         sum = t;
     }
-    if c != 0.0 && c.is_finite() { sum + c } else { sum }
+    if c != 0.0 && c.is_finite() {
+        sum + c
+    } else {
+        sum
+    }
 }
 
 fn qed_compute(props: [f64; 8]) -> f64 {

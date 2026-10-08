@@ -7,7 +7,7 @@
 //! - PEOE_VSA1–14:  bins per-atom Labute ASA by Gasteiger partial charge.
 //! - EState_VSA1–11: bins per-atom Labute ASA by E-State index.
 
-use crate::descriptors::{logp_crippen_per_atom, mr_per_atom};
+use crate::descriptors::crippen_atom_type_contribs;
 use crate::estate::estate_indices;
 use crate::gasteiger::gasteiger_charges;
 use crate::topo_descriptors::labute_asa_per_atom;
@@ -54,7 +54,12 @@ fn vsa_bins(mol: &Molecule, contrib: &[f64], cuts: &[f64]) -> Vec<f64> {
 /// contribution falls in each bin. Bin boundaries (RDKit):
 /// -0.4, -0.2, 0.0, 0.1, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60
 pub fn slogp_vsa(mol: &Molecule) -> Vec<f64> {
-    vsa_bins(mol, &logp_crippen_per_atom(mol), SLOGP_CUTS)
+    // RDKit bins by each atom's own Crippen type value (no hydrogens folded).
+    let logp: Vec<f64> = crippen_atom_type_contribs(mol)
+        .iter()
+        .map(|c| c.0)
+        .collect();
+    vsa_bins(mol, &logp, SLOGP_CUTS)
 }
 
 /// SMR_VSA descriptors (10 values).
@@ -63,7 +68,12 @@ pub fn slogp_vsa(mol: &Molecule) -> Vec<f64> {
 /// contribution falls in each bin. Bin boundaries (RDKit):
 /// 1.29, 1.82, 2.24, 2.45, 2.75, 3.05, 3.63, 3.80, 4.00
 pub fn smr_vsa(mol: &Molecule) -> Vec<f64> {
-    vsa_bins(mol, &mr_per_atom(mol), SMR_CUTS)
+    // RDKit bins by each atom's own Crippen type value (no hydrogens folded).
+    let mr: Vec<f64> = crippen_atom_type_contribs(mol)
+        .iter()
+        .map(|c| c.1)
+        .collect();
+    vsa_bins(mol, &mr, SMR_CUTS)
 }
 
 /// PEOE_VSA descriptors (14 values).

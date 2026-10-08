@@ -628,6 +628,14 @@ impl Mol {
         chematic_chem::ring_count(&self.inner)
     }
 
+    /// Number of rings as RDKit's ``rdMolDescriptors.CalcNumRings`` counts
+    /// them (its symmetrized SSSR); larger than :attr:`ring_count` for cages
+    /// and bridged systems.
+    #[getter]
+    fn num_rings(&self) -> usize {
+        chematic_chem::rdkit_num_rings(&self.inner)
+    }
+
     /// Number of distinct connected ring systems.
     ///
     /// Two SSSR rings form the same system when they share at least one atom
@@ -1082,7 +1090,7 @@ impl Mol {
         d.set_item("drug_score", chematic_chem::drug_score(m))?;
         // MQN (Molecular Quantum Numbers): 42 integer descriptors (Ertl 2010)
         for (i, &v) in chematic_chem::mqn(m).iter().enumerate() {
-            d.set_item(format!("MQN{}", i + 1), u32::from(v))?;
+            d.set_item(format!("MQN{}", i + 1), v)?;
         }
         Ok(d)
     }
@@ -2812,9 +2820,10 @@ impl Mol {
 
     /// Molecular Quantum Numbers (MQN) — 42-element topological descriptor vector.
     ///
-    /// Encodes atom counts, bond counts, ring counts, and degree statistics.
-    /// Reference: Ertl et al., *J. Chem. Inf. Model.* 2009.
-    fn mqn(&self) -> Vec<u8> {
+    /// RDKit's ``rdMolDescriptors.CalcMQNs``: atom, polarity, charge,
+    /// topology, bond and ring-size counts (Nguyen et al. 2009 order),
+    /// returned as a list of ints.
+    fn mqn(&self) -> Vec<u32> {
         chematic_chem::mqn(&self.inner)
     }
 

@@ -20,25 +20,15 @@
 //! sampling path. It is a measurement tool over already-generated conformer
 //! ensembles.
 //!
-//! **Known scope limits of [`extract_torsion_motifs`]**, both inherited from
-//! `chematic_chem::rotatable_bond_atom_pairs` rather than introduced here
-//! (see that function's own doc comment for the full exclusion list):
-//! - Amide C–N bonds (the omega torsion) are never returned — they are
-//!   excluded from "rotatable" by that shared definition. A caller wanting
-//!   amide torsions needs a different extraction path (e.g.
-//!   `etkdg_knowledge`'s own `candidate_central_bonds`/`classify_bond`,
-//!   which keeps amide bonds and flags them via `amide_like`, but that
-//!   module is currently private to this crate).
-//! - A biphenyl-like inter-ring single bond is only found if the input
-//!   SMILES spells it as an explicit single bond (`c1ccc(-c2ccccc2)cc1`).
-//!   Without the explicit `-`, both endpoints being lowercase makes this
-//!   crate's SMILES parser assign `BondOrder::Aromatic` to that bond (its
-//!   `implicit_bond` rule is "both atoms aromatic -> aromatic bond",
-//!   independent of ring membership) even though the bond itself is not in
-//!   any ring — and an aromatic-order bond is not "single", so it is
-//!   invisible to the rotatable-bond filter. This is spelling-dependent,
-//!   pre-existing behavior of the shared parser/descriptor, not something
-//!   this diagnostic tool works around.
+//! **Known scope limit of [`extract_torsion_motifs`]**, inherited from
+//! `chematic_chem::rotatable_bond_atom_pairs` (RDKit's strict rotatable-bond
+//! SMARTS) rather than introduced here: amide C–N bonds (the omega torsion)
+//! are never returned — they are excluded from "rotatable" by that shared
+//! definition. A caller wanting amide torsions needs a different extraction
+//! path (e.g. `etkdg_knowledge`'s own `candidate_central_bonds`/
+//! `classify_bond`, which keeps amide bonds and flags them via `amide_like`,
+//! but that module is currently private to this crate). A biphenyl-like
+//! inter-ring bond is found in either SMILES spelling.
 
 #[allow(unused_imports)]
 use crate::fmath::DetMath;
@@ -702,28 +692,21 @@ mod tests {
     }
 
     #[test]
-    fn biphenyl_inter_ring_bond_is_a_motif_only_when_spelled_as_explicit_single() {
-        // Pins another documented scope limit: an implicit (no "-") bond
-        // between two aromatic atoms parses as BondOrder::Aromatic in this
-        // crate's SMILES parser regardless of ring membership, so it is
-        // invisible to the "is_single" rotatable-bond filter.
-        let explicit = parse("c1ccc(-c2ccccc2)cc1").unwrap();
-        let explicit_coords = generate_coords(&explicit);
-        let explicit_motifs = extract_torsion_motifs(&explicit, &explicit_coords);
-        assert_eq!(
-            explicit_motifs.len(),
-            1,
-            "explicit '-' spelling must find the inter-ring torsion"
-        );
-
-        let implicit = parse("c1ccc(c2ccccc2)cc1").unwrap();
-        let implicit_coords = generate_coords(&implicit);
-        let implicit_motifs = extract_torsion_motifs(&implicit, &implicit_coords);
-        assert!(
-            implicit_motifs.is_empty(),
-            "documenting current behavior: implicit spelling's Aromatic-order \
-             inter-ring bond is not found -- see module doc's known scope limits"
-        );
+    fn biphenyl_inter_ring_bond_is_a_motif_in_either_spelling() {
+        // The rotatable-bond definition is RDKit's strict SMARTS, whose
+        // `-,:;!@` bond also takes an aromatic-flagged non-ring bond: the
+        // implicit spelling, parsed with an aromatic-order inter-ring bond,
+        // finds the same torsion as the explicit `-` spelling (it used to be
+        // missed).
+        for smiles in ["c1ccc(-c2ccccc2)cc1", "c1ccc(c2ccccc2)cc1"] {
+            let mol = parse(smiles).unwrap();
+            let coords = generate_coords(&mol);
+            assert_eq!(
+                extract_torsion_motifs(&mol, &coords).len(),
+                1,
+                "{smiles}: the inter-ring torsion is a motif"
+            );
+        }
     }
 
     #[test]

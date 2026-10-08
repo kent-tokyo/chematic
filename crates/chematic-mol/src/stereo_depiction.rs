@@ -1217,14 +1217,20 @@ mod tests {
             let coords = super::mol_block_coords(&mol);
             let plain = write_mol_with_coords(&mol, &MolMetadata::default(), &coords);
             for &b in &either {
-                let line = plain.lines().nth(4 + mol.atom_count() + b.0 as usize).unwrap();
+                let line = plain
+                    .lines()
+                    .nth(4 + mol.atom_count() + b.0 as usize)
+                    .unwrap();
                 assert_eq!(line[9..12].trim(), "0", "{plain}");
             }
         }
         // Symmetric ends and small rings are not stereo bonds.
         for smi in ["CC(C)=C(C)C", "C1=CCCCC1", "C=CC"] {
             let mol = parse(smi).unwrap();
-            assert!(super::undeclared_stereo_double_bonds(&mol).is_empty(), "{smi}");
+            assert!(
+                super::undeclared_stereo_double_bonds(&mol).is_empty(),
+                "{smi}"
+            );
         }
     }
 

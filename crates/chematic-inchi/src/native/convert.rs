@@ -130,6 +130,39 @@ pub(crate) fn unresolved_specified_tetrahedral_stereo_atoms(mol: &Molecule) -> V
         .collect()
 }
 
+/// InChI 0D parity of a tetrahedral centre from its SMILES neighbour order:
+/// looking from the first written neighbour, `@` lists the other three
+/// anticlockwise, which is an odd ("o", 1) parity over that neighbour array
+/// and `@@` an even ("e", 2) one. `None` when the atom has no tetrahedral
+/// tag or no recorded four-neighbour order (a lone-pair centre, a molecule
+/// not read from SMILES).
+fn smiles_order_parity(mol: &Molecule, aidx: AtomIdx) -> Option<(i8, [AtomIdx; 4])> {
+    let parity = match mol.atom(aidx).chirality {
+        Chirality::CounterClockwise => 1i8,
+        Chirality::Clockwise => 2i8,
+        _ => return None,
+    };
+    let order = mol.stereo_neighbor_order(aidx)?;
+    if order.len() != 4 {
+        return None;
+    }
+    // The recorded order must still be this atom's neighbour set.
+    let neighbours: Vec<u32> = mol.neighbors(aidx).map(|(n, _)| n.0).collect();
+    let real: Vec<u32> = order
+        .iter()
+        .copied()
+        .filter(|&n| n != chematic_core::STEREO_H_SENTINEL)
+        .collect();
+    if real.len() != neighbours.len() || real.iter().any(|n| !neighbours.contains(n)) {
+        return None;
+    }
+    let mut arr = [AtomIdx(0); 4];
+    for (slot, &n) in arr.iter_mut().zip(order) {
+        *slot = AtomIdx(n);
+    }
+    Some((parity, arr))
+}
+
 /// Convert a `Molecule` into the atom + stereo lists required by the IUPAC InChI C API.
 ///
 /// Aromatic bonds are Kekulized first. Tetrahedral stereo is derived from CIP R/S codes:
@@ -177,11 +210,21 @@ pub fn mol_to_inchi_atoms(
     //
     // stereo_data: (center_aidx, CipCode, [p4, p3, p2, p1])
     // stereo_h: (center_aidx, InChI index of the manufactured H atom, its source)
-    let mut stereo_data: Vec<(AtomIdx, CipCode, [AtomIdx; 4])> = Vec::new();
+    let mut stereo_data: Vec<(AtomIdx, i8, [AtomIdx; 4])> = Vec::new();
     let mut stereo_h: Vec<(AtomIdx, i16, StereoHSource)> = Vec::new(); // ordered by heavy_order
 
     for &aidx in &heavy_order {
-        let Some((code, sorted_nbrs)) = tetrahedral_stereo_neighbors(mol, aidx) else {
+        // The parity comes from the SMILES itself wherever the parser kept the
+        // neighbour order: `@`/`@@` over the written neighbours, as RDKit
+        // passes it. The InChI library then decides which centres are
+        // stereogenic, so ring and cage centres that CIP cannot label (the
+        // two bridgeheads of a 1,4-disubstituted cyclohexane, adamantane
+        // substituents) keep their configuration instead of becoming `?` or
+        // disappearing. Without that order, R/S over CIP-ranked neighbours.
+        let Some((parity, sorted_nbrs)) = smiles_order_parity(mol, aidx).or_else(|| {
+            tetrahedral_stereo_neighbors(mol, aidx)
+                .map(|(code, nbrs)| (if code == CipCode::R { 2i8 } else { 1i8 }, nbrs))
+        }) else {
             continue;
         };
         // Usually at most one substituent is hydrogen (bracket-H or a real
@@ -215,7 +258,7 @@ pub fn mol_to_inchi_atoms(
             };
             stereo_h.push((aidx, h_idx, source));
         }
-        stereo_data.push((aidx, code, sorted_nbrs));
+        stereo_data.push((aidx, parity, sorted_nbrs));
     }
 
     // Build lookups: center_aidx → manufactured-H InChI index, and
@@ -331,7 +374,7 @@ pub fn mol_to_inchi_atoms(
     // CIP S (CCW from lowest priority) → ODD (1)
     let mut stereo: Vec<InchiStereo0D> = Vec::new();
 
-    for (center_aidx, code, sorted_nbrs) in &stereo_data {
+    for (center_aidx, parity, sorted_nbrs) in &stereo_data {
         let Some(&center_ni) = inchi_idx.get(center_aidx) else {
             continue;
         };
@@ -365,13 +408,11 @@ pub fn mol_to_inchi_atoms(
             continue;
         }
 
-        let parity = if *code == CipCode::R { 2i8 } else { 1i8 };
-
         stereo.push(InchiStereo0D {
             neighbor: arr,
             central_atom: center_ni,
             stereo_type: 2,
-            parity,
+            parity: *parity,
         });
     }
 
