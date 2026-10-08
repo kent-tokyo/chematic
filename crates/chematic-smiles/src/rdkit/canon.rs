@@ -36,6 +36,8 @@ struct Traversal<'a> {
     /// `_TraversalRingClosureBond`.
     ring_closure_idx: Vec<Option<u32>>,
     stack: Vec<StackElem>,
+    /// The sorted destinations of every pending frame, back to back.
+    possibles: Vec<Possible>,
 }
 
 type Possible = (i32, usize, usize);
@@ -44,16 +46,23 @@ type Possible = (i32, usize, usize);
 /// sorted destinations and the next one to look at.
 struct CycleFrame {
     atom: usize,
-    possibles: Vec<Possible>,
+    /// Its destinations are `possibles[start..end]`.
+    start: usize,
+    end: usize,
     next: usize,
 }
 
 /// A pending `dfsBuildStack` call.
 struct StackFrame {
     atom: usize,
-    possibles: Vec<Possible>,
+    /// Its destinations are `possibles[start..end]`.
+    start: usize,
+    end: usize,
     next: usize,
+    /// The bonds in traversal order, kept for chiral atoms only (the only
+    /// ones whose order is read).
     trav: Vec<usize>,
+    keep_trav: bool,
     /// A branch was opened for the child being visited.
     close_branch: bool,
 }
@@ -63,14 +72,15 @@ impl Traversal<'_> {
         self.mol.bonds[b].bt as i64
     }
 
-    /// The destinations `dfsFindCycles` sorts at `atom`.
+    /// Appends the destinations `dfsFindCycles` sorts at `atom` to
+    /// `possibles`; returns their range.
     fn cycle_possibles(
-        &self,
+        &mut self,
         atom: usize,
         in_bond: Option<usize>,
         colors: &[Color],
-    ) -> Vec<Possible> {
-        let mut possibles: Vec<Possible> = Vec::new();
+    ) -> (usize, usize) {
+        let start = self.possibles.len();
         for &b in &self.mol.atom_bonds[atom] {
             if Some(b) == in_bond {
                 continue;
@@ -84,38 +94,41 @@ impl Traversal<'_> {
                 rank += (MAX_BONDTYPE - self.bond_type_value(b)) * MAX_NATOMS * MAX_NATOMS;
             }
             // RDKit computes in `unsigned int` and stores an `int`.
-            possibles.push((rank as i32, other, b));
+            self.possibles.push((rank as i32, other, b));
         }
-        possibles.sort_by_key(|p| p.0);
-        possibles
+        self.possibles[start..].sort_by_key(|p| p.0);
+        (start, self.possibles.len())
     }
 
     /// `dfsFindCycles`, with an explicit stack instead of recursion.
     fn find_cycles(&mut self, start: usize, colors: &mut [Color]) {
         colors[start] = Color::Grey;
-        let possibles = self.cycle_possibles(start, None, colors);
+        let (s0, e0) = self.cycle_possibles(start, None, colors);
         let mut frames = vec![CycleFrame {
             atom: start,
-            possibles,
-            next: 0,
+            start: s0,
+            end: e0,
+            next: s0,
         }];
         while let Some(frame) = frames.last_mut() {
-            if frame.next == frame.possibles.len() {
+            if frame.next == frame.end {
                 colors[frame.atom] = Color::Black;
+                self.possibles.truncate(frame.start);
                 frames.pop();
                 continue;
             }
-            let (_, other, b) = frame.possibles[frame.next];
+            let (_, other, b) = self.possibles[frame.next];
             let atom = frame.atom;
             frame.next += 1;
             match colors[other] {
                 Color::White => {
                     colors[other] = Color::Grey;
-                    let possibles = self.cycle_possibles(other, Some(b), colors);
+                    let (s, e) = self.cycle_possibles(other, Some(b), colors);
                     frames.push(CycleFrame {
                         atom: other,
-                        possibles,
-                        next: 0,
+                        start: s,
+                        end: e,
+                        next: s,
                     });
                 }
                 Color::Grey => {
@@ -136,19 +149,26 @@ impl Traversal<'_> {
         colors: &mut [Color],
     ) -> Result<StackFrame, RdkitSmilesError> {
         let mol = self.mol;
-        // `seenFromHere`: the atom and its ring-closure partners.
-        let mut seen_from_here = vec![atom];
         self.stack.push(StackElem::Atom(atom));
         colors[atom] = Color::Grey;
-        let mut trav: Vec<usize> = Vec::new();
-        if let Some(b) = in_bond {
+        let keep_trav = mol.atoms[atom].chiral != ChiralTag::Unspecified;
+        let mut trav: Vec<usize> = if keep_trav {
+            Vec::with_capacity(mol.degree(atom))
+        } else {
+            Vec::new()
+        };
+        if let Some(b) = in_bond
+            && keep_trav
+        {
             trav.push(b);
         }
-        if !self.ring_closures[atom].is_empty() {
+        let closures = std::mem::take(&mut self.ring_closures[atom]);
+        if !closures.is_empty() {
             let mut rings_closed = Vec::new();
-            for b in self.ring_closures[atom].clone() {
-                trav.push(b);
-                seen_from_here.push(mol.bonds[b].other(atom));
+            for &b in &closures {
+                if keep_trav {
+                    trav.push(b);
+                }
                 if let Some(ring_idx) = self.ring_closure_idx[b] {
                     self.stack.push(StackElem::Bond(b, atom));
                     self.stack.push(StackElem::Ring(ring_idx));
@@ -174,27 +194,34 @@ impl Traversal<'_> {
                 self.cycles_available[r] = true;
             }
         }
-        let mut possibles: Vec<Possible> = Vec::new();
+        let start = self.possibles.len();
         for &b in &mol.atom_bonds[atom] {
             if Some(b) == in_bond {
                 continue;
             }
             let other = mol.bonds[b].other(atom);
-            if colors[other] != Color::White || seen_from_here.contains(&other) {
+            // `seenFromHere`: the atom and its ring-closure partners.
+            if colors[other] != Color::White
+                || other == atom
+                || closures.iter().any(|&c| mol.bonds[c].other(atom) == other)
+            {
                 continue;
             }
             let mut rank = i64::from(self.ranks[other]);
             if mol.num_bond_rings(b) != 0 {
                 rank += (MAX_BONDTYPE - self.bond_type_value(b)) * MAX_NATOMS * MAX_NATOMS;
             }
-            possibles.push((rank as i32, other, b));
+            self.possibles.push((rank as i32, other, b));
         }
-        possibles.sort_by_key(|p| p.0);
+        self.possibles[start..].sort_by_key(|p| p.0);
+        self.ring_closures[atom] = closures;
         Ok(StackFrame {
             atom,
-            possibles,
-            next: 0,
+            start,
+            end: self.possibles.len(),
+            next: start,
             trav,
+            keep_trav,
             close_branch: false,
         })
     }
@@ -208,16 +235,18 @@ impl Traversal<'_> {
                 self.stack.push(StackElem::BranchClose);
                 frame.close_branch = false;
             }
-            let np = frame.possibles.len();
+            let np = frame.end;
             let mut child = None;
             while frame.next < np {
                 let k = frame.next;
-                let (_, other, b) = frame.possibles[k];
+                let (_, other, b) = self.possibles[k];
                 frame.next += 1;
                 if colors[other] != Color::White {
                     continue;
                 }
-                frame.trav.push(b);
+                if frame.keep_trav {
+                    frame.trav.push(b);
+                }
                 if k + 1 != np {
                     self.stack.push(StackElem::BranchOpen);
                     frame.close_branch = true;
@@ -233,6 +262,7 @@ impl Traversal<'_> {
                 }
                 None => {
                     let done = frames.pop().expect("frame");
+                    self.possibles.truncate(done.start);
                     self.traversal_bond_order[done.atom] = done.trav;
                     colors[done.atom] = Color::Black;
                 }
@@ -285,7 +315,8 @@ pub(crate) fn canonicalize_fragment(
             traversal_bond_order: vec![Vec::new(); n],
             cycles_available: vec![true; MAX_CYCLES],
             ring_closure_idx: vec![None; nb],
-            stack: Vec::new(),
+            stack: Vec::with_capacity(4 * n),
+            possibles: Vec::with_capacity(2 * nb + 2),
         };
         let mut tcolors = vec![Color::White; n];
         t.find_cycles(start, &mut tcolors);

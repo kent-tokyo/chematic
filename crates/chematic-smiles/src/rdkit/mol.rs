@@ -224,22 +224,68 @@ pub(crate) struct RingInfo {
     pub atom_rings: Vec<Vec<usize>>,
     pub bond_rings: Vec<Vec<usize>>,
     /// Ring ids each atom is in, in ring order (`atomMembers`).
-    pub atom_members: Vec<Vec<usize>>,
+    atom_member_lists: Members,
     /// Ring ids each bond is in, in ring order.
-    pub bond_members: Vec<Vec<usize>>,
+    bond_member_lists: Members,
+}
+
+/// Lists of ring ids, stored back to back.
+#[derive(Clone, Debug, Default)]
+struct Members {
+    /// `ids[start[i]..start[i + 1]]` is item `i`'s list.
+    start: Vec<u32>,
+    ids: Vec<usize>,
+}
+
+impl Members {
+    /// The lists of `n` items, each ring's items listed in `rings`.
+    fn build<'a>(n: usize, rings: impl Iterator<Item = &'a Vec<usize>> + Clone) -> Self {
+        let mut start = vec![0u32; n + 1];
+        for ring in rings.clone() {
+            for &x in ring {
+                start[x + 1] += 1;
+            }
+        }
+        for i in 0..n {
+            start[i + 1] += start[i];
+        }
+        let mut fill: Vec<u32> = start[..n].to_vec();
+        let mut ids = vec![0usize; start[n] as usize];
+        for (ri, ring) in rings.enumerate() {
+            for &x in ring {
+                ids[fill[x] as usize] = ri;
+                fill[x] += 1;
+            }
+        }
+        Self { start, ids }
+    }
+
+    fn get(&self, i: usize) -> &[usize] {
+        &self.ids[self.start[i] as usize..self.start[i + 1] as usize]
+    }
 }
 
 impl RingInfo {
+    /// Ring ids atom `a` is in, in ring order (`atomMembers`).
+    pub(crate) fn atom_members(&self, a: usize) -> &[usize] {
+        self.atom_member_lists.get(a)
+    }
+
+    /// Ring ids bond `b` is in, in ring order.
+    pub(crate) fn bond_members(&self, b: usize) -> &[usize] {
+        self.bond_member_lists.get(b)
+    }
+
     pub(crate) fn num_atom_rings(&self, a: usize) -> usize {
-        self.atom_members[a].len()
+        self.atom_members(a).len()
     }
 
     pub(crate) fn num_bond_rings(&self, b: usize) -> usize {
-        self.bond_members[b].len()
+        self.bond_members(b).len()
     }
 
     pub(crate) fn min_bond_ring_size(&self, b: usize) -> usize {
-        self.bond_members[b]
+        self.bond_members(b)
             .iter()
             .map(|&r| self.bond_rings[r].len())
             .min()
@@ -247,7 +293,7 @@ impl RingInfo {
     }
 
     pub(crate) fn is_atom_in_ring_of_size(&self, a: usize, size: usize) -> bool {
-        self.atom_members[a]
+        self.atom_members(a)
             .iter()
             .any(|&r| self.atom_rings[r].len() == size)
     }
@@ -684,29 +730,23 @@ impl Mol {
     }
 
     pub(crate) fn set_rings(&mut self, atom_rings: Vec<Vec<usize>>) {
-        let mut info = RingInfo {
-            atom_members: vec![Vec::new(); self.atoms.len()],
-            bond_members: vec![Vec::new(); self.bonds.len()],
-            ..RingInfo::default()
-        };
-        for (ri, ring) in atom_rings.iter().enumerate() {
-            let mut bring = Vec::with_capacity(ring.len());
-            for k in 0..ring.len() {
-                let b = self
-                    .bond_between(ring[k], ring[(k + 1) % ring.len()])
-                    .expect("ring atoms are bonded");
-                bring.push(b);
-            }
-            for &a in ring {
-                info.atom_members[a].push(ri);
-            }
-            for &b in &bring {
-                info.bond_members[b].push(ri);
-            }
-            info.bond_rings.push(bring);
-        }
-        info.atom_rings = atom_rings;
-        self.rings = Some(info);
+        let bond_rings: Vec<Vec<usize>> = atom_rings
+            .iter()
+            .map(|ring| {
+                (0..ring.len())
+                    .map(|k| {
+                        self.bond_between(ring[k], ring[(k + 1) % ring.len()])
+                            .expect("ring atoms are bonded")
+                    })
+                    .collect()
+            })
+            .collect();
+        self.rings = Some(RingInfo {
+            atom_member_lists: Members::build(self.atoms.len(), atom_rings.iter()),
+            bond_member_lists: Members::build(self.bonds.len(), bond_rings.iter()),
+            atom_rings,
+            bond_rings,
+        });
     }
 }
 

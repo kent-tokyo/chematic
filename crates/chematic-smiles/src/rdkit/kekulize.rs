@@ -232,7 +232,8 @@ fn mark_dbond_cands(
         }
         let rinfo = mol.ring_info();
         let num_atom_rings = rinfo.num_atom_rings(a);
-        let num_non_cand = rinfo.atom_members[a]
+        let num_non_cand = rinfo
+            .atom_members(a)
             .iter()
             .filter(|&&ri| is_ring_not_cand[ri])
             .count();

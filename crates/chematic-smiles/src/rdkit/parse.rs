@@ -26,7 +26,10 @@ pub(crate) fn from_chematic(mol: &Molecule) -> Result<Mol, RdkitSmilesError> {
             "stereo stored as CIP labels (molecule not read from SMILES)",
         ));
     }
-    for (_, atom) in mol.atoms() {
+    out.atoms.reserve(mol.atom_count());
+    out.atom_bonds.reserve(mol.atom_count());
+    out.bonds.reserve(mol.bond_count());
+    for (aidx, atom) in mol.atoms() {
         let anum = if atom.wildcard {
             0
         } else {
@@ -47,7 +50,8 @@ pub(crate) fn from_chematic(mol: &Molecule) -> Result<Mol, RdkitSmilesError> {
             a.num_explicit_hs = u32::from(atom.hydrogen_count.unwrap_or(0));
             a.no_implicit = true;
         }
-        out.add_atom(a);
+        let idx = out.add_atom(a);
+        out.atom_bonds[idx].reserve_exact(mol.neighbors(aidx).count());
     }
 
     // RDKit's bond numbering: chain bonds as written, then ring closures.

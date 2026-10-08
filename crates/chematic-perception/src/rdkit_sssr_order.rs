@@ -379,7 +379,8 @@ fn smallest_rings_bfs_in(
                 depths[nbr] = depth;
                 queue.push_back(nbr);
             } else {
-                let mut ring = vec![nbr];
+                let mut ring = Vec::with_capacity(depths[nbr] + depth + 1);
+                ring.push(nbr);
                 let mut parent = parents[nbr];
                 while parent != -1 && parent != root as isize {
                     ring.push(parent as usize);

@@ -54,8 +54,8 @@ pub(crate) fn murcko_decompose(mol: Mol) -> Result<Mol, RdkitSmilesError> {
             continue;
         }
         let mut remove_it = true;
-        let bonds = res.atom_bonds[i].clone();
-        for b in bonds {
+        for k in 0..res.atom_bonds[i].len() {
+            let b = res.atom_bonds[i][k];
             let nbr = res.bonds[b].other(i);
             if !keep[nbr] {
                 continue;
@@ -92,7 +92,8 @@ pub(crate) fn murcko_decompose(mol: Mol) -> Result<Mol, RdkitSmilesError> {
         }
         let (u, v) = (res.bonds[b].begin, res.bonds[b].end);
         for (x, y) in [(u, v), (v, u)] {
-            for &ob in &res.atom_bonds[x].clone() {
+            for k in 0..res.atom_bonds[x].len() {
+                let ob = res.atom_bonds[x][k];
                 if ob == b || !res.bonds[ob].stereo_atoms.contains(&y) {
                     continue;
                 }

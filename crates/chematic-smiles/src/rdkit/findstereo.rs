@@ -306,7 +306,7 @@ fn controlling_atoms_dupes(
         return false;
     }
     let ri = mol.ring_info();
-    let (m1, m2) = (&ri.atom_members[c1], &ri.atom_members[c2]);
+    let (m1, m2) = (ri.atom_members(c1), ri.atom_members(c2));
     let (mut i1, mut i2) = (0, 0);
     while i1 < m1.len() && i2 < m2.len() {
         if m1[i1] < m2[i2] {

@@ -264,7 +264,7 @@ pub fn rdkit_smarts(
     rooted_at_atom: Option<usize>,
 ) -> Result<String, RdkitSmilesError> {
     let m = rdkit_mol_for_writing(mol)?;
-    Ok(smarts_write::mol_to_smarts(&m, isomeric, rooted_at_atom, true)?.0)
+    Ok(smarts_write::mol_to_smarts_owned(m, isomeric, rooted_at_atom, true)?.0)
 }
 
 /// `Chem.MolToCXSmarts(m)` for `m = Chem.MolFromSmiles(s)` (RDKit

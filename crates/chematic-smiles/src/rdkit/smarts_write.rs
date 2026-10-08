@@ -6,6 +6,8 @@
 //! canonicalization) and ring information cleared, every atom as a bracket
 //! `[#n]`/`[Sym]` atom and every bond explicitly.
 
+use std::borrow::Cow;
+
 use super::RdkitSmilesError;
 use super::canon::{StackElem, canonicalize_fragment};
 use super::mol::{BondDir, BondType, ChiralTag, Mol};
@@ -17,16 +19,16 @@ fn in_organic_subset(anum: u32) -> bool {
     matches!(anum, 0 | 5 | 6 | 7 | 8 | 9 | 15 | 16 | 17 | 35 | 53)
 }
 
-/// `getNonQueryAtomSmarts`.
-fn atom_smarts(mol: &Mol, a: usize, isomeric: bool) -> String {
+/// `getNonQueryAtomSmarts`, appended to `res`.
+fn atom_smarts(res: &mut String, mol: &Mol, a: usize, isomeric: bool) {
+    use std::fmt::Write;
     let atom = &mol.atoms[a];
-    let mut res = String::from("[");
+    res.push('[');
     if atom.isotope != 0 {
-        res.push_str(&atom.isotope.to_string());
+        let _ = write!(res, "{}", atom.isotope);
     }
     if in_organic_subset(atom.anum) {
-        res.push('#');
-        res.push_str(&atom.anum.to_string());
+        let _ = write!(res, "#{}", atom.anum);
     } else {
         res.push_str(periodic::symbol(atom.anum));
     }
@@ -51,49 +53,54 @@ fn atom_smarts(mol: &Mol, a: usize, isomeric: bool) -> String {
         0 => {}
         -1 => res.push('-'),
         1 => res.push('+'),
-        c if c < 0 => res.push_str(&c.to_string()),
+        c if c < 0 => {
+            let _ = write!(res, "{c}");
+        }
         c => {
-            res.push('+');
-            res.push_str(&c.to_string());
+            let _ = write!(res, "+{c}");
         }
     }
     if let Some(m) = atom.map {
-        res.push(':');
-        res.push_str(&m.to_string());
+        let _ = write!(res, ":{m}");
     }
     res.push(']');
-    res
 }
 
 /// `getNonQueryBondSmarts`.
-fn bond_smarts(mol: &Mol, b: usize, atom_to_left: usize, isomeric: bool, dative: bool) -> String {
+fn bond_smarts(
+    mol: &Mol,
+    b: usize,
+    atom_to_left: usize,
+    isomeric: bool,
+    dative: bool,
+) -> &'static str {
     let bond = &mol.bonds[b];
-    let dir = |default: &str| -> String {
+    let dir = |default: &'static str| -> &'static str {
         if isomeric {
             match bond.dir {
-                BondDir::EndDownRight => return "\\".into(),
-                BondDir::EndUpRight => return "/".into(),
+                BondDir::EndDownRight => return "\\",
+                BondDir::EndUpRight => return "/",
                 BondDir::None => {}
             }
         }
-        default.into()
+        default
     };
     if bond.aromatic {
         return dir(":");
     }
     match bond.bt {
         BondType::Single => dir("-"),
-        BondType::Double => "=".into(),
-        BondType::Triple => "#".into(),
-        BondType::Quadruple => "$".into(),
+        BondType::Double => "=",
+        BondType::Triple => "#",
+        BondType::Quadruple => "$",
         BondType::Aromatic => dir(":"),
         BondType::Dative => {
             if !dative {
-                "-".into()
+                "-"
             } else if bond.begin != atom_to_left {
-                "<-".into()
+                "<-"
             } else {
-                "->".into()
+                "->"
             }
         }
     }
@@ -108,6 +115,108 @@ pub(crate) fn mol_to_smarts(
     rooted_at_atom: Option<usize>,
     dative: bool,
 ) -> Result<(String, Vec<usize>, Vec<usize>), RdkitSmilesError> {
+    mol_to_smarts_cow(Cow::Borrowed(mol), isomeric, rooted_at_atom, dative)
+}
+
+/// [`mol_to_smarts`] on a molecule the caller no longer needs (a
+/// single-fragment molecule is then written without a copy).
+pub(crate) fn mol_to_smarts_owned(
+    mol: Mol,
+    isomeric: bool,
+    rooted_at_atom: Option<usize>,
+    dative: bool,
+) -> Result<(String, Vec<usize>, Vec<usize>), RdkitSmilesError> {
+    mol_to_smarts_cow(Cow::Owned(mol), isomeric, rooted_at_atom, dative)
+}
+
+/// The atom `MolToSmarts` starts the next fragment at among the atoms
+/// `white` accepts: the root if allowed, else the first non-chiral atom,
+/// else the chiral atom with the lowest rank (= index).
+fn pick_start(
+    mol: &Mol,
+    rooted_at_atom: Option<usize>,
+    white: impl Fn(usize) -> bool,
+) -> Option<usize> {
+    match rooted_at_atom {
+        Some(r) if white(r) => Some(r),
+        _ => {
+            let mut first_chiral = None;
+            for a in 0..mol.atoms.len() {
+                if !white(a) {
+                    continue;
+                }
+                if matches!(mol.atoms[a].chiral, ChiralTag::Cw | ChiralTag::Ccw) {
+                    first_chiral.get_or_insert(a);
+                } else {
+                    return Some(a);
+                }
+            }
+            first_chiral
+        }
+    }
+}
+
+/// Output of [`mol_to_smarts`] while it is being written.
+struct SmartsOut {
+    res: String,
+    atom_order: Vec<usize>,
+    bond_order: Vec<usize>,
+}
+
+impl SmartsOut {
+    /// `FragmentSmartsConstruct` of fragment `sub` (atoms `atoms` and bonds
+    /// `sub_bonds` of the whole molecule) from `local_start`.
+    #[allow(clippy::too_many_arguments)]
+    fn write_fragment(
+        &mut self,
+        mut sub: Mol,
+        atoms: &[usize],
+        sub_bonds: &[usize],
+        local_start: usize,
+        isomeric: bool,
+        dative: bool,
+    ) -> Result<(), RdkitSmilesError> {
+        // Empty ring information and an updated property cache; ranks are
+        // atom indices.
+        sub.set_rings(Vec::new());
+        sub.update_property_cache(false)?;
+        let ranks: Vec<u32> = (0..sub.atoms.len() as u32).collect();
+        let canon = canonicalize_fragment(&mut sub, local_start, &ranks, isomeric)?;
+        let res = &mut self.res;
+        if !res.is_empty() {
+            res.push('.');
+        }
+        for e in &canon.stack {
+            match *e {
+                StackElem::Atom(a) => {
+                    atom_smarts(res, &sub, a, isomeric);
+                    self.atom_order.push(atoms[a]);
+                }
+                StackElem::Bond(b, left) => {
+                    res.push_str(bond_smarts(&sub, b, left, isomeric, dative));
+                    self.bond_order.push(sub_bonds[b]);
+                }
+                StackElem::Ring(num) => {
+                    use std::fmt::Write;
+                    if num >= 10 {
+                        res.push('%');
+                    }
+                    let _ = write!(res, "{num}");
+                }
+                StackElem::BranchOpen => res.push('('),
+                StackElem::BranchClose => res.push(')'),
+            }
+        }
+        Ok(())
+    }
+}
+
+fn mol_to_smarts_cow(
+    mol: Cow<'_, Mol>,
+    isomeric: bool,
+    rooted_at_atom: Option<usize>,
+    dative: bool,
+) -> Result<(String, Vec<usize>, Vec<usize>), RdkitSmilesError> {
     let n = mol.atoms.len();
     if n == 0 {
         return Ok((String::new(), Vec::new(), Vec::new()));
@@ -117,7 +226,26 @@ pub(crate) fn mol_to_smarts(
     {
         return Err(RdkitSmilesError::Unsupported("bad atom index".into()));
     }
-    let frags = mol_frags(mol);
+    let mut out = SmartsOut {
+        res: String::with_capacity(8 * n),
+        atom_order: Vec::with_capacity(n),
+        bond_order: Vec::with_capacity(mol.bonds.len()),
+    };
+    let frags = mol_frags(&mol);
+    if frags.len() == 1 {
+        let start = pick_start(&mol, rooted_at_atom, |_| true).expect("non-empty molecule");
+        let sub_bonds: Vec<usize> = (0..mol.bonds.len()).collect();
+        out.write_fragment(
+            mol.into_owned(),
+            &frags[0],
+            &sub_bonds,
+            start,
+            isomeric,
+            dative,
+        )?;
+        return Ok((out.res, out.atom_order, out.bond_order));
+    }
+    let mol: &Mol = &mol;
     let mut frag_of = vec![0usize; n];
     for (f, atoms) in frags.iter().enumerate() {
         for &a in atoms {
@@ -125,81 +253,25 @@ pub(crate) fn mol_to_smarts(
         }
     }
     let mut done = vec![false; frags.len()];
-    let mut res = String::new();
-    let mut atom_order = Vec::with_capacity(n);
-    let mut bond_order = Vec::with_capacity(mol.bonds.len());
-    loop {
-        let white = |a: usize| !done[frag_of[a]];
-        let start = match rooted_at_atom {
-            Some(r) if white(r) => r,
-            _ => {
-                // The first unprocessed non-chiral atom, else the chiral
-                // atom with the lowest rank (= index).
-                let mut pick = None;
-                let mut first_chiral = None;
-                for a in 0..n {
-                    if !white(a) {
-                        continue;
-                    }
-                    if matches!(mol.atoms[a].chiral, ChiralTag::Cw | ChiralTag::Ccw) {
-                        first_chiral.get_or_insert(a);
-                    } else {
-                        pick = Some(a);
-                        break;
-                    }
-                }
-                match pick.or(first_chiral) {
-                    Some(a) => a,
-                    None => break,
-                }
-            }
-        };
+    while let Some(start) = pick_start(mol, rooted_at_atom, |a| !done[frag_of[a]]) {
         let f = frag_of[start];
         done[f] = true;
         let atoms = &frags[f];
-        let mut sub = if frags.len() == 1 {
-            mol.clone()
-        } else {
-            fragment(mol, atoms)
-        };
         // Global bond index of each fragment bond (fragment keeps order).
         let sub_bonds: Vec<usize> = (0..mol.bonds.len())
             .filter(|&b| frag_of[mol.bonds[b].begin] == f)
             .collect();
-        // FragmentSmartsConstruct: empty ring information and an updated
-        // property cache; ranks are atom indices.
-        sub.set_rings(Vec::new());
-        sub.update_property_cache(false)?;
-        let ranks: Vec<u32> = (0..sub.atoms.len() as u32).collect();
         let local_start = atoms.binary_search(&start).expect("start in fragment");
-        let canon = canonicalize_fragment(&mut sub, local_start, &ranks, isomeric)?;
-        if !res.is_empty() {
-            res.push('.');
-        }
-        for e in &canon.stack {
-            match *e {
-                StackElem::Atom(a) => {
-                    res.push_str(&atom_smarts(&sub, a, isomeric));
-                    atom_order.push(atoms[a]);
-                }
-                StackElem::Bond(b, left) => {
-                    res.push_str(&bond_smarts(&sub, b, left, isomeric, dative));
-                    bond_order.push(sub_bonds[b]);
-                }
-                StackElem::Ring(num) => {
-                    if num < 10 {
-                        res.push_str(&num.to_string());
-                    } else {
-                        res.push('%');
-                        res.push_str(&num.to_string());
-                    }
-                }
-                StackElem::BranchOpen => res.push('('),
-                StackElem::BranchClose => res.push(')'),
-            }
-        }
+        out.write_fragment(
+            fragment(mol, atoms),
+            atoms,
+            &sub_bonds,
+            local_start,
+            isomeric,
+            dative,
+        )?;
     }
-    Ok((res, atom_order, bond_order))
+    Ok((out.res, out.atom_order, out.bond_order))
 }
 
 /// `SmilesWrite::getCXExtensions(mol)` for the fields a `MolFromSmiles`
