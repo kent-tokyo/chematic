@@ -35,6 +35,7 @@ pub mod path;
 pub mod pattern;
 pub mod pharmacophore_fp;
 pub mod rdkit_atom_pair;
+pub mod rdkit_avalon;
 mod rdkit_isotope_delta_table;
 pub mod rdkit_layered;
 mod rdkit_morgan_config;
@@ -59,6 +60,7 @@ pub use ecfp::{
     tanimoto_ecfp4,
 };
 pub use rdkit_atom_pair::rdkit_atom_pair_fp;
+pub use rdkit_avalon::{RdkitAvalonError, rdkit_avalon_fp};
 pub use rdkit_layered::rdkit_layered_fp;
 pub use rdkit_pattern::rdkit_pattern_fp;
 pub use rdkit_rdk::rdkit_rdk_fp;

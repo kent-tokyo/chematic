@@ -1,6 +1,7 @@
-//! `MolOps::Kekulize(mol, markAtomsBonds=true, canonical=false)` as
-//! `sanitizeMol` runs it (RDKit 2026.03.1 `Kekulize.cpp`). With
-//! `canonical=false` the atom ranks are the atom indices.
+//! `MolOps::Kekulize(mol, markAtomsBonds=true, canonical)` (RDKit
+//! 2026.03.1 `Kekulize.cpp`): [`kekulize`] is the `canonical=false` call
+//! `sanitizeMol` makes (the atom ranks are the atom indices),
+//! [`kekulize_ranked`] takes the atom ranks of a `canonical=true` call.
 
 use std::collections::{HashMap, VecDeque};
 
@@ -53,6 +54,15 @@ pub(crate) fn make_ring_neighbor_map(
 }
 
 pub(crate) fn kekulize(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+    kekulize_ranked(mol, None)
+}
+
+/// `Kekulize` with the traversal ordered by `ranks` (`None`: atom indices).
+/// No bond carries a wedge here, so the wedge preferences never apply.
+pub(crate) fn kekulize_ranked(
+    mol: &mut Mol,
+    ranks: Option<&[u32]>,
+) -> Result<(), RdkitSmilesError> {
     let n_atoms = mol.atoms.len();
     let mut found_aromatic = mol.bonds.iter().any(|b| b.aromatic);
     let mut valences = vec![0i32; n_atoms];
@@ -95,7 +105,7 @@ pub(crate) fn kekulize(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
             let mut fused = Vec::new();
             pick_fused_rings(curr, &neigh, &mut fused, &mut fus_done);
             let frings: Vec<&Vec<usize>> = fused.iter().map(|&r| &arings[r]).collect();
-            kekulize_fused(mol, &frings)?;
+            kekulize_fused(mol, &frings, ranks)?;
             match (0..cnrs).find(|&r| !fus_done[r]) {
                 Some(r) => curr = r,
                 None => break,
@@ -133,7 +143,11 @@ pub(crate) fn kekulize(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
     Ok(())
 }
 
-fn kekulize_fused(mol: &mut Mol, arings: &[&Vec<usize>]) -> Result<(), RdkitSmilesError> {
+fn kekulize_fused(
+    mol: &mut Mol,
+    arings: &[&Vec<usize>],
+    ranks: Option<&[u32]>,
+) -> Result<(), RdkitSmilesError> {
     let mut all_atms: Vec<usize> = Vec::new();
     for ring in arings {
         for &a in ring.iter() {
@@ -148,9 +162,10 @@ fn kekulize_fused(mol: &mut Mol, arings: &[&Vec<usize>]) -> Result<(), RdkitSmil
     let mut done = Vec::new();
     mark_dbond_cands(mol, &all_atms, &mut d_bnd_cands, &mut questions, &mut done);
     let d_bnd_adds = vec![false; mol.bonds.len()];
-    let mut kekulized = kekulize_worker(mol, &all_atms, d_bnd_cands.clone(), d_bnd_adds, done);
+    let mut kekulized =
+        kekulize_worker(mol, &all_atms, d_bnd_cands.clone(), d_bnd_adds, done, ranks);
     if !kekulized && !questions.is_empty() {
-        kekulized = permute_dummies_and_kekulize(mol, &all_atms, &d_bnd_cands, &questions);
+        kekulized = permute_dummies_and_kekulize(mol, &all_atms, &d_bnd_cands, &questions, ranks);
     }
     if !kekulized {
         return Err(RdkitSmilesError::Sanitization("Can't kekulize mol.".into()));
@@ -313,6 +328,7 @@ fn kekulize_worker(
     mut d_bnd_cands: Vec<bool>,
     mut d_bnd_adds: Vec<bool>,
     mut done: Vec<usize>,
+    ranks: Option<&[u32]>,
 ) -> bool {
     let n = mol.atoms.len();
     let mut astack: VecDeque<usize> = VecDeque::new();
@@ -323,9 +339,11 @@ fn kekulize_worker(
     for &a in all_atms {
         in_all[a] = true;
     }
-    // Ranks are atom indices (canonical=false); no wedged bonds.
+    // `lessByRank`: by rank, then index (canonical=false: ranks are the
+    // indices); no wedged bonds.
+    let key = |a: usize| (ranks.map_or(a as u32, |r| r[a]), a);
     let mut sorted = all_atms.to_vec();
-    sorted.sort_unstable();
+    sorted.sort_unstable_by_key(|&a| key(a));
     let mut btmoves: VecDeque<usize> = VecDeque::new();
     let mut num_bt = 0usize;
     while done.len() < sorted.len() || !astack.is_empty() {
@@ -348,7 +366,7 @@ fn kekulize_worker(
                 .nbrs(curr)
                 .filter(|&nb| in_all[nb] && !done.contains(&nb))
                 .collect();
-            nbrs.sort_unstable();
+            nbrs.sort_unstable_by_key(|&a| key(a));
             let mut lstack = Vec::new();
             for &nb in &nbrs {
                 let nb_bond = mol.bond_between(curr, nb).expect("bonded");
@@ -421,6 +439,7 @@ fn permute_dummies_and_kekulize(
     all_atms: &[usize],
     d_bnd_cands: &[bool],
     questions: &[usize],
+    ranks: Option<&[u32]>,
 ) -> bool {
     let mut in_play = vec![false; mol.atoms.len()];
     for &a in all_atms {
@@ -450,6 +469,7 @@ fn permute_dummies_and_kekulize(
             t_cands,
             vec![false; mol.bonds.len()],
             Vec::new(),
+            ranks,
         );
     }
     kekulized

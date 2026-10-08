@@ -36,6 +36,7 @@ mod aromaticity;
 mod canon;
 mod kekulize;
 mod mol;
+mod molblock;
 mod parse;
 mod periodic;
 mod rank;
@@ -44,6 +45,8 @@ mod stereo;
 mod write;
 
 use chematic_core::Molecule;
+
+pub use molblock::{RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, rdkit_mol_block};
 
 /// Why [`rdkit_canonical_smiles`] produced no string.
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -3832,9 +3832,28 @@ impl Mol {
     /// A broad mix of atom, bond, ring, and path features, loosely modelled
     /// on RDKit's Avalon fingerprint (``rdkit.Avalon.pyAvalonTools.GetAvalonFP``).
     /// Bit positions are not RDKit-identical (see :mod:`chematic.rdkit_compat`
-    /// notes on Morgan fingerprints for the same caveat).
+    /// notes on Morgan fingerprints for the same caveat); :meth:`rdkit_avalon_fp`
+    /// is the RDKit-identical fingerprint.
     fn avalon_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::avalon_fp(&self.inner))
+    }
+
+    /// RDKit's Avalon fingerprint as bytes (``n_bits / 8`` bytes, bit ``i`` at
+    /// byte ``i // 8``, mask ``1 << (i % 8)``).
+    ///
+    /// Bit-identical to ``rdkit.Avalon.pyAvalonTools.GetAvalonFP(mol,
+    /// nBits=n_bits)`` (default ``bitFlags``, ``isQuery=False``) for the RDKit
+    /// molecule ``Chem.MolFromSmiles`` builds from the SMILES this molecule was
+    /// read from: a port of the Avalon toolkit's fingerprint code (version
+    /// 2.0.5-pre.3, the one RDKit 2026.03 builds) applied to the connection
+    /// table RDKit's ``MolToMolBlock`` writes.
+    ///
+    /// Raises ``ValueError`` for molecules RDKit would reject or that the RDKit
+    /// model does not cover.
+    #[pyo3(signature = (n_bits = 2048))]
+    fn rdkit_avalon_fp(&self, n_bits: usize) -> PyResult<Vec<u8>> {
+        chematic_fp::rdkit_avalon_fp(&self.inner, n_bits)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
     /// 3D pharmacophore fingerprint as bytes (256 bytes = 2048 bits).
