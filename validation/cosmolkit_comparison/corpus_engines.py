@@ -239,7 +239,7 @@ def chematic_engine():
         "fp_pattern": lambda m: _bits(m.rdkit_pattern_fp()),
         "fp_layered": lambda m: _bits(m.rdkit_layered_fp()),
         "fp_rdkit": lambda m: _bits(m.rdkit_rdk_fp()),
-        "fp_avalon": lambda m: _bits(m.avalon_fp()),
+        "fp_avalon": lambda m: _bits(m.rdkit_avalon_fp(2048)),
         "chi0v": lambda m: m.chi0v, "chi1v": lambda m: m.chi1v, "chi2v": lambda m: m.chi2v,
         "chi3v": lambda m: m.chi3v, "chi4v": lambda m: m.chi4v,
         "chi0": lambda m: m.chi0, "chi1": lambda m: m.chi1,
