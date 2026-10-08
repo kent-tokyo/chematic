@@ -41,8 +41,8 @@ impl Mol {
     ///
     /// Raises ``ValueError`` instead of returning a string when the molecule
     /// uses a feature the port does not model (message starting
-    /// ``"RDKit-compatible SMILES: unsupported input"``, e.g. non-tetrahedral
-    /// chirality or a molecule not read from SMILES) or when RDKit's
+    /// ``"RDKit-compatible SMILES: unsupported input"``, e.g. a molecule not
+    /// read from SMILES) or when RDKit's
     /// sanitization would reject it (``"RDKit-compatible SMILES:
     /// sanitization failed"``; ``Chem.MolFromSmiles`` returns ``None``).
     ///
