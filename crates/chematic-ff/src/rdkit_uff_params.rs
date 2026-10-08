@@ -3,7 +3,7 @@
 
 /// `(label, r1, theta0_deg, x1, D1, zeta, Z1, V1, U1, GMP_Xi, GMP_Hardness, GMP_Radius)`,
 /// sorted by label.
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::approx_constant)]
 pub(crate) static UFF_PARAMS: &[(&str, [f64; 11])] = &[
     (
         "Ac6+3",

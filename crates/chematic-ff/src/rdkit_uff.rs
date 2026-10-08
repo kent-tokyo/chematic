@@ -12,6 +12,10 @@
 //! The molecule must carry explicit hydrogens in RDKit `AddHs` order
 //! (chematic's `add_hydrogens`), as RDKit's own UFF expects.
 
+// RDKit's spelling (`x * -1.0`, `-1. * k`) is kept: those are exact
+// negations, so rewriting them would not change any result.
+#![allow(clippy::neg_multiply, clippy::type_complexity)]
+
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 
 use crate::rdkit_mmff::{
@@ -138,7 +142,7 @@ fn atom_label(mol: &Molecule, i: usize, hyb: Option<u8>, conjugated: bool) -> St
     }
     if z != 0 && UFF_NEEDS_HYBRID[z.min(118)] {
         match z {
-            12 | 13 | 14 | 15 | 50 | 51 | 52 | 81 | 82 | 83 | 84 => key.push('3'),
+            12..=15 | 50..=52 | 81..=84 => key.push('3'),
             80 => key.push('1'),
             _ => match hyb {
                 Some(1) => key.push('1'),
@@ -263,7 +267,7 @@ fn int_pow(x: f64, n: u32) -> f64 {
         1 => x,
         _ => {
             let half = int_pow(x, n / 2);
-            if n % 2 == 0 {
+            if n.is_multiple_of(2) {
                 half * half
             } else {
                 half * half * x
@@ -302,7 +306,7 @@ fn equation17(bo23: f64, p2: &AtomicParams, p3: &AtomicParams) -> f64 {
 /// `calcInversionCoefficientsAndForceConstant`: (K, C0, C1, C2).
 fn inversion_coefficients(at2: usize, is_c_bound_to_o: bool) -> (f64, f64, f64, f64) {
     let (mut res, c0, c1, c2);
-    if matches!(at2, 6 | 7 | 8) {
+    if matches!(at2, 6..=8) {
         c0 = 1.0;
         c1 = -1.0;
         c2 = 0.0;
@@ -955,7 +959,7 @@ impl RdkitUffField {
             if !matches!(at2, 6 | 7 | 8 | 15 | 33 | 51 | 83) || adj[j].len() != 3 {
                 continue;
             }
-            if matches!(at2, 6 | 7 | 8) && hyb[j] != Some(2) {
+            if matches!(at2, 6..=8) && hyb[j] != Some(2) {
                 continue;
             }
             let nb = [adj[j][0].0, adj[j][1].0, adj[j][2].0];

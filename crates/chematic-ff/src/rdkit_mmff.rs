@@ -10,6 +10,10 @@
 //! RDKit's gradient scaling), so `MMFFOptimizeMolecule` lands on the same
 //! coordinates. The MMFF parameters come from chematic's MMFF94 typing.
 
+// RDKit's spelling (`x * -1.0`, `-1. * k`) is kept: those are exact
+// negations, so rewriting them would not change any result.
+#![allow(clippy::neg_multiply, clippy::type_complexity)]
+
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use std::collections::HashMap;
 
