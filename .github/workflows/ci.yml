@@ -289,6 +289,8 @@ jobs:
           git diff --quiet
           .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/hba-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-linux.jsonl --metadata-output validation/results/a6-source-265-linux.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
           .venv/bin/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-linux.jsonl --metadata validation/results/a6-source-265-linux.meta.json --output validation/results/a6-source-265-linux.summary.json --build-profile release
+          cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-source-265-linux.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-source-265-linux.scored.jsonl
+          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-linux.jsonl --scored validation/results/a6-source-265-linux.scored.jsonl --scope source-linux-x86_64 --output validation/results/a6-source-265-linux.gate.json
       - name: Retain HBA source-wheel parity result
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -304,6 +306,8 @@ jobs:
             validation/results/a6-source-265-linux.jsonl
             validation/results/a6-source-265-linux.meta.json
             validation/results/a6-source-265-linux.summary.json
+            validation/results/a6-source-265-linux.scored.jsonl
+            validation/results/a6-source-265-linux.gate.json
           if-no-files-found: ignore
 
   test-a6-paired-linux-cp39:
@@ -316,7 +320,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.9'
-      - name: Build source wheel and compare fixed A6 rows with published v1.0.31
+      - name: Build source wheel and compare fixed A6 rows with published v1.0.37
         run: |
           python -m venv .venv
           .venv/bin/pip install --index-url https://pypi.org/simple maturin numpy
@@ -325,10 +329,14 @@ jobs:
           git diff --quiet
           .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-source-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-linux-cp39.jsonl --metadata-output validation/results/a6-source-265-linux-cp39.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
           .venv/bin/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-linux-cp39.jsonl --metadata validation/results/a6-source-265-linux-cp39.meta.json --output validation/results/a6-source-265-linux-cp39.summary.json --build-profile release
-          .venv/bin/pip download --index-url https://pypi.org/simple --only-binary=:all: --no-deps 'chematic==1.0.31' --dest dist/a6-published-wheel
+          .venv/bin/pip download --index-url https://pypi.org/simple --only-binary=:all: --no-deps 'chematic==1.0.37' --dest dist/a6-published-wheel
           .venv/bin/pip install --force-reinstall --no-deps dist/a6-published-wheel/chematic-*.whl
           .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-linux-cp39.jsonl --metadata-output validation/results/a6-published-265-linux-cp39.meta.json --wall-budget-seconds 1200 --package-kind published
           .venv/bin/python scripts/compare_a6_source_published_rows.py --source-rows validation/results/a6-source-265-linux-cp39.jsonl --source-metadata validation/results/a6-source-265-linux-cp39.meta.json --published-rows validation/results/a6-published-265-linux-cp39.jsonl --published-metadata validation/results/a6-published-265-linux-cp39.meta.json --output validation/results/a6-source-vs-published-265-linux-cp39.json
+          cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-source-265-linux-cp39.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-source-265-linux-cp39.scored.jsonl
+          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-linux-cp39.jsonl --scored validation/results/a6-source-265-linux-cp39.scored.jsonl --scope source-linux-x86_64-cp39 --output validation/results/a6-source-265-linux-cp39.gate.json
+          cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-published-265-linux-cp39.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-published-265-linux-cp39.scored.jsonl
+          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-published-265-linux-cp39.jsonl --scored validation/results/a6-published-265-linux-cp39.scored.jsonl --scope published-linux-x86_64-cp39 --reference-rows validation/results/a6-source-265-linux-cp39.jsonl --output validation/results/a6-published-265-linux-cp39.gate.json
       - name: Retain paired Linux A6 outcome
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -341,6 +349,10 @@ jobs:
             validation/results/a6-published-265-linux-cp39.jsonl
             validation/results/a6-published-265-linux-cp39.meta.json
             validation/results/a6-source-vs-published-265-linux-cp39.json
+            validation/results/a6-source-265-linux-cp39.scored.jsonl
+            validation/results/a6-source-265-linux-cp39.gate.json
+            validation/results/a6-published-265-linux-cp39.scored.jsonl
+            validation/results/a6-published-265-linux-cp39.gate.json
           if-no-files-found: ignore
 
   test-hba-wheel-macos:
@@ -369,12 +381,16 @@ jobs:
           git diff --quiet
           .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/hba-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-macos.jsonl --metadata-output validation/results/a6-source-265-macos.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
           .venv/bin/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-macos.jsonl --metadata validation/results/a6-source-265-macos.meta.json --output validation/results/a6-source-265-macos.summary.json --build-profile release
+          cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-source-265-macos.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-source-265-macos.scored.jsonl
+          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-macos.jsonl --scored validation/results/a6-source-265-macos.scored.jsonl --scope source-macos-arm64 --output validation/results/a6-source-265-macos.gate.json
       - name: Compare A6 published wheel on the same macOS host
         run: |
-          .venv/bin/pip download --only-binary=:all: --no-deps 'chematic==1.0.31' --dest dist/a6-published-wheel
+          .venv/bin/pip download --only-binary=:all: --no-deps 'chematic==1.0.37' --dest dist/a6-published-wheel
           .venv/bin/pip install --force-reinstall --no-deps dist/a6-published-wheel/chematic-*.whl
           .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-macos.jsonl --metadata-output validation/results/a6-published-265-macos.meta.json --wall-budget-seconds 1200 --package-kind published
           .venv/bin/python scripts/compare_a6_source_published_rows.py --source-rows validation/results/a6-source-265-macos.jsonl --source-metadata validation/results/a6-source-265-macos.meta.json --published-rows validation/results/a6-published-265-macos.jsonl --published-metadata validation/results/a6-published-265-macos.meta.json --output validation/results/a6-source-vs-published-265-macos.json
+          cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-published-265-macos.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-published-265-macos.scored.jsonl
+          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-published-265-macos.jsonl --scored validation/results/a6-published-265-macos.scored.jsonl --scope published-macos-arm64-cp313 --reference-rows validation/results/a6-source-265-macos.jsonl --output validation/results/a6-published-265-macos.gate.json
       - name: Retain macOS HBA wheel result
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -392,6 +408,10 @@ jobs:
             validation/results/a6-published-265-macos.jsonl
             validation/results/a6-published-265-macos.meta.json
             validation/results/a6-source-vs-published-265-macos.json
+            validation/results/a6-source-265-macos.scored.jsonl
+            validation/results/a6-source-265-macos.gate.json
+            validation/results/a6-published-265-macos.scored.jsonl
+            validation/results/a6-published-265-macos.gate.json
           if-no-files-found: ignore
 
   test-source-wheel-windows:
@@ -426,6 +446,8 @@ jobs:
           git diff --quiet
           .venv/Scripts/python scripts/public_package_3d_chematic.py --wheel dist/source-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-windows.jsonl --metadata-output validation/results/a6-source-265-windows.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
           .venv/Scripts/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-windows.jsonl --metadata validation/results/a6-source-265-windows.meta.json --output validation/results/a6-source-265-windows.summary.json --build-profile release
+          cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-source-265-windows.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-source-265-windows.scored.jsonl
+          .venv/Scripts/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-windows.jsonl --scored validation/results/a6-source-265-windows.scored.jsonl --scope source-windows-x86_64 --output validation/results/a6-source-265-windows.gate.json
       - name: Retain Windows source-wheel results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -437,6 +459,8 @@ jobs:
             validation/results/a6-source-265-windows.jsonl
             validation/results/a6-source-265-windows.meta.json
             validation/results/a6-source-265-windows.summary.json
+            validation/results/a6-source-265-windows.scored.jsonl
+            validation/results/a6-source-265-windows.gate.json
           if-no-files-found: ignore
 
   test-a6-published-macos-cp39:
@@ -445,16 +469,19 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.9'
-      - name: Rerun published v1.0.31 A6 rows with the Linux lane Python ABI
+      - name: Rerun published v1.0.37 A6 rows with the Linux lane Python ABI
         run: |
           test "$(uname -m)" = arm64
           python -m venv .venv
-          .venv/bin/pip download --index-url https://pypi.org/simple --only-binary=:all: --no-deps 'chematic==1.0.31' --dest dist/a6-published-wheel
+          .venv/bin/pip download --index-url https://pypi.org/simple --only-binary=:all: --no-deps 'chematic==1.0.37' --dest dist/a6-published-wheel
           .venv/bin/pip install --no-deps dist/a6-published-wheel/chematic-*.whl
           .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-macos-cp39.jsonl --metadata-output validation/results/a6-published-265-macos-cp39.meta.json --wall-budget-seconds 1200 --package-kind published
+          cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-published-265-macos-cp39.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-published-265-macos-cp39.scored.jsonl
+          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-published-265-macos-cp39.jsonl --scored validation/results/a6-published-265-macos-cp39.scored.jsonl --scope published-macos-arm64-cp39 --output validation/results/a6-published-265-macos-cp39.gate.json
       - name: Retain macOS Python 3.9 published A6 outcomes
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -463,6 +490,53 @@ jobs:
           path: |
             validation/results/a6-published-265-macos-cp39.jsonl
             validation/results/a6-published-265-macos-cp39.meta.json
+            validation/results/a6-published-265-macos-cp39.scored.jsonl
+            validation/results/a6-published-265-macos-cp39.gate.json
+          if-no-files-found: ignore
+
+  # #739: the same A6 rows from the Linux, macOS and Windows jobs above,
+  # compared row by row. Each platform job gates its own rows on the
+  # independent scorer; this job reports whether the coordinates are
+  # bit-identical across platforms (the libm-crate math makes them so).
+  a6-cross-platform:
+    name: A6 coordinates across platforms (#739)
+    needs: [test-python, test-hba-wheel-macos, test-source-wheel-windows, test-a6-paired-linux-cp39, test-a6-published-macos-cp39]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: rdkit-hba-source-wheel-5k*
+          path: a6-artifacts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: a6-p*
+          path: a6-artifacts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: source-wheel-windows
+          path: a6-artifacts/source-wheel-windows
+      - name: Compare A6 coordinates with the Linux rows
+        run: |
+          A=a6-artifacts
+          compare() {
+            python scripts/a6_platform_gate.py --report-only --rows "$A/$1.jsonl" --scored "$A/$1.scored.jsonl" \
+              --reference-rows "$A/$2.jsonl" --scope "$3" --output "a6-cross/$3.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          }
+          compare rdkit-hba-source-wheel-5k-macos/a6-source-265-macos rdkit-hba-source-wheel-5k/a6-source-265-linux source-macos-vs-linux
+          compare source-wheel-windows/a6-source-265-windows rdkit-hba-source-wheel-5k/a6-source-265-linux source-windows-vs-linux
+          compare a6-published-macos-cp39/a6-published-265-macos-cp39 a6-paired-linux-cp39/a6-published-265-linux-cp39 published-v1.0.37-macos-vs-linux-cp39
+          compare a6-paired-linux-cp39/a6-published-265-linux-cp39 a6-paired-linux-cp39/a6-source-265-linux-cp39 published-v1.0.37-vs-source-linux-cp39
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: a6-cross-platform
+          path: a6-cross/*.json
           if-no-files-found: ignore
 
   test-wasm:
