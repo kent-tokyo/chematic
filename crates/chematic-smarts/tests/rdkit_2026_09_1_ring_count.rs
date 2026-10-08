@@ -65,7 +65,12 @@ fn relevant_cycle_ring_counts_match_rdkit_2026_09_1() {
 }
 
 #[test]
-fn the_2026_03_6_profile_still_refuses_the_macrocycles() {
-    let err = atoms(CASES[1].0, "[R2]", RdkitRingCountModel::SymmetrizedSssr).unwrap_err();
-    assert!(matches!(err, RdkitParityError::RingModelAmbiguous { .. }));
+fn the_2026_03_profile_follows_rdkit_ring_order_on_the_macrocycles() {
+    // RDKit 2026.03.1 `GetSubstructMatches(MolFromSmarts("[R2]"))` on this
+    // macrocycle; the symmetrized-SSSR profile now reproduces RDKit's ring
+    // order instead of refusing.
+    assert_eq!(
+        atoms(CASES[1].0, "[R2]", RdkitRingCountModel::SymmetrizedSssr).unwrap(),
+        vec![15, 16, 21, 22, 28, 33]
+    );
 }
