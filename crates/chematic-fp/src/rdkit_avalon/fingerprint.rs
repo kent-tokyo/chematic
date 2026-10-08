@@ -1,3 +1,5 @@
+// Ported from the Avalon Cheminformatics Toolkit, Copyright 2001-2011 Novartis
+// Pharma AG, BSD-3-Clause license; see THIRD_PARTY_NOTICES.md.
 //! `CountFingerprintPatterns` of the Avalon toolkit (`ssmatch.c`), ported
 //! operation for operation for `as_query == FALSE` and `exclude_atom == 0`
 //! (what `SetFingerprintBits`, and so RDKit's `GetAvalonFP`, runs), with the

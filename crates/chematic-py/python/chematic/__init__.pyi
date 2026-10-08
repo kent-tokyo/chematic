@@ -627,6 +627,14 @@ class Mol:
         """Topological torsion fingerprint as bytes (256 bytes = 2048 bits, LSB-first)."""
         ...
 
+    def rdkit_avalon_fp(self, n_bits: int = 2048) -> bytes:
+        """RDKit's Avalon fingerprint as ``n_bits // 8`` bytes (LSB-first),
+        bit-identical to ``pyAvalonTools.GetAvalonFP(Chem.MolFromSmiles(s),
+        nBits=n_bits)`` (default ``bitFlags``, ``isQuery=False``) for a molecule
+        read with :func:`from_smiles`. Raises ``ValueError`` for molecules RDKit
+        rejects or the RDKit model does not cover."""
+        ...
+
     def maccs(self) -> bytes:
         """MACCS 166-bit keys as bytes (21 bytes, LSB-first)."""
         ...

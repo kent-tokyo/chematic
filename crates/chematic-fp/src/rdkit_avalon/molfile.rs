@@ -1,3 +1,5 @@
+// Ported from the Avalon Cheminformatics Toolkit, Copyright 2001-2011 Novartis
+// Pharma AG, BSD-3-Clause license; see THIRD_PARTY_NOTICES.md.
 //! The part of the Avalon toolkit's MOL-file reader (`reaccsio.c`:
 //! `MolStr2Mol`, `ReadREACCSAtom`, `ReadREACCSBond`, `ReadProperties`,
 //! `ReadV30Atom`, `ReadV30Bond`) that decides the fields the fingerprint
@@ -121,17 +123,15 @@ pub fn read_molblock(block: &str) -> Option<AvalonMolecule> {
                     }
                 }
             }
-        } else if line.starts_with("A  ") {
-            let atom = scan_int(&line[3..]);
-            if let Some(a) = atom {
-                if a >= 1
-                    && (a as usize) <= mol.atoms.len()
-                    && mol.atoms[(a - 1) as usize].symbol == "R"
-                {
-                    if let Some(text) = lines.get(pos) {
-                        mol.atoms[(a - 1) as usize].atext = text.chars().take(80).collect();
-                    }
-                }
+        } else if let Some(rest) = line.strip_prefix("A  ") {
+            // atom text line pair; kept only as the label of an "R" atom
+            if let Some(a) = scan_int(rest)
+                && a >= 1
+                && (a as usize) <= mol.atoms.len()
+                && mol.atoms[(a - 1) as usize].symbol == "R"
+                && let Some(text) = lines.get(pos)
+            {
+                mol.atoms[(a - 1) as usize].atext = text.chars().take(80).collect();
             }
             pos += 1;
         } else if line.starts_with("G  ") {

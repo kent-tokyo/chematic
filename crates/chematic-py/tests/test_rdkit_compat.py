@@ -728,6 +728,18 @@ def test_avalon_fp_self_tanimoto():
     assert DataStructs.TanimotoSimilarity(fp, fp) == 1.0
 
 
+def test_avalon_fp_matches_rdkit_bits():
+    # RDKit 2026.03.1: list(pyAvalonTools.GetAvalonFP(aspirin).GetOnBits())
+    expected = [
+        13, 15, 41, 67, 85, 115, 116, 138, 153, 157, 190, 195, 196, 198, 216,
+        217, 222, 226, 239, 246, 251, 262, 273, 281, 287, 293, 305, 322, 324,
+        329, 330, 334, 335, 340, 341, 343, 351, 365, 370, 388, 412, 415, 426,
+        436, 442, 444, 451, 455, 463, 464, 468, 478, 485, 510,
+    ]
+    mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
+    assert list(pyAvalonTools.GetAvalonFP(mol).GetOnBits()) == expected
+
+
 def test_avalon_fp_nbits_zero_raises():
     mol = Chem.MolFromSmiles("c1ccccc1")
     with pytest.raises(ValueError):

@@ -48,9 +48,17 @@ pub struct RdkitMolBlock {
 ///
 /// `MolFromSmiles` is modelled as in [`super::rdkit_canonical_smiles`]
 /// (`removeHs`, `sanitizeMol`, legacy stereo perception); `prepareMol` then
-/// kekulizes with `canonical=true`. The canonical atom ranks of that call
-/// (`Canon::rankFragmentAtoms` over the whole molecule) are taken from
-/// `Canon::rankMolAtoms`.
+/// kekulizes with `canonical=true`.
+///
+/// That call ranks the atoms with `Canon::rankFragmentAtoms` with every atom
+/// and bond in play; the ranks are taken from `Canon::rankMolAtoms`, which
+/// gives the same ranks then: `initFragmentCanonAtoms` builds the same
+/// canon atoms as `initCanonAtoms` (fragment degree = degree, so no
+/// `totalNumHs` adjustment; the same bond holders, sorted the same way),
+/// every in-play test of the compare functors and `rankWithFunctor` passes,
+/// the functor flags match for the default arguments of both, and the only
+/// extra input of `rankMolAtoms`, stereo groups, does not arise from a
+/// plain SMILES.
 pub fn rdkit_mol_block(mol: &Molecule) -> Result<RdkitMolBlock, RdkitSmilesError> {
     let mut m = parse::from_chematic(mol)?;
     sanitize::remove_hs_and_sanitize(&mut m)?;

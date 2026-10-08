@@ -1,3 +1,5 @@
+// Ported from the Avalon Cheminformatics Toolkit, Copyright 2001-2011 Novartis
+// Pharma AG, BSD-3-Clause license; see THIRD_PARTY_NOTICES.md.
 //! Ring perception of the Avalon toolkit, ported operation for operation.
 //!
 //! Sources (Avalon Cheminformatics Toolkit, `AvalonToolkit_2.0.5-pre.3`,
@@ -171,9 +173,7 @@ pub(crate) fn ring_list(bonds: &[[u32; 2]]) -> Vec<RingNode> {
             tree_link[at2] = b as i32;
             while tmp_link != UNLINKED {
                 at2 = other(tmp_link as usize, at2);
-                let new_link = tmp_link;
-                tmp_link = tree_link[at2];
-                tree_link[at2] = new_link;
+                std::mem::swap(&mut tmp_link, &mut tree_link[at2]);
             }
         } else {
             let mut level1 = 0;

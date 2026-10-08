@@ -1244,24 +1244,29 @@ class pyAvalonTools:
     """Mirrors ``rdkit.Avalon.pyAvalonTools``."""
 
     @staticmethod
-    def GetAvalonFP(mol: Mol, nBits: int = 512, **kwargs) -> "ExplicitBitVect":
-        """Return an Avalon-style structural fingerprint as ExplicitBitVect.
+    def GetAvalonFP(
+        mol: Mol,
+        nBits: int = 512,
+        isQuery: bool = False,
+        resetVect: bool = False,
+        bitFlags: int = 15761407,
+    ) -> "ExplicitBitVect":
+        """Return RDKit's Avalon fingerprint as ExplicitBitVect.
 
-        .. note::
-           Bit patterns differ from RDKit's Avalon fingerprint (chematic uses
-           a broad atom/bond/ring/path feature mix hashed with FNV-1a; RDKit
-           uses its own C++ Avalon toolkit implementation). Use for
-           similarity ranking, not cross-library bit-level comparison.
+        Bit-identical to ``rdkit.Avalon.pyAvalonTools.GetAvalonFP`` for the
+        default ``bitFlags`` with ``isQuery=False`` (see
+        :meth:`chematic.Mol.rdkit_avalon_fp`). As in RDKit, when ``nBits`` is
+        not a multiple of 8 only the first ``nBits // 8`` bytes carry bits.
         """
-        if kwargs:
-            raise TypeError(f"Unsupported keyword arguments: {sorted(kwargs)}")
+        if isQuery or bitFlags != 15761407:
+            raise NotImplementedError(
+                "only the default bitFlags with isQuery=False are supported"
+            )
         if nBits <= 0:
             raise ValueError(f"nBits must be positive, got {nBits}")
-        raw = bytes(mol._mol.avalon_fp())
-        if nBits == 2048:
-            return ExplicitBitVect._from_bytes(raw, 2048)
-        # ponytail: modulo fold of the internal 2048-bit fp; not RDKit bit-exact
-        return _fold_bits(raw, nBits)
+        raw = bytes(mol._mol.rdkit_avalon_fp(nBits))
+        raw += bytes((nBits + 7) // 8 - len(raw))
+        return ExplicitBitVect._from_bytes(raw, nBits)
 
 
 # ---------------------------------------------------------------------------
