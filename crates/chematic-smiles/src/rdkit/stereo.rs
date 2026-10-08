@@ -287,7 +287,7 @@ fn iterate_cip_ranks(mol: &Mol, invars: &[i64], ranks: &mut Vec<u32>, seed_with_
     let mut sorted: Vec<usize> = (0..n).collect();
     sorted.sort_by(|&x, &y| cip[x].cmp(&cip[y]));
     let mut curr_rank = vec![0u32; n];
-    let (mut needs_sorting, mut num_ranks) = find_segments_to_resort(&sorted, &cip, &mut curr_rank);
+    let (mut needs_sorting, mut num_ranks) = find_segments_to_resort(&sorted, cip, &mut curr_rank);
     ranks.copy_from_slice(&curr_rank);
     for i in 0..n {
         if seed_with_invars {
@@ -341,7 +341,7 @@ fn iterate_cip_ranks(mol: &Mol, invars: &[i64], ranks: &mut Vec<u32>, seed_with_
         for &(first, last) in &needs_sorting {
             sorted[first..=last].sort_by(|&x, &y| cip[x].cmp(&cip[y]));
         }
-        let (ns, nr) = find_segments_to_resort(&sorted, &cip, &mut curr_rank);
+        let (ns, nr) = find_segments_to_resort(&sorted, cip, &mut curr_rank);
         needs_sorting = ns;
         num_ranks = nr;
         ranks.copy_from_slice(&curr_rank);

@@ -126,7 +126,7 @@ enum Functor {
 
 /// RDKit `countSwapsToInterconvert(ref, probe)`.
 fn count_swaps(reference: &[u32], probe: &[u32]) -> usize {
-    let mut probe = probe.to_vec();
+    let mut probe: SmallVec<[u32; 4]> = SmallVec::from_slice(probe);
     let mut n = 0;
     for i in 0..reference.len().min(probe.len()) {
         if probe[i] != reference[i]
@@ -150,6 +150,7 @@ impl Ranker<'_> {
             .collect();
         // `isRingStereoAtom` / `hasRingNbr` (`advancedInitCanonAtom`).
         for (i, atom) in atoms.iter_mut().enumerate() {
+            atom.bonds.reserve_exact(inp.nbrs[i].len());
             atom.is_ring_stereo = inp.ring_stereo[i];
             atom.has_ring_nbr = inp.nbrs[i].iter().any(|&nb| inp.ring_stereo[nb as usize]);
         }
@@ -324,7 +325,7 @@ impl Ranker<'_> {
     }
 
     fn chiral_rank(&self, i: usize) -> u32 {
-        let mut perm: Vec<u32> = Vec::with_capacity(4);
+        let mut perm: SmallVec<[u32; 4]> = SmallVec::new();
         for &x in &self.inp.nbrs[i] {
             let r = self.atoms[x as usize].index;
             if perm.contains(&r) {
