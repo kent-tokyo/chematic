@@ -1,10 +1,44 @@
-# Legacy direct-comparison smoke harness
+# chematic / COSMolKit / RDKit comparison
 
-This retained harness defines a small public smoke corpus and a common JSONL
-result contract for chematic, RDKit, and optional external adapters. It
-deliberately reports parse failures and unsupported operations separately from
-value mismatches. COSMolKit is not part of the active roadmap; its name remains
-in the directory path only for compatibility with existing scripts and evidence.
+COSMolKit is an explicit comparison target. This directory holds two harnesses:
+
+* **Corpus-scale comparison** (`run_corpus.py`, `compare_corpus.py`,
+  `bench_corpus.py`, engine adapters in `corpus_engines.py`). Each engine
+  dumps every operation for every row of a SMILES corpus; the dumps are
+  scored against a reference engine (RDKit), and the same operations are
+  timed in separate interpreters with rotating order.
+* **Smoke harness** (below): a ten-row public corpus and a common JSONL
+  contract for adapter validation.
+
+## Corpus-scale comparison
+
+Install each engine in a Python that also has RDKit (round-trip operations
+read engine output back with RDKit), then from this directory:
+
+```bash
+python run_corpus.py --engine rdkit     --corpus ../../scripts/chembl_accuracy_corpus_4999.smi --output rdkit.jsonl
+python run_corpus.py --engine cosmolkit --corpus ../../scripts/chembl_accuracy_corpus_4999.smi --output cosmolkit.jsonl
+python run_corpus.py --engine chematic  --corpus ../../scripts/chembl_accuracy_corpus_4999.smi --output chematic.jsonl
+python compare_corpus.py --reference rdkit=rdkit.jsonl \
+    --engine cosmolkit=cosmolkit.jsonl --engine chematic=chematic.jsonl --output summary.json
+python bench_corpus.py --corpus ../../scripts/chembl_accuracy_corpus_4999.smi --blocks 5 --output bench.json
+```
+
+Rules: a cell is a `match` only when the value equals the reference exactly
+(floats bit for bit; `match_1e-9` is reported separately). Typed refusals,
+unsupported operations and errors are counted on their own and never as
+matches. Round-trip operations (`*_rt`) are judged against the input
+molecule, not against the reference engine's own writer, so RDKit's writer
+is scored too. `API_NOTES` in `corpus_engines.py` names the API each
+operation uses; where chematic has a native and an RDKit-compatible API the
+RDKit-compatible one is used. `check_rdkit_smiles.py` and
+`check_rdkit_avalon.py` are focused checks for the RDKit-compatible
+canonical SMILES writer and Avalon fingerprint.
+
+The October 8, 2026 results are recorded in
+[benchmarks/2026-10-08-cosmolkit-parity.md](../../benchmarks/2026-10-08-cosmolkit-parity.md).
+
+## Smoke harness
 
 Run the two currently available engines from the repository root:
 
@@ -35,9 +69,10 @@ The `rdkit_morgan_bits` operation uses chematic's promoted RDKit-exact Morgan
 API when available; older installed chematic versions report it as
 `unsupported` instead of silently substituting native ECFP4.
 
-No COSMolKit runner is bundled or planned. Any independently maintained
-external adapter must emit the same schema and identify unsupported operations
-as `unsupported`, never as a passing value.
+The corpus-scale harness above includes a COSMolKit adapter
+(`corpus_engines.py`). Any other external adapter must emit the same schema
+and identify unsupported operations as `unsupported`, never as a passing
+value.
 
 An external adapter can be plugged in without changing the harness:
 
