@@ -439,3 +439,20 @@ fn mol_block_2d_writes_v3000_for_dative_bonds() {
                 M  V30 3 9 3 4\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n";
     assert_eq!(block, want);
 }
+
+#[test]
+fn allene_chirality_is_read_and_dropped() {
+    // Chem.MolToSmiles(Chem.MolFromSmiles(s)), RDKit 2026.03.1.
+    for (s, want) in [
+        ("OC=[C@AL1]=CC", "CC=C=CO"),
+        ("OC=[C@AL2]=CC", "CC=C=CO"),
+        ("OC=[C@AL]=CC", "CC=C=CO"),
+        ("C[C@AL1](F)Cl", "C[C](F)Cl"),
+        ("[C@AL1H2]", "[CH2]"),
+    ] {
+        assert_eq!(rd(s).unwrap(), want, "input {s}");
+    }
+    for s in ["OC=[C@AL0]=CC", "[C@AL3]", "C[C@@AL1H](F)Cl", "[CH2@AL1]"] {
+        assert!(crate::parse(s).is_err(), "input {s}");
+    }
+}

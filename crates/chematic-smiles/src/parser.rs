@@ -966,12 +966,14 @@ impl<'a> Parser<'a> {
             // "missing ']'" a few characters later.
             // RDKit's grammar: a class without a number is permutation 0
             // (kept as "unknown"), an explicit 0 is an error; `@TH1`/`@TH`
-            // are `@`, `@TH2` is `@@`.
+            // are `@`, `@TH2` is `@@`. Allene classes (`@AL`, `@AL1`,
+            // `@AL2`) are read and dropped, as RDKit does.
             let number = self.parse_leading_digits_u16();
             let digits = number.unwrap_or(0);
             return match (class, number) {
                 ("TH", None | Some(1)) => Ok(Chirality::CounterClockwise),
                 ("TH", Some(2)) => Ok(Chirality::Clockwise),
+                ("AL", None | Some(1) | Some(2)) => Ok(Chirality::None),
                 ("SP", None) => Ok(Chirality::SquarePlanarUnnumbered),
                 ("SP", Some(1)) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP1)),
                 ("SP", Some(2)) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP2)),
