@@ -58,6 +58,22 @@ class Mol:
         molecules RDKit's sanitization rejects; never returns a wrong string."""
         ...
 
+    def rdkit_smiles_with(
+        self,
+        *,
+        isomeric: bool = True,
+        kekule: bool = False,
+        canonical: bool = True,
+        all_bonds_explicit: bool = False,
+        all_hs_explicit: bool = False,
+        rooted_at_atom: int | None = None,
+    ) -> str:
+        """``Chem.MolToSmiles`` (RDKit 2026.03.1) with ``isomericSmiles``,
+        ``kekuleSmiles``, ``canonical``, ``allBondsExplicit``,
+        ``allHsExplicit`` and ``rootedAtAtom``. Raises ``ValueError`` like
+        :attr:`rdkit_smiles`."""
+        ...
+
     def smiles_with_atom_order(self) -> tuple[str, list[int]]:
         """Canonical SMILES and ``order``: ``order[k]`` is the index of the
         ``k``-th atom written (its index after re-parsing the string)."""

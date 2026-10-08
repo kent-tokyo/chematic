@@ -198,3 +198,75 @@ fn long_chain() {
     let chain = "C".repeat(2000);
     assert_eq!(rd(&chain).as_deref(), Ok(chain.as_str()));
 }
+
+#[test]
+fn writer_options_match_rdkit() {
+    use super::{RdkitSmilesParams, rdkit_smiles};
+    let d = RdkitSmilesParams::default();
+    let cases: [(&str, RdkitSmilesParams, &str); 7] = [
+        (
+            "c1ccccc1O",
+            RdkitSmilesParams { kekule: true, ..d },
+            "OC1=CC=CC=C1",
+        ),
+        (
+            "F/C=C/[C@H](N)C",
+            RdkitSmilesParams {
+                isomeric: false,
+                ..d
+            },
+            "CC(N)C=CF",
+        ),
+        (
+            "c1ccccc1[13CH2]O",
+            RdkitSmilesParams {
+                all_bonds_explicit: true,
+                all_hs_explicit: true,
+                ..d
+            },
+            "[OH]-[13CH2]-[c]1:[cH]:[cH]:[cH]:[cH]:[cH]:1",
+        ),
+        (
+            "OCC.[Na+]",
+            RdkitSmilesParams {
+                canonical: false,
+                ..d
+            },
+            "OCC.[Na+]",
+        ),
+        (
+            "OCC(=O)N",
+            RdkitSmilesParams {
+                rooted_at_atom: Some(3),
+                ..d
+            },
+            "O=C(N)CO",
+        ),
+        (
+            "F/C=C/[C@H](N)C",
+            RdkitSmilesParams {
+                isomeric: false,
+                all_bonds_explicit: true,
+                ..d
+            },
+            "C-C(-N)/C=C/F",
+        ),
+        (
+            "c1ccc[nH]1",
+            RdkitSmilesParams {
+                kekule: true,
+                all_hs_explicit: true,
+                ..d
+            },
+            "[CH]1=[CH][NH][CH]=[CH]1",
+        ),
+    ];
+    for (input, params, want) in cases {
+        let mol = crate::parse(input).expect("parses");
+        assert_eq!(
+            rdkit_smiles(&mol, &params).as_deref(),
+            Ok(want),
+            "{input} {params:?}"
+        );
+    }
+}
