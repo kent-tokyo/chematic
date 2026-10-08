@@ -437,6 +437,21 @@ pub static MMFF94_STBN: &[(u8, u8, u8, u8, f64, f64)] = &[
 /// an aryl amide carbonyl `(7, 3, 10, 37)` took 0.130 instead of RDKit's
 /// level-3 row `(2, 3, 7, 10)` = 0.116 (#637).
 pub fn mmff94_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
+    mmff_oop_in(MMFF94_OOP, type_j, type_i, type_k, type_l)
+}
+
+/// [`mmff94_oop`] against the MMFF94s out-of-plane table.
+pub fn mmff94s_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
+    mmff_oop_in(super::mmff94s::MMFF94S_OOP, type_j, type_i, type_k, type_l)
+}
+
+fn mmff_oop_in(
+    table: &[(u8, u8, u8, u8, f64)],
+    type_j: u8,
+    type_i: u8,
+    type_k: u8,
+    type_l: u8,
+) -> Option<f64> {
     use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
     let level = |t: u8, stage: usize| {
         mmff94_numeric_type_info(t)
@@ -445,7 +460,7 @@ pub fn mmff94_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64>
     };
     let lookup = |mut outer: [u8; 3]| {
         outer.sort_unstable();
-        search_oop(type_j, outer[0], outer[1], outer[2])
+        search_oop(table, type_j, outer[0], outer[1], outer[2])
     };
     lookup([type_i, type_k, type_l]).or_else(|| {
         (0..4).find_map(|stage| {
@@ -458,13 +473,19 @@ pub fn mmff94_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64>
     })
 }
 
-fn search_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
-    MMFF94_OOP
+fn search_oop(
+    table: &[(u8, u8, u8, u8, f64)],
+    type_j: u8,
+    type_i: u8,
+    type_k: u8,
+    type_l: u8,
+) -> Option<f64> {
+    table
         .binary_search_by_key(&(type_i, type_j, type_k, type_l), |&(i, j, k, l, _)| {
             (i, j, k, l)
         })
         .ok()
-        .map(|idx| MMFF94_OOP[idx].4)
+        .map(|idx| table[idx].4)
 }
 
 /// Look up Stretch-Bend parameters for angle i-j-k by MMFF *type* alone —

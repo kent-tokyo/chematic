@@ -431,6 +431,14 @@ export class MolHandle {
      */
     randic_index(): number;
     /**
+     * Canonical SMILES exactly as RDKit 2026.03.1 writes it
+     * (`Chem.MolToSmiles(Chem.MolFromSmiles(s))` for a molecule parsed
+     * from the SMILES `s`). Throws instead of returning a string for
+     * inputs the RDKit port does not model or that RDKit's sanitization
+     * rejects; `canonical_smiles` is unchanged.
+     */
+    rdkit_smiles(): string;
+    /**
      * Returns `true` if the molecule passes the REOS (Rapid Elimination Of Swill) filter.
      */
     reos_passes(): boolean;
@@ -3321,6 +3329,7 @@ export interface InitOutput {
     readonly molhandle_potential_stereocenter_indices: (a: number) => [number, number];
     readonly molhandle_qed: (a: number) => number;
     readonly molhandle_randic_index: (a: number) => number;
+    readonly molhandle_rdkit_smiles: (a: number) => [number, number, number, number];
     readonly molhandle_reos_passes: (a: number) => number;
     readonly molhandle_ring_count: (a: number) => number;
     readonly molhandle_rotatable_bond_count: (a: number) => number;

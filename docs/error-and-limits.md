@@ -192,6 +192,39 @@ and WASM/Node. Failures contain stable `error.code`, `error.path`, and
 `error.message` fields; callers never need to match display text. Its default
 limits are documented in [Semantic model API](semantic-model.md).
 
+### Abstention matrix (audited 2026-10-08)
+
+`scripts/typed_abstention_audit.py` and `scripts/typed_abstention_audit.mjs`
+run one probe per operation family and abstention category on the Python
+binding and the WASM package
+(`validation/results/typed-abstention-audit-*-2026-10-08.json`):
+
+| Family | Category probed | Python | WASM / Node |
+|---|---|---|---|
+| SMILES, SMARTS, MOL block, InChI parse | malformed | `ChematicInputError(ValueError)`: `category`, `code` (`smiles_parse`, …), `format` | thrown string (not an `Error`), message only |
+| mmCIF parse past `max_input_bytes` | resource_limit | `ChematicInputError`: `category="resource_limit"`, `code="input_too_large"` | thrown string, message only |
+| SMIRKS (`run_smirks_checked` / `run_reactants_checked`) | malformed, unsupported | envelope `status: typed_refusal`, `reason` (`smirks_parse`, `reactant_count_mismatch`) | same envelope |
+| 3D pipeline v2 | unsupported (Pt complex, no MMFF94 type) | `PipelineV2Error(ValueError)` with `diagnostics.cause.kind` | envelope `ok: false`, `error.cause.kind` |
+| Nucleic-acid document | ambiguous, unsupported, resource_limit | envelope `ok: false`, `error.code`, `error.path` | same envelope |
+
+A SMILES whose graph gives a neutral oxygen more than two bonds or a neutral
+fluorine more than one (`O=O1C=CC=C1`, `CO(C)C`, `F(C)C`; #769) is not a
+molecule: the Rust parser returns `SmilesError::InvalidValence { element,
+atom, valence, max }` and Python raises `ChematicInputError` with
+`code="smiles_valence"`. The valence counts bond orders and explicit
+hydrogens (an aromatic bond counts one, a dative bond only at its acceptor).
+Charged atoms (`[O+]`, `[o+]`) and the hypervalent states of S, P, N and the
+heavier halogens are not checked.
+
+So the reaction, 3D and nucleic-acid APIs report a stable machine-readable
+kind in both bindings. In Python, the parsers raise `ChematicInputError`, a
+`ValueError` subclass (`except ValueError` keeps working) whose `category`
+is one of `malformed`, `unsupported`, `ambiguous` and `resource_limit`, with
+a stable `code` and the `format`. The WASM parsers still throw strings:
+thrown `Error` objects with the same fields would change what code that
+compares the thrown value with a string sees, so that change is left for a
+release that may change the error surface.
+
 ---
 
 ## Fail-closed writers

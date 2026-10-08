@@ -33,7 +33,9 @@ The optional `native-inchi` feature is the sole C FFI boundary. Its unsafe
 calls are confined to `chematic-inchi/src/native`, use fixed `repr(C)` layouts,
 validate non-empty input and signed count ranges before crossing the boundary,
 and release every library-owned output through `FreeStdINCHI`. The default
-pure-Rust and WASM paths do not enable this feature.
+pure-Rust crates and the WASM build do not enable this feature; the published
+Python wheels do (`[tool.maturin] features` in `crates/chematic-py/pyproject.toml`),
+so that `standard_inchi` returns IUPAC InChI instead of an error.
 
 ## Verification performed for this baseline
 

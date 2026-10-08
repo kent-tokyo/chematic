@@ -308,12 +308,24 @@ fn qed_acceptor_count(view: &Molecule) -> usize {
 fn qed_aromatic_ring_count(view: &Molecule) -> usize {
     let n = view.atom_count();
     let ring_atom = chematic_perception::ring_atom_flags(view);
+    // `[A;R][!a]` joins the two atoms with SMARTS's default bond, which is
+    // single or aromatic: a ring carbonyl carbon between two aromatic atoms
+    // (fluorenone, anthraquinone) is not deleted for its `=O`.
     let deleted: Vec<bool> = (0..n)
         .map(|i| {
             let idx = AtomIdx(i as u32);
             ring_atom[i]
                 && !view.atom(idx).aromatic
-                && view.neighbors(idx).any(|(nb, _)| !view.atom(nb).aromatic)
+                && view.neighbors(idx).any(|(nb, bi)| {
+                    !view.atom(nb).aromatic
+                        && matches!(
+                            view.bond(bi).order,
+                            BondOrder::Single
+                                | BondOrder::Up
+                                | BondOrder::Down
+                                | BondOrder::Aromatic
+                        )
+                })
         })
         .collect();
     let mut parent: Vec<usize> = (0..n).collect();
@@ -362,14 +374,35 @@ fn qed_properties(mol: &Molecule) -> [f64; 8] {
     })
 }
 
+/// CPython's built-in `sum()` over floats (3.12 and later): Neumaier's
+/// compensated summation. RDKit's QED reduces with `sum()`, so a naive sum
+/// differs from it in the last bits.
+fn python_float_sum(values: impl IntoIterator<Item = f64>) -> f64 {
+    let (mut sum, mut c) = (0.0_f64, 0.0_f64);
+    for x in values {
+        let t = sum + x;
+        if sum.abs() >= x.abs() {
+            c += (sum - t) + x;
+        } else {
+            c += (x - t) + sum;
+        }
+        sum = t;
+    }
+    if c != 0.0 && c.is_finite() {
+        sum + c
+    } else {
+        sum
+    }
+}
+
 fn qed_compute(props: [f64; 8]) -> f64 {
-    let mut t = 0.0_f64;
-    for (i, &pi) in props.iter().enumerate() {
+    // Same operations as RDKit's QED.qed: `sum(w * log(d))`, `exp(t / sum(w))`.
+    let t = python_float_sum(props.iter().enumerate().map(|(i, &pi)| {
         let (a, b, c, d, e, f, dmax) = ADS_PARAMS[i];
         let d_i = ads(pi, a, b, c, d, e, f, dmax).max(1e-10);
-        t += WEIGHTS_MEAN[i] * d_i.ln();
-    }
-    let w_sum: f64 = WEIGHTS_MEAN.iter().sum();
+        WEIGHTS_MEAN[i] * d_i.ln()
+    }));
+    let w_sum = python_float_sum(WEIGHTS_MEAN);
     (t / w_sum).exp()
 }
 

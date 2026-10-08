@@ -912,6 +912,7 @@ fn read_mol_internal(
         detail: d,
     };
 
+    let mut valence_fields: Vec<(AtomIdx, u8)> = Vec::new();
     for atom_i in 0..natoms {
         let (raw_lineno, atom_line) = next_line()?;
 
@@ -1041,10 +1042,22 @@ fn read_mol_internal(
             .and_then(|value| u16::try_from(value).ok())
             .filter(|&value| value != 0);
 
+        // Valence field (vvv, columns 48-50): the atom's total valence, 15
+        // meaning zero. Writers (RDKit, chematic) set it when the bonds alone
+        // would give the atom a different hydrogen count.
+        let valence_field = atom_line
+            .get(48..51)
+            .and_then(parse_unsigned_ascii)
+            .filter(|&v| v != 0 && v <= 15)
+            .map(|v| if v == 15 { 0u8 } else { v as u8 });
+
         atom.charge = charge;
         atom.isotope = isotope;
         atom.atom_map = atom_map;
         let idx = builder.add_atom(atom);
+        if let Some(valence) = valence_field {
+            valence_fields.push((idx, valence));
+        }
         if let Some(label) = r_group {
             builder.set_r_group(idx, label);
         }
@@ -1236,6 +1249,17 @@ fn read_mol_internal(
     flag_aromatic_bond_atoms(&mut mol);
     for (atom, charge) in property_charges {
         mol.set_charge(atom, charge);
+    }
+    // A valence field fixes the atom's hydrogens (as RDKit reads it); skipped
+    // on aromatic-bond atoms, whose integer valence the bonds do not give.
+    for (idx, valence) in valence_fields {
+        let aromatic_bond = mol
+            .neighbors(idx)
+            .any(|(_, b)| mol.bond(b).order == BondOrder::Aromatic);
+        let bonds = chematic_core::valence::bond_order_sum(&mol, idx);
+        if !aromatic_bond && valence >= bonds {
+            mol.set_hydrogen_count(idx, Some(valence - bonds));
+        }
     }
     for (atom, label) in property_rgroups {
         mol.set_r_group(atom, label);
@@ -1611,7 +1635,7 @@ pub fn write_mol_with_coords_into(
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
 ) {
-    write_v2000_reporting(out, mol, metadata, coords);
+    write_v2000_reporting(out, mol, metadata, coords, &[]);
 }
 
 /// [`write_mol_with_coords`] that also reports the stereo the block does not
@@ -1630,7 +1654,7 @@ pub fn write_mol_with_stereo_report(
     coords: &[(f64, f64)],
 ) -> (String, MolStereoLoss) {
     let mut out = String::new();
-    let loss = write_v2000_reporting(&mut out, mol, metadata, coords);
+    let loss = write_v2000_reporting(&mut out, mol, metadata, coords, &[]);
     (out, loss)
 }
 
@@ -1733,11 +1757,87 @@ impl core::fmt::Display for MolStereoLoss {
     }
 }
 
+/// [`write_mol_with_stereo_report`] on chematic's own layout (the stereo
+/// depiction when the molecule has stereo, the plain layout otherwise), as
+/// the Python and WASM `to_mol_block` write it.
+///
+/// A layout draws every double bond cis or trans, and readers take drawn
+/// geometry as E/Z. Double bonds that could carry E/Z but have none
+/// declared are therefore written "either" (stereo 3), so the block never
+/// gains a configuration the molecule does not have. Caller-supplied
+/// coordinates ([`write_mol_with_coords`]) are data and stay unmarked.
+///
+/// ```
+/// let mol = chematic_smiles::parse("CC=CC").unwrap();
+/// let (block, loss) = chematic_mol::write_laid_out_mol(&mol, &Default::default());
+/// assert!(loss.is_empty());
+/// assert!(block.contains("  2  3  2  3\n"));
+/// ```
+pub fn write_laid_out_mol(mol: &Molecule, metadata: &MolMetadata) -> (String, MolStereoLoss) {
+    let mut out = String::new();
+    let loss = write_laid_out_mol_into(&mut out, mol, metadata);
+    (out, loss)
+}
+
+/// [`write_laid_out_mol`] into a reusable buffer (cleared first).
+#[doc(hidden)]
+pub fn write_laid_out_mol_into(
+    out: &mut String,
+    mol: &Molecule,
+    metadata: &MolMetadata,
+) -> MolStereoLoss {
+    let coords = crate::stereo_depiction::mol_block_coords(mol);
+    let either = if crate::stereo_depiction::needs_stereo_depiction(mol) {
+        // The stereo depiction marks its own unspecified double bonds.
+        Vec::new()
+    } else {
+        crate::stereo_depiction::undeclared_stereo_double_bonds(mol)
+    };
+    write_v2000_reporting(out, mol, metadata, &coords, &either)
+}
+
+/// An SDF record written as [`write_laid_out_mol`] writes its MOL block.
+pub fn write_laid_out_sdf_record_into(
+    out: &mut String,
+    mol: &Molecule,
+    meta: &MolMetadata,
+    props: &std::collections::HashMap<String, String>,
+) {
+    write_laid_out_mol_into(out, mol, meta);
+    append_sd_fields_and_delimiter(out, props);
+}
+
+/// The V2000 valence field (vvv) for atom `idx`: 0 (unset) when a reader
+/// infers the atom's hydrogens from its bonds, otherwise the total valence
+/// (15 for zero), so `[I]`, `[S](=O)=O` or `[SH2]` keep their hydrogen
+/// count (they used to read back as `[IH]`, `[SH]`, ...).
+fn valence_field(mol: &Molecule, idx: AtomIdx, atom: &Atom) -> u8 {
+    let Some(h) = atom.hydrogen_count else {
+        return 0;
+    };
+    if atom.wildcard
+        || chematic_core::valence::valence_inferred_hcount(mol, idx) == h
+        || mol
+            .neighbors(idx)
+            .any(|(_, b)| mol.bond(b).order == BondOrder::Aromatic)
+    {
+        return 0;
+    }
+    match chematic_core::valence::bond_order_sum(mol, idx).saturating_add(h) {
+        0 => 15,
+        v if v < 15 => v,
+        _ => 0,
+    }
+}
+
+/// `either`: double bonds written with stereo 3 when there is no stereo
+/// depiction (see [`write_laid_out_mol`]).
 fn write_v2000_reporting(
     out: &mut String,
     mol: &Molecule,
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
+    either: &[chematic_core::BondIdx],
 ) -> MolStereoLoss {
     // A MOL block is dominated by fixed-width atom and bond rows.  Reserve
     // the common-size output up front so serialization does not repeatedly
@@ -1772,6 +1872,7 @@ fn write_v2000_reporting(
         let charge_code = encode_charge(atom.charge);
         let mass_difference = encode_mass_difference(atom.element, atom.isotope).unwrap_or(0);
         let atom_map = atom.atom_map.unwrap_or(0);
+        let valence = valence_field(mol, idx, atom);
         if let Some(&(x, y)) = coords.get(idx.0 as usize) {
             push_fixed4(out, x, 10);
             push_fixed4(out, y, 10);
@@ -1784,7 +1885,9 @@ fn write_v2000_reporting(
             }
             push_right_aligned_i16(out, mass_difference, 2);
             push_right_aligned_u32(out, charge_code as u32, 3);
-            out.push_str("  0  0  0  0  0  0  0");
+            out.push_str("  0  0  0");
+            push_right_aligned_u32(out, u32::from(valence), 3);
+            out.push_str("  0  0  0");
             push_right_aligned_u32(out, atom_map as u32, 3);
             out.push_str("  0\n");
         } else {
@@ -1802,7 +1905,9 @@ fn write_v2000_reporting(
                 push_right_aligned_i16(out, mass_difference, 2);
                 push_right_aligned_u32(out, charge_code as u32, 3);
             }
-            out.push_str("  0  0  0  0  0  0  0");
+            out.push_str("  0  0  0");
+            push_right_aligned_u32(out, u32::from(valence), 3);
+            out.push_str("  0  0  0");
             push_right_aligned_u32(out, atom_map as u32, 3);
             out.push_str("  0\n");
         }
@@ -1858,6 +1963,7 @@ fn write_v2000_reporting(
                 match bond.order {
                     BondOrder::Up => 1,
                     BondOrder::Down => 6,
+                    _ if either.contains(&bond_idx) => 3,
                     _ => 0,
                 },
             ),
@@ -2987,6 +3093,35 @@ M  END
             .with_comment("test molecule");
         assert_eq!(meta.name, "aspirin");
         assert_eq!(meta.comment, "test molecule");
+    }
+
+    #[test]
+    fn valence_field_keeps_hydrogen_counts_bonds_do_not_give() {
+        // Bracket atoms whose hydrogens a reader cannot infer from the bonds
+        // (hypervalent iodine, a sulfonyl radical, a carbene) carry the V2000
+        // valence field; 7 exposed-10k rows read back with an added H.
+        for smi in [
+            "Cl[I]Cl",
+            "c1ccc(cc1)[I]c1ccccc1",
+            "CNC[S](=O)=O",
+            "C[CH]C",
+            "[CH2]",
+        ] {
+            let mol = chematic_smiles::parse(smi).unwrap();
+            let (block, _) = write_laid_out_mol(&mol, &MolMetadata::default());
+            let back = read_mol_with_diagnostics(&block).unwrap().mol;
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&back),
+                chematic_smiles::canonical_smiles(&mol),
+                "{smi}\n{block}"
+            );
+        }
+        // Atoms whose hydrogens the bonds give leave the field at 0.
+        let mol = chematic_smiles::parse("OCC[NH3+]").unwrap();
+        let block = write_mol(&mol, &MolMetadata::default());
+        for line in block.lines().skip(4).take(mol.atom_count()) {
+            assert_eq!(line.get(48..51), Some("  0"), "{block}");
+        }
     }
 
     #[test]

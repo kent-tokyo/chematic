@@ -116,7 +116,7 @@ fn row(case: &Value) -> Result<Value, Box<dyn std::error::Error>> {
 }
 
 /// The published crate version pinned in Cargo.toml.
-const CHEMATIC_VERSION: &str = "1.0.36";
+const CHEMATIC_VERSION: &str = "1.0.37";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().collect();

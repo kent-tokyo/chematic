@@ -265,6 +265,17 @@ fn compute_ring_info(mol: &Molecule) -> RingInfo {
 /// See the module doc comment for the full algorithm and its verification
 /// status.
 pub fn rdkit_layered_fp(mol: &Molecule) -> BitVec2048 {
+    // RDKit fingerprints its sanitized graph: perchlorate as
+    // `[Cl+3]([O-])3O`, organometallic dative bonds
+    // ([`chematic_perception::rdkit_sanitize_cleanup`]).
+    if let Some(cleaned) = chematic_perception::rdkit_sanitize_cleanup(mol) {
+        return rdkit_layered_fp_input(&cleaned);
+    }
+    rdkit_layered_fp_input(mol)
+}
+
+/// [`rdkit_layered_fp`] on the graph RDKit sees.
+fn rdkit_layered_fp_input(mol: &Molecule) -> BitVec2048 {
     let mut fp = BitVec2048::new();
     if mol.atom_count() == 0 {
         return fp;

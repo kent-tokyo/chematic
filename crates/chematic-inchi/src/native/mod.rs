@@ -62,6 +62,89 @@ impl std::fmt::Display for InchiError {
 
 impl std::error::Error for InchiError {}
 
+/// The molecule RDKit 2026.03.1's `Chem.MolFromInchi(inchi)` builds before
+/// its `removeHs`, sanitization and stereo perception: the IUPAC library's
+/// `GetStructFromINCHI` output post-processed as RDKit's `InchiToMol` does
+/// (see `chematic_smiles::rdkit_molecule_from_inchi_output`).
+/// `chematic_smiles::rdkit_canonical_smiles` on the result gives
+/// `Chem.MolToSmiles(Chem.MolFromInchi(inchi))`.
+pub fn rdkit_mol_from_inchi(inchi: &str) -> Result<Molecule, InchiError> {
+    let c_inchi = CString::new(inchi).map_err(|e| InchiError::InvalidInput(e.to_string()))?;
+    let mut inchi_buf = c_inchi.into_bytes_with_nul();
+    let mut options = [0 as c_char];
+    let mut input = ffi::InchiInputInchi {
+        sz_inchi: inchi_buf.as_mut_ptr() as *mut c_char,
+        sz_options: options.as_mut_ptr(),
+    };
+    // SAFETY: all-zero is the documented initial state of the output struct.
+    let mut output: ffi::InchiOutputStruct = unsafe { std::mem::zeroed() };
+    // SAFETY: `input` points to live NUL-terminated buffers for the call;
+    // `output` is freed below with the matching free function.
+    let ret = unsafe { ffi::GetStructFromINCHI(&mut input, &mut output) };
+    let result = if ret == 0 || ret == 1 {
+        let n_atoms = output.num_atoms.max(0) as usize;
+        let n_stereo = output.num_stereo0d.max(0) as usize;
+        // SAFETY: on success the library allocated `num_atoms` atoms and
+        // `num_stereo0D` stereo elements (or null pointers when zero).
+        let atoms: &[ffi::InchiAtom] = if n_atoms == 0 || output.atom.is_null() {
+            &[]
+        } else {
+            unsafe { std::slice::from_raw_parts(output.atom, n_atoms) }
+        };
+        let stereo: &[ffi::InchiStereo0D] = if n_stereo == 0 || output.stereo0d.is_null() {
+            &[]
+        } else {
+            unsafe { std::slice::from_raw_parts(output.stereo0d, n_stereo) }
+        };
+        let out_atoms: Vec<chematic_smiles::InchiOutputAtom> = atoms
+            .iter()
+            .map(|a| {
+                let name: Vec<u8> = a
+                    .elname
+                    .iter()
+                    .take_while(|&&c| c != 0)
+                    .map(|&c| c as u8)
+                    .collect();
+                let nb = a.num_bonds.max(0) as usize;
+                chematic_smiles::InchiOutputAtom {
+                    element: String::from_utf8_lossy(&name).into_owned(),
+                    bonds: (0..nb.min(ffi::MAXVAL))
+                        .map(|k| (a.neighbor[k] as usize, a.bond_type[k], a.bond_stereo[k]))
+                        .collect(),
+                    num_iso_h: a.num_iso_h,
+                    isotopic_mass: a.isotopic_mass,
+                    radical: a.radical,
+                    charge: a.charge,
+                }
+            })
+            .collect();
+        let out_stereo: Vec<chematic_smiles::InchiOutputStereo0D> = stereo
+            .iter()
+            .map(|s| chematic_smiles::InchiOutputStereo0D {
+                neighbor: s.neighbor,
+                central_atom: s.central_atom,
+                stereo_type: s.stereo_type,
+                parity: s.parity,
+            })
+            .collect();
+        chematic_smiles::rdkit_molecule_from_inchi_output(&out_atoms, &out_stereo)
+            .map_err(|e| InchiError::LibError(e.to_string()))
+    } else {
+        let msg = if output.sz_message.is_null() {
+            format!("GetStructFromINCHI returned {ret}")
+        } else {
+            // SAFETY: the library's message is NUL-terminated.
+            unsafe { CStr::from_ptr(output.sz_message) }
+                .to_string_lossy()
+                .into_owned()
+        };
+        Err(InchiError::LibError(msg))
+    };
+    // SAFETY: frees exactly what `GetStructFromINCHI` allocated.
+    unsafe { ffi::FreeStructFromINCHI(&mut output) };
+    result
+}
+
 /// Generate a standard IUPAC InChI string using the vendored InChI C library.
 ///
 /// Layers included: formula, connectivity (/c), hydrogen (/h), charge (/q if non-zero),

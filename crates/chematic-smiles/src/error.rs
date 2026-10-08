@@ -41,6 +41,17 @@ pub enum SmilesError {
     /// implemented. `class` is the tag text without the leading `@` (e.g. `"TB4"`).
     /// Only `@SP1`/`@SP2`/`@SP3` are currently supported, alongside plain `@`/`@@`.
     UnsupportedChiralityClass { class: String, pos: usize },
+    /// A neutral oxygen or fluorine has more bonds (bond orders plus explicit
+    /// hydrogens) than its element permits, e.g. the three-coordinate oxygen
+    /// of `O=O1C=CC=C1` or `CO(C)C` (#769). Charged atoms (`[O+]`, `[o+]`)
+    /// and the hypervalent states of other elements are not checked here.
+    /// `atom` is the zero-based atom index in input order.
+    InvalidValence {
+        element: &'static str,
+        atom: usize,
+        valence: u32,
+        max: u32,
+    },
 }
 
 impl fmt::Display for SmilesError {
@@ -86,6 +97,15 @@ impl fmt::Display for SmilesError {
             Self::UnsupportedChiralityClass { class, pos } => write!(
                 f,
                 "unsupported chirality class '@{class}' at position {pos}: only tetrahedral (@/@@) and square-planar (@SP1/@SP2/@SP3) are currently supported"
+            ),
+            Self::InvalidValence {
+                element,
+                atom,
+                valence,
+                max,
+            } => write!(
+                f,
+                "explicit valence {valence} for neutral {element} atom #{atom} is greater than permitted ({max})"
             ),
         }
     }

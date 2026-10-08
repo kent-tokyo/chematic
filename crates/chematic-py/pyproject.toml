@@ -43,4 +43,8 @@ Documentation = "https://docs.rs/chematic"
 [tool.maturin]
 module-name = "chematic"
 manifest-path = "Cargo.toml"
+# Published wheels carry the IUPAC InChI library (v1.07.5, the version RDKit
+# 2026.03 links), so `Mol.standard_inchi` / `standard_inchikey` work out of
+# the box. The Rust crates and the WASM build stay pure Rust by default.
+features = ["native-inchi"]
 python-source = "python"

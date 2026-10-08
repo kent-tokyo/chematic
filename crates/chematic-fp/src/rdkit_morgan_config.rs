@@ -26,14 +26,16 @@
 //! if unsupported" path -- a caller cannot construct an unverified combination in the
 //! first place, so there is nothing to guess or silently coerce.
 
-use chematic_core::{AtomIdx, BondIdx, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 use rustc_hash::FxHashMap;
 
 use crate::bitvec::BitVecN;
 use crate::rdkit_morgan_ecfp4::{
     RdkitMorganError, reject_known_rdkit_coordination_sanitization_gap,
 };
-use crate::rdkit_morgan_hash::{checked_bond_invariant, expand_one_pass_with_chirality};
+use crate::rdkit_morgan_hash::{
+    MorganChirality, checked_bond_invariant, expand_one_pass_with_chirality,
+};
 
 /// Morgan/ECFP radius, restricted to the four values independently re-verified
 /// against a live RDKit oracle for this API (`validation/ecfp4_rdkit_stable_api_fixtures.json`'s
@@ -93,8 +95,8 @@ impl RdkitMorganFpSize {
 pub struct RdkitMorganConfig {
     pub radius: RdkitMorganRadius,
     pub fp_size: RdkitMorganFpSize,
-    /// Include RDKit-compatible tetrahedral chirality contributions.
-    /// E/Z bond stereo remains outside this first verified increment.
+    /// RDKit's `includeChirality`: tetrahedral centres (RDKit's legacy
+    /// stereo perception and `_CIPCode`) and E/Z double-bond invariants.
     pub include_chirality: bool,
 }
 
@@ -163,7 +165,7 @@ pub fn rdkit_morgan_fingerprint(
 
     let ring_atoms = chematic_perception::ring_atom_flags(aromatized);
     let bond_count = aromatized.bond_count();
-    let mut bond_invariants = Vec::with_capacity(bond_count);
+    let mut bond_invariants: Vec<u32> = Vec::with_capacity(bond_count);
     for b in 0..bond_count {
         let bond_idx = BondIdx(b as u32);
         let order = aromatized.bond(bond_idx).order;
@@ -172,23 +174,51 @@ pub fn rdkit_morgan_fingerprint(
         bond_invariants.push(invariant);
     }
 
-    let cip_codes = if config.include_chirality {
-        let assignment = chematic_cip::assign_cip_accurate_experimental(
-            aromatized,
-            chematic_cip::CipBudget::default_budget(),
-        )
-        .map_err(|e| RdkitMorganError::InternalInvariantViolation {
-            reason: format!("CIP assignment failed for chiral Morgan fingerprint: {e}"),
-        })?;
-        Some(
-            assignment
-                .assignments
-                .into_iter()
-                .filter(|(_, code)| {
-                    matches!(code, chematic_core::CipCode::R | chematic_core::CipCode::S)
+    // `includeChirality`: RDKit reads chiral tags, `_CIPCode` and bond
+    // stereo from its legacy stereo perception (2026.03's default); the
+    // port of it gives them for the molecule as RDKit parses it. Where the
+    // port declines, fall back to chematic's tags and accurate CIP labels.
+    let chirality = if config.include_chirality {
+        match chematic_smiles::rdkit_legacy_stereo(mol) {
+            Ok(stereo) if stereo.atom_tagged.len() == aromatized.atom_count() => {
+                for (b, &st) in stereo.bond_stereo.iter().enumerate() {
+                    // MorganBondInvGenerator: 100 + 10 * bondType + stereo
+                    // for a DOUBLE bond whose stereo is not STEREONONE.
+                    if st != 0 && aromatized.bond(BondIdx(b as u32)).order == BondOrder::Double {
+                        bond_invariants[b] = 100 + 10 * 2 + u32::from(st);
+                    }
+                }
+                Some(MorganChirality {
+                    tagged: stereo.atom_tagged,
+                    code: stereo
+                        .atom_cip
+                        .iter()
+                        .map(|c| match c {
+                            Some(b'R') => 3,
+                            Some(b'S') => 2,
+                            _ => 1,
+                        })
+                        .collect(),
                 })
-                .collect::<rustc_hash::FxHashMap<AtomIdx, chematic_core::CipCode>>(),
-        )
+            }
+            _ => {
+                let assignment = chematic_cip::assign_cip_accurate_experimental(
+                    aromatized,
+                    chematic_cip::CipBudget::default_budget(),
+                )
+                .map_err(|e| RdkitMorganError::InternalInvariantViolation {
+                    reason: format!("CIP assignment failed for chiral Morgan fingerprint: {e}"),
+                })?;
+                let codes = assignment
+                    .assignments
+                    .into_iter()
+                    .filter(|(_, code)| {
+                        matches!(code, chematic_core::CipCode::R | chematic_core::CipCode::S)
+                    })
+                    .collect::<rustc_hash::FxHashMap<AtomIdx, chematic_core::CipCode>>();
+                Some(MorganChirality::from_cip(aromatized, &codes))
+            }
+        }
     } else {
         None
     };
@@ -198,7 +228,7 @@ pub fn rdkit_morgan_fingerprint(
         &bond_invariants,
         config.radius.as_u32(),
         true,
-        cip_codes.as_ref(),
+        chirality.as_ref(),
     );
 
     for ((atom_idx, radius), raw_id) in emitted {
@@ -219,6 +249,33 @@ pub fn rdkit_morgan_fingerprint(
     }
 
     Ok(result)
+}
+
+/// RDKit's `countSimulation` fingerprint for a Morgan generator with
+/// `config` and the default `countBounds` `[1, 2, 4, 8]`: identifiers are
+/// folded to `fp_size / 4` buckets, and bucket `b` with count `c` sets bit
+/// `4 * b + i` for every bound `bounds[i] <= c`.
+pub fn rdkit_morgan_count_simulation(
+    mol: &Molecule,
+    config: &RdkitMorganConfig,
+) -> Result<BitVecN, RdkitMorganError> {
+    const BOUNDS: [u32; 4] = [1, 2, 4, 8];
+    let result = rdkit_morgan_fingerprint(mol, config)?;
+    let fp_size = config.fp_size.bits();
+    let effective = (fp_size / BOUNDS.len()) as u32;
+    let mut counts: FxHashMap<u32, u32> = FxHashMap::default();
+    for (&raw, &count) in &result.sparse_counts {
+        *counts.entry(raw % effective).or_insert(0) += count;
+    }
+    let mut fp = BitVecN::new(fp_size);
+    for (&bucket, &count) in &counts {
+        for (i, &bound) in BOUNDS.iter().enumerate() {
+            if count >= bound {
+                fp.set(bucket as usize * BOUNDS.len() + i);
+            }
+        }
+    }
+    Ok(fp)
 }
 
 #[cfg(test)]
@@ -280,18 +337,16 @@ mod tests {
         }
     }
 
+    /// The RDKit-parity view models `cleanUpOrganometallics` (dative
+    /// `[C-]`→Fe), so this config path agrees with the fixed ECFP4 one.
     #[test]
-    fn measured_feii_coordination_gap_uses_the_shared_typed_refusal() {
+    fn feii_coordination_sanitization_is_modeled() {
         let mol = parse("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10")
             .expect("ferrocene-like SMILES parses");
-        assert!(matches!(
-            rdkit_morgan_fingerprint(&mol, &RdkitMorganConfig::default()),
-            Err(RdkitMorganError::UnsupportedCoordinationSanitization {
-                atomic_number: 26,
-                degree: 10,
-                ..
-            })
-        ));
+        let fp = rdkit_morgan_fingerprint(&mol, &RdkitMorganConfig::default())
+            .expect("modeled sanitization");
+        let ecfp4 = crate::rdkit_morgan_ecfp4::rdkit_morgan_ecfp4_experimental(&mol).unwrap();
+        assert_eq!(fp.sparse_counts, ecfp4.sparse_counts);
     }
 
     #[test]

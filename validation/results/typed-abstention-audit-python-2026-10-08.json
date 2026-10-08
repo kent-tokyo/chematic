@@ -1,0 +1,117 @@
+{
+ "schema": "typed-abstention-audit/v1",
+ "binding": "python",
+ "chematic_version": "1.0.36",
+ "probes": [
+  {
+   "family": "smiles",
+   "category": "malformed",
+   "outcome": "raised",
+   "class": "ChematicInputError",
+   "fields": {
+    "code": "smiles_parse",
+    "category": "malformed"
+   },
+   "message": "mismatched parenthesis at position 5"
+  },
+  {
+   "family": "smarts",
+   "category": "malformed",
+   "outcome": "raised",
+   "class": "ChematicInputError",
+   "fields": {
+    "code": "smarts_parse",
+    "category": "malformed"
+   },
+   "message": "invalid SMARTS '[C;': unexpected end of SMARTS string"
+  },
+  {
+   "family": "mol_block",
+   "category": "malformed",
+   "outcome": "raised",
+   "class": "ChematicInputError",
+   "fields": {
+    "code": "mol_block_parse",
+    "category": "malformed"
+   },
+   "message": "unexpected end of input"
+  },
+  {
+   "family": "inchi",
+   "category": "malformed",
+   "outcome": "raised",
+   "class": "ChematicInputError",
+   "fields": {
+    "code": "inchi_parse",
+    "category": "malformed"
+   },
+   "message": "invalid formula layer"
+  },
+  {
+   "family": "smirks",
+   "category": "malformed",
+   "outcome": "envelope",
+   "fields": {
+    "status": "typed_refusal",
+    "reason": "smirks_parse"
+   }
+  },
+  {
+   "family": "smirks",
+   "category": "unsupported",
+   "outcome": "envelope",
+   "fields": {
+    "status": "typed_refusal",
+    "reason": "reactant_count_mismatch"
+   }
+  },
+  {
+   "family": "3d",
+   "category": "unsupported",
+   "outcome": "raised",
+   "class": "PipelineV2Error",
+   "fields": {
+    "diagnostics.cause": "force_field"
+   },
+   "message": "pipeline_v2 failed at stage ForceFieldMinimization: ForceField(UnsupportedAtomType(\"MMFF94 numeric type error: unsupported element Element(78) at atom 1\"))"
+  },
+  {
+   "family": "nucleic_acid",
+   "category": "ambiguous",
+   "outcome": "envelope",
+   "fields": {
+    "ok": false,
+    "error.code": "ambiguous_atom_mapping"
+   }
+  },
+  {
+   "family": "nucleic_acid",
+   "category": "unsupported",
+   "outcome": "envelope",
+   "fields": {
+    "ok": false,
+    "error.code": "unsupported_linkage_topology"
+   }
+  },
+  {
+   "family": "nucleic_acid",
+   "category": "resource_limit",
+   "outcome": "envelope",
+   "fields": {
+    "ok": false,
+    "error.code": "resource_limit"
+   }
+  },
+  {
+   "family": "mmcif",
+   "category": "resource_limit",
+   "outcome": "raised",
+   "class": "ChematicInputError",
+   "fields": {
+    "code": "input_too_large",
+    "category": "resource_limit"
+   },
+   "message": "mmCIF input exceeds 10-byte limit"
+  }
+ ]
+}

@@ -2,11 +2,17 @@ name: Published wheel chemistry gates
 
 # Runs the #734/#754 chemistry gates (83 reaction fixtures, the 310k SMARTS
 # opt-in profile, CIP / hybridization / MMFF94 / MOL stereo on the exposed 10k
-# and ChEMBL 5k corpora, and the BioTransformer rule corpus) on the published
+# and ChEMBL 5k corpora, the BioTransformer rule corpus, and the 265 A6
+# stereo-safe MMFF94 rows on the independent scorer, #739) on the published
 # PyPI wheels for macOS and Windows, and compares every count with the
 # published Linux numbers in validation/published-wheel-chemistry-gates-expected-v<version>.json.
 # The wheel is downloaded from PyPI as a binary only; a source-build fallback
 # would not be a published-wheel result.
+#
+# Two stages. The macOS and Windows jobs run only chematic's side of every
+# gate (no RDKit: RDKit 2026.03.6 ships no macOS x86-64 wheel) and upload its
+# outputs. A Linux job per platform then compares those outputs with one
+# pinned RDKit 2026.03.6 wheel (SHA-256 checked) and checks the counts.
 
 on:
   workflow_dispatch:
@@ -14,7 +20,7 @@ on:
       version:
         description: Published chematic version to install from PyPI
         required: true
-        default: "1.0.36"
+        default: "1.0.38"
         type: string
       biotransformer_corpus:
         description: Also run the BioTransformer rule corpus (about 15 minutes)
@@ -26,12 +32,12 @@ permissions:
   contents: read
 
 env:
-  BIOTRANSFORMER_REPO: https://github.com/Wishartlab-openscience/Biotransformer.git
-  BIOTRANSFORMER_COMMIT: 7149f7ec
+  RDKIT_WHEEL: rdkit-2026.3.6-cp312-cp312-manylinux_2_28_x86_64.whl
+  RDKIT_WHEEL_SHA256: 9f97b58f1962df73bdacf44347bfa013f4fcb9896e049f98af2183e70e7aab46
 
 jobs:
-  gates:
-    name: ${{ matrix.label }}
+  chematic:
+    name: chematic ${{ matrix.label }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     strategy:
@@ -40,50 +46,112 @@ jobs:
         include:
           - os: macos-15
             label: macos-arm64-cp312
-            python-version: "3.12"
           - os: macos-15-intel
             label: macos-x86_64-cp312
-            python-version: "3.12"
           - os: windows-latest
             label: windows-amd64-cp312
-            python-version: "3.12"
     steps:
       - name: Keep pinned corpora byte-identical (no CRLF conversion)
         run: git config --global core.autocrlf false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Download and install the published wheel
+          python-version: "3.12"
+      - name: Download and install the published wheel (no RDKit)
         shell: bash
         run: |
-          python -m pip install --disable-pip-version-check "rdkit==2026.3.6" "json5==0.15.0"
+          python -m pip install --disable-pip-version-check "json5==0.15.0"
           python -m pip download --disable-pip-version-check --only-binary=:all: --no-deps \
             -d published-wheel "chematic==${{ inputs.version }}"
           python -m pip install --disable-pip-version-check --no-deps published-wheel/chematic-*.whl
-          python -c "import chematic, rdkit; print(chematic.__version__, rdkit.__version__)"
+          python -c "import chematic; print(chematic.__version__)"
       - name: Fetch the pinned BioTransformer rule tables
         if: ${{ inputs.biotransformer_corpus }}
-        shell: bash
-        run: |
-          git clone --filter=blob:none --no-checkout "$BIOTRANSFORMER_REPO" biotransformer-src
-          git -C biotransformer-src checkout --quiet "$BIOTRANSFORMER_COMMIT"
-          mkdir -p bt-rules
-          for f in database_metabolicReactions.json database_ENVMICRO_metabolicReactions.json \
-                   database_standardizationReactions.json; do
-            path=$(git -C biotransformer-src ls-files | grep -m1 -E "(^|/)$f\$")
-            cp "biotransformer-src/$path" "bt-rules/$f"
-          done
-      - name: Run the gates
+        run: python scripts/fetch_biotransformer_rules.py --out-dir bt-rules
+      - name: Run chematic's side of the gates
         shell: bash
         run: |
           rules=()
           if [ "${{ inputs.biotransformer_corpus }}" = "true" ]; then rules=(--rules-dir bt-rules); fi
-          python scripts/published_wheel_chemistry_gates.py \
+          python scripts/published_wheel_chemistry_gates.py --phase chematic \
             --wheel "$(ls published-wheel/chematic-*.whl)" \
+            --scope "published_pypi_v${{ inputs.version }}_${{ matrix.label }}" \
+            --out-dir "chematic-${{ matrix.label }}" "${rules[@]}"
+      - name: Run the 265 A6 rows (#739)
+        shell: bash
+        run: |
+          python scripts/public_package_3d_chematic.py --wheel "$(ls published-wheel/chematic-*.whl)" \
+            --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe \
+            --output "chematic-${{ matrix.label }}/a6-rows.jsonl" \
+            --metadata-output "chematic-${{ matrix.label }}/a6-rows.meta.json" \
+            --wall-budget-seconds 1200 --package-kind published
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: chematic-outputs-${{ inputs.version }}-${{ matrix.label }}
+          path: |
+            chematic-${{ matrix.label }}/*.json
+            chematic-${{ matrix.label }}/*.jsonl
+            chematic-${{ matrix.label }}/*.jsonl.gz
+            chematic-${{ matrix.label }}/gates.log
+          if-no-files-found: error
+
+  compare:
+    name: RDKit compare ${{ matrix.label }}
+    needs: chematic
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        label: [macos-arm64-cp312, macos-x86_64-cp312, windows-amd64-cp312]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
+        with:
+          python-version: "3.12"
+      - name: Install the pinned RDKit wheel
+        run: |
+          python -m pip download --disable-pip-version-check --only-binary=:all: --no-deps \
+            -d rdkit-wheel "rdkit==2026.3.6"
+          echo "$RDKIT_WHEEL_SHA256  rdkit-wheel/$RDKIT_WHEEL" | sha256sum -c -
+          python -m pip install --disable-pip-version-check "rdkit-wheel/$RDKIT_WHEEL" "json5==0.15.0"
+          python -c "from rdkit import rdBase; assert rdBase.rdkitVersion == '2026.03.6', rdBase.rdkitVersion"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: chematic-outputs-${{ inputs.version }}-${{ matrix.label }}
+          path: chematic-${{ matrix.label }}
+      - name: Fetch the pinned BioTransformer rule tables
+        if: ${{ inputs.biotransformer_corpus }}
+        run: python scripts/fetch_biotransformer_rules.py --out-dir bt-rules
+      - name: Compare with RDKit and check the counts
+        run: |
+          rules=()
+          if [ "${{ inputs.biotransformer_corpus }}" = "true" ]; then rules=(--rules-dir bt-rules); fi
+          python scripts/published_wheel_chemistry_gates.py --phase rdkit \
+            --chematic-outputs "chematic-${{ matrix.label }}" \
             --expected "validation/published-wheel-chemistry-gates-expected-v${{ inputs.version }}.json" \
             --scope "published_pypi_v${{ inputs.version }}_${{ matrix.label }}" \
             --out-dir "gates-${{ matrix.label }}" "${rules[@]}"
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+        if: ${{ !cancelled() }}
+      - name: Score the A6 rows on the independent scorer (#739)
+        if: ${{ !cancelled() }}
+        run: |
+          rows="chematic-${{ matrix.label }}/a6-rows.jsonl"
+          out="gates-${{ matrix.label }}"
+          mkdir -p "$out"
+          cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- \
+            --chematic-rows "$rows" \
+            --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl \
+            --output "$out/a6-scored.jsonl"
+          expected="validation/published-wheel-chemistry-gates-expected-v${{ inputs.version }}.json"
+          ref=$(python -c "import json, sys; print(json.load(open(sys.argv[1])).get('a6', {}).get('coordinates_sha256', ''))" "$expected")
+          reference=()
+          if [ -n "$ref" ]; then reference=(--reference-sha256 "$ref"); fi
+          python scripts/a6_platform_gate.py --rows "$rows" --scored "$out/a6-scored.jsonl" \
+            --scope "published_pypi_v${{ inputs.version }}_${{ matrix.label }}" "${reference[@]}" \
+            --output "$out/a6-gate.json"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:

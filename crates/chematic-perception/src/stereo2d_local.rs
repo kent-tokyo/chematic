@@ -126,6 +126,16 @@ fn classify_local_parity(
     center: AtomIdx,
     ctab_atom1_only: bool,
 ) -> ParityOutcome {
+    classify_local_parity_with(mol, coords, center, ctab_atom1_only, false)
+}
+
+fn classify_local_parity_with(
+    mol: &Molecule,
+    coords: &[(f64, f64)],
+    center: AtomIdx,
+    ctab_atom1_only: bool,
+    lone_pair_centres: bool,
+) -> ParityOutcome {
     let nbs: Vec<AtomIdx> = mol.neighbors(center).map(|(nb, _)| nb).collect();
 
     if !(3..=4).contains(&nbs.len()) || !has_wedge_or_hash(mol, center, ctab_atom1_only) {
@@ -135,6 +145,11 @@ fn classify_local_parity(
     let result = match nbs.len() {
         4 => tetrahedral_4(mol, coords, center, &nbs),
         3 if chematic_core::implicit_hcount(mol, center) == 1 => {
+            tetrahedral_3_implicit_h(mol, coords, center, &nbs)
+        }
+        // A three-coordinate centre with a lone pair in place of the
+        // implicit H (a bridgehead `[N@@]`): the same three-bond parity.
+        3 if lone_pair_centres && chematic_core::implicit_hcount(mol, center) == 0 => {
             tetrahedral_3_implicit_h(mol, coords, center, &nbs)
         }
         _ => Err(StereoRejectionReason::UnsupportedCoordination),
@@ -173,6 +188,21 @@ pub fn local_parity_from_wedges(
     center: AtomIdx,
 ) -> Option<(Chirality, Vec<u32>)> {
     match classify_local_parity(mol, coords, center, false) {
+        ParityOutcome::Assigned(chirality, order) => Some((chirality, order)),
+        ParityOutcome::NotRequested | ParityOutcome::Rejected(_) => None,
+    }
+}
+
+/// [`local_parity_from_wedges`], also reading a three-coordinate centre
+/// without hydrogens (lone pair in the implicit-H position, as SMILES and
+/// RDKit treat a bridgehead `[N@@]`). Used by the stereo depiction to check
+/// a wedge it draws for such a centre; the MOL reader keeps its own gate.
+pub fn local_parity_from_wedges_with_lone_pair(
+    mol: &Molecule,
+    coords: &[(f64, f64)],
+    center: AtomIdx,
+) -> Option<(Chirality, Vec<u32>)> {
+    match classify_local_parity_with(mol, coords, center, false, true) {
         ParityOutcome::Assigned(chirality, order) => Some((chirality, order)),
         ParityOutcome::NotRequested | ParityOutcome::Rejected(_) => None,
     }

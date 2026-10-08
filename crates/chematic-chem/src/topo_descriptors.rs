@@ -150,51 +150,6 @@ fn chi_dfs(
     sum
 }
 
-/// Count simple paths of exactly `length` bonds in the heavy-atom subgraph.
-/// Returns undirected path count (each path counted once).
-fn count_paths(mol: &Molecule, heavy: &[usize], length: usize) -> usize {
-    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
-    count_paths_with_set(mol, heavy, &heavy_set, length)
-}
-
-fn count_paths_with_set(
-    mol: &Molecule,
-    heavy: &[usize],
-    heavy_set: &FxHashSet<usize>,
-    length: usize,
-) -> usize {
-    let mut total = 0usize;
-    for &start in heavy {
-        let mut visited = vec![false; mol.atom_count()];
-        visited[start] = true;
-        total += count_paths_dfs(mol, start, length, 0, &mut visited, heavy_set);
-    }
-    total / 2
-}
-
-fn count_paths_dfs(
-    mol: &Molecule,
-    cur: usize,
-    target_len: usize,
-    cur_len: usize,
-    visited: &mut Vec<bool>,
-    heavy_set: &FxHashSet<usize>,
-) -> usize {
-    if cur_len == target_len {
-        return 1;
-    }
-    let mut count = 0;
-    for (nb, _) in mol.neighbors(AtomIdx(cur as u32)) {
-        let ni = nb.0 as usize;
-        if heavy_set.contains(&ni) && !visited[ni] {
-            visited[ni] = true;
-            count += count_paths_dfs(mol, ni, target_len, cur_len + 1, visited, heavy_set);
-            visited[ni] = false;
-        }
-    }
-    count
-}
-
 /// Compute chi sum for paths of exactly `n` bonds (n ≥ 1).
 /// Each undirected path is counted once (sum divided by 2).
 fn chi_n_with(
@@ -341,127 +296,90 @@ pub fn padmakar_ivan_index(mol: &Molecule) -> u64 {
 
 // ─── Kappa Shape Indices ─────────────────────────────────────────────────────
 
-/// Hall-Kier κ1 shape index (alpha-corrected, matches RDKit `CalcKappa1`).
-///
-/// κ1 = (A+α)·(A+α−1)² / (P1+α)²  where A = heavy atom count, P1 = bond
-/// count, α = [`hall_kier_alpha`](crate::descriptors::hall_kier_alpha).
-/// A larger value indicates a more linear graph.
+/// RDKit's kappa helpers (`ConnectivityDescriptors.cpp`), operation for
+/// operation: `p` is the path count, `a` the heavy-atom count, and a zero
+/// denominator gives 0.
+fn rdkit_kappa1(p1: f64, a: f64, alpha: f64) -> f64 {
+    let denom = p1 + alpha;
+    if denom != 0.0 {
+        (a + alpha) * (a + alpha - 1.0) * (a + alpha - 1.0) / (denom * denom)
+    } else {
+        0.0
+    }
+}
+
+fn rdkit_kappa2(p2: f64, a: f64, alpha: f64) -> f64 {
+    let denom = (p2 + alpha) * (p2 + alpha);
+    if denom != 0.0 {
+        (a + alpha - 1.0) * (a + alpha - 2.0) * (a + alpha - 2.0) / denom
+    } else {
+        0.0
+    }
+}
+
+fn rdkit_kappa3(p3: f64, a: usize, alpha: f64) -> f64 {
+    let denom = (p3 + alpha) * (p3 + alpha);
+    if denom == 0.0 {
+        return 0.0;
+    }
+    let a_f = a as f64;
+    if a % 2 == 1 {
+        (a_f + alpha - 1.0) * (a_f + alpha - 3.0) * (a_f + alpha - 3.0) / denom
+    } else {
+        (a_f + alpha - 2.0) * (a_f + alpha - 3.0) * (a_f + alpha - 3.0) / denom
+    }
+}
+
+/// Atoms RDKit's `getNumHeavyAtoms` counts (atomic number > 1).
+fn rdkit_heavy_atom_count(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| !a.wildcard && a.element.atomic_number() > 1)
+        .count()
+}
+
+/// Hall-Kier κ1 shape index, RDKit's `CalcKappa1`:
+/// `(A+α)(A+α−1)² / (P1+α)²` with P1 the bond count.
 pub fn kappa1(mol: &Molecule) -> f64 {
-    let heavy = heavy_indices(mol);
-    let n = heavy.len();
-    if n < 2 {
-        return 0.0;
-    }
-    let p1 = count_paths(mol, &heavy, 1);
-    if p1 == 0 {
-        return 0.0;
-    }
-    let alpha = crate::descriptors::hall_kier_alpha(mol);
-    let a = n as f64 + alpha;
-    let p1 = p1 as f64 + alpha;
-    a * (a - 1.0).powi(2) / p1.powi(2)
+    rdkit_kappa1(
+        mol.bond_count() as f64,
+        rdkit_heavy_atom_count(mol) as f64,
+        crate::descriptors::hall_kier_alpha(mol),
+    )
 }
 
-/// Hall-Kier κ2 shape index (alpha-corrected, matches RDKit `CalcKappa2`).
-///
-/// κ2 = (A+α−1)·(A+α−2)² / (P2+α)²  where P2 = count of 2-bond paths.
+/// Hall-Kier κ2 shape index, RDKit's `CalcKappa2`:
+/// `(A+α−1)(A+α−2)² / (P2+α)²` with P2 the count of 2-bond paths.
 pub fn kappa2(mol: &Molecule) -> f64 {
-    let heavy = heavy_indices(mol);
-    let n = heavy.len();
-    if n < 3 {
-        return 0.0;
-    }
-    let p2 = count_paths(mol, &heavy, 2);
-    if p2 == 0 {
-        return 0.0;
-    }
-    let alpha = crate::descriptors::hall_kier_alpha(mol);
-    let a = n as f64 + alpha;
-    let p2 = p2 as f64 + alpha;
-    (a - 1.0) * (a - 2.0).powi(2) / p2.powi(2)
+    rdkit_kappa2(
+        rdkit_paths_of_length(mol, 2, true).len() as f64,
+        rdkit_heavy_atom_count(mol) as f64,
+        crate::descriptors::hall_kier_alpha(mol),
+    )
 }
 
-/// Hall-Kier κ3 shape index (alpha-corrected, matches RDKit `CalcKappa3`).
-///
-/// Formula depends on parity of heavy-atom count:
-/// - odd n:  κ3 = (A+α−1)·(A+α−3)² / (P3+α)²
-/// - even n: κ3 = (A+α−2)·(A+α−3)² / (P3+α)²
-///
-/// Returns 0.0 when fewer than 4 heavy atoms or no 3-bond paths exist.
+/// Hall-Kier κ3 shape index, RDKit's `CalcKappa3` (the numerator depends on
+/// the parity of the heavy-atom count).
 pub fn kappa3(mol: &Molecule) -> f64 {
-    let heavy = heavy_indices(mol);
-    let n = heavy.len();
-    if n < 4 {
-        return 0.0;
-    }
-    let p3 = count_paths(mol, &heavy, 3);
-    if p3 == 0 {
-        return 0.0;
-    }
-    let alpha = crate::descriptors::hall_kier_alpha(mol);
-    let a = n as f64 + alpha;
-    let p3 = p3 as f64 + alpha;
-    let factor = if n % 2 == 1 { a - 1.0 } else { a - 2.0 };
-    factor * (a - 3.0).powi(2) / p3.powi(2)
+    rdkit_kappa3(
+        rdkit_paths_of_length(mol, 3, true).len() as f64,
+        rdkit_heavy_atom_count(mol),
+        crate::descriptors::hall_kier_alpha(mol),
+    )
 }
 
-/// Compute κ1, κ2, κ3 in a single `heavy_indices` pass.
-///
-/// Returns `(κ1, κ2, κ3)`. Use when all three are needed to avoid
-/// three redundant `heavy_indices` computations.
+/// κ1, κ2 and κ3 with one Hall-Kier alpha: `(κ1, κ2, κ3)`.
 pub fn kappa_all(mol: &Molecule) -> (f64, f64, f64) {
-    let heavy = heavy_indices(mol);
-    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
-    kappa_all_with_topology(mol, &heavy, &heavy_set)
-}
-
-fn kappa_all_with_topology(
-    mol: &Molecule,
-    heavy: &[usize],
-    heavy_set: &FxHashSet<usize>,
-) -> (f64, f64, f64) {
-    let n = heavy.len();
     let alpha = crate::descriptors::hall_kier_alpha(mol);
-    let a = n as f64 + alpha;
-
-    let k1 = if n >= 2 {
-        let p1 = count_paths_with_set(mol, heavy, heavy_set, 1);
-        if p1 == 0 {
-            0.0
-        } else {
-            let p1 = p1 as f64 + alpha;
-            a * (a - 1.0).powi(2) / p1.powi(2)
-        }
-    } else {
-        0.0
-    };
-
-    let k2 = if n >= 3 {
-        let p2 = count_paths_with_set(mol, heavy, heavy_set, 2);
-        if p2 == 0 {
-            0.0
-        } else {
-            let p2 = p2 as f64 + alpha;
-            (a - 1.0) * (a - 2.0).powi(2) / p2.powi(2)
-        }
-    } else {
-        0.0
-    };
-
-    let k3 = if n >= 4 {
-        let p3 = count_paths_with_set(mol, heavy, heavy_set, 3);
-        if p3 == 0 {
-            0.0
-        } else {
-            let p3 = p3 as f64 + alpha;
-            let factor = if n % 2 == 1 { a - 1.0 } else { a - 2.0 };
-            factor * (a - 3.0).powi(2) / p3.powi(2)
-        }
-    } else {
-        0.0
-    };
-
-    (k1, k2, k3)
+    let a = rdkit_heavy_atom_count(mol);
+    (
+        rdkit_kappa1(mol.bond_count() as f64, a as f64, alpha),
+        rdkit_kappa2(
+            rdkit_paths_of_length(mol, 2, true).len() as f64,
+            a as f64,
+            alpha,
+        ),
+        rdkit_kappa3(rdkit_paths_of_length(mol, 3, true).len() as f64, a, alpha),
+    )
 }
 
 // ─── Chi Connectivity Indices ────────────────────────────────────────────────
@@ -471,20 +389,12 @@ fn kappa_all_with_topology(
 /// χ0 = Σᵢ δᵢ^(−0.5) over all heavy atoms, where δᵢ = heavy-atom degree.
 /// Atoms with δ = 0 contribute 0.
 pub fn chi0(mol: &Molecule) -> f64 {
-    let heavy = heavy_indices(mol);
-    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
-    heavy
-        .iter()
-        .map(|&i| {
-            let d = delta(mol, AtomIdx(i as u32), &heavy_set);
-            if d > 0.0 { d.powf(-0.5) } else { 0.0 }
-        })
-        .sum()
+    rdkit_chi0(mol)
 }
 
 /// Kier-Hall χ1 connectivity index (bond-path sum).
 pub fn chi1(mol: &Molecule) -> f64 {
-    chi_n(mol, 1, false)
+    rdkit_chi1(mol)
 }
 
 /// Kier-Hall χ2 connectivity index (2-bond path sum).
@@ -502,38 +412,29 @@ pub fn chi4(mol: &Molecule) -> f64 {
     chi_n(mol, 4, false)
 }
 
-/// Valence-corrected χ0v connectivity index.
-///
-/// Uses δᵥ = (Zᵥ − H) / (Z − Zᵥ − 1) instead of the simple degree.
+/// Valence-corrected χ0v connectivity index (RDKit `CalcChi0v`).
 pub fn chi0v(mol: &Molecule) -> f64 {
-    let heavy = heavy_indices(mol);
-    heavy
-        .iter()
-        .map(|&i| {
-            let d = delta_v(mol, AtomIdx(i as u32));
-            if d > 0.0 { d.powf(-0.5) } else { 0.0 }
-        })
-        .sum()
+    rdkit_chi_v(mol)[0]
 }
 
-/// Valence-corrected χ1v connectivity index.
+/// Valence-corrected χ1v connectivity index (RDKit `CalcChi1v`).
 pub fn chi1v(mol: &Molecule) -> f64 {
-    chi_n(mol, 1, true)
+    rdkit_chi_v(mol)[1]
 }
 
-/// Valence-corrected χ2v connectivity index.
+/// Valence-corrected χ2v connectivity index (RDKit `CalcChi2v`).
 pub fn chi2v(mol: &Molecule) -> f64 {
-    chi_n(mol, 2, true)
+    rdkit_chi_v(mol)[2]
 }
 
-/// Valence-corrected χ3v connectivity index.
+/// Valence-corrected χ3v connectivity index (RDKit `CalcChi3v`).
 pub fn chi3v(mol: &Molecule) -> f64 {
-    chi_n(mol, 3, true)
+    rdkit_chi_v(mol)[3]
 }
 
-/// Valence-corrected χ4v connectivity index.
+/// Valence-corrected χ4v connectivity index (RDKit `CalcChi4v`).
 pub fn chi4v(mol: &Molecule) -> f64 {
-    chi_n(mol, 4, true)
+    rdkit_chi_v(mol)[4]
 }
 
 /// Compute all 10 Hall-Kier connectivity indices in a single pass.
@@ -551,32 +452,20 @@ fn chi_all_with_topology(
     heavy: &[usize],
     heavy_set: &FxHashSet<usize>,
 ) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64) {
-    let c0 = heavy
-        .iter()
-        .map(|&i| {
-            let d = delta(mol, AtomIdx(i as u32), heavy_set);
-            if d > 0.0 { d.powf(-0.5) } else { 0.0 }
-        })
-        .sum();
-    let c0v = heavy
-        .iter()
-        .map(|&i| {
-            let d = delta_v(mol, AtomIdx(i as u32));
-            if d > 0.0 { d.powf(-0.5) } else { 0.0 }
-        })
-        .sum();
+    let c0 = rdkit_chi0(mol);
+    let [c0v, c1v, c2v, c3v, c4v] = rdkit_chi_v(mol);
 
     (
         c0,
-        chi_n_with(mol, heavy, heavy_set, 1, false),
+        rdkit_chi1(mol),
         chi_n_with(mol, heavy, heavy_set, 2, false),
         chi_n_with(mol, heavy, heavy_set, 3, false),
         chi_n_with(mol, heavy, heavy_set, 4, false),
         c0v,
-        chi_n_with(mol, heavy, heavy_set, 1, true),
-        chi_n_with(mol, heavy, heavy_set, 2, true),
-        chi_n_with(mol, heavy, heavy_set, 3, true),
-        chi_n_with(mol, heavy, heavy_set, 4, true),
+        c1v,
+        c2v,
+        c3v,
+        c4v,
     )
 }
 
@@ -599,77 +488,81 @@ pub fn topology_bundle(mol: &Molecule) -> TopologyBundle {
     let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
     TopologyBundle {
         wiener: wiener_index_with_topology(mol, &heavy, &heavy_set),
-        kappa: kappa_all_with_topology(mol, &heavy, &heavy_set),
+        kappa: kappa_all(mol),
         chi: chi_all_with_topology(mol, &heavy, &heavy_set),
     }
 }
 
 // ─── Bertz Complexity ────────────────────────────────────────────────────────
 
-/// Simplified Bertz CT molecular complexity index.
+/// Bertz CT molecular complexity index (Bertz, *J. Am. Chem. Soc.* **103**,
+/// 3599–3601, 1981), bit-identical to RDKit's `GraphDescriptors.BertzCT`
+/// (default `cutoff=100`; aromatic bonds as order 1.5).
 ///
-/// CT = m_total + Σᵢ C(deg_total_i, 2)
-///
-/// where m_total = total bond count including implicit C-H bonds,
-/// deg_total_i = heavy-atom degree + implicit H count for atom i, and
-/// C(n, 2) = n·(n−1)/2.  This is the additive topology formula from
-/// Bertz (1981) JACS 103, 3599 without logarithmic weighting.
+/// Returns 0.0 for fewer than two atoms or more than 1000 atoms.
 pub fn bertz_ct(mol: &Molecule) -> f64 {
-    let mut total_h_bonds = 0u64;
-    let mut complexity = 0.0f64;
-    for (idx, _) in mol.atoms() {
-        let heavy_deg = mol.degree(idx);
-        let h = implicit_hcount(mol, idx) as usize;
-        total_h_bonds += h as u64;
-        let total_deg = heavy_deg + h;
-        complexity += (total_deg * total_deg.saturating_sub(1) / 2) as f64;
-    }
-    let heavy_bonds = mol.bond_count() as u64;
-    let m_total = heavy_bonds + total_h_bonds;
-    complexity + m_total as f64
+    crate::rdkit_graph::bertz_ct(mol)
 }
 
 // ─── Labute ASA ─────────────────────────────────────────────────────────────
 
 /// Covalent (Rb0) radius of an element (Å), from RDKit's ptable.GetRb0.
 /// Returns 0.0 for unrecognized elements (they contribute no surface area).
-fn rb0(atomic_number: u8) -> f64 {
+/// Bond radii of the van der Waals volume estimate (unchanged; this
+/// descriptor has no RDKit counterpart).
+fn vdw_volume_rb0(atomic_number: u8) -> f64 {
     match atomic_number {
-        1 => 0.33,   // H
-        6 => 0.77,   // C
-        7 => 0.70,   // N
-        8 => 0.66,   // O
-        9 => 0.611,  // F
-        14 => 1.04,  // Si
-        15 => 0.89,  // P
-        16 => 1.04,  // S
-        17 => 0.997, // Cl
-        33 => 1.21,  // As
-        34 => 1.20,  // Se
-        35 => 1.167, // Br
-        53 => 1.387, // I
+        1 => 0.33,
+        6 => 0.77,
+        7 => 0.70,
+        8 => 0.66,
+        9 => 0.611,
+        14 => 1.04,
+        15 => 0.89,
+        16 => 1.04,
+        17 => 0.997,
+        33 => 1.21,
+        34 => 1.20,
+        35 => 1.167,
+        53 => 1.387,
         _ => 0.0,
     }
+}
+
+fn rb0(atom: &chematic_core::Atom) -> f64 {
+    // RDKit's getRb0; a dummy atom (atomic number 0) has none.
+    if atom.wildcard {
+        return 0.0;
+    }
+    crate::descriptors::RDKIT_RB0
+        .get(atom.element.atomic_number() as usize - 1)
+        .copied()
+        .unwrap_or(0.0)
 }
 
 /// Bond-type scale factor used in the Labute formula (Å subtracted from Ri+Rj).
 ///
 /// Shorter bonds (double, triple, aromatic) bring atoms closer, increasing
 /// surface overlap.  Single bonds have scale 0 (spheres just touching, no overlap).
-fn bond_scale(order: BondOrder) -> f64 {
-    match order {
-        BondOrder::Aromatic => 0.1,
-        BondOrder::Single
-        | BondOrder::Up
-        | BondOrder::Down
-        | BondOrder::Zero
-        | BondOrder::Dative
-        | BondOrder::QueryAny
-        | BondOrder::QuerySingleOrDouble
-        | BondOrder::QuerySingleOrAromatic
-        | BondOrder::QueryDoubleOrAromatic => 0.0,
+fn bond_scale(view: &Molecule, bond: chematic_core::BondIdx) -> f64 {
+    // RDKit: aromatic bonds 0.1; otherwise by bond type for types < 4
+    // (single 0, double 0.2, triple 0.3), nothing for any other type.
+    let b = view.bond(bond);
+    if b.order == BondOrder::Aromatic
+        || (view.atom(b.atom1).aromatic
+            && view.atom(b.atom2).aromatic
+            && b.order != BondOrder::Single
+            && b.order != BondOrder::Double
+            && b.order != BondOrder::Up
+            && b.order != BondOrder::Down)
+    {
+        return 0.1;
+    }
+    match b.order {
+        BondOrder::Single | BondOrder::Up | BondOrder::Down => 0.0,
         BondOrder::Double => 0.2,
-        BondOrder::Triple | BondOrder::Quadruple => 0.3,
+        BondOrder::Triple => 0.3,
+        _ => 0.0,
     }
 }
 
@@ -684,56 +577,49 @@ fn bond_scale(order: BondOrder) -> f64 {
 /// added into the whole-molecule total ([`labute_asa`]). This is a faithful,
 /// numerically-verified port of RDKit's behavior, not a simplification.
 fn labute_asa_parts(mol: &Molecule) -> (Vec<f64>, f64) {
+    // RDKit's getLabuteAtomContribs (MolSurf.cpp) with includeHs, operation
+    // for operation; bond aromaticity as RDKit perceives it.
     let n = mol.atom_count();
     if n == 0 {
         return (Vec::new(), 0.0);
     }
-
-    const R_H: f64 = 0.33;
+    let view = crate::descriptors::descriptor_aromaticity(mol);
+    let view: &Molecule = &view;
+    let radii: Vec<f64> = mol.atoms().map(|(_, a)| rb0(a)).collect();
     let mut v: Vec<f64> = vec![0.0; n];
-    let mut h_pool = 0.0f64;
-    let radii: Vec<f64> = (0..n)
-        .map(|i| rb0(mol.atom(AtomIdx(i as u32)).element.atomic_number()))
-        .collect();
-
-    for (_, bond) in mol.bonds() {
+    // Bonds in RDKit's numbering (ring closures last), as RDKit accumulates.
+    for bidx in mol.rdkit_bond_order() {
+        let bond = view.bond(bidx);
         let i = bond.atom1.0 as usize;
         let j = bond.atom2.0 as usize;
-        let ri = radii[i];
-        let rj = radii[j];
-        if ri < 1e-10 || rj < 1e-10 {
-            continue;
-        }
-        let scale = bond_scale(bond.order);
-        let bij = ri + rj - scale;
+        let (ri, rj) = (radii[i], radii[j]);
+        let mut bij = ri + rj;
+        bij -= bond_scale(view, bidx);
         let dij = (ri - rj).abs().max(bij).min(ri + rj);
         v[i] += rj * rj - (ri - dij) * (ri - dij) / dij;
         v[j] += ri * ri - (rj - dij) * (rj - dij) / dij;
     }
-
+    // One hydrogen per atom, pooled into a single term (as RDKit does).
+    let rh = crate::descriptors::RDKIT_RB0[0];
+    let mut h_contrib = 0.0f64;
     for i in 0..n {
         let ri = radii[i];
-        if ri < 1e-10 {
-            continue;
-        }
-        // Runs once per heavy atom regardless of its actual implicit H
-        // count — see doc comment above.
-        let dij = ri + R_H;
-        v[i] += R_H * R_H - (ri - dij) * (ri - dij) / dij;
-        h_pool += ri * ri - (R_H - dij) * (R_H - dij) / dij;
+        let bij = ri + rh;
+        let dij = (ri - rh).abs().max(bij).min(ri + rh);
+        v[i] += rh * rh - (ri - dij) * (ri - dij) / dij;
+        h_contrib += ri * ri - (rh - dij) * (rh - dij) / dij;
     }
-
-    let per_atom = (0..n)
+    let per_atom: Vec<f64> = (0..n)
         .map(|i| {
             let ri = radii[i];
-            if ri < 1e-10 {
-                return 0.0;
-            }
-            (4.0 * PI * ri * ri - PI * ri * v[i]).max(0.0)
+            PI * ri * (4.0 * ri - v[i])
         })
         .collect();
-    let h_pool_area = (4.0 * PI * R_H * R_H - PI * R_H * h_pool).max(0.0);
-
+    let h_pool_area = if h_contrib.abs() > 1e-4 {
+        PI * rh * (4.0 * rh - h_contrib)
+    } else {
+        0.0
+    };
     (per_atom, h_pool_area)
 }
 
@@ -745,9 +631,187 @@ pub fn labute_asa_per_atom(mol: &Molecule) -> Vec<f64> {
     labute_asa_parts(mol).0
 }
 
-/// Pooled implicit-hydrogen area term (Å²) excluded from
-/// [`labute_asa_per_atom`] but included in [`labute_asa`]'s total.
-/// Only used by `vsa.rs` tests that check the VSA-sum-vs-total invariant.
+// ─── RDKit-exact path enumeration and valence connectivity ───────────────────
+
+/// RDKit's `PeriodicTable::getNouterElecs`, indexed by atomic number - 1.
+/// Generated with RDKit 2026.03.1.
+const RDKIT_N_OUTER_ELECS: [u8; 118] = [
+    1, 2, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 2, 3,
+    4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 3, 4, 5, 6,
+    7, 8, 9, 10, 11, 12, 13, 14, 15, 4, 5, 6, 7, 8, 9, 10, 11, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 3,
+    4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+];
+
+/// RDKit's `findAllPathsOfLengthN(mol, target_len, use_bonds, useHs=false)`
+/// (`Subgraphs.cpp`), in RDKit's order: atom paths grown one atom at a time
+/// from every start atom (neighbours in ascending index), a ring may close
+/// on the last step, and paths with the same bond set keep their first
+/// occurrence. With `use_bonds` a path of `target_len` bonds is returned as
+/// its bond indices, otherwise a path of `target_len` atoms as atoms.
+/// Sums over these paths add in RDKit's order, so they are bit-identical.
+pub(crate) fn rdkit_paths_of_length(
+    mol: &Molecule,
+    target_len: usize,
+    use_bonds: bool,
+) -> Vec<Vec<u32>> {
+    let dim = mol.atom_count();
+    let upper = if use_bonds {
+        target_len + 1
+    } else {
+        target_len
+    };
+    if dim == 0 || upper == 0 {
+        return Vec::new();
+    }
+    let is_h = |i: usize| {
+        let a = mol.atom(AtomIdx(i as u32));
+        !a.wildcard && a.element.atomic_number() == 1
+    };
+    // Sorted neighbour lists stand in for RDKit's adjacency-matrix scan.
+    let mut adj: Vec<Vec<u32>> = vec![Vec::new(); dim];
+    for (_, bond) in mol.bonds() {
+        let (a, b) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
+        if a == b || is_h(a) || is_h(b) {
+            continue;
+        }
+        adj[a].push(b as u32);
+        adj[b].push(a as u32);
+    }
+    for list in &mut adj {
+        list.sort_unstable();
+        list.dedup();
+    }
+    let mut paths: Vec<Vec<u32>> = (0..dim as u32).map(|i| vec![i]).collect();
+    for _ in 1..upper {
+        let mut next = Vec::new();
+        for path in &paths {
+            let end = *path.last().expect("paths are never empty") as usize;
+            for &other in &adj[end] {
+                if !path.contains(&other)
+                    || (upper > 2 && path.len() == upper - 1 && path[path.len() - 2] != other)
+                {
+                    let mut p = path.clone();
+                    p.push(other);
+                    next.push(p);
+                }
+            }
+        }
+        paths = next;
+    }
+    if !use_bonds && upper == 1 {
+        return paths;
+    }
+    let mut seen: FxHashSet<Vec<u32>> = FxHashSet::default();
+    let mut out = Vec::new();
+    for path in paths {
+        let mut bonds: Vec<u32> = path
+            .windows(2)
+            .map(|w| {
+                mol.bond_between(AtomIdx(w[0]), AtomIdx(w[1]))
+                    .expect("consecutive path atoms are bonded")
+                    .0
+                    .0
+            })
+            .collect();
+        let ordered = bonds.clone();
+        bonds.sort_unstable();
+        if seen.insert(bonds) {
+            out.push(if use_bonds { ordered } else { path });
+        }
+    }
+    out
+}
+
+/// RDKit's Hall-Kier valence deltas (`hkDeltas`), already as `1/sqrt(δv)`
+/// (0 where δv is 0): `nOuter - H` up to neon, otherwise
+/// `(nOuter - H) / (Z - nOuter - 1)`; hydrogen and dummy atoms give 0.
+fn rdkit_hk_deltas(mol: &Molecule) -> Vec<f64> {
+    mol.atoms()
+        .map(|(idx, atom)| {
+            let n = if atom.wildcard {
+                0
+            } else {
+                atom.element.atomic_number() as i32
+            };
+            let d = if n <= 1 {
+                0.0
+            } else {
+                let outer = RDKIT_N_OUTER_ELECS[n as usize - 1] as i32;
+                let num = outer - i32::from(implicit_hcount(mol, idx));
+                if n <= 10 {
+                    num as f64
+                } else {
+                    num as f64 / (n - outer - 1) as f64
+                }
+            };
+            if d != 0.0 { 1.0 / d.sqrt() } else { d }
+        })
+        .collect()
+}
+
+/// RDKit's `calcChiNv` for n >= 2 over [`rdkit_paths_of_length`].
+fn rdkit_chi_nv(mol: &Molecule, hk: &[f64], n: usize) -> f64 {
+    let mut res = 0.0;
+    for p in rdkit_paths_of_length(mol, n + 1, false) {
+        let mut accum = 1.0;
+        for &a in &p[..n] {
+            accum *= hk[a as usize];
+        }
+        // A closed ring path counts its first atom once (RDKit github #463).
+        if p[n] != p[0] {
+            accum *= hk[p[n] as usize];
+        }
+        res += accum;
+    }
+    res
+}
+
+/// RDKit `CalcChi0v` .. `CalcChi4v`, bit-identical.
+fn rdkit_chi_v(mol: &Molecule) -> [f64; 5] {
+    let hk = rdkit_hk_deltas(mol);
+    let chi0v = hk.iter().fold(0.0, |acc, x| acc + x);
+    // Bonds in RDKit's numbering (ring closures last), as RDKit sums them.
+    let mut chi1v = 0.0;
+    for b in mol.rdkit_bond_order() {
+        let bond = mol.bond(b);
+        chi1v += hk[bond.atom1.0 as usize] * hk[bond.atom2.0 as usize];
+    }
+    [
+        chi0v,
+        chi1v,
+        rdkit_chi_nv(mol, &hk, 2),
+        rdkit_chi_nv(mol, &hk, 3),
+        rdkit_chi_nv(mol, &hk, 4),
+    ]
+}
+
+/// RDKit's Python `GraphDescriptors.Chi0`: `sqrt(1 / degree)` over every
+/// atom with a neighbour (graph hydrogens included), summed in atom order.
+fn rdkit_chi0(mol: &Molecule) -> f64 {
+    let mut res = 0.0;
+    for (idx, _) in mol.atoms() {
+        let d = mol.degree(idx) as f64;
+        if d != 0.0 {
+            res += (1.0 / d).sqrt();
+        }
+    }
+    res
+}
+
+/// RDKit's Python `GraphDescriptors.Chi1`: `sqrt(1 / (deg_i * deg_j))` over
+/// the bonds with nonzero product, summed left to right.
+fn rdkit_chi1(mol: &Molecule) -> f64 {
+    let mut res = 0.0;
+    for b in mol.rdkit_bond_order() {
+        let bond = mol.bond(b);
+        let c = (mol.degree(bond.atom1) * mol.degree(bond.atom2)) as f64;
+        if c != 0.0 {
+            res += (1.0 / c).sqrt();
+        }
+    }
+    res
+}
+
 #[cfg(test)]
 pub(crate) fn labute_h_pool_area(mol: &Molecule) -> f64 {
     labute_asa_parts(mol).1
@@ -989,7 +1053,7 @@ pub fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<u32>> {
 
 pub fn labute_asa(mol: &Molecule) -> f64 {
     let (per_atom, h_pool_area) = labute_asa_parts(mol);
-    per_atom.iter().sum::<f64>() + h_pool_area
+    per_atom.iter().fold(0.0, |acc, x| acc + x) + h_pool_area
 }
 
 // ─── VABC — van der Waals atomic bonded-contribution volume ──────────────────
@@ -1065,8 +1129,8 @@ pub fn vabc(mol: &Molecule) -> f64 {
     for (_, bond) in mol.bonds() {
         let z1 = mol.atom(bond.atom1).element.atomic_number();
         let z2 = mol.atom(bond.atom2).element.atomic_number();
-        let rb1 = rb0(z1);
-        let rb2 = rb0(z2);
+        let rb1 = vdw_volume_rb0(z1);
+        let rb2 = vdw_volume_rb0(z2);
         if rb1 > 1e-10 && rb2 > 1e-10 {
             v -= sphere_intersection(r_vdw_bondi(z1), r_vdw_bondi(z2), rb1 + rb2);
         }
@@ -1074,7 +1138,7 @@ pub fn vabc(mol: &Molecule) -> f64 {
 
     for (idx, atom) in mol.atoms() {
         let z = atom.element.atomic_number();
-        let rb_heavy = rb0(z);
+        let rb_heavy = vdw_volume_rb0(z);
         if rb_heavy < 1e-10 {
             continue;
         }
@@ -1401,21 +1465,22 @@ mod tests {
         assert!(bz < asp, "benzene BertzCT {bz} should be < aspirin {asp}");
     }
 
+    // Reference values: RDKit 2026.03.1 `GraphDescriptors.BertzCT`.
     #[test]
-    fn bertz_ct_ethane_less_than_propane() {
-        assert!(bertz_ct(&mol("CC")) < bertz_ct(&mol("CCC")));
-    }
-
-    #[test]
-    fn bertz_ct_methane() {
-        // C: deg=0, h=4, total=4, C(4,2)=6; m=4 H bonds → CT = 6+4 = 10
-        assert!(close(bertz_ct(&mol("C")), 10.0, 0.01));
+    fn bertz_ct_small_molecules_match_rdkit() {
+        assert_eq!(bertz_ct(&mol("C")), 0.0);
+        assert_eq!(bertz_ct(&mol("CC")), 0.0);
+        assert_eq!(bertz_ct(&mol("CCO")), 2.7548875021634682);
     }
 
     #[test]
     fn bertz_ct_benzene() {
-        // 6 C with total_deg=3: 6·C(3,2)=18; bonds=6+6=12 → CT = 18+12 = 30
-        assert!(close(bertz_ct(&mol("c1ccccc1")), 30.0, 0.01));
+        assert_eq!(bertz_ct(&mol("c1ccccc1")), 71.96100505779535);
+    }
+
+    #[test]
+    fn bertz_ct_aspirin() {
+        assert_eq!(bertz_ct(&mol("CC(=O)Oc1ccccc1C(=O)O")), 343.2228677267164);
     }
 
     // ── LabuteASA ─────────────────────────────────────────────────────────────

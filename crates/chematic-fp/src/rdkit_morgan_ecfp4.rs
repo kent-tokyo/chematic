@@ -324,6 +324,11 @@ fn with_rdkit_morgan_input<R>(
 pub(crate) fn reject_known_rdkit_coordination_sanitization_gap(
     mol: &Molecule,
 ) -> Result<(), RdkitMorganError> {
+    // The RDKit-parity view now applies `cleanUpOrganometallics` (the
+    // carbanion–Fe bond becomes dative), which is exactly this rewrite.
+    if chematic_perception::rdkit_sanitize_cleanup_needed(mol) {
+        return Ok(());
+    }
     for (atom_idx, atom) in mol.atoms() {
         let atomic_number = atom.element.atomic_number();
         let degree = mol.degree(atom_idx);
@@ -516,18 +521,24 @@ mod tests {
         );
     }
 
+    /// RDKit's `cleanUpOrganometallics` turns the four-bonded `[C-]`–Fe bond
+    /// dative; the RDKit-parity view models that, so the fingerprint is
+    /// exact (bits from RDKit 2026.03.1 `GetMorganGenerator(radius=2)`).
     #[test]
-    fn measured_feii_coordination_gap_is_a_typed_refusal() {
+    fn feii_coordination_sanitization_matches_rdkit() {
         let mol = parse("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10")
             .expect("ferrocene-like SMILES parses");
-        assert!(matches!(
-            rdkit_morgan_ecfp4_experimental(&mol),
-            Err(RdkitMorganError::UnsupportedCoordinationSanitization {
-                atomic_number: 26,
-                degree: 10,
-                ..
-            })
-        ));
+        let result = rdkit_morgan_ecfp4_experimental(&mol).expect("modeled sanitization");
+        let actual: Vec<usize> = (0..ECFP4_FP_SIZE)
+            .filter(|&bit| result.fingerprint.get(bit))
+            .collect();
+        assert_eq!(
+            actual,
+            vec![
+                80, 119, 169, 473, 652, 747, 825, 881, 909, 1023, 1057, 1096, 1163, 1317, 1380,
+                1464, 1474, 1622, 1645, 1675, 1772, 1813, 1852, 2040, 2047,
+            ]
+        );
     }
 
     #[test]

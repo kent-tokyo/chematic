@@ -1,0 +1,102 @@
+{
+ "schema": "734-754-followups-batch18/v1",
+ "rdkit": "2026.03.6",
+ "merged_origin_main": "3899cd3f",
+ "ci_failures_fixed": {
+  "binding_surface_wasm_exports": {
+   "recorded": 272,
+   "branch": 273,
+   "merged": 275
+  },
+  "mmff94_source_wheel_gate": {
+   "pinned_heavy_differing": 81,
+   "pinned_type37": 66,
+   "branch": [
+    0,
+    0
+   ]
+  }
+ },
+ "ci_jobs_passed_locally": [
+  "compatibility contract",
+  "v3000 rdkit 20/20",
+  "attachment 8/8",
+  "v3000 indigo",
+  "sgroup reader",
+  "relative stereo",
+  "ez query truth table",
+  "stereo torture 300/300",
+  "spelling invariance",
+  "all-features check",
+  "native-inchi",
+  "crystal serde",
+  "explorer demo",
+  "cffconvert",
+  "hba parity",
+  "reaction compatibility v2",
+  "a6 termination summary"
+ ],
+ "not_runnable_here": [
+  "wasm32 build + Node tests",
+  "MSRV 1.88 toolchain"
+ ],
+ "pr_perf_gate_instructions": {
+  "smarts_compile_main": 86858208,
+  "smarts_compile_branch": 86865114,
+  "descriptors_main": 28743958,
+  "descriptors_branch": 28767955
+ },
+ "layout_2d_as_drawn": {
+  "batch17": {
+   "clean": 14699,
+   "with_clash": 26,
+   "with_crossing": 300,
+   "narrow_branch_atoms": 2291
+  },
+  "source": {
+   "clean": 14722,
+   "with_clash": 28,
+   "with_crossing": 277,
+   "bond_dev_over_0.2": 276,
+   "with_narrow_branch": 317,
+   "narrow_branch_atoms": 2162
+  },
+  "rdkit": {
+   "clean": 14504,
+   "with_clash": 276,
+   "with_crossing": 402,
+   "bond_dev_over_0.2": 540,
+   "with_narrow_branch": 0,
+   "narrow_branch_atoms": 0
+  },
+  "rows_better": 24,
+  "rows_worse": 3
+ },
+ "write_mol_2000_rows_instructions": {
+  "batch17": 653453915,
+  "before_sweep": 710805123,
+  "source": 678697551
+ },
+ "smarts_hyb_instructions": {
+  "hyb_patterns": 294781000,
+  "plain_patterns": 265225000,
+  "eval_hybridization": 38806156
+ },
+ "canonical_audit": {
+  "real_rows": 30030,
+  "total_s": 1.91,
+  "worst_ms": 4.6,
+  "worst_rdkit_ms": 1.1,
+  "aromatic_ez_plan_candidates_row2984": 288
+ },
+ "gates_merged_tree": {
+  "rust_tests": 5348,
+  "pytest": 1034,
+  "script_tests": 151,
+  "a6_coords_identical_to_batch16": [
+   265,
+   265
+  ],
+  "biotransformer_identical": true
+ }
+}

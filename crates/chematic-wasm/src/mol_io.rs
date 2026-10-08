@@ -190,9 +190,7 @@ pub fn mol_block_stereo_loss_json(mol: &MolHandle) -> String {
 /// Every molecule is laid out (also without stereo, unlike `write_mol`);
 /// with stereo the layout is the writer's stereo depiction.
 fn mol_block_with_loss(mol: &chematic_core::Molecule) -> (String, chematic_mol::MolStereoLoss) {
-    let meta = chematic_mol::MolMetadata::default();
-    let depiction = chematic_mol::stereo_depiction::stereo_depiction(mol, &[]);
-    chematic_mol::write_mol_with_stereo_report(mol, &meta, &depiction.coords)
+    chematic_mol::write_laid_out_mol(mol, &chematic_mol::MolMetadata::default())
 }
 
 /// Parse an SDF string and return a JSON array of canonical SMILES strings.

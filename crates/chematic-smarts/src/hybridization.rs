@@ -285,6 +285,15 @@ fn bond_is_conjugated(f: &Facts, bond: BondIdx) -> bool {
     })
 }
 
+/// Whether `bond` is conjugated in RDKit's model (`Bond::getIsConjugated`
+/// after `MolOps::setConjugation`), on the molecule as given (pass RDKit's
+/// aromaticity view). Memoized with [`rdkit_hybridization`]'s facts.
+pub fn rdkit_bond_is_conjugated(mol: &Molecule, bond: BondIdx) -> bool {
+    let lazy = lazy_facts(mol);
+    let f = Facts { mol, lazy: &lazy };
+    bond_is_conjugated(&f, bond)
+}
+
 /// RDKit hybridization as the SMARTS `^n` code (0 = S, 1 = SP, 2 = SP2,
 /// 3 = SP3, 4 = SP3D, 5 = SP3D2); `None` = unspecified.
 ///

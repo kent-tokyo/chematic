@@ -35,6 +35,7 @@ pub mod cx;
 pub mod error;
 pub mod parser;
 pub mod random_smiles;
+pub mod rdkit;
 pub mod smi_file;
 pub mod writer;
 
@@ -55,8 +56,14 @@ pub use canonical_search::{
 };
 pub use cx::{CxAtomProp, CxSmiles, attachment_point_label_number, parse_cxsmiles, write_cxsmiles};
 pub use error::SmilesError;
-pub use parser::{SmilesParseLimits, parse, parse_with_limits};
+pub use parser::{SmilesParseLimits, parse, parse_template, parse_with_limits};
 pub use random_smiles::{random_smiles, random_smiles_vect};
+pub use rdkit::{
+    InchiOutputAtom, InchiOutputStereo0D, RdkitLegacyStereo, RdkitMolBlock, RdkitMolBlockAtom,
+    RdkitMolBlockBond, RdkitSmilesError, RdkitSmilesParams, rdkit_2d_coords,
+    rdkit_atom_stereocenter_counts, rdkit_canonical_smiles, rdkit_legacy_stereo, rdkit_mol_block,
+    rdkit_mol_block_2d, rdkit_molecule_from_inchi_output, rdkit_smiles, rdkit_stereoisomer_smiles,
+};
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,
 };

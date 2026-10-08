@@ -48,7 +48,7 @@ pub mod parser;
 #[cfg(feature = "native-inchi")]
 pub mod native;
 #[cfg(feature = "native-inchi")]
-pub use native::{InchiError, standard_inchi, standard_inchi_key};
+pub use native::{InchiError, rdkit_mol_from_inchi, standard_inchi, standard_inchi_key};
 
 use chematic_core::{AtomIdx, Molecule};
 use chematic_smiles::canonical::canonical_atom_order;

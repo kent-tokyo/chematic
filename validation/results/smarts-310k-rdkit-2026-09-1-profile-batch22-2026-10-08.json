@@ -1,0 +1,20 @@
+{
+  "chematic_version": "1.0.36",
+  "counts": {
+    "2026.03.6:exact": 309982,
+    "2026.03.6:typed_unsupported:ring_model_ambiguous": 18,
+    "2026.09.1:exact": 310000
+  },
+  "input_cells": 310000,
+  "oracle": {
+    "commit": "fece8caa860bdf6c9c82bdb9253f22a0cf87150c",
+    "path": "validation/results/rdkit-native-rebaseline-2026-03-6-to-2026-09-1-2026-10-04-new.jsonl.gz",
+    "rdkit": "2026.09.1 native C++ build",
+    "sha256": "87332ff0e1d8a24fd2160b8dc631486d696466f5634c4a7d29d50520a16e5435"
+  },
+  "schema": "python-opt-in-smarts-parity-310k-rdkit-2026.09.1/v1",
+  "scope": "source-built Python wheel; not a published registry artifact",
+  "source_revision": "0029e0ce476da4f57121c15e6dc20801a000f06a+dirty",
+  "unexpected": [],
+  "unexpected_total": 0
+}

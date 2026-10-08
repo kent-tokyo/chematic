@@ -61,8 +61,9 @@ pub struct RdkitParityConfig {
     /// bridged-cage fixtures.
     pub use_shared_symmetrized_sssr: bool,
     /// Which ring list `[R<n>]` counts rings in. The default is RDKit
-    /// 2026.03.6's symmetrized SSSR (with its `ring_model_ambiguous`
-    /// refusal for charged polycyclic macrocycles);
+    /// 2026.03's symmetrized SSSR (exact, order-dependent ring list where
+    /// it depends on atom order; `ring_model_ambiguous` only where that
+    /// port declines);
     /// [`RdkitRingCountModel::RelevantCycles`] is RDKit 2026.09.1's.
     pub ring_count_model: RdkitRingCountModel,
 }
@@ -70,9 +71,13 @@ pub struct RdkitParityConfig {
 /// The ring list behind `[R<n>]` in [`find_matches_rdkit_parity`].
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum RdkitRingCountModel {
-    /// RDKit 2026.03.6: its symmetrized SSSR. Where that list depends on
-    /// atom order (two or more aromatic cations with replacement rings) the
-    /// call refuses with [`RdkitParityError::RingModelAmbiguous`].
+    /// RDKit 2026.03: its symmetrized SSSR. Where that list depends on atom
+    /// order (two or more aromatic cations with replacement rings) the
+    /// rings are counted over the exact port of RDKit's order-dependent
+    /// ring list (`chematic_perception::rdkit_sssr_ring_order`) for the
+    /// molecule in its given atom order, as RDKit does; only where that
+    /// port declines does the call refuse with
+    /// [`RdkitParityError::RingModelAmbiguous`].
     #[default]
     SymmetrizedSssr,
     /// RDKit 2026.09.1: every relevant cycle (the union of all minimum cycle
@@ -168,12 +173,26 @@ pub fn find_matches_rdkit_parity(
             .filter(|(_, atom)| atom.aromatic && atom.charge > 0)
             .count();
         if aromatic_cations >= 2 && model.extra_ring_count() > 0 {
-            return Err(RdkitParityError::RingModelAmbiguous {
-                aromatic_cations,
-                extra_rings: model.extra_ring_count(),
-            });
+            // Here RDKit's symmetrized SSSR depends on the atom order. Count
+            // over the exact port of RDKit's order-dependent ring list for
+            // the molecule in its given atom order; refuse only where that
+            // port itself declines (RDKit's approximate ring finder).
+            let Some(exact) = chematic_perception::rdkit_sssr_ring_order(mol_ref) else {
+                return Err(RdkitParityError::RingModelAmbiguous {
+                    aromatic_cations,
+                    extra_rings: model.extra_ring_count(),
+                });
+            };
+            let mut counts = vec![0usize; mol_ref.atom_count()];
+            for ring in &exact {
+                for a in ring {
+                    counts[a.0 as usize] += 1;
+                }
+            }
+            Some(RdkitParityRingModel::from_counts(&counts))
+        } else {
+            Some(model)
         }
-        Some(model)
     } else {
         None
     };
@@ -942,24 +961,22 @@ mod tests {
     }
 
     #[test]
-    fn ambiguous_aromatic_cation_ring_model_fails_closed() {
+    fn order_dependent_ring_model_uses_exact_rdkit_ring_order() {
         // This highly charged fused polyaromatic scaffold was the sole
         // SMARTS parity regression in the 5,021-molecule A4 census: the
         // generated replacement rings produced many false-positive [R3]
-        // matches where RDKit returned only atoms 3 and 4.  Refuse the
-        // ambiguous model instead of returning a plausible but wrong set.
+        // matches. RDKit's symmetrized SSSR depends on atom order here; the
+        // exact port of its ring order gives RDKit 2026.03's answer (atoms 3
+        // and 4) for the molecule in its given order.
         let mol =
             parse("c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1")
                 .unwrap();
         let query = parse_smarts("[R3]").unwrap();
-        let result = find_matches_rdkit_parity(&query, &mol, &RdkitParityConfig::default());
-        assert!(matches!(
-            result,
-            Err(RdkitParityError::RingModelAmbiguous {
-                aromatic_cations: 2..,
-                extra_rings: 1..
-            })
-        ));
+        let (matches, _) =
+            find_matches_rdkit_parity(&query, &mol, &RdkitParityConfig::default()).unwrap();
+        let mut atoms: Vec<u32> = matches.iter().map(|m| m[&0].0).collect();
+        atoms.sort_unstable();
+        assert_eq!(atoms, vec![3, 4]);
     }
 
     #[test]

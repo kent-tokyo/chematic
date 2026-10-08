@@ -718,7 +718,13 @@ pub fn embed_pipeline_v2(
     mol: &Molecule,
     config: &PipelineV2Config,
 ) -> Result<PipelineV2Result, PipelineV2Failure> {
-    let first = embed_pipeline_v2_from_seed(mol, config)?;
+    let first = match embed_pipeline_v2_from_seed(mol, config) {
+        Ok(first) => first,
+        Err(failure) if retries_final_stereo_violation(config, &failure) => {
+            return reseed_after_final_stereo_violation(mol, config, failure);
+        }
+        Err(failure) => return Err(failure),
+    };
     if !minimization_stalled_on_constraint(&first) {
         return Ok(first);
     }
@@ -730,10 +736,7 @@ pub fn embed_pipeline_v2(
     let mut used_ms = first.elapsed_ms_by_stage.total_ms;
     for k in 1..=STALLED_MINIMIZATION_RESEEDS {
         let mut retry = config.clone();
-        retry.embed.random_seed = config
-            .embed
-            .random_seed
-            .wrapping_add(k.wrapping_mul(0x9E37_79B9_7F4A_7C15));
+        retry.embed.random_seed = reseeded(config, k);
         if let Some(budget) = config.total_timeout_ms {
             if used_ms >= budget {
                 break;
@@ -755,6 +758,57 @@ pub fn embed_pipeline_v2(
 
 /// Extra embeddings tried when minimization stalls on a stereo constraint.
 const STALLED_MINIMIZATION_RESEEDS: u64 = 3;
+
+/// Extra embeddings tried when a stereo-safe run ends in a final stereo
+/// violation (#739).
+const FINAL_STEREO_VIOLATION_RESEEDS: u64 = 7;
+
+/// The seed of the `k`-th extra embedding after `config`'s own.
+fn reseeded(config: &PipelineV2Config, k: u64) -> u64 {
+    config
+        .embed
+        .random_seed
+        .wrapping_add(k.wrapping_mul(0x9E37_79B9_7F4A_7C15))
+}
+
+/// A stereo-safe (`RepairAndVerify`) run whose force field relaxed a declared
+/// centre through inversion, beyond what the post-minimization repair undoes.
+fn retries_final_stereo_violation(config: &PipelineV2Config, failure: &PipelineV2Failure) -> bool {
+    config.stereo_policy == StereoPolicy::RepairAndVerify
+        && matches!(failure.cause, PipelineV2FailureCause::FinalStereoViolation)
+}
+
+/// #739: whether MMFF94 relaxes a strained embedding back across a declared
+/// centre depends on the embedding, down to the last bit of the host's
+/// libm. A beta-lactam bridgehead (penam, A6 rows 53 and 246) inverted from
+/// a quarter of the seeds, on every platform; which seed was hit decided
+/// whether the fixed A6 seed passed on Linux or on macOS. Embed again from
+/// other seeds, within the time budget, and return the first success. When
+/// every seed fails, the first failure is returned unchanged: the typed
+/// refusal stays.
+#[allow(clippy::result_large_err)]
+fn reseed_after_final_stereo_violation(
+    mol: &Molecule,
+    config: &PipelineV2Config,
+    first: PipelineV2Failure,
+) -> Result<PipelineV2Result, PipelineV2Failure> {
+    let mut used_ms = first.elapsed_ms_by_stage.total_ms;
+    for k in 1..=FINAL_STEREO_VIOLATION_RESEEDS {
+        let mut retry = config.clone();
+        retry.embed.random_seed = reseeded(config, k);
+        if let Some(budget) = config.total_timeout_ms {
+            if used_ms >= budget {
+                break;
+            }
+            retry.total_timeout_ms = Some(budget - used_ms);
+        }
+        match embed_pipeline_v2_from_seed(mol, &retry) {
+            Ok(result) => return Ok(result),
+            Err(failure) => used_ms += failure.elapsed_ms_by_stage.total_ms,
+        }
+    }
+    Err(first)
+}
 
 fn minimization_stalled_on_constraint(result: &PipelineV2Result) -> bool {
     result.force_field.mmff94_termination

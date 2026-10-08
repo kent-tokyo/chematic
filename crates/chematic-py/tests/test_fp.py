@@ -452,3 +452,11 @@ def test_avalon_fp_tanimoto_similarity_ordering(benzene, toluene, aspirin):
     sim_toluene = chematic.tanimoto(benzene.avalon_fp(), toluene.avalon_fp())
     sim_aspirin = chematic.tanimoto(benzene.avalon_fp(), aspirin.avalon_fp())
     assert sim_toluene > sim_aspirin
+
+
+def test_rdkit_avalon_fp_matches_rdkit(aspirin):
+    # RDKit 2026.03.1 GetAvalonFP(aspirin, nBits=512) on-bits
+    raw = bytes(aspirin.rdkit_avalon_fp(512))
+    assert len(raw) == 64
+    bits = [i * 8 + j for i, b in enumerate(raw) for j in range(8) if b >> j & 1]
+    assert bits[:5] == [13, 15, 41, 67, 85] and len(bits) == 54

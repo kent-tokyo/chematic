@@ -2,14 +2,23 @@
 
 This directory contains dated, reproducible measurement records. Numbers are
 scoped to each record's source or package, corpus, host, runtime and operation.
-The current release is **v1.0.33**. Its published-package RDKit 2026.03.6
-Python baseline and RDKit.js 2026.03.6/2026.09.1 rebaseline are versioned
-below. Other older records remain scoped to their stated artifacts and hosts.
+The current release is **v1.0.38**. Its source-candidate COSMolKit/RDKit
+comparison and the published-package RDKit 2026.03.6 and RDKit.js
+2026.03.6/2026.09.1 records are versioned below. Other records remain scoped
+to their stated artifacts and hosts.
 
 ## Start here
 
 | Need | Start with |
 |---|---|
+| Review the v1.0.38 RDKit/COSMolKit parity work | [`2026-10-08-cosmolkit-parity.md`](2026-10-08-cosmolkit-parity.md): named RDKit-compatible SMILES, InChI, fingerprint, stereoisomer, 2D-coordinate, MOL-block and force-field APIs; exact corpus denominators and remaining ETKDG/SMARTS-writer/PDB-writer boundaries; source-candidate evidence, not a published-package speed claim |
+| Review #769 and #739 | [`2026-10-08-issues-769-739.md`](2026-10-08-issues-769-739.md): over-valent neutral O/F in SMILES is a typed `InvalidValence` error (SMIRKS templates exempt); A6 rows 53/246 reproduced on published v1.0.31 and on the source with glibc math; the `libm` change had only moved the penam inversion to other seeds (v1.0.37: 32 of 2,650 seeded runs fail); a stereo-safe run that ends in a final stereo violation now re-embeds (0 / 2,650); v1.0.37 A6 coordinates bit-identical on Linux aarch64 (qemu) and Windows (Wine); A6 gated on every CI platform |
+| Review the #734/#754 batch-23 follow-ups | [`2026-10-08-734-754-followups-batch23.md`](2026-10-08-734-754-followups-batch23.md): octahedral metal complexes drawn with their pyridines 1.5 bonds out; rows with a clash as drawn 23 → 5 of 15,000 (RDKit 276), crossings 230 → 213 |
+| Review the #734/#754 batch-22 follow-ups | [`2026-10-08-734-754-followups-batch22.md`](2026-10-08-734-754-followups-batch22.md): cheaper clash relief with byte-identical MOL blocks (652M → 589M instructions); long peptides' forks opened (narrow branch atoms 1,757 → 916 of 15,000 rows); two crossings fixed; remaining decided items restated |
+| Review the #734/#754 batch-21 follow-ups | [`2026-10-08-734-754-followups-batch21.md`](2026-10-08-734-754-followups-batch21.md): Python parsers raise `ChematicInputError` (category / code / format); abstention matrix across Python and WASM; nucleic-acid edit sequences replayed identically in Rust, Python and WASM; published v1.0.37 depiction 4–13× faster than RDKit |
+| Review the #734/#754 batch-20 follow-ups | [`2026-10-08-734-754-followups-batch20.md`](2026-10-08-734-754-followups-batch20.md): published-wheel chemistry gate workflow repaired (no RDKit on macOS/Windows, Linux compare with a pinned RDKit wheel, rule tables fetched by path); published v1.0.37 Linux wheel / npm / crate / sdist gates and A6; porphyrin template, straight CF2 chains, exterior gaps at ring-fusion atoms (clean 14,767 of 15,000); 3D quality tier: lowest of 10 stereo-safe MMFF94 conformers p90 3.69 kcal/mol above RDKit's best of 10 (single conformer 8.65) |
+| Review the #734/#754 batch-19 follow-ups | [`2026-10-08-734-754-followups-batch19.md`](2026-10-08-734-754-followups-batch19.md): crossings as drawn 277 → 242 of 15,000 (RDKit 402), clashes 28 → 25 (RDKit 276), clean 14,757; adamantane-type cage template; wider turns for small substituents; 90° forks; no stacked atoms from the relief; SVG 23% and canonical SMILES 7% fewer instructions with identical output; fullerenes and long-peptide forks decided |
+| Review the #734/#754 batch-18 follow-ups | [`2026-10-07-734-754-followups-batch18.md`](2026-10-07-734-754-followups-batch18.md): CI jobs run locally (binding inventory and MMFF94 source-wheel gate would have failed; refreshed), PR perf gate equal to main in instructions, `origin/main` merged with every gate unchanged, gem-disubstituted ring atoms (crossings 300 → 277 of 15,000; RDKit 402), canonical worst-case audit |
 | Review the #734/#754 batch-17 follow-ups | [`2026-10-07-734-754-followups-batch17.md`](2026-10-07-734-754-followups-batch17.md): rows with a clash as drawn 53 → 26 of 15,000 (RDKit 276), clean 14,699; turns about ring double-bond atoms; stress majorization for overlapping fused/spiro systems; depiction 5–12× faster than RDKit; RDKit 2026.09.1 Python still not on PyPI (stopped early for the release) |
 | Review the #734/#754 batch-16 follow-ups | [`2026-10-07-734-754-followups-batch16.md`](2026-10-07-734-754-followups-batch16.md): branch points drawn 120° apart (v1.0.36 drew every acyclic three-bond atom 150°/150°/60°); rows with a clash as drawn 155 → 53 of 15,000 (RDKit 276), clean 14,669 (RDKit 14,504); terminal wedge neighbours no longer stacked on ring atoms; Python `to_mol_block` writes 2D coordinates for every molecule; reaction SVGs and similarity maps draw stereo; canonical E/Z pruning: explicit-H rows 4111/4384 60/40 ms → 2.3/0.4 ms, 30,305 audit strings unchanged; A6 row 0036 analysed (decided) |
 | Review the #734/#754 batch-15 follow-ups | [`2026-10-07-734-754-followups-batch15.md`](2026-10-07-734-754-followups-batch15.md): SVG/depict data draw declared stereo (RDKit reads the drawings as the input on 1,686/1,687 and 1,670/1,670 stereo rows; PyPI v1.0.36 286 and 317); SDWriter Å coordinates; batch-14 `write_mol` slowdown 6,960M → 625M instructions (batch 13 353M); bridged layout clashes 212 → 5 of 531; A6 264/265 converged (stalled minimization re-embeds); BTMR1063 pair 162.6 s → 1.83 s; equal-output reactions 0.72x v1.0.34 |
@@ -91,7 +100,7 @@ below. Other older records remain scoped to their stated artifacts and hosts.
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.0.33. Older records remain versioned historical
+The current release line is v1.0.38. Older records remain versioned historical
 measurements where their headers say so; a release does not imply that an older
 measurement was rerun.
 

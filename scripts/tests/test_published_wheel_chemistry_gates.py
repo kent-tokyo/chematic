@@ -56,3 +56,63 @@ def test_resume_only_skips_complete_json(tmp_path):
     assert not MODULE.finished(path)
     path.write_text('{"counts": {"exact": 1}}')
     assert MODULE.finished(path)
+
+
+CHEMATIC_SIDE = [
+    "reaction_python_checked_candidates.py",
+    "chematic_chemistry_dump.py",
+    "check_python_smarts_parity_310k.py",
+    "biotransformer_chematic_responses.py",
+    "biotransformer_rules.py",
+    "chematic_reaction_worker.py",
+    "fetch_biotransformer_rules.py",
+]
+
+
+def test_chematic_side_scripts_import_no_rdkit_at_module_level():
+    """The macOS and Windows jobs run these without RDKit installed."""
+    import ast
+
+    scripts = SCRIPT.parent
+    for name in CHEMATIC_SIDE:
+        tree = ast.parse((scripts / name).read_text(encoding="utf-8"))
+        for node in tree.body:
+            names = []
+            if isinstance(node, ast.Import):
+                names = [a.name for a in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                names = [node.module or ""]
+            assert not any(n.split(".")[0] == "rdkit" for n in names), name
+
+
+def test_replay_answers_recorded_requests(tmp_path):
+    import gzip
+    import sys
+
+    sys.path.insert(0, str(SCRIPT.parent))
+    spec = importlib.util.spec_from_file_location("bt_corpus", SCRIPT.parent / "biotransformer_rule_corpus.py")
+    corpus = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(corpus)
+
+    rules = tmp_path / "rules.json"
+    rules.write_text('{"reactions": {"one": {"btmrID": "R1", "smirks": "[C:1]>>[C:1]O"},'
+                     ' "two": {"btmrID": "R2", "smirks": "[N:1]>>[N:1]C"}}}', encoding="utf-8")
+    requests = tmp_path / "requests.tsv"
+    requests.write_text("# header\nCC\t[H]C([H])([H])C([H])([H])[H]\n", encoding="utf-8")
+    responses = tmp_path / "responses.jsonl.gz"
+    with gzip.open(responses, "wt", encoding="utf-8") as f:
+        f.write(json.dumps({"version": "0.0", "file": "x"}) + "\n")
+        f.write(json.dumps([0, 0, "ok", None, [[{"smiles": "CCO"}]]]) + "\n")
+        f.write(json.dumps([1, 1, "no_match", None, []]) + "\n")
+    replay = corpus.Replay([responses], [rules], requests)
+    assert replay.version == "0.0"
+    got = replay.run({"smirks": "[C:1]>>[C:1]O", "smiles": "CC"})
+    assert got == {"status": "ok", "detail": None, "products": [[{"smiles": "CCO"}]]}
+    got = replay.run({"smirks": "[N:1]>>[N:1]C", "smiles": "[H]C([H])([H])C([H])([H])[H]"})
+    assert got["status"] == "no_match"
+    try:
+        replay.run({"smirks": "[C:1]>>[C:1]O", "smiles": "CCC"})
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError("an unrecorded request must stop the run")

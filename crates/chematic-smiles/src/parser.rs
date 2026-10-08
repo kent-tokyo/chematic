@@ -49,6 +49,27 @@ impl Default for SmilesParseLimits {
 
 /// Parse an OpenSMILES string while enforcing input and graph-size limits.
 pub fn parse_with_limits(input: &str, limits: &SmilesParseLimits) -> Result<Molecule, SmilesError> {
+    parse_checked(input, limits, true)
+}
+
+/// Parse one side of a reaction template (SMIRKS or reaction SMARTS read as
+/// SMILES) into its template graph.
+///
+/// The same grammar and limits as [`parse`], without the check that rejects
+/// a neutral oxygen or fluorine with too many bonds
+/// ([`SmilesError::InvalidValence`], #769): a template atom is a pattern, not
+/// an atom of a molecule (RDKit does not sanitize templates either), and a
+/// product it would write with an impossible valence is refused when the
+/// template is applied.
+pub fn parse_template(input: &str) -> Result<Molecule, SmilesError> {
+    parse_checked(input, &SmilesParseLimits::default(), false)
+}
+
+fn parse_checked(
+    input: &str,
+    limits: &SmilesParseLimits,
+    check_valence: bool,
+) -> Result<Molecule, SmilesError> {
     if input.len() > limits.max_input_bytes {
         return Err(SmilesError::ResourceLimit {
             resource: "input bytes",
@@ -71,6 +92,9 @@ pub fn parse_with_limits(input: &str, limits: &SmilesParseLimits) -> Result<Mole
             limit: limits.max_bonds,
         });
     }
+    if check_valence {
+        check_neutral_valence(&mol)?;
+    }
     Ok(mol)
 }
 
@@ -82,6 +106,50 @@ fn parse_unbounded(input: &str) -> Result<Molecule, SmilesError> {
     let bytes = input.as_bytes();
     let mut p = Parser::new(bytes);
     p.parse_smiles()
+}
+
+/// Reject a neutral oxygen with explicit valence above 2 or a neutral
+/// fluorine above 1 (#769). Neither element has a hypervalent neutral state,
+/// so such a graph (`O=O1C=CC=C1`, `CO(C)C`, `F(C)C`) cannot be a molecule;
+/// accepting it let aromaticity perception aromatize the ring through the
+/// invalid oxygen. The valence is the sum of bond orders plus explicit
+/// hydrogens. An aromatic bond counts 1 (an aromatic oxygen or furan-type
+/// atom has two sigma bonds), a dative bond counts only at its acceptor, and
+/// zero-order and query bonds count nothing. Charged atoms and the
+/// hypervalent states of S, P, N and the heavier halogens are left to the
+/// existing contracts.
+fn check_neutral_valence(mol: &Molecule) -> Result<(), SmilesError> {
+    for (idx, atom) in mol.atoms() {
+        if atom.charge != 0 || atom.wildcard {
+            continue;
+        }
+        let max = match atom.element {
+            Element::O => 2,
+            Element::F => 1,
+            _ => continue,
+        };
+        let mut valence = u32::from(atom.hydrogen_count.unwrap_or(0));
+        for (_, bond) in mol.neighbors(idx) {
+            let entry = mol.bond(bond);
+            valence += match entry.order {
+                BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic => 1,
+                BondOrder::Double => 2,
+                BondOrder::Triple => 3,
+                BondOrder::Quadruple => 4,
+                BondOrder::Dative => u32::from(entry.atom2 == idx),
+                _ => 0,
+            };
+        }
+        if valence > max {
+            return Err(SmilesError::InvalidValence {
+                element: atom.element.symbol(),
+                atom: idx.0 as usize,
+                valence,
+                max,
+            });
+        }
+    }
+    Ok(())
 }
 
 const MAX_BRANCH_DEPTH: usize = 500;
@@ -530,6 +598,13 @@ impl<'a> Parser<'a> {
                 mol.set_bond_direction_anchor(new_bond_idx, a1);
             }
             mol.set_smiles_ring_closure(new_bond_idx, ring_num, slot);
+            // RDKit's `CloseMolRings` keeps the opening partial bond (begin =
+            // opening atom) only when it carried an explicit, non-directional
+            // bond symbol; dative arrows set their own orientation.
+            if bond != BondOrder::Dative {
+                let at_open = matches!(open_bond, Some(b) if !matches!(b.order, BondOrder::Up | BondOrder::Down));
+                mol.set_smiles_ring_closure_begins_at_open(new_bond_idx, at_open);
+            }
             // Record the close partner for final PendingRing resolution, keyed
             // by this occurrence's unique slot -- NOT the ring digit, which
             // may be reused by an unrelated ring later in the same SMILES.

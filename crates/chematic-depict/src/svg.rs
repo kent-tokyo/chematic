@@ -139,6 +139,109 @@ impl<'a> DrawCtx<'a> {
 // Entry points
 // ---------------------------------------------------------------------------
 
+/// An `f64` written as `{:.2}` would write it, without the general float
+/// formatter (its exact path was most of an SVG's cost). Values near a
+/// rounding tie, very large and non-finite values use the formatter, so the
+/// text is always the same; any other format spec also goes to it.
+struct F2(f64);
+
+/// The order of `a * 200` against `target`, computed exactly from `a`'s
+/// bits (`a` finite and non-negative); `None` when out of range.
+fn exact_cmp_times_200(a: f64, target: u64) -> Option<std::cmp::Ordering> {
+    let bits = a.to_bits();
+    let exp_bits = ((bits >> 52) & 0x7ff) as i32;
+    let frac = bits & ((1u64 << 52) - 1);
+    let (mantissa, exp) = if exp_bits == 0 {
+        (frac, -1074)
+    } else {
+        (frac | (1u64 << 52), exp_bits - 1075)
+    };
+    let lhs = mantissa as u128 * 200;
+    if exp >= 0 {
+        if exp > 40 {
+            return None;
+        }
+        Some((lhs << exp).cmp(&(target as u128)))
+    } else {
+        let shift = (-exp) as u32;
+        if shift > 70 {
+            return None;
+        }
+        Some(lhs.cmp(&((target as u128) << shift)))
+    }
+}
+
+impl std::fmt::Display for F2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if f.precision() != Some(2) || f.width().is_some() || f.sign_plus() {
+            return std::fmt::Display::fmt(&self.0, f);
+        }
+        let mut buf = [0u8; 24];
+        match fixed2_digits(self.0, &mut buf) {
+            Some(start) => f.write_str(std::str::from_utf8(&buf[start..]).expect("ASCII digits")),
+            None => std::fmt::Display::fmt(&self.0, f),
+        }
+    }
+}
+
+/// `x` as `{:.2}` writes it, as ASCII in `buf[start..]` (`start` returned),
+/// or `None` where the general formatter must decide (non-finite or very
+/// large values, a tie it cannot settle exactly).
+fn fixed2_digits(x: f64, buf: &mut [u8; 24]) -> Option<usize> {
+    let scaled = x.abs() * 100.0;
+    if !x.is_finite() || scaled >= 1e15 {
+        return None;
+    }
+    // `scaled` is below 2^50: truncation is `floor`.
+    let k = scaled as u64;
+    let units = if (scaled - k as f64 - 0.5).abs() < 1e-6 {
+        // Near a tie the formatter decides on the exact binary value:
+        // compare |x| * 200 with 2k + 1 exactly, ties to even.
+        match exact_cmp_times_200(x.abs(), 2 * k + 1)? {
+            std::cmp::Ordering::Greater => k + 1,
+            std::cmp::Ordering::Less => k,
+            std::cmp::Ordering::Equal => k + (k & 1),
+        }
+    } else {
+        // Away from a tie, rounding to nearest is the formatter's choice
+        // (`scaled + 0.5` cannot round across an integer this far from .5).
+        (scaled + 0.5) as u64
+    };
+    let mut pos = buf.len();
+    let (mut int, dec) = (units / 100, units % 100);
+    pos -= 1;
+    buf[pos] = b'0' + (dec % 10) as u8;
+    pos -= 1;
+    buf[pos] = b'0' + (dec / 10) as u8;
+    pos -= 1;
+    buf[pos] = b'.';
+    loop {
+        pos -= 1;
+        buf[pos] = b'0' + (int % 10) as u8;
+        int /= 10;
+        if int == 0 {
+            break;
+        }
+    }
+    if x.is_sign_negative() {
+        pos -= 1;
+        buf[pos] = b'-';
+    }
+    Some(pos)
+}
+
+/// Append `x` as `format!("{x:.2}")` would.
+fn push_f2(out: &mut String, x: f64) {
+    let mut buf = [0u8; 24];
+    match fixed2_digits(x, &mut buf) {
+        Some(start) => out.push_str(std::str::from_utf8(&buf[start..]).expect("ASCII digits")),
+        None => {
+            use std::fmt::Write as _;
+            write!(out, "{x:.2}").expect("writing to String cannot fail");
+        }
+    }
+}
+
 /// Render just the bonds and atom labels for `mol` without an SVG wrapper.
 ///
 /// Used by the grid renderer to compose multiple molecules into one SVG.
@@ -191,7 +294,9 @@ pub(crate) fn render_mol_body_opts(
         let p = layout.get(*idx);
         body.push_str(&format!(
             "  <circle cx=\"{:.2}\" cy=\"{:.2}\" r=\"16\" fill=\"{}\" opacity=\"0.5\"/>\n",
-            p.x, p.y, color,
+            F2(p.x),
+            F2(p.y),
+            color,
         ));
     }
 
@@ -277,7 +382,9 @@ pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
         let p = layout.get(*idx);
         svg.push_str(&format!(
             "  <circle cx=\"{:.2}\" cy=\"{:.2}\" r=\"16\" fill=\"{}\" opacity=\"0.5\"/>\n",
-            p.x, p.y, color
+            F2(p.x),
+            F2(p.y),
+            color
         ));
     }
 
@@ -362,7 +469,9 @@ pub fn render_svg_with_metadata(
         let p = layout.get(*idx);
         svg.push_str(&format!(
             "  <circle cx=\"{:.2}\" cy=\"{:.2}\" r=\"16\" fill=\"{}\" opacity=\"0.5\"/>\n",
-            p.x, p.y, color
+            F2(p.x),
+            F2(p.y),
+            color
         ));
     }
 
@@ -405,16 +514,21 @@ fn write_svg_header_opts(layout: &Layout, opts: &RenderOptions, svg: &mut String
         "<svg xmlns=\"http://www.w3.org/2000/svg\" \
          width=\"{}\" height=\"{}\" \
          viewBox=\"{:.2} {:.2} {:.2} {:.2}\">\n",
-        display_w, display_h, view_x, view_y, view_w, view_h
+        display_w,
+        display_h,
+        F2(view_x),
+        F2(view_y),
+        F2(view_w),
+        F2(view_h)
     ));
 
     if opts.background != "transparent" {
         svg.push_str(&format!(
             "  <rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" fill=\"{}\"/>\n",
-            view_x,
-            view_y,
-            view_w,
-            view_h,
+            F2(view_x),
+            F2(view_y),
+            F2(view_w),
+            F2(view_h),
             escape_xml(&opts.background) // S1: escape user input
         ));
     }
@@ -433,10 +547,10 @@ fn write_atom_labels_ctx(mol: &Molecule, layout: &Layout, ctx: &DrawCtx, svg: &m
             if let Some(fill) = ctx.label_rect_fill {
                 svg.push_str(&format!(
                     "  <rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" fill=\"{}\"/>\n",
-                    p.x - LABEL_HALF_W,
-                    p.y - LABEL_HALF_H,
-                    LABEL_HALF_W * 2.0,
-                    LABEL_HALF_H * 2.0,
+                    F2(p.x - LABEL_HALF_W),
+                    F2(p.y - LABEL_HALF_H),
+                    F2(LABEL_HALF_W * 2.0),
+                    F2(LABEL_HALF_H * 2.0),
                     escape_xml(fill), // S1: escape background colour
                 ));
             }
@@ -457,8 +571,8 @@ fn write_atom_labels_ctx(mol: &Molecule, layout: &Layout, ctx: &DrawCtx, svg: &m
                  font-family=\"sans-serif\" font-size=\"{}\" \
                  text-anchor=\"middle\" dominant-baseline=\"central\" \
                  fill=\"{}\"{}>{}</text>\n",
-                p.x,
-                p.y,
+                F2(p.x),
+                F2(p.y),
                 FONT_SIZE as u32,
                 ctx.text_color(atom.element.atomic_number()),
                 data_attrs,
@@ -469,8 +583,8 @@ fn write_atom_labels_ctx(mol: &Molecule, layout: &Layout, ctx: &DrawCtx, svg: &m
             svg.push_str(&format!(
                 "  <text x=\"{:.2}\" y=\"{:.2}\" font-size=\"0\" \
                  data-atom-idx=\"{}\" data-element=\"{}\" data-charge=\"{}\"/>\n",
-                p.x,
-                p.y,
+                F2(p.x),
+                F2(p.y),
                 idx.0,
                 atom.element.symbol(),
                 atom.charge
@@ -484,8 +598,8 @@ fn write_atom_labels_ctx(mol: &Molecule, layout: &Layout, ctx: &DrawCtx, svg: &m
                  font-family=\"sans-serif\" font-size=\"8\" \
                  text-anchor=\"start\" dominant-baseline=\"auto\" \
                  fill=\"#8b92a9\">{}</text>\n",
-                p.x + LABEL_HALF_W,
-                p.y - LABEL_HALF_H,
+                F2(p.x + LABEL_HALF_W),
+                F2(p.y - LABEL_HALF_H),
                 idx.0
             ));
         }
@@ -515,11 +629,21 @@ fn render_bond_c(order: BondOrder, p1: Point, p2: Point, color: &str) -> String 
 }
 
 fn render_line(p1: Point, p2: Point, stroke_width: &str, color: &str) -> String {
-    format!(
-        "  <line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" \
-         stroke=\"{}\" stroke-width=\"{}\" fill=\"none\"/>\n",
-        p1.x, p1.y, p2.x, p2.y, color, stroke_width
-    )
+    let mut s = String::with_capacity(112);
+    s.push_str("  <line x1=\"");
+    push_f2(&mut s, p1.x);
+    s.push_str("\" y1=\"");
+    push_f2(&mut s, p1.y);
+    s.push_str("\" x2=\"");
+    push_f2(&mut s, p2.x);
+    s.push_str("\" y2=\"");
+    push_f2(&mut s, p2.y);
+    s.push_str("\" stroke=\"");
+    s.push_str(color);
+    s.push_str("\" stroke-width=\"");
+    s.push_str(stroke_width);
+    s.push_str("\" fill=\"none\"/>\n");
+    s
 }
 
 fn perp_unit(p1: Point, p2: Point) -> (f64, f64) {
@@ -571,7 +695,13 @@ fn render_line_dashed(
     format!(
         "  <line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" \
          stroke=\"{}\" stroke-width=\"{}\" fill=\"none\" stroke-dasharray=\"{}\"/>\n",
-        p1.x, p1.y, p2.x, p2.y, color, stroke_width, dasharray
+        F2(p1.x),
+        F2(p1.y),
+        F2(p2.x),
+        F2(p2.y),
+        color,
+        stroke_width,
+        dasharray
     )
 }
 
@@ -605,7 +735,14 @@ fn render_wedge_up(p1: Point, p2: Point, color: &str) -> String {
     format!(
         "  <polygon points=\"{:.2},{:.2} {:.2},{:.2} {:.2},{:.2}\" \
          fill=\"{}\" stroke=\"{}\" stroke-width=\"0.5\"/>\n",
-        p1.x, p1.y, x2a, y2a, x2b, y2b, color, color
+        F2(p1.x),
+        F2(p1.y),
+        F2(x2a),
+        F2(y2a),
+        F2(x2b),
+        F2(y2b),
+        color,
+        color
     )
 }
 
@@ -678,7 +815,14 @@ fn render_dative_bond(p1: Point, p2: Point, color: &str) -> String {
     s.push_str(&format!(
         "  <polygon points=\"{:.2},{:.2} {:.2},{:.2} {:.2},{:.2}\" \
          fill=\"{}\" stroke=\"{}\" stroke-width=\"0.5\"/>\n",
-        p2.x, p2.y, left_x, left_y, right_x, right_y, color, color
+        F2(p2.x),
+        F2(p2.y),
+        F2(left_x),
+        F2(left_y),
+        F2(right_x),
+        F2(right_y),
+        color,
+        color
     ));
 
     s
@@ -706,7 +850,9 @@ fn render_query_any_bond(p1: Point, p2: Point, color: &str) -> String {
         "  <text x=\"{:.2}\" y=\"{:.2}\" font-family=\"serif\" font-size=\"14\" \
          text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"{}\" \
          font-weight=\"bold\">*</text>\n",
-        mid_x, mid_y, color
+        F2(mid_x),
+        F2(mid_y),
+        color
     ));
 
     s
@@ -1348,6 +1494,56 @@ mod tests {
         for order in orders {
             // Each should render without panicking
             let _ = render_bond_c(order, p1, p2, "black");
+        }
+    }
+}
+
+#[cfg(test)]
+mod f2_tests {
+    use super::F2;
+
+    #[test]
+    fn f2_matches_the_float_formatter() {
+        let mut values = vec![
+            0.0,
+            -0.0,
+            0.005,
+            -0.005,
+            0.015,
+            0.025,
+            1.005,
+            2.675,
+            123.455,
+            -0.004,
+            -0.0049,
+            0.0049,
+            99.995,
+            1e14,
+            3.0e15,
+            f64::NAN,
+            f64::INFINITY,
+            -1.5,
+        ];
+        // Exact ties (multiples of 1/8) and their neighbours.
+        for m in -4000..4000 {
+            let v = m as f64 / 8.0;
+            values.push(v);
+            values.push(f64::from_bits(v.to_bits() + 1));
+            values.push(f64::from_bits(v.to_bits().saturating_sub(1)));
+            values.push(m as f64 * 0.005);
+            values.push(m as f64 * 0.125 + 0.005);
+        }
+        let mut seed = 0x2545_f491_4f6c_dd1du64;
+        for _ in 0..200_000 {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            let v = (seed % 2_000_000_000) as f64 / 1_000_000.0 - 1000.0;
+            values.push(v);
+            values.push(v / 997.0);
+        }
+        for v in values {
+            assert_eq!(format!("{:.2}", F2(v)), format!("{v:.2}"), "{v:e}");
         }
     }
 }

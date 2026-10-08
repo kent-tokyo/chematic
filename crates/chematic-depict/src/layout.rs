@@ -151,8 +151,8 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
             }
         }
         // Lays the component out with forks 60° either side of the chain
-        // direction, or 30° at the atoms `narrow` marks.
-        let lay = |narrow: &[bool]| -> Vec<Option<Point>> {
+        // direction, or `forks[atom]` where that is not zero.
+        let lay_forks = |forks: &[f64]| -> Vec<Option<Point>> {
             let mut placed: Vec<Option<Point>> = vec![None; n];
             let mut system_placed: Vec<bool> = vec![false; ring_systems.len()];
 
@@ -163,7 +163,7 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
             // ring system blind at the origin (the pre-fix behavior) makes
             // unrelated ring systems of the same size collide exactly.
             if let Some(seed_idx) = seed_ring_system_index(&ring_systems) {
-                place_ring_system(&ring_systems[seed_idx], None, &mut placed);
+                place_ring_system(mol, &ring_systems[seed_idx], None, &mut placed);
                 system_placed[seed_idx] = true;
             }
 
@@ -180,7 +180,7 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
                 &atom_to_system,
                 &mut system_placed,
                 &mut placed,
-                narrow,
+                NarrowForks { angles: forks },
             );
 
             // Defensive fallbacks -- should not fire for any connected
@@ -188,7 +188,7 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
             // reachable from the seed via the molecule graph.
             for (sys_idx, system) in ring_systems.iter().enumerate() {
                 if !system_placed[sys_idx] {
-                    place_ring_system(system, None, &mut placed);
+                    place_ring_system(mol, system, None, &mut placed);
                 }
             }
             let mut still_unplaced: Vec<AtomIdx> = component_set
@@ -205,6 +205,14 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
 
             placed
         };
+        let lay_with = |narrow: &[bool], angle: f64| {
+            let forks: Vec<f64> = narrow
+                .iter()
+                .map(|&b| if b { angle } else { 0.0 })
+                .collect();
+            lay_forks(&forks)
+        };
+        let lay = |narrow: &[bool]| lay_with(narrow, std::f64::consts::PI / 6.0);
         // Forks are drawn 120° apart; where that leaves a clash or a
         // crossing the component is laid out again with the narrower ±30°
         // forks of earlier releases and the drawing with fewer defects kept
@@ -213,21 +221,29 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
         // forks near the wide drawing's defects stay narrow when that does
         // as well.
         let mut placed = lay(&vec![false; n]);
-        let wide_defects = component_defects(mol, component_atoms, &placed);
+        let comp_bonds = component_bonds(mol, component_atoms);
+        // Clashes plus crossings of a drawing of this component.
+        let defect_counts = |placed: &[Option<Point>]| {
+            layout_defects(component_atoms, &comp_bonds, &Bonded(mol), placed)
+        };
+        let defects = |placed: &[Option<Point>]| {
+            let (clashes, crossings) = defect_counts(placed);
+            clashes + crossings
+        };
+        let wide_defects = defects(&placed);
         if wide_defects > 0 {
             let mut narrow = lay(&vec![true; n]);
+            let narrow_raw = defects(&narrow);
             let mut narrow_chosen = false;
             if component_atoms.len() <= 60 {
                 relieve_clashes(mol, component_atoms, &mut placed, false);
                 relieve_clashes(mol, component_atoms, &mut narrow, false);
-                if component_defects(mol, component_atoms, &narrow)
-                    < component_defects(mol, component_atoms, &placed)
-                {
+                if defects(&narrow) < defects(&placed) {
                     placed = narrow;
                     narrow_chosen = true;
                 }
             } else {
-                if component_defects(mol, component_atoms, &narrow) < wide_defects {
+                if narrow_raw < wide_defects {
                     placed = narrow;
                     narrow_chosen = true;
                 }
@@ -235,15 +251,37 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
             }
             // Where the narrow forks won, keep the wide ones away from the
             // wide drawing's defects when that does as well.
-            if narrow_chosen && component_atoms.len() <= 60 {
+            if narrow_chosen {
                 let wide = lay(&vec![false; n]);
                 let near = atoms_near_defects(mol, component_atoms, &wide);
                 let mut local = lay(&near);
-                relieve_clashes(mol, component_atoms, &mut local, false);
-                if component_defects(mol, component_atoms, &local)
-                    <= component_defects(mol, component_atoms, &placed)
-                {
-                    placed = local;
+                let mut mask = vec![true; n];
+                // A large component (a long peptide) keeps the local drawing
+                // without relief when it needs none.
+                if component_atoms.len() > 60 {
+                    if defects(&local) == 0 {
+                        placed = local;
+                        mask = near;
+                    }
+                } else {
+                    relieve_clashes(mol, component_atoms, &mut local, false);
+                    if defects(&local) <= defects(&placed) {
+                        placed = local;
+                        mask = near;
+                    }
+                }
+                // The narrow forks opened to ±45° (90° between the two
+                // branches) when that does as well, after relief (large
+                // components included, now that the relief stops counting a
+                // move once it cannot win).
+                let mut medium = lay_with(&mask, std::f64::consts::PI / 4.0);
+                if defects(&medium) > 0 {
+                    relieve_clashes(mol, component_atoms, &mut medium, false);
+                }
+                // Kept when it has no more defects and no more clashes.
+                let (m, p) = (defect_counts(&medium), defect_counts(&placed));
+                if m.0 <= p.0 && m.0 + m.1 <= p.0 + p.1 {
+                    placed = medium;
                 }
             }
         }
@@ -404,6 +442,7 @@ fn group_ring_systems(rings: &[Vec<AtomIdx>]) -> Vec<Vec<Vec<AtomIdx>>> {
 /// collides with unrelated geometry (see `place_regular_ring`'s doc for the
 /// bug this replaces).
 fn place_ring_system(
+    mol: &Molecule,
     system: &[Vec<AtomIdx>],
     anchor: Option<(AtomIdx, Point, f64)>,
     placed: &mut [Option<Point>],
@@ -521,7 +560,7 @@ fn place_ring_system(
         place_regular_ring(ring, placed);
     }
 
-    untangle_bridged_system(system, placed);
+    untangle_bridged_system(mol, system, anchor.map(|(a, ..)| a), placed);
 }
 
 /// A bridged ring system (two rings sharing three or more atoms), or a
@@ -531,7 +570,12 @@ fn place_ring_system(
 /// chelate's fused rings) is redrawn by stress majorization on its
 /// ring-graph distances, started from the polygon drawing and turned back
 /// onto it, and kept only when it has fewer such pairs.
-fn untangle_bridged_system(system: &[Vec<AtomIdx>], placed: &mut [Option<Point>]) {
+fn untangle_bridged_system(
+    mol: &Molecule,
+    system: &[Vec<AtomIdx>],
+    anchor: Option<AtomIdx>,
+    placed: &mut [Option<Point>],
+) {
     let bridged = system.iter().enumerate().any(|(i, r)| {
         system[i + 1..]
             .iter()
@@ -556,6 +600,32 @@ fn untangle_bridged_system(system: &[Vec<AtomIdx>], placed: &mut [Option<Point>]
                 adj[i].push(j);
                 adj[j].push(i);
             }
+        }
+    }
+    // Ring systems with a template (adamantane-type cages, porphyrins) are
+    // drawn from it, turned onto the polygon drawing. An anchored one keeps
+    // its entry atom where the bond to the already-placed chain put it.
+    // (Stress-majorized systems below keep the centred fit: shifting them
+    // onto their entry atom stacked a second artemisinin unit on the first.)
+    {
+        let old: Vec<Point> = atoms
+            .iter()
+            .map(|a| placed[a.0 as usize].unwrap())
+            .collect();
+        if let Some(t) =
+            adamantane_cage(mol, &atoms, &adj, &old).or_else(|| porphyrin_core(&adj, &old))
+        {
+            let mut aligned = turn_onto(&t, &old);
+            if let Some(k) = anchor.and_then(|a| atoms.binary_search(&a).ok()) {
+                let (sx, sy) = (old[k].x - aligned[k].x, old[k].y - aligned[k].y);
+                for p in &mut aligned {
+                    *p = Point::new(p.x + sx, p.y + sy);
+                }
+            }
+            for (k, a) in atoms.iter().enumerate() {
+                placed[a.0 as usize] = Some(aligned[k]);
+            }
+            return;
         }
     }
     // No overlapping pair (the usual case): nothing to redraw, and the
@@ -620,16 +690,25 @@ fn untangle_bridged_system(system: &[Vec<AtomIdx>], placed: &mut [Option<Point>]
     let smacof = |mut x: Vec<Point>, bond_weight: f64, rounds: usize| -> Vec<Point> {
         // Stress majorization, one atom at a time (weights d^-2, bonds
         // `bond_weight` times that).
-        let weight = |i: usize, j: usize| {
-            let w = base_w[i * n + j];
-            if dist[i][j] == 1 { w * bond_weight } else { w }
-        };
+        // The pair weights, computed once per run (the same products the
+        // loop formed for every pair in every round).
+        let weights: Vec<f64> = (0..n * n)
+            .map(|k| {
+                let w = base_w[k];
+                if dist[k / n][k % n] == 1 {
+                    w * bond_weight
+                } else {
+                    w
+                }
+            })
+            .collect();
         for _ in 0..rounds {
             let mut moved: f64 = 0.0;
             for i in 0..n {
                 let (mut sx, mut sy, mut sw) = (0.0, 0.0, 0.0);
+                let row = &weights[i * n..(i + 1) * n];
                 for j in 0..n {
-                    let w = weight(i, j);
+                    let w = row[j];
                     if w == 0.0 {
                         continue;
                     }
@@ -734,36 +813,209 @@ fn untangle_bridged_system(system: &[Vec<AtomIdx>], placed: &mut [Option<Point>]
         }
     }
     let mut x = old.clone();
-    let mut best_key = (f64::MAX, f64::MAX);
-    for start in starts {
-        let result = smacof(start, 1.0, 60);
-        let key = (close_pairs(&result), stress(&result));
-        if key.0 < best_key.0 || (key.0 == best_key.0 && key.1 < best_key.1) {
-            best_key = key;
-            x = result;
-        }
-    }
-    // Then even out bond lengths, keeping the untangled arrangement when
-    // that adds no overlap.
-    let bond_spread = |x: &[Point]| {
-        let mut worst: f64 = 0.0;
-        for i in 0..n {
-            for &j in &adj[i] {
-                worst = worst.max((x[i].dist(&x[j]) / BOND_LEN - 1.0).abs());
+    {
+        let mut best_key = (f64::MAX, f64::MAX);
+        for start in starts {
+            let result = smacof(start, 1.0, 60);
+            let key = (close_pairs(&result), stress(&result));
+            if key.0 < best_key.0 || (key.0 == best_key.0 && key.1 < best_key.1) {
+                best_key = key;
+                x = result;
             }
         }
-        worst
-    };
-    let refined = smacof(x.clone(), 8.0, 40);
-    if close_pairs(&refined) <= best_key.0 && bond_spread(&refined) < bond_spread(&x) {
-        x = refined;
+        // Then even out bond lengths, keeping the untangled arrangement when
+        // that adds no overlap.
+        let bond_spread = |x: &[Point]| {
+            let mut worst: f64 = 0.0;
+            for i in 0..n {
+                for &j in &adj[i] {
+                    worst = worst.max((x[i].dist(&x[j]) / BOND_LEN - 1.0).abs());
+                }
+            }
+            worst
+        };
+        let refined = smacof(x.clone(), 8.0, 40);
+        if close_pairs(&refined) <= best_key.0 && bond_spread(&refined) < bond_spread(&x) {
+            x = refined;
+        }
     }
     // Turn (no mirror) and shift back onto the polygon drawing.
+    let aligned = turn_onto(&x, &old);
+    if close_pairs(&aligned) < before {
+        for (k, a) in atoms.iter().enumerate() {
+            placed[a.0 as usize] = Some(aligned[k]);
+        }
+    }
+}
+
+/// The drawing of a porphyrin core: a ring system of four five-membered
+/// rings, each joined to the next through one atom (the meso carbons), with
+/// optionally one atom bonded to the four inner atoms (a metal). Each
+/// five-membered ring is a regular pentagon with its inner atom (N) facing
+/// the centre, every bond one bond length and the angles at the ring-fusion
+/// carbons and the meso carbons 126°; a central atom sits at the centre.
+/// The polygon placement and stress majorization drew the pentagons folded
+/// inside the macrocycle. Of the drawing and its mirror image, the one
+/// closer to `old` is returned. `None` for any other system.
+fn porphyrin_core(adj: &[Vec<usize>], old: &[Point]) -> Option<Vec<Point>> {
+    let n = adj.len();
+    if n != 24 && n != 25 {
+        return None;
+    }
+    // A central atom: bonded to exactly four atoms, each of which has two
+    // other neighbours.
+    let centre_atom = if n == 25 {
+        let c = (0..n).find(|&i| adj[i].len() == 4)?;
+        if adj[c].iter().any(|&j| adj[j].len() != 3) {
+            return None;
+        }
+        Some(c)
+    } else {
+        None
+    };
+    // Degrees within the core (without the central atom).
+    let core_nbs = |i: usize| -> Vec<usize> {
+        adj[i]
+            .iter()
+            .copied()
+            .filter(|&j| Some(j) != centre_atom)
+            .collect()
+    };
+    let deg = |i: usize| core_nbs(i).len();
+    // Pyrroles: an inner atom of core degree 2 whose two neighbours (core
+    // degree 3) each have a degree-2 neighbour, those two bonded.
+    let mut pyrroles: Vec<[usize; 5]> = Vec::new(); // [inner, a, b, beta_a, beta_b]
+    let mut used = vec![false; n];
+    for x in (0..n).filter(|&i| Some(i) != centre_atom && deg(i) == 2) {
+        let nb = core_nbs(x);
+        let (a, b) = (nb[0], nb[1]);
+        if deg(a) != 3 || deg(b) != 3 {
+            continue;
+        }
+        let mut found = None;
+        for ba in core_nbs(a).into_iter().filter(|&t| t != x && deg(t) == 2) {
+            for bb in core_nbs(b).into_iter().filter(|&t| t != x && deg(t) == 2) {
+                if ba != bb && adj[ba].contains(&bb) {
+                    found = Some((ba, bb));
+                }
+            }
+        }
+        let Some((ba, bb)) = found else { continue };
+        let ring = [x, a, b, ba, bb];
+        if ring.iter().any(|&t| used[t]) {
+            return None;
+        }
+        for &t in &ring {
+            used[t] = true;
+        }
+        pyrroles.push(ring);
+    }
+    if pyrroles.len() != 4 {
+        return None;
+    }
+    if let Some(c) = centre_atom {
+        // The central atom is bonded to the four inner atoms.
+        let mut inner: Vec<usize> = pyrroles.iter().map(|r| r[0]).collect();
+        let mut nbs = adj[c].clone();
+        inner.sort_unstable();
+        nbs.sort_unstable();
+        if inner != nbs {
+            return None;
+        }
+    }
+    // The meso atom beside a fusion carbon: its remaining core neighbour.
+    let meso_of = |p: &[usize; 5], side: usize| -> Option<usize> {
+        let (fusion, beta) = if side == 0 {
+            (p[1], p[3])
+        } else {
+            (p[2], p[4])
+        };
+        core_nbs(fusion)
+            .into_iter()
+            .find(|&t| t != p[0] && t != beta)
+    };
+    // Walk round the macrocycle: pyrrole k's side-1 fusion carbon, a meso
+    // atom, then the next pyrrole's side-0 fusion carbon.
+    let mut order: Vec<([usize; 5], bool)> = vec![(pyrroles[0], false)];
+    let mut mesos = Vec::new();
+    for _ in 0..4 {
+        let (p, flipped) = *order.last().unwrap();
+        let m = meso_of(&p, if flipped { 0 } else { 1 })?;
+        if deg(m) != 2 || used[m] {
+            return None;
+        }
+        let other = core_nbs(m)
+            .into_iter()
+            .find(|&t| t != p[if flipped { 1 } else { 2 }])?;
+        let next = *pyrroles.iter().find(|q| q[1] == other || q[2] == other)?;
+        mesos.push(m);
+        order.push((next, next[2] == other));
+    }
+    if order[4].0 != order[0].0 || order[4].1 != order[0].1 {
+        return None;
+    }
+    let mut seen_meso = mesos.clone();
+    seen_meso.sort_unstable();
+    seen_meso.dedup();
+    if seen_meso.len() != 4 {
+        return None;
+    }
+    // Coordinates in bond lengths.
+    let r5 = 1.0 / (2.0 * 36f64.to_radians().sin());
+    let (c72, s72) = (72f64.to_radians().cos(), 72f64.to_radians().sin());
+    let (c36, s36) = (36f64.to_radians().cos(), 36f64.to_radians().sin());
+    // Pentagon centre distance: the meso atom lies on the exterior bisector
+    // of the fusion carbon and on the 45° line.
+    let d = r5 * c72 + c72 + r5 * s72 + s72;
+    let draw = |mirror: f64| -> Vec<Point> {
+        let mut x = vec![Point::new(0.0, 0.0); n];
+        for (k, &(p, flipped)) in order[..4].iter().enumerate() {
+            let theta = k as f64 * std::f64::consts::FRAC_PI_2;
+            let (ux, uy) = (theta.cos(), theta.sin());
+            let (vx, vy) = (-uy, ux);
+            let at = |a: f64, b: f64| {
+                Point::new(
+                    (a * ux + b * vx) * BOND_LEN,
+                    mirror * (a * uy + b * vy) * BOND_LEN,
+                )
+            };
+            // Side 1 (the walk's exit) is +v.
+            let (s0, s1) = if flipped { (1.0, -1.0) } else { (-1.0, 1.0) };
+            x[p[0]] = at(d - r5, 0.0);
+            x[p[1]] = at(d - r5 * c72, s0 * r5 * s72);
+            x[p[2]] = at(d - r5 * c72, s1 * r5 * s72);
+            x[p[3]] = at(d + r5 * c36, s0 * r5 * s36);
+            x[p[4]] = at(d + r5 * c36, s1 * r5 * s36);
+            let m = mesos[k];
+            let phi = theta + std::f64::consts::FRAC_PI_4;
+            let rm = std::f64::consts::SQRT_2 * (d - r5 * c72 - c72);
+            x[m] = Point::new(
+                rm * phi.cos() * BOND_LEN,
+                mirror * rm * phi.sin() * BOND_LEN,
+            );
+        }
+        x
+    };
+    let fit = |x: &[Point]| {
+        let t = turn_onto(x, old);
+        t.iter()
+            .zip(old)
+            .map(|(a, b)| a.dist(b).powi(2))
+            .sum::<f64>()
+    };
+    let (a, b) = (draw(1.0), draw(-1.0));
+    Some(if fit(&b) < fit(&a) { b } else { a })
+}
+
+/// `x` turned (no mirror) about its centroid and shifted onto `old`'s
+/// centroid, at the turn that best fits it to `old`.
+fn turn_onto(x: &[Point], old: &[Point]) -> Vec<Point> {
+    let n = x.len();
     let centre = |pts: &[Point]| {
         let (sx, sy) = pts.iter().fold((0.0, 0.0), |(a, b), p| (a + p.x, b + p.y));
         Point::new(sx / n as f64, sy / n as f64)
     };
-    let (co, cx) = (centre(&old), centre(&x));
+    let (co, cx) = (centre(old), centre(x));
     let (mut num, mut den) = (0.0, 0.0);
     for i in 0..n {
         let (ax, ay) = (x[i].x - cx.x, x[i].y - cx.y);
@@ -773,18 +1025,117 @@ fn untangle_bridged_system(system: &[Vec<AtomIdx>], placed: &mut [Option<Point>]
     }
     let theta = num.atan2(den);
     let (sin, cos) = theta.sin_cos();
-    let aligned: Vec<Point> = x
-        .iter()
+    x.iter()
         .map(|p| {
             let (dx, dy) = (p.x - cx.x, p.y - cx.y);
             Point::new(co.x + dx * cos - dy * sin, co.y + dx * sin + dy * cos)
         })
-        .collect();
-    if close_pairs(&aligned) < before {
-        for (k, a) in atoms.iter().enumerate() {
-            placed[a.0 as usize] = Some(aligned[k]);
+        .collect()
+}
+
+/// RDKit's drawing of adamantane in bond lengths: the four bridgeheads, then
+/// the atom joining each pair of them. The atoms joining bridgeheads 0 and 2
+/// and bridgeheads 3 and 1 are inside the outline.
+const ADAMANTANE_BRIDGEHEADS: [(f64, f64); 4] = [
+    (0.0640, 0.8214),
+    (1.6135, 0.0473),
+    (0.1684, -0.9075),
+    (-1.3811, -0.1334),
+];
+const ADAMANTANE_LINKS: [((usize, usize), (f64, f64)); 6] = [
+    ((0, 2), (-0.3829, -0.0732)),
+    ((0, 1), (1.0622, 0.8816)),
+    ((1, 2), (1.1665, -0.8473)),
+    ((2, 3), (-0.8298, -0.9678)),
+    ((3, 0), (-0.9341, 0.7611)),
+    ((3, 1), (-0.5467, 0.4178)),
+];
+
+/// The drawing of an adamantane-type cage (ten atoms: four bridgeheads, each
+/// pair joined through one atom; adamantane, hexamine), which no polygon
+/// placement or stress majorization draws without a clash: RDKit's
+/// projection, with the bridgeheads assigned (of the 24 assignments and their
+/// mirror images) so that no atom with a substituent lies inside the outline,
+/// then closest to the current drawing `old`. `None` for any other system.
+fn adamantane_cage(
+    mol: &Molecule,
+    atoms: &[AtomIdx],
+    adj: &[Vec<usize>],
+    old: &[Point],
+) -> Option<Vec<Point>> {
+    let n = atoms.len();
+    if n != 10 {
+        return None;
+    }
+    let heads: Vec<usize> = (0..n).filter(|&i| adj[i].len() == 3).collect();
+    if heads.len() != 4 || (0..n).any(|i| adj[i].len() != 3 && adj[i].len() != 2) {
+        return None;
+    }
+    // link[a][b]: the atom joining heads a and b.
+    let mut link = [[usize::MAX; 4]; 4];
+    for i in (0..n).filter(|&i| adj[i].len() == 2) {
+        let a = heads.iter().position(|&h| h == adj[i][0])?;
+        let b = heads.iter().position(|&h| h == adj[i][1])?;
+        if a == b || link[a][b] != usize::MAX {
+            return None;
+        }
+        link[a][b] = i;
+        link[b][a] = i;
+    }
+    let substituted = |i: usize| mol.degree(atoms[i]) > adj[i].len();
+    let centre = |pts: &[Point]| {
+        let (sx, sy) = pts.iter().fold((0.0, 0.0), |(a, b), p| (a + p.x, b + p.y));
+        Point::new(sx / n as f64, sy / n as f64)
+    };
+    let co = centre(old);
+    let mut best: Option<((usize, f64), Vec<Point>)> = None;
+    let mut perm = [0usize, 1, 2, 3];
+    for code in 0..24 {
+        // The `code`-th permutation of the four heads (factorial digits).
+        let mut pool = vec![0usize, 1, 2, 3];
+        let mut c = code;
+        for (k, slot) in perm.iter_mut().enumerate() {
+            let f = [6, 2, 1, 1][k];
+            *slot = pool.remove(c / f);
+            c %= f;
+        }
+        for mirror in [1.0, -1.0] {
+            let mut x = vec![Point::new(0.0, 0.0); n];
+            for (role, &(px, py)) in ADAMANTANE_BRIDGEHEADS.iter().enumerate() {
+                x[heads[perm[role]]] = Point::new(mirror * px * BOND_LEN, py * BOND_LEN);
+            }
+            for &((a, b), (px, py)) in &ADAMANTANE_LINKS {
+                x[link[perm[a]][perm[b]]] = Point::new(mirror * px * BOND_LEN, py * BOND_LEN);
+            }
+            let inside = [link[perm[0]][perm[2]], link[perm[3]][perm[1]]]
+                .into_iter()
+                .filter(|&i| substituted(i))
+                .count();
+            // Residual after the best turn onto `old`.
+            let (mut num, mut den, mut sq) = (0.0, 0.0, 0.0);
+            for i in 0..n {
+                let (bx, by) = (old[i].x - co.x, old[i].y - co.y);
+                num += x[i].x * by - x[i].y * bx;
+                den += x[i].x * bx + x[i].y * by;
+                sq += x[i].x * x[i].x + x[i].y * x[i].y + bx * bx + by * by;
+            }
+            let key = (inside, sq - 2.0 * num.hypot(den));
+            if best
+                .as_ref()
+                .is_none_or(|(k, _)| key.0 < k.0 || (key.0 == k.0 && key.1 < k.1 - 1e-9))
+            {
+                best = Some((key, x));
+            }
         }
     }
+    best.map(|(_, x)| x)
+}
+
+/// Per atom, the angle each of a fork's two branches makes with the chain
+/// direction when it is drawn narrower than 120° (0 for the 60° default).
+#[derive(Clone, Copy)]
+struct NarrowForks<'a> {
+    angles: &'a [f64],
 }
 
 /// Places the unplaced atoms of `ring` when its placed atoms form one path of
@@ -1236,7 +1587,7 @@ fn grow_layout(
     atom_to_system: &HashMap<AtomIdx, usize>,
     system_placed: &mut [bool],
     placed: &mut [Option<Point>],
-    narrow: &[bool],
+    narrow: NarrowForks<'_>,
 ) {
     let mut worklist: VecDeque<AtomIdx> = {
         let mut seeded: Vec<AtomIdx> = component
@@ -1260,13 +1611,51 @@ fn grow_layout(
             .collect();
         unplaced_neighbors.sort_unstable();
 
-        for nb in unplaced_neighbors {
+        // A ring atom with two ring bonds and two substituents (a
+        // gem-disubstituted carbon, phenytoin's C5) puts them 30° either
+        // side of the ring's outward bisector; taking the bisector for the
+        // first left the second against a ring bond, crossing the
+        // neighbour's substituent in five-membered rings.
+        let pair_dirs: Option<[f64; 2]> = (unplaced_neighbors.len() == 2
+            && atom_to_system.contains_key(&start))
+        .then(|| {
+            let origin = placed[start.0 as usize]?;
+            let ring_nbs: Vec<Point> = mol
+                .neighbors(start)
+                .filter_map(|(nb, _)| placed[nb.0 as usize])
+                .collect();
+            if ring_nbs.len() != 2 {
+                return None;
+            }
+            let (mx, my) = (
+                (ring_nbs[0].x + ring_nbs[1].x) / 2.0,
+                (ring_nbs[0].y + ring_nbs[1].y) / 2.0,
+            );
+            let (dx, dy) = (origin.x - mx, origin.y - my);
+            if dx * dx + dy * dy < 1e-6 {
+                return None;
+            }
+            let b = dy.atan2(dx);
+            // Split the exterior angle into three equal gaps.
+            let inner = {
+                let (ax, ay) = (ring_nbs[0].x - origin.x, ring_nbs[0].y - origin.y);
+                let (cx, cy) = (ring_nbs[1].x - origin.x, ring_nbs[1].y - origin.y);
+                (ax * cy - ay * cx).abs().atan2(ax * cx + ay * cy)
+            };
+            let d = (2.0 * std::f64::consts::PI - inner) / 6.0;
+            Some([b - d, b + d])
+        })
+        .flatten();
+        for (k, nb) in unplaced_neighbors.into_iter().enumerate() {
             if placed[nb.0 as usize].is_some() {
                 continue; // Placed by an earlier neighbor this same pass (e.g. a shared spiro/fused atom).
             }
             // Determine outgoing direction from the already-placed atom.
             // Use a direction that avoids existing neighbors.
-            let dir = best_outgoing_direction(start, placed, mol);
+            let dir = match pair_dirs {
+                Some(dirs) if direction_is_free(start, dirs[k], placed) => dirs[k],
+                _ => best_outgoing_direction(start, placed, mol),
+            };
             let mut newly_ring_placed = Vec::new();
             dfs_zigzag(
                 mol,
@@ -1336,6 +1725,23 @@ fn best_outgoing_direction(atom: AtomIdx, placed: &[Option<Point>], mol: &Molecu
         .copied()
         .find(|&dir| !occupies(dir))
         .unwrap_or(ranked[0])
+}
+
+/// Whether one bond from `atom` along `dir` is clear: no placed atom
+/// within half a bond and not the middle of a placed ring.
+fn direction_is_free(atom: AtomIdx, dir: f64, placed: &[Option<Point>]) -> bool {
+    let Some(origin) = placed[atom.0 as usize] else {
+        return false;
+    };
+    let candidate = Point::new(
+        origin.x + BOND_LEN * dir.cos(),
+        origin.y + BOND_LEN * dir.sin(),
+    );
+    !placed
+        .iter()
+        .filter_map(|p| p.as_ref())
+        .any(|p| candidate.dist(p) < BOND_LEN / 2.0)
+        && !ring_centre(candidate, origin, placed)
 }
 
 /// Whether `candidate` sits in the middle of a placed ring: three or more
@@ -1408,7 +1814,11 @@ fn ranked_candidates(used_angles: &[f64]) -> Vec<f64> {
 fn min_angle_separation(angle: f64, used: &[f64]) -> f64 {
     used.iter()
         .map(|&u| {
-            let diff = (angle - u).abs();
+            // Reduced to [0, 2π) first: a candidate past 2π against a
+            // negative used angle gave a negative separation (the exterior
+            // gap of a ring-fusion atom ranked last, so a substituent went
+            // into a ring).
+            let diff = (angle - u).rem_euclid(2.0 * std::f64::consts::PI);
             if diff > std::f64::consts::PI {
                 2.0 * std::f64::consts::PI - diff
             } else {
@@ -1449,7 +1859,7 @@ fn dfs_zigzag(
     atom_to_system: &HashMap<AtomIdx, usize>,
     system_placed: &mut [bool],
     newly_ring_placed: &mut Vec<AtomIdx>,
-    narrow: &[bool],
+    narrow: NarrowForks<'_>,
 ) {
     let deflection = std::f64::consts::PI / 6.0;
     // 4th element: the sign to apply, and then flip, when this atom continues
@@ -1469,11 +1879,99 @@ fn dfs_zigzag(
         };
 
         if let Some(&sys_idx) = atom_to_system.get(&atom) {
+            // A ring hung on an atom with six or more bonds (an octahedral
+            // metal with pyridines) is drawn one and a half bonds out: at
+            // one bond its neighbours' rings, 60° apart, touched.
+            let reach = if mol.degree(parent) >= 6 {
+                1.5 * BOND_LEN
+            } else {
+                BOND_LEN
+            };
             let entry_pos = Point::new(
-                parent_pos.x + BOND_LEN * dir.cos(),
-                parent_pos.y + BOND_LEN * dir.sin(),
+                parent_pos.x + reach * dir.cos(),
+                parent_pos.y + reach * dir.sin(),
             );
-            place_ring_system(&ring_systems[sys_idx], Some((atom, entry_pos, dir)), placed);
+            // An entry atom with a second substituent (a 5,5-disubstituted
+            // hydantoin, a 4,4-disubstituted piperidine) turns its ring 30°
+            // so the two substituent bonds lie either side of the ring's
+            // outward bisector instead of one on it; the side whose new
+            // atoms land on fewer placed atoms is kept.
+            let in_system = |a: AtomIdx| atom_to_system.get(&a).is_some_and(|&k| k == sys_idx);
+            let (ring_nbs, outside) = mol.neighbors(atom).fold((0, 0), |(r, o), (nb, _)| {
+                if in_system(nb) {
+                    (r + 1, o)
+                } else {
+                    (r, o + 1)
+                }
+            });
+            if ring_nbs == 2 && outside == 2 {
+                let before: Vec<Option<Point>> = placed.to_vec();
+                let mut best: Option<(usize, Vec<Option<Point>>)> = None;
+                for turn in [std::f64::consts::PI / 6.0, -std::f64::consts::PI / 6.0] {
+                    let mut trial = before.clone();
+                    place_ring_system(
+                        mol,
+                        &ring_systems[sys_idx],
+                        Some((atom, entry_pos, dir + turn)),
+                        &mut trial,
+                    );
+                    let new_atoms: Vec<Point> = trial
+                        .iter()
+                        .zip(&before)
+                        .filter(|(t, b)| t.is_some() && b.is_none())
+                        .filter_map(|(t, _)| *t)
+                        .collect();
+                    let crowded = new_atoms
+                        .iter()
+                        .map(|q| {
+                            before
+                                .iter()
+                                .flatten()
+                                .filter(|p| p.dist(q) < BOND_LEN)
+                                .count()
+                        })
+                        .sum::<usize>();
+                    // The second substituent's spot (the parent bond mirrored
+                    // across the ring's outward bisector) counts too.
+                    let spot = {
+                        let e = entry_pos;
+                        let ring: Vec<Point> = mol
+                            .neighbors(atom)
+                            .filter(|&(nb, _)| in_system(nb))
+                            .filter_map(|(nb, _)| trial[nb.0 as usize])
+                            .collect();
+                        (ring.len() == 2).then(|| {
+                            let (mx, my) =
+                                ((ring[0].x + ring[1].x) / 2.0, (ring[0].y + ring[1].y) / 2.0);
+                            let b = (e.y - my).atan2(e.x - mx);
+                            let back = dir + std::f64::consts::PI;
+                            let free = 2.0 * b - back;
+                            Point::new(e.x + BOND_LEN * free.cos(), e.y + BOND_LEN * free.sin())
+                        })
+                    };
+                    let crowded = crowded
+                        + spot.map_or(0, |q| {
+                            trial
+                                .iter()
+                                .flatten()
+                                .filter(|p| p.dist(&q) < BOND_LEN)
+                                .count()
+                        });
+                    if best.as_ref().is_none_or(|(c, _)| crowded < *c) {
+                        best = Some((crowded, trial));
+                    }
+                }
+                if let Some((_, trial)) = best {
+                    placed.copy_from_slice(&trial);
+                }
+            } else {
+                place_ring_system(
+                    mol,
+                    &ring_systems[sys_idx],
+                    Some((atom, entry_pos, dir)),
+                    placed,
+                );
+            }
             system_placed[sys_idx] = true;
             newly_ring_placed.extend(ring_systems[sys_idx].iter().flatten().copied());
             continue; // Further growth from this ring's atoms is grow_layout's job.
@@ -1516,8 +2014,8 @@ fn dfs_zigzag(
             // peptide backbone does not curl).
             // Push in reverse so the first neighbor is popped first,
             // preserving DFS order.
-            let fork = if narrow[atom.0 as usize] {
-                deflection
+            let fork = if narrow.angles[atom.0 as usize] != 0.0 {
+                narrow.angles[atom.0 as usize]
             } else {
                 2.0 * deflection
             };
@@ -1538,6 +2036,17 @@ fn dfs_zigzag(
             // directions away from the parent instead (a cross for three).
             let k = unplaced.len();
             let step = 2.0 * std::f64::consts::PI / (k as f64 + 1.0);
+            // Three neighbours of which only one continues (a CF2 or CMe2 in
+            // a chain): that one goes straight on, the terminal ones either
+            // side, so a perfluoroalkyl chain does not curl back on itself.
+            let mut unplaced = unplaced;
+            if k == 3 {
+                let going_on: Vec<usize> =
+                    (0..3).filter(|&i| mol.degree(unplaced[i]) > 1).collect();
+                if going_on.len() == 1 {
+                    unplaced.swap(going_on[0], 1);
+                }
+            }
             for (i, nb) in unplaced.into_iter().enumerate().rev() {
                 let offset = (i as f64 - (k as f64 - 1.0) / 2.0) * step;
                 let child_sign = if offset > 0.0 { 1.0 } else { -1.0 };
@@ -1685,25 +2194,43 @@ const CLASH_DIST: f64 = 0.45 * BOND_LEN;
 fn atoms_near_defects(mol: &Molecule, atoms: &[AtomIdx], placed: &[Option<Point>]) -> Vec<bool> {
     let at = |a: AtomIdx| placed[a.0 as usize].unwrap_or(Point::new(0.0, 0.0));
     let mut hit = vec![false; mol.atom_count()];
-    for (k, &a) in atoms.iter().enumerate() {
-        for &b in &atoms[k + 1..] {
+    // The same sweeps along x as `layout_defects`.
+    let mut by_x: Vec<(f64, AtomIdx)> = atoms.iter().map(|&a| (at(a).x, a)).collect();
+    by_x.sort_unstable_by(|p, q| p.0.total_cmp(&q.0));
+    for (k, &(x, a)) in by_x.iter().enumerate() {
+        for &(x2, b) in &by_x[k + 1..] {
+            if x2 - x >= CLASH_DIST {
+                break;
+            }
             if at(a).dist(&at(b)) < CLASH_DIST && mol.bond_between(a, b).is_none() {
                 hit[a.0 as usize] = true;
                 hit[b.0 as usize] = true;
             }
         }
     }
-    let bonds: Vec<(AtomIdx, AtomIdx)> = mol
+    let mut in_component = vec![false; mol.atom_count()];
+    for &a in atoms {
+        in_component[a.0 as usize] = true;
+    }
+    let mut spans: Vec<(f64, f64, AtomIdx, AtomIdx)> = mol
         .bonds()
-        .filter(|(_, e)| atoms.contains(&e.atom1))
-        .map(|(_, e)| (e.atom1, e.atom2))
+        .filter(|(_, e)| in_component[e.atom1.0 as usize])
+        .map(|(_, e)| {
+            let (xa, xb) = (at(e.atom1).x, at(e.atom2).x);
+            (xa.min(xb), xa.max(xb), e.atom1, e.atom2)
+        })
         .collect();
-    for (k, &(a, b)) in bonds.iter().enumerate() {
-        for &(c, d) in &bonds[k + 1..] {
+    spans.sort_unstable_by(|p, q| p.0.total_cmp(&q.0));
+    for (k, &(_, hi, a, b)) in spans.iter().enumerate() {
+        for &(lo2, _, c, d) in &spans[k + 1..] {
+            if lo2 > hi + 1e-9 {
+                break;
+            }
             if a != c
                 && a != d
                 && b != c
                 && b != d
+                && boxes_meet(at(a), at(b), at(c), at(d))
                 && segments_intersect(at(a), at(b), at(c), at(d))
             {
                 for x in [a, b, c, d] {
@@ -1726,19 +2253,16 @@ fn atoms_near_defects(mol: &Molecule, atoms: &[AtomIdx], placed: &[Option<Point>
     near
 }
 
-/// Clashes plus crossings of one component's layout.
-fn component_defects(mol: &Molecule, atoms: &[AtomIdx], placed: &[Option<Point>]) -> usize {
+/// The bonds of the component made of `atoms`.
+fn component_bonds(mol: &Molecule, atoms: &[AtomIdx]) -> Vec<(AtomIdx, AtomIdx)> {
     let mut in_component = vec![false; mol.atom_count()];
     for &a in atoms {
         in_component[a.0 as usize] = true;
     }
-    let bonds: Vec<(AtomIdx, AtomIdx)> = mol
-        .bonds()
+    mol.bonds()
         .filter(|(_, e)| in_component[e.atom1.0 as usize])
         .map(|(_, e)| (e.atom1.min(e.atom2), e.atom1.max(e.atom2)))
-        .collect();
-    let (clashes, crossings) = layout_defects(atoms, &bonds, &Bonded(mol), placed);
-    clashes + crossings
+        .collect()
 }
 
 /// Clash and crossing counts of one component's layout.
@@ -1786,6 +2310,7 @@ fn layout_defects(
                 && a != d
                 && b != c
                 && b != d
+                && boxes_meet(at(a), at(b), at(c), at(d))
                 && segments_intersect(at(a), at(b), at(c), at(d))
             {
                 crossings += 1;
@@ -1816,6 +2341,57 @@ fn relieve_clashes(
     if atoms.len() < 4 || atoms.len() > 300 {
         return;
     }
+    // Moves that stack a moved atom on one that stays (within a fifth of a
+    // bond) are refused: they can lower the clash count and still draw two
+    // atoms as one. Some crowded chains (perfluorotributylamine) need such a
+    // step that a later move clears; when the relief leaves a clash, it is
+    // run again allowing them, and that drawing is kept when it has fewer
+    // defects and no more stacked atoms.
+    let before = placed.to_vec();
+    let (clashes, crossings) = relieve_clashes_pass(mol, atoms, placed, keep_double_bonds, true);
+    if clashes > 0 {
+        let mut retry = before.clone();
+        let (c2, x2) = relieve_clashes_pass(mol, atoms, &mut retry, keep_double_bonds, false);
+        if c2 + x2 < clashes + crossings
+            && c2 <= clashes
+            && stacked_pairs(mol, atoms, &retry) <= stacked_pairs(mol, atoms, &before)
+        {
+            placed.copy_from_slice(&retry);
+        }
+    }
+}
+
+/// Non-bonded pairs of `atoms` drawn within a fifth of a bond.
+fn stacked_pairs(mol: &Molecule, atoms: &[AtomIdx], placed: &[Option<Point>]) -> usize {
+    let mut by_x: Vec<(Point, AtomIdx)> = atoms
+        .iter()
+        .filter_map(|&a| placed[a.0 as usize].map(|p| (p, a)))
+        .collect();
+    by_x.sort_unstable_by(|p, q| p.0.x.total_cmp(&q.0.x));
+    let limit = 0.2 * BOND_LEN;
+    let mut count = 0;
+    for (k, &(p, a)) in by_x.iter().enumerate() {
+        for &(q, b) in &by_x[k + 1..] {
+            if q.x - p.x >= limit {
+                break;
+            }
+            if p.dist(&q) < limit && mol.bond_between(a, b).is_none() {
+                count += 1;
+            }
+        }
+    }
+    count
+}
+
+/// One clash relief run (see [`relieve_clashes`]); `no_stacking` refuses
+/// moves that stack atoms. Returns the clashes and crossings left.
+fn relieve_clashes_pass(
+    mol: &Molecule,
+    atoms: &[AtomIdx],
+    placed: &mut [Option<Point>],
+    keep_double_bonds: bool,
+    no_stacking: bool,
+) -> (usize, usize) {
     let mut atoms = atoms.to_vec();
     atoms.sort_unstable();
     let mut in_component = vec![false; mol.atom_count()];
@@ -1996,6 +2572,7 @@ fn relieve_clashes(
                     && a != d
                     && b != c
                     && b != d
+                    && boxes_meet(at(a), at(b), at(c), at(d))
                     && segments_intersect(at(a), at(b), at(c), at(d))
                 {
                     crossing_pairs.push((k.min(l), k.max(l)));
@@ -2041,19 +2618,37 @@ fn relieve_clashes(
                         continue; // move the smaller side
                     }
                     let (pp, pr) = (at(pivot), at(root));
-                    let mut moves: Vec<Box<dyn Fn(Point) -> Point>> = Vec::new();
-                    moves.push(Box::new(move |q: Point| reflect_point(q, pp, pr)));
+                    // The mirror across the hinge bond, then turns about the
+                    // pivot (sin, cos), in this order.
+                    let mut turns = [(0.0f64, 1.0f64); 10];
+                    let mut n_turns = 0;
                     if !has_double(pivot) {
-                        for deg in [30.0_f64, -30.0, 60.0, -60.0] {
-                            let (sin, cos) = deg.to_radians().sin_cos();
-                            moves.push(Box::new(move |q: Point| {
-                                let (dx, dy) = (q.x - pp.x, q.y - pp.y);
-                                Point::new(pp.x + dx * cos - dy * sin, pp.y + dx * sin + dy * cos)
-                            }));
+                        // A substituent of up to three atoms may also swing
+                        // further round its hinge (a bridge atom's methyls,
+                        // a tropane's N-methyl, into a free face; a carboxyl).
+                        let wide: &[f64] = if moved.len() <= 3 {
+                            &[
+                                30.0, -30.0, 60.0, -60.0, 90.0, -90.0, 120.0, -120.0, 150.0, -150.0,
+                            ]
+                        } else {
+                            &[30.0, -30.0, 60.0, -60.0]
+                        };
+                        for &deg in wide {
+                            turns[n_turns] = deg.to_radians().sin_cos();
+                            n_turns += 1;
                         }
                     }
+                    let apply = |k: usize, q: Point| -> Point {
+                        if k == 0 {
+                            reflect_point(q, pp, pr)
+                        } else {
+                            let (sin, cos) = turns[k - 1];
+                            let (dx, dy) = (q.x - pp.x, q.y - pp.y);
+                            Point::new(pp.x + dx * cos - dy * sin, pp.y + dx * sin + dy * cos)
+                        }
+                    };
                     // The hinge's other bonds, for the turns' 30-degree check.
-                    let others: Vec<f64> = if moves.len() > 1 {
+                    let others: Vec<f64> = if n_turns > 0 {
                         mol.neighbors(pivot)
                             .filter(|&(nb, _)| nb != root)
                             .map(|(nb, _)| {
@@ -2064,19 +2659,38 @@ fn relieve_clashes(
                     } else {
                         Vec::new()
                     };
-                    for (k, f) in moves.iter().enumerate() {
-                        new.clear();
-                        new.extend(moved.iter().map(|&m| (m, f(at(m)))));
+                    for k in 0..=n_turns {
                         if k > 0 {
-                            // A turn must leave the hinge's bonds 30 degrees apart.
-                            let np = new[0].1;
+                            // A turn must leave the hinge's bonds 30 degrees
+                            // apart (`moved` starts with the root).
+                            let np = apply(k, at(moved[0]));
                             let dir = (np.y - pp.y).atan2(np.x - pp.x);
-                            if min_angle_separation(dir, &others) < 30f64.to_radians() - 1e-9 {
+                            // A three-atom group (a carboxyl) turned past 60
+                            // degrees keeps them 60 degrees apart, so that it
+                            // does not open a narrow fork.
+                            let apart = if k > 4 && moved.len() == 3 {
+                                60f64
+                            } else {
+                                30f64
+                            };
+                            if min_angle_separation(dir, &others) < apart.to_radians() - 1e-9 {
                                 continue;
                             }
                         }
+                        new.clear();
+                        new.extend(moved.iter().map(|&m| (m, apply(k, at(m)))));
+                        // Only a move that beats the current drawing and the
+                        // best move so far can be kept, so the count stops
+                        // once it cannot.
+                        // (A move equal to the best one can still win on
+                        // size; one equal to the current drawing cannot.)
+                        let bound = match &best {
+                            Some((k0, _)) if (k0.0, k0.1) < current => (k0.0, k0.1, true),
+                            _ => (current.0, current.1, false),
+                        };
                         let (clashes, crossings) = defects_after_move(
                             current,
+                            bound,
                             &index,
                             &bonds,
                             &bonded,
@@ -2091,6 +2705,13 @@ fn relieve_clashes(
                         if (clashes, crossings) < current {
                             let key = (clashes, crossings, moved.len());
                             if best.as_ref().is_none_or(|(k0, _)| key < *k0) {
+                                // A move that stacks a moved atom on one that
+                                // stays (within a fifth of a bond) can lower
+                                // the clash count and still draw two atoms as
+                                // one.
+                                if no_stacking && stacks(&index, &snapshot, &new, &mut in_moved) {
+                                    continue;
+                                }
                                 best = Some((key, new.clone()));
                             }
                         }
@@ -2106,6 +2727,36 @@ fn relieve_clashes(
         }
         current = (clashes, crossings);
     }
+    current
+}
+
+/// Whether a moved atom of `new` lands within a fifth of a bond of an atom
+/// that stays.
+fn stacks(
+    index: &RoundIndex,
+    snapshot: &[Point],
+    new: &[(AtomIdx, Point)],
+    in_moved: &mut [bool],
+) -> bool {
+    for &(m, _) in new {
+        in_moved[m.0 as usize] = true;
+    }
+    let stacked = new.iter().any(|&(_, q)| {
+        let (cx, cy) = cell(q, CLASH_DIST);
+        (-1..=1).any(|dx| {
+            (-1..=1).any(|dy| {
+                index.atom_grid.get((cx + dx, cy + dy)).is_some_and(|list| {
+                    list.iter().any(|&b| {
+                        !in_moved[b.0 as usize] && q.dist(&snapshot[b.0 as usize]) < 0.2 * BOND_LEN
+                    })
+                })
+            })
+        })
+    });
+    for &(m, _) in new {
+        in_moved[m.0 as usize] = false;
+    }
+    stacked
 }
 
 /// One round's lookup tables for [`defects_after_move`]: every clash and
@@ -2263,6 +2914,7 @@ impl RoundIndex {
 #[allow(clippy::too_many_arguments)]
 fn defects_after_move(
     current: (usize, usize),
+    bound: (usize, usize, bool),
     index: &RoundIndex,
     bonds: &[(AtomIdx, AtomIdx)],
     bonded: &Bonded,
@@ -2285,7 +2937,13 @@ fn defects_after_move(
         .iter()
         .filter(|&&(a, b)| moved(a) != moved(b))
         .count() as i64;
+    // The clash count only grows from here: a move past `bound` stops early.
+    let mut over = false;
     for &(m, q) in new {
+        if clashes > bound.0 as i64 {
+            over = true;
+            break;
+        }
         let (cx, cy) = cell(q, CLASH_DIST);
         for dx in -1..=1 {
             for dy in -1..=1 {
@@ -2303,6 +2961,24 @@ fn defects_after_move(
             }
         }
     }
+    // A move with more clashes than `bound` cannot be kept: its crossings
+    // are not counted.
+    let restore = |in_moved: &mut [bool], new_pos: &mut [Point]| {
+        for &(m, _) in new {
+            in_moved[m.0 as usize] = false;
+            new_pos[m.0 as usize] = old[m.0 as usize];
+        }
+    };
+    if over || clashes > bound.0 as i64 {
+        restore(in_moved, new_pos);
+        return (usize::MAX, usize::MAX);
+    }
+    // With as many clashes as `bound`, the count stops once the crossings
+    // (which only grow from here) pass it (reach it, when a tie loses).
+    let at_bound = clashes == bound.0 as i64;
+    let lost = |crossings: i64| {
+        at_bound && (crossings > bound.1 as i64 || (!bound.2 && crossings >= bound.1 as i64))
+    };
     // Bonds on the branch: inside it, or the hinge into it.
     touched.clear();
     *epoch += 1;
@@ -2355,6 +3031,9 @@ fn defects_after_move(
                 }
             }
         }
+        if lost(crossings) {
+            break;
+        }
         // Against the other branch bonds, once per pair (two bonds inside
         // the branch move together).
         if !inside(k) {
@@ -2364,10 +3043,13 @@ fn defects_after_move(
                 }
             }
         }
+        if lost(crossings) {
+            break;
+        }
     }
-    for &(m, _) in new {
-        in_moved[m.0 as usize] = false;
-        new_pos[m.0 as usize] = old[m.0 as usize];
+    restore(in_moved, new_pos);
+    if lost(crossings) {
+        return (usize::MAX, usize::MAX);
     }
     (clashes.max(0) as usize, crossings.max(0) as usize)
 }
@@ -2782,13 +3464,97 @@ mod tests {
     }
 
     #[test]
+    fn angle_separation_wraps_past_two_pi() {
+        // 330° against -90° is 60° apart, not negative.
+        let sep = min_angle_separation(330f64.to_radians(), &[(-90f64).to_radians()]);
+        assert!(
+            (sep.to_degrees() - 60.0).abs() < 1e-9,
+            "{}",
+            sep.to_degrees()
+        );
+    }
+
+    #[test]
+    fn large_components_open_their_forks_too() {
+        // A component of more than 60 atoms that needs narrow forks: its
+        // ±45° drawing is relieved as well, and keeps no fork under 90°.
+        use chematic_smiles::parse;
+        let smi = "CC(C)Cc1cccc(-c2ccccc2C(C)C)c1OC1CC(CNC(=O)c2ccc(C=C3SC(=O)NC3=O)cc2)N(C(=O)c2ccccc2C(=O)c2ccc(F)cc2F)C1";
+        let mol = parse(smi).unwrap();
+        assert!(mol.atom_count() > 60);
+        let layout = compute_layout(&mol);
+        let ring_atoms: std::collections::HashSet<AtomIdx> = chematic_perception::find_sssr(&mol)
+            .rings()
+            .iter()
+            .flatten()
+            .copied()
+            .collect();
+        let mut narrow = 0;
+        for i in 0..mol.atom_count() {
+            let atom = AtomIdx(i as u32);
+            if ring_atoms.contains(&atom) || mol.degree(atom) != 3 {
+                continue;
+            }
+            let c = layout.get(atom);
+            let mut angles: Vec<f64> = mol
+                .neighbors(atom)
+                .map(|(nb, _)| {
+                    let p = layout.get(nb);
+                    (p.y - c.y)
+                        .atan2(p.x - c.x)
+                        .rem_euclid(std::f64::consts::TAU)
+                })
+                .collect();
+            angles.sort_by(f64::total_cmp);
+            if (0..3).any(|k| {
+                (angles[(k + 1) % 3] - angles[k]).rem_euclid(std::f64::consts::TAU)
+                    < 90f64.to_radians() - 1e-6
+            }) {
+                narrow += 1;
+            }
+        }
+        assert_eq!(narrow, 0);
+        assert!(detect_crossings(&layout, &mol).is_empty());
+    }
+
+    #[test]
+    fn crowded_forks_open_to_90_degrees_when_that_does_as_well() {
+        // The carbonyl of a trityl phenyl ketone needs a narrower fork than
+        // 120°; at ±30° its O ran 60° from a C-C, at ±45° 90°.
+        use chematic_smiles::parse;
+        let smi = "O=C(C1=CC=CC=C1)C(C2=CC=CC=C2)(C3=CC=CC=C3)C4=CC=CC=C4";
+        let mol = parse(smi).unwrap();
+        let layout = compute_layout(&mol);
+        let c = layout.get(AtomIdx(1));
+        let mut angles: Vec<f64> = mol
+            .neighbors(AtomIdx(1))
+            .map(|(nb, _)| {
+                let p = layout.get(nb);
+                (p.y - c.y)
+                    .atan2(p.x - c.x)
+                    .rem_euclid(std::f64::consts::TAU)
+            })
+            .collect();
+        angles.sort_by(f64::total_cmp);
+        for k in 0..3 {
+            let gap = (angles[(k + 1) % 3] - angles[k]).rem_euclid(std::f64::consts::TAU);
+            assert!(gap.to_degrees() > 90.0 - 1e-6, "{angles:?}");
+        }
+        assert!(detect_crossings(&layout, &mol).is_empty());
+    }
+
+    #[test]
     fn bridged_and_crowded_layouts_have_no_clash_or_crossing() {
         use chematic_smiles::parse;
         for (smi, cage) in [
-            ("CNC1CC2CCC1C2", true),                // norbornane
-            ("C1C[S+]2CC[S+]1CC2", true),           // bicyclo[2.2.2]
-            ("C1OCC2(CN3CCC2CC3)O1", true),         // spiro quinuclidine
-            ("CN1C2CCC1CC(O)C2", true),             // tropane
+            ("CNC1CC2CCC1C2", true),        // norbornane
+            ("C1C[S+]2CC[S+]1CC2", true),   // bicyclo[2.2.2]
+            ("C1OCC2(CN3CCC2CC3)O1", true), // spiro quinuclidine
+            // Tropane, a pinanol: the N-methyl and the bridge's methyls
+            // swing into free faces instead of across a ring bond.
+            ("CN1C2CCC1CC(O)C2", false),
+            ("CN1C2CCC1CC(OC(=O)c1c[nH]c3ccccc13)C2", false),
+            ("CC1(C)C2CCC(C)(O)C1C2", false),
             ("c1ccc(C(n2ccnc2)n2ccnc2)cc1", false), // two rings on one carbon
             ("CCC1(CC)C(=O)NC(=O)NC1=O", false),    // quaternary ring carbon
             ("OC(=O)C(F)(F)C(F)(F)C(O)=O", false),  // crowded chain
@@ -2808,6 +3574,57 @@ mod tests {
             // as polygons (cephalotaxine core, spiro naphthodioxin).
             ("COC1=CC23CCCN2CCc2cc4c(cc2C3C1O)OCO4", false),
             ("O=C1C(O)=CC2(Oc3cccc4cccc(c34)O2)C23OC12C(O)CCC3O", false),
+            // Gem-disubstituted ring entry atoms: phenytoin, a
+            // 3,3-disubstituted glutarimide.
+            ("O=C1NC(=O)C(c2ccccc2)(c2ccccc2)N1", false),
+            ("O=C1CCC(c2ccccc2)(C2CCN(C)CC2)C(=O)N1", false),
+            // Adamantane-type cages, drawn as RDKit's projection (one
+            // crossing, as RDKit's), substituted on a bridgehead or a link.
+            ("C1C2CC3CC1CC(C2)C3", true),
+            ("C1N2CN3CN1CN(C2)C3", true),
+            ("C=CC[N+]12CN3CN(CN(C3)C1)C2", true),
+            ("NC12CC3CC(CC(C3)C1)C2", true),
+            ("OC1C2CC3CC(C2)CC1C3", true),
+            // Porphyrins (protoporphyrin IX, a zinc porphyrin): the pyrroles
+            // were folded inside the macrocycle.
+            (
+                "CC1=C2NC(=C1CCC(O)=O)C=C3N=C(C=C4NC(=CC5=NC(=C2)C(=C5C)C=C)C(=C4C)C=C)C(=C3CCC(O)=O)C",
+                false,
+            ),
+            (
+                "C1=CC2=CC3=CC=C4N3[Zn]35N2C1=CC1=CC=C(N13)C=C1C=CC(=N15)C=4",
+                false,
+            ),
+            // Perfluoroalkyl chains run straight through their CF2 atoms
+            // instead of curling back (perfluorotributylamine; a
+            // perfluorooctyl catechol).
+            (
+                "FC(F)(F)C(F)(F)C(F)(F)C(F)(F)N(C(F)(F)C(F)(F)C(F)(F)C(F)(F)F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F",
+                false,
+            ),
+            (
+                "Oc1cccc(CCCCCC(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F)c1O",
+                false,
+            ),
+            // An octahedral metal with four pyridines: their rings, 60°
+            // apart, are hung one and a half bonds out.
+            (
+                "N#CS[Ni](SC#N)([N+]1=CC=CC=C1)([N+]2=CC=CC=C2)([N+]3=CC=CC=C3)[N+]4=CC=CC=C4",
+                false,
+            ),
+            // A ring-fusion atom's substituent goes into the exterior gap
+            // (it went into a ring when the gap's direction passed 2π).
+            ("CC1(C)OC2C3C(COC2(COS(N)(=O)=O)O1)C3(Cl)Cl", false),
+            // An aspartate carboxyl turned past 60° round its CH2, clear of
+            // the neighbouring residue (three-atom groups take the wide turns).
+            (
+                "CCCN(NC(=O)C1CCCN1C(=O)C(NC(=O)C(NC(=O)C(CC(=O)O)NC(=O)C(CCC(=O)O)NC(=O)C(NC(=O)C(CC(=O)O)NC(C)=O)C(C)O)C(C)C)C(C)C)C(=O)c1cc(C(F)(F)F)cc(C(F)(F)F)c1",
+                false,
+            ),
+            (
+                "CC1(C)CCC2(C(=O)N3CCOCC3)CCC3(C)C(C(=O)C=C4C5(C)C=C(C#N)C(=O)C(C)(C)C5CCC43C)C2C1",
+                false,
+            ),
         ] {
             let mol = parse(smi).unwrap();
             let layout = compute_layout(&mol);

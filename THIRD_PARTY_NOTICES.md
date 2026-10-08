@@ -109,12 +109,90 @@ crates/chematic-fp/src/rdkit_atom_pair.rs
 crates/chematic-fp/src/rdkit_isotope_delta_table.rs
 crates/chematic-chem/src/gasteiger.rs
 crates/chematic-perception/src/rdkit_parity.rs
+crates/chematic-smiles/src/rdkit/molblock.rs
+crates/chematic-fp/src/rdkit_avalon/convert.rs
 ```
 
 These are compatibility implementations, not a copy or redistribution of
 the RDKit build. This inventory is a copyright/license notice; it is not a
 patent or freedom-to-operate opinion. No patent clearance is claimed for any
 algorithm merely because its reference implementation is BSD-licensed.
+
+## Avalon Cheminformatics Toolkit (Avalon fingerprint)
+
+`crates/chematic-fp/src/rdkit_avalon/` (`mod.rs`, `rings.rs`,
+`fingerprint.rs`, `molfile.rs`) is a line-level port of the fingerprint code
+of the Avalon Cheminformatics Toolkit, the C library RDKit's
+`rdkit.Avalon.pyAvalonTools.GetAvalonFP` calls. The version is the one RDKit
+2026.03 downloads (`External/AvalonTools/CMakeLists.txt`).
+
+Derived from:
+
+```
+Project:         Avalon Cheminformatics Toolkit (rdkit/ava-formake)
+Version:         tag AvalonToolkit_2.0.5-pre.3
+                 (commit cdcfc251b4a2e4cc4cc0e450c9114ef953626f35)
+Source URL:      https://github.com/rdkit/ava-formake/tree/AvalonToolkit_2.0.5-pre.3
+Files:           src/main/C/common/ssmatch.c (CountFingerprintPatterns,
+                   SetPathBitsRec, SetPathLengthFlags, SpecialNeighboursRec,
+                   SetFeatureBits, SetFingerprintBits)
+                 src/main/C/common/perceive.c (SetRingSizeFlags,
+                   PerceiveAromaticBonds, PerceiveDYAromaticity)
+                 src/main/C/common/graph.c (RingList, SortRings, CombineRings,
+                   ProperRingPairs)
+                 src/main/C/common/set.c (bit sets)
+                 src/main/C/common/utilities.c (RingState, SetupNeighbourhood,
+                   ImplicitHydrogens, ComputeImplicitH, periodic_table)
+                 src/main/C/common/hashcode.c (next_hash, hash_position,
+                   hash_string)
+                 src/main/C/common/reaccsio.c (MolStr2Mol field semantics)
+License:         BSD-3-Clause
+Copyright:       Copyright 2001-2011 Novartis Pharma AG. All rights reserved.
+                 hashcode.c: Copyright (c) 2010, Novartis Institutes for
+                 BioMedical Research Inc. All rights reserved.
+```
+
+The toolkit's `license.txt` (BSD-3-Clause):
+
+```
+Copyright 2001-2011 Novartis Pharma AG. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are
+permitted provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright notice, this list of
+      conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice, this list
+      of conditions and the following disclaimer in the documentation and/or other materials
+      provided with the distribution.
+
+   3. Neither the name of Novartis Institutes for BioMedical Research Inc.
+      nor the names of its contributors may be used to endorse or promote
+      products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY NOVARTIS PHARMA AG ''AS IS'' AND ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those of the
+authors and should not be interpreted as representing official policies, either expressed
+or implied, of Novartis Pharma AG.
+```
+
+The way RDKit feeds the toolkit (`External/AvalonTools/AvalonTools.cpp`:
+`getAvalonFP`, `getFp`, `molToReaccs`) and writes the MOL block it reads
+(`Code/GraphMol/FileParsers/MolFileWriter.cpp`, `Code/GraphMol/Kekulize.cpp`,
+RDKit tag `Release_2026_03_1`) is followed in
+`crates/chematic-fp/src/rdkit_avalon/convert.rs` and
+`crates/chematic-smiles/src/rdkit/molblock.rs`, covered by the RDKit
+BSD-3-Clause notice above.
 
 ## IUPAC InChI source
 

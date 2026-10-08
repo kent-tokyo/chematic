@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.37</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.38</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,7 +80,7 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.0.37 improves stereo-aware MOL and SVG depiction, crowded 2D layouts,
+v1.0.38 adds named RDKit-compatible APIs and improves stereo-aware MOL and SVG depiction, crowded 2D layouts,
 canonical SMILES worst cases, MMFF94 typing and energy terms, lone-pair CIP,
 and the opt-in RDKit 2026.09.1 SMARTS ring profile. It also adds the bounded
 `chematic.nucleic-acid.v1` document model across Rust, Python, and WASM, and

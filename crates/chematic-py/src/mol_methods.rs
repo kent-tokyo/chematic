@@ -15,6 +15,8 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 use std::sync::Arc;
 
+type PyUffTerm = (String, Vec<usize>, Vec<f64>);
+
 #[pymethods]
 impl Mol {
     // -----------------------------------------------------------------------
@@ -25,6 +27,99 @@ impl Mol {
     #[getter]
     fn smiles(&self) -> String {
         chematic_smiles::canonical_smiles(&self.inner)
+    }
+
+    /// Canonical SMILES exactly as RDKit 2026.03.1 writes it.
+    ///
+    /// For a molecule read with :func:`from_smiles` this is the string
+    /// ``Chem.MolToSmiles(Chem.MolFromSmiles(s))`` returns (isomeric,
+    /// canonical, default parameters) — a port of RDKit's parse,
+    /// sanitization, legacy stereo perception and canonical SMILES writer.
+    /// It is separate from :attr:`smiles` (chematic's own canonical SMILES),
+    /// which it does not change.
+    ///
+    /// Raises ``ValueError`` instead of returning a string when the molecule
+    /// uses a feature the port does not model (message starting
+    /// ``"RDKit-compatible SMILES: unsupported input"``, e.g. non-tetrahedral
+    /// chirality or a molecule not read from SMILES) or when RDKit's
+    /// sanitization would reject it (``"RDKit-compatible SMILES:
+    /// sanitization failed"``; ``Chem.MolFromSmiles`` returns ``None``).
+    ///
+    ///     chematic.from_smiles("OC(=O)[C@@H]1CCCN1").rdkit_smiles
+    ///     # 'O=C(O)[C@@H]1CCCN1'
+    #[getter]
+    fn rdkit_smiles(&self) -> PyResult<String> {
+        chematic_smiles::rdkit_canonical_smiles(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// SMILES exactly as RDKit 2026.03.1's ``Chem.MolToSmiles`` writes it
+    /// with the given options (``doRandom`` is always false):
+    /// ``isomeric`` = ``isomericSmiles``, ``kekule`` = ``kekuleSmiles``,
+    /// ``canonical``, ``all_bonds_explicit`` = ``allBondsExplicit``,
+    /// ``all_hs_explicit`` = ``allHsExplicit`` and ``rooted_at_atom`` =
+    /// ``rootedAtAtom`` (``None``: -1). With the defaults it equals
+    /// :attr:`rdkit_smiles`. Raises ``ValueError`` like :attr:`rdkit_smiles`.
+    ///
+    ///     chematic.from_smiles("c1ccccc1O").rdkit_smiles_with(kekule=True)
+    ///     # 'OC1=CC=CC=C1'
+    #[pyo3(signature = (*, isomeric = true, kekule = false, canonical = true,
+                        all_bonds_explicit = false, all_hs_explicit = false,
+                        rooted_at_atom = None))]
+    fn rdkit_smiles_with(
+        &self,
+        isomeric: bool,
+        kekule: bool,
+        canonical: bool,
+        all_bonds_explicit: bool,
+        all_hs_explicit: bool,
+        rooted_at_atom: Option<usize>,
+    ) -> PyResult<String> {
+        let params = chematic_smiles::RdkitSmilesParams {
+            isomeric,
+            kekule,
+            canonical,
+            all_bonds_explicit,
+            all_hs_explicit,
+            rooted_at_atom,
+        };
+        chematic_smiles::rdkit_smiles(&self.inner, &params)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// 2D coordinates exactly as RDKit 2026.03.1's default depiction gives
+    /// them: for a molecule read with :func:`from_smiles` this is
+    /// ``[[p.x, p.y] for p in m.GetConformer().GetPositions()]`` after
+    /// ``m = Chem.MolFromSmiles(s); rdDepictor.Compute2DCoords(m)`` (RDKit's
+    /// own depictor with its defaults, not CoordGen), bit for bit.
+    ///
+    /// One ``[x, y]`` per atom of RDKit's molecule, in RDKit's atom order —
+    /// this molecule's atom order unless ``MolFromSmiles`` removes hydrogen
+    /// atoms written in brackets. chematic's own 2D layout (used by
+    /// :meth:`depict_data`, the SVG and MOL writers) is separate and
+    /// unchanged. Raises ``ValueError`` like :attr:`rdkit_smiles`.
+    ///
+    ///     chematic.from_smiles("CCO").rdkit_2d_coords()[1]
+    ///     # [0.0, 0.5000000000000001]
+    fn rdkit_2d_coords(&self) -> PyResult<Vec<[f64; 2]>> {
+        chematic_smiles::rdkit_2d_coords(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// The MOL block RDKit 2026.03.1 writes for this molecule with its
+    /// default 2D depiction: ``Chem.MolToMolBlock(m)`` after
+    /// ``m = Chem.MolFromSmiles(s); rdDepictor.Compute2DCoords(m)`` for the
+    /// SMILES ``s`` the molecule was read from (V2000, coordinates of
+    /// :meth:`rdkit_2d_coords`, RDKit's kekulization and wedge bonds).
+    ///
+    /// Raises ``ValueError`` like :attr:`rdkit_smiles`, and for molecules
+    /// RDKit would write as V3000 (dative bonds, more than 999 atoms or
+    /// bonds).
+    ///
+    ///     print(chematic.from_smiles("C[C@H](O)F").rdkit_mol_block_2d())
+    fn rdkit_mol_block_2d(&self) -> PyResult<String> {
+        chematic_smiles::rdkit_mol_block_2d(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
     /// Canonical SMILES together with the atom output order.
@@ -184,6 +279,192 @@ impl Mol {
         .unwrap_or(0.0)
     }
 
+    /// RDKit-compatible MMFF94 energy: ``MMFFGetMoleculeForceField(m,
+    /// MMFFGetMoleculeProperties(m), nonBondedThresh,
+    /// ignoreInterfragInteractions).CalcEnergy()`` for ``coords`` (all atoms,
+    /// in the order of :meth:`add_hydrogens`, which is RDKit's ``AddHs``
+    /// order). ``variant`` is ``"MMFF94"`` or ``"MMFF94s"``. Raises
+    /// ``ValueError`` when MMFF94 typing fails.
+    #[pyo3(signature = (coords, variant = "MMFF94", non_bonded_thresh = 100.0, ignore_interfrag_interactions = true))]
+    fn rdkit_mmff_energy(
+        &self,
+        coords: Vec<[f64; 3]>,
+        variant: &str,
+        non_bonded_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<f64> {
+        let ff = rdkit_mmff_field(
+            &self.inner,
+            &coords,
+            mmff_variant(variant)?,
+            non_bonded_thresh,
+            ignore_interfrag_interactions,
+            [true; 7],
+        )?;
+        Ok(ff.energy(coords.as_flattened()))
+    }
+
+    /// RDKit-compatible ``MMFFOptimizeMolecule(m, maxIters, nonBondedThresh,
+    /// ignoreInterfragInteractions)`` from ``coords``: returns
+    /// ``(status, energy, coords)`` with RDKit's status (0 converged, 1 more
+    /// iterations needed) and final energy. ``variant`` is ``"MMFF94"`` or
+    /// ``"MMFF94s"`` (``"MMFF94S"`` is accepted as ``"MMFF94s"``; note RDKit
+    /// itself silently treats any spelling other than ``"MMFF94s"`` as
+    /// MMFF94).
+    #[pyo3(signature = (coords, max_iters = 200, variant = "MMFF94", non_bonded_thresh = 100.0, ignore_interfrag_interactions = true))]
+    fn rdkit_mmff_optimize(
+        &self,
+        coords: Vec<[f64; 3]>,
+        max_iters: u32,
+        variant: &str,
+        non_bonded_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<(i32, f64, Vec<[f64; 3]>)> {
+        let ff = rdkit_mmff_field(
+            &self.inner,
+            &coords,
+            mmff_variant(variant)?,
+            non_bonded_thresh,
+            ignore_interfrag_interactions,
+            [true; 7],
+        )?;
+        let mut pos = coords.as_flattened().to_vec();
+        let (status, energy) = ff.optimize(&mut pos, max_iters);
+        if status < 0 {
+            return Err(PyValueError::new_err("bad direction in linearSearch"));
+        }
+        Ok((
+            status,
+            energy,
+            pos.chunks(3).map(|c| [c[0], c[1], c[2]]).collect(),
+        ))
+    }
+
+    /// RDKit-compatible UFF energy: ``UFFGetMoleculeForceField(m,
+    /// vdwThresh, ignoreInterfragInteractions=...).CalcEnergy()`` for
+    /// ``coords`` (all atoms, in :meth:`add_hydrogens` order, which is
+    /// RDKit's ``AddHs`` order).
+    #[pyo3(signature = (coords, vdw_thresh = 10.0, ignore_interfrag_interactions = true))]
+    fn rdkit_uff_energy(
+        &self,
+        coords: Vec<[f64; 3]>,
+        vdw_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<f64> {
+        let ff = rdkit_uff_field(
+            &self.inner,
+            &coords,
+            vdw_thresh,
+            ignore_interfrag_interactions,
+        )?;
+        Ok(ff.energy(coords.as_flattened()))
+    }
+
+    /// RDKit-compatible UFF gradient (``CalcGrad()``, unscaled) for
+    /// ``coords``, flattened.
+    #[pyo3(signature = (coords, vdw_thresh = 10.0, ignore_interfrag_interactions = true))]
+    fn rdkit_uff_gradient(
+        &self,
+        coords: Vec<[f64; 3]>,
+        vdw_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<Vec<f64>> {
+        let ff = rdkit_uff_field(
+            &self.inner,
+            &coords,
+            vdw_thresh,
+            ignore_interfrag_interactions,
+        )?;
+        let pos = coords.as_flattened();
+        let mut grad = vec![0.0; pos.len()];
+        ff.gradient(pos, &mut grad);
+        Ok(grad)
+    }
+
+    /// RDKit-compatible ``UFFOptimizeMolecule(m, maxIters, vdwThresh,
+    /// ignoreInterfragInteractions=...)`` from ``coords``: returns
+    /// ``(status, energy, coords)`` with RDKit's status (0 converged, 1 more
+    /// iterations needed) and final energy.
+    #[pyo3(signature = (coords, max_iters = 200, vdw_thresh = 10.0, ignore_interfrag_interactions = true))]
+    fn rdkit_uff_optimize(
+        &self,
+        coords: Vec<[f64; 3]>,
+        max_iters: u32,
+        vdw_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<(i32, f64, Vec<[f64; 3]>)> {
+        let ff = rdkit_uff_field(
+            &self.inner,
+            &coords,
+            vdw_thresh,
+            ignore_interfrag_interactions,
+        )?;
+        let mut pos = coords.as_flattened().to_vec();
+        let (status, energy) = ff.optimize(&mut pos, max_iters);
+        if status < 0 {
+            return Err(PyValueError::new_err("bad direction in linearSearch"));
+        }
+        Ok((
+            status,
+            energy,
+            pos.chunks(3).map(|c| [c[0], c[1], c[2]]).collect(),
+        ))
+    }
+
+    /// Diagnostic: the RDKit UFF terms ``(kind, atoms, params)`` in RDKit's
+    /// contribution order.
+    #[pyo3(signature = (coords, vdw_thresh = 10.0))]
+    fn _rdkit_uff_terms(&self, coords: Vec<[f64; 3]>, vdw_thresh: f64) -> PyResult<Vec<PyUffTerm>> {
+        let ff = rdkit_uff_field(&self.inner, &coords, vdw_thresh, true)?;
+        Ok(ff
+            .debug_terms()
+            .into_iter()
+            .map(|(k, a, p)| (k.to_string(), a, p))
+            .collect())
+    }
+
+    /// RDKit ``UFFHasAllMoleculeParams``: whether every atom (of this
+    /// explicit-hydrogen molecule) has a UFF atom type with parameters.
+    fn rdkit_uff_has_all_params(&self) -> bool {
+        chematic_ff::rdkit_uff::rdkit_uff_has_all_params(&self.inner)
+    }
+
+    /// RDKit's UFF atom labels (``UFF::Tools::getAtomLabel``), one per atom.
+    fn rdkit_uff_atom_labels(&self) -> Vec<String> {
+        chematic_ff::rdkit_uff::rdkit_uff_atom_labels(&self.inner)
+    }
+
+    /// Diagnostic: RDKit-compatible MMFF94 energy and unscaled gradient with
+    /// only the term classes in ``terms`` (``bond``, ``angle``,
+    /// ``stretch_bend``, ``oop``, ``torsion``, ``vdw``, ``ele``).
+    #[pyo3(signature = (coords, terms = None, non_bonded_thresh = 100.0, variant = "MMFF94"))]
+    fn _rdkit_mmff_terms(
+        &self,
+        coords: Vec<[f64; 3]>,
+        terms: Option<Vec<String>>,
+        non_bonded_thresh: f64,
+        variant: &str,
+    ) -> PyResult<(f64, Vec<f64>)> {
+        let mut mask = [true; 7];
+        if let Some(t) = terms {
+            for (k, name) in chematic_ff::rdkit_mmff::RDKIT_MMFF_TERMS.iter().enumerate() {
+                mask[k] = t.iter().any(|x| x == name);
+            }
+        }
+        let ff = rdkit_mmff_field(
+            &self.inner,
+            &coords,
+            mmff_variant(variant)?,
+            non_bonded_thresh,
+            true,
+            mask,
+        )?;
+        let pos = coords.as_flattened();
+        let mut grad = vec![0.0; pos.len()];
+        ff.gradient(pos, &mut grad);
+        Ok((ff.energy(pos), grad))
+    }
+
     /// Per-atom MMFF94 force field type names.
     ///
     /// Returns one string per heavy atom describing the MMFF94 atom type
@@ -250,12 +531,10 @@ impl Mol {
         // Laid out like RDKit's MolToMolBlock (and the WASM binding): the
         // stereo depiction, or the plain layout without stereo (this wrote
         // every atom at the origin for a molecule without stereo).
-        let coords = chematic_mol::stereo_depiction::mol_block_coords(&self.inner);
-        let (block, loss) = chematic_mol::write_mol_with_stereo_report(
-            &self.inner,
-            &chematic_mol::MolMetadata::default(),
-            &coords,
-        );
+        // Undeclared E/Z double bonds are written "either", so the layout
+        // never reads back as a configuration the molecule does not have.
+        let (block, loss) =
+            chematic_mol::write_laid_out_mol(&self.inner, &chematic_mol::MolMetadata::default());
         strict_mol_block(py, block, &loss, strict)
     }
 
@@ -276,12 +555,10 @@ impl Mol {
         // Laid out like RDKit's MolToMolBlock (and the WASM binding): the
         // stereo depiction, or the plain layout without stereo (this wrote
         // every atom at the origin for a molecule without stereo).
-        let coords = chematic_mol::stereo_depiction::mol_block_coords(&self.inner);
-        let (block, loss) = chematic_mol::write_mol_with_stereo_report(
-            &self.inner,
-            &chematic_mol::MolMetadata::default(),
-            &coords,
-        );
+        // Undeclared E/Z double bonds are written "either", so the layout
+        // never reads back as a configuration the molecule does not have.
+        let (block, loss) =
+            chematic_mol::write_laid_out_mol(&self.inner, &chematic_mol::MolMetadata::default());
         Ok((block, stereo_loss_dict(py, &loss)?))
     }
 
@@ -630,6 +907,14 @@ impl Mol {
     #[getter]
     fn ring_count(&self) -> usize {
         chematic_chem::ring_count(&self.inner)
+    }
+
+    /// Number of rings as RDKit's ``rdMolDescriptors.CalcNumRings`` counts
+    /// them (its symmetrized SSSR); larger than :attr:`ring_count` for cages
+    /// and bridged systems.
+    #[getter]
+    fn num_rings(&self) -> usize {
+        chematic_chem::rdkit_num_rings(&self.inner)
     }
 
     /// Number of distinct connected ring systems.
@@ -1086,7 +1371,7 @@ impl Mol {
         d.set_item("drug_score", chematic_chem::drug_score(m))?;
         // MQN (Molecular Quantum Numbers): 42 integer descriptors (Ertl 2010)
         for (i, &v) in chematic_chem::mqn(m).iter().enumerate() {
-            d.set_item(format!("MQN{}", i + 1), u32::from(v))?;
+            d.set_item(format!("MQN{}", i + 1), v)?;
         }
         Ok(d)
     }
@@ -1531,6 +1816,28 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::rdkit_atom_pair_fp(&self.inner))
     }
 
+    /// RDKit's hashed atom-pair count fingerprint
+    /// (``rdMolDescriptors.GetHashedAtomPairFingerprint(m, nBits=nbits)``)
+    /// as a sorted list of ``(bucket, count)`` nonzero elements.
+    #[pyo3(signature = (nbits = 2048))]
+    fn rdkit_atom_pair_counts(&self, nbits: u32) -> PyResult<Vec<(u32, u32)>> {
+        if nbits == 0 {
+            return Err(PyValueError::new_err("nbits must be positive"));
+        }
+        Ok(chematic_fp::rdkit_atom_pair_counts(&self.inner, nbits))
+    }
+
+    /// RDKit's hashed topological-torsion count fingerprint
+    /// (``rdMolDescriptors.GetHashedTopologicalTorsionFingerprint(m, nBits=nbits)``)
+    /// as a sorted list of ``(bucket, count)`` nonzero elements.
+    #[pyo3(signature = (nbits = 2048))]
+    fn rdkit_torsion_counts(&self, nbits: u32) -> PyResult<Vec<(u32, u32)>> {
+        if nbits == 0 {
+            return Err(PyValueError::new_err("nbits must be positive"));
+        }
+        Ok(chematic_fp::rdkit_torsion_counts(&self.inner, nbits))
+    }
+
     /// RDKit-compatible "Layered fingerprint" (``rdkit.Chem.LayeredFingerprint``)
     /// as bytes (256 bytes = 2048 bits).
     ///
@@ -1657,16 +1964,24 @@ impl Mol {
     ///
     /// Raises ``ValueError`` on the same preprocessing failures as :meth:`rdkit_ecfp4`
     /// (regardless of ``radius``/``nbits`` -- the failure happens before folding).
-    /// ``include_chirality`` enables RDKit-compatible tetrahedral chirality.
-    /// E/Z bond stereo is not included by this API yet.
-    #[pyo3(signature = (radius = 2, nbits = 2048, include_chirality = false))]
+    /// ``include_chirality`` is RDKit's ``includeChirality``: tetrahedral
+    /// centres and E/Z double bonds as RDKit's (legacy) stereo perception
+    /// sees them. ``count_simulation`` is RDKit's ``countSimulation`` with
+    /// the default ``countBounds`` ``[1, 2, 4, 8]``.
+    #[pyo3(signature = (radius = 2, nbits = 2048, include_chirality = false, count_simulation = false))]
     fn rdkit_ecfp_config(
         &self,
         radius: u32,
         nbits: usize,
         include_chirality: bool,
+        count_simulation: bool,
     ) -> PyResult<Vec<u8>> {
         let config = python_rdkit_morgan_config(radius, nbits, include_chirality)?;
+        if count_simulation {
+            let fp = chematic_fp::rdkit_morgan_count_simulation(&self.inner, &config)
+                .map_err(|e| PyValueError::new_err(e.to_string()))?;
+            return Ok(bitvecn_to_bytes(&fp));
+        }
         let result = chematic_fp::rdkit_morgan_fingerprint(&self.inner, &config)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(bitvecn_to_bytes(&result.fingerprint))
@@ -1947,8 +2262,9 @@ impl Mol {
     ///
     /// Raises ``ValueError`` for invalid SMARTS.
     fn has_substructure(&self, smarts: &str) -> PyResult<bool> {
-        let query = crate::misc::cached_smarts(smarts)
-            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        let query = crate::misc::cached_smarts(smarts).map_err(|e| {
+            crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
+        })?;
         // Stop at the first embedding instead of enumerating every match — an
         // existence check doesn't need the full match set or the dedup pass.
         let config = chematic_smarts::MatchConfig {
@@ -1973,8 +2289,9 @@ impl Mol {
     /// Returns an empty list when there are no matches.
     /// Raises ``ValueError`` for invalid SMARTS.
     fn find_matches(&self, smarts: &str) -> PyResult<Vec<Vec<usize>>> {
-        let query = crate::misc::cached_smarts(smarts)
-            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        let query = crate::misc::cached_smarts(smarts).map_err(|e| {
+            crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
+        })?;
         Ok(chematic_smarts::find_match_atom_sets_perceived(
             &query,
             &self.inner,
@@ -1988,9 +2305,12 @@ impl Mol {
     /// ambiguous ring-count systems and bounded searches are never presented
     /// as an empty match set. This mode is not general RDKit SMARTS parity.
     ///
+    /// The default profile counts ``[R<n>]`` rings in RDKit 2026.03's
+    /// symmetrized SSSR, using the exact port of RDKit's atom-order-dependent
+    /// ring list where that list depends on atom order; it refuses as
+    /// ``ring_model_ambiguous`` only where that port declines.
     /// ``profile="2026.09.1"`` counts ``[R<n>]`` rings in RDKit 2026.09.1's
-    /// ring list (all relevant cycles) instead of 2026.03.6's symmetrized
-    /// SSSR; nothing is then refused as ``ring_model_ambiguous``.
+    /// ring list (all relevant cycles) instead.
     #[pyo3(signature = (smarts, profile = "2026.03.6"))]
     fn find_matches_rdkit_parity<'py>(
         &self,
@@ -2010,8 +2330,9 @@ impl Mol {
             }
         };
 
-        let query = crate::misc::cached_smarts(smarts)
-            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        let query = crate::misc::cached_smarts(smarts).map_err(|e| {
+            crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
+        })?;
         let result = PyDict::new(py);
         let config = chematic_smarts::RdkitParityConfig {
             use_rdkit_parity_aromaticity: true,
@@ -2349,6 +2670,43 @@ impl Mol {
         chematic_chem::enumerate_stereoisomers(&self.inner)
             .into_iter()
             .map(Mol::bare)
+            .collect()
+    }
+
+    /// RDKit-compatible stereoisomer enumeration: the isomers
+    /// ``rdkit.Chem.EnumerateStereoisomers.EnumerateStereoisomers`` yields
+    /// with ``StereoEnumerationOptions(onlyUnassigned=True, unique=True,
+    /// maxIsomers=max_isomers, tryEmbedding=False)``, as Mols parsed from
+    /// their RDKit canonical SMILES, sorted by that SMILES.
+    ///
+    /// Only ``only_unassigned=True`` and ``unique=True`` are supported.
+    /// With more flip combinations than ``max_isomers`` RDKit yields a random
+    /// sample seeded deterministically from the molecule (``rand=None``);
+    /// that sample is reproduced (CPython ``hash`` + ``random.Random``).
+    /// Raises ``ValueError`` when the molecule is outside the
+    /// RDKit-compatible model (e.g. enhanced stereo groups), or for
+    /// ``max_isomers=0`` with more than 16 flips.
+    #[pyo3(signature = (only_unassigned = true, unique = true, max_isomers = 1024))]
+    fn rdkit_stereoisomers(
+        &self,
+        only_unassigned: bool,
+        unique: bool,
+        max_isomers: usize,
+    ) -> PyResult<Vec<Mol>> {
+        if !only_unassigned || !unique {
+            return Err(PyValueError::new_err(
+                "only only_unassigned=True and unique=True are supported",
+            ));
+        }
+        let smiles = chematic_smiles::rdkit_stereoisomer_smiles(&self.inner, max_isomers)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        smiles
+            .iter()
+            .map(|s| {
+                chematic_smiles::parse(s)
+                    .map(Mol::bare)
+                    .map_err(|e| PyValueError::new_err(format!("{s}: {e}")))
+            })
             .collect()
     }
 
@@ -2816,9 +3174,10 @@ impl Mol {
 
     /// Molecular Quantum Numbers (MQN) — 42-element topological descriptor vector.
     ///
-    /// Encodes atom counts, bond counts, ring counts, and degree statistics.
-    /// Reference: Ertl et al., *J. Chem. Inf. Model.* 2009.
-    fn mqn(&self) -> Vec<u8> {
+    /// RDKit's ``rdMolDescriptors.CalcMQNs``: atom, polarity, charge,
+    /// topology, bond and ring-size counts (Nguyen et al. 2009 order),
+    /// returned as a list of ints.
+    fn mqn(&self) -> Vec<u32> {
         chematic_chem::mqn(&self.inner)
     }
 
@@ -3803,9 +4162,28 @@ impl Mol {
     /// A broad mix of atom, bond, ring, and path features, loosely modelled
     /// on RDKit's Avalon fingerprint (``rdkit.Avalon.pyAvalonTools.GetAvalonFP``).
     /// Bit positions are not RDKit-identical (see :mod:`chematic.rdkit_compat`
-    /// notes on Morgan fingerprints for the same caveat).
+    /// notes on Morgan fingerprints for the same caveat); :meth:`rdkit_avalon_fp`
+    /// is the RDKit-identical fingerprint.
     fn avalon_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::avalon_fp(&self.inner))
+    }
+
+    /// RDKit's Avalon fingerprint as bytes (``n_bits / 8`` bytes, bit ``i`` at
+    /// byte ``i // 8``, mask ``1 << (i % 8)``).
+    ///
+    /// Bit-identical to ``rdkit.Avalon.pyAvalonTools.GetAvalonFP(mol,
+    /// nBits=n_bits)`` (default ``bitFlags``, ``isQuery=False``) for the RDKit
+    /// molecule ``Chem.MolFromSmiles`` builds from the SMILES this molecule was
+    /// read from: a port of the Avalon toolkit's fingerprint code (version
+    /// 2.0.5-pre.3, the one RDKit 2026.03 builds) applied to the connection
+    /// table RDKit's ``MolToMolBlock`` writes.
+    ///
+    /// Raises ``ValueError`` for molecules RDKit would reject or that the RDKit
+    /// model does not cover.
+    #[pyo3(signature = (n_bits = 2048))]
+    fn rdkit_avalon_fp(&self, n_bits: usize) -> PyResult<Vec<u8>> {
+        chematic_fp::rdkit_avalon_fp(&self.inner, n_bits)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
     /// 3D pharmacophore fingerprint as bytes (256 bytes = 2048 bits).
@@ -5032,4 +5410,61 @@ fn stereo_loss_dict<'py>(
     )?;
     d.set_item("stereo_groups_dropped", loss.stereo_groups_dropped)?;
     Ok(d)
+}
+
+fn rdkit_uff_field(
+    mol: &chematic_core::Molecule,
+    coords: &[[f64; 3]],
+    vdw_thresh: f64,
+    ignore_interfrag: bool,
+) -> PyResult<chematic_ff::rdkit_uff::RdkitUffField> {
+    if coords.len() != mol.atom_count() {
+        return Err(PyValueError::new_err(format!(
+            "expected {} coordinates, got {}",
+            mol.atom_count(),
+            coords.len()
+        )));
+    }
+    Ok(chematic_ff::rdkit_uff::RdkitUffField::new(
+        mol,
+        coords,
+        vdw_thresh,
+        ignore_interfrag,
+    ))
+}
+
+fn mmff_variant(variant: &str) -> PyResult<chematic_ff::rdkit_mmff::MmffVariant> {
+    match variant {
+        "MMFF94" => Ok(chematic_ff::rdkit_mmff::MmffVariant::Mmff94),
+        "MMFF94s" | "MMFF94S" => Ok(chematic_ff::rdkit_mmff::MmffVariant::Mmff94s),
+        _ => Err(PyValueError::new_err(format!(
+            "unsupported MMFF variant {variant:?} (expected \"MMFF94\" or \"MMFF94s\")"
+        ))),
+    }
+}
+
+fn rdkit_mmff_field(
+    mol: &chematic_core::Molecule,
+    coords: &[[f64; 3]],
+    variant: chematic_ff::rdkit_mmff::MmffVariant,
+    non_bonded_thresh: f64,
+    ignore_interfrag: bool,
+    terms: [bool; 7],
+) -> PyResult<chematic_ff::rdkit_mmff::RdkitMmffField> {
+    if coords.len() != mol.atom_count() {
+        return Err(PyValueError::new_err(format!(
+            "expected {} coordinates, got {}",
+            mol.atom_count(),
+            coords.len()
+        )));
+    }
+    chematic_ff::rdkit_mmff::RdkitMmffField::with_terms(
+        mol,
+        coords,
+        variant,
+        non_bonded_thresh,
+        ignore_interfrag,
+        terms,
+    )
+    .map_err(|e| PyValueError::new_err(e.to_string()))
 }

@@ -110,10 +110,11 @@ pub use mol2000::{
     MolStereoWriteError, SquarePlanarPerceptionDiagnostic, SquarePlanarRejectionReason,
     Stereo3DDiagnostic, UnsupportedStereoReason, parse_mol, parse_mol_with_coords,
     parse_sdf_with_coords, read_mol_with_diagnostics, read_sdf_with_diagnostics,
-    validate_square_planar_for_write, write_mol, write_mol_with_conformer,
-    write_mol_with_conformer_checked, write_mol_with_coords, write_mol_with_stereo_report,
-    write_sdf, write_sdf_record, write_sdf_record_v3000, write_sdf_record_with_conformer,
-    write_sdf_record_with_conformer_checked, write_sdf_with_charges,
+    validate_square_planar_for_write, write_laid_out_mol, write_laid_out_sdf_record_into,
+    write_mol, write_mol_with_conformer, write_mol_with_conformer_checked, write_mol_with_coords,
+    write_mol_with_stereo_report, write_sdf, write_sdf_record, write_sdf_record_v3000,
+    write_sdf_record_with_conformer, write_sdf_record_with_conformer_checked,
+    write_sdf_with_charges,
 };
 pub use mol3000::{
     V3000SGroup, V3000SGroupKind, parse_mol_v3000, parse_mol_v3000_with_coords,

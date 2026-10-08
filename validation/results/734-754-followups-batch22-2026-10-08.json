@@ -1,0 +1,45 @@
+{
+ "schema": "734-754-followups-batch22/v1",
+ "rdkit": "2026.03.6",
+ "base_revision": "0029e0ce",
+ "relief_identical_output": {
+  "write_mol_2000_rows_instructions": {
+   "batch21": 652494617,
+   "identical_change": 589199581
+  },
+  "mol_blocks_identical_rows": 15000
+ },
+ "layout_2d_as_drawn": {
+  "batch20_21": {
+   "clean": 14767,
+   "with_clash": 23,
+   "with_crossing": 232,
+   "narrow_branch_atoms": 1757,
+   "with_narrow_branch": 251
+  },
+  "source": {
+   "clean": 14769,
+   "with_clash": 23,
+   "with_crossing": 230,
+   "narrow_branch_atoms": 916,
+   "with_narrow_branch": 231
+  },
+  "rows_better": 2,
+  "rows_worse": 0,
+  "rows_narrow_changed": 68
+ },
+ "write_mol_2000_rows_instructions_source": 679875501,
+ "decided": [
+  "chlorendic acid bridge Cl crossing",
+  "canonical row c5k 2984 planner serialization (3.8 ms)",
+  "333-atom explicit-H peptide refinement",
+  "WASM error surface (maintainer choice)",
+  "fullerenes",
+  "octahedral complexes"
+ ],
+ "external": {
+  "macos_windows_wheels": "dispatch version=1.0.37",
+  "wasm32_msrv": "static.rust-lang.org 403 via proxy",
+  "rdkit_2026_09_1_python": "not on PyPI (2026-10-08)"
+ }
+}

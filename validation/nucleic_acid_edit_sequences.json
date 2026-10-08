@@ -1,0 +1,771 @@
+{
+ "schema_version": 1,
+ "contract": "validation/nucleic_acid_document_contract.json",
+ "generated_with": "chematic 1.0.36",
+ "sequences": [
+  {
+   "id": "short_dna",
+   "start": "short_dna",
+   "steps": [
+    {
+     "command": {
+      "kind": "set_annotation",
+      "target": {
+       "kind": "residue",
+       "id": "d2"
+      },
+      "key": "selected",
+      "value": true
+     },
+     "ok": true,
+     "document": {
+      "annotations": {
+       "source": "contract fixture"
+      },
+      "atom_ids": [
+       "d1-5",
+       "d1-3",
+       "d2-5",
+       "d2-3"
+      ],
+      "linkages": [
+       {
+        "annotations": {},
+        "five_prime_atom_ref": "d2-5",
+        "five_prime_residue_id": "d2",
+        "id": "dl1",
+        "kind": "phosphodiester",
+        "three_prime_atom_ref": "d1-3",
+        "three_prime_residue_id": "d1"
+       }
+      ],
+      "schema": "chematic.nucleic-acid.v1",
+      "strands": [
+       {
+        "annotations": {
+         "name": "AT"
+        },
+        "id": "dna-1",
+        "kind": "dna",
+        "residues": [
+         {
+          "annotations": {
+           "position": 1
+          },
+          "atom_refs": [
+           "d1-5",
+           "d1-3"
+          ],
+          "base": "A",
+          "id": "d1",
+          "sugar": "deoxyribose",
+          "three_prime_linkage": "dl1"
+         },
+         {
+          "annotations": {
+           "position": 2,
+           "selected": true
+          },
+          "atom_refs": [
+           "d2-5",
+           "d2-3"
+          ],
+          "base": "T",
+          "five_prime_linkage": "dl1",
+          "id": "d2",
+          "sugar": "deoxyribose"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "command": {
+      "kind": "set_annotation",
+      "target": {
+       "kind": "linkage",
+       "id": "dl1"
+      },
+      "key": "note",
+      "value": "checked"
+     },
+     "ok": true,
+     "document": {
+      "annotations": {
+       "source": "contract fixture"
+      },
+      "atom_ids": [
+       "d1-5",
+       "d1-3",
+       "d2-5",
+       "d2-3"
+      ],
+      "linkages": [
+       {
+        "annotations": {
+         "note": "checked"
+        },
+        "five_prime_atom_ref": "d2-5",
+        "five_prime_residue_id": "d2",
+        "id": "dl1",
+        "kind": "phosphodiester",
+        "three_prime_atom_ref": "d1-3",
+        "three_prime_residue_id": "d1"
+       }
+      ],
+      "schema": "chematic.nucleic-acid.v1",
+      "strands": [
+       {
+        "annotations": {
+         "name": "AT"
+        },
+        "id": "dna-1",
+        "kind": "dna",
+        "residues": [
+         {
+          "annotations": {
+           "position": 1
+          },
+          "atom_refs": [
+           "d1-5",
+           "d1-3"
+          ],
+          "base": "A",
+          "id": "d1",
+          "sugar": "deoxyribose",
+          "three_prime_linkage": "dl1"
+         },
+         {
+          "annotations": {
+           "position": 2,
+           "selected": true
+          },
+          "atom_refs": [
+           "d2-5",
+           "d2-3"
+          ],
+          "base": "T",
+          "five_prime_linkage": "dl1",
+          "id": "d2",
+          "sugar": "deoxyribose"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "command": {
+      "kind": "set_residue_identity",
+      "residue_id": "d1",
+      "base": "G",
+      "sugar": "deoxyribose"
+     },
+     "ok": true,
+     "document": {
+      "annotations": {
+       "source": "contract fixture"
+      },
+      "atom_ids": [
+       "d1-5",
+       "d1-3",
+       "d2-5",
+       "d2-3"
+      ],
+      "linkages": [
+       {
+        "annotations": {
+         "note": "checked"
+        },
+        "five_prime_atom_ref": "d2-5",
+        "five_prime_residue_id": "d2",
+        "id": "dl1",
+        "kind": "phosphodiester",
+        "three_prime_atom_ref": "d1-3",
+        "three_prime_residue_id": "d1"
+       }
+      ],
+      "schema": "chematic.nucleic-acid.v1",
+      "strands": [
+       {
+        "annotations": {
+         "name": "AT"
+        },
+        "id": "dna-1",
+        "kind": "dna",
+        "residues": [
+         {
+          "annotations": {
+           "position": 1
+          },
+          "atom_refs": [
+           "d1-5",
+           "d1-3"
+          ],
+          "base": "G",
+          "id": "d1",
+          "sugar": "deoxyribose",
+          "three_prime_linkage": "dl1"
+         },
+         {
+          "annotations": {
+           "position": 2,
+           "selected": true
+          },
+          "atom_refs": [
+           "d2-5",
+           "d2-3"
+          ],
+          "base": "T",
+          "five_prime_linkage": "dl1",
+          "id": "d2",
+          "sugar": "deoxyribose"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "command": {
+      "kind": "set_annotation",
+      "target": {
+       "kind": "residue",
+       "id": "missing"
+      },
+      "key": "selected",
+      "value": true
+     },
+     "ok": false,
+     "code": "missing_target",
+     "path": "/command/target/id"
+    },
+    {
+     "command": {
+      "kind": "remove_annotation",
+      "target": {
+       "kind": "residue",
+       "id": "d2"
+      },
+      "key": "selected"
+     },
+     "ok": true,
+     "document": {
+      "annotations": {
+       "source": "contract fixture"
+      },
+      "atom_ids": [
+       "d1-5",
+       "d1-3",
+       "d2-5",
+       "d2-3"
+      ],
+      "linkages": [
+       {
+        "annotations": {
+         "note": "checked"
+        },
+        "five_prime_atom_ref": "d2-5",
+        "five_prime_residue_id": "d2",
+        "id": "dl1",
+        "kind": "phosphodiester",
+        "three_prime_atom_ref": "d1-3",
+        "three_prime_residue_id": "d1"
+       }
+      ],
+      "schema": "chematic.nucleic-acid.v1",
+      "strands": [
+       {
+        "annotations": {
+         "name": "AT"
+        },
+        "id": "dna-1",
+        "kind": "dna",
+        "residues": [
+         {
+          "annotations": {
+           "position": 1
+          },
+          "atom_refs": [
+           "d1-5",
+           "d1-3"
+          ],
+          "base": "G",
+          "id": "d1",
+          "sugar": "deoxyribose",
+          "three_prime_linkage": "dl1"
+         },
+         {
+          "annotations": {
+           "position": 2
+          },
+          "atom_refs": [
+           "d2-5",
+           "d2-3"
+          ],
+          "base": "T",
+          "five_prime_linkage": "dl1",
+          "id": "d2",
+          "sugar": "deoxyribose"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "command": {
+      "kind": "set_annotation",
+      "target": {
+       "kind": "document"
+      },
+      "key": "revision",
+      "value": 2
+     },
+     "ok": true,
+     "document": {
+      "annotations": {
+       "revision": 2,
+       "source": "contract fixture"
+      },
+      "atom_ids": [
+       "d1-5",
+       "d1-3",
+       "d2-5",
+       "d2-3"
+      ],
+      "linkages": [
+       {
+        "annotations": {
+         "note": "checked"
+        },
+        "five_prime_atom_ref": "d2-5",
+        "five_prime_residue_id": "d2",
+        "id": "dl1",
+        "kind": "phosphodiester",
+        "three_prime_atom_ref": "d1-3",
+        "three_prime_residue_id": "d1"
+       }
+      ],
+      "schema": "chematic.nucleic-acid.v1",
+      "strands": [
+       {
+        "annotations": {
+         "name": "AT"
+        },
+        "id": "dna-1",
+        "kind": "dna",
+        "residues": [
+         {
+          "annotations": {
+           "position": 1
+          },
+          "atom_refs": [
+           "d1-5",
+           "d1-3"
+          ],
+          "base": "G",
+          "id": "d1",
+          "sugar": "deoxyribose",
+          "three_prime_linkage": "dl1"
+         },
+         {
+          "annotations": {
+           "position": 2
+          },
+          "atom_refs": [
+           "d2-5",
+           "d2-3"
+          ],
+          "base": "T",
+          "five_prime_linkage": "dl1",
+          "id": "d2",
+          "sugar": "deoxyribose"
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "short_rna",
+   "start": "short_rna",
+   "steps": [
+    {
+     "command": {
+      "kind": "set_annotation",
+      "target": {
+       "kind": "strand",
+       "id": "rna-1"
+      },
+      "key": "label",
+      "value": "RNA sample"
+     },
+     "ok": true,
+     "document": {
+      "annotations": {},
+      "atom_ids": [
+       "r1-5",
+       "r1-3",
+       "r2-5",
+       "r2-3"
+      ],
+      "linkages": [
+       {
+        "annotations": {},
+        "five_prime_atom_ref": "r2-5",
+        "five_prime_residue_id": "r2",
+        "id": "rl1",
+        "kind": "phosphodiester",
+        "three_prime_atom_ref": "r1-3",
+        "three_prime_residue_id": "r1"
+       }
+      ],
+      "schema": "chematic.nucleic-acid.v1",
+      "strands": [
+       {
+        "annotations": {
+         "label": "RNA sample",
+         "name": "AU"
+        },
+        "id": "rna-1",
+        "kind": "rna",
+        "residues": [
+         {
+          "annotations": {},
+          "atom_refs": [
+           "r1-5",
+           "r1-3"
+          ],
+          "base": "A",
+          "id": "r1",
+          "sugar": "ribose",
+          "three_prime_linkage": "rl1"
+         },
+         {
+          "annotations": {},
+          "atom_refs": [
+           "r2-5",
+           "r2-3"
+          ],
+          "base": "U",
+          "five_prime_linkage": "rl1",
+          "id": "r2",
+          "sugar": "ribose"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "command": {
+      "kind": "set_residue_identity",
+      "residue_id": "r1",
+      "base": "U",
+      "sugar": "ribose"
+     },
+     "ok": true,
+     "document": {
+      "annotations": {},
+      "atom_ids": [
+       "r1-5",
+       "r1-3",
+       "r2-5",
+       "r2-3"
+      ],
+      "linkages": [
+       {
+        "annotations": {},
+        "five_prime_atom_ref": "r2-5",
+        "five_prime_residue_id": "r2",
+        "id": "rl1",
+        "kind": "phosphodiester",
+        "three_prime_atom_ref": "r1-3",
+        "three_prime_residue_id": "r1"
+       }
+      ],
+      "schema": "chematic.nucleic-acid.v1",
+      "strands": [
+       {
+        "annotations": {
+         "label": "RNA sample",
+         "name": "AU"
+        },
+        "id": "rna-1",
+        "kind": "rna",
+        "residues": [
+         {
+          "annotations": {},
+          "atom_refs": [
+           "r1-5",
+           "r1-3"
+          ],
+          "base": "U",
+          "id": "r1",
+          "sugar": "ribose",
+          "three_prime_linkage": "rl1"
+         },
+         {
+          "annotations": {},
+          "atom_refs": [
+           "r2-5",
+           "r2-3"
+          ],
+          "base": "U",
+          "five_prime_linkage": "rl1",
+          "id": "r2",
+          "sugar": "ribose"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "command": {
+      "kind": "set_residue_identity",
+      "residue_id": "r1",
+      "base": "Q",
+      "sugar": "ribose"
+     },
+     "ok": false,
+     "code": "invalid_command",
+     "path": "/"
+    },
+    {
+     "command": {
+      "kind": "remove_annotation",
+      "target": {
+       "kind": "strand",
+       "id": "rna-1"
+      },
+      "key": "label"
+     },
+     "ok": true,
+     "document": {
+      "annotations": {},
+      "atom_ids": [
+       "r1-5",
+       "r1-3",
+       "r2-5",
+       "r2-3"
+      ],
+      "linkages": [
+       {
+        "annotations": {},
+        "five_prime_atom_ref": "r2-5",
+        "five_prime_residue_id": "r2",
+        "id": "rl1",
+        "kind": "phosphodiester",
+        "three_prime_atom_ref": "r1-3",
+        "three_prime_residue_id": "r1"
+       }
+      ],
+      "schema": "chematic.nucleic-acid.v1",
+      "strands": [
+       {
+        "annotations": {
+         "name": "AU"
+        },
+        "id": "rna-1",
+        "kind": "rna",
+        "residues": [
+         {
+          "annotations": {},
+          "atom_refs": [
+           "r1-5",
+           "r1-3"
+          ],
+          "base": "U",
+          "id": "r1",
+          "sugar": "ribose",
+          "three_prime_linkage": "rl1"
+         },
+         {
+          "annotations": {},
+          "atom_refs": [
+           "r2-5",
+           "r2-3"
+          ],
+          "base": "U",
+          "five_prime_linkage": "rl1",
+          "id": "r2",
+          "sugar": "ribose"
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "explicit_modification",
+   "start": "explicit_modification",
+   "steps": [
+    {
+     "command": {
+      "kind": "set_residue_identity",
+      "residue_id": "m1",
+      "base": "C",
+      "modification": "5mC",
+      "sugar": "deoxyribose"
+     },
+     "ok": true,
+     "document": {
+      "annotations": {
+       "explicit_modification": true
+      },
+      "atom_ids": [
+       "m1-5",
+       "m1-3",
+       "m2-5",
+       "m2-3"
+      ],
+      "linkages": [
+       {
+        "annotations": {},
+        "five_prime_atom_ref": "m2-5",
+        "five_prime_residue_id": "m2",
+        "id": "ml1",
+        "kind": "phosphodiester",
+        "three_prime_atom_ref": "m1-3",
+        "three_prime_residue_id": "m1"
+       }
+      ],
+      "schema": "chematic.nucleic-acid.v1",
+      "strands": [
+       {
+        "annotations": {},
+        "id": "modified-1",
+        "kind": "dna",
+        "residues": [
+         {
+          "annotations": {
+           "display": "5-methylcytosine"
+          },
+          "atom_refs": [
+           "m1-5",
+           "m1-3"
+          ],
+          "base": "C",
+          "id": "m1",
+          "modification": "5mC",
+          "sugar": "deoxyribose",
+          "three_prime_linkage": "ml1"
+         },
+         {
+          "annotations": {},
+          "atom_refs": [
+           "m2-5",
+           "m2-3"
+          ],
+          "base": "G",
+          "five_prime_linkage": "ml1",
+          "id": "m2",
+          "sugar": "deoxyribose"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "command": {
+      "kind": "set_residue_identity",
+      "residue_id": "m1",
+      "base": "C",
+      "modification": "not-a-modification",
+      "sugar": "deoxyribose"
+     },
+     "ok": false,
+     "code": "unknown_modification",
+     "path": "/strands/0/residues/0/modification"
+    },
+    {
+     "command": {
+      "kind": "set_residue_identity",
+      "residue_id": "m1",
+      "base": "C",
+      "sugar": "deoxyribose"
+     },
+     "ok": true,
+     "document": {
+      "annotations": {
+       "explicit_modification": true
+      },
+      "atom_ids": [
+       "m1-5",
+       "m1-3",
+       "m2-5",
+       "m2-3"
+      ],
+      "linkages": [
+       {
+        "annotations": {},
+        "five_prime_atom_ref": "m2-5",
+        "five_prime_residue_id": "m2",
+        "id": "ml1",
+        "kind": "phosphodiester",
+        "three_prime_atom_ref": "m1-3",
+        "three_prime_residue_id": "m1"
+       }
+      ],
+      "schema": "chematic.nucleic-acid.v1",
+      "strands": [
+       {
+        "annotations": {},
+        "id": "modified-1",
+        "kind": "dna",
+        "residues": [
+         {
+          "annotations": {
+           "display": "5-methylcytosine"
+          },
+          "atom_refs": [
+           "m1-5",
+           "m1-3"
+          ],
+          "base": "C",
+          "id": "m1",
+          "sugar": "deoxyribose",
+          "three_prime_linkage": "ml1"
+         },
+         {
+          "annotations": {},
+          "atom_refs": [
+           "m2-5",
+           "m2-3"
+          ],
+          "base": "G",
+          "five_prime_linkage": "ml1",
+          "id": "m2",
+          "sugar": "deoxyribose"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "command": {
+      "kind": "set_annotation",
+      "target": {
+       "kind": "residue",
+       "id": "m1"
+      },
+      "key": "",
+      "value": 1
+     },
+     "ok": false,
+     "code": "invalid_command",
+     "path": "/"
+    }
+   ]
+  }
+ ]
+}

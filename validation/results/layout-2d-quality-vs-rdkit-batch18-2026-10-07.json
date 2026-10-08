@@ -1,0 +1,62 @@
+{
+ "schema": "layout-2d-quality-vs-rdkit/v1",
+ "rdkit": "2026.03.6",
+ "chematic": "1.0.36",
+ "all": {
+  "rows": 15000,
+  "chematic": {
+   "clean": 14722,
+   "with_clash": 28,
+   "with_crossing": 277,
+   "bond_dev_over_0.2": 276,
+   "with_narrow_branch": 317,
+   "narrow_branch_atoms": 2162
+  },
+  "rdkit": {
+   "clean": 14504,
+   "with_clash": 276,
+   "with_crossing": 402,
+   "bond_dev_over_0.2": 540,
+   "with_narrow_branch": 0,
+   "narrow_branch_atoms": 0
+  }
+ },
+ "bridged": {
+  "rows": 531,
+  "chematic": {
+   "clean": 290,
+   "with_clash": 5,
+   "with_crossing": 241,
+   "bond_dev_over_0.2": 262,
+   "with_narrow_branch": 32,
+   "narrow_branch_atoms": 150
+  },
+  "rdkit": {
+   "clean": 232,
+   "with_clash": 102,
+   "with_crossing": 290,
+   "bond_dev_over_0.2": 337,
+   "with_narrow_branch": 0,
+   "narrow_branch_atoms": 0
+  }
+ },
+ "not_bridged": {
+  "rows": 14469,
+  "chematic": {
+   "clean": 14432,
+   "with_clash": 23,
+   "with_crossing": 36,
+   "bond_dev_over_0.2": 14,
+   "with_narrow_branch": 285,
+   "narrow_branch_atoms": 2012
+  },
+  "rdkit": {
+   "clean": 14272,
+   "with_clash": 174,
+   "with_crossing": 112,
+   "bond_dev_over_0.2": 203,
+   "with_narrow_branch": 0,
+   "narrow_branch_atoms": 0
+  }
+ }
+}
