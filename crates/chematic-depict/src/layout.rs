@@ -1879,9 +1879,17 @@ fn dfs_zigzag(
         };
 
         if let Some(&sys_idx) = atom_to_system.get(&atom) {
+            // A ring hung on an atom with six or more bonds (an octahedral
+            // metal with pyridines) is drawn one and a half bonds out: at
+            // one bond its neighbours' rings, 60° apart, touched.
+            let reach = if mol.degree(parent) >= 6 {
+                1.5 * BOND_LEN
+            } else {
+                BOND_LEN
+            };
             let entry_pos = Point::new(
-                parent_pos.x + BOND_LEN * dir.cos(),
-                parent_pos.y + BOND_LEN * dir.sin(),
+                parent_pos.x + reach * dir.cos(),
+                parent_pos.y + reach * dir.sin(),
             );
             // An entry atom with a second substituent (a 5,5-disubstituted
             // hydantoin, a 4,4-disubstituted piperidine) turns its ring 30°
@@ -3596,6 +3604,12 @@ mod tests {
             ),
             (
                 "Oc1cccc(CCCCCC(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F)c1O",
+                false,
+            ),
+            // An octahedral metal with four pyridines: their rings, 60°
+            // apart, are hung one and a half bonds out.
+            (
+                "N#CS[Ni](SC#N)([N+]1=CC=CC=C1)([N+]2=CC=CC=C2)([N+]3=CC=CC=C3)[N+]4=CC=CC=C4",
                 false,
             ),
             // A ring-fusion atom's substituent goes into the exterior gap
