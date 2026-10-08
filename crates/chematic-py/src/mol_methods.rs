@@ -85,6 +85,71 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// RDKit 2026.03.1's ``AllChem.EmbedMolecule(mol, randomSeed=...)``
+    /// (ETKDGv3 defaults), bit for bit: the 3D coordinates of every atom,
+    /// one ``[x, y, z]`` per atom in this molecule's atom order.
+    ///
+    /// Call it on the explicit-hydrogen molecule, as RDKit is called on
+    /// ``Chem.AddHs(m)``::
+    ///
+    ///     mh = chematic.from_smiles("CCO").add_hydrogens()
+    ///     xyz = mh.rdkit_embed(random_seed=42)
+    ///     # == Chem.AddHs(Chem.MolFromSmiles("CCO")) embedded with
+    ///     #    AllChem.EmbedMolecule(mh, randomSeed=42)
+    ///
+    /// The keyword arguments are ``EmbedMolecule``'s (``maxAttempts`` =
+    /// ``max_iterations``, 0: RDKit's default of 10 x atoms). Raises
+    /// ``RuntimeError`` when RDKit's embedding fails (``EmbedMolecule``
+    /// returns -1) and ``ValueError`` for inputs the port does not model
+    /// (e.g. molecules with several fragments, ``random_seed=-1``) or that
+    /// make RDKit raise. chematic's own 3D methods are unchanged.
+    #[pyo3(signature = (*, random_seed = 42, max_iterations = 0,
+                        use_exp_torsion_angle_prefs = true, use_basic_knowledge = true,
+                        et_version = 2, use_small_ring_torsions = false,
+                        use_macrocycle_torsions = true, use_macrocycle_14_config = true,
+                        enforce_chirality = true, ignore_smoothing_failures = false))]
+    #[allow(clippy::too_many_arguments)]
+    fn rdkit_embed(
+        &self,
+        py: Python<'_>,
+        random_seed: i32,
+        max_iterations: u32,
+        use_exp_torsion_angle_prefs: bool,
+        use_basic_knowledge: bool,
+        et_version: u32,
+        use_small_ring_torsions: bool,
+        use_macrocycle_torsions: bool,
+        use_macrocycle_14_config: bool,
+        enforce_chirality: bool,
+        ignore_smoothing_failures: bool,
+    ) -> PyResult<Vec<[f64; 3]>> {
+        use chematic_3d::rdkit_embed::{RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_molecule};
+        if !(1..=2).contains(&et_version) {
+            return Err(PyValueError::new_err(
+                "Only version 1 and 2 of the experimental torsion-angle preferences (ETversion) supported",
+            ));
+        }
+        let opts = RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            use_exp_torsion_angle_prefs,
+            use_basic_knowledge,
+            et_version,
+            use_small_ring_torsions,
+            use_macrocycle_torsions,
+            use_macrocycle14config: use_macrocycle_14_config,
+            enforce_chirality,
+            force_trans_amides: true,
+            ignore_smoothing_failures,
+        };
+        let mol = self.inner.clone();
+        let res = py.detach(move || rdkit_embed_molecule(&mol, &opts));
+        res.map_err(|e| match e {
+            RdkitEmbedError::Failed => pyo3::exceptions::PyRuntimeError::new_err(e.to_string()),
+            _ => PyValueError::new_err(e.to_string()),
+        })
+    }
+
     /// 2D coordinates exactly as RDKit 2026.03.1's default depiction gives
     /// them: for a molecule read with :func:`from_smiles` this is
     /// ``[[p.x, p.y] for p in m.GetConformer().GetPositions()]`` after

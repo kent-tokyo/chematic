@@ -14,11 +14,16 @@
 pub mod bounds;
 pub mod dg;
 pub mod embed;
+pub mod etk;
+mod molecule;
 mod rng;
 mod stdsort;
+mod substruct;
+mod torsion_prefs;
 
 pub use bounds::{
     BondsAndAngles, BoundsInvariant, collect_bonds_and_angles, init_bounds_mat, set_topol_bounds,
 };
 pub use dg::{BoundsMatrix, ChiralSet, triangle_smooth_bounds};
 pub use embed::{EmbedArgs, EmbedError, EmbedParams, embed_points};
+pub use molecule::{RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_molecule};

@@ -74,6 +74,28 @@ class Mol:
         :attr:`rdkit_smiles`."""
         ...
 
+    def rdkit_embed(
+        self,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        use_exp_torsion_angle_prefs: bool = True,
+        use_basic_knowledge: bool = True,
+        et_version: int = 2,
+        use_small_ring_torsions: bool = False,
+        use_macrocycle_torsions: bool = True,
+        use_macrocycle_14_config: bool = True,
+        enforce_chirality: bool = True,
+        ignore_smoothing_failures: bool = False,
+    ) -> list[list[float]]:
+        """RDKit 2026.03.1's ``AllChem.EmbedMolecule(mol, randomSeed=...)``
+        (ETKDGv3 defaults), bit for bit, on this explicit-hydrogen molecule
+        (``m.add_hydrogens().rdkit_embed()`` ==
+        ``EmbedMolecule(Chem.AddHs(m), randomSeed=42)``): one ``[x, y, z]``
+        per atom. Raises ``RuntimeError`` when RDKit's embedding fails and
+        ``ValueError`` for unsupported inputs."""
+        ...
+
     def rdkit_2d_coords(self) -> list[list[float]]:
         """RDKit 2026.03.1's default 2D depiction, bit for bit: the
         coordinates ``rdDepictor.Compute2DCoords(Chem.MolFromSmiles(s))``
