@@ -87,7 +87,9 @@ pub fn find_matches_perceived(
     mol: &Molecule,
     config: &MatchConfig,
 ) -> Vec<FxHashMap<usize, AtomIdx>> {
-    if is_aromaticity_insensitive(query) {
+    if is_aromaticity_insensitive(query)
+        && !chematic_perception::rdkit_sanitize_cleanup_may_apply(mol)
+    {
         return find_matches_with_config(query, mol, config);
     }
     with_perceived_target(mol, |target| {
@@ -126,7 +128,9 @@ pub fn find_match_atom_sets_perceived(
         });
         out
     };
-    if is_aromaticity_insensitive(query) {
+    if is_aromaticity_insensitive(query)
+        && !chematic_perception::rdkit_sanitize_cleanup_may_apply(mol)
+    {
         return run(mol);
     }
     with_perceived_target(mol, run)
@@ -135,7 +139,9 @@ pub fn find_match_atom_sets_perceived(
 /// Whether `query` matches the perceived aromatic view of `mol` at least once.
 /// `max_matches` and `uniquify` in `config` are ignored.
 pub fn has_match_perceived(query: &QueryMolecule, mol: &Molecule, config: &MatchConfig) -> bool {
-    if is_aromaticity_insensitive(query) {
+    if is_aromaticity_insensitive(query)
+        && !chematic_perception::rdkit_sanitize_cleanup_may_apply(mol)
+    {
         return has_match_with_config(query, mol, config);
     }
     // The perceived view has the same atoms and elements, so the size and

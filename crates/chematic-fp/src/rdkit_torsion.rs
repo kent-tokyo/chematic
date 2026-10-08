@@ -263,17 +263,24 @@ fn atom_type_index(atomic_num: u8) -> u32 {
 /// every torsion's count-simulation bucket count was inflated 2x, setting
 /// spurious extra threshold bits -- see this module's own investigation
 /// notes / git history for the methyl-serinate repro that caught it).
+///
+/// Like RDKit (`useHs=false`), hydrogen atoms -- isotopic `[2H]`/`[3H]`
+/// included -- are never part of a path.
 fn four_atom_paths(mol: &Molecule) -> Vec<[AtomIdx; 4]> {
     let n = mol.atom_count();
+    let heavy = |i: AtomIdx| !is_hydrogen(mol, i);
     let mut paths = Vec::new();
     for start in 0..n {
         let a = AtomIdx(start as u32);
-        for (b, _) in mol.neighbors(a) {
-            for (c, _) in mol.neighbors(b) {
+        if !heavy(a) {
+            continue;
+        }
+        for (b, _) in mol.neighbors(a).filter(|&(x, _)| heavy(x)) {
+            for (c, _) in mol.neighbors(b).filter(|&(x, _)| heavy(x)) {
                 if c == a {
                     continue;
                 }
-                for (d, _) in mol.neighbors(c) {
+                for (d, _) in mol.neighbors(c).filter(|&(x, _)| heavy(x)) {
                     if d == a || d == b || d.0 <= a.0 {
                         continue;
                     }
@@ -305,6 +312,12 @@ fn four_atom_paths(mol: &Molecule) -> Vec<[AtomIdx; 4]> {
 /// entries is not yet reverse-engineered, so they are not generated here.
 /// This is a known, narrower residual: still not full bit-exact parity for
 /// molecules with an *asymmetrically substituted* 3-membered ring.
+/// An atom RDKit's path search skips without `useHs` (atomic number 1).
+fn is_hydrogen(mol: &Molecule, idx: AtomIdx) -> bool {
+    let a = mol.atom(idx);
+    !a.wildcard && a.element.atomic_number() == 1
+}
+
 fn triangle_closure_paths(mol: &Molecule) -> Vec<[AtomIdx; 4]> {
     let n = mol.atom_count();
     let mut paths = Vec::new();

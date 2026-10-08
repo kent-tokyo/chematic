@@ -55,9 +55,14 @@ pub enum DerivedSlot {
     /// RDKit hybridization code per atom (the SMARTS `^n` primitive);
     /// `chematic-smarts`.
     RdkitHybridization = 12,
+    /// The single bonds RDKit's `cleanUpOrganometallics` makes dative, as
+    /// decided on the molecule as input (`chematic-perception`). An
+    /// RDKit-parity view is seeded with "none": its dative bonds are
+    /// already written as such.
+    RdkitDativeBonds = 13,
 }
 
-const SLOT_COUNT: usize = 13;
+const SLOT_COUNT: usize = 14;
 
 /// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
 /// the unwind-safety traits so `Molecule` stays usable across

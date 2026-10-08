@@ -10,6 +10,7 @@ pub mod aromaticity;
 pub mod cip_priority;
 pub mod pharmacophore;
 pub mod rdkit_canon;
+pub mod rdkit_cleanup;
 mod rdkit_parity;
 pub mod rdkit_sssr_order;
 pub mod relevant_cycles;
@@ -36,6 +37,9 @@ pub use rdkit_canon::{
     RdkitRankAtom, RdkitRankBond, rdkit_canonical_atom_ranks,
     rdkit_canonical_atom_ranks_with_bond_stereo, rdkit_canonical_kekule,
     rdkit_canonical_kekule_with_rings, rdkit_rank_mol_atoms,
+};
+pub use rdkit_cleanup::{
+    rdkit_sanitize_cleanup, rdkit_sanitize_cleanup_may_apply, rdkit_sanitize_cleanup_needed,
 };
 pub use rdkit_parity::{
     AromaticityError, apply_aromaticity_rdkit_parity_experimental,

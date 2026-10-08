@@ -280,18 +280,16 @@ mod tests {
         }
     }
 
+    /// The RDKit-parity view models `cleanUpOrganometallics` (dative
+    /// `[C-]`→Fe), so this config path agrees with the fixed ECFP4 one.
     #[test]
-    fn measured_feii_coordination_gap_uses_the_shared_typed_refusal() {
+    fn feii_coordination_sanitization_is_modeled() {
         let mol = parse("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10")
             .expect("ferrocene-like SMILES parses");
-        assert!(matches!(
-            rdkit_morgan_fingerprint(&mol, &RdkitMorganConfig::default()),
-            Err(RdkitMorganError::UnsupportedCoordinationSanitization {
-                atomic_number: 26,
-                degree: 10,
-                ..
-            })
-        ));
+        let fp = rdkit_morgan_fingerprint(&mol, &RdkitMorganConfig::default())
+            .expect("modeled sanitization");
+        let ecfp4 = crate::rdkit_morgan_ecfp4::rdkit_morgan_ecfp4_experimental(&mol).unwrap();
+        assert_eq!(fp.sparse_counts, ecfp4.sparse_counts);
     }
 
     #[test]

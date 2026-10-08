@@ -70,6 +70,24 @@ fn is_metal(z: u8) -> bool {
 /// atom of total degree four), the single bond to the bonded metal with the
 /// fewest dative bonds so far (higher canonical rank first on a tie).
 pub fn organometallic_dative_bonds(mol: &Molecule) -> Vec<bool> {
+    // Memoized; an RDKit-parity view is seeded with no further dative bonds
+    // (RDKit decides them on the input form, before aromaticity perception).
+    (*mol.derived(chematic_core::DerivedSlot::RdkitDativeBonds, || {
+        organometallic_dative_bonds_uncached(mol)
+    }))
+    .clone()
+}
+
+/// Mark `view` (an RDKit-parity view, whose dative bonds are already
+/// written as `BondOrder::Dative`) as needing no further dative rewrite.
+pub(crate) fn seed_no_further_dative_bonds(view: &Molecule) {
+    view.seed_derived(
+        chematic_core::DerivedSlot::RdkitDativeBonds,
+        std::sync::Arc::new(vec![false; view.bond_count()]),
+    );
+}
+
+fn organometallic_dative_bonds_uncached(mol: &Molecule) -> Vec<bool> {
     let n = mol.atom_count();
     let mut dative = vec![false; mol.bond_count()];
     let z = |a: usize| -> u8 {
