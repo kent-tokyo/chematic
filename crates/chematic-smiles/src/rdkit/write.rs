@@ -183,7 +183,7 @@ fn fragment_smiles_construct(
     start: usize,
     ranks: &[u32],
     p: &RdkitSmilesParams,
-) -> Result<String, RdkitSmilesError> {
+) -> Result<Piece, RdkitSmilesError> {
     if p.kekule {
         // `MolOps::Kekulize(mol)`: canonical, with `rankFragmentAtoms`
         // (chirality and isotopes included).
@@ -194,6 +194,8 @@ fn fragment_smiles_construct(
     let mut res = String::with_capacity(2 * canon.stack.len());
     let mut ring_closure_map: BTreeMap<u32, u32> = BTreeMap::new();
     let mut to_erase: Vec<u32> = Vec::new();
+    let mut atom_order = Vec::new();
+    let mut bond_order = Vec::new();
     for e in &canon.stack {
         match *e {
             StackElem::Atom(a) => {
@@ -201,8 +203,12 @@ fn fragment_smiles_construct(
                     ring_closure_map.remove(&r);
                 }
                 atom_smiles(&mut res, mol, a, p);
+                atom_order.push(a);
             }
-            StackElem::Bond(b, left) => res.push_str(bond_smiles(mol, b, left, p)),
+            StackElem::Bond(b, left) => {
+                res.push_str(bond_smiles(mol, b, left, p));
+                bond_order.push(b);
+            }
             StackElem::Ring(ring_idx) => {
                 let closure_val = if let Some(&v) = ring_closure_map.get(&ring_idx) {
                     to_erase.push(ring_idx);
@@ -230,8 +236,12 @@ fn fragment_smiles_construct(
             StackElem::BranchClose => res.push(')'),
         }
     }
-    Ok(res)
+    Ok((res, atom_order, bond_order))
 }
+
+/// A fragment's SMILES with its atom and bond output orders
+/// (`_smilesAtomOutputOrder`, `_smilesBondOutputOrder`).
+type Piece = (String, Vec<usize>, Vec<usize>);
 
 /// `MolOps::getMolFrags`: atom lists of the connected components, numbered
 /// from the lowest atom index, each list ascending.
@@ -328,8 +338,18 @@ fn mol_to_smiles_cow(
     mol: std::borrow::Cow<'_, Mol>,
     p: &RdkitSmilesParams,
 ) -> Result<String, RdkitSmilesError> {
+    Ok(mol_to_smiles_ordered(mol, p, false)?.0)
+}
+
+/// `SmilesWrite::detail::MolToSmiles(mol, p, doingCXSmiles)` with the
+/// output orders it stores on the molecule (indices into `mol`).
+fn mol_to_smiles_ordered(
+    mol: std::borrow::Cow<'_, Mol>,
+    p: &RdkitSmilesParams,
+    cx: bool,
+) -> Result<Piece, RdkitSmilesError> {
     if mol.atoms.is_empty() {
-        return Ok(String::new());
+        return Ok(Default::default());
     }
     if let Some(r) = p.rooted_at_atom
         && r >= mol.atoms.len()
@@ -344,20 +364,41 @@ fn mol_to_smiles_cow(
         // RDKit's fragment-local root: the root minus the fragment's first
         // atom index (0 here).
         let rooted = p.rooted_at_atom;
-        return fragment_piece(mol.into_owned(), rooted, false, p);
+        return fragment_piece(mol.into_owned(), rooted, false, p, cx);
     }
-    let mut pieces: Vec<String> = Vec::with_capacity(n_frags);
+    let mut pieces: Vec<Piece> = Vec::with_capacity(n_frags);
     for atoms in &frags {
         let rooted = p
             .rooted_at_atom
             .filter(|r| atoms.binary_search(r).is_ok())
             .map(|r| r - atoms[0]);
-        pieces.push(fragment_piece(fragment(&mol, atoms), rooted, true, p)?);
+        let (smi, mut atom_order, mut bond_order) =
+            fragment_piece(fragment(&mol, atoms), rooted, true, p, cx)?;
+        // `fragment` keeps the bonds inside the fragment in their order.
+        let frag_bonds: Vec<usize> = (0..mol.bonds.len())
+            .filter(|&b| atoms.binary_search(&mol.bonds[b].begin).is_ok())
+            .collect();
+        for a in &mut atom_order {
+            *a = atoms[*a];
+        }
+        for b in &mut bond_order {
+            *b = frag_bonds[*b];
+        }
+        pieces.push((smi, atom_order, bond_order));
     }
     if p.canonical {
         pieces.sort();
     }
-    Ok(pieces.join("."))
+    let mut res = (String::new(), Vec::new(), Vec::new());
+    for (i, (smi, atoms, bonds)) in pieces.into_iter().enumerate() {
+        if i > 0 {
+            res.0.push('.');
+        }
+        res.0.push_str(&smi);
+        res.1.extend(atoms);
+        res.2.extend(bonds);
+    }
+    Ok(res)
 }
 
 /// One fragment's SMILES; `copied`: the fragment is a copy that lost
@@ -367,14 +408,27 @@ fn fragment_piece(
     rooted: Option<usize>,
     copied: bool,
     p: &RdkitSmilesParams,
-) -> Result<String, RdkitSmilesError> {
+    cx: bool,
+) -> Result<Piece, RdkitSmilesError> {
     tmol.update_property_cache(false)?;
     if p.isomeric && copied {
         legacy_stereo_perception(&mut tmol, true, false);
     }
-    for b in &mut tmol.bonds {
-        if b.stereo == BondStereo::Any {
-            b.stereo = BondStereo::None;
+    if cx {
+        // Coordinate bonds go to the extension; the begin atom's explicit
+        // valence is recomputed.
+        for b in 0..tmol.bonds.len() {
+            if tmol.bonds[b].bt == BondType::Dative {
+                tmol.bonds[b].bt = BondType::Single;
+                let begin = tmol.bonds[b].begin;
+                tmol.calc_explicit_valence(begin, false)?;
+            }
+        }
+    } else {
+        for b in &mut tmol.bonds {
+            if b.stereo == BondStereo::Any {
+                b.stereo = BondStereo::None;
+            }
         }
     }
     let ranks: Vec<u32> = if p.canonical {
@@ -394,4 +448,106 @@ fn fragment_piece(
             .expect("non-empty fragment"),
     };
     fragment_smiles_construct(&mut tmol, start, &ranks, p)
+}
+
+/// `SmilesWrite::detail::MolToSmiles(mol, p, doingCXSmiles=true)` followed
+/// by MolHash's `addCXExtensions` (`skip_radicals`: without the radical
+/// field).
+pub(crate) fn mol_to_cx_smiles_for_hash(
+    mol: Mol,
+    p: &RdkitSmilesParams,
+    skip_radicals: bool,
+) -> Result<String, RdkitSmilesError> {
+    if mol.atoms.is_empty() {
+        // `MolToSmiles` stores no output order for an empty molecule, and
+        // `getCXExtensions` raises on the missing property.
+        return Err(RdkitSmilesError::Unsupported(
+            "CXSMILES of an empty molecule (RDKit raises KeyError '_smilesAtomOutputOrder')".into(),
+        ));
+    }
+    let (mut res, atoms, bonds) = mol_to_smiles_ordered(std::borrow::Cow::Borrowed(&mol), p, true)?;
+    let ext = hash_cx_extensions(&mol, &atoms, &bonds, skip_radicals);
+    if !ext.is_empty() {
+        res.push(' ');
+        res.push_str(&ext);
+    }
+    Ok(res)
+}
+
+/// `getCXExtensions(mol, CX_ALL ^ skipped)` for a hash molecule read from
+/// SMILES without stereo groups: radicals, ring double bonds of unknown
+/// configuration (`ctu`) and coordinate bonds.
+fn hash_cx_extensions(mol: &Mol, atoms: &[usize], bonds: &[usize], skip_radicals: bool) -> String {
+    let mut res = String::from("|");
+    if !skip_radicals {
+        let mut rads: BTreeMap<u32, Vec<usize>> = BTreeMap::new();
+        for (i, &a) in atoms.iter().enumerate() {
+            let nrad = mol.atoms[a].radicals;
+            if nrad != 0 {
+                rads.entry(nrad).or_default().push(i);
+            }
+        }
+        for (nrad, idxs) in &rads {
+            res.push_str(match nrad {
+                1 => "^1:",
+                2 => "^2:",
+                3 => "^5:",
+                _ => continue,
+            });
+            for i in idxs {
+                res.push_str(&format!("{i},"));
+            }
+        }
+        if res.ends_with(',') {
+            res.pop();
+        }
+    }
+    let append = |res: &mut String, block: &str| {
+        if block.is_empty() {
+            return;
+        }
+        if res.len() > 1 {
+            res.push(',');
+        }
+        res.push_str(block);
+    };
+    // `get_ringbond_cistrans_block`: STEREOANY ring double bonds in rings of
+    // at least `minRingSizeForDoubleBondStereo` (8).
+    if let Some(ri) = &mol.rings {
+        let mut ctu = String::new();
+        for (i, &b) in bonds.iter().enumerate() {
+            if ri.num_bond_rings(b) == 0 || ri.min_bond_ring_size(b) < 8 {
+                continue;
+            }
+            let bond = &mol.bonds[b];
+            if !matches!(bond.bt, BondType::Double | BondType::Aromatic)
+                || bond.stereo != BondStereo::Any
+            {
+                continue;
+            }
+            ctu.push_str(if ctu.is_empty() { "ctu:" } else { "," });
+            ctu.push_str(&i.to_string());
+        }
+        append(&mut res, &ctu);
+    }
+    let mut coord = String::new();
+    for (i, &b) in bonds.iter().enumerate() {
+        let bond = &mol.bonds[b];
+        if bond.bt != BondType::Dative {
+            continue;
+        }
+        let beg = atoms
+            .iter()
+            .position(|&a| a == bond.begin)
+            .unwrap_or(atoms.len());
+        coord.push_str(if coord.is_empty() { "C:" } else { "," });
+        coord.push_str(&format!("{beg}.{i}"));
+    }
+    append(&mut res, &coord);
+    if res.len() > 1 {
+        res.push('|');
+        res
+    } else {
+        String::new()
+    }
 }

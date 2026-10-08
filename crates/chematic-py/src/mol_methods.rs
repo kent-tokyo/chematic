@@ -2856,6 +2856,40 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// RDKit's ``rdMolHash.MolHash(m, function, useCXSmiles)`` (RDKit
+    /// 2026.03.1) for ``m = Chem.MolFromSmiles(s)``, ``s`` the SMILES this
+    /// molecule was read from. ``function`` names a member of
+    /// ``rdMolHash.HashFunction`` (case-insensitive): ``"AnonymousGraph"``,
+    /// ``"ElementGraph"``, ``"CanonicalSmiles"``, ``"MurckoScaffold"``,
+    /// ``"ExtendedMurcko"``, ``"MolFormula"``, ``"AtomBondCounts"``,
+    /// ``"DegreeVector"``, ``"Mesomer"``, ``"HetAtomTautomer"``,
+    /// ``"HetAtomProtomer"``, ``"RedoxPair"``, ``"Regioisomer"``,
+    /// ``"NetCharge"``, ``"SmallWorldIndexBR"``, ``"SmallWorldIndexBRL"``,
+    /// ``"ArthorSubstructureOrder"``, ``"HetAtomTautomerv2"`` or
+    /// ``"HetAtomProtomerv2"``.
+    ///
+    /// Raises ``ValueError`` for an unknown function name, for molecules the
+    /// RDKit port does not model and for molecules RDKit's sanitization
+    /// rejects.
+    ///
+    ///     chematic.from_smiles("Cc1ccccc1CC(=O)O").rdkit_mol_hash("ExtendedMurcko")
+    ///     # '*c1ccccc1*'
+    #[pyo3(signature = (function, use_cx_smiles=false))]
+    fn rdkit_mol_hash(&self, function: &str, use_cx_smiles: bool) -> PyResult<String> {
+        let f = chematic_smiles::RdkitHashFunction::from_name(function).ok_or_else(|| {
+            let names: Vec<&str> = chematic_smiles::RdkitHashFunction::ALL
+                .iter()
+                .map(|f| f.name())
+                .collect();
+            PyValueError::new_err(format!(
+                "unknown hash function {function:?}; expected one of {}",
+                names.join(", ")
+            ))
+        })?;
+        chematic_smiles::rdkit_mol_hash(&self.inner, f, use_cx_smiles)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// The RDKit canonical SMILES (``Chem.MolToSmiles(isomer)``) of the
     /// isomers :meth:`rdkit_stereoisomers` returns, sorted. Unlike
     /// re-reading them (``MolFromSmiles`` drops e.g. the chirality RDKit

@@ -74,6 +74,15 @@ class Mol:
         :attr:`rdkit_smiles`."""
         ...
 
+    def rdkit_mol_hash(self, function: str, use_cx_smiles: bool = False) -> str:
+        """``rdMolHash.MolHash(m, function, useCXSmiles)`` (RDKit 2026.03.1)
+        for the molecule RDKit reads from the same SMILES. ``function`` is a
+        ``rdMolHash.HashFunction`` member name (case-insensitive), e.g.
+        ``"ExtendedMurcko"``, ``"HetAtomTautomer"`` or ``"MolFormula"``.
+        Raises ``ValueError`` for unknown names, unsupported inputs and
+        molecules RDKit's sanitization rejects."""
+        ...
+
     def rdkit_2d_coords(self) -> list[list[float]]:
         """RDKit 2026.03.1's default 2D depiction, bit for bit: the
         coordinates ``rdDepictor.Compute2DCoords(Chem.MolFromSmiles(s))``

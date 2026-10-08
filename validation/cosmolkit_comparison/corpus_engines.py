@@ -35,6 +35,14 @@ SMARTS_QUERIES = json.loads(
     (ROOT / "validation/rdkit_rebaseline_smarts_queries.json").read_text(encoding="utf-8")
 )["queries"]
 
+# rdMolHash.HashFunction members, in enum order; ``mol_hash_<name>`` ops.
+MOL_HASH_FUNCTIONS = [
+    "AnonymousGraph", "ElementGraph", "CanonicalSmiles", "MurckoScaffold", "ExtendedMurcko",
+    "MolFormula", "AtomBondCounts", "DegreeVector", "Mesomer", "HetAtomTautomer",
+    "HetAtomProtomer", "RedoxPair", "Regioisomer", "NetCharge", "SmallWorldIndexBR",
+    "SmallWorldIndexBRL", "ArthorSubstructureOrder", "HetAtomTautomerv2", "HetAtomProtomerv2",
+]
+
 API_NOTES = {
     "chematic": {
         "canonical_smiles": "Mol.rdkit_smiles (RDKit-compatible writer); canonical_smiles_rt reads back the native Mol.smiles",
@@ -51,6 +59,8 @@ API_NOTES = {
         "inchi": "Mol.standard_inchi (needs the native-inchi build feature)",
         "morgan2_bitinfo": "Mol.rdkit_morgan_bit_info(2, 2048)",
         "pdb_read": "chematic.rdkit_pdb_block_to_smiles(Mol.rdkit_pdb_block())",
+        "extended_murcko": "Mol.rdkit_mol_hash('ExtendedMurcko')",
+        "mol_hash_*": "Mol.rdkit_mol_hash(<HashFunction name>)",
     },
     "cosmolkit": {
         "smarts": "get_substruct_matches(mol, parse_smarts(q))",
@@ -58,6 +68,7 @@ API_NOTES = {
         "molblock_rt": "Molecule.to_2d_sdf_string()",
         "morgan2_bitinfo": "fingerprint_morgan_with_output(2, 2048).additional_output().bit_info_map()",
         "pdb_read": "Molecule.from_pdb_block(Molecule.to_pdb_block()).to_smiles()",
+        "extended_murcko": "Molecule.net_scaffold().to_smiles()",
     },
 }
 
@@ -104,7 +115,7 @@ def rdkit_engine():
     Chem = _rd()
     from rdkit import rdBase
     from rdkit.Chem import (QED, Crippen, Descriptors, MACCSkeys, rdCIPLabeler,
-                            rdFingerprintGenerator)
+                            rdFingerprintGenerator, rdMolHash)
     from rdkit.Chem import rdMolDescriptors as D
 
     gen = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
@@ -184,7 +195,11 @@ def rdkit_engine():
         "morgan2_bitinfo": lambda m: morgan_bitinfo(m),
         "pdb_read": lambda m: (lambda r: Chem.MolToSmiles(r) if r is not None else None)(
             Chem.MolFromPDBBlock(Chem.MolToPDBBlock(m))),
+        "extended_murcko": lambda m: rdMolHash.MolHash(m, rdMolHash.HashFunction.ExtendedMurcko),
     })
+    for name in MOL_HASH_FUNCTIONS:
+        ops["mol_hash_" + name] = (lambda f: lambda m: rdMolHash.MolHash(m, f))(
+            rdMolHash.HashFunction.names[name])
     ops.update({
         "fp_atom_pair": lambda m: list(RD.GetHashedAtomPairFingerprintAsBitVect(m, nBits=2048).GetOnBits()),
         "fp_torsion": lambda m: list(RD.GetHashedTopologicalTorsionFingerprintAsBitVect(m, nBits=2048).GetOnBits()),
@@ -342,7 +357,10 @@ def chematic_engine():
         "stereoisomers": lambda m: m.rdkit_stereoisomer_smiles(),
         "morgan2_bitinfo": lambda m: _bit_info(m.rdkit_morgan_bit_info(2, 2048)),
         "pdb_read": lambda m: c.rdkit_pdb_block_to_smiles(m.rdkit_pdb_block()),
+        "extended_murcko": lambda m: m.rdkit_mol_hash("ExtendedMurcko"),
     })
+    for name in MOL_HASH_FUNCTIONS:
+        ops["mol_hash_" + name] = (lambda f: lambda m: m.rdkit_mol_hash(f))(name)
     for name, kwargs in (("smiles_kekule", {"kekule": True}), ("smiles_noniso", {"isomeric": False}),
                          ("smiles_explicit", {"all_bonds_explicit": True, "all_hs_explicit": True})):
         ops[name] = (lambda kw: lambda m: _rdkit_smiles_with(m, kw))(kwargs)
@@ -449,6 +467,7 @@ def cosmolkit_engine():
         "morgan2_bitinfo": lambda m: _bit_info(
             m.fingerprint_morgan_with_output(radius=2, n_bits=2048).additional_output().bit_info_map()),
         "pdb_read": lambda m: ck.Molecule.from_pdb_block(m.to_pdb_block()).to_smiles(),
+        "extended_murcko": lambda m: m.net_scaffold().to_smiles(),
     })
     raw = {"canonical_smiles": lambda m: m.to_smiles(), "molblock": lambda m: m.to_2d_sdf_string()}
     return {"version": getattr(ck, "__version__", "unknown"), "parse": ck.Molecule.from_smiles,

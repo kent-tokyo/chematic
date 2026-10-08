@@ -44,6 +44,7 @@ mod mol;
 mod mol2_read;
 mod molblock;
 mod molblock2d;
+mod molhash;
 mod murcko;
 mod parse;
 mod pdb;
@@ -52,6 +53,7 @@ mod periodic;
 mod pyrandom;
 mod rank;
 mod sanitize;
+mod smarts_match;
 mod smarts_write;
 mod stereo;
 mod substruct;
@@ -62,6 +64,7 @@ use chematic_core::Molecule;
 
 pub use inchi_read::{InchiOutputAtom, InchiOutputStereo0D, rdkit_molecule_from_inchi_output};
 pub use molblock::{RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, rdkit_mol_block};
+pub use molhash::RdkitHashFunction;
 
 /// Why [`rdkit_canonical_smiles`] produced no string.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -306,6 +309,24 @@ pub fn rdkit_murcko_scaffold(mol: &Molecule) -> Result<String, RdkitSmilesError>
     let mut scaffold = murcko::murcko_decompose(m)?;
     stereo::legacy_stereo_perception(&mut scaffold, true, false);
     write::mol_to_smiles_owned(scaffold, &RdkitSmilesParams::default())
+}
+
+/// `rdMolHash.MolHash(m, function, useCXSmiles)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1), every
+/// `rdMolHash.HashFunction`: graph, element-graph, scaffold, tautomer,
+/// mesomer and regioisomer SMILES hashes and the formula and count hashes.
+pub fn rdkit_mol_hash(
+    mol: &Molecule,
+    function: RdkitHashFunction,
+    use_cx_smiles: bool,
+) -> Result<String, RdkitSmilesError> {
+    if use_cx_smiles && !mol.stereo_groups().is_empty() {
+        return Err(RdkitSmilesError::Unsupported(
+            "enhanced stereo groups".into(),
+        ));
+    }
+    let m = rdkit_mol_for_writing(mol)?;
+    molhash::mol_hash(m, function, use_cx_smiles)
 }
 
 /// `EnumerateStereoisomers.GetStereoisomerCount(m)` (default options) for

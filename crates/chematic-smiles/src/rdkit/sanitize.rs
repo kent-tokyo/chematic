@@ -447,7 +447,7 @@ fn metal_bond_cleanup(mol: &mut Mol, a: usize, ranks: &[u32]) -> Result<(), Rdki
 }
 
 /// `assignRadicals`.
-fn assign_radicals(mol: &mut Mol) {
+pub(crate) fn assign_radicals(mol: &mut Mol) {
     for a in 0..mol.atoms.len() {
         let atom = &mol.atoms[a];
         if !atom.no_implicit || atom.anum == 0 {

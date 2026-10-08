@@ -20,3 +20,20 @@ def test_murcko_chiral_centers_counts():
     assert chematic.from_smiles("CC(F)C(Cl)Br").rdkit_stereoisomer_count() == 4
     smiles = chematic.from_smiles("Cc1n[s+]([O-])nc1N").rdkit_stereoisomer_smiles()
     assert smiles == ["Cc1n[s@+]([O-])nc1N", "Cc1n[s@@+]([O-])nc1N"]
+
+
+def test_rdkit_mol_hash():
+    # rdMolHash.MolHash(Chem.MolFromSmiles(s), f[, useCXSmiles]), RDKit 2026.03.1.
+    m = chematic.from_smiles("Cc1ccccc1CC(=O)O")
+    assert m.rdkit_mol_hash("ExtendedMurcko") == "*c1ccccc1*"
+    assert m.rdkit_mol_hash("extendedmurcko") == "*c1ccccc1*"
+    assert m.rdkit_mol_hash("Regioisomer") == "*C.*CC(=O)O.c1ccccc1"
+    assert chematic.from_smiles("Oc1ccccn1").rdkit_mol_hash("HetAtomTautomer") == "[O][C]1[CH][CH][CH][CH][N]1_1_0"
+    assert chematic.from_smiles("[NH3+]CC([O-])=O").rdkit_mol_hash("MolFormula") == "C2H5NO2"
+    assert chematic.from_smiles("N->[Cu]").rdkit_mol_hash("CanonicalSmiles", use_cx_smiles=True) == "[NH3][Cu] |C:0.0|"
+    try:
+        m.rdkit_mol_hash("NoSuchHash")
+    except ValueError as e:
+        assert "ExtendedMurcko" in str(e)
+    else:
+        raise AssertionError("unknown hash function accepted")
