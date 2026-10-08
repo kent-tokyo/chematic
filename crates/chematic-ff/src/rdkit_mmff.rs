@@ -372,15 +372,22 @@ impl RdkitMmffField {
 
     /// `ForceField::calcEnergy(pos)` on a flat `3 * n` position array.
     pub fn energy(&self, pos: &[f64]) -> f64 {
+        self.energy_with_distances(pos, pos)
+    }
+
+    /// The energy at `pos` with every interatomic distance RDKit takes from
+    /// its `ForceField::distance` cache taken at `dpos` instead (see
+    /// [`crate::rdkit_bfgs::BfgsOutcome::stale_distance_point`]).
+    pub fn energy_with_distances(&self, pos: &[f64], dpos: &[f64]) -> f64 {
         let mut res = 0.0;
         if self.terms[0] && !self.bonds.is_empty() {
-            res += self.bond_energy(pos);
+            res += self.bond_energy(dpos);
         }
         if self.terms[1] && !self.angles.is_empty() {
-            res += self.angle_energy(pos);
+            res += self.angle_energy(pos, dpos);
         }
         if self.terms[2] && !self.stretch_bends.is_empty() {
-            res += self.stbn_energy(pos);
+            res += self.stbn_energy(pos, dpos);
         }
         if self.terms[3] && !self.oops.is_empty() {
             res += self.oop_energy(pos);
@@ -389,7 +396,7 @@ impl RdkitMmffField {
             res += self.torsion_energy(pos);
         }
         if (self.terms[5] || self.terms[6]) && !self.nonbonded.is_empty() {
-            res += self.nonbonded_energy(pos);
+            res += self.nonbonded_energy(dpos);
         }
         res
     }
@@ -419,13 +426,13 @@ impl RdkitMmffField {
 
     // ─── Bond stretch ────────────────────────────────────────────────────────
 
-    fn bond_energy(&self, pos: &[f64]) -> f64 {
+    fn bond_energy(&self, dpos: &[f64]) -> f64 {
         let c1 = MDYNE_A_TO_KCAL_MOL;
         let cs = -2.0;
         let c3 = 7.0 / 12.0;
         let mut sum = 0.0;
         for &(i, j, r0, kb) in &self.bonds {
-            let dist_term = distance(pos, i, j) - r0;
+            let dist_term = distance(dpos, i, j) - r0;
             let dist_term2 = dist_term * dist_term;
             sum += 0.5 * c1 * kb * dist_term2 * (1.0 + cs * dist_term + c3 * cs * cs * dist_term2);
         }
@@ -457,11 +464,11 @@ impl RdkitMmffField {
 
     // ─── Angle bend ──────────────────────────────────────────────────────────
 
-    fn angle_energy(&self, pos: &[f64]) -> f64 {
+    fn angle_energy(&self, pos: &[f64], dpos: &[f64]) -> f64 {
         let mut res = 0.0;
         for &(i, j, k, theta0, ka, linear) in &self.angles {
-            let dist1 = distance(pos, i, j);
-            let dist2 = distance(pos, j, k);
+            let dist1 = distance(dpos, i, j);
+            let dist2 = distance(dpos, j, k);
             let (p1, p2, p3) = (P3::at(pos, i), P3::at(pos, j), P3::at(pos, k));
             let cos_theta = clip_to_one(p1.sub(p2).dot(p3.sub(p2)) / (dist1 * dist2));
             res += angle_bend_energy(theta0, ka, linear, cos_theta);
@@ -514,11 +521,11 @@ impl RdkitMmffField {
 
     // ─── Stretch-bend ────────────────────────────────────────────────────────
 
-    fn stbn_energy(&self, pos: &[f64]) -> f64 {
+    fn stbn_energy(&self, pos: &[f64], dpos: &[f64]) -> f64 {
         let mut total = 0.0;
         for &(i, j, k, r1, r2, theta0, k1, k2) in &self.stretch_bends {
-            let dist1 = distance(pos, i, j);
-            let dist2 = distance(pos, j, k);
+            let dist1 = distance(dpos, i, j);
+            let dist2 = distance(dpos, j, k);
             let (p1, p2, p3) = (P3::at(pos, i), P3::at(pos, j), P3::at(pos, k));
             let cos_theta = clip_to_one(p1.sub(p2).dot(p3.sub(p2)) / (dist1 * dist2));
             let delta_theta = RAD2DEG * cos_theta.acos() - theta0;
@@ -785,10 +792,10 @@ impl RdkitMmffField {
 
     // ─── Non-bonded (van der Waals + electrostatics) ─────────────────────────
 
-    fn nonbonded_energy(&self, pos: &[f64]) -> f64 {
+    fn nonbonded_energy(&self, dpos: &[f64]) -> f64 {
         let mut sum = 0.0;
         for t in &self.nonbonded {
-            let dist = distance(pos, t.i, t.j);
+            let dist = distance(dpos, t.i, t.j);
             if let Some((r_star, well)) = t.vdw {
                 sum += vdw_energy(dist, r_star, well);
             }
@@ -899,8 +906,21 @@ impl RdkitMmffField {
     /// RDKit `MMFFOptimizeMolecule(mol, maxIters)` (forceTol 1e-4) on the
     /// flat positions: (status, final energy).
     pub fn optimize(&self, pos: &mut [f64], max_iters: u32) -> (i32, f64) {
-        let status = self.minimize(pos, max_iters, 1e-4);
-        (status, self.energy(pos))
+        if self.is_empty() {
+            return (0, 0.0);
+        }
+        let out = crate::rdkit_bfgs::bfgs_minimize_detailed(
+            pos,
+            1e-4,
+            max_iters,
+            |p| self.energy(p),
+            |p, g| self.scaled_gradient(p, g),
+        );
+        let energy = match &out.stale_distance_point {
+            Some(d) => self.energy_with_distances(pos, d),
+            None => self.energy(pos),
+        };
+        (out.status, energy)
     }
 }
 

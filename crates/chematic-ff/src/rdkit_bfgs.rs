@@ -61,6 +61,39 @@ pub fn bfgs_minimize(
     func: impl Fn(&[f64]) -> f64,
     grad_fn: impl Fn(&[f64], &mut [f64]) -> f64,
 ) -> i32 {
+    bfgs_minimize_detailed(pos, grad_tol, max_its, func, grad_fn).status
+}
+
+/// Outcome of [`bfgs_minimize_detailed`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct BfgsOutcome {
+    /// RDKit's status: 0 converged, 1 `max_its` reached, -1 line-search
+    /// failure.
+    pub status: i32,
+    /// The point of the last energy evaluation when it is not the returned
+    /// position. RDKit's `ForceField` caches interatomic distances per
+    /// evaluation and its `calcEnergy()` (no positions argument) reuses that
+    /// cache, so after such a minimization RDKit's reported energy takes
+    /// its distances from this point and everything else from the final
+    /// position. This happens only when the last line search gives up
+    /// (step below `MOVETOL`): RDKit then restores the previous point and
+    /// reports convergence.
+    pub stale_distance_point: Option<Vec<f64>>,
+}
+
+/// [`bfgs_minimize`], also reporting whether RDKit's distance cache is
+/// stale afterwards (see [`BfgsOutcome::stale_distance_point`]).
+pub fn bfgs_minimize_detailed(
+    pos: &mut [f64],
+    grad_tol: f64,
+    max_its: u32,
+    func: impl Fn(&[f64]) -> f64,
+    grad_fn: impl Fn(&[f64], &mut [f64]) -> f64,
+) -> BfgsOutcome {
+    let done = |status: i32, stale: Option<Vec<f64>>| BfgsOutcome {
+        status,
+        stale_distance_point: stale,
+    };
     const EPS: f64 = 3e-8;
     const TOLX: f64 = 4.0 * EPS;
     const MAXSTEP: f64 = 100.0;
@@ -81,11 +114,11 @@ pub fn bfgs_minimize(
     }
     let max_step = MAXSTEP * smax(sum.sqrt(), dim as f64);
     for _iter in 1..=max_its {
-        let (status, func_val) =
+        let (status, func_val, stale) =
             linear_search(pos, fp, &grad, &mut xi, &mut new_pos, &func, max_step);
         if status < 0 {
             // RDKit's CHECK_INVARIANT("bad direction in linearSearch").
-            return -1;
+            return done(-1, None);
         }
         fp = func_val;
         let mut test = 0.0_f64;
@@ -99,7 +132,7 @@ pub fn bfgs_minimize(
             dgrad[i] = grad[i];
         }
         if test < TOLX {
-            return 0;
+            return done(0, stale);
         }
         let grad_scale = grad_fn(pos, &mut grad);
         test = 0.0;
@@ -111,7 +144,7 @@ pub fn bfgs_minimize(
         }
         test /= term;
         if test < grad_tol {
-            return 0;
+            return done(0, None);
         }
         let (mut fac, mut fae, mut sum_dgrad, mut sum_xi) = (0.0, 0.0, 0.0, 0.0);
         for i in 0..dim {
@@ -151,10 +184,11 @@ pub fn bfgs_minimize(
             xi[i] = p;
         }
     }
-    1
+    done(1, None)
 }
 
-/// `BFGSOpt::linearSearch`: (resCode, newVal).
+/// `BFGSOpt::linearSearch`: (resCode, newVal, last trial point when the
+/// search gave up and restored `old_pt`).
 fn linear_search(
     old_pt: &[f64],
     old_val: f64,
@@ -163,7 +197,7 @@ fn linear_search(
     new_pt: &mut [f64],
     func: &impl Fn(&[f64]) -> f64,
     max_step: f64,
-) -> (i32, f64) {
+) -> (i32, f64, Option<Vec<f64>>) {
     const FUNCTOL: f64 = 1e-4;
     const MOVETOL: f64 = 1e-7;
     const MAX_ITER_LINEAR_SEARCH: u32 = 1000;
@@ -184,7 +218,7 @@ fn linear_search(
         slope += dir[i] * grad[i];
     }
     if slope >= 0.0 {
-        return (-1, new_val);
+        return (-1, new_val, None);
     }
     let mut test = 0.0;
     for i in 0..dim {
@@ -201,14 +235,18 @@ fn linear_search(
     let mut it = 0;
     while it < MAX_ITER_LINEAR_SEARCH {
         if lambda < lambda_min {
-            return (1, new_val);
+            // RDKit breaks out and restores the old point (keeping the last
+            // trial's value as newVal).
+            let trial = (it > 0).then(|| new_pt.to_vec());
+            new_pt.copy_from_slice(old_pt);
+            return (1, new_val, trial);
         }
         for i in 0..dim {
             new_pt[i] = old_pt[i] + lambda * dir[i];
         }
         new_val = func(new_pt);
         if new_val - old_val <= FUNCTOL * lambda * slope {
-            return (0, new_val);
+            return (0, new_val, None);
         }
         if it == 0 {
             tmp_lambda = -slope / (2.0 * (new_val - old_val - slope));
@@ -240,5 +278,51 @@ fn linear_search(
         it += 1;
     }
     new_pt.copy_from_slice(old_pt);
-    (-1, new_val)
+    (-1, new_val, None)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quadratic_converges() {
+        let mut pos = vec![3.0, -2.0];
+        let status = bfgs_minimize(
+            &mut pos,
+            1e-4,
+            200,
+            |p| (p[0] - 1.0).powi(2) + 2.0 * (p[1] + 0.5).powi(2),
+            |p, g| {
+                g[0] = 2.0 * (p[0] - 1.0);
+                g[1] = 4.0 * (p[1] + 0.5);
+                1.0
+            },
+        );
+        assert_eq!(status, 0);
+        assert!((pos[0] - 1.0).abs() < 1e-3 && (pos[1] + 0.5).abs() < 1e-3);
+    }
+
+    /// RDKit's line search gives up below `MOVETOL`, restores the start
+    /// point and reports convergence; the last trial point is reported as
+    /// the stale distance-cache point.
+    #[test]
+    fn line_search_give_up_restores_point() {
+        let start = vec![0.5];
+        let mut pos = start.clone();
+        let out = bfgs_minimize_detailed(
+            &mut pos,
+            1e-4,
+            200,
+            |p| if p[0] == 0.5 { 1.0 } else { 2.0 },
+            |_, g| {
+                g[0] = 1.0;
+                1.0
+            },
+        );
+        assert_eq!(out.status, 0);
+        assert_eq!(pos, start);
+        let stale = out.stale_distance_point.expect("trial point");
+        assert!(stale[0] < 0.5 && stale[0] > 0.5 - 1e-6);
+    }
 }

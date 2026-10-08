@@ -422,9 +422,9 @@ impl AngleTerm {
         }
     }
 
-    fn energy(&self, pos: &[f64]) -> f64 {
-        let dist1 = distance(pos, self.i, self.j);
-        let dist2 = distance(pos, self.j, self.k);
+    fn energy(&self, pos: &[f64], dpos: &[f64]) -> f64 {
+        let dist1 = distance(dpos, self.i, self.j);
+        let dist2 = distance(dpos, self.j, self.k);
         let p1 = P3::at(pos, self.i);
         let p2 = P3::at(pos, self.j);
         let p3 = P3::at(pos, self.k);
@@ -1096,16 +1096,23 @@ impl RdkitUffField {
 
     /// `ForceField::calcEnergy(pos)` on flat coordinates.
     pub fn energy(&self, pos: &[f64]) -> f64 {
+        self.energy_with_distances(pos, pos)
+    }
+
+    /// The energy at `pos` with every interatomic distance RDKit takes from
+    /// its `ForceField::distance` cache taken at `dpos` instead (see
+    /// [`crate::rdkit_bfgs::BfgsOutcome::stale_distance_point`]).
+    pub fn energy_with_distances(&self, pos: &[f64], dpos: &[f64]) -> f64 {
         let mut res = 0.0;
         for &(i, j, r0, kb) in &self.bonds {
-            let dist_term = distance(pos, i, j) - r0;
+            let dist_term = distance(dpos, i, j) - r0;
             res += 0.5 * kb * dist_term * dist_term;
         }
         for a in &self.angles {
-            res += a.energy(pos);
+            res += a.energy(pos, dpos);
         }
         for &(i, j, x_ij, well, thresh) in &self.vdw {
-            let dist = distance(pos, i, j);
+            let dist = distance(dpos, i, j);
             if dist > thresh || dist <= 0.0 {
                 continue;
             }
@@ -1204,8 +1211,27 @@ impl RdkitUffField {
     /// RDKit `UFFOptimizeMolecule(mol, maxIters)` (forceTol 1e-4) on flat
     /// coordinates: (status, final energy).
     pub fn optimize(&self, pos: &mut [f64], max_iters: u32) -> (i32, f64) {
-        let status = self.minimize(pos, max_iters, 1e-4);
-        (status, self.energy(pos))
+        if self.is_empty() {
+            return (0, 0.0);
+        }
+        let out = crate::rdkit_bfgs::bfgs_minimize_detailed(
+            pos,
+            1e-4,
+            max_iters,
+            |p| self.energy(p),
+            |p, g| {
+                for x in g.iter_mut() {
+                    *x = 0.0;
+                }
+                self.gradient(p, g);
+                crate::rdkit_bfgs::scale_gradient(g)
+            },
+        );
+        let energy = match &out.stale_distance_point {
+            Some(d) => self.energy_with_distances(pos, d),
+            None => self.energy(pos),
+        };
+        (out.status, energy)
     }
 }
 
