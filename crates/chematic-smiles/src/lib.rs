@@ -59,8 +59,9 @@ pub use error::SmilesError;
 pub use parser::{SmilesParseLimits, parse, parse_with_limits};
 pub use random_smiles::{random_smiles, random_smiles_vect};
 pub use rdkit::{
-    RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, RdkitSmilesError,
-    rdkit_atom_stereocenter_counts, rdkit_canonical_smiles, rdkit_mol_block,
+    InchiOutputAtom, InchiOutputStereo0D, RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond,
+    RdkitSmilesError, RdkitSmilesParams, rdkit_atom_stereocenter_counts, rdkit_canonical_smiles,
+    rdkit_mol_block, rdkit_molecule_from_inchi_output, rdkit_smiles,
 };
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,

@@ -51,6 +51,40 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// SMILES exactly as RDKit 2026.03.1's ``Chem.MolToSmiles`` writes it
+    /// with the given options (``doRandom`` is always false):
+    /// ``isomeric`` = ``isomericSmiles``, ``kekule`` = ``kekuleSmiles``,
+    /// ``canonical``, ``all_bonds_explicit`` = ``allBondsExplicit``,
+    /// ``all_hs_explicit`` = ``allHsExplicit`` and ``rooted_at_atom`` =
+    /// ``rootedAtAtom`` (``None``: -1). With the defaults it equals
+    /// :attr:`rdkit_smiles`. Raises ``ValueError`` like :attr:`rdkit_smiles`.
+    ///
+    ///     chematic.from_smiles("c1ccccc1O").rdkit_smiles_with(kekule=True)
+    ///     # 'OC1=CC=CC=C1'
+    #[pyo3(signature = (*, isomeric = true, kekule = false, canonical = true,
+                        all_bonds_explicit = false, all_hs_explicit = false,
+                        rooted_at_atom = None))]
+    fn rdkit_smiles_with(
+        &self,
+        isomeric: bool,
+        kekule: bool,
+        canonical: bool,
+        all_bonds_explicit: bool,
+        all_hs_explicit: bool,
+        rooted_at_atom: Option<usize>,
+    ) -> PyResult<String> {
+        let params = chematic_smiles::RdkitSmilesParams {
+            isomeric,
+            kekule,
+            canonical,
+            all_bonds_explicit,
+            all_hs_explicit,
+            rooted_at_atom,
+        };
+        chematic_smiles::rdkit_smiles(&self.inner, &params)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// Canonical SMILES together with the atom output order.
     ///
     /// Returns ``(smiles, order)`` where ``smiles`` equals :attr:`smiles` and

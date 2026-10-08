@@ -929,11 +929,22 @@ fn is_valid_smarts(smarts: &str) -> bool {
 
 /// Parse an InChI string and return a Mol.
 ///
+/// With the IUPAC InChI library built in (the default wheel), the structure
+/// is reconstructed like RDKit's ``Chem.MolFromInchi``; otherwise (or if the
+/// library rejects the string) the pure-Rust parser is used.
+///
 /// Raises ``ValueError`` on parse failure.
 ///
 ///     mol = chematic.from_inchi("InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3")
 #[pyfunction]
 fn from_inchi(inchi: &str) -> PyResult<Mol> {
+    #[cfg(feature = "native-inchi")]
+    if let Ok(mol) = chematic_inchi::rdkit_mol_from_inchi(inchi) {
+        return Ok(Mol {
+            inner: Arc::new(mol),
+            props: Default::default(),
+        });
+    }
     chematic_inchi::parse_inchi(inchi)
         .map(|mol| Mol {
             inner: Arc::new(mol),

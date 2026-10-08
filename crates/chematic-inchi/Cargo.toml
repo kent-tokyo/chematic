@@ -38,6 +38,10 @@ name = "ez_stash_inchi_snapshot"
 required-features = ["native-inchi"]
 
 [[example]]
+name = "rdkit_inchi_read_check"
+required-features = ["native-inchi"]
+
+[[example]]
 name = "dedup_verify"
 required-features = ["native-inchi"]
 

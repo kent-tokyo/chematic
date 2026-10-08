@@ -273,6 +273,7 @@ pub(crate) fn canonicalize_fragment(
     mol: &mut Mol,
     start: usize,
     ranks: &[u32],
+    isomeric: bool,
 ) -> Result<Canonicalized, RdkitSmilesError> {
     let n = mol.atoms.len();
     let nb = mol.bonds.len();
@@ -305,7 +306,7 @@ pub(crate) fn canonicalize_fragment(
     };
     let mut num_swaps_odd = vec![false; n];
     for a in 0..n {
-        if mol.atoms[a].chiral == ChiralTag::Unspecified {
+        if !isomeric || mol.atoms[a].chiral == ChiralTag::Unspecified {
             continue;
         }
         if !is_atom_potential_tetrahedral_center(mol, a) {
@@ -353,7 +354,7 @@ pub(crate) fn canonicalize_fragment(
     let mut ring_adjusted = vec![false; n];
     for e in &stack {
         let StackElem::Atom(a) = *e else { continue };
-        if mol.atoms[a].chiral == ChiralTag::Unspecified {
+        if !isomeric || mol.atoms[a].chiral == ChiralTag::Unspecified {
             continue;
         }
         if let Some(rsa) = mol.atoms[a].ring_stereo_atoms.clone() {

@@ -34,6 +34,7 @@
 
 mod aromaticity;
 mod canon;
+mod inchi_read;
 mod kekulize;
 mod mol;
 mod molblock;
@@ -46,6 +47,7 @@ mod write;
 
 use chematic_core::Molecule;
 
+pub use inchi_read::{InchiOutputAtom, InchiOutputStereo0D, rdkit_molecule_from_inchi_output};
 pub use molblock::{RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, rdkit_mol_block};
 
 /// Why [`rdkit_canonical_smiles`] produced no string.
@@ -85,10 +87,66 @@ impl std::error::Error for RdkitSmilesError {}
 /// );
 /// ```
 pub fn rdkit_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError> {
+    rdkit_smiles(mol, &RdkitSmilesParams::default())
+}
+
+/// RDKit's `SmilesWriteParams` as `Chem.MolToSmiles` exposes them
+/// (`doRandom` is always false). The default is `MolToSmiles`'s.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RdkitSmilesParams {
+    /// `isomericSmiles`: write chirality, `/` `\` and isotopes.
+    pub isomeric: bool,
+    /// `kekuleSmiles`: write the (canonical) Kekulé form.
+    pub kekule: bool,
+    /// `canonical`: canonical atom ranks and sorted fragments.
+    pub canonical: bool,
+    /// `allBondsExplicit`: write every bond symbol.
+    pub all_bonds_explicit: bool,
+    /// `allHsExplicit`: write every atom in brackets with its H count.
+    pub all_hs_explicit: bool,
+    /// `rootedAtAtom`: start the fragment holding this atom there.
+    pub rooted_at_atom: Option<usize>,
+}
+
+impl Default for RdkitSmilesParams {
+    fn default() -> Self {
+        Self {
+            isomeric: true,
+            kekule: false,
+            canonical: true,
+            all_bonds_explicit: false,
+            all_hs_explicit: false,
+            rooted_at_atom: None,
+        }
+    }
+}
+
+/// `Chem.MolToSmiles(Chem.MolFromSmiles(s), **params)` for the SMILES `s`
+/// chematic parsed `mol` from (RDKit 2026.03.1).
+pub fn rdkit_smiles(
+    mol: &Molecule,
+    params: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
     let mut m = parse::from_chematic(mol)?;
-    sanitize::remove_hs_and_sanitize(&mut m)?;
+    if has_added_hydrogens(mol) {
+        sanitize::sanitize_keeping_hs(&mut m)?;
+    } else {
+        sanitize::remove_hs_and_sanitize(&mut m)?;
+    }
     stereo::legacy_stereo_perception(&mut m, true, true);
-    write::mol_to_smiles(&m)
+    write::mol_to_smiles(&m, params)
+}
+
+/// Whether `mol` carries hydrogen atoms the SMILES parser cannot produce:
+/// an H outside brackets (no H count), as `add_hydrogens` adds them. Such a
+/// molecule stands for RDKit's molecule after `Chem.AddHs`, whose hydrogen
+/// atoms are graph atoms that `MolToSmiles` writes; a molecule read from
+/// SMILES only has bracket `[H]` atoms, which `MolFromSmiles` removes by
+/// its `removeHs` rules.
+fn has_added_hydrogens(mol: &Molecule) -> bool {
+    mol.atoms().any(|(_, a)| {
+        !a.wildcard && a.element == chematic_core::Element::H && a.hydrogen_count.is_none()
+    })
 }
 
 /// RDKit's `CalcNumAtomStereoCenters` and

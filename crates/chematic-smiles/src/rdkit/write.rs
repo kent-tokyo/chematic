@@ -1,15 +1,16 @@
 //! `SmilesWrite` (RDKit 2026.03.1 `SmilesWrite.cpp`): `GetAtomSmiles`,
 //! `GetBondSmiles`, `FragmentSmilesConstruct` and `MolToSmiles` with the
-//! default `SmilesWriteParams` (isomeric, canonical, no Kekulé form).
+//! `SmilesWriteParams` of [`RdkitSmilesParams`] (`doRandom=false`).
 
 use std::collections::BTreeMap;
 
-use super::RdkitSmilesError;
 use super::canon::{StackElem, canonicalize_fragment};
+use super::kekulize::kekulize_ranked;
 use super::mol::{BondDir, BondStereo, BondType, ChiralTag, Mol};
 use super::periodic;
-use super::rank::rank_mol_atoms;
+use super::rank::rank_mol_atoms_with;
 use super::stereo::legacy_stereo_perception;
+use super::{RdkitSmilesError, RdkitSmilesParams};
 
 /// `SmilesWrite::inOrganicSubset`.
 fn in_organic_subset(anum: u32) -> bool {
@@ -17,7 +18,7 @@ fn in_organic_subset(anum: u32) -> bool {
 }
 
 /// `atomNeedsBracket`.
-fn atom_needs_bracket(mol: &Mol, a: usize, at_string: &str) -> bool {
+fn atom_needs_bracket(mol: &Mol, a: usize, at_string: &str, isomeric: bool) -> bool {
     let atom = &mol.atoms[a];
     if !in_organic_subset(atom.anum) {
         return true;
@@ -25,7 +26,7 @@ fn atom_needs_bracket(mol: &Mol, a: usize, at_string: &str) -> bool {
     if atom.charge != 0 {
         return true;
     }
-    if atom.isotope != 0 || !at_string.is_empty() {
+    if isomeric && (atom.isotope != 0 || !at_string.is_empty()) {
         return true;
     }
     if atom.map.is_some() {
@@ -46,23 +47,25 @@ fn atom_needs_bracket(mol: &Mol, a: usize, at_string: &str) -> bool {
 }
 
 /// `SmilesWrite::GetAtomSmiles`.
-fn atom_smiles(mol: &Mol, a: usize) -> String {
+fn atom_smiles(mol: &Mol, a: usize, p: &RdkitSmilesParams) -> String {
     let atom = &mol.atoms[a];
     let mut symb = periodic::symbol(atom.anum).to_string();
     let at_string = match atom.chiral {
+        _ if !p.isomeric => "",
         ChiralTag::Cw => "@@",
         ChiralTag::Ccw => "@",
         ChiralTag::Unspecified => "",
     };
-    let needs_bracket = atom_needs_bracket(mol, a, at_string);
+    let needs_bracket = p.all_hs_explicit || atom_needs_bracket(mol, a, at_string, p.isomeric);
     let mut res = String::new();
     if needs_bracket {
         res.push('[');
     }
-    if atom.isotope != 0 {
+    if atom.isotope != 0 && p.isomeric {
         res.push_str(&atom.isotope.to_string());
     }
-    if atom.aromatic
+    if !p.kekule
+        && atom.aromatic
         && symb.as_bytes()[0].is_ascii_uppercase()
         && matches!(atom.anum, 5 | 6 | 7 | 8 | 14 | 15 | 16 | 33 | 34 | 52)
     {
@@ -102,33 +105,40 @@ fn atom_smiles(mol: &Mol, a: usize) -> String {
 }
 
 /// `SmilesWrite::GetBondSmiles`.
-fn bond_smiles(mol: &Mol, b: usize, atom_to_left: usize) -> &'static str {
+fn bond_smiles(mol: &Mol, b: usize, atom_to_left: usize, p: &RdkitSmilesParams) -> &'static str {
     let bond = &mol.bonds[b];
     let mut aromatic = false;
-    if matches!(
-        bond.bt,
-        BondType::Single | BondType::Double | BondType::Aromatic
-    ) {
+    if !p.kekule
+        && matches!(
+            bond.bt,
+            BondType::Single | BondType::Double | BondType::Aromatic
+        )
+    {
         let a1 = &mol.atoms[atom_to_left];
         let a2 = &mol.atoms[bond.other(atom_to_left)];
         if a1.aromatic && a2.aromatic && (a1.anum != 0 || a2.anum != 0) {
             aromatic = true;
         }
     }
+    let write_dir = p.all_bonds_explicit || p.isomeric;
+    let slash = |dir: BondDir| match dir {
+        BondDir::EndDownRight => "\\",
+        _ => "/",
+    };
     match bond.bt {
         BondType::Single => match bond.dir {
-            BondDir::EndDownRight => "\\",
-            BondDir::EndUpRight => "/",
             BondDir::None => {
-                if aromatic && !bond.aromatic {
+                if p.all_bonds_explicit || (aromatic && !bond.aromatic) {
                     "-"
                 } else {
                     ""
                 }
             }
+            dir if write_dir => slash(dir),
+            _ => "",
         },
         BondType::Double => {
-            if !aromatic || !bond.aromatic {
+            if !aromatic || !bond.aromatic || p.all_bonds_explicit {
                 "="
             } else {
                 ""
@@ -137,15 +147,15 @@ fn bond_smiles(mol: &Mol, b: usize, atom_to_left: usize) -> &'static str {
         BondType::Triple => "#",
         BondType::Quadruple => "$",
         BondType::Aromatic => match bond.dir {
-            BondDir::EndDownRight => "\\",
-            BondDir::EndUpRight => "/",
             BondDir::None => {
-                if !aromatic {
+                if p.all_bonds_explicit || !aromatic {
                     ":"
                 } else {
                     ""
                 }
             }
+            dir if write_dir => slash(dir),
+            _ => "",
         },
         BondType::Dative => {
             if bond.begin == atom_to_left {
@@ -162,8 +172,15 @@ fn fragment_smiles_construct(
     mol: &mut Mol,
     start: usize,
     ranks: &[u32],
+    p: &RdkitSmilesParams,
 ) -> Result<String, RdkitSmilesError> {
-    let canon = canonicalize_fragment(mol, start, ranks)?;
+    if p.kekule {
+        // `MolOps::Kekulize(mol)`: canonical, with `rankFragmentAtoms`
+        // (chirality and isotopes included).
+        let kek_ranks = rank_mol_atoms_with(mol, true);
+        kekulize_ranked(mol, Some(&kek_ranks))?;
+    }
+    let canon = canonicalize_fragment(mol, start, ranks, p.isomeric)?;
     let mut res = String::new();
     let mut ring_closure_map: BTreeMap<u32, u32> = BTreeMap::new();
     let mut to_erase: Vec<u32> = Vec::new();
@@ -173,9 +190,9 @@ fn fragment_smiles_construct(
                 for r in to_erase.drain(..) {
                     ring_closure_map.remove(&r);
                 }
-                res.push_str(&atom_smiles(mol, a));
+                res.push_str(&atom_smiles(mol, a, p));
             }
-            StackElem::Bond(b, left) => res.push_str(bond_smiles(mol, b, left)),
+            StackElem::Bond(b, left) => res.push_str(bond_smiles(mol, b, left, p)),
             StackElem::Ring(ring_idx) => {
                 let closure_val = if let Some(&v) = ring_closure_map.get(&ring_idx) {
                     to_erase.push(ring_idx);
@@ -279,23 +296,36 @@ fn fragment(mol: &Mol, atoms: &[usize]) -> Mol {
     out
 }
 
-/// `SmilesWrite::detail::MolToSmiles(mol, params)` with the default
-/// parameters, on a molecule as `MolFromSmiles` leaves it.
-pub(crate) fn mol_to_smiles(mol: &Mol) -> Result<String, RdkitSmilesError> {
+/// `SmilesWrite::detail::MolToSmiles(mol, params)` on a molecule as
+/// `MolFromSmiles` leaves it.
+pub(crate) fn mol_to_smiles(mol: &Mol, p: &RdkitSmilesParams) -> Result<String, RdkitSmilesError> {
     if mol.atoms.is_empty() {
         return Ok(String::new());
+    }
+    if let Some(r) = p.rooted_at_atom
+        && r >= mol.atoms.len()
+    {
+        return Err(RdkitSmilesError::Unsupported(
+            "rootedAtAtom must be less than the number of atoms".into(),
+        ));
     }
     let frags = mol_frags(mol);
     let n_frags = frags.len();
     let mut pieces: Vec<String> = Vec::with_capacity(n_frags);
     for atoms in &frags {
+        // RDKit's fragment-local root: the root minus the fragment's first
+        // atom index.
+        let rooted = p
+            .rooted_at_atom
+            .filter(|r| atoms.binary_search(r).is_ok())
+            .map(|r| r - atoms[0]);
         let mut tmol = if n_frags == 1 {
             mol.clone()
         } else {
             fragment(mol, atoms)
         };
         tmol.update_property_cache(false)?;
-        if n_frags > 1 {
+        if p.isomeric && n_frags > 1 {
             // The fragment copy lost `_StereochemDone`.
             legacy_stereo_perception(&mut tmol, true, false);
         }
@@ -304,12 +334,27 @@ pub(crate) fn mol_to_smiles(mol: &Mol) -> Result<String, RdkitSmilesError> {
                 b.stereo = BondStereo::None;
             }
         }
-        let ranks = rank_mol_atoms(&tmol);
-        let start = (0..tmol.atoms.len())
-            .min_by_key(|&i| ranks[i])
-            .expect("non-empty fragment");
-        pieces.push(fragment_smiles_construct(&mut tmol, start, &ranks)?);
+        let ranks: Vec<u32> = if p.canonical {
+            rank_mol_atoms_with(&tmol, p.isomeric)
+        } else {
+            (0..tmol.atoms.len() as u32).collect()
+        };
+        let start = match rooted {
+            Some(r) if r < tmol.atoms.len() => r,
+            Some(_) => {
+                return Err(RdkitSmilesError::Unsupported(
+                    "rootedAtAtom maps outside its fragment (RDKit indexes past the fragment)"
+                        .into(),
+                ));
+            }
+            None => (0..tmol.atoms.len())
+                .min_by_key(|&i| ranks[i])
+                .expect("non-empty fragment"),
+        };
+        pieces.push(fragment_smiles_construct(&mut tmol, start, &ranks, p)?);
     }
-    pieces.sort();
+    if p.canonical {
+        pieces.sort();
+    }
     Ok(pieces.join("."))
 }

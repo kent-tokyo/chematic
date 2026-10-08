@@ -345,7 +345,7 @@ fn iterate_cip_ranks(mol: &Mol, invars: &[i64], ranks: &mut Vec<u32>, seed_with_
 }
 
 /// `assignAtomCIPRanks`.
-fn assign_atom_cip_ranks(mol: &Mol, ranks: &mut Vec<u32>) {
+pub(crate) fn assign_atom_cip_ranks(mol: &Mol, ranks: &mut Vec<u32>) {
     let invars = build_cip_invariants(mol);
     iterate_cip_ranks(mol, &invars, ranks, false);
 }

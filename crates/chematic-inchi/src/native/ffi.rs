@@ -60,7 +60,33 @@ pub struct InchiOutput {
     pub sz_log: *mut c_char,
 }
 
+/// Matches `inchi_InputINCHI` from inchi_api.h.
+#[repr(C)]
+pub struct InchiInputInchi {
+    pub sz_inchi: *mut c_char,
+    pub sz_options: *mut c_char,
+}
+
+/// Matches `inchi_OutputStruct` from inchi_api.h.
+#[repr(C)]
+pub struct InchiOutputStruct {
+    pub atom: *mut InchiAtom,
+    pub stereo0d: *mut InchiStereo0D,
+    pub num_atoms: i16,
+    pub num_stereo0d: i16,
+    pub sz_message: *mut c_char,
+    pub sz_log: *mut c_char,
+    pub warning_flags: [[std::os::raw::c_ulong; 2]; 2],
+}
+
 unsafe extern "C" {
+    /// Rebuild a structure (0D: connection table, H counts, stereo parities)
+    /// from an InChI string. Returns 0=OK, 1=warning, others: failure.
+    pub fn GetStructFromINCHI(inp: *mut InchiInputInchi, out: *mut InchiOutputStruct) -> c_int;
+
+    /// Free memory allocated by `GetStructFromINCHI`.
+    pub fn FreeStructFromINCHI(out: *mut InchiOutputStruct);
+
     /// Generate standard InChI from an `inchi_Input`.
     /// Returns 0=OK, 1=warning, 2=error, 3=fatal.
     pub fn GetStdINCHI(inp: *mut InchiInput, out: *mut InchiOutput) -> c_int;

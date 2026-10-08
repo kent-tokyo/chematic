@@ -198,3 +198,132 @@ fn long_chain() {
     let chain = "C".repeat(2000);
     assert_eq!(rd(&chain).as_deref(), Ok(chain.as_str()));
 }
+
+#[test]
+fn writer_options_match_rdkit() {
+    use super::{RdkitSmilesParams, rdkit_smiles};
+    let d = RdkitSmilesParams::default();
+    let cases: [(&str, RdkitSmilesParams, &str); 7] = [
+        (
+            "c1ccccc1O",
+            RdkitSmilesParams { kekule: true, ..d },
+            "OC1=CC=CC=C1",
+        ),
+        (
+            "F/C=C/[C@H](N)C",
+            RdkitSmilesParams {
+                isomeric: false,
+                ..d
+            },
+            "CC(N)C=CF",
+        ),
+        (
+            "c1ccccc1[13CH2]O",
+            RdkitSmilesParams {
+                all_bonds_explicit: true,
+                all_hs_explicit: true,
+                ..d
+            },
+            "[OH]-[13CH2]-[c]1:[cH]:[cH]:[cH]:[cH]:[cH]:1",
+        ),
+        (
+            "OCC.[Na+]",
+            RdkitSmilesParams {
+                canonical: false,
+                ..d
+            },
+            "OCC.[Na+]",
+        ),
+        (
+            "OCC(=O)N",
+            RdkitSmilesParams {
+                rooted_at_atom: Some(3),
+                ..d
+            },
+            "O=C(N)CO",
+        ),
+        (
+            "F/C=C/[C@H](N)C",
+            RdkitSmilesParams {
+                isomeric: false,
+                all_bonds_explicit: true,
+                ..d
+            },
+            "C-C(-N)/C=C/F",
+        ),
+        (
+            "c1ccc[nH]1",
+            RdkitSmilesParams {
+                kekule: true,
+                all_hs_explicit: true,
+                ..d
+            },
+            "[CH]1=[CH][NH][CH]=[CH]1",
+        ),
+    ];
+    for (input, params, want) in cases {
+        let mol = crate::parse(input).expect("parses");
+        assert_eq!(
+            rdkit_smiles(&mol, &params).as_deref(),
+            Ok(want),
+            "{input} {params:?}"
+        );
+    }
+}
+
+/// Every implicit H as a new graph atom, heavy atom by heavy atom (what
+/// chematic-chem's `add_hydrogens` and RDKit's `AddHs` do).
+fn add_hs(mol: &chematic_core::Molecule) -> chematic_core::Molecule {
+    use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Element, MoleculeBuilder};
+    let mut b = MoleculeBuilder::new();
+    for i in 0..mol.atom_count() {
+        let mut a = mol.atom(AtomIdx(i as u32)).clone();
+        a.hydrogen_count = Some(0);
+        b.add_atom(a);
+    }
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(BondIdx(i as u32));
+        b.add_bond(bond.atom1, bond.atom2, bond.order)
+            .expect("bond");
+    }
+    b.copy_stereo_from(mol);
+    b.copy_bond_directions_from(mol);
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        for _ in 0..chematic_core::implicit_hcount(mol, idx) {
+            let h = b.add_atom(Atom::new(Element::H));
+            b.add_bond(idx, h, BondOrder::Single).expect("bond");
+            if let Some(order) = mol.stereo_neighbor_order(idx) {
+                let o = order
+                    .iter()
+                    .map(|&v| {
+                        if v == chematic_core::STEREO_H_SENTINEL {
+                            h.0
+                        } else {
+                            v
+                        }
+                    })
+                    .collect();
+                b.set_stereo_neighbor_order(idx, o);
+            }
+        }
+    }
+    b.build()
+}
+
+#[test]
+fn explicit_hydrogen_atoms_are_written_like_rdkit_add_hs() {
+    // Chem.MolToSmiles(Chem.AddHs(Chem.MolFromSmiles(input)))
+    for (input, want) in [
+        (
+            "N[C@@H](C)C(=O)O",
+            "[H]OC(=O)[C@@]([H])(N([H])[H])C([H])([H])[H]",
+        ),
+        ("c1cc[nH]c1", "[H]c1c([H])c([H])n([H])c1[H]"),
+        ("F/C=C/C", "[H]/C(F)=C(/[H])C([H])([H])[H]"),
+        ("[2H]C", "[H]C([H])([H])[2H]"),
+    ] {
+        let mol = add_hs(&crate::parse(input).expect("parses"));
+        assert_eq!(rdkit_canonical_smiles(&mol).as_deref(), Ok(want), "{input}");
+    }
+}
