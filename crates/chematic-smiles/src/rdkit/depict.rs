@@ -82,19 +82,6 @@ impl P {
         self.y /= ln;
         Ok(())
     }
-    fn angle_to(self, o: P) -> DResult<f64> {
-        let mut t1 = self;
-        let mut t2 = o;
-        t1.normalize()?;
-        t2.normalize()?;
-        let mut d = t1.dot(t2);
-        if d < -1.0 {
-            d = -1.0;
-        } else if d > 1.0 {
-            d = 1.0;
-        }
-        Ok(d.acos())
-    }
 }
 
 /// `RDGeom::Transform2D`: a row-major 3x3 matrix.
@@ -227,11 +214,6 @@ fn rotation_dir(center: P, loc1: P, loc2: P, rem_angle: f64) -> i32 {
     if cross >= 0.0 { -1 } else { 1 }
 }
 
-/// `computeAngle`.
-fn compute_angle(center: P, loc1: P, loc2: P) -> DResult<f64> {
-    loc1.sub(center).angle_to(loc2.sub(center))
-}
-
 /// `computeSubAngle`.
 fn compute_sub_angle(degree: usize, htype: Hybridization) -> f64 {
     match htype {
@@ -280,10 +262,6 @@ impl Ctx<'_> {
 
     fn anum(&self, a: usize) -> u32 {
         self.mol.atoms[a].anum
-    }
-
-    fn num_atom_rings(&self, a: usize) -> usize {
-        self.mol.num_atom_rings(a)
     }
 
     fn num_bond_rings(&self, b: usize) -> usize {
@@ -1519,7 +1497,8 @@ impl EFrag {
                         break;
                     } else {
                         self.flip_about_bond(ctx, ri, true)?;
-                        colls = self.find_collisions(ctx, true);
+                        // Recomputed for its density side effect, as RDKit does.
+                        self.find_collisions(ctx, true);
                         self.flip_about_bond(ctx, ri, false)?;
                         colls = self.find_collisions(ctx, true);
                         new_density = self.total_density();

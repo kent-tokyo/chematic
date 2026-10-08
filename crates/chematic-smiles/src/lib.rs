@@ -62,7 +62,7 @@ pub use rdkit::{
     InchiOutputAtom, InchiOutputStereo0D, RdkitLegacyStereo, RdkitMolBlock, RdkitMolBlockAtom,
     RdkitMolBlockBond, RdkitSmilesError, RdkitSmilesParams, rdkit_2d_coords,
     rdkit_atom_stereocenter_counts, rdkit_canonical_smiles, rdkit_legacy_stereo, rdkit_mol_block,
-    rdkit_molecule_from_inchi_output, rdkit_smiles, rdkit_stereoisomer_smiles,
+    rdkit_mol_block_2d, rdkit_molecule_from_inchi_output, rdkit_smiles, rdkit_stereoisomer_smiles,
 };
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,
