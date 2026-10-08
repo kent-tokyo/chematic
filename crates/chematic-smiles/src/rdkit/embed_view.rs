@@ -126,6 +126,94 @@ impl RdkitMolView {
             .map(|r| r.len())
             .collect()
     }
+
+    /// RDKit's connected components (`MolOps::getMolFrags(mol, mapping)`:
+    /// fragments numbered in order of their lowest atom index), each as its
+    /// sorted atom indices.
+    pub fn fragments(&self) -> Vec<Vec<usize>> {
+        let n = self.num_atoms();
+        let mut comp = vec![usize::MAX; n];
+        let mut frags: Vec<Vec<usize>> = Vec::new();
+        for s in 0..n {
+            if comp[s] != usize::MAX {
+                continue;
+            }
+            let id = frags.len();
+            comp[s] = id;
+            let mut stack = vec![s];
+            let mut members = vec![s];
+            while let Some(a) = stack.pop() {
+                for b in self.neighbors(a) {
+                    if comp[b] == usize::MAX {
+                        comp[b] = id;
+                        stack.push(b);
+                        members.push(b);
+                    }
+                }
+            }
+            members.sort_unstable();
+            frags.push(members);
+        }
+        frags
+    }
+
+    /// The fragment `MolOps::getMolFrags(mol, sanitizeFrags=true)` returns
+    /// for the sorted atom set `atoms` (one connected component): atoms and
+    /// bonds keep their relative order, and ring perception is redone on the
+    /// fragment as `sanitizeMol` does. `None` where RDKit's ring finder
+    /// would fall back to its approximate algorithm.
+    pub fn fragment(&self, atoms: &[usize]) -> Option<RdkitMolView> {
+        let mut new_idx = vec![usize::MAX; self.num_atoms()];
+        for (k, &a) in atoms.iter().enumerate() {
+            new_idx[a] = k;
+        }
+        let mut new_bond = vec![usize::MAX; self.num_bonds()];
+        let mut bonds = Vec::new();
+        let mut chematic_bond = Vec::new();
+        for (bi, b) in self.bonds.iter().enumerate() {
+            if new_idx[b.begin] == usize::MAX || new_idx[b.end] == usize::MAX {
+                continue;
+            }
+            new_bond[bi] = bonds.len();
+            let mut nb = b.clone();
+            nb.begin = new_idx[b.begin];
+            nb.end = new_idx[b.end];
+            nb.stereo_atoms = b.stereo_atoms.iter().map(|&s| new_idx[s]).collect();
+            bonds.push(nb);
+            chematic_bond.push(self.chematic_bond[bi]);
+        }
+        let atom_bonds: Vec<Vec<usize>> = atoms
+            .iter()
+            .map(|&a| self.atom_bonds[a].iter().map(|&b| new_bond[b]).collect())
+            .collect();
+        let ring_input: Vec<(usize, usize, bool)> = bonds
+            .iter()
+            .map(|b: &RdkitViewBond| (b.begin, b.end, b.bond_type != 17))
+            .collect();
+        let atom_rings = chematic_perception::rdkit_symmetrized_sssr(atoms.len(), &ring_input)?;
+        let mut view = RdkitMolView {
+            atoms: atoms.iter().map(|&a| self.atoms[a].clone()).collect(),
+            bonds,
+            atom_bonds,
+            atom_rings: Vec::new(),
+            bond_rings: Vec::new(),
+            chematic_bond,
+        };
+        let bond_rings = atom_rings
+            .iter()
+            .map(|ring| {
+                (0..ring.len())
+                    .map(|k| {
+                        view.bond_between(ring[k], ring[(k + 1) % ring.len()])
+                            .expect("ring atoms are bonded")
+                    })
+                    .collect()
+            })
+            .collect();
+        view.atom_rings = atom_rings;
+        view.bond_rings = bond_rings;
+        Some(view)
+    }
 }
 
 /// Number of trailing hydrogen atoms appended by `add_hydrogens` (RDKit

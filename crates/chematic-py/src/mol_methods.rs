@@ -103,8 +103,9 @@ impl Mol {
     /// ``max_iterations``, 0: RDKit's default of 10 x atoms). Raises
     /// ``RuntimeError`` when RDKit's embedding fails (``EmbedMolecule``
     /// returns -1) and ``ValueError`` for inputs the port does not model
-    /// (e.g. molecules with several fragments, ``random_seed=-1``) or that
-    /// make RDKit raise. chematic's own 3D methods are unchanged.
+    /// (e.g. ``random_seed=-1``) or that make RDKit raise. Molecules with
+    /// several fragments are embedded fragment by fragment, as RDKit does.
+    /// chematic's own 3D methods are unchanged.
     #[pyo3(signature = (*, random_seed = 42, max_iterations = 0,
                         use_exp_torsion_angle_prefs = true, use_basic_knowledge = true,
                         et_version = 2, use_small_ring_torsions = false,
@@ -150,6 +151,32 @@ impl Mol {
             RdkitEmbedError::Failed => pyo3::exceptions::PyRuntimeError::new_err(e.to_string()),
             _ => PyValueError::new_err(e.to_string()),
         })
+    }
+
+    /// RDKit 2026.03.1's ``rdDistGeom.GetMoleculeBoundsMatrix(mol, ...)``
+    /// (``scaleVDW=False``), bit for bit: the distance-geometry bounds
+    /// matrix as a list of rows, upper bounds above the diagonal and lower
+    /// bounds below it. Call it on the explicit-hydrogen molecule, as RDKit
+    /// is called on ``Chem.AddHs(m)``::
+    ///
+    ///     bm = chematic.from_smiles("CCO").add_hydrogens().rdkit_bounds_matrix()
+    ///
+    /// Raises ``ValueError`` for inputs the port does not model.
+    #[pyo3(signature = (*, set15bounds = true, do_triangle_smoothing = true,
+                        use_macrocycle_14_config = false))]
+    fn rdkit_bounds_matrix(
+        &self,
+        set15bounds: bool,
+        do_triangle_smoothing: bool,
+        use_macrocycle_14_config: bool,
+    ) -> PyResult<Vec<Vec<f64>>> {
+        chematic_3d::rdkit_embed::rdkit_bounds_matrix(
+            &self.inner,
+            set15bounds,
+            do_triangle_smoothing,
+            use_macrocycle_14_config,
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
     /// 2D coordinates exactly as RDKit 2026.03.1's default depiction gives

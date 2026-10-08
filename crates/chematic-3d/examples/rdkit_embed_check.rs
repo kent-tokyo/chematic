@@ -34,8 +34,15 @@ fn main() {
                     .zip(e)
                     .map(|(a, b)| (a - b).abs())
                     .fold(0.0, f64::max);
-                if g.len() * 3 == e.len() && md <= 1e-8 {
+                let exact = g.len() * 3 == e.len()
+                    && g.iter()
+                        .flatten()
+                        .zip(e)
+                        .all(|(a, b)| a.to_bits() == b.to_bits());
+                if exact {
                     "match".to_string()
+                } else if g.len() * 3 == e.len() && md <= 1e-8 {
+                    format!("close {md:e}")
                 } else {
                     format!("mismatch {md:e}")
                 }
@@ -50,6 +57,8 @@ fn main() {
         }
         let key = if status.starts_with("mismatch") {
             "mismatch".to_string()
+        } else if status.starts_with("close") {
+            "close (<=1e-8, not bit-exact)".to_string()
         } else {
             status
         };

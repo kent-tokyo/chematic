@@ -26,4 +26,4 @@ pub use bounds::{
 };
 pub use dg::{BoundsMatrix, ChiralSet, triangle_smooth_bounds};
 pub use embed::{EmbedArgs, EmbedError, EmbedParams, embed_points};
-pub use molecule::{RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_molecule};
+pub use molecule::{RdkitEmbedError, RdkitEmbedOptions, rdkit_bounds_matrix, rdkit_embed_molecule};

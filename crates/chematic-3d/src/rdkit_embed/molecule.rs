@@ -230,18 +230,42 @@ pub fn rdkit_embed_molecule(
     }
     let view = chematic_smiles::rdkit_mol_view(mh)
         .map_err(|e| RdkitEmbedError::Unsupported(e.to_string()))?;
-    if fragment_count(&view) > 1 {
-        return Err(RdkitEmbedError::Unsupported(
-            "multi-fragment molecules".into(),
-        ));
-    }
     if o.use_exp_torsion_angle_prefs && !o.use_basic_knowledge {
         return Err(RdkitEmbedError::Unsupported(
             "plain ETDG (no basic knowledge) is not ported".into(),
         ));
     }
-    let etk = o.use_exp_torsion_angle_prefs || o.use_basic_knowledge;
     let labels = chematic_ff::rdkit_uff::rdkit_uff_atom_labels(mh);
+    let frags = view.fragments();
+    if frags.len() == 1 {
+        return embed_fragment(&view, &labels, o);
+    }
+    // embedFragmentsSeparately: every fragment (getMolFrags(asMols=true),
+    // sanitized) is embedded with the same seed; the first failure ends it.
+    let mut out = vec![[0.0f64; 3]; view.num_atoms()];
+    for atoms in &frags {
+        let piece = view.fragment(atoms).ok_or_else(|| {
+            RdkitEmbedError::Unsupported(
+                "ring perception falls back to RDKit's approximate ring finder".into(),
+            )
+        })?;
+        let piece_labels: Vec<String> = atoms.iter().map(|&a| labels[a].clone()).collect();
+        let xyz = embed_fragment(&piece, &piece_labels, o)?;
+        for (k, &a) in atoms.iter().enumerate() {
+            out[a] = xyz[k];
+        }
+    }
+    Ok(out)
+}
+
+/// The embedding of one fragment (`EmbedMultipleConfs`' per-fragment loop
+/// body and `embedHelper_` for conformer 0).
+fn embed_fragment(
+    view: &RdkitMolView,
+    labels: &[String],
+    o: &RdkitEmbedOptions,
+) -> Result<Vec<[f64; 3]>, RdkitEmbedError> {
+    let etk = o.use_exp_torsion_angle_prefs || o.use_basic_knowledge;
     let Some(mmat) = setup_initial_bounds(&view, &labels, o)? else {
         return Err(RdkitEmbedError::Failed);
     };
@@ -295,25 +319,35 @@ pub fn rdkit_embed_molecule(
     }
 }
 
-fn fragment_count(v: &RdkitMolView) -> usize {
-    let n = v.num_atoms();
-    let mut seen = vec![false; n];
-    let mut count = 0;
-    for s in 0..n {
-        if seen[s] {
-            continue;
-        }
-        count += 1;
-        seen[s] = true;
-        let mut stack = vec![s];
-        while let Some(a) = stack.pop() {
-            for b in v.neighbors(a) {
-                if !seen[b] {
-                    seen[b] = true;
-                    stack.push(b);
-                }
-            }
-        }
+/// `rdDistGeom.GetMoleculeBoundsMatrix(mh, set15bounds, scaleVDW=False,
+/// doTriangleSmoothing, useMacrocycle14config)` (RDKit 2026.03.1) for an
+/// explicit-hydrogen molecule from `add_hydrogens`: the N x N matrix with
+/// upper bounds above the diagonal and lower bounds below it. As in RDKit,
+/// a failed triangle smoothing still returns the (partially smoothed)
+/// matrix.
+pub fn rdkit_bounds_matrix(
+    mh: &Molecule,
+    set15bounds: bool,
+    do_triangle_smoothing: bool,
+    use_macrocycle14config: bool,
+) -> Result<Vec<Vec<f64>>, RdkitEmbedError> {
+    let view = chematic_smiles::rdkit_mol_view(mh)
+        .map_err(|e| RdkitEmbedError::Unsupported(e.to_string()))?;
+    let labels = chematic_ff::rdkit_uff::rdkit_uff_atom_labels(mh);
+    let n = view.num_atoms();
+    let mut m = BoundsMatrix::new(n);
+    init_bounds_mat(&mut m);
+    set_topol_bounds(
+        &view,
+        &labels,
+        &mut m,
+        set15bounds,
+        use_macrocycle14config,
+        true,
+    )?;
+    if do_triangle_smoothing {
+        triangle_smooth_bounds(&mut m, 0.0);
     }
-    count
+    let raw = m.raw();
+    Ok((0..n).map(|i| raw[i * n..(i + 1) * n].to_vec()).collect())
 }

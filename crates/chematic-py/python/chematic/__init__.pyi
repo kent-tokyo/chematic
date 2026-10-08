@@ -96,6 +96,19 @@ class Mol:
         ``ValueError`` for unsupported inputs."""
         ...
 
+    def rdkit_bounds_matrix(
+        self,
+        *,
+        set15bounds: bool = True,
+        do_triangle_smoothing: bool = True,
+        use_macrocycle_14_config: bool = False,
+    ) -> list[list[float]]:
+        """``rdDistGeom.GetMoleculeBoundsMatrix`` (RDKit 2026.03.1,
+        ``scaleVDW=False``) for the explicit-hydrogen molecule: upper bounds
+        above the diagonal, lower bounds below. Raises ``ValueError`` for
+        unsupported inputs."""
+        ...
+
     def rdkit_2d_coords(self) -> list[list[float]]:
         """RDKit 2026.03.1's default 2D depiction, bit for bit: the
         coordinates ``rdDepictor.Compute2DCoords(Chem.MolFromSmiles(s))``
