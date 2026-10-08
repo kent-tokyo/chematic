@@ -8,7 +8,9 @@
 //! RDKit algorithms that walk `RingInfo` in order and stop early, such as
 //! MMFF94's aromaticity pass.
 
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
+
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 use smallvec::SmallVec;
@@ -430,7 +432,7 @@ fn pick_d2_nodes(g: &Graph, frag: &[usize], degrees: &[i32], active: &[bool]) ->
 
 struct Search<'g> {
     g: &'g Graph,
-    invars: HashSet<Vec<usize>>,
+    invars: FxHashSet<Vec<usize>>,
     ring_atoms: Vec<bool>,
     ring_bonds: Vec<bool>,
 }
@@ -454,7 +456,7 @@ impl Search<'_> {
     ) -> Result<(), TooBig> {
         let g = self.g;
         let mut dup_d2_cands: BTreeMap<Invariant, Vec<usize>> = BTreeMap::new();
-        let mut dup_map: HashMap<usize, Vec<usize>> = HashMap::new();
+        let mut dup_map: FxHashMap<usize, Vec<usize>> = FxHashMap::default();
         for &cand in d2nodes {
             let srings = smallest_rings_bfs(g, cand, active, &[])?;
             for nring in &srings {
@@ -902,7 +904,7 @@ fn symmetrized_sssr(g: &Graph, n: usize) -> Option<Vec<Vec<usize>>> {
 
     let mut search = Search {
         g,
-        invars: HashSet::new(),
+        invars: FxHashSet::default(),
         ring_atoms: vec![false; n],
         ring_bonds: vec![false; g.ends.len()],
     };

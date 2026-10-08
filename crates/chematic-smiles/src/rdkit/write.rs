@@ -302,6 +302,22 @@ pub(crate) fn fragment(mol: &Mol, atoms: &[usize]) -> Mol {
 /// `SmilesWrite::detail::MolToSmiles(mol, params)` on a molecule as
 /// `MolFromSmiles` leaves it.
 pub(crate) fn mol_to_smiles(mol: &Mol, p: &RdkitSmilesParams) -> Result<String, RdkitSmilesError> {
+    mol_to_smiles_cow(std::borrow::Cow::Borrowed(mol), p)
+}
+
+/// [`mol_to_smiles`] on a molecule the caller no longer needs (a
+/// single-fragment molecule is then written without a copy).
+pub(crate) fn mol_to_smiles_owned(
+    mol: Mol,
+    p: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
+    mol_to_smiles_cow(std::borrow::Cow::Owned(mol), p)
+}
+
+fn mol_to_smiles_cow(
+    mol: std::borrow::Cow<'_, Mol>,
+    p: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
     if mol.atoms.is_empty() {
         return Ok(String::new());
     }
@@ -312,52 +328,60 @@ pub(crate) fn mol_to_smiles(mol: &Mol, p: &RdkitSmilesParams) -> Result<String, 
             "rootedAtAtom must be less than the number of atoms".into(),
         ));
     }
-    let frags = mol_frags(mol);
+    let frags = mol_frags(&mol);
     let n_frags = frags.len();
+    if n_frags == 1 {
+        // RDKit's fragment-local root: the root minus the fragment's first
+        // atom index (0 here).
+        let rooted = p.rooted_at_atom;
+        return fragment_piece(mol.into_owned(), rooted, false, p);
+    }
     let mut pieces: Vec<String> = Vec::with_capacity(n_frags);
     for atoms in &frags {
-        // RDKit's fragment-local root: the root minus the fragment's first
-        // atom index.
         let rooted = p
             .rooted_at_atom
             .filter(|r| atoms.binary_search(r).is_ok())
             .map(|r| r - atoms[0]);
-        let mut tmol = if n_frags == 1 {
-            mol.clone()
-        } else {
-            fragment(mol, atoms)
-        };
-        tmol.update_property_cache(false)?;
-        if p.isomeric && n_frags > 1 {
-            // The fragment copy lost `_StereochemDone`.
-            legacy_stereo_perception(&mut tmol, true, false);
-        }
-        for b in &mut tmol.bonds {
-            if b.stereo == BondStereo::Any {
-                b.stereo = BondStereo::None;
-            }
-        }
-        let ranks: Vec<u32> = if p.canonical {
-            rank_mol_atoms_with(&tmol, p.isomeric)
-        } else {
-            (0..tmol.atoms.len() as u32).collect()
-        };
-        let start = match rooted {
-            Some(r) if r < tmol.atoms.len() => r,
-            Some(_) => {
-                return Err(RdkitSmilesError::Unsupported(
-                    "rootedAtAtom maps outside its fragment (RDKit indexes past the fragment)"
-                        .into(),
-                ));
-            }
-            None => (0..tmol.atoms.len())
-                .min_by_key(|&i| ranks[i])
-                .expect("non-empty fragment"),
-        };
-        pieces.push(fragment_smiles_construct(&mut tmol, start, &ranks, p)?);
+        pieces.push(fragment_piece(fragment(&mol, atoms), rooted, true, p)?);
     }
     if p.canonical {
         pieces.sort();
     }
     Ok(pieces.join("."))
+}
+
+/// One fragment's SMILES; `copied`: the fragment is a copy that lost
+/// `_StereochemDone`.
+fn fragment_piece(
+    mut tmol: Mol,
+    rooted: Option<usize>,
+    copied: bool,
+    p: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
+    tmol.update_property_cache(false)?;
+    if p.isomeric && copied {
+        legacy_stereo_perception(&mut tmol, true, false);
+    }
+    for b in &mut tmol.bonds {
+        if b.stereo == BondStereo::Any {
+            b.stereo = BondStereo::None;
+        }
+    }
+    let ranks: Vec<u32> = if p.canonical {
+        rank_mol_atoms_with(&tmol, p.isomeric)
+    } else {
+        (0..tmol.atoms.len() as u32).collect()
+    };
+    let start = match rooted {
+        Some(r) if r < tmol.atoms.len() => r,
+        Some(_) => {
+            return Err(RdkitSmilesError::Unsupported(
+                "rootedAtAtom maps outside its fragment (RDKit indexes past the fragment)".into(),
+            ));
+        }
+        None => (0..tmol.atoms.len())
+            .min_by_key(|&i| ranks[i])
+            .expect("non-empty fragment"),
+    };
+    fragment_smiles_construct(&mut tmol, start, &ranks, p)
 }

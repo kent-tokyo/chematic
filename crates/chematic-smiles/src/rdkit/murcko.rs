@@ -8,11 +8,10 @@ use super::mol::{BondType, ChiralTag, Mol};
 /// `MurckoDecompose(mol)` followed by `GetScaffoldForMol`'s
 /// `UpdatePropertyCache()` and `GetSymmSSSR`. The result's stereo is not
 /// perceived (`_StereochemDone` is cleared).
-pub(crate) fn murcko_decompose(mol: &Mol) -> Result<Mol, RdkitSmilesError> {
+pub(crate) fn murcko_decompose(mol: Mol) -> Result<Mol, RdkitSmilesError> {
     let n = mol.atoms.len();
-    let mut res = mol.clone();
     if n == 0 {
-        return Ok(res);
+        return Ok(mol);
     }
     let ri = mol.ring_info();
     let mut keep: Vec<bool> = (0..n).map(|i| ri.num_atom_rings(i) > 0).collect();
@@ -48,6 +47,7 @@ pub(crate) fn murcko_decompose(mol: &Mol) -> Result<Mol, RdkitSmilesError> {
             }
         }
     }
+    let mut res = mol;
     let mut removed = Vec::new();
     for i in 0..n {
         if keep[i] {

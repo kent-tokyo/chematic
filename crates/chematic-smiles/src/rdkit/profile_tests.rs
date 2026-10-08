@@ -78,7 +78,7 @@ fn rdkit_profile() {
         let _ = smarts_write::mol_to_smarts(&m, true, None, true);
         t[7] += t0.elapsed();
         let t0 = Instant::now();
-        let s = murcko::murcko_decompose(&m);
+        let s = murcko::murcko_decompose(m.clone());
         t[8] += t0.elapsed();
         if let Ok(mut s) = s {
             let t0 = Instant::now();

@@ -142,7 +142,7 @@ pub fn rdkit_smiles(
         sanitize::remove_hs_and_sanitize(&mut m)?;
     }
     stereo::legacy_stereo_perception_unflagged(&mut m);
-    write::mol_to_smiles(&m, params)
+    write::mol_to_smiles_owned(m, params)
 }
 
 /// Whether `mol` carries hydrogen atoms the SMILES parser cannot produce:
@@ -298,9 +298,9 @@ pub fn rdkit_cx_smarts(mol: &Molecule) -> Result<String, RdkitSmilesError> {
 /// chiral tag), then the scaffold's stereo is re-perceived by `MolToSmiles`.
 pub fn rdkit_murcko_scaffold(mol: &Molecule) -> Result<String, RdkitSmilesError> {
     let m = rdkit_mol_for_writing(mol)?;
-    let mut scaffold = murcko::murcko_decompose(&m)?;
+    let mut scaffold = murcko::murcko_decompose(m)?;
     stereo::legacy_stereo_perception(&mut scaffold, true, false);
-    write::mol_to_smiles(&scaffold, &RdkitSmilesParams::default())
+    write::mol_to_smiles_owned(scaffold, &RdkitSmilesParams::default())
 }
 
 /// `EnumerateStereoisomers.GetStereoisomerCount(m)` (default options) for
