@@ -108,5 +108,44 @@ pub fn rdkit_atom_stereocenter_counts(mol: &Molecule) -> Result<(usize, usize), 
     Ok((total, unspecified))
 }
 
+/// RDKit's legacy stereo perception (`MolFromSmiles`, RDKit 2026.03's
+/// default) of `mol`, indexed like `mol`: per atom whether it keeps a chiral
+/// tag and its `_CIPCode` (`b'R'`/`b'S'`), per bond its `Bond::BondStereo`
+/// value (0 none, 1 any, 2 Z, 3 E).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RdkitLegacyStereo {
+    pub atom_tagged: Vec<bool>,
+    pub atom_cip: Vec<Option<u8>>,
+    pub bond_stereo: Vec<u8>,
+}
+
+/// [`RdkitLegacyStereo`] for `mol`; `Err` where the port cannot model the
+/// molecule or RDKit's hydrogen removal would renumber its atoms.
+pub fn rdkit_legacy_stereo(mol: &Molecule) -> Result<RdkitLegacyStereo, RdkitSmilesError> {
+    let mut m = parse::from_chematic(mol)?;
+    let n_atoms = m.atoms.len();
+    sanitize::remove_hs_and_sanitize(&mut m)?;
+    if m.atoms.len() != n_atoms || m.bonds.len() != mol.bond_count() {
+        return Err(RdkitSmilesError::Unsupported(
+            "hydrogen removal renumbers atoms".into(),
+        ));
+    }
+    stereo::legacy_stereo_perception(&mut m, true, true);
+    let order = mol.rdkit_bond_order();
+    let mut bond_stereo = vec![0u8; mol.bond_count()];
+    for (k, b) in order.iter().enumerate() {
+        bond_stereo[b.0 as usize] = m.bonds[k].stereo as u8;
+    }
+    Ok(RdkitLegacyStereo {
+        atom_tagged: m
+            .atoms
+            .iter()
+            .map(|a| a.chiral != mol::ChiralTag::Unspecified)
+            .collect(),
+        atom_cip: m.atoms.iter().map(|a| a.cip_code).collect(),
+        bond_stereo,
+    })
+}
+
 #[cfg(test)]
 mod tests;

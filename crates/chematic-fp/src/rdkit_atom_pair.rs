@@ -110,8 +110,25 @@ pub fn rdkit_atom_pair_fp(mol: &Molecule) -> BitVec2048 {
     })
 }
 
-/// [`rdkit_atom_pair_fp`] on a molecule whose aromaticity is already RDKit-perceived.
-fn rdkit_atom_pair_fp_prepared(mol: &Molecule) -> BitVec2048 {
+/// RDKit's hashed atom-pair *count* fingerprint
+/// (`rdMolDescriptors.GetHashedAtomPairFingerprint(mol, nBits)`): the
+/// nonzero `(bucket, count)` elements, sorted by bucket.
+pub fn rdkit_atom_pair_counts(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
+    let n_bits = n_bits.max(1);
+    chematic_perception::with_rdkit_parity_view(mol, |view| {
+        let counts = rdkit_atom_pair_bucket_counts(view.unwrap_or(mol), n_bits);
+        counts
+            .into_iter()
+            .enumerate()
+            .filter(|&(_, c)| c > 0)
+            .map(|(b, c)| (b as u32, c))
+            .collect()
+    })
+}
+
+/// Per-bucket pair counts of `getHashedAtomPairFingerprint(mol, n_buckets)`
+/// on a molecule whose aromaticity is already RDKit-perceived.
+fn rdkit_atom_pair_bucket_counts(mol: &Molecule, n_buckets: u32) -> Vec<u32> {
     let n = mol.atom_count();
     let code_limit = (1u32 << CODE_SIZE) - 1;
     let codes: Vec<u32> = (0..n)
@@ -119,8 +136,7 @@ fn rdkit_atom_pair_fp_prepared(mol: &Molecule) -> BitVec2048 {
         .collect();
 
     let dist = all_pairs_dist(mol);
-    const BLOCK_LENGTH: u32 = 2048 / N_BITS_PER_ENTRY as u32;
-    let mut counts = vec![0u32; BLOCK_LENGTH as usize];
+    let mut counts = vec![0u32; n_buckets as usize];
     for i in 0..n {
         for j in (i + 1)..n {
             let Some(d) = dist[i][j] else { continue };
@@ -133,11 +149,17 @@ fn rdkit_atom_pair_fp_prepared(mol: &Molecule) -> BitVec2048 {
                 (codes[j], codes[i])
             };
             let h = hash_vec(&[lo, d, hi]);
-            let bucket = (h % BLOCK_LENGTH) as usize;
+            let bucket = (h % n_buckets) as usize;
             counts[bucket] = counts[bucket].saturating_add(1);
         }
     }
+    counts
+}
 
+/// [`rdkit_atom_pair_fp`] on a molecule whose aromaticity is already RDKit-perceived.
+fn rdkit_atom_pair_fp_prepared(mol: &Molecule) -> BitVec2048 {
+    const BLOCK_LENGTH: u32 = 2048 / N_BITS_PER_ENTRY as u32;
+    let counts = rdkit_atom_pair_bucket_counts(mol, BLOCK_LENGTH);
     let mut fp = BitVec2048::new();
     for (bucket, &count) in counts.iter().enumerate() {
         for (i, &bound) in COUNT_BOUNDS.iter().enumerate() {
