@@ -85,6 +85,41 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// 2D coordinates exactly as RDKit 2026.03.1's default depiction gives
+    /// them: for a molecule read with :func:`from_smiles` this is
+    /// ``[[p.x, p.y] for p in m.GetConformer().GetPositions()]`` after
+    /// ``m = Chem.MolFromSmiles(s); rdDepictor.Compute2DCoords(m)`` (RDKit's
+    /// own depictor with its defaults, not CoordGen), bit for bit.
+    ///
+    /// One ``[x, y]`` per atom of RDKit's molecule, in RDKit's atom order —
+    /// this molecule's atom order unless ``MolFromSmiles`` removes hydrogen
+    /// atoms written in brackets. chematic's own 2D layout (used by
+    /// :meth:`depict_data`, the SVG and MOL writers) is separate and
+    /// unchanged. Raises ``ValueError`` like :attr:`rdkit_smiles`.
+    ///
+    ///     chematic.from_smiles("CCO").rdkit_2d_coords()[1]
+    ///     # [0.0, 0.5000000000000001]
+    fn rdkit_2d_coords(&self) -> PyResult<Vec<[f64; 2]>> {
+        chematic_smiles::rdkit_2d_coords(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// The MOL block RDKit 2026.03.1 writes for this molecule with its
+    /// default 2D depiction: ``Chem.MolToMolBlock(m)`` after
+    /// ``m = Chem.MolFromSmiles(s); rdDepictor.Compute2DCoords(m)`` for the
+    /// SMILES ``s`` the molecule was read from (V2000, coordinates of
+    /// :meth:`rdkit_2d_coords`, RDKit's kekulization and wedge bonds).
+    ///
+    /// Raises ``ValueError`` like :attr:`rdkit_smiles`, and for molecules
+    /// RDKit would write as V3000 (dative bonds, more than 999 atoms or
+    /// bonds).
+    ///
+    ///     print(chematic.from_smiles("C[C@H](O)F").rdkit_mol_block_2d())
+    fn rdkit_mol_block_2d(&self) -> PyResult<String> {
+        chematic_smiles::rdkit_mol_block_2d(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// Canonical SMILES together with the atom output order.
     ///
     /// Returns ``(smiles, order)`` where ``smiles`` equals :attr:`smiles` and

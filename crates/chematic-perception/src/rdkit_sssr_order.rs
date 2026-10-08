@@ -582,7 +582,11 @@ impl Search<'_> {
 /// the depth limit, final insertion sort over 16-element runs), which RDKit's
 /// Linux builds use: for more than 16 elements the order of equal elements
 /// is this algorithm's, not the input's.
-fn libstdcxx_sort<T>(v: &mut [T], less: impl Fn(&T, &T) -> bool + Copy) {
+///
+/// Public for other RDKit ports that must reproduce `std::sort`'s order of
+/// equal elements.
+#[doc(hidden)]
+pub fn libstdcxx_sort<T>(v: &mut [T], less: impl Fn(&T, &T) -> bool + Copy) {
     const THRESHOLD: usize = 16;
     fn move_median_to_first<T>(
         v: &mut [T],

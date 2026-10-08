@@ -530,6 +530,13 @@ impl<'a> Parser<'a> {
                 mol.set_bond_direction_anchor(new_bond_idx, a1);
             }
             mol.set_smiles_ring_closure(new_bond_idx, ring_num, slot);
+            // RDKit's `CloseMolRings` keeps the opening partial bond (begin =
+            // opening atom) only when it carried an explicit, non-directional
+            // bond symbol; dative arrows set their own orientation.
+            if bond != BondOrder::Dative {
+                let at_open = matches!(open_bond, Some(b) if !matches!(b.order, BondOrder::Up | BondOrder::Down));
+                mol.set_smiles_ring_closure_begins_at_open(new_bond_idx, at_open);
+            }
             // Record the close partner for final PendingRing resolution, keyed
             // by this occurrence's unique slot -- NOT the ring digit, which
             // may be reused by an unrelated ring later in the same SMILES.

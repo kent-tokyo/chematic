@@ -1089,6 +1089,14 @@ impl Molecule {
         self.smiles_ring_closure_keys.contains_key(&idx.0)
     }
 
+    /// For a ring-closure bond read from SMILES, whether RDKit's parser
+    /// makes the ring-opening atom the bond's begin atom; `None` when not
+    /// recorded.
+    pub fn smiles_ring_closure_begins_at_open(&self, idx: BondIdx) -> Option<bool> {
+        let k = *self.smiles_ring_closure_keys.get(&idx.0)?;
+        (k & 2 != 0).then_some(k & 1 != 0)
+    }
+
     /// Bond indices in the order RDKit's SMILES parser creates the bonds:
     /// chain bonds as written, then every ring-closure bond, ordered by ring
     /// label and, for a reused label, by occurrence (RDKit closes rings after
@@ -1438,8 +1446,24 @@ impl MoleculeBuilder {
     /// Record that bond `idx` closed SMILES ring label `label` at its
     /// `occurrence`-th use (see [`Molecule::rdkit_bond_order`]).
     pub fn set_smiles_ring_closure(&mut self, idx: BondIdx, label: u32, occurrence: u32) {
-        self.smiles_ring_closure_keys
-            .insert(idx.0, (u64::from(label) << 32) | u64::from(occurrence));
+        // Low two bits: whether the begin atom RDKit gives the bond is known
+        // (bit 1) and is the ring-opening atom (bit 0); see
+        // `set_smiles_ring_closure_begins_at_open`.
+        self.smiles_ring_closure_keys.insert(
+            idx.0,
+            (u64::from(label) << 32) | ((u64::from(occurrence) << 2) & 0xFFFF_FFFF),
+        );
+    }
+
+    /// Record, for ring-closure bond `idx` (already registered with
+    /// [`MoleculeBuilder::set_smiles_ring_closure`]), whether RDKit's SMILES
+    /// parser makes the ring-opening atom its begin atom (`CloseMolRings`
+    /// keeps the opening partial bond only when it carried an explicit,
+    /// non-directional bond symbol).
+    pub fn set_smiles_ring_closure_begins_at_open(&mut self, idx: BondIdx, at_open: bool) {
+        if let Some(k) = self.smiles_ring_closure_keys.get_mut(&idx.0) {
+            *k = (*k & !3) | 2 | u64::from(at_open);
+        }
     }
 
     /// Copy all bond-direction entries from `mol` into this builder verbatim.

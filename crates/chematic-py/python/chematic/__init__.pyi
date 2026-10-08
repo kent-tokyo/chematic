@@ -74,6 +74,20 @@ class Mol:
         :attr:`rdkit_smiles`."""
         ...
 
+    def rdkit_2d_coords(self) -> list[list[float]]:
+        """RDKit 2026.03.1's default 2D depiction, bit for bit: the
+        coordinates ``rdDepictor.Compute2DCoords(Chem.MolFromSmiles(s))``
+        gives, one ``[x, y]`` per atom in RDKit's atom order. Raises
+        ``ValueError`` like :attr:`rdkit_smiles`."""
+        ...
+
+    def rdkit_mol_block_2d(self) -> str:
+        """``Chem.MolToMolBlock(m)`` after ``rdDepictor.Compute2DCoords(m)``
+        for ``m = Chem.MolFromSmiles(s)`` (RDKit 2026.03.1, V2000). Raises
+        ``ValueError`` like :attr:`rdkit_smiles` and for molecules RDKit
+        writes as V3000."""
+        ...
+
     def smiles_with_atom_order(self) -> tuple[str, list[int]]:
         """Canonical SMILES and ``order``: ``order[k]`` is the index of the
         ``k``-th atom written (its index after re-parsing the string)."""
