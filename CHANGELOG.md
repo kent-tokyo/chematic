@@ -10,6 +10,30 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- `chematic-mcp --transport streamable-http` serves the MCP 2026-07-28
+  stateless dialect over HTTP at `/mcp`, bound to `127.0.0.1:3000` by
+  default (#779).
+  - It uses the same protocol codec, server and tool registry as stdio, so
+    schemas, `structuredContent` and typed errors match stdio exactly.
+  - It checks mirrored headers (`MCP-Protocol-Version`, `Mcp-Method`,
+    `Mcp-Name`), protects loopback `Host`/`Origin` against DNS rebinding, and
+    enforces body, header, timeout and concurrency limits. It sends no CORS
+    headers.
+  - Binding outside loopback requires `--allow-non-loopback`.
+  - stdio remains the default and is unchanged. The adapter is self-hosted
+    only: there is no hosted endpoint, authentication or OAuth, and no SLA.
+  - Results of the official conformance suite are in
+    [benchmarks/2026-10-09-issues-769-779.md](benchmarks/2026-10-09-issues-769-779.md).
+
+### Changed
+
+- `chematic-mcp` now serves 2026-07-28 requests whose `_meta` omits
+  `io.modelcontextprotocol/clientInfo`, on stdio and over HTTP. The spec makes
+  that key optional. A malformed `clientInfo` is still rejected with
+  `-32602`.
+
 ## [1.0.38] - 2026-10-08
 
 ### Added

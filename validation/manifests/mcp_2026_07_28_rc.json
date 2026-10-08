@@ -93,7 +93,7 @@
     "findings": [
       "crates/rmcp/src/model.rs defines UNSUPPORTED_PROTOCOL_VERSION = -32022, MISSING_REQUIRED_CLIENT_CAPABILITY = -32021, RESOURCE_NOT_FOUND = -32002 (legacy-only) -- agrees with main-branch drift, NOT the RC-tag pin",
       "rmcp's DiscoverResult struct keeps `server_info: Implementation` as a top-level required field WHILE ALSO adding ttl_ms/cache_scope -- i.e. a hybrid of the RC-tag shape and the main-branch CacheableResult change, not a pure adoption of either; this server's DiscoverResult follows that same hybrid, on the reasoning that a real shipping SDK's pragmatic choice is stronger evidence than an untagged doc-comment deletion",
-      "rmcp keeps client_info as a non-Option (required) field -- agrees with the RC-tag pin over main-branch's softening to optional; this server also treats clientInfo as required",
+      "rmcp keeps client_info as a non-Option (required) field -- agrees with the RC-tag pin over main-branch's softening to optional; this server treated clientInfo as required until #779, and now accepts requests without it (the current spec text and the official conformance check sep-2575-request-meta-client-info-optional require that; a present but malformed clientInfo is still -32602). Accepting more than the RC pin required breaks no RC-pinned client",
       "release notes for rmcp-v3.0.0-beta.1 (PR #973 server discovery/negotiation SEP-2575, #999 stateless-serving-of-2026-07-28 SEP-2567, #889/#1025 CacheableResult SEP-2549, #1038 'omit resultType for legacy protocol sessions') independently converged on the same legacy/modern split this implementation uses"
     ]
   },
