@@ -141,7 +141,7 @@ pub fn rdkit_smiles(
     } else {
         sanitize::remove_hs_and_sanitize(&mut m)?;
     }
-    stereo::legacy_stereo_perception(&mut m, true, true);
+    stereo::legacy_stereo_perception_unflagged(&mut m);
     write::mol_to_smiles(&m, params)
 }
 
@@ -249,7 +249,7 @@ pub fn rdkit_pdb_block(
     mol: &Molecule,
     coords: Option<&[[f64; 3]]>,
 ) -> Result<String, RdkitSmilesError> {
-    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    let m = rdkit_mol_for_writing(mol)?;
     pdb::mol_to_pdb_block(&m, coords)
 }
 
@@ -263,7 +263,7 @@ pub fn rdkit_smarts(
     isomeric: bool,
     rooted_at_atom: Option<usize>,
 ) -> Result<String, RdkitSmilesError> {
-    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    let m = rdkit_mol_for_writing(mol)?;
     Ok(smarts_write::mol_to_smarts(&m, isomeric, rooted_at_atom, true)?.0)
 }
 
@@ -277,7 +277,7 @@ pub fn rdkit_cx_smarts(mol: &Molecule) -> Result<String, RdkitSmilesError> {
             "enhanced stereo groups".into(),
         ));
     }
-    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    let m = rdkit_mol_for_writing(mol)?;
     let (mut res, atoms, bonds) = smarts_write::mol_to_smarts(&m, true, None, false)?;
     if !res.is_empty() {
         let ext = smarts_write::cx_extensions(&m, &atoms, &bonds);
@@ -297,7 +297,7 @@ pub fn rdkit_cx_smarts(mol: &Molecule) -> Result<String, RdkitSmilesError> {
 /// bracket or chiral atoms get their implicit hydrogens back and lose their
 /// chiral tag), then the scaffold's stereo is re-perceived by `MolToSmiles`.
 pub fn rdkit_murcko_scaffold(mol: &Molecule) -> Result<String, RdkitSmilesError> {
-    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    let m = rdkit_mol_for_writing(mol)?;
     let mut scaffold = murcko::murcko_decompose(&m)?;
     stereo::legacy_stereo_perception(&mut scaffold, true, false);
     write::mol_to_smiles(&scaffold, &RdkitSmilesParams::default())
@@ -414,6 +414,19 @@ pub fn rdkit_mol_block_2d(mol: &Molecule) -> Result<String, RdkitSmilesError> {
 
 /// `Chem.MolFromSmiles(s)` for the SMILES `s` chematic parsed `mol` from,
 /// with the atoms' `_CIPRank` values (empty when RDKit sets none).
+/// [`rdkit_mol_from_smiles`]'s molecule for writers, which read neither
+/// `chirality_possible` nor the CIP ranks.
+fn rdkit_mol_for_writing(mol: &Molecule) -> Result<mol::Mol, RdkitSmilesError> {
+    let mut m = parse::from_chematic(mol)?;
+    if has_added_hydrogens(mol) {
+        sanitize::sanitize_keeping_hs(&mut m)?;
+    } else {
+        sanitize::remove_hs_and_sanitize(&mut m)?;
+    }
+    stereo::legacy_stereo_perception_unflagged(&mut m);
+    Ok(m)
+}
+
 fn rdkit_mol_from_smiles(mol: &Molecule) -> Result<(mol::Mol, Vec<u32>), RdkitSmilesError> {
     let mut m = parse::from_chematic(mol)?;
     if has_added_hydrogens(mol) {

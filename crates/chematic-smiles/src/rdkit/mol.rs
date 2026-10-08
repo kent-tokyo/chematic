@@ -614,6 +614,58 @@ impl Mol {
         self.rings = None;
     }
 
+    /// [`Mol::remove_atom`] on each of `removed` (ascending, distinct) from
+    /// the last to the first, in one pass.
+    pub(crate) fn remove_atoms(&mut self, removed: &[usize]) {
+        if removed.is_empty() {
+            return;
+        }
+        let n = self.atoms.len();
+        let mut gone = vec![false; n];
+        for &a in removed {
+            gone[a] = true;
+        }
+        // Each removal shifts the indices above it down by one; a stereo
+        // atom equal to a removed index ends up shifted the same way.
+        let mut shift = vec![0usize; n + 1];
+        for i in 0..n {
+            shift[i + 1] = shift[i] + usize::from(gone[i]);
+        }
+        let fix_atom = |x: usize| x - shift[x.min(n)];
+        let mut new_bond_idx = vec![usize::MAX; self.bonds.len()];
+        let mut bonds = Vec::with_capacity(self.bonds.len());
+        for (b, mut bond) in self.bonds.drain(..).enumerate() {
+            if gone[bond.begin] || gone[bond.end] {
+                continue;
+            }
+            new_bond_idx[b] = bonds.len();
+            bond.begin = fix_atom(bond.begin);
+            bond.end = fix_atom(bond.end);
+            for x in &mut bond.stereo_atoms {
+                *x = fix_atom(*x);
+            }
+            bonds.push(bond);
+        }
+        self.bonds = bonds;
+        let mut i = 0;
+        self.atoms.retain(|_| {
+            i += 1;
+            !gone[i - 1]
+        });
+        let mut i = 0;
+        self.atom_bonds.retain(|_| {
+            i += 1;
+            !gone[i - 1]
+        });
+        for list in &mut self.atom_bonds {
+            list.retain(|&b| new_bond_idx[b] != usize::MAX);
+            for b in list.iter_mut() {
+                *b = new_bond_idx[*b];
+            }
+        }
+        self.rings = None;
+    }
+
     /// `MolOps::symmetrizeSSSR`: (re)computes the ring information.
     pub(crate) fn find_rings(&mut self) -> Result<(), RdkitSmilesError> {
         let bonds: Vec<(usize, usize, bool)> = self

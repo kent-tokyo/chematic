@@ -66,7 +66,7 @@ fn rdkit_profile() {
         let _ = kekulize::kekulize(&mut c);
         t[3] += t0.elapsed();
         let t0 = Instant::now();
-        stereo::legacy_stereo_perception(&mut m, true, true);
+        stereo::legacy_stereo_perception_unflagged(&mut m);
         t[4] += t0.elapsed();
         let t0 = Instant::now();
         let _ = rank::rank_mol_atoms_with(&m, true);

@@ -20,22 +20,25 @@ pub(crate) fn murcko_decompose(mol: &Mol) -> Result<Mol, RdkitSmilesError> {
     // non-ring atom on such a path lies on the unique linker between two
     // ring systems, so any shortest path marks the same atoms.
     let rings = &ri.atom_rings;
-    for i in 0..rings.len() {
-        for j in (i + 1)..rings.len() {
-            let (from, to) = (rings[i][0], rings[j][0]);
-            // BFS from `to`: parent[x] = next atom from x toward `to`.
-            let mut parent = vec![usize::MAX; n];
-            parent[to] = to;
-            let mut queue = std::collections::VecDeque::from([to]);
-            while let Some(a) = queue.pop_front() {
-                for b in mol.nbrs(a) {
-                    if parent[b] == usize::MAX {
-                        parent[b] = a;
-                        queue.push_back(b);
-                    }
+    let mut parent = vec![usize::MAX; n];
+    let mut queue = std::collections::VecDeque::new();
+    for j in 1..rings.len() {
+        let to = rings[j][0];
+        // BFS from `to`: parent[x] = next atom from x toward `to`.
+        parent.fill(usize::MAX);
+        parent[to] = to;
+        queue.clear();
+        queue.push_back(to);
+        while let Some(a) = queue.pop_front() {
+            for b in mol.nbrs(a) {
+                if parent[b] == usize::MAX {
+                    parent[b] = a;
+                    queue.push_back(b);
                 }
             }
-            let mut at = from;
+        }
+        for ring in &rings[..j] {
+            let mut at = ring[0];
             while at != to {
                 keep[at] = true;
                 at = parent[at];
@@ -99,9 +102,7 @@ pub(crate) fn murcko_decompose(mol: &Mol) -> Result<Mol, RdkitSmilesError> {
             }
         }
     }
-    for &a in removed.iter().rev() {
-        res.remove_atom(a);
-    }
+    res.remove_atoms(&removed);
     for a in &mut res.atoms {
         a.cip_code = None;
         a.chirality_possible = false;

@@ -747,6 +747,24 @@ pub(crate) fn legacy_stereo_perception(
     clean_it: bool,
     flag_possible: bool,
 ) -> Vec<u32> {
+    legacy_stereo_perception_impl(mol, clean_it, flag_possible, false)
+}
+
+/// `legacy_stereo_perception(mol, true, true)` for callers that read neither
+/// `chirality_possible` nor the returned ranks. On a molecule without
+/// stereo atoms or bonds the flagging pass only sets `chirality_possible`
+/// (no CIP codes, bond stereo or ring-stereo data survive it), so it is
+/// skipped there, and with it the CIP ranking.
+pub(crate) fn legacy_stereo_perception_unflagged(mol: &mut Mol) {
+    legacy_stereo_perception_impl(mol, true, true, true);
+}
+
+fn legacy_stereo_perception_impl(
+    mol: &mut Mol,
+    clean_it: bool,
+    flag_possible: bool,
+    skip_flag_only_pass: bool,
+) -> Vec<u32> {
     let mut has_stereo_atoms = false;
     let mut has_potential_stereo_atoms = false;
     for a in 0..mol.atoms.len() {
@@ -808,7 +826,7 @@ pub(crate) fn legacy_stereo_perception(
     }
     let mut ranks: Vec<u32> = Vec::new();
     let mut keep_going = has_stereo_atoms | has_stereo_bonds;
-    if !keep_going {
+    if !keep_going && !skip_flag_only_pass {
         keep_going = flag_possible && (has_potential_stereo_atoms || has_potential_stereo_bonds);
     }
     while keep_going {
