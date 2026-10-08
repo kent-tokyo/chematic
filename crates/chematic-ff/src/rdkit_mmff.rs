@@ -4,8 +4,10 @@
 //! `MMFF::constructForceField` builds (bond stretch, angle bend,
 //! stretch-bend, out-of-plane, torsion and a combined non-bonded
 //! contribution), in RDKit's order and with RDKit's energy and gradient
-//! expressions (`Code/ForceField/MMFF/*.cpp`), so energies and gradients are
-//! bit-identical to RDKit's. [`RdkitMmffField::minimize`] is
+//! expressions (`Code/ForceField/MMFF/*.cpp`), so energies and gradients
+//! reproduce RDKit within platform floating-point tolerance (and are
+//! bit-identical on the recorded Linux comparison lane).
+//! [`RdkitMmffField::minimize`] is
 //! `ForceField::minimize` (`BFGSOpt::minimize` with its line search and
 //! RDKit's gradient scaling), so `MMFFOptimizeMolecule` lands on the same
 //! coordinates. The MMFF parameters come from chematic's MMFF94 typing.
@@ -1122,16 +1124,29 @@ pub(crate) mod tests {
         let ff =
             RdkitMmffField::with_terms(&mol, &COORDS, variant, 100.0, true, [true; 7]).unwrap();
         let mut pos = COORDS.as_flattened().to_vec();
-        assert_eq!(ff.energy(&pos), energy);
+        let initial = ff.energy(&pos);
+        assert!(
+            (initial - energy).abs() <= 1e-12,
+            "initial energy {initial} differs from RDKit {energy}"
+        );
         let (status, e) = ff.optimize(&mut pos, 200);
-        assert_eq!((status, e), (0, opt_energy));
-        assert_eq!(pos[0], x0);
+        assert_eq!(status, 0);
+        assert!(
+            (e - opt_energy).abs() <= 1e-9,
+            "optimized energy {e} differs from RDKit {opt_energy} by {}",
+            (e - opt_energy).abs()
+        );
+        assert!(
+            (pos[0] - x0).abs() <= 1e-6,
+            "first coordinate {} differs from RDKit {x0}",
+            pos[0]
+        );
     }
 
     /// RDKit 2026.03.1: `MMFFGetMoleculeForceField(...).CalcEnergy()` and
     /// `Minimize(maxIts=200)` (status, energy, first coordinate).
     #[test]
-    fn mmff94_matches_rdkit_bitwise() {
+    fn mmff94_matches_rdkit_with_platform_tolerance() {
         check(
             MmffVariant::Mmff94,
             22.565180175565263,
@@ -1141,7 +1156,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn mmff94s_matches_rdkit_bitwise() {
+    fn mmff94s_matches_rdkit_with_platform_tolerance() {
         check(
             MmffVariant::Mmff94s,
             22.959370426002092,

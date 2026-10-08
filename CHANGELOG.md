@@ -10,11 +10,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.38] - 2026-10-08
+
 ### Added
 
 - Added Rust unit-test coverage reporting with `cargo-llvm-cov`, Codecov OIDC
   uploads, and downloadable LCOV/HTML reports in GitHub Actions.
-- Added RDKit 2026.03.1-exact APIs alongside chematic's own (existing APIs are
+- Added RDKit 2026.03.1-compatible APIs alongside chematic's own (existing APIs are
   unchanged): `Mol.rdkit_smiles` (RDKit canonical SMILES),
   `Mol.rdkit_smiles_with(...)` (MolToSmiles writer options), `rdkit_avalon_fp`,
   explicit-hydrogen SMILES after `add_hydrogens()`, `from_inchi` read-back that
@@ -26,6 +28,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   MolToMolBlock), and `rdkit_mmff_energy` / `rdkit_mmff_optimize` (MMFF94 and
   MMFF94s) plus `rdkit_uff_energy` / `rdkit_uff_gradient` /
   `rdkit_uff_optimize` / `rdkit_uff_has_all_params`.
+  Bit-identical numeric claims are limited to the recorded Linux comparison
+  lane; portable tests allow documented last-bit coordinate and minimizer
+  differences from the host math library.
 - Added the corpus-scale COSMolKit comparison harness under
   `validation/cosmolkit_comparison/`; results are recorded in
   [benchmarks/2026-10-08-cosmolkit-parity.md](benchmarks/2026-10-08-cosmolkit-parity.md).
@@ -35,8 +40,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Descriptors now follow RDKit's operation order and SMARTS definitions, so
   exact mass, Crippen logP/MR, HBA/HBD, rotatable bonds, ring counts, MQN,
   Chi/Kappa, Labute ASA, QED, BalabanJ, BertzCT, PEOE_VSA, SlogP_VSA and
-  SMR_VSA equal RDKit's values bit for bit on the ChEMBL 5k and RDKit.js 10k
-  corpora (Ipc differs on 0.3% of rows because RDKit's value is
+  SMR_VSA equal RDKit's values bit for bit on the recorded ChEMBL 5k and
+  RDKit.js 10k comparison lane (Ipc differs on 0.3% of rows because RDKit's value is
   BLAS-dependent). `Mol.mqn` now returns RDKit's 42-element layout.
 - The published Python wheels enable the IUPAC `native-inchi` feature.
 - Laid-out MOL V2000 output marks undeclared stereo double bonds as "either"

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "release": {"version": "1.0.38", "tag": "v1.0.38", "commit": null},
+  "checked_at": "2026-10-08T00:00:00+09:00",
+  "release_ready": false,
+  "channels": [
+    {"id": "github_release", "status": "not_measured", "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.38", "detail": "Pending tag and GitHub Release verification."},
+    {"id": "npm", "status": "not_measured", "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.38", "detail": "Pending direct registry verification."},
+    {"id": "pypi", "status": "not_measured", "url": "https://pypi.org/pypi/chematic/1.0.38/json", "detail": "Pending direct registry verification."},
+    {"id": "crates_io", "status": "not_measured", "url": "https://crates.io/crates/chematic/1.0.38", "detail": "Pending direct registry verification."},
+    {"id": "docs_rs", "status": "not_measured", "url": "https://docs.rs/chematic/1.0.38/chematic/", "detail": "Pending direct rustdoc verification."},
+    {"id": "site", "status": "not_measured", "url": "https://kent-tokyo.github.io/chematic/", "detail": "Pending Pages publication and direct homepage verification."}
+  ]
+}

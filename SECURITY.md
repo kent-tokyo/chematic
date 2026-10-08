@@ -4,10 +4,10 @@
 
 | Version | Supported | Status |
 |---|---|---|
-| v1.0.37 | Yes | Current release |
-| v1.0.8 | Security fixes only | Upgrade to v1.0.37 is recommended |
-| v1.0.7 | Security fixes only | Upgrade to v1.0.37 is recommended |
-| v1.0.0-v1.0.6 | Security fixes only | Upgrade to v1.0.37 is recommended |
+| v1.0.38 | Yes | Current release |
+| v1.0.8 | Security fixes only | Upgrade to v1.0.38 is recommended |
+| v1.0.7 | Security fixes only | Upgrade to v1.0.38 is recommended |
+| v1.0.0-v1.0.6 | Security fixes only | Upgrade to v1.0.38 is recommended |
 | v0.89.0 | Security fixes only | Previous published release |
 | Earlier versions | No | End of life |
 
@@ -106,4 +106,4 @@ Copyright and third-party notices are in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_
 Implementation and patent/FTO boundaries are in
 [`docs/implementation-provenance.md`](docs/implementation-provenance.md).
 
-Last updated: 2026-10-03.
+Last updated: 2026-10-08.

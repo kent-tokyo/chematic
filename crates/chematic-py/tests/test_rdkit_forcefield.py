@@ -6,6 +6,9 @@ MMFFGetMoleculeProperties(m, mmffVariant=...), nonBondedThresh=100,
 ignoreInterfragInteractions=True)``, UFF via ``UFFGetMoleculeForceField(m,
 vdwThresh=10, ignoreInterfragInteractions=True)``, then ``Initialize();
 Minimize(maxIts=200); CalcEnergy()``.
+
+The recorded Linux comparison is bit-identical. Portable assertions allow
+the same host-libm/minimizer tolerances as the Rust tests.
 """
 
 import pytest
@@ -49,20 +52,22 @@ def mol():
         ("MMFF94s", 22.959370426002092, -11.453744586799015, 3.66682072353845),
     ],
 )
-def test_mmff_matches_rdkit_bitwise(mol, variant, energy, opt_energy, x0):
-    assert mol.rdkit_mmff_energy(COORDS, variant) == energy
+def test_mmff_matches_rdkit_with_platform_tolerance(mol, variant, energy, opt_energy, x0):
+    assert mol.rdkit_mmff_energy(COORDS, variant) == pytest.approx(energy, abs=1e-12)
     status, e, coords = mol.rdkit_mmff_optimize(COORDS, 200, variant)
-    assert (status, e) == (0, opt_energy)
-    assert coords[0][0] == x0
+    assert status == 0
+    assert e == pytest.approx(opt_energy, abs=1e-9)
+    assert coords[0][0] == pytest.approx(x0, abs=1e-6)
     assert len(coords) == len(COORDS)
 
 
-def test_uff_matches_rdkit_bitwise(mol):
+def test_uff_matches_rdkit_with_platform_tolerance(mol):
     assert mol.rdkit_uff_has_all_params()
-    assert mol.rdkit_uff_energy(COORDS) == 40.395092089572906
+    assert mol.rdkit_uff_energy(COORDS) == pytest.approx(40.395092089572906, abs=1e-12)
     status, e, coords = mol.rdkit_uff_optimize(COORDS, 200)
-    assert (status, e) == (0, 19.492409722746174)
-    assert coords[0][0] == 3.764669178348734
+    assert status == 0
+    assert e == pytest.approx(19.492409722746174, abs=1e-9)
+    assert coords[0][0] == pytest.approx(3.764669178348734, abs=1e-6)
     labels = mol.rdkit_uff_atom_labels()
     assert labels[:5] == ["C_3", "C_R", "O_R", "N_R", "C_R"]
 

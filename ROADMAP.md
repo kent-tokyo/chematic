@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-07. Release line: **v1.0.37**. Release-source and
+> Updated 2026-10-08. Release line: **v1.0.38**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,

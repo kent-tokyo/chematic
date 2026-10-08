@@ -9,7 +9,9 @@
 //! of floating-point operations, the `std::map` iteration order of the
 //! embedded atoms, the way `operator[]` inserts default atoms, and the
 //! aliasing of references the C++ keeps into atoms it moves. `sin`, `cos`
-//! and `acos` are the platform's libm functions, as RDKit calls them.
+//! and `acos` are the platform's libm functions, as RDKit calls them. Recorded
+//! Linux comparisons are bit-identical; other platforms may differ in the
+//! last floating-point bits while remaining within the documented tolerance.
 
 use std::collections::BTreeMap;
 use std::f64::consts::PI;

@@ -1,0 +1,102 @@
+{
+  "schema_version": 2,
+  "product": "chematic",
+  "release": {
+    "version": "1.0.38",
+    "tag": "v1.0.38",
+    "commit": null,
+    "commit_source": "The release workflow replaces this pre-publication placeholder with the annotated v1.0.38 tag target.",
+    "released_at": "2026-10-08T20:23:20+09:00"
+  },
+  "evidence_context": {
+    "stable_release": {
+      "version": "1.0.38",
+      "tag": "v1.0.38",
+      "commit": null
+    },
+    "candidate": null,
+    "oracle_lanes": [
+      {
+        "engine": "RDKit",
+        "version": "2025.09.3",
+        "role": "pinned_regression",
+        "status": "active"
+      },
+      {
+        "engine": "RDKit",
+        "version": "2026.03.6",
+        "role": "separate_comparison",
+        "status": "active"
+      }
+    ],
+    "measurement_version_policy": "Source-wheel and historical package measurements retain their recorded artifact, corpus and comparator; v1.0.38 published packages require separate reruns."
+  },
+  "packages": {
+    "rust": {
+      "name": "chematic",
+      "version": "1.0.38",
+      "registry_url": "https://crates.io/crates/chematic/1.0.38"
+    },
+    "python": {
+      "name": "chematic",
+      "version": "1.0.38",
+      "registry_url": "https://pypi.org/project/chematic/1.0.38/"
+    },
+    "npm": {
+      "name": "@kent-tokyo/chematic",
+      "version": "1.0.38",
+      "registry_url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.0.38"
+    }
+  },
+  "wasm": {
+    "artifact": "crates/chematic-wasm/pkg/chematic_wasm_bg.wasm",
+    "measurements": [
+      {
+        "status": "historical",
+        "release_or_snapshot": "v1.0.2 release candidate",
+        "raw_bytes": 3300452,
+        "compressed_bytes": 1213008,
+        "command": "wasm-pack 0.13.1; wasm-opt 130 -O3; gzip -9",
+        "runtime": "macOS arm64",
+        "source": "benchmarks/2026-09-04-wasm-size.md"
+      }
+    ]
+  },
+  "mcp": {
+    "tool_count": 20,
+    "transport": [
+      "stdio"
+    ],
+    "network_enabled_tools": [
+      "pubchem_lookup"
+    ]
+  },
+  "benchmarks": {
+    "historical": [
+      {
+        "path": "benchmarks/2026-10-08-cosmolkit-parity.md",
+        "status": "historical",
+        "versions": [
+          "v1.0.38 source candidate",
+          "RDKit 2026.03.1",
+          "COSMolKit 0.3.0"
+        ],
+        "commit": "a8ca103c",
+        "corpus": "ChEMBL 5k, RDKit.js 10k and operation-specific parity cohorts",
+        "hardware": "record-specific"
+      },
+      {
+        "path": "benchmarks/2026-10-02-v1.0.30-published-artifact-gates.md",
+        "status": "historical",
+        "versions": [
+          "published chematic 1.0.30",
+          "RDKit 2026.03.6"
+        ],
+        "commit": "v1.0.30",
+        "corpus": "exposed chemistry, SMARTS, reaction and operation cohorts",
+        "hardware": "record-specific"
+      }
+    ]
+  },
+  "generated_at": "2026-10-08T11:23:20Z"
+}

@@ -5,8 +5,9 @@
 //! trigonal-bipyramidal special case, van der Waals, torsion and inversion),
 //! in RDKit's order and with RDKit's energy and gradient expressions
 //! (`Code/ForceField/UFF/*.cpp`), so `UFFGetMoleculeForceField(...)
-//! .CalcEnergy()` / `CalcGrad()` and `UFFOptimizeMolecule` are reproduced bit
-//! for bit. Atom typing is RDKit's `UFF::Tools::getAtomLabel` on chematic's
+//! .CalcEnergy()` / `CalcGrad()` and `UFFOptimizeMolecule` are reproduced
+//! within platform floating-point tolerance (and bit for bit on the recorded
+//! Linux comparison lane). Atom typing is RDKit's `UFF::Tools::getAtomLabel` on chematic's
 //! RDKit-compatible hybridization, aromaticity and conjugation perception.
 //!
 //! The molecule must carry explicit hydrogens in RDKit `AddHs` order
@@ -1286,16 +1287,17 @@ mod tests {
     /// RDKit 2026.03.1 `UFFGetMoleculeForceField(vdwThresh=10)`:
     /// `CalcEnergy()` and `Minimize(maxIts=200)` on paracetamol.
     #[test]
-    fn uff_matches_rdkit_bitwise() {
+    fn uff_matches_rdkit_with_platform_tolerance() {
         use crate::rdkit_mmff::tests::{COORDS, paracetamol};
         let mol = paracetamol();
         assert!(rdkit_uff_has_all_params(&mol));
         let ff = RdkitUffField::new(&mol, &COORDS, 10.0, true);
         let mut pos = COORDS.as_flattened().to_vec();
-        assert_eq!(ff.energy(&pos), 40.395092089572906);
+        assert!((ff.energy(&pos) - 40.395092089572906).abs() <= 1e-12);
         let (status, e) = ff.optimize(&mut pos, 200);
-        assert_eq!((status, e), (0, 19.492409722746174));
-        assert_eq!(pos[0], 3.764669178348734);
+        assert_eq!(status, 0);
+        assert!((e - 19.492409722746174).abs() <= 1e-9);
+        assert!((pos[0] - 3.764669178348734).abs() <= 1e-6);
     }
 
     #[test]

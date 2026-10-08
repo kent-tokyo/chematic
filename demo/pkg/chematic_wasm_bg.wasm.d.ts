@@ -248,6 +248,7 @@ export const molhandle_pka_base_value: (a: number) => number;
 export const molhandle_potential_stereocenter_indices: (a: number) => [number, number];
 export const molhandle_qed: (a: number) => number;
 export const molhandle_randic_index: (a: number) => number;
+export const molhandle_rdkit_smiles: (a: number) => [number, number, number, number];
 export const molhandle_reos_passes: (a: number) => number;
 export const molhandle_ring_count: (a: number) => number;
 export const molhandle_rotatable_bond_count: (a: number) => number;

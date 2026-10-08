@@ -1,11 +1,16 @@
 # COSMolKit parity record — 2026-10-08
 
-Source: branch `claude/cosmolkit-parity` (unreleased, on top of v1.0.37).
+Source: commit `a8ca103c` from branch `claude/cosmolkit-parity`, later merged
+into the v1.0.38 release candidate.
 Reference: RDKit 2026.03.1. Competitor: COSMolKit 0.3.0 (PyPI wheel).
 Harness: `validation/cosmolkit_comparison/` (`run_corpus.py`,
 `compare_corpus.py`). A row counts as a match only when the value equals
 RDKit's exactly (floats compared bit-for-bit; ints and floats compared as
 numbers); refusals, unsupported operations and errors never count.
+Bit-identical statements below are limited to that recorded comparison lane;
+macOS arm64 can follow a slightly different minimizer path, so portable unit
+tests use a `1e-9` absolute tolerance for optimized force-field energies and
+`1e-6` for coordinates (`1e-12` for the same-coordinate initial energy).
 
 Corpora:
 
@@ -60,10 +65,10 @@ bridgehead-N stereo label differs.
 
 | Surface | Scope | Result |
 |---|---|---|
-| `Compute2DCoords` coordinates (`Mol.rdkit_2d_coords`) | both corpora | 5000/5000, 10000/10000 bit-identical |
+| `Compute2DCoords` coordinates (`Mol.rdkit_2d_coords`) | both corpora | 5000/5000, 10000/10000 bit-identical on the recorded lane; portable tests use `1e-12` coordinate tolerance |
 | `MolToMolBlock` after `Compute2DCoords` (`Mol.rdkit_mol_block_2d`) | both corpora | 5000/5000, 9999/10000 (V3000 output not written yet) |
-| MMFF94 / MMFF94s energy, gradient, `MMFFOptimizeMolecule(maxIters=200)` | first 1000 rows of each corpus (990 + 994 compared) | all bit-identical |
-| UFF energy, gradient, `UFFOptimizeMolecule(maxIters=200)` | same | all bit-identical |
+| MMFF94 / MMFF94s energy, gradient, `MMFFOptimizeMolecule(maxIters=200)` | first 1000 rows of each corpus (990 + 994 compared) | all bit-identical on the recorded lane |
+| UFF energy, gradient, `UFFOptimizeMolecule(maxIters=200)` | same | all bit-identical on the recorded lane |
 | `MolToSmiles` option matrix (32 switch combinations × 3 roots) | both corpora | 1,440,000 / 1,440,000 |
 
 COSMolKit 0.3.0 also reproduces `Compute2DCoords` (40/40 on a pilot) and
