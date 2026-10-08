@@ -31,9 +31,9 @@ on:
 permissions:
   contents: read
 
-env:
-  RDKIT_WHEEL: rdkit-2026.3.6-cp312-cp312-manylinux_2_28_x86_64.whl
-  RDKIT_WHEEL_SHA256: 9f97b58f1962df73bdacf44347bfa013f4fcb9896e049f98af2183e70e7aab46
+# The RDKit build each platform compares against, with its SHA-256, is
+# validation/rdkit-comparator-platform-policy-v1.json (#754); a platform with
+# no such build runs only chematic's side and is compared on Linux.
 
 jobs:
   chematic:
@@ -112,10 +112,8 @@ jobs:
           python-version: "3.12"
       - name: Install the pinned RDKit wheel
         run: |
-          python -m pip download --disable-pip-version-check --only-binary=:all: --no-deps \
-            -d rdkit-wheel "rdkit==2026.3.6"
-          echo "$RDKIT_WHEEL_SHA256  rdkit-wheel/$RDKIT_WHEEL" | sha256sum -c -
-          python -m pip install --disable-pip-version-check "rdkit-wheel/$RDKIT_WHEEL" "json5==0.15.0"
+          python scripts/install_pinned_rdkit.py
+          python -m pip install --disable-pip-version-check "json5==0.15.0"
           python -c "from rdkit import rdBase; assert rdBase.rdkitVersion == '2026.03.6', rdBase.rdkitVersion"
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
@@ -160,4 +158,58 @@ jobs:
             gates-${{ matrix.label }}/*.json
             gates-${{ matrix.label }}/*.jsonl
             gates-${{ matrix.label }}/gates.log
+          if-no-files-found: error
+
+  # xsmarts-autoconf needs chematic and RDKit in one process, so it runs only
+  # where the policy pins an RDKit 2026.03.6 wheel (not macOS x86-64).
+  autoconf:
+    name: xsmarts-autoconf ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # chematic's Linux wheels are CPython 3.9 builds and RDKit
+          # 2026.03.6 has none, so Linux builds the published sdist.
+          - os: ubuntu-latest
+            label: linux-x86_64-cp312-sdist
+            artifact: sdist
+          - os: macos-15
+            label: macos-arm64-cp312
+            artifact: wheel
+          - os: windows-latest
+            label: windows-amd64-cp312
+            artifact: wheel
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
+        with:
+          python-version: "3.12"
+      - name: Install the published wheel, the pinned RDKit and the pinned tool
+        run: |
+          if [ "${{ matrix.artifact }}" = "sdist" ]; then
+            python -m pip install --disable-pip-version-check --no-deps --no-binary=chematic \
+              "chematic==${{ inputs.version }}"
+          else
+            python -m pip download --disable-pip-version-check --only-binary=:all: --no-deps \
+              -d published-wheel "chematic==${{ inputs.version }}"
+            python -m pip install --disable-pip-version-check --no-deps published-wheel/chematic-*.whl
+          fi
+          python scripts/install_pinned_rdkit.py
+          commit=$(python -c "import json; print(json.load(open('validation/xsmarts_autoconf_expected.json'))['autoconf_commit'])")
+          python -m pip install --disable-pip-version-check \
+            "xsmarts-autoconf @ git+https://github.com/swamidasslab/xsmarts-autoconf@${commit}"
+      - name: Run the pinned autoconf lane
+        run: |
+          mkdir -p autoconf-${{ matrix.label }}
+          python scripts/xsmarts_autoconf_lane.py --output "autoconf-${{ matrix.label }}/xsmarts-autoconf.json"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: xsmarts-autoconf-${{ inputs.version }}-${{ matrix.label }}
+          path: autoconf-${{ matrix.label }}/*.json
           if-no-files-found: error

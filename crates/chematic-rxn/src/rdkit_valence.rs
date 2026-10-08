@@ -10,7 +10,7 @@
 //! accept any valence.
 
 /// RDKit's allowed valences for element `z` (ascending); `None` = any.
-fn valence_list(z: u8) -> Option<&'static [u8]> {
+pub(crate) fn valence_list(z: u8) -> Option<&'static [u8]> {
     Some(match z {
         1 => &[1],
         2 | 10 | 18 | 36 | 86 => &[0],
