@@ -49,11 +49,15 @@ API_NOTES = {
         "pdb_block": "Mol.rdkit_pdb_block", "stereoisomer_count": "Mol.rdkit_stereoisomer_count",
         "chiral_centers": "Mol.rdkit_chiral_centers(include_unassigned=True)",
         "inchi": "Mol.standard_inchi (needs the native-inchi build feature)",
+        "morgan2_bitinfo": "Mol.rdkit_morgan_bit_info(2, 2048)",
+        "pdb_read": "chematic.rdkit_pdb_block_to_smiles(Mol.rdkit_pdb_block())",
     },
     "cosmolkit": {
         "smarts": "get_substruct_matches(mol, parse_smarts(q))",
         "cip": "Molecule.with_cip_labels()",
         "molblock_rt": "Molecule.to_2d_sdf_string()",
+        "morgan2_bitinfo": "fingerprint_morgan_with_output(2, 2048).additional_output().bit_info_map()",
+        "pdb_read": "Molecule.from_pdb_block(Molecule.to_pdb_block()).to_smiles()",
     },
 }
 
@@ -84,6 +88,11 @@ def rdkit_inchi_of(smiles_canonical: str) -> str | None:
 
 def _bits(raw: bytes, offset: int = 0) -> list[int]:
     return [i + offset for i in range(len(raw) * 8) if raw[i // 8] >> (i % 8) & 1]
+
+
+def _bit_info(info) -> dict[str, list[list[int]]]:
+    """A Morgan bitInfo map as JSON: bit -> sorted [atom, radius] pairs."""
+    return {str(bit): sorted([int(a), int(r)] for a, r in env) for bit, env in sorted(info.items())}
 
 
 def _smarts_sets(matches) -> list[list[int]]:
@@ -172,6 +181,9 @@ def rdkit_engine():
         "atom_pair_counts": lambda m: sorted([k, v] for k, v in
                                              RD.GetHashedAtomPairFingerprint(m, nBits=2048).GetNonzeroElements().items()),
         "stereoisomers": lambda m: sorted(Chem.MolToSmiles(x) for x in EnumerateStereoisomers(m)),
+        "morgan2_bitinfo": lambda m: morgan_bitinfo(m),
+        "pdb_read": lambda m: (lambda r: Chem.MolToSmiles(r) if r is not None else None)(
+            Chem.MolFromPDBBlock(Chem.MolToPDBBlock(m))),
     })
     ops.update({
         "fp_atom_pair": lambda m: list(RD.GetHashedAtomPairFingerprintAsBitVect(m, nBits=2048).GetOnBits()),
@@ -206,6 +218,12 @@ def rdkit_engine():
         "balaban_j": GraphDescriptors.BalabanJ,
         "ipc": GraphDescriptors.Ipc,
     })
+
+    def morgan_bitinfo(m):
+        ao = rdFingerprintGenerator.AdditionalOutput()
+        ao.AllocateBitInfoMap()
+        gen.GetFingerprint(m, additionalOutput=ao)
+        return _bit_info(ao.GetBitInfoMap())
 
     def parse(smiles):
         mol = Chem.MolFromSmiles(smiles)
@@ -322,6 +340,8 @@ def chematic_engine():
         "morgan2_countsim": lambda m: _bits(m.rdkit_ecfp_config(2, 2048, count_simulation=True)),
         "atom_pair_counts": lambda m: sorted([k, v] for k, v in m.rdkit_atom_pair_counts(2048)),
         "stereoisomers": lambda m: m.rdkit_stereoisomer_smiles(),
+        "morgan2_bitinfo": lambda m: _bit_info(m.rdkit_morgan_bit_info(2, 2048)),
+        "pdb_read": lambda m: c.rdkit_pdb_block_to_smiles(m.rdkit_pdb_block()),
     })
     for name, kwargs in (("smiles_kekule", {"kekule": True}), ("smiles_noniso", {"isomeric": False}),
                          ("smiles_explicit", {"all_bonds_explicit": True, "all_hs_explicit": True})):
@@ -426,6 +446,9 @@ def cosmolkit_engine():
         "morgan2_chiral": lambda m: on(m.fingerprint_morgan(radius=2, n_bits=2048, include_chirality=True)),
         "morgan2_countsim": lambda m: on(m.fingerprint_morgan(radius=2, n_bits=2048, count_simulation=True)),
         "stereoisomers": lambda m: sorted(x.to_smiles() for x in m.stereoisomers()),
+        "morgan2_bitinfo": lambda m: _bit_info(
+            m.fingerprint_morgan_with_output(radius=2, n_bits=2048).additional_output().bit_info_map()),
+        "pdb_read": lambda m: ck.Molecule.from_pdb_block(m.to_pdb_block()).to_smiles(),
     })
     raw = {"canonical_smiles": lambda m: m.to_smiles(), "molblock": lambda m: m.to_2d_sdf_string()}
     return {"version": getattr(ck, "__version__", "unknown"), "parse": ck.Molecule.from_smiles,
