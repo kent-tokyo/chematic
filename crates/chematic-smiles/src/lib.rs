@@ -35,6 +35,7 @@ pub mod cx;
 pub mod error;
 pub mod parser;
 pub mod random_smiles;
+pub mod rdkit;
 pub mod smi_file;
 pub mod writer;
 
@@ -57,6 +58,7 @@ pub use cx::{CxAtomProp, CxSmiles, attachment_point_label_number, parse_cxsmiles
 pub use error::SmilesError;
 pub use parser::{SmilesParseLimits, parse, parse_with_limits};
 pub use random_smiles::{random_smiles, random_smiles_vect};
+pub use rdkit::{RdkitSmilesError, rdkit_canonical_smiles};
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,
 };
