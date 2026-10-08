@@ -198,6 +198,17 @@ fn matched_bond_code_slice(
 /// `rdkit.Chem.PatternFingerprint(mol, fpSize=2048)` (the Python API's own
 /// default, `tautomericFingerprint=False`).
 pub fn rdkit_pattern_fp(mol: &Molecule) -> BitVec2048 {
+    // RDKit fingerprints its sanitized graph: perchlorate as
+    // `[Cl+3]([O-])3O`, organometallic dative bonds
+    // ([`chematic_perception::rdkit_sanitize_cleanup`]).
+    if let Some(cleaned) = chematic_perception::rdkit_sanitize_cleanup(mol) {
+        return rdkit_pattern_fp_input(&cleaned);
+    }
+    rdkit_pattern_fp_input(mol)
+}
+
+/// [`rdkit_pattern_fp`] on the graph RDKit sees.
+fn rdkit_pattern_fp_input(mol: &Molecule) -> BitVec2048 {
     const FP_SIZE: u32 = 2048;
     let mut fp = BitVec2048::new();
     let cfg = MatchConfig {

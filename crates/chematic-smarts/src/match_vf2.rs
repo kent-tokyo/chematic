@@ -1437,11 +1437,15 @@ fn eval_bond_primitive(
         ),
         BondPrimitive::Any => true,
         BondPrimitive::Ring => {
-            // A bond is a "ring bond" if both its endpoints share at least one common ring.
-            ctx.rings()
-                .rings()
-                .iter()
-                .any(|ring| ring.contains(&a) && ring.contains(&b))
+            // A bond is a "ring bond" if both its endpoints share at least one
+            // common ring. A dative bond never is: ring perception skips it
+            // (as RDKit's does), even when both ends lie on other rings.
+            order != BondOrder::Dative
+                && ctx
+                    .rings()
+                    .rings()
+                    .iter()
+                    .any(|ring| ring.contains(&a) && ring.contains(&b))
         }
         // `/` and `\\` match a single or aromatic bond without constraining
         // cis/trans, as in RDKit (which ignores bond stereo when matching):
