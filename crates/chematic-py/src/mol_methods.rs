@@ -2339,19 +2339,8 @@ impl Mol {
             ring_count_model,
             ..chematic_smarts::RdkitParityConfig::default()
         };
-        match chematic_smarts::find_matches_rdkit_parity(&query, &self.inner, &config) {
-            Ok((matches, false)) => {
-                let mut atom_sets: Vec<Vec<usize>> = matches
-                    .into_iter()
-                    .map(|mapping| {
-                        let mut atoms: Vec<usize> =
-                            mapping.values().map(|atom| atom.0 as usize).collect();
-                        atoms.sort_unstable();
-                        atoms
-                    })
-                    .collect();
-                atom_sets.sort_unstable();
-                atom_sets.dedup();
+        match chematic_smarts::find_match_atom_sets_rdkit_parity(&query, &self.inner, &config) {
+            Ok((atom_sets, false)) => {
                 result.set_item("status", "ok")?;
                 result.set_item("reason", py.None())?;
                 result.set_item("matches", atom_sets)?;
