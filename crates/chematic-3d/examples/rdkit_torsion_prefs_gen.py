@@ -1,5 +1,6 @@
 import re, sys
-base = "/tmp/claude-0/-home-claude/c9395eac-d598-5a86-b7de-b9824d14929d/scratchpad/rdsrc/rdkit/Code/GraphMol/ForceFieldHelpers/CrystalFF/"
+# usage: rdkit_torsion_prefs_gen.py OUT.rs RDKIT_SOURCE_ROOT
+base = sys.argv[2].rstrip("/") + "/Code/GraphMol/ForceFieldHelpers/CrystalFF/"
 def literals(path):
     src = open(base + path).read()
     # strip /* */ and // comments outside strings
