@@ -51,11 +51,22 @@ fn atom_smiles(res: &mut String, mol: &Mol, a: usize, p: &RdkitSmilesParams) {
     use std::fmt::Write;
     let atom = &mol.atoms[a];
     let symb = periodic::symbol(atom.anum);
+    let nontet_string;
     let at_string = match atom.chiral {
         _ if !p.isomeric => "",
         ChiralTag::Cw => "@@",
         ChiralTag::Ccw => "@",
         ChiralTag::Unspecified => "",
+        tag => {
+            // `getAtomChiralityInfo`: the class, then the permutation when set.
+            let class = tag.nontet().expect("non-tetrahedral");
+            nontet_string = if atom.chiral_perm == 0 {
+                format!("@{}", class.token())
+            } else {
+                format!("@{}{}", class.token(), atom.chiral_perm)
+            };
+            nontet_string.as_str()
+        }
     };
     let needs_bracket = p.all_hs_explicit || atom_needs_bracket(mol, a, at_string, p.isomeric);
     if needs_bracket {

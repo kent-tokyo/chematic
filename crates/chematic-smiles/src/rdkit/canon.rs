@@ -3,7 +3,7 @@
 //! `/` `\` directions written around stereo double bonds.
 
 use super::RdkitSmilesError;
-use super::mol::{BondDir, BondStereo, BondType, ChiralTag, Mol};
+use super::mol::{BondDir, BondStereo, BondType, ChiralTag, Mol, insert_implicit_nbors};
 use super::stereo::is_atom_potential_tetrahedral_center;
 
 const MAX_NATOMS: i64 = 5000;
@@ -336,13 +336,20 @@ pub(crate) fn canonicalize_fragment(
         _ => return Err(RdkitSmilesError::Unsupported("empty traversal".into())),
     };
     let mut num_swaps_odd = vec![false; n];
+    let mut permutation = vec![0u32; n];
     for a in 0..n {
         if !isomeric || mol.atoms[a].chiral == ChiralTag::Unspecified {
             continue;
         }
-        if !is_atom_potential_tetrahedral_center(mol, a) {
+        let nontet = mol.atoms[a].chiral.nontet();
+        if !is_atom_potential_tetrahedral_center(mol, a) && nontet.is_none() {
             continue;
         }
+        let perm = if nontet.is_some() {
+            mol.atoms[a].chiral_perm
+        } else {
+            0
+        };
         let first_in_part = a == first_idx;
         let mut order = traversal_bond_order[a].clone();
         if order.len() < mol.degree(a) {
@@ -351,6 +358,14 @@ pub(crate) fn canonicalize_fragment(
                     order.push(b);
                 }
             }
+        }
+        if perm != 0 {
+            // The permutation relative to the output order (with implicit
+            // ligands where SMILES puts them).
+            let mut probe: Vec<Option<usize>> = order.iter().map(|&b| Some(b)).collect();
+            insert_implicit_nbors(&mut probe, nontet.expect("non-tetrahedral"), first_in_part);
+            permutation[a] = mol.chiral_permutation(a, &probe, false);
+            continue;
         }
         let mut odd = mol.perturbation_is_odd(a, &order);
         if chiral_atom_needs_tag_inversion(mol, a, first_in_part, ring_closures[a].len()) {
@@ -410,8 +425,12 @@ pub(crate) fn canonicalize_fragment(
                     ring_adjusted[nbr] = true;
                 }
             }
-        } else if num_swaps_odd[a] {
-            mol.atoms[a].invert_chirality();
+        } else if mol.atoms[a].chiral.is_tetrahedral() {
+            if num_swaps_odd[a] {
+                mol.atoms[a].invert_chirality();
+            }
+        } else if permutation[a] != 0 {
+            mol.atoms[a].chiral_perm = permutation[a];
         }
     }
 

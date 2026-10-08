@@ -47,6 +47,14 @@ pub enum Chirality {
     Clockwise,
     /// `@SP1`/`@SP2`/`@SP3` — square-planar (4-coordinate) stereo.
     SquarePlanar(SquarePlanarPermutation),
+    /// `@SP` without a permutation number (RDKit keeps the class, permutation 0).
+    SquarePlanarUnnumbered,
+    /// `@TB1`..`@TB20` — trigonal-bipyramidal (5-coordinate) stereo; 0 is
+    /// `@TB` without a permutation number.
+    TrigonalBipyramidal(u8),
+    /// `@OH1`..`@OH30` — octahedral (6-coordinate) stereo; 0 is `@OH`
+    /// without a permutation number.
+    Octahedral(u8),
 }
 
 impl Chirality {
@@ -57,6 +65,61 @@ impl Chirality {
     /// second non-tetrahedral kind of "not None" chirality exists.
     pub fn is_tetrahedral(&self) -> bool {
         matches!(self, Self::CounterClockwise | Self::Clockwise)
+    }
+
+    /// The non-tetrahedral class and permutation number (0: none given),
+    /// `None` for tetrahedral or absent stereo.
+    pub fn nontetrahedral(&self) -> Option<(crate::NonTetrahedralClass, u32)> {
+        use crate::NonTetrahedralClass as C;
+        match *self {
+            Self::SquarePlanar(p) => Some((
+                C::SquarePlanar,
+                match p {
+                    SquarePlanarPermutation::SP1 => 1,
+                    SquarePlanarPermutation::SP2 => 2,
+                    SquarePlanarPermutation::SP3 => 3,
+                },
+            )),
+            Self::SquarePlanarUnnumbered => Some((C::SquarePlanar, 0)),
+            Self::TrigonalBipyramidal(p) => Some((C::TrigonalBipyramidal, u32::from(p))),
+            Self::Octahedral(p) => Some((C::Octahedral, u32::from(p))),
+            _ => None,
+        }
+    }
+
+    /// The chirality for a non-tetrahedral class and permutation number
+    /// (0: none given); `None` past the class's largest permutation.
+    pub fn from_nontetrahedral(class: crate::NonTetrahedralClass, perm: u32) -> Option<Self> {
+        use crate::NonTetrahedralClass as C;
+        if perm > class.max_permutation() {
+            return None;
+        }
+        Some(match (class, perm) {
+            (C::SquarePlanar, 0) => Self::SquarePlanarUnnumbered,
+            (C::SquarePlanar, 1) => Self::SquarePlanar(SquarePlanarPermutation::SP1),
+            (C::SquarePlanar, 2) => Self::SquarePlanar(SquarePlanarPermutation::SP2),
+            (C::SquarePlanar, _) => Self::SquarePlanar(SquarePlanarPermutation::SP3),
+            (C::TrigonalBipyramidal, p) => Self::TrigonalBipyramidal(p as u8),
+            (C::Octahedral, p) => Self::Octahedral(p as u8),
+        })
+    }
+
+    /// The SMILES chirality token (`@`, `@@`, `@SP2`, `@TB7`, `@OH`, ...),
+    /// empty for no stereo.
+    pub fn smiles_token(&self) -> String {
+        match self {
+            Self::None => String::new(),
+            Self::CounterClockwise => "@".into(),
+            Self::Clockwise => "@@".into(),
+            _ => {
+                let (class, perm) = self.nontetrahedral().expect("non-tetrahedral");
+                if perm == 0 {
+                    format!("@{}", class.token())
+                } else {
+                    format!("@{}{perm}", class.token())
+                }
+            }
+        }
     }
 }
 

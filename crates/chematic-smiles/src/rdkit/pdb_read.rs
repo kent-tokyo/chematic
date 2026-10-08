@@ -4,7 +4,7 @@
 //! standard residue bond orders, sanitization and 3D chirality.
 
 use super::RdkitSmilesError;
-use super::mol::{Atom, Bond, BondDir, BondType, ChiralTag, Mol};
+use super::mol::{Atom, Bond, BondDir, BondType, ChiralTag, Mol, insert_implicit_nbors};
 use super::periodic;
 use super::sanitize;
 
@@ -691,22 +691,157 @@ fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
     ]
 }
 
-/// Whether `assignNontetrahedralChiralTypeFrom3D` would tag the atom
-/// (`Err` where its `normalize` throws on a neighbour at the atom's
-/// position).
-fn nontetrahedral_from_3d(
+/// `Point3D::angleTo`.
+fn angle_to(a: [f64; 3], o: [f64; 3]) -> f64 {
+    let lsq = dot(a, a) * dot(o, o);
+    let d = dot(a, o) / lsq.sqrt();
+    if d <= -1.0 {
+        return std::f64::consts::PI;
+    }
+    if d >= 1.0 {
+        return 0.0;
+    }
+    d.acos()
+}
+
+/// `OctahedralPermFrom3D`.
+fn octahedral_perm_from_3d(pair: &[usize; 6], vol: impl Fn(usize, usize, usize) -> bool) -> u32 {
+    match pair[0] {
+        2 => match pair[2] {
+            4 => {
+                if vol(0, 3, 4) {
+                    28
+                } else {
+                    27
+                }
+            }
+            5 => {
+                if vol(0, 2, 3) {
+                    25
+                } else {
+                    30
+                }
+            }
+            _ => {
+                if vol(0, 2, 3) {
+                    26
+                } else {
+                    29
+                }
+            }
+        },
+        3 => match pair[1] {
+            4 => {
+                if vol(0, 3, 4) {
+                    22
+                } else {
+                    21
+                }
+            }
+            5 => {
+                if vol(0, 1, 3) {
+                    19
+                } else {
+                    24
+                }
+            }
+            _ => {
+                if vol(0, 1, 3) {
+                    20
+                } else {
+                    23
+                }
+            }
+        },
+        4 => match pair[1] {
+            3 => {
+                if vol(0, 2, 4) {
+                    13
+                } else {
+                    12
+                }
+            }
+            5 => {
+                if vol(0, 1, 2) {
+                    6
+                } else {
+                    18
+                }
+            }
+            _ => {
+                if vol(0, 1, 2) {
+                    7
+                } else {
+                    17
+                }
+            }
+        },
+        5 => match pair[1] {
+            3 => {
+                if vol(0, 2, 3) {
+                    11
+                } else {
+                    9
+                }
+            }
+            4 => {
+                if vol(0, 1, 2) {
+                    3
+                } else {
+                    16
+                }
+            }
+            _ => {
+                if vol(0, 1, 2) {
+                    5
+                } else {
+                    15
+                }
+            }
+        },
+        _ => match pair[1] {
+            3 => {
+                if vol(0, 2, 3) {
+                    10
+                } else {
+                    8
+                }
+            }
+            4 => {
+                if vol(0, 1, 2) {
+                    1
+                } else {
+                    2
+                }
+            }
+            _ => {
+                if vol(0, 1, 2) {
+                    4
+                } else {
+                    14
+                }
+            }
+        },
+    }
+}
+
+/// `assignNontetrahedralChiralTypeFrom3D(mol, conf, atom, tolerance=0.1)`:
+/// the tag and permutation it assigns, `None` where it assigns none, `Err`
+/// where its `normalize` throws on a neighbour at the atom's position.
+pub(crate) fn nontetrahedral_from_3d(
     mol: &Mol,
     coords: &[[f64; 3]],
     a: usize,
-) -> Result<bool, RdkitSmilesError> {
+) -> Result<Option<(ChiralTag, u32)>, RdkitSmilesError> {
+    const TOLERANCE: f64 = 0.1;
     if mol.atoms[a].anum < 15 {
-        return Ok(false);
+        return Ok(None);
     }
     let cen = coords[a];
     let mut v: Vec<[f64; 3]> = Vec::new();
     for nb in mol.nbrs(a) {
         if v.len() == 6 {
-            return Ok(false);
+            return Ok(None);
         }
         let d = sub(coords[nb], cen);
         let l = dot(d, d).sqrt();
@@ -717,15 +852,15 @@ fn nontetrahedral_from_3d(
     }
     let count = v.len();
     if count < 3 {
-        return Ok(false);
+        return Ok(None);
     }
     let mut pair = [0usize; 6];
     let mut pairs = 0;
     for i in 0..count {
         for j in i + 1..count {
-            if dot(v[i], v[j]) < -(1.0 - 0.1) {
+            if dot(v[i], v[j]) < -(1.0 - TOLERANCE) {
                 if pair[i] != 0 || pair[j] != 0 {
-                    return Ok(false);
+                    return Ok(None);
                 }
                 pair[i] = j + 1;
                 pair[j] = i + 1;
@@ -733,10 +868,82 @@ fn nontetrahedral_from_3d(
             }
         }
     }
-    Ok(matches!(
-        (pairs, count),
-        (1, 3) | (1, 4) | (1, 5) | (2, 4) | (2, 5) | (3, 6)
-    ))
+    let vol = |x: usize, y: usize, z: usize| dot(v[x], cross(v[y], v[z])) >= 0.0;
+    let deg100 = 100.0 * std::f64::consts::PI / 180.0;
+    let pick = |c: bool, a: u32, b: u32| if c { a } else { b };
+    let res = match (pairs, count) {
+        (1, 3) => {
+            let perm = match pair[0] {
+                0 => 3,
+                2 => 2,
+                _ => 1,
+            };
+            Some((ChiralTag::SquarePlanar, perm))
+        }
+        (1, 4) => {
+            // (pair whose angle decides, OH volume test and permutations,
+            // TB volume test and permutations)
+            let (ang_pair, oh_vol, oh_perm, tb_vol, tb_perm) = if pair[0] == 2 {
+                ((2, 3), (0, 2, 3), (25, 29), (0, 2, 3), (7, 8))
+            } else if pair[0] == 3 {
+                ((1, 3), (0, 1, 3), (19, 23), (0, 1, 3), (5, 6))
+            } else if pair[0] == 4 {
+                ((1, 2), (0, 1, 2), (6, 17), (0, 1, 2), (3, 4))
+            } else if pair[1] == 3 {
+                ((0, 3), (0, 1, 3), (10, 8), (1, 0, 3), (13, 14))
+            } else if pair[1] == 4 {
+                ((0, 2), (0, 1, 3), (1, 2), (1, 0, 2), (10, 12))
+            } else {
+                ((0, 1), (0, 1, 3), (4, 14), (3, 0, 1), (16, 19))
+            };
+            if angle_to(v[ang_pair.0], v[ang_pair.1]) < deg100 {
+                Some((
+                    ChiralTag::Octahedral,
+                    pick(vol(oh_vol.0, oh_vol.1, oh_vol.2), oh_perm.0, oh_perm.1),
+                ))
+            } else {
+                Some((
+                    ChiralTag::TrigonalBipyramidal,
+                    pick(vol(tb_vol.0, tb_vol.1, tb_vol.2), tb_perm.0, tb_perm.1),
+                ))
+            }
+        }
+        (1, 5) => {
+            let perm = if pair[0] == 2 {
+                pick(vol(0, 2, 3), 7, 8)
+            } else if pair[0] == 3 {
+                pick(vol(0, 1, 3), 5, 6)
+            } else if pair[0] == 4 {
+                pick(vol(0, 1, 2), 3, 4)
+            } else if pair[0] == 5 {
+                pick(vol(0, 1, 2), 1, 2)
+            } else if pair[1] == 3 {
+                pick(vol(1, 0, 3), 13, 14)
+            } else if pair[1] == 4 {
+                pick(vol(1, 0, 2), 10, 12)
+            } else if pair[1] == 5 {
+                pick(vol(1, 0, 2), 9, 11)
+            } else if pair[2] == 4 {
+                pick(vol(2, 0, 1), 16, 19)
+            } else if pair[2] == 5 {
+                pick(vol(2, 0, 1), 15, 20)
+            } else {
+                pick(vol(3, 0, 1), 17, 18)
+            };
+            Some((ChiralTag::TrigonalBipyramidal, perm))
+        }
+        (2, 4) => {
+            let perm = match pair[0] {
+                2 => 2,
+                3 => 1,
+                _ => 3,
+            };
+            Some((ChiralTag::SquarePlanar, perm))
+        }
+        (2, 5) | (3, 6) => Some((ChiralTag::Octahedral, octahedral_perm_from_3d(&pair, vol))),
+        _ => None,
+    };
+    Ok(res)
 }
 
 /// `MolOps::assignChiralTypesFrom3D(mol, -1, replaceExistingTags=true)`.
@@ -758,8 +965,10 @@ pub(crate) fn assign_chiral_types_from_3d(
         if nz_degree < 3 || tnz_degree > 6 {
             continue;
         }
-        if nontetrahedral_from_3d(mol, coords, a)? {
-            return Err(parse_error("non-tetrahedral stereo from 3D coordinates"));
+        if let Some((tag, perm)) = nontetrahedral_from_3d(mol, coords, a)? {
+            mol.atoms[a].chiral = tag;
+            mol.atoms[a].chiral_perm = perm;
+            continue;
         }
         if tnz_degree > 4 {
             continue;
@@ -963,7 +1172,37 @@ pub(crate) fn to_chematic(
         if a.radicals != 0 && atom.hydrogen_count.is_none() {
             return Err(parse_error("radical"));
         }
-        if a.chiral != ChiralTag::Unspecified {
+        if let Some(class) = a.chiral.nontet() {
+            // The permutation relative to the neighbour order with implicit
+            // ligands where SMILES puts them (first for an atom without a
+            // lower-numbered neighbour, else second), which is how the
+            // SMILES-model conversion reads it back.
+            let is_start = !m.nbrs(i).any(|x| x < i);
+            // `GetBondOrdering` of the converted molecule: its bonds by
+            // neighbour index.
+            let mut by_nbr: Vec<(usize, usize)> = m.atom_bonds[i]
+                .iter()
+                .map(|&b| (m.bonds[b].other(i), b))
+                .collect();
+            by_nbr.sort_unstable();
+            let mut probe: Vec<Option<usize>> = by_nbr.iter().map(|&(_, b)| Some(b)).collect();
+            insert_implicit_nbors(&mut probe, class, is_start);
+            let perm = if a.chiral_perm == 0 {
+                0
+            } else {
+                m.chiral_permutation(i, &probe, false)
+            };
+            atom.chirality = Chirality::from_nontetrahedral(class, perm)
+                .ok_or_else(|| parse_error("non-tetrahedral permutation out of range"))?;
+            let mut order: Vec<u32> = by_nbr.iter().map(|&(x, _)| x as u32).collect();
+            if n_hs > 0 {
+                order.insert(
+                    if is_start { 0 } else { 1.min(order.len()) },
+                    STEREO_H_SENTINEL,
+                );
+            }
+            orders.push((AtomIdx(i as u32), order));
+        } else if a.chiral != ChiralTag::Unspecified {
             let mut order: Vec<u32> = m.nbrs(i).map(|x| x as u32).collect();
             let is_start = !m.nbrs(i).any(|x| x < i);
             let mut tag = a.chiral;

@@ -86,11 +86,19 @@ fn should_remove_h(mol: &Mol, a: usize) -> bool {
     if atom.isotope != 0 {
         return false;
     }
+    // removeHydrides=false
+    if atom.charge == -1 {
+        return false;
+    }
     let mut only_h_neighbors = true;
     for &b in &mol.atom_bonds[a] {
         let nbr = mol.bonds[b].other(a);
         if mol.atoms[nbr].anum != 1 {
             only_h_neighbors = false;
+        }
+        // removeDummyNeighbors=false, removeNontetrahedralNeighbors=false
+        if mol.atoms[nbr].anum < 1 || mol.atoms[nbr].chiral.nontet().is_some() {
+            return false;
         }
         // removeDefiningBondStereo=false
         if mol.degree(nbr) == 2 {
@@ -577,8 +585,17 @@ fn set_hybridization(mol: &mut Mol) {
             mol.atoms[a].hybrid = Hybridization::Unspecified;
             continue;
         }
-        if mol.atoms[a].chiral != ChiralTag::Unspecified && mol.total_degree(a) == 4 {
-            mol.atoms[a].hybrid = Hybridization::Sp3;
+        // A stereo class that matches the coordination number fixes it.
+        let td = mol.total_degree(a);
+        let by_tag = match mol.atoms[a].chiral {
+            ChiralTag::Cw | ChiralTag::Ccw if td == 4 => Some(Hybridization::Sp3),
+            ChiralTag::SquarePlanar if (2..=4).contains(&td) => Some(Hybridization::Sp2d),
+            ChiralTag::TrigonalBipyramidal if (2..=5).contains(&td) => Some(Hybridization::Sp3d),
+            ChiralTag::Octahedral if (2..=6).contains(&td) => Some(Hybridization::Sp3d2),
+            _ => None,
+        };
+        if let Some(h) = by_tag {
+            mol.atoms[a].hybrid = h;
             continue;
         }
         let norbs = if mol.atoms[a].anum < 89 {
@@ -606,9 +623,24 @@ fn set_hybridization(mol: &mut Mol) {
 
 /// `cleanupChirality`.
 fn cleanup_chirality(mol: &mut Mol) {
-    for atom in &mut mol.atoms {
-        if atom.chiral != ChiralTag::Unspecified && atom.hybrid != Hybridization::Sp3 {
-            atom.chiral = ChiralTag::Unspecified;
+    for a in 0..mol.atoms.len() {
+        let td = mol.total_degree(a);
+        let atom = &mut mol.atoms[a];
+        match atom.chiral {
+            ChiralTag::Cw | ChiralTag::Ccw => {
+                if atom.hybrid != Hybridization::Sp3 {
+                    atom.chiral = ChiralTag::Unspecified;
+                }
+            }
+            ChiralTag::SquarePlanar | ChiralTag::TrigonalBipyramidal | ChiralTag::Octahedral => {
+                let class = atom.chiral.nontet().expect("non-tetrahedral");
+                if td < 2 || td > class.max_nbors() {
+                    atom.chiral = ChiralTag::Unspecified;
+                } else if atom.chiral_perm > class.max_permutation() {
+                    atom.chiral_perm = 0;
+                }
+            }
+            ChiralTag::Unspecified => {}
         }
     }
 }

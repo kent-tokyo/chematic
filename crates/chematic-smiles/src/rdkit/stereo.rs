@@ -878,6 +878,7 @@ fn legacy_stereo_perception_impl(
     for a in 0..mol.atoms.len() {
         let atom = &mol.atoms[a];
         if atom.chiral != ChiralTag::Unspecified
+            && atom.chiral.nontet().is_none()
             && atom.cip_code.is_none()
             && (!possible[a] || atom.ring_stereo_atoms.is_none())
         {

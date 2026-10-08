@@ -973,7 +973,7 @@ fn adjacency_chiral_tag(mol: &Molecule, a: AtomIdx) -> u8 {
         Chirality::None => return 0,
         Chirality::CounterClockwise => true,
         Chirality::Clockwise => false,
-        Chirality::SquarePlanar(_) => return 3,
+        _ => return 3,
     };
     let adj: Vec<u32> = mol.neighbors(a).map(|(nb, _)| nb.0).collect();
     let declared: Vec<u32> = match mol.stereo_neighbor_order(a) {

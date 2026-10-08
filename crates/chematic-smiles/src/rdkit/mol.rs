@@ -5,6 +5,8 @@
 
 use super::RdkitSmilesError;
 use super::periodic;
+use chematic_core::NonTetrahedralClass;
+use chematic_core::nontetrahedral;
 
 /// `Atom::ChiralType` (the tags this pipeline carries).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -14,6 +16,50 @@ pub(crate) enum ChiralTag {
     Cw,
     /// `CHI_TETRAHEDRAL_CCW` (`@` relative to the bond order).
     Ccw,
+    /// `CHI_SQUAREPLANAR` (permutation in `Atom::chiral_perm`).
+    SquarePlanar,
+    /// `CHI_TRIGONALBIPYRAMIDAL`.
+    TrigonalBipyramidal,
+    /// `CHI_OCTAHEDRAL`.
+    Octahedral,
+}
+
+impl ChiralTag {
+    /// The non-tetrahedral class (`hasNonTetrahedralStereo`).
+    pub(crate) fn nontet(self) -> Option<NonTetrahedralClass> {
+        match self {
+            ChiralTag::SquarePlanar => Some(NonTetrahedralClass::SquarePlanar),
+            ChiralTag::TrigonalBipyramidal => Some(NonTetrahedralClass::TrigonalBipyramidal),
+            ChiralTag::Octahedral => Some(NonTetrahedralClass::Octahedral),
+            _ => None,
+        }
+    }
+
+    /// The tag of a non-tetrahedral class.
+    pub(crate) fn of_class(class: NonTetrahedralClass) -> ChiralTag {
+        match class {
+            NonTetrahedralClass::SquarePlanar => ChiralTag::SquarePlanar,
+            NonTetrahedralClass::TrigonalBipyramidal => ChiralTag::TrigonalBipyramidal,
+            NonTetrahedralClass::Octahedral => ChiralTag::Octahedral,
+        }
+    }
+
+    /// `CHI_TETRAHEDRAL_CW` or `CHI_TETRAHEDRAL_CCW`.
+    pub(crate) fn is_tetrahedral(self) -> bool {
+        matches!(self, ChiralTag::Cw | ChiralTag::Ccw)
+    }
+
+    /// The `Atom::ChiralType` value.
+    pub(crate) fn rdkit_value(self) -> u8 {
+        match self {
+            ChiralTag::Unspecified => 0,
+            ChiralTag::Cw => 1,
+            ChiralTag::Ccw => 2,
+            ChiralTag::SquarePlanar => 6,
+            ChiralTag::TrigonalBipyramidal => 7,
+            ChiralTag::Octahedral => 8,
+        }
+    }
 }
 
 /// `Atom::HybridizationType`.
@@ -24,6 +70,7 @@ pub(crate) enum Hybridization {
     Sp,
     Sp2,
     Sp3,
+    Sp2d,
     Sp3d,
     Sp3d2,
 }
@@ -103,6 +150,8 @@ pub(crate) struct Atom {
     pub no_implicit: bool,
     pub aromatic: bool,
     pub chiral: ChiralTag,
+    /// `_chiralPermutation` of a non-tetrahedral tag (0: none).
+    pub chiral_perm: u32,
     pub radicals: u32,
     /// `molAtomMapNumber`.
     pub map: Option<u32>,
@@ -131,6 +180,7 @@ impl Atom {
             no_implicit: false,
             aromatic: false,
             chiral: ChiralTag::Unspecified,
+            chiral_perm: 0,
             radicals: 0,
             map: None,
             explicit_valence: -1,
@@ -143,13 +193,17 @@ impl Atom {
         }
     }
 
-    /// `Atom::invertChirality` for tetrahedral tags.
+    /// `Atom::invertChirality`.
     pub(crate) fn invert_chirality(&mut self) {
-        self.chiral = match self.chiral {
-            ChiralTag::Cw => ChiralTag::Ccw,
-            ChiralTag::Ccw => ChiralTag::Cw,
-            ChiralTag::Unspecified => ChiralTag::Unspecified,
-        };
+        match self.chiral {
+            ChiralTag::Cw => self.chiral = ChiralTag::Ccw,
+            ChiralTag::Ccw => self.chiral = ChiralTag::Cw,
+            ChiralTag::TrigonalBipyramidal | ChiralTag::Octahedral => {
+                let class = self.chiral.nontet().expect("non-tetrahedral");
+                self.chiral_perm = nontetrahedral::invert(class, self.chiral_perm);
+            }
+            ChiralTag::Unspecified | ChiralTag::SquarePlanar => {}
+        }
     }
 }
 
@@ -762,6 +816,128 @@ impl Mol {
             atom_rings,
             bond_rings,
         });
+    }
+}
+
+impl Mol {
+    /// `Chirality::getChiralAcrossAtom(cen, lig)`.
+    pub(crate) fn chiral_across_atom(&self, cen: usize, lig: usize) -> Option<usize> {
+        let class = self.atoms[cen].chiral.nontet()?;
+        let perm = self.atoms[cen].chiral_perm;
+        if perm == 0 {
+            return None;
+        }
+        let bonds = &self.atom_bonds[cen];
+        if bonds.len() > class.max_nbors() {
+            return None;
+        }
+        let found = bonds
+            .iter()
+            .position(|&b| self.bonds[b].other(cen) == lig)?;
+        let across = nontetrahedral::across(class, perm, found)?;
+        bonds.get(across).map(|&b| self.bonds[b].other(cen))
+    }
+
+    /// `Chirality::getTrigonalBipyramidalAxialAtom(cen, axial)`.
+    pub(crate) fn tb_axial_atom(&self, cen: usize, axial: i32) -> Option<usize> {
+        if self.atoms[cen].chiral != ChiralTag::TrigonalBipyramidal || self.degree(cen) > 5 {
+            return None;
+        }
+        let ax = nontetrahedral::tb_axial(self.atoms[cen].chiral_perm)?;
+        let idx = if axial != -1 { ax[0] } else { ax[1] };
+        self.atom_bonds[cen]
+            .get(idx)
+            .map(|&b| self.bonds[b].other(cen))
+    }
+
+    /// `isTrigonalBipyramidalAxialAtom(cen, qry) != 0`.
+    fn is_tb_axial_atom(&self, cen: usize, qry: usize) -> bool {
+        if self.atoms[cen].chiral != ChiralTag::TrigonalBipyramidal || self.degree(cen) > 5 {
+            return false;
+        }
+        let Some(ax) = nontetrahedral::tb_axial(self.atoms[cen].chiral_perm) else {
+            return false;
+        };
+        match self.atom_bonds[cen]
+            .iter()
+            .position(|&b| self.bonds[b].other(cen) == qry)
+        {
+            Some(pos) => pos == ax[0] || pos == ax[1],
+            None => false,
+        }
+    }
+
+    /// `Chirality::getIdealAngleBetweenLigands(cen, lig1, lig2)` (degrees).
+    pub(crate) fn ideal_angle_between_ligands(&self, cen: usize, lig1: usize, lig2: usize) -> f64 {
+        match self.atoms[cen].chiral {
+            ChiralTag::SquarePlanar | ChiralTag::Octahedral => {
+                if self.chiral_across_atom(cen, lig1) == Some(lig2) {
+                    180.0
+                } else {
+                    90.0
+                }
+            }
+            ChiralTag::TrigonalBipyramidal => {
+                if self.chiral_across_atom(cen, lig1) == Some(lig2) {
+                    180.0
+                } else if self.is_tb_axial_atom(cen, lig1) || self.is_tb_axial_atom(cen, lig2) {
+                    90.0
+                } else {
+                    120.0
+                }
+            }
+            _ => 0.0,
+        }
+    }
+
+    /// `Chirality::getChiralPermutation(atom, probe, inverse)`: `probe` is
+    /// a ligand order of bond indices (`None` for implicit or missing
+    /// ligands); 0 where RDKit gives 0.
+    pub(crate) fn chiral_permutation(
+        &self,
+        a: usize,
+        probe: &[Option<usize>],
+        inverse: bool,
+    ) -> u32 {
+        let atom = &self.atoms[a];
+        let Some(class) = atom.chiral.nontet() else {
+            return 0;
+        };
+        if atom.chiral_perm == 0 || probe.len() > class.max_nbors() {
+            return 0;
+        }
+        let mut reference: Vec<Option<usize>> =
+            self.atom_bonds[a].iter().map(|&b| Some(b)).collect();
+        if reference.len() < probe.len() {
+            reference.resize(probe.len(), None);
+        }
+        if reference.len() != probe.len() {
+            return 0;
+        }
+        let (r, p) = if inverse {
+            (probe, reference.as_slice())
+        } else {
+            (reference.as_slice(), probe)
+        };
+        nontetrahedral::permute(class, atom.chiral_perm, r, p).unwrap_or(0)
+    }
+}
+
+/// `insertImplicitNbors`: pad a SMILES-order ligand list to the class's
+/// ligand count, at the front for the first atom of a SMILES part and after
+/// the first ligand otherwise.
+pub(crate) fn insert_implicit_nbors(
+    bonds: &mut Vec<Option<usize>>,
+    class: NonTetrahedralClass,
+    first: bool,
+) {
+    let max = class.max_nbors();
+    if bonds.len() < max {
+        let pad = max - bonds.len();
+        let at = if first { 0 } else { 1.min(bonds.len()) };
+        for _ in 0..pad {
+            bonds.insert(at, None);
+        }
     }
 }
 

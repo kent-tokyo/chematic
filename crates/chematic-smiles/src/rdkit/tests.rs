@@ -178,11 +178,21 @@ fn rdkit_rejected_inputs_are_errors() {
 }
 
 #[test]
-fn unsupported_inputs_are_errors() {
-    assert!(matches!(
-        rd("F[Pt@SP1](Cl)(Br)I"),
-        Err(RdkitSmilesError::Unsupported(_))
-    ));
+fn nontetrahedral_stereo_is_written_like_rdkit() {
+    // Chem.MolToSmiles(Chem.MolFromSmiles(s)), RDKit 2026.03.1.
+    for (s, want) in [
+        ("F[Pt@SP1](Cl)(Br)I", "[F][Pt@SP1]([Cl])([Br])[I]"),
+        ("F[Pt@SP1](C)(O)Cl", "[CH3][Pt@SP3]([OH])([F])[Cl]"),
+        ("S[As@TB1](F)(Cl)(Br)N", "N[As@TB6](F)(S)(Cl)Br"),
+        (
+            "C[Pt@OH1](F)(O)(N)(Br)Cl",
+            "[CH3][Pt@OH16]([NH2])([OH])([F])([Cl])[Br]",
+        ),
+        ("CC[Pt@SP](C)(O)F", "C[CH2][Pt@SP]([CH3])([OH])[F]"),
+        ("F[C@TH2H](C)O", "C[C@@H](O)F"),
+    ] {
+        assert_eq!(rd(s).unwrap(), want, "input {s}");
+    }
 }
 
 #[test]

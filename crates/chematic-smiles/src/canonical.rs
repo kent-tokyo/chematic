@@ -2690,6 +2690,7 @@ impl<'a> CanonicalWriter<'a> {
                 Chirality::Clockwise => self.out.push_str("@@"),
                 Chirality::None => {}
                 Chirality::SquarePlanar(p) => self.out.push_str(square_planar_token(p)),
+                other => self.out.push_str(&other.smiles_token()),
             }
 
             emit_bracket_hydrogens(&mut self.out, self.mol, idx);
@@ -2868,6 +2869,7 @@ impl<'a> CanonicalWriter<'a> {
                 _ => Chirality::None,
             },
             Chirality::None => Chirality::None,
+            other => crate::writer::remap_nontetrahedral(other, original, &canonical),
         }
     }
 }
@@ -4819,7 +4821,7 @@ mod tests {
                     (Chirality::CounterClockwise, false) => false,
                     (Chirality::CounterClockwise, true) => true,
                     (Chirality::None, _) => unreachable!("filtered out above"),
-                    (Chirality::SquarePlanar(_), _) => {
+                    (_, _) => {
                         unreachable!("centers is filtered to is_tetrahedral() above")
                     }
                 })

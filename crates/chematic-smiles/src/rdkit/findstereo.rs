@@ -16,6 +16,7 @@ pub(crate) const NOATOM: usize = usize::MAX;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum StereoType {
     AtomTetrahedral,
+    AtomSquarePlanar,
     AtomTrigonalBipyramidal,
     AtomOctahedral,
     BondDouble,
@@ -48,13 +49,15 @@ pub(crate) struct StereoInfo {
     pub descriptor: Descriptor,
 }
 
-/// `isAtomPotentialNontetrahedralCenter` (no non-tetrahedral tags exist in
-/// the model).
+/// `isAtomPotentialNontetrahedralCenter`.
 fn is_atom_potential_nontetrahedral_center(mol: &Mol, a: usize) -> bool {
     let tnz = atom_nonzero_degree(mol, a) + mol.total_num_hs(a) as usize;
     let anum = mol.atoms[a].anum;
     if !(2..=6).contains(&tnz) || (anum < 12 && anum != 4) {
         return false;
+    }
+    if mol.atoms[a].chiral.nontet().is_some() {
+        return true;
     }
     mol.atoms[a].chiral == ChiralTag::Unspecified && tnz >= 4
 }
@@ -116,6 +119,23 @@ fn atom_stereo_info(mol: &Mol, a: usize) -> StereoInfo {
             } else {
                 Descriptor::TetCcw
             };
+        }
+        tag
+        @ (ChiralTag::SquarePlanar | ChiralTag::TrigonalBipyramidal | ChiralTag::Octahedral) => {
+            if is_atom_potential_nontetrahedral_center(mol, a) {
+                info.kind = match tag {
+                    ChiralTag::SquarePlanar => StereoType::AtomSquarePlanar,
+                    ChiralTag::TrigonalBipyramidal => StereoType::AtomTrigonalBipyramidal,
+                    _ => StereoType::AtomOctahedral,
+                };
+                // `_chiralPermutation` is always set on these tags; zero is
+                // an explicit statement that the configuration is unknown.
+                info.specified = if mol.atoms[a].chiral_perm == 0 {
+                    Specified::Unknown
+                } else {
+                    Specified::Specified
+                };
+            }
         }
         ChiralTag::Unspecified => {
             if is_atom_potential_nontetrahedral_center(mol, a) {

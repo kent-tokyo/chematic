@@ -43,7 +43,7 @@ fn atom_smarts(res: &mut String, mol: &Mol, a: usize, isomeric: bool) {
                 res.push('@');
                 added_chirality = true;
             }
-            ChiralTag::Unspecified => {}
+            _ => {}
         }
     }
     if added_chirality && atom.num_explicit_hs == 1 {
