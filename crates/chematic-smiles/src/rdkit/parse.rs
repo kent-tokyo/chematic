@@ -100,10 +100,16 @@ pub(crate) fn from_chematic(mol: &Molecule) -> Result<Mol, RdkitSmilesError> {
         // bond or a bare `/` `\` it keeps the closing one (begin = closing
         // atom). chematic stores the opening atom first.
         let swap = is_closure[bidx.0 as usize]
-            && matches!(
-                bond.order,
-                BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic
-            );
+            && match mol.smiles_ring_closure_begins_at_open(bidx) {
+                Some(at_open) => !at_open,
+                // Not recorded: assume single/aromatic/directional bonds
+                // were written bare at the opening digit and double/triple
+                // bonds explicitly there.
+                None => matches!(
+                    bond.order,
+                    BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic
+                ),
+            };
         let (begin, end, dir) = if swap {
             (a2, a1, dir12.flipped())
         } else {

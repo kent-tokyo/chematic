@@ -368,6 +368,7 @@ dependencies = [
  "chematic-chem",
  "chematic-core",
  "chematic-perception",
+ "chematic-smarts",
  "chematic-smiles",
  "criterion",
  "libm",

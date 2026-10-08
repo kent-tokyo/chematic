@@ -34,13 +34,16 @@
 
 mod aromaticity;
 mod canon;
+mod depict;
 mod enumerate;
 mod inchi_read;
 mod kekulize;
 mod mol;
 mod molblock;
+mod molblock2d;
 mod parse;
 mod periodic;
+mod pyrandom;
 mod rank;
 mod sanitize;
 mod stereo;
@@ -232,5 +235,77 @@ pub fn rdkit_stereoisomer_smiles(
     enumerate::enumerate(&m, max_isomers)
 }
 
+/// The 2D coordinates RDKit 2026.03.1's default depiction gives the atoms
+/// of `Chem.MolFromSmiles(s)`: `rdDepictor.Compute2DCoords(mol)` (RDKit's
+/// own depictor, not CoordGen; `canonOrient=True`, no coordinate map, no
+/// random sampling, no ring templates), for the SMILES `s` chematic parsed
+/// `mol` from. One `[x, y]` per atom of RDKit's molecule, in RDKit's atom
+/// order (chematic's atom order when `MolFromSmiles` removes no hydrogen
+/// atoms).
+///
+/// `MolFromSmiles` is modelled as in [`rdkit_canonical_smiles`]; the
+/// depiction is a port of RDKit's `compute2DCoords` that reproduces its
+/// floating-point operations in order.
+///
+/// ```
+/// let mol = chematic_smiles::parse("CCO").unwrap();
+/// let xy = chematic_smiles::rdkit_2d_coords(&mol).unwrap();
+/// assert_eq!(xy.len(), 3);
+/// assert_eq!(xy[1], [0.0, 0.5000000000000001]);
+/// ```
+pub fn rdkit_2d_coords(mol: &Molecule) -> Result<Vec<[f64; 2]>, RdkitSmilesError> {
+    let (m, cip) = rdkit_mol_from_smiles(mol)?;
+    depict::compute_2d_coords(&m, &cip)
+}
+
+/// `Chem.MolToMolBlock(m)` after `rdDepictor.Compute2DCoords(m)` for
+/// `m = Chem.MolFromSmiles(s)`, the SMILES `s` chematic parsed `mol` from
+/// (RDKit 2026.03.1): the V2000 MOL block with the coordinates of
+/// [`rdkit_2d_coords`], RDKit's kekulization, wedge/hash bonds chosen by
+/// `pickBondsToWedge`, crossed double bonds and `M  CHG`/`RAD`/`ISO` lines.
+///
+/// Molecules RDKit would write as V3000 (dative bonds, more than 999 atoms
+/// or bonds) are refused. A dummy atom without map number, isotope, charge
+/// or hydrogens is written as RDKit writes a bare `*` (chematic does not
+/// keep whether it was bracketed).
+///
+/// ```
+/// let mol = chematic_smiles::parse("C[C@H](O)F").unwrap();
+/// let block = chematic_smiles::rdkit_mol_block_2d(&mol).unwrap();
+/// assert!(block.starts_with("\n     RDKit          2D\n\n  4  3  0"));
+/// assert!(block.contains("  2  1  1  1\n"));
+/// ```
+pub fn rdkit_mol_block_2d(mol: &Molecule) -> Result<String, RdkitSmilesError> {
+    let (m, cip) = rdkit_mol_from_smiles(mol)?;
+    let xy = depict::compute_2d_coords(&m, &cip)?;
+    let bare_dummies: Vec<bool> = m
+        .atoms
+        .iter()
+        .map(|a| {
+            a.anum == 0
+                && a.map.is_none()
+                && a.isotope == 0
+                && a.charge == 0
+                && a.num_explicit_hs == 0
+        })
+        .collect();
+    molblock2d::mol_block_2d(&m, &cip, &xy, &bare_dummies)
+}
+
+/// `Chem.MolFromSmiles(s)` for the SMILES `s` chematic parsed `mol` from,
+/// with the atoms' `_CIPRank` values (empty when RDKit sets none).
+fn rdkit_mol_from_smiles(mol: &Molecule) -> Result<(mol::Mol, Vec<u32>), RdkitSmilesError> {
+    let mut m = parse::from_chematic(mol)?;
+    if has_added_hydrogens(mol) {
+        sanitize::sanitize_keeping_hs(&mut m)?;
+    } else {
+        sanitize::remove_hs_and_sanitize(&mut m)?;
+    }
+    let cip = stereo::legacy_stereo_perception(&mut m, true, true);
+    Ok((m, cip))
+}
+
+#[cfg(test)]
+mod depict_tests;
 #[cfg(test)]
 mod tests;

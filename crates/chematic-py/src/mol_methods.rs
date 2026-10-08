@@ -85,6 +85,41 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// 2D coordinates exactly as RDKit 2026.03.1's default depiction gives
+    /// them: for a molecule read with :func:`from_smiles` this is
+    /// ``[[p.x, p.y] for p in m.GetConformer().GetPositions()]`` after
+    /// ``m = Chem.MolFromSmiles(s); rdDepictor.Compute2DCoords(m)`` (RDKit's
+    /// own depictor with its defaults, not CoordGen), bit for bit.
+    ///
+    /// One ``[x, y]`` per atom of RDKit's molecule, in RDKit's atom order —
+    /// this molecule's atom order unless ``MolFromSmiles`` removes hydrogen
+    /// atoms written in brackets. chematic's own 2D layout (used by
+    /// :meth:`depict_data`, the SVG and MOL writers) is separate and
+    /// unchanged. Raises ``ValueError`` like :attr:`rdkit_smiles`.
+    ///
+    ///     chematic.from_smiles("CCO").rdkit_2d_coords()[1]
+    ///     # [0.0, 0.5000000000000001]
+    fn rdkit_2d_coords(&self) -> PyResult<Vec<[f64; 2]>> {
+        chematic_smiles::rdkit_2d_coords(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// The MOL block RDKit 2026.03.1 writes for this molecule with its
+    /// default 2D depiction: ``Chem.MolToMolBlock(m)`` after
+    /// ``m = Chem.MolFromSmiles(s); rdDepictor.Compute2DCoords(m)`` for the
+    /// SMILES ``s`` the molecule was read from (V2000, coordinates of
+    /// :meth:`rdkit_2d_coords`, RDKit's kekulization and wedge bonds).
+    ///
+    /// Raises ``ValueError`` like :attr:`rdkit_smiles`, and for molecules
+    /// RDKit would write as V3000 (dative bonds, more than 999 atoms or
+    /// bonds).
+    ///
+    ///     print(chematic.from_smiles("C[C@H](O)F").rdkit_mol_block_2d())
+    fn rdkit_mol_block_2d(&self) -> PyResult<String> {
+        chematic_smiles::rdkit_mol_block_2d(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// Canonical SMILES together with the atom output order.
     ///
     /// Returns ``(smiles, order)`` where ``smiles`` equals :attr:`smiles` and
@@ -240,6 +275,196 @@ impl Mol {
         )
         .map(|b| b.total)
         .unwrap_or(0.0)
+    }
+
+    /// RDKit-compatible MMFF94 energy: ``MMFFGetMoleculeForceField(m,
+    /// MMFFGetMoleculeProperties(m), nonBondedThresh,
+    /// ignoreInterfragInteractions).CalcEnergy()`` for ``coords`` (all atoms,
+    /// in the order of :meth:`add_hydrogens`, which is RDKit's ``AddHs``
+    /// order). ``variant`` is ``"MMFF94"`` or ``"MMFF94s"``. Raises
+    /// ``ValueError`` when MMFF94 typing fails.
+    #[pyo3(signature = (coords, variant = "MMFF94", non_bonded_thresh = 100.0, ignore_interfrag_interactions = true))]
+    fn rdkit_mmff_energy(
+        &self,
+        coords: Vec<[f64; 3]>,
+        variant: &str,
+        non_bonded_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<f64> {
+        let ff = rdkit_mmff_field(
+            &self.inner,
+            &coords,
+            mmff_variant(variant)?,
+            non_bonded_thresh,
+            ignore_interfrag_interactions,
+            [true; 7],
+        )?;
+        Ok(ff.energy(coords.as_flattened()))
+    }
+
+    /// RDKit-compatible ``MMFFOptimizeMolecule(m, maxIters, nonBondedThresh,
+    /// ignoreInterfragInteractions)`` from ``coords``: returns
+    /// ``(status, energy, coords)`` with RDKit's status (0 converged, 1 more
+    /// iterations needed) and final energy. ``variant`` is ``"MMFF94"`` or
+    /// ``"MMFF94s"`` (``"MMFF94S"`` is accepted as ``"MMFF94s"``; note RDKit
+    /// itself silently treats any spelling other than ``"MMFF94s"`` as
+    /// MMFF94).
+    #[pyo3(signature = (coords, max_iters = 200, variant = "MMFF94", non_bonded_thresh = 100.0, ignore_interfrag_interactions = true))]
+    fn rdkit_mmff_optimize(
+        &self,
+        coords: Vec<[f64; 3]>,
+        max_iters: u32,
+        variant: &str,
+        non_bonded_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<(i32, f64, Vec<[f64; 3]>)> {
+        let ff = rdkit_mmff_field(
+            &self.inner,
+            &coords,
+            mmff_variant(variant)?,
+            non_bonded_thresh,
+            ignore_interfrag_interactions,
+            [true; 7],
+        )?;
+        let mut pos = coords.as_flattened().to_vec();
+        let (status, energy) = ff.optimize(&mut pos, max_iters);
+        if status < 0 {
+            return Err(PyValueError::new_err("bad direction in linearSearch"));
+        }
+        Ok((
+            status,
+            energy,
+            pos.chunks(3).map(|c| [c[0], c[1], c[2]]).collect(),
+        ))
+    }
+
+    /// RDKit-compatible UFF energy: ``UFFGetMoleculeForceField(m,
+    /// vdwThresh, ignoreInterfragInteractions=...).CalcEnergy()`` for
+    /// ``coords`` (all atoms, in :meth:`add_hydrogens` order, which is
+    /// RDKit's ``AddHs`` order).
+    #[pyo3(signature = (coords, vdw_thresh = 10.0, ignore_interfrag_interactions = true))]
+    fn rdkit_uff_energy(
+        &self,
+        coords: Vec<[f64; 3]>,
+        vdw_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<f64> {
+        let ff = rdkit_uff_field(
+            &self.inner,
+            &coords,
+            vdw_thresh,
+            ignore_interfrag_interactions,
+        )?;
+        Ok(ff.energy(coords.as_flattened()))
+    }
+
+    /// RDKit-compatible UFF gradient (``CalcGrad()``, unscaled) for
+    /// ``coords``, flattened.
+    #[pyo3(signature = (coords, vdw_thresh = 10.0, ignore_interfrag_interactions = true))]
+    fn rdkit_uff_gradient(
+        &self,
+        coords: Vec<[f64; 3]>,
+        vdw_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<Vec<f64>> {
+        let ff = rdkit_uff_field(
+            &self.inner,
+            &coords,
+            vdw_thresh,
+            ignore_interfrag_interactions,
+        )?;
+        let pos = coords.as_flattened();
+        let mut grad = vec![0.0; pos.len()];
+        ff.gradient(pos, &mut grad);
+        Ok(grad)
+    }
+
+    /// RDKit-compatible ``UFFOptimizeMolecule(m, maxIters, vdwThresh,
+    /// ignoreInterfragInteractions=...)`` from ``coords``: returns
+    /// ``(status, energy, coords)`` with RDKit's status (0 converged, 1 more
+    /// iterations needed) and final energy.
+    #[pyo3(signature = (coords, max_iters = 200, vdw_thresh = 10.0, ignore_interfrag_interactions = true))]
+    fn rdkit_uff_optimize(
+        &self,
+        coords: Vec<[f64; 3]>,
+        max_iters: u32,
+        vdw_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<(i32, f64, Vec<[f64; 3]>)> {
+        let ff = rdkit_uff_field(
+            &self.inner,
+            &coords,
+            vdw_thresh,
+            ignore_interfrag_interactions,
+        )?;
+        let mut pos = coords.as_flattened().to_vec();
+        let (status, energy) = ff.optimize(&mut pos, max_iters);
+        if status < 0 {
+            return Err(PyValueError::new_err("bad direction in linearSearch"));
+        }
+        Ok((
+            status,
+            energy,
+            pos.chunks(3).map(|c| [c[0], c[1], c[2]]).collect(),
+        ))
+    }
+
+    /// Diagnostic: the RDKit UFF terms ``(kind, atoms, params)`` in RDKit's
+    /// contribution order.
+    #[pyo3(signature = (coords, vdw_thresh = 10.0))]
+    fn _rdkit_uff_terms(
+        &self,
+        coords: Vec<[f64; 3]>,
+        vdw_thresh: f64,
+    ) -> PyResult<Vec<(String, Vec<usize>, Vec<f64>)>> {
+        let ff = rdkit_uff_field(&self.inner, &coords, vdw_thresh, true)?;
+        Ok(ff
+            .debug_terms()
+            .into_iter()
+            .map(|(k, a, p)| (k.to_string(), a, p))
+            .collect())
+    }
+
+    /// RDKit ``UFFHasAllMoleculeParams``: whether every atom (of this
+    /// explicit-hydrogen molecule) has a UFF atom type with parameters.
+    fn rdkit_uff_has_all_params(&self) -> bool {
+        chematic_ff::rdkit_uff::rdkit_uff_has_all_params(&self.inner)
+    }
+
+    /// RDKit's UFF atom labels (``UFF::Tools::getAtomLabel``), one per atom.
+    fn rdkit_uff_atom_labels(&self) -> Vec<String> {
+        chematic_ff::rdkit_uff::rdkit_uff_atom_labels(&self.inner)
+    }
+
+    /// Diagnostic: RDKit-compatible MMFF94 energy and unscaled gradient with
+    /// only the term classes in ``terms`` (``bond``, ``angle``,
+    /// ``stretch_bend``, ``oop``, ``torsion``, ``vdw``, ``ele``).
+    #[pyo3(signature = (coords, terms = None, non_bonded_thresh = 100.0, variant = "MMFF94"))]
+    fn _rdkit_mmff_terms(
+        &self,
+        coords: Vec<[f64; 3]>,
+        terms: Option<Vec<String>>,
+        non_bonded_thresh: f64,
+        variant: &str,
+    ) -> PyResult<(f64, Vec<f64>)> {
+        let mut mask = [true; 7];
+        if let Some(t) = terms {
+            for (k, name) in chematic_ff::rdkit_mmff::RDKIT_MMFF_TERMS.iter().enumerate() {
+                mask[k] = t.iter().any(|x| x == name);
+            }
+        }
+        let ff = rdkit_mmff_field(
+            &self.inner,
+            &coords,
+            mmff_variant(variant)?,
+            non_bonded_thresh,
+            true,
+            mask,
+        )?;
+        let pos = coords.as_flattened();
+        let mut grad = vec![0.0; pos.len()];
+        ff.gradient(pos, &mut grad);
+        Ok((ff.energy(pos), grad))
     }
 
     /// Per-atom MMFF94 force field type names.
@@ -2454,9 +2679,12 @@ impl Mol {
     /// their RDKit canonical SMILES, sorted by that SMILES.
     ///
     /// Only ``only_unassigned=True`` and ``unique=True`` are supported.
-    /// Raises ``ValueError`` where RDKit would pick a random sample (more flip
-    /// combinations than ``max_isomers``) or the molecule is outside the
-    /// RDKit-compatible model (e.g. enhanced stereo groups).
+    /// With more flip combinations than ``max_isomers`` RDKit yields a random
+    /// sample seeded deterministically from the molecule (``rand=None``);
+    /// that sample is reproduced (CPython ``hash`` + ``random.Random``).
+    /// Raises ``ValueError`` when the molecule is outside the
+    /// RDKit-compatible model (e.g. enhanced stereo groups), or for
+    /// ``max_isomers=0`` with more than 16 flips.
     #[pyo3(signature = (only_unassigned = true, unique = true, max_isomers = 1024))]
     fn rdkit_stereoisomers(
         &self,
@@ -5181,4 +5409,61 @@ fn stereo_loss_dict<'py>(
     )?;
     d.set_item("stereo_groups_dropped", loss.stereo_groups_dropped)?;
     Ok(d)
+}
+
+fn rdkit_uff_field(
+    mol: &chematic_core::Molecule,
+    coords: &[[f64; 3]],
+    vdw_thresh: f64,
+    ignore_interfrag: bool,
+) -> PyResult<chematic_ff::rdkit_uff::RdkitUffField> {
+    if coords.len() != mol.atom_count() {
+        return Err(PyValueError::new_err(format!(
+            "expected {} coordinates, got {}",
+            mol.atom_count(),
+            coords.len()
+        )));
+    }
+    Ok(chematic_ff::rdkit_uff::RdkitUffField::new(
+        mol,
+        coords,
+        vdw_thresh,
+        ignore_interfrag,
+    ))
+}
+
+fn mmff_variant(variant: &str) -> PyResult<chematic_ff::rdkit_mmff::MmffVariant> {
+    match variant {
+        "MMFF94" => Ok(chematic_ff::rdkit_mmff::MmffVariant::Mmff94),
+        "MMFF94s" | "MMFF94S" => Ok(chematic_ff::rdkit_mmff::MmffVariant::Mmff94s),
+        _ => Err(PyValueError::new_err(format!(
+            "unsupported MMFF variant {variant:?} (expected \"MMFF94\" or \"MMFF94s\")"
+        ))),
+    }
+}
+
+fn rdkit_mmff_field(
+    mol: &chematic_core::Molecule,
+    coords: &[[f64; 3]],
+    variant: chematic_ff::rdkit_mmff::MmffVariant,
+    non_bonded_thresh: f64,
+    ignore_interfrag: bool,
+    terms: [bool; 7],
+) -> PyResult<chematic_ff::rdkit_mmff::RdkitMmffField> {
+    if coords.len() != mol.atom_count() {
+        return Err(PyValueError::new_err(format!(
+            "expected {} coordinates, got {}",
+            mol.atom_count(),
+            coords.len()
+        )));
+    }
+    chematic_ff::rdkit_mmff::RdkitMmffField::with_terms(
+        mol,
+        coords,
+        variant,
+        non_bonded_thresh,
+        ignore_interfrag,
+        terms,
+    )
+    .map_err(|e| PyValueError::new_err(e.to_string()))
 }
