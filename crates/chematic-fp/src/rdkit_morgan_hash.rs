@@ -260,7 +260,7 @@ pub(crate) fn expand_one_pass_with_chirality(
     bond_invariants: &[u32],
     max_radius: u32,
     suppress: bool,
-    cip_codes: Option<&FxHashMap<AtomIdx, CipCode>>,
+    chirality: Option<&MorganChirality>,
 ) -> FxHashMap<(u32, u32), u32> {
     let mut out: FxHashMap<(u32, u32), u32> = FxHashMap::default();
     expand_one_pass_with_chirality_into(
@@ -269,7 +269,7 @@ pub(crate) fn expand_one_pass_with_chirality(
         bond_invariants,
         max_radius,
         suppress,
-        cip_codes,
+        chirality,
         |atom_idx, radius, invariant| {
             out.insert((atom_idx, radius), invariant);
         },
@@ -288,7 +288,7 @@ pub(crate) fn expand_one_pass_with_chirality_into<F>(
     bond_invariants: &[u32],
     max_radius: u32,
     suppress: bool,
-    cip_codes: Option<&FxHashMap<AtomIdx, CipCode>>,
+    chirality: Option<&MorganChirality>,
     mut emit: F,
 ) where
     F: FnMut(u32, u32, u32),
@@ -348,25 +348,23 @@ pub(crate) fn expand_one_pass_with_chirality_into<F>(
 
             let mut invar = layer;
             invar = hash_combine(invar, current_invariants[i]);
-            let mut looks_chiral =
-                cip_codes.is_some() && mol.atom(idx).chirality != chematic_core::Chirality::None;
+            // RDKit: an atom with a chiral tag "looks chiral" until a
+            // non-single bond or two equal neighbour invariants show
+            // otherwise; once found chiral, later rounds skip that check.
+            let mut looks_chiral = chirality.is_some_and(|c| c.tagged[i]);
             let mut previous_neighbor: Option<u32> = None;
             for &(bond_inv, nb_inv) in &pairs {
                 invar = hash_combine(invar, hash_pair(bond_inv, nb_inv));
-                if looks_chiral {
+                if looks_chiral && !chiral_atoms[i] {
                     if bond_inv != 1 || previous_neighbor == Some(nb_inv) {
                         looks_chiral = false;
                     }
-                    previous_neighbor = Some(nb_inv);
                 }
+                previous_neighbor = Some(nb_inv);
             }
-            if looks_chiral {
+            if looks_chiral && let Some(c) = chirality {
                 chiral_atoms[i] = true;
-                let code = cip_codes
-                    .and_then(|codes| codes.get(&idx).copied())
-                    .map(chiral_code)
-                    .unwrap_or(1);
-                invar = hash_combine(invar, code);
+                invar = hash_combine(invar, c.code[i]);
             }
 
             next_invariants[i] = invar;
@@ -504,6 +502,36 @@ where
         std::mem::swap(&mut env, &mut next_env);
     }
     Some(())
+}
+
+/// Per-atom chirality inputs of RDKit's Morgan generator with
+/// `includeChirality`: whether the atom carries a chiral tag (after RDKit's
+/// stereo perception), and the value hashed in for it (`R` 3, `S` 2,
+/// otherwise 1).
+#[derive(Debug, Clone)]
+pub(crate) struct MorganChirality {
+    pub tagged: Vec<bool>,
+    pub code: Vec<u32>,
+}
+
+impl MorganChirality {
+    /// From chematic's own tags and an R/S assignment.
+    pub(crate) fn from_cip(mol: &Molecule, codes: &FxHashMap<AtomIdx, CipCode>) -> Self {
+        let n = mol.atom_count();
+        Self {
+            tagged: (0..n)
+                .map(|i| mol.atom(AtomIdx(i as u32)).chirality != chematic_core::Chirality::None)
+                .collect(),
+            code: (0..n)
+                .map(|i| {
+                    codes
+                        .get(&AtomIdx(i as u32))
+                        .copied()
+                        .map_or(1, chiral_code)
+                })
+                .collect(),
+        }
+    }
 }
 
 fn chiral_code(code: CipCode) -> u32 {

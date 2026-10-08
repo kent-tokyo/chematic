@@ -1593,6 +1593,28 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::rdkit_atom_pair_fp(&self.inner))
     }
 
+    /// RDKit's hashed atom-pair count fingerprint
+    /// (``rdMolDescriptors.GetHashedAtomPairFingerprint(m, nBits=nbits)``)
+    /// as a sorted list of ``(bucket, count)`` nonzero elements.
+    #[pyo3(signature = (nbits = 2048))]
+    fn rdkit_atom_pair_counts(&self, nbits: u32) -> PyResult<Vec<(u32, u32)>> {
+        if nbits == 0 {
+            return Err(PyValueError::new_err("nbits must be positive"));
+        }
+        Ok(chematic_fp::rdkit_atom_pair_counts(&self.inner, nbits))
+    }
+
+    /// RDKit's hashed topological-torsion count fingerprint
+    /// (``rdMolDescriptors.GetHashedTopologicalTorsionFingerprint(m, nBits=nbits)``)
+    /// as a sorted list of ``(bucket, count)`` nonzero elements.
+    #[pyo3(signature = (nbits = 2048))]
+    fn rdkit_torsion_counts(&self, nbits: u32) -> PyResult<Vec<(u32, u32)>> {
+        if nbits == 0 {
+            return Err(PyValueError::new_err("nbits must be positive"));
+        }
+        Ok(chematic_fp::rdkit_torsion_counts(&self.inner, nbits))
+    }
+
     /// RDKit-compatible "Layered fingerprint" (``rdkit.Chem.LayeredFingerprint``)
     /// as bytes (256 bytes = 2048 bits).
     ///
@@ -1719,16 +1741,24 @@ impl Mol {
     ///
     /// Raises ``ValueError`` on the same preprocessing failures as :meth:`rdkit_ecfp4`
     /// (regardless of ``radius``/``nbits`` -- the failure happens before folding).
-    /// ``include_chirality`` enables RDKit-compatible tetrahedral chirality.
-    /// E/Z bond stereo is not included by this API yet.
-    #[pyo3(signature = (radius = 2, nbits = 2048, include_chirality = false))]
+    /// ``include_chirality`` is RDKit's ``includeChirality``: tetrahedral
+    /// centres and E/Z double bonds as RDKit's (legacy) stereo perception
+    /// sees them. ``count_simulation`` is RDKit's ``countSimulation`` with
+    /// the default ``countBounds`` ``[1, 2, 4, 8]``.
+    #[pyo3(signature = (radius = 2, nbits = 2048, include_chirality = false, count_simulation = false))]
     fn rdkit_ecfp_config(
         &self,
         radius: u32,
         nbits: usize,
         include_chirality: bool,
+        count_simulation: bool,
     ) -> PyResult<Vec<u8>> {
         let config = python_rdkit_morgan_config(radius, nbits, include_chirality)?;
+        if count_simulation {
+            let fp = chematic_fp::rdkit_morgan_count_simulation(&self.inner, &config)
+                .map_err(|e| PyValueError::new_err(e.to_string()))?;
+            return Ok(bitvecn_to_bytes(&fp));
+        }
         let result = chematic_fp::rdkit_morgan_fingerprint(&self.inner, &config)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(bitvecn_to_bytes(&result.fingerprint))
@@ -2414,6 +2444,40 @@ impl Mol {
         chematic_chem::enumerate_stereoisomers(&self.inner)
             .into_iter()
             .map(Mol::bare)
+            .collect()
+    }
+
+    /// RDKit-compatible stereoisomer enumeration: the isomers
+    /// ``rdkit.Chem.EnumerateStereoisomers.EnumerateStereoisomers`` yields
+    /// with ``StereoEnumerationOptions(onlyUnassigned=True, unique=True,
+    /// maxIsomers=max_isomers, tryEmbedding=False)``, as Mols parsed from
+    /// their RDKit canonical SMILES, sorted by that SMILES.
+    ///
+    /// Only ``only_unassigned=True`` and ``unique=True`` are supported.
+    /// Raises ``ValueError`` where RDKit would pick a random sample (more flip
+    /// combinations than ``max_isomers``) or the molecule is outside the
+    /// RDKit-compatible model (e.g. enhanced stereo groups).
+    #[pyo3(signature = (only_unassigned = true, unique = true, max_isomers = 1024))]
+    fn rdkit_stereoisomers(
+        &self,
+        only_unassigned: bool,
+        unique: bool,
+        max_isomers: usize,
+    ) -> PyResult<Vec<Mol>> {
+        if !only_unassigned || !unique {
+            return Err(PyValueError::new_err(
+                "only only_unassigned=True and unique=True are supported",
+            ));
+        }
+        let smiles = chematic_smiles::rdkit_stereoisomer_smiles(&self.inner, max_isomers)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        smiles
+            .iter()
+            .map(|s| {
+                chematic_smiles::parse(s)
+                    .map(Mol::bare)
+                    .map_err(|e| PyValueError::new_err(format!("{s}: {e}")))
+            })
             .collect()
     }
 

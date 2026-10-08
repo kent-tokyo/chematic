@@ -59,12 +59,12 @@ pub use ecfp::{
     ecfp6, ecfp6_rdkit_environment_experimental, ecfp6_rdkit_invariants, morgan_fp_counts,
     tanimoto_ecfp4,
 };
-pub use rdkit_atom_pair::rdkit_atom_pair_fp;
+pub use rdkit_atom_pair::{rdkit_atom_pair_counts, rdkit_atom_pair_fp};
 pub use rdkit_avalon::{RdkitAvalonError, rdkit_avalon_fp};
 pub use rdkit_layered::rdkit_layered_fp;
 pub use rdkit_pattern::rdkit_pattern_fp;
 pub use rdkit_rdk::rdkit_rdk_fp;
-pub use rdkit_torsion::rdkit_torsion_fp;
+pub use rdkit_torsion::{rdkit_torsion_counts, rdkit_torsion_fp};
 /// Diagnostic-only APIs, not meant for production use — a per-`(atom,
 /// radius)` trace of chematic's real Morgan expansion, for the RDKit
 /// environment-parity oracle (see `scripts/ecfp_rdkit_environment_parity.py`),
@@ -97,7 +97,7 @@ pub use pharmacophore_fp::{
 };
 pub use rdkit_morgan_config::{
     RdkitMorganConfig, RdkitMorganFingerprint, RdkitMorganFpSize, RdkitMorganRadius,
-    rdkit_morgan_fingerprint,
+    rdkit_morgan_count_simulation, rdkit_morgan_fingerprint,
 };
 pub use rdkit_morgan_ecfp4::{
     PreparedRdkitMorganEcfp4, RdkitMorganEcfp4, RdkitMorganError, prepare_rdkit_morgan_ecfp4,

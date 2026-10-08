@@ -281,6 +281,9 @@ fn fragment(mol: &Mol, atoms: &[usize]) -> Mol {
             b.begin = new_idx[bond.begin];
             b.end = new_idx[bond.end];
             b.stereo_atoms = b.stereo_atoms.iter().map(|&x| new_idx[x]).collect();
+            b.requested = b
+                .requested
+                .map(|(sa, sb, trans)| (new_idx[sa], new_idx[sb], trans));
             out.add_bond(b);
         }
     }

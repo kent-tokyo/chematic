@@ -304,7 +304,9 @@ def chematic_engine():
         "murcko_scaffold": lambda m: m.scaffold().rdkit_smiles,
         "morgan3_2048": lambda m: _bits(m.rdkit_ecfp_config(3, 2048)),
         "morgan2_chiral": lambda m: _bits(m.rdkit_ecfp_config(2, 2048, include_chirality=True)),
-        "stereoisomers": lambda m: sorted(x.rdkit_smiles for x in m.enumerate_stereoisomers()),
+        "morgan2_countsim": lambda m: _bits(m.rdkit_ecfp_config(2, 2048, count_simulation=True)),
+        "atom_pair_counts": lambda m: sorted([k, v] for k, v in m.rdkit_atom_pair_counts(2048)),
+        "stereoisomers": lambda m: sorted(x.rdkit_smiles for x in m.rdkit_stereoisomers()),
     })
     for name, kwargs in (("smiles_kekule", {"kekule": True}), ("smiles_noniso", {"isomeric": False}),
                          ("smiles_explicit", {"all_bonds_explicit": True, "all_hs_explicit": True})):

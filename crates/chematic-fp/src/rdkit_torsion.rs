@@ -410,6 +410,39 @@ pub fn rdkit_torsion_fp(mol: &Molecule) -> BitVec2048 {
     })
 }
 
+/// Per-bucket torsion counts (`getHashedTopologicalTorsionFingerprint`).
+fn torsion_bucket_counts(mol: &Molecule, atom_invariants: &[u32], n_buckets: u32) -> Vec<u32> {
+    let mut counts = vec![0u32; n_buckets as usize];
+    for path in four_atom_paths(mol)
+        .into_iter()
+        .chain(triangle_closure_paths(mol))
+    {
+        let h = torsion_hash(atom_invariants, &path);
+        let bucket = (h % n_buckets) as usize;
+        counts[bucket] = counts[bucket].saturating_add(1);
+    }
+    counts
+}
+
+/// RDKit's hashed topological-torsion *count* fingerprint
+/// (`rdMolDescriptors.GetHashedTopologicalTorsionFingerprint(mol, nBits)`):
+/// the nonzero `(bucket, count)` elements, sorted by bucket.
+pub fn rdkit_torsion_counts(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
+    let n_bits = n_bits.max(1);
+    chematic_perception::with_rdkit_parity_view(mol, |view| {
+        let m = view.unwrap_or(mol);
+        let invariants: Vec<u32> = (0..m.atom_count())
+            .map(|i| atom_code(m, AtomIdx(i as u32), 0).wrapping_sub(2))
+            .collect();
+        torsion_bucket_counts(m, &invariants, n_bits)
+            .into_iter()
+            .enumerate()
+            .filter(|&(_, c)| c > 0)
+            .map(|(b, c)| (b as u32, c))
+            .collect()
+    })
+}
+
 /// [`rdkit_torsion_fp`] on a molecule whose aromaticity is already RDKit-perceived.
 fn rdkit_torsion_fp_prepared(mol: &Molecule) -> BitVec2048 {
     let n = mol.atom_count();
@@ -426,15 +459,7 @@ fn rdkit_torsion_fp_prepared(mol: &Molecule) -> BitVec2048 {
         .collect();
 
     const BLOCK_LENGTH: u32 = 2048 / N_BITS_PER_ENTRY as u32;
-    let mut counts = vec![0u32; BLOCK_LENGTH as usize];
-    for path in four_atom_paths(mol)
-        .into_iter()
-        .chain(triangle_closure_paths(mol))
-    {
-        let h = torsion_hash(&atom_invariants, &path);
-        let bucket = (h % BLOCK_LENGTH) as usize;
-        counts[bucket] = counts[bucket].saturating_add(1);
-    }
+    let counts = torsion_bucket_counts(mol, &atom_invariants, BLOCK_LENGTH);
 
     let mut fp = BitVec2048::new();
     for (bucket, &count) in counts.iter().enumerate() {
