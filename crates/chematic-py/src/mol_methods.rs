@@ -242,6 +242,88 @@ impl Mol {
         .unwrap_or(0.0)
     }
 
+    /// RDKit-compatible MMFF94 energy: ``MMFFGetMoleculeForceField(m,
+    /// MMFFGetMoleculeProperties(m), nonBondedThresh,
+    /// ignoreInterfragInteractions).CalcEnergy()`` for ``coords`` (all atoms,
+    /// in the order of :meth:`add_hydrogens`, which is RDKit's ``AddHs``
+    /// order). Raises ``ValueError`` when MMFF94 typing fails.
+    #[pyo3(signature = (coords, non_bonded_thresh = 100.0, ignore_interfrag_interactions = true))]
+    fn rdkit_mmff_energy(
+        &self,
+        coords: Vec<[f64; 3]>,
+        non_bonded_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<f64> {
+        let ff = rdkit_mmff_field(
+            &self.inner,
+            &coords,
+            non_bonded_thresh,
+            ignore_interfrag_interactions,
+            [true; 7],
+        )?;
+        Ok(ff.energy(coords.as_flattened()))
+    }
+
+    /// RDKit-compatible ``MMFFOptimizeMolecule(m, maxIters, nonBondedThresh,
+    /// ignoreInterfragInteractions)`` from ``coords``: returns
+    /// ``(status, energy, coords)`` with RDKit's status (0 converged, 1 more
+    /// iterations needed) and final energy.
+    #[pyo3(signature = (coords, max_iters = 200, variant = "MMFF94", non_bonded_thresh = 100.0, ignore_interfrag_interactions = true))]
+    fn rdkit_mmff_optimize(
+        &self,
+        coords: Vec<[f64; 3]>,
+        max_iters: u32,
+        variant: &str,
+        non_bonded_thresh: f64,
+        ignore_interfrag_interactions: bool,
+    ) -> PyResult<(i32, f64, Vec<[f64; 3]>)> {
+        if variant != "MMFF94" {
+            return Err(PyValueError::new_err(format!(
+                "unsupported MMFF variant {variant:?}"
+            )));
+        }
+        let ff = rdkit_mmff_field(
+            &self.inner,
+            &coords,
+            non_bonded_thresh,
+            ignore_interfrag_interactions,
+            [true; 7],
+        )?;
+        let mut pos = coords.as_flattened().to_vec();
+        let (status, energy) = ff.optimize(&mut pos, max_iters);
+        if status < 0 {
+            return Err(PyValueError::new_err("bad direction in linearSearch"));
+        }
+        Ok((
+            status,
+            energy,
+            pos.chunks(3).map(|c| [c[0], c[1], c[2]]).collect(),
+        ))
+    }
+
+    /// Diagnostic: RDKit-compatible MMFF94 energy and unscaled gradient with
+    /// only the term classes in ``terms`` (``bond``, ``angle``,
+    /// ``stretch_bend``, ``oop``, ``torsion``, ``vdw``, ``ele``).
+    #[pyo3(signature = (coords, terms = None, non_bonded_thresh = 100.0))]
+    fn _rdkit_mmff_terms(
+        &self,
+        coords: Vec<[f64; 3]>,
+        terms: Option<Vec<String>>,
+        non_bonded_thresh: f64,
+    ) -> PyResult<(f64, Vec<f64>)> {
+        let mut mask = [true; 7];
+        if let Some(t) = terms {
+            for (k, name) in chematic_ff::rdkit_mmff::RDKIT_MMFF_TERMS.iter().enumerate() {
+                mask[k] = t.iter().any(|x| x == name);
+            }
+        }
+        let ff = rdkit_mmff_field(&self.inner, &coords, non_bonded_thresh, true, mask)?;
+        let pos = coords.as_flattened();
+        let mut grad = vec![0.0; pos.len()];
+        ff.gradient(pos, &mut grad);
+        Ok((ff.energy(pos), grad))
+    }
+
     /// Per-atom MMFF94 force field type names.
     ///
     /// Returns one string per heavy atom describing the MMFF94 atom type
@@ -5181,4 +5263,28 @@ fn stereo_loss_dict<'py>(
     )?;
     d.set_item("stereo_groups_dropped", loss.stereo_groups_dropped)?;
     Ok(d)
+}
+
+fn rdkit_mmff_field(
+    mol: &chematic_core::Molecule,
+    coords: &[[f64; 3]],
+    non_bonded_thresh: f64,
+    ignore_interfrag: bool,
+    terms: [bool; 7],
+) -> PyResult<chematic_ff::rdkit_mmff::RdkitMmffField> {
+    if coords.len() != mol.atom_count() {
+        return Err(PyValueError::new_err(format!(
+            "expected {} coordinates, got {}",
+            mol.atom_count(),
+            coords.len()
+        )));
+    }
+    chematic_ff::rdkit_mmff::RdkitMmffField::with_terms(
+        mol,
+        coords,
+        non_bonded_thresh,
+        ignore_interfrag,
+        terms,
+    )
+    .map_err(|e| PyValueError::new_err(e.to_string()))
 }

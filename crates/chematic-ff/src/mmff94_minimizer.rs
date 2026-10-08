@@ -277,6 +277,38 @@ impl Mmff94EnergyModel {
         })
     }
 
+    /// The prepared bonded parameters, for the RDKit-order force field
+    /// ([`crate::rdkit_mmff`]).
+    pub(crate) fn rdkit_parts(&self) -> crate::rdkit_mmff::PreparedParts {
+        crate::rdkit_mmff::PreparedParts {
+            bonds: self
+                .bonds
+                .iter()
+                .map(|b| (b.i, b.j, b.params.r0, b.params.kb))
+                .collect(),
+            angles: self
+                .angles
+                .iter()
+                .map(|a| (a.i, a.j, a.k, a.params.theta0, a.params.ka, a.linear))
+                .collect(),
+            stretch_bends: self
+                .stretch_bends
+                .iter()
+                .map(|t| {
+                    (
+                        t.i, t.j, t.k, t.r0_ij, t.r0_kj, t.theta0, t.kba_ij, t.kba_kj,
+                    )
+                })
+                .collect(),
+            oops: self.oops.iter().map(|o| (o.j, o.koop)).collect(),
+            torsions: self
+                .torsions
+                .iter()
+                .map(|t| (t.i, t.j, t.k, t.l, t.params.v1, t.params.v2, t.params.v3))
+                .collect(),
+        }
+    }
+
     /// Evaluate total MMFF94 energy for coordinates matching the prepared molecule.
     pub fn energy(&self, coords: &[[f64; 3]]) -> f64 {
         self.bond_energy(coords)

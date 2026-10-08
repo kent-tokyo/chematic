@@ -19,6 +19,7 @@ pub mod mmff94_numeric;
 pub mod mmff94_numeric_type_registry;
 pub mod mmff94_params;
 pub mod params;
+pub mod rdkit_mmff;
 pub mod uff;
 
 pub use dreiding::{DREIDINGType, assign_dreiding_types};
