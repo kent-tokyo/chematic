@@ -12,7 +12,7 @@ use super::rank::rank_mol_atoms;
 
 /// `GetDefaultAtomNumber`.
 fn default_atom_number(anum: u32, elem: &mut HashMap<u32, u32>) -> String {
-    let mut ret = [b' ', b' '];
+    let mut ret = *b"  ";
     match elem.get_mut(&anum) {
         None => {
             elem.insert(anum, 1);
