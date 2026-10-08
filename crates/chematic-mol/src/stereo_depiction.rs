@@ -437,9 +437,39 @@ fn wedge_matches_with(
             }
         }
     }
+    // A lone-pair centre (three neighbours, no H) whose bonds all lie in
+    // one half-plane is read differently by different toolkits; only use a
+    // drawing that spreads them.
+    if angles.len() == 3 && chematic_core::implicit_hcount(mol, centre) == 0 {
+        let mut sorted: Vec<f64> = angles
+            .iter()
+            .map(|a| a.rem_euclid(std::f64::consts::TAU))
+            .collect();
+        sorted.sort_by(f64::total_cmp);
+        let gaps = [
+            sorted[1] - sorted[0],
+            sorted[2] - sorted[1],
+            sorted[0] + std::f64::consts::TAU - sorted[2],
+        ];
+        if gaps.iter().any(|&g| g >= std::f64::consts::PI) {
+            return None;
+        }
+    }
     let (chirality, order) =
-        chematic_perception::stereo2d_local::local_parity_from_wedges(drawn, coords, centre)?;
+        chematic_perception::stereo2d_local::local_parity_from_wedges_with_lone_pair(
+            drawn, coords, centre,
+        )?;
     let declared = mol.stereo_neighbor_order(centre)?;
+    // A lone-pair centre (`[N@@]` with three neighbours) records three
+    // neighbours; chematic reads that order as seen from the lone pair
+    // (verified by RDKit round trips of asymmetric bridgehead amines).
+    let with_lone_pair;
+    let declared = if declared.len() == 3 && order.len() == 4 && order.contains(&u32::MAX) {
+        with_lone_pair = [u32::MAX, declared[0], declared[1], declared[2]];
+        &with_lone_pair[..]
+    } else {
+        declared
+    };
     let want = mol.atom(centre).chirality;
     if !want.is_tetrahedral() || !chirality.is_tetrahedral() || declared.len() != order.len() {
         return None;
@@ -1230,6 +1260,27 @@ mod tests {
             assert!(
                 super::undeclared_stereo_double_bonds(&mol).is_empty(),
                 "{smi}"
+            );
+        }
+    }
+
+    /// A bridgehead `[N@@]` (lone pair, three ring bonds) gets a wedge, as
+    /// RDKit 2026.03 writes and reads one back (checked against RDKit for
+    /// both enantiomers of this amine and of exposed-10k row 2960).
+    #[test]
+    fn bridgehead_nitrogen_is_wedged() {
+        for smiles in [
+            "C[C@@]2(C[N@@]3CC[C@@H]2C3)O",
+            "C[C@@]2(C[N@]3CC[C@@H]2C3)O",
+        ] {
+            let m = chematic_smiles::parse(smiles).unwrap();
+            let coords = super::mol_block_coords(&m);
+            let sd = super::stereo_depiction(&m, &coords);
+            assert!(sd.unexpressed_centres.is_empty(), "{smiles}");
+            assert!(
+                sd.wedges
+                    .values()
+                    .any(|w| m.atom(w.start).element.atomic_number() == 7)
             );
         }
     }

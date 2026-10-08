@@ -27,8 +27,12 @@ CLASSIFICATION = ROOT / "validation/results/rdkit-rebaseline-residual-classifica
 PUBLISHED = ROOT / "validation/results/v1.0.30-published-python-chemistry-rows.jsonl.gz"
 ORACLE_SHA256 = "3f55a2e16ee3aef9c59e6d17e1404528021658269fe4edb71208a19e12e07093"
 ORACLE_RDKIT = "2026.03.6"
-REFUSED_ROWS = (9, 23, 28, 29, 30, 34)
-REFUSED_QUERIES = ("[R1]", "[R2]", "[R3]")
+# Rows 9, 23, 28, 29, 30 and 34 x [R1]/[R2]/[R3] used to be typed
+# `ring_model_ambiguous` refusals (RDKit's symmetrized SSSR depends on atom
+# order there); the default profile now counts them over the exact port of
+# RDKit's order-dependent ring list, so no cell is expected to be refused.
+REFUSED_ROWS: tuple[int, ...] = ()
+REFUSED_QUERIES: tuple[str, ...] = ()
 
 
 def sha256(path: Path) -> str:
@@ -165,11 +169,11 @@ def main() -> int:
     if (unexpected or observed_refused != expected_refused
             or any(status != "typed_unsupported" or reason != "ring_model_ambiguous"
                    for _, _, status, reason in refused)
-            or counters["exact"] != 309_982
-            or counters["fixed_original_residual"] != 183
+            or counters["exact"] != 310_000
+            or counters["fixed_original_residual"] != 200
             or counters["fixed_original_boolean"] != 43
-            or counters["refused_original_residual"] != 17
-            or counters["refused_original_correct"] != 1):
+            or counters["refused_original_residual"] != 0
+            or counters["refused_original_correct"] != 0):
         raise ValueError(f"source-wheel SMARTS gate did not meet the predeclared profile: {report['counts']}; "
                          f"refused={len(refused)}, unexpected={len(unexpected)}")
     print(json.dumps({"input_cells": report["input_cells"], "counts": report["counts"],

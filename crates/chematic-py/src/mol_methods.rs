@@ -2016,9 +2016,12 @@ impl Mol {
     /// ambiguous ring-count systems and bounded searches are never presented
     /// as an empty match set. This mode is not general RDKit SMARTS parity.
     ///
+    /// The default profile counts ``[R<n>]`` rings in RDKit 2026.03's
+    /// symmetrized SSSR, using the exact port of RDKit's atom-order-dependent
+    /// ring list where that list depends on atom order; it refuses as
+    /// ``ring_model_ambiguous`` only where that port declines.
     /// ``profile="2026.09.1"`` counts ``[R<n>]`` rings in RDKit 2026.09.1's
-    /// ring list (all relevant cycles) instead of 2026.03.6's symmetrized
-    /// SSSR; nothing is then refused as ``ring_model_ambiguous``.
+    /// ring list (all relevant cycles) instead.
     #[pyo3(signature = (smarts, profile = "2026.03.6"))]
     fn find_matches_rdkit_parity<'py>(
         &self,

@@ -17,16 +17,16 @@ def test_completed_match_and_no_match_are_distinct_from_refusal():
     }
 
 
-def test_ambiguous_ring_count_is_typed_unsupported():
+def test_order_dependent_ring_count_follows_rdkit_ring_order():
+    # RDKit 2026.03's symmetrized SSSR depends on atom order for this
+    # macrocycle; the default profile counts over the exact port of RDKit's
+    # ring order (RDKit 2026.03.1 and 2026.03.6: atoms 3 and 4 are in three
+    # rings) instead of refusing.
     corpus = Path(__file__).resolve().parents[3] / "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi"
     smiles = corpus.read_text(encoding="utf-8").splitlines()[23]
     mol = chematic.from_smiles(smiles)
     result = mol.find_matches_rdkit_parity("[R3]")
-    assert result == {
-        "status": "typed_unsupported",
-        "reason": "ring_model_ambiguous",
-        "matches": None,
-    }
+    assert result == {"status": "ok", "reason": None, "matches": [[3], [4]]}
 
 
 def test_invalid_smarts_still_raises():
