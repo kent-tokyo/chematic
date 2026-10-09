@@ -36,8 +36,8 @@ pub use pharmacophore::{Feature, FeatureType, detect_features, features_to_bitve
 pub use rdkit_canon::{
     RdkitRankAtom, RdkitRankBond, rdkit_canonical_atom_ranks,
     rdkit_canonical_atom_ranks_with_bond_stereo, rdkit_canonical_kekule,
-    rdkit_canonical_kekule_with_rings, rdkit_rank_fragment_atoms_with_symbols,
-    rdkit_rank_mol_atoms,
+    rdkit_canonical_kekule_with_rings, rdkit_rank_fragment_atoms,
+    rdkit_rank_fragment_atoms_with_symbols, rdkit_rank_mol_atoms,
 };
 pub use rdkit_cleanup::{
     rdkit_sanitize_cleanup, rdkit_sanitize_cleanup_may_apply, rdkit_sanitize_cleanup_needed,

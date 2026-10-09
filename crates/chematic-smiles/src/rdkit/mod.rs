@@ -277,6 +277,127 @@ pub fn rdkit_smarts(
     Ok(smarts_write::mol_to_smarts_owned(m, isomeric, rooted_at_atom, true)?.0)
 }
 
+/// `Chem.MolToCXSmiles(m, params)` for `m = Chem.MolFromSmiles(s)` (RDKit
+/// 2026.03.1, `CXSmilesFields.CX_ALL`): the SMILES written with dative
+/// bonds as single bonds, then the CXSMILES extension of a molecule read
+/// from SMILES (radicals `^n:`, ring double bonds of unknown geometry
+/// `ctu:`, coordinate bonds `C:`). With `params.kekule` the whole molecule
+/// is kekulized first, as `MolToCXSmiles` does. Molecules with enhanced
+/// stereo groups are refused.
+///
+/// ```
+/// let mol = chematic_smiles::parse("C[CH2]").unwrap();
+/// assert_eq!(
+///     chematic_smiles::rdkit_cx_smiles(&mol, &Default::default()).unwrap(),
+///     "[CH2]C |^1:0|"
+/// );
+/// ```
+pub fn rdkit_cx_smiles(
+    mol: &Molecule,
+    params: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
+    if !mol.stereo_groups().is_empty() {
+        return Err(RdkitSmilesError::Unsupported(
+            "enhanced stereo groups".into(),
+        ));
+    }
+    let mut m = rdkit_mol_for_writing(mol)?;
+    let mut p = *params;
+    if p.kekule {
+        kekulize::kekulize(&mut m)?;
+        p.kekule = false;
+    }
+    write::mol_to_cx_smiles(m, &p, false)
+}
+
+/// `Chem.MolFragmentToSmiles(m, atomsToUse, bondsToUse, **params)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1, no atom or bond symbols):
+/// the atoms `atoms` (indices into RDKit's molecule) with the bonds
+/// `bonds` (default: every bond between two of them), ranked by
+/// `Canon::rankFragmentAtoms`; chiral atoms with a bond outside the
+/// fragment lose their tag, disconnected pieces are joined with `.`.
+/// `params.kekule` is refused for fragments with aromatic atoms.
+///
+/// ```
+/// let mol = chematic_smiles::parse("OC(=O)c1ccccc1").unwrap();
+/// let p = Default::default();
+/// assert_eq!(chematic_smiles::rdkit_fragment_smiles(&mol, &[0, 1, 2], None, &p).unwrap(), "O=CO");
+/// ```
+pub fn rdkit_fragment_smiles(
+    mol: &Molecule,
+    atoms: &[usize],
+    bonds: Option<&[usize]>,
+    params: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
+    let m = rdkit_mol_for_writing(mol)?;
+    write::mol_fragment_to_smiles(m, atoms, bonds, params)
+}
+
+/// `Chem.MolFromSmiles(s).GetNumAtoms()` for the SMILES `s` chematic
+/// parsed `mol` from: the atom count after RDKit's hydrogen removal (the
+/// index range of RDKit's atom numbering).
+pub fn rdkit_num_atoms(mol: &Molecule) -> Result<usize, RdkitSmilesError> {
+    Ok(rdkit_mol_for_writing(mol)?.atoms.len())
+}
+
+/// RDKit's process-wide random generator (`getRandomGenerator()`, seeded
+/// with 42 at load), as the random SMILES writer draws from it.
+static RDKIT_RANDOM_GENERATOR: std::sync::Mutex<Option<write::MinstdRand>> =
+    std::sync::Mutex::new(None);
+
+/// `Chem.MolToRandomSmilesVect(m, n, randomSeed, isomericSmiles,
+/// kekuleSmiles, allBondsExplicit, allHsExplicit)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1): `n` non-canonical SMILES
+/// with a random root per fragment and random DFS branch order, drawn
+/// from RDKit's `boost::minstd_rand` generator. `random_seed > 0` reseeds
+/// the generator first; `0` continues a process-wide generator that starts
+/// as RDKit's does (seed 42). `canonical` and `rooted_at_atom` of `params`
+/// are ignored.
+///
+/// ```
+/// let mol = chematic_smiles::parse("CCO").unwrap();
+/// let v = chematic_smiles::rdkit_random_smiles(&mol, 2, 42, &Default::default()).unwrap();
+/// assert_eq!(v.len(), 2);
+/// ```
+pub fn rdkit_random_smiles(
+    mol: &Molecule,
+    n: usize,
+    random_seed: u32,
+    params: &RdkitSmilesParams,
+) -> Result<Vec<String>, RdkitSmilesError> {
+    let p = RdkitSmilesParams {
+        canonical: false,
+        rooted_at_atom: None,
+        ..*params
+    };
+    rdkit_random_smiles_with(mol, n, random_seed, &p)
+}
+
+/// `n` calls of `Chem.MolToSmiles(m, doRandom=True, **params)` after
+/// seeding as in [`rdkit_random_smiles`] (with `params.canonical` the
+/// fragments are sorted; a `rooted_at_atom` fixes the root of its
+/// fragment).
+pub fn rdkit_random_smiles_with(
+    mol: &Molecule,
+    n: usize,
+    random_seed: u32,
+    params: &RdkitSmilesParams,
+) -> Result<Vec<String>, RdkitSmilesError> {
+    let m = rdkit_mol_for_writing(mol)?;
+    let mut guard = RDKIT_RANDOM_GENERATOR
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if random_seed > 0 || guard.is_none() {
+        *guard = Some(write::MinstdRand::new(if random_seed > 0 {
+            random_seed
+        } else {
+            42
+        }));
+    }
+    let rng = guard.as_mut().expect("seeded");
+    write::mol_to_random_smiles(&m, n, params, rng)
+}
+
 /// `Chem.MolToCXSmarts(m)` for `m = Chem.MolFromSmiles(s)` (RDKit
 /// 2026.03.1): [`rdkit_smarts`] with dative bonds written as `-` plus the
 /// CXSMILES extension (radicals `^n:`, coordinate bonds `C:`). Molecules

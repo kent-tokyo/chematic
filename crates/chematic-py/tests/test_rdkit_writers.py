@@ -37,3 +37,13 @@ def test_rdkit_mol_hash():
         assert "ExtendedMurcko" in str(e)
     else:
         raise AssertionError("unknown hash function accepted")
+
+
+def test_rdkit_cx_random_fragment_smiles():
+    # RDKit 2026.03.1: MolToCXSmiles, MolToRandomSmilesVect, MolFragmentToSmiles.
+    assert chematic.from_smiles("C[CH2]").rdkit_cx_smiles() == "[CH2]C |^1:0|"
+    m = chematic.from_smiles("OC(=O)c1ccccc1")
+    assert m.rdkit_fragment_smiles([0, 1, 2]) == "O=CO"
+    assert m.rdkit_num_atoms() == 9
+    assert chematic.from_smiles("CCO").rdkit_random_smiles(5, 42) == [
+        "CCO", "OCC", "CCO", "CCO", "CCO"]

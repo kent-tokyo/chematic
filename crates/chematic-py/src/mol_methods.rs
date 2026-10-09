@@ -2935,6 +2935,111 @@ impl Mol {
         .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// RDKit 2026.03.1's ``Chem.MolToCXSmiles(m, params)`` (all CXSMILES
+    /// fields) for ``m = Chem.MolFromSmiles(s)``: the SMILES with dative
+    /// bonds written as single bonds plus the extension (radicals ``^n:``,
+    /// coordinate bonds ``C:``, ring double bonds of unknown geometry
+    /// ``ctu:``). Molecules with enhanced stereo groups are refused
+    /// (``ValueError``)::
+    ///
+    ///     chematic.from_smiles("C[CH2]").rdkit_cx_smiles()  # '[CH2]C |^1:0|'
+    #[pyo3(signature = (*, isomeric = true, kekule = false, canonical = true,
+                        all_bonds_explicit = false, all_hs_explicit = false,
+                        rooted_at_atom = None))]
+    fn rdkit_cx_smiles(
+        &self,
+        isomeric: bool,
+        kekule: bool,
+        canonical: bool,
+        all_bonds_explicit: bool,
+        all_hs_explicit: bool,
+        rooted_at_atom: Option<usize>,
+    ) -> PyResult<String> {
+        let params = chematic_smiles::RdkitSmilesParams {
+            isomeric,
+            kekule,
+            canonical,
+            all_bonds_explicit,
+            all_hs_explicit,
+            rooted_at_atom,
+        };
+        chematic_smiles::rdkit_cx_smiles(&self.inner, &params)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit 2026.03.1's ``Chem.MolToRandomSmilesVect(m, n, randomSeed,
+    /// isomericSmiles, kekuleSmiles, allBondsExplicit, allHsExplicit)`` for
+    /// ``m = Chem.MolFromSmiles(s)``, bit for bit (RDKit's
+    /// ``boost::minstd_rand`` generator). ``random_seed > 0`` reseeds the
+    /// generator; ``0`` continues a process-wide generator that starts as
+    /// RDKit's (seed 42)::
+    ///
+    ///     chematic.from_smiles("CCO").rdkit_random_smiles(5, 42)
+    #[pyo3(signature = (n, random_seed = 0, *, isomeric = true, kekule = false,
+                        all_bonds_explicit = false, all_hs_explicit = false))]
+    fn rdkit_random_smiles(
+        &self,
+        n: usize,
+        random_seed: u32,
+        isomeric: bool,
+        kekule: bool,
+        all_bonds_explicit: bool,
+        all_hs_explicit: bool,
+    ) -> PyResult<Vec<String>> {
+        let params = chematic_smiles::RdkitSmilesParams {
+            isomeric,
+            kekule,
+            canonical: false,
+            all_bonds_explicit,
+            all_hs_explicit,
+            rooted_at_atom: None,
+        };
+        chematic_smiles::rdkit_random_smiles(&self.inner, n, random_seed, &params)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit 2026.03.1's ``Chem.MolFragmentToSmiles(m, atomsToUse,
+    /// bondsToUse, ...)`` for ``m = Chem.MolFromSmiles(s)``. Atom and bond
+    /// indices are RDKit's (see :meth:`rdkit_num_atoms`); ``bonds=None``
+    /// uses every bond between two of the atoms. Raises ``ValueError``
+    /// where RDKit raises (e.g. "neither end atom traversed") and for
+    /// ``kekule=True`` on fragments with aromatic atoms::
+    ///
+    ///     chematic.from_smiles("OC(=O)c1ccccc1").rdkit_fragment_smiles([0, 1, 2])  # 'O=CO'
+    #[pyo3(signature = (atoms, bonds = None, isomeric = true, kekule = false,
+                        canonical = true, all_bonds_explicit = false,
+                        all_hs_explicit = false, rooted_at_atom = None))]
+    #[allow(clippy::too_many_arguments)]
+    fn rdkit_fragment_smiles(
+        &self,
+        atoms: Vec<usize>,
+        bonds: Option<Vec<usize>>,
+        isomeric: bool,
+        kekule: bool,
+        canonical: bool,
+        all_bonds_explicit: bool,
+        all_hs_explicit: bool,
+        rooted_at_atom: Option<usize>,
+    ) -> PyResult<String> {
+        let params = chematic_smiles::RdkitSmilesParams {
+            isomeric,
+            kekule,
+            canonical,
+            all_bonds_explicit,
+            all_hs_explicit,
+            rooted_at_atom,
+        };
+        chematic_smiles::rdkit_fragment_smiles(&self.inner, &atoms, bonds.as_deref(), &params)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// ``Chem.MolFromSmiles(s).GetNumAtoms()``: the number of atoms in
+    /// RDKit's molecule (after its hydrogen removal).
+    fn rdkit_num_atoms(&self) -> PyResult<usize> {
+        chematic_smiles::rdkit_num_atoms(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// RDKit-compatible ``Chem.MolToCXSmarts(m)``.
     fn rdkit_cx_smarts(&self) -> PyResult<String> {
         chematic_smiles::rdkit_cx_smarts(&self.inner)

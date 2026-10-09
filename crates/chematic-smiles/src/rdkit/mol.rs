@@ -168,6 +168,9 @@ pub(crate) struct Atom {
     pub ring_stereochem_cand: Option<bool>,
     /// `_ChiralityPossible`.
     pub chirality_possible: bool,
+    /// `_brokenChirality` (`MolFragmentToSmiles`: a chiral atom with a
+    /// bond outside the fragment).
+    pub broken_chirality: bool,
 }
 
 impl Atom {
@@ -190,6 +193,7 @@ impl Atom {
             ring_stereo_atoms: None,
             ring_stereochem_cand: None,
             chirality_possible: false,
+            broken_chirality: false,
         }
     }
 

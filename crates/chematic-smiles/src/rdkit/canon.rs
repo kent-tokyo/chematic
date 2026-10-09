@@ -5,6 +5,7 @@
 use super::RdkitSmilesError;
 use super::mol::{BondDir, BondStereo, BondType, ChiralTag, Mol, insert_implicit_nbors};
 use super::stereo::is_atom_potential_tetrahedral_center;
+use super::write::MinstdRand;
 
 const MAX_NATOMS: i64 = 5000;
 const MAX_CYCLES: usize = 1024;
@@ -21,7 +22,7 @@ pub(crate) enum StackElem {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Color {
+pub(crate) enum Color {
     White,
     Grey,
     Black,
@@ -38,6 +39,10 @@ struct Traversal<'a> {
     stack: Vec<StackElem>,
     /// The sorted destinations of every pending frame, back to back.
     possibles: Vec<Possible>,
+    /// `bondsInPlay` (`None`: every bond).
+    bonds_in_play: Option<&'a [bool]>,
+    /// `doRandom`: RDKit's global generator.
+    rng: Option<&'a mut MinstdRand>,
 }
 
 type Possible = (i32, usize, usize);
@@ -82,12 +87,17 @@ impl Traversal<'_> {
     ) -> (usize, usize) {
         let start = self.possibles.len();
         for &b in &self.mol.atom_bonds[atom] {
+            if self.bonds_in_play.is_some_and(|bp| !bp[b]) {
+                continue;
+            }
             if Some(b) == in_bond {
                 continue;
             }
             let other = self.mol.bonds[b].other(atom);
             let mut rank = i64::from(self.ranks[other]);
-            if colors[other] == Color::Grey {
+            if let Some(rng) = self.rng.as_deref_mut() {
+                rank = i64::from(rng.next_u32());
+            } else if colors[other] == Color::Grey {
                 rank -= (MAX_BONDTYPE + 1) * MAX_NATOMS * MAX_NATOMS;
                 rank += (MAX_BONDTYPE - self.bond_type_value(b)) * MAX_NATOMS;
             } else if self.mol.num_bond_rings(b) != 0 {
@@ -196,6 +206,9 @@ impl Traversal<'_> {
         }
         let start = self.possibles.len();
         for &b in &mol.atom_bonds[atom] {
+            if self.bonds_in_play.is_some_and(|bp| !bp[b]) {
+                continue;
+            }
             if Some(b) == in_bond {
                 continue;
             }
@@ -208,7 +221,9 @@ impl Traversal<'_> {
                 continue;
             }
             let mut rank = i64::from(self.ranks[other]);
-            if mol.num_bond_rings(b) != 0 {
+            if let Some(rng) = self.rng.as_deref_mut() {
+                rank = i64::from(rng.next_u32());
+            } else if mol.num_bond_rings(b) != 0 {
                 rank += (MAX_BONDTYPE - self.bond_type_value(b)) * MAX_NATOMS * MAX_NATOMS;
             }
             self.possibles.push((rank as i32, other, b));
@@ -305,6 +320,38 @@ pub(crate) fn canonicalize_fragment(
     ranks: &[u32],
     isomeric: bool,
 ) -> Result<Canonicalized, RdkitSmilesError> {
+    let mut colors = vec![Color::White; mol.atoms.len()];
+    canonicalize_fragment_with(
+        mol,
+        start,
+        ranks,
+        isomeric,
+        &mut colors,
+        &FragmentScope::default(),
+        None,
+    )
+}
+
+/// The atoms and bonds `canonicalizeFragment` may use (`atomsInPlay`,
+/// `bondsInPlay`; `None`: all).
+#[derive(Default, Clone, Copy)]
+pub(crate) struct FragmentScope<'a> {
+    pub atoms: Option<&'a [bool]>,
+    pub bonds: Option<&'a [bool]>,
+}
+
+/// `Canon::canonicalizeFragment` with the caller's `colors` (atoms the
+/// traversal visits end up black), `atomsInPlay`/`bondsInPlay` and, for
+/// `doRandom`, RDKit's random generator.
+pub(crate) fn canonicalize_fragment_with(
+    mol: &mut Mol,
+    start: usize,
+    ranks: &[u32],
+    isomeric: bool,
+    colors: &mut [Color],
+    scope: &FragmentScope<'_>,
+    rng: Option<&mut MinstdRand>,
+) -> Result<Canonicalized, RdkitSmilesError> {
     let n = mol.atoms.len();
     let nb = mol.bonds.len();
     let (stack, ring_closures, traversal_bond_order, ring_closure_idx) = {
@@ -317,11 +364,12 @@ pub(crate) fn canonicalize_fragment(
             ring_closure_idx: vec![None; nb],
             stack: Vec::with_capacity(4 * n),
             possibles: Vec::with_capacity(2 * nb + 2),
+            bonds_in_play: scope.bonds,
+            rng,
         };
-        let mut tcolors = vec![Color::White; n];
+        let mut tcolors = colors.to_vec();
         t.find_cycles(start, &mut tcolors);
-        let mut colors = vec![Color::White; n];
-        t.build_stack(start, &mut colors)?;
+        t.build_stack(start, colors)?;
         (
             t.stack,
             t.ring_closures,
@@ -338,7 +386,18 @@ pub(crate) fn canonicalize_fragment(
     let mut num_swaps_odd = vec![false; n];
     let mut permutation = vec![0u32; n];
     for a in 0..n {
-        if !isomeric || mol.atoms[a].chiral == ChiralTag::Unspecified {
+        if !isomeric || scope.atoms.is_some_and(|ap| !ap[a]) {
+            continue;
+        }
+        if mol.atoms[a].chiral == ChiralTag::Unspecified {
+            continue;
+        }
+        if let Some(bp) = scope.bonds
+            && mol.atom_bonds[a].iter().any(|&b| !bp[b])
+        {
+            mol.atoms[a].broken_chirality = true;
+        }
+        if mol.atoms[a].broken_chirality {
             continue;
         }
         let nontet = mol.atoms[a].chiral.nontet();
@@ -400,7 +459,10 @@ pub(crate) fn canonicalize_fragment(
     let mut ring_adjusted = vec![false; n];
     for e in &stack {
         let StackElem::Atom(a) = *e else { continue };
-        if !isomeric || mol.atoms[a].chiral == ChiralTag::Unspecified {
+        if !isomeric
+            || mol.atoms[a].chiral == ChiralTag::Unspecified
+            || mol.atoms[a].broken_chirality
+        {
             continue;
         }
         if let Some(rsa) = mol.atoms[a].ring_stereo_atoms.clone() {
@@ -599,6 +661,13 @@ fn canonicalize_double_bond(
 ) -> Result<(), RdkitSmilesError> {
     let mut atom1 = mol.bonds[dbl].begin;
     let mut atom2 = mol.bonds[dbl].end;
+    if st.atom_visit[atom1] == 0 && st.atom_visit[atom2] == 0 {
+        // RDKit's precondition (raised as a RuntimeError): a stereo double
+        // bond next to the fragment with neither atom after the first.
+        return Err(RdkitSmilesError::Unsupported(
+            "Pre-condition Violation: neither end atom traversed".into(),
+        ));
+    }
     if !matches!(mol.degree(atom1), 2 | 3) || !matches!(mol.degree(atom2), 2 | 3) {
         return Ok(());
     }

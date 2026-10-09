@@ -109,6 +109,49 @@ class Mol:
         unsupported inputs."""
         ...
 
+    def rdkit_cx_smiles(
+        self,
+        *,
+        isomeric: bool = True,
+        kekule: bool = False,
+        canonical: bool = True,
+        all_bonds_explicit: bool = False,
+        all_hs_explicit: bool = False,
+        rooted_at_atom: int | None = None,
+    ) -> str:
+        """``Chem.MolToCXSmiles(m, params)`` (RDKit 2026.03.1, all fields)
+        for the molecule RDKit reads from the same SMILES."""
+        ...
+    def rdkit_random_smiles(
+        self,
+        n: int,
+        random_seed: int = 0,
+        *,
+        isomeric: bool = True,
+        kekule: bool = False,
+        all_bonds_explicit: bool = False,
+        all_hs_explicit: bool = False,
+    ) -> list[str]:
+        """``Chem.MolToRandomSmilesVect(m, n, randomSeed, ...)`` (RDKit
+        2026.03.1), bit for bit."""
+        ...
+    def rdkit_fragment_smiles(
+        self,
+        atoms: list[int],
+        bonds: list[int] | None = None,
+        isomeric: bool = True,
+        kekule: bool = False,
+        canonical: bool = True,
+        all_bonds_explicit: bool = False,
+        all_hs_explicit: bool = False,
+        rooted_at_atom: int | None = None,
+    ) -> str:
+        """``Chem.MolFragmentToSmiles(m, atomsToUse, bondsToUse, ...)``
+        (RDKit 2026.03.1) in RDKit's atom and bond numbering."""
+        ...
+    def rdkit_num_atoms(self) -> int:
+        """``Chem.MolFromSmiles(s).GetNumAtoms()``."""
+        ...
     def rdkit_mol_hash(self, function: str, use_cx_smiles: bool = False) -> str:
         """``rdMolHash.MolHash(m, function, useCXSmiles)`` (RDKit 2026.03.1)
         for the molecule RDKit reads from the same SMILES. ``function`` is a
