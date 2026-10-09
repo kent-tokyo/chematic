@@ -1357,6 +1357,48 @@ pub fn rdkit_hydrogen_suppressed_with_map(mol: &Molecule) -> Option<(Molecule, V
     (out.atom_count() == kept.len()).then_some((out, kept))
 }
 
+thread_local! {
+    static IN_RDKIT_MODEL: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Runs `f` on RDKit's own molecule for `mol` (`Chem.MolFromSmiles(s)`:
+/// hydrogen graph atoms removed, RDKit's aromaticity, bond orders, charges
+/// and per-atom hydrogen counts, as [`rdkit_hydrogen_suppressed`] builds it)
+/// when chematic's reading of `mol` may differ from RDKit's
+/// ([`chematic_perception::rdkit_model_may_disagree`], or hydrogen graph
+/// atoms), and on `mol` itself otherwise. Nested calls run on the molecule
+/// they are given.
+pub fn with_rdkit_model_molecule<R>(mol: &Molecule, f: impl FnOnce(&Molecule) -> R) -> R {
+    if IN_RDKIT_MODEL.with(|c| c.get()) {
+        return f(mol);
+    }
+    let needed = chematic_perception::rdkit_model_may_disagree(mol)
+        || mol
+            .atoms()
+            .any(|(_, a)| !a.wildcard && a.element == chematic_core::Element::H);
+    let model = if needed {
+        rdkit_mol_from_smiles(mol)
+            .ok()
+            .and_then(|(m, _)| pdb_read::to_chematic(&m, true).ok())
+    } else {
+        None
+    };
+    match model {
+        Some(m) => {
+            struct Reset;
+            impl Drop for Reset {
+                fn drop(&mut self) {
+                    IN_RDKIT_MODEL.with(|c| c.set(false));
+                }
+            }
+            IN_RDKIT_MODEL.with(|c| c.set(true));
+            let _reset = Reset;
+            f(&m)
+        }
+        None => f(mol),
+    }
+}
+
 /// Registers [`rdkit_model_correct_view`] as chematic-perception's
 /// RDKit-model hook, so the shared RDKit-parity aromatic view (used by the
 /// RDKit-compatible fingerprints, descriptors and SMARTS matching) follows

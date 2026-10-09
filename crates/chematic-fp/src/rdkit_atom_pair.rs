@@ -104,9 +104,10 @@ fn all_pairs_dist(mol: &Molecule) -> Vec<Vec<Option<u32>>> {
 /// this module's own doc comment for the corpus measurement confirming it's
 /// the *only* remaining gap here.
 pub fn rdkit_atom_pair_fp(mol: &Molecule) -> BitVec2048 {
-    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
-        return rdkit_atom_pair_fp(&h);
-    }
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_atom_pair_fp_impl(m))
+}
+
+fn rdkit_atom_pair_fp_impl(mol: &Molecule) -> BitVec2048 {
     // RDKit fingerprints sanitized molecules, i.e. after aromaticity
     // perception; Kekule input must not see a different graph than the
     // equivalent aromatic spelling. The perceived view is memoized on `mol`.
@@ -119,9 +120,10 @@ pub fn rdkit_atom_pair_fp(mol: &Molecule) -> BitVec2048 {
 /// (`rdMolDescriptors.GetHashedAtomPairFingerprint(mol, nBits)`): the
 /// nonzero `(bucket, count)` elements, sorted by bucket.
 pub fn rdkit_atom_pair_counts(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
-    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
-        return rdkit_atom_pair_counts(&h, n_bits);
-    }
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_atom_pair_counts_impl(m, n_bits))
+}
+
+fn rdkit_atom_pair_counts_impl(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
     let n_bits = n_bits.max(1);
     chematic_perception::with_rdkit_parity_view(mol, |view| {
         let counts = rdkit_atom_pair_bucket_counts(view.unwrap_or(mol), n_bits);

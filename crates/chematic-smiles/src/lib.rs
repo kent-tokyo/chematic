@@ -76,7 +76,7 @@ pub use rdkit::{
     rdkit_murcko_scaffold, rdkit_num_atoms, rdkit_pdb_block, rdkit_random_smiles,
     rdkit_random_smiles_with, rdkit_reaction_to_smarts, rdkit_sanitized_model, rdkit_smarts,
     rdkit_smarts_to_smarts, rdkit_smiles, rdkit_stereoisomer_count, rdkit_stereoisomer_smiles,
-    rdkit_tautomer_score, register_rdkit_model_hook,
+    rdkit_tautomer_score, register_rdkit_model_hook, with_rdkit_model_molecule,
 };
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,

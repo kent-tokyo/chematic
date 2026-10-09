@@ -1208,6 +1208,11 @@ pub(crate) fn total_valence(mol: &Molecule, idx: AtomIdx) -> u8 {
         .neighbors(idx)
         .map(|(_, bid)| {
             let order = mol.bond(bid).order;
+            // RDKit's `getValenceContrib`: a dative bond counts for its
+            // acceptor only.
+            if order == BondOrder::Dative {
+                return u8::from(mol.bond(bid).atom1 != idx);
+            }
             let order = match (&kekule, order) {
                 (Some(k), BondOrder::Aromatic) => k
                     .as_ref()

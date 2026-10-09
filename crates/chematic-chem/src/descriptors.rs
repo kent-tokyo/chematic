@@ -499,6 +499,10 @@ fn count_rdkit_pattern(
 /// N-H). The former hand-written rule counted O-H/S-H on charged or
 /// metal-bound atoms (7 exposed-10k rows).
 pub fn hbd_count(mol: &Molecule) -> usize {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| hbd_count_impl(m))
+}
+
+fn hbd_count_impl(mol: &Molecule) -> usize {
     static QUERY: std::sync::OnceLock<chematic_smarts::QueryMolecule> = std::sync::OnceLock::new();
     count_rdkit_pattern(&QUERY, RDKIT_HBD_SMARTS, mol)
 }
@@ -519,6 +523,10 @@ pub fn hba_count(mol: &Molecule) -> usize {
 /// Count hydrogen-bond acceptors using the RDKit 2026.03 profile; the same
 /// value as [`hba_count`].
 pub fn rdkit_hba_count(mol: &Molecule) -> usize {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_hba_count_impl(m))
+}
+
+fn rdkit_hba_count_impl(mol: &Molecule) -> usize {
     hba_count(mol)
 }
 
@@ -840,6 +848,10 @@ pub fn tpsa(mol: &Molecule) -> f64 {
 /// RDKit-default TPSA: `rdMolDescriptors.CalcTPSA(mol)` / `Descriptors.TPSA(mol)`
 /// with `includeSandP=False`, i.e. the N and O contributions of [`tpsa`] only.
 pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_tpsa_impl(m))
+}
+
+fn rdkit_tpsa_impl(mol: &Molecule) -> f64 {
     tpsa_contributions(mol)
         .into_iter()
         .zip(mol.atoms())
@@ -1288,6 +1300,10 @@ pub fn lipinski_passes(mol: &Molecule) -> bool {
 /// not count zero-valence carbon radicals as CSP3.
 /// Returns 0.0 if the molecule contains no carbon atoms.
 pub fn fsp3(mol: &Molecule) -> f64 {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| fsp3_impl(m))
+}
+
+fn fsp3_impl(mol: &Molecule) -> f64 {
     // RDKit `calcFractionCSP3`: carbons whose total degree (neighbours plus
     // hydrogens) is four, over all carbons. A four-bonded carbanion (the
     // ring carbon of a ferrocenyl `[C-]` bonded to Fe) counts.
@@ -2262,9 +2278,10 @@ pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
 /// ring-size counts over RDKit's ring information (symmetrized SSSR) and
 /// aromatic bonds. The former implementation used a different layout.
 pub fn mqn(mol: &Molecule) -> Vec<u32> {
-    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
-        return mqn(&h);
-    }
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| mqn_impl(m))
+}
+
+fn mqn_impl(mol: &Molecule) -> Vec<u32> {
     let mut res = vec![0u32; 42];
     let view = descriptor_aromaticity(mol);
     let view: &Molecule = &view;
@@ -2941,6 +2958,10 @@ pub fn num_ester_bonds(mol: &Molecule) -> usize {
 /// As RDKit's `CalcMolFormula`: a net charge is appended (`"C2H3O2-"`,
 /// `"O4S-2"`, `"H4N+"`) and dummy atoms are written as `*`.
 pub fn calc_mol_formula(mol: &Molecule) -> String {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| calc_mol_formula_impl(m))
+}
+
+fn calc_mol_formula_impl(mol: &Molecule) -> String {
     use std::collections::BTreeMap;
 
     // Count atoms by element
@@ -2960,9 +2981,16 @@ pub fn calc_mol_formula(mol: &Molecule) -> String {
     }
 
     // Count total implicit hydrogens
+    // RDKit's `getTotalNumHs` also counts a dummy atom's hydrogens (`[*H]`).
     let total_h: usize = mol
         .atoms()
-        .map(|(idx, _)| implicit_hcount(mol, idx) as usize)
+        .map(|(idx, a)| {
+            if a.wildcard {
+                a.hydrogen_count.unwrap_or(0) as usize
+            } else {
+                implicit_hcount(mol, idx) as usize
+            }
+        })
         .sum();
 
     if total_h > 0 {

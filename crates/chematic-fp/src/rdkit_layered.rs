@@ -265,9 +265,10 @@ fn compute_ring_info(mol: &Molecule) -> RingInfo {
 /// See the module doc comment for the full algorithm and its verification
 /// status.
 pub fn rdkit_layered_fp(mol: &Molecule) -> BitVec2048 {
-    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
-        return rdkit_layered_fp(&h);
-    }
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_layered_fp_impl(m))
+}
+
+fn rdkit_layered_fp_impl(mol: &Molecule) -> BitVec2048 {
     // Where chematic's own aromaticity may disagree with RDKit's, read the
     // RDKit-corrected parity view (aromatic flags and bond orders as RDKit
     // sanitizes them) instead of re-perceiving.
