@@ -386,7 +386,7 @@ fn path_seed(bond_hashes: &[u32], distinct_atoms: u32) -> u32 {
 /// See the module doc comment for the full algorithm and its verification
 /// status.
 pub fn rdkit_rdk_fp(mol: &Molecule) -> BitVec2048 {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_rdk_fp_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, rdkit_rdk_fp_impl)
 }
 
 fn rdkit_rdk_fp_impl(mol: &Molecule) -> BitVec2048 {

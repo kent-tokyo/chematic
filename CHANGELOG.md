@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.41] - 2026-10-10
+
 ### Added
 
 - RDKit 2026.03.1-compatible tautomers (MolStandardize `TautomerEnumerator`

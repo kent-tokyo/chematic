@@ -53,7 +53,7 @@ enum Range {
     /// `{-n}`
     Greater(i32),
     /// `{a-b}`
-    Range(i32, i32),
+    Between(i32, i32),
 }
 
 #[derive(Clone, Debug)]
@@ -127,6 +127,8 @@ enum PBt {
     DativeR,
     DativeL,
 }
+
+type OpenRing = (usize, Option<(Node, PBt)>, usize);
 
 /// `QueryBond::expandQuery(what, how, maintainOrder=true)`: a `BondNull`
 /// (`~`) side is merged as `mergeNullQueries` merges atom null queries.
@@ -278,10 +280,8 @@ impl Parser<'_> {
         let mut prev: Option<usize> = None;
         let mut branches: Vec<Option<usize>> = Vec::new();
         let mut pending: Option<(Node, PBt)> = None;
-        let mut rings: std::collections::HashMap<u32, (usize, Option<(Node, PBt)>, usize)> =
-            std::collections::HashMap::new();
-        loop {
-            let Some(c) = self.peek() else { break };
+        let mut rings: std::collections::HashMap<u32, OpenRing> = std::collections::HashMap::new();
+        while let Some(c) = self.peek() {
             match c {
                 b')' | b'.' if pending.is_some() => {
                     return Err(self.err("bond without a following atom"));
@@ -843,7 +843,7 @@ impl Parser<'_> {
                         }
                         self.i += 1;
                         range = match self.number() {
-                            Some(hi) => Range::Range(lo, hi),
+                            Some(hi) => Range::Between(lo, hi),
                             None => Range::Less(lo),
                         };
                     }
@@ -1069,7 +1069,7 @@ fn atom_smarts_simple(leaf: &Leaf, ctx: &mut AtomCtx, need_paren: &mut bool) -> 
         Range::Greater(v) => {
             let _ = write!(res, "{{-{v}}}");
         }
-        Range::Range(a, b) => {
+        Range::Between(a, b) => {
             let _ = write!(res, "{{{a}-{b}}}");
         }
     }

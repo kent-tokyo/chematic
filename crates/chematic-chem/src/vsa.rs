@@ -56,7 +56,7 @@ fn vsa_bins(mol: &Molecule, contrib: &[f64], cuts: &[f64]) -> Vec<f64> {
 /// contribution falls in each bin. Bin boundaries (RDKit):
 /// -0.4, -0.2, 0.0, 0.1, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60
 pub fn slogp_vsa(mol: &Molecule) -> Vec<f64> {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| slogp_vsa_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, slogp_vsa_impl)
 }
 
 fn slogp_vsa_impl(mol: &Molecule) -> Vec<f64> {
@@ -74,7 +74,7 @@ fn slogp_vsa_impl(mol: &Molecule) -> Vec<f64> {
 /// contribution falls in each bin. Bin boundaries (RDKit):
 /// 1.29, 1.82, 2.24, 2.45, 2.75, 3.05, 3.63, 3.80, 4.00
 pub fn smr_vsa(mol: &Molecule) -> Vec<f64> {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| smr_vsa_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, smr_vsa_impl)
 }
 
 fn smr_vsa_impl(mol: &Molecule) -> Vec<f64> {

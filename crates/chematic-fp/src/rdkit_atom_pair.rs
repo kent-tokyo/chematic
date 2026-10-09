@@ -104,7 +104,7 @@ fn all_pairs_dist(mol: &Molecule) -> Vec<Vec<Option<u32>>> {
 /// this module's own doc comment for the corpus measurement confirming it's
 /// the *only* remaining gap here.
 pub fn rdkit_atom_pair_fp(mol: &Molecule) -> BitVec2048 {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_atom_pair_fp_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, rdkit_atom_pair_fp_impl)
 }
 
 fn rdkit_atom_pair_fp_impl(mol: &Molecule) -> BitVec2048 {

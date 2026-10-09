@@ -645,8 +645,7 @@ fn update_double_bond_neighbors(
                 return Ok(());
             }
             let ang = dihedral(bond1_p, begin_p, end_p, bond2_p);
-            let same_torsion_dir = ang >= std::f64::consts::PI / 2.0;
-            same_torsion_dir
+            ang >= std::f64::consts::PI / 2.0
         }
         None => {
             let mut same = match mol.bonds[dbl].stereo {

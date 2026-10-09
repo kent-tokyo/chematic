@@ -499,7 +499,7 @@ fn count_rdkit_pattern(
 /// N-H). The former hand-written rule counted O-H/S-H on charged or
 /// metal-bound atoms (7 exposed-10k rows).
 pub fn hbd_count(mol: &Molecule) -> usize {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| hbd_count_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, hbd_count_impl)
 }
 
 fn hbd_count_impl(mol: &Molecule) -> usize {
@@ -523,7 +523,7 @@ pub fn hba_count(mol: &Molecule) -> usize {
 /// Count hydrogen-bond acceptors using the RDKit 2026.03 profile; the same
 /// value as [`hba_count`].
 pub fn rdkit_hba_count(mol: &Molecule) -> usize {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_hba_count_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, rdkit_hba_count_impl)
 }
 
 fn rdkit_hba_count_impl(mol: &Molecule) -> usize {
@@ -848,7 +848,7 @@ pub fn tpsa(mol: &Molecule) -> f64 {
 /// RDKit-default TPSA: `rdMolDescriptors.CalcTPSA(mol)` / `Descriptors.TPSA(mol)`
 /// with `includeSandP=False`, i.e. the N and O contributions of [`tpsa`] only.
 pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_tpsa_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, rdkit_tpsa_impl)
 }
 
 fn rdkit_tpsa_impl(mol: &Molecule) -> f64 {
@@ -1302,7 +1302,7 @@ pub fn lipinski_passes(mol: &Molecule) -> bool {
 /// not count zero-valence carbon radicals as CSP3.
 /// Returns 0.0 if the molecule contains no carbon atoms.
 pub fn fsp3(mol: &Molecule) -> f64 {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| fsp3_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, fsp3_impl)
 }
 
 fn fsp3_impl(mol: &Molecule) -> f64 {
@@ -1637,8 +1637,8 @@ fn simple_ring_system_count(mol: &Molecule) -> Option<usize> {
         }
     }
     let mut roots = Vec::new();
-    for a in 0..n {
-        if on_ring[a] {
+    for (a, &is_on_ring) in on_ring.iter().enumerate() {
+        if is_on_ring {
             let r = find(&mut parent, a as u32) as usize;
             balance[r] += 1;
             if r == a {
@@ -2465,7 +2465,7 @@ pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
 /// ring-size counts over RDKit's ring information (symmetrized SSSR) and
 /// aromatic bonds. The former implementation used a different layout.
 pub fn mqn(mol: &Molecule) -> Vec<u32> {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| mqn_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, mqn_impl)
 }
 
 fn mqn_impl(mol: &Molecule) -> Vec<u32> {
@@ -3156,7 +3156,7 @@ pub fn num_ester_bonds(mol: &Molecule) -> usize {
 /// As RDKit's `CalcMolFormula`: a net charge is appended (`"C2H3O2-"`,
 /// `"O4S-2"`, `"H4N+"`) and dummy atoms are written as `*`.
 pub fn calc_mol_formula(mol: &Molecule) -> String {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| calc_mol_formula_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, calc_mol_formula_impl)
 }
 
 fn calc_mol_formula_impl(mol: &Molecule) -> String {

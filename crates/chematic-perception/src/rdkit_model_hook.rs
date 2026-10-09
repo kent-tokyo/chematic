@@ -253,7 +253,7 @@ fn aromatic_systems_are_huckel(mol: &Molecule) -> bool {
                 }
             }
         }
-        if electrons < 2 || (electrons - 2) % 4 != 0 {
+        if electrons < 2 || !(electrons - 2).is_multiple_of(4) {
             return false;
         }
         let bonds = twice_bonds / 2;
@@ -327,7 +327,7 @@ fn fused_rings_are_huckel(mol: &Molecule, comp: &[usize], electrons_of: &[u32]) 
                 }
                 x = parent[x];
             }
-            if electrons < 2 || (electrons - 2) % 4 != 0 {
+            if electrons < 2 || !(electrons - 2).is_multiple_of(4) {
                 return false;
             }
         }

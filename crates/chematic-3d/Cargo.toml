@@ -18,13 +18,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 libm = "0.2"
-chematic-core       = { path = "../chematic-core",       version = "1.0.40" }
-chematic-perception = { path = "../chematic-perception", version = "1.0.40" }
-chematic-ff         = { path = "../chematic-ff",         version = "1.0.40" }
-chematic-chem       = { path = "../chematic-chem",       version = "1.0.40" }
-chematic-fp         = { path = "../chematic-fp",         version = "1.0.40" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.40" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.40" }
+chematic-core       = { path = "../chematic-core",       version = "1.0.41" }
+chematic-perception = { path = "../chematic-perception", version = "1.0.41" }
+chematic-ff         = { path = "../chematic-ff",         version = "1.0.41" }
+chematic-chem       = { path = "../chematic-chem",       version = "1.0.41" }
+chematic-fp         = { path = "../chematic-fp",         version = "1.0.41" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.41" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.41" }
 serde_json          = "1.0"
 
 # std::time::Instant panics on wasm32-unknown-unknown (issue #219); web-time

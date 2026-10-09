@@ -419,7 +419,7 @@ fn torsion_hash(atom_invariants: &[u32], path: &[AtomIdx; 4]) -> u32 {
 /// on a 200-molecule general corpus sample, with essentially all remaining
 /// misses confined to this one narrow structural class.
 pub fn rdkit_torsion_fp(mol: &Molecule) -> BitVec2048 {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_torsion_fp_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, rdkit_torsion_fp_impl)
 }
 
 fn rdkit_torsion_fp_impl(mol: &Molecule) -> BitVec2048 {

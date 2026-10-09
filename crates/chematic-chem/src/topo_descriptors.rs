@@ -441,7 +441,7 @@ pub fn chi4(mol: &Molecule) -> f64 {
 
 /// Valence-corrected χ0v connectivity index (RDKit `CalcChi0v`).
 pub fn chi0v(mol: &Molecule) -> f64 {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| chi0v_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, chi0v_impl)
 }
 
 fn chi0v_impl(mol: &Molecule) -> f64 {
@@ -450,7 +450,7 @@ fn chi0v_impl(mol: &Molecule) -> f64 {
 
 /// Valence-corrected χ1v connectivity index (RDKit `CalcChi1v`).
 pub fn chi1v(mol: &Molecule) -> f64 {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| chi1v_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, chi1v_impl)
 }
 
 fn chi1v_impl(mol: &Molecule) -> f64 {
@@ -459,7 +459,7 @@ fn chi1v_impl(mol: &Molecule) -> f64 {
 
 /// Valence-corrected χ2v connectivity index (RDKit `CalcChi2v`).
 pub fn chi2v(mol: &Molecule) -> f64 {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| chi2v_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, chi2v_impl)
 }
 
 fn chi2v_impl(mol: &Molecule) -> f64 {
@@ -468,7 +468,7 @@ fn chi2v_impl(mol: &Molecule) -> f64 {
 
 /// Valence-corrected χ3v connectivity index (RDKit `CalcChi3v`).
 pub fn chi3v(mol: &Molecule) -> f64 {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| chi3v_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, chi3v_impl)
 }
 
 fn chi3v_impl(mol: &Molecule) -> f64 {
@@ -477,7 +477,7 @@ fn chi3v_impl(mol: &Molecule) -> f64 {
 
 /// Valence-corrected χ4v connectivity index (RDKit `CalcChi4v`).
 pub fn chi4v(mol: &Molecule) -> f64 {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| chi4v_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, chi4v_impl)
 }
 
 fn chi4v_impl(mol: &Molecule) -> f64 {
@@ -489,7 +489,7 @@ fn chi4v_impl(mol: &Molecule) -> f64 {
 /// Returns `(χ0, χ1, χ2, χ3, χ4, χ0v, χ1v, χ2v, χ3v, χ4v)`.
 /// Use when all indices are needed to avoid 10 redundant `heavy_indices` computations.
 pub fn chi_all(mol: &Molecule) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64) {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| chi_all_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, chi_all_impl)
 }
 
 fn chi_all_impl(mol: &Molecule) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64) {

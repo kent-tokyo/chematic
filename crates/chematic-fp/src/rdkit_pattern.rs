@@ -198,7 +198,7 @@ fn matched_bond_code_slice(
 /// `rdkit.Chem.PatternFingerprint(mol, fpSize=2048)` (the Python API's own
 /// default, `tautomericFingerprint=False`).
 pub fn rdkit_pattern_fp(mol: &Molecule) -> BitVec2048 {
-    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_pattern_fp_impl(m))
+    chematic_smiles::with_rdkit_model_molecule(mol, rdkit_pattern_fp_impl)
 }
 
 fn rdkit_pattern_fp_impl(mol: &Molecule) -> BitVec2048 {

@@ -289,6 +289,16 @@ pub fn rdkit_morgan_count_simulation(
     Ok(fp)
 }
 
+/// Whether `mol` carries any stereo specification: a chiral tag or a
+/// directional (`/`, `\\`) bond.
+fn has_stereo_input(mol: &Molecule) -> bool {
+    mol.atoms()
+        .any(|(_, a)| a.chirality != chematic_core::Chirality::None)
+        || mol
+            .bonds()
+            .any(|(_, b)| matches!(b.order, BondOrder::Up | BondOrder::Down))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -506,14 +516,4 @@ mod tests {
         assert_eq!(result.fingerprint.popcount(), 0);
         assert!(result.sparse_counts.is_empty());
     }
-}
-
-/// Whether `mol` carries any stereo specification: a chiral tag or a
-/// directional (`/`, `\\`) bond.
-fn has_stereo_input(mol: &Molecule) -> bool {
-    mol.atoms()
-        .any(|(_, a)| a.chirality != chematic_core::Chirality::None)
-        || mol
-            .bonds()
-            .any(|(_, b)| matches!(b.order, BondOrder::Up | BondOrder::Down))
 }

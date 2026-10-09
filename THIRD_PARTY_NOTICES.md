@@ -100,7 +100,7 @@ The following source files also implement compatibility behavior or copied
 constant/pattern data from RDKit and are covered by the same BSD-3-Clause
 notice above. They must retain this notice in source and binary distributions:
 
-The v1.0.40 compatibility work was checked against RDKit tag
+The v1.0.40-v1.0.41 compatibility work was checked against RDKit tag
 `Release_2026_03_1` (commit
 `351f8f378f8ad6bbd517980c38896e66bf907af8`):
 https://github.com/rdkit/rdkit/tree/Release_2026_03_1
@@ -116,6 +116,14 @@ crates/chematic-chem/src/gasteiger.rs
 crates/chematic-perception/src/rdkit_parity.rs
 crates/chematic-perception/src/rdkit_canon.rs
 crates/chematic-perception/src/rdkit_sssr_order.rs
+crates/chematic-perception/src/rdkit_model_hook.rs
+crates/chematic-chem/src/descriptors.rs
+crates/chematic-chem/src/topo_descriptors.rs
+crates/chematic-chem/src/vsa.rs
+crates/chematic-cip/src/compare.rs
+crates/chematic-rxn/src/rdkit_stereo.rs
+crates/chematic-rxn/src/transform.rs
+crates/chematic-smarts/src/match_vf2.rs
 crates/chematic-smiles/src/rdkit/molblock.rs
 crates/chematic-smiles/src/rdkit/
 crates/chematic-smarts/src/rdkit_parity_match.rs

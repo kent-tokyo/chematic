@@ -1,3 +1,5 @@
+#![allow(clippy::redundant_closure)]
+
 //! Per-descriptor timing over a SMILES file (first N rows).
 use chematic_chem as c;
 use std::time::Instant;
