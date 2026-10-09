@@ -450,6 +450,29 @@ pub fn rdkit_mol_block_2d(mol: &Molecule) -> Result<String, RdkitSmilesError> {
             ));
         }
     }
+    // An unspecified double bond RDKit does not cross because a neighbouring
+    // single bond carries a direction (conjugated partial stereo) reads back
+    // with the configuration its coordinates happen to show: refuse it too.
+    for (b, bond) in m.bonds.iter().enumerate() {
+        if bond.bt != mol::BondType::Double
+            || bond.stereo != mol::BondStereo::None
+            || m.num_bond_rings(b) != 0
+            || !molblock2d::is_bond_potential_stereo_bond(&m, b)
+        {
+            continue;
+        }
+        let directed_nbr = [bond.begin, bond.end].iter().any(|&a| {
+            m.atom_bonds[a].iter().any(|&nb| {
+                nb != b && m.bonds[nb].bt == mol::BondType::Single && m.bonds[nb].dir.is_set()
+            })
+        });
+        if directed_nbr {
+            return Err(RdkitSmilesError::Unsupported(
+                "an unspecified double bond next to directed bonds would read back with stereo"
+                    .into(),
+            ));
+        }
+    }
     let bare_dummies: Vec<bool> = m
         .atoms
         .iter()
