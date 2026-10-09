@@ -198,9 +198,10 @@ fn matched_bond_code_slice(
 /// `rdkit.Chem.PatternFingerprint(mol, fpSize=2048)` (the Python API's own
 /// default, `tautomericFingerprint=False`).
 pub fn rdkit_pattern_fp(mol: &Molecule) -> BitVec2048 {
-    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
-        return rdkit_pattern_fp(&h);
-    }
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_pattern_fp_impl(m))
+}
+
+fn rdkit_pattern_fp_impl(mol: &Molecule) -> BitVec2048 {
     // Where chematic's own aromaticity may disagree with RDKit's, read the
     // RDKit-corrected parity view (aromatic flags and bond orders as RDKit
     // sanitizes them) instead of re-perceiving.
@@ -252,7 +253,7 @@ fn rdkit_pattern_fp_input(mol: &Molecule, trust_view: bool) -> BitVec2048 {
         let _ = for_each_embedding(query, mol, &cfg, |m| {
             let mut bit_id = p_idx;
             for &t in m {
-                let an = mol.atom(AtomIdx(t)).element.atomic_number() as u32;
+                let an = crate::rdkit_atomic_num(mol, AtomIdx(t));
                 bit_id = hash_combine(bit_id, an);
             }
             for qb in &query.bonds {

@@ -63,9 +63,12 @@ pub enum DerivedSlot {
     /// Per-target ring models and lookup tables of the RDKit-parity SMARTS
     /// matcher (`chematic-smarts`), shared by every query run on a target.
     RdkitParityMatch = 14,
+    /// RDKit's `numPiElectrons` per atom on its sanitized model, where
+    /// chematic's perception may disagree with RDKit's; `chematic-fp`.
+    RdkitPiElectrons = 15,
 }
 
-const SLOT_COUNT: usize = 15;
+const SLOT_COUNT: usize = 16;
 
 /// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
 /// the unwind-safety traits so `Molecule` stays usable across

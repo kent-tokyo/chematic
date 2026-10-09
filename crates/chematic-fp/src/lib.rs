@@ -143,3 +143,14 @@ pub(crate) fn rdkit_fp_view(
     }
     std::borrow::Cow::Owned(out)
 }
+
+/// RDKit's atomic number of an atom: 0 for a dummy atom, which chematic
+/// stores with a placeholder element.
+pub(crate) fn rdkit_atomic_num(mol: &chematic_core::Molecule, idx: chematic_core::AtomIdx) -> u32 {
+    let atom = mol.atom(idx);
+    if atom.wildcard {
+        0
+    } else {
+        u32::from(atom.element.atomic_number())
+    }
+}

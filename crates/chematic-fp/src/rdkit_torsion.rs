@@ -89,6 +89,18 @@ const N_BITS_PER_ENTRY: usize = 4;
 /// misses attributable to this gap or to asymmetrically-substituted
 /// 3-membered rings (see that function's own doc comment).
 pub(crate) fn num_pi_electrons(mol: &Molecule, idx: AtomIdx) -> u32 {
+    // Where chematic's perception may disagree with RDKit's (hypervalent
+    // atoms, metals, radicals, ...), RDKit's own count on its model.
+    let rd = mol.derived(chematic_core::DerivedSlot::RdkitPiElectrons, || {
+        if chematic_perception::rdkit_model_may_disagree(mol) {
+            chematic_smiles::rdkit_num_pi_electrons(mol)
+        } else {
+            None
+        }
+    });
+    if let Some(v) = rd.as_ref() {
+        return v[idx.0 as usize];
+    }
     let atom = mol.atom(idx);
     if atom.aromatic {
         return 1;
@@ -407,9 +419,10 @@ fn torsion_hash(atom_invariants: &[u32], path: &[AtomIdx; 4]) -> u32 {
 /// on a 200-molecule general corpus sample, with essentially all remaining
 /// misses confined to this one narrow structural class.
 pub fn rdkit_torsion_fp(mol: &Molecule) -> BitVec2048 {
-    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
-        return rdkit_torsion_fp(&h);
-    }
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_torsion_fp_impl(m))
+}
+
+fn rdkit_torsion_fp_impl(mol: &Molecule) -> BitVec2048 {
     // RDKit fingerprints sanitized molecules, i.e. after aromaticity
     // perception; Kekule input must not see a different graph than the
     // equivalent aromatic spelling. The perceived view is memoized on `mol`.
@@ -436,9 +449,10 @@ fn torsion_bucket_counts(mol: &Molecule, atom_invariants: &[u32], n_buckets: u32
 /// (`rdMolDescriptors.GetHashedTopologicalTorsionFingerprint(mol, nBits)`):
 /// the nonzero `(bucket, count)` elements, sorted by bucket.
 pub fn rdkit_torsion_counts(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
-    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
-        return rdkit_torsion_counts(&h, n_bits);
-    }
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_torsion_counts_impl(m, n_bits))
+}
+
+fn rdkit_torsion_counts_impl(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
     let n_bits = n_bits.max(1);
     chematic_perception::with_rdkit_parity_view(mol, |view| {
         let m = view.unwrap_or(mol);
