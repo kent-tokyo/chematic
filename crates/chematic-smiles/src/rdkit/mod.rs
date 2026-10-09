@@ -428,6 +428,28 @@ pub fn rdkit_2d_coords(mol: &Molecule) -> Result<Vec<[f64; 2]>, RdkitSmilesError
 pub fn rdkit_mol_block_2d(mol: &Molecule) -> Result<String, RdkitSmilesError> {
     let (m, cip) = rdkit_mol_from_smiles(mol)?;
     let xy = depict::compute_2d_coords(&m, &cip)?;
+    // A block whose coordinates contradict a double bond's E/Z would be
+    // read back with the other configuration: refuse it (the depiction
+    // port does not reproduce RDKit's layout of some macrocycles).
+    for bond in &m.bonds {
+        if !matches!(bond.stereo, mol::BondStereo::E | mol::BondStereo::Z)
+            || bond.stereo_atoms.len() != 2
+        {
+            continue;
+        }
+        let (b, e) = (xy[bond.begin], xy[bond.end]);
+        let side = |p: [f64; 2]| (e[0] - b[0]) * (p[1] - b[1]) - (e[1] - b[1]) * (p[0] - b[0]);
+        let (s0, s1) = (
+            side(xy[bond.stereo_atoms[0]]),
+            side(xy[bond.stereo_atoms[1]]),
+        );
+        let cis = s0 * s1 > 0.0;
+        if s0 * s1 == 0.0 || cis != (bond.stereo == mol::BondStereo::Z) {
+            return Err(RdkitSmilesError::Unsupported(
+                "2D coordinates do not reproduce a double bond's E/Z configuration".into(),
+            ));
+        }
+    }
     let bare_dummies: Vec<bool> = m
         .atoms
         .iter()
@@ -772,6 +794,25 @@ pub fn rdkit_sanitized_model(mol: &Molecule) -> Result<RdkitSanitizedModel, Rdki
         removed_h_neighbors,
         bonds,
     })
+}
+
+/// `Chem.MolFromSmiles(s)` as a chematic molecule when RDKit's `removeHs`
+/// takes hydrogen graph atoms of `mol` away (`None` otherwise, or where the
+/// port cannot model `mol`): RDKit's atoms and bonds in RDKit's order, each
+/// heavy atom with its total hydrogen count. RDKit-compatible fingerprints
+/// read this molecule so that `[H]C([H])([H])[H]` is methane, as in RDKit.
+pub fn rdkit_hydrogen_suppressed(mol: &Molecule) -> Option<Molecule> {
+    if !mol
+        .atoms()
+        .any(|(_, a)| !a.wildcard && a.element == chematic_core::Element::H)
+    {
+        return None;
+    }
+    let (m, _) = rdkit_mol_from_smiles(mol).ok()?;
+    if m.atoms.len() == mol.atom_count() {
+        return None;
+    }
+    pdb_read::to_chematic(&m, true).ok()
 }
 
 /// Registers [`rdkit_model_correct_view`] as chematic-perception's
