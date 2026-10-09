@@ -17,7 +17,8 @@ fuzz lane and cross-platform comparator policy. The latest
 published-package chemistry and speed comparison packet is pinned to
 **v1.0.30** against RDKit 2026.03.6. Later dated records cover v1.0.36
 and v1.0.37 packages plus published v1.0.38 and v1.0.39 source evidence;
-v1.0.39 still needs its own channel and package-output verification.
+v1.0.39 release channels are verified; its chemistry package-output reruns
+remain separate open work.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|
