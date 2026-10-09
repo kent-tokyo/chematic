@@ -657,6 +657,7 @@ fn finish_molecule_with_flags(
         a.aromatic = atom_aromatic.contains(&idx);
         builder.add_atom(a);
     }
+    let mut stash = Vec::new();
     for (bidx, bond) in mol.bonds() {
         let order = bond_orders[&bidx];
         if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, order)
@@ -667,7 +668,7 @@ fn finish_molecule_with_flags(
             // the same way the SMILES parser's aromatic-aromatic coercion
             // does — stash it so an exocyclic double bond anchored on this
             // ring bond still round-trips through the canonical writer.
-            builder.set_bond_direction(new_bidx, bond.order);
+            stash.push((new_bidx, bond.order, bond.atom1));
         }
     }
     // Atoms/bonds above are re-added in `mol`'s own enumeration order with
@@ -679,6 +680,11 @@ fn finish_molecule_with_flags(
     builder.copy_stereo_groups_from(mol);
     builder.copy_stereo_from(mol);
     builder.copy_bond_directions_from(mol);
+    // After the wholesale copy, which would otherwise erase them.
+    for (bidx, dir, anchor) in stash {
+        builder.set_bond_direction(bidx, dir);
+        builder.set_bond_direction_anchor(bidx, anchor);
+    }
     let normalized = builder.build();
 
     // Compare the pre-normalization implicit H against what the same
