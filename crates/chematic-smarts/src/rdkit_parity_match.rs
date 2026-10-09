@@ -877,7 +877,7 @@ fn eval_hcount(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
 }
 
 fn eval_valence(idx: AtomIdx, ctx: &EvalCtx<'_>, v: u8) -> bool {
-    crate::match_vf2::total_valence(ctx.mol, idx) == v
+    crate::match_vf2::smarts_total_valence(ctx.mol, idx) == v
 }
 
 fn eval_ring_bond_count(idx: AtomIdx, ctx: &EvalCtx<'_>, x: u8) -> bool {

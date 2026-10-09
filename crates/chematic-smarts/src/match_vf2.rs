@@ -1188,13 +1188,23 @@ fn eval_hcount(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
 
 /// Total valence (bond order sum + implicit H) for Valence primitive.
 fn eval_valence(idx: AtomIdx, ctx: &EvalCtx<'_>, v: u8) -> bool {
-    total_valence(ctx.mol, idx) == v
+    smarts_total_valence(ctx.mol, idx) == v
 }
 
 /// Daylight/RDKit total valence: bond orders of the Kekulé form plus all
 /// hydrogens, so benzene carbon is `v4` and pyrrole nitrogen `v3`. When the
 /// aromatic system cannot be kekulized an aromatic bond counts 1.
 pub(crate) fn total_valence(mol: &Molecule, idx: AtomIdx) -> u8 {
+    total_valence_with(mol, idx, false)
+}
+
+/// [`total_valence`] as SMARTS `v` reads it (`Atom::getTotalValence`):
+/// a dative bond counts for its acceptor only (`getValenceContrib`).
+pub(crate) fn smarts_total_valence(mol: &Molecule, idx: AtomIdx) -> u8 {
+    total_valence_with(mol, idx, true)
+}
+
+fn total_valence_with(mol: &Molecule, idx: AtomIdx, dative_acceptor_only: bool) -> u8 {
     let has_aromatic = mol
         .neighbors(idx)
         .any(|(_, bid)| mol.bond(bid).order == BondOrder::Aromatic);
@@ -1208,9 +1218,7 @@ pub(crate) fn total_valence(mol: &Molecule, idx: AtomIdx) -> u8 {
         .neighbors(idx)
         .map(|(_, bid)| {
             let order = mol.bond(bid).order;
-            // RDKit's `getValenceContrib`: a dative bond counts for its
-            // acceptor only.
-            if order == BondOrder::Dative {
+            if dative_acceptor_only && order == BondOrder::Dative {
                 return u8::from(mol.bond(bid).atom1 != idx);
             }
             let order = match (&kekule, order) {
