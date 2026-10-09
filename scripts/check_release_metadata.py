@@ -87,7 +87,11 @@ def main() -> int:
         require(bool(package.get("registry_url")), f"{key} registry URL missing", errors)
     mcp = document.get("mcp", {})
     require(mcp.get("tool_count") == 20, "MCP tool count drifted from the documented registry", errors)
-    require(mcp.get("transport") == ["stdio"], "MCP transport must remain stdio", errors)
+    require(
+        mcp.get("transport") == ["stdio", "streamable-http"],
+        "MCP transports must describe stdio and the opt-in Streamable HTTP adapter",
+        errors,
+    )
     require(mcp.get("network_enabled_tools") == ["pubchem_lookup"], "MCP network tool declaration drifted", errors)
     for entry in document.get("benchmarks", {}).get("historical", []):
         require(entry.get("status") == "historical", f"benchmark is not marked historical: {entry.get('path')}", errors)

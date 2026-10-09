@@ -1,8 +1,8 @@
 # Open-work ledger
 
-Updated 2026-10-08 for the **v1.0.38 release line**. The published v1.0.37
-Linux CPython 3.9 wheel, npm package and crate remain the latest artifact gate
-evidence below; v1.0.38 must be remeasured after publication
+Updated 2026-10-09 for the **v1.0.39 release line**. The published v1.0.38
+artifacts remain the latest artifact gate evidence below; v1.0.39 must be
+remeasured after publication
 (macOS and Windows wheels: dispatch the repaired
 `published-wheel-chemistry-gates.yml`).
 Published chemistry/benchmark evidence is versioned:

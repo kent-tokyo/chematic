@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.39] - 2026-10-09
+
 ### Fixed
 
 - SMARTS: a lowercase letter followed by a lowercase letter in a bracket

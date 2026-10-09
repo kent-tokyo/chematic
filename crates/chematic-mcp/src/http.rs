@@ -159,6 +159,15 @@ impl HttpServer {
             let _ = stream.set_write_timeout(Some(self.config.io_timeout));
             if active.fetch_add(1, Ordering::SeqCst) >= self.config.max_concurrency {
                 active.fetch_sub(1, Ordering::SeqCst);
+                // Consume one bounded request before closing the connection. On
+                // some TCP stacks, closing a socket with unread request bytes
+                // sends a reset that can discard the 503 response. The normal
+                // parser keeps this drain subject to the same header, body and
+                // I/O limits as a served request; no tool is executed here.
+                {
+                    let mut reader = BufReader::new(&mut stream);
+                    let _ = read_request(&mut reader);
+                }
                 let response = HttpResponse::json(
                     503,
                     &protocol::error_response(

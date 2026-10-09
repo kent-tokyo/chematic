@@ -1,9 +1,9 @@
 # Validation report
 
-Updated 2026-10-08 for **v1.0.38**. The broad chemistry and speed packet
+Updated 2026-10-09 for **v1.0.39**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
-v1.0.31, v1.0.36 and v1.0.37 artifacts plus v1.0.38 source. v1.0.38
-package-output reruns remain open. Every
+artifacts, the published v1.0.38 chemistry baseline, and v1.0.39 source.
+v1.0.39 package-output reruns remain open. Every
 comparison is limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
@@ -16,8 +16,9 @@ comparison is limited to its recorded artifact, comparator, corpus and operation
 | RDKit-compatible HBA | The hash-verified published v1.0.30 macOS arm64 wheel matches RDKit 2026.03.6 on 5,000/5,000 exposed ChEMBL rows; published v1.0.29 matched 3,641/5,000. HBA only. | [Release-channel evidence](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.30.json) |
 | Paired speed (P0.2) | Published Python: 20 operations pass exact-output and paired-interval gates in 20 alternating blocks on one host. Isolated Python and Rust lanes split parse-inclusive, first-use and precomputed calls. Whole-process RSS is not library allocation; changed HBA output is not an equivalent-output speed win. | [Python matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) · [isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) · [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) |
 | Published browser Morgan | On Ubuntu 24.04, Chromium, Firefox and WebKit each have 250/250 direct and prepared bit parity and favorable 20-block speed intervals versus official RDKit.js (smallest lower bound 1.63×). A separate Chromium 10k lane has 9,999 exact and one typed Fe refusal. No universal browser or memory claim. | [Three-browser record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) · [M4 Chromium](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md) |
-| Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.36 Python, npm and Rust artifacts classify the 83-row graph/origin/map gate as 80 exact and three jointly invalid. BioTransformer results are separately classified; this is not general SMIRKS parity. v1.0.38 packages need their own rerun. | [v1.0.36 published reruns](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-06-v1036-published-reruns-and-followups.md) |
-| Release channels | v1.0.37 GitHub Release, npm, PyPI, all 20 crates.io archives, docs.rs and Pages were directly verified against main commit `0cbf01d1`. Availability does not establish chemical accuracy. | [v1.0.37 record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.37.json) |
+| Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.38 and the v1.0.39 source candidate retain the 83-row gate at 80 exact and three jointly invalid. Property fuzzing reduced implicit-H product differences from 125 to 28 and refusals from 52 to 18 on 2,000 generated templates; the remaining cases stay classified, not counted as parity. | [batch 24](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-08-754-734-followups-batch24.md) |
+| MCP Streamable HTTP | The v1.0.39 source candidate adds an opt-in, loopback-first 2026-07-28 stateless transport. The official suite produced 82 passes; its other checks require suite fixtures or capabilities the server does not declare. This is source evidence until published packages are verified. | [HTTP conformance record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-issues-769-779.md) |
+| Release channels | v1.0.38 GitHub Release, npm, PyPI, all 20 crates.io archives, docs.rs and Pages were directly verified against release commit `55b22d65`. Availability does not establish chemical accuracy. | [v1.0.38 metadata](https://github.com/kent-tokyo/chematic/blob/main/release-metadata/v1.0.38.json) |
 
 ## Other bounded results
 

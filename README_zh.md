@@ -26,12 +26,12 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.38 范围
+### v1.0.39 范围
 
-v1.0.38 为 SMILES、InChI、指纹、立体异构体枚举、二维坐标、MOL block 以及
-MMFF94／MMFF94s／UFF 增加了明确命名的 RDKit 兼容 API。描述符也对齐到已记录的
-兼容配置，并改进了输入边界、保持立体信息的 3D 重试和拥挤分子的二维布局。
-带日期的源码测量和旧版已发布包测量，与 v1.0.38 发布包验证保持分离。详情见
+v1.0.39 增加了默认仅绑定回环地址的 MCP Streamable HTTP，并改进了 RDKit
+兼容配置下的 SMARTS／SMIRKS 解析、元素替换和芳香生成物的高价态处理。同时新增
+SMIRKS property-based fuzzing、按平台固定的比较策略和可提交给上游的探针。
+在 v1.0.39 发布包重新测量前，v1.0.38 的发布包结果仍作为历史记录。详情见
 [验证报告](docs/validation.md)，变更见 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用

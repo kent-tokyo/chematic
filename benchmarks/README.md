@@ -2,8 +2,8 @@
 
 This directory contains dated, reproducible measurement records. Numbers are
 scoped to each record's source or package, corpus, host, runtime and operation.
-The current release is **v1.0.38**. Its source-candidate COSMolKit/RDKit
-comparison and the published-package RDKit 2026.03.6 and RDKit.js
+The current release is **v1.0.39**. Its source changes are recorded in the
+#754/#734 and #769/#779 records below; the published-package RDKit 2026.03.6 and RDKit.js
 2026.03.6/2026.09.1 records are versioned below. Other records remain scoped
 to their stated artifacts and hosts.
 
@@ -102,7 +102,7 @@ to their stated artifacts and hosts.
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.0.38. Older records remain versioned historical
+The current release line is v1.0.39. Older records remain versioned historical
 measurements where their headers say so; a release does not imply that an older
 measurement was rerun.
 
