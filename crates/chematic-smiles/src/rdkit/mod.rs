@@ -54,6 +54,7 @@ mod pdb_read;
 mod periodic;
 mod pyrandom;
 mod rank;
+mod rxn_smarts;
 mod sanitize;
 mod smarts_match;
 mod smarts_write;
@@ -484,6 +485,35 @@ fn detect_chemistry_problems(
         res.push(problem);
     }
     Ok(res)
+}
+
+/// `Chem.MolToSmarts(Chem.MolFromSmarts(smarts))` (RDKit 2026.03.1): the
+/// query re-written as RDKit writes query molecules (`[OH]` becomes
+/// `[O&H1]`, `;` becomes `&` where no `,` needs it, recursive queries
+/// re-written, chirality relative to the output order). Directional and
+/// dative bonds and chirality classes are refused.
+///
+/// ```
+/// assert_eq!(chematic_smiles::rdkit_smarts_to_smarts("[CX3](=O)[OX2H1]").unwrap(),
+///            "[C&X3](=O)[O&X2&H1]");
+/// ```
+pub fn rdkit_smarts_to_smarts(smarts: &str) -> Result<String, RdkitSmilesError> {
+    rxn_smarts::smarts_to_smarts(smarts)
+}
+
+/// `rdChemReactions.ReactionToSmarts(rdChemReactions.ReactionFromSmarts(s))`
+/// (RDKit 2026.03.1): each reactant, agent and product template written by
+/// `MolToSmarts` (see [`rdkit_smarts_to_smarts`]) in input order, a
+/// template with several components (`(A.B)` grouping) in parentheses.
+///
+/// ```
+/// assert_eq!(
+///     chematic_smiles::rdkit_reaction_to_smarts("[C:1](=[O:2])[OH].[NH2:3]>>[C:1](=[O:2])[N:3]").unwrap(),
+///     "[C:1](=[O:2])[O&H1].[N&H2:3]>>[C:1](=[O:2])[N:3]"
+/// );
+/// ```
+pub fn rdkit_reaction_to_smarts(reaction_smarts: &str) -> Result<String, RdkitSmilesError> {
+    rxn_smarts::reaction_to_smarts(reaction_smarts)
 }
 
 /// RDKit's process-wide random generator (`getRandomGenerator()`, seeded

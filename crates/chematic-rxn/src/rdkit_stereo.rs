@@ -96,16 +96,19 @@ impl ReactionStereo {
     }
 }
 
-/// Top-level `.`-separated templates of one reaction side.
+/// Top-level `.`-separated templates of one reaction side; a component
+/// group `(A.B)` is one template (without its parentheses).
 fn split_templates(side: &str) -> Vec<&str> {
     let mut parts = Vec::new();
-    let mut depth = 0usize;
+    let (mut depth, mut paren) = (0usize, 0usize);
     let mut start = 0;
     for (i, b) in side.bytes().enumerate() {
         match b {
             b'[' => depth += 1,
             b']' => depth = depth.saturating_sub(1),
-            b'.' if depth == 0 => {
+            b'(' if depth == 0 => paren += 1,
+            b')' if depth == 0 => paren = paren.saturating_sub(1),
+            b'.' if depth == 0 && paren == 0 => {
                 parts.push(&side[start..i]);
                 start = i + 1;
             }
@@ -113,7 +116,32 @@ fn split_templates(side: &str) -> Vec<&str> {
         }
     }
     parts.push(&side[start..]);
-    parts.into_iter().filter(|p| !p.is_empty()).collect()
+    parts
+        .into_iter()
+        .filter(|p| !p.is_empty())
+        .map(|p| {
+            // A whole-component group: `(` ... matching `)` at the end.
+            let b = p.as_bytes();
+            if b.first() == Some(&b'(') && b.last() == Some(&b')') {
+                let (mut d, mut br) = (0usize, 0usize);
+                for (k, &c) in b.iter().enumerate() {
+                    match c {
+                        b'[' => br += 1,
+                        b']' => br = br.saturating_sub(1),
+                        b'(' if br == 0 => d += 1,
+                        b')' if br == 0 => {
+                            d -= 1;
+                            if d == 0 {
+                                return if k == b.len() - 1 { &p[1..k] } else { p };
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            p
+        })
+        .collect()
 }
 
 /// One entry of an atom's SMILES-text neighbour order.
@@ -192,8 +220,12 @@ pub(crate) fn tokenize_template(text: &str) -> Option<Vec<TemplateAtom>> {
                 i += 1;
             }
             b'.' => {
-                // Component grouping inside one template is not followed.
-                return None;
+                // Another component of a grouped template, `(A.B)`.
+                if !stack.is_empty() {
+                    return None;
+                }
+                prev = None;
+                i += 1;
             }
             c @ (b'0'..=b'9' | b'%') => {
                 let (num, len) = if c == b'%' {

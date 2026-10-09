@@ -263,7 +263,31 @@ fn rdkit_detect_chemistry_problems(smiles: &str) -> PyResult<Vec<(String, Vec<us
     Ok(problems.into_iter().map(|p| (p.kind, p.atoms)).collect())
 }
 
+/// RDKit 2026.03.1's ``rdChemReactions.ReactionToSmarts(
+/// rdChemReactions.ReactionFromSmarts(reaction_smarts))``: every template
+/// re-written as RDKit writes query molecules (``[OH]`` -> ``[O&H1]``,
+/// chirality relative to the output order, ``(A.B)`` groups in
+/// parentheses). Raises ``ValueError`` for unsupported syntax (directional
+/// or dative bonds, chirality classes)::
+///
+///     chematic.rdkit_reaction_to_smarts("[C:1](=[O:2])[OH]>>[C:1](=[O:2])N")
+///     # '[C:1](=[O:2])[O&H1]>>[C:1](=[O:2])N'
+#[pyfunction]
+fn rdkit_reaction_to_smarts(reaction_smarts: &str) -> PyResult<String> {
+    chematic_smiles::rdkit_reaction_to_smarts(reaction_smarts)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+/// RDKit 2026.03.1's ``Chem.MolToSmarts(Chem.MolFromSmarts(smarts))``.
+#[pyfunction]
+fn rdkit_smarts_to_smarts(smarts: &str) -> PyResult<String> {
+    chematic_smiles::rdkit_smarts_to_smarts(smarts)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(rdkit_reaction_to_smarts, m)?)?;
+    m.add_function(wrap_pyfunction!(rdkit_smarts_to_smarts, m)?)?;
     m.add_function(wrap_pyfunction!(rdkit_detect_chemistry_problems, m)?)?;
     m.add_function(wrap_pyfunction!(smarts_match, m)?)?;
     m.add_function(wrap_pyfunction!(smarts_find, m)?)?;

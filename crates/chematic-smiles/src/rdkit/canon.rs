@@ -301,7 +301,8 @@ fn chiral_atom_needs_tag_inversion(
 ) -> bool {
     let atom = &mol.atoms[a];
     let fourth_valence = atom.num_explicit_hs == 1
-        || (!mol.needs_update_property_cache(a) && mol.implicit_valence(a) == 1);
+        || (!mol.needs_update_property_cache(a) && mol.implicit_valence(a) == 1)
+        || atom.single_h_query;
     let unsaturated = mol.atom_bonds[a]
         .iter()
         .any(|&b| mol.bonds[b].bt.as_double() > 1.0);

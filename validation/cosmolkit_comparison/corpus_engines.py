@@ -71,6 +71,7 @@ API_NOTES = {
         "fragment_smiles": "Mol.rdkit_fragment_smiles(first half of Mol.rdkit_num_atoms())",
         "chemistry_problems": "Mol.rdkit_chemistry_problems()",
         "chemistry_problems_unsanitized": "chematic.rdkit_detect_chemistry_problems(smiles)",
+        "reaction_smarts_roundtrip": "chematic.rdkit_reaction_to_smarts(smirks)",
         "morgan2_sparse_counts": "Mol.rdkit_morgan_sparse_counts(2)",
         "torsion_legacy_counts": "Mol.rdkit_legacy_torsion_counts()",
         "mmff_energy_gradient": "Mol.add_hydrogens()._rdkit_mmff_terms(RDKit-embedded coords)",
@@ -1098,6 +1099,9 @@ def reaction_smarts_roundtrip(engine: str, smirks: str) -> str:
     if engine == "cosmolkit":
         import cosmolkit as ck
         return ck.parse_smirks(smirks).to_smirks()
+    if engine == "chematic":
+        import chematic as c
+        return c.rdkit_reaction_to_smarts(smirks)
     raise UnsupportedError(f"{engine}: no reaction SMARTS writer")
 
 

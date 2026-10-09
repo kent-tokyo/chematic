@@ -4249,3 +4249,11 @@ def rdkit_detect_chemistry_problems(smiles: str) -> list[tuple[str, list[int]]]:
     """``Chem.DetectChemistryProblems(Chem.MolFromSmiles(smiles, sanitize=False))``
     (RDKit 2026.03.1) as ``[(type, atom_indices)]``."""
     ...
+
+def rdkit_reaction_to_smarts(reaction_smarts: str) -> str:
+    """``ReactionToSmarts(ReactionFromSmarts(s))`` (RDKit 2026.03.1)."""
+    ...
+
+def rdkit_smarts_to_smarts(smarts: str) -> str:
+    """``Chem.MolToSmarts(Chem.MolFromSmarts(s))`` (RDKit 2026.03.1)."""
+    ...

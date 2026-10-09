@@ -171,6 +171,10 @@ pub(crate) struct Atom {
     /// `_brokenChirality` (`MolFragmentToSmiles`: a chiral atom with a
     /// bond outside the fragment).
     pub broken_chirality: bool,
+    /// A SMARTS query atom whose query is an AND with `H1`
+    /// (`Canon::details::hasSingleHQuery`): chirality writing treats it as
+    /// having a fourth neighbour.
+    pub single_h_query: bool,
 }
 
 impl Atom {
@@ -194,6 +198,7 @@ impl Atom {
             ring_stereochem_cand: None,
             chirality_possible: false,
             broken_chirality: false,
+            single_h_query: false,
         }
     }
 

@@ -64,3 +64,17 @@ def test_rdkit_problems_matrices_fingerprints():
     assert m.rdkit_morgan_sparse_counts(2)[2246728737] == 1
     assert len(m.rdkit_legacy_torsion_counts()) == 0
     assert sum(m.rdkit_atom_pair_sparse_counts().values()) == 6
+
+
+def test_rdkit_reaction_smarts_writer_and_grouping():
+    # RDKit 2026.03.1 ReactionToSmarts(ReactionFromSmarts(s)) / MolToSmarts.
+    s = "[C@@H:1]([NH2:2])([#6:3])[C:4]=[O:5]>>[C@@H:1]([NH:2]C(C)=O)([#6:3])[C:4]=[O:5]"
+    assert chematic.rdkit_reaction_to_smarts(s) == (
+        "[N&H2:2][C@&H1:1]([#6:3])[C:4]=[O:5]>>[N&H1:2]([C@&H1:1]([#6:3])[C:4]=[O:5])C(C)=O")
+    lactam = "([C:1](=[O:2])[OH].[NH2:3])>>[C:1](=[O:2])[N:3]"
+    assert chematic.rdkit_reaction_to_smarts(lactam) == (
+        "([C:1](=[O:2])[O&H1].[N&H2:3])>>[C:1](=[O:2])[N:3]")
+    assert chematic.rdkit_smarts_to_smarts("[N;H2,H1;!$(NC=O)]") == "[N;H2,H1;!$(NC=O)]"
+    r = chematic.run_smirks_checked(lactam, [chematic.from_smiles("NCCCC(=O)O")], rdkit_compat=True)
+    assert r["status"] == "products"
+    assert sorted({p.rdkit_smiles() for ps in r["products"] for p in ps}) == ["O=C1CCCN1"]

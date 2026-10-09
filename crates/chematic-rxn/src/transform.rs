@@ -1686,7 +1686,35 @@ fn split_components(side: &str) -> Vec<&str> {
     let mut out = Vec::new();
     let (mut bracket, mut paren) = (0usize, 0usize);
     let mut start = 0usize;
+    // Component grouping, `(A.B)`: as in RDKit's reaction SMARTS, the
+    // group is one template whose disconnected parts match one molecule.
+    let mut group: Option<usize> = None;
+    let mut group_depth = 0usize;
     for (i, b) in side.bytes().enumerate() {
+        if group.is_some() {
+            match b {
+                b'[' => bracket += 1,
+                b']' => bracket = bracket.saturating_sub(1),
+                b'(' if bracket == 0 => group_depth += 1,
+                b')' if bracket == 0 => {
+                    group_depth -= 1;
+                    if group_depth == 0 {
+                        let g = group.take().expect("group");
+                        if i > g + 1 {
+                            out.push(&side[g + 1..i]);
+                        }
+                        start = i + 1;
+                    }
+                }
+                _ => {}
+            }
+            continue;
+        }
+        if b == b'(' && bracket == 0 && i == start {
+            group = Some(i);
+            group_depth = 1;
+            continue;
+        }
         match b {
             b'[' => bracket += 1,
             b']' => bracket = bracket.saturating_sub(1),
@@ -1701,7 +1729,10 @@ fn split_components(side: &str) -> Vec<&str> {
             _ => {}
         }
     }
-    if side.len() > start {
+    if let Some(g) = group {
+        // Unclosed group: left to the template parser to refuse.
+        out.push(&side[g..]);
+    } else if side.len() > start {
         out.push(&side[start..]);
     }
     out
