@@ -62,6 +62,11 @@ API_NOTES = {
         "extended_murcko": "Mol.rdkit_mol_hash('ExtendedMurcko')",
         "embed3d": "Mol.add_hydrogens().rdkit_embed(random_seed=42)",
         "mol_hash_*": "Mol.rdkit_mol_hash(<HashFunction name>)",
+        "tautomer_*": "Mol.canonical_tautomer() / enumerate_tautomers() (native), read back by RDKit",
+        "rxn:*": "chematic.run_smirks_checked(smirks, [mol, *partners], rdkit_compat=True)",
+        "distance_matrix": "Mol.topological_distance_matrix()",
+        "mmff_energy_gradient": "Mol.add_hydrogens()._rdkit_mmff_terms(RDKit-embedded coords)",
+        "uff_energy_gradient": "Mol.add_hydrogens().rdkit_uff_energy/rdkit_uff_gradient(RDKit-embedded coords)",
     },
     "cosmolkit": {
         "smarts": "get_substruct_matches(mol, parse_smarts(q))",
@@ -82,6 +87,10 @@ API_NOTES = {
         "smiles_*": "Molecule.to_smiles_with_params(SmilesWriteParams(...))",
         "embed3d": "with_hydrogens().with_3d_conformer_result_with_params(EmbedParams.etkdg_v3() randomSeed=42)",
         "removed": "see COSMOLKIT_05_REMOVED",
+        "tautomer_*": "Molecule.canonical_tautomer() / enumerate_tautomers().canonical_smiles()",
+        "rxn:*": "parse_smirks(s).run([mol, *partners], ReactionRunParams())",
+        "3d ops": "with_hydrogens().with_only_3d_conformer(RDKit-embedded coords)",
+        "chemistry_problems": "detect_chemistry_problems(), kind + message mapped to RDKit types",
     },
 }
 
@@ -267,6 +276,7 @@ def rdkit_engine():
             raise ValueError("RDKit could not parse")
         return mol
 
+    ops.update(_rdkit_new_ops(Chem))
     return {"version": rdBase.rdkitVersion, "parse": parse, "ops": ops}
 
 
@@ -403,7 +413,8 @@ def chematic_engine():
         return writer(**kwargs)
 
     raw = {"canonical_smiles": lambda m: m.smiles, "molblock": molblock}
-    return {"version": c.__version__, "parse": c.from_smiles, "ops": ops, "raw": raw}
+    ops.update(_chematic_new_ops(c))
+    return {"version": c.__version__, "parse": _with_input_smiles(c.from_smiles), "ops": ops, "raw": raw}
 
 
 # ----------------------------------------------------------------- COSMolKit
@@ -663,7 +674,8 @@ def _cosmolkit_05_engine():
     })
     ops.update(_cosmolkit_05_new_ops(ck))
     raw = {"canonical_smiles": lambda m: m.to_smiles(), "molblock": lambda m: m.to_sdf_2d()}
-    return {"version": getattr(ck, "__version__", "unknown"), "parse": ck.Molecule.from_smiles,
+    return {"version": getattr(ck, "__version__", "unknown"),
+            "parse": _with_input_smiles(ck.Molecule.from_smiles),
             "ops": ops, "raw": raw, "unsupported": dict(COSMOLKIT_05_REMOVED)}
 
 
@@ -680,9 +692,361 @@ def _ck05_coords(block):
     return v.tolist() if hasattr(v, "tolist") else [list(p) for p in v]
 
 
+# ------------------------------------------------- COSMolKit 0.5 surfaces
+# Fixed reaction set: (name, SMIRKS, partner SMILES for reactant templates
+# 2..n). The corpus molecule is reactant 1. Products are compared as sorted,
+# de-duplicated product sets, each product written by the engine and read
+# back by RDKit (``rdkit_readback``) so that engines with different writers
+# compare on the molecules themselves; "<invalid>" marks a product RDKit
+# cannot read back (or sanitize, for RDKit's own products).
+REACTIONS = [
+    ("amide_acid", "[C:1](=[O:2])[OH].[N;!H0;!$(NC=O);!$(N=*);!$(N#*):3]>>[C:1](=[O:2])[N:3]", ["NCc1ccccc1"]),
+    ("amide_amine", "[N;!H0;!$(NC=O);!$(N=*);!$(N#*);!$(Nc);!$([N+]):1].[C:2](=[O:3])[OH]>>[N:1][C:2]=[O:3]", ["CC(=O)O"]),
+    ("esterification", "[C:1](=[O:2])[OH].[OH:3][CH3:4]>>[C:1](=[O:2])[O:3][C:4]", ["CO"]),
+    ("suzuki_like", "[c:1][Br,I].[c:2]B(O)O>>[c:1][c:2]", ["OB(O)c1ccccc1"]),
+    ("sulfonamide", "[N;!H0;!$(NC=O);!$(NS(=O)=O);!$([N+]):1].Cl[S:2](=[O:3])(=[O:4])[C:5]>>[N:1][S:2](=[O:3])(=[O:4])[C:5]", ["CS(=O)(=O)Cl"]),
+    ("boc_deprotection", "[N:1]C(=O)OC([CH3])([CH3])[CH3]>>[N:1]", []),
+    ("ester_hydrolysis", "[C:1](=[O:2])O[CX4]>>[C:1](=[O:2])O", []),
+    ("amide_hydrolysis", "[C:1](=[O:2])[NH:3][C:4]>>[C:1](=[O:2])O.[N:3][C:4]", []),
+    ("nitro_reduction", "[c:1][N+](=O)[O-]>>[c:1]N", []),
+    ("alcohol_oxidation", "[CH2:1][OH:2]>>[CH:1]=[O:2]", []),
+    ("ketone_reduction", "[C:1](=[O:2])([#6:3])[#6:4]>>[C:1]([OH:2])([#6:3])[#6:4]", []),
+    ("n_methylation", "[NH2:1][c:2]>>C[NH:1][c:2]", []),
+    ("halogen_exchange", "[c:1]Cl>>[c:1]F", []),
+    ("n_oxidation", "[n;H0;+0:1]>>[n+:1][O-]", []),
+    ("lactam_ring_closure", "([C:1](=[O:2])[OH].[NH2:3])>>[C:1](=[O:2])[N:3]", []),
+    ("diels_alder", "[C:1]=[C:2][C:3]=[C:4].[C:5]=[C:6]>>[C:1]1[C:2]=[C:3][C:4][C:6][C:5]1", ["C=CC(=O)OC"]),
+    ("stereo_retaining_acylation", "[C@@H:1]([NH2:2])([#6:3])[C:4]=[O:5]>>[C@@H:1]([NH:2]C(C)=O)([#6:3])[C:4]=[O:5]", []),
+    ("stereo_inversion", "[C@:1]([N:2])>>[C@@:1]([N:2])", []),
+    ("unmapped_methyl_ester", "C(=O)[OH]>>C(=O)OC", []),
+    ("partially_mapped_ether", "[c:1][OH]>>[c:1]OC", []),
+]
+
+# Deliberately broken SMILES (read with sanitize=False) for the
+# DetectChemistryProblems check (check_chemistry_problems.py).
+BROKEN_SMILES = [
+    "CN(C)(C)(C)C", "C1=CC=CC=C1C(=O)(O)O", "c1ccccc1c", "c1cccc1", "Cc1nccc1",
+    "F(C)C", "O(C)(C)C", "CC(C)(C)(C)C", "c1ccc2c(c1)cccn2C", "n1cccc1",
+    "C1=CC=CC=C1=C", "Cl(C)C", "[NH4](C)", "c1ccco1C", "B(C)(C)(C)C",
+    "C(=O)=O=C", "S(C)(C)(C)(C)(C)(C)C", "C1CC1(C)(C)C", "c1ccccc1.N(C)(C)(C)C", "[O-](C)C",
+]
+
+
+def _round_nested(v, nd=6):
+    if isinstance(v, float):
+        r = round(v, nd)
+        return 0.0 if r == 0 else r
+    if isinstance(v, (list, tuple)):
+        return [_round_nested(x, nd) for x in v]
+    return v
+
+
+def _distance_matrix_norm(rows):
+    """Topological distances as ints (-1 for disconnected atom pairs)."""
+    return [[int(round(d)) if d < 1e7 else -1 for d in row] for row in rows]
+
+
+def rdkit_embedded_h(smiles: str):
+    """``Chem.AddHs(Chem.MolFromSmiles(smiles))`` embedded with
+    ``EmbedMolecule(randomSeed=42)``: (molecule, coordinates) or None. The
+    shared input of every engine's 3D surface ops."""
+    Chem = _rd()
+    from rdkit.Chem import AllChem
+    m = Chem.MolFromSmiles(smiles)
+    if m is None:
+        return None
+    mh = Chem.AddHs(m)
+    if AllChem.EmbedMolecule(mh, randomSeed=42) != 0:
+        return None
+    return mh, mh.GetConformer().GetPositions().tolist()
+
+
+def _rdkit_reaction(smirks):
+    from rdkit.Chem import AllChem
+    rxn = AllChem.ReactionFromSmarts(smirks)
+    rxn.Initialize()
+    return rxn
+
+
+def _product_sets(sets):
+    """Sorted unique product sets: each a '.'-joined list of RDKit-canonical
+    product SMILES in product-template order."""
+    return sorted({".".join(rdkit_readback(p, "smiles") or "<invalid>" if p is not None else "<invalid>"
+                            for p in ps) for ps in sets})
+
+
+def fragment_atoms(n: int) -> list[int]:
+    """The deterministic atom subset of the fragment-SMILES op: the first
+    half of the atoms (at least one)."""
+    return list(range(max(1, n // 2)))
+
+
+def _rdkit_new_ops(Chem):
+    from rdkit.Chem import AllChem, rdFingerprintGenerator, rdMolDescriptors
+    from rdkit.Chem.MolStandardize import rdMolStandardize
+
+    enumerator = rdMolStandardize.TautomerEnumerator()
+    sparse_gen = rdFingerprintGenerator.GetMorganGenerator(radius=2)
+
+    def run_rxn(smirks, partners):
+        rxn = _rdkit_reaction(smirks)
+        pmols = [Chem.MolFromSmiles(x) for x in partners]
+
+        def run(m):
+            sets = []
+            for prods in rxn.RunReactants((m, *pmols)):
+                smis = []
+                for p in prods:
+                    try:
+                        Chem.SanitizeMol(p)
+                        smis.append(Chem.MolToSmiles(p))
+                    except Exception:  # noqa: BLE001 - unsanitizable product
+                        smis.append(None)
+                sets.append(smis)
+            return _product_sets(sets)
+        return run
+
+    def mmff(m):
+        e = _rd_embed_from_mol(m)
+        if e is None:
+            return None
+        mh, _ = e
+        props = AllChem.MMFFGetMoleculeProperties(mh)
+        if props is None:
+            return None
+        ff = AllChem.MMFFGetMoleculeForceField(mh, props)
+        return _round_nested([ff.CalcEnergy(), list(ff.CalcGrad())])
+
+    def uff(m):
+        e = _rd_embed_from_mol(m)
+        if e is None:
+            return None
+        mh, _ = e
+        ff = AllChem.UFFGetMoleculeForceField(mh)
+        return _round_nested([ff.CalcEnergy(), list(ff.CalcGrad())])
+
+    def dm3d(m):
+        e = _rd_embed_from_mol(m)
+        if e is None:
+            return None
+        return _round_nested(Chem.Get3DDistanceMatrix(e[0]).tolist())
+
+    def problems(m):
+        return sorted([p.GetType(), _problem_atoms(p)] for p in Chem.DetectChemistryProblems(m))
+
+    ops = {
+        "tautomer_canonical": lambda m: Chem.MolToSmiles(enumerator.Canonicalize(m)),
+        "tautomer_set": lambda m: sorted({Chem.MolToSmiles(t) for t in enumerator.Enumerate(m)}),
+        "cx_smiles": lambda m: Chem.MolToCXSmiles(m),
+        "random_smiles5": lambda m: list(Chem.MolToRandomSmilesVect(m, 5, randomSeed=42)),
+        "fragment_smiles": lambda m: Chem.MolFragmentToSmiles(m, atomsToUse=fragment_atoms(m.GetNumAtoms())),
+        "chemistry_problems": problems,
+        "distance_matrix": lambda m: _distance_matrix_norm(Chem.GetDistanceMatrix(m).tolist()),
+        "distance_matrix_3d": dm3d,
+        "mmff_energy_gradient": mmff,
+        "uff_energy_gradient": uff,
+        "morgan2_sparse_counts": lambda m: sorted([int(k), v] for k, v in
+                                                  sparse_gen.GetSparseCountFingerprint(m).GetNonzeroElements().items()),
+        "torsion_legacy_counts": lambda m: sorted([int(k), v] for k, v in
+                                                  rdMolDescriptors.GetTopologicalTorsionFingerprint(m).GetNonzeroElements().items()),
+    }
+    for name, smirks, partners in REACTIONS:
+        ops["rxn:" + name] = run_rxn(smirks, partners)
+    return ops
+
+
+def _rd_embed_from_mol(m):
+    """RDKit's embedded explicit-H copy of an RDKit molecule (input order)."""
+    Chem = _rd()
+    from rdkit.Chem import AllChem
+    mh = Chem.AddHs(m)
+    if AllChem.EmbedMolecule(mh, randomSeed=42) != 0:
+        return None
+    return mh, mh.GetConformer().GetPositions().tolist()
+
+
+def _problem_atoms(p):
+    if hasattr(p, "GetAtomIndices"):
+        return sorted(p.GetAtomIndices())
+    return [p.GetAtomIdx()]
+
+
+class _InputSmiles:
+    """The SMILES the engine's ``parse`` last read: 3D surface ops embed the
+    input molecule with RDKit (same atom order in every engine)."""
+    value: str | None = None
+
+
+def _with_input_smiles(parse):
+    def wrapped(smiles):
+        _InputSmiles.value = smiles
+        return parse(smiles)
+    return wrapped
+
+
+def _embedded_input():
+    return None if _InputSmiles.value is None else rdkit_embedded_h(_InputSmiles.value)
+
+
+def _chematic_new_ops(c):
+    def readback(mol):
+        return rdkit_readback(mol.smiles, "smiles")
+
+    def run_rxn(smirks, partners):
+        pmols = [c.from_smiles(x) for x in partners]
+
+        def run(m):
+            r = c.run_smirks_checked(smirks, [m, *pmols], rdkit_compat=True)
+            if r["status"] not in ("products", "no_match"):
+                raise RefusedError(f"{r['status']}: {r.get('reason')}")
+            return _product_sets([[p.smiles for p in ps] for ps in r.get("products") or []])
+        return run
+
+    def mmff(m):
+        e = _embedded_input()
+        if e is None:
+            return None
+        mh = m.add_hydrogens()
+        energy, grad = mh._rdkit_mmff_terms(e[1])
+        return _round_nested([energy, list(grad)])
+
+    def uff(m):
+        e = _embedded_input()
+        if e is None:
+            return None
+        mh = m.add_hydrogens()
+        return _round_nested([mh.rdkit_uff_energy(e[1]), list(mh.rdkit_uff_gradient(e[1]))])
+
+    ops = {
+        "tautomer_canonical": lambda m: readback(m.canonical_tautomer()),
+        "tautomer_set": lambda m: sorted({readback(t) for t in m.enumerate_tautomers()}),
+        "distance_matrix": lambda m: _distance_matrix_norm(m.topological_distance_matrix()),
+        "mmff_energy_gradient": mmff,
+        "uff_energy_gradient": uff,
+    }
+    for name, smirks, partners in REACTIONS:
+        ops["rxn:" + name] = run_rxn(smirks, partners)
+    return ops
+
+
 def _cosmolkit_05_new_ops(ck):
-    """Harness operations for surfaces new in COSMolKit 0.5 (filled in below)."""
-    return {}
+    """Harness operations for surfaces new in COSMolKit 0.5."""
+    def run_rxn(smirks, partners):
+        rxn = ck.parse_smirks(smirks)
+        pmols = [ck.Molecule.from_smiles(x) for x in partners]
+
+        def run(m):
+            sets = rxn.run([m, *pmols], ck.ReactionRunParams())
+            return _product_sets([[p.to_smiles() for p in ps] for ps in sets])
+        return run
+
+    def embedded(m):
+        e = _embedded_input()
+        if e is None:
+            return None
+        return m.with_hydrogens().with_only_3d_conformer(e[1])
+
+    def energy_gradient(kind):
+        def run(m):
+            mh = embedded(m)
+            if mh is None:
+                return None
+            g = getattr(mh, kind + "_energy_gradient")()
+            energy = g.energy() if callable(g.energy) else g.energy
+            grad = g.gradient() if callable(g.gradient) else g.gradient
+            return _round_nested([energy, list(grad)])
+        return run
+
+    def dm(values, n):
+        return [values[i * n:(i + 1) * n] for i in range(n)]
+
+    def dm3d(m):
+        mh = embedded(m)
+        if mh is None:
+            return None
+        d = mh.distance_matrix_3d()
+        return _round_nested(dm(d.values(), d.dimension()))
+
+    def topo_dm(m):
+        d = m.distance_matrix()
+        return _distance_matrix_norm(dm(d.values(), d.dimension()))
+
+    def problems(m):
+        found = m.detect_chemistry_problems().problems
+        return sorted(_ck05_problem(p) for p in (found() if callable(found) else found))
+
+    sparse_gen = ck.MorganFingerprintGenerator(params=ck.MorganParams(radius=2))
+    ops = {
+        "tautomer_canonical": lambda m: m.canonical_tautomer().to_smiles(),
+        "tautomer_set": lambda m: sorted(set(m.enumerate_tautomers().canonical_smiles())),
+        "cx_smiles": lambda m: m.to_cx_smiles(),
+        "random_smiles5": lambda m: list(m.to_random_smiles(5, 42)),
+        "fragment_smiles": lambda m: m.to_fragment_smiles(fragment_atoms(m.num_atoms())),
+        "chemistry_problems": problems,
+        "distance_matrix": topo_dm,
+        "distance_matrix_3d": dm3d,
+        "mmff_energy_gradient": energy_gradient("mmff"),
+        "uff_energy_gradient": energy_gradient("uff"),
+        "morgan2_sparse_counts": lambda m: sorted([int(k), v] for k, v in
+                                                  m.morgan_sparse_count_fingerprint_with_generator(sparse_gen)
+                                                  .nonzero_elements().items()),
+        "torsion_legacy_counts": lambda m: sorted([int(k), v] for k, v in
+                                                  m.legacy_topological_torsion_sparse_count_fingerprint()
+                                                  .nonzero_elements().items()),
+    }
+    for name, smirks, partners in REACTIONS:
+        ops["rxn:" + name] = run_rxn(smirks, partners)
+    return ops
+
+
+def _ck05_problem(p):
+    """A COSMolKit ChemistryProblem as RDKit's ``[GetType(), atoms]`` (the
+    0.5 error carries a kind and RDKit's message text)."""
+    import re
+    err = p.error() if callable(p.error) else p.error
+    kind = err.kind() if callable(err.kind) else err.kind
+    text = str(err)
+    if kind == "Valence":
+        m = re.search(r"atom # (\d+)", text)
+        return ["AtomValenceException", [int(m.group(1))] if m else []]
+    if kind == "Kekulize":
+        m = re.search(r"aromatic atom (\d+) is not in a ring", text)
+        if m:
+            return ["AtomKekulizeException", [int(m.group(1))]]
+        return ["KekulizeException", sorted(int(x) for x in re.findall(r"AtomId\((\d+)\)", text))]
+    return [str(kind), []]
+
+
+def chemistry_problems_unsanitized(engine: str, smiles: str):
+    """``DetectChemistryProblems`` of ``smiles`` read with sanitize=False, as
+    sorted ``[type, atoms]`` pairs; None where the engine cannot read it."""
+    if engine == "rdkit":
+        Chem = _rd()
+        m = Chem.MolFromSmiles(smiles, sanitize=False)
+        return None if m is None else sorted(
+            [p.GetType(), _problem_atoms(p)] for p in Chem.DetectChemistryProblems(m))
+    if engine == "cosmolkit":
+        import cosmolkit as ck
+        try:
+            m = ck.Molecule.from_smiles_with_params(smiles, ck.SmilesParseParams(sanitize=False))
+        except Exception:  # noqa: BLE001 - unreadable input
+            return None
+        problems = m.detect_chemistry_problems().problems
+        problems = problems() if callable(problems) else problems
+        return sorted(_ck05_problem(p) for p in problems)
+    raise UnsupportedError(f"{engine}: no DetectChemistryProblems equivalent")
+
+
+def reaction_smarts_roundtrip(engine: str, smirks: str) -> str:
+    """The engine's reaction-SMARTS writer applied to the parsed reaction
+    (RDKit: ``ReactionToSmarts(ReactionFromSmarts(s))``)."""
+    if engine == "rdkit":
+        from rdkit.Chem import AllChem
+        return AllChem.ReactionToSmarts(AllChem.ReactionFromSmarts(smirks))
+    if engine == "cosmolkit":
+        import cosmolkit as ck
+        return ck.parse_smirks(smirks).to_smirks()
+    raise UnsupportedError(f"{engine}: no reaction SMARTS writer")
 
 
 class RefusedError(Exception):
