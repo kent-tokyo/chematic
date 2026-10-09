@@ -23,10 +23,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
-def run_shard(engine_name: str, rows: list[str], start: int) -> list[dict]:
+def run_shard(engine_name: str, rows: list[str], start: int, skip_ops: str | None = None) -> list[dict]:
+    import re
+
     from corpus_engines import ENGINES, RefusedError, UnsupportedError
 
     engine = ENGINES[engine_name]()
+    if skip_ops:
+        skip = re.compile(skip_ops)
+        engine["ops"] = {k: v for k, v in engine["ops"].items() if not skip.fullmatch(k)}
     out = []
     for offset, smiles in enumerate(rows):
         rec = {"index": start + offset, "smiles": smiles, "ops": {}}
@@ -57,6 +62,8 @@ def main() -> int:
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--shard-size", type=int, default=500)
     ap.add_argument("--limit", type=int, default=0, help="first N rows only (0 = all)")
+    ap.add_argument("--skip-ops", default=None,
+                    help="regular expression; operations whose name fully matches it are not run")
     ap.add_argument("--_shard", nargs=2, type=int, help=argparse.SUPPRESS)
     args = ap.parse_args()
 
@@ -67,7 +74,7 @@ def main() -> int:
 
     if args._shard:  # child process
         start, stop = args._shard
-        for rec in run_shard(args.engine, rows[start:stop], start):
+        for rec in run_shard(args.engine, rows[start:stop], start, args.skip_ops):
             sys.stdout.write(json.dumps(rec, sort_keys=True) + "\n")
         return 0
 
@@ -88,6 +95,7 @@ def main() -> int:
         "corpus": args.corpus.name,
         "corpus_sha256": hashlib.sha256(data).hexdigest(),
         "rows": len(rows),
+        "skip_ops": args.skip_ops,
     }
     tmp = args.output.with_name(args.output.name + ".partial")
     t0 = time.time()
@@ -99,6 +107,8 @@ def main() -> int:
                    "--output", str(args.output), "--_shard", str(start), str(stop)]
             if args.limit:
                 cmd += ["--limit", str(args.limit)]
+            if args.skip_ops:
+                cmd += ["--skip-ops", args.skip_ops]
             proc = subprocess.run(cmd, capture_output=True, text=True)
             got = [json.loads(line) for line in proc.stdout.splitlines() if line.strip()]
             done = {r["index"] for r in got}
