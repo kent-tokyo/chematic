@@ -197,6 +197,52 @@ pub struct RdkitLegacyStereo {
     pub bond_stereo: Vec<u8>,
 }
 
+/// What `MolFromSmiles`' sanitization changes in the bonds and charges of
+/// a molecule before perception (`cleanUp`: nitro-like nitrogens, P(=O)=C,
+/// halogen oxides; `cleanUpOrganometallics`: dative bonds from hypervalent
+/// atoms to metals), indexed like `mol`.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct RdkitCleanupEdits {
+    /// `(atom, new formal charge)`.
+    pub charges: Vec<(usize, i32)>,
+    /// `(bond, new order, dative donor atom)`.
+    pub bonds: Vec<(usize, chematic_core::BondOrder, Option<usize>)>,
+}
+
+/// [`RdkitCleanupEdits`] for `mol` (`None`: nothing changes); `Err` where the
+/// port cannot model the molecule.
+pub fn rdkit_cleanup_edits(mol: &Molecule) -> Result<Option<RdkitCleanupEdits>, RdkitSmilesError> {
+    let mut m = parse::from_chematic(mol)?;
+    for a in 0..m.atoms.len() {
+        m.update_atom_property_cache(a, false)?;
+    }
+    let before = m.clone();
+    sanitize::clean_up(&mut m)?;
+    sanitize::clean_up_organometallics(&mut m)?;
+    let mut edits = RdkitCleanupEdits::default();
+    for (a, (x, y)) in before.atoms.iter().zip(&m.atoms).enumerate() {
+        if x.charge != y.charge {
+            edits.charges.push((a, y.charge));
+        }
+    }
+    let order = mol.rdkit_bond_order();
+    for (k, (x, y)) in before.bonds.iter().zip(&m.bonds).enumerate() {
+        if x.bt == y.bt {
+            continue;
+        }
+        let bo = match y.bt {
+            mol::BondType::Single => chematic_core::BondOrder::Single,
+            mol::BondType::Double => chematic_core::BondOrder::Double,
+            mol::BondType::Triple => chematic_core::BondOrder::Triple,
+            mol::BondType::Dative => chematic_core::BondOrder::Dative,
+            _ => return Err(RdkitSmilesError::Unsupported("clean-up bond type".into())),
+        };
+        let donor = (y.bt == mol::BondType::Dative).then_some(y.begin);
+        edits.bonds.push((order[k].0 as usize, bo, donor));
+    }
+    Ok((!edits.charges.is_empty() || !edits.bonds.is_empty()).then_some(edits))
+}
+
 /// [`RdkitLegacyStereo`] for `mol`; `Err` where the port cannot model the
 /// molecule or RDKit's hydrogen removal would renumber its atoms.
 pub fn rdkit_legacy_stereo(mol: &Molecule) -> Result<RdkitLegacyStereo, RdkitSmilesError> {

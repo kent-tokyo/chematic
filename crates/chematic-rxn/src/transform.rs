@@ -2427,6 +2427,7 @@ fn apply_match_profile(
     let mut products = products;
     for product in &mut products {
         if mixed_aromatic_state(&product.molecule)
+            && mixed_state_introduced(product, reactants)
             && let Some(view) = rdkit_sanitized_view(&product.molecule)
         {
             product.molecule = view;
@@ -2721,6 +2722,49 @@ fn mixed_aromatic_state(mol: &Molecule) -> bool {
             .filter(|&(_, b)| mol.bond(b).order == BondOrder::Aromatic)
             .count();
         (a.aromatic && aromatic_bonds < 2) || (!a.aromatic && aromatic_bonds > 0)
+    })
+}
+
+/// Per atom, whether it is in a mixed aromatic state (see
+/// [`mixed_aromatic_state`]).
+fn mixed_aromatic_atoms(mol: &Molecule) -> Vec<bool> {
+    let mut out = vec![false; mol.atom_count()];
+    for (_, b) in mol.bonds() {
+        if b.order == BondOrder::Double && mol.atom(b.atom1).aromatic && mol.atom(b.atom2).aromatic
+        {
+            out[b.atom1.0 as usize] = true;
+            out[b.atom2.0 as usize] = true;
+        }
+    }
+    for (idx, a) in mol.atoms() {
+        let aromatic_bonds = mol
+            .neighbors(idx)
+            .filter(|&(_, b)| mol.bond(b).order == BondOrder::Aromatic)
+            .count();
+        if (a.aromatic && aromatic_bonds < 2) || (!a.aromatic && aromatic_bonds > 0) {
+            out[idx.0 as usize] = true;
+        }
+    }
+    out
+}
+
+/// Whether the template made a product's mixed aromatic state: some mixed
+/// atom is new or was not mixed in its reactant. A state carried over from
+/// the reactant unchanged (an aromatic ring written with `#`) stays as
+/// RDKit's product keeps it.
+fn mixed_state_introduced(product: &TracedProduct, reactants: &[&Molecule]) -> bool {
+    let mixed = mixed_aromatic_atoms(&product.molecule);
+    let mut reactant_mixed: Vec<Option<Vec<bool>>> = vec![None; reactants.len()];
+    mixed.iter().enumerate().any(|(i, &m)| {
+        if !m {
+            return false;
+        }
+        let Some(src) = product.atom_sources.get(i).copied().flatten() else {
+            return true;
+        };
+        let rm = reactant_mixed[src.reactant]
+            .get_or_insert_with(|| mixed_aromatic_atoms(reactants[src.reactant]));
+        !rm[src.atom.0 as usize]
     })
 }
 

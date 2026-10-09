@@ -372,7 +372,7 @@ fn no_dative(mol: &Mol, a: usize) -> bool {
 }
 
 /// `cleanUpOrganometallics`.
-fn clean_up_organometallics(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+pub(crate) fn clean_up_organometallics(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
     // Only a single bond to a metal needs fixing. Without a metal the scan
     // below would only refresh property caches (non-strictly, which cannot
     // fail), and `sanitize_mol` recomputes every one of them next.

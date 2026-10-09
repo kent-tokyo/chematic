@@ -1167,6 +1167,32 @@ pub(crate) fn rdkit_parse_cleanup(mol: &Molecule) -> std::sync::Arc<Option<Molec
 }
 
 fn rdkit_parse_cleanup_uncached(mol: &Molecule) -> Option<Molecule> {
+    // `cleanUp` and `cleanUpOrganometallics` run before perception: nitro
+    // groups become `[N+](=O)[O-]`, bonds from hypervalent atoms to metals
+    // dative bonds.
+    let edited = chematic_smiles::rdkit_cleanup_edits(mol)
+        .ok()
+        .flatten()
+        .map(|edits| {
+            let mut out = mol.clone();
+            for (a, charge) in edits.charges {
+                out.set_charge(AtomIdx(a as u32), charge as i8);
+            }
+            for (b, order, donor) in edits.bonds {
+                let b = chematic_core::BondIdx(b as u32);
+                match donor {
+                    Some(d) => out.set_dative_bond(b, AtomIdx(d as u32)),
+                    None => out.set_bond_order(b, order),
+                }
+            }
+            out
+        });
+    let src = edited.as_ref().unwrap_or(mol);
+    chirality_cleanup(src).or(edited)
+}
+
+/// The tags RDKit's parser drops (see [`rdkit_parse_cleanup`]).
+fn chirality_cleanup(mol: &Molecule) -> Option<Molecule> {
     let tagged: Vec<AtomIdx> = mol
         .atoms()
         .filter(|(_, a)| a.chirality.is_tetrahedral())
