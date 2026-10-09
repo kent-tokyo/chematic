@@ -117,3 +117,29 @@ pub use search::{
     nearest_neighbors_from_fp, try_nearest_neighbors,
 };
 pub use topo_path::{TopoPathConfig, tanimoto_topo_path, topo_path};
+
+/// The RDKit-corrected view as RDKit's bond-typed fingerprints see it: a
+/// ring triple bond RDKit flags aromatic (`c1ccccc#1`, kept as a triple
+/// bond in the view) counts as aromatic.
+pub(crate) fn rdkit_fp_view(
+    view: &chematic_core::Molecule,
+) -> std::borrow::Cow<'_, chematic_core::Molecule> {
+    use chematic_core::BondOrder;
+    let aromatic_triples: Vec<chematic_core::BondIdx> = view
+        .bonds()
+        .filter(|(_, b)| {
+            b.order == BondOrder::Triple
+                && view.atom(b.atom1).aromatic
+                && view.atom(b.atom2).aromatic
+        })
+        .map(|(i, _)| i)
+        .collect();
+    if aromatic_triples.is_empty() {
+        return std::borrow::Cow::Borrowed(view);
+    }
+    let mut out = view.clone();
+    for b in aromatic_triples {
+        out.set_bond_order(b, BondOrder::Aromatic);
+    }
+    std::borrow::Cow::Owned(out)
+}

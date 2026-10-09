@@ -322,6 +322,8 @@ pub(crate) struct Tautomer {
     n_modified_atoms: usize,
     n_modified_bonds: usize,
     done: bool,
+    /// `_StereochemDone` is a non-computed property (see [`smiles`]).
+    flag_kept: bool,
 }
 
 /// `TautomerEnumeratorResult`.
@@ -351,8 +353,15 @@ impl Default for Settings {
     }
 }
 
-fn smiles(mol: &Mol) -> Result<String, RdkitSmilesError> {
-    write::mol_to_smiles(mol, &RdkitSmilesParams::default())
+/// `MolToSmiles(mol)`; `flag_kept`: the molecule's `_StereochemDone` is a
+/// non-computed property (set by `setTautomerStereoAndIsoHs` without
+/// `reassignStereo`), which edited fragment copies keep.
+fn smiles(mol: &Mol, flag_kept: bool) -> Result<String, RdkitSmilesError> {
+    if flag_kept {
+        write::mol_to_smiles_flag_kept(mol, &RdkitSmilesParams::default())
+    } else {
+        write::mol_to_smiles(mol, &RdkitSmilesParams::default())
+    }
 }
 
 /// `MolOps::Kekulize(mol, markAtomsBonds=false, canonical=true)`.
@@ -474,7 +483,7 @@ pub(crate) fn enumerate(
     settings: &Settings,
 ) -> Result<EnumerateResult, RdkitSmilesError> {
     let transforms = transforms();
-    let smi = smiles(mol)?;
+    let smi = smiles(mol, false)?;
     let mut taut = mol.clone();
     if (0..taut.atoms.len()).any(|a| taut.needs_update_property_cache(a)) {
         taut.update_property_cache(false)?;
@@ -498,6 +507,7 @@ pub(crate) fn enumerate(
             n_modified_atoms: 0,
             n_modified_bonds: 0,
             done: false,
+            flag_kept: false,
         },
     );
     let mut completed = false;
@@ -570,7 +580,7 @@ pub(crate) fn enumerate(
                             &res.modified_bonds,
                             settings.reassign_stereo,
                         );
-                        let tsmiles = smiles(&product)?;
+                        let tsmiles = smiles(&product, !settings.reassign_stereo)?;
                         if res.tautomers.contains_key(&tsmiles) {
                             continue;
                         }
@@ -591,6 +601,7 @@ pub(crate) fn enumerate(
                                 n_modified_atoms: n_atoms,
                                 n_modified_bonds: n_bonds,
                                 done: false,
+                                flag_kept: !settings.reassign_stereo,
                             },
                         );
                     }
@@ -621,7 +632,7 @@ pub(crate) fn enumerate(
                 let after = next_key(&res.tautomers, &key);
                 stored.n_modified_atoms = max_atoms;
                 stored.n_modified_bonds = max_bonds;
-                let new_key = smiles(&stored.mol)?;
+                let new_key = smiles(&stored.mol, stored.flag_kept)?;
                 if res.tautomers.contains_key(&new_key) {
                     cursor = after;
                 } else {

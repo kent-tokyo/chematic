@@ -749,12 +749,27 @@ pub(crate) fn descriptor_aromaticity(mol: &Molecule) -> DescriptorView<'_> {
     // the same perceived copy, and that copy carries its own SSSR cache.
     DescriptorView::Perceived(
         mol.derived(chematic_core::DerivedSlot::DescriptorAromatic, || {
-            chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).unwrap_or_else(
-                |_| {
+            let mut view = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
+                .unwrap_or_else(|_| {
                     let cleaned = chematic_perception::rdkit_sanitize_cleanup(mol);
                     chematic_perception::apply_aromaticity(cleaned.as_ref().unwrap_or(mol))
-                },
-            )
+                });
+            // A ring triple bond RDKit flags aromatic (`c1ccccc#1`) is kept
+            // as a triple bond in the view; RDKit's descriptors read its
+            // aromatic flag.
+            let triples: Vec<chematic_core::BondIdx> = view
+                .bonds()
+                .filter(|(_, b)| {
+                    b.order == chematic_core::BondOrder::Triple
+                        && view.atom(b.atom1).aromatic
+                        && view.atom(b.atom2).aromatic
+                })
+                .map(|(i, _)| i)
+                .collect();
+            for b in triples {
+                view.set_bond_order(b, chematic_core::BondOrder::Aromatic);
+            }
+            view
         }),
     )
 }
@@ -836,6 +851,39 @@ pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
 // ---------------------------------------------------------------------------
 // 8. LogP (Wildman-Crippen, calibrated)
 // ---------------------------------------------------------------------------
+
+/// Crippen types on the RDKit port's AddHs molecule (diagnostics).
+#[doc(hidden)]
+pub fn crippen_types_rdkit_model(mol: &Molecule) -> Option<Vec<Option<(String, f64)>>> {
+    let patterns: Vec<&str> = CRIPPEN_SMARTS.iter().map(|e| e.0).collect();
+    let (types, _) = chematic_smiles::rdkit_addhs_first_pattern(mol, &patterns)?;
+    Some(
+        types
+            .into_iter()
+            .map(|t| t.map(|t| (CRIPPEN_SMARTS[t].0.to_string(), CRIPPEN_SMARTS[t].1)))
+            .collect(),
+    )
+}
+
+/// Whether Crippen typing must run on the RDKit port's molecule: chematic's
+/// perception may differ from RDKit's (see
+/// [`chematic_perception::rdkit_model_may_disagree`]), hydrogen graph atoms,
+/// or charged hydroxyl/oxonium hydrogens (`[OH-]`, `[OH+]`).
+fn crippen_needs_rdkit_model(mol: &Molecule) -> bool {
+    chematic_perception::rdkit_model_may_disagree(mol)
+        || mol.atoms().any(|(_, a)| {
+            !a.wildcard
+                && (a.element == Element::H
+                    || (a.element == Element::O
+                        && a.charge != 0
+                        && a.hydrogen_count.is_some_and(|h| h > 0)))
+        })
+}
+
+/// [`crippen_totals`] typed on the RDKit port's `AddHs(MolFromSmiles(s))`.
+fn crippen_totals_rdkit_model(mol: &Molecule) -> Option<(f64, f64)> {
+    chematic_smiles::rdkit_crippen_logp_mr(mol)
+}
 
 /// Compute a Wildman-Crippen LogP (RDKit-compatible).
 ///
@@ -1163,6 +1211,12 @@ fn h_logp_for_parent(
 /// not folded in. A graph hydrogen gets the hydrogen type of its neighbour.
 /// The SlogP/SMR VSA descriptors bin atoms by these values.
 pub(crate) fn crippen_atom_type_contribs(mol: &Molecule) -> Vec<(f64, f64)> {
+    if crippen_needs_rdkit_model(mol)
+        && let Some(c) = chematic_smiles::rdkit_crippen_contribs_no_hs(mol)
+        && c.len() == mol.atom_count()
+    {
+        return c;
+    }
     let queries = get_crippen_queries();
     let mol_arom = descriptor_aromaticity(mol);
     let anchor_types = crippen_anchor_types(&mol_arom, queries);
@@ -1267,10 +1321,17 @@ pub fn aromatic_ring_count(mol: &Molecule) -> usize {
 /// Count aromatic rings after applying the opt-in RDKit aromaticity model.
 /// Native aromatic flags and native ring counts are left untouched.
 pub fn rdkit_aromatic_ring_count(mol: &Molecule) -> usize {
-    chematic_perception::with_rdkit_parity_view(mol, |view| match view {
-        Ok(perceived) => chematic_perception::aromatic_ring_list_preperceived(perceived).len(),
+    if chematic_perception::rdkit_parity_view_is_identity(mol) {
+        return chematic_perception::aromatic_ring_list_preperceived(mol).len();
+    }
+    match chematic_perception::apply_aromaticity_rdkit_parity_shared(mol).as_ref() {
+        // The descriptor view reads aromatic-flagged ring triple bonds as
+        // aromatic, as RDKit's ring counting does.
+        Ok(_) => {
+            chematic_perception::aromatic_ring_list_preperceived(&descriptor_aromaticity(mol)).len()
+        }
         Err(_) => chematic_perception::aromatic_ring_list(mol).len(),
-    })
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1404,6 +1465,15 @@ pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
 /// atoms come first (an explicit hydrogen typed by its neighbour), then each
 /// heavy atom's implicit hydrogens in heavy-atom order.
 fn crippen_totals(mol: &Molecule) -> (f64, f64) {
+    // Molecules chematic's perception may model differently from RDKit
+    // (radicals, dummies, hydrogen graph atoms, unusual valences, ...):
+    // type RDKit's own `AddHs(MolFromSmiles(s))` molecule with the same
+    // table, as `Crippen.MolLogP` does.
+    if crippen_needs_rdkit_model(mol)
+        && let Some(t) = crippen_totals_rdkit_model(mol)
+    {
+        return t;
+    }
     let queries = get_crippen_queries();
     let mol_arom = descriptor_aromaticity(mol);
     let anchor_types = crippen_anchor_types(&mol_arom, queries);
@@ -2129,6 +2199,13 @@ pub fn cns_mpo_score(mol: &Molecule) -> f64 {
 /// sp3d/sp3d2 and report `0`. Before 1.0.35 this used bond orders only (any
 /// atom without a multiple bond was sp3).
 pub fn hybridization_per_atom(mol: &Molecule) -> Vec<u8> {
+    // Where chematic's perception may disagree with RDKit's sanitization
+    // (radicals, unusual valences, ...), take RDKit's hybridization.
+    if chematic_perception::rdkit_model_may_disagree(mol)
+        && let Some(h) = chematic_smiles::rdkit_hybridizations(mol)
+    {
+        return h;
+    }
     // On RDKit's aromaticity view, as RDKit's sanitized molecule: a
     // Kekulé-written thiophene S is aromatic, hence sp2.
     let view = descriptor_aromaticity(mol);
@@ -2185,6 +2262,9 @@ pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
 /// ring-size counts over RDKit's ring information (symmetrized SSSR) and
 /// aromatic bonds. The former implementation used a different layout.
 pub fn mqn(mol: &Molecule) -> Vec<u32> {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return mqn(&h);
+    }
     let mut res = vec![0u32; 42];
     let view = descriptor_aromaticity(mol);
     let view: &Molecule = &view;
@@ -2618,6 +2698,9 @@ fn rdkit_hall_kier_atom_alpha(atomic_number: u8, hyb: u8) -> f64 {
 /// molecule with a heteroatom or unsaturation, and so did the kappa indices
 /// built on it.
 pub fn hall_kier_alpha(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return hall_kier_alpha(&h);
+    }
     let hyb = hybridization_per_atom(mol);
     let mut alpha_sum = 0.0;
     for (idx, atom) in mol.atoms() {

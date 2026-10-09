@@ -340,6 +340,9 @@ fn rdkit_heavy_atom_count(mol: &Molecule) -> usize {
 /// Hall-Kier κ1 shape index, RDKit's `CalcKappa1`:
 /// `(A+α)(A+α−1)² / (P1+α)²` with P1 the bond count.
 pub fn kappa1(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return kappa1(&h);
+    }
     rdkit_kappa1(
         mol.bond_count() as f64,
         rdkit_heavy_atom_count(mol) as f64,
@@ -350,6 +353,9 @@ pub fn kappa1(mol: &Molecule) -> f64 {
 /// Hall-Kier κ2 shape index, RDKit's `CalcKappa2`:
 /// `(A+α−1)(A+α−2)² / (P2+α)²` with P2 the count of 2-bond paths.
 pub fn kappa2(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return kappa2(&h);
+    }
     rdkit_kappa2(
         rdkit_paths_of_length(mol, 2, true).len() as f64,
         rdkit_heavy_atom_count(mol) as f64,
@@ -360,6 +366,9 @@ pub fn kappa2(mol: &Molecule) -> f64 {
 /// Hall-Kier κ3 shape index, RDKit's `CalcKappa3` (the numerator depends on
 /// the parity of the heavy-atom count).
 pub fn kappa3(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return kappa3(&h);
+    }
     rdkit_kappa3(
         rdkit_paths_of_length(mol, 3, true).len() as f64,
         rdkit_heavy_atom_count(mol),
@@ -369,6 +378,9 @@ pub fn kappa3(mol: &Molecule) -> f64 {
 
 /// κ1, κ2 and κ3 with one Hall-Kier alpha: `(κ1, κ2, κ3)`.
 pub fn kappa_all(mol: &Molecule) -> (f64, f64, f64) {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return kappa_all(&h);
+    }
     let alpha = crate::descriptors::hall_kier_alpha(mol);
     let a = rdkit_heavy_atom_count(mol);
     (
@@ -389,51 +401,81 @@ pub fn kappa_all(mol: &Molecule) -> (f64, f64, f64) {
 /// χ0 = Σᵢ δᵢ^(−0.5) over all heavy atoms, where δᵢ = heavy-atom degree.
 /// Atoms with δ = 0 contribute 0.
 pub fn chi0(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return chi0(&h);
+    }
     rdkit_chi0(mol)
 }
 
 /// Kier-Hall χ1 connectivity index (bond-path sum).
 pub fn chi1(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return chi1(&h);
+    }
     rdkit_chi1(mol)
 }
 
 /// Kier-Hall χ2 connectivity index (2-bond path sum).
 pub fn chi2(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return chi2(&h);
+    }
     chi_n(mol, 2, false)
 }
 
 /// Kier-Hall χ3 connectivity index (3-bond path sum).
 pub fn chi3(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return chi3(&h);
+    }
     chi_n(mol, 3, false)
 }
 
 /// Kier-Hall χ4 connectivity index (4-bond path sum).
 pub fn chi4(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return chi4(&h);
+    }
     chi_n(mol, 4, false)
 }
 
 /// Valence-corrected χ0v connectivity index (RDKit `CalcChi0v`).
 pub fn chi0v(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return chi0v(&h);
+    }
     rdkit_chi_v(mol)[0]
 }
 
 /// Valence-corrected χ1v connectivity index (RDKit `CalcChi1v`).
 pub fn chi1v(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return chi1v(&h);
+    }
     rdkit_chi_v(mol)[1]
 }
 
 /// Valence-corrected χ2v connectivity index (RDKit `CalcChi2v`).
 pub fn chi2v(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return chi2v(&h);
+    }
     rdkit_chi_v(mol)[2]
 }
 
 /// Valence-corrected χ3v connectivity index (RDKit `CalcChi3v`).
 pub fn chi3v(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return chi3v(&h);
+    }
     rdkit_chi_v(mol)[3]
 }
 
 /// Valence-corrected χ4v connectivity index (RDKit `CalcChi4v`).
 pub fn chi4v(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return chi4v(&h);
+    }
     rdkit_chi_v(mol)[4]
 }
 
@@ -442,6 +484,9 @@ pub fn chi4v(mol: &Molecule) -> f64 {
 /// Returns `(χ0, χ1, χ2, χ3, χ4, χ0v, χ1v, χ2v, χ3v, χ4v)`.
 /// Use when all indices are needed to avoid 10 redundant `heavy_indices` computations.
 pub fn chi_all(mol: &Molecule) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64) {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return chi_all(&h);
+    }
     let heavy = heavy_indices(mol);
     let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
     chi_all_with_topology(mol, &heavy, &heavy_set)
@@ -501,6 +546,9 @@ pub fn topology_bundle(mol: &Molecule) -> TopologyBundle {
 ///
 /// Returns 0.0 for fewer than two atoms or more than 1000 atoms.
 pub fn bertz_ct(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return bertz_ct(&h);
+    }
     crate::rdkit_graph::bertz_ct(mol)
 }
 
@@ -1052,6 +1100,9 @@ pub fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<u32>> {
 }
 
 pub fn labute_asa(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return labute_asa(&h);
+    }
     let (per_atom, h_pool_area) = labute_asa_parts(mol);
     per_atom.iter().fold(0.0, |acc, x| acc + x) + h_pool_area
 }

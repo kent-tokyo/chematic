@@ -2500,7 +2500,11 @@ impl Mol {
             ring_count_model,
             ..chematic_smarts::RdkitParityConfig::default()
         };
-        match chematic_smarts::find_match_atom_sets_rdkit_parity(&query, &self.inner, &config) {
+        // RDKit matches its hydrogen-suppressed molecule (`MolFromSmiles`
+        // removes most hydrogen graph atoms), in its atom numbering.
+        let suppressed = chematic_smiles::rdkit_hydrogen_suppressed(&self.inner);
+        let target = suppressed.as_ref().unwrap_or(&self.inner);
+        match chematic_smarts::find_match_atom_sets_rdkit_parity(&query, target, &config) {
             Ok((atom_sets, false)) => {
                 result.set_item("status", "ok")?;
                 result.set_item("reason", py.None())?;
