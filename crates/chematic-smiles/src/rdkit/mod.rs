@@ -35,6 +35,7 @@
 mod align;
 mod aromaticity;
 mod canon;
+mod crippen_params;
 mod depict;
 mod embed_view;
 mod enumerate;
@@ -799,18 +800,23 @@ pub fn rdkit_sanitized_model(mol: &Molecule) -> Result<RdkitSanitizedModel, Rdki
         }
         let bond = &m.bonds[next];
         next += 1;
-        bonds[cb] = Some(if bond.aromatic {
-            BondOrder::Aromatic
-        } else {
-            match bond.bt {
-                mol::BondType::Single => BondOrder::Single,
-                mol::BondType::Double => BondOrder::Double,
-                mol::BondType::Triple => BondOrder::Triple,
-                mol::BondType::Quadruple => BondOrder::Quadruple,
-                mol::BondType::Aromatic => BondOrder::Aromatic,
-                mol::BondType::Dative => BondOrder::Dative,
-            }
-        });
+        // RDKit flags a ring triple (or double) bond it could not make
+        // aromatic-typed as aromatic but keeps its type (`c1ccccc#1`); the
+        // type is what chematic's bond order can carry.
+        bonds[cb] = Some(
+            if bond.aromatic && !matches!(bond.bt, mol::BondType::Triple) {
+                BondOrder::Aromatic
+            } else {
+                match bond.bt {
+                    mol::BondType::Single => BondOrder::Single,
+                    mol::BondType::Double => BondOrder::Double,
+                    mol::BondType::Triple => BondOrder::Triple,
+                    mol::BondType::Quadruple => BondOrder::Quadruple,
+                    mol::BondType::Aromatic => BondOrder::Aromatic,
+                    mol::BondType::Dative => BondOrder::Dative,
+                }
+            },
+        );
     }
     Ok(RdkitSanitizedModel {
         atoms,
@@ -858,6 +864,133 @@ pub fn rdkit_hybridizations(mol: &Molecule) -> Option<Vec<u8>> {
             })
             .collect(),
     )
+}
+
+/// RDKit's `MolOps::addHs` on a sanitized molecule (no coordinates): every
+/// atom's hydrogens become graph atoms appended in atom order, the atom
+/// keeping none.
+fn add_hs_graph(m: &mut mol::Mol) -> Result<(), RdkitSmilesError> {
+    let n = m.atoms.len();
+    for a in 0..n {
+        let hs = m.total_num_hs(a);
+        for _ in 0..hs {
+            let mut h = mol::Atom::new(1);
+            h.no_implicit = false;
+            let hi = m.add_atom(h);
+            m.add_bond(mol::Bond::new(a, hi, mol::BondType::Single));
+        }
+        m.atoms[a].num_explicit_hs = 0;
+        m.atoms[a].no_implicit = true;
+    }
+    if let Some(ri) = &m.rings {
+        let rings = ri.atom_rings.clone();
+        m.set_rings(rings);
+    }
+    m.update_property_cache(false)
+}
+
+/// For RDKit's `Chem.AddHs(Chem.MolFromSmiles(s))` molecule: per atom, the
+/// index of the first of `patterns` (SMARTS) with a match starting at that
+/// atom (`SubstructMatch(..., uniquify=false)`), as RDKit's Crippen atom
+/// typing assigns types; and the number of heavy (original) atoms, which
+/// come first. `None` where the port cannot model `mol`.
+pub fn rdkit_addhs_first_pattern(
+    mol: &Molecule,
+    patterns: &[&str],
+) -> Option<(Vec<Option<usize>>, usize)> {
+    thread_local! {
+        static CACHE: std::cell::RefCell<std::collections::HashMap<String, Option<smarts_match::Query>>> =
+            std::cell::RefCell::new(std::collections::HashMap::new());
+    }
+    let (mut m, _) = rdkit_mol_from_smiles(mol).ok()?;
+    let heavy = m.atoms.len();
+    add_hs_graph(&mut m).ok()?;
+    let mut types: Vec<Option<usize>> = vec![None; m.atoms.len()];
+    let mut left = types.len();
+    for (pi, pat) in patterns.iter().enumerate() {
+        if left == 0 {
+            break;
+        }
+        let hits = CACHE.with(|c| {
+            let mut c = c.borrow_mut();
+            let q = c
+                .entry(pat.to_string())
+                .or_insert_with(|| std::panic::catch_unwind(|| smarts_match::parse(pat)).ok());
+            q.as_ref().map(|q| smarts_match::first_atoms(q, &m))
+        });
+        let Some(hits) = hits else { continue };
+        for (a, hit) in hits.into_iter().enumerate() {
+            if hit && types[a].is_none() {
+                types[a] = Some(pi);
+                left -= 1;
+            }
+        }
+    }
+    Some((types, heavy))
+}
+
+/// RDKit's `getCrippenAtomContribs` on `Chem.AddHs(Chem.MolFromSmiles(s))`
+/// (RDKit 2026.03.1 `Crippen.cpp` parameters): per atom of that molecule
+/// (heavy atoms first, then the added hydrogens) its `(logP, MR)`
+/// contribution, and the number of heavy atoms. `None` where the port
+/// cannot model `mol`.
+pub fn rdkit_crippen_contribs(mol: &Molecule) -> Option<(Vec<(f64, f64)>, usize)> {
+    crippen_contribs(mol, true)
+}
+
+/// `getCrippenAtomContribs(Chem.MolFromSmiles(s))` (no added hydrogens), as
+/// RDKit's SlogP/SMR VSA descriptors call it: per atom of RDKit's molecule.
+pub fn rdkit_crippen_contribs_no_hs(mol: &Molecule) -> Option<Vec<(f64, f64)>> {
+    crippen_contribs(mol, false).map(|(c, _)| c)
+}
+
+fn crippen_contribs(mol: &Molecule, add_hs: bool) -> Option<(Vec<(f64, f64)>, usize)> {
+    thread_local! {
+        static QUERIES: Vec<Option<smarts_match::Query>> = crippen_params::CRIPPEN_PARAMS
+            .iter()
+            .map(|p| std::panic::catch_unwind(|| smarts_match::parse(p.1)).ok())
+            .collect();
+    }
+    let (mut m, _) = rdkit_mol_from_smiles(mol).ok()?;
+    let heavy = m.atoms.len();
+    if add_hs {
+        add_hs_graph(&mut m).ok()?;
+    }
+    let mut contribs = vec![(0.0, 0.0); m.atoms.len()];
+    let mut needed = vec![true; m.atoms.len()];
+    let mut left = needed.len();
+    QUERIES.with(|qs| {
+        for (pi, q) in qs.iter().enumerate() {
+            if left == 0 {
+                break;
+            }
+            let Some(q) = q else { continue };
+            for (a, hit) in smarts_match::first_atoms(q, &m).into_iter().enumerate() {
+                if hit && needed[a] {
+                    needed[a] = false;
+                    left -= 1;
+                    let p = crippen_params::CRIPPEN_PARAMS[pi];
+                    contribs[a] = (p.2, p.3);
+                }
+            }
+        }
+    });
+    Some((contribs, heavy))
+}
+
+/// `Crippen.MolLogP(m)` and `Crippen.MolMR(m)` for `m = MolFromSmiles(s)`
+/// (contributions summed in atom order).
+pub fn rdkit_crippen_logp_mr(mol: &Molecule) -> Option<(f64, f64)> {
+    let (c, _) = rdkit_crippen_contribs(mol)?;
+    let mut logp = 0.0f64;
+    let mut mr = 0.0f64;
+    for (l, _) in &c {
+        logp += l;
+    }
+    for (_, r) in &c {
+        mr += r;
+    }
+    Some((logp, mr))
 }
 
 /// Registers [`rdkit_model_correct_view`] as chematic-perception's

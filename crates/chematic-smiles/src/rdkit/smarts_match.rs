@@ -595,6 +595,16 @@ fn all_matches(q: &Query, mol: &Mol, max_matches: usize) -> Vec<Vec<usize>> {
         .collect()
 }
 
+/// The atoms that are the first query atom of some match of `q` in `mol`
+/// (`SubstructMatch(mol, q, matches, uniquify=false)`, first atoms).
+pub(crate) fn first_atoms(q: &Query, mol: &Mol) -> Vec<bool> {
+    let mut hit = vec![false; mol.atoms.len()];
+    for m in all_matches(q, mol, 0) {
+        hit[m[0]] = true;
+    }
+    hit
+}
+
 /// `SubstructMatch(mol, query)` with the default parameters: matches as
 /// mol atom indices in query atom order, the first of each atom set only,
 /// at most 1000.

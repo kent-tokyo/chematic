@@ -837,6 +837,39 @@ pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
 // 8. LogP (Wildman-Crippen, calibrated)
 // ---------------------------------------------------------------------------
 
+/// Crippen types on the RDKit port's AddHs molecule (diagnostics).
+#[doc(hidden)]
+pub fn crippen_types_rdkit_model(mol: &Molecule) -> Option<Vec<Option<(String, f64)>>> {
+    let patterns: Vec<&str> = CRIPPEN_SMARTS.iter().map(|e| e.0).collect();
+    let (types, _) = chematic_smiles::rdkit_addhs_first_pattern(mol, &patterns)?;
+    Some(
+        types
+            .into_iter()
+            .map(|t| t.map(|t| (CRIPPEN_SMARTS[t].0.to_string(), CRIPPEN_SMARTS[t].1)))
+            .collect(),
+    )
+}
+
+/// Whether Crippen typing must run on the RDKit port's molecule: chematic's
+/// perception may differ from RDKit's (see
+/// [`chematic_perception::rdkit_model_may_disagree`]), hydrogen graph atoms,
+/// or charged hydroxyl/oxonium hydrogens (`[OH-]`, `[OH+]`).
+fn crippen_needs_rdkit_model(mol: &Molecule) -> bool {
+    chematic_perception::rdkit_model_may_disagree(mol)
+        || mol.atoms().any(|(_, a)| {
+            !a.wildcard
+                && (a.element == Element::H
+                    || (a.element == Element::O
+                        && a.charge != 0
+                        && a.hydrogen_count.is_some_and(|h| h > 0)))
+        })
+}
+
+/// [`crippen_totals`] typed on the RDKit port's `AddHs(MolFromSmiles(s))`.
+fn crippen_totals_rdkit_model(mol: &Molecule) -> Option<(f64, f64)> {
+    chematic_smiles::rdkit_crippen_logp_mr(mol)
+}
+
 /// Compute a Wildman-Crippen LogP (RDKit-compatible).
 ///
 /// Uses the same 117-entry SMARTS atom-type table as RDKit `Crippen.MolLogP()`,
@@ -1163,6 +1196,12 @@ fn h_logp_for_parent(
 /// not folded in. A graph hydrogen gets the hydrogen type of its neighbour.
 /// The SlogP/SMR VSA descriptors bin atoms by these values.
 pub(crate) fn crippen_atom_type_contribs(mol: &Molecule) -> Vec<(f64, f64)> {
+    if crippen_needs_rdkit_model(mol)
+        && let Some(c) = chematic_smiles::rdkit_crippen_contribs_no_hs(mol)
+        && c.len() == mol.atom_count()
+    {
+        return c;
+    }
     let queries = get_crippen_queries();
     let mol_arom = descriptor_aromaticity(mol);
     let anchor_types = crippen_anchor_types(&mol_arom, queries);
@@ -1404,6 +1443,15 @@ pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
 /// atoms come first (an explicit hydrogen typed by its neighbour), then each
 /// heavy atom's implicit hydrogens in heavy-atom order.
 fn crippen_totals(mol: &Molecule) -> (f64, f64) {
+    // Molecules chematic's perception may model differently from RDKit
+    // (radicals, dummies, hydrogen graph atoms, unusual valences, ...):
+    // type RDKit's own `AddHs(MolFromSmiles(s))` molecule with the same
+    // table, as `Crippen.MolLogP` does.
+    if crippen_needs_rdkit_model(mol)
+        && let Some(t) = crippen_totals_rdkit_model(mol)
+    {
+        return t;
+    }
     let queries = get_crippen_queries();
     let mol_arom = descriptor_aromaticity(mol);
     let anchor_types = crippen_anchor_types(&mol_arom, queries);

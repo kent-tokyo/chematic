@@ -5293,7 +5293,9 @@ mod tests {
             (
                 "[C:1][Br:2]>>[C:1][Cl:2]",
                 "BrCCN(=O)=O",
-                vec!["ClCCN(=O)=O"],
+                // The RDKit-parity view of the reactant carries RDKit's
+                // nitro clean-up, as RDKit's reactant does.
+                vec!["ClCC[N+](=O)[O-]"],
             ),
             (
                 "[c:1][Cl:2]>>[c:1]N(=O)=O",
