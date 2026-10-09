@@ -77,4 +77,20 @@ def test_rdkit_reaction_smarts_writer_and_grouping():
     assert chematic.rdkit_smarts_to_smarts("[N;H2,H1;!$(NC=O)]") == "[N;H2,H1;!$(NC=O)]"
     r = chematic.run_smirks_checked(lactam, [chematic.from_smiles("NCCCC(=O)O")], rdkit_compat=True)
     assert r["status"] == "products"
-    assert sorted({p.rdkit_smiles() for ps in r["products"] for p in ps}) == ["O=C1CCCN1"]
+    assert sorted({p.rdkit_smiles for ps in r["products"] for p in ps}) == ["O=C1CCCN1"]
+
+
+def test_rdkit_reaction_profile_maps_and_rejected_products():
+    # RDKit copies unmatched reactant atoms with their atom maps.
+    r = chematic.run_smirks_checked("[C:1](=[O:2])[OH]>>[C:1](=[O:2])N",
+                                    [chematic.from_smiles("[CH3:7]C(=O)O")], rdkit_compat=True)
+    assert [p.smiles for ps in r["products"] for p in ps] == ["NC(=O)[CH3:7]"]
+    # RunReactants returns product sets sanitization rejects; chematic
+    # reports them as rejected_products.
+    r = chematic.run_smirks_checked("[CH2:1][OH:2]>>[CH:1]=[O:2]",
+                                    [chematic.from_smiles("[OH+3](C)CO")], rdkit_compat=True)
+    assert r["reason"] == "product_valence" and len(r["rejected_products"]) == 1
+    # A * atom has atomic number 0: [#6] does not match it.
+    r = chematic.run_smirks_checked("[C:1](=[O:2])([#6:3])[#6:4]>>[C:1]([OH:2])([#6:3])[#6:4]",
+                                    [chematic.from_smiles("*C(=O)*")], rdkit_compat=True)
+    assert r["status"] == "no_match"
