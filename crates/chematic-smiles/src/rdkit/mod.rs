@@ -689,6 +689,91 @@ fn rdkit_mol_for_writing(mol: &Molecule) -> Result<mol::Mol, RdkitSmilesError> {
     Ok(m)
 }
 
+/// RDKit's sanitized model of `mol` (`Chem.MolFromSmiles`) projected onto
+/// chematic's graph: what `removeHs` + `sanitizeMol` (cleanup, Kekulize,
+/// aromaticity) leave on each atom and bond, by chematic index. Atoms RDKit
+/// removes (explicit hydrogens) and their bonds are `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RdkitSanitizedModel {
+    /// Per chematic atom: `(is_aromatic, formal_charge, total H count
+    /// counting removed hydrogen neighbours as graph atoms)`.
+    pub atoms: Vec<Option<(bool, i8, u8)>>,
+    /// Per chematic atom: number of hydrogen neighbours RDKit removed.
+    pub removed_h_neighbors: Vec<u8>,
+    /// Per chematic bond: RDKit's bond as a chematic order (`Aromatic` for
+    /// aromatic bonds; `Single`, `Double`, `Triple`, `Quadruple`, `Dative`
+    /// otherwise).
+    pub bonds: Vec<Option<chematic_core::BondOrder>>,
+}
+
+/// [`RdkitSanitizedModel`] for `mol` (RDKit 2026.03.1). `Err` where the
+/// port cannot model the molecule or RDKit's sanitization rejects it.
+pub fn rdkit_sanitized_model(mol: &Molecule) -> Result<RdkitSanitizedModel, RdkitSmilesError> {
+    use chematic_core::BondOrder;
+    let order = mol.rdkit_bond_order();
+    let mut m = parse::from_chematic_ordered(mol, &order)?;
+    let n = m.atoms.len();
+    // Bonds before H removal, by RDKit index: (begin, end, chematic bond).
+    let bonds_before: Vec<(usize, usize, usize)> = m
+        .bonds
+        .iter()
+        .zip(order.iter())
+        .map(|(b, cb)| (b.begin, b.end, cb.0 as usize))
+        .collect();
+    let kept: Vec<usize> = if has_added_hydrogens(mol) {
+        sanitize::sanitize_keeping_hs(&mut m)?;
+        (0..n).collect()
+    } else {
+        sanitize::remove_hs(&mut m, true)?
+    };
+    let mut new_idx = vec![usize::MAX; n];
+    for (k, &old) in kept.iter().enumerate() {
+        new_idx[old] = k;
+    }
+    let mut atoms = vec![None; n];
+    let mut removed_h_neighbors = vec![0u8; n];
+    for (b0, e0, _) in &bonds_before {
+        if new_idx[*b0] == usize::MAX && new_idx[*e0] != usize::MAX {
+            removed_h_neighbors[*e0] += 1;
+        } else if new_idx[*e0] == usize::MAX && new_idx[*b0] != usize::MAX {
+            removed_h_neighbors[*b0] += 1;
+        }
+    }
+    for (old, &k) in new_idx.iter().enumerate() {
+        if k == usize::MAX {
+            continue;
+        }
+        let a = &m.atoms[k];
+        atoms[old] = Some((a.aromatic, a.charge as i8, m.total_num_hs(k).min(255) as u8));
+    }
+    let mut bonds = vec![None; mol.bond_count()];
+    let mut next = 0usize;
+    for (b0, e0, cb) in bonds_before {
+        if new_idx[b0] == usize::MAX || new_idx[e0] == usize::MAX {
+            continue;
+        }
+        let bond = &m.bonds[next];
+        next += 1;
+        bonds[cb] = Some(if bond.aromatic {
+            BondOrder::Aromatic
+        } else {
+            match bond.bt {
+                mol::BondType::Single => BondOrder::Single,
+                mol::BondType::Double => BondOrder::Double,
+                mol::BondType::Triple => BondOrder::Triple,
+                mol::BondType::Quadruple => BondOrder::Quadruple,
+                mol::BondType::Aromatic => BondOrder::Aromatic,
+                mol::BondType::Dative => BondOrder::Dative,
+            }
+        });
+    }
+    Ok(RdkitSanitizedModel {
+        atoms,
+        removed_h_neighbors,
+        bonds,
+    })
+}
+
 fn rdkit_mol_from_smiles(mol: &Molecule) -> Result<(mol::Mol, Vec<u32>), RdkitSmilesError> {
     let mut m = parse::from_chematic(mol)?;
     if has_added_hydrogens(mol) {

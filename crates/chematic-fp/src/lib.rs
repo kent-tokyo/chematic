@@ -18,6 +18,9 @@
 pub mod atom_pair;
 pub mod avalon;
 pub mod bitvec;
+mod rdkit_model_view;
+#[doc(hidden)]
+pub use rdkit_model_view::rdkit_model_view_differs;
 pub mod bulk;
 pub mod ecfp;
 mod ecfp_diagnostics;

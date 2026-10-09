@@ -105,7 +105,7 @@ pub fn rdkit_atom_pair_fp(mol: &Molecule) -> BitVec2048 {
     // RDKit fingerprints sanitized molecules, i.e. after aromaticity
     // perception; Kekule input must not see a different graph than the
     // equivalent aromatic spelling. The perceived view is memoized on `mol`.
-    chematic_perception::with_rdkit_parity_view(mol, |view| {
+    crate::rdkit_model_view::with_rdkit_model_view(mol, |view| {
         rdkit_atom_pair_fp_prepared(view.unwrap_or(mol))
     })
 }
@@ -115,7 +115,7 @@ pub fn rdkit_atom_pair_fp(mol: &Molecule) -> BitVec2048 {
 /// nonzero `(bucket, count)` elements, sorted by bucket.
 pub fn rdkit_atom_pair_counts(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
     let n_bits = n_bits.max(1);
-    chematic_perception::with_rdkit_parity_view(mol, |view| {
+    crate::rdkit_model_view::with_rdkit_model_view(mol, |view| {
         let counts = rdkit_atom_pair_bucket_counts(view.unwrap_or(mol), n_bits);
         counts
             .into_iter()

@@ -405,7 +405,7 @@ pub fn rdkit_torsion_fp(mol: &Molecule) -> BitVec2048 {
     // RDKit fingerprints sanitized molecules, i.e. after aromaticity
     // perception; Kekule input must not see a different graph than the
     // equivalent aromatic spelling. The perceived view is memoized on `mol`.
-    chematic_perception::with_rdkit_parity_view(mol, |view| {
+    crate::rdkit_model_view::with_rdkit_model_view(mol, |view| {
         rdkit_torsion_fp_prepared(view.unwrap_or(mol))
     })
 }
@@ -429,7 +429,7 @@ fn torsion_bucket_counts(mol: &Molecule, atom_invariants: &[u32], n_buckets: u32
 /// the nonzero `(bucket, count)` elements, sorted by bucket.
 pub fn rdkit_torsion_counts(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
     let n_bits = n_bits.max(1);
-    chematic_perception::with_rdkit_parity_view(mol, |view| {
+    crate::rdkit_model_view::with_rdkit_model_view(mol, |view| {
         let m = view.unwrap_or(mol);
         let invariants: Vec<u32> = (0..m.atom_count())
             .map(|i| atom_code(m, AtomIdx(i as u32), 0).wrapping_sub(2))

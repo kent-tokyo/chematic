@@ -215,7 +215,7 @@ static MACCS_SMARTS: &[(&str, usize)] = &[
 fn count_aromatic_rings(mol: &Molecule) -> usize {
     // RDKit key 125 counts rings of the molecule's RingInfo (symmetrized
     // SSSR) whose *bonds* are all aromatic, after RDKit aromaticity.
-    chematic_perception::with_rdkit_parity_view(mol, |view| {
+    crate::rdkit_model_view::with_rdkit_model_view(mol, |view| {
         let view = view.unwrap_or(mol);
         chematic_perception::find_symmetrized_sssr(view)
             .rings()
@@ -258,7 +258,7 @@ fn maccs_queries() -> &'static [Option<chematic_smarts::QueryMolecule>] {
 pub fn maccs(mol: &Molecule) -> BitVec2048 {
     // Match on the RDKit-perceived aromatic view (RDKit computes MACCS on a
     // sanitized molecule), so Kekule and aromatic spellings agree.
-    chematic_perception::with_rdkit_parity_view(mol, |view| maccs_on(view.unwrap_or(mol)))
+    crate::rdkit_model_view::with_rdkit_model_view(mol, |view| maccs_on(view.unwrap_or(mol)))
 }
 
 fn maccs_on(mol: &Molecule) -> BitVec2048 {

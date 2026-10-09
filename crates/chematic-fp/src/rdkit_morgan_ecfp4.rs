@@ -242,6 +242,7 @@ pub fn prepare_rdkit_morgan_ecfp4(
     let rdkit_input = normalized.as_ref().unwrap_or(mol);
     reject_known_rdkit_coordination_sanitization_gap(rdkit_input)?;
     let molecule = chematic_perception::apply_aromaticity_rdkit_parity_experimental(rdkit_input)?;
+    let molecule = crate::rdkit_model_view::patched(rdkit_input, &molecule).unwrap_or(molecule);
     let ring_atoms = chematic_perception::ring_atom_flags(&molecule);
     let mut bond_invariants = Vec::with_capacity(molecule.bond_count());
     for b in 0..molecule.bond_count() {
@@ -299,10 +300,12 @@ fn with_rdkit_morgan_input<R>(
     let rdkit_input = normalized.as_ref().unwrap_or(mol);
     reject_known_rdkit_coordination_sanitization_gap(rdkit_input)?;
     let view = chematic_perception::apply_aromaticity_rdkit_parity_shared(rdkit_input);
-    let molecule = match view.as_ref() {
+    let parity = match view.as_ref() {
         Ok(m) => m,
         Err(e) => return Err(e.clone().into()),
     };
+    let patched = crate::rdkit_model_view::patched(rdkit_input, parity);
+    let molecule = patched.as_ref().unwrap_or(parity);
     let ring_atoms = chematic_perception::ring_atom_flags(molecule);
     let mut bond_invariants = Vec::with_capacity(molecule.bond_count());
     for b in 0..molecule.bond_count() {
