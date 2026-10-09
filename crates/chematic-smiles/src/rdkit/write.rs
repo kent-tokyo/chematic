@@ -328,7 +328,29 @@ fn mol_to_smiles_cow(
     mol: std::borrow::Cow<'_, Mol>,
     p: &RdkitSmilesParams,
 ) -> Result<String, RdkitSmilesError> {
-    Ok(mol_to_smiles_ordered(mol, p, false)?.0)
+    Ok(mol_to_smiles_ordered(mol, p, false, false)?.0)
+}
+
+/// [`mol_to_smiles`] on a molecule whose `_StereochemDone` is a
+/// non-computed property (set by the tautomer enumerator), which edited
+/// fragment copies keep.
+pub(crate) fn mol_to_smiles_flag_kept(
+    mol: &Mol,
+    p: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
+    Ok(mol_to_smiles_ordered(std::borrow::Cow::Borrowed(mol), p, false, true)?.0)
+}
+
+/// `fragmentHasChallengingFeatures` (no substance or stereo groups here).
+fn challenging_fragment(mol: &Mol, atoms: &[usize]) -> bool {
+    atoms.iter().any(|&a| {
+        !matches!(mol.atoms[a].chiral, ChiralTag::Unspecified)
+            || mol.atom_bonds[a].iter().any(|&b| {
+                let bond = &mol.bonds[b];
+                atoms.binary_search(&bond.other(a)).is_ok()
+                    && !matches!(bond.stereo, BondStereo::None | BondStereo::Any)
+            })
+    })
 }
 
 /// `SmilesWrite::detail::MolToSmiles(mol, p, doingCXSmiles)` with the
@@ -337,6 +359,7 @@ fn mol_to_smiles_ordered(
     mol: std::borrow::Cow<'_, Mol>,
     p: &RdkitSmilesParams,
     cx: bool,
+    flag_kept: bool,
 ) -> Result<Piece, RdkitSmilesError> {
     if mol.atoms.is_empty() {
         return Ok(Default::default());
@@ -362,8 +385,14 @@ fn mol_to_smiles_ordered(
             .rooted_at_atom
             .filter(|r| atoms.binary_search(r).is_ok())
             .map(|r| r - atoms[0]);
+        // `getMolFrags` copies a fragment with `copyMolSubset` (no molecule
+        // properties) when it is a single atom or one of more than three
+        // simple fragments, and as an edited copy of the molecule otherwise
+        // (keeping a non-computed `_StereochemDone`).
+        let subset_copy = atoms.len() == 1 || (n_frags > 3 && !challenging_fragment(&mol, atoms));
+        let copied = !flag_kept || subset_copy;
         let (smi, mut atom_order, mut bond_order) =
-            fragment_piece(fragment(&mol, atoms), rooted, true, p, cx)?;
+            fragment_piece(fragment(&mol, atoms), rooted, copied, p, cx)?;
         // `fragment` keeps the bonds inside the fragment in their order.
         let frag_bonds: Vec<usize> = (0..mol.bonds.len())
             .filter(|&b| atoms.binary_search(&mol.bonds[b].begin).is_ok())
@@ -455,7 +484,8 @@ pub(crate) fn mol_to_cx_smiles_for_hash(
             "CXSMILES of an empty molecule (RDKit raises KeyError '_smilesAtomOutputOrder')".into(),
         ));
     }
-    let (mut res, atoms, bonds) = mol_to_smiles_ordered(std::borrow::Cow::Borrowed(&mol), p, true)?;
+    let (mut res, atoms, bonds) =
+        mol_to_smiles_ordered(std::borrow::Cow::Borrowed(&mol), p, true, false)?;
     let ext = hash_cx_extensions(&mol, &atoms, &bonds, skip_radicals);
     if !ext.is_empty() {
         res.push(' ');
