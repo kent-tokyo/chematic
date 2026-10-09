@@ -238,6 +238,8 @@ impl PreparedRdkitMorganEcfp4 {
 pub fn prepare_rdkit_morgan_ecfp4(
     mol: &Molecule,
 ) -> Result<PreparedRdkitMorganEcfp4, RdkitMorganError> {
+    let suppressed = chematic_smiles::rdkit_hydrogen_suppressed(mol);
+    let mol = suppressed.as_ref().unwrap_or(mol);
     let normalized = normalize_rdkit_hypervalent_halogen_oxoacids(mol);
     let rdkit_input = normalized.as_ref().unwrap_or(mol);
     reject_known_rdkit_coordination_sanitization_gap(rdkit_input)?;
@@ -290,6 +292,8 @@ fn with_rdkit_morgan_input<R>(
     mol: &Molecule,
     f: impl FnOnce(&Molecule, &[bool], &[u32]) -> R,
 ) -> Result<R, RdkitMorganError> {
+    let suppressed = chematic_smiles::rdkit_hydrogen_suppressed(mol);
+    let mol = suppressed.as_ref().unwrap_or(mol);
     // RDKit sanitizes neutral hypervalent halogen oxoacids while parsing (for
     // example `OCl(=O)(=O)=O` becomes `[O-][Cl+3]([O-])([O-])O`). The core
     // SMILES model intentionally preserves the user spelling, so apply this

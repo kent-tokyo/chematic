@@ -59,12 +59,17 @@ pub use ecfp::{
     ecfp6, ecfp6_rdkit_environment_experimental, ecfp6_rdkit_invariants, morgan_fp_counts,
     tanimoto_ecfp4,
 };
-pub use rdkit_atom_pair::{rdkit_atom_pair_counts, rdkit_atom_pair_fp};
+pub use rdkit_atom_pair::{
+    rdkit_atom_pair_counts, rdkit_atom_pair_fp, rdkit_atom_pair_sparse_counts,
+};
 pub use rdkit_avalon::{RdkitAvalonError, rdkit_avalon_fp};
 pub use rdkit_layered::rdkit_layered_fp;
 pub use rdkit_pattern::rdkit_pattern_fp;
 pub use rdkit_rdk::rdkit_rdk_fp;
-pub use rdkit_torsion::{rdkit_torsion_counts, rdkit_torsion_fp};
+pub use rdkit_torsion::{
+    rdkit_legacy_torsion_counts, rdkit_torsion_counts, rdkit_torsion_fp,
+    rdkit_torsion_sparse_counts,
+};
 /// Diagnostic-only APIs, not meant for production use — a per-`(atom,
 /// radius)` trace of chematic's real Morgan expansion, for the RDKit
 /// environment-parity oracle (see `scripts/ecfp_rdkit_environment_parity.py`),
@@ -112,3 +117,40 @@ pub use search::{
     nearest_neighbors_from_fp, try_nearest_neighbors,
 };
 pub use topo_path::{TopoPathConfig, tanimoto_topo_path, topo_path};
+
+/// The RDKit-corrected view as RDKit's bond-typed fingerprints see it: a
+/// ring triple bond RDKit flags aromatic (`c1ccccc#1`, kept as a triple
+/// bond in the view) counts as aromatic.
+pub(crate) fn rdkit_fp_view(
+    view: &chematic_core::Molecule,
+) -> std::borrow::Cow<'_, chematic_core::Molecule> {
+    use chematic_core::BondOrder;
+    let aromatic_triples: Vec<chematic_core::BondIdx> = view
+        .bonds()
+        .filter(|(_, b)| {
+            b.order == BondOrder::Triple
+                && view.atom(b.atom1).aromatic
+                && view.atom(b.atom2).aromatic
+        })
+        .map(|(i, _)| i)
+        .collect();
+    if aromatic_triples.is_empty() {
+        return std::borrow::Cow::Borrowed(view);
+    }
+    let mut out = view.clone();
+    for b in aromatic_triples {
+        out.set_bond_order(b, BondOrder::Aromatic);
+    }
+    std::borrow::Cow::Owned(out)
+}
+
+/// RDKit's atomic number of an atom: 0 for a dummy atom, which chematic
+/// stores with a placeholder element.
+pub(crate) fn rdkit_atomic_num(mol: &chematic_core::Molecule, idx: chematic_core::AtomIdx) -> u32 {
+    let atom = mol.atom(idx);
+    if atom.wildcard {
+        0
+    } else {
+        u32::from(atom.element.atomic_number())
+    }
+}

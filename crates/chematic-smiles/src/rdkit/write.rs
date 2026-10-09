@@ -4,11 +4,11 @@
 
 use std::collections::BTreeMap;
 
-use super::canon::{StackElem, canonicalize_fragment};
+use super::canon::{Color, FragmentScope, StackElem, canonicalize_fragment_with};
 use super::kekulize::kekulize_ranked;
 use super::mol::{BondDir, BondStereo, BondType, ChiralTag, Mol};
 use super::periodic;
-use super::rank::rank_mol_atoms_with;
+use super::rank::{rank_fragment_atoms, rank_mol_atoms_with};
 use super::stereo::legacy_stereo_perception;
 use super::{RdkitSmilesError, RdkitSmilesParams};
 
@@ -53,7 +53,7 @@ fn atom_smiles(res: &mut String, mol: &Mol, a: usize, p: &RdkitSmilesParams) {
     let symb = periodic::symbol(atom.anum);
     let nontet_string;
     let at_string = match atom.chiral {
-        _ if !p.isomeric => "",
+        _ if !p.isomeric || atom.broken_chirality => "",
         ChiralTag::Cw => "@@",
         ChiralTag::Ccw => "@",
         ChiralTag::Unspecified => "",
@@ -167,20 +167,76 @@ fn bond_smiles(mol: &Mol, b: usize, atom_to_left: usize, p: &RdkitSmilesParams) 
     }
 }
 
+/// RDKit's global random generator (`getRandomGenerator()`,
+/// `boost::minstd_rand`): `x <- 48271 x mod (2^31 - 1)`.
+#[derive(Debug, Clone)]
+pub(crate) struct MinstdRand {
+    state: u64,
+}
+
+impl MinstdRand {
+    const MODULUS: u64 = 2_147_483_647;
+
+    /// `generator.seed(seed)` (boost: `seed mod m`, 0 becomes 1).
+    pub(crate) fn new(seed: u32) -> MinstdRand {
+        let x = u64::from(seed) % Self::MODULUS;
+        MinstdRand {
+            state: if x == 0 { 1 } else { x },
+        }
+    }
+
+    pub(crate) fn next_u32(&mut self) -> u32 {
+        self.state = self.state * 48_271 % Self::MODULUS;
+        self.state as u32
+    }
+}
+
 /// `SmilesWrite::FragmentSmilesConstruct` for a whole fragment.
 fn fragment_smiles_construct(
     mol: &mut Mol,
     start: usize,
     ranks: &[u32],
     p: &RdkitSmilesParams,
+    rng: Option<&mut MinstdRand>,
+) -> Result<Piece, RdkitSmilesError> {
+    let mut colors = vec![Color::White; mol.atoms.len()];
+    fragment_smiles_construct_with(
+        mol,
+        start,
+        ranks,
+        p,
+        &mut colors,
+        &FragmentScope::default(),
+        rng,
+    )
+}
+
+/// `SmilesWrite::FragmentSmilesConstruct` with the caller's colors and
+/// atoms/bonds in play.
+fn fragment_smiles_construct_with(
+    mol: &mut Mol,
+    start: usize,
+    ranks: &[u32],
+    p: &RdkitSmilesParams,
+    colors: &mut [Color],
+    scope: &FragmentScope<'_>,
+    rng: Option<&mut MinstdRand>,
 ) -> Result<Piece, RdkitSmilesError> {
     if p.kekule {
-        // `MolOps::Kekulize(mol)`: canonical, with `rankFragmentAtoms`
-        // (chirality and isotopes included).
-        let kek_ranks = rank_mol_atoms_with(mol, true);
-        kekulize_ranked(mol, Some(&kek_ranks))?;
+        if let Some(in_play) = scope.atoms {
+            if (0..mol.atoms.len()).any(|a| in_play[a] && mol.atoms[a].aromatic) {
+                return Err(RdkitSmilesError::Unsupported(
+                    "kekule SMILES of a fragment with aromatic atoms (KekulizeFragment)".into(),
+                ));
+            }
+        } else {
+            // `MolOps::Kekulize(mol)`: canonical, with `rankFragmentAtoms`
+            // (chirality and isotopes included).
+            let kek_ranks = rank_mol_atoms_with(mol, true);
+            kekulize_ranked(mol, Some(&kek_ranks))?;
+        }
     }
-    let canon = canonicalize_fragment(mol, start, ranks, p.isomeric)?;
+    let canon = canonicalize_fragment_with(mol, start, ranks, p.isomeric, colors, scope, rng)?;
     let mut res = String::with_capacity(2 * canon.stack.len());
     let mut ring_closure_map: BTreeMap<u32, u32> = BTreeMap::new();
     let mut to_erase: Vec<u32> = Vec::new();
@@ -328,7 +384,29 @@ fn mol_to_smiles_cow(
     mol: std::borrow::Cow<'_, Mol>,
     p: &RdkitSmilesParams,
 ) -> Result<String, RdkitSmilesError> {
-    Ok(mol_to_smiles_ordered(mol, p, false)?.0)
+    Ok(mol_to_smiles_ordered(mol, p, false, false, None)?.0)
+}
+
+/// [`mol_to_smiles`] on a molecule whose `_StereochemDone` is a
+/// non-computed property (set by the tautomer enumerator), which edited
+/// fragment copies keep.
+pub(crate) fn mol_to_smiles_flag_kept(
+    mol: &Mol,
+    p: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
+    Ok(mol_to_smiles_ordered(std::borrow::Cow::Borrowed(mol), p, false, true, None)?.0)
+}
+
+/// `fragmentHasChallengingFeatures` (no substance or stereo groups here).
+fn challenging_fragment(mol: &Mol, atoms: &[usize]) -> bool {
+    atoms.iter().any(|&a| {
+        !matches!(mol.atoms[a].chiral, ChiralTag::Unspecified)
+            || mol.atom_bonds[a].iter().any(|&b| {
+                let bond = &mol.bonds[b];
+                atoms.binary_search(&bond.other(a)).is_ok()
+                    && !matches!(bond.stereo, BondStereo::None | BondStereo::Any)
+            })
+    })
 }
 
 /// `SmilesWrite::detail::MolToSmiles(mol, p, doingCXSmiles)` with the
@@ -337,6 +415,8 @@ fn mol_to_smiles_ordered(
     mol: std::borrow::Cow<'_, Mol>,
     p: &RdkitSmilesParams,
     cx: bool,
+    flag_kept: bool,
+    mut rng: Option<&mut MinstdRand>,
 ) -> Result<Piece, RdkitSmilesError> {
     if mol.atoms.is_empty() {
         return Ok(Default::default());
@@ -354,7 +434,7 @@ fn mol_to_smiles_ordered(
         // RDKit's fragment-local root: the root minus the fragment's first
         // atom index (0 here).
         let rooted = p.rooted_at_atom;
-        return fragment_piece(mol.into_owned(), rooted, false, p, cx);
+        return fragment_piece(mol.into_owned(), rooted, false, p, cx, rng);
     }
     let mut pieces: Vec<Piece> = Vec::with_capacity(n_frags);
     for atoms in &frags {
@@ -362,8 +442,20 @@ fn mol_to_smiles_ordered(
             .rooted_at_atom
             .filter(|r| atoms.binary_search(r).is_ok())
             .map(|r| r - atoms[0]);
-        let (smi, mut atom_order, mut bond_order) =
-            fragment_piece(fragment(&mol, atoms), rooted, true, p, cx)?;
+        // `getMolFrags` copies a fragment with `copyMolSubset` (no molecule
+        // properties) when it is a single atom or one of more than three
+        // simple fragments, and as an edited copy of the molecule otherwise
+        // (keeping a non-computed `_StereochemDone`).
+        let subset_copy = atoms.len() == 1 || (n_frags > 3 && !challenging_fragment(&mol, atoms));
+        let copied = !flag_kept || subset_copy;
+        let (smi, mut atom_order, mut bond_order) = fragment_piece(
+            fragment(&mol, atoms),
+            rooted,
+            copied,
+            p,
+            cx,
+            rng.as_deref_mut(),
+        )?;
         // `fragment` keeps the bonds inside the fragment in their order.
         let frag_bonds: Vec<usize> = (0..mol.bonds.len())
             .filter(|&b| atoms.binary_search(&mol.bonds[b].begin).is_ok())
@@ -399,6 +491,7 @@ fn fragment_piece(
     copied: bool,
     p: &RdkitSmilesParams,
     cx: bool,
+    mut rng: Option<&mut MinstdRand>,
 ) -> Result<Piece, RdkitSmilesError> {
     tmol.update_property_cache(false)?;
     if p.isomeric && copied {
@@ -421,6 +514,11 @@ fn fragment_piece(
             }
         }
     }
+    // `doRandom`: a random root where none is given.
+    let rooted = match (rooted, rng.as_deref_mut()) {
+        (None, Some(r)) => Some(r.next_u32() as usize % tmol.atoms.len()),
+        (rooted, _) => rooted,
+    };
     let ranks: Vec<u32> = if p.canonical {
         rank_mol_atoms_with(&tmol, p.isomeric)
     } else {
@@ -437,7 +535,7 @@ fn fragment_piece(
             .min_by_key(|&i| ranks[i])
             .expect("non-empty fragment"),
     };
-    fragment_smiles_construct(&mut tmol, start, &ranks, p)
+    fragment_smiles_construct(&mut tmol, start, &ranks, p, rng)
 }
 
 /// `SmilesWrite::detail::MolToSmiles(mol, p, doingCXSmiles=true)` followed
@@ -455,7 +553,23 @@ pub(crate) fn mol_to_cx_smiles_for_hash(
             "CXSMILES of an empty molecule (RDKit raises KeyError '_smilesAtomOutputOrder')".into(),
         ));
     }
-    let (mut res, atoms, bonds) = mol_to_smiles_ordered(std::borrow::Cow::Borrowed(&mol), p, true)?;
+    mol_to_cx_smiles(mol, p, skip_radicals)
+}
+
+/// `MolToCXSmiles(mol, params)` after the caller's `Kekulize`: the SMILES
+/// written with `doingCXSmiles=true` and `getCXExtensions(CX_ALL)` for a
+/// molecule read from SMILES without stereo groups or a conformer
+/// (`skip_radicals`: without the radical field).
+pub(crate) fn mol_to_cx_smiles(
+    mol: Mol,
+    p: &RdkitSmilesParams,
+    skip_radicals: bool,
+) -> Result<String, RdkitSmilesError> {
+    if mol.atoms.is_empty() {
+        return Ok(String::new());
+    }
+    let (mut res, atoms, bonds) =
+        mol_to_smiles_ordered(std::borrow::Cow::Borrowed(&mol), p, true, false, None)?;
     let ext = hash_cx_extensions(&mol, &atoms, &bonds, skip_radicals);
     if !ext.is_empty() {
         res.push(' ');
@@ -478,11 +592,13 @@ fn hash_cx_extensions(mol: &Mol, atoms: &[usize], bonds: &[usize], skip_radicals
             }
         }
         for (nrad, idxs) in &rads {
+            // RDKit warns about other counts and writes their indices
+            // without a field prefix.
             res.push_str(match nrad {
                 1 => "^1:",
                 2 => "^2:",
                 3 => "^5:",
-                _ => continue,
+                _ => "",
             });
             for i in idxs {
                 res.push_str(&format!("{i},"));
@@ -540,4 +656,120 @@ fn hash_cx_extensions(mol: &Mol, atoms: &[usize], bonds: &[usize], skip_radicals
     } else {
         String::new()
     }
+}
+
+/// `n` calls of `MolToSmiles(mol, doRandom=true, **p)` on a molecule as `MolFromSmiles`
+/// leaves it: `n` SMILES drawn with RDKit's generator `rng` (one random
+/// root per fragment, random neighbour ranks in both DFS passes).
+pub(crate) fn mol_to_random_smiles(
+    mol: &Mol,
+    n: usize,
+    p: &RdkitSmilesParams,
+    rng: &mut MinstdRand,
+) -> Result<Vec<String>, RdkitSmilesError> {
+    let mut out = Vec::with_capacity(n);
+    for _ in 0..n {
+        let piece =
+            mol_to_smiles_ordered(std::borrow::Cow::Borrowed(mol), p, false, false, Some(rng))?;
+        out.push(piece.0);
+    }
+    Ok(out)
+}
+
+/// `MolFragmentToSmiles(mol, params, atomsToUse, bondsToUse)` (RDKit
+/// 2026.03.1, no atom or bond symbols) on a molecule as `MolFromSmiles`
+/// leaves it.
+pub(crate) fn mol_fragment_to_smiles(
+    mut tmol: Mol,
+    atoms_to_use: &[usize],
+    bonds_to_use: Option<&[usize]>,
+    p: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
+    let n = tmol.atoms.len();
+    let bad = |what: &str| Err(RdkitSmilesError::Unsupported(what.into()));
+    if atoms_to_use.is_empty() {
+        return bad("no atoms provided");
+    }
+    if let Some(r) = p.rooted_at_atom {
+        if r >= n {
+            return bad("rootedAtomAtom must be less than the number of atoms");
+        }
+        if !atoms_to_use.contains(&r) {
+            return bad("rootedAtAtom not found in atomsToUse");
+        }
+    }
+    if atoms_to_use.iter().any(|&a| a >= n) {
+        return bad("atom index out of range");
+    }
+    if n == 0 {
+        return Ok(String::new());
+    }
+    let mut atoms_in_play = vec![false; n];
+    for &a in atoms_to_use {
+        atoms_in_play[a] = true;
+    }
+    let mut bonds_in_play = vec![false; tmol.bonds.len()];
+    match bonds_to_use {
+        Some(bonds) => {
+            for &b in bonds {
+                if b >= tmol.bonds.len() {
+                    return bad("bond index out of range");
+                }
+                bonds_in_play[b] = true;
+            }
+        }
+        None => {
+            if p.rooted_at_atom.is_some() && mol_frags(&tmol).len() != 1 {
+                return bad(
+                    "rootedAtAtom can only be used with molecules that have a single fragment",
+                );
+            }
+            for &a in atoms_to_use {
+                for &b in &tmol.atom_bonds[a] {
+                    if atoms_in_play[tmol.bonds[b].other(a)] {
+                        bonds_in_play[b] = true;
+                    }
+                }
+            }
+        }
+    }
+    tmol.update_property_cache(false)?;
+    let ranks: Vec<u32> = if p.canonical {
+        rank_fragment_atoms(&tmol, &atoms_in_play, &bonds_in_play, p.isomeric)
+    } else {
+        (0..n as u32).collect()
+    };
+    let mut colors = vec![Color::Black; n];
+    for &a in atoms_to_use {
+        colors[a] = Color::White;
+    }
+    let scope = FragmentScope {
+        atoms: Some(&atoms_in_play),
+        bonds: Some(&bonds_in_play),
+    };
+    let mut rooted = p.rooted_at_atom;
+    let mut res = String::new();
+    loop {
+        let start = match rooted.take() {
+            Some(r) => r,
+            None => {
+                let mut next: Option<usize> = None;
+                for &i in atoms_to_use {
+                    if colors[i] == Color::White && next.is_none_or(|nx| ranks[i] < ranks[nx]) {
+                        next = Some(i);
+                    }
+                }
+                next.expect("no start atom found")
+            }
+        };
+        let (smi, _, _) =
+            fragment_smiles_construct_with(&mut tmol, start, &ranks, p, &mut colors, &scope, None)?;
+        res.push_str(&smi);
+        if colors.contains(&Color::White) {
+            res.push('.');
+        } else {
+            break;
+        }
+    }
+    Ok(res)
 }

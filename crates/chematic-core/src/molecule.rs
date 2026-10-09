@@ -1052,6 +1052,18 @@ impl Molecule {
         self.bonds[idx.0 as usize].order = order;
     }
 
+    /// Make bond `idx` a dative bond from `donor` (stored as `atom1`, see
+    /// [`BondOrder::Dative`]), swapping its endpoints if needed. Adjacency
+    /// order is untouched.
+    pub fn set_dative_bond(&mut self, idx: BondIdx, donor: AtomIdx) {
+        self.invalidate_derived();
+        let bond = &mut self.bonds[idx.0 as usize];
+        bond.order = BondOrder::Dative;
+        if bond.atom2 == donor {
+            std::mem::swap(&mut bond.atom1, &mut bond.atom2);
+        }
+    }
+
     /// Return the enhanced stereo groups attached to this molecule.
     pub fn stereo_groups(&self) -> &[StereoGroup] {
         &self.stereo_groups

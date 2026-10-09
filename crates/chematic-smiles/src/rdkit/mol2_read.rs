@@ -578,11 +578,12 @@ fn controlling_bond_from_atom(
     (bond, obond)
 }
 
-/// `updateDoubleBondNeighbors` with a conformer.
+/// `updateDoubleBondNeighbors`, with a conformer or (`None`) from the
+/// double bond's cis/trans stereo and stereo atoms.
 fn update_double_bond_neighbors(
     mol: &mut Mol,
     dbl: usize,
-    coords: &[[f64; 3]],
+    coords: Option<&[[f64; 3]]>,
     st: &mut DirState,
 ) -> Result<(), RdkitSmilesError> {
     if !st.needs_dir[dbl] {
@@ -597,52 +598,72 @@ fn update_double_bond_neighbors(
     let (Some(mut bond2), mut obond2) = controlling_bond_from_atom(mol, st, dbl, atom2) else {
         return Ok(());
     };
-    let begin_p = coords[atom1];
-    let end_p = coords[atom2];
-    let mut bond1_p = coords[mol.bonds[bond1].other(atom1)];
-    let mut bond2_p = coords[mol.bonds[bond2].other(atom2)];
-    let mut linear = false;
-    let mut p1 = psub(bond1_p, begin_p);
-    let mut p2 = psub(end_p, begin_p);
-    if is_linear(p1, p2) {
-        match obond1 {
-            None => linear = true,
-            Some(ob) => {
-                obond1 = Some(bond1);
-                bond1 = ob;
-                bond1_p = coords[mol.bonds[bond1].other(atom1)];
-                p1 = psub(bond1_p, begin_p);
-                if is_linear(p1, p2) {
-                    linear = true;
-                }
-            }
-        }
-    }
-    if !linear {
-        p1 = psub(bond2_p, end_p);
-        p2 = psub(begin_p, end_p);
-        if is_linear(p1, p2) {
-            match obond2 {
-                None => linear = true,
-                Some(ob) => {
-                    obond2 = Some(bond2);
-                    bond2 = ob;
-                    bond2_p = coords[mol.bonds[bond2].other(atom2)];
-                    // RDKit measures this one from the begin atom.
-                    p1 = psub(bond2_p, begin_p);
-                    if is_linear(p1, p2) {
-                        linear = true;
+    let same_torsion_dir = match coords {
+        Some(coords) => {
+            let begin_p = coords[atom1];
+            let end_p = coords[atom2];
+            let mut bond1_p = coords[mol.bonds[bond1].other(atom1)];
+            let mut bond2_p = coords[mol.bonds[bond2].other(atom2)];
+            let mut linear = false;
+            let mut p1 = psub(bond1_p, begin_p);
+            let mut p2 = psub(end_p, begin_p);
+            if is_linear(p1, p2) {
+                match obond1 {
+                    None => linear = true,
+                    Some(ob) => {
+                        obond1 = Some(bond1);
+                        bond1 = ob;
+                        bond1_p = coords[mol.bonds[bond1].other(atom1)];
+                        p1 = psub(bond1_p, begin_p);
+                        if is_linear(p1, p2) {
+                            linear = true;
+                        }
                     }
                 }
             }
+            if !linear {
+                p1 = psub(bond2_p, end_p);
+                p2 = psub(begin_p, end_p);
+                if is_linear(p1, p2) {
+                    match obond2 {
+                        None => linear = true,
+                        Some(ob) => {
+                            obond2 = Some(bond2);
+                            bond2 = ob;
+                            bond2_p = coords[mol.bonds[bond2].other(atom2)];
+                            // RDKit measures this one from the begin atom.
+                            p1 = psub(bond2_p, begin_p);
+                            if is_linear(p1, p2) {
+                                linear = true;
+                            }
+                        }
+                    }
+                }
+            }
+            if linear {
+                set_stereo_for_bond(mol, dbl, BondStereo::Any);
+                return Ok(());
+            }
+            let ang = dihedral(bond1_p, begin_p, end_p, bond2_p);
+            let same_torsion_dir = ang >= std::f64::consts::PI / 2.0;
+            same_torsion_dir
         }
-    }
-    if linear {
-        set_stereo_for_bond(mol, dbl, BondStereo::Any);
-        return Ok(());
-    }
-    let ang = dihedral(bond1_p, begin_p, end_p, bond2_p);
-    let same_torsion_dir = ang >= std::f64::consts::PI / 2.0;
+        None => {
+            let mut same = match mol.bonds[dbl].stereo {
+                BondStereo::Z => false,
+                BondStereo::E => true,
+                _ => return Ok(()),
+            };
+            let sa = mol.bonds[dbl].stereo_atoms.clone();
+            if !sa.contains(&mol.bonds[bond1].other(atom1)) {
+                same = !same;
+            }
+            if !sa.contains(&mol.bonds[bond2].other(atom2)) {
+                same = !same;
+            }
+            same
+        }
+    };
     let mut reverse = same_torsion_dir;
 
     let mut followup: Vec<usize> = Vec::new();
@@ -700,6 +721,16 @@ fn update_double_bond_neighbors(
 /// `MolOps::detectBondStereochemistry(mol)`
 /// (`setDoubleBondNeighborDirections` from the conformer).
 fn detect_bond_stereochemistry(mol: &mut Mol, coords: &[[f64; 3]]) -> Result<(), RdkitSmilesError> {
+    set_double_bond_neighbor_directions(mol, Some(coords))
+}
+
+/// `MolOps::setDoubleBondNeighborDirections(mol, conf)`: directions on the
+/// single bonds next to each candidate double bond, from the conformer or
+/// (`None`) from each double bond's cis/trans stereo.
+pub(crate) fn set_double_bond_neighbor_directions(
+    mol: &mut Mol,
+    coords: Option<&[[f64; 3]]>,
+) -> Result<(), RdkitSmilesError> {
     mol.find_rings()?;
     let nb = mol.bonds.len();
     let mut st = DirState {

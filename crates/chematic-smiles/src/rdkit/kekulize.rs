@@ -63,6 +63,21 @@ pub(crate) fn kekulize_ranked(
     mol: &mut Mol,
     ranks: Option<&[u32]>,
 ) -> Result<(), RdkitSmilesError> {
+    kekulize_full(mol, ranks, true)
+}
+
+/// The message of the `KekulizeException` thrown when a ring system cannot
+/// be kekulized (other kekulization failures are
+/// `AtomKekulizeException`s).
+pub(crate) const CANT_KEKULIZE: &str = "Can't kekulize mol.";
+
+/// `Kekulize(mol, markAtomsBonds, canonical)`: [`kekulize_ranked`] that
+/// leaves the aromatic flags alone when `mark_atoms_bonds` is false.
+pub(crate) fn kekulize_full(
+    mol: &mut Mol,
+    ranks: Option<&[u32]>,
+    mark_atoms_bonds: bool,
+) -> Result<(), RdkitSmilesError> {
     let n_atoms = mol.atoms.len();
     let mut found_aromatic = mol.bonds.iter().any(|b| b.aromatic);
     let mut valences = vec![0i32; n_atoms];
@@ -111,6 +126,16 @@ pub(crate) fn kekulize_ranked(
                 None => break,
             }
         }
+    }
+    if !mark_atoms_bonds {
+        for a in 0..n_atoms {
+            if mol.total_valence(a) != valences[a] {
+                return Err(RdkitSmilesError::Sanitization(format!(
+                    "Kekulization somehow screwed up valence on {a}"
+                )));
+            }
+        }
+        return Ok(());
     }
     // markAtomsBonds
     for b in &mut mol.bonds {
@@ -168,7 +193,13 @@ fn kekulize_fused(
         kekulized = permute_dummies_and_kekulize(mol, &all_atms, &d_bnd_cands, &questions, ranks);
     }
     if !kekulized {
-        return Err(RdkitSmilesError::Sanitization("Can't kekulize mol.".into()));
+        let mut msg = String::from("Can't kekulize mol.  Unkekulized atoms:");
+        for (i, &cand) in d_bnd_cands.iter().enumerate() {
+            if cand {
+                msg.push_str(&format!(" {i}"));
+            }
+        }
+        return Err(RdkitSmilesError::Sanitization(msg));
     }
     Ok(())
 }

@@ -168,6 +168,13 @@ pub(crate) struct Atom {
     pub ring_stereochem_cand: Option<bool>,
     /// `_ChiralityPossible`.
     pub chirality_possible: bool,
+    /// `_brokenChirality` (`MolFragmentToSmiles`: a chiral atom with a
+    /// bond outside the fragment).
+    pub broken_chirality: bool,
+    /// A SMARTS query atom whose query is an AND with `H1`
+    /// (`Canon::details::hasSingleHQuery`): chirality writing treats it as
+    /// having a fourth neighbour.
+    pub single_h_query: bool,
 }
 
 impl Atom {
@@ -190,6 +197,8 @@ impl Atom {
             ring_stereo_atoms: None,
             ring_stereochem_cand: None,
             chirality_possible: false,
+            broken_chirality: false,
+            single_h_query: false,
         }
     }
 
@@ -782,6 +791,23 @@ impl Mol {
     }
 
     /// `MolOps::symmetrizeSSSR`: (re)computes the ring information.
+    /// `MolOps::findSSSR` (no symmetrization), as `Kekulize` runs it on a
+    /// molecule without ring information.
+    pub(crate) fn find_sssr(&mut self) -> Result<(), RdkitSmilesError> {
+        let bonds: Vec<(usize, usize, bool)> = self
+            .bonds
+            .iter()
+            .map(|b| (b.begin, b.end, b.bt != BondType::Dative))
+            .collect();
+        let rings = chematic_perception::rdkit_sssr(self.atoms.len(), &bonds).ok_or_else(|| {
+            RdkitSmilesError::Unsupported(
+                "ring perception falls back to RDKit's approximate ring finder".into(),
+            )
+        })?;
+        self.set_rings(rings);
+        Ok(())
+    }
+
     pub(crate) fn find_rings(&mut self) -> Result<(), RdkitSmilesError> {
         let bonds: Vec<(usize, usize, bool)> = self
             .bonds

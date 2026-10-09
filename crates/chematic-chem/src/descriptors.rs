@@ -445,8 +445,10 @@ pub fn exact_mass(mol: &Molecule) -> f64 {
 /// carry explicit H atoms in the graph (e.g. from bracket notation `[H]`).
 /// Those are excluded from the heavy-atom count.
 pub fn heavy_atom_count(mol: &Molecule) -> usize {
+    // RDKit's `CalcNumHeavyAtoms`: atomic number above 1, so dummy atoms
+    // (atomic number 0) are not heavy atoms.
     mol.atoms()
-        .filter(|(_, atom)| atom.element != Element::H)
+        .filter(|(_, atom)| !atom.wildcard && atom.element != Element::H)
         .count()
 }
 
@@ -497,6 +499,10 @@ fn count_rdkit_pattern(
 /// N-H). The former hand-written rule counted O-H/S-H on charged or
 /// metal-bound atoms (7 exposed-10k rows).
 pub fn hbd_count(mol: &Molecule) -> usize {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| hbd_count_impl(m))
+}
+
+fn hbd_count_impl(mol: &Molecule) -> usize {
     static QUERY: std::sync::OnceLock<chematic_smarts::QueryMolecule> = std::sync::OnceLock::new();
     count_rdkit_pattern(&QUERY, RDKIT_HBD_SMARTS, mol)
 }
@@ -517,6 +523,10 @@ pub fn hba_count(mol: &Molecule) -> usize {
 /// Count hydrogen-bond acceptors using the RDKit 2026.03 profile; the same
 /// value as [`hba_count`].
 pub fn rdkit_hba_count(mol: &Molecule) -> usize {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_hba_count_impl(m))
+}
+
+fn rdkit_hba_count_impl(mol: &Molecule) -> usize {
     hba_count(mol)
 }
 
@@ -747,12 +757,27 @@ pub(crate) fn descriptor_aromaticity(mol: &Molecule) -> DescriptorView<'_> {
     // the same perceived copy, and that copy carries its own SSSR cache.
     DescriptorView::Perceived(
         mol.derived(chematic_core::DerivedSlot::DescriptorAromatic, || {
-            chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).unwrap_or_else(
-                |_| {
+            let mut view = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
+                .unwrap_or_else(|_| {
                     let cleaned = chematic_perception::rdkit_sanitize_cleanup(mol);
                     chematic_perception::apply_aromaticity(cleaned.as_ref().unwrap_or(mol))
-                },
-            )
+                });
+            // A ring triple bond RDKit flags aromatic (`c1ccccc#1`) is kept
+            // as a triple bond in the view; RDKit's descriptors read its
+            // aromatic flag.
+            let triples: Vec<chematic_core::BondIdx> = view
+                .bonds()
+                .filter(|(_, b)| {
+                    b.order == chematic_core::BondOrder::Triple
+                        && view.atom(b.atom1).aromatic
+                        && view.atom(b.atom2).aromatic
+                })
+                .map(|(i, _)| i)
+                .collect();
+            for b in triples {
+                view.set_bond_order(b, chematic_core::BondOrder::Aromatic);
+            }
+            view
         }),
     )
 }
@@ -823,17 +848,56 @@ pub fn tpsa(mol: &Molecule) -> f64 {
 /// RDKit-default TPSA: `rdMolDescriptors.CalcTPSA(mol)` / `Descriptors.TPSA(mol)`
 /// with `includeSandP=False`, i.e. the N and O contributions of [`tpsa`] only.
 pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_tpsa_impl(m))
+}
+
+fn rdkit_tpsa_impl(mol: &Molecule) -> f64 {
     tpsa_contributions(mol)
         .into_iter()
         .zip(mol.atoms())
         .filter(|(_, (_, atom))| matches!(atom.element.atomic_number(), 7 | 8))
         .map(|(contribution, _)| contribution)
-        .sum()
+        // RDKit accumulates from +0.0; `Iterator::sum` for f64 starts from
+        // -0.0, which would give -0.0 for a molecule without N or O.
+        .fold(0.0, |acc, c| acc + c)
 }
 
 // ---------------------------------------------------------------------------
 // 8. LogP (Wildman-Crippen, calibrated)
 // ---------------------------------------------------------------------------
+
+/// Crippen types on the RDKit port's AddHs molecule (diagnostics).
+#[doc(hidden)]
+pub fn crippen_types_rdkit_model(mol: &Molecule) -> Option<Vec<Option<(String, f64)>>> {
+    let patterns: Vec<&str> = CRIPPEN_SMARTS.iter().map(|e| e.0).collect();
+    let (types, _) = chematic_smiles::rdkit_addhs_first_pattern(mol, &patterns)?;
+    Some(
+        types
+            .into_iter()
+            .map(|t| t.map(|t| (CRIPPEN_SMARTS[t].0.to_string(), CRIPPEN_SMARTS[t].1)))
+            .collect(),
+    )
+}
+
+/// Whether Crippen typing must run on the RDKit port's molecule: chematic's
+/// perception may differ from RDKit's (see
+/// [`chematic_perception::rdkit_model_may_disagree`]), hydrogen graph atoms,
+/// or charged hydroxyl/oxonium hydrogens (`[OH-]`, `[OH+]`).
+fn crippen_needs_rdkit_model(mol: &Molecule) -> bool {
+    chematic_perception::rdkit_model_may_disagree(mol)
+        || mol.atoms().any(|(_, a)| {
+            !a.wildcard
+                && (a.element == Element::H
+                    || (a.element == Element::O
+                        && a.charge != 0
+                        && a.hydrogen_count.is_some_and(|h| h > 0)))
+        })
+}
+
+/// [`crippen_totals`] typed on the RDKit port's `AddHs(MolFromSmiles(s))`.
+fn crippen_totals_rdkit_model(mol: &Molecule) -> Option<(f64, f64)> {
+    chematic_smiles::rdkit_crippen_logp_mr(mol)
+}
 
 /// Compute a Wildman-Crippen LogP (RDKit-compatible).
 ///
@@ -1161,6 +1225,12 @@ fn h_logp_for_parent(
 /// not folded in. A graph hydrogen gets the hydrogen type of its neighbour.
 /// The SlogP/SMR VSA descriptors bin atoms by these values.
 pub(crate) fn crippen_atom_type_contribs(mol: &Molecule) -> Vec<(f64, f64)> {
+    if crippen_needs_rdkit_model(mol)
+        && let Some(c) = chematic_smiles::rdkit_crippen_contribs_no_hs(mol)
+        && c.len() == mol.atom_count()
+    {
+        return c;
+    }
     let queries = get_crippen_queries();
     let mol_arom = descriptor_aromaticity(mol);
     let anchor_types = crippen_anchor_types(&mol_arom, queries);
@@ -1232,6 +1302,10 @@ pub fn lipinski_passes(mol: &Molecule) -> bool {
 /// not count zero-valence carbon radicals as CSP3.
 /// Returns 0.0 if the molecule contains no carbon atoms.
 pub fn fsp3(mol: &Molecule) -> f64 {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| fsp3_impl(m))
+}
+
+fn fsp3_impl(mol: &Molecule) -> f64 {
     // RDKit `calcFractionCSP3`: carbons whose total degree (neighbours plus
     // hydrogens) is four, over all carbons. A four-bonded carbanion (the
     // ring carbon of a ferrocenyl `[C-]` bonded to Fe) counts.
@@ -1265,10 +1339,17 @@ pub fn aromatic_ring_count(mol: &Molecule) -> usize {
 /// Count aromatic rings after applying the opt-in RDKit aromaticity model.
 /// Native aromatic flags and native ring counts are left untouched.
 pub fn rdkit_aromatic_ring_count(mol: &Molecule) -> usize {
-    chematic_perception::with_rdkit_parity_view(mol, |view| match view {
-        Ok(perceived) => chematic_perception::aromatic_ring_list_preperceived(perceived).len(),
+    if chematic_perception::rdkit_parity_view_is_identity(mol) {
+        return chematic_perception::aromatic_ring_list_preperceived(mol).len();
+    }
+    match chematic_perception::apply_aromaticity_rdkit_parity_shared(mol).as_ref() {
+        // The descriptor view reads aromatic-flagged ring triple bonds as
+        // aromatic, as RDKit's ring counting does.
+        Ok(_) => {
+            chematic_perception::aromatic_ring_list_preperceived(&descriptor_aromaticity(mol)).len()
+        }
         Err(_) => chematic_perception::aromatic_ring_list(mol).len(),
-    })
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1402,6 +1483,15 @@ pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
 /// atoms come first (an explicit hydrogen typed by its neighbour), then each
 /// heavy atom's implicit hydrogens in heavy-atom order.
 fn crippen_totals(mol: &Molecule) -> (f64, f64) {
+    // Molecules chematic's perception may model differently from RDKit
+    // (radicals, dummies, hydrogen graph atoms, unusual valences, ...):
+    // type RDKit's own `AddHs(MolFromSmiles(s))` molecule with the same
+    // table, as `Crippen.MolLogP` does.
+    if crippen_needs_rdkit_model(mol)
+        && let Some(t) = crippen_totals_rdkit_model(mol)
+    {
+        return t;
+    }
     let queries = get_crippen_queries();
     let mol_arom = descriptor_aromaticity(mol);
     let anchor_types = crippen_anchor_types(&mol_arom, queries);
@@ -1466,9 +1556,15 @@ fn crippen_totals(mol: &Molecule) -> (f64, f64) {
 
 /// Number of heteroatoms (non-C, non-H heavy atoms).
 pub fn num_heteroatoms(mol: &Molecule) -> usize {
+    // RDKit's `CalcNumHeteroatoms`: atomic number other than 1 and 6, so
+    // dummy atoms (atomic number 0) count.
     mol.atoms()
         .filter(|(_, a)| {
-            let an = a.element.atomic_number();
+            let an = if a.wildcard {
+                0
+            } else {
+                a.element.atomic_number()
+            };
             an != 1 && an != 6
         })
         .count()
@@ -1478,7 +1574,188 @@ pub fn num_heteroatoms(mol: &Molecule) -> usize {
 /// its symmetrized SSSR. It exceeds [`ring_count`] (the SSSR size, i.e. the
 /// cycle rank) for cages and bridged systems such as cubane or adamantane.
 pub fn rdkit_num_rings(mol: &Molecule) -> usize {
-    rdkit_ring_list(mol).len()
+    simple_ring_system_count(mol).unwrap_or_else(|| rdkit_ring_list(mol).len())
+}
+
+/// The number of ring systems when every ring system is a single simple
+/// cycle (as many ring bonds as ring atoms): then RDKit's symmetrized SSSR
+/// is exactly those cycles. `None` for fused, spiro or bridged systems, and
+/// where RDKit's ring graph differs from chematic's (organometallic dative
+/// bonds, query bond orders).
+fn simple_ring_system_count(mol: &Molecule) -> Option<usize> {
+    if mol.bonds().any(|(_, b)| {
+        matches!(
+            b.order,
+            BondOrder::QueryAny
+                | BondOrder::QuerySingleOrDouble
+                | BondOrder::QuerySingleOrAromatic
+                | BondOrder::QueryDoubleOrAromatic
+        )
+    }) || chematic_perception::rdkit_organometallic_dative_bonds(mol)
+        .iter()
+        .any(|&d| d)
+    {
+        return None;
+    }
+    let flags = chematic_perception::ring_bond_flags_shared(mol);
+    let n = mol.atom_count();
+    let mut parent: Vec<u32> = (0..n as u32).collect();
+    fn find(parent: &mut [u32], mut x: u32) -> u32 {
+        while parent[x as usize] != x {
+            let p = parent[parent[x as usize] as usize];
+            parent[x as usize] = p;
+            x = p;
+        }
+        x
+    }
+    let mut ring_bonds = 0usize;
+    for (bi, bond) in mol.bonds() {
+        if !flags[bi.0 as usize] {
+            continue;
+        }
+        ring_bonds += 1;
+        let (a, b) = (
+            find(&mut parent, bond.atom1.0),
+            find(&mut parent, bond.atom2.0),
+        );
+        if a != b {
+            parent[a as usize] = b;
+        }
+    }
+    if ring_bonds == 0 {
+        return Some(0);
+    }
+    // Per system: ring atoms minus ring bonds (0 for a simple cycle).
+    let mut balance = vec![0i32; n];
+    let mut on_ring = vec![false; n];
+    for (bi, bond) in mol.bonds() {
+        if flags[bi.0 as usize] {
+            on_ring[bond.atom1.0 as usize] = true;
+            on_ring[bond.atom2.0 as usize] = true;
+            let r = find(&mut parent, bond.atom1.0);
+            balance[r as usize] -= 1;
+        }
+    }
+    let mut roots = Vec::new();
+    for a in 0..n {
+        if on_ring[a] {
+            let r = find(&mut parent, a as u32) as usize;
+            balance[r] += 1;
+            if r == a {
+                roots.push(a);
+            }
+        }
+    }
+    let mut rings = 0usize;
+    for &r in &roots {
+        match balance[r] {
+            0 => rings += 1,
+            -1 => rings += two_cycle_system_rings(mol, &flags, &mut parent, r)?,
+            _ => rings += system_rings_rdkit(mol, &flags, &mut parent, r)?,
+        }
+    }
+    Some(rings)
+}
+
+/// RDKit's symmetrized SSSR size for the ring system rooted at `root`
+/// alone (its ring bonds, in RDKit's bond order).
+fn system_rings_rdkit(
+    mol: &Molecule,
+    flags: &[bool],
+    parent: &mut [u32],
+    root: usize,
+) -> Option<usize> {
+    fn find(parent: &mut [u32], mut x: u32) -> u32 {
+        while parent[x as usize] != x {
+            let p = parent[parent[x as usize] as usize];
+            parent[x as usize] = p;
+            x = p;
+        }
+        x
+    }
+    let mut local = vec![u32::MAX; mol.atom_count()];
+    let mut k = 0usize;
+    let mut bonds = Vec::new();
+    for bi in mol.rdkit_bond_order() {
+        if !flags[bi.0 as usize] {
+            continue;
+        }
+        let bond = mol.bond(bi);
+        if find(parent, bond.atom1.0) as usize != root {
+            continue;
+        }
+        let mut id = |a: AtomIdx| {
+            let slot = &mut local[a.0 as usize];
+            if *slot == u32::MAX {
+                *slot = k as u32;
+                k += 1;
+            }
+            *slot as usize
+        };
+        let (a, b) = (id(bond.atom1), id(bond.atom2));
+        bonds.push((a, b, true));
+    }
+    chematic_perception::rdkit_symmetrized_sssr(k, &bonds).map(|r| r.len())
+}
+
+/// RDKit's ring count for a ring system of cycle rank 2 rooted at `root`:
+/// two cycles sharing one atom give 2; two branch atoms joined by three
+/// paths of `a <= b <= c` bonds give the rings `a+b` and `a+c`, plus `b+c`
+/// when `a == b` (it then has the size of `a+c` and can stand in for it).
+fn two_cycle_system_rings(
+    mol: &Molecule,
+    flags: &[bool],
+    parent: &mut [u32],
+    root: usize,
+) -> Option<usize> {
+    fn find(parent: &mut [u32], mut x: u32) -> u32 {
+        while parent[x as usize] != x {
+            let p = parent[parent[x as usize] as usize];
+            parent[x as usize] = p;
+            x = p;
+        }
+        x
+    }
+    let ring_neighbors = |a: AtomIdx| -> Vec<AtomIdx> {
+        mol.neighbors(a)
+            .filter(|(_, bi)| flags[bi.0 as usize])
+            .map(|(nb, _)| nb)
+            .collect()
+    };
+    let mut branch: Vec<AtomIdx> = Vec::new();
+    for (idx, _) in mol.atoms() {
+        if find(parent, idx.0) as usize != root {
+            continue;
+        }
+        match ring_neighbors(idx).len() {
+            2 => {}
+            3 => branch.push(idx),
+            4 => return Some(2),
+            _ => return None,
+        }
+    }
+    let &[u, v] = branch.as_slice() else {
+        return None;
+    };
+    let mut lengths: Vec<usize> = Vec::with_capacity(3);
+    for start in ring_neighbors(u) {
+        let (mut prev, mut cur, mut len) = (u, start, 1usize);
+        while cur != v {
+            let next = ring_neighbors(cur).into_iter().find(|&x| x != prev)?;
+            prev = cur;
+            cur = next;
+            len += 1;
+            if len > mol.atom_count() {
+                return None;
+            }
+        }
+        lengths.push(len);
+    }
+    if lengths.len() != 3 {
+        return None;
+    }
+    lengths.sort_unstable();
+    Some(if lengths[0] == lengths[1] { 3 } else { 2 })
 }
 
 /// RDKit's ring information (`SanitizeMol`'s symmetrized SSSR), falling back
@@ -1567,8 +1844,12 @@ fn rdkit_ring_classes(mol: &Molecule) -> Vec<(bool, bool, bool)> {
                 all_aromatic &= aromatic;
                 all_single &= !aromatic
                     && matches!(order, BondOrder::Single | BondOrder::Up | BondOrder::Down);
-                hetero |= view.atom(a).element.atomic_number() != 6
-                    || view.atom(b).element.atomic_number() != 6;
+                // Dummy atoms (atomic number 0 in RDKit) count as non-carbon.
+                let non_carbon = |x: AtomIdx| {
+                    let atom = view.atom(x);
+                    atom.wildcard || atom.element.atomic_number() != 6
+                };
+                hetero |= non_carbon(a) || non_carbon(b);
             }
             (all_aromatic, all_single, hetero)
         })
@@ -2121,6 +2402,13 @@ pub fn cns_mpo_score(mol: &Molecule) -> f64 {
 /// sp3d/sp3d2 and report `0`. Before 1.0.35 this used bond orders only (any
 /// atom without a multiple bond was sp3).
 pub fn hybridization_per_atom(mol: &Molecule) -> Vec<u8> {
+    // Where chematic's perception may disagree with RDKit's sanitization
+    // (radicals, unusual valences, ...), take RDKit's hybridization.
+    if chematic_perception::rdkit_model_may_disagree(mol)
+        && let Some(h) = chematic_smiles::rdkit_hybridizations(mol)
+    {
+        return h;
+    }
     // On RDKit's aromaticity view, as RDKit's sanitized molecule: a
     // Kekulé-written thiophene S is aromatic, hence sp2.
     let view = descriptor_aromaticity(mol);
@@ -2177,6 +2465,10 @@ pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
 /// ring-size counts over RDKit's ring information (symmetrized SSSR) and
 /// aromatic bonds. The former implementation used a different layout.
 pub fn mqn(mol: &Molecule) -> Vec<u32> {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| mqn_impl(m))
+}
+
+fn mqn_impl(mol: &Molecule) -> Vec<u32> {
     let mut res = vec![0u32; 42];
     let view = descriptor_aromaticity(mol);
     let view: &Molecule = &view;
@@ -2284,7 +2576,18 @@ pub fn mqn(mol: &Molecule) -> Vec<u32> {
     let mut n_aromatic = 0u32;
     for (bi, bond) in view.bonds() {
         let n_rings = bond_rings[bi.0 as usize];
-        match bond.order {
+        // An aromatic-flagged ring triple bond (`c1ccccc#1`, triple in
+        // `mol`, aromatic in the view) counts as aromatic and as triple.
+        let order = if bond.order == BondOrder::Aromatic
+            && view.bond_count() == mol.bond_count()
+            && mol.bond(bi).order == BondOrder::Triple
+        {
+            n_aromatic += 1;
+            BondOrder::Triple
+        } else {
+            bond.order
+        };
+        match order {
             BondOrder::Aromatic => n_aromatic += 1,
             BondOrder::Single | BondOrder::Up | BondOrder::Down => {
                 if n_rings == 0 {
@@ -2610,6 +2913,9 @@ fn rdkit_hall_kier_atom_alpha(atomic_number: u8, hyb: u8) -> f64 {
 /// molecule with a heteroatom or unsaturation, and so did the kappa indices
 /// built on it.
 pub fn hall_kier_alpha(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return hall_kier_alpha(&h);
+    }
     let hyb = hybridization_per_atom(mol);
     let mut alpha_sum = 0.0;
     for (idx, atom) in mol.atoms() {
@@ -2850,18 +3156,22 @@ pub fn num_ester_bonds(mol: &Molecule) -> usize {
 /// As RDKit's `CalcMolFormula`: a net charge is appended (`"C2H3O2-"`,
 /// `"O4S-2"`, `"H4N+"`) and dummy atoms are written as `*`.
 pub fn calc_mol_formula(mol: &Molecule) -> String {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| calc_mol_formula_impl(m))
+}
+
+fn calc_mol_formula_impl(mol: &Molecule) -> String {
     use std::collections::BTreeMap;
 
     // Count atoms by element
     let mut counts: BTreeMap<String, usize> = BTreeMap::new();
 
-    let mut wildcards = 0usize;
     let mut charge = 0i32;
     for (_, atom) in mol.atoms() {
         charge += i32::from(atom.charge);
         if atom.wildcard {
-            // RDKit writes dummy atoms as `*` after the elements.
-            wildcards += 1;
+            // RDKit's `getMolFormula` keys dummy atoms by the symbol `*`,
+            // sorted with the other non-C, non-H symbols (byte order).
+            *counts.entry("*".to_string()).or_insert(0) += 1;
             continue;
         }
         let symbol = atom.element.symbol().to_string();
@@ -2869,9 +3179,16 @@ pub fn calc_mol_formula(mol: &Molecule) -> String {
     }
 
     // Count total implicit hydrogens
+    // RDKit's `getTotalNumHs` also counts a dummy atom's hydrogens (`[*H]`).
     let total_h: usize = mol
         .atoms()
-        .map(|(idx, _)| implicit_hcount(mol, idx) as usize)
+        .map(|(idx, a)| {
+            if a.wildcard {
+                a.hydrogen_count.unwrap_or(0) as usize
+            } else {
+                implicit_hcount(mol, idx) as usize
+            }
+        })
         .sum();
 
     if total_h > 0 {
@@ -2905,10 +3222,6 @@ pub fn calc_mol_formula(mol: &Molecule) -> String {
                 formula.push_str(&count.to_string());
             }
         }
-    }
-
-    for _ in 0..wildcards {
-        formula.push('*');
     }
 
     // If no atoms at all, return empty
