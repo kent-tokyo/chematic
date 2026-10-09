@@ -94,6 +94,8 @@ struct Input {
     /// Run the special-chirality refinement on ties (`useChirality &&
     /// includeRingStereo`).
     special_chirality: bool,
+    /// `rankFragmentAtoms`' `atomsInPlay` / `bondsInPlay`.
+    in_play: Option<(Vec<bool>, Vec<bool>)>,
 }
 
 fn sign(v: i64) -> i32 {
@@ -149,7 +151,12 @@ impl Ranker<'_> {
             })
             .collect();
         // `isRingStereoAtom` / `hasRingNbr` (`advancedInitCanonAtom`).
+        // Atoms outside `atomsInPlay` are left as `initFragmentCanonAtoms`
+        // leaves them (no `advancedInitCanonAtom`).
         for (i, atom) in atoms.iter_mut().enumerate() {
+            if inp.in_play.as_ref().is_some_and(|(a, _)| !a[i]) {
+                continue;
+            }
             atom.bonds.reserve_exact(inp.nbrs[i].len());
             atom.is_ring_stereo = inp.ring_stereo[i];
             atom.has_ring_nbr = inp.nbrs[i].iter().any(|&nb| inp.ring_stereo[nb as usize]);
@@ -164,6 +171,11 @@ impl Ranker<'_> {
         };
         for bidx in 0..inp.bonds.len() {
             let (a, b, ..) = inp.bonds[bidx];
+            if let Some((atoms_in, bonds_in)) = &inp.in_play
+                && !(bonds_in[bidx] && atoms_in[a as usize] && atoms_in[b as usize])
+            {
+                continue;
+            }
             for (x, y) in [(a, b), (b, a)] {
                 let h = ranker.make_holder(bidx, y);
                 let at = &mut ranker.atoms[x as usize];
@@ -471,8 +483,13 @@ impl Ranker<'_> {
         res
     }
 
+    fn out_of_play(&self, i: usize) -> bool {
+        self.inp.in_play.as_ref().is_some_and(|(a, _)| !a[i])
+    }
+
     fn compare(&mut self, f: Functor, i: usize, j: usize) -> i32 {
         match f {
+            _ if self.out_of_play(i) && self.out_of_play(j) => 0,
             Functor::Atom => {
                 let v = self.basecomp(i, j);
                 if v != 0 {
@@ -1027,6 +1044,7 @@ fn build_input(mol: &Molecule, rings: &[Vec<usize>], ez: &[(BondIdx, bool)]) -> 
         bond_symbols: None,
         break_ties: true,
         special_chirality: true,
+        in_play: None,
     };
     for (idx, atom) in mol.atoms() {
         inp.anum.push(if atom.wildcard {
@@ -1156,10 +1174,62 @@ pub fn rdkit_rank_mol_atoms(atoms: &[RdkitRankAtom], bonds: &[RdkitRankBond]) ->
         bond_symbols: None,
         break_ties: true,
         special_chirality: true,
+        in_play: None,
     };
     let mut ranker = Ranker::new(&inp);
     for (i, a) in atoms.iter().enumerate() {
         ranker.atoms[i].total_hs = a.total_num_hs;
+    }
+    ranker.rank()
+}
+
+/// `Canon::rankFragmentAtoms(mol, ranks, atomsInPlay, bondsInPlay, nullptr,
+/// nullptr, breakTies=true, includeChirality, includeIsotopes,
+/// includeAtomMaps=true, includeChiralPresence=false,
+/// includeRingStereo=true)`, as `MolFragmentToSmiles` ranks. `atoms` and
+/// `bonds` describe the whole molecule (chirality, isotopes and bond stereo
+/// already cleared by the caller where they are not included; `num_rings`
+/// from the ring perception `rankFragmentAtoms` sees); only the atoms and
+/// bonds in play take part in the neighbourhoods, and an atom in play counts
+/// its bonds leaving the fragment as hydrogens (RDKit's github #1567).
+pub fn rdkit_rank_fragment_atoms(
+    atoms: &[RdkitRankAtom],
+    bonds: &[RdkitRankBond],
+    atoms_in_play: &[bool],
+    bonds_in_play: &[bool],
+    include_chirality: bool,
+) -> Vec<u32> {
+    let n = atoms.len();
+    let mut nbrs: Vec<SmallVec<[u32; 4]>> = vec![SmallVec::new(); n];
+    for b in bonds {
+        nbrs[b.begin as usize].push(b.end);
+        nbrs[b.end as usize].push(b.begin);
+    }
+    let inp = Input {
+        anum: atoms.iter().map(|a| a.atomic_num).collect(),
+        isotope: atoms.iter().map(|a| a.isotope).collect(),
+        charge: atoms.iter().map(|a| a.formal_charge).collect(),
+        map: atoms.iter().map(|a| a.atom_map).collect(),
+        chiral: atoms.iter().map(|a| a.chiral_tag).collect(),
+        nrings: atoms.iter().map(|a| a.num_rings).collect(),
+        ring_stereo: atoms.iter().map(|a| a.ring_stereo).collect(),
+        nbrs,
+        bonds: bonds
+            .iter()
+            .map(|b| (b.begin, b.end, b.bond_type, b.stereo, b.stereo_atoms))
+            .collect(),
+        atom_symbols: None,
+        bond_symbols: None,
+        break_ties: true,
+        special_chirality: include_chirality,
+        in_play: Some((atoms_in_play.to_vec(), bonds_in_play.to_vec())),
+    };
+    let mut ranker = Ranker::new(&inp);
+    for (i, a) in atoms.iter().enumerate() {
+        if atoms_in_play[i] {
+            let full_degree = inp.nbrs[i].len() as u32;
+            ranker.atoms[i].total_hs = a.total_num_hs + full_degree - ranker.atoms[i].degree;
+        }
     }
     ranker.rank()
 }
@@ -1201,6 +1271,7 @@ pub fn rdkit_rank_fragment_atoms_with_symbols(
         bond_symbols: Some(bond_symbols.to_vec()),
         break_ties: false,
         special_chirality: false,
+        in_play: None,
     };
     let mut ranker = Ranker::new(&inp);
     for (i, a) in atoms.iter().enumerate() {

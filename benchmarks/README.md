@@ -2,8 +2,8 @@
 
 This directory contains dated, reproducible measurement records. Numbers are
 scoped to each record's source or package, corpus, host, runtime and operation.
-The current release is **v1.0.40**. Its new RDKit/COSMolKit and seeded ETKDG
-results are source-build evidence in the first record below; published-package
+The current release is **v1.0.41**. Its new RDKit/COSMolKit 0.5 results and the
+v1.0.40 seeded ETKDG results are source-build evidence; published-package
 reruns remain separate. Older records stay scoped to their stated artifacts,
 comparators and hosts.
 
@@ -11,6 +11,7 @@ comparators and hosts.
 
 | Need | Start with |
 |---|---|
+| Review the RDKit/COSMolKit 0.5 comparison | [`2026-10-10-cosmolkit-050.md`](2026-10-10-cosmolkit-050.md): 161 operations on ChEMBL 5k and RDKit.js 10k, a 4,072-row unusual-SMILES stress corpus, and equal-work timings; source-built evidence against RDKit 2026.03.1 and COSMolKit 0.5.0rc15, not a published-package claim |
 | Review the second RDKit/COSMolKit parity round and seeded ETKDG work | [`2026-10-09-cosmolkit-parity-2.md`](2026-10-09-cosmolkit-parity-2.md): source-built comparison against RDKit 2026.03.1 and COSMolKit 0.3.0; seeded ETKDG coordinates match RDKit on 4,977/4,977 ChEMBL and 9,947/9,947 RDKit.js rows where RDKit succeeds on the recorded Linux x86-64 host; broad writer, reader, alignment, MolHash and non-tetrahedral checks; not yet published-package evidence |
 | Review the v1.0.38 RDKit/COSMolKit parity work | [`2026-10-08-cosmolkit-parity.md`](2026-10-08-cosmolkit-parity.md): named RDKit-compatible SMILES, InChI, fingerprint, stereoisomer, 2D-coordinate, MOL-block and force-field APIs; exact corpus denominators and remaining ETKDG/SMARTS-writer/PDB-writer boundaries; source-candidate evidence, not a published-package speed claim |
 | Review the #754/#734 batch-24 follow-ups | [`2026-10-08-754-734-followups-batch24.md`](2026-10-08-754-734-followups-batch24.md): published v1.0.38 baseline (SMARTS 310,000 exact); property-based SMIRKS fuzz lane (implicit-H differences 125 → 28, refusals 52 → 18 on 2,000 templates); SMARTS `[ca]`/`[na]`/`[cr6]` read as elements fixed; element-change charge and hypervalent ring S follow RDKit; comparator platform policy; upstream probes; the 8 autoconf differences decided |

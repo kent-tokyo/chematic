@@ -372,7 +372,7 @@ fn no_dative(mol: &Mol, a: usize) -> bool {
 }
 
 /// `cleanUpOrganometallics`.
-fn clean_up_organometallics(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+pub(crate) fn clean_up_organometallics(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
     // Only a single bond to a metal needs fixing. Without a metal the scan
     // below would only refresh property caches (non-strictly, which cannot
     // fail), and `sanitize_mol` recomputes every one of them next.
@@ -508,7 +508,7 @@ fn is_atom_conjug_cand(mol: &Mol, a: usize) -> bool {
 }
 
 /// `setConjugation`.
-fn set_conjugation(mol: &mut Mol) {
+pub(crate) fn set_conjugation(mol: &mut Mol) {
     for b in &mut mol.bonds {
         b.conjugated = b.aromatic;
     }
@@ -579,7 +579,7 @@ fn num_bonds_plus_lone_pairs(mol: &Mol, a: usize) -> i32 {
 }
 
 /// `setHybridization`.
-fn set_hybridization(mol: &mut Mol) {
+pub(crate) fn set_hybridization(mol: &mut Mol) {
     for a in 0..mol.atoms.len() {
         if mol.atoms[a].anum == 0 {
             mol.atoms[a].hybrid = Hybridization::Unspecified;
@@ -646,7 +646,7 @@ fn cleanup_chirality(mol: &mut Mol) {
 }
 
 /// `adjustHs`.
-fn adjust_hs(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+pub(crate) fn adjust_hs(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
     for a in 0..mol.atoms.len() {
         let orig_implicit = mol.implicit_valence(a);
         mol.calc_explicit_valence(a, false)?;

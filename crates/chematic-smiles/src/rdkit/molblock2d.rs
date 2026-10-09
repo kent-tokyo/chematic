@@ -211,7 +211,7 @@ fn determine_bond_wedge_state(mol: &Mol, bid: usize, from: usize, xy: &[[f64; 2]
 }
 
 /// `Chirality::detail::isBondPotentialStereoBond`.
-fn is_bond_potential_stereo_bond(mol: &Mol, b: usize) -> bool {
+pub(crate) fn is_bond_potential_stereo_bond(mol: &Mol, b: usize) -> bool {
     let bond = &mol.bonds[b];
     if bond.bt != BondType::Double {
         return false;

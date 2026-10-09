@@ -2,7 +2,7 @@
 
 CheMatic is not a drop-in RDKit replacement. Choose a declared operation
 profile, preserve unsupported inputs, and compare results on your own data
-before changing a production workflow. The current release is **v1.0.40**;
+before changing a production workflow. The current release is **v1.0.41**;
 the latest published-package comparison packet is pinned to **v1.0.30**.
 
 For runnable calls, see the [RDKit cheat sheet](rdkit_cheatsheet.md). For
@@ -22,6 +22,7 @@ operation-level measurement and unsupported states, see the
 | Similarity | `DataStructs.TanimotoSimilarity(a, b)` | `chematic.tanimoto(a, b)` | Use fingerprints from the same declared profile. |
 | 2D depiction | `rdMolDraw2D.MolDraw2DSVG` | `mol._repr_svg_()`; Rust `chematic_depict::depict_svg` | SVG supported; PNG requires the optional feature. |
 | Reactions | `AllChem.ReactionFromSmarts(...).RunReactants(...)` | `chematic.run_smirks(...)` | Bounded template application, not full SMIRKS parity. Reactant templates are SMARTS queries (`X`, `D`, `;`, `,`, `!`, `$()`); product templates follow RDKit's product semantics (query-only features dropped, element changes applied, unspelled charge and H kept from the reactant) and products must pass RDKit's sanitize valence rules. Canonical SMILES spelling differs from RDKit's; compare by InChIKey or re-canonicalize. |
+| Tautomers | `rdMolStandardize.TautomerEnumerator` | `mol.rdkit_canonical_tautomer()`, `mol.rdkit_tautomers()` | Named RDKit 2026.03.1-compatible profile; preserve refusals and compare on your corpus. |
 | MCS | `rdFMCS.FindMCS(mols)` | `chematic.find_mcs(...)` / `find_mcs_checked(...)` | Check timeout separately from no match. |
 | Batch processing | Python loops / `BulkTanimotoSimilarity` | `chematic.bulk.*`, `descriptors_df(...)` | Preserve original input index and all failure outcomes. |
 | Browser | `@rdkit/rdkit` | `@kent-tokyo/chematic` | Compare the published packages on the same operation and host. |

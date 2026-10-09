@@ -26,13 +26,13 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.40 范围
+### v1.0.41 范围
 
-v1.0.40 增加了与 RDKit 2026.03.1 对齐的 writer、reader、MolHash、alignment、
-立体异构体、非四面体立体化学和固定随机种子的 ETKDGv3 API。在记录的 Linux
-x86-64 source build 中，RDKit 成功的 4,977 个 ChEMBL 和 9,947 个 RDKit.js
-样本全部得到相同坐标；其他平台使用明确的数值容差。该结果不代表所有已发布
-v1.0.40 artifact 已完成重新测量。详情见
+v1.0.41 扩展了与 RDKit 2026.03.1 对齐的 API，加入互变异构体枚举、CXSMILES、
+随机和片段 SMILES、距离矩阵、稀疏指纹、化学问题检测和反应 writer。在记录的
+source 比较中，ChEMBL 5k 和 RDKit.js 10k 的 161 个项目均不低于 COSMolKit
+0.5.0rc15 与 RDKit 的一致数。另一个 4,072 条 stress corpus 中，native canonical
+SMILES 往返仍有一个项目较弱。该结果不代表所有已发布 v1.0.41 artifact 已完成重新测量。详情见
 [验证报告](docs/validation.md)，变更见 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用

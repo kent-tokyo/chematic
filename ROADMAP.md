@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-09. Release line: **v1.0.39**. Release-source and
+> Updated 2026-10-10. Release line: **v1.0.41**. Release-source and
 > published-package results are kept separate.
 
 CheMatic prioritizes a safe, typed, local-first chemistry kernel for Rust,
@@ -11,6 +11,7 @@ boundaries, and reproducible evidence take priority over feature-count races.
 
 | Gate | Current evidence | Next exit |
 |---|---|---|
+| P0.1 RDKit/COSMolKit source surfaces | The v1.0.41 source record covers 161 operations on ChEMBL 5k and RDKit.js 10k; chematic matches RDKit at least as often as COSMolKit 0.5.0rc15 on every operation. The 4,072-row stress corpus retains one weaker native canonical-SMILES round trip. | Rerun the named public artifacts; do not relabel source evidence as package evidence. |
 | P0.1 outputs | Published v1.0.30 artifact audit covers 10k chemistry, 310k SMARTS, 57 reactions and 63 Python/Rust operations. HBA is 5,000/5,000 on its declared lane. | Retain 200 SMARTS differences, five CIP abstentions and four npm gaps as open; see [acceptance policy](benchmarks/2026-10-03-v1030-published-p0-acceptance-policy.md). |
 | P0.2 speed | Published Python: 20 exact-output operations pass paired-interval gates on one host; three-browser Morgan has a separate scoped result. | Equal-work and memory lanes on more artifacts/corpora; see [validation](docs/validation.md). |
 | P1 reactions | Published v1.0.34 PyPI Linux wheel, npm package and crates.io crate: 80 exact graph/origin/map, 3 jointly invalid, no typed unsupported (v1.0.30: 73/83). | Rerun the macOS and Windows wheels; refusals are not matches. |

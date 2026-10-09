@@ -1015,6 +1015,11 @@ enum ParityShortcut {
 /// explicit representation is kept ([`unchanged_without_kekulization_with`]).
 fn parity_shortcut(mol: &Molecule) -> ParityShortcut {
     *mol.derived(chematic_core::DerivedSlot::RdkitParityShortcut, || {
+        // Molecules whose view the RDKit-model hook may correct take the
+        // full path, where the hook runs.
+        if crate::rdkit_model_hook::hook_for(mol).is_some() {
+            return ParityShortcut::Full;
+        }
         // RDKit's sanitization rewrites some graphs (perchlorate,
         // organometallic dative bonds); the view is then never `mol`.
         if crate::rdkit_cleanup::rdkit_sanitize_cleanup_needed(mol) {
@@ -1824,6 +1829,38 @@ pub fn with_rdkit_parity_view<R>(
 }
 
 fn apply_aromaticity_rdkit_parity_uncached(mol: &Molecule) -> Result<Molecule, AromaticityError> {
+    // The gate flags only molecules whose (memoized) shortcut is `Full`.
+    let hook = if parity_shortcut(mol) == ParityShortcut::Full {
+        crate::rdkit_model_hook::hook_for(mol)
+    } else {
+        None
+    };
+    let Some(hook) = hook else {
+        return apply_aromaticity_rdkit_parity_parity_only(mol);
+    };
+    let view = apply_aromaticity_rdkit_parity_parity_only(mol);
+    let base = match &view {
+        Ok(v) => v,
+        Err(_) => mol,
+    };
+    match hook(mol, base) {
+        Some(corrected) => {
+            crate::rdkit_sssr_order::seed_no_further_dative_bonds(&corrected);
+            Ok(corrected)
+        }
+        None => view,
+    }
+}
+
+/// The RDKit-parity view without the RDKit-model hook (diagnostics).
+#[doc(hidden)]
+pub fn aromaticity_rdkit_parity_only(mol: &Molecule) -> Result<Molecule, AromaticityError> {
+    apply_aromaticity_rdkit_parity_parity_only(mol)
+}
+
+fn apply_aromaticity_rdkit_parity_parity_only(
+    mol: &Molecule,
+) -> Result<Molecule, AromaticityError> {
     if let Some(cleaned) = crate::rdkit_cleanup::rdkit_sanitize_cleanup(mol) {
         // The view of RDKit's sanitized graph; its ring data is its own.
         let view = apply_aromaticity_rdkit_parity_unseeded(&cleaned)?;

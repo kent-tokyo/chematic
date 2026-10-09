@@ -109,6 +109,100 @@ class Mol:
         unsupported inputs."""
         ...
 
+    def rdkit_cx_smiles(
+        self,
+        *,
+        isomeric: bool = True,
+        kekule: bool = False,
+        canonical: bool = True,
+        all_bonds_explicit: bool = False,
+        all_hs_explicit: bool = False,
+        rooted_at_atom: int | None = None,
+    ) -> str:
+        """``Chem.MolToCXSmiles(m, params)`` (RDKit 2026.03.1, all fields)
+        for the molecule RDKit reads from the same SMILES."""
+        ...
+    def rdkit_random_smiles(
+        self,
+        n: int,
+        random_seed: int = 0,
+        *,
+        isomeric: bool = True,
+        kekule: bool = False,
+        all_bonds_explicit: bool = False,
+        all_hs_explicit: bool = False,
+    ) -> list[str]:
+        """``Chem.MolToRandomSmilesVect(m, n, randomSeed, ...)`` (RDKit
+        2026.03.1), bit for bit."""
+        ...
+    def rdkit_fragment_smiles(
+        self,
+        atoms: list[int],
+        bonds: list[int] | None = None,
+        isomeric: bool = True,
+        kekule: bool = False,
+        canonical: bool = True,
+        all_bonds_explicit: bool = False,
+        all_hs_explicit: bool = False,
+        rooted_at_atom: int | None = None,
+    ) -> str:
+        """``Chem.MolFragmentToSmiles(m, atomsToUse, bondsToUse, ...)``
+        (RDKit 2026.03.1) in RDKit's atom and bond numbering."""
+        ...
+    def rdkit_distance_matrix(
+        self, use_bo: bool = False, use_atom_wts: bool = False
+    ) -> list[list[float]]:
+        """``Chem.GetDistanceMatrix(m, useBO, useAtomWts)`` (RDKit 2026.03.1)."""
+        ...
+    def rdkit_distance_matrix_3d(
+        self, coords: list[list[float]], use_atom_wts: bool = False
+    ) -> list[list[float]]:
+        """``Chem.Get3DDistanceMatrix(m, useAtomWts)`` for ``coords``."""
+        ...
+    def rdkit_morgan_sparse_counts(
+        self, radius: int = 2, include_chirality: bool = False
+    ) -> dict[int, int]:
+        """``GetMorganGenerator(radius).GetSparseCountFingerprint(m)`` elements."""
+        ...
+    def rdkit_atom_pair_sparse_counts(self) -> dict[int, int]:
+        """``GetAtomPairGenerator().GetSparseCountFingerprint(m)`` elements."""
+        ...
+    def rdkit_torsion_sparse_counts(self) -> dict[int, int]:
+        """``GetTopologicalTorsionGenerator().GetSparseCountFingerprint(m)`` elements."""
+        ...
+    def rdkit_legacy_torsion_counts(self) -> dict[int, int]:
+        """``rdMolDescriptors.GetTopologicalTorsionFingerprint(m)`` elements."""
+        ...
+    def rdkit_chemistry_problems(self) -> list[tuple[str, list[int]]]:
+        """``Chem.DetectChemistryProblems(Chem.MolFromSmiles(s))`` (sanitized)."""
+        ...
+    def rdkit_num_atoms(self) -> int:
+        """``Chem.MolFromSmiles(s).GetNumAtoms()``."""
+        ...
+    def rdkit_canonical_tautomer(self) -> str:
+        """``Chem.MolToSmiles(rdMolStandardize.TautomerEnumerator().Canonicalize(m))``
+        (RDKit 2026.03.1, default parameters) for the molecule RDKit reads
+        from the same SMILES. Raises ``ValueError`` for unsupported inputs."""
+        ...
+
+    def rdkit_tautomers(self) -> list[str]:
+        """``sorted(Chem.MolToSmiles(t) for t in
+        rdMolStandardize.TautomerEnumerator().Enumerate(m))`` (RDKit
+        2026.03.1, default parameters). Raises ``ValueError`` for unsupported
+        inputs."""
+        ...
+
+    def rdkit_tautomer_status(self) -> str:
+        """``TautomerEnumeratorResult.status`` of RDKit's enumeration:
+        ``"Completed"``, ``"MaxTautomersReached"``,
+        ``"MaxTransformsReached"`` or ``"Canceled"``."""
+        ...
+
+    def rdkit_tautomer_score(self) -> int:
+        """``rdMolStandardize.TautomerEnumerator.ScoreTautomer(m)`` (RDKit
+        2026.03.1). Raises ``ValueError`` for unsupported inputs."""
+        ...
+
     def rdkit_mol_hash(self, function: str, use_cx_smiles: bool = False) -> str:
         """``rdMolHash.MolHash(m, function, useCXSmiles)`` (RDKit 2026.03.1)
         for the molecule RDKit reads from the same SMILES. ``function`` is a
@@ -887,6 +981,16 @@ class Mol:
         """
         ...
 
+    def rdkit_parsed(self) -> Mol:
+        """``Chem.MolFromSmiles(s)`` (RDKit 2026.03.1) as a chematic molecule:
+        RDKit's atom order and hydrogen removal, aromaticity, hydrogen counts
+        and kept stereo tags."""
+        ...
+    def rdkit_add_hydrogens(self) -> Mol:
+        """``Chem.AddHs(Chem.MolFromSmiles(s))`` (RDKit 2026.03.1): SMILES
+        ``[H]`` atoms removed as RDKit's reader removes them, then all
+        hydrogens added after the heavy atoms."""
+        ...
     def add_hydrogens(self) -> Mol:
         """Return a copy with all implicit hydrogens made explicit."""
         ...
@@ -1909,6 +2013,11 @@ class Mol:
     @property
     def chi1v(self) -> float:
         """First-order valence connectivity index χ¹ᵥ."""
+        ...
+
+    @property
+    def labute_asa(self) -> float:
+        """Labute approximate surface area (RDKit ``CalcLabuteASA``)."""
         ...
 
     @property
@@ -3350,6 +3459,9 @@ def run_smirks_checked(
     where RDKit 2026.03.6 and CheMatic have different semantics. Status is one
     of ``products``, ``no_match``, ``partial_products``, ``typed_refusal`` or
     ``typed_unsupported``. ``partial_products`` is not a parity claim.
+    With ``rdkit_compat=True``, ``rejected_products`` holds the
+    valence-rejected product sets as RDKit returns them, as
+    ``[[(mol, sanitizable), ...], ...]``.
     """
     ...
 
@@ -4173,4 +4285,17 @@ def screen(
         df = pd.DataFrame(results)
         passing = df[df.overall_pass]
     """
+    ...
+
+def rdkit_detect_chemistry_problems(smiles: str) -> list[tuple[str, list[int]]]:
+    """``Chem.DetectChemistryProblems(Chem.MolFromSmiles(smiles, sanitize=False))``
+    (RDKit 2026.03.1) as ``[(type, atom_indices)]``."""
+    ...
+
+def rdkit_reaction_to_smarts(reaction_smarts: str) -> str:
+    """``ReactionToSmarts(ReactionFromSmarts(s))`` (RDKit 2026.03.1)."""
+    ...
+
+def rdkit_smarts_to_smarts(smarts: str) -> str:
+    """``Chem.MolToSmarts(Chem.MolFromSmarts(s))`` (RDKit 2026.03.1)."""
     ...

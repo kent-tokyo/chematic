@@ -1,8 +1,8 @@
 # Open-work ledger
 
-Updated 2026-10-09 for the **v1.0.40 release line**. The seeded ETKDG and
-expanded RDKit/COSMolKit comparison are source-build evidence; v1.0.40
-release channels and chemistry artifacts must be verified after publication
+Updated 2026-10-10 for the **v1.0.41 release line**. The expanded RDKit/COSMolKit
+0.5 comparison is source-build evidence; v1.0.40 release channels are verified,
+while v1.0.41 channels and chemistry artifacts must be verified after publication
 (macOS and Windows wheels: dispatch the repaired
 `published-wheel-chemistry-gates.yml`).
 Published chemistry/benchmark evidence is versioned:

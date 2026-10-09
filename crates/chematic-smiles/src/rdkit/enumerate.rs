@@ -8,7 +8,7 @@
 //! canonical SMILES.
 
 use super::findstereo::{NOATOM, Specified, StereoType, find_potential_stereo};
-use super::mol::{ChiralTag, Mol};
+use super::mol::{BondStereo, ChiralTag, Mol};
 use super::pyrandom::{PyRandom, hash_pair_tuple};
 use super::stereo::legacy_stereo_perception;
 use super::write::mol_to_smiles;
@@ -30,8 +30,31 @@ fn assign(
         };
         m.atoms[a].cip_code = None;
     }
+    // `_BondFlipper.flip`: STEREOCIS / STEREOTRANS relative to the stereo
+    // atoms; then `Chem.SetDoubleBondNeighborDirections(isomer)`, whose
+    // directions (one per single bond, so conjugated double bonds sharing
+    // one can override each other) are what the perception below reads.
     for (j, &(b, sa, sb)) in bonds.iter().enumerate() {
-        m.bonds[b].requested = Some((sa, sb, !bits(atoms.len() + j)));
+        m.bonds[b].stereo = if bits(atoms.len() + j) {
+            BondStereo::Z
+        } else {
+            BondStereo::E
+        };
+        m.bonds[b].stereo_atoms = vec![sa, sb];
+    }
+    if !bonds.is_empty()
+        && super::mol2_read::set_double_bond_neighbor_directions(&mut m, None).is_err()
+    {
+        // Fall back to the requested configurations.
+        let mut fallback = base.clone();
+        for (j, &(b, sa, sb)) in bonds.iter().enumerate() {
+            fallback.bonds[b].requested = Some((sa, sb, !bits(atoms.len() + j)));
+        }
+        for (i, &a) in atoms.iter().enumerate() {
+            fallback.atoms[a].chiral = m.atoms[a].chiral;
+            let _ = i;
+        }
+        m = fallback;
     }
     for a in &mut m.atoms {
         a.cip_code = None;

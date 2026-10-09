@@ -144,6 +144,9 @@ pub fn rdkit_morgan_fingerprint(
     mol: &Molecule,
     config: &RdkitMorganConfig,
 ) -> Result<RdkitMorganFingerprint, RdkitMorganError> {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return rdkit_morgan_fingerprint(&h, config);
+    }
     reject_known_rdkit_coordination_sanitization_gap(mol)?;
     let view = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol);
     let aromatized: &Molecule = match view.as_ref() {
@@ -178,7 +181,15 @@ pub fn rdkit_morgan_fingerprint(
     // stereo from its legacy stereo perception (2026.03's default); the
     // port of it gives them for the molecule as RDKit parses it. Where the
     // port declines, fall back to chematic's tags and accurate CIP labels.
-    let chirality = if config.include_chirality {
+    let chirality = if config.include_chirality && !has_stereo_input(mol) {
+        // Without chiral tags or directional bonds RDKit's legacy perception
+        // tags nothing and leaves every double bond STEREONONE.
+        let n = aromatized.atom_count();
+        Some(MorganChirality {
+            tagged: vec![false; n],
+            code: vec![1; n],
+        })
+    } else if config.include_chirality {
         match chematic_smiles::rdkit_legacy_stereo(mol) {
             Ok(stereo) if stereo.atom_tagged.len() == aromatized.atom_count() => {
                 for (b, &st) in stereo.bond_stereo.iter().enumerate() {
@@ -276,6 +287,16 @@ pub fn rdkit_morgan_count_simulation(
         }
     }
     Ok(fp)
+}
+
+/// Whether `mol` carries any stereo specification: a chiral tag or a
+/// directional (`/`, `\\`) bond.
+fn has_stereo_input(mol: &Molecule) -> bool {
+    mol.atoms()
+        .any(|(_, a)| a.chirality != chematic_core::Chirality::None)
+        || mol
+            .bonds()
+            .any(|(_, b)| matches!(b.order, BondOrder::Up | BondOrder::Down))
 }
 
 #[cfg(test)]

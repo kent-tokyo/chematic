@@ -256,6 +256,9 @@ fn maccs_queries() -> &'static [Option<chematic_smarts::QueryMolecule>] {
 /// For count-based keys (14 total), the bit is set only when the match count
 /// exceeds the threshold stored in `MACCS_SMARTS`.
 pub fn maccs(mol: &Molecule) -> BitVec2048 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return maccs(&h);
+    }
     // Match on the RDKit-perceived aromatic view (RDKit computes MACCS on a
     // sanitized molecule), so Kekule and aromatic spellings agree.
     chematic_perception::with_rdkit_parity_view(mol, |view| maccs_on(view.unwrap_or(mol)))

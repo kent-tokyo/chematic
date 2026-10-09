@@ -57,6 +57,8 @@ use crate::rdkit_torsion::{CODE_SIZE, atom_code};
 /// `AtomPairArguments`: `minDistance = 1`, `maxDistance = maxPathLen - 1 = 30`
 /// (`numPathBits = 5` => `maxPathLen = (1 << 5) - 1 = 31`). Pairs outside this
 /// range are skipped entirely, not clamped.
+/// `numPathBits`.
+const NUM_PATH_BITS: u32 = 5;
 const MIN_DISTANCE: u32 = 1;
 const MAX_DISTANCE: u32 = 30;
 
@@ -102,6 +104,10 @@ fn all_pairs_dist(mol: &Molecule) -> Vec<Vec<Option<u32>>> {
 /// this module's own doc comment for the corpus measurement confirming it's
 /// the *only* remaining gap here.
 pub fn rdkit_atom_pair_fp(mol: &Molecule) -> BitVec2048 {
+    chematic_smiles::with_rdkit_model_molecule(mol, rdkit_atom_pair_fp_impl)
+}
+
+fn rdkit_atom_pair_fp_impl(mol: &Molecule) -> BitVec2048 {
     // RDKit fingerprints sanitized molecules, i.e. after aromaticity
     // perception; Kekule input must not see a different graph than the
     // equivalent aromatic spelling. The perceived view is memoized on `mol`.
@@ -114,6 +120,10 @@ pub fn rdkit_atom_pair_fp(mol: &Molecule) -> BitVec2048 {
 /// (`rdMolDescriptors.GetHashedAtomPairFingerprint(mol, nBits)`): the
 /// nonzero `(bucket, count)` elements, sorted by bucket.
 pub fn rdkit_atom_pair_counts(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
+    chematic_smiles::with_rdkit_model_molecule(mol, |m| rdkit_atom_pair_counts_impl(m, n_bits))
+}
+
+fn rdkit_atom_pair_counts_impl(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
     let n_bits = n_bits.max(1);
     chematic_perception::with_rdkit_parity_view(mol, |view| {
         let counts = rdkit_atom_pair_bucket_counts(view.unwrap_or(mol), n_bits);
@@ -123,6 +133,36 @@ pub fn rdkit_atom_pair_counts(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
             .filter(|&(_, c)| c > 0)
             .map(|(b, c)| (b as u32, c))
             .collect()
+    })
+}
+
+/// RDKit's unhashed atom-pair count fingerprint
+/// (`rdFingerprintGenerator.GetAtomPairGenerator()
+/// .GetSparseCountFingerprint(mol)`, distances 1..=30, no chirality):
+/// `getAtomPairCode(min code, max code, distance)` per pair, the nonzero
+/// `(code, count)` elements sorted by code.
+pub fn rdkit_atom_pair_sparse_counts(mol: &Molecule) -> Vec<(u32, u32)> {
+    chematic_perception::with_rdkit_parity_view(mol, |view| {
+        let mol = view.unwrap_or(mol);
+        let n = mol.atom_count();
+        let code_limit = (1u32 << CODE_SIZE) - 1;
+        let codes: Vec<u32> = (0..n)
+            .map(|i| atom_code(mol, AtomIdx(i as u32), 0) % code_limit)
+            .collect();
+        let dist = all_pairs_dist(mol);
+        let mut counts: std::collections::BTreeMap<u32, u32> = std::collections::BTreeMap::new();
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let Some(d) = dist[i][j] else { continue };
+                if !(MIN_DISTANCE..=MAX_DISTANCE).contains(&d) {
+                    continue;
+                }
+                let (lo, hi) = (codes[i].min(codes[j]), codes[i].max(codes[j]));
+                let code = d | (lo << NUM_PATH_BITS) | (hi << (NUM_PATH_BITS + CODE_SIZE));
+                *counts.entry(code).or_insert(0) += 1;
+            }
+        }
+        counts.into_iter().collect()
     })
 }
 

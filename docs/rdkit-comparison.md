@@ -10,17 +10,18 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.0.40 release** adds named RDKit-compatible writers, readers, MolHash,
-alignment, stereoisomer enumeration, non-tetrahedral stereo, and fixed-seed
-ETKDGv3 paths. On the recorded Linux x86-64 source lane, ETKDG coordinates
-match RDKit 2026.03.1 on all 4,977 ChEMBL and 9,947 RDKit.js rows where RDKit
-succeeds. This is source-build evidence, not a universal or published-package
-parity claim. The latest
+The **v1.0.41 release** expands the named RDKit 2026.03.1-compatible surface
+with tautomer, writer, matrix, sparse-fingerprint, chemistry-problem and
+reaction APIs. In the recorded source comparison, chematic matches RDKit at
+least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and
+RDKit.js 10k; the separate stress corpus retains one weaker native canonical
+SMILES round-trip result. This is source-build evidence, not a universal or
+published-package parity claim. The latest
 published-package chemistry and speed comparison packet is pinned to
 **v1.0.30** against RDKit 2026.03.6. Later dated records cover v1.0.36
-and v1.0.37 packages plus v1.0.38-v1.0.40 source evidence. v1.0.39 release
-channels are verified; v1.0.40 channel verification and package-output reruns
-remain separate publication work.
+and v1.0.37 packages plus later source evidence. v1.0.40 release channels are
+verified; v1.0.41 channel verification and package-output reruns remain
+separate publication work.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|

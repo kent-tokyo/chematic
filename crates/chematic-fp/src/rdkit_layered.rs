@@ -265,23 +265,36 @@ fn compute_ring_info(mol: &Molecule) -> RingInfo {
 /// See the module doc comment for the full algorithm and its verification
 /// status.
 pub fn rdkit_layered_fp(mol: &Molecule) -> BitVec2048 {
+    chematic_smiles::with_rdkit_model_molecule(mol, rdkit_layered_fp_impl)
+}
+
+fn rdkit_layered_fp_impl(mol: &Molecule) -> BitVec2048 {
+    // Where chematic's own aromaticity may disagree with RDKit's, read the
+    // RDKit-corrected parity view (aromatic flags and bond orders as RDKit
+    // sanitizes them) instead of re-perceiving.
+    if chematic_perception::rdkit_model_may_disagree(mol)
+        && let Ok(view) = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol).as_ref()
+    {
+        return rdkit_layered_fp_input(&crate::rdkit_fp_view(view), true);
+    }
     // RDKit fingerprints its sanitized graph: perchlorate as
     // `[Cl+3]([O-])3O`, organometallic dative bonds
     // ([`chematic_perception::rdkit_sanitize_cleanup`]).
     if let Some(cleaned) = chematic_perception::rdkit_sanitize_cleanup(mol) {
-        return rdkit_layered_fp_input(&cleaned);
+        return rdkit_layered_fp_input(&cleaned, false);
     }
-    rdkit_layered_fp_input(mol)
+    rdkit_layered_fp_input(mol, false)
 }
 
 /// [`rdkit_layered_fp`] on the graph RDKit sees.
-fn rdkit_layered_fp_input(mol: &Molecule) -> BitVec2048 {
+fn rdkit_layered_fp_input(mol: &Molecule, trust_view: bool) -> BitVec2048 {
     let mut fp = BitVec2048::new();
     if mol.atom_count() == 0 {
         return fp;
     }
 
-    let has_literal_aromatic_bond = mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic);
+    let has_literal_aromatic_bond =
+        trust_view || mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic);
     let aromaticity = if has_literal_aromatic_bond {
         None
     } else {
@@ -289,7 +302,7 @@ fn rdkit_layered_fp_input(mol: &Molecule) -> BitVec2048 {
     };
 
     let anums: Vec<u32> = (0..mol.atom_count())
-        .map(|i| mol.atom(AtomIdx(i as u32)).element.atomic_number() as u32)
+        .map(|i| crate::rdkit_atomic_num(mol, AtomIdx(i as u32)))
         .collect();
     let atom_aromatic: Vec<bool> = (0..mol.atom_count())
         .map(|i| is_atom_aromatic(mol, aromaticity.as_ref(), AtomIdx(i as u32)))

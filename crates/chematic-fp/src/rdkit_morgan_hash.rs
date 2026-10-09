@@ -136,7 +136,12 @@ pub(crate) fn hash_vec(values: &[u32]) -> u32 {
 fn connectivity_invariant(mol: &Molecule, idx: AtomIdx, ring_atoms: &[bool]) -> u32 {
     let atom = mol.atom(idx);
     let mut components: SmallVec<[u32; 6]> = SmallVec::new();
-    components.push(atom.element.atomic_number() as u32);
+    // Dummy atoms have atomic number 0 (chematic stores them as C).
+    components.push(if atom.wildcard {
+        0
+    } else {
+        atom.element.atomic_number() as u32
+    });
     components.push(rdkit_total_degree(mol, idx) as u32);
     components.push(rdkit_total_h_count(mol, idx) as u32);
     components.push((atom.charge as i32) as u32);
