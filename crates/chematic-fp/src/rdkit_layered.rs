@@ -302,7 +302,7 @@ fn rdkit_layered_fp_input(mol: &Molecule, trust_view: bool) -> BitVec2048 {
     };
 
     let anums: Vec<u32> = (0..mol.atom_count())
-        .map(|i| mol.atom(AtomIdx(i as u32)).element.atomic_number() as u32)
+        .map(|i| crate::rdkit_atomic_num(mol, AtomIdx(i as u32)))
         .collect();
     let atom_aromatic: Vec<bool> = (0..mol.atom_count())
         .map(|i| is_atom_aromatic(mol, aromaticity.as_ref(), AtomIdx(i as u32)))

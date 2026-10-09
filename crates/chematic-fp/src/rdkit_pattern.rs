@@ -253,7 +253,7 @@ fn rdkit_pattern_fp_input(mol: &Molecule, trust_view: bool) -> BitVec2048 {
         let _ = for_each_embedding(query, mol, &cfg, |m| {
             let mut bit_id = p_idx;
             for &t in m {
-                let an = mol.atom(AtomIdx(t)).element.atomic_number() as u32;
+                let an = crate::rdkit_atomic_num(mol, AtomIdx(t));
                 bit_id = hash_combine(bit_id, an);
             }
             for qb in &query.bonds {
