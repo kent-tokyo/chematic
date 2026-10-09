@@ -128,6 +128,29 @@ def to_rdkit(product: dict):
     return rw.GetMol()
 
 
+def classify(want: set, raw_count: int, raw: list, got_pair, max_products: int) -> str:
+    """The outcome of one (rule, reactant, hydrogen mode); see the module doc."""
+    got, got_single = got_pair if got_pair is not None else (None, None)
+    if got is None:
+        return "chematic_refused" if want else "both_none_refused"
+    if not want and not got:
+        return "both_none"
+    if want == got:
+        return "exact"
+    if raw_count < max_products and got_single == (
+        {k for k in map(single_sanitize_key, raw) if k is not None}
+    ):
+        return "rdkit_resanitize_fails_same_products"
+    if raw_count >= max_products and want <= got:
+        # RDKit stopped at max_products (H-atom mapping permutations), so
+        # its set is a subset.
+        return "rdkit_truncated_subset"
+    if raw_count and not want:
+        # Every raw RDKit product fails RDKit's own sanitize.
+        return "rdkit_raw_unsanitizable"
+    return "differ"
+
+
 class InProcess:
     """chematic imported into this interpreter."""
 
@@ -290,26 +313,8 @@ def main() -> int:
                 for mode, rmol in (("implicit", mol), ("explicit_h", molh)):
                     want, raw_count, raw = rdkit_set(rxn, rmol, args.max_products)
                     status, got_pair, detail = chematic_set(chematic, rule["smirks"], Chem.MolToSmiles(rmol))
-                    got, got_single = got_pair if got_pair is not None else (None, None)
-                    if got is None:
-                        outcome = "chematic_refused" if want else "both_none_refused"
-                    elif not want and not got:
-                        outcome = "both_none"
-                    elif want == got:
-                        outcome = "exact"
-                    elif raw_count < args.max_products and got_single == (
-                        {k for k in map(single_sanitize_key, raw) if k is not None}
-                    ):
-                        outcome = "rdkit_resanitize_fails_same_products"
-                    elif raw_count >= args.max_products and want <= got:
-                        # RDKit stopped at max_products (H-atom mapping
-                        # permutations), so its set is a subset.
-                        outcome = "rdkit_truncated_subset"
-                    elif raw_count and not want:
-                        # Every raw RDKit product fails RDKit's own sanitize.
-                        outcome = "rdkit_raw_unsanitizable"
-                    else:
-                        outcome = "differ"
+                    got = got_pair[0] if got_pair is not None else None
+                    outcome = classify(want, raw_count, raw, got_pair, args.max_products)
                     counts[f"{mode}:{outcome}"] += 1
                     stats[f"{mode}:{outcome}"] += 1
                     if outcome in {"differ", "chematic_refused", "rdkit_raw_unsanitizable",

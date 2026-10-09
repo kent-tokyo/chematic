@@ -14,56 +14,73 @@
       "chematic": "sssr",
       "class": "documented_profile",
       "note": "Native SSSR ring counts are kept; RDKit uses symmetrized rings.",
-      "roadmap_queue": 4
+      "roadmap_queue": 4,
+      "compatibility_option": false,
+      "decision": "No option. RDKit's symmetrized SSSR depends on atom order; the SMARTS profiles give RDKit's ring counts where they are order-independent (profile=\"2026.09.1\" all 310,000 cells; v1.0.38 the 2026.03.6 grid exactly), and native ring counts stay SSSR."
     },
     "smirks.colon_product_bond": {
       "rdkit": "aromatic_flag_set",
       "chematic": "UNKNOWN",
       "class": "policy_sanitized_views_agree",
       "note": "Both flag the atoms aromatic; outside a ring RDKit keeps the raw product, which fails its sanitize, and chematic drops it.",
-      "roadmap_queue": 3
+      "roadmap_queue": 3,
+      "compatibility_option": false,
+      "decision": "No option. RDKit's raw product fails its own SanitizeMol; returning it would hand out a molecule chematic cannot write or re-read. Sanitized views agree."
     },
     "smirks.fragmented_reactant": {
       "rdkit": "intermolecular_pair",
       "chematic": "rejected",
       "class": "adapter_difference",
       "note": "The RDKit adapter passes the molecule once per reactant template; chematic run_smirks with the same two reactants gives RDKit's COCO.",
-      "roadmap_queue": 3
+      "roadmap_queue": 3,
+      "compatibility_option": false,
+      "decision": "No option. An adapter difference: called with the same two reactants chematic gives RDKit's COCO."
     },
     "smirks.hcount_query_explicit_h": {
       "rdkit": "pin_adds_h",
       "chematic": "preserved",
       "class": "policy_implicit_h_equivalence",
       "note": "Explicit-H reactants give the implicit-H products (#734 item 5); every RDKit product here fails its own SanitizeMol.",
-      "roadmap_queue": 3
+      "roadmap_queue": 3,
+      "compatibility_option": false,
+      "decision": "No option. Explicit-H reactants give the implicit-H products (#734 item 5); RDKit's products here fail its own SanitizeMol."
     },
     "smirks.product_h_atom_added": {
       "rdkit": "h_dropped",
       "chematic": "UNKNOWN",
       "class": "policy_sanitized_views_agree",
       "note": "RDKit drops the added H atom and keeps CC[O-] raw; its sanitized product (CC[OH-]) is invalid, and chematic gives none.",
-      "roadmap_queue": 3
+      "roadmap_queue": 3,
+      "compatibility_option": false,
+      "decision": "No option. RDKit's sanitized product (CC[OH-]) is invalid; chematic gives none."
     },
     "smirks.product_h_pin": {
       "rdkit": "authoritative",
       "chematic": "UNKNOWN",
       "class": "policy_implicit_h_equivalence",
       "note": "Explicit-H reactants give the implicit-H products (#734 item 5); RDKit C[CH5] fails its own SanitizeMol.",
-      "roadmap_queue": 3
+      "roadmap_queue": 3,
+      "compatibility_option": false,
+      "decision": "No option. Implicit-H equivalence; RDKit's C[CH5] fails its own SanitizeMol."
     },
     "smirks.star_on_explicit_h": {
       "rdkit": "h_atoms_when_explicit",
       "chematic": "UNKNOWN",
       "class": "policy_implicit_h_equivalence",
       "note": "`*` edits heavy atoms of explicit-H reactants as in the implicit form (#734 item 5); every RDKit product here fails its own SanitizeMol.",
-      "roadmap_queue": 3
+      "roadmap_queue": 3,
+      "compatibility_option": false,
+      "decision": "No option. Implicit-H equivalence; every RDKit product fails its own SanitizeMol."
     },
     "smirks.valence_invalid_raw": {
       "rdkit": "kept_raw",
       "chematic": "dropped_at_apply",
       "class": "policy_sanitized_views_agree",
       "note": "RDKit returns an unsanitized product that fails its own SanitizeMol; chematic returns only sanitizable products.",
-      "roadmap_queue": 3
+      "roadmap_queue": 3,
+      "compatibility_option": false,
+      "decision": "No option. chematic returns only sanitizable products; run_smirks_checked reports the refused match as product_valence."
     }
-  }
+  },
+  "decisions_recorded": "2026-10-08, benchmarks/2026-10-08-754-734-followups-batch24.md"
 }

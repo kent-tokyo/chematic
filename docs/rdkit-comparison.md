@@ -10,14 +10,14 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.0.38 release** adds named RDKit-compatible SMILES, InChI,
-fingerprint, stereoisomer, 2D-coordinate, MOL-block and force-field APIs on
-top of the bounded reaction, E/Z, MOL-stereo, hybridization, MMFF94, CIP, and
-RDKit 2026.09.1 ring-profile work. The latest
+The **v1.0.39 release** retains the named RDKit-compatible APIs from v1.0.38
+and tightens RDKit-profile SMARTS/SMIRKS parsing, element replacement, and
+hypervalent aromatic product handling. It also adds a reproducible SMIRKS
+fuzz lane and cross-platform comparator policy. The latest
 published-package chemistry and speed comparison packet is pinned to
 **v1.0.30** against RDKit 2026.03.6. Later dated records cover v1.0.36
-and v1.0.37 packages plus v1.0.38 source; v1.0.38 still needs its own channel
-and package-output verification.
+and v1.0.37 packages plus published v1.0.38 and v1.0.39 source evidence;
+v1.0.39 still needs its own channel and package-output verification.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|

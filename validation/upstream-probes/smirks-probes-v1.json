@@ -1,0 +1,89 @@
+{
+ "schema": "chematic-upstream-probes/v1",
+ "for": "https://github.com/swamidasslab/xsmarts-autoconf",
+ "issue": "https://github.com/kent-tokyo/chematic/issues/754",
+ "rdkit": "2026.03.6",
+ "comparison": "RDKit RunReactants on the reactant (AddHs for hydrogens=explicit_h), each product set sanitized (SanitizeMol, RemoveHs) and written as canonical SMILES; unsanitizable sets dropped.",
+ "probes": [
+  {
+   "id": "smarts.lowercase_pair_is_aromatic_atom_plus_primitive",
+   "smirks": "[ca:1]>>[*:1]Cl",
+   "reactant": "Clc1ccccn1",
+   "hydrogens": "implicit",
+   "rdkit_sanitized_products": [
+    "Clc1ccc(Cl)nc1",
+    "Clc1cccc(Cl)n1",
+    "Clc1cccnc1Cl",
+    "Clc1ccnc(Cl)c1"
+   ],
+   "note": "`[ca]` is aromatic carbon AND aromatic (not calcium); likewise `[na]`, `[cr6]`. chematic <= 1.0.38 read Ca/Na/Cr and matched nothing."
+  },
+  {
+   "id": "smarts.lowercase_ring_size",
+   "smirks": "[cr6:1]>>[*:1]Cl",
+   "reactant": "Clc1ccccn1",
+   "hydrogens": "implicit",
+   "rdkit_sanitized_products": [
+    "Clc1ccc(Cl)nc1",
+    "Clc1cccc(Cl)n1",
+    "Clc1cccnc1Cl",
+    "Clc1ccnc(Cl)c1"
+   ],
+   "note": "`[cr6]` is aromatic carbon in a 6-ring, not chromium."
+  },
+  {
+   "id": "smirks.element_change_resets_charge",
+   "smirks": "[N:1]>>[S:1]",
+   "reactant": "C[N+](C)(C)C",
+   "hydrogens": "implicit",
+   "rdkit_sanitized_products": [
+    "CS(C)(C)C"
+   ],
+   "note": "An element change takes the template atom's charge (0), not the matched atom's: CS(C)(C)C."
+  },
+  {
+   "id": "smirks.element_change_recomputes_h",
+   "smirks": "[N:1]>>[S:1]",
+   "reactant": "CN",
+   "hydrogens": "implicit",
+   "rdkit_sanitized_products": [
+    "CS"
+   ],
+   "note": "H count re-derived for the new element: CS."
+  },
+  {
+   "id": "smirks.element_change_keeps_aromatic_flag",
+   "smirks": "[#6&D3+0:1]>>[S:1]",
+   "reactant": "Clc1ccccn1",
+   "hydrogens": "implicit",
+   "rdkit_sanitized_products": [
+    "ClS1=CC=CC=N1"
+   ],
+   "note": "The rewritten ring atom keeps the reactant's aromatic flag; sanitize kekulizes it as hypervalent S: ClS1=CC=CC=N1."
+  },
+  {
+   "id": "smirks.explicit_h_element_change",
+   "smirks": "[#6:1]([#6:2]):[cH1:3]>>[*:1](-[S:2])-[*:3]",
+   "reactant": "Clc1ccccn1",
+   "hydrogens": "explicit_h",
+   "rdkit_sanitized_products": [
+    "ClC1=CC[SH2]C=N1",
+    "ClC1=C[SH2]CC=N1",
+    "ClC1=NC=CC[SH2]1",
+    "ClC1=N[SH2]CC=C1",
+    "Cl[SH]1CC=CC=N1"
+   ],
+   "note": "With AddHs the H atom stays on the new S and RDKit gives [SH2]; the implicit-H form gives the H-free thioether."
+  },
+  {
+   "id": "sanitize.kekulize_depends_on_atom_order",
+   "smirks": "[cr6+0:1]:[#6:2]:[c:3]-[#6:4]>>[*:1]:[C+:2]:[*:3]-[*:4]",
+   "reactant": "Cc1ccccc1",
+   "hydrogens": "implicit",
+   "rdkit_sanitized_products": [
+    "CC1=CC=CC=[C+]1"
+   ],
+   "note": "The raw product is one graph; RDKit's kekulization of the ring cation depends on atom order ([c+]1ccccc1C vs Cc1[c+]cccc1 give different Kekule structures)."
+  }
+ ]
+}

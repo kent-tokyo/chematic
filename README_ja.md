@@ -26,13 +26,13 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.0.38 の対応範囲
+### v1.0.39 の対応範囲
 
-v1.0.38では、SMILES、InChI、指紋、立体異性体列挙、2D座標、MOLブロック、
-MMFF94／MMFF94s／UFFについて、明示的なRDKit互換APIを追加しました。記述子の
-定義も文書化した互換プロファイルへ揃え、入力境界、立体を守る3D再試行、混雑した
-2Dレイアウトを改善しています。日付付きsource測定や旧版公開物の測定と、v1.0.38
-公開物の確認は区別しています。詳しくは
+v1.0.39では、loopbackを既定とするMCP Streamable HTTPを追加し、RDKit互換
+プロファイルのSMARTS／SMIRKS解析、元素置換、芳香族生成物の高原子価処理を
+改善しました。SMIRKSのproperty-based fuzzing、プラットフォーム別の比較条件、
+上流提出用プローブも追加しています。v1.0.38公開物の測定は、v1.0.39公開物を
+再測定するまでhistoricalとして区別します。詳しくは
 [検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方

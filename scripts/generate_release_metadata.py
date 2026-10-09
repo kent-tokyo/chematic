@@ -96,7 +96,7 @@ def main() -> int:
         },
         "mcp": {
             "tool_count": 20,
-            "transport": ["stdio"],
+            "transport": ["stdio", "streamable-http"],
             "network_enabled_tools": ["pubchem_lookup"],
         },
         "benchmarks": {

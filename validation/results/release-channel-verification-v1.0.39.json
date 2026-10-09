@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "release": {"version": "1.0.39", "tag": "v1.0.39", "commit": null},
+  "checked_at": "2026-10-09T09:24:19+09:00",
+  "release_ready": false,
+  "channels": [
+    {"id": "github_release", "status": "not_measured", "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.39", "detail": "Pre-publication placeholder; verify the Release, tag target and attached metadata after publishing."},
+    {"id": "npm", "status": "not_measured", "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.39", "detail": "Pre-publication placeholder; verify registry tarball and integrity metadata after publishing."},
+    {"id": "pypi", "status": "not_measured", "url": "https://pypi.org/pypi/chematic/1.0.39/json", "detail": "Pre-publication placeholder; verify the source distribution and platform wheels after publishing."},
+    {"id": "crates_io", "status": "not_measured", "url": "https://crates.io/crates/chematic/1.0.39", "detail": "Pre-publication placeholder; verify all publishable workspace crates after publishing."},
+    {"id": "docs_rs", "status": "not_measured", "url": "https://docs.rs/chematic/1.0.39/chematic/", "detail": "Pre-publication placeholder; verify generated rustdoc after registry publication."},
+    {"id": "site", "status": "not_measured", "url": "https://kent-tokyo.github.io/chematic/", "detail": "Pre-publication placeholder; verify the Pages deployment and displayed version after publishing."}
+  ]
+}

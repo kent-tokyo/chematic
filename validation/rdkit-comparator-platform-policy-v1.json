@@ -1,0 +1,61 @@
+{
+ "schema": "rdkit-comparator-platform-policy/v1",
+ "issue": "https://github.com/kent-tokyo/chematic/issues/754",
+ "comparator": {
+  "package": "rdkit",
+  "version": "2026.3.6",
+  "rdkit_version": "2026.03.6",
+  "python": "cp312"
+ },
+ "rule": "A chematic gate compares against exactly one RDKit build. Where PyPI has that build for the platform, a lane that needs both engines in one process (xsmarts-autoconf) runs there with the wheel's SHA-256 checked. Where it has none, chematic's side of each gate runs on the platform without RDKit and is compared on Linux x86-64 with the pinned Linux wheel; lanes that need one process are not run there and are listed as not applicable, never replaced by another RDKit version.",
+ "platforms": {
+  "linux-x86_64": {
+   "runner": "ubuntu-latest",
+   "wheel": "rdkit-2026.3.6-cp312-cp312-manylinux_2_28_x86_64.whl",
+   "sha256": "9f97b58f1962df73bdacf44347bfa013f4fcb9896e049f98af2183e70e7aab46",
+   "same_process_lanes": true,
+   "note": "chematic's Linux wheels are CPython 3.9 builds and this RDKit has no CPython 3.9 wheel: the two-stage gates run the cp39 wheel without RDKit, and xsmarts-autoconf builds the published sdist for CPython 3.12."
+  },
+  "linux-aarch64": {
+   "runner": null,
+   "wheel": "rdkit-2026.3.6-cp312-cp312-manylinux_2_28_aarch64.whl",
+   "sha256": "16d446583b7bac24b018a424bb24fd515c625f7bad4171d6aa46993a3e2f9aa0",
+   "same_process_lanes": true
+  },
+  "macos-arm64": {
+   "runner": "macos-15",
+   "wheel": "rdkit-2026.3.6-cp312-cp312-macosx_11_0_arm64.whl",
+   "sha256": "b490da262688b9b16528d592752ab7838d4df4d7ffaacdb3c42d07e769a97552",
+   "same_process_lanes": true
+  },
+  "macos-x86_64": {
+   "runner": "macos-15-intel",
+   "wheel": null,
+   "sha256": null,
+   "same_process_lanes": false,
+   "note": "PyPI has no RDKit 2026.3.6 macOS x86-64 wheel (checked 2026-10-08): the two-stage gates run, xsmarts-autoconf is not applicable."
+  },
+  "windows-amd64": {
+   "runner": "windows-latest",
+   "wheel": "rdkit-2026.3.6-cp312-cp312-win_amd64.whl",
+   "sha256": "740f2015d07426a9d3ee98cdda2dbb028b84b35aca3edeff0dcb75294512d692",
+   "same_process_lanes": true
+  }
+ },
+ "lanes": {
+  "two_stage_gates": {
+   "workflow": ".github/workflows/published-wheel-chemistry-gates.yml",
+   "jobs": [
+    "chematic",
+    "compare"
+   ],
+   "comparator_platform": "linux-x86_64"
+  },
+  "xsmarts_autoconf": {
+   "workflow": ".github/workflows/published-wheel-chemistry-gates.yml",
+   "job": "autoconf",
+   "requires_same_process": true,
+   "expected": "validation/xsmarts_autoconf_expected.json"
+  }
+ }
+}

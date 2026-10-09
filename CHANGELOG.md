@@ -10,6 +10,59 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.39] - 2026-10-09
+
+### Fixed
+
+- SMARTS: a lowercase letter followed by a lowercase letter in a bracket
+  atom is the aromatic one-letter atom and the next primitive, as in RDKit:
+  `[ca]`, `[na]` and `[cr6]` no longer read as calcium, sodium and chromium.
+  Only `se`, `as`, `te` and `si` spell two-letter aromatic atoms (`[se]` now
+  requires an aromatic atom), and `[cl]` is an error.
+- SMIRKS (RDKit profile): an element change takes the template atom's
+  charge (`[N:1]>>[S:1]` on a quaternary ammonium gives a neutral sulfur);
+  an explicit-H core whose element changes beside an aromatic bond
+  re-derives its hydrogens as the implicit form does; a three-connected
+  aromatic S, Se, Te, P or As takes a double bond in the product's
+  kekulization by RDKit's rule (2-chloropyridine with `[c:1]>>[S:1]` gives
+  `ClS1=CC=CC=N1` instead of a refusal).
+
+### Added
+
+- `scripts/smirks_property_fuzz.py`: property-based SMIRKS fuzzing against
+  RDKit with shrinking to minimal probes; its counts are a CI gate
+  (`validation/smirks_property_fuzz_expected.json`). On 2,000 generated
+  templates, differences from RDKit fall from 125 to 28 (implicit-H) and
+  refusals from 52 to 18 against published v1.0.38.
+- `validation/rdkit-comparator-platform-policy-v1.json` and
+  `scripts/install_pinned_rdkit.py`: the one RDKit build each platform's
+  gates compare against; the published-wheel workflow runs xsmarts-autoconf
+  on Linux, macOS arm64 and Windows. Portable probes for xsmarts-autoconf in
+  `validation/upstream-probes/`. Record:
+  `benchmarks/2026-10-08-754-734-followups-batch24.md`.
+
+- `chematic-mcp --transport streamable-http` serves the MCP 2026-07-28
+  stateless dialect over HTTP at `/mcp`, bound to `127.0.0.1:3000` by
+  default (#779).
+  - It uses the same protocol codec, server and tool registry as stdio, so
+    schemas, `structuredContent` and typed errors match stdio exactly.
+  - It checks mirrored headers (`MCP-Protocol-Version`, `Mcp-Method`,
+    `Mcp-Name`), protects loopback `Host`/`Origin` against DNS rebinding, and
+    enforces body, header, timeout and concurrency limits. It sends no CORS
+    headers.
+  - Binding outside loopback requires `--allow-non-loopback`.
+  - stdio remains the default and is unchanged. The adapter is self-hosted
+    only: there is no hosted endpoint, authentication or OAuth, and no SLA.
+  - Results of the official conformance suite are in
+    [benchmarks/2026-10-09-issues-769-779.md](benchmarks/2026-10-09-issues-769-779.md).
+
+### Changed
+
+- `chematic-mcp` now serves 2026-07-28 requests whose `_meta` omits
+  `io.modelcontextprotocol/clientInfo`, on stdio and over HTTP. The spec makes
+  that key optional. A malformed `clientInfo` is still rejected with
+  `-32602`.
+
 ## [1.0.38] - 2026-10-08
 
 ### Added

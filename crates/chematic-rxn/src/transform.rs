@@ -2750,6 +2750,15 @@ fn rdkit_kekule_candidate(mol: &Molecule, idx: AtomIdx) -> bool {
             .neighbors(idx)
             .any(|(_, b)| mol.bond(b).order == BondOrder::Zero);
     if !pi && !chalcogen_cation && !neutral_pnictogen && !pnictogen_beside_zero {
+        // A three-connected aromatic P, As, S, Se or Te is judged by RDKit's
+        // own rule; chematic's never makes it a candidate.
+        if matches!(atom.element.atomic_number(), 15 | 16 | 33 | 34 | 52)
+            && atom.charge == 0
+            && mol.degree(idx) >= 3
+            && let Some(candidate) = rdkit_mark_dbond_cand(mol, idx)
+        {
+            return candidate;
+        }
         return chematic_core::atom_must_be_matched(mol, idx);
     }
     let sbo: i16 = mol
@@ -2762,6 +2771,73 @@ fn rdkit_kekule_candidate(mol: &Molecule, idx: AtomIdx) -> bool {
         + i16::from(atom.hydrogen_count.unwrap_or(0));
     crate::rdkit_valence::default_valence(atom.element.atomic_number(), atom.charge)
         .is_some_and(|dv| sbo == dv - 1)
+}
+
+/// RDKit's `markDbondCands` decision for an aromatic atom with no double
+/// or triple bond (`Kekulize.cpp`, RDKit 2026.03): aromatic bonds count 1
+/// toward `sbo`, other bonds their order, plus all hydrogens; the default
+/// valence, shifted by the charge (negated for a carbocation and for the
+/// early elements), is raised through the element's valence list while the
+/// total valence (aromatic bonds as 1.5) exceeds it; an atom whose degree
+/// plus implicit hydrogens reaches that valence is no candidate; otherwise
+/// it is one when the valence is `sbo + 1`, or `sbo + 2` for a bracket
+/// atom. `None` for an element RDKit leaves unrestricted or a non-aromatic
+/// atom. [`rdkit_kekule_candidate`] uses it for three-connected aromatic
+/// P, As, S, Se and Te: a ring carbon a template rewrites to `[S:1]` keeps
+/// the reactant's aromatic flag in RDKit, and 2-chloropyridine gives the
+/// hypervalent `ClS1=CC=CC=N1` (#754 fuzz lane). Applied to every aromatic
+/// atom it accepted products RDKit's sanitize rejects, so the other atoms
+/// keep chematic's rule.
+fn rdkit_mark_dbond_cand(mol: &Molecule, idx: AtomIdx) -> Option<bool> {
+    let atom = mol.atom(idx);
+    if !atom.aromatic || atom.wildcard {
+        return None;
+    }
+    let z = atom.element.atomic_number();
+    let list = crate::rdkit_valence::valence_list(z)?;
+    let early = matches!(z, 1..=5 | 11..=13 | 19..=31 | 37..=49 | 55..=81 | 87..=112);
+    let mut chrg = i16::from(atom.charge);
+    if early || (z == 6 && chrg > 0) {
+        chrg = -chrg;
+    }
+    let hydrogens = i16::from(chematic_core::implicit_hcount(mol, idx));
+    let mut sbo = hydrogens;
+    let mut total2 = 2 * hydrogens;
+    let mut ignored = 0i16;
+    for (_, b) in mol.neighbors(idx) {
+        let bond = mol.bond(b);
+        match bond.order {
+            BondOrder::Aromatic => {
+                sbo += 1;
+                total2 += 3;
+            }
+            BondOrder::Zero | BondOrder::QueryAny => ignored += 1,
+            BondOrder::Dative if bond.atom1 == idx => ignored += 1,
+            order => {
+                let o = i16::from(order.order_int());
+                sbo += o;
+                total2 += 2 * o;
+            }
+        }
+    }
+    let tbo = (total2 + 1) / 2;
+    let mut dv = i16::from(list[0]) + chrg;
+    for &v in &list[1..] {
+        if tbo <= dv {
+            break;
+        }
+        dv = i16::from(v) + chrg;
+    }
+    let implicit = if atom.hydrogen_count.is_none() {
+        hydrogens
+    } else {
+        0
+    };
+    let total_degree = mol.degree(idx) as i16 + implicit - ignored;
+    if total_degree >= dv {
+        return Some(false);
+    }
+    Some(dv == sbo + 1 || (atom.hydrogen_count.is_some() && dv == sbo + 2))
 }
 
 /// Whether RDKit's sanitize step would accept `mol` (issue #734).
@@ -3749,8 +3825,12 @@ fn build_product(
                     new_atom.aromatic = tmpl_atom.aromatic;
                 }
                 // Unspecified charge keeps the reactant atom's (RDKit:
-                // `[O-:1]>>[O:1]` leaves the alkoxide charged).
-                if spec_of(i).charge {
+                // `[O-:1]>>[O:1]` leaves the alkoxide charged), unless the
+                // element changes: RDKit then takes the template atom's
+                // charge too (`[N:1]>>[S:1]` on a quaternary ammonium gives
+                // a neutral sulfur, not `[SH+]`; found by the SMIRKS fuzz
+                // lane, #754).
+                if spec_of(i).charge || new_atom.element != src_atom.element {
                     new_atom.charge = tmpl_atom.charge;
                 }
                 // An isotope in the template applies; none keeps the
@@ -4158,6 +4238,17 @@ fn build_product(
             && molecule
                 .neighbors(core)
                 .any(|(_, b)| molecule.bond(b).order == BondOrder::Aromatic);
+        // An element change leaves nothing to keep: the implicit-H form
+        // re-derives the new element's hydrogens after kekulizing, so the
+        // core does too (`[#6:1]:[cH1:2]>>[*:1]-[S:2]` on explicit-H
+        // 2-chloropyridine gave `[SH]`, a radical, where the implicit form
+        // gives the H-free thioether).
+        let element_changed = source_of[core.0 as usize]
+            .is_some_and(|(mol_idx, src)| input_mols[mol_idx].atom(src).element != atom.element);
+        if mixed && element_changed {
+            molecule.set_hydrogen_count(core, None);
+            continue;
+        }
         let n = if mixed {
             source_of[core.0 as usize].map_or(0, |(mol_idx, src)| {
                 input_mols[mol_idx]
@@ -4892,6 +4983,40 @@ mod tests {
             rdkit_profile_sets(" [C:1][CH2:3][OH:4]>>[C:1] ", r"CC/C(CO)=C/C"),
             vec![vec![canon_of(r"C/C=C/CC")]]
         );
+    }
+
+    #[test]
+    fn smirks_fuzz_probes_follow_rdkit(/* #754: scripts/smirks_property_fuzz.py */) {
+        // An element change takes the template atom's charge, not the
+        // matched atom's: RDKit gives a neutral sulfur here, not `[SH+]`.
+        assert_eq!(
+            rdkit_profile_sets("[N:1]>>[S:1]", "C[N+](C)(C)C"),
+            vec![vec![canon_of("CS(C)(C)C")]]
+        );
+        assert_eq!(
+            rdkit_profile_sets("[N:1]>>[S:1]", "CN"),
+            vec![vec![canon_of("CS")]]
+        );
+        // A ring carbon rewritten to sulfur keeps the reactant's aromatic
+        // flag in RDKit; three-connected, it takes a double bond in the
+        // kekulization (RDKit writes the product `ClS1=CC=CC=N1`) instead
+        // of failing it and the product being refused.
+        assert_eq!(
+            rdkit_profile_sets("[#6&D3+0:1]>>[S:1]", "Clc1ccccn1"),
+            vec![vec![canon_of("Cls1ncccc1")]]
+        );
+        // An explicit-H reactant gives the implicit-H products when the
+        // edit changes an element next to an aromatic bond (was `[SH]`, a
+        // radical).
+        let smirks = "[#6:1]([#6:2]):[cH1:3]>>[*:1](-[S:2])-[*:3]";
+        let mut implicit = rdkit_profile_sets(smirks, "Clc1ccccn1");
+        let mut explicit = rdkit_profile_sets(smirks, "[H]c1nc(Cl)c([H])c([H])c1[H]");
+        implicit.sort();
+        explicit.sort();
+        implicit.dedup();
+        explicit.dedup();
+        assert!(!implicit.is_empty());
+        assert_eq!(explicit, implicit);
     }
 
     #[test]

@@ -107,7 +107,7 @@ fn handle_modern(id: &Value, method: &str, params: &Value, ctx: &RequestContext)
             return protocol::error_response(
                 id,
                 protocol::INVALID_PARAMS,
-                "modern request missing required _meta triple (protocolVersion, clientInfo, clientCapabilities)",
+                "modern request missing required _meta keys (protocolVersion, clientCapabilities)",
                 None,
             );
         }
@@ -297,7 +297,7 @@ mod tests {
             era: ProtocolEra::Modern20260728,
             client_meta: Some(ClientMeta {
                 protocol_version: protocol::MODERN_PROTOCOL_VERSION.to_string(),
-                client_info: json!({ "name": "test", "version": "1.0" }),
+                client_info: Some(json!({ "name": "test", "version": "1.0" })),
                 client_capabilities: json!({}),
                 log_level: None,
             }),

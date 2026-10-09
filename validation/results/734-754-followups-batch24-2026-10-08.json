@@ -1,0 +1,140 @@
+{
+ "schema": "chematic.734-754-followups-batch24.v1",
+ "date": "2026-10-08",
+ "base": "origin/main 512277b3 (v1.0.38)",
+ "published_v1.0.38": {
+  "wheel": "chematic-1.0.38-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+  "wheel_sha256": "e09419da24f317ebad88ee385c972a16766ba368b5ced912a61f9627d0ccb957",
+  "gates": {
+   "reaction_83": {
+    "graph_origin_map_match": 80,
+    "joint_invalid_input": 3
+   },
+   "smarts_310k": {
+    "counts": {
+     "exact": 310000,
+     "fixed_original_boolean": 43,
+     "fixed_original_residual": 200
+    },
+    "unexpected_total": 0
+   },
+   "exposed_10k": {
+    "cip_accurate": {
+     "agree": 4395,
+     "kekule_dependent": 0
+    },
+    "hybridization": {
+     "atoms": 220015,
+     "agree": 220015
+    },
+    "mmff94": {
+     "compared_rows": 9796,
+     "heavy": 215565,
+     "hydrogen": 191148,
+     "rdkit_unsupported": 204
+    },
+    "mol_writer": {
+     "stereo_rows": 1687,
+     "read_back_as_input": 1687,
+     "strict_refused": 0
+    }
+   },
+   "chembl_5k": {
+    "cip_accurate": {
+     "agree": 4186,
+     "kekule_dependent": 20
+    },
+    "hybridization": {
+     "atoms": 138655,
+     "agree": 138655
+    },
+    "mmff94": {
+     "compared_rows": 4990,
+     "heavy": 138500,
+     "hydrogen": 116364,
+     "rdkit_unsupported": 10
+    },
+    "mol_writer": {
+     "stereo_rows": 1670,
+     "read_back_as_input": 1670,
+     "strict_refused": 0
+    }
+   },
+   "biotransformer_corpus": {
+    "explicit_h:both_none": 382090,
+    "explicit_h:both_none_refused": 673,
+    "explicit_h:differ": 35,
+    "explicit_h:exact": 6604,
+    "explicit_h:rdkit_raw_unsanitizable": 172,
+    "explicit_h:rdkit_resanitize_fails_same_products": 14,
+    "explicit_h:rdkit_truncated_subset": 12,
+    "implicit:both_none": 388406,
+    "implicit:both_none_refused": 143,
+    "implicit:exact": 1051,
+    "multi_reactant_rules_skipped": 6,
+    "rdkit_parse_error_rules": 3,
+    "rules_run": 974
+   }
+  },
+  "a6": {
+   "rows": 265,
+   "successes": 265,
+   "independently_sound": 265,
+   "stereo_clean": 265,
+   "with_gross_clash": 0,
+   "coordinates_sha256": "b1ce930f542ee3ac7a674acadc4caa43bc2d63df570381557db76fb5fd9de804"
+  }
+ },
+ "source_gates_vs_v1.0.38": {
+  "pass": true,
+  "differences": []
+ },
+ "xsmarts_autoconf_source": {
+  "same_as_reference": 75,
+  "flags": 83,
+  "unexpected": {}
+ },
+ "smirks_fuzz": {
+  "seed": 754,
+  "templates": 2000,
+  "applications": 16000,
+  "published_v1.0.38": {
+   "explicit_h:both_none": 4873,
+   "explicit_h:both_none_refused": 1101,
+   "explicit_h:chematic_refused": 60,
+   "explicit_h:differ": 86,
+   "explicit_h:exact": 1148,
+   "explicit_h:implicit_h_equivalent": 71,
+   "explicit_h:rdkit_raw_unsanitizable": 646,
+   "explicit_h:same_graph_kekule_order": 15,
+   "implicit:both_none": 3993,
+   "implicit:both_none_refused": 1393,
+   "implicit:chematic_refused": 52,
+   "implicit:differ": 125,
+   "implicit:exact": 2379,
+   "implicit:rdkit_raw_unsanitizable": 9,
+   "implicit:same_graph_kekule_order": 49
+  },
+  "source": {
+   "explicit_h:both_none": 4764,
+   "explicit_h:both_none_refused": 1135,
+   "explicit_h:chematic_refused": 20,
+   "explicit_h:differ": 70,
+   "explicit_h:exact": 1184,
+   "explicit_h:implicit_h_equivalent": 90,
+   "explicit_h:rdkit_raw_unsanitizable": 721,
+   "explicit_h:same_graph_kekule_order": 16,
+   "implicit:both_none": 3899,
+   "implicit:both_none_refused": 1484,
+   "implicit:chematic_refused": 18,
+   "implicit:differ": 28,
+   "implicit:exact": 2482,
+   "implicit:rdkit_raw_unsanitizable": 12,
+   "implicit:same_graph_kekule_order": 77
+  },
+  "distinct_minimized_probes": {
+   "published_v1.0.38": 156,
+   "source": 83
+  }
+ }
+}
