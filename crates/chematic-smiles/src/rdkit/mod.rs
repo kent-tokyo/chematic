@@ -838,6 +838,28 @@ pub fn rdkit_hydrogen_suppressed(mol: &Molecule) -> Option<Molecule> {
     pdb_read::to_chematic(&m, true).ok()
 }
 
+/// RDKit's hybridization of every atom of `mol` (`Chem.MolFromSmiles`):
+/// 1 SP, 2 SP2, 3 SP3, 0 otherwise (S, SP2D, SP3D, SP3D2, unspecified).
+/// `None` where RDKit removes atoms (explicit hydrogens) or the port cannot
+/// model `mol`.
+pub fn rdkit_hybridizations(mol: &Molecule) -> Option<Vec<u8>> {
+    let (m, _) = rdkit_mol_from_smiles(mol).ok()?;
+    if m.atoms.len() != mol.atom_count() {
+        return None;
+    }
+    Some(
+        m.atoms
+            .iter()
+            .map(|a| match a.hybrid {
+                mol::Hybridization::Sp => 1,
+                mol::Hybridization::Sp2 => 2,
+                mol::Hybridization::Sp3 => 3,
+                _ => 0,
+            })
+            .collect(),
+    )
+}
+
 /// Registers [`rdkit_model_correct_view`] as chematic-perception's
 /// RDKit-model hook, so the shared RDKit-parity aromatic view (used by the
 /// RDKit-compatible fingerprints, descriptors and SMARTS matching) follows

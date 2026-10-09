@@ -2129,6 +2129,13 @@ pub fn cns_mpo_score(mol: &Molecule) -> f64 {
 /// sp3d/sp3d2 and report `0`. Before 1.0.35 this used bond orders only (any
 /// atom without a multiple bond was sp3).
 pub fn hybridization_per_atom(mol: &Molecule) -> Vec<u8> {
+    // Where chematic's perception may disagree with RDKit's sanitization
+    // (radicals, unusual valences, ...), take RDKit's hybridization.
+    if chematic_perception::rdkit_model_may_disagree(mol)
+        && let Some(h) = chematic_smiles::rdkit_hybridizations(mol)
+    {
+        return h;
+    }
     // On RDKit's aromaticity view, as RDKit's sanitized molecule: a
     // Kekulé-written thiophene S is aromatic, hence sp2.
     let view = descriptor_aromaticity(mol);
@@ -2618,6 +2625,9 @@ fn rdkit_hall_kier_atom_alpha(atomic_number: u8, hyb: u8) -> f64 {
 /// molecule with a heteroatom or unsaturation, and so did the kappa indices
 /// built on it.
 pub fn hall_kier_alpha(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return hall_kier_alpha(&h);
+    }
     let hyb = hybridization_per_atom(mol);
     let mut alpha_sum = 0.0;
     for (idx, atom) in mol.atoms() {

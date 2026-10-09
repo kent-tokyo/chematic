@@ -205,8 +205,13 @@ pub(crate) fn rdkit_isotope_delta(mol: &Molecule, idx: AtomIdx) -> i32 {
     use crate::rdkit_isotope_delta_table::RDKIT_ATOMIC_WEIGHTS;
 
     let atom = mol.atom(idx);
+    if atom.wildcard {
+        // A dummy atom's mass is 0 with or without an isotope.
+        return 0;
+    }
     match atom.isotope {
-        None => 0,
+        // RDKit's isotope 0 is "unspecified": the average weight.
+        None | Some(0) => 0,
         Some(mass_number) => {
             match rdkit_isotope_delta_for(atom.element.atomic_number(), mass_number) {
                 Some(delta) => delta as i32,
