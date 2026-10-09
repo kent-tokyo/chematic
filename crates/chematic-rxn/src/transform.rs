@@ -3805,6 +3805,31 @@ fn correct_product_stereo(
     product
 }
 
+/// RDKit's bond order around a carried, non-ring atom of the product: the
+/// bond to `discoverer` (the neighbour the walk reached it from) first, then
+/// its other bonds in reactant order. `None` for an atom in a ring (other
+/// neighbours may add their bonds earlier) or with an implicit-H slot.
+fn rdkit_carried_bond_order(
+    mol: &Molecule,
+    atom: AtomIdx,
+    discoverer: Option<AtomIdx>,
+) -> Option<Vec<u32>> {
+    let d = discoverer?;
+    if atoms_in_rings(mol)[atom.0 as usize] {
+        return None;
+    }
+    let reactant: Vec<u32> = match mol.stereo_neighbor_order(atom) {
+        Some(o) => o.to_vec(),
+        None => mol.neighbors(atom).map(|(n, _)| n.0).collect(),
+    };
+    if reactant.contains(&chematic_core::STEREO_H_SENTINEL) || !reactant.contains(&d.0) {
+        return None;
+    }
+    let mut order = vec![d.0];
+    order.extend(reactant.into_iter().filter(|&n| n != d.0));
+    Some(order)
+}
+
 /// Build one product molecule applying full SMIRKS semantics.
 ///
 /// 1. Atom-mapped product atoms: copy source atom + override aromatic/charge/H from template.
@@ -4068,6 +4093,9 @@ fn build_product(
     for &(mol_idx, atom) in all_template_atoms.iter().chain(folded_h.iter()) {
         visited[mol_idx][atom.0 as usize] = true;
     }
+    // Each carried atom's neighbour the walk reached it from (RDKit's
+    // product bond order around it starts with that bond).
+    let mut discoverer: FxHashMap<(usize, AtomIdx), AtomIdx> = FxHashMap::default();
     if carry_substituents {
         // Seeded in reactant atom order, so the product's atom order does not
         // follow the hash set's iteration order.
@@ -4079,6 +4107,7 @@ fn build_product(
                 if std::mem::replace(&mut visited[mol_idx][nb_idx.0 as usize], true) {
                     continue;
                 }
+                discoverer.insert(key, cur_idx);
                 let src_atom = input_mols[mol_idx].atom(nb_idx);
                 let mut new_atom = src_atom.clone();
                 // RDKit copies an unmatched reactant atom whole
@@ -4230,6 +4259,30 @@ fn build_product(
         .collect();
     for &((mol_idx, src_idx), new_idx) in &sourced_atoms {
         let src = input_mols[mol_idx];
+        if keep_carried_maps
+            && src.atom(src_idx).chirality.nontetrahedral().is_some()
+            && !template_idx_to_new.contains(&Some(new_idx))
+        {
+            // RDKit leaves a carried atom's non-tetrahedral tag as it was
+            // (`checkAndCorrectChiralityOfProduct` only corrects tetrahedral
+            // ones): the same permutation, now relative to the product's
+            // bond order, which starts with the bond the walk came in by.
+            let order = rdkit_carried_bond_order(
+                src,
+                src_idx,
+                discoverer.get(&(mol_idx, src_idx)).copied(),
+            )
+            .and_then(|order| remap_reactant_stereo_order(&order, mol_idx, &src_to_new))
+            .filter(|order| order_matches_final_topology(&product, new_idx, order));
+            match order {
+                Some(order) => {
+                    product.set_chirality(new_idx, src.atom(src_idx).chirality);
+                    product.set_stereo_neighbor_order(new_idx, order);
+                }
+                None => product.set_chirality(new_idx, Chirality::None),
+            }
+            continue;
+        }
         if !src.atom(src_idx).chirality.is_tetrahedral()
             || template_idx_to_new.contains(&Some(new_idx))
         {
