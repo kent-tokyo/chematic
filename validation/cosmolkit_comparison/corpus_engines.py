@@ -72,6 +72,17 @@ API_NOTES = {
         "extended_murcko": "Molecule.net_scaffold().to_smiles()",
         "embed3d": "Molecule.with_hydrogens().with_3d_conformer_result(EmbedParameters.etkdg_v3(), random_seed=42)",
     },
+    "cosmolkit-0.5": {
+        "smarts": "Molecule.substruct_matches(parse_smarts(q))",
+        "cip": "Molecule.with_cip_labels()",
+        "molblock_rt": "Molecule.to_sdf_2d()",
+        "morgan*": "morgan_fingerprint_with_generator(MorganFingerprintGenerator(params=MorganParams(radius, fp_size=2048, ...)))",
+        "morgan2_bitinfo": "morgan_fingerprint_with_generator(..., output=FingerprintAdditionalOutput().bit_info_map())",
+        "fp_torsion": "Molecule.legacy_topological_torsion_fingerprint()",
+        "smiles_*": "Molecule.to_smiles_with_params(SmilesWriteParams(...))",
+        "embed3d": "with_hydrogens().with_3d_conformer_result_with_params(EmbedParams.etkdg_v3() randomSeed=42)",
+        "removed": "see COSMOLKIT_05_REMOVED",
+    },
 }
 
 
@@ -396,7 +407,7 @@ def chematic_engine():
 
 
 # ----------------------------------------------------------------- COSMolKit
-def cosmolkit_engine():
+def _cosmolkit_03_engine():
     def _embed3d(m):
         p = ck.EmbedParameters.etkdg_v3()
         p.random_seed = 42
@@ -502,6 +513,176 @@ def cosmolkit_engine():
     raw = {"canonical_smiles": lambda m: m.to_smiles(), "molblock": lambda m: m.to_2d_sdf_string()}
     return {"version": getattr(ck, "__version__", "unknown"), "parse": ck.Molecule.from_smiles,
             "ops": ops, "raw": raw}
+
+
+def cosmolkit_version_tuple(version: str) -> tuple[int, int]:
+    """(major, minor) of a COSMolKit version string such as ``0.5.0-rc.15``."""
+    parts = version.split(".")
+    try:
+        return int(parts[0]), int(parts[1])
+    except (IndexError, ValueError):
+        return (0, 0)
+
+
+def cosmolkit_engine():
+    """COSMolKit adapters for the installed release: the 0.3 API, or the
+    reworked 0.5 API (``*_with_params`` names, generator fingerprints)."""
+    import cosmolkit as ck
+
+    version = getattr(ck, "__version__", "unknown")
+    if cosmolkit_version_tuple(version) >= (0, 5):
+        return _cosmolkit_05_engine()
+    return _cosmolkit_03_engine()
+
+
+# Operations COSMolKit 0.5 no longer offers (reported as unsupported).
+COSMOLKIT_05_REMOVED = {
+    "inchi": "InChI writer removed in 0.5",
+    "inchikey": "InChI writer removed in 0.5",
+    "inchi_read": "InChI reader removed in 0.5",
+    "fp_avalon": "Avalon fingerprint removed in 0.5",
+    "murcko_scaffold": "murcko_scaffold removed in 0.5",
+    "extended_murcko": "net_scaffold removed in 0.5",
+    "pdb_block": "Molecule.to_pdb_block removed in 0.5 (bio PDB writer works on BioStructure)",
+    "pdb_read": "Molecule.from_pdb_block removed in 0.5",
+    "chiral_centers": "find_chiral_centers now returns chiral-tag names for every atom, "
+                      "not FindMolChiralCenters' R/S/? list",
+    "peoe_vsa": "not offered", "bertz_ct": "not offered", "balaban_j": "not offered", "ipc": "not offered",
+}
+
+
+def _cosmolkit_05_engine():
+    import cosmolkit as ck
+
+    on = lambda fp: sorted(fp.on_bits())  # noqa: E731
+
+    def morgan(radius, **kw):
+        gen = ck.MorganFingerprintGenerator(params=ck.MorganParams(radius=radius, fp_size=2048, **kw))
+        return lambda m: on(m.morgan_fingerprint_with_generator(gen))
+
+    def morgan_bitinfo(m):
+        gen = ck.MorganFingerprintGenerator(params=ck.MorganParams(radius=2, fp_size=2048))
+        out = ck.FingerprintAdditionalOutput()
+        out.allocate_bit_info_map()
+        m.morgan_fingerprint_with_generator(gen, output=out)
+        return _bit_info(out.bit_info_map())
+
+    def smiles_with(**kw):
+        p = ck.SmilesWriteParams(**kw)
+        return lambda m: m.to_smiles_with_params(p)
+
+    def cip(m):
+        lab = m.with_cip_labels()
+        out = [["a", a.id(), str(a.cip_descriptor().value)] for a in lab.atoms() if a.cip_descriptor()]
+        out += [["b", *sorted((b.begin(), b.end())), str(b.cip_descriptor().value)]
+                for b in lab.bonds() if b.cip_descriptor()]
+        return sorted(out)
+
+    def smarts(q):
+        qm = ck.parse_smarts(q)
+        return lambda m: _smarts_sets(_ck05_mapping(r) for r in m.substruct_matches(qm))
+
+    def embed3d(m):
+        p = ck.EmbedParams.etkdg_v3()
+        p = p.with_json('{"randomSeed": 42}') or p
+        try:
+            r = m.with_hydrogens().with_3d_conformer_result_with_params(p)
+        except Exception:  # noqa: BLE001 - embedding failure
+            return None
+        if not r.ok:
+            return None
+        mol = r.molecule
+        mol = mol() if callable(mol) else mol
+        return None if mol is None or mol.num_3d_conformers() == 0 else _ck05_coords(mol.coordinates_3d())
+
+    ops = {
+        "canonical_smiles": lambda m: m.to_smiles(),
+        "canonical_smiles_rt": lambda m: rdkit_readback(m.to_smiles(), "smiles"),
+        "formula": lambda m: m.molecular_formula(),
+        "mol_wt": lambda m: m.molecular_weight(),
+        "exact_mw": lambda m: m.exact_molecular_weight(),
+        "tpsa": lambda m: m.tpsa(),
+        "logp": lambda m: m.crippen_descriptors().logp,
+        "mr": lambda m: m.crippen_descriptors().molar_refractivity,
+        "hba": lambda m: m.num_hba(),
+        "hbd": lambda m: m.num_hbd(),
+        "rotatable_bonds": lambda m: m.num_rotatable_bonds(),
+        "aromatic_rings": lambda m: m.num_aromatic_rings(),
+        "fsp3": lambda m: m.fraction_csp3(),
+        "qed": lambda m: m.qed(),
+        "stereocenters": lambda m: m.num_atom_stereo_centers(),
+        "morgan2_2048": morgan(2),
+        "maccs": lambda m: sorted(i + 1 for i in m.maccs_fingerprint().on_bits()),
+        "cip": cip,
+        "molblock_rt": lambda m: rdkit_readback(m.to_sdf_2d(), "mol"),
+    }
+    for q in SMARTS_QUERIES:
+        ops["smarts:" + q] = smarts(q)
+    ops.update({
+        "fp_atom_pair": lambda m: on(m.atom_pair_fingerprint()),
+        "fp_torsion": lambda m: on(m.legacy_topological_torsion_fingerprint()),
+        "fp_pattern": lambda m: on(m.pattern_fingerprint()),
+        "fp_layered": lambda m: on(m.layered_fingerprint()),
+        "fp_rdkit": lambda m: on(m.topological_fingerprint()),
+        "chi0v": lambda m: m.chi_0_v(), "chi1v": lambda m: m.chi_1_v(), "chi2v": lambda m: m.chi_2_v(),
+        "chi3v": lambda m: m.chi_3_v(), "chi4v": lambda m: m.chi_4_v(),
+        "chi0": lambda m: m.chi_0(), "chi1": lambda m: m.chi_1(),
+        "kappa1": lambda m: m.kappa_1(), "kappa2": lambda m: m.kappa_2(), "kappa3": lambda m: m.kappa_3(),
+        "hall_kier_alpha": lambda m: m.hall_kier_alpha(),
+        "labute_asa": lambda m: m.labute_asa(),
+        "slogp_vsa": lambda m: list(m.slogp_vsa()),
+        "smr_vsa": lambda m: list(m.smr_vsa()),
+        "mqn": lambda m: list(m.mqns()),
+        "num_rings": lambda m: m.num_rings(),
+        "num_aliphatic_rings": lambda m: m.num_aliphatic_rings(),
+        "num_saturated_rings": lambda m: m.num_saturated_rings(),
+        "num_aromatic_heterocycles": lambda m: m.num_aromatic_heterocycles(),
+        "num_aliphatic_heterocycles": lambda m: m.num_aliphatic_heterocycles(),
+        "num_saturated_heterocycles": lambda m: m.num_saturated_heterocycles(),
+        "num_heteroatoms": lambda m: m.num_heteroatoms(),
+        "num_amide_bonds": lambda m: m.num_amide_bonds(),
+        "num_bridgehead_atoms": lambda m: m.num_bridgehead_atoms(),
+        "num_spiro_atoms": lambda m: m.num_spiro_atoms(),
+        "heavy_atoms": lambda m: m.num_heavy_atoms(),
+        "unspecified_stereocenters": lambda m: m.num_unspecified_atom_stereo_centers(),
+        "smiles_kekule": smiles_with(do_kekule=True),
+        "smiles_noniso": smiles_with(do_isomeric_smiles=False),
+        "smiles_explicit": smiles_with(all_bonds_explicit=True, all_hydrogens_explicit=True),
+        "smiles_addhs": lambda m: m.with_hydrogens().to_smiles(),
+        "smarts_write": lambda m: m.to_smarts(),
+        "cx_smarts": lambda m: m.to_cx_smarts(),
+        "stereoisomer_count": lambda m: m.stereoisomer_count(),
+        "morgan3_2048": morgan(3),
+        "morgan2_chiral": morgan(2, include_chirality=True),
+        "morgan2_countsim": morgan(2, count_simulation=True),
+        "atom_pair_counts": lambda m: sorted([k, v] for k, v in
+                                             m.atom_pair_count_fingerprint().nonzero_elements().items()),
+        "stereoisomers": lambda m: sorted(x.to_smiles() for x in m.enumerate_stereoisomers()),
+        "morgan2_bitinfo": morgan_bitinfo,
+        "embed3d": embed3d,
+    })
+    ops.update(_cosmolkit_05_new_ops(ck))
+    raw = {"canonical_smiles": lambda m: m.to_smiles(), "molblock": lambda m: m.to_sdf_2d()}
+    return {"version": getattr(ck, "__version__", "unknown"), "parse": ck.Molecule.from_smiles,
+            "ops": ops, "raw": raw, "unsupported": dict(COSMOLKIT_05_REMOVED)}
+
+
+def _ck05_mapping(match):
+    for name in ("atom_mapping", "atoms", "mapping"):
+        v = getattr(match, name, None)
+        if v is not None:
+            return v() if callable(v) else v
+    return match
+
+
+def _ck05_coords(block):
+    v = block() if callable(block) else block
+    return v.tolist() if hasattr(v, "tolist") else [list(p) for p in v]
+
+
+def _cosmolkit_05_new_ops(ck):
+    """Harness operations for surfaces new in COSMolKit 0.5 (filled in below)."""
+    return {}
 
 
 class RefusedError(Exception):
