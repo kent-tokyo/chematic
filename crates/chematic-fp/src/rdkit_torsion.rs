@@ -216,7 +216,12 @@ pub(crate) fn atom_code(mol: &Molecule, idx: AtomIdx, branch_subtract: u32) -> u
     let n_pi = num_pi_electrons(mol, idx) % MAX_NUM_PI;
     code |= n_pi << NUM_BRANCH_BITS;
 
-    let type_idx = atom_type_index(atom.element.atomic_number());
+    // Dummy atoms have atomic number 0 (chematic stores them as C).
+    let type_idx = atom_type_index(if atom.wildcard {
+        0
+    } else {
+        atom.element.atomic_number()
+    });
     code |= type_idx << (NUM_BRANCH_BITS + NUM_PI_BITS);
 
     code

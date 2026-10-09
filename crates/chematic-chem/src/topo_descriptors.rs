@@ -1100,6 +1100,9 @@ pub fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<u32>> {
 }
 
 pub fn labute_asa(mol: &Molecule) -> f64 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return labute_asa(&h);
+    }
     let (per_atom, h_pool_area) = labute_asa_parts(mol);
     per_atom.iter().fold(0.0, |acc, x| acc + x) + h_pool_area
 }

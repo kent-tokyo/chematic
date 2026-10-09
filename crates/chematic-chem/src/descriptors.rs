@@ -1321,10 +1321,17 @@ pub fn aromatic_ring_count(mol: &Molecule) -> usize {
 /// Count aromatic rings after applying the opt-in RDKit aromaticity model.
 /// Native aromatic flags and native ring counts are left untouched.
 pub fn rdkit_aromatic_ring_count(mol: &Molecule) -> usize {
-    chematic_perception::with_rdkit_parity_view(mol, |view| match view {
-        Ok(perceived) => chematic_perception::aromatic_ring_list_preperceived(perceived).len(),
+    if chematic_perception::rdkit_parity_view_is_identity(mol) {
+        return chematic_perception::aromatic_ring_list_preperceived(mol).len();
+    }
+    match chematic_perception::apply_aromaticity_rdkit_parity_shared(mol).as_ref() {
+        // The descriptor view reads aromatic-flagged ring triple bonds as
+        // aromatic, as RDKit's ring counting does.
+        Ok(_) => {
+            chematic_perception::aromatic_ring_list_preperceived(&descriptor_aromaticity(mol)).len()
+        }
         Err(_) => chematic_perception::aromatic_ring_list(mol).len(),
-    })
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -2255,6 +2262,9 @@ pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
 /// ring-size counts over RDKit's ring information (symmetrized SSSR) and
 /// aromatic bonds. The former implementation used a different layout.
 pub fn mqn(mol: &Molecule) -> Vec<u32> {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return mqn(&h);
+    }
     let mut res = vec![0u32; 42];
     let view = descriptor_aromaticity(mol);
     let view: &Molecule = &view;
