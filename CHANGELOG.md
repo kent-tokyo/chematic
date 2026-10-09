@@ -30,6 +30,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - `rdkit_mol_block_2d` writes V3000 where RDKit does (dative bonds, more than
   999 atoms or bonds).
 - Stereoisomer enumeration and counting follow RDKit's `FindPotentialStereo`.
+- Seeded 3D embedding as RDKit's `EmbedMolecule` (ETKDGv3 defaults, including
+  multi-fragment molecules): `Mol.add_hydrogens().rdkit_embed(random_seed=42)`
+  and `Mol.rdkit_bounds_matrix()` (`GetMoleculeBoundsMatrix`). Coordinates are
+  bit-identical to `EmbedMolecule(AddHs(m), randomSeed=42)` on the recorded
+  Linux x86-64 lane; other platforms may differ by libm last bits.
 - Results: [benchmarks/2026-10-09-cosmolkit-parity-2.md](benchmarks/2026-10-09-cosmolkit-parity-2.md).
 
 ### Changed
@@ -39,6 +44,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   scaffolds allocate less (same outputs).
 - `chematic.from_smiles` accepts a neutral O or F singly bonded to a metal
   (aqua and alkoxide ligands), as RDKit does.
+- RDKit-model hybridization uses RDKit's outer-electron counts for the
+  lanthanides (Ce–Lu), which changes `^n` SMARTS matches and RDKit UFF typing
+  of lanthanide atoms to RDKit's.
 
 ### Fixed
 

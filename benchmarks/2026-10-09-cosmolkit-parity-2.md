@@ -82,9 +82,28 @@ COSMolKit sanitizes at parse time, so its Murcko time excludes work
 that chematic's Murcko time includes; parse plus Murcko is 481 ms for chematic
 and 1,107 ms for COSMolKit.
 
+## Seeded ETKDG embedding
+
+`embed3d` harness op: `AllChem.EmbedMolecule(Chem.AddHs(m), randomSeed=42)`
+coordinates (ETKDGv3 defaults) against COSMolKit
+(`EmbedParameters.etkdg_v3()`, `random_seed=42`) and chematic
+(`Mol.add_hydrogens().rdkit_embed(random_seed=42)`), exact float equality,
+rows where RDKit's embedding succeeds:
+
+| Corpus | COSMolKit | chematic |
+|---|---:|---:|
+| ChEMBL 5k | 4977/4977 | 4977/4977 |
+| RDKit.js 10k | 9946/9947 | 9947/9947 |
+
+Where RDKit's embedding fails (23 and 52 rows) chematic fails too; one
+RDKit.js row raises inside RDKit (`bad lower bound`) and in chematic. The
+same full run (wheel from `claude/rdkit-etkdg` 981f31ff, which includes this
+branch) kept every other operation at its earlier result: 100% except Ipc.
+Bit-identical coordinates are claimed for the Linux x86-64 lane recorded here;
+other platforms' libm can change last bits, which the minimizations can
+amplify.
+
 ## Remaining gap
 
-- **Seeded ETKDG embedding.** COSMolKit reproduces
-  `EmbedMolecule(AddHs(m), randomSeed=42)` exactly; chematic's port (branch
-  `claude/rdkit-etkdg`) has an exact distance-geometry core but no
-  bounds-matrix builder or ETKDG torsion stage yet.
+None found on the compared surfaces: chematic matches RDKit at least as often
+as COSMolKit on every operation in the harness.
