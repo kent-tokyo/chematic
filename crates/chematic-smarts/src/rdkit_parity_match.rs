@@ -793,8 +793,16 @@ fn eval_atom_query(q: &AtomQuery, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
 fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
     let atom = ctx.mol.atom(idx);
     match p {
-        AtomPrimitive::AtomicNum(n) => atom.element.atomic_number() == *n,
-        AtomPrimitive::Symbol(s) => atom.element.symbol() == s.as_str(),
+        // A target dummy atom (`*`, stored with a placeholder element) has
+        // atomic number 0 in RDKit: it matches `[#0]` and no element symbol.
+        AtomPrimitive::AtomicNum(n) => {
+            if atom.wildcard {
+                *n == 0
+            } else {
+                atom.element.atomic_number() == *n
+            }
+        }
+        AtomPrimitive::Symbol(s) => !atom.wildcard && atom.element.symbol() == s.as_str(),
         AtomPrimitive::Aromatic(a) => atom.aromatic == *a,
         AtomPrimitive::Charge(c) => atom.charge == *c,
         AtomPrimitive::HCount(h) => eval_hcount(idx, ctx, *h),

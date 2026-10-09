@@ -1661,8 +1661,12 @@ fn rdkit_ring_classes(mol: &Molecule) -> Vec<(bool, bool, bool)> {
                 all_aromatic &= aromatic;
                 all_single &= !aromatic
                     && matches!(order, BondOrder::Single | BondOrder::Up | BondOrder::Down);
-                hetero |= view.atom(a).element.atomic_number() != 6
-                    || view.atom(b).element.atomic_number() != 6;
+                // Dummy atoms (atomic number 0 in RDKit) count as non-carbon.
+                let non_carbon = |x: AtomIdx| {
+                    let atom = view.atom(x);
+                    atom.wildcard || atom.element.atomic_number() != 6
+                };
+                hetero |= non_carbon(a) || non_carbon(b);
             }
             (all_aromatic, all_single, hetero)
         })
@@ -2389,7 +2393,18 @@ fn mqn_impl(mol: &Molecule) -> Vec<u32> {
     let mut n_aromatic = 0u32;
     for (bi, bond) in view.bonds() {
         let n_rings = bond_rings[bi.0 as usize];
-        match bond.order {
+        // An aromatic-flagged ring triple bond (`c1ccccc#1`, triple in
+        // `mol`, aromatic in the view) counts as aromatic and as triple.
+        let order = if bond.order == BondOrder::Aromatic
+            && view.bond_count() == mol.bond_count()
+            && mol.bond(bi).order == BondOrder::Triple
+        {
+            n_aromatic += 1;
+            BondOrder::Triple
+        } else {
+            bond.order
+        };
+        match order {
             BondOrder::Aromatic => n_aromatic += 1,
             BondOrder::Single | BondOrder::Up | BondOrder::Down => {
                 if n_rings == 0 {

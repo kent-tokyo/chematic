@@ -89,6 +89,18 @@ const N_BITS_PER_ENTRY: usize = 4;
 /// misses attributable to this gap or to asymmetrically-substituted
 /// 3-membered rings (see that function's own doc comment).
 pub(crate) fn num_pi_electrons(mol: &Molecule, idx: AtomIdx) -> u32 {
+    // Where chematic's perception may disagree with RDKit's (hypervalent
+    // atoms, metals, radicals, ...), RDKit's own count on its model.
+    let rd = mol.derived(chematic_core::DerivedSlot::RdkitPiElectrons, || {
+        if chematic_perception::rdkit_model_may_disagree(mol) {
+            chematic_smiles::rdkit_num_pi_electrons(mol)
+        } else {
+            None
+        }
+    });
+    if let Some(v) = rd.as_ref() {
+        return v[idx.0 as usize];
+    }
     let atom = mol.atom(idx);
     if atom.aromatic {
         return 1;

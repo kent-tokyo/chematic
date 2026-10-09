@@ -1399,6 +1399,37 @@ pub fn with_rdkit_model_molecule<R>(mol: &Molecule, f: impl FnOnce(&Molecule) ->
     }
 }
 
+/// RDKit's `numPiElectrons` of every atom of `mol` (`Chem.MolFromSmiles`):
+/// 1 for an aromatic atom, 0 for an SP3 atom, otherwise the explicit
+/// valence beyond one per physical bond. `None` where RDKit removes atoms
+/// or the port cannot model `mol`.
+pub fn rdkit_num_pi_electrons(mol: &Molecule) -> Option<Vec<u32>> {
+    let (m, _) = rdkit_mol_from_smiles(mol).ok()?;
+    if m.atoms.len() != mol.atom_count() {
+        return None;
+    }
+    Some(
+        (0..m.atoms.len())
+            .map(|a| {
+                let atom = &m.atoms[a];
+                if atom.aromatic {
+                    1
+                } else if atom.hybrid != mol::Hybridization::Sp3 {
+                    let val = atom.explicit_valence.max(0) as u32;
+                    let physical = atom.num_explicit_hs
+                        + m.atom_bonds[a]
+                            .iter()
+                            .filter(|&&b| m.bonds[b].valence_contrib(a) != 0.0)
+                            .count() as u32;
+                    val.saturating_sub(physical)
+                } else {
+                    0
+                }
+            })
+            .collect(),
+    )
+}
+
 /// Registers [`rdkit_model_correct_view`] as chematic-perception's
 /// RDKit-model hook, so the shared RDKit-parity aromatic view (used by the
 /// RDKit-compatible fingerprints, descriptors and SMARTS matching) follows
