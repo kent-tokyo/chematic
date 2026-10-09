@@ -51,7 +51,7 @@ API_NOTES = {
         "morgan2_2048": "Mol.rdkit_ecfp_config(2, 2048)",
         "mol_wt": "Mol.rdkit_mw", "tpsa": "Mol.rdkit_tpsa",
         "aromatic_rings": "Mol.rdkit_aromatic_ring_count",
-        "molblock_rt": "Mol.to_mol_block() (default writer)",
+        "molblock_rt": "Mol.rdkit_mol_block_2d() (RDKit-compatible writer; Mol.to_mol_block() where it refuses)",
         "murcko_scaffold": "Mol.rdkit_murcko_scaffold (RDKit MurckoDecompose on the RDKit model)",
         "smarts_write": "Mol.rdkit_smarts", "cx_smarts": "Mol.rdkit_cx_smarts",
         "pdb_block": "Mol.rdkit_pdb_block", "stereoisomer_count": "Mol.rdkit_stereoisomer_count",
@@ -301,6 +301,13 @@ def chematic_engine():
         return run
 
     def molblock(m):
+        # The RDKit-compatible writer where the port models the molecule,
+        # chematic's default writer otherwise.
+        if hasattr(m, "rdkit_mol_block_2d"):
+            try:
+                return m.rdkit_mol_block_2d()
+            except ValueError:
+                pass
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             return m.to_mol_block()

@@ -445,8 +445,10 @@ pub fn exact_mass(mol: &Molecule) -> f64 {
 /// carry explicit H atoms in the graph (e.g. from bracket notation `[H]`).
 /// Those are excluded from the heavy-atom count.
 pub fn heavy_atom_count(mol: &Molecule) -> usize {
+    // RDKit's `CalcNumHeavyAtoms`: atomic number above 1, so dummy atoms
+    // (atomic number 0) are not heavy atoms.
     mol.atoms()
-        .filter(|(_, atom)| atom.element != Element::H)
+        .filter(|(_, atom)| !atom.wildcard && atom.element != Element::H)
         .count()
 }
 
@@ -1466,9 +1468,15 @@ fn crippen_totals(mol: &Molecule) -> (f64, f64) {
 
 /// Number of heteroatoms (non-C, non-H heavy atoms).
 pub fn num_heteroatoms(mol: &Molecule) -> usize {
+    // RDKit's `CalcNumHeteroatoms`: atomic number other than 1 and 6, so
+    // dummy atoms (atomic number 0) count.
     mol.atoms()
         .filter(|(_, a)| {
-            let an = a.element.atomic_number();
+            let an = if a.wildcard {
+                0
+            } else {
+                a.element.atomic_number()
+            };
             an != 1 && an != 6
         })
         .count()
@@ -2855,13 +2863,13 @@ pub fn calc_mol_formula(mol: &Molecule) -> String {
     // Count atoms by element
     let mut counts: BTreeMap<String, usize> = BTreeMap::new();
 
-    let mut wildcards = 0usize;
     let mut charge = 0i32;
     for (_, atom) in mol.atoms() {
         charge += i32::from(atom.charge);
         if atom.wildcard {
-            // RDKit writes dummy atoms as `*` after the elements.
-            wildcards += 1;
+            // RDKit's `getMolFormula` keys dummy atoms by the symbol `*`,
+            // sorted with the other non-C, non-H symbols (byte order).
+            *counts.entry("*".to_string()).or_insert(0) += 1;
             continue;
         }
         let symbol = atom.element.symbol().to_string();
@@ -2905,10 +2913,6 @@ pub fn calc_mol_formula(mol: &Molecule) -> String {
                 formula.push_str(&count.to_string());
             }
         }
-    }
-
-    for _ in 0..wildcards {
-        formula.push('*');
     }
 
     // If no atoms at all, return empty

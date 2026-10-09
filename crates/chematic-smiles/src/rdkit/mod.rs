@@ -774,6 +774,84 @@ pub fn rdkit_sanitized_model(mol: &Molecule) -> Result<RdkitSanitizedModel, Rdki
     })
 }
 
+/// Registers [`rdkit_model_correct_view`] as chematic-perception's
+/// RDKit-model hook, so the shared RDKit-parity aromatic view (used by the
+/// RDKit-compatible fingerprints, descriptors and SMARTS matching) follows
+/// this crate's port of RDKit's sanitization on molecules where the parity
+/// view may disagree with RDKit. Called by every SMILES parse; idempotent.
+pub fn register_rdkit_model_hook() {
+    chematic_perception::set_rdkit_model_hook(rdkit_model_correct_view);
+}
+
+/// The bond-order class RDKit's model distinguishes.
+fn order_class(order: chematic_core::BondOrder) -> u8 {
+    use chematic_core::BondOrder;
+    match order {
+        BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
+        BondOrder::Double => 2,
+        BondOrder::Triple => 3,
+        BondOrder::Quadruple => 4,
+        BondOrder::Aromatic => 12,
+        BondOrder::Dative => 17,
+        _ => 0,
+    }
+}
+
+/// `view` (an RDKit-parity view of `mol`, on `mol`'s graph) with the
+/// aromaticity, bond orders, charges and hydrogen counts of
+/// [`rdkit_sanitized_model`] where they disagree; `None` when they agree or
+/// the port cannot model `mol`.
+pub fn rdkit_model_correct_view(mol: &Molecule, view: &Molecule) -> Option<Molecule> {
+    use chematic_core::{AtomIdx, BondIdx};
+    if view.atom_count() != mol.atom_count() || view.bond_count() != mol.bond_count() {
+        return None;
+    }
+    let model = rdkit_sanitized_model(mol).ok()?;
+    let atom_differs = |i: usize| -> bool {
+        match model.atoms[i] {
+            Some((arom, charge, _)) => {
+                let a = view.atom(AtomIdx(i as u32));
+                a.aromatic != arom || a.charge != charge
+            }
+            None => false,
+        }
+    };
+    let bond_differs = |b: usize| -> bool {
+        match model.bonds[b] {
+            Some(order) => order_class(view.bond(BondIdx(b as u32)).order) != order_class(order),
+            None => false,
+        }
+    };
+    if !(0..mol.atom_count()).any(atom_differs) && !(0..mol.bond_count()).any(bond_differs) {
+        return None;
+    }
+    let mut out = view.clone();
+    let mut touched = vec![false; mol.atom_count()];
+    for b in 0..mol.bond_count() {
+        if bond_differs(b) {
+            let order = model.bonds[b].expect("modelled bond");
+            let bond = view.bond(BondIdx(b as u32));
+            touched[bond.atom1.0 as usize] = true;
+            touched[bond.atom2.0 as usize] = true;
+            out.set_bond_order(BondIdx(b as u32), order);
+        }
+    }
+    for i in 0..mol.atom_count() {
+        let Some((arom, charge, hs)) = model.atoms[i] else {
+            continue;
+        };
+        if atom_differs(i) || touched[i] {
+            let idx = AtomIdx(i as u32);
+            out.set_atom_aromatic(idx, arom);
+            out.set_charge(idx, charge);
+            if !view.atom(idx).wildcard {
+                out.set_hydrogen_count(idx, Some(hs.saturating_sub(model.removed_h_neighbors[i])));
+            }
+        }
+    }
+    Some(out)
+}
+
 fn rdkit_mol_from_smiles(mol: &Molecule) -> Result<(mol::Mol, Vec<u32>), RdkitSmilesError> {
     let mut m = parse::from_chematic(mol)?;
     if has_added_hydrogens(mol) {
