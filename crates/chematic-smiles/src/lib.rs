@@ -61,14 +61,15 @@ pub use random_smiles::{random_smiles, random_smiles_vect};
 pub use rdkit::{
     InchiOutputAtom, InchiOutputStereo0D, RdkitAlignment, RdkitHashFunction, RdkitLegacyStereo,
     RdkitMol2Molecule, RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, RdkitMolView,
-    RdkitPdbMolecule, RdkitSmilesError, RdkitSmilesParams, RdkitViewAtom, RdkitViewBond,
-    Transform3D, rdkit_2d_coords, rdkit_align_mol, rdkit_align_points,
-    rdkit_atom_stereocenter_counts, rdkit_best_rms, rdkit_calc_rms, rdkit_canonical_smiles,
-    rdkit_chiral_centers, rdkit_cx_smarts, rdkit_legacy_stereo, rdkit_mol_block,
+    RdkitPdbMolecule, RdkitSmilesError, RdkitSmilesParams, RdkitTautomerEnumeration,
+    RdkitTautomerStatus, RdkitViewAtom, RdkitViewBond, Transform3D, rdkit_2d_coords,
+    rdkit_align_mol, rdkit_align_points, rdkit_atom_stereocenter_counts, rdkit_best_rms,
+    rdkit_calc_rms, rdkit_canonical_smiles, rdkit_canonical_tautomer, rdkit_chiral_centers,
+    rdkit_cx_smarts, rdkit_enumerate_tautomers, rdkit_legacy_stereo, rdkit_mol_block,
     rdkit_mol_block_2d, rdkit_mol_from_mol2_block, rdkit_mol_from_pdb_block,
     rdkit_mol_from_xyz_block, rdkit_mol_hash, rdkit_mol_view, rdkit_molecule_from_inchi_output,
     rdkit_murcko_scaffold, rdkit_pdb_block, rdkit_smarts, rdkit_smiles, rdkit_stereoisomer_count,
-    rdkit_stereoisomer_smiles,
+    rdkit_stereoisomer_smiles, rdkit_tautomer_score,
 };
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,

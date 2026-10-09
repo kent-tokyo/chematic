@@ -58,6 +58,7 @@ mod smarts_match;
 mod smarts_write;
 mod stereo;
 mod substruct;
+mod tautomer;
 mod write;
 mod xyz_read;
 
@@ -67,6 +68,7 @@ pub use embed_view::{RdkitMolView, RdkitViewAtom, RdkitViewBond, rdkit_mol_view}
 pub use inchi_read::{InchiOutputAtom, InchiOutputStereo0D, rdkit_molecule_from_inchi_output};
 pub use molblock::{RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, rdkit_mol_block};
 pub use molhash::RdkitHashFunction;
+pub use tautomer::RdkitTautomerStatus;
 
 /// Why [`rdkit_canonical_smiles`] produced no string.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -621,6 +623,61 @@ pub fn rdkit_mol_from_mol2_block(
 
 /// [`rdkit_mol_from_smiles`]'s molecule for writers, which read neither
 /// `chirality_possible` nor the CIP ranks.
+/// The result of [`rdkit_enumerate_tautomers`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RdkitTautomerEnumeration {
+    /// `Chem.MolToSmiles(t)` of every tautomer, in the result's order (its
+    /// map keys' order).
+    pub smiles: Vec<String>,
+    /// The result's map keys (`TautomerEnumeratorResult.smiles`).
+    pub keys: Vec<String>,
+    /// `TautomerEnumeratorResult.status`.
+    pub status: RdkitTautomerStatus,
+}
+
+/// `Chem.MolToSmiles(rdMolStandardize.TautomerEnumerator().Canonicalize(m))`
+/// for `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1, default
+/// `CleanupParameters`): the port of `TautomerEnumerator::canonicalize`
+/// (transforms, enumeration order and limits, `scoreTautomer`, ties broken
+/// by the smaller canonical SMILES).
+///
+/// ```
+/// let mol = chematic_smiles::parse("Oc1ccccn1").unwrap();
+/// assert_eq!(chematic_smiles::rdkit_canonical_tautomer(&mol).unwrap(), "O=c1cccc[nH]1");
+/// ```
+pub fn rdkit_canonical_tautomer(mol: &Molecule) -> Result<String, RdkitSmilesError> {
+    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    let (canon, _) = tautomer::canonicalize(&m)?;
+    write::mol_to_smiles_owned(canon, &RdkitSmilesParams::default())
+}
+
+/// `rdMolStandardize.TautomerEnumerator().Enumerate(m)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1, default
+/// `CleanupParameters`): the tautomers' SMILES and the result status.
+pub fn rdkit_enumerate_tautomers(
+    mol: &Molecule,
+) -> Result<RdkitTautomerEnumeration, RdkitSmilesError> {
+    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    let res = tautomer::enumerate(&m, &tautomer::Settings::default())?;
+    let mut smiles = Vec::with_capacity(res.tautomers.len());
+    for t in res.tautomers.values() {
+        smiles.push(write::mol_to_smiles(&t.mol, &RdkitSmilesParams::default())?);
+    }
+    Ok(RdkitTautomerEnumeration {
+        smiles,
+        keys: res.tautomers.keys().cloned().collect(),
+        status: res.status,
+    })
+}
+
+/// `rdMolStandardize.TautomerEnumerator.ScoreTautomer(m)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1): ring, substructure and
+/// hetero-H terms of `TautomerScoringFunctions::scoreTautomer`.
+pub fn rdkit_tautomer_score(mol: &Molecule) -> Result<i32, RdkitSmilesError> {
+    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    Ok(tautomer::score_tautomer(&m))
+}
+
 fn rdkit_mol_for_writing(mol: &Molecule) -> Result<mol::Mol, RdkitSmilesError> {
     let mut m = parse::from_chematic(mol)?;
     if has_added_hydrogens(mol) {
