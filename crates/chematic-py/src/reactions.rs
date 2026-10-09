@@ -537,8 +537,12 @@ fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
 /// reactant_atom_index)`` or ``None`` for a newly created product atom.
 /// ``product_template_maps`` has the same nesting and contains each output
 /// atom's template map label or ``None``. These align with the returned
-/// product molecules' atom indices. This option does not change
-/// :func:`run_smirks` semantics.
+/// product molecules' atom indices. With ``rdkit_compat=True``,
+/// ``rejected_products`` lists the valence-rejected product sets as RDKit's
+/// ``RunReactants`` returns them, each product paired with whether RDKit's
+/// sanitization would accept it, and atoms carried over from a reactant
+/// keep its atom map numbers (as RDKit copies them). This option does not
+/// change :func:`run_smirks` semantics.
 #[pyfunction(signature = (smirks, reactants, rdkit_compat = false))]
 fn run_smirks_checked<'py>(
     smirks: &str,
@@ -557,6 +561,7 @@ fn run_smirks_checked<'py>(
             Vec::<Vec<Vec<Option<(usize, u32)>>>>::new(),
         )?;
         result.set_item("product_template_maps", Vec::<Vec<Vec<Option<u16>>>>::new())?;
+        result.set_item("rejected_products", Vec::<Vec<(Mol, bool)>>::new())?;
         result.set_item("accepted_matches", 0)?;
         result.set_item("applied_products", 0)?;
         result.set_item("valence_rejected_matches", 0)?;
@@ -609,6 +614,16 @@ fn run_smirks_checked<'py>(
         }
     };
     let diagnostics = report.diagnostics;
+    let rejected: Vec<Vec<(Mol, bool)>> = report
+        .rejected_products
+        .into_iter()
+        .map(|set| {
+            set.into_iter()
+                .map(|(p, ok)| (Mol::bare(p.molecule), ok))
+                .collect()
+        })
+        .collect();
+    result.set_item("rejected_products", rejected)?;
     let status = if diagnostics.valence_rejected_matches > 0 || diagnostics.truncated_matches {
         if report.products.is_empty() {
             "typed_refusal"

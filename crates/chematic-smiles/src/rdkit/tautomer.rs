@@ -464,7 +464,9 @@ fn sanitize_product(product: &mut Mol) -> Result<bool, RdkitSmilesError> {
     product.update_property_cache(false)?;
     match kekulize_full(product, None, true) {
         Ok(()) => {}
-        Err(RdkitSmilesError::Sanitization(msg)) if msg == CANT_KEKULIZE => return Ok(false),
+        Err(RdkitSmilesError::Sanitization(msg)) if msg.starts_with(CANT_KEKULIZE) => {
+            return Ok(false);
+        }
         Err(e) => return Err(e),
     }
     aromaticity::set_aromaticity(product);

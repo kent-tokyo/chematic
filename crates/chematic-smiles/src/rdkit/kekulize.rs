@@ -193,7 +193,13 @@ fn kekulize_fused(
         kekulized = permute_dummies_and_kekulize(mol, &all_atms, &d_bnd_cands, &questions, ranks);
     }
     if !kekulized {
-        return Err(RdkitSmilesError::Sanitization(CANT_KEKULIZE.into()));
+        let mut msg = String::from("Can't kekulize mol.  Unkekulized atoms:");
+        for (i, &cand) in d_bnd_cands.iter().enumerate() {
+            if cand {
+                msg.push_str(&format!(" {i}"));
+            }
+        }
+        return Err(RdkitSmilesError::Sanitization(msg));
     }
     Ok(())
 }

@@ -65,7 +65,16 @@ API_NOTES = {
         "tautomer_*": "Mol.rdkit_canonical_tautomer() / rdkit_tautomers() (port of RDKit's TautomerEnumerator; "
                       "older wheels: native canonical_tautomer() / enumerate_tautomers() read back by RDKit)",
         "rxn:*": "chematic.run_smirks_checked(smirks, [mol, *partners], rdkit_compat=True)",
-        "distance_matrix": "Mol.topological_distance_matrix()",
+        "distance_matrix": "Mol.rdkit_distance_matrix()",
+        "distance_matrix_3d": "Mol.add_hydrogens().rdkit_distance_matrix_3d(RDKit-embedded coords)",
+        "cx_smiles": "Mol.rdkit_cx_smiles()",
+        "random_smiles5": "Mol.rdkit_random_smiles(5, 42)",
+        "fragment_smiles": "Mol.rdkit_fragment_smiles(first half of Mol.rdkit_num_atoms())",
+        "chemistry_problems": "Mol.rdkit_chemistry_problems()",
+        "chemistry_problems_unsanitized": "chematic.rdkit_detect_chemistry_problems(smiles)",
+        "reaction_smarts_roundtrip": "chematic.rdkit_reaction_to_smarts(smirks)",
+        "morgan2_sparse_counts": "Mol.rdkit_morgan_sparse_counts(2)",
+        "torsion_legacy_counts": "Mol.rdkit_legacy_torsion_counts()",
         "mmff_energy_gradient": "Mol.add_hydrogens()._rdkit_mmff_terms(RDKit-embedded coords)",
         "uff_energy_gradient": "Mol.add_hydrogens().rdkit_uff_energy/rdkit_uff_gradient(RDKit-embedded coords)",
     },
@@ -926,9 +935,16 @@ def _chematic_new_ops(c):
 
         def run(m):
             r = c.run_smirks_checked(smirks, [m, *pmols], rdkit_compat=True)
-            if r["status"] not in ("products", "no_match"):
+            valence = r["status"] in ("typed_refusal", "partial_products") and r.get("reason") == "product_valence"
+            if r["status"] not in ("products", "no_match") and not valence:
                 raise RefusedError(f"{r['status']}: {r.get('reason')}")
-            return _product_sets([[p.smiles for p in ps] for ps in r.get("products") or []])
+            # RDKit returns the product sets its sanitization rejects too
+            # (``<invalid>`` products); chematic reports them separately.
+            # As for every engine, RDKit's read-back of each product decides
+            # ``<invalid>``.
+            sets = [[p.smiles for p in ps] for ps in r.get("products") or []]
+            sets += [[p.smiles for p, _ok in ps] for ps in r.get("rejected_products") or []]
+            return _product_sets(sets)
         return run
 
     def mmff(m):
@@ -946,6 +962,15 @@ def _chematic_new_ops(c):
         mh = m.add_hydrogens()
         return _round_nested([mh.rdkit_uff_energy(e[1]), list(mh.rdkit_uff_gradient(e[1]))])
 
+    def dm3d(m):
+        e = _embedded_input()
+        if e is None:
+            return None
+        return _round_nested(m.add_hydrogens().rdkit_distance_matrix_3d(e[1]))
+
+    def problems(m):
+        return sorted([t, sorted(a)] for t, a in m.rdkit_chemistry_problems())
+
     def tautomer_canonical(m):
         if hasattr(m, "rdkit_canonical_tautomer"):
             return m.rdkit_canonical_tautomer()
@@ -959,9 +984,16 @@ def _chematic_new_ops(c):
     ops = {
         "tautomer_canonical": tautomer_canonical,
         "tautomer_set": tautomer_set,
-        "distance_matrix": lambda m: _distance_matrix_norm(m.topological_distance_matrix()),
+        "cx_smiles": lambda m: m.rdkit_cx_smiles(),
+        "random_smiles5": lambda m: m.rdkit_random_smiles(5, 42),
+        "fragment_smiles": lambda m: m.rdkit_fragment_smiles(fragment_atoms(m.rdkit_num_atoms())),
+        "chemistry_problems": problems,
+        "distance_matrix": lambda m: _distance_matrix_norm(m.rdkit_distance_matrix()),
+        "distance_matrix_3d": dm3d,
         "mmff_energy_gradient": mmff,
         "uff_energy_gradient": uff,
+        "morgan2_sparse_counts": lambda m: sorted([int(k), v] for k, v in m.rdkit_morgan_sparse_counts(2).items()),
+        "torsion_legacy_counts": lambda m: sorted([int(k), v] for k, v in m.rdkit_legacy_torsion_counts().items()),
     }
     for name, smirks, partners in REACTIONS:
         ops["rxn:" + name] = run_rxn(smirks, partners)
@@ -1073,6 +1105,13 @@ def chemistry_problems_unsanitized(engine: str, smiles: str):
         problems = m.detect_chemistry_problems().problems
         problems = problems() if callable(problems) else problems
         return sorted(_ck05_problem(p) for p in problems)
+    if engine == "chematic":
+        import chematic as c
+        try:
+            found = c.rdkit_detect_chemistry_problems(smiles)
+        except ValueError:
+            return None
+        return sorted([t, sorted(a)] for t, a in found)
     raise UnsupportedError(f"{engine}: no DetectChemistryProblems equivalent")
 
 
@@ -1085,6 +1124,9 @@ def reaction_smarts_roundtrip(engine: str, smirks: str) -> str:
     if engine == "cosmolkit":
         import cosmolkit as ck
         return ck.parse_smirks(smirks).to_smirks()
+    if engine == "chematic":
+        import chematic as c
+        return c.rdkit_reaction_to_smarts(smirks)
     raise UnsupportedError(f"{engine}: no reaction SMARTS writer")
 
 

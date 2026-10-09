@@ -42,6 +42,7 @@ mod enumerate;
 mod findstereo;
 mod inchi_read;
 mod kekulize;
+mod matrices;
 mod mol;
 mod mol2_read;
 mod molblock;
@@ -54,6 +55,7 @@ mod pdb_read;
 mod periodic;
 mod pyrandom;
 mod rank;
+mod rxn_smarts;
 mod sanitize;
 mod smarts_match;
 mod smarts_write;
@@ -198,6 +200,52 @@ pub struct RdkitLegacyStereo {
     pub bond_stereo: Vec<u8>,
 }
 
+/// What `MolFromSmiles`' sanitization changes in the bonds and charges of
+/// a molecule before perception (`cleanUp`: nitro-like nitrogens, P(=O)=C,
+/// halogen oxides; `cleanUpOrganometallics`: dative bonds from hypervalent
+/// atoms to metals), indexed like `mol`.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct RdkitCleanupEdits {
+    /// `(atom, new formal charge)`.
+    pub charges: Vec<(usize, i32)>,
+    /// `(bond, new order, dative donor atom)`.
+    pub bonds: Vec<(usize, chematic_core::BondOrder, Option<usize>)>,
+}
+
+/// [`RdkitCleanupEdits`] for `mol` (`None`: nothing changes); `Err` where the
+/// port cannot model the molecule.
+pub fn rdkit_cleanup_edits(mol: &Molecule) -> Result<Option<RdkitCleanupEdits>, RdkitSmilesError> {
+    let mut m = parse::from_chematic(mol)?;
+    for a in 0..m.atoms.len() {
+        m.update_atom_property_cache(a, false)?;
+    }
+    let before = m.clone();
+    sanitize::clean_up(&mut m)?;
+    sanitize::clean_up_organometallics(&mut m)?;
+    let mut edits = RdkitCleanupEdits::default();
+    for (a, (x, y)) in before.atoms.iter().zip(&m.atoms).enumerate() {
+        if x.charge != y.charge {
+            edits.charges.push((a, y.charge));
+        }
+    }
+    let order = mol.rdkit_bond_order();
+    for (k, (x, y)) in before.bonds.iter().zip(&m.bonds).enumerate() {
+        if x.bt == y.bt {
+            continue;
+        }
+        let bo = match y.bt {
+            mol::BondType::Single => chematic_core::BondOrder::Single,
+            mol::BondType::Double => chematic_core::BondOrder::Double,
+            mol::BondType::Triple => chematic_core::BondOrder::Triple,
+            mol::BondType::Dative => chematic_core::BondOrder::Dative,
+            _ => return Err(RdkitSmilesError::Unsupported("clean-up bond type".into())),
+        };
+        let donor = (y.bt == mol::BondType::Dative).then_some(y.begin);
+        edits.bonds.push((order[k].0 as usize, bo, donor));
+    }
+    Ok((!edits.charges.is_empty() || !edits.bonds.is_empty()).then_some(edits))
+}
+
 /// [`RdkitLegacyStereo`] for `mol`; `Err` where the port cannot model the
 /// molecule or RDKit's hydrogen removal would renumber its atoms.
 pub fn rdkit_legacy_stereo(mol: &Molecule) -> Result<RdkitLegacyStereo, RdkitSmilesError> {
@@ -278,6 +326,301 @@ pub fn rdkit_smarts(
 ) -> Result<String, RdkitSmilesError> {
     let m = rdkit_mol_for_writing(mol)?;
     Ok(smarts_write::mol_to_smarts_owned(m, isomeric, rooted_at_atom, true)?.0)
+}
+
+/// `Chem.MolToCXSmiles(m, params)` for `m = Chem.MolFromSmiles(s)` (RDKit
+/// 2026.03.1, `CXSmilesFields.CX_ALL`): the SMILES written with dative
+/// bonds as single bonds, then the CXSMILES extension of a molecule read
+/// from SMILES (radicals `^n:`, ring double bonds of unknown geometry
+/// `ctu:`, coordinate bonds `C:`). With `params.kekule` the whole molecule
+/// is kekulized first, as `MolToCXSmiles` does. Molecules with enhanced
+/// stereo groups are refused.
+///
+/// ```
+/// let mol = chematic_smiles::parse("C[CH2]").unwrap();
+/// assert_eq!(
+///     chematic_smiles::rdkit_cx_smiles(&mol, &Default::default()).unwrap(),
+///     "[CH2]C |^1:0|"
+/// );
+/// ```
+pub fn rdkit_cx_smiles(
+    mol: &Molecule,
+    params: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
+    if !mol.stereo_groups().is_empty() {
+        return Err(RdkitSmilesError::Unsupported(
+            "enhanced stereo groups".into(),
+        ));
+    }
+    let mut m = rdkit_mol_for_writing(mol)?;
+    let mut p = *params;
+    if p.kekule {
+        kekulize::kekulize(&mut m)?;
+        p.kekule = false;
+    }
+    write::mol_to_cx_smiles(m, &p, false)
+}
+
+/// `Chem.MolFragmentToSmiles(m, atomsToUse, bondsToUse, **params)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1, no atom or bond symbols):
+/// the atoms `atoms` (indices into RDKit's molecule) with the bonds
+/// `bonds` (default: every bond between two of them), ranked by
+/// `Canon::rankFragmentAtoms`; chiral atoms with a bond outside the
+/// fragment lose their tag, disconnected pieces are joined with `.`.
+/// `params.kekule` is refused for fragments with aromatic atoms.
+///
+/// ```
+/// let mol = chematic_smiles::parse("OC(=O)c1ccccc1").unwrap();
+/// let p = Default::default();
+/// assert_eq!(chematic_smiles::rdkit_fragment_smiles(&mol, &[0, 1, 2], None, &p).unwrap(), "O=CO");
+/// ```
+pub fn rdkit_fragment_smiles(
+    mol: &Molecule,
+    atoms: &[usize],
+    bonds: Option<&[usize]>,
+    params: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
+    let m = rdkit_mol_for_writing(mol)?;
+    write::mol_fragment_to_smiles(m, atoms, bonds, params)
+}
+
+/// `Chem.MolFromSmiles(s).GetNumAtoms()` for the SMILES `s` chematic
+/// parsed `mol` from: the atom count after RDKit's hydrogen removal (the
+/// index range of RDKit's atom numbering).
+pub fn rdkit_num_atoms(mol: &Molecule) -> Result<usize, RdkitSmilesError> {
+    Ok(rdkit_mol_for_writing(mol)?.atoms.len())
+}
+
+/// `Chem.GetDistanceMatrix(m, useBO, useAtomWts)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1; the `Chem.AddHs` molecule
+/// when `mol` carries added hydrogens): topological distances by
+/// Floyd-Warshall, `1e8` between fragments; `use_bo` weights bonds by
+/// `1 / bond order` (aromatic `2/3`), `use_atom_wts` sets the diagonal to
+/// `6 / atomic number`. One row per atom in RDKit's atom order.
+pub fn rdkit_distance_matrix(
+    mol: &Molecule,
+    use_bo: bool,
+    use_atom_wts: bool,
+) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
+    let m = rdkit_mol_for_writing(mol)?;
+    let n = m.atoms.len();
+    let d = matrices::distance_mat(&m, use_bo, use_atom_wts);
+    Ok(d.chunks(n.max(1)).map(<[f64]>::to_vec).take(n).collect())
+}
+
+/// `Chem.Get3DDistanceMatrix(m, useAtomWts=...)` for RDKit's molecule of
+/// `mol` (as in [`rdkit_distance_matrix`]) with the conformer `coords`
+/// (one `[x, y, z]` per atom in RDKit's atom order).
+pub fn rdkit_distance_matrix_3d(
+    mol: &Molecule,
+    coords: &[[f64; 3]],
+    use_atom_wts: bool,
+) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
+    let m = rdkit_mol_for_writing(mol)?;
+    let n = m.atoms.len();
+    if coords.len() != n {
+        return Err(RdkitSmilesError::Unsupported(format!(
+            "{} coordinates for {n} atoms",
+            coords.len()
+        )));
+    }
+    let d = matrices::distance_mat_3d(&m, coords, use_atom_wts);
+    Ok(d.chunks(n.max(1)).map(<[f64]>::to_vec).take(n).collect())
+}
+
+/// One problem `MolOps::detectChemistryProblems` reports (see
+/// [`rdkit_detect_chemistry_problems`]).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RdkitChemistryProblem {
+    /// `MolSanitizeException::getType()`: `"AtomValenceException"`,
+    /// `"AtomKekulizeException"` or `"KekulizeException"`.
+    pub kind: String,
+    /// The atom (`getAtomIdx()`) or atoms (`getAtomIndices()`) involved,
+    /// in the parser's atom order.
+    pub atoms: Vec<usize>,
+    /// RDKit's message.
+    pub message: String,
+}
+
+/// `Chem.DetectChemistryProblems(Chem.MolFromSmiles(s, sanitize=False))`
+/// (RDKit 2026.03.1, `SANITIZE_ALL`) for the SMILES `s` chematic parsed
+/// `mol` from: `cleanUp`, a strict `updatePropertyCache` per atom (each
+/// failure an `AtomValenceException`), then a non-canonical `Kekulize` on
+/// SSSR rings (`AtomKekulizeException` for a non-ring aromatic atom,
+/// `KekulizeException` with the unkekulized atoms). Problems come in
+/// RDKit's order. Parse SMILES with impossible O/F valences with
+/// [`crate::parse_template`], which [`crate::parse`] rejects.
+///
+/// ```
+/// let mol = chematic_smiles::parse("c1cccc1").unwrap();
+/// let p = chematic_smiles::rdkit_detect_chemistry_problems(&mol).unwrap();
+/// assert_eq!(p[0].kind, "KekulizeException");
+/// assert_eq!(p[0].atoms, vec![0, 1, 2, 3, 4]);
+/// ```
+pub fn rdkit_detect_chemistry_problems(
+    mol: &Molecule,
+) -> Result<Vec<RdkitChemistryProblem>, RdkitSmilesError> {
+    detect_chemistry_problems(parse::from_chematic(mol)?)
+}
+
+/// `Chem.DetectChemistryProblems(Chem.MolFromSmiles(s))`: as
+/// [`rdkit_detect_chemistry_problems`] on RDKit's sanitized molecule (atom
+/// indices after its hydrogen removal); `Err` where `MolFromSmiles` itself
+/// fails.
+pub fn rdkit_detect_chemistry_problems_sanitized(
+    mol: &Molecule,
+) -> Result<Vec<RdkitChemistryProblem>, RdkitSmilesError> {
+    // `clearComputedProps` leaves the ring information (symmetrized SSSR);
+    // `Kekulize` runs `findSSSR` only without it.
+    detect_chemistry_problems(rdkit_mol_for_writing(mol)?)
+}
+
+fn detect_chemistry_problems(
+    mut m: mol::Mol,
+) -> Result<Vec<RdkitChemistryProblem>, RdkitSmilesError> {
+    let mut res = Vec::new();
+    sanitize::clean_up(&mut m)?;
+    for a in 0..m.atoms.len() {
+        if let Err(e) = m.update_atom_property_cache(a, true) {
+            let message = match e {
+                RdkitSmilesError::Sanitization(msg) => msg,
+                other => return Err(other),
+            };
+            res.push(RdkitChemistryProblem {
+                kind: "AtomValenceException".into(),
+                atoms: vec![a],
+                message,
+            });
+        }
+    }
+    if m.rings.is_none()
+        && (m.bonds.iter().any(|b| b.aromatic) || m.atoms.iter().any(|a| a.aromatic))
+    {
+        m.find_sssr()?;
+    }
+    if let Err(e) = kekulize::kekulize(&mut m) {
+        let message = match e {
+            RdkitSmilesError::Sanitization(msg) => msg,
+            other => return Err(other),
+        };
+        let numbers = |s: &str| -> Vec<usize> {
+            s.split(|c: char| !c.is_ascii_digit())
+                .filter_map(|t| t.parse().ok())
+                .collect()
+        };
+        let problem =
+            if let Some(rest) = message.strip_prefix("Can't kekulize mol.  Unkekulized atoms:") {
+                RdkitChemistryProblem {
+                    kind: "KekulizeException".into(),
+                    atoms: numbers(rest),
+                    message,
+                }
+            } else if let Some(rest) = message
+                .strip_prefix("non-ring atom ")
+                .or_else(|| message.strip_prefix("Kekulization somehow screwed up valence on "))
+            {
+                RdkitChemistryProblem {
+                    kind: "AtomKekulizeException".into(),
+                    atoms: numbers(rest).into_iter().take(1).collect(),
+                    message,
+                }
+            } else {
+                RdkitChemistryProblem {
+                    kind: "AtomValenceException".into(),
+                    atoms: numbers(&message).into_iter().take(1).collect(),
+                    message,
+                }
+            };
+        res.push(problem);
+    }
+    Ok(res)
+}
+
+/// `Chem.MolToSmarts(Chem.MolFromSmarts(smarts))` (RDKit 2026.03.1): the
+/// query re-written as RDKit writes query molecules (`[OH]` becomes
+/// `[O&H1]`, `;` becomes `&` where no `,` needs it, recursive queries
+/// re-written, chirality relative to the output order). Directional and
+/// dative bonds and chirality classes are refused.
+///
+/// ```
+/// assert_eq!(chematic_smiles::rdkit_smarts_to_smarts("[CX3](=O)[OX2H1]").unwrap(),
+///            "[C&X3](=O)[O&X2&H1]");
+/// ```
+pub fn rdkit_smarts_to_smarts(smarts: &str) -> Result<String, RdkitSmilesError> {
+    rxn_smarts::smarts_to_smarts(smarts)
+}
+
+/// `rdChemReactions.ReactionToSmarts(rdChemReactions.ReactionFromSmarts(s))`
+/// (RDKit 2026.03.1): each reactant, agent and product template written by
+/// `MolToSmarts` (see [`rdkit_smarts_to_smarts`]) in input order, a
+/// template with several components (`(A.B)` grouping) in parentheses.
+///
+/// ```
+/// assert_eq!(
+///     chematic_smiles::rdkit_reaction_to_smarts("[C:1](=[O:2])[OH].[NH2:3]>>[C:1](=[O:2])[N:3]").unwrap(),
+///     "[C:1](=[O:2])[O&H1].[N&H2:3]>>[C:1](=[O:2])[N:3]"
+/// );
+/// ```
+pub fn rdkit_reaction_to_smarts(reaction_smarts: &str) -> Result<String, RdkitSmilesError> {
+    rxn_smarts::reaction_to_smarts(reaction_smarts)
+}
+
+/// RDKit's process-wide random generator (`getRandomGenerator()`, seeded
+/// with 42 at load), as the random SMILES writer draws from it.
+static RDKIT_RANDOM_GENERATOR: std::sync::Mutex<Option<write::MinstdRand>> =
+    std::sync::Mutex::new(None);
+
+/// `Chem.MolToRandomSmilesVect(m, n, randomSeed, isomericSmiles,
+/// kekuleSmiles, allBondsExplicit, allHsExplicit)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1): `n` non-canonical SMILES
+/// with a random root per fragment and random DFS branch order, drawn
+/// from RDKit's `boost::minstd_rand` generator. `random_seed > 0` reseeds
+/// the generator first; `0` continues a process-wide generator that starts
+/// as RDKit's does (seed 42). `canonical` and `rooted_at_atom` of `params`
+/// are ignored.
+///
+/// ```
+/// let mol = chematic_smiles::parse("CCO").unwrap();
+/// let v = chematic_smiles::rdkit_random_smiles(&mol, 2, 42, &Default::default()).unwrap();
+/// assert_eq!(v.len(), 2);
+/// ```
+pub fn rdkit_random_smiles(
+    mol: &Molecule,
+    n: usize,
+    random_seed: u32,
+    params: &RdkitSmilesParams,
+) -> Result<Vec<String>, RdkitSmilesError> {
+    let p = RdkitSmilesParams {
+        canonical: false,
+        rooted_at_atom: None,
+        ..*params
+    };
+    rdkit_random_smiles_with(mol, n, random_seed, &p)
+}
+
+/// `n` calls of `Chem.MolToSmiles(m, doRandom=True, **params)` after
+/// seeding as in [`rdkit_random_smiles`] (with `params.canonical` the
+/// fragments are sorted; a `rooted_at_atom` fixes the root of its
+/// fragment).
+pub fn rdkit_random_smiles_with(
+    mol: &Molecule,
+    n: usize,
+    random_seed: u32,
+    params: &RdkitSmilesParams,
+) -> Result<Vec<String>, RdkitSmilesError> {
+    let m = rdkit_mol_for_writing(mol)?;
+    let mut guard = RDKIT_RANDOM_GENERATOR
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if random_seed > 0 || guard.is_none() {
+        *guard = Some(write::MinstdRand::new(if random_seed > 0 {
+            random_seed
+        } else {
+            42
+        }));
+    }
+    let rng = guard.as_mut().expect("seeded");
+    write::mol_to_random_smiles(&m, n, params, rng)
 }
 
 /// `Chem.MolToCXSmarts(m)` for `m = Chem.MolFromSmiles(s)` (RDKit
@@ -991,6 +1334,27 @@ pub fn rdkit_crippen_logp_mr(mol: &Molecule) -> Option<(f64, f64)> {
         mr += r;
     }
     Some((logp, mr))
+}
+
+/// [`rdkit_hydrogen_suppressed`] with, per atom of the returned molecule,
+/// the index of the atom of `mol` it is (RDKit's `removeHs` keeps the
+/// other atoms in order).
+pub fn rdkit_hydrogen_suppressed_with_map(mol: &Molecule) -> Option<(Molecule, Vec<usize>)> {
+    if has_added_hydrogens(mol)
+        || !mol
+            .atoms()
+            .any(|(_, a)| !a.wildcard && a.element == chematic_core::Element::H)
+    {
+        return None;
+    }
+    let mut m = parse::from_chematic(mol).ok()?;
+    let kept = sanitize::remove_hs(&mut m, true).ok()?;
+    if kept.len() == mol.atom_count() {
+        return None;
+    }
+    stereo::legacy_stereo_perception(&mut m, true, true);
+    let out = pdb_read::to_chematic(&m, true).ok()?;
+    (out.atom_count() == kept.len()).then_some((out, kept))
 }
 
 /// Registers [`rdkit_model_correct_view`] as chematic-perception's

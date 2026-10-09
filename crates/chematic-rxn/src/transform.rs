@@ -80,6 +80,17 @@ pub struct ReactionTransformReport {
 pub struct TracedReactionTransformReport {
     pub products: Vec<Vec<TracedProduct>>,
     pub diagnostics: ReactionTransformDiagnostics,
+    /// RDKit profile only: the valence-rejected product sets as RDKit's
+    /// `RunReactants` returns them (unsanitized), each product with whether
+    /// RDKit's sanitization would accept it. Empty for native semantics.
+    pub rejected_products: Vec<Vec<(TracedProduct, bool)>>,
+}
+
+/// One match's product set: accepted, or rejected by product valence (with
+/// each product's own verdict).
+enum ProductSetOutcome {
+    Valid(Vec<TracedProduct>),
+    Rejected(Vec<TracedProduct>, Vec<bool>),
 }
 
 /// Why the pinned RDKit 2026.03.6 compatibility profile cannot safely claim
@@ -577,6 +588,21 @@ impl PreparedReaction {
             .as_ref()
     }
 
+    /// Whether a reactant template spells a hydrogen atom (`[H]`, `#1`).
+    fn reactant_side_spells_hydrogen(&self) -> bool {
+        let reactants = self
+            .normalized_smirks
+            .split('>')
+            .next()
+            .unwrap_or_default()
+            .as_bytes();
+        reactants.windows(2).any(|w| w == b"[H")
+            || reactants
+                .windows(3)
+                .any(|w| w[0] == b'#' && w[1] == b'1' && !w[2].is_ascii_digit())
+            || reactants.ends_with(b"#1")
+    }
+
     /// Whether the template text spells any tetrahedral stereo.
     fn has_any_stereo_text(&self) -> bool {
         self.normalized_smirks.contains('@')
@@ -601,6 +627,7 @@ impl PreparedReaction {
             None => vec![self],
         };
         let mut products = Vec::new();
+        let mut rejected_products = Vec::new();
         let mut diagnostics = ReactionTransformDiagnostics {
             accepted_matches: 0,
             applied_products: 0,
@@ -618,10 +645,12 @@ impl PreparedReaction {
             diagnostics.valence_rejected_matches += report.diagnostics.valence_rejected_matches;
             diagnostics.truncated_matches |= report.diagnostics.truncated_matches;
             products.extend(report.products);
+            rejected_products.extend(report.rejected_products);
         }
         Ok(RdkitProfileOutcome::Report(TracedReactionTransformReport {
             products,
             diagnostics,
+            rejected_products,
         }))
     }
 
@@ -866,6 +895,39 @@ impl PreparedReaction {
         Result<TracedReactionTransformReport, ReactionCompatibilityUnsupported>,
         TransformError,
     > {
+        // RDKit's SMILES parser removes hydrogen atoms (`removeHs`): the
+        // profile runs on that molecule and maps atom sources back.
+        // A template that spells hydrogen atoms is for explicit-H reactants
+        // (`AddHs`, as BioTransformer runs RDKit): those keep them.
+        let suppressed: Vec<Option<(Molecule, Vec<usize>)>> = match profile {
+            Profile::Rdkit if self.reactant_side_spells_hydrogen() => Vec::new(),
+            Profile::Native => Vec::new(),
+            Profile::Rdkit => reactants
+                .iter()
+                .map(|m| {
+                    chematic_smiles::rdkit_hydrogen_suppressed_with_map(m)
+                        .map(|(h, kept)| (with_reactant_tetrahedral_records(m, h, &kept), kept))
+                })
+                .collect(),
+        };
+        let suppressed_refs: Vec<&Molecule>;
+        let reactants: &[&Molecule] = if suppressed.iter().any(Option::is_some) {
+            suppressed_refs = reactants
+                .iter()
+                .zip(&suppressed)
+                .map(|(&m, s)| s.as_ref().map_or(m, |(s, _)| s))
+                .collect();
+            &suppressed_refs
+        } else {
+            reactants
+        };
+        let restore_sources = |product: &mut TracedProduct| {
+            for source in product.atom_sources.iter_mut().flatten() {
+                if let Some(Some((_, kept))) = suppressed.get(source.reactant) {
+                    source.atom = AtomIdx(kept[source.atom.0 as usize] as u32);
+                }
+            }
+        };
         // RDKit's SMILES parser drops tags on atoms that cannot be centres.
         let cleaned: Vec<std::sync::Arc<Option<Molecule>>> = match profile {
             Profile::Native => Vec::new(),
@@ -892,10 +954,20 @@ impl PreparedReaction {
         let accepted_matches = matches.len();
         let mut products = Vec::with_capacity(accepted_matches);
         let mut valence_rejected_matches = 0;
+        let mut rejected_products = Vec::new();
         for m in &matches {
             match apply_match_profile(self, reactants, m, carry_substituents, profile) {
-                Ok(Some(product_set)) => products.push(product_set),
-                Ok(None) => valence_rejected_matches += 1,
+                Ok(ProductSetOutcome::Valid(mut product_set)) => {
+                    product_set.iter_mut().for_each(restore_sources);
+                    products.push(product_set);
+                }
+                Ok(ProductSetOutcome::Rejected(mut set, ok)) => {
+                    valence_rejected_matches += 1;
+                    if profile == Profile::Rdkit {
+                        set.iter_mut().for_each(restore_sources);
+                        rejected_products.push(set.into_iter().zip(ok).collect());
+                    }
+                }
                 Err(reason) => return Ok(Err(reason)),
             }
         }
@@ -907,6 +979,7 @@ impl PreparedReaction {
                 truncated_matches: false,
             },
             products,
+            rejected_products,
         }))
     }
 
@@ -951,6 +1024,7 @@ impl PreparedReaction {
             return Ok(TracedReactionTransformReport {
                 products,
                 diagnostics,
+                rejected_products: Vec::new(),
             });
         }
         self.run_reactants_traced_with_diagnostics_impl(reactants, true, limits)
@@ -1686,7 +1760,35 @@ fn split_components(side: &str) -> Vec<&str> {
     let mut out = Vec::new();
     let (mut bracket, mut paren) = (0usize, 0usize);
     let mut start = 0usize;
+    // Component grouping, `(A.B)`: as in RDKit's reaction SMARTS, the
+    // group is one template whose disconnected parts match one molecule.
+    let mut group: Option<usize> = None;
+    let mut group_depth = 0usize;
     for (i, b) in side.bytes().enumerate() {
+        if group.is_some() {
+            match b {
+                b'[' => bracket += 1,
+                b']' => bracket = bracket.saturating_sub(1),
+                b'(' if bracket == 0 => group_depth += 1,
+                b')' if bracket == 0 => {
+                    group_depth -= 1;
+                    if group_depth == 0 {
+                        let g = group.take().expect("group");
+                        if i > g + 1 {
+                            out.push(&side[g + 1..i]);
+                        }
+                        start = i + 1;
+                    }
+                }
+                _ => {}
+            }
+            continue;
+        }
+        if b == b'(' && bracket == 0 && i == start {
+            group = Some(i);
+            group_depth = 1;
+            continue;
+        }
         match b {
             b'[' => bracket += 1,
             b']' => bracket = bracket.saturating_sub(1),
@@ -1701,7 +1803,10 @@ fn split_components(side: &str) -> Vec<&str> {
             _ => {}
         }
     }
-    if side.len() > start {
+    if let Some(g) = group {
+        // Unclosed group: left to the template parser to refuse.
+        out.push(&side[g..]);
+    } else if side.len() > start {
         out.push(&side[start..]);
     }
     out
@@ -2273,8 +2378,11 @@ fn apply_match_traced_impl(
     m: &ReactionMatch,
     carry_substituents: bool,
 ) -> Option<Vec<TracedProduct>> {
-    apply_match_profile(prepared, reactants, m, carry_substituents, Profile::Native)
-        .unwrap_or_else(|_| unreachable!("the native profile never declines"))
+    match apply_match_profile(prepared, reactants, m, carry_substituents, Profile::Native) {
+        Ok(ProductSetOutcome::Valid(set)) => Some(set),
+        Ok(ProductSetOutcome::Rejected(..)) => None,
+        Err(_) => unreachable!("the native profile never declines"),
+    }
 }
 
 fn apply_match_profile(
@@ -2283,7 +2391,7 @@ fn apply_match_profile(
     m: &ReactionMatch,
     carry_substituents: bool,
     profile: Profile,
-) -> Result<Option<Vec<TracedProduct>>, ReactionCompatibilityUnsupported> {
+) -> Result<ProductSetOutcome, ReactionCompatibilityUnsupported> {
     let originals = reactants;
     let views = aromatic_views(reactants);
     let perceived = perceived_refs(reactants, &views);
@@ -2324,6 +2432,7 @@ fn apply_match_profile(
                 &all_template_atoms,
                 carry_substituents,
                 prepared.product_specs.get(pi).map_or(&[], Vec::as_slice),
+                profile == Profile::Rdkit,
             );
             if let Some(stereo) = stereo {
                 let src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx> = product
@@ -2370,6 +2479,7 @@ fn apply_match_profile(
     let mut products = products;
     for product in &mut products {
         if mixed_aromatic_state(&product.molecule)
+            && mixed_state_introduced(product, reactants)
             && let Some(view) = rdkit_sanitized_view(&product.molecule)
         {
             product.molecule = view;
@@ -2377,11 +2487,15 @@ fn apply_match_profile(
     }
 
     // Skip product sets RDKit's sanitize step would reject (issue #734).
-    if products.iter().all(|p| sanitizable_product(&p.molecule)) {
+    let ok: Vec<bool> = products
+        .iter()
+        .map(|p| sanitizable_product(&p.molecule))
+        .collect();
+    if ok.iter().all(|&o| o) {
         crate::perf_counters::record_product_set();
-        Ok(Some(products))
+        Ok(ProductSetOutcome::Valid(products))
     } else {
-        Ok(None)
+        Ok(ProductSetOutcome::Rejected(products, ok))
     }
 }
 
@@ -2660,6 +2774,49 @@ fn mixed_aromatic_state(mol: &Molecule) -> bool {
             .filter(|&(_, b)| mol.bond(b).order == BondOrder::Aromatic)
             .count();
         (a.aromatic && aromatic_bonds < 2) || (!a.aromatic && aromatic_bonds > 0)
+    })
+}
+
+/// Per atom, whether it is in a mixed aromatic state (see
+/// [`mixed_aromatic_state`]).
+fn mixed_aromatic_atoms(mol: &Molecule) -> Vec<bool> {
+    let mut out = vec![false; mol.atom_count()];
+    for (_, b) in mol.bonds() {
+        if b.order == BondOrder::Double && mol.atom(b.atom1).aromatic && mol.atom(b.atom2).aromatic
+        {
+            out[b.atom1.0 as usize] = true;
+            out[b.atom2.0 as usize] = true;
+        }
+    }
+    for (idx, a) in mol.atoms() {
+        let aromatic_bonds = mol
+            .neighbors(idx)
+            .filter(|&(_, b)| mol.bond(b).order == BondOrder::Aromatic)
+            .count();
+        if (a.aromatic && aromatic_bonds < 2) || (!a.aromatic && aromatic_bonds > 0) {
+            out[idx.0 as usize] = true;
+        }
+    }
+    out
+}
+
+/// Whether the template made a product's mixed aromatic state: some mixed
+/// atom is new or was not mixed in its reactant. A state carried over from
+/// the reactant unchanged (an aromatic ring written with `#`) stays as
+/// RDKit's product keeps it.
+fn mixed_state_introduced(product: &TracedProduct, reactants: &[&Molecule]) -> bool {
+    let mixed = mixed_aromatic_atoms(&product.molecule);
+    let mut reactant_mixed: Vec<Option<Vec<bool>>> = vec![None; reactants.len()];
+    mixed.iter().enumerate().any(|(i, &m)| {
+        if !m {
+            return false;
+        }
+        let Some(src) = product.atom_sources.get(i).copied().flatten() else {
+            return true;
+        };
+        let rm = reactant_mixed[src.reactant]
+            .get_or_insert_with(|| mixed_aromatic_atoms(reactants[src.reactant]));
+        !rm[src.atom.0 as usize]
     })
 }
 
@@ -3700,6 +3857,78 @@ fn correct_product_stereo(
     product
 }
 
+/// `h` (RDKit's hydrogen-suppressed reading of `mol`, atom `i` being atom
+/// `kept[i]` of `mol`) with each tetrahedral centre RDKit kept described by
+/// `mol`'s own record: the same tag and neighbour order, a removed hydrogen
+/// atom becoming the implicit-H slot.
+fn with_reactant_tetrahedral_records(mol: &Molecule, mut h: Molecule, kept: &[usize]) -> Molecule {
+    let mut new_of = vec![None; mol.atom_count()];
+    for (i, &k) in kept.iter().enumerate() {
+        new_of[k] = Some(i as u32);
+    }
+    for (i, &k) in kept.iter().enumerate() {
+        let idx = AtomIdx(i as u32);
+        let src = AtomIdx(k as u32);
+        if !h.atom(idx).chirality.is_tetrahedral() {
+            continue;
+        }
+        let order: Vec<u32> = match mol.stereo_neighbor_order(src) {
+            Some(o) => o.to_vec(),
+            None => mol.neighbors(src).map(|(n, _)| n.0).collect(),
+        };
+        let mut slots = 0;
+        let remapped: Option<Vec<u32>> = order
+            .iter()
+            .map(|&n| {
+                if n == chematic_core::STEREO_H_SENTINEL {
+                    slots += 1;
+                    return Some(n);
+                }
+                match new_of[n as usize] {
+                    Some(x) => Some(x),
+                    None => {
+                        slots += 1;
+                        Some(chematic_core::STEREO_H_SENTINEL)
+                    }
+                }
+            })
+            .collect();
+        match remapped {
+            Some(o) if slots <= 1 && mol.atom(src).chirality.is_tetrahedral() => {
+                h.set_chirality(idx, mol.atom(src).chirality);
+                h.set_stereo_neighbor_order(idx, o);
+            }
+            _ => h.set_chirality(idx, Chirality::None),
+        }
+    }
+    h
+}
+
+/// RDKit's bond order around a carried, non-ring atom of the product: the
+/// bond to `discoverer` (the neighbour the walk reached it from) first, then
+/// its other bonds in reactant order. `None` for an atom in a ring (other
+/// neighbours may add their bonds earlier) or with an implicit-H slot.
+fn rdkit_carried_bond_order(
+    mol: &Molecule,
+    atom: AtomIdx,
+    discoverer: Option<AtomIdx>,
+) -> Option<Vec<u32>> {
+    let d = discoverer?;
+    if atoms_in_rings(mol)[atom.0 as usize] {
+        return None;
+    }
+    let reactant: Vec<u32> = match mol.stereo_neighbor_order(atom) {
+        Some(o) => o.to_vec(),
+        None => mol.neighbors(atom).map(|(n, _)| n.0).collect(),
+    };
+    if reactant.contains(&chematic_core::STEREO_H_SENTINEL) || !reactant.contains(&d.0) {
+        return None;
+    }
+    let mut order = vec![d.0];
+    order.extend(reactant.into_iter().filter(|&n| n != d.0));
+    Some(order)
+}
+
 /// Build one product molecule applying full SMIRKS semantics.
 ///
 /// 1. Atom-mapped product atoms: copy source atom + override aromatic/charge/H from template.
@@ -3718,6 +3947,7 @@ fn build_product(
     all_template_atoms: &FxHashSet<(usize, AtomIdx)>,
     carry_substituents: bool,
     specs: &[ProductAtomSpec],
+    keep_carried_maps: bool,
 ) -> (TracedProduct, Vec<Option<AtomIdx>>) {
     // A product holds at most the reactants' atoms and bonds plus the
     // template's: reserve them once instead of growing per atom and bond.
@@ -3962,6 +4192,9 @@ fn build_product(
     for &(mol_idx, atom) in all_template_atoms.iter().chain(folded_h.iter()) {
         visited[mol_idx][atom.0 as usize] = true;
     }
+    // Each carried atom's neighbour the walk reached it from (RDKit's
+    // product bond order around it starts with that bond).
+    let mut discoverer: FxHashMap<(usize, AtomIdx), AtomIdx> = FxHashMap::default();
     if carry_substituents {
         // Seeded in reactant atom order, so the product's atom order does not
         // follow the hash set's iteration order.
@@ -3973,9 +4206,14 @@ fn build_product(
                 if std::mem::replace(&mut visited[mol_idx][nb_idx.0 as usize], true) {
                     continue;
                 }
+                discoverer.insert(key, cur_idx);
                 let src_atom = input_mols[mol_idx].atom(nb_idx);
                 let mut new_atom = src_atom.clone();
-                new_atom.atom_map = None;
+                // RDKit copies an unmatched reactant atom whole
+                // (`addMissingProductAtom`), its atom map number included.
+                if !keep_carried_maps {
+                    new_atom.atom_map = None;
+                }
                 let new_idx = builder.add_atom(new_atom);
                 src_to_new.insert(key, new_idx);
                 queue.push_back(key);
@@ -4120,6 +4358,30 @@ fn build_product(
         .collect();
     for &((mol_idx, src_idx), new_idx) in &sourced_atoms {
         let src = input_mols[mol_idx];
+        if keep_carried_maps
+            && src.atom(src_idx).chirality.nontetrahedral().is_some()
+            && !template_idx_to_new.contains(&Some(new_idx))
+        {
+            // RDKit leaves a carried atom's non-tetrahedral tag as it was
+            // (`checkAndCorrectChiralityOfProduct` only corrects tetrahedral
+            // ones): the same permutation, now relative to the product's
+            // bond order, which starts with the bond the walk came in by.
+            let order = rdkit_carried_bond_order(
+                src,
+                src_idx,
+                discoverer.get(&(mol_idx, src_idx)).copied(),
+            )
+            .and_then(|order| remap_reactant_stereo_order(&order, mol_idx, &src_to_new))
+            .filter(|order| order_matches_final_topology(&product, new_idx, order));
+            match order {
+                Some(order) => {
+                    product.set_chirality(new_idx, src.atom(src_idx).chirality);
+                    product.set_stereo_neighbor_order(new_idx, order);
+                }
+                None => product.set_chirality(new_idx, Chirality::None),
+            }
+            continue;
+        }
         if !src.atom(src_idx).chirality.is_tetrahedral()
             || template_idx_to_new.contains(&Some(new_idx))
         {

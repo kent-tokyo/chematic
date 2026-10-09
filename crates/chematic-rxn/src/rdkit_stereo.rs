@@ -96,16 +96,19 @@ impl ReactionStereo {
     }
 }
 
-/// Top-level `.`-separated templates of one reaction side.
+/// Top-level `.`-separated templates of one reaction side; a component
+/// group `(A.B)` is one template (without its parentheses).
 fn split_templates(side: &str) -> Vec<&str> {
     let mut parts = Vec::new();
-    let mut depth = 0usize;
+    let (mut depth, mut paren) = (0usize, 0usize);
     let mut start = 0;
     for (i, b) in side.bytes().enumerate() {
         match b {
             b'[' => depth += 1,
             b']' => depth = depth.saturating_sub(1),
-            b'.' if depth == 0 => {
+            b'(' if depth == 0 => paren += 1,
+            b')' if depth == 0 => paren = paren.saturating_sub(1),
+            b'.' if depth == 0 && paren == 0 => {
                 parts.push(&side[start..i]);
                 start = i + 1;
             }
@@ -113,7 +116,32 @@ fn split_templates(side: &str) -> Vec<&str> {
         }
     }
     parts.push(&side[start..]);
-    parts.into_iter().filter(|p| !p.is_empty()).collect()
+    parts
+        .into_iter()
+        .filter(|p| !p.is_empty())
+        .map(|p| {
+            // A whole-component group: `(` ... matching `)` at the end.
+            let b = p.as_bytes();
+            if b.first() == Some(&b'(') && b.last() == Some(&b')') {
+                let (mut d, mut br) = (0usize, 0usize);
+                for (k, &c) in b.iter().enumerate() {
+                    match c {
+                        b'[' => br += 1,
+                        b']' => br = br.saturating_sub(1),
+                        b'(' if br == 0 => d += 1,
+                        b')' if br == 0 => {
+                            d -= 1;
+                            if d == 0 {
+                                return if k == b.len() - 1 { &p[1..k] } else { p };
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            p
+        })
+        .collect()
 }
 
 /// One entry of an atom's SMILES-text neighbour order.
@@ -192,8 +220,12 @@ pub(crate) fn tokenize_template(text: &str) -> Option<Vec<TemplateAtom>> {
                 i += 1;
             }
             b'.' => {
-                // Component grouping inside one template is not followed.
-                return None;
+                // Another component of a grouped template, `(A.B)`.
+                if !stack.is_empty() {
+                    return None;
+                }
+                prev = None;
+                i += 1;
             }
             c @ (b'0'..=b'9' | b'%') => {
                 let (num, len) = if c == b'%' {
@@ -1135,6 +1167,32 @@ pub(crate) fn rdkit_parse_cleanup(mol: &Molecule) -> std::sync::Arc<Option<Molec
 }
 
 fn rdkit_parse_cleanup_uncached(mol: &Molecule) -> Option<Molecule> {
+    // `cleanUp` and `cleanUpOrganometallics` run before perception: nitro
+    // groups become `[N+](=O)[O-]`, bonds from hypervalent atoms to metals
+    // dative bonds.
+    let edited = chematic_smiles::rdkit_cleanup_edits(mol)
+        .ok()
+        .flatten()
+        .map(|edits| {
+            let mut out = mol.clone();
+            for (a, charge) in edits.charges {
+                out.set_charge(AtomIdx(a as u32), charge as i8);
+            }
+            for (b, order, donor) in edits.bonds {
+                let b = chematic_core::BondIdx(b as u32);
+                match donor {
+                    Some(d) => out.set_dative_bond(b, AtomIdx(d as u32)),
+                    None => out.set_bond_order(b, order),
+                }
+            }
+            out
+        });
+    let src = edited.as_ref().unwrap_or(mol);
+    chirality_cleanup(src).or(edited)
+}
+
+/// The tags RDKit's parser drops (see [`rdkit_parse_cleanup`]).
+fn chirality_cleanup(mol: &Molecule) -> Option<Molecule> {
     let tagged: Vec<AtomIdx> = mol
         .atoms()
         .filter(|(_, a)| a.chirality.is_tetrahedral())
@@ -1142,6 +1200,28 @@ fn rdkit_parse_cleanup_uncached(mol: &Molecule) -> Option<Molecule> {
         .collect();
     if tagged.is_empty() {
         return None;
+    }
+    let clear = |out: &mut Molecule, a: AtomIdx| {
+        out.set_chirality(a, Chirality::None);
+        // Issue 194: the bracket H was there only for the tag.
+        let atom = mol.atom(a);
+        if atom.hydrogen_count == Some(1) && atom.charge == 0 && !atom.aromatic {
+            out.set_hydrogen_count(a, None);
+        }
+    };
+    // The SMILES port's legacy stereo perception decides as RDKit does
+    // (bridgehead nitrogens, ring special cases, CIP-ranked duplicates);
+    // the approximation below serves molecules it cannot model.
+    if let Ok(st) = chematic_smiles::rdkit_legacy_stereo(mol) {
+        let mut out = mol.clone();
+        let mut changed = false;
+        for &a in &tagged {
+            if !st.atom_tagged[a.0 as usize] {
+                clear(&mut out, a);
+                changed = true;
+            }
+        }
+        return changed.then_some(out);
     }
     let classes = chematic_smiles::topological_equivalence_classes(mol);
     let legal = |a: AtomIdx| -> bool {
@@ -1188,14 +1268,6 @@ fn rdkit_parse_cleanup_uncached(mol: &Molecule) -> Option<Molecule> {
     };
     let mut out = mol.clone();
     let mut changed = false;
-    let clear = |out: &mut Molecule, a: AtomIdx| {
-        out.set_chirality(a, Chirality::None);
-        // Issue 194: the bracket H was there only for the tag.
-        let atom = mol.atom(a);
-        if atom.hydrogen_count == Some(1) && atom.charge == 0 && !atom.aromatic {
-            out.set_hydrogen_count(a, None);
-        }
-    };
     let mut undecided = Vec::new();
     for &a in &tagged {
         if !legal(a) {

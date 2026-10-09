@@ -454,6 +454,87 @@ pub fn rdkit_torsion_counts(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
     })
 }
 
+/// `getTopologicalTorsionCode(pathCodes, includeChirality=false)`: the
+/// path codes (read from the end with the smaller code first) packed
+/// `CODE_SIZE` bits apart, as an unsigned 64-bit value.
+fn torsion_code(path_codes: &[u32; 4]) -> u64 {
+    let mut reverse_it = false;
+    let (mut i, mut j) = (0usize, 3usize);
+    while i < j {
+        if path_codes[i] > path_codes[j] {
+            reverse_it = true;
+            break;
+        } else if path_codes[i] < path_codes[j] {
+            break;
+        }
+        i += 1;
+        j -= 1;
+    }
+    let mut res = 0u64;
+    for k in 0..4 {
+        let c = if reverse_it {
+            path_codes[3 - k]
+        } else {
+            path_codes[k]
+        };
+        res |= u64::from(c) << (CODE_SIZE as usize * k);
+    }
+    res
+}
+
+/// Nonzero `(code, count)` elements of the unhashed torsion codes, sorted.
+fn torsion_code_counts(mol: &Molecule, code_of: impl Fn(AtomIdx, bool) -> u32) -> Vec<(u64, u32)> {
+    let mut counts: std::collections::BTreeMap<u64, u32> = std::collections::BTreeMap::new();
+    for path in four_atom_paths(mol)
+        .into_iter()
+        .chain(triangle_closure_paths(mol))
+    {
+        let mut codes = [0u32; 4];
+        for (pos, &a) in path.iter().enumerate() {
+            codes[pos] = code_of(a, pos != 0 && pos != 3);
+        }
+        *counts.entry(torsion_code(&codes)).or_insert(0) += 1;
+    }
+    counts.into_iter().collect()
+}
+
+/// RDKit's unhashed topological-torsion count fingerprint
+/// (`rdFingerprintGenerator.GetTopologicalTorsionGenerator()
+/// .GetSparseCountFingerprint(mol)`, torsion atom count 4, no chirality):
+/// the nonzero `(code, count)` elements, sorted by code.
+pub fn rdkit_torsion_sparse_counts(mol: &Molecule) -> Vec<(u64, u32)> {
+    chematic_perception::with_rdkit_parity_view(mol, |view| {
+        let m = view.unwrap_or(mol);
+        let modulus = (1u32 << CODE_SIZE) - 1;
+        torsion_code_counts(m, |a, interior| {
+            let inv = atom_code(m, a, 0).wrapping_sub(2);
+            inv % modulus + 1 - u32::from(interior)
+        })
+    })
+}
+
+/// RDKit's legacy `rdMolDescriptors.GetTopologicalTorsionFingerprint(mol)`
+/// (`AtomPairs::getTopologicalTorsionFingerprint`, targetSize 4, no
+/// chirality): atom codes `getAtomCode - 1` (one less on the interior
+/// atoms, unsigned arithmetic as in C++), packed by
+/// `getTopologicalTorsionCode`; the nonzero `(code, count)` elements of
+/// the `SparseIntVect<int64_t>`, sorted by code.
+pub fn rdkit_legacy_torsion_counts(mol: &Molecule) -> Vec<(i64, u32)> {
+    chematic_perception::with_rdkit_parity_view(mol, |view| {
+        let m = view.unwrap_or(mol);
+        let mut v: Vec<(i64, u32)> = torsion_code_counts(m, |a, interior| {
+            atom_code(m, a, 0)
+                .wrapping_sub(1)
+                .wrapping_sub(u32::from(interior))
+        })
+        .into_iter()
+        .map(|(c, n)| (c as i64, n))
+        .collect();
+        v.sort_unstable();
+        v
+    })
+}
+
 /// [`rdkit_torsion_fp`] on a molecule whose aromaticity is already RDKit-perceived.
 fn rdkit_torsion_fp_prepared(mol: &Molecule) -> BitVec2048 {
     let n = mol.atom_count();

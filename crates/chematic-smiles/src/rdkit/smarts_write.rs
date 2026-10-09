@@ -274,6 +274,71 @@ fn mol_to_smarts_cow(
     Ok((out.res, out.atom_order, out.bond_order))
 }
 
+/// Writes one stack element of a fragment: `(out, element, fragment
+/// molecule, fragment atom -> molecule atom, fragment bond -> molecule
+/// bond)`; called for atoms and bonds only.
+pub(crate) type ElemWriter<'a> = dyn FnMut(&mut String, StackElem, &Mol, &[usize], &[usize]) -> Result<(), RdkitSmilesError>
+    + 'a;
+
+/// `molToSmarts` (isomeric, no root) with the atoms and bonds written by
+/// `write` (query molecules: [`super::rxn_smarts`]).
+pub(crate) fn mol_to_smarts_custom(
+    mol: Mol,
+    write: &mut ElemWriter<'_>,
+) -> Result<String, RdkitSmilesError> {
+    let n = mol.atoms.len();
+    let mut res = String::new();
+    if n == 0 {
+        return Ok(res);
+    }
+    let frags = mol_frags(&mol);
+    let mut frag_of = vec![0usize; n];
+    for (f, atoms) in frags.iter().enumerate() {
+        for &a in atoms {
+            frag_of[a] = f;
+        }
+    }
+    let mut done = vec![false; frags.len()];
+    while let Some(start) = pick_start(&mol, None, |a| !done[frag_of[a]]) {
+        let f = frag_of[start];
+        done[f] = true;
+        let atoms = &frags[f];
+        let sub_bonds: Vec<usize> = (0..mol.bonds.len())
+            .filter(|&b| frag_of[mol.bonds[b].begin] == f)
+            .collect();
+        let local_start = atoms.binary_search(&start).expect("start in fragment");
+        let mut sub = if frags.len() == 1 {
+            mol.clone()
+        } else {
+            fragment(&mol, atoms)
+        };
+        sub.set_rings(Vec::new());
+        sub.update_property_cache(false)?;
+        let ranks: Vec<u32> = (0..sub.atoms.len() as u32).collect();
+        let canon = canonicalize_fragment(&mut sub, local_start, &ranks, true)?;
+        if !res.is_empty() {
+            res.push('.');
+        }
+        for e in &canon.stack {
+            match *e {
+                StackElem::Atom(_) | StackElem::Bond(..) => {
+                    write(&mut res, *e, &sub, atoms, &sub_bonds)?
+                }
+                StackElem::Ring(num) => {
+                    use std::fmt::Write;
+                    if num >= 10 {
+                        res.push('%');
+                    }
+                    let _ = write!(res, "{num}");
+                }
+                StackElem::BranchOpen => res.push('('),
+                StackElem::BranchClose => res.push(')'),
+            }
+        }
+    }
+    Ok(res)
+}
+
 /// `SmilesWrite::getCXExtensions(mol)` for the fields a `MolFromSmiles`
 /// molecule without stereo groups can carry: radicals and coordinate
 /// (dative) bonds.
