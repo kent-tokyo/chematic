@@ -75,11 +75,14 @@ def main() -> int:
     from corpus_engines import API_NOTES, ENGINES  # noqa: E402
 
     version = ENGINES[args.engine]()["version"]
+    notes_key = args.engine
+    if args.engine == "cosmolkit" and not str(version).startswith("0.3"):
+        notes_key = "cosmolkit-0.5"
     header = {
         "schema": "cosmolkit-corpus-comparison/v1",
         "engine": args.engine,
         "engine_version": version,
-        "api_notes": API_NOTES.get(args.engine, {}),
+        "api_notes": API_NOTES.get(notes_key, {}),
         "python": platform.python_version(),
         "platform": platform.platform(),
         "corpus": args.corpus.name,
