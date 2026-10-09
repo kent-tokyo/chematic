@@ -3,46 +3,52 @@
   "release": {
     "version": "1.0.40",
     "tag": "v1.0.40",
-    "commit": null
+    "commit": "e48272b5590dc4ea5892152b2c0786a4edb442ea"
   },
-  "checked_at": "2026-10-09T10:37:52+09:00",
-  "release_ready": false,
+  "checked_at": "2026-10-09T11:28:16+09:00",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.40",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.40",
-      "detail": "Pending tag publication and GitHub Release verification."
+      "detail": "Published Release and metadata asset verified; annotated tag target is e48272b5590dc4ea5892152b2c0786a4edb442ea."
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.40",
       "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.40",
-      "detail": "Pending npm publication and registry verification."
+      "detail": "Registry tarball, SHA-1 and sha512 integrity metadata verified for @kent-tokyo/chematic 1.0.40."
     },
     {
       "id": "pypi",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.40",
       "url": "https://pypi.org/pypi/chematic/1.0.40/json",
-      "detail": "Pending PyPI publication and artifact verification."
+      "detail": "PyPI JSON verified with 18 non-yanked artifacts: 17 platform wheels and one source distribution."
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.40",
       "url": "https://crates.io/crates/chematic/1.0.40",
-      "detail": "Pending publication and verification of all 20 workspace crates."
+      "detail": "All 20 publishable workspace crates were verified as non-yanked through the crates.io API, including individual checksums."
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.40",
       "url": "https://docs.rs/chematic/1.0.40/chematic/",
-      "detail": "Pending docs.rs build and HTTP verification."
+      "detail": "Generated rustdoc returned HTTP 200."
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.40",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "Pending GitHub Pages deployment and displayed-version verification."
+      "detail": "GitHub Pages returned HTTP 200 and displayed v1.0.40."
     }
   ]
 }
