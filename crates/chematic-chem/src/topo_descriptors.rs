@@ -445,7 +445,7 @@ pub fn chi0v(mol: &Molecule) -> f64 {
 }
 
 fn chi0v_impl(mol: &Molecule) -> f64 {
-    rdkit_chi_v(mol)[0]
+    rdkit_chi_v_order(mol, 0)
 }
 
 /// Valence-corrected χ1v connectivity index (RDKit `CalcChi1v`).
@@ -454,7 +454,7 @@ pub fn chi1v(mol: &Molecule) -> f64 {
 }
 
 fn chi1v_impl(mol: &Molecule) -> f64 {
-    rdkit_chi_v(mol)[1]
+    rdkit_chi_v_order(mol, 1)
 }
 
 /// Valence-corrected χ2v connectivity index (RDKit `CalcChi2v`).
@@ -463,7 +463,7 @@ pub fn chi2v(mol: &Molecule) -> f64 {
 }
 
 fn chi2v_impl(mol: &Molecule) -> f64 {
-    rdkit_chi_v(mol)[2]
+    rdkit_chi_v_order(mol, 2)
 }
 
 /// Valence-corrected χ3v connectivity index (RDKit `CalcChi3v`).
@@ -472,7 +472,7 @@ pub fn chi3v(mol: &Molecule) -> f64 {
 }
 
 fn chi3v_impl(mol: &Molecule) -> f64 {
-    rdkit_chi_v(mol)[3]
+    rdkit_chi_v_order(mol, 3)
 }
 
 /// Valence-corrected χ4v connectivity index (RDKit `CalcChi4v`).
@@ -481,7 +481,7 @@ pub fn chi4v(mol: &Molecule) -> f64 {
 }
 
 fn chi4v_impl(mol: &Molecule) -> f64 {
-    rdkit_chi_v(mol)[4]
+    rdkit_chi_v_order(mol, 4)
 }
 
 /// Compute all 10 Hall-Kier connectivity indices in a single pass.
@@ -823,20 +823,37 @@ fn rdkit_chi_nv(mol: &Molecule, hk: &[f64], n: usize) -> f64 {
 /// RDKit `CalcChi0v` .. `CalcChi4v`, bit-identical.
 fn rdkit_chi_v(mol: &Molecule) -> [f64; 5] {
     let hk = rdkit_hk_deltas(mol);
-    let chi0v = hk.iter().fold(0.0, |acc, x| acc + x);
-    // Bonds in RDKit's numbering (ring closures last), as RDKit sums them.
+    [
+        rdkit_chi0v_from(&hk),
+        rdkit_chi1v_from(mol, &hk),
+        rdkit_chi_nv(mol, &hk, 2),
+        rdkit_chi_nv(mol, &hk, 3),
+        rdkit_chi_nv(mol, &hk, 4),
+    ]
+}
+
+/// One of [`rdkit_chi_v`]'s values, without computing the others.
+fn rdkit_chi_v_order(mol: &Molecule, n: usize) -> f64 {
+    let hk = rdkit_hk_deltas(mol);
+    match n {
+        0 => rdkit_chi0v_from(&hk),
+        1 => rdkit_chi1v_from(mol, &hk),
+        _ => rdkit_chi_nv(mol, &hk, n),
+    }
+}
+
+fn rdkit_chi0v_from(hk: &[f64]) -> f64 {
+    hk.iter().fold(0.0, |acc, x| acc + x)
+}
+
+/// Bonds in RDKit's numbering (ring closures last), as RDKit sums them.
+fn rdkit_chi1v_from(mol: &Molecule, hk: &[f64]) -> f64 {
     let mut chi1v = 0.0;
     for b in mol.rdkit_bond_order() {
         let bond = mol.bond(b);
         chi1v += hk[bond.atom1.0 as usize] * hk[bond.atom2.0 as usize];
     }
-    [
-        chi0v,
-        chi1v,
-        rdkit_chi_nv(mol, &hk, 2),
-        rdkit_chi_nv(mol, &hk, 3),
-        rdkit_chi_nv(mol, &hk, 4),
-    ]
+    chi1v
 }
 
 /// RDKit's Python `GraphDescriptors.Chi0`: `sqrt(1 / degree)` over every

@@ -2016,6 +2016,11 @@ class Mol:
         ...
 
     @property
+    def labute_asa(self) -> float:
+        """Labute approximate surface area (RDKit ``CalcLabuteASA``)."""
+        ...
+
+    @property
     def chi2v(self) -> float:
         """Second-order valence connectivity index χ²ᵥ."""
         ...

@@ -5565,6 +5565,13 @@ impl Mol {
         chematic_chem::chi1v(&self.inner)
     }
 
+    /// Labute approximate surface area (RDKit ``CalcLabuteASA``), the same
+    /// value as ``descriptors()["labute_asa"]`` without the other descriptors.
+    #[getter]
+    fn labute_asa(&self) -> f64 {
+        chematic_chem::labute_asa(&self.inner)
+    }
+
     /// Second-order valence connectivity index χ²ᵥ.
     #[getter]
     fn chi2v(&self) -> f64 {

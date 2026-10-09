@@ -1574,7 +1574,188 @@ pub fn num_heteroatoms(mol: &Molecule) -> usize {
 /// its symmetrized SSSR. It exceeds [`ring_count`] (the SSSR size, i.e. the
 /// cycle rank) for cages and bridged systems such as cubane or adamantane.
 pub fn rdkit_num_rings(mol: &Molecule) -> usize {
-    rdkit_ring_list(mol).len()
+    simple_ring_system_count(mol).unwrap_or_else(|| rdkit_ring_list(mol).len())
+}
+
+/// The number of ring systems when every ring system is a single simple
+/// cycle (as many ring bonds as ring atoms): then RDKit's symmetrized SSSR
+/// is exactly those cycles. `None` for fused, spiro or bridged systems, and
+/// where RDKit's ring graph differs from chematic's (organometallic dative
+/// bonds, query bond orders).
+fn simple_ring_system_count(mol: &Molecule) -> Option<usize> {
+    if mol.bonds().any(|(_, b)| {
+        matches!(
+            b.order,
+            BondOrder::QueryAny
+                | BondOrder::QuerySingleOrDouble
+                | BondOrder::QuerySingleOrAromatic
+                | BondOrder::QueryDoubleOrAromatic
+        )
+    }) || chematic_perception::rdkit_organometallic_dative_bonds(mol)
+        .iter()
+        .any(|&d| d)
+    {
+        return None;
+    }
+    let flags = chematic_perception::ring_bond_flags_shared(mol);
+    let n = mol.atom_count();
+    let mut parent: Vec<u32> = (0..n as u32).collect();
+    fn find(parent: &mut [u32], mut x: u32) -> u32 {
+        while parent[x as usize] != x {
+            let p = parent[parent[x as usize] as usize];
+            parent[x as usize] = p;
+            x = p;
+        }
+        x
+    }
+    let mut ring_bonds = 0usize;
+    for (bi, bond) in mol.bonds() {
+        if !flags[bi.0 as usize] {
+            continue;
+        }
+        ring_bonds += 1;
+        let (a, b) = (
+            find(&mut parent, bond.atom1.0),
+            find(&mut parent, bond.atom2.0),
+        );
+        if a != b {
+            parent[a as usize] = b;
+        }
+    }
+    if ring_bonds == 0 {
+        return Some(0);
+    }
+    // Per system: ring atoms minus ring bonds (0 for a simple cycle).
+    let mut balance = vec![0i32; n];
+    let mut on_ring = vec![false; n];
+    for (bi, bond) in mol.bonds() {
+        if flags[bi.0 as usize] {
+            on_ring[bond.atom1.0 as usize] = true;
+            on_ring[bond.atom2.0 as usize] = true;
+            let r = find(&mut parent, bond.atom1.0);
+            balance[r as usize] -= 1;
+        }
+    }
+    let mut roots = Vec::new();
+    for a in 0..n {
+        if on_ring[a] {
+            let r = find(&mut parent, a as u32) as usize;
+            balance[r] += 1;
+            if r == a {
+                roots.push(a);
+            }
+        }
+    }
+    let mut rings = 0usize;
+    for &r in &roots {
+        match balance[r] {
+            0 => rings += 1,
+            -1 => rings += two_cycle_system_rings(mol, &flags, &mut parent, r)?,
+            _ => rings += system_rings_rdkit(mol, &flags, &mut parent, r)?,
+        }
+    }
+    Some(rings)
+}
+
+/// RDKit's symmetrized SSSR size for the ring system rooted at `root`
+/// alone (its ring bonds, in RDKit's bond order).
+fn system_rings_rdkit(
+    mol: &Molecule,
+    flags: &[bool],
+    parent: &mut [u32],
+    root: usize,
+) -> Option<usize> {
+    fn find(parent: &mut [u32], mut x: u32) -> u32 {
+        while parent[x as usize] != x {
+            let p = parent[parent[x as usize] as usize];
+            parent[x as usize] = p;
+            x = p;
+        }
+        x
+    }
+    let mut local = vec![u32::MAX; mol.atom_count()];
+    let mut k = 0usize;
+    let mut bonds = Vec::new();
+    for bi in mol.rdkit_bond_order() {
+        if !flags[bi.0 as usize] {
+            continue;
+        }
+        let bond = mol.bond(bi);
+        if find(parent, bond.atom1.0) as usize != root {
+            continue;
+        }
+        let mut id = |a: AtomIdx| {
+            let slot = &mut local[a.0 as usize];
+            if *slot == u32::MAX {
+                *slot = k as u32;
+                k += 1;
+            }
+            *slot as usize
+        };
+        let (a, b) = (id(bond.atom1), id(bond.atom2));
+        bonds.push((a, b, true));
+    }
+    chematic_perception::rdkit_symmetrized_sssr(k, &bonds).map(|r| r.len())
+}
+
+/// RDKit's ring count for a ring system of cycle rank 2 rooted at `root`:
+/// two cycles sharing one atom give 2; two branch atoms joined by three
+/// paths of `a <= b <= c` bonds give the rings `a+b` and `a+c`, plus `b+c`
+/// when `a == b` (it then has the size of `a+c` and can stand in for it).
+fn two_cycle_system_rings(
+    mol: &Molecule,
+    flags: &[bool],
+    parent: &mut [u32],
+    root: usize,
+) -> Option<usize> {
+    fn find(parent: &mut [u32], mut x: u32) -> u32 {
+        while parent[x as usize] != x {
+            let p = parent[parent[x as usize] as usize];
+            parent[x as usize] = p;
+            x = p;
+        }
+        x
+    }
+    let ring_neighbors = |a: AtomIdx| -> Vec<AtomIdx> {
+        mol.neighbors(a)
+            .filter(|(_, bi)| flags[bi.0 as usize])
+            .map(|(nb, _)| nb)
+            .collect()
+    };
+    let mut branch: Vec<AtomIdx> = Vec::new();
+    for (idx, _) in mol.atoms() {
+        if find(parent, idx.0) as usize != root {
+            continue;
+        }
+        match ring_neighbors(idx).len() {
+            2 => {}
+            3 => branch.push(idx),
+            4 => return Some(2),
+            _ => return None,
+        }
+    }
+    let &[u, v] = branch.as_slice() else {
+        return None;
+    };
+    let mut lengths: Vec<usize> = Vec::with_capacity(3);
+    for start in ring_neighbors(u) {
+        let (mut prev, mut cur, mut len) = (u, start, 1usize);
+        while cur != v {
+            let next = ring_neighbors(cur).into_iter().find(|&x| x != prev)?;
+            prev = cur;
+            cur = next;
+            len += 1;
+            if len > mol.atom_count() {
+                return None;
+            }
+        }
+        lengths.push(len);
+    }
+    if lengths.len() != 3 {
+        return None;
+    }
+    lengths.sort_unstable();
+    Some(if lengths[0] == lengths[1] { 3 } else { 2 })
 }
 
 /// RDKit's ring information (`SanitizeMol`'s symmetrized SSSR), falling back

@@ -374,7 +374,7 @@ def chematic_engine():
         "chi0": lambda m: m.chi0, "chi1": lambda m: m.chi1,
         "kappa1": lambda m: m.kappa1, "kappa2": lambda m: m.kappa2, "kappa3": lambda m: m.kappa3,
         "hall_kier_alpha": lambda m: m.hall_kier_alpha,
-        "labute_asa": lambda m: m.descriptors()["labute_asa"],
+        "labute_asa": lambda m: m.labute_asa,
         "slogp_vsa": lambda m: list(m.slogp_vsa()),
         "smr_vsa": lambda m: list(m.smr_vsa()),
         "peoe_vsa": lambda m: list(m.peoe_vsa()),

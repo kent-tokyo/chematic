@@ -144,7 +144,7 @@ def table(engine: str):
             "fp_rdkit": lambda m: m.rdkit_rdk_fp(),
             "cx_smarts": lambda m: m.rdkit_cx_smarts(),
             "stereoisomer_count": lambda m: m.rdkit_stereoisomer_count(),
-            "chi1v": lambda m: m.chi1v, "kappa2": lambda m: m.kappa2, "labute_asa": lambda m: m.descriptors()["labute_asa"],
+            "chi1v": lambda m: m.chi1v, "kappa2": lambda m: m.kappa2, "labute_asa": lambda m: m.labute_asa,
             "slogp_vsa": lambda m: m.slogp_vsa(), "mqn": lambda m: m.mqn(), "num_rings": lambda m: m.num_rings,
             "add_hs_smiles": lambda m: m.add_hydrogens().rdkit_smiles,
             "distance_matrix": lambda m: m.topological_distance_matrix(),
