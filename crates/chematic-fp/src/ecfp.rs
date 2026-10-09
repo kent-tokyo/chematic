@@ -290,6 +290,9 @@ pub(crate) fn initial_atom_id(
             Chirality::CounterClockwise => 1u8,
             Chirality::Clockwise => 2u8,
             Chirality::SquarePlanar(p) => 3 + p as u8,
+            Chirality::SquarePlanarUnnumbered => 6u8,
+            Chirality::TrigonalBipyramidal(p) => 10u8.wrapping_add(p),
+            Chirality::Octahedral(p) => 40u8.wrapping_add(p),
         };
         bytes.push(chirality_byte);
     }

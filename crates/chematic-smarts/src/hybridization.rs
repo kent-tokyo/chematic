@@ -29,6 +29,11 @@ fn outer_electrons(z: u8) -> Option<i32> {
         39..=47 => z - 36,
         72..=79 => z - 68,
         57 => 3,
+        // Lanthanides as RDKit's periodic table lists them (Ce 4, Pr 3,
+        // Nd 4, then one more per element up to Lu 15).
+        58 | 60 => 4,
+        59 => 3,
+        61..=71 => z - 56,
         30 | 48 | 80 => 2,
         _ => return None,
     })

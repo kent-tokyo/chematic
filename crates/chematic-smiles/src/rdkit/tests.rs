@@ -178,11 +178,21 @@ fn rdkit_rejected_inputs_are_errors() {
 }
 
 #[test]
-fn unsupported_inputs_are_errors() {
-    assert!(matches!(
-        rd("F[Pt@SP1](Cl)(Br)I"),
-        Err(RdkitSmilesError::Unsupported(_))
-    ));
+fn nontetrahedral_stereo_is_written_like_rdkit() {
+    // Chem.MolToSmiles(Chem.MolFromSmiles(s)), RDKit 2026.03.1.
+    for (s, want) in [
+        ("F[Pt@SP1](Cl)(Br)I", "[F][Pt@SP1]([Cl])([Br])[I]"),
+        ("F[Pt@SP1](C)(O)Cl", "[CH3][Pt@SP3]([OH])([F])[Cl]"),
+        ("S[As@TB1](F)(Cl)(Br)N", "N[As@TB6](F)(S)(Cl)Br"),
+        (
+            "C[Pt@OH1](F)(O)(N)(Br)Cl",
+            "[CH3][Pt@OH16]([NH2])([OH])([F])([Cl])[Br]",
+        ),
+        ("CC[Pt@SP](C)(O)F", "C[CH2][Pt@SP]([CH3])([OH])[F]"),
+        ("F[C@TH2H](C)O", "C[C@@H](O)F"),
+    ] {
+        assert_eq!(rd(s).unwrap(), want, "input {s}");
+    }
 }
 
 #[test]
@@ -325,5 +335,937 @@ fn explicit_hydrogen_atoms_are_written_like_rdkit_add_hs() {
     ] {
         let mol = add_hs(&crate::parse(input).expect("parses"));
         assert_eq!(rdkit_canonical_smiles(&mol).as_deref(), Ok(want), "{input}");
+    }
+}
+
+/// RDKit 2026.03.1 `MolToSmarts`, `MolToCXSmarts`,
+/// `MurckoScaffold.GetScaffoldForMol`, `GetStereoisomerCount`,
+/// `FindMolChiralCenters(includeUnassigned=True)` and `MolToPDBBlock`.
+#[test]
+fn rdkit_writers_match_rdkit() {
+    let p = |s: &str| crate::parse(s).expect("parses");
+    let cases: &[(&str, &str, &str, &str)] = &[
+        (
+            "C[C@H](N)C(=O)O",
+            "[#6]-[#6@H](-[#7])-[#6](=[#8])-[#8]",
+            "[#6]-[#6@H](-[#7])-[#6](=[#8])-[#8]",
+            "",
+        ),
+        ("N->[Cu]", "[#7]->[Cu]", "[#7]-[Cu] |C:0.0|", ""),
+        (
+            "CCCCOC1=CC=C(NC[S](=O)=O)C=N1",
+            "[#6]-[#6]-[#6]-[#6]-[#8]-[#6]1:[#6]:[#6]:[#6](-[#7]-[#6]-[#16](=[#8])=[#8]):[#6]:[#7]:1",
+            "[#6]-[#6]-[#6]-[#6]-[#8]-[#6]1:[#6]:[#6]:[#6](-[#7]-[#6]-[#16](=[#8])=[#8]):[#6]:[#7]:1 |^1:11|",
+            "c1ccncc1",
+        ),
+        (
+            "Cn1cccc1CC1CCC1",
+            "[#6]-[#7]1:[#6]:[#6]:[#6]:[#6]:1-[#6]-[#6]1-[#6]-[#6]-[#6]-1",
+            "[#6]-[#7]1:[#6]:[#6]:[#6]:[#6]:1-[#6]-[#6]1-[#6]-[#6]-[#6]-1",
+            "c1c[nH]c(CC2CCC2)c1",
+        ),
+        (
+            "O=C1CC[C@H](C)N1CCc1ccccc1",
+            "[#8]=[#6]1-[#6]-[#6]-[#6@H](-[#6])-[#7]-1-[#6]-[#6]-[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1",
+            "[#8]=[#6]1-[#6]-[#6]-[#6@H](-[#6])-[#7]-1-[#6]-[#6]-[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1",
+            "O=C1CCCN1CCc1ccccc1",
+        ),
+    ];
+    for &(input, smarts, cx, scaffold) in cases {
+        let m = p(input);
+        assert_eq!(
+            super::rdkit_smarts(&m, true, None).unwrap(),
+            smarts,
+            "{input}"
+        );
+        assert_eq!(super::rdkit_cx_smarts(&m).unwrap(), cx, "{input}");
+        assert_eq!(
+            super::rdkit_murcko_scaffold(&m).unwrap(),
+            scaffold,
+            "{input}"
+        );
+    }
+    assert_eq!(
+        super::rdkit_chiral_centers(&p("O=C1CC[C@H](C)N1CCc1ccccc1"), true).unwrap(),
+        [(4, "S".to_string())]
+    );
+    assert_eq!(
+        super::rdkit_stereoisomer_count(&p("CC(F)C(Cl)Br")).unwrap(),
+        4
+    );
+    assert_eq!(
+        super::rdkit_pdb_block(&p("CC(=O)[O-]"), None).unwrap(),
+        "HETATM    1  C1  UNL     1       0.000   0.000   0.000  1.00  0.00           C  \n\
+         HETATM    2  C2  UNL     1       0.000   0.000   0.000  1.00  0.00           C  \n\
+         HETATM    3  O1  UNL     1       0.000   0.000   0.000  1.00  0.00           O  \n\
+         HETATM    4  O2  UNL     1       0.000   0.000   0.000  1.00  0.00           O1-\n\
+         CONECT    1    2\nCONECT    2    3    3    4\nEND\n"
+    );
+}
+
+/// `GetStereoisomerCount` cases that need `FindPotentialStereo`'s
+/// dependent ("possible") stereo (RDKit 2026.03.1).
+#[test]
+fn stereoisomer_count_uses_find_potential_stereo() {
+    for (smiles, want) in [
+        ("CC(C(=O)O)=C1CCC(C)CC1", 4),
+        ("O[As]=O", 2),
+        ("ON=C1C=CC(C=C1)=NO", 4),
+        ("C1C[S+]2CC[S+]1CC2", 4),
+        ("C12C3=C4C5=C1[Fe]23456789C%10C6=C7C8=C9%10", 1),
+        ("BrCC(Br)COP(=O)(OCC(Br)CBr)OCC(Br)CBr", 16),
+    ] {
+        let mol = crate::parse(smiles).expect("parses");
+        assert_eq!(
+            super::rdkit_stereoisomer_count(&mol).unwrap(),
+            want,
+            "{smiles}"
+        );
+    }
+}
+
+/// RDKit 2026.03.1 `MolToMolBlock` switches to V3000 for a dative bond.
+#[test]
+fn mol_block_2d_writes_v3000_for_dative_bonds() {
+    let mol = crate::parse("C[13CH2]O->[Fe]").expect("parses");
+    let block = super::rdkit_mol_block_2d(&mol).unwrap();
+    let want = "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+                M  V30 BEGIN CTAB\nM  V30 COUNTS 4 3 0 0 0\nM  V30 BEGIN ATOM\n\
+                M  V30 1 C -1.979613 -0.136500 0.000000 0\n\
+                M  V30 2 C -0.599379 0.450827 0.000000 0 MASS=13\n\
+                M  V30 3 O 0.599379 -0.450827 0.000000 0\n\
+                M  V30 4 Fe 1.979613 0.136500 0.000000 0 VAL=1\n\
+                M  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\n\
+                M  V30 3 9 3 4\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n";
+    assert_eq!(block, want);
+}
+
+#[test]
+fn allene_chirality_is_read_and_dropped() {
+    // Chem.MolToSmiles(Chem.MolFromSmiles(s)), RDKit 2026.03.1.
+    for (s, want) in [
+        ("OC=[C@AL1]=CC", "CC=C=CO"),
+        ("OC=[C@AL2]=CC", "CC=C=CO"),
+        ("OC=[C@AL]=CC", "CC=C=CO"),
+        ("C[C@AL1](F)Cl", "C[C](F)Cl"),
+        ("[C@AL1H2]", "[CH2]"),
+    ] {
+        assert_eq!(rd(s).unwrap(), want, "input {s}");
+    }
+    for s in ["OC=[C@AL0]=CC", "[C@AL3]", "C[C@@AL1H](F)Cl", "[CH2@AL1]"] {
+        assert!(crate::parse(s).is_err(), "input {s}");
+    }
+}
+
+#[test]
+fn mol_hash_matches_rdkit() {
+    use super::RdkitHashFunction;
+    let cases: &[(&str, &str, &str, Option<&str>)] = &[
+        // rdMolHash.MolHash(Chem.MolFromSmiles(s), f[, True]), RDKit 2026.03.1.
+        (
+            r"C[C@H](N)C(=O)O",
+            "AnonymousGraph",
+            r"**(*)*(*)*",
+            Some(r"**(*)*(*)*"),
+        ),
+        (
+            r"C[C@H](N)C(=O)O",
+            "ElementGraph",
+            r"C[C@H](N)C(O)O",
+            Some(r"C[C@H](N)C(O)O"),
+        ),
+        (
+            r"C[C@H](N)C(=O)O",
+            "CanonicalSmiles",
+            r"C[C@H](N)C(=O)O",
+            Some(r"C[C@H](N)C(=O)O"),
+        ),
+        (r"C[C@H](N)C(=O)O", "MurckoScaffold", r"", None),
+        (r"C[C@H](N)C(=O)O", "ExtendedMurcko", r"", None),
+        (
+            r"C[C@H](N)C(=O)O",
+            "MolFormula",
+            r"C3H7NO2",
+            Some(r"C3H7NO2"),
+        ),
+        (r"C[C@H](N)C(=O)O", "AtomBondCounts", r"6,5", Some(r"6,5")),
+        (
+            r"C[C@H](N)C(=O)O",
+            "DegreeVector",
+            r"0,2,0,4",
+            Some(r"0,2,0,4"),
+        ),
+        (
+            r"C[C@H](N)C(=O)O",
+            "Mesomer",
+            r"C[C@H](N)[C]([O])O_0",
+            Some(r"C[C@H](N)[C]([O])O_0"),
+        ),
+        (
+            r"C[C@H](N)C(=O)O",
+            "HetAtomTautomer",
+            r"C[C@H]([N])[C]([O])[O]_3_0",
+            Some(r"C[C@H]([N])[C]([O])[O]_3_0"),
+        ),
+        (
+            r"C[C@H](N)C(=O)O",
+            "HetAtomProtomer",
+            r"C[C@H]([N])[C]([O])[O]_3",
+            Some(r"C[C@H]([N])[C]([O])[O]_3"),
+        ),
+        (
+            r"C[C@H](N)C(=O)O",
+            "RedoxPair",
+            r"C[C@H](N)[C]([O])O",
+            Some(r"C[C@H](N)[C]([O])O"),
+        ),
+        (
+            r"C[C@H](N)C(=O)O",
+            "Regioisomer",
+            r"*N.CCC(=O)O",
+            Some(r"*N.CCC(=O)O"),
+        ),
+        (r"C[C@H](N)C(=O)O", "NetCharge", r"0", Some(r"0")),
+        (
+            r"C[C@H](N)C(=O)O",
+            "SmallWorldIndexBR",
+            r"B5R0",
+            Some(r"B5R0"),
+        ),
+        (
+            r"C[C@H](N)C(=O)O",
+            "SmallWorldIndexBRL",
+            r"B5R0L0",
+            Some(r"B5R0L0"),
+        ),
+        (
+            r"C[C@H](N)C(=O)O",
+            "ArthorSubstructureOrder",
+            r"000600050100030003000029000000",
+            Some(r"000600050100030003000029000000"),
+        ),
+        (
+            r"C[C@H](N)C(=O)O",
+            "HetAtomTautomerv2",
+            r"[CH3]-[C@H](-[NH2])-[C](:[O]):[O]_1_0",
+            Some(r"[CH3]-[C@H](-[NH2])-[C](:[O]):[O]_1_0"),
+        ),
+        (
+            r"C[C@H](N)C(=O)O",
+            "HetAtomProtomerv2",
+            r"[CH3]-[C@H](-[NH2])-[C](:[O]):[O]_1",
+            Some(r"[CH3]-[C@H](-[NH2])-[C](:[O]):[O]_1"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "AnonymousGraph",
+            r"**1*****1",
+            Some(r"**1*****1"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "ElementGraph",
+            r"OC1CCCCN1",
+            Some(r"OC1CCCCN1"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "CanonicalSmiles",
+            r"Oc1ccccn1",
+            Some(r"Oc1ccccn1"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "MurckoScaffold",
+            r"c1ccncc1",
+            Some(r"c1ccncc1"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "ExtendedMurcko",
+            r"*c1ccccn1",
+            Some(r"*c1ccccn1"),
+        ),
+        (r"Oc1ccccn1", "MolFormula", r"C5H5NO", Some(r"C5H5NO")),
+        (r"Oc1ccccn1", "AtomBondCounts", r"7,7", Some(r"7,7")),
+        (r"Oc1ccccn1", "DegreeVector", r"0,1,5,1", Some(r"0,1,5,1")),
+        (
+            r"Oc1ccccn1",
+            "Mesomer",
+            r"O[C]1[CH][CH][CH][CH][N]1_0",
+            Some(r"O[C]1[CH][CH][CH][CH][N]1_0"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "HetAtomTautomer",
+            r"[O][C]1[CH][CH][CH][CH][N]1_1_0",
+            Some(r"[O][C]1[CH][CH][CH][CH][N]1_1_0"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "HetAtomProtomer",
+            r"[O][C]1[CH][CH][CH][CH][N]1_1",
+            Some(r"[O][C]1[CH][CH][CH][CH][N]1_1"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "RedoxPair",
+            r"O[C]1[CH][CH][CH][CH][N]1",
+            Some(r"O[C]1[CH][CH][CH][CH][N]1"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "Regioisomer",
+            r"*O.c1ccncc1",
+            Some(r"*O.c1ccncc1"),
+        ),
+        (r"Oc1ccccn1", "NetCharge", r"0", Some(r"0")),
+        (r"Oc1ccccn1", "SmallWorldIndexBR", r"B7R1", Some(r"B7R1")),
+        (
+            r"Oc1ccccn1",
+            "SmallWorldIndexBRL",
+            r"B7R1L5",
+            Some(r"B7R1L5"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "ArthorSubstructureOrder",
+            r"00070007010005000200002d000000",
+            Some(r"00070007010005000200002d000000"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "HetAtomTautomerv2",
+            r"[O]:[C]1:[C]:[C]:[C]:[C]:[N]:1_5_0",
+            Some(r"[O]:[C]1:[C]:[C]:[C]:[C]:[N]:1_5_0"),
+        ),
+        (
+            r"Oc1ccccn1",
+            "HetAtomProtomerv2",
+            r"[O]:[C]1:[C]:[C]:[C]:[C]:[N]:1_5",
+            Some(r"[O]:[C]1:[C]:[C]:[C]:[C]:[N]:1_5"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "AnonymousGraph",
+            r"**(*)**(*)*",
+            Some(r"**(*)**(*)*"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "ElementGraph",
+            r"CC(O)CC(C)O",
+            Some(r"CC(O)CC(C)O"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "CanonicalSmiles",
+            r"CC(=O)/C=C(/C)O",
+            Some(r"CC(=O)/C=C(/C)O"),
+        ),
+        (r"CC(=O)/C=C(\O)C", "MurckoScaffold", r"", None),
+        (r"CC(=O)/C=C(\O)C", "ExtendedMurcko", r"", None),
+        (r"CC(=O)/C=C(\O)C", "MolFormula", r"C5H8O2", Some(r"C5H8O2")),
+        (r"CC(=O)/C=C(\O)C", "AtomBondCounts", r"7,6", Some(r"7,6")),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "DegreeVector",
+            r"0,2,1,4",
+            Some(r"0,2,1,4"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "Mesomer",
+            r"C[C]([O])[CH][C](C)O_0",
+            Some(r"C[C]([O])[CH][C](C)O_0"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "HetAtomTautomer",
+            r"C[C]([O])[CH][C](C)[O]_1_0",
+            Some(r"C[C]([O])[CH][C](C)[O]_1_0"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "HetAtomProtomer",
+            r"C[C]([O])[CH][C](C)[O]_1",
+            Some(r"C[C]([O])[CH][C](C)[O]_1"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "RedoxPair",
+            r"C[C]([O])[CH][C](C)O",
+            Some(r"C[C]([O])[CH][C](C)O"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "Regioisomer",
+            r"CC(=O)/C=C(/C)O",
+            Some(r"CC(=O)/C=C(/C)O"),
+        ),
+        (r"CC(=O)/C=C(\O)C", "NetCharge", r"0", Some(r"0")),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "SmallWorldIndexBR",
+            r"B6R0",
+            Some(r"B6R0"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "SmallWorldIndexBRL",
+            r"B6R0L1",
+            Some(r"B6R0L1"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "ArthorSubstructureOrder",
+            r"00070006010005000200002e000000",
+            Some(r"00070006010005000200002e000000"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "HetAtomTautomerv2",
+            r"[C]:[C](:[O]):[C]:[C](:[C]):[O]_8_0",
+            Some(r"[C]:[C](:[O]):[C]:[C](:[C]):[O]_8_0"),
+        ),
+        (
+            r"CC(=O)/C=C(\O)C",
+            "HetAtomProtomerv2",
+            r"[C]:[C](:[O]):[C]:[C](:[C]):[O]_8",
+            Some(r"[C]:[C](:[O]):[C]:[C](:[C]):[O]_8"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "AnonymousGraph",
+            r"*.***(*)*",
+            Some(r"*.***(*)*"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "ElementGraph",
+            r"NCC(O)O.[Na]",
+            Some(r"NCC(O)O.[Na]"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "CanonicalSmiles",
+            r"[NH3+]CC(=O)[O-].[Na+]",
+            Some(r"[NH3+]CC(=O)[O-].[Na+]"),
+        ),
+        (r"[NH3+]CC([O-])=O.[Na+]", "MurckoScaffold", r"", None),
+        (r"[NH3+]CC([O-])=O.[Na+]", "ExtendedMurcko", r"", None),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "MolFormula",
+            r"C2H5NNaO2+",
+            Some(r"C2H5NNaO2+"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "AtomBondCounts",
+            r"6,4",
+            Some(r"6,4"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "DegreeVector",
+            r"0,1,1,3",
+            Some(r"0,1,1,3"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "Mesomer",
+            r"[NH3]C[C]([O])[O].[Na]_1",
+            Some(r"[NH3]C[C]([O])[O].[Na]_1"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "HetAtomTautomer",
+            r"[N]C[C]([O])[O].[Na]_3_1",
+            Some(r"[N]C[C]([O])[O].[Na]_3_1"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "HetAtomProtomer",
+            r"[N]C[C]([O])[O].[Na]_2",
+            Some(r"[N]C[C]([O])[O].[Na]_2"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "RedoxPair",
+            r"[NH3]C[C]([O])[O].[Na]",
+            Some(r"[NH3]C[C]([O])[O].[Na]"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "Regioisomer",
+            r"*[NH3+].CC(=O)[O-].[Na+]",
+            Some(r"*[NH3+].CC(=O)[O-].[Na+]"),
+        ),
+        (r"[NH3+]CC([O-])=O.[Na+]", "NetCharge", r"1", Some(r"1")),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "SmallWorldIndexBR",
+            r"B4R4294967295",
+            Some(r"B4R4294967295"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "SmallWorldIndexBRL",
+            r"B4R4294967295L1",
+            Some(r"B4R4294967295L1"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "ArthorSubstructureOrder",
+            r"00060004020002000300002e010300",
+            Some(r"00060004020002000300002e010300"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "HetAtomTautomerv2",
+            r"[NH3+]-[CH2]-[C](=[O])-[O-].[Na+]_0_0",
+            Some(r"[NH3+]-[CH2]-[C](=[O])-[O-].[Na+]_0_0"),
+        ),
+        (
+            r"[NH3+]CC([O-])=O.[Na+]",
+            "HetAtomProtomerv2",
+            r"[NH3+]-[CH2]-[C](=[O])-[O-].[Na+]_0",
+            Some(r"[NH3+]-[CH2]-[C](=[O])-[O-].[Na+]_0"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "AnonymousGraph",
+            r"**1***(****2****3*****32)**1",
+            Some(r"**1***(****2****3*****32)**1"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "ElementGraph",
+            r"FC1CCC(CCCC2CCC[C@H]3CCCC[C@H]23)CC1",
+            Some(r"FC1CCC(CCCC2CCC[C@H]3CCCC[C@H]23)CC1"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "CanonicalSmiles",
+            r"Fc1ccc(/C=C/CC2CCC[C@H]3CCCC[C@H]23)cc1",
+            Some(r"Fc1ccc(/C=C/CC2CCC[C@H]3CCCC[C@H]23)cc1"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "MurckoScaffold",
+            r"C(=C\c1ccccc1)/CC1CCC[C@H]2CCCC[C@H]12",
+            Some(r"C(=C\c1ccccc1)/CC1CCC[C@H]2CCCC[C@H]12"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "ExtendedMurcko",
+            r"*c1ccc(/C=C/CC2CCC[C@H]3CCCC[C@H]23)cc1",
+            Some(r"*c1ccc(/C=C/CC2CCC[C@H]3CCCC[C@H]23)cc1"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "MolFormula",
+            r"C19H25F",
+            Some(r"C19H25F"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "AtomBondCounts",
+            r"20,22",
+            Some(r"20,22"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "DegreeVector",
+            r"0,5,14,1",
+            Some(r"0,5,14,1"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "Mesomer",
+            r"F[C]1[CH][CH][C]([CH][CH]CC2CCC[C@H]3CCCC[C@H]23)[CH][CH]1_0",
+            Some(r"F[C]1[CH][CH][C]([CH][CH]CC2CCC[C@H]3CCCC[C@H]23)[CH][CH]1_0"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "HetAtomTautomer",
+            r"F[C]1[CH][CH][C]([CH][CH]CC2CCC[C@H]3CCCC[C@H]23)[CH][CH]1_0_0",
+            Some(r"F[C]1[CH][CH][C]([CH][CH]CC2CCC[C@H]3CCCC[C@H]23)[CH][CH]1_0_0"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "HetAtomProtomer",
+            r"F[C]1[CH][CH][C]([CH][CH]CC2CCC[C@H]3CCCC[C@H]23)[CH][CH]1_0",
+            Some(r"F[C]1[CH][CH][C]([CH][CH]CC2CCC[C@H]3CCCC[C@H]23)[CH][CH]1_0"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "RedoxPair",
+            r"F[C]1[CH][CH][C]([CH][CH]CC2CCC[C@H]3CCCC[C@H]23)[CH][CH]1",
+            Some(r"F[C]1[CH][CH][C]([CH][CH]CC2CCC[C@H]3CCCC[C@H]23)[CH][CH]1"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "Regioisomer",
+            r"*C=CC*.*F.C1CC[C@H]2CCCC[C@@H]2C1.c1ccccc1",
+            Some(r"*C=CC*.*F.C1CC[C@H]2CCCC[C@@H]2C1.c1ccccc1"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "NetCharge",
+            r"0",
+            Some(r"0"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "SmallWorldIndexBR",
+            r"B22R3",
+            Some(r"B22R3"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "SmallWorldIndexBRL",
+            r"B22R3L14",
+            Some(r"B22R3L14"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "ArthorSubstructureOrder",
+            r"00140016010013000100007b000000",
+            Some(r"00140016010013000100007b000000"),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "HetAtomTautomerv2",
+            r"[F]-[c]1:[cH]:[cH]:[c](/[CH]=[CH]/[CH2]-[CH]2-[CH2]-[CH2]-[CH2]-[C@H]3-[CH2]-[CH2]-[CH2]-[CH2]-[C@H]-2-3):[cH]:[cH]:1_0_0",
+            Some(
+                r"[F]-[c]1:[cH]:[cH]:[c](/[CH]=[CH]/[CH2]-[CH]2-[CH2]-[CH2]-[CH2]-[C@H]3-[CH2]-[CH2]-[CH2]-[CH2]-[C@H]-2-3):[cH]:[cH]:1_0_0",
+            ),
+        ),
+        (
+            r"C1CC[C@H]2CCCC[C@@H]2C1C/C=C/c1ccc(F)cc1",
+            "HetAtomProtomerv2",
+            r"[F]-[c]1:[cH]:[cH]:[c](/[CH]=[CH]/[CH2]-[CH]2-[CH2]-[CH2]-[CH2]-[C@H]3-[CH2]-[CH2]-[CH2]-[CH2]-[C@H]-2-3):[cH]:[cH]:1_0",
+            Some(
+                r"[F]-[c]1:[cH]:[cH]:[c](/[CH]=[CH]/[CH2]-[CH]2-[CH2]-[CH2]-[CH2]-[C@H]3-[CH2]-[CH2]-[CH2]-[CH2]-[C@H]-2-3):[cH]:[cH]:1_0",
+            ),
+        ),
+        (r"[CH2]CC", "AnonymousGraph", r"[*]**", Some(r"[*]**")),
+        (r"[CH2]CC", "ElementGraph", r"CCC", Some(r"CCC")),
+        (
+            r"[CH2]CC",
+            "CanonicalSmiles",
+            r"[CH2]CC",
+            Some(r"[CH2]CC |^1:0|"),
+        ),
+        (r"[CH2]CC", "MurckoScaffold", r"", None),
+        (r"[CH2]CC", "ExtendedMurcko", r"", None),
+        (r"[CH2]CC", "MolFormula", r"C3H7", Some(r"C3H7")),
+        (r"[CH2]CC", "AtomBondCounts", r"3,2", Some(r"3,2")),
+        (r"[CH2]CC", "DegreeVector", r"0,0,1,2", Some(r"0,0,1,2")),
+        (r"[CH2]CC", "Mesomer", r"[CH2]CC_0", Some(r"[CH2]CC_0")),
+        (
+            r"[CH2]CC",
+            "HetAtomTautomer",
+            r"[CH2]CC_0_0",
+            Some(r"[CH2]CC_0_0"),
+        ),
+        (
+            r"[CH2]CC",
+            "HetAtomProtomer",
+            r"[CH2]CC_0",
+            Some(r"[CH2]CC_0"),
+        ),
+        (r"[CH2]CC", "RedoxPair", r"[CH2]CC", Some(r"[CH2]CC")),
+        (
+            r"[CH2]CC",
+            "Regioisomer",
+            r"[CH2]CC",
+            Some(r"[CH2]CC |^1:0|"),
+        ),
+        (r"[CH2]CC", "NetCharge", r"0", Some(r"0")),
+        (r"[CH2]CC", "SmallWorldIndexBR", r"B2R0", Some(r"B2R0")),
+        (r"[CH2]CC", "SmallWorldIndexBRL", r"B2R0L1", Some(r"B2R0L1")),
+        (
+            r"[CH2]CC",
+            "ArthorSubstructureOrder",
+            r"000300020100030000000012010000",
+            Some(r"000300020100030000000012010000"),
+        ),
+        (
+            r"[CH2]CC",
+            "HetAtomTautomerv2",
+            r"[CH2]-[CH2]-[CH3]_0_0",
+            Some(r"[CH2]-[CH2]-[CH3]_0_0"),
+        ),
+        (
+            r"[CH2]CC",
+            "HetAtomProtomerv2",
+            r"[CH2]-[CH2]-[CH3]_0",
+            Some(r"[CH2]-[CH2]-[CH3]_0"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "AnonymousGraph",
+            r"****(*)*1***2****2*1",
+            Some(r"****(*)*1***2****2*1"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "ElementGraph",
+            r"CCOC(O)C1CCC2NCCC2C1",
+            Some(r"CCOC(O)C1CCC2NCCC2C1"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "CanonicalSmiles",
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            Some(r"CCOC(=O)c1ccc2[nH]ccc2c1"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "MurckoScaffold",
+            r"c1ccc2[nH]ccc2c1",
+            Some(r"c1ccc2[nH]ccc2c1"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "ExtendedMurcko",
+            r"*c1ccc2[nH]ccc2c1",
+            Some(r"*c1ccc2[nH]ccc2c1"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "MolFormula",
+            r"C11H11NO2",
+            Some(r"C11H11NO2"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "AtomBondCounts",
+            r"14,15",
+            Some(r"14,15"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "DegreeVector",
+            r"0,4,8,2",
+            Some(r"0,4,8,2"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "Mesomer",
+            r"CCO[C]([O])[C]1[CH][CH][C]2N[CH][CH][C]2[CH]1_0",
+            Some(r"CCO[C]([O])[C]1[CH][CH][C]2N[CH][CH][C]2[CH]1_0"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "HetAtomTautomer",
+            r"CCO[C]([O])[C]1[CH][CH][C]2[N][CH][CH][C]2[CH]1_1_0",
+            Some(r"CCO[C]([O])[C]1[CH][CH][C]2[N][CH][CH][C]2[CH]1_1_0"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "HetAtomProtomer",
+            r"CCO[C]([O])[C]1[CH][CH][C]2[N][CH][CH][C]2[CH]1_1",
+            Some(r"CCO[C]([O])[C]1[CH][CH][C]2[N][CH][CH][C]2[CH]1_1"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "RedoxPair",
+            r"CCO[C]([O])[C]1[CH][CH][C]2N[CH][CH][C]2[CH]1",
+            Some(r"CCO[C]([O])[C]1[CH][CH][C]2N[CH][CH][C]2[CH]1"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "Regioisomer",
+            r"*OC(*)=O.CC.c1ccc2[nH]ccc2c1",
+            Some(r"*OC(*)=O.CC.c1ccc2[nH]ccc2c1"),
+        ),
+        (r"CCOC(=O)c1ccc2[nH]ccc2c1", "NetCharge", r"0", Some(r"0")),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "SmallWorldIndexBR",
+            r"B15R2",
+            Some(r"B15R2"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "SmallWorldIndexBRL",
+            r"B15R2L8",
+            Some(r"B15R2L8"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "ArthorSubstructureOrder",
+            r"000e000f01000b0003000059000000",
+            Some(r"000e000f01000b0003000059000000"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "HetAtomTautomerv2",
+            r"[CH3]-[CH2]-[O]-[C](:[O]):[C]1:[C]:[C]:[C]2:[N]:[C]:[C]:[C]:2:[C]:1_6_0",
+            Some(r"[CH3]-[CH2]-[O]-[C](:[O]):[C]1:[C]:[C]:[C]2:[N]:[C]:[C]:[C]:2:[C]:1_6_0"),
+        ),
+        (
+            r"CCOC(=O)c1ccc2[nH]ccc2c1",
+            "HetAtomProtomerv2",
+            r"[CH3]-[CH2]-[O]-[C](:[O]):[C]1:[C]:[C]:[C]2:[N]:[C]:[C]:[C]:2:[C]:1_6",
+            Some(r"[CH3]-[CH2]-[O]-[C](:[O]):[C]1:[C]:[C]:[C]2:[N]:[C]:[C]:[C]:2:[C]:1_6"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "AnonymousGraph",
+            r"*[*@SP1](*)(*)*",
+            Some(r"*[*@SP1](*)(*)*"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "ElementGraph",
+            r"[NH2][Pt@SP1]([NH2])([Cl])[Cl]",
+            Some(r"[NH2][Pt@SP1]([NH2])([Cl])[Cl]"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "CanonicalSmiles",
+            r"[NH3]->[Pt@SP1](<-[NH3])([Cl])[Cl]",
+            Some(r"[NH3][Pt@SP1]([NH3])([Cl])[Cl] |C:0.0,2.1|"),
+        ),
+        (r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]", "MurckoScaffold", r"", None),
+        (r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]", "ExtendedMurcko", r"", None),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "MolFormula",
+            r"Cl2H6N2Pt",
+            Some(r"Cl2H6N2Pt"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "AtomBondCounts",
+            r"5,4",
+            Some(r"5,4"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "DegreeVector",
+            r"1,0,0,4",
+            Some(r"1,0,0,4"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "Mesomer",
+            r"[NH3][Pt@SP1]([NH3])([Cl])[Cl]_0",
+            Some(r"[NH3][Pt@SP1]([NH3])([Cl])[Cl]_0"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "HetAtomTautomer",
+            r"[N][Pt@SP1]([N])([Cl])[Cl]_6_0",
+            Some(r"[N][Pt@SP1]([N])([Cl])[Cl]_6_0"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "HetAtomProtomer",
+            r"[N][Pt@SP1]([N])([Cl])[Cl]_6",
+            Some(r"[N][Pt@SP1]([N])([Cl])[Cl]_6"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "RedoxPair",
+            r"[NH3][Pt@SP1]([NH3])([Cl])[Cl]",
+            Some(r"[NH3][Pt@SP1]([NH3])([Cl])[Cl]"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "Regioisomer",
+            r"[NH3]->[Pt@SP1](<-[NH3])([Cl])[Cl]",
+            Some(r"[NH3][Pt@SP1]([NH3])([Cl])[Cl] |C:0.0,2.1|"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "NetCharge",
+            r"0",
+            Some(r"0"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "SmallWorldIndexBR",
+            r"B4R0",
+            Some(r"B4R0"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "SmallWorldIndexBRL",
+            r"B4R0L0",
+            Some(r"B4R0L0"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "ArthorSubstructureOrder",
+            r"00050004010000000400007e000000",
+            Some(r"00050004010000000400007e000000"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "HetAtomTautomerv2",
+            r"[NH3]->[Pt@SP1](<-[NH3])(-[Cl])-[Cl]_0_0",
+            Some(r"[NH3]-[Pt@SP1](-[NH3])(-[Cl])-[Cl]_0_0 |C:0.0,2.1|"),
+        ),
+        (
+            r"[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+            "HetAtomProtomerv2",
+            r"[NH3]->[Pt@SP1](<-[NH3])(-[Cl])-[Cl]_0",
+            Some(r"[NH3]-[Pt@SP1](-[NH3])(-[Cl])-[Cl]_0 |C:0.0,2.1|"),
+        ),
+        (r"CC", "AnonymousGraph", r"**", Some(r"**")),
+        (r"CC", "ElementGraph", r"CC", Some(r"CC")),
+        (r"CC", "CanonicalSmiles", r"CC", Some(r"CC")),
+        (r"CC", "MurckoScaffold", r"", None),
+        (r"CC", "ExtendedMurcko", r"", None),
+        (r"CC", "MolFormula", r"C2H6", Some(r"C2H6")),
+        (r"CC", "AtomBondCounts", r"2,1", Some(r"2,1")),
+        (r"CC", "DegreeVector", r"0,0,0,2", Some(r"0,0,0,2")),
+        (r"CC", "Mesomer", r"CC_0", Some(r"CC_0")),
+        (r"CC", "HetAtomTautomer", r"CC_0_0", Some(r"CC_0_0")),
+        (r"CC", "HetAtomProtomer", r"CC_0", Some(r"CC_0")),
+        (r"CC", "RedoxPair", r"CC", Some(r"CC")),
+        (r"CC", "Regioisomer", r"CC", Some(r"CC")),
+        (r"CC", "NetCharge", r"0", Some(r"0")),
+        (r"CC", "SmallWorldIndexBR", r"B1R0", Some(r"B1R0")),
+        (r"CC", "SmallWorldIndexBRL", r"B1R0L0", Some(r"B1R0L0")),
+        (
+            r"CC",
+            "ArthorSubstructureOrder",
+            r"00020001010002000000000c000000",
+            Some(r"00020001010002000000000c000000"),
+        ),
+        (
+            r"CC",
+            "HetAtomTautomerv2",
+            r"[CH3]-[CH3]_0_0",
+            Some(r"[CH3]-[CH3]_0_0"),
+        ),
+        (
+            r"CC",
+            "HetAtomProtomerv2",
+            r"[CH3]-[CH3]_0",
+            Some(r"[CH3]-[CH3]_0"),
+        ),
+    ];
+    for &(s, f, want, want_cx) in cases {
+        let mol = crate::parse(s).expect("parses");
+        let func = RdkitHashFunction::from_name(f).expect("function");
+        assert_eq!(
+            super::rdkit_mol_hash(&mol, func, false).unwrap(),
+            want,
+            "{f} {s}"
+        );
+        // `None`: RDKit raises (an empty scaffold has no output order).
+        assert_eq!(
+            super::rdkit_mol_hash(&mol, func, true).ok().as_deref(),
+            want_cx,
+            "{f} {s} (CX)"
+        );
     }
 }

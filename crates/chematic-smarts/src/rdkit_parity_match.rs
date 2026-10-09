@@ -20,6 +20,8 @@
 //! `match_vf2.rs` so this mode's other results are identical to
 //! the default matcher's.
 
+use std::sync::OnceLock;
+
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, implicit_hcount};
@@ -101,11 +103,101 @@ pub fn find_matches_rdkit_parity(
     mol: &Molecule,
     config: &RdkitParityConfig,
 ) -> Result<(Vec<FxHashMap<usize, AtomIdx>>, bool), RdkitParityError> {
+    let mut results: Vec<FxHashMap<usize, AtomIdx>> = Vec::new();
+    let budget_exhausted = run_rdkit_parity(query, mol, config, &mut results)?;
+    if config.base.uniquify {
+        let mut seen = FxHashSet::default();
+        results.retain(|m| {
+            let mut key: Vec<u32> = m.values().map(|idx| idx.0).collect();
+            key.sort_unstable();
+            seen.insert(key)
+        });
+    }
+    Ok((results, budget_exhausted))
+}
+
+/// The distinct target atom sets of [`find_matches_rdkit_parity`]'s
+/// matches: each set sorted ascending, the sets sorted and deduplicated.
+/// Same search, budget and errors; it skips building a map per match.
+pub fn find_match_atom_sets_rdkit_parity(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    config: &RdkitParityConfig,
+) -> Result<(Vec<Vec<u32>>, bool), RdkitParityError> {
+    let mut sink = AtomSetSink {
+        stride: query.atoms.len(),
+        data: Vec::new(),
+        count: 0,
+    };
+    let budget_exhausted = run_rdkit_parity(query, mol, config, &mut sink)?;
+    let mut sets: Vec<&[u32]> = if sink.stride == 0 {
+        Vec::new()
+    } else {
+        sink.data.chunks_exact(sink.stride).collect()
+    };
+    sets.sort_unstable();
+    sets.dedup();
+    Ok((
+        sets.into_iter().map(<[u32]>::to_vec).collect(),
+        budget_exhausted,
+    ))
+}
+
+/// Where the search reports each complete mapping (`map[q]` = target atom).
+trait MatchSink {
+    fn count(&self) -> usize;
+    fn push(&mut self, map: &[u32]);
+}
+
+impl MatchSink for Vec<FxHashMap<usize, AtomIdx>> {
+    fn count(&self) -> usize {
+        self.len()
+    }
+
+    fn push(&mut self, map: &[u32]) {
+        Vec::push(
+            self,
+            map.iter()
+                .enumerate()
+                .map(|(q, &t)| (q, AtomIdx(t)))
+                .collect(),
+        );
+    }
+}
+
+/// Each match's target atoms, sorted, back to back.
+struct AtomSetSink {
+    stride: usize,
+    data: Vec<u32>,
+    count: usize,
+}
+
+impl MatchSink for AtomSetSink {
+    fn count(&self) -> usize {
+        self.count
+    }
+
+    fn push(&mut self, map: &[u32]) {
+        let start = self.data.len();
+        self.data.extend_from_slice(map);
+        self.data[start..].sort_unstable();
+        self.count += 1;
+    }
+}
+
+/// The RDKit-parity search; reports matches to `sink` and returns whether
+/// the visit budget ran out.
+fn run_rdkit_parity<S: MatchSink>(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    config: &RdkitParityConfig,
+    sink: &mut S,
+) -> Result<bool, RdkitParityError> {
     if query.atoms.is_empty() {
-        return Ok((vec![], false));
+        return Ok(false);
     }
     if query.atoms.len() > mol.atom_count() {
-        return Ok((vec![], false));
+        return Ok(false);
     }
 
     let view;
@@ -125,109 +217,203 @@ pub fn find_matches_rdkit_parity(
     let organometallic_view = rdkit_parity_iron_carbanion_view(mol_ref);
     let mol_ref = organometallic_view.as_ref().unwrap_or(mol_ref);
 
-    let rings = chematic_perception::find_sssr(mol_ref);
+    let cache = mol_ref.derived(
+        chematic_core::DerivedSlot::RdkitParityMatch,
+        TargetCache::default,
+    );
+    let rings = chematic_perception::find_sssr_shared(mol_ref);
+    let rings: &RingSet = &rings;
+    let budget = &config.ring_model_budget;
     let uses_ring_size = query_uses_ring_size(query);
-    let symmetrized_rings = if uses_ring_size {
-        let result = chematic_perception::find_symmetrized_sssr_with_diagnostics_bounded(
-            mol_ref,
-            Some(config.ring_model_budget.max_candidates),
-        );
-        if result.status() == SymmetrizedSssrStatus::CapExhausted {
-            return Err(RdkitParityError::RingModelBudgetExceeded {
-                candidates_examined: result.candidates_examined(),
-                cap: config.ring_model_budget.max_candidates,
-            });
+    // Every model below depends only on the target and the budget, so it is
+    // computed once per target and shared by all queries run on it.
+    // How many of its bonds the SSSR ring sharing the most bonds with other
+    // SSSR rings shares, when every bounded ring search below provably stays
+    // under the candidate cap; `None` otherwise.
+    let shared = cache
+        .max_shared_bonds
+        .get_or_init(|| max_shared_bonds(mol_ref, rings));
+    let shortcut_bounded = rings_shortcut_bounded(mol_ref, rings, budget.max_candidates);
+    let mut symmetrized_local = None;
+    let symmetrized_rings: Option<&RingSet> = if uses_ring_size {
+        let cap = budget.max_candidates;
+        match keyed(&cache.symmetrized, cap, &mut symmetrized_local, || {
+            if *shared == 0 && shortcut_bounded {
+                // Bond-disjoint SSSR rings: they are the graph's only simple
+                // cycles, so the symmetrized set adds nothing to them.
+                return Ok(None);
+            }
+            let result = chematic_perception::find_symmetrized_sssr_with_diagnostics_bounded(
+                mol_ref,
+                Some(cap),
+            );
+            if result.status() == SymmetrizedSssrStatus::CapExhausted {
+                Err(RdkitParityError::RingModelBudgetExceeded {
+                    candidates_examined: result.candidates_examined(),
+                    cap,
+                })
+            } else {
+                Ok(Some(result.into_ring_set()))
+            }
+        }) {
+            Ok(set) => set.as_ref(),
+            Err(e) => return Err(e.clone()),
         }
-        Some(result.into_ring_set())
     } else {
         None
     };
-    let size_model = if uses_ring_size {
-        Some(build_rdkit_parity_ring_model(
-            mol_ref,
-            &rings,
-            &config.ring_model_budget,
-        )?)
+    let uses_ring_count = query_uses_ring_count(query);
+    let needs_parity_model = uses_ring_size
+        || (uses_ring_count
+            && config.ring_count_model == RdkitRingCountModel::SymmetrizedSssr
+            && !config.use_shared_symmetrized_sssr);
+    let mut parity_local = None;
+    let parity_model = if needs_parity_model {
+        match keyed(&cache.parity_model, *budget, &mut parity_local, || {
+            if *shared <= 1 && shortcut_bounded {
+                // No SSSR ring shares two or more bonds, so no candidate can
+                // replace one (see `max_shared_bonds`): the model is the SSSR.
+                return Ok(sssr_ring_model(mol_ref, rings));
+            }
+            build_rdkit_parity_ring_model(mol_ref, rings, budget)
+        }) {
+            Ok(model) => Some(model),
+            Err(e) => return Err(e.clone()),
+        }
     } else {
         None
     };
-    let ring_model = if query_uses_ring_count(query)
-        && config.ring_count_model == RdkitRingCountModel::RelevantCycles
-    {
-        let cap = config.ring_model_budget.max_candidates;
-        let counts = chematic_perception::relevant_cycle_counts(mol_ref, cap).map_err(|_| {
-            RdkitParityError::RingModelBudgetExceeded {
+    let size_model = if uses_ring_size { parity_model } else { None };
+    let mut owned_ring_model = None;
+    let ring_model =
+        if uses_ring_count && config.ring_count_model == RdkitRingCountModel::RelevantCycles {
+            let cap = config.ring_model_budget.max_candidates;
+            let mut local = None;
+            let counts = keyed(&cache.relevant_counts, cap, &mut local, || {
+                chematic_perception::relevant_cycle_counts(mol_ref, cap).ok()
+            })
+            .as_ref()
+            .ok_or(RdkitParityError::RingModelBudgetExceeded {
                 candidates_examined: cap.saturating_add(1),
                 cap,
-            }
-        })?;
-        Some(RdkitParityRingModel::from_counts(&counts))
-    } else if query_uses_ring_count(query) {
-        let model = if config.use_shared_symmetrized_sssr {
-            build_shared_symmetrized_ring_model(mol_ref, &rings, &config.ring_model_budget)?
-        } else {
-            build_rdkit_parity_ring_model(mol_ref, &rings, &config.ring_model_budget)?
-        };
-        let aromatic_cations = mol_ref
-            .atoms()
-            .filter(|(_, atom)| atom.aromatic && atom.charge > 0)
-            .count();
-        if aromatic_cations >= 2 && model.extra_ring_count() > 0 {
-            // Here RDKit's symmetrized SSSR depends on the atom order. Count
-            // over the exact port of RDKit's order-dependent ring list for
-            // the molecule in its given atom order; refuse only where that
-            // port itself declines (RDKit's approximate ring finder).
-            let Some(exact) = chematic_perception::rdkit_sssr_ring_order(mol_ref) else {
-                return Err(RdkitParityError::RingModelAmbiguous {
-                    aromatic_cations,
-                    extra_rings: model.extra_ring_count(),
-                });
+            })?;
+            Some(&*owned_ring_model.insert(RdkitParityRingModel::from_counts(counts)))
+        } else if uses_ring_count {
+            let model = if config.use_shared_symmetrized_sssr {
+                &*owned_ring_model.insert(build_shared_symmetrized_ring_model(
+                    mol_ref,
+                    rings,
+                    &config.ring_model_budget,
+                )?)
+            } else {
+                parity_model.expect("built when the ring count needs it")
             };
-            let mut counts = vec![0usize; mol_ref.atom_count()];
-            for ring in &exact {
-                for a in ring {
-                    counts[a.0 as usize] += 1;
-                }
+            let aromatic_cations = mol_ref
+                .atoms()
+                .filter(|(_, atom)| atom.aromatic && atom.charge > 0)
+                .count();
+            if aromatic_cations >= 2 && model.extra_ring_count() > 0 {
+                // Here RDKit's symmetrized SSSR depends on the atom order. Count
+                // over the exact port of RDKit's order-dependent ring list for
+                // the molecule in its given atom order; refuse only where that
+                // port itself declines (RDKit's approximate ring finder).
+                let exact = cache.exact_counts.get_or_init(|| {
+                    chematic_perception::rdkit_sssr_ring_order(mol_ref).map(|exact| {
+                        let mut counts = vec![0usize; mol_ref.atom_count()];
+                        for ring in &exact {
+                            for a in ring {
+                                counts[a.0 as usize] += 1;
+                            }
+                        }
+                        counts
+                    })
+                });
+                let Some(counts) = exact else {
+                    return Err(RdkitParityError::RingModelAmbiguous {
+                        aromatic_cations,
+                        extra_rings: model.extra_ring_count(),
+                    });
+                };
+                Some(&*owned_ring_model.insert(RdkitParityRingModel::from_counts(counts)))
+            } else {
+                Some(model)
             }
-            Some(RdkitParityRingModel::from_counts(&counts))
         } else {
-            Some(model)
-        }
-    } else {
-        None
-    };
+            None
+        };
 
     let ctx = EvalCtx {
         mol: mol_ref,
-        rings: &rings,
-        symmetrized_rings: symmetrized_rings.as_ref(),
-        size_model: size_model.as_ref(),
-        ring_model: ring_model.as_ref(),
+        rings,
+        symmetrized_rings,
+        size_model,
+        ring_model,
         config: &config.base,
         visit_budget: std::cell::Cell::new(config.base.max_visit_budget.unwrap_or(u64::MAX)),
         budget_exhausted: std::cell::Cell::new(false),
-        min_ring_size_by_atom: std::cell::RefCell::new(None),
+        cache: &cache,
+        state_pool: std::cell::RefCell::new(Vec::new()),
     };
-    let mut mapping: FxHashMap<usize, AtomIdx> = FxHashMap::default();
-    let mut results: Vec<FxHashMap<usize, AtomIdx>> = Vec::new();
-    match_recursive(
-        query,
-        &ctx,
-        &mut mapping,
-        &mut results,
-        config.base.max_matches,
-    );
+    let mut state = MatchState::new(query.atoms.len());
+    match_recursive(query, &ctx, &mut state, sink, config.base.max_matches);
+    Ok(ctx.budget_exhausted.get())
+}
 
-    if config.base.uniquify {
-        let mut seen = FxHashSet::default();
-        results.retain(|m| {
-            let mut key: Vec<u32> = m.values().map(|idx| idx.0).collect();
-            key.sort_unstable();
-            seen.insert(key)
-        });
+/// The largest number of bonds any SSSR ring shares with other SSSR rings.
+///
+/// It bounds what RDKit's symmetrization (and its port in
+/// [`build_rdkit_parity_ring_model`]) can add. A candidate ring `C` replaces
+/// a basis ring `X` of its own size only if it contains every bond of `X`
+/// that no other basis ring has and is not `X` itself:
+///
+/// - `0`: the SSSR rings are bond-disjoint, so they are the graph's only
+///   simple cycles (a sum of two or more bond-disjoint cycles is not a
+///   simple cycle) and nothing can be added;
+/// - `1`: the unshared bonds of `X` form a path through all of its atoms;
+///   a cycle with as many atoms that contains that path is closed by the
+///   one bond between the path's ends, so it is `X`.
+fn max_shared_bonds(mol: &Molecule, rings: &RingSet) -> usize {
+    let mut ring_bonds: Vec<Vec<BondIdx>> = Vec::with_capacity(rings.ring_count());
+    let mut count = vec![0u32; mol.bond_count()];
+    for ring in rings.rings() {
+        let n = ring.len();
+        let bonds: Vec<BondIdx> = (0..n)
+            .filter_map(|i| mol.bond_between(ring[i], ring[(i + 1) % n]).map(|(b, _)| b))
+            .collect();
+        for b in &bonds {
+            count[b.0 as usize] += 1;
+        }
+        ring_bonds.push(bonds);
     }
+    ring_bonds
+        .iter()
+        .map(|bonds| bonds.iter().filter(|b| count[b.0 as usize] > 1).count())
+        .max()
+        .unwrap_or(0)
+}
 
-    Ok((results, ctx.budget_exhausted.get()))
+/// Whether the ring searches skipped by the shortcuts above stay within
+/// `cap` candidates: they make at most `atoms + 2 * bonds` searches per
+/// candidate group, each yielding cycles of a graph with at most `2^rings`
+/// of them (counted with a margin for repeats).
+fn rings_shortcut_bounded(mol: &Molecule, rings: &RingSet, cap: usize) -> bool {
+    let r = rings.ring_count();
+    if r > 12 {
+        return false;
+    }
+    let searches = (mol.atom_count() + 2 * mol.bond_count() + 1) * (r + 2);
+    searches.saturating_mul(1usize << r).saturating_mul(8) <= cap
+}
+
+/// [`build_rdkit_parity_ring_model`]'s result when it accepts no extra ring.
+fn sssr_ring_model(mol: &Molecule, rings: &RingSet) -> RdkitParityRingModel {
+    let mut counts = vec![0usize; mol.atom_count()];
+    for ring in rings.rings() {
+        for a in ring {
+            counts[a.0 as usize] += 1;
+        }
+    }
+    RdkitParityRingModel::from_counts(&counts)
 }
 
 /// Reproduce the verified Fe--[C-] valence-four cleanup case without
@@ -345,6 +531,47 @@ fn atom_query_uses_ring_size(q: &AtomQuery) -> bool {
 // Evaluation context -- same shape as match_vf2::EvalCtx, plus the ring model.
 // ---------------------------------------------------------------------------
 
+/// Per-target state shared by every RDKit-parity query run on one target
+/// (memoized on the target as `DerivedSlot::RdkitParityMatch`). Values
+/// computed under a budget remember it; another budget recomputes them.
+#[derive(Default)]
+struct TargetCache {
+    /// [`build_rdkit_parity_ring_model`] on the SSSR.
+    parity_model: OnceLock<(
+        RdkitRingModelBudget,
+        Result<RdkitParityRingModel, RdkitParityError>,
+    )>,
+    /// The bounded symmetrized SSSR (`[kN]`), keyed by its candidate cap;
+    /// `None` when it is the SSSR itself.
+    symmetrized: OnceLock<(usize, Result<Option<RingSet>, RdkitParityError>)>,
+    /// See [`max_shared_bonds`].
+    max_shared_bonds: OnceLock<usize>,
+    /// Relevant-cycle counts per atom (`[RN]`, 2026.09.1), keyed by cap.
+    relevant_counts: OnceLock<(usize, Option<Vec<usize>>)>,
+    /// Ring counts per atom over RDKit's order-dependent ring list.
+    exact_counts: OnceLock<Option<Vec<usize>>>,
+    /// Per bond: some SSSR ring contains both of its atoms.
+    ring_bond: OnceLock<Vec<bool>>,
+    /// Smallest SSSR ring size per atom.
+    min_ring_size: OnceLock<Vec<Option<u8>>>,
+}
+
+/// `cell`'s value when it was computed for `key`; otherwise computes it,
+/// into `cell` if that is still empty, else into `local`.
+fn keyed<'a, K: PartialEq + Copy, V>(
+    cell: &'a OnceLock<(K, V)>,
+    key: K,
+    local: &'a mut Option<V>,
+    compute: impl FnOnce() -> V,
+) -> &'a V {
+    let mut compute = Some(compute);
+    let (cached_key, value) = cell.get_or_init(|| (key, (compute.take().expect("called once"))()));
+    if *cached_key == key {
+        return value;
+    }
+    local.insert((compute.take().expect("cell holds another key"))())
+}
+
 struct EvalCtx<'a> {
     mol: &'a Molecule,
     rings: &'a RingSet,
@@ -354,13 +581,14 @@ struct EvalCtx<'a> {
     config: &'a MatchConfig,
     visit_budget: std::cell::Cell<u64>,
     budget_exhausted: std::cell::Cell<bool>,
-    min_ring_size_by_atom: std::cell::RefCell<Option<Vec<Option<u8>>>>,
+    cache: &'a TargetCache,
+    /// Spare states for recursive-SMARTS searches.
+    state_pool: std::cell::RefCell<Vec<MatchState>>,
 }
 
 impl EvalCtx<'_> {
     fn min_ring_size(&self, idx: AtomIdx) -> Option<u8> {
-        let mut cache = self.min_ring_size_by_atom.borrow_mut();
-        let table = cache.get_or_insert_with(|| {
+        let table = self.cache.min_ring_size.get_or_init(|| {
             let mut table = vec![None; self.mol.atom_count()];
             for ring in self.rings.rings() {
                 let size = ring.len() as u8;
@@ -373,24 +601,118 @@ impl EvalCtx<'_> {
         });
         table[idx.0 as usize]
     }
+
+    /// Whether some SSSR ring contains both atoms of `bond`.
+    fn bond_atoms_share_ring(&self, bond: BondIdx) -> bool {
+        let flags = self.cache.ring_bond.get_or_init(|| {
+            let mut rings_of: Vec<Vec<u32>> = vec![Vec::new(); self.mol.atom_count()];
+            for (r, ring) in self.rings.rings().iter().enumerate() {
+                for atom in ring {
+                    rings_of[atom.0 as usize].push(r as u32);
+                }
+            }
+            self.mol
+                .bonds()
+                .map(|(_, entry)| {
+                    let b_rings = &rings_of[entry.atom2.0 as usize];
+                    rings_of[entry.atom1.0 as usize]
+                        .iter()
+                        .any(|r| b_rings.contains(r))
+                })
+                .collect()
+        });
+        flags[bond.0 as usize]
+    }
+}
+
+const UNMAPPED: u32 = u32::MAX;
+
+/// A partial query-to-target mapping: `map[q]` is query atom `q`'s target
+/// atom, or [`UNMAPPED`].
+struct MatchState {
+    map: Vec<u32>,
+    mapped: usize,
+    /// Candidate buffers, one per search depth.
+    buffers: Vec<Vec<u32>>,
+}
+
+impl MatchState {
+    fn new(query_len: usize) -> Self {
+        Self {
+            map: vec![UNMAPPED; query_len],
+            mapped: 0,
+            buffers: Vec::new(),
+        }
+    }
+
+    fn get(&self, q: usize) -> Option<AtomIdx> {
+        let t = self.map[q];
+        (t != UNMAPPED).then_some(AtomIdx(t))
+    }
+
+    fn uses(&self, t: AtomIdx) -> bool {
+        self.map.contains(&t.0)
+    }
+
+    fn insert(&mut self, q: usize, t: AtomIdx) {
+        self.map[q] = t.0;
+        self.mapped += 1;
+    }
+
+    fn remove(&mut self, q: usize) {
+        self.map[q] = UNMAPPED;
+        self.mapped -= 1;
+    }
+
+    /// Reuse this state for a query of `query_len` atoms.
+    fn reset(&mut self, query_len: usize) {
+        self.map.clear();
+        self.map.resize(query_len, UNMAPPED);
+        self.mapped = 0;
+    }
+
+    /// The lowest unmapped query atom.
+    fn next_unmapped(&self) -> usize {
+        self.map.iter().position(|&t| t == UNMAPPED).unwrap()
+    }
+
+    /// The target atoms query atom `q` can map to, in ascending order:
+    /// every atom, or (equivalently, since `bonds_compatible` requires a
+    /// bond to the image of each mapped query neighbour) only the
+    /// neighbours of one mapped query neighbour's image.
+    fn candidates(&mut self, q: usize, query: &QueryMolecule, mol: &Molecule) -> Vec<u32> {
+        let mut buffer = self.buffers.pop().unwrap_or_default();
+        buffer.clear();
+        let anchor = query.adj[q].iter().find_map(|&(_, q_nb)| self.get(q_nb));
+        match anchor {
+            Some(image) => {
+                buffer.extend(mol.neighbors(image).map(|(nb, _)| nb.0));
+                buffer.sort_unstable();
+                buffer.dedup();
+            }
+            None => buffer.extend(0..mol.atom_count() as u32),
+        }
+        buffer
+    }
+
+    fn recycle(&mut self, buffer: Vec<u32>) {
+        self.buffers.push(buffer);
+    }
 }
 
 // ---------------------------------------------------------------------------
-// Recursive VF2 search -- identical control flow to match_vf2::match_recursive.
+// Recursive VF2 search -- the control flow of match_vf2::match_recursive
+// (same candidates in the same order, so the same visits and results).
 // ---------------------------------------------------------------------------
 
-fn next_unmapped(mapping: &FxHashMap<usize, AtomIdx>, query_len: usize) -> usize {
-    (0..query_len).find(|i| !mapping.contains_key(i)).unwrap()
-}
-
-fn match_recursive(
+fn match_recursive<S: MatchSink>(
     query: &QueryMolecule,
     ctx: &EvalCtx<'_>,
-    mapping: &mut FxHashMap<usize, AtomIdx>,
-    results: &mut Vec<FxHashMap<usize, AtomIdx>>,
+    state: &mut MatchState,
+    results: &mut S,
     max: Option<usize>,
 ) {
-    if max.is_some_and(|m| results.len() >= m) {
+    if max.is_some_and(|m| results.count() >= m) {
         return;
     }
     let remaining = ctx.visit_budget.get();
@@ -400,52 +722,52 @@ fn match_recursive(
     }
     ctx.visit_budget.set(remaining - 1);
 
-    if mapping.len() == query.atoms.len() {
-        results.push(mapping.clone());
+    if state.mapped == query.atoms.len() {
+        results.push(&state.map);
         return;
     }
 
-    let q_next = next_unmapped(mapping, query.atoms.len());
-    let used_targets: FxHashSet<AtomIdx> = mapping.values().copied().collect();
-
-    for t in 0..ctx.mol.atom_count() {
-        if max.is_some_and(|m| results.len() >= m) {
+    let q_next = state.next_unmapped();
+    let candidates = state.candidates(q_next, query, ctx.mol);
+    for &t in &candidates {
+        if max.is_some_and(|m| results.count() >= m) {
             break;
         }
-        let t_idx = AtomIdx(t as u32);
-        if used_targets.contains(&t_idx) {
+        let t_idx = AtomIdx(t);
+        if state.uses(t_idx) {
             continue;
         }
         if !eval_atom_query(&query.atoms[q_next].query, t_idx, ctx) {
             continue;
         }
-        if !bonds_compatible(q_next, t_idx, mapping, query, ctx) {
+        if !bonds_compatible(q_next, t_idx, state, query, ctx) {
             continue;
         }
-        mapping.insert(q_next, t_idx);
-        match_recursive(query, ctx, mapping, results, max);
-        mapping.remove(&q_next);
+        state.insert(q_next, t_idx);
+        match_recursive(query, ctx, state, results, max);
+        state.remove(q_next);
     }
+    state.recycle(candidates);
 }
 
 fn bonds_compatible(
     q: usize,
     t: AtomIdx,
-    mapping: &FxHashMap<usize, AtomIdx>,
+    state: &MatchState,
     query: &QueryMolecule,
     ctx: &EvalCtx<'_>,
 ) -> bool {
     for &(bond_idx, q_nb) in &query.adj[q] {
-        if let Some(&t_nb) = mapping.get(&q_nb) {
+        if let Some(t_nb) = state.get(q_nb) {
             match ctx.mol.bond_between(t, t_nb) {
                 None => return false,
-                Some((_bidx, bond_entry)) => {
+                Some((bidx, bond_entry)) => {
                     let qbond = &query.bonds[bond_idx];
                     // Whether the target bond runs in the query bond's own
                     // atom1 -> atom2 direction (dative `->` / `<-`).
                     let image_of_atom1 = if qbond.atom1 == q { t } else { t_nb };
                     let forward = bond_entry.atom1 == image_of_atom1;
-                    if !eval_bond_query(&qbond.query, bond_entry.order, t, t_nb, forward, ctx) {
+                    if !eval_bond_query(&qbond.query, bond_entry.order, bidx, forward, ctx) {
                         return false;
                     }
                 }
@@ -562,13 +884,8 @@ fn eval_ring_bond_count(idx: AtomIdx, ctx: &EvalCtx<'_>, x: u8) -> bool {
     let count = ctx
         .mol
         .neighbors(idx)
-        .filter(|(nb, bond)| {
-            ctx.mol.bond(*bond).order != BondOrder::Dative
-                && ctx
-                    .rings
-                    .rings()
-                    .iter()
-                    .any(|ring| ring.contains(&idx) && ring.contains(nb))
+        .filter(|&(_, bond)| {
+            ctx.mol.bond(bond).order != BondOrder::Dative && ctx.bond_atoms_share_ring(bond)
         })
         .count() as u8;
     count == x
@@ -606,19 +923,22 @@ fn has_match_anchored(query: &QueryMolecule, anchor: AtomIdx, ctx: &EvalCtx<'_>)
     if !eval_atom_query(&query.atoms[0].query, anchor, ctx) {
         return false;
     }
-    let mut mapping = FxHashMap::default();
-    mapping.insert(0usize, anchor);
     if query.atoms.len() == 1 {
         return true;
     }
-    has_match_recursive(query, ctx, &mut mapping)
+    let mut state = ctx
+        .state_pool
+        .borrow_mut()
+        .pop()
+        .unwrap_or_else(|| MatchState::new(0));
+    state.reset(query.atoms.len());
+    state.insert(0, anchor);
+    let found = has_match_recursive(query, ctx, &mut state);
+    ctx.state_pool.borrow_mut().push(state);
+    found
 }
 
-fn has_match_recursive(
-    query: &QueryMolecule,
-    ctx: &EvalCtx<'_>,
-    mapping: &mut FxHashMap<usize, AtomIdx>,
-) -> bool {
+fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, state: &mut MatchState) -> bool {
     let remaining = ctx.visit_budget.get();
     if remaining == 0 {
         ctx.budget_exhausted.set(true);
@@ -626,32 +946,33 @@ fn has_match_recursive(
     }
     ctx.visit_budget.set(remaining - 1);
 
-    if mapping.len() == query.atoms.len() {
+    if state.mapped == query.atoms.len() {
         return true;
     }
 
-    let q_next = next_unmapped(mapping, query.atoms.len());
-    let used_targets: FxHashSet<AtomIdx> = mapping.values().copied().collect();
-
-    for t in 0..ctx.mol.atom_count() {
-        let t_idx = AtomIdx(t as u32);
-        if used_targets.contains(&t_idx) {
+    let q_next = state.next_unmapped();
+    let candidates = state.candidates(q_next, query, ctx.mol);
+    let mut found = false;
+    for &t in &candidates {
+        let t_idx = AtomIdx(t);
+        if state.uses(t_idx) {
             continue;
         }
         if !eval_atom_query(&query.atoms[q_next].query, t_idx, ctx) {
             continue;
         }
-        if !bonds_compatible(q_next, t_idx, mapping, query, ctx) {
+        if !bonds_compatible(q_next, t_idx, state, query, ctx) {
             continue;
         }
-        mapping.insert(q_next, t_idx);
-        if has_match_recursive(query, ctx, mapping) {
-            mapping.remove(&q_next);
-            return true;
+        state.insert(q_next, t_idx);
+        found = has_match_recursive(query, ctx, state);
+        state.remove(q_next);
+        if found {
+            break;
         }
-        mapping.remove(&q_next);
     }
-    false
+    state.recycle(candidates);
+    found
 }
 
 // ---------------------------------------------------------------------------
@@ -661,22 +982,21 @@ fn has_match_recursive(
 fn eval_bond_query(
     q: &BondQuery,
     order: BondOrder,
-    a: AtomIdx,
-    b: AtomIdx,
+    bond: BondIdx,
     forward: bool,
     ctx: &EvalCtx<'_>,
 ) -> bool {
     match q {
-        BondQuery::Primitive(p) => eval_bond_primitive(p, order, a, b, forward, ctx),
+        BondQuery::Primitive(p) => eval_bond_primitive(p, order, bond, forward, ctx),
         BondQuery::And(x, y) => {
-            eval_bond_query(x, order, a, b, forward, ctx)
-                && eval_bond_query(y, order, a, b, forward, ctx)
+            eval_bond_query(x, order, bond, forward, ctx)
+                && eval_bond_query(y, order, bond, forward, ctx)
         }
         BondQuery::Or(x, y) => {
-            eval_bond_query(x, order, a, b, forward, ctx)
-                || eval_bond_query(y, order, a, b, forward, ctx)
+            eval_bond_query(x, order, bond, forward, ctx)
+                || eval_bond_query(y, order, bond, forward, ctx)
         }
-        BondQuery::Not(x) => !eval_bond_query(x, order, a, b, forward, ctx),
+        BondQuery::Not(x) => !eval_bond_query(x, order, bond, forward, ctx),
         // Unspecified SMARTS bond: single or aromatic (RDKit semantics).
         BondQuery::Any => matches!(
             order,
@@ -692,8 +1012,7 @@ fn eval_bond_query(
 fn eval_bond_primitive(
     p: &BondPrimitive,
     order: BondOrder,
-    a: AtomIdx,
-    b: AtomIdx,
+    bond: BondIdx,
     forward: bool,
     ctx: &EvalCtx<'_>,
 ) -> bool {
@@ -723,14 +1042,7 @@ fn eval_bond_primitive(
         BondPrimitive::Any => true,
         // Dative bonds are excluded from the ring model, even when both
         // endpoints happen to lie in another ring of that model.
-        BondPrimitive::Ring => {
-            order != BondOrder::Dative
-                && ctx
-                    .rings
-                    .rings()
-                    .iter()
-                    .any(|ring| ring.contains(&a) && ring.contains(&b))
-        }
+        BondPrimitive::Ring => order != BondOrder::Dative && ctx.bond_atoms_share_ring(bond),
         // `/` and `\\` match a single or aromatic bond without constraining
         // cis/trans, as in RDKit (which ignores bond stereo when matching):
         // `C/C` matches ethane, and the answer for `F/C=C/F` does not depend

@@ -74,6 +74,50 @@ class Mol:
         :attr:`rdkit_smiles`."""
         ...
 
+    def rdkit_embed(
+        self,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        use_exp_torsion_angle_prefs: bool = True,
+        use_basic_knowledge: bool = True,
+        et_version: int = 2,
+        use_small_ring_torsions: bool = False,
+        use_macrocycle_torsions: bool = True,
+        use_macrocycle_14_config: bool = True,
+        enforce_chirality: bool = True,
+        ignore_smoothing_failures: bool = False,
+    ) -> list[list[float]]:
+        """RDKit 2026.03.1's ``AllChem.EmbedMolecule(mol, randomSeed=...)``
+        (ETKDGv3 defaults), bit for bit, on this explicit-hydrogen molecule
+        (``m.add_hydrogens().rdkit_embed()`` ==
+        ``EmbedMolecule(Chem.AddHs(m), randomSeed=42)``): one ``[x, y, z]``
+        per atom. Raises ``RuntimeError`` when RDKit's embedding fails and
+        ``ValueError`` for unsupported inputs."""
+        ...
+
+    def rdkit_bounds_matrix(
+        self,
+        *,
+        set15bounds: bool = True,
+        do_triangle_smoothing: bool = True,
+        use_macrocycle_14_config: bool = False,
+    ) -> list[list[float]]:
+        """``rdDistGeom.GetMoleculeBoundsMatrix`` (RDKit 2026.03.1,
+        ``scaleVDW=False``) for the explicit-hydrogen molecule: upper bounds
+        above the diagonal, lower bounds below. Raises ``ValueError`` for
+        unsupported inputs."""
+        ...
+
+    def rdkit_mol_hash(self, function: str, use_cx_smiles: bool = False) -> str:
+        """``rdMolHash.MolHash(m, function, useCXSmiles)`` (RDKit 2026.03.1)
+        for the molecule RDKit reads from the same SMILES. ``function`` is a
+        ``rdMolHash.HashFunction`` member name (case-insensitive), e.g.
+        ``"ExtendedMurcko"``, ``"HetAtomTautomer"`` or ``"MolFormula"``.
+        Raises ``ValueError`` for unknown names, unsupported inputs and
+        molecules RDKit's sanitization rejects."""
+        ...
+
     def rdkit_2d_coords(self) -> list[list[float]]:
         """RDKit 2026.03.1's default 2D depiction, bit for bit: the
         coordinates ``rdDepictor.Compute2DCoords(Chem.MolFromSmiles(s))``

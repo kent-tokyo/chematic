@@ -38,9 +38,13 @@ def test_rdkit_smiles_leaves_native_smiles_unchanged():
     "smiles,kind",
     [
         ("CN(C)(C)(C)C", "sanitization failed"),
-        ("F[Pt@SP1](Cl)(Br)I", "unsupported input"),
     ],
 )
 def test_rdkit_smiles_raises_typed_value_error(smiles, kind):
     with pytest.raises(ValueError, match=f"RDKit-compatible SMILES: {kind}"):
         chematic.from_smiles(smiles).rdkit_smiles
+
+
+def test_rdkit_smiles_writes_square_planar_stereo_like_rdkit():
+    # RDKit 2026.03.1: Chem.MolToSmiles(Chem.MolFromSmiles("F[Pt@SP1](Cl)(Br)I"))
+    assert chematic.from_smiles("F[Pt@SP1](Cl)(Br)I").rdkit_smiles == "[F][Pt@SP1]([Cl])([Br])[I]"

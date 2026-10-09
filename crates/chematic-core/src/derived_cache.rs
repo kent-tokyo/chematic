@@ -60,9 +60,12 @@ pub enum DerivedSlot {
     /// RDKit-parity view is seeded with "none": its dative bonds are
     /// already written as such.
     RdkitDativeBonds = 13,
+    /// Per-target ring models and lookup tables of the RDKit-parity SMARTS
+    /// matcher (`chematic-smarts`), shared by every query run on a target.
+    RdkitParityMatch = 14,
 }
 
-const SLOT_COUNT: usize = 14;
+const SLOT_COUNT: usize = 15;
 
 /// Stored values keep `Molecule`'s auto traits: `Send + Sync` for Rayon and
 /// the unwind-safety traits so `Molecule` stays usable across

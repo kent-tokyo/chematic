@@ -232,7 +232,8 @@ fn mark_dbond_cands(
         }
         let rinfo = mol.ring_info();
         let num_atom_rings = rinfo.num_atom_rings(a);
-        let num_non_cand = rinfo.atom_members[a]
+        let num_non_cand = rinfo
+            .atom_members(a)
             .iter()
             .filter(|&&ri| is_ring_not_cand[ri])
             .count();
@@ -288,30 +289,65 @@ fn mark_dbond_cands(
     }
 }
 
+/// `done` with `done_count[a]`, the number of times `a` is in it.
+struct Done {
+    list: Vec<usize>,
+    count: Vec<u32>,
+}
+
+impl Done {
+    fn new(list: Vec<usize>, n: usize) -> Self {
+        let mut count = vec![0u32; n];
+        for &a in &list {
+            count[a] += 1;
+        }
+        Self { list, count }
+    }
+
+    fn contains(&self, a: usize) -> bool {
+        self.count[a] > 0
+    }
+
+    fn push(&mut self, a: usize) {
+        self.list.push(a);
+        self.count[a] += 1;
+    }
+
+    fn truncate(&mut self, len: usize) {
+        for &a in &self.list[len..] {
+            self.count[a] -= 1;
+        }
+        self.list.truncate(len);
+    }
+}
+
 fn back_track(
     mol: &mut Mol,
     last_opt: usize,
-    done: &mut Vec<usize>,
+    done: &mut Done,
     aqueue: &mut VecDeque<usize>,
     d_bnd_cands: &mut [bool],
     d_bnd_adds: &mut [bool],
 ) {
     let first = done
+        .list
         .iter()
         .position(|&x| x == last_opt)
-        .unwrap_or(done.len());
-    let tdone: Vec<usize> = done[..first].to_vec();
+        .unwrap_or(done.list.len());
     let last = done
+        .list
         .iter()
         .rposition(|&x| x == last_opt)
         .expect("last option was visited");
-    for &x in done[last..].iter().rev() {
+    for &x in done.list[last..].iter().rev() {
         aqueue.push_front(x);
     }
+    // `done` becomes its first `first` atoms.
+    done.truncate(first);
     for bi in 0..mol.bonds.len() {
         if d_bnd_adds[bi] {
             let (a1, a2) = (mol.bonds[bi].begin, mol.bonds[bi].end);
-            if !tdone.contains(&a1) && !tdone.contains(&a2) {
+            if !done.contains(a1) && !done.contains(a2) {
                 d_bnd_adds[bi] = false;
                 mol.bonds[bi].bt = BondType::Single;
                 d_bnd_cands[a1] = true;
@@ -319,7 +355,6 @@ fn back_track(
             }
         }
     }
-    *done = tdone;
 }
 
 fn kekulize_worker(
@@ -327,10 +362,11 @@ fn kekulize_worker(
     all_atms: &[usize],
     mut d_bnd_cands: Vec<bool>,
     mut d_bnd_adds: Vec<bool>,
-    mut done: Vec<usize>,
+    done: Vec<usize>,
     ranks: Option<&[u32]>,
 ) -> bool {
     let n = mol.atoms.len();
+    let mut done = Done::new(done, n);
     let mut astack: VecDeque<usize> = VecDeque::new();
     let mut options: HashMap<usize, VecDeque<usize>> = HashMap::new();
     let mut last_opt: Option<usize> = None;
@@ -346,11 +382,13 @@ fn kekulize_worker(
     sorted.sort_unstable_by_key(|&a| key(a));
     let mut btmoves: VecDeque<usize> = VecDeque::new();
     let mut num_bt = 0usize;
-    while done.len() < sorted.len() || !astack.is_empty() {
+    let mut nbrs: Vec<usize> = Vec::new();
+    let mut lstack: Vec<usize> = Vec::new();
+    while done.list.len() < sorted.len() || !astack.is_empty() {
         let curr = if let Some(c) = astack.pop_front() {
             c
         } else {
-            match sorted.iter().copied().find(|a| !done.contains(a)) {
+            match sorted.iter().copied().find(|&a| !done.contains(a)) {
                 Some(c) => c,
                 None => return false,
             }
@@ -362,12 +400,13 @@ fn kekulize_worker(
             opts = o.clone();
         } else {
             opts = VecDeque::new();
-            let mut nbrs: Vec<usize> = mol
-                .nbrs(curr)
-                .filter(|&nb| in_all[nb] && !done.contains(&nb))
-                .collect();
+            nbrs.clear();
+            nbrs.extend(
+                mol.nbrs(curr)
+                    .filter(|&nb| in_all[nb] && !done.contains(nb)),
+            );
             nbrs.sort_unstable_by_key(|&a| key(a));
-            let mut lstack = Vec::new();
+            lstack.clear();
             for &nb in &nbrs {
                 let nb_bond = mol.bond_between(curr, nb).expect("bonded");
                 if !astack.contains(&nb) {
@@ -382,7 +421,7 @@ fn kekulize_worker(
                     opts.push_back(nb);
                 }
             }
-            astack.extend(lstack);
+            astack.extend(lstack.iter().copied());
         }
         if c_cand {
             if let Some(ncnd) = opts.pop_front() {

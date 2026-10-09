@@ -40,8 +40,8 @@ pub use query::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryAtom, QueryBond, QueryMolecule,
 };
 pub use rdkit_parity_match::{
-    RdkitParityConfig, RdkitRingCountModel, find_matches_rdkit_parity,
-    has_match_rdkit_parity_bounded,
+    RdkitParityConfig, RdkitRingCountModel, find_match_atom_sets_rdkit_parity,
+    find_matches_rdkit_parity, has_match_rdkit_parity_bounded,
 };
 pub use rdkit_ring_model::{
     RdkitParityError, RdkitParityRingModel, RdkitRingModelBudget, build_rdkit_parity_ring_model,

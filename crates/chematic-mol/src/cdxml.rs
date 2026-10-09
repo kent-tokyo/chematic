@@ -1433,7 +1433,7 @@ mod tests {
             Chirality::Clockwise => Chirality::CounterClockwise,
             Chirality::CounterClockwise => Chirality::Clockwise,
             Chirality::None => Chirality::None,
-            sp @ Chirality::SquarePlanar(_) => sp,
+            other => other,
         }
     }
 

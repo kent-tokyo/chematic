@@ -197,6 +197,14 @@ fn mol_blocks_match_rdkit() {
 
 #[test]
 fn v3000_and_unsupported_inputs_are_refused() {
-    assert!(rdkit_mol_block_2d(&parse("[NH3]->[Pt](Cl)(Cl)<-[NH3]").unwrap()).is_err());
-    assert!(rdkit_2d_coords(&parse("[Pt@SP1](Cl)(Cl)(N)N").unwrap()).is_err());
+    // Dative bonds switch RDKit's writer to V3000 (written, not refused).
+    let block = rdkit_mol_block_2d(&parse("[NH3]->[Pt](Cl)(Cl)<-[NH3]").unwrap()).unwrap();
+    assert!(block.contains("999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 5 4 0 0 0\n"));
+    // Non-tetrahedral centres take RDKit's fixed templates.
+    let xy = rdkit_2d_coords(&parse("[Pt@SP1](Cl)(Cl)(N)N").unwrap()).unwrap();
+    let r = 1.060_660_5; // RDKit's ISQRT2 (0.707107) * BOND_LEN (1.5)
+    let close = |p: [f64; 2], q: [f64; 2]| (p[0] - q[0]).abs() < 1e-9 && (p[1] - q[1]).abs() < 1e-9;
+    assert!(close(xy[0], [0.0, 0.0]));
+    assert!(close(xy[1], [-r, -r]));
+    assert!(close(xy[3], [r, r]));
 }

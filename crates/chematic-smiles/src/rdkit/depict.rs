@@ -17,7 +17,7 @@ use std::collections::BTreeMap;
 use std::f64::consts::PI;
 
 use super::RdkitSmilesError;
-use super::mol::{BondStereo, BondType, Hybridization, Mol};
+use super::mol::{BondStereo, BondType, ChiralTag, Hybridization, Mol};
 
 const BOND_LEN: f64 = 1.5;
 const COLLISION_THRES: f64 = 0.70;
@@ -209,6 +209,28 @@ fn rotation_dir(center: P, loc1: P, loc2: P, rem_angle: f64) -> i32 {
     let diff_angle = PI - rem_angle;
     cross *= diff_angle;
     if cross >= 0.0 { -1 } else { 1 }
+}
+
+/// `computeNormal(center, other)`.
+fn compute_normal(center: P, other: P) -> DResult<P> {
+    let mut res = other.sub(center);
+    res.normalize()?;
+    Ok(P::new(-res.y, res.x))
+}
+
+/// `Point2D::angleTo`.
+fn angle_to_2d(a: P, b: P) -> DResult<f64> {
+    let mut t1 = a;
+    let mut t2 = b;
+    t1.normalize()?;
+    t2.normalize()?;
+    let d = t1.dot(t2).clamp(-1.0, 1.0);
+    Ok(d.acos())
+}
+
+/// `computeAngle(center, loc1, loc2)`.
+fn compute_angle(center: P, loc1: P, loc2: P) -> DResult<f64> {
+    angle_to_2d(loc1.sub(center), loc2.sub(center))
 }
 
 /// `computeSubAngle`.
@@ -614,6 +636,107 @@ impl EFrag {
         f.ea.insert(aid, eatm);
         f.update_new_neighs(ctx, aid)?;
         Ok(f)
+    }
+
+    /// `EmbeddedFrag(mol, coordMap)`: fixed atoms at the given positions.
+    fn from_coord_map(ctx: &Ctx, map: &BTreeMap<usize, P>) -> DResult<EFrag> {
+        let mut f = EFrag::default();
+        for (&aid, &loc) in map {
+            let eatm = EAtom {
+                loc,
+                fixed: true,
+                ..EAtom::default()
+            };
+            f.ea.insert(aid, eatm);
+        }
+        f.setup_new_neighs(ctx)?;
+        f.setup_attachment_points(ctx)?;
+        Ok(f)
+    }
+
+    /// `setupAttachmentPoints`.
+    fn setup_attachment_points(&mut self, ctx: &Ctx) -> DResult<()> {
+        for dai in self.attach.clone() {
+            let enbrs = self.get(dai)?.neighs.clone();
+            let done: Vec<usize> = ctx.mol.nbrs(dai).filter(|nb| !enbrs.contains(nb)).collect();
+            match done.len() {
+                0 => {
+                    let a = self.at(dai);
+                    a.normal = P::new(1.0, 0.0);
+                    a.angle = -1.0;
+                }
+                1 => {
+                    let nbid = done[0];
+                    let normal = compute_normal(self.loc(dai)?, self.loc(nbid)?)?;
+                    let a = self.at(dai);
+                    a.nbr1 = nbid as i64;
+                    a.normal = normal;
+                }
+                2 => {
+                    let ang =
+                        compute_angle(self.loc(dai)?, self.loc(done[0])?, self.loc(done[1])?)?;
+                    let a = self.at(dai);
+                    a.nbr1 = done[0] as i64;
+                    a.nbr2 = done[1] as i64;
+                    a.angle = ang;
+                }
+                _ => self.compute_nbrs_and_ang(ctx, dai, &done)?,
+            }
+        }
+        Ok(())
+    }
+
+    /// `computeNbrsAndAng`.
+    fn compute_nbrs_and_ang(&mut self, ctx: &Ctx, aid: usize, done: &[usize]) -> DResult<()> {
+        let center = self.loc(aid)?;
+        let mut pairs: Vec<(f64, (usize, usize))> = Vec::new();
+        // RDKit's inner loop starts at `nbi3++` (a post-increment), so it
+        // pairs every neighbour with itself too.
+        for i in 0..done.len() {
+            for j in i..done.len() {
+                let ang = compute_angle(center, self.loc(done[i])?, self.loc(done[j])?)?;
+                pairs.push((ang, (done[i], done[j])));
+            }
+        }
+        // `std::list::sort` is stable.
+        pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+        let mut winner = *pairs.last().expect("three neighbours");
+        let ri = ctx.mol.ring_info();
+        for pr in pairs.iter().rev() {
+            if ri.num_atom_rings(pr.1.0) <= 1 && ri.num_atom_rings(pr.1.1) <= 1 {
+                winner = *pr;
+                break;
+            }
+        }
+        let (wnb1, wnb2) = winner.1;
+        let (mut nb1, mut nb2) = (-1i64, -1i64);
+        for &(_, (f, s)) in &pairs {
+            if wnb1 == f {
+                nb2 = wnb1 as i64;
+                nb1 = s as i64;
+                break;
+            } else if wnb1 == s {
+                nb2 = wnb1 as i64;
+                nb1 = f as i64;
+                break;
+            } else if wnb2 == f {
+                nb2 = wnb2 as i64;
+                nb1 = s as i64;
+                break;
+            } else if wnb2 == s {
+                nb2 = wnb2 as i64;
+                nb1 = f as i64;
+                break;
+            }
+        }
+        let w_ang = winner.0;
+        let rot = rotation_dir(center, self.loc(key(nb1)?)?, self.loc(key(nb2)?)?, w_ang);
+        let a = self.at(aid);
+        a.rot_dir = rot;
+        a.nbr1 = nb1;
+        a.nbr2 = nb2;
+        a.angle = 2.0 * PI - w_ang;
+        Ok(())
     }
 
     /// `EmbeddedFrag(dblBond)`.
@@ -1847,14 +1970,158 @@ fn shift_coords(efrags: &mut [EFrag]) {
     }
 }
 
+/// RDKit's truncated `ISQRT2` (not `FRAC_1_SQRT_2`: the template
+/// coordinates use these digits).
+#[allow(clippy::approx_constant)]
+const ISQRT2: f64 = 0.707107;
+const SQRT3_2: f64 = 0.866025;
+
+/// `embedNontetrahedralStereo`: a fixed template fragment per square-planar,
+/// trigonal-bipyramidal or octahedral centre.
+fn embed_nontetrahedral_stereo(
+    ctx: &Ctx,
+    atom_ranks: &[i64],
+    efrags: &mut Vec<EFrag>,
+) -> DResult<()> {
+    let mol = ctx.mol;
+    for a in 0..mol.atoms.len() {
+        let tag = mol.atoms[a].chiral;
+        if tag.nontet().is_none() {
+            continue;
+        }
+        // getRankedAtomNeighbors (a stable sort for these short lists).
+        let mut nbrs: Vec<usize> = mol.nbrs(a).collect();
+        nbrs.sort_by_key(|&x| atom_ranks[x]);
+        let mut map: BTreeMap<usize, P> = BTreeMap::new();
+        map.insert(a, P::new(0.0, 0.0));
+        match tag {
+            ChiralTag::SquarePlanar => {
+                let pts = [
+                    P::new(ISQRT2 * BOND_LEN, ISQRT2 * BOND_LEN),
+                    P::new(ISQRT2 * BOND_LEN, -ISQRT2 * BOND_LEN),
+                    P::new(-ISQRT2 * BOND_LEN, -ISQRT2 * BOND_LEN),
+                    P::new(-ISQRT2 * BOND_LEN, ISQRT2 * BOND_LEN),
+                ];
+                if nbrs.is_empty() {
+                    return derr("square-planar centre without neighbours");
+                }
+                map.insert(nbrs[0], pts[0]);
+                let mut q2_full = false;
+                for &nbr in &nbrs[1..] {
+                    let angle = mol.ideal_angle_between_ligands(a, nbrs[0], nbr);
+                    if (angle - 180.0).abs() < 0.1 {
+                        map.insert(nbr, pts[2]);
+                    } else if !q2_full {
+                        map.insert(nbr, pts[1]);
+                        q2_full = true;
+                    } else {
+                        map.insert(nbr, pts[3]);
+                    }
+                }
+            }
+            ChiralTag::TrigonalBipyramidal => {
+                let pts = [
+                    P::new(0.0, BOND_LEN),
+                    P::new(0.0, -BOND_LEN),
+                    P::new(-SQRT3_2 * BOND_LEN, BOND_LEN / 2.0),
+                    P::new(-SQRT3_2 * BOND_LEN, -BOND_LEN / 2.0),
+                    P::new(BOND_LEN, 0.0),
+                ];
+                let axial1 = mol.tb_axial_atom(a, 1);
+                let axial2 = mol.tb_axial_atom(a, -1);
+                if let Some(x) = axial1 {
+                    map.insert(x, pts[0]);
+                }
+                if let Some(x) = axial2 {
+                    map.insert(x, pts[1]);
+                }
+                let mut which = 2;
+                for &nbr in &nbrs {
+                    if Some(nbr) != axial1 && Some(nbr) != axial2 {
+                        // Past the template (no axial ligands known) RDKit
+                        // reads beyond its static array, which holds zeros.
+                        map.insert(nbr, pts.get(which).copied().unwrap_or_default());
+                        which += 1;
+                    }
+                }
+            }
+            _ => {
+                let pts = [
+                    P::new(0.0, BOND_LEN),
+                    P::new(0.0, -BOND_LEN),
+                    P::new(SQRT3_2 * BOND_LEN, BOND_LEN / 2.0),
+                    P::new(SQRT3_2 * BOND_LEN, -BOND_LEN / 2.0),
+                    P::new(-SQRT3_2 * BOND_LEN, -BOND_LEN / 2.0),
+                    P::new(-SQRT3_2 * BOND_LEN, BOND_LEN / 2.0),
+                ];
+                let mut axial1 = None;
+                let mut axial2 = None;
+                for i in 0..nbrs.len() {
+                    let mut all90 = true;
+                    for j in i + 1..nbrs.len() {
+                        let ang = mol.ideal_angle_between_ligands(a, nbrs[i], nbrs[j]);
+                        if (ang - 180.0).abs() < 0.1 {
+                            axial1 = Some(nbrs[i]);
+                            axial2 = Some(nbrs[j]);
+                            all90 = false;
+                            break;
+                        } else if (ang - 90.0).abs() > 0.1 {
+                            all90 = false;
+                        }
+                    }
+                    if all90 {
+                        axial1 = Some(nbrs[i]);
+                    }
+                    if axial1.is_some() {
+                        break;
+                    }
+                }
+                if let Some(x) = axial1 {
+                    map.insert(x, pts[0]);
+                }
+                if let Some(x) = axial2 {
+                    map.insert(x, pts[1]);
+                }
+                let mut ref1: Option<usize> = None;
+                let mut ref2: Option<usize> = None;
+                for &nbr in &nbrs {
+                    if Some(nbr) == axial1 || Some(nbr) == axial2 {
+                        continue;
+                    }
+                    if ref1.is_none() {
+                        ref1 = Some(nbr);
+                        map.insert(nbr, pts[2]);
+                        ref2 = mol.chiral_across_atom(a, nbr);
+                        if let Some(x) = ref2 {
+                            map.insert(x, pts[4]);
+                        }
+                    } else {
+                        if Some(nbr) == ref2 || Some(nbr) == ref1 {
+                            continue;
+                        }
+                        map.insert(nbr, pts[3]);
+                        if let Some(x) = mol.chiral_across_atom(a, nbr) {
+                            map.insert(x, pts[5]);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        efrags.push(EFrag::from_coord_map(ctx, &map)?);
+    }
+    Ok(())
+}
+
 /// `compute2DCoords` with `rdDepictor.Compute2DCoords`' defaults on an
 /// RDKit molecule as `MolFromSmiles` leaves it; `cip` holds the atoms'
 /// `_CIPRank` values (empty when unset).
 pub(crate) fn compute_2d_coords(mol: &Mol, cip: &[u32]) -> Result<Vec<[f64; 2]>, RdkitSmilesError> {
-    compute(mol, cip).map_err(|e| RdkitSmilesError::Unsupported(format!("depiction: {}", e.0)))
+    compute(mol, cip, true)
+        .map_err(|e| RdkitSmilesError::Unsupported(format!("depiction: {}", e.0)))
 }
 
-fn compute(mol_in: &Mol, cip: &[u32]) -> DResult<Vec<[f64; 2]>> {
+fn compute(mol_in: &Mol, cip: &[u32], canon_orient: bool) -> DResult<Vec<[f64; 2]>> {
     let n = mol_in.atoms.len();
     // symmetrizeSSSR(mol, arings, includeDativeBonds=true) on the copy.
     let mut mol = mol_in.clone();
@@ -1880,6 +2147,7 @@ fn compute(mol_in: &Mol, cip: &[u32]) -> DResult<Vec<[f64; 2]>> {
     if !arings.is_empty() {
         embed_fused_systems(&ctx, &arings, &mut efrags)?;
     }
+    embed_nontetrahedral_stereo(&ctx, &atom_ranks, &mut efrags)?;
     // embedCisTransSystems
     for (b, bond) in mol.bonds.iter().enumerate() {
         if bond.bt == BondType::Double
@@ -1940,8 +2208,10 @@ fn compute(mol_in: &Mol, cip: &[u32]) -> DResult<Vec<[f64; 2]>> {
         f.remove_collisions_open_angles(&ctx)?;
         f.remove_collisions_shorten_bonds(&ctx)?;
     }
-    for f in efrags.iter_mut().filter(|f| !f.dead) {
-        f.canonicalize_orientation()?;
+    if canon_orient {
+        for f in efrags.iter_mut().filter(|f| !f.dead) {
+            f.canonicalize_orientation()?;
+        }
     }
     shift_coords(&mut efrags);
     let mut out = vec![[0.0f64; 2]; n];

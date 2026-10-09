@@ -43,8 +43,17 @@ pub fn invert_stereocenter(mol: &Molecule, idx: AtomIdx) -> Molecule {
                 Chirality::CounterClockwise => Chirality::Clockwise,
                 Chirality::None => Chirality::None,
                 // cis/trans relabeling is a constitutional change, not a chiral
-                // (mirror-image) inversion -- leave square-planar tags untouched.
-                sp @ Chirality::SquarePlanar(_) => sp,
+                // (mirror-image) inversion -- leave square-planar tags untouched;
+                // trigonal-bipyramidal and octahedral tags take their mirror
+                // permutation (RDKit's `Atom::invertChirality`).
+                other => match other.nontetrahedral() {
+                    Some((class, perm)) => Chirality::from_nontetrahedral(
+                        class,
+                        chematic_core::nontetrahedral::invert(class, perm),
+                    )
+                    .unwrap_or(other),
+                    None => other,
+                },
             };
         }
         builder.add_atom(atom);
