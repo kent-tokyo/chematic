@@ -173,6 +173,9 @@ class Mol:
     def rdkit_legacy_torsion_counts(self) -> dict[int, int]:
         """``rdMolDescriptors.GetTopologicalTorsionFingerprint(m)`` elements."""
         ...
+    def rdkit_chemistry_problems(self) -> list[tuple[str, list[int]]]:
+        """``Chem.DetectChemistryProblems(Chem.MolFromSmiles(s))`` (sanitized)."""
+        ...
     def rdkit_num_atoms(self) -> int:
         """``Chem.MolFromSmiles(s).GetNumAtoms()``."""
         ...

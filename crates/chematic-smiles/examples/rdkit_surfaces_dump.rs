@@ -57,6 +57,9 @@ fn main() {
             json!({
                 "smiles": smi,
                 "prob": prob,
+                "probs": wrap(chematic_smiles::rdkit_detect_chemistry_problems_sanitized(&mol).map(|v| {
+                    json!(v.into_iter().map(|p| json!([p.kind, p.atoms])).collect::<Vec<_>>())
+                })),
                 "cx": wrap(rdkit_cx_smiles(&mol, &p)),
                 "rand": wrap(rdkit_random_smiles(&mol, 5, 42, &p)),
                 "frag": wrap(rdkit_fragment_smiles(&mol, &atoms, None, &p)),

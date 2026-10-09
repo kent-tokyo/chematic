@@ -3100,6 +3100,15 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// RDKit 2026.03.1's ``Chem.DetectChemistryProblems(Chem.MolFromSmiles(s))``
+    /// on RDKit's sanitized molecule: ``[(type, atom_indices)]`` (see
+    /// :func:`chematic.rdkit_detect_chemistry_problems` for unsanitized input).
+    fn rdkit_chemistry_problems(&self) -> PyResult<Vec<(String, Vec<usize>)>> {
+        let problems = chematic_smiles::rdkit_detect_chemistry_problems_sanitized(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(problems.into_iter().map(|p| (p.kind, p.atoms)).collect())
+    }
+
     /// ``Chem.MolFromSmiles(s).GetNumAtoms()``: the number of atoms in
     /// RDKit's molecule (after its hydrogen removal).
     fn rdkit_num_atoms(&self) -> PyResult<usize> {

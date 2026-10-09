@@ -64,7 +64,15 @@ API_NOTES = {
         "mol_hash_*": "Mol.rdkit_mol_hash(<HashFunction name>)",
         "tautomer_*": "Mol.canonical_tautomer() / enumerate_tautomers() (native), read back by RDKit",
         "rxn:*": "chematic.run_smirks_checked(smirks, [mol, *partners], rdkit_compat=True)",
-        "distance_matrix": "Mol.topological_distance_matrix()",
+        "distance_matrix": "Mol.rdkit_distance_matrix()",
+        "distance_matrix_3d": "Mol.add_hydrogens().rdkit_distance_matrix_3d(RDKit-embedded coords)",
+        "cx_smiles": "Mol.rdkit_cx_smiles()",
+        "random_smiles5": "Mol.rdkit_random_smiles(5, 42)",
+        "fragment_smiles": "Mol.rdkit_fragment_smiles(first half of Mol.rdkit_num_atoms())",
+        "chemistry_problems": "Mol.rdkit_chemistry_problems()",
+        "chemistry_problems_unsanitized": "chematic.rdkit_detect_chemistry_problems(smiles)",
+        "morgan2_sparse_counts": "Mol.rdkit_morgan_sparse_counts(2)",
+        "torsion_legacy_counts": "Mol.rdkit_legacy_torsion_counts()",
         "mmff_energy_gradient": "Mol.add_hydrogens()._rdkit_mmff_terms(RDKit-embedded coords)",
         "uff_energy_gradient": "Mol.add_hydrogens().rdkit_uff_energy/rdkit_uff_gradient(RDKit-embedded coords)",
     },
@@ -938,12 +946,28 @@ def _chematic_new_ops(c):
         mh = m.add_hydrogens()
         return _round_nested([mh.rdkit_uff_energy(e[1]), list(mh.rdkit_uff_gradient(e[1]))])
 
+    def dm3d(m):
+        e = _embedded_input()
+        if e is None:
+            return None
+        return _round_nested(m.add_hydrogens().rdkit_distance_matrix_3d(e[1]))
+
+    def problems(m):
+        return sorted([t, sorted(a)] for t, a in m.rdkit_chemistry_problems())
+
     ops = {
         "tautomer_canonical": lambda m: readback(m.canonical_tautomer()),
         "tautomer_set": lambda m: sorted({readback(t) for t in m.enumerate_tautomers()}),
-        "distance_matrix": lambda m: _distance_matrix_norm(m.topological_distance_matrix()),
+        "cx_smiles": lambda m: m.rdkit_cx_smiles(),
+        "random_smiles5": lambda m: m.rdkit_random_smiles(5, 42),
+        "fragment_smiles": lambda m: m.rdkit_fragment_smiles(fragment_atoms(m.rdkit_num_atoms())),
+        "chemistry_problems": problems,
+        "distance_matrix": lambda m: _distance_matrix_norm(m.rdkit_distance_matrix()),
+        "distance_matrix_3d": dm3d,
         "mmff_energy_gradient": mmff,
         "uff_energy_gradient": uff,
+        "morgan2_sparse_counts": lambda m: sorted([int(k), v] for k, v in m.rdkit_morgan_sparse_counts(2).items()),
+        "torsion_legacy_counts": lambda m: sorted([int(k), v] for k, v in m.rdkit_legacy_torsion_counts().items()),
     }
     for name, smirks, partners in REACTIONS:
         ops["rxn:" + name] = run_rxn(smirks, partners)
@@ -1055,6 +1079,13 @@ def chemistry_problems_unsanitized(engine: str, smiles: str):
         problems = m.detect_chemistry_problems().problems
         problems = problems() if callable(problems) else problems
         return sorted(_ck05_problem(p) for p in problems)
+    if engine == "chematic":
+        import chematic as c
+        try:
+            found = c.rdkit_detect_chemistry_problems(smiles)
+        except ValueError:
+            return None
+        return sorted([t, sorted(a)] for t, a in found)
     raise UnsupportedError(f"{engine}: no DetectChemistryProblems equivalent")
 
 

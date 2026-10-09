@@ -410,7 +410,24 @@ pub struct RdkitChemistryProblem {
 pub fn rdkit_detect_chemistry_problems(
     mol: &Molecule,
 ) -> Result<Vec<RdkitChemistryProblem>, RdkitSmilesError> {
-    let mut m = parse::from_chematic(mol)?;
+    detect_chemistry_problems(parse::from_chematic(mol)?)
+}
+
+/// `Chem.DetectChemistryProblems(Chem.MolFromSmiles(s))`: as
+/// [`rdkit_detect_chemistry_problems`] on RDKit's sanitized molecule (atom
+/// indices after its hydrogen removal); `Err` where `MolFromSmiles` itself
+/// fails.
+pub fn rdkit_detect_chemistry_problems_sanitized(
+    mol: &Molecule,
+) -> Result<Vec<RdkitChemistryProblem>, RdkitSmilesError> {
+    // `clearComputedProps` leaves the ring information (symmetrized SSSR);
+    // `Kekulize` runs `findSSSR` only without it.
+    detect_chemistry_problems(rdkit_mol_for_writing(mol)?)
+}
+
+fn detect_chemistry_problems(
+    mut m: mol::Mol,
+) -> Result<Vec<RdkitChemistryProblem>, RdkitSmilesError> {
     let mut res = Vec::new();
     sanitize::clean_up(&mut m)?;
     for a in 0..m.atoms.len() {
@@ -426,7 +443,9 @@ pub fn rdkit_detect_chemistry_problems(
             });
         }
     }
-    if m.bonds.iter().any(|b| b.aromatic) || m.atoms.iter().any(|a| a.aromatic) {
+    if m.rings.is_none()
+        && (m.bonds.iter().any(|b| b.aromatic) || m.atoms.iter().any(|a| a.aromatic))
+    {
         m.find_sssr()?;
     }
     if let Err(e) = kekulize::kekulize(&mut m) {

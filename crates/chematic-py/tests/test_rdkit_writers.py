@@ -47,3 +47,20 @@ def test_rdkit_cx_random_fragment_smiles():
     assert m.rdkit_num_atoms() == 9
     assert chematic.from_smiles("CCO").rdkit_random_smiles(5, 42) == [
         "CCO", "OCC", "CCO", "CCO", "CCO"]
+
+
+def test_rdkit_problems_matrices_fingerprints():
+    # RDKit 2026.03.1: DetectChemistryProblems (sanitize=False), distance
+    # matrices, sparse count fingerprints.
+    assert chematic.rdkit_detect_chemistry_problems("c1cccc1") == [
+        ("KekulizeException", [0, 1, 2, 3, 4])]
+    assert chematic.rdkit_detect_chemistry_problems("F(C)C") == [("AtomValenceException", [0])]
+    m = chematic.from_smiles("CC(=O)O")
+    assert m.rdkit_chemistry_problems() == []
+    assert m.rdkit_distance_matrix()[0] == [0.0, 1.0, 2.0, 2.0]
+    assert m.rdkit_distance_matrix(use_bo=True)[1][2] == 0.5
+    d = m.rdkit_distance_matrix_3d([[0, 0, 0], [1, 0, 0], [1, 1, 0], [1, 0, 1]])
+    assert d[0][3] == 2 ** 0.5
+    assert m.rdkit_morgan_sparse_counts(2)[2246728737] == 1
+    assert len(m.rdkit_legacy_torsion_counts()) == 0
+    assert sum(m.rdkit_atom_pair_sparse_counts().values()) == 6
