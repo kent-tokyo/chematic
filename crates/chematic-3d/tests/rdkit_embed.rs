@@ -241,7 +241,7 @@ fn etkdg_coordinates_are_bit_identical_to_rdkit() {
 }
 
 #[test]
-fn negative_seed_and_fragments_are_refused() {
+fn negative_seed_is_refused_and_fragments_are_embedded() {
     let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCO").unwrap());
     let opts = RdkitEmbedOptions {
         random_seed: -1,
@@ -251,9 +251,10 @@ fn negative_seed_and_fragments_are_refused() {
         rdkit_embed_molecule(&mh, &opts),
         Err(RdkitEmbedError::Unsupported(_))
     ));
+    // Multi-fragment molecules are embedded fragment by fragment, as
+    // RDKit's EmbedMultipleConfs does with embedFragmentsSeparately.
     let salt = chematic_chem::add_hydrogens(&chematic_smiles::parse("CC(=O)[O-].[Na+]").unwrap());
-    assert!(matches!(
-        rdkit_embed_molecule(&salt, &RdkitEmbedOptions::default()),
-        Err(RdkitEmbedError::Unsupported(_))
-    ));
+    let coords = rdkit_embed_molecule(&salt, &RdkitEmbedOptions::default())
+        .unwrap_or_else(|e| panic!("salt: {e}"));
+    assert_eq!(coords.len(), salt.atom_count());
 }
