@@ -148,6 +148,16 @@ pub fn rdkit_model_may_disagree(mol: &Molecule) -> bool {
             _ => return true,
         }
     }
+    // A ring triple bond (`C1=CSC#C1`): RDKit may flag it aromatic while
+    // keeping its type, which the parity view does not model.
+    if mol.bonds().any(|(_, b)| b.order == BondOrder::Triple) {
+        let ring = crate::sssr::ring_bond_flags_shared(mol);
+        if mol.bonds().any(|(bi, b)| {
+            b.order == BondOrder::Triple && ring.get(bi.0 as usize).copied().unwrap_or(false)
+        }) {
+            return true;
+        }
+    }
     !aromatic_systems_are_huckel(mol)
 }
 

@@ -1163,6 +1163,7 @@ pub(crate) fn to_chematic(
         atom.isotope = (a.isotope != 0).then_some(a.isotope as u16);
         atom.charge = a.charge as i8;
         atom.aromatic = a.aromatic;
+        atom.atom_map = a.map.map(|x| x as u16);
         let n_hs = if a.anum == 1 && a.num_explicit_hs == 0 {
             // A hydrogen graph atom: written without a count, so the
             // writers keep every H atom (the state after `Chem.AddHs`).
@@ -1218,14 +1219,21 @@ pub(crate) fn to_chematic(
             let mut order: Vec<u32> = m.nbrs(i).map(|x| x as u32).collect();
             let is_start = !m.nbrs(i).any(|x| x < i);
             let mut tag = a.chiral;
-            if m.degree(i) == 3 && is_start && n_hs == 1 {
+            // RDKit's tag reads the implicit hydrogen after the three bonds.
+            // The SMILES-model conversion reads a first atom's hydrogen
+            // first (`chiralAtomNeedsTagInversion`): for such an atom the
+            // hydrogen goes first in the neighbour order and the tag is
+            // inverted (moving it from last to first is an odd permutation),
+            // so chematic's own reading of the order agrees too.
+            let h_first = m.degree(i) == 3 && is_start && n_hs == 1;
+            if h_first {
                 tag = if tag == ChiralTag::Cw {
                     ChiralTag::Ccw
                 } else {
                     ChiralTag::Cw
                 };
-            }
-            if n_hs > 0 {
+                order.insert(0, STEREO_H_SENTINEL);
+            } else if n_hs > 0 {
                 order.push(STEREO_H_SENTINEL);
             }
             atom.chirality = if tag == ChiralTag::Ccw {
