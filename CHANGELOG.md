@@ -50,6 +50,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `(A.B)>>C`, apply RDKit's reactant clean-up, keep atom maps on carried atoms,
   remove explicit hydrogens as RDKit does, and return products that fail
   sanitization as `rejected_products`.
+- The fixed issue-754 SMIRKS fuzz gate retains its implicit-H counts; its
+  explicit-H classifications are rebaselined for the new RDKit-model reactant
+  path and remain published as bounded diagnostic evidence.
 - In SMARTS matching, a dummy atom `*` in the target has atomic number 0, so
   `[#6]` and `C` no longer match it (RDKit's rule).
 - CIP ranking compares isotopes only after atomic numbers at every sphere, as
