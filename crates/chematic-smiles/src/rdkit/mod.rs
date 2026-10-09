@@ -1348,6 +1348,18 @@ pub fn rdkit_parsed_molecule(mol: &Molecule) -> Option<Molecule> {
     pdb_read::to_chematic(&m, true).ok()
 }
 
+/// `Chem.AddHs(Chem.MolFromSmiles(s))` as a chematic molecule built by the
+/// port (heavy atoms in RDKit's order, then every hydrogen in atom order),
+/// for a molecule read from `s`; `None` where the port cannot model it.
+pub fn rdkit_added_hs_molecule(mol: &Molecule) -> Option<Molecule> {
+    if has_added_hydrogens(mol) {
+        return None;
+    }
+    let (mut m, _) = rdkit_mol_from_smiles(mol).ok()?;
+    add_hs_graph(&mut m).ok()?;
+    pdb_read::to_chematic(&m, true).ok()
+}
+
 /// [`rdkit_hydrogen_suppressed`] with, per atom of the returned molecule,
 /// the index of the atom of `mol` it is (RDKit's `removeHs` keeps the
 /// other atoms in order).

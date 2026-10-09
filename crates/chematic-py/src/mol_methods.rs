@@ -3264,6 +3264,19 @@ impl Mol {
     ///     chematic.from_smiles("[H]C([H])([H])[H]").rdkit_add_hydrogens().rdkit_smiles
     ///     # '[H]C([H])([H])[H]'
     fn rdkit_add_hydrogens(&self) -> Mol {
+        // Hydrogens on dummy atoms (`[*H]`), which chematic's own
+        // `add_hydrogens` leaves implicit: the port's AddHs.
+        if self
+            .inner
+            .atoms()
+            .any(|(_, a)| a.wildcard && a.hydrogen_count.is_some_and(|h| h > 0))
+            && let Some(m) = chematic_smiles::rdkit_added_hs_molecule(&self.inner)
+        {
+            return Mol {
+                inner: Arc::new(m),
+                props: Default::default(),
+            };
+        }
         let base = chematic_smiles::rdkit_parsed_molecule(&self.inner);
         let base = base.as_ref().unwrap_or(&self.inner);
         Mol {
