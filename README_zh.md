@@ -26,12 +26,13 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.39 范围
+### v1.0.40 范围
 
-v1.0.39 增加了默认仅绑定回环地址的 MCP Streamable HTTP，并改进了 RDKit
-兼容配置下的 SMARTS／SMIRKS 解析、元素替换和芳香生成物的高价态处理。同时新增
-SMIRKS property-based fuzzing、按平台固定的比较策略和可提交给上游的探针。
-在 v1.0.39 发布包重新测量前，v1.0.38 的发布包结果仍作为历史记录。详情见
+v1.0.40 增加了与 RDKit 2026.03.1 对齐的 writer、reader、MolHash、alignment、
+立体异构体、非四面体立体化学和固定随机种子的 ETKDGv3 API。在记录的 Linux
+x86-64 source build 中，RDKit 成功的 4,977 个 ChEMBL 和 9,947 个 RDKit.js
+样本全部得到相同坐标；其他平台使用明确的数值容差。该结果不代表所有已发布
+v1.0.40 artifact 已完成重新测量。详情见
 [验证报告](docs/validation.md)，变更见 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用

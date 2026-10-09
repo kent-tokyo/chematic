@@ -27,9 +27,11 @@ stable:
   represented through aromatic direction stashes.
 - Aromaticity model selection and CIP mode are explicit compatibility choices;
   neither claims universal RDKit parity, and unresolved CIP is not guessed.
-- 3D generation and MMFF94 remain Experimental; successful output does not
-  imply ETKDGv3/conformational-quality parity or complete force-field
-  coverage.
+- 3D generation and MMFF94 remain Experimental. The named fixed-seed
+  RDKit-compatible ETKDGv3 path has bounded source-build parity evidence;
+  successful output from it or the general 3D APIs does not imply universal
+  topology, platform-bitwise, conformational-quality, or complete force-field
+  parity.
 
 ### Evidence boundary
 
@@ -155,10 +157,14 @@ unresolved result is not a guessed R/S label.
 
 3D generation and MMFF94 minimization are experimental. The legacy
 `generate_coords`/`generate_3d` path is retained for compatibility and does
-not promise ETKDGv3-quality conformers or success on every topology. The
-bounded `embed_pipeline_v2` path is opt-in and reports stage/provenance
-evidence with typed failure outcomes; a successful result still guarantees
-sanity checks, not conformational-quality or RDKit parity.
+not promise ETKDGv3-quality conformers or success on every topology. v1.0.40
+adds a named fixed-seed RDKit-compatible ETKDGv3 path. It matches RDKit on the
+recorded Linux x86-64 ChEMBL 5k and RDKit.js 10k success rows; other platforms
+use a 5e-4 Å coordinate regression tolerance. This bounded source result is
+not a promise for other seeds, topologies, conformer ensembles, platforms or
+published artifacts. The `embed_pipeline_v2` path remains opt-in and reports
+stage/provenance evidence with typed failure outcomes; a successful result
+still guarantees sanity checks, not universal conformational-quality parity.
 
 MMFF94 exposes the implemented energy terms and minimization APIs, but
 typing, parameter coverage, charged/metal/fused-ring cases, and convergence

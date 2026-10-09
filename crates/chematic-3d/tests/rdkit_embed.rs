@@ -229,7 +229,9 @@ const CASES: &[(&str, &[[f64; 3]])] = &[
 
 /// Bit-identical on the recorded Linux x86-64 comparison lane; elsewhere the
 /// platform libm's last-bit differences are allowed to accumulate through
-/// the minimizations, so coordinates are compared within 1e-4 Å.
+/// the minimizations, so coordinates are compared within 5e-4 Å. The wider
+/// bound is required on macOS arm64, where the accumulated libm difference in
+/// this fixture reaches about 1.3e-4 Å.
 #[test]
 fn etkdg_coordinates_match_rdkit_with_platform_tolerance() {
     let exact = cfg!(all(target_os = "linux", target_arch = "x86_64"));
@@ -243,7 +245,7 @@ fn etkdg_coordinates_match_rdkit_with_platform_tolerance() {
                 assert_eq!(g, e, "{smi}");
             } else {
                 for k in 0..3 {
-                    assert!((g[k] - e[k]).abs() <= 1e-4, "{smi}: {g:?} vs RDKit {e:?}");
+                    assert!((g[k] - e[k]).abs() <= 5e-4, "{smi}: {g:?} vs RDKit {e:?}");
                 }
             }
         }

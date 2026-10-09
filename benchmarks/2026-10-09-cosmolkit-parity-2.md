@@ -101,7 +101,8 @@ same full run (wheel from `claude/rdkit-etkdg` 981f31ff, which includes this
 branch) kept every other operation at its earlier result: 100% except Ipc.
 Bit-identical coordinates are claimed for the Linux x86-64 lane recorded here;
 other platforms' libm can change last bits, which the minimizations can
-amplify.
+amplify. The integrated macOS arm64 regression uses a 5e-4 Å per-coordinate
+tolerance; one fixture exceeded the draft 1e-4 Å bound by about 3e-5 Å.
 
 ## Remaining gap
 

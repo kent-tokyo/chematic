@@ -24,14 +24,14 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.0.39 release boundary
+### v1.0.40 release boundary
 
-v1.0.39 adds an opt-in, loopback-first MCP Streamable HTTP transport and
-tightens RDKit-profile SMARTS/SMIRKS parsing, element replacement, and
-hypervalent aromatic product handling. It also adds property-based SMIRKS
-fuzzing, pinned cross-platform comparator policy, and portable upstream
-probes. Published v1.0.38 measurements remain historical until v1.0.39
-packages are rerun. See
+v1.0.40 adds named RDKit 2026.03.1-compatible writers, readers, MolHash,
+alignment, stereoisomer, non-tetrahedral stereo, and seeded ETKDGv3 APIs.
+On the recorded Linux x86-64 source lane, seeded ETKDG coordinates match
+RDKit for all 4,977 ChEMBL and 9,947 RDKit.js rows where RDKit succeeds;
+other platforms use a documented numeric tolerance. These are source-build
+results, not yet a claim about every published v1.0.40 artifact. See
 [validation](docs/validation.md) and [CHANGELOG](CHANGELOG.md).
 
 ## Use it

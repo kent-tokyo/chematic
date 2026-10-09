@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.40] - 2026-10-09
+
 ### Added
 
 - More RDKit 2026.03.1-compatible APIs alongside chematic's own:
