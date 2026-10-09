@@ -749,12 +749,27 @@ pub(crate) fn descriptor_aromaticity(mol: &Molecule) -> DescriptorView<'_> {
     // the same perceived copy, and that copy carries its own SSSR cache.
     DescriptorView::Perceived(
         mol.derived(chematic_core::DerivedSlot::DescriptorAromatic, || {
-            chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).unwrap_or_else(
-                |_| {
+            let mut view = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)
+                .unwrap_or_else(|_| {
                     let cleaned = chematic_perception::rdkit_sanitize_cleanup(mol);
                     chematic_perception::apply_aromaticity(cleaned.as_ref().unwrap_or(mol))
-                },
-            )
+                });
+            // A ring triple bond RDKit flags aromatic (`c1ccccc#1`) is kept
+            // as a triple bond in the view; RDKit's descriptors read its
+            // aromatic flag.
+            let triples: Vec<chematic_core::BondIdx> = view
+                .bonds()
+                .filter(|(_, b)| {
+                    b.order == chematic_core::BondOrder::Triple
+                        && view.atom(b.atom1).aromatic
+                        && view.atom(b.atom2).aromatic
+                })
+                .map(|(i, _)| i)
+                .collect();
+            for b in triples {
+                view.set_bond_order(b, chematic_core::BondOrder::Aromatic);
+            }
+            view
         }),
     )
 }

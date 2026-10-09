@@ -395,7 +395,7 @@ pub fn rdkit_rdk_fp(mol: &Molecule) -> BitVec2048 {
     if chematic_perception::rdkit_model_may_disagree(mol)
         && let Ok(view) = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol).as_ref()
     {
-        return rdkit_rdk_fp_input(view, true);
+        return rdkit_rdk_fp_input(&crate::rdkit_fp_view(view), true);
     }
     // RDKit fingerprints its sanitized graph: perchlorate as
     // `[Cl+3]([O-])3O`, organometallic dative bonds
