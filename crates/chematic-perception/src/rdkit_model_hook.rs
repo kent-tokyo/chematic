@@ -46,6 +46,13 @@ fn twice_order(order: BondOrder) -> Option<u32> {
 /// Whether the RDKit-parity view of `mol` may differ from RDKit's
 /// sanitized molecule (see the module documentation). Linear time.
 pub fn rdkit_model_may_disagree(mol: &Molecule) -> bool {
+    // Memoized: several consumers ask for one molecule.
+    *mol.derived(chematic_core::DerivedSlot::RdkitModelGate, || {
+        rdkit_model_may_disagree_uncached(mol)
+    })
+}
+
+fn rdkit_model_may_disagree_uncached(mol: &Molecule) -> bool {
     let n = mol.atom_count();
     for i in 0..n {
         let idx = AtomIdx(i as u32);
@@ -265,25 +272,29 @@ fn aromatic_systems_are_huckel(mol: &Molecule) -> bool {
 /// aromatic bond (RDKit judges fused systems ring by ring) has 4n+2 pi
 /// electrons, and every aromatic bond is in such a ring.
 fn fused_rings_are_huckel(mol: &Molecule, comp: &[usize], electrons_of: &[u32]) -> bool {
-    let mut local = std::collections::HashMap::with_capacity(comp.len());
+    let mut local = vec![u32::MAX; mol.atom_count()];
     for (k, &a) in comp.iter().enumerate() {
-        local.insert(a, k);
+        local[a] = k as u32;
     }
-    let adj: Vec<Vec<usize>> = comp
-        .iter()
-        .map(|&a| {
+    // Flat aromatic adjacency of the component in local numbering.
+    let mut start = Vec::with_capacity(comp.len() + 1);
+    let mut flat: Vec<usize> = Vec::with_capacity(comp.len() * 3);
+    for &a in comp {
+        start.push(flat.len());
+        flat.extend(
             mol.neighbor_slice(AtomIdx(a as u32))
                 .iter()
                 .filter(|&&(_, b)| mol.bond(b).order == BondOrder::Aromatic)
-                .map(|&(nb, _)| local[&(nb.0 as usize)])
-                .collect()
-        })
-        .collect();
+                .map(|&(nb, _)| local[nb.0 as usize] as usize),
+        );
+    }
+    start.push(flat.len());
+    let adj = |x: usize| &flat[start[x]..start[x + 1]];
     let m = comp.len();
     let mut parent = vec![usize::MAX; m];
     let mut queue = std::collections::VecDeque::with_capacity(m);
     for u in 0..m {
-        for &v in &adj[u] {
+        for &v in adj(u) {
             if v < u {
                 continue;
             }
@@ -293,7 +304,7 @@ fn fused_rings_are_huckel(mol: &Molecule, comp: &[usize], electrons_of: &[u32]) 
             queue.clear();
             queue.push_back(u);
             'bfs: while let Some(x) = queue.pop_front() {
-                for &y in &adj[x] {
+                for &y in adj(x) {
                     if (x == u && y == v) || parent[y] != usize::MAX {
                         continue;
                     }
