@@ -583,18 +583,19 @@ impl DgField {
         if self.has_dist {
             for c in &self.dist {
                 let d2 = dist2(c.i, c.j, pos, dim);
-                let d;
-                let pre;
-                if d2 > c.ub2 {
-                    d = d2.sqrt();
-                    pre = 4.0 * (((d * d) / c.ub2) - 1.0) * (d / c.ub2);
+                let (d, pre) = if d2 > c.ub2 {
+                    let d = d2.sqrt();
+                    (d, 4.0 * (((d * d) / c.ub2) - 1.0) * (d / c.ub2))
                 } else if d2 < c.lb2 {
-                    d = d2.sqrt();
+                    let d = d2.sqrt();
                     let l2d2 = d2 + c.lb2;
-                    pre = 8.0 * c.lb2 * d * (1.0 - 2.0 * c.lb2 / l2d2) / (l2d2 * l2d2);
+                    (
+                        d,
+                        8.0 * c.lb2 * d * (1.0 - 2.0 * c.lb2 / l2d2) / (l2d2 * l2d2),
+                    )
                 } else {
                     continue;
-                }
+                };
                 for k in 0..dim {
                     let p1 = dim * c.i + k;
                     let p2 = dim * c.j + k;
