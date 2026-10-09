@@ -1142,18 +1142,23 @@ pub fn rdkit_sanitized_model(mol: &Molecule) -> Result<RdkitSanitizedModel, Rdki
         }
         let bond = &m.bonds[next];
         next += 1;
-        bonds[cb] = Some(if bond.aromatic {
-            BondOrder::Aromatic
-        } else {
-            match bond.bt {
-                mol::BondType::Single => BondOrder::Single,
-                mol::BondType::Double => BondOrder::Double,
-                mol::BondType::Triple => BondOrder::Triple,
-                mol::BondType::Quadruple => BondOrder::Quadruple,
-                mol::BondType::Aromatic => BondOrder::Aromatic,
-                mol::BondType::Dative => BondOrder::Dative,
-            }
-        });
+        // RDKit flags a ring triple (or double) bond it could not make
+        // aromatic-typed as aromatic but keeps its type (`c1ccccc#1`); the
+        // type is what chematic's bond order can carry.
+        bonds[cb] = Some(
+            if bond.aromatic && !matches!(bond.bt, mol::BondType::Triple) {
+                BondOrder::Aromatic
+            } else {
+                match bond.bt {
+                    mol::BondType::Single => BondOrder::Single,
+                    mol::BondType::Double => BondOrder::Double,
+                    mol::BondType::Triple => BondOrder::Triple,
+                    mol::BondType::Quadruple => BondOrder::Quadruple,
+                    mol::BondType::Aromatic => BondOrder::Aromatic,
+                    mol::BondType::Dative => BondOrder::Dative,
+                }
+            },
+        );
     }
     Ok(RdkitSanitizedModel {
         atoms,
@@ -1179,6 +1184,27 @@ pub fn rdkit_hydrogen_suppressed(mol: &Molecule) -> Option<Molecule> {
         return None;
     }
     pdb_read::to_chematic(&m, true).ok()
+}
+
+/// [`rdkit_hydrogen_suppressed`] with, per atom of the returned molecule,
+/// the index of the atom of `mol` it is (RDKit's `removeHs` keeps the
+/// other atoms in order).
+pub fn rdkit_hydrogen_suppressed_with_map(mol: &Molecule) -> Option<(Molecule, Vec<usize>)> {
+    if has_added_hydrogens(mol)
+        || !mol
+            .atoms()
+            .any(|(_, a)| !a.wildcard && a.element == chematic_core::Element::H)
+    {
+        return None;
+    }
+    let mut m = parse::from_chematic(mol).ok()?;
+    let kept = sanitize::remove_hs(&mut m, true).ok()?;
+    if kept.len() == mol.atom_count() {
+        return None;
+    }
+    stereo::legacy_stereo_perception(&mut m, true, true);
+    let out = pdb_read::to_chematic(&m, true).ok()?;
+    (out.atom_count() == kept.len()).then_some((out, kept))
 }
 
 /// Registers [`rdkit_model_correct_view`] as chematic-perception's

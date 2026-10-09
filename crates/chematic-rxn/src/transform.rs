@@ -588,6 +588,21 @@ impl PreparedReaction {
             .as_ref()
     }
 
+    /// Whether a reactant template spells a hydrogen atom (`[H]`, `#1`).
+    fn reactant_side_spells_hydrogen(&self) -> bool {
+        let reactants = self
+            .normalized_smirks
+            .split('>')
+            .next()
+            .unwrap_or_default()
+            .as_bytes();
+        reactants.windows(2).any(|w| w == b"[H")
+            || reactants
+                .windows(3)
+                .any(|w| w[0] == b'#' && w[1] == b'1' && !w[2].is_ascii_digit())
+            || reactants.ends_with(b"#1")
+    }
+
     /// Whether the template text spells any tetrahedral stereo.
     fn has_any_stereo_text(&self) -> bool {
         self.normalized_smirks.contains('@')
@@ -880,6 +895,39 @@ impl PreparedReaction {
         Result<TracedReactionTransformReport, ReactionCompatibilityUnsupported>,
         TransformError,
     > {
+        // RDKit's SMILES parser removes hydrogen atoms (`removeHs`): the
+        // profile runs on that molecule and maps atom sources back.
+        // A template that spells hydrogen atoms is for explicit-H reactants
+        // (`AddHs`, as BioTransformer runs RDKit): those keep them.
+        let suppressed: Vec<Option<(Molecule, Vec<usize>)>> = match profile {
+            Profile::Rdkit if self.reactant_side_spells_hydrogen() => Vec::new(),
+            Profile::Native => Vec::new(),
+            Profile::Rdkit => reactants
+                .iter()
+                .map(|m| {
+                    chematic_smiles::rdkit_hydrogen_suppressed_with_map(m)
+                        .map(|(h, kept)| (with_reactant_tetrahedral_records(m, h, &kept), kept))
+                })
+                .collect(),
+        };
+        let suppressed_refs: Vec<&Molecule>;
+        let reactants: &[&Molecule] = if suppressed.iter().any(Option::is_some) {
+            suppressed_refs = reactants
+                .iter()
+                .zip(&suppressed)
+                .map(|(&m, s)| s.as_ref().map_or(m, |(s, _)| s))
+                .collect();
+            &suppressed_refs
+        } else {
+            reactants
+        };
+        let restore_sources = |product: &mut TracedProduct| {
+            for source in product.atom_sources.iter_mut().flatten() {
+                if let Some(Some((_, kept))) = suppressed.get(source.reactant) {
+                    source.atom = AtomIdx(kept[source.atom.0 as usize] as u32);
+                }
+            }
+        };
         // RDKit's SMILES parser drops tags on atoms that cannot be centres.
         let cleaned: Vec<std::sync::Arc<Option<Molecule>>> = match profile {
             Profile::Native => Vec::new(),
@@ -909,10 +957,14 @@ impl PreparedReaction {
         let mut rejected_products = Vec::new();
         for m in &matches {
             match apply_match_profile(self, reactants, m, carry_substituents, profile) {
-                Ok(ProductSetOutcome::Valid(product_set)) => products.push(product_set),
-                Ok(ProductSetOutcome::Rejected(set, ok)) => {
+                Ok(ProductSetOutcome::Valid(mut product_set)) => {
+                    product_set.iter_mut().for_each(restore_sources);
+                    products.push(product_set);
+                }
+                Ok(ProductSetOutcome::Rejected(mut set, ok)) => {
                     valence_rejected_matches += 1;
                     if profile == Profile::Rdkit {
+                        set.iter_mut().for_each(restore_sources);
                         rejected_products.push(set.into_iter().zip(ok).collect());
                     }
                 }
@@ -3803,6 +3855,53 @@ fn correct_product_stereo(
     }
 
     product
+}
+
+/// `h` (RDKit's hydrogen-suppressed reading of `mol`, atom `i` being atom
+/// `kept[i]` of `mol`) with each tetrahedral centre RDKit kept described by
+/// `mol`'s own record: the same tag and neighbour order, a removed hydrogen
+/// atom becoming the implicit-H slot.
+fn with_reactant_tetrahedral_records(mol: &Molecule, mut h: Molecule, kept: &[usize]) -> Molecule {
+    let mut new_of = vec![None; mol.atom_count()];
+    for (i, &k) in kept.iter().enumerate() {
+        new_of[k] = Some(i as u32);
+    }
+    for (i, &k) in kept.iter().enumerate() {
+        let idx = AtomIdx(i as u32);
+        let src = AtomIdx(k as u32);
+        if !h.atom(idx).chirality.is_tetrahedral() {
+            continue;
+        }
+        let order: Vec<u32> = match mol.stereo_neighbor_order(src) {
+            Some(o) => o.to_vec(),
+            None => mol.neighbors(src).map(|(n, _)| n.0).collect(),
+        };
+        let mut slots = 0;
+        let remapped: Option<Vec<u32>> = order
+            .iter()
+            .map(|&n| {
+                if n == chematic_core::STEREO_H_SENTINEL {
+                    slots += 1;
+                    return Some(n);
+                }
+                match new_of[n as usize] {
+                    Some(x) => Some(x),
+                    None => {
+                        slots += 1;
+                        Some(chematic_core::STEREO_H_SENTINEL)
+                    }
+                }
+            })
+            .collect();
+        match remapped {
+            Some(o) if slots <= 1 && mol.atom(src).chirality.is_tetrahedral() => {
+                h.set_chirality(idx, mol.atom(src).chirality);
+                h.set_stereo_neighbor_order(idx, o);
+            }
+            _ => h.set_chirality(idx, Chirality::None),
+        }
+    }
+    h
 }
 
 /// RDKit's bond order around a carried, non-ring atom of the product: the
