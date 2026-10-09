@@ -1188,7 +1188,52 @@ fn rdkit_parse_cleanup_uncached(mol: &Molecule) -> Option<Molecule> {
             out
         });
     let src = edited.as_ref().unwrap_or(mol);
-    chirality_cleanup(src).or(edited)
+    let tagged = chirality_cleanup(src);
+    let src2 = tagged.as_ref().unwrap_or(src);
+    ez_cleanup(src2).or(tagged).or(edited)
+}
+
+/// The double-bond directions RDKit's parser clears: `/` `\` next to a
+/// double bond its legacy stereo perception leaves without stereo (two
+/// alike substituents at one end, `[H]/N=C(/N)N`), unless the same bond
+/// also directs a double bond that keeps its stereo.
+fn ez_cleanup(mol: &Molecule) -> Option<Molecule> {
+    use chematic_core::{BondIdx, BondOrder};
+    let directed = |b: BondIdx| {
+        matches!(mol.bond(b).order, BondOrder::Up | BondOrder::Down)
+            || mol.bond_direction(b).is_some()
+    };
+    if !mol.bonds().any(|(b, _)| directed(b)) {
+        return None;
+    }
+    let st = chematic_smiles::rdkit_legacy_stereo(mol).ok()?;
+    let is_double = |b: BondIdx| mol.bond(b).order == BondOrder::Double;
+    let stereo_double = |b: BondIdx| is_double(b) && st.bond_stereo[b.0 as usize] > 1;
+    let mut out: Option<Molecule> = None;
+    for (b, bond) in mol.bonds() {
+        if !directed(b) {
+            continue;
+        }
+        let ends = [bond.atom1, bond.atom2];
+        let next_to_double = ends
+            .iter()
+            .any(|&a| mol.neighbors(a).any(|(_, nb)| nb != b && is_double(nb)));
+        if !next_to_double {
+            continue;
+        }
+        let keeps = ends
+            .iter()
+            .any(|&a| mol.neighbors(a).any(|(_, nb)| nb != b && stereo_double(nb)));
+        if keeps {
+            continue;
+        }
+        let m = out.get_or_insert_with(|| mol.clone());
+        if matches!(bond.order, BondOrder::Up | BondOrder::Down) {
+            m.set_bond_order(b, BondOrder::Single);
+        }
+        m.clear_bond_direction(b);
+    }
+    out
 }
 
 /// The tags RDKit's parser drops (see [`rdkit_parse_cleanup`]).
@@ -1204,8 +1249,13 @@ fn chirality_cleanup(mol: &Molecule) -> Option<Molecule> {
     let clear = |out: &mut Molecule, a: AtomIdx| {
         out.set_chirality(a, Chirality::None);
         // Issue 194: the bracket H was there only for the tag.
+        // Not next to a dative bond, whose valence counts differ between
+        // RDKit and implicit-H inference (RDKit writes `[CH](->C...)`).
         let atom = mol.atom(a);
-        if atom.hydrogen_count == Some(1) && atom.charge == 0 && !atom.aromatic {
+        let dative = mol
+            .neighbors(a)
+            .any(|(_, b)| mol.bond(b).order == chematic_core::BondOrder::Dative);
+        if atom.hydrogen_count == Some(1) && atom.charge == 0 && !atom.aromatic && !dative {
             out.set_hydrogen_count(a, None);
         }
     };
