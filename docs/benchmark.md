@@ -7,8 +7,9 @@ links the raw data and older measurements.
 
 ## Current published-package evidence
 
-The current release is **v1.0.39**. The latest broad published-package performance
-packet below is for **v1.0.30**, not a new v1.0.39 measurement. None is a
+The current release is **v1.0.40**. The latest broad published-package performance
+packet below is for **v1.0.30**, not a new v1.0.40 measurement. The v1.0.40
+RDKit/COSMolKit and seeded ETKDG record is source-built evidence. None is a
 universal speed or compatibility claim.
 
 | Lane | Result | Boundary |
@@ -38,7 +39,7 @@ retains 200 SMARTS failures, five typed CIP abstentions and four npm API gaps.
 - The [v1.0.12 similarity-search record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-similarity-search-v1.0.12.md)
   separates native/native, RDKit-compatible/RDKit and cross-profile overlap.
   Source A/B and older operation timings remain in the
-  [index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md); they do not update v1.0.39 claims.
+  [index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md); they do not update v1.0.40 claims.
 
 ## Reproduction and interpretation
 

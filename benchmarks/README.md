@@ -2,15 +2,16 @@
 
 This directory contains dated, reproducible measurement records. Numbers are
 scoped to each record's source or package, corpus, host, runtime and operation.
-The current release is **v1.0.39**. Its source changes are recorded in the
-#754/#734 and #769/#779 records below; the published-package RDKit 2026.03.6 and RDKit.js
-2026.03.6/2026.09.1 records are versioned below. Other records remain scoped
-to their stated artifacts and hosts.
+The current release is **v1.0.40**. Its new RDKit/COSMolKit and seeded ETKDG
+results are source-build evidence in the first record below; published-package
+reruns remain separate. Older records stay scoped to their stated artifacts,
+comparators and hosts.
 
 ## Start here
 
 | Need | Start with |
 |---|---|
+| Review the second RDKit/COSMolKit parity round and seeded ETKDG work | [`2026-10-09-cosmolkit-parity-2.md`](2026-10-09-cosmolkit-parity-2.md): source-built comparison against RDKit 2026.03.1 and COSMolKit 0.3.0; seeded ETKDG coordinates match RDKit on 4,977/4,977 ChEMBL and 9,947/9,947 RDKit.js rows where RDKit succeeds on the recorded Linux x86-64 host; broad writer, reader, alignment, MolHash and non-tetrahedral checks; not yet published-package evidence |
 | Review the v1.0.38 RDKit/COSMolKit parity work | [`2026-10-08-cosmolkit-parity.md`](2026-10-08-cosmolkit-parity.md): named RDKit-compatible SMILES, InChI, fingerprint, stereoisomer, 2D-coordinate, MOL-block and force-field APIs; exact corpus denominators and remaining ETKDG/SMARTS-writer/PDB-writer boundaries; source-candidate evidence, not a published-package speed claim |
 | Review the #754/#734 batch-24 follow-ups | [`2026-10-08-754-734-followups-batch24.md`](2026-10-08-754-734-followups-batch24.md): published v1.0.38 baseline (SMARTS 310,000 exact); property-based SMIRKS fuzz lane (implicit-H differences 125 → 28, refusals 52 → 18 on 2,000 templates); SMARTS `[ca]`/`[na]`/`[cr6]` read as elements fixed; element-change charge and hypervalent ring S follow RDKit; comparator platform policy; upstream probes; the 8 autoconf differences decided |
 | Review #769 on the published packages and #779 | [`2026-10-09-issues-769-779.md`](2026-10-09-issues-769-779.md): the #769 valence check confirmed on published PyPI, npm and crates.io v1.0.38; opt-in `chematic-mcp --transport streamable-http` (2026-07-28 stateless dialect at `/mcp`, loopback by default, same protocol/server/tool layers as stdio); official conformance suite 0.2.0-alpha.12 run on all 40 2026-07-28 server scenarios: 82 checks pass, the 41 failures all need suite fixtures or unimplemented capabilities, and 3 real defects it found were fixed |

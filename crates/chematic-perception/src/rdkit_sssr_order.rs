@@ -8,7 +8,9 @@
 //! RDKit algorithms that walk `RingInfo` in order and stop early, such as
 //! MMFF94's aromaticity pass.
 
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
+
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 use smallvec::SmallVec;
@@ -377,7 +379,8 @@ fn smallest_rings_bfs_in(
                 depths[nbr] = depth;
                 queue.push_back(nbr);
             } else {
-                let mut ring = vec![nbr];
+                let mut ring = Vec::with_capacity(depths[nbr] + depth + 1);
+                ring.push(nbr);
                 let mut parent = parents[nbr];
                 while parent != -1 && parent != root as isize {
                     ring.push(parent as usize);
@@ -430,7 +433,7 @@ fn pick_d2_nodes(g: &Graph, frag: &[usize], degrees: &[i32], active: &[bool]) ->
 
 struct Search<'g> {
     g: &'g Graph,
-    invars: HashSet<Vec<usize>>,
+    invars: FxHashSet<Vec<usize>>,
     ring_atoms: Vec<bool>,
     ring_bonds: Vec<bool>,
 }
@@ -454,7 +457,7 @@ impl Search<'_> {
     ) -> Result<(), TooBig> {
         let g = self.g;
         let mut dup_d2_cands: BTreeMap<Invariant, Vec<usize>> = BTreeMap::new();
-        let mut dup_map: HashMap<usize, Vec<usize>> = HashMap::new();
+        let mut dup_map: FxHashMap<usize, Vec<usize>> = FxHashMap::default();
         for &cand in d2nodes {
             let srings = smallest_rings_bfs(g, cand, active, &[])?;
             for nring in &srings {
@@ -868,7 +871,34 @@ pub fn rdkit_symmetrized_sssr(
     symmetrized_sssr(&Graph { adj, ends, orders }, n_atoms)
 }
 
+/// RDKit's plain SSSR (`MolOps::findSSSR`, without the symmetrization
+/// extras) for a graph given as for [`rdkit_symmetrized_sssr`].
+pub fn rdkit_sssr(n_atoms: usize, bonds: &[(usize, usize, bool)]) -> Option<Vec<Vec<usize>>> {
+    let mut adj = vec![SmallVec::new(); n_atoms];
+    let mut ends = Vec::with_capacity(bonds.len());
+    let mut orders = Vec::with_capacity(bonds.len());
+    for (k, &(a, b, eligible)) in bonds.iter().enumerate() {
+        ends.push((a, b));
+        orders.push(if eligible {
+            BondOrder::Single
+        } else {
+            BondOrder::Zero
+        });
+        adj[a].push((b, k));
+        adj[b].push((a, k));
+    }
+    sssr_with_extras(&Graph { adj, ends, orders }, n_atoms).map(|(res, _)| res)
+}
+
 fn symmetrized_sssr(g: &Graph, n: usize) -> Option<Vec<Vec<usize>>> {
+    let (res, extras_all) = sssr_with_extras(g, n)?;
+    symmetrize(g, res, &extras_all)
+}
+
+/// `findSSSR`: the SSSR rings and the extra rings found on the way.
+type SssrWithExtras = (Vec<Vec<usize>>, Vec<Vec<usize>>);
+
+fn sssr_with_extras(g: &Graph, n: usize) -> Option<SssrWithExtras> {
     let mut active: Vec<bool> = g.orders.iter().map(|&o| ring_eligible(o)).collect();
     let mut degrees: Vec<i32> = (0..n)
         .map(|a| g.adj[a].iter().filter(|&&(_, bi)| active[bi]).count() as i32)
@@ -902,7 +932,7 @@ fn symmetrized_sssr(g: &Graph, n: usize) -> Option<Vec<Vec<usize>>> {
 
     let mut search = Search {
         g,
-        invars: HashSet::new(),
+        invars: FxHashSet::default(),
         ring_atoms: vec![false; n],
         ring_bonds: vec![false; g.ends.len()],
     };
@@ -973,7 +1003,14 @@ fn symmetrized_sssr(g: &Graph, n: usize) -> Option<Vec<Vec<usize>>> {
         }
         res.extend(frag_res);
     }
+    Some((res, extras_all))
+}
 
+fn symmetrize(
+    g: &Graph,
+    res: Vec<Vec<usize>>,
+    extras_all: &[Vec<usize>],
+) -> Option<Vec<Vec<usize>>> {
     // symmetrizeSSSR: an extra ring that can stand in for one SSSR ring of
     // the same size without dropping a bond only that ring provides.
     let bond_rings: Vec<Vec<usize>> = res.iter().map(|r| ring_bond_set(g, r)).collect();
@@ -984,7 +1021,7 @@ fn symmetrized_sssr(g: &Graph, n: usize) -> Option<Vec<Vec<usize>>> {
         }
     }
     let mut out = res.clone();
-    for extra in &extras_all {
+    for extra in extras_all {
         let extra_bonds = ring_bond_set(g, extra);
         for ring in &bond_rings {
             if ring.len() != extra_bonds.len() {

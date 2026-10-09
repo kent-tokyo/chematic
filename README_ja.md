@@ -26,13 +26,13 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.0.39 の対応範囲
+### v1.0.40 の対応範囲
 
-v1.0.39では、loopbackを既定とするMCP Streamable HTTPを追加し、RDKit互換
-プロファイルのSMARTS／SMIRKS解析、元素置換、芳香族生成物の高原子価処理を
-改善しました。SMIRKSのproperty-based fuzzing、プラットフォーム別の比較条件、
-上流提出用プローブも追加しています。v1.0.38公開物の測定は、v1.0.39公開物を
-再測定するまでhistoricalとして区別します。詳しくは
+v1.0.40では、RDKit 2026.03.1互換のwriter、reader、MolHash、alignment、
+立体異性体列挙、非四面体立体、固定seedのETKDGv3 APIを追加しました。
+記録したLinux x86-64のsource buildでは、RDKitが成功したChEMBL 4,977件と
+RDKit.js 9,947件のETKDG座標がすべて一致しました。他OSは数値許容差で検証します。
+これはsource buildの結果であり、全公開artifactの再測定結果ではありません。詳しくは
 [検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方

@@ -2,7 +2,7 @@
 
 CheMatic is not a drop-in RDKit replacement. Choose a declared operation
 profile, preserve unsupported inputs, and compare results on your own data
-before changing a production workflow. The current release is **v1.0.39**;
+before changing a production workflow. The current release is **v1.0.40**;
 the latest published-package comparison packet is pinned to **v1.0.30**.
 
 For runnable calls, see the [RDKit cheat sheet](rdkit_cheatsheet.md). For
@@ -56,8 +56,11 @@ read/write coverage rather than assuming every RDKit format is supported.
   Standard InChI. `mol.standard_inchi`/`standard_inchikey` require the
   optional `native-inchi` feature and its C library.
 - **3D:** `generate_3d`, `embed_pipeline_v2`, MMFF94 and related force-field
-  paths remain Experimental. A typed successful result does not prove
-  ETKDGv3 conformer quality, universal parameter coverage or RDKit speed.
+  paths remain Experimental. v1.0.40 adds a named fixed-seed RDKit-compatible
+  ETKDGv3 path: the recorded Linux x86-64 source comparison matches all
+  successful RDKit rows on the exposed ChEMBL 5k and RDKit.js 10k corpora.
+  This does not prove other seeds, topologies, platforms, ensemble quality,
+  universal parameter coverage, published-package parity or RDKit speed.
 - **Rich formats and reactions:** CDXML presentation editing and
   Markush/polymer expansion are bounded. V3000 coordination/haptic
   semantics are not generally interchangeable. The published v1.0.30

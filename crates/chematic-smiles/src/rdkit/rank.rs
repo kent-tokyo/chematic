@@ -21,12 +21,7 @@ pub(crate) fn rank_mol_atoms_with(mol: &Mol, isomeric: bool) -> Vec<u32> {
         .iter()
         .enumerate()
         .map(|(i, a)| {
-            let chiral_tag = match a.chiral {
-                _ if !isomeric => 0,
-                ChiralTag::Unspecified => 0,
-                ChiralTag::Cw => 1,
-                ChiralTag::Ccw => 2,
-            };
+            let chiral_tag = if isomeric { a.chiral.rdkit_value() } else { 0 };
             RdkitRankAtom {
                 atomic_num: a.anum,
                 isotope: if isomeric { a.isotope } else { 0 },

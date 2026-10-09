@@ -6,6 +6,7 @@
 
 use crate::EcfpBitInfo;
 use crate::Mol;
+use crate::RdkitBestAlignment;
 use crate::RdkitMorganDetail;
 use crate::formats::{bitvec2048_to_bytes, flat_to_coords3d};
 use ndarray::Array1;
@@ -40,8 +41,8 @@ impl Mol {
     ///
     /// Raises ``ValueError`` instead of returning a string when the molecule
     /// uses a feature the port does not model (message starting
-    /// ``"RDKit-compatible SMILES: unsupported input"``, e.g. non-tetrahedral
-    /// chirality or a molecule not read from SMILES) or when RDKit's
+    /// ``"RDKit-compatible SMILES: unsupported input"``, e.g. a molecule not
+    /// read from SMILES) or when RDKit's
     /// sanitization would reject it (``"RDKit-compatible SMILES:
     /// sanitization failed"``; ``Chem.MolFromSmiles`` returns ``None``).
     ///
@@ -87,6 +88,98 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// RDKit 2026.03.1's ``AllChem.EmbedMolecule(mol, randomSeed=...)``
+    /// (ETKDGv3 defaults), bit for bit: the 3D coordinates of every atom,
+    /// one ``[x, y, z]`` per atom in this molecule's atom order.
+    ///
+    /// Call it on the explicit-hydrogen molecule, as RDKit is called on
+    /// ``Chem.AddHs(m)``::
+    ///
+    ///     mh = chematic.from_smiles("CCO").add_hydrogens()
+    ///     xyz = mh.rdkit_embed(random_seed=42)
+    ///     # == Chem.AddHs(Chem.MolFromSmiles("CCO")) embedded with
+    ///     #    AllChem.EmbedMolecule(mh, randomSeed=42)
+    ///
+    /// The keyword arguments are ``EmbedMolecule``'s (``maxAttempts`` =
+    /// ``max_iterations``, 0: RDKit's default of 10 x atoms). Raises
+    /// ``RuntimeError`` when RDKit's embedding fails (``EmbedMolecule``
+    /// returns -1) and ``ValueError`` for inputs the port does not model
+    /// (e.g. ``random_seed=-1``) or that make RDKit raise. Molecules with
+    /// several fragments are embedded fragment by fragment, as RDKit does.
+    /// chematic's own 3D methods are unchanged.
+    #[pyo3(signature = (*, random_seed = 42, max_iterations = 0,
+                        use_exp_torsion_angle_prefs = true, use_basic_knowledge = true,
+                        et_version = 2, use_small_ring_torsions = false,
+                        use_macrocycle_torsions = true, use_macrocycle_14_config = true,
+                        enforce_chirality = true, ignore_smoothing_failures = false))]
+    #[allow(clippy::too_many_arguments)]
+    fn rdkit_embed(
+        &self,
+        py: Python<'_>,
+        random_seed: i32,
+        max_iterations: u32,
+        use_exp_torsion_angle_prefs: bool,
+        use_basic_knowledge: bool,
+        et_version: u32,
+        use_small_ring_torsions: bool,
+        use_macrocycle_torsions: bool,
+        use_macrocycle_14_config: bool,
+        enforce_chirality: bool,
+        ignore_smoothing_failures: bool,
+    ) -> PyResult<Vec<[f64; 3]>> {
+        use chematic_3d::rdkit_embed::{RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_molecule};
+        if !(1..=2).contains(&et_version) {
+            return Err(PyValueError::new_err(
+                "Only version 1 and 2 of the experimental torsion-angle preferences (ETversion) supported",
+            ));
+        }
+        let opts = RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            use_exp_torsion_angle_prefs,
+            use_basic_knowledge,
+            et_version,
+            use_small_ring_torsions,
+            use_macrocycle_torsions,
+            use_macrocycle14config: use_macrocycle_14_config,
+            enforce_chirality,
+            force_trans_amides: true,
+            ignore_smoothing_failures,
+        };
+        let mol = self.inner.clone();
+        let res = py.detach(move || rdkit_embed_molecule(&mol, &opts));
+        res.map_err(|e| match e {
+            RdkitEmbedError::Failed => pyo3::exceptions::PyRuntimeError::new_err(e.to_string()),
+            _ => PyValueError::new_err(e.to_string()),
+        })
+    }
+
+    /// RDKit 2026.03.1's ``rdDistGeom.GetMoleculeBoundsMatrix(mol, ...)``
+    /// (``scaleVDW=False``), bit for bit: the distance-geometry bounds
+    /// matrix as a list of rows, upper bounds above the diagonal and lower
+    /// bounds below it. Call it on the explicit-hydrogen molecule, as RDKit
+    /// is called on ``Chem.AddHs(m)``::
+    ///
+    ///     bm = chematic.from_smiles("CCO").add_hydrogens().rdkit_bounds_matrix()
+    ///
+    /// Raises ``ValueError`` for inputs the port does not model.
+    #[pyo3(signature = (*, set15bounds = true, do_triangle_smoothing = true,
+                        use_macrocycle_14_config = false))]
+    fn rdkit_bounds_matrix(
+        &self,
+        set15bounds: bool,
+        do_triangle_smoothing: bool,
+        use_macrocycle_14_config: bool,
+    ) -> PyResult<Vec<Vec<f64>>> {
+        chematic_3d::rdkit_embed::rdkit_bounds_matrix(
+            &self.inner,
+            set15bounds,
+            do_triangle_smoothing,
+            use_macrocycle_14_config,
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// 2D coordinates exactly as RDKit 2026.03.1's default depiction gives
     /// them: for a molecule read with :func:`from_smiles` this is
     /// ``[[p.x, p.y] for p in m.GetConformer().GetPositions()]`` after
@@ -109,12 +202,12 @@ impl Mol {
     /// The MOL block RDKit 2026.03.1 writes for this molecule with its
     /// default 2D depiction: ``Chem.MolToMolBlock(m)`` after
     /// ``m = Chem.MolFromSmiles(s); rdDepictor.Compute2DCoords(m)`` for the
-    /// SMILES ``s`` the molecule was read from (V2000, coordinates of
-    /// :meth:`rdkit_2d_coords`, RDKit's kekulization and wedge bonds).
+    /// SMILES ``s`` the molecule was read from (V2000, or V3000 where RDKit
+    /// switches to it: dative bonds, more than 999 atoms or bonds;
+    /// coordinates of :meth:`rdkit_2d_coords`, RDKit's kekulization and
+    /// wedge bonds).
     ///
-    /// Raises ``ValueError`` like :attr:`rdkit_smiles`, and for molecules
-    /// RDKit would write as V3000 (dative bonds, more than 999 atoms or
-    /// bonds).
+    /// Raises ``ValueError`` like :attr:`rdkit_smiles`.
     ///
     ///     print(chematic.from_smiles("C[C@H](O)F").rdkit_mol_block_2d())
     fn rdkit_mol_block_2d(&self) -> PyResult<String> {
@@ -2008,6 +2101,31 @@ impl Mol {
         ))
     }
 
+    /// RDKit's Morgan ``bitInfo`` for ``n_bits``-bit fingerprints of radius
+    /// ``radius`` (``rdFingerprintGenerator.GetMorganGenerator(radius=radius,
+    /// fpSize=n_bits, includeChirality=include_chirality)`` with
+    /// ``AdditionalOutput.GetBitInfoMap()``): ``{bit: [(atom, radius), ...]}``
+    /// with each list sorted.
+    #[pyo3(signature = (radius = 2, n_bits = 2048, include_chirality = false))]
+    fn rdkit_morgan_bit_info(
+        &self,
+        radius: u32,
+        n_bits: usize,
+        include_chirality: bool,
+    ) -> PyResult<std::collections::BTreeMap<usize, Vec<(u32, u32)>>> {
+        let config = python_rdkit_morgan_config(radius, n_bits, include_chirality)?;
+        let result = chematic_fp::rdkit_morgan_fingerprint(&self.inner, &config)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(result
+            .folded_bit_info
+            .into_iter()
+            .map(|(bit, mut env)| {
+                env.sort_unstable();
+                (bit, env)
+            })
+            .collect())
+    }
+
     /// MACCS 166-bit keys as bytes (21 bytes, LSB-first).
     fn maccs(&self) -> Vec<u8> {
         let fp = chematic_fp::maccs(&self.inner);
@@ -2339,19 +2457,8 @@ impl Mol {
             ring_count_model,
             ..chematic_smarts::RdkitParityConfig::default()
         };
-        match chematic_smarts::find_matches_rdkit_parity(&query, &self.inner, &config) {
-            Ok((matches, false)) => {
-                let mut atom_sets: Vec<Vec<usize>> = matches
-                    .into_iter()
-                    .map(|mapping| {
-                        let mut atoms: Vec<usize> =
-                            mapping.values().map(|atom| atom.0 as usize).collect();
-                        atoms.sort_unstable();
-                        atoms
-                    })
-                    .collect();
-                atom_sets.sort_unstable();
-                atom_sets.dedup();
+        match chematic_smarts::find_match_atom_sets_rdkit_parity(&query, &self.inner, &config) {
+            Ok((atom_sets, false)) => {
                 result.set_item("status", "ok")?;
                 result.set_item("reason", py.None())?;
                 result.set_item("matches", atom_sets)?;
@@ -2708,6 +2815,198 @@ impl Mol {
                     .map_err(|e| PyValueError::new_err(format!("{s}: {e}")))
             })
             .collect()
+    }
+
+    /// RDKit-compatible ``Chem.MolToSmarts(m, isomericSmiles=isomeric,
+    /// rootedAtAtom=rooted_at_atom)`` (input atom order, every atom
+    /// bracketed, every bond explicit).
+    #[pyo3(signature = (isomeric = true, rooted_at_atom = None))]
+    fn rdkit_smarts(&self, isomeric: bool, rooted_at_atom: Option<usize>) -> PyResult<String> {
+        chematic_smiles::rdkit_smarts(&self.inner, isomeric, rooted_at_atom)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit-compatible ``Chem.MolToPDBBlock(m)``; ``coords`` (one
+    /// ``[x, y, z]`` per atom) stands for a conformer, otherwise zero
+    /// coordinates are written as RDKit does.
+    #[pyo3(signature = (coords = None))]
+    fn rdkit_pdb_block(&self, coords: Option<Vec<[f64; 3]>>) -> PyResult<String> {
+        chematic_smiles::rdkit_pdb_block(&self.inner, coords.as_deref())
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// ``rdMolAlign.GetAlignmentTransform`` / ``AlignMol`` (RDKit 2026.03.1)
+    /// for two conformers of this molecule (coordinates in
+    /// ``Chem.MolFromSmiles`` atom order): ``(rmsd, transform)`` with the
+    /// 4x4 transform (rows) taking ``probe_coords`` onto ``ref_coords``.
+    /// ``atom_map`` is a list of ``(probe atom, reference atom)`` pairs;
+    /// without it the first substructure match is used.
+    #[pyo3(signature = (probe_coords, ref_coords, atom_map = None, weights = None, reflect = false, max_iterations = 50))]
+    fn rdkit_align(
+        &self,
+        probe_coords: Vec<[f64; 3]>,
+        ref_coords: Vec<[f64; 3]>,
+        atom_map: Option<Vec<(usize, usize)>>,
+        weights: Option<Vec<f64>>,
+        reflect: bool,
+        max_iterations: u32,
+    ) -> PyResult<(f64, [[f64; 4]; 4])> {
+        let res = chematic_smiles::rdkit_align_mol(
+            &self.inner,
+            &probe_coords,
+            &ref_coords,
+            atom_map.as_deref(),
+            weights.as_deref(),
+            reflect,
+            max_iterations,
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok((res.rmsd, res.transform.rows()))
+    }
+
+    /// ``rdMolAlign.GetBestRMS(prb, ref, maxMatches=max_matches,
+    /// symmetrizeConjugatedTerminalGroups=..., weights=weights)`` (RDKit
+    /// 2026.03.1) for two conformers of this molecule.
+    #[pyo3(signature = (probe_coords, ref_coords, max_matches = 1_000_000, symmetrize_conjugated_terminal_groups = true, weights = None))]
+    fn rdkit_best_rms(
+        &self,
+        probe_coords: Vec<[f64; 3]>,
+        ref_coords: Vec<[f64; 3]>,
+        max_matches: usize,
+        symmetrize_conjugated_terminal_groups: bool,
+        weights: Option<Vec<f64>>,
+    ) -> PyResult<f64> {
+        chematic_smiles::rdkit_best_rms(
+            &self.inner,
+            &probe_coords,
+            &ref_coords,
+            max_matches,
+            symmetrize_conjugated_terminal_groups,
+            weights.as_deref(),
+        )
+        .map(|res| res.rmsd)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// ``rdMolAlign.GetBestAlignmentTransform`` (RDKit 2026.03.1):
+    /// ``(rmsd, transform, atom_map)`` of the best fit over all matches,
+    /// ``atom_map`` as ``(probe atom, reference atom)`` pairs.
+    #[pyo3(signature = (probe_coords, ref_coords, max_matches = 1_000_000, symmetrize_conjugated_terminal_groups = true, weights = None))]
+    fn rdkit_best_alignment(
+        &self,
+        probe_coords: Vec<[f64; 3]>,
+        ref_coords: Vec<[f64; 3]>,
+        max_matches: usize,
+        symmetrize_conjugated_terminal_groups: bool,
+        weights: Option<Vec<f64>>,
+    ) -> PyResult<RdkitBestAlignment> {
+        let res = chematic_smiles::rdkit_best_rms(
+            &self.inner,
+            &probe_coords,
+            &ref_coords,
+            max_matches,
+            symmetrize_conjugated_terminal_groups,
+            weights.as_deref(),
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok((res.rmsd, res.transform.rows(), res.atom_map))
+    }
+
+    /// ``rdMolAlign.CalcRMS(prb, ref, maxMatches=max_matches,
+    /// symmetrizeConjugatedTerminalGroups=..., weights=weights)`` (RDKit
+    /// 2026.03.1): the smallest RMSD over all matches, without aligning.
+    #[pyo3(signature = (probe_coords, ref_coords, max_matches = 1_000_000, symmetrize_conjugated_terminal_groups = true, weights = None))]
+    fn rdkit_calc_rms(
+        &self,
+        probe_coords: Vec<[f64; 3]>,
+        ref_coords: Vec<[f64; 3]>,
+        max_matches: usize,
+        symmetrize_conjugated_terminal_groups: bool,
+        weights: Option<Vec<f64>>,
+    ) -> PyResult<f64> {
+        chematic_smiles::rdkit_calc_rms(
+            &self.inner,
+            &probe_coords,
+            &ref_coords,
+            max_matches,
+            symmetrize_conjugated_terminal_groups,
+            weights.as_deref(),
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit-compatible ``Chem.MolToCXSmarts(m)``.
+    fn rdkit_cx_smarts(&self) -> PyResult<String> {
+        chematic_smiles::rdkit_cx_smarts(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit-compatible Bemis-Murcko scaffold:
+    /// ``Chem.MolToSmiles(MurckoScaffold.GetScaffoldForMol(m))``.
+    fn rdkit_murcko_scaffold(&self) -> PyResult<String> {
+        chematic_smiles::rdkit_murcko_scaffold(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit's ``rdMolHash.MolHash(m, function, useCXSmiles)`` (RDKit
+    /// 2026.03.1) for ``m = Chem.MolFromSmiles(s)``, ``s`` the SMILES this
+    /// molecule was read from. ``function`` names a member of
+    /// ``rdMolHash.HashFunction`` (case-insensitive): ``"AnonymousGraph"``,
+    /// ``"ElementGraph"``, ``"CanonicalSmiles"``, ``"MurckoScaffold"``,
+    /// ``"ExtendedMurcko"``, ``"MolFormula"``, ``"AtomBondCounts"``,
+    /// ``"DegreeVector"``, ``"Mesomer"``, ``"HetAtomTautomer"``,
+    /// ``"HetAtomProtomer"``, ``"RedoxPair"``, ``"Regioisomer"``,
+    /// ``"NetCharge"``, ``"SmallWorldIndexBR"``, ``"SmallWorldIndexBRL"``,
+    /// ``"ArthorSubstructureOrder"``, ``"HetAtomTautomerv2"`` or
+    /// ``"HetAtomProtomerv2"``.
+    ///
+    /// Raises ``ValueError`` for an unknown function name, for molecules the
+    /// RDKit port does not model and for molecules RDKit's sanitization
+    /// rejects.
+    ///
+    ///     chematic.from_smiles("Cc1ccccc1CC(=O)O").rdkit_mol_hash("ExtendedMurcko")
+    ///     # '*c1ccccc1*'
+    #[pyo3(signature = (function, use_cx_smiles=false))]
+    fn rdkit_mol_hash(&self, function: &str, use_cx_smiles: bool) -> PyResult<String> {
+        let f = chematic_smiles::RdkitHashFunction::from_name(function).ok_or_else(|| {
+            let names: Vec<&str> = chematic_smiles::RdkitHashFunction::ALL
+                .iter()
+                .map(|f| f.name())
+                .collect();
+            PyValueError::new_err(format!(
+                "unknown hash function {function:?}; expected one of {}",
+                names.join(", ")
+            ))
+        })?;
+        chematic_smiles::rdkit_mol_hash(&self.inner, f, use_cx_smiles)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// The RDKit canonical SMILES (``Chem.MolToSmiles(isomer)``) of the
+    /// isomers :meth:`rdkit_stereoisomers` returns, sorted. Unlike
+    /// re-reading them (``MolFromSmiles`` drops e.g. the chirality RDKit
+    /// gives an aromatic ``[s+]([O-])``), these are RDKit's strings as
+    /// written.
+    #[pyo3(signature = (max_isomers = 1024))]
+    fn rdkit_stereoisomer_smiles(&self, max_isomers: usize) -> PyResult<Vec<String>> {
+        chematic_smiles::rdkit_stereoisomer_smiles(&self.inner, max_isomers)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit-compatible ``EnumerateStereoisomers.GetStereoisomerCount(m)``
+    /// (default options): ``2 ** (number of flippable centres/bonds)``.
+    fn rdkit_stereoisomer_count(&self) -> PyResult<u128> {
+        chematic_smiles::rdkit_stereoisomer_count(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// RDKit-compatible ``Chem.FindMolChiralCenters(m, force=True,
+    /// includeUnassigned=include_unassigned)`` (legacy stereo perception,
+    /// RDKit 2026.03's default): ``[(atom_index, "R" | "S" | "?")]``.
+    #[pyo3(signature = (include_unassigned = true))]
+    fn rdkit_chiral_centers(&self, include_unassigned: bool) -> PyResult<Vec<(usize, String)>> {
+        chematic_smiles::rdkit_chiral_centers(&self.inner, include_unassigned)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
     /// Return a copy with all implicit hydrogens made explicit.

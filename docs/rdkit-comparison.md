@@ -10,15 +10,17 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.0.39 release** retains the named RDKit-compatible APIs from v1.0.38
-and tightens RDKit-profile SMARTS/SMIRKS parsing, element replacement, and
-hypervalent aromatic product handling. It also adds a reproducible SMIRKS
-fuzz lane and cross-platform comparator policy. The latest
+The **v1.0.40 release** adds named RDKit-compatible writers, readers, MolHash,
+alignment, stereoisomer enumeration, non-tetrahedral stereo, and fixed-seed
+ETKDGv3 paths. On the recorded Linux x86-64 source lane, ETKDG coordinates
+match RDKit 2026.03.1 on all 4,977 ChEMBL and 9,947 RDKit.js rows where RDKit
+succeeds. This is source-build evidence, not a universal or published-package
+parity claim. The latest
 published-package chemistry and speed comparison packet is pinned to
 **v1.0.30** against RDKit 2026.03.6. Later dated records cover v1.0.36
-and v1.0.37 packages plus published v1.0.38 and v1.0.39 source evidence;
-v1.0.39 release channels are verified; its chemistry package-output reruns
-remain separate open work.
+and v1.0.37 packages plus v1.0.38-v1.0.40 source evidence. v1.0.39 release
+channels are verified; v1.0.40 channel verification and package-output reruns
+remain separate publication work.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|
@@ -28,6 +30,7 @@ remain separate open work.
 | Browser Morgan | Published v1.0.30 npm/WASM on Ubuntu 24.04: Chromium, Firefox and WebKit each match 250/250 direct and prepared rows; 20-block speed intervals favor chematic on the measured lane. | Other browser hosts, operations or library-only memory. |
 | Reactions | Published v1.0.30 Rust: 73/83 exact. Linux/macOS release-profile source wheels: 76 all-axis matches, three typed unsupported, one diagnosed refusal and three invalid in both; WASM Node test passed. | General SMIRKS parity, yield or selectivity prediction; source results are not published-package results. |
 | 3D/MMFF94 | Experimental. Published v1.0.31 macOS: 265/265 geometry/stereo/clash, 100/265 converged and 262 comparable same-coordinate energies within 1 kcal/mol. | Cross-platform or independent conformer quality; an MMFF94 speed win. |
+| Seeded ETKDGv3 | v1.0.40 source lane on Linux x86-64: 4,977/4,977 ChEMBL and 9,947/9,947 RDKit.js successful rows match RDKit 2026.03.1 coordinates exactly. macOS regression tests use a 5e-4 Å per-coordinate tolerance. | Other seeds, topologies, platforms, conformer ensembles, or published artifacts. |
 
 The [validation report](validation.md) links the exact artifacts, corpus
 hashes, failure counts and operation definitions. The [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
@@ -42,9 +45,11 @@ current-package result.
 - **Profiles:** Native ECFP4 and named RDKit-compatible Morgan are different
   definitions. Aromaticity, CIP and canonical identity also have explicit
   modes or fail-closed limits. Matching names do not imply identical defaults.
-- **3D:** RDKit's ETKDG and force-field workflows are more mature. CheMatic
-  exposes bounded 3D paths with typed failures but does not claim ETKDGv3
-  or full MMFF94 parity.
+- **3D:** RDKit's ETKDG and force-field workflows remain broader and more
+  mature. CheMatic now exposes a named fixed-seed RDKit-compatible ETKDGv3
+  path with the bounded corpus evidence above. That result does not establish
+  universal topology, ensemble-quality, platform-bitwise, or full MMFF94
+  parity for the general 3D APIs.
 - **Formats:** CheMatic has selected materials and simulation formats in
   addition to common molecule formats. Read/write and binding coverage vary;
   use the [format matrix](format-capabilities.md) rather than assuming every

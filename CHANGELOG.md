@@ -10,6 +10,51 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.40] - 2026-10-09
+
+### Added
+
+- More RDKit 2026.03.1-compatible APIs alongside chematic's own:
+  `Mol.rdkit_smarts` / `rdkit_cx_smarts` (MolToSmarts, MolToCXSmarts),
+  `rdkit_pdb_block` (MolToPDBBlock), `rdkit_murcko_scaffold`
+  (MurckoScaffold.GetScaffoldForMol), `rdkit_chiral_centers`
+  (FindMolChiralCenters), `rdkit_stereoisomer_count` (GetStereoisomerCount),
+  `rdkit_stereoisomer_smiles`, `rdkit_mol_hash` (all 19 rdMolHash functions),
+  `rdkit_morgan_bit_info` (Morgan bit-info map), alignment and RMSD
+  (`rdkit_align`, `rdkit_best_rms`, `rdkit_best_alignment`, `rdkit_calc_rms`:
+  AlignMol, GetBestRMS, GetBestAlignmentTransform, CalcRMS), and readers
+  `chematic.rdkit_from_pdb_block`, `rdkit_from_xyz_block` and
+  `rdkit_from_mol2_block` (MolFromPDBBlock, MolFromXYZBlock,
+  MolFromMol2Block).
+- The RDKit-compatible paths now handle non-tetrahedral stereo (`@SP`, `@TB`,
+  `@OH`, including assignment from 3D coordinates and depiction templates);
+  `@AL1`/`@AL2` are read and dropped as RDKit does.
+- `rdkit_mol_block_2d` writes V3000 where RDKit does (dative bonds, more than
+  999 atoms or bonds).
+- Stereoisomer enumeration and counting follow RDKit's `FindPotentialStereo`.
+- Seeded 3D embedding as RDKit's `EmbedMolecule` (ETKDGv3 defaults, including
+  multi-fragment molecules): `Mol.add_hydrogens().rdkit_embed(random_seed=42)`
+  and `Mol.rdkit_bounds_matrix()` (`GetMoleculeBoundsMatrix`). Coordinates are
+  bit-identical to `EmbedMolecule(AddHs(m), randomSeed=42)` on the recorded
+  Linux x86-64 lane; other platforms may differ by libm last bits.
+- Results: [benchmarks/2026-10-09-cosmolkit-parity-2.md](benchmarks/2026-10-09-cosmolkit-parity-2.md).
+
+### Changed
+
+- RDKit-parity SMARTS matching computes ring models once per molecule and is
+  about 3× faster; RDKit canonical SMILES, SMARTS writing and Murcko
+  scaffolds allocate less (same outputs).
+- `chematic.from_smiles` accepts a neutral O or F singly bonded to a metal
+  (aqua and alkoxide ligands), as RDKit does.
+- RDKit-model hybridization uses RDKit's outer-electron counts for the
+  lanthanides (Ce–Lu), which changes `^n` SMARTS matches and RDKit UFF typing
+  of lanthanide atoms to RDKit's.
+
+### Fixed
+
+- The `chematic.mol_hash` docstring described other functions and claimed
+  equivalence to `rdMolHash.MolHash`; it now describes the screening hash.
+
 ## [1.0.39] - 2026-10-09
 
 ### Fixed

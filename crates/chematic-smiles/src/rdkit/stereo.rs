@@ -26,7 +26,7 @@ fn bond_affects_atom_chirality(mol: &Mol, b: usize, a: usize) -> bool {
 }
 
 /// `Chirality::detail::getAtomNonzeroDegree`.
-fn atom_nonzero_degree(mol: &Mol, a: usize) -> usize {
+pub(crate) fn atom_nonzero_degree(mol: &Mol, a: usize) -> usize {
     mol.atom_bonds[a]
         .iter()
         .filter(|&&b| bond_affects_atom_chirality(mol, b, a))
@@ -273,11 +273,21 @@ fn iterate_cip_ranks(mol: &Mol, invars: &[i64], ranks: &mut Vec<u32>, seed_with_
     if n == 0 {
         return;
     }
-    let mut cip: Vec<Vec<i32>> = invars.iter().map(|&v| vec![v as i32]).collect();
+    // Entry buffers are reused across calls (RDKit reserves 16 per entry).
+    let mut pool: Vec<Vec<i32>> =
+        CIP_ENTRY_POOL.with(|pool| std::mem::take(&mut *pool.borrow_mut()));
+    while pool.len() < n {
+        pool.push(Vec::with_capacity(16));
+    }
+    let cip = &mut pool[..n];
+    for (e, &v) in cip.iter_mut().zip(invars) {
+        e.clear();
+        e.push(v as i32);
+    }
     let mut sorted: Vec<usize> = (0..n).collect();
     sorted.sort_by(|&x, &y| cip[x].cmp(&cip[y]));
     let mut curr_rank = vec![0u32; n];
-    let (mut needs_sorting, mut num_ranks) = find_segments_to_resort(&sorted, &cip, &mut curr_rank);
+    let (mut needs_sorting, mut num_ranks) = find_segments_to_resort(&sorted, cip, &mut curr_rank);
     ranks.copy_from_slice(&curr_rank);
     for i in 0..n {
         if seed_with_invars {
@@ -291,46 +301,47 @@ fn iterate_cip_ranks(mol: &Mol, invars: &[i64], ranks: &mut Vec<u32>, seed_with_
     let max_its = n / 2 + 1;
     let mut num_its = 0;
     let mut last_num_ranks: i64 = -1;
-    // Bond features: per atom, (count, neighbour) in bond order.
-    let features: Vec<Vec<(u32, usize)>> = (0..n)
-        .map(|a| {
-            mol.atom_bonds[a]
-                .iter()
-                .map(|&b| {
-                    let bond = &mol.bonds[b];
-                    let nbr = bond.other(a);
-                    let special = bond.bt == BondType::Double
-                        && mol.atoms[nbr].anum == 15
-                        && matches!(mol.degree(nbr), 3 | 4);
-                    let count = if special { 1 } else { bond.bt.twice() };
-                    (count, nbr)
-                })
-                .collect()
-        })
-        .collect();
+    // Bond features: per atom, (count, neighbour) in bond order, stored
+    // back to back (atom `a`'s are `features[feature_start[a]..feature_start[a + 1]]`).
+    let mut feature_start: Vec<usize> = Vec::with_capacity(n + 1);
+    let mut features: Vec<(u32, usize)> = Vec::with_capacity(2 * mol.bonds.len());
+    feature_start.push(0);
+    for a in 0..n {
+        for &b in &mol.atom_bonds[a] {
+            let bond = &mol.bonds[b];
+            let nbr = bond.other(a);
+            let special = bond.bt == BondType::Double
+                && mol.atoms[nbr].anum == 15
+                && matches!(mol.degree(nbr), 3 | 4);
+            let count = if special { 1 } else { bond.bt.twice() };
+            features.push((count, nbr));
+        }
+        feature_start.push(features.len());
+    }
+    let total_hs: Vec<usize> = (0..n).map(|a| mol.total_num_hs(a) as usize).collect();
+    let mut vals: Vec<i32> = Vec::with_capacity(16);
     while !needs_sorting.is_empty()
         && num_its < max_its
         && (last_num_ranks < 0 || (last_num_ranks as usize) < num_ranks)
     {
         for index in 0..n {
-            let mut vals: Vec<i32> = Vec::new();
-            for &(count, nbr) in &features[index] {
+            vals.clear();
+            for &(count, nbr) in &features[feature_start[index]..feature_start[index + 1]] {
                 for _ in 0..count {
                     vals.push(ranks[nbr] as i32 + 1);
                 }
             }
             vals.sort_unstable_by(|x, y| y.cmp(x));
             let entry = &mut cip[index];
-            entry.extend(vals);
-            for _ in 0..mol.total_num_hs(index) {
-                entry.push(0);
-            }
+            entry.reserve(vals.len() + total_hs[index]);
+            entry.extend_from_slice(&vals);
+            entry.resize(entry.len() + total_hs[index], 0);
         }
         last_num_ranks = num_ranks as i64;
         for &(first, last) in &needs_sorting {
             sorted[first..=last].sort_by(|&x, &y| cip[x].cmp(&cip[y]));
         }
-        let (ns, nr) = find_segments_to_resort(&sorted, &cip, &mut curr_rank);
+        let (ns, nr) = find_segments_to_resort(&sorted, cip, &mut curr_rank);
         needs_sorting = ns;
         num_ranks = nr;
         ranks.copy_from_slice(&curr_rank);
@@ -342,6 +353,11 @@ fn iterate_cip_ranks(mol: &Mol, invars: &[i64], ranks: &mut Vec<u32>, seed_with_
         }
         num_its += 1;
     }
+    CIP_ENTRY_POOL.with(|p| *p.borrow_mut() = pool);
+}
+
+thread_local! {
+    static CIP_ENTRY_POOL: std::cell::RefCell<Vec<Vec<i32>>> = const { std::cell::RefCell::new(Vec::new()) };
 }
 
 /// `assignAtomCIPRanks`.
@@ -400,9 +416,12 @@ fn requested_neighbor_dirs(
     ranks: &[u32],
 ) -> DoubleBondNeighborDirections {
     let side = |a: usize, stereo_atom: usize, dir: BondDir| {
+        // Only single and aromatic bonds take a direction.
         let mut out: Vec<(usize, BondDir)> = mol.atom_bonds[a]
             .iter()
-            .filter(|&&nb| nb != b)
+            .filter(|&&nb| {
+                nb != b && matches!(mol.bonds[nb].bt, BondType::Single | BondType::Aromatic)
+            })
             .map(|&nb| {
                 let o = mol.bonds[nb].other(a);
                 (o, if o == stereo_atom { dir } else { dir.flipped() })
@@ -739,6 +758,24 @@ pub(crate) fn legacy_stereo_perception(
     clean_it: bool,
     flag_possible: bool,
 ) -> Vec<u32> {
+    legacy_stereo_perception_impl(mol, clean_it, flag_possible, false)
+}
+
+/// `legacy_stereo_perception(mol, true, true)` for callers that read neither
+/// `chirality_possible` nor the returned ranks. On a molecule without
+/// stereo atoms or bonds the flagging pass only sets `chirality_possible`
+/// (no CIP codes, bond stereo or ring-stereo data survive it), so it is
+/// skipped there, and with it the CIP ranking.
+pub(crate) fn legacy_stereo_perception_unflagged(mol: &mut Mol) {
+    legacy_stereo_perception_impl(mol, true, true, true);
+}
+
+fn legacy_stereo_perception_impl(
+    mol: &mut Mol,
+    clean_it: bool,
+    flag_possible: bool,
+    skip_flag_only_pass: bool,
+) -> Vec<u32> {
     let mut has_stereo_atoms = false;
     let mut has_potential_stereo_atoms = false;
     for a in 0..mol.atoms.len() {
@@ -800,7 +837,7 @@ pub(crate) fn legacy_stereo_perception(
     }
     let mut ranks: Vec<u32> = Vec::new();
     let mut keep_going = has_stereo_atoms | has_stereo_bonds;
-    if !keep_going {
+    if !keep_going && !skip_flag_only_pass {
         keep_going = flag_possible && (has_potential_stereo_atoms || has_potential_stereo_bonds);
     }
     while keep_going {
@@ -844,6 +881,7 @@ pub(crate) fn legacy_stereo_perception(
     for a in 0..mol.atoms.len() {
         let atom = &mol.atoms[a];
         if atom.chiral != ChiralTag::Unspecified
+            && atom.chiral.nontet().is_none()
             && atom.cip_code.is_none()
             && (!possible[a] || atom.ring_stereo_atoms.is_none())
         {

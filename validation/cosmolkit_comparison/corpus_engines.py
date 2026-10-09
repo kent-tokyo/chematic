@@ -35,6 +35,14 @@ SMARTS_QUERIES = json.loads(
     (ROOT / "validation/rdkit_rebaseline_smarts_queries.json").read_text(encoding="utf-8")
 )["queries"]
 
+# rdMolHash.HashFunction members, in enum order; ``mol_hash_<name>`` ops.
+MOL_HASH_FUNCTIONS = [
+    "AnonymousGraph", "ElementGraph", "CanonicalSmiles", "MurckoScaffold", "ExtendedMurcko",
+    "MolFormula", "AtomBondCounts", "DegreeVector", "Mesomer", "HetAtomTautomer",
+    "HetAtomProtomer", "RedoxPair", "Regioisomer", "NetCharge", "SmallWorldIndexBR",
+    "SmallWorldIndexBRL", "ArthorSubstructureOrder", "HetAtomTautomerv2", "HetAtomProtomerv2",
+]
+
 API_NOTES = {
     "chematic": {
         "canonical_smiles": "Mol.rdkit_smiles (RDKit-compatible writer); canonical_smiles_rt reads back the native Mol.smiles",
@@ -44,12 +52,25 @@ API_NOTES = {
         "mol_wt": "Mol.rdkit_mw", "tpsa": "Mol.rdkit_tpsa",
         "aromatic_rings": "Mol.rdkit_aromatic_ring_count",
         "molblock_rt": "Mol.to_mol_block() (default writer)",
+        "murcko_scaffold": "Mol.rdkit_murcko_scaffold (RDKit MurckoDecompose on the RDKit model)",
+        "smarts_write": "Mol.rdkit_smarts", "cx_smarts": "Mol.rdkit_cx_smarts",
+        "pdb_block": "Mol.rdkit_pdb_block", "stereoisomer_count": "Mol.rdkit_stereoisomer_count",
+        "chiral_centers": "Mol.rdkit_chiral_centers(include_unassigned=True)",
         "inchi": "Mol.standard_inchi (needs the native-inchi build feature)",
+        "morgan2_bitinfo": "Mol.rdkit_morgan_bit_info(2, 2048)",
+        "pdb_read": "chematic.rdkit_pdb_block_to_smiles(Mol.rdkit_pdb_block())",
+        "extended_murcko": "Mol.rdkit_mol_hash('ExtendedMurcko')",
+        "embed3d": "Mol.add_hydrogens().rdkit_embed(random_seed=42)",
+        "mol_hash_*": "Mol.rdkit_mol_hash(<HashFunction name>)",
     },
     "cosmolkit": {
         "smarts": "get_substruct_matches(mol, parse_smarts(q))",
         "cip": "Molecule.with_cip_labels()",
         "molblock_rt": "Molecule.to_2d_sdf_string()",
+        "morgan2_bitinfo": "fingerprint_morgan_with_output(2, 2048).additional_output().bit_info_map()",
+        "pdb_read": "Molecule.from_pdb_block(Molecule.to_pdb_block()).to_smiles()",
+        "extended_murcko": "Molecule.net_scaffold().to_smiles()",
+        "embed3d": "Molecule.with_hydrogens().with_3d_conformer_result(EmbedParameters.etkdg_v3(), random_seed=42)",
     },
 }
 
@@ -82,6 +103,11 @@ def _bits(raw: bytes, offset: int = 0) -> list[int]:
     return [i + offset for i in range(len(raw) * 8) if raw[i // 8] >> (i % 8) & 1]
 
 
+def _bit_info(info) -> dict[str, list[list[int]]]:
+    """A Morgan bitInfo map as JSON: bit -> sorted [atom, radius] pairs."""
+    return {str(bit): sorted([int(a), int(r)] for a, r in env) for bit, env in sorted(info.items())}
+
+
 def _smarts_sets(matches) -> list[list[int]]:
     return sorted({tuple(sorted(m)) for m in matches})
 
@@ -91,7 +117,7 @@ def rdkit_engine():
     Chem = _rd()
     from rdkit import rdBase
     from rdkit.Chem import (QED, Crippen, Descriptors, MACCSkeys, rdCIPLabeler,
-                            rdFingerprintGenerator)
+                            rdFingerprintGenerator, rdMolHash)
     from rdkit.Chem import rdMolDescriptors as D
 
     gen = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
@@ -138,7 +164,7 @@ def rdkit_engine():
         ops["smarts:" + q] = (lambda qm: lambda m: _smarts_sets(m.GetSubstructMatches(qm, maxMatches=100000)))(qm)
     from rdkit.Avalon import pyAvalonTools
     from rdkit.Chem import GraphDescriptors, rdMolDescriptors as RD
-    from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers
+    from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers, GetStereoisomerCount
     from rdkit.Chem.Scaffolds import MurckoScaffold
     gen3 = rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=2048)
     gen_chiral = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048, includeChirality=True)
@@ -156,13 +182,27 @@ def rdkit_engine():
         "smiles_addhs": lambda m: Chem.MolToSmiles(Chem.AddHs(m)),
         "inchi_read": inchi_rt,
         "murcko_scaffold": lambda m: Chem.MolToSmiles(MurckoScaffold.GetScaffoldForMol(m)),
+        "smarts_write": lambda m: Chem.MolToSmarts(m),
+        "cx_smarts": lambda m: Chem.MolToCXSmarts(m),
+        "pdb_block": lambda m: Chem.MolToPDBBlock(m),
+        "stereoisomer_count": lambda m: GetStereoisomerCount(m),
+        "chiral_centers": lambda m: [list(c) for c in
+                                     Chem.FindMolChiralCenters(Chem.Mol(m), includeUnassigned=True)],
         "morgan3_2048": lambda m: list(gen3.GetFingerprint(m).GetOnBits()),
         "morgan2_chiral": lambda m: list(gen_chiral.GetFingerprint(m).GetOnBits()),
         "morgan2_countsim": lambda m: list(gen_count.GetFingerprint(m).GetOnBits()),
         "atom_pair_counts": lambda m: sorted([k, v] for k, v in
                                              RD.GetHashedAtomPairFingerprint(m, nBits=2048).GetNonzeroElements().items()),
         "stereoisomers": lambda m: sorted(Chem.MolToSmiles(x) for x in EnumerateStereoisomers(m)),
+        "morgan2_bitinfo": lambda m: morgan_bitinfo(m),
+        "pdb_read": lambda m: (lambda r: Chem.MolToSmiles(r) if r is not None else None)(
+            Chem.MolFromPDBBlock(Chem.MolToPDBBlock(m))),
+        "extended_murcko": lambda m: rdMolHash.MolHash(m, rdMolHash.HashFunction.ExtendedMurcko),
+        "embed3d": lambda m: embed3d(m),
     })
+    for name in MOL_HASH_FUNCTIONS:
+        ops["mol_hash_" + name] = (lambda f: lambda m: rdMolHash.MolHash(m, f))(
+            rdMolHash.HashFunction.names[name])
     ops.update({
         "fp_atom_pair": lambda m: list(RD.GetHashedAtomPairFingerprintAsBitVect(m, nBits=2048).GetOnBits()),
         "fp_torsion": lambda m: list(RD.GetHashedTopologicalTorsionFingerprintAsBitVect(m, nBits=2048).GetOnBits()),
@@ -196,6 +236,19 @@ def rdkit_engine():
         "balaban_j": GraphDescriptors.BalabanJ,
         "ipc": GraphDescriptors.Ipc,
     })
+
+    def embed3d(m):
+        from rdkit.Chem import AllChem
+        mh = Chem.AddHs(m)
+        if AllChem.EmbedMolecule(mh, randomSeed=42) != 0:
+            return None
+        return mh.GetConformer().GetPositions().tolist()
+
+    def morgan_bitinfo(m):
+        ao = rdFingerprintGenerator.AdditionalOutput()
+        ao.AllocateBitInfoMap()
+        gen.GetFingerprint(m, additionalOutput=ao)
+        return _bit_info(ao.GetBitInfoMap())
 
     def parse(smiles):
         mol = Chem.MolFromSmiles(smiles)
@@ -301,16 +354,33 @@ def chematic_engine():
         "ipc": lambda m: m.ipc,
         "smiles_addhs": lambda m: m.add_hydrogens().rdkit_smiles,
         "inchi_read": lambda m: _inchi_read(m),
-        "murcko_scaffold": lambda m: m.scaffold().rdkit_smiles,
+        "murcko_scaffold": lambda m: m.rdkit_murcko_scaffold(),
+        "smarts_write": lambda m: m.rdkit_smarts(),
+        "cx_smarts": lambda m: m.rdkit_cx_smarts(),
+        "pdb_block": lambda m: m.rdkit_pdb_block(),
+        "stereoisomer_count": lambda m: m.rdkit_stereoisomer_count(),
+        "chiral_centers": lambda m: [list(c) for c in m.rdkit_chiral_centers(include_unassigned=True)],
         "morgan3_2048": lambda m: _bits(m.rdkit_ecfp_config(3, 2048)),
         "morgan2_chiral": lambda m: _bits(m.rdkit_ecfp_config(2, 2048, include_chirality=True)),
         "morgan2_countsim": lambda m: _bits(m.rdkit_ecfp_config(2, 2048, count_simulation=True)),
         "atom_pair_counts": lambda m: sorted([k, v] for k, v in m.rdkit_atom_pair_counts(2048)),
-        "stereoisomers": lambda m: sorted(x.rdkit_smiles for x in m.rdkit_stereoisomers()),
+        "stereoisomers": lambda m: m.rdkit_stereoisomer_smiles(),
+        "morgan2_bitinfo": lambda m: _bit_info(m.rdkit_morgan_bit_info(2, 2048)),
+        "pdb_read": lambda m: c.rdkit_pdb_block_to_smiles(m.rdkit_pdb_block()),
+        "extended_murcko": lambda m: m.rdkit_mol_hash("ExtendedMurcko"),
+        "embed3d": lambda m: _embed3d(m),
     })
+    for name in MOL_HASH_FUNCTIONS:
+        ops["mol_hash_" + name] = (lambda f: lambda m: m.rdkit_mol_hash(f))(name)
     for name, kwargs in (("smiles_kekule", {"kekule": True}), ("smiles_noniso", {"isomeric": False}),
                          ("smiles_explicit", {"all_bonds_explicit": True, "all_hs_explicit": True})):
         ops[name] = (lambda kw: lambda m: _rdkit_smiles_with(m, kw))(kwargs)
+
+    def _embed3d(m):
+        try:
+            return m.add_hydrogens().rdkit_embed(random_seed=42)
+        except RuntimeError:  # RDKit's EmbedMolecule returns -1 here too
+            return None
 
     def _inchi_read(m):
         inchi = rdkit_inchi_of(rdkit_readback(m.rdkit_smiles, "smiles"))
@@ -327,6 +397,18 @@ def chematic_engine():
 
 # ----------------------------------------------------------------- COSMolKit
 def cosmolkit_engine():
+    def _embed3d(m):
+        p = ck.EmbedParameters.etkdg_v3()
+        p.random_seed = 42
+        try:
+            r = m.with_hydrogens().with_3d_conformer_result(p)
+        except Exception:  # noqa: BLE001 - embedding failure
+            return None
+        if not r.ok:
+            return None
+        mol = r.molecule() if callable(getattr(r, "molecule", None)) else getattr(r, "molecule", None)
+        return None if mol is None or mol.num_conformers() == 0 else mol.coordinates_3d().tolist()
+
     import cosmolkit as ck
 
     def cip(m):
@@ -402,10 +484,20 @@ def cosmolkit_engine():
         "inchi_read": lambda m: (lambda i: ck.Molecule.from_inchi(i).to_smiles() if i else None)(
             rdkit_inchi_of(rdkit_readback(m.to_smiles(), "smiles"))),
         "murcko_scaffold": lambda m: m.murcko_scaffold().to_smiles(),
+        "smarts_write": lambda m: m.to_smarts(),
+        "cx_smarts": lambda m: m.to_cx_smarts(),
+        "pdb_block": lambda m: m.to_pdb_block(),
+        "stereoisomer_count": lambda m: m.stereoisomer_count(),
+        "chiral_centers": lambda m: [list(c) for c in m.find_chiral_centers(include_unassigned=True)],
         "morgan3_2048": lambda m: on(m.fingerprint_morgan(radius=3, n_bits=2048)),
         "morgan2_chiral": lambda m: on(m.fingerprint_morgan(radius=2, n_bits=2048, include_chirality=True)),
         "morgan2_countsim": lambda m: on(m.fingerprint_morgan(radius=2, n_bits=2048, count_simulation=True)),
         "stereoisomers": lambda m: sorted(x.to_smiles() for x in m.stereoisomers()),
+        "morgan2_bitinfo": lambda m: _bit_info(
+            m.fingerprint_morgan_with_output(radius=2, n_bits=2048).additional_output().bit_info_map()),
+        "pdb_read": lambda m: ck.Molecule.from_pdb_block(m.to_pdb_block()).to_smiles(),
+        "extended_murcko": lambda m: m.net_scaffold().to_smiles(),
+        "embed3d": _embed3d,
     })
     raw = {"canonical_smiles": lambda m: m.to_smiles(), "molblock": lambda m: m.to_2d_sdf_string()}
     return {"version": getattr(ck, "__version__", "unknown"), "parse": ck.Molecule.from_smiles,

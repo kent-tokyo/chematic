@@ -1,0 +1,122 @@
+{
+  "schema_version": 2,
+  "product": "chematic",
+  "release": {
+    "version": "1.0.40",
+    "tag": "v1.0.40",
+    "commit": null,
+    "commit_source": "Pre-publication placeholder; replace with the exact annotated tag target after v1.0.40 is published.",
+    "released_at": "2026-10-09T10:37:52+09:00"
+  },
+  "evidence_context": {
+    "stable_release": {
+      "version": "1.0.40",
+      "tag": "v1.0.40",
+      "commit": null
+    },
+    "candidate": null,
+    "oracle_lanes": [
+      {
+        "engine": "RDKit",
+        "version": "2025.09.3",
+        "role": "pinned_regression",
+        "status": "active"
+      },
+      {
+        "engine": "RDKit",
+        "version": "2026.03.6",
+        "role": "separate_comparison",
+        "status": "active"
+      },
+      {
+        "engine": "RDKit",
+        "version": "2026.03.1",
+        "role": "separate_comparison",
+        "status": "historical"
+      }
+    ],
+    "measurement_version_policy": "Source and historical package measurements retain their recorded artifact, corpus and comparator; v1.0.40 published packages require separate reruns."
+  },
+  "packages": {
+    "rust": {
+      "name": "chematic",
+      "version": "1.0.40",
+      "registry_url": "https://crates.io/crates/chematic/1.0.40"
+    },
+    "python": {
+      "name": "chematic",
+      "version": "1.0.40",
+      "registry_url": "https://pypi.org/project/chematic/1.0.40/"
+    },
+    "npm": {
+      "name": "@kent-tokyo/chematic",
+      "version": "1.0.40",
+      "registry_url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.0.40"
+    }
+  },
+  "wasm": {
+    "artifact": "crates/chematic-wasm/pkg/chematic_wasm_bg.wasm",
+    "measurements": [
+      {
+        "status": "historical",
+        "release_or_snapshot": "v1.0.2 release candidate",
+        "raw_bytes": 3300452,
+        "compressed_bytes": 1213008,
+        "command": "wasm-pack 0.13.1; wasm-opt 130 -O3; gzip -9",
+        "runtime": "macOS arm64",
+        "source": "benchmarks/2026-09-04-wasm-size.md"
+      }
+    ]
+  },
+  "mcp": {
+    "tool_count": 20,
+    "transport": [
+      "stdio",
+      "streamable-http"
+    ],
+    "network_enabled_tools": [
+      "pubchem_lookup"
+    ]
+  },
+  "benchmarks": {
+    "historical": [
+      {
+        "path": "benchmarks/2026-10-09-cosmolkit-parity-2.md",
+        "status": "historical",
+        "versions": [
+          "v1.0.40 source candidate",
+          "RDKit 2026.03.1",
+          "COSMolKit 0.3.0"
+        ],
+        "commit": "fc1df71b",
+        "corpus": "ChEMBL 5k, RDKit.js 10k, generated non-tetrahedral structures and operation-specific parity cohorts",
+        "hardware": "recorded Linux x86-64 source lane"
+      },
+      {
+        "path": "benchmarks/2026-10-08-754-734-followups-batch24.md",
+        "status": "historical",
+        "versions": [
+          "published chematic 1.0.38 baseline",
+          "v1.0.39 source candidate",
+          "RDKit 2026.03.6"
+        ],
+        "commit": "5cbeba1f",
+        "corpus": "published chemistry gates, 2,000 generated SMIRKS templates and xsmarts-autoconf probes",
+        "hardware": "record-specific"
+      },
+      {
+        "path": "benchmarks/2026-10-09-issues-769-779.md",
+        "status": "historical",
+        "versions": [
+          "published chematic 1.0.38",
+          "v1.0.39 source candidate",
+          "MCP conformance suite 0.2.0-alpha.12"
+        ],
+        "commit": "fcfb76ed",
+        "corpus": "published valence probes and all 40 MCP 2026-07-28 server scenarios",
+        "hardware": "record-specific"
+      }
+    ]
+  },
+  "generated_at": "2026-10-09T01:37:52Z"
+}

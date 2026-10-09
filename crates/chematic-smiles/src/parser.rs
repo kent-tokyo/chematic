@@ -129,8 +129,18 @@ fn check_neutral_valence(mol: &Molecule) -> Result<(), SmilesError> {
             _ => continue,
         };
         let mut valence = u32::from(atom.hydrogen_count.unwrap_or(0));
-        for (_, bond) in mol.neighbors(idx) {
+        for (nbr, bond) in mol.neighbors(idx) {
             let entry = mol.bond(bond);
+            // A single bond to a metal is a coordination bond (RDKit's
+            // `cleanUpOrganometallics` makes it dative from the ligand), as
+            // in aqua and alkoxide complexes: it adds nothing here.
+            let other = mol.atom(nbr);
+            if entry.order == BondOrder::Single
+                && !other.wildcard
+                && is_metal(other.element.atomic_number())
+            {
+                continue;
+            }
             valence += match entry.order {
                 BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic => 1,
                 BondOrder::Double => 2,
@@ -150,6 +160,15 @@ fn check_neutral_valence(mol: &Molecule) -> Result<(), SmilesError> {
         }
     }
     Ok(())
+}
+
+/// RDKit's `QueryOps::isMetal`: everything but H, the noble gases and the
+/// non-metals B, C, N, O, F, Si, P, S, Cl, As, Se, Br, Te, I, At.
+fn is_metal(anum: u8) -> bool {
+    !matches!(
+        anum,
+        0 | 1 | 2 | 5..=10 | 14..=18 | 33..=36 | 52..=54 | 85 | 86
+    )
 }
 
 const MAX_BRANCH_DEPTH: usize = 500;
@@ -945,11 +964,24 @@ impl<'a> Parser<'a> {
             // Consume the whole token (class + digits) even when rejecting, so the
             // error points at this token instead of cascading into an unrelated
             // "missing ']'" a few characters later.
-            let digits = self.parse_leading_digits_u16().unwrap_or(0);
-            return match (class, digits) {
-                ("SP", 1) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP1)),
-                ("SP", 2) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP2)),
-                ("SP", 3) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP3)),
+            // RDKit's grammar: a class without a number is permutation 0
+            // (kept as "unknown"), an explicit 0 is an error; `@TH1`/`@TH`
+            // are `@`, `@TH2` is `@@`. Allene classes (`@AL`, `@AL1`,
+            // `@AL2`) are read and dropped, as RDKit does.
+            let number = self.parse_leading_digits_u16();
+            let digits = number.unwrap_or(0);
+            return match (class, number) {
+                ("TH", None | Some(1)) => Ok(Chirality::CounterClockwise),
+                ("TH", Some(2)) => Ok(Chirality::Clockwise),
+                ("AL", None | Some(1) | Some(2)) => Ok(Chirality::None),
+                ("SP", None) => Ok(Chirality::SquarePlanarUnnumbered),
+                ("SP", Some(1)) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP1)),
+                ("SP", Some(2)) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP2)),
+                ("SP", Some(3)) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP3)),
+                ("TB", None) => Ok(Chirality::TrigonalBipyramidal(0)),
+                ("TB", Some(n @ 1..=20)) => Ok(Chirality::TrigonalBipyramidal(n as u8)),
+                ("OH", None) => Ok(Chirality::Octahedral(0)),
+                ("OH", Some(n @ 1..=30)) => Ok(Chirality::Octahedral(n as u8)),
                 _ => Err(SmilesError::UnsupportedChiralityClass {
                     class: format!("{class}{digits}"),
                     pos: at_pos,
