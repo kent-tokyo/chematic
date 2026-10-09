@@ -109,6 +109,30 @@ class Mol:
         unsupported inputs."""
         ...
 
+    def rdkit_canonical_tautomer(self) -> str:
+        """``Chem.MolToSmiles(rdMolStandardize.TautomerEnumerator().Canonicalize(m))``
+        (RDKit 2026.03.1, default parameters) for the molecule RDKit reads
+        from the same SMILES. Raises ``ValueError`` for unsupported inputs."""
+        ...
+
+    def rdkit_tautomers(self) -> list[str]:
+        """``sorted(Chem.MolToSmiles(t) for t in
+        rdMolStandardize.TautomerEnumerator().Enumerate(m))`` (RDKit
+        2026.03.1, default parameters). Raises ``ValueError`` for unsupported
+        inputs."""
+        ...
+
+    def rdkit_tautomer_status(self) -> str:
+        """``TautomerEnumeratorResult.status`` of RDKit's enumeration:
+        ``"Completed"``, ``"MaxTautomersReached"``,
+        ``"MaxTransformsReached"`` or ``"Canceled"``."""
+        ...
+
+    def rdkit_tautomer_score(self) -> int:
+        """``rdMolStandardize.TautomerEnumerator.ScoreTautomer(m)`` (RDKit
+        2026.03.1). Raises ``ValueError`` for unsupported inputs."""
+        ...
+
     def rdkit_mol_hash(self, function: str, use_cx_smiles: bool = False) -> str:
         """``rdMolHash.MolHash(m, function, useCXSmiles)`` (RDKit 2026.03.1)
         for the molecule RDKit reads from the same SMILES. ``function`` is a

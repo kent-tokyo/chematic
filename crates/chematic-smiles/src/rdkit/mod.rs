@@ -705,4 +705,6 @@ mod depict_tests;
 #[cfg(test)]
 mod profile_tests;
 #[cfg(test)]
+mod tautomer_tests;
+#[cfg(test)]
 mod tests;
