@@ -932,8 +932,10 @@ def _chematic_new_ops(c):
                 raise RefusedError(f"{r['status']}: {r.get('reason')}")
             # RDKit returns the product sets its sanitization rejects too
             # (``<invalid>`` products); chematic reports them separately.
+            # As for every engine, RDKit's read-back of each product decides
+            # ``<invalid>``.
             sets = [[p.smiles for p in ps] for ps in r.get("products") or []]
-            sets += [[p.smiles if ok else None for p, ok in ps] for ps in r.get("rejected_products") or []]
+            sets += [[p.smiles for p, _ok in ps] for ps in r.get("rejected_products") or []]
             return _product_sets(sets)
         return run
 

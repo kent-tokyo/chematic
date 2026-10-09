@@ -1175,6 +1175,28 @@ fn rdkit_parse_cleanup_uncached(mol: &Molecule) -> Option<Molecule> {
     if tagged.is_empty() {
         return None;
     }
+    let clear = |out: &mut Molecule, a: AtomIdx| {
+        out.set_chirality(a, Chirality::None);
+        // Issue 194: the bracket H was there only for the tag.
+        let atom = mol.atom(a);
+        if atom.hydrogen_count == Some(1) && atom.charge == 0 && !atom.aromatic {
+            out.set_hydrogen_count(a, None);
+        }
+    };
+    // The SMILES port's legacy stereo perception decides as RDKit does
+    // (bridgehead nitrogens, ring special cases, CIP-ranked duplicates);
+    // the approximation below serves molecules it cannot model.
+    if let Ok(st) = chematic_smiles::rdkit_legacy_stereo(mol) {
+        let mut out = mol.clone();
+        let mut changed = false;
+        for &a in &tagged {
+            if !st.atom_tagged[a.0 as usize] {
+                clear(&mut out, a);
+                changed = true;
+            }
+        }
+        return changed.then_some(out);
+    }
     let classes = chematic_smiles::topological_equivalence_classes(mol);
     let legal = |a: AtomIdx| -> bool {
         let atom = mol.atom(a);
@@ -1220,14 +1242,6 @@ fn rdkit_parse_cleanup_uncached(mol: &Molecule) -> Option<Molecule> {
     };
     let mut out = mol.clone();
     let mut changed = false;
-    let clear = |out: &mut Molecule, a: AtomIdx| {
-        out.set_chirality(a, Chirality::None);
-        // Issue 194: the bracket H was there only for the tag.
-        let atom = mol.atom(a);
-        if atom.hydrogen_count == Some(1) && atom.charge == 0 && !atom.aromatic {
-            out.set_hydrogen_count(a, None);
-        }
-    };
     let mut undecided = Vec::new();
     for &a in &tagged {
         if !legal(a) {
