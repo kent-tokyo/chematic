@@ -47,7 +47,7 @@ API_NOTES = {
     "chematic": {
         "canonical_smiles": "Mol.rdkit_smiles (RDKit-compatible writer); canonical_smiles_rt reads back the native Mol.smiles",
         "smarts": "Mol.find_matches_rdkit_parity (opt-in RDKit 2026.03.6 profile; typed refusals)",
-        "cip": "Mol.cip_stereo(mode='accurate'); abstentions from cip_stereo_unresolved()",
+        "cip": "Mol.rdkit_parsed().cip_stereo(mode='accurate'); abstentions from cip_stereo_unresolved()",
         "morgan2_2048": "Mol.rdkit_ecfp_config(2, 2048)",
         "mol_wt": "Mol.rdkit_mw", "tpsa": "Mol.rdkit_tpsa",
         "aromatic_rings": "Mol.rdkit_aromatic_ring_count",
@@ -60,13 +60,13 @@ API_NOTES = {
         "morgan2_bitinfo": "Mol.rdkit_morgan_bit_info(2, 2048)",
         "pdb_read": "chematic.rdkit_pdb_block_to_smiles(Mol.rdkit_pdb_block())",
         "extended_murcko": "Mol.rdkit_mol_hash('ExtendedMurcko')",
-        "embed3d": "Mol.add_hydrogens().rdkit_embed(random_seed=42)",
+        "embed3d": "Mol.rdkit_add_hydrogens().rdkit_embed(random_seed=42)",
         "mol_hash_*": "Mol.rdkit_mol_hash(<HashFunction name>)",
         "tautomer_*": "Mol.rdkit_canonical_tautomer() / rdkit_tautomers() (port of RDKit's TautomerEnumerator; "
                       "older wheels: native canonical_tautomer() / enumerate_tautomers() read back by RDKit)",
         "rxn:*": "chematic.run_smirks_checked(smirks, [mol, *partners], rdkit_compat=True)",
         "distance_matrix": "Mol.rdkit_distance_matrix()",
-        "distance_matrix_3d": "Mol.add_hydrogens().rdkit_distance_matrix_3d(RDKit-embedded coords)",
+        "distance_matrix_3d": "Mol.rdkit_add_hydrogens().rdkit_distance_matrix_3d(RDKit-embedded coords)",
         "cx_smiles": "Mol.rdkit_cx_smiles()",
         "random_smiles5": "Mol.rdkit_random_smiles(5, 42)",
         "fragment_smiles": "Mol.rdkit_fragment_smiles(first half of Mol.rdkit_num_atoms())",
@@ -75,8 +75,8 @@ API_NOTES = {
         "reaction_smarts_roundtrip": "chematic.rdkit_reaction_to_smarts(smirks)",
         "morgan2_sparse_counts": "Mol.rdkit_morgan_sparse_counts(2)",
         "torsion_legacy_counts": "Mol.rdkit_legacy_torsion_counts()",
-        "mmff_energy_gradient": "Mol.add_hydrogens()._rdkit_mmff_terms(RDKit-embedded coords)",
-        "uff_energy_gradient": "Mol.add_hydrogens().rdkit_uff_energy/rdkit_uff_gradient(RDKit-embedded coords)",
+        "mmff_energy_gradient": "Mol.rdkit_add_hydrogens()._rdkit_mmff_terms(RDKit-embedded coords)",
+        "uff_energy_gradient": "Mol.rdkit_add_hydrogens().rdkit_uff_energy/rdkit_uff_gradient(RDKit-embedded coords)",
     },
     "cosmolkit": {
         "smarts": "get_substruct_matches(mol, parse_smarts(q))",
@@ -295,6 +295,10 @@ def chematic_engine():
     import chematic as c
 
     def cip(m):
+        # CIP labels of RDKit's molecule (its atom indices, the stereo tags
+        # its reader keeps), as rdCIPLabeler sees it.
+        if hasattr(m, "rdkit_parsed"):
+            m = m.rdkit_parsed()
         out = []
         for d in m.cip_stereo(mode="accurate"):
             out.append(["b", *sorted(d["bond_atoms"]), d["descriptor"]] if "bond_idx" in d
@@ -390,7 +394,7 @@ def chematic_engine():
         "bertz_ct": lambda m: m.bertz_ct,
         "balaban_j": lambda m: m.balaban_j,
         "ipc": lambda m: m.ipc,
-        "smiles_addhs": lambda m: m.add_hydrogens().rdkit_smiles,
+        "smiles_addhs": lambda m: _rdkit_hs(m).rdkit_smiles,
         "inchi_read": lambda m: _inchi_read(m),
         "murcko_scaffold": lambda m: m.rdkit_murcko_scaffold(),
         "smarts_write": lambda m: m.rdkit_smarts(),
@@ -416,7 +420,7 @@ def chematic_engine():
 
     def _embed3d(m):
         try:
-            return m.add_hydrogens().rdkit_embed(random_seed=42)
+            return _rdkit_hs(m).rdkit_embed(random_seed=42)
         except RuntimeError:  # RDKit's EmbedMolecule returns -1 here too
             return None
 
@@ -926,6 +930,14 @@ def _embedded_input():
     return _EMBED_MEMO[smi]
 
 
+def _rdkit_hs(m):
+    """``AddHs(MolFromSmiles(s))`` of a chematic molecule read from ``s``
+    (older wheels: ``add_hydrogens``)."""
+    if hasattr(m, "rdkit_add_hydrogens"):
+        return m.rdkit_add_hydrogens()
+    return m.add_hydrogens()
+
+
 def _chematic_new_ops(c):
     def readback(mol):
         return rdkit_readback(mol.smiles, "smiles")
@@ -951,7 +963,7 @@ def _chematic_new_ops(c):
         e = _embedded_input()
         if e is None:
             return None
-        mh = m.add_hydrogens()
+        mh = _rdkit_hs(m)
         energy, grad = mh._rdkit_mmff_terms(e[1])
         return _round_nested([energy, list(grad)])
 
@@ -959,14 +971,14 @@ def _chematic_new_ops(c):
         e = _embedded_input()
         if e is None:
             return None
-        mh = m.add_hydrogens()
+        mh = _rdkit_hs(m)
         return _round_nested([mh.rdkit_uff_energy(e[1]), list(mh.rdkit_uff_gradient(e[1]))])
 
     def dm3d(m):
         e = _embedded_input()
         if e is None:
             return None
-        return _round_nested(m.add_hydrogens().rdkit_distance_matrix_3d(e[1]))
+        return _round_nested(_rdkit_hs(m).rdkit_distance_matrix_3d(e[1]))
 
     def problems(m):
         return sorted([t, sorted(a)] for t, a in m.rdkit_chemistry_problems())

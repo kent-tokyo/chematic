@@ -3255,6 +3255,41 @@ impl Mol {
         }
     }
 
+    /// RDKit 2026.03.1's ``Chem.AddHs(Chem.MolFromSmiles(s))`` for a
+    /// molecule read from ``s``: hydrogen atoms written in the SMILES
+    /// (``[H]``) are first removed and stereo tags RDKit's reader drops are
+    /// dropped (RDKit's molecule, in RDKit's atom order), then every
+    /// hydrogen is added after the heavy atoms::
+    ///
+    ///     chematic.from_smiles("[H]C([H])([H])[H]").rdkit_add_hydrogens().rdkit_smiles
+    ///     # '[H]C([H])([H])[H]'
+    fn rdkit_add_hydrogens(&self) -> Mol {
+        let base = chematic_smiles::rdkit_parsed_molecule(&self.inner);
+        let base = base.as_ref().unwrap_or(&self.inner);
+        Mol {
+            inner: Arc::new(chematic_chem::add_hydrogens(base)),
+            props: Default::default(),
+        }
+    }
+
+    /// RDKit 2026.03.1's ``Chem.MolFromSmiles(s)`` for a molecule read from
+    /// ``s``: RDKit's atoms in RDKit's order (``[H]`` atoms removed), its
+    /// aromaticity and hydrogen counts, and only the stereo tags RDKit's
+    /// reader keeps. The molecule itself where the port cannot model it::
+    ///
+    ///     chematic.from_smiles("[H][C@](F)(Cl)Br").rdkit_parsed().smiles
+    ///     # 'F[C@@H](Cl)Br'
+    fn rdkit_parsed(&self) -> Mol {
+        let inner = match chematic_smiles::rdkit_parsed_molecule(&self.inner) {
+            Some(m) => Arc::new(m),
+            None => Arc::clone(&self.inner),
+        };
+        Mol {
+            inner,
+            props: Default::default(),
+        }
+    }
+
     /// Return a copy with all explicit hydrogen atoms removed.
     fn remove_hydrogens(&self) -> Mol {
         Mol {

@@ -73,10 +73,10 @@ pub use rdkit::{
     rdkit_hydrogen_suppressed_with_map, rdkit_legacy_stereo, rdkit_model_correct_view,
     rdkit_mol_block, rdkit_mol_block_2d, rdkit_mol_from_mol2_block, rdkit_mol_from_pdb_block,
     rdkit_mol_from_xyz_block, rdkit_mol_hash, rdkit_mol_view, rdkit_molecule_from_inchi_output,
-    rdkit_murcko_scaffold, rdkit_num_atoms, rdkit_pdb_block, rdkit_random_smiles,
-    rdkit_random_smiles_with, rdkit_reaction_to_smarts, rdkit_sanitized_model, rdkit_smarts,
-    rdkit_smarts_to_smarts, rdkit_smiles, rdkit_stereoisomer_count, rdkit_stereoisomer_smiles,
-    rdkit_tautomer_score, register_rdkit_model_hook,
+    rdkit_murcko_scaffold, rdkit_num_atoms, rdkit_parsed_molecule, rdkit_pdb_block,
+    rdkit_random_smiles, rdkit_random_smiles_with, rdkit_reaction_to_smarts, rdkit_sanitized_model,
+    rdkit_smarts, rdkit_smarts_to_smarts, rdkit_smiles, rdkit_stereoisomer_count,
+    rdkit_stereoisomer_smiles, rdkit_tautomer_score, register_rdkit_model_hook,
 };
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,

@@ -981,6 +981,16 @@ class Mol:
         """
         ...
 
+    def rdkit_parsed(self) -> Mol:
+        """``Chem.MolFromSmiles(s)`` (RDKit 2026.03.1) as a chematic molecule:
+        RDKit's atom order and hydrogen removal, aromaticity, hydrogen counts
+        and kept stereo tags."""
+        ...
+    def rdkit_add_hydrogens(self) -> Mol:
+        """``Chem.AddHs(Chem.MolFromSmiles(s))`` (RDKit 2026.03.1): SMILES
+        ``[H]`` atoms removed as RDKit's reader removes them, then all
+        hydrogens added after the heavy atoms."""
+        ...
     def add_hydrogens(self) -> Mol:
         """Return a copy with all implicit hydrogens made explicit."""
         ...

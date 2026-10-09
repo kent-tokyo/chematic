@@ -188,6 +188,10 @@ impl std::error::Error for CipCompareError {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum RuleMode {
     Rule1a2,
+    /// Rule 1a alone (isotopes ignored): the first pass for molecules with
+    /// isotope labels, so Rule 2 only decides what Rule 1a leaves tied at
+    /// every sphere.
+    Rule1a,
 }
 
 /// Cache key for issue #107's `compare_ligands` pairwise-comparison memoization,
@@ -234,14 +238,14 @@ impl PairwiseCacheKey {
     /// itself was already in canonical order (`false` means the caller's `a`/`b` are
     /// swapped relative to the key -- the cached/stored value must be inverted before
     /// being returned to a caller who asked in that order).
-    fn canonical(graph: &CipDigraph, a: NodeId, b: NodeId) -> (Self, bool) {
+    fn canonical(graph: &CipDigraph, a: NodeId, b: NodeId, rule_mode: RuleMode) -> (Self, bool) {
         let already_canonical = a.0 <= b.0;
         let (left, right) = if already_canonical { (a, b) } else { (b, a) };
         (
             Self {
                 left,
                 right,
-                rule_mode: RuleMode::Rule1a2,
+                rule_mode,
                 mancude_identity: graph.mancude_identity(),
                 budget: graph.budget(),
             },
@@ -325,6 +329,10 @@ pub struct CompareContext<'t> {
     pub cache_hits: u64,
     /// Diagnostic only: how many calls computed and inserted a fresh cache entry.
     pub cache_misses: u64,
+    /// The rule pass a nested comparison belongs to (`None`: a top-level
+    /// comparison, which runs Rule 1a alone first when the molecule has
+    /// isotope labels).
+    pass: Option<RuleMode>,
 }
 
 impl Default for CompareContext<'_> {
@@ -345,6 +353,7 @@ impl<'t> CompareContext<'t> {
             cache: HashMap::new(),
             cache_hits: 0,
             cache_misses: 0,
+            pass: None,
         }
     }
 
@@ -359,6 +368,7 @@ impl<'t> CompareContext<'t> {
             cache_misses: 0,
             fractional_comparisons: 0,
             fractional_decisions: 0,
+            pass: None,
         }
     }
 }
@@ -481,6 +491,11 @@ fn kind_label(kind: CipNodeKind) -> String {
 enum LevelSlot {
     Node(NodeId),
     Phantom,
+}
+
+/// [`rule1a2_slot_key`] without the isotope (Rule 1a alone).
+fn rule1a_slot_key(graph: &CipDigraph, slot: LevelSlot) -> (AtomicNumberKey, Option<u16>) {
+    (rule1a2_slot_key(graph, slot).0, None)
 }
 
 fn rule1a2_slot_key(graph: &CipDigraph, slot: LevelSlot) -> (AtomicNumberKey, Option<u16>) {
@@ -626,6 +641,23 @@ pub fn compare_ligands(
     right: NodeId,
     ctx: &mut CompareContext,
 ) -> Result<BranchComparison, CipCompareError> {
+    // CIP's rules apply in order over the whole hierarchical digraph: Rule 2
+    // (isotopes) only breaks what Rule 1a leaves tied at every sphere, so a
+    // labelled methyl does not outrank a carboxyl (`[13CH3][C@H](N)C(=O)O`).
+    if ctx.pass.is_none() && graph.molecule().atoms().any(|(_, a)| a.isotope.is_some()) {
+        ctx.pass = Some(RuleMode::Rule1a);
+        let first = compare_ligands(graph, left, right, ctx);
+        let result = match first {
+            Ok(BranchComparison::Equal) => {
+                ctx.pass = Some(RuleMode::Rule1a2);
+                compare_ligands(graph, left, right, ctx)
+            }
+            other => other,
+        };
+        ctx.pass = None;
+        return result;
+    }
+    let rule_mode = ctx.pass.unwrap_or(RuleMode::Rule1a2);
     let left_kind = graph.node(left).kind;
     let right_kind = graph.node(right).kind;
     let depth = graph.node(left).depth;
@@ -639,7 +671,7 @@ pub fn compare_ligands(
     // rank_children_heavy_tail_diagnosis.rs`) sees a complete, faithful log of
     // every comparison a caller actually asked for, not just the ones that did
     // fresh recursive work.
-    let (cache_key, already_canonical) = PairwiseCacheKey::canonical(graph, left, right);
+    let (cache_key, already_canonical) = PairwiseCacheKey::canonical(graph, left, right, rule_mode);
     let (outcome, rule) = if let Some(&cached) = ctx.cache.get(&cache_key) {
         ctx.cache_hits += 1;
         let outcome = if already_canonical {
@@ -654,7 +686,11 @@ pub fn compare_ligands(
             left,
             right,
             ctx,
-            rule1a2_slot_key,
+            if rule_mode == RuleMode::Rule1a {
+                rule1a_slot_key
+            } else {
+                rule1a2_slot_key
+            },
             cmp_key_instrumented,
         )? {
             LevelOutcome::Decided(c, lk, rk) => {

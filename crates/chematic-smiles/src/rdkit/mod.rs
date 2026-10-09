@@ -1336,6 +1336,18 @@ pub fn rdkit_crippen_logp_mr(mol: &Molecule) -> Option<(f64, f64)> {
     Some((logp, mr))
 }
 
+/// `Chem.MolFromSmiles(s)` as a chematic molecule (RDKit's atoms, bonds,
+/// aromaticity, hydrogen counts and kept stereo, in RDKit's order), for a
+/// molecule read from `s` without added hydrogens; `None` where the port
+/// cannot model it.
+pub fn rdkit_parsed_molecule(mol: &Molecule) -> Option<Molecule> {
+    if has_added_hydrogens(mol) {
+        return None;
+    }
+    let (m, _) = rdkit_mol_from_smiles(mol).ok()?;
+    pdb_read::to_chematic(&m, true).ok()
+}
+
 /// [`rdkit_hydrogen_suppressed`] with, per atom of the returned molecule,
 /// the index of the atom of `mol` it is (RDKit's `removeHs` keeps the
 /// other atoms in order).

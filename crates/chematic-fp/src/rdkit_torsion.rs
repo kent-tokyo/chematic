@@ -520,6 +520,10 @@ pub fn rdkit_torsion_sparse_counts(mol: &Molecule) -> Vec<(u64, u32)> {
 /// `getTopologicalTorsionCode`; the nonzero `(code, count)` elements of
 /// the `SparseIntVect<int64_t>`, sorted by code.
 pub fn rdkit_legacy_torsion_counts(mol: &Molecule) -> Vec<(i64, u32)> {
+    // RDKit fingerprints its hydrogen-suppressed molecule (`[H]` atoms gone).
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return rdkit_legacy_torsion_counts(&h);
+    }
     chematic_perception::with_rdkit_parity_view(mol, |view| {
         let m = view.unwrap_or(mol);
         let mut v: Vec<(i64, u32)> = torsion_code_counts(m, |a, interior| {

@@ -904,10 +904,7 @@ impl PreparedReaction {
             Profile::Native => Vec::new(),
             Profile::Rdkit => reactants
                 .iter()
-                .map(|m| {
-                    chematic_smiles::rdkit_hydrogen_suppressed_with_map(m)
-                        .map(|(h, kept)| (with_reactant_tetrahedral_records(m, h, &kept), kept))
-                })
+                .map(|m| chematic_smiles::rdkit_hydrogen_suppressed_with_map(m))
                 .collect(),
         };
         let suppressed_refs: Vec<&Molecule>;
@@ -3855,53 +3852,6 @@ fn correct_product_stereo(
     }
 
     product
-}
-
-/// `h` (RDKit's hydrogen-suppressed reading of `mol`, atom `i` being atom
-/// `kept[i]` of `mol`) with each tetrahedral centre RDKit kept described by
-/// `mol`'s own record: the same tag and neighbour order, a removed hydrogen
-/// atom becoming the implicit-H slot.
-fn with_reactant_tetrahedral_records(mol: &Molecule, mut h: Molecule, kept: &[usize]) -> Molecule {
-    let mut new_of = vec![None; mol.atom_count()];
-    for (i, &k) in kept.iter().enumerate() {
-        new_of[k] = Some(i as u32);
-    }
-    for (i, &k) in kept.iter().enumerate() {
-        let idx = AtomIdx(i as u32);
-        let src = AtomIdx(k as u32);
-        if !h.atom(idx).chirality.is_tetrahedral() {
-            continue;
-        }
-        let order: Vec<u32> = match mol.stereo_neighbor_order(src) {
-            Some(o) => o.to_vec(),
-            None => mol.neighbors(src).map(|(n, _)| n.0).collect(),
-        };
-        let mut slots = 0;
-        let remapped: Option<Vec<u32>> = order
-            .iter()
-            .map(|&n| {
-                if n == chematic_core::STEREO_H_SENTINEL {
-                    slots += 1;
-                    return Some(n);
-                }
-                match new_of[n as usize] {
-                    Some(x) => Some(x),
-                    None => {
-                        slots += 1;
-                        Some(chematic_core::STEREO_H_SENTINEL)
-                    }
-                }
-            })
-            .collect();
-        match remapped {
-            Some(o) if slots <= 1 && mol.atom(src).chirality.is_tetrahedral() => {
-                h.set_chirality(idx, mol.atom(src).chirality);
-                h.set_stereo_neighbor_order(idx, o);
-            }
-            _ => h.set_chirality(idx, Chirality::None),
-        }
-    }
-    h
 }
 
 /// RDKit's bond order around a carried, non-ring atom of the product: the
