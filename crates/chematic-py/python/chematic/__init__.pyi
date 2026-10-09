@@ -3420,6 +3420,9 @@ def run_smirks_checked(
     where RDKit 2026.03.6 and CheMatic have different semantics. Status is one
     of ``products``, ``no_match``, ``partial_products``, ``typed_refusal`` or
     ``typed_unsupported``. ``partial_products`` is not a parity claim.
+    With ``rdkit_compat=True``, ``rejected_products`` holds the
+    valence-rejected product sets as RDKit returns them, as
+    ``[[(mol, sanitizable), ...], ...]``.
     """
     ...
 

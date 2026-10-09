@@ -927,9 +927,14 @@ def _chematic_new_ops(c):
 
         def run(m):
             r = c.run_smirks_checked(smirks, [m, *pmols], rdkit_compat=True)
-            if r["status"] not in ("products", "no_match"):
+            valence = r["status"] in ("typed_refusal", "partial_products") and r.get("reason") == "product_valence"
+            if r["status"] not in ("products", "no_match") and not valence:
                 raise RefusedError(f"{r['status']}: {r.get('reason')}")
-            return _product_sets([[p.smiles for p in ps] for ps in r.get("products") or []])
+            # RDKit returns the product sets its sanitization rejects too
+            # (``<invalid>`` products); chematic reports them separately.
+            sets = [[p.smiles for p in ps] for ps in r.get("products") or []]
+            sets += [[p.smiles if ok else None for p, ok in ps] for ps in r.get("rejected_products") or []]
+            return _product_sets(sets)
         return run
 
     def mmff(m):

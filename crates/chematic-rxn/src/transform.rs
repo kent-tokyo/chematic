@@ -80,6 +80,17 @@ pub struct ReactionTransformReport {
 pub struct TracedReactionTransformReport {
     pub products: Vec<Vec<TracedProduct>>,
     pub diagnostics: ReactionTransformDiagnostics,
+    /// RDKit profile only: the valence-rejected product sets as RDKit's
+    /// `RunReactants` returns them (unsanitized), each product with whether
+    /// RDKit's sanitization would accept it. Empty for native semantics.
+    pub rejected_products: Vec<Vec<(TracedProduct, bool)>>,
+}
+
+/// One match's product set: accepted, or rejected by product valence (with
+/// each product's own verdict).
+enum ProductSetOutcome {
+    Valid(Vec<TracedProduct>),
+    Rejected(Vec<TracedProduct>, Vec<bool>),
 }
 
 /// Why the pinned RDKit 2026.03.6 compatibility profile cannot safely claim
@@ -601,6 +612,7 @@ impl PreparedReaction {
             None => vec![self],
         };
         let mut products = Vec::new();
+        let mut rejected_products = Vec::new();
         let mut diagnostics = ReactionTransformDiagnostics {
             accepted_matches: 0,
             applied_products: 0,
@@ -618,10 +630,12 @@ impl PreparedReaction {
             diagnostics.valence_rejected_matches += report.diagnostics.valence_rejected_matches;
             diagnostics.truncated_matches |= report.diagnostics.truncated_matches;
             products.extend(report.products);
+            rejected_products.extend(report.rejected_products);
         }
         Ok(RdkitProfileOutcome::Report(TracedReactionTransformReport {
             products,
             diagnostics,
+            rejected_products,
         }))
     }
 
@@ -892,10 +906,16 @@ impl PreparedReaction {
         let accepted_matches = matches.len();
         let mut products = Vec::with_capacity(accepted_matches);
         let mut valence_rejected_matches = 0;
+        let mut rejected_products = Vec::new();
         for m in &matches {
             match apply_match_profile(self, reactants, m, carry_substituents, profile) {
-                Ok(Some(product_set)) => products.push(product_set),
-                Ok(None) => valence_rejected_matches += 1,
+                Ok(ProductSetOutcome::Valid(product_set)) => products.push(product_set),
+                Ok(ProductSetOutcome::Rejected(set, ok)) => {
+                    valence_rejected_matches += 1;
+                    if profile == Profile::Rdkit {
+                        rejected_products.push(set.into_iter().zip(ok).collect());
+                    }
+                }
                 Err(reason) => return Ok(Err(reason)),
             }
         }
@@ -907,6 +927,7 @@ impl PreparedReaction {
                 truncated_matches: false,
             },
             products,
+            rejected_products,
         }))
     }
 
@@ -951,6 +972,7 @@ impl PreparedReaction {
             return Ok(TracedReactionTransformReport {
                 products,
                 diagnostics,
+                rejected_products: Vec::new(),
             });
         }
         self.run_reactants_traced_with_diagnostics_impl(reactants, true, limits)
@@ -2304,8 +2326,11 @@ fn apply_match_traced_impl(
     m: &ReactionMatch,
     carry_substituents: bool,
 ) -> Option<Vec<TracedProduct>> {
-    apply_match_profile(prepared, reactants, m, carry_substituents, Profile::Native)
-        .unwrap_or_else(|_| unreachable!("the native profile never declines"))
+    match apply_match_profile(prepared, reactants, m, carry_substituents, Profile::Native) {
+        Ok(ProductSetOutcome::Valid(set)) => Some(set),
+        Ok(ProductSetOutcome::Rejected(..)) => None,
+        Err(_) => unreachable!("the native profile never declines"),
+    }
 }
 
 fn apply_match_profile(
@@ -2314,7 +2339,7 @@ fn apply_match_profile(
     m: &ReactionMatch,
     carry_substituents: bool,
     profile: Profile,
-) -> Result<Option<Vec<TracedProduct>>, ReactionCompatibilityUnsupported> {
+) -> Result<ProductSetOutcome, ReactionCompatibilityUnsupported> {
     let originals = reactants;
     let views = aromatic_views(reactants);
     let perceived = perceived_refs(reactants, &views);
@@ -2355,6 +2380,7 @@ fn apply_match_profile(
                 &all_template_atoms,
                 carry_substituents,
                 prepared.product_specs.get(pi).map_or(&[], Vec::as_slice),
+                profile == Profile::Rdkit,
             );
             if let Some(stereo) = stereo {
                 let src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx> = product
@@ -2408,11 +2434,15 @@ fn apply_match_profile(
     }
 
     // Skip product sets RDKit's sanitize step would reject (issue #734).
-    if products.iter().all(|p| sanitizable_product(&p.molecule)) {
+    let ok: Vec<bool> = products
+        .iter()
+        .map(|p| sanitizable_product(&p.molecule))
+        .collect();
+    if ok.iter().all(|&o| o) {
         crate::perf_counters::record_product_set();
-        Ok(Some(products))
+        Ok(ProductSetOutcome::Valid(products))
     } else {
-        Ok(None)
+        Ok(ProductSetOutcome::Rejected(products, ok))
     }
 }
 
@@ -3749,6 +3779,7 @@ fn build_product(
     all_template_atoms: &FxHashSet<(usize, AtomIdx)>,
     carry_substituents: bool,
     specs: &[ProductAtomSpec],
+    keep_carried_maps: bool,
 ) -> (TracedProduct, Vec<Option<AtomIdx>>) {
     // A product holds at most the reactants' atoms and bonds plus the
     // template's: reserve them once instead of growing per atom and bond.
@@ -4006,7 +4037,11 @@ fn build_product(
                 }
                 let src_atom = input_mols[mol_idx].atom(nb_idx);
                 let mut new_atom = src_atom.clone();
-                new_atom.atom_map = None;
+                // RDKit copies an unmatched reactant atom whole
+                // (`addMissingProductAtom`), its atom map number included.
+                if !keep_carried_maps {
+                    new_atom.atom_map = None;
+                }
                 let new_idx = builder.add_atom(new_atom);
                 src_to_new.insert(key, new_idx);
                 queue.push_back(key);
