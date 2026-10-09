@@ -10,6 +10,63 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- RDKit 2026.03.1-compatible tautomers (MolStandardize `TautomerEnumerator`
+  port): `Mol.rdkit_canonical_tautomer()`, `rdkit_tautomers()`,
+  `rdkit_tautomer_score()` and `rdkit_tautomer_status()`.
+- More RDKit-compatible writers and surfaces: `Mol.rdkit_cx_smiles()`
+  (MolToCXSmiles), `rdkit_random_smiles(n, random_seed)`
+  (MolToRandomSmilesVect, RDKit's generator reproduced),
+  `rdkit_fragment_smiles(atoms, bonds=None, ...)` (MolFragmentToSmiles),
+  `rdkit_distance_matrix` / `rdkit_distance_matrix_3d` (GetDistanceMatrix,
+  Get3DDistanceMatrix), `rdkit_morgan_sparse_counts`,
+  `rdkit_atom_pair_sparse_counts`, `rdkit_torsion_sparse_counts`,
+  `rdkit_legacy_torsion_counts`, `rdkit_num_atoms`, `rdkit_parsed()`
+  (the molecule `MolFromSmiles` builds), `rdkit_add_hydrogens()` (AddHs),
+  `Mol.rdkit_chemistry_problems()` and
+  `chematic.rdkit_detect_chemistry_problems(smiles)` (DetectChemistryProblems),
+  and `chematic.rdkit_reaction_to_smarts` / `rdkit_smarts_to_smarts`
+  (ReactionToSmarts, `MolToSmarts(MolFromSmarts(s))`).
+- The COSMolKit comparison harness supports COSMolKit 0.5 alongside 0.3, adds
+  tautomer, reaction, CXSMILES, random/fragment SMILES, chemistry-problem,
+  distance-matrix, gradient and sparse-fingerprint operations, and a generated
+  stress corpus of unusual RDKit-valid SMILES
+  (`validation/cosmolkit_comparison/corpora/stress-v1.smi`). Results:
+  [benchmarks/2026-10-10-cosmolkit-050.md](benchmarks/2026-10-10-cosmolkit-050.md).
+
+### Changed
+
+- Where chematic's own aromaticity view can disagree with RDKit's (antiaromatic
+  or odd-sized aromatic rings, charged or radical ring atoms, RDKit clean-up
+  candidates such as nitro groups, metals, ring triple bonds, dummy and
+  superheavy atoms, explicit `[H]` atoms), RDKit-compatible descriptors,
+  fingerprints, SMARTS matching and reactions now use RDKit's own reading of
+  the molecule. A linear-time check selects these molecules, so ordinary
+  molecules keep the existing path.
+- Reactions in RDKit-compatible mode accept SMIRKS component grouping
+  `(A.B)>>C`, apply RDKit's reactant clean-up, keep atom maps on carried atoms,
+  remove explicit hydrogens as RDKit does, and return products that fail
+  sanitization as `rejected_products`.
+- In SMARTS matching, a dummy atom `*` in the target has atomic number 0, so
+  `[#6]` and `C` no longer match it (RDKit's rule).
+- CIP ranking compares isotopes only after atomic numbers at every sphere, as
+  RDKit does.
+- Dummy atoms no longer count as heavy atoms; formulas write them as RDKit
+  does (`*2`), and elements 113–118 keep their identity in the RDKit-compatible
+  paths.
+
+### Fixed
+
+- RDKit-default TPSA returned -0.0 instead of 0.0 for molecules without N or
+  O.
+- A tetrahedral centre whose explicit `[H]` was removed by the RDKit-model
+  conversion could come back inverted in chematic's own reading.
+- Exocyclic double bonds whose E/Z hangs on an aromatized ring bond lost their
+  stereo in the RDKit-compatible view.
+- `rdkit_mol_block_2d` refuses (and the harness falls back to the default
+  writer) when its 2D coordinates would contradict a double bond's E/Z.
+
 ## [1.0.40] - 2026-10-09
 
 ### Added
