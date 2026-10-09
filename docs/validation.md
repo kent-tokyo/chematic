@@ -3,8 +3,9 @@
 Updated 2026-10-09 for **v1.0.40**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
 artifacts, the published v1.0.38 chemistry baseline, and v1.0.40 source.
-v1.0.40 release-channel and package-output verification remain open. Every
-comparison is limited to its recorded artifact, comparator, corpus and operation.
+v1.0.40 release channels are verified; package-output chemistry reruns remain
+open. Every comparison is limited to its recorded artifact, comparator, corpus
+and operation.
 
 ## Current evidence
 
@@ -19,7 +20,7 @@ comparison is limited to its recorded artifact, comparator, corpus and operation
 | Published browser Morgan | On Ubuntu 24.04, Chromium, Firefox and WebKit each have 250/250 direct and prepared bit parity and favorable 20-block speed intervals versus official RDKit.js (smallest lower bound 1.63×). A separate Chromium 10k lane has 9,999 exact and one typed Fe refusal. No universal browser or memory claim. | [Three-browser record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) · [M4 Chromium](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md) |
 | Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.38 and current source retain the 83-row gate at 80 exact and three jointly invalid. Property fuzzing reduced implicit-H product differences from 125 to 28 and refusals from 52 to 18 on 2,000 generated templates; the remaining cases stay classified, not counted as parity. | [batch 24](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-08-754-734-followups-batch24.md) |
 | MCP Streamable HTTP | Published v1.0.39 added the opt-in, loopback-first 2026-07-28 stateless transport retained here. The official suite produced 82 passes; its other checks require suite fixtures or capabilities the server does not declare. | [HTTP conformance record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-issues-769-779.md) |
-| Release channels | v1.0.40 channel verification is pending publication. The last fully verified channel packet is v1.0.39: GitHub Release, npm, PyPI, all 20 crates.io archives, docs.rs and Pages. Availability does not establish chemical accuracy. | [v1.0.39 verification](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.39.json) |
+| Release channels | v1.0.40 is verified on GitHub Release, npm, PyPI (17 wheels plus one sdist), all 20 crates.io archives, docs.rs and Pages. Availability does not establish chemical accuracy. | [v1.0.40 verification](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.40.json) |
 
 ## Other bounded results
 
