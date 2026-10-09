@@ -857,7 +857,9 @@ fn rdkit_tpsa_impl(mol: &Molecule) -> f64 {
         .zip(mol.atoms())
         .filter(|(_, (_, atom))| matches!(atom.element.atomic_number(), 7 | 8))
         .map(|(contribution, _)| contribution)
-        .sum()
+        // RDKit accumulates from +0.0; `Iterator::sum` for f64 starts from
+        // -0.0, which would give -0.0 for a molecule without N or O.
+        .fold(0.0, |acc, c| acc + c)
 }
 
 // ---------------------------------------------------------------------------
