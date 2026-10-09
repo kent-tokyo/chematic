@@ -70,6 +70,7 @@ fn parse_checked(
     limits: &SmilesParseLimits,
     check_valence: bool,
 ) -> Result<Molecule, SmilesError> {
+    crate::rdkit::register_rdkit_model_hook();
     if input.len() > limits.max_input_bytes {
         return Err(SmilesError::ResourceLimit {
             resource: "input bytes",

@@ -3129,6 +3129,59 @@ impl Mol {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// RDKit's canonical tautomer as RDKit canonical SMILES:
+    /// ``Chem.MolToSmiles(rdMolStandardize.TautomerEnumerator().Canonicalize(m))``
+    /// for ``m = Chem.MolFromSmiles(smiles)`` (RDKit 2026.03.1, default
+    /// parameters). Unlike :meth:`canonical_tautomer` (chematic's own
+    /// algorithm) this is a port of RDKit's ``TautomerEnumerator``.
+    ///
+    /// Raises ``ValueError`` for molecules the RDKit port does not model and
+    /// for molecules RDKit's sanitization rejects.
+    ///
+    ///     chematic.from_smiles("Oc1ccccn1").rdkit_canonical_tautomer()
+    ///     # 'O=c1cccc[nH]1'
+    fn rdkit_canonical_tautomer(&self) -> PyResult<String> {
+        chematic_smiles::rdkit_canonical_tautomer(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// The tautomers RDKit enumerates, as sorted RDKit canonical SMILES:
+    /// ``sorted(Chem.MolToSmiles(t) for t in
+    /// rdMolStandardize.TautomerEnumerator().Enumerate(m))`` (RDKit
+    /// 2026.03.1, default parameters: at most 1000 tautomers and 1000
+    /// transforms).
+    ///
+    ///     chematic.from_smiles("Oc1ccccn1").rdkit_tautomers()
+    ///     # ['O=C1CC=CC=N1', 'O=c1cccc[nH]1', 'Oc1ccccn1']
+    fn rdkit_tautomers(&self) -> PyResult<Vec<String>> {
+        let mut res = chematic_smiles::rdkit_enumerate_tautomers(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?
+            .smiles;
+        res.sort();
+        Ok(res)
+    }
+
+    /// The status of RDKit's tautomer enumeration
+    /// (``TautomerEnumeratorResult.status``): ``"Completed"``,
+    /// ``"MaxTautomersReached"``, ``"MaxTransformsReached"`` or
+    /// ``"Canceled"``.
+    fn rdkit_tautomer_status(&self) -> PyResult<String> {
+        let res = chematic_smiles::rdkit_enumerate_tautomers(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(format!("{:?}", res.status))
+    }
+
+    /// RDKit's tautomer score of this molecule:
+    /// ``rdMolStandardize.TautomerEnumerator.ScoreTautomer(m)`` (aromatic
+    /// rings, functional-group SMARTS terms and the H-on-P/S/Se/Te penalty).
+    ///
+    ///     chematic.from_smiles("O=c1cccc[nH]1").rdkit_tautomer_score()
+    ///     # 102
+    fn rdkit_tautomer_score(&self) -> PyResult<i32> {
+        chematic_smiles::rdkit_tautomer_score(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// RDKit's ``rdMolHash.MolHash(m, function, useCXSmiles)`` (RDKit
     /// 2026.03.1) for ``m = Chem.MolFromSmiles(s)``, ``s`` the SMILES this
     /// molecule was read from. ``function`` names a member of

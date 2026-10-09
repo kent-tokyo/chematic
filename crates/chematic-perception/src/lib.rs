@@ -11,6 +11,7 @@ pub mod cip_priority;
 pub mod pharmacophore;
 pub mod rdkit_canon;
 pub mod rdkit_cleanup;
+pub mod rdkit_model_hook;
 mod rdkit_parity;
 pub mod rdkit_sssr_order;
 pub mod relevant_cycles;
@@ -42,10 +43,12 @@ pub use rdkit_canon::{
 pub use rdkit_cleanup::{
     rdkit_sanitize_cleanup, rdkit_sanitize_cleanup_may_apply, rdkit_sanitize_cleanup_needed,
 };
+pub use rdkit_model_hook::{RdkitModelHook, rdkit_model_may_disagree, set_rdkit_model_hook};
 pub use rdkit_parity::{
     AromaticityError, apply_aromaticity_rdkit_parity_experimental,
-    apply_aromaticity_rdkit_parity_shared, assign_aromaticity_rdkit_parity_experimental,
-    rdkit_parity_view_is_identity, with_rdkit_parity_view,
+    apply_aromaticity_rdkit_parity_shared, aromaticity_rdkit_parity_only,
+    assign_aromaticity_rdkit_parity_experimental, rdkit_parity_view_is_identity,
+    with_rdkit_parity_view,
 };
 pub use rdkit_sssr_order::{
     organometallic_dative_bonds as rdkit_organometallic_dative_bonds, rdkit_sssr,

@@ -198,17 +198,28 @@ fn matched_bond_code_slice(
 /// `rdkit.Chem.PatternFingerprint(mol, fpSize=2048)` (the Python API's own
 /// default, `tautomericFingerprint=False`).
 pub fn rdkit_pattern_fp(mol: &Molecule) -> BitVec2048 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return rdkit_pattern_fp(&h);
+    }
+    // Where chematic's own aromaticity may disagree with RDKit's, read the
+    // RDKit-corrected parity view (aromatic flags and bond orders as RDKit
+    // sanitizes them) instead of re-perceiving.
+    if chematic_perception::rdkit_model_may_disagree(mol)
+        && let Ok(view) = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol).as_ref()
+    {
+        return rdkit_pattern_fp_input(view, true);
+    }
     // RDKit fingerprints its sanitized graph: perchlorate as
     // `[Cl+3]([O-])3O`, organometallic dative bonds
     // ([`chematic_perception::rdkit_sanitize_cleanup`]).
     if let Some(cleaned) = chematic_perception::rdkit_sanitize_cleanup(mol) {
-        return rdkit_pattern_fp_input(&cleaned);
+        return rdkit_pattern_fp_input(&cleaned, false);
     }
-    rdkit_pattern_fp_input(mol)
+    rdkit_pattern_fp_input(mol, false)
 }
 
 /// [`rdkit_pattern_fp`] on the graph RDKit sees.
-fn rdkit_pattern_fp_input(mol: &Molecule) -> BitVec2048 {
+fn rdkit_pattern_fp_input(mol: &Molecule, trust_view: bool) -> BitVec2048 {
     const FP_SIZE: u32 = 2048;
     let mut fp = BitVec2048::new();
     let cfg = MatchConfig {
@@ -224,7 +235,8 @@ fn rdkit_pattern_fp_input(mol: &Molecule) -> BitVec2048 {
     // [`assign_aromaticity_ex`] for molecules with zero literal `Aromatic`
     // bonds anywhere (i.e. wholly Kekule-notation input), where it's the only
     // available aromaticity signal at all.
-    let has_literal_aromatic_bond = mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic);
+    let has_literal_aromatic_bond =
+        trust_view || mol.bonds().any(|(_, b)| b.order == BondOrder::Aromatic);
     let aromaticity = if has_literal_aromatic_bond {
         None
     } else {

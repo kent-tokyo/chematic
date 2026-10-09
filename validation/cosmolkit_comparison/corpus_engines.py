@@ -51,7 +51,7 @@ API_NOTES = {
         "morgan2_2048": "Mol.rdkit_ecfp_config(2, 2048)",
         "mol_wt": "Mol.rdkit_mw", "tpsa": "Mol.rdkit_tpsa",
         "aromatic_rings": "Mol.rdkit_aromatic_ring_count",
-        "molblock_rt": "Mol.to_mol_block() (default writer)",
+        "molblock_rt": "Mol.rdkit_mol_block_2d() (RDKit-compatible writer; Mol.to_mol_block() where it refuses)",
         "murcko_scaffold": "Mol.rdkit_murcko_scaffold (RDKit MurckoDecompose on the RDKit model)",
         "smarts_write": "Mol.rdkit_smarts", "cx_smarts": "Mol.rdkit_cx_smarts",
         "pdb_block": "Mol.rdkit_pdb_block", "stereoisomer_count": "Mol.rdkit_stereoisomer_count",
@@ -62,7 +62,8 @@ API_NOTES = {
         "extended_murcko": "Mol.rdkit_mol_hash('ExtendedMurcko')",
         "embed3d": "Mol.add_hydrogens().rdkit_embed(random_seed=42)",
         "mol_hash_*": "Mol.rdkit_mol_hash(<HashFunction name>)",
-        "tautomer_*": "Mol.canonical_tautomer() / enumerate_tautomers() (native), read back by RDKit",
+        "tautomer_*": "Mol.rdkit_canonical_tautomer() / rdkit_tautomers() (port of RDKit's TautomerEnumerator; "
+                      "older wheels: native canonical_tautomer() / enumerate_tautomers() read back by RDKit)",
         "rxn:*": "chematic.run_smirks_checked(smirks, [mol, *partners], rdkit_compat=True)",
         "distance_matrix": "Mol.rdkit_distance_matrix()",
         "distance_matrix_3d": "Mol.add_hydrogens().rdkit_distance_matrix_3d(RDKit-embedded coords)",
@@ -309,6 +310,13 @@ def chematic_engine():
         return run
 
     def molblock(m):
+        # The RDKit-compatible writer where the port models the molecule,
+        # chematic's default writer otherwise.
+        if hasattr(m, "rdkit_mol_block_2d"):
+            try:
+                return m.rdkit_mol_block_2d()
+            except ValueError:
+                pass
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             return m.to_mol_block()
@@ -963,9 +971,19 @@ def _chematic_new_ops(c):
     def problems(m):
         return sorted([t, sorted(a)] for t, a in m.rdkit_chemistry_problems())
 
+    def tautomer_canonical(m):
+        if hasattr(m, "rdkit_canonical_tautomer"):
+            return m.rdkit_canonical_tautomer()
+        return readback(m.canonical_tautomer())
+
+    def tautomer_set(m):
+        if hasattr(m, "rdkit_tautomers"):
+            return sorted(set(m.rdkit_tautomers()))
+        return sorted({readback(t) for t in m.enumerate_tautomers()})
+
     ops = {
-        "tautomer_canonical": lambda m: readback(m.canonical_tautomer()),
-        "tautomer_set": lambda m: sorted({readback(t) for t in m.enumerate_tautomers()}),
+        "tautomer_canonical": tautomer_canonical,
+        "tautomer_set": tautomer_set,
         "cx_smiles": lambda m: m.rdkit_cx_smiles(),
         "random_smiles5": lambda m: m.rdkit_random_smiles(5, 42),
         "fragment_smiles": lambda m: m.rdkit_fragment_smiles(fragment_atoms(m.rdkit_num_atoms())),

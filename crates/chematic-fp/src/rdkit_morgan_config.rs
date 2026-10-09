@@ -144,6 +144,9 @@ pub fn rdkit_morgan_fingerprint(
     mol: &Molecule,
     config: &RdkitMorganConfig,
 ) -> Result<RdkitMorganFingerprint, RdkitMorganError> {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return rdkit_morgan_fingerprint(&h, config);
+    }
     reject_known_rdkit_coordination_sanitization_gap(mol)?;
     let view = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol);
     let aromatized: &Molecule = match view.as_ref() {

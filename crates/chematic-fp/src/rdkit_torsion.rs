@@ -402,6 +402,9 @@ fn torsion_hash(atom_invariants: &[u32], path: &[AtomIdx; 4]) -> u32 {
 /// on a 200-molecule general corpus sample, with essentially all remaining
 /// misses confined to this one narrow structural class.
 pub fn rdkit_torsion_fp(mol: &Molecule) -> BitVec2048 {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return rdkit_torsion_fp(&h);
+    }
     // RDKit fingerprints sanitized molecules, i.e. after aromaticity
     // perception; Kekule input must not see a different graph than the
     // equivalent aromatic spelling. The perceived view is memoized on `mol`.
@@ -428,6 +431,9 @@ fn torsion_bucket_counts(mol: &Molecule, atom_invariants: &[u32], n_buckets: u32
 /// (`rdMolDescriptors.GetHashedTopologicalTorsionFingerprint(mol, nBits)`):
 /// the nonzero `(bucket, count)` elements, sorted by bucket.
 pub fn rdkit_torsion_counts(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
+    if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
+        return rdkit_torsion_counts(&h, n_bits);
+    }
     let n_bits = n_bits.max(1);
     chematic_perception::with_rdkit_parity_view(mol, |view| {
         let m = view.unwrap_or(mol);

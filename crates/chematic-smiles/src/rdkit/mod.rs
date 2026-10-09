@@ -60,6 +60,7 @@ mod smarts_match;
 mod smarts_write;
 mod stereo;
 mod substruct;
+mod tautomer;
 mod write;
 mod xyz_read;
 
@@ -69,6 +70,7 @@ pub use embed_view::{RdkitMolView, RdkitViewAtom, RdkitViewBond, rdkit_mol_view}
 pub use inchi_read::{InchiOutputAtom, InchiOutputStereo0D, rdkit_molecule_from_inchi_output};
 pub use molblock::{RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, rdkit_mol_block};
 pub use molhash::RdkitHashFunction;
+pub use tautomer::RdkitTautomerStatus;
 
 /// Why [`rdkit_canonical_smiles`] produced no string.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -769,6 +771,51 @@ pub fn rdkit_2d_coords(mol: &Molecule) -> Result<Vec<[f64; 2]>, RdkitSmilesError
 pub fn rdkit_mol_block_2d(mol: &Molecule) -> Result<String, RdkitSmilesError> {
     let (m, cip) = rdkit_mol_from_smiles(mol)?;
     let xy = depict::compute_2d_coords(&m, &cip)?;
+    // A block whose coordinates contradict a double bond's E/Z would be
+    // read back with the other configuration: refuse it (the depiction
+    // port does not reproduce RDKit's layout of some macrocycles).
+    for bond in &m.bonds {
+        if !matches!(bond.stereo, mol::BondStereo::E | mol::BondStereo::Z)
+            || bond.stereo_atoms.len() != 2
+        {
+            continue;
+        }
+        let (b, e) = (xy[bond.begin], xy[bond.end]);
+        let side = |p: [f64; 2]| (e[0] - b[0]) * (p[1] - b[1]) - (e[1] - b[1]) * (p[0] - b[0]);
+        let (s0, s1) = (
+            side(xy[bond.stereo_atoms[0]]),
+            side(xy[bond.stereo_atoms[1]]),
+        );
+        let cis = s0 * s1 > 0.0;
+        if s0 * s1 == 0.0 || cis != (bond.stereo == mol::BondStereo::Z) {
+            return Err(RdkitSmilesError::Unsupported(
+                "2D coordinates do not reproduce a double bond's E/Z configuration".into(),
+            ));
+        }
+    }
+    // An unspecified double bond RDKit does not cross because a neighbouring
+    // single bond carries a direction (conjugated partial stereo) reads back
+    // with the configuration its coordinates happen to show: refuse it too.
+    for (b, bond) in m.bonds.iter().enumerate() {
+        if bond.bt != mol::BondType::Double
+            || bond.stereo != mol::BondStereo::None
+            || m.num_bond_rings(b) != 0
+            || !molblock2d::is_bond_potential_stereo_bond(&m, b)
+        {
+            continue;
+        }
+        let directed_nbr = [bond.begin, bond.end].iter().any(|&a| {
+            m.atom_bonds[a].iter().any(|&nb| {
+                nb != b && m.bonds[nb].bt == mol::BondType::Single && m.bonds[nb].dir.is_set()
+            })
+        });
+        if directed_nbr {
+            return Err(RdkitSmilesError::Unsupported(
+                "an unspecified double bond next to directed bonds would read back with stereo"
+                    .into(),
+            ));
+        }
+    }
     let bare_dummies: Vec<bool> = m
         .atoms
         .iter()
@@ -964,6 +1011,61 @@ pub fn rdkit_mol_from_mol2_block(
 
 /// [`rdkit_mol_from_smiles`]'s molecule for writers, which read neither
 /// `chirality_possible` nor the CIP ranks.
+/// The result of [`rdkit_enumerate_tautomers`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RdkitTautomerEnumeration {
+    /// `Chem.MolToSmiles(t)` of every tautomer, in the result's order (its
+    /// map keys' order).
+    pub smiles: Vec<String>,
+    /// The result's map keys (`TautomerEnumeratorResult.smiles`).
+    pub keys: Vec<String>,
+    /// `TautomerEnumeratorResult.status`.
+    pub status: RdkitTautomerStatus,
+}
+
+/// `Chem.MolToSmiles(rdMolStandardize.TautomerEnumerator().Canonicalize(m))`
+/// for `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1, default
+/// `CleanupParameters`): the port of `TautomerEnumerator::canonicalize`
+/// (transforms, enumeration order and limits, `scoreTautomer`, ties broken
+/// by the smaller canonical SMILES).
+///
+/// ```
+/// let mol = chematic_smiles::parse("Oc1ccccn1").unwrap();
+/// assert_eq!(chematic_smiles::rdkit_canonical_tautomer(&mol).unwrap(), "O=c1cccc[nH]1");
+/// ```
+pub fn rdkit_canonical_tautomer(mol: &Molecule) -> Result<String, RdkitSmilesError> {
+    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    let (canon, _) = tautomer::canonicalize(&m)?;
+    write::mol_to_smiles_owned(canon, &RdkitSmilesParams::default())
+}
+
+/// `rdMolStandardize.TautomerEnumerator().Enumerate(m)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1, default
+/// `CleanupParameters`): the tautomers' SMILES and the result status.
+pub fn rdkit_enumerate_tautomers(
+    mol: &Molecule,
+) -> Result<RdkitTautomerEnumeration, RdkitSmilesError> {
+    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    let res = tautomer::enumerate(&m, &tautomer::Settings::default())?;
+    let mut smiles = Vec::with_capacity(res.tautomers.len());
+    for t in res.tautomers.values() {
+        smiles.push(write::mol_to_smiles(&t.mol, &RdkitSmilesParams::default())?);
+    }
+    Ok(RdkitTautomerEnumeration {
+        smiles,
+        keys: res.tautomers.keys().cloned().collect(),
+        status: res.status,
+    })
+}
+
+/// `rdMolStandardize.TautomerEnumerator.ScoreTautomer(m)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1): ring, substructure and
+/// hetero-H terms of `TautomerScoringFunctions::scoreTautomer`.
+pub fn rdkit_tautomer_score(mol: &Molecule) -> Result<i32, RdkitSmilesError> {
+    let (m, _) = rdkit_mol_from_smiles(mol)?;
+    Ok(tautomer::score_tautomer(&m))
+}
+
 fn rdkit_mol_for_writing(mol: &Molecule) -> Result<mol::Mol, RdkitSmilesError> {
     let mut m = parse::from_chematic(mol)?;
     if has_added_hydrogens(mol) {
@@ -973,6 +1075,188 @@ fn rdkit_mol_for_writing(mol: &Molecule) -> Result<mol::Mol, RdkitSmilesError> {
     }
     stereo::legacy_stereo_perception_unflagged(&mut m);
     Ok(m)
+}
+
+/// RDKit's sanitized model of `mol` (`Chem.MolFromSmiles`) projected onto
+/// chematic's graph: what `removeHs` + `sanitizeMol` (cleanup, Kekulize,
+/// aromaticity) leave on each atom and bond, by chematic index. Atoms RDKit
+/// removes (explicit hydrogens) and their bonds are `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RdkitSanitizedModel {
+    /// Per chematic atom: `(is_aromatic, formal_charge, total H count
+    /// counting removed hydrogen neighbours as graph atoms)`.
+    pub atoms: Vec<Option<(bool, i8, u8)>>,
+    /// Per chematic atom: number of hydrogen neighbours RDKit removed.
+    pub removed_h_neighbors: Vec<u8>,
+    /// Per chematic bond: RDKit's bond as a chematic order (`Aromatic` for
+    /// aromatic bonds; `Single`, `Double`, `Triple`, `Quadruple`, `Dative`
+    /// otherwise).
+    pub bonds: Vec<Option<chematic_core::BondOrder>>,
+}
+
+/// [`RdkitSanitizedModel`] for `mol` (RDKit 2026.03.1). `Err` where the
+/// port cannot model the molecule or RDKit's sanitization rejects it.
+pub fn rdkit_sanitized_model(mol: &Molecule) -> Result<RdkitSanitizedModel, RdkitSmilesError> {
+    use chematic_core::BondOrder;
+    let order = mol.rdkit_bond_order();
+    let mut m = parse::from_chematic_ordered(mol, &order)?;
+    let n = m.atoms.len();
+    // Bonds before H removal, by RDKit index: (begin, end, chematic bond).
+    let bonds_before: Vec<(usize, usize, usize)> = m
+        .bonds
+        .iter()
+        .zip(order.iter())
+        .map(|(b, cb)| (b.begin, b.end, cb.0 as usize))
+        .collect();
+    let kept: Vec<usize> = if has_added_hydrogens(mol) {
+        sanitize::sanitize_keeping_hs(&mut m)?;
+        (0..n).collect()
+    } else {
+        sanitize::remove_hs(&mut m, true)?
+    };
+    let mut new_idx = vec![usize::MAX; n];
+    for (k, &old) in kept.iter().enumerate() {
+        new_idx[old] = k;
+    }
+    let mut atoms = vec![None; n];
+    let mut removed_h_neighbors = vec![0u8; n];
+    for (b0, e0, _) in &bonds_before {
+        if new_idx[*b0] == usize::MAX && new_idx[*e0] != usize::MAX {
+            removed_h_neighbors[*e0] += 1;
+        } else if new_idx[*e0] == usize::MAX && new_idx[*b0] != usize::MAX {
+            removed_h_neighbors[*b0] += 1;
+        }
+    }
+    for (old, &k) in new_idx.iter().enumerate() {
+        if k == usize::MAX {
+            continue;
+        }
+        let a = &m.atoms[k];
+        atoms[old] = Some((a.aromatic, a.charge as i8, m.total_num_hs(k).min(255) as u8));
+    }
+    let mut bonds = vec![None; mol.bond_count()];
+    let mut next = 0usize;
+    for (b0, e0, cb) in bonds_before {
+        if new_idx[b0] == usize::MAX || new_idx[e0] == usize::MAX {
+            continue;
+        }
+        let bond = &m.bonds[next];
+        next += 1;
+        bonds[cb] = Some(if bond.aromatic {
+            BondOrder::Aromatic
+        } else {
+            match bond.bt {
+                mol::BondType::Single => BondOrder::Single,
+                mol::BondType::Double => BondOrder::Double,
+                mol::BondType::Triple => BondOrder::Triple,
+                mol::BondType::Quadruple => BondOrder::Quadruple,
+                mol::BondType::Aromatic => BondOrder::Aromatic,
+                mol::BondType::Dative => BondOrder::Dative,
+            }
+        });
+    }
+    Ok(RdkitSanitizedModel {
+        atoms,
+        removed_h_neighbors,
+        bonds,
+    })
+}
+
+/// `Chem.MolFromSmiles(s)` as a chematic molecule when RDKit's `removeHs`
+/// takes hydrogen graph atoms of `mol` away (`None` otherwise, or where the
+/// port cannot model `mol`): RDKit's atoms and bonds in RDKit's order, each
+/// heavy atom with its total hydrogen count. RDKit-compatible fingerprints
+/// read this molecule so that `[H]C([H])([H])[H]` is methane, as in RDKit.
+pub fn rdkit_hydrogen_suppressed(mol: &Molecule) -> Option<Molecule> {
+    if !mol
+        .atoms()
+        .any(|(_, a)| !a.wildcard && a.element == chematic_core::Element::H)
+    {
+        return None;
+    }
+    let (m, _) = rdkit_mol_from_smiles(mol).ok()?;
+    if m.atoms.len() == mol.atom_count() {
+        return None;
+    }
+    pdb_read::to_chematic(&m, true).ok()
+}
+
+/// Registers [`rdkit_model_correct_view`] as chematic-perception's
+/// RDKit-model hook, so the shared RDKit-parity aromatic view (used by the
+/// RDKit-compatible fingerprints, descriptors and SMARTS matching) follows
+/// this crate's port of RDKit's sanitization on molecules where the parity
+/// view may disagree with RDKit. Called by every SMILES parse; idempotent.
+pub fn register_rdkit_model_hook() {
+    chematic_perception::set_rdkit_model_hook(rdkit_model_correct_view);
+}
+
+/// The bond-order class RDKit's model distinguishes.
+fn order_class(order: chematic_core::BondOrder) -> u8 {
+    use chematic_core::BondOrder;
+    match order {
+        BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
+        BondOrder::Double => 2,
+        BondOrder::Triple => 3,
+        BondOrder::Quadruple => 4,
+        BondOrder::Aromatic => 12,
+        BondOrder::Dative => 17,
+        _ => 0,
+    }
+}
+
+/// `view` (an RDKit-parity view of `mol`, on `mol`'s graph) with the
+/// aromaticity, bond orders, charges and hydrogen counts of
+/// [`rdkit_sanitized_model`] where they disagree; `None` when they agree or
+/// the port cannot model `mol`.
+pub fn rdkit_model_correct_view(mol: &Molecule, view: &Molecule) -> Option<Molecule> {
+    use chematic_core::{AtomIdx, BondIdx};
+    if view.atom_count() != mol.atom_count() || view.bond_count() != mol.bond_count() {
+        return None;
+    }
+    let model = rdkit_sanitized_model(mol).ok()?;
+    let atom_differs = |i: usize| -> bool {
+        match model.atoms[i] {
+            Some((arom, charge, _)) => {
+                let a = view.atom(AtomIdx(i as u32));
+                a.aromatic != arom || a.charge != charge
+            }
+            None => false,
+        }
+    };
+    let bond_differs = |b: usize| -> bool {
+        match model.bonds[b] {
+            Some(order) => order_class(view.bond(BondIdx(b as u32)).order) != order_class(order),
+            None => false,
+        }
+    };
+    if !(0..mol.atom_count()).any(atom_differs) && !(0..mol.bond_count()).any(bond_differs) {
+        return None;
+    }
+    let mut out = view.clone();
+    let mut touched = vec![false; mol.atom_count()];
+    for b in 0..mol.bond_count() {
+        if bond_differs(b) {
+            let order = model.bonds[b].expect("modelled bond");
+            let bond = view.bond(BondIdx(b as u32));
+            touched[bond.atom1.0 as usize] = true;
+            touched[bond.atom2.0 as usize] = true;
+            out.set_bond_order(BondIdx(b as u32), order);
+        }
+    }
+    for i in 0..mol.atom_count() {
+        let Some((arom, charge, hs)) = model.atoms[i] else {
+            continue;
+        };
+        if atom_differs(i) || touched[i] {
+            let idx = AtomIdx(i as u32);
+            out.set_atom_aromatic(idx, arom);
+            out.set_charge(idx, charge);
+            if !view.atom(idx).wildcard {
+                out.set_hydrogen_count(idx, Some(hs.saturating_sub(model.removed_h_neighbors[i])));
+            }
+        }
+    }
+    Some(out)
 }
 
 fn rdkit_mol_from_smiles(mol: &Molecule) -> Result<(mol::Mol, Vec<u32>), RdkitSmilesError> {
@@ -990,5 +1274,7 @@ fn rdkit_mol_from_smiles(mol: &Molecule) -> Result<(mol::Mol, Vec<u32>), RdkitSm
 mod depict_tests;
 #[cfg(test)]
 mod profile_tests;
+#[cfg(test)]
+mod tautomer_tests;
 #[cfg(test)]
 mod tests;
