@@ -4,15 +4,15 @@
   "release": {
     "version": "1.0.39",
     "tag": "v1.0.39",
-    "commit": null,
-    "commit_source": "The release workflow replaces this pre-publication placeholder with the annotated v1.0.39 tag target.",
-    "released_at": "2026-10-09T08:42:49+09:00"
+    "commit": "d56693327e6114560d7b723668be322e5d1ee277",
+    "commit_source": "Annotated tag target verified through the GitHub Git Data API after publication.",
+    "released_at": "2026-10-09T09:41:17+09:00"
   },
   "evidence_context": {
     "stable_release": {
       "version": "1.0.39",
       "tag": "v1.0.39",
-      "commit": null
+      "commit": "d56693327e6114560d7b723668be322e5d1ee277"
     },
     "candidate": null,
     "oracle_lanes": [
@@ -112,5 +112,5 @@
       }
     ]
   },
-  "generated_at": "2026-10-08T23:42:49Z"
+  "generated_at": "2026-10-09T01:01:54Z"
 }

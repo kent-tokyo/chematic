@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "release": {"version": "1.0.39", "tag": "v1.0.39", "commit": null},
-  "checked_at": "2026-10-09T09:24:19+09:00",
-  "release_ready": false,
+  "release": {"version": "1.0.39", "tag": "v1.0.39", "commit": "d56693327e6114560d7b723668be322e5d1ee277"},
+  "checked_at": "2026-10-09T10:01:54+09:00",
+  "release_ready": true,
   "channels": [
-    {"id": "github_release", "status": "not_measured", "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.39", "detail": "Pre-publication placeholder; verify the Release, tag target and attached metadata after publishing."},
-    {"id": "npm", "status": "not_measured", "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.39", "detail": "Pre-publication placeholder; verify registry tarball and integrity metadata after publishing."},
-    {"id": "pypi", "status": "not_measured", "url": "https://pypi.org/pypi/chematic/1.0.39/json", "detail": "Pre-publication placeholder; verify the source distribution and platform wheels after publishing."},
-    {"id": "crates_io", "status": "not_measured", "url": "https://crates.io/crates/chematic/1.0.39", "detail": "Pre-publication placeholder; verify all publishable workspace crates after publishing."},
-    {"id": "docs_rs", "status": "not_measured", "url": "https://docs.rs/chematic/1.0.39/chematic/", "detail": "Pre-publication placeholder; verify generated rustdoc after registry publication."},
-    {"id": "site", "status": "not_measured", "url": "https://kent-tokyo.github.io/chematic/", "detail": "Pre-publication placeholder; verify the Pages deployment and displayed version after publishing."}
+    {"id": "github_release", "status": "verified", "observed_version": "1.0.39", "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.39", "detail": "Published Release and metadata asset verified; annotated tag target is d56693327e6114560d7b723668be322e5d1ee277."},
+    {"id": "npm", "status": "verified", "observed_version": "1.0.39", "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.39", "detail": "Registry tarball and sha512 integrity metadata verified for @kent-tokyo/chematic 1.0.39."},
+    {"id": "pypi", "status": "verified", "observed_version": "1.0.39", "url": "https://pypi.org/pypi/chematic/1.0.39/json", "detail": "PyPI JSON verified with 18 non-yanked artifacts: 17 platform wheels and one source distribution."},
+    {"id": "crates_io", "status": "verified", "observed_version": "1.0.39", "url": "https://crates.io/crates/chematic/1.0.39", "detail": "All 20 publishable workspace crates were verified through the crates.io API."},
+    {"id": "docs_rs", "status": "verified", "observed_version": "1.0.39", "url": "https://docs.rs/chematic/1.0.39/chematic/", "detail": "Generated rustdoc returned HTTP 200."},
+    {"id": "site", "status": "verified", "observed_version": "1.0.39", "url": "https://kent-tokyo.github.io/chematic/", "detail": "GitHub Pages returned HTTP 200 and displayed v1.0.39."}
   ]
 }
