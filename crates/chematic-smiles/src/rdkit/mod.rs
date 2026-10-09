@@ -41,6 +41,7 @@ mod enumerate;
 mod findstereo;
 mod inchi_read;
 mod kekulize;
+mod matrices;
 mod mol;
 mod mol2_read;
 mod molblock;
@@ -338,6 +339,132 @@ pub fn rdkit_fragment_smiles(
 /// index range of RDKit's atom numbering).
 pub fn rdkit_num_atoms(mol: &Molecule) -> Result<usize, RdkitSmilesError> {
     Ok(rdkit_mol_for_writing(mol)?.atoms.len())
+}
+
+/// `Chem.GetDistanceMatrix(m, useBO, useAtomWts)` for
+/// `m = Chem.MolFromSmiles(s)` (RDKit 2026.03.1; the `Chem.AddHs` molecule
+/// when `mol` carries added hydrogens): topological distances by
+/// Floyd-Warshall, `1e8` between fragments; `use_bo` weights bonds by
+/// `1 / bond order` (aromatic `2/3`), `use_atom_wts` sets the diagonal to
+/// `6 / atomic number`. One row per atom in RDKit's atom order.
+pub fn rdkit_distance_matrix(
+    mol: &Molecule,
+    use_bo: bool,
+    use_atom_wts: bool,
+) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
+    let m = rdkit_mol_for_writing(mol)?;
+    let n = m.atoms.len();
+    let d = matrices::distance_mat(&m, use_bo, use_atom_wts);
+    Ok(d.chunks(n.max(1)).map(<[f64]>::to_vec).take(n).collect())
+}
+
+/// `Chem.Get3DDistanceMatrix(m, useAtomWts=...)` for RDKit's molecule of
+/// `mol` (as in [`rdkit_distance_matrix`]) with the conformer `coords`
+/// (one `[x, y, z]` per atom in RDKit's atom order).
+pub fn rdkit_distance_matrix_3d(
+    mol: &Molecule,
+    coords: &[[f64; 3]],
+    use_atom_wts: bool,
+) -> Result<Vec<Vec<f64>>, RdkitSmilesError> {
+    let m = rdkit_mol_for_writing(mol)?;
+    let n = m.atoms.len();
+    if coords.len() != n {
+        return Err(RdkitSmilesError::Unsupported(format!(
+            "{} coordinates for {n} atoms",
+            coords.len()
+        )));
+    }
+    let d = matrices::distance_mat_3d(&m, coords, use_atom_wts);
+    Ok(d.chunks(n.max(1)).map(<[f64]>::to_vec).take(n).collect())
+}
+
+/// One problem `MolOps::detectChemistryProblems` reports (see
+/// [`rdkit_detect_chemistry_problems`]).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RdkitChemistryProblem {
+    /// `MolSanitizeException::getType()`: `"AtomValenceException"`,
+    /// `"AtomKekulizeException"` or `"KekulizeException"`.
+    pub kind: String,
+    /// The atom (`getAtomIdx()`) or atoms (`getAtomIndices()`) involved,
+    /// in the parser's atom order.
+    pub atoms: Vec<usize>,
+    /// RDKit's message.
+    pub message: String,
+}
+
+/// `Chem.DetectChemistryProblems(Chem.MolFromSmiles(s, sanitize=False))`
+/// (RDKit 2026.03.1, `SANITIZE_ALL`) for the SMILES `s` chematic parsed
+/// `mol` from: `cleanUp`, a strict `updatePropertyCache` per atom (each
+/// failure an `AtomValenceException`), then a non-canonical `Kekulize` on
+/// SSSR rings (`AtomKekulizeException` for a non-ring aromatic atom,
+/// `KekulizeException` with the unkekulized atoms). Problems come in
+/// RDKit's order. Parse SMILES with impossible O/F valences with
+/// [`crate::parse_template`], which [`crate::parse`] rejects.
+///
+/// ```
+/// let mol = chematic_smiles::parse("c1cccc1").unwrap();
+/// let p = chematic_smiles::rdkit_detect_chemistry_problems(&mol).unwrap();
+/// assert_eq!(p[0].kind, "KekulizeException");
+/// assert_eq!(p[0].atoms, vec![0, 1, 2, 3, 4]);
+/// ```
+pub fn rdkit_detect_chemistry_problems(
+    mol: &Molecule,
+) -> Result<Vec<RdkitChemistryProblem>, RdkitSmilesError> {
+    let mut m = parse::from_chematic(mol)?;
+    let mut res = Vec::new();
+    sanitize::clean_up(&mut m)?;
+    for a in 0..m.atoms.len() {
+        if let Err(e) = m.update_atom_property_cache(a, true) {
+            let message = match e {
+                RdkitSmilesError::Sanitization(msg) => msg,
+                other => return Err(other),
+            };
+            res.push(RdkitChemistryProblem {
+                kind: "AtomValenceException".into(),
+                atoms: vec![a],
+                message,
+            });
+        }
+    }
+    if m.bonds.iter().any(|b| b.aromatic) || m.atoms.iter().any(|a| a.aromatic) {
+        m.find_sssr()?;
+    }
+    if let Err(e) = kekulize::kekulize(&mut m) {
+        let message = match e {
+            RdkitSmilesError::Sanitization(msg) => msg,
+            other => return Err(other),
+        };
+        let numbers = |s: &str| -> Vec<usize> {
+            s.split(|c: char| !c.is_ascii_digit())
+                .filter_map(|t| t.parse().ok())
+                .collect()
+        };
+        let problem =
+            if let Some(rest) = message.strip_prefix("Can't kekulize mol.  Unkekulized atoms:") {
+                RdkitChemistryProblem {
+                    kind: "KekulizeException".into(),
+                    atoms: numbers(rest),
+                    message,
+                }
+            } else if let Some(rest) = message
+                .strip_prefix("non-ring atom ")
+                .or_else(|| message.strip_prefix("Kekulization somehow screwed up valence on "))
+            {
+                RdkitChemistryProblem {
+                    kind: "AtomKekulizeException".into(),
+                    atoms: numbers(rest).into_iter().take(1).collect(),
+                    message,
+                }
+            } else {
+                RdkitChemistryProblem {
+                    kind: "AtomValenceException".into(),
+                    atoms: numbers(&message).into_iter().take(1).collect(),
+                    message,
+                }
+            };
+        res.push(problem);
+    }
+    Ok(res)
 }
 
 /// RDKit's process-wide random generator (`getRandomGenerator()`, seeded

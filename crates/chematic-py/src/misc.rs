@@ -246,7 +246,25 @@ fn element_atomic_number(symbol: &str) -> PyResult<u8> {
 // Register
 // ---------------------------------------------------------------------------
 
+/// RDKit 2026.03.1's ``Chem.DetectChemistryProblems(
+/// Chem.MolFromSmiles(smiles, sanitize=False))``: ``[(type, atom_indices)]``
+/// in RDKit's order, ``type`` one of ``"AtomValenceException"``,
+/// ``"AtomKekulizeException"``, ``"KekulizeException"``; atom indices in the
+/// SMILES atom order. Raises ``ValueError`` for unparsable SMILES::
+///
+///     chematic.rdkit_detect_chemistry_problems("CC(C)(C)(C)C")
+///     # [('AtomValenceException', [1])]
+#[pyfunction]
+fn rdkit_detect_chemistry_problems(smiles: &str) -> PyResult<Vec<(String, Vec<usize>)>> {
+    let mol = chematic_smiles::parse_template(smiles)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let problems = chematic_smiles::rdkit_detect_chemistry_problems(&mol)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    Ok(problems.into_iter().map(|p| (p.kind, p.atoms)).collect())
+}
+
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(rdkit_detect_chemistry_problems, m)?)?;
     m.add_function(wrap_pyfunction!(smarts_match, m)?)?;
     m.add_function(wrap_pyfunction!(smarts_find, m)?)?;
     m.add_function(wrap_pyfunction!(similarity_map_svg, m)?)?;

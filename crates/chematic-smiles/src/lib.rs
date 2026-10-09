@@ -59,17 +59,18 @@ pub use error::SmilesError;
 pub use parser::{SmilesParseLimits, parse, parse_template, parse_with_limits};
 pub use random_smiles::{random_smiles, random_smiles_vect};
 pub use rdkit::{
-    InchiOutputAtom, InchiOutputStereo0D, RdkitAlignment, RdkitHashFunction, RdkitLegacyStereo,
-    RdkitMol2Molecule, RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond, RdkitMolView,
-    RdkitPdbMolecule, RdkitSmilesError, RdkitSmilesParams, RdkitViewAtom, RdkitViewBond,
-    Transform3D, rdkit_2d_coords, rdkit_align_mol, rdkit_align_points,
+    InchiOutputAtom, InchiOutputStereo0D, RdkitAlignment, RdkitChemistryProblem, RdkitHashFunction,
+    RdkitLegacyStereo, RdkitMol2Molecule, RdkitMolBlock, RdkitMolBlockAtom, RdkitMolBlockBond,
+    RdkitMolView, RdkitPdbMolecule, RdkitSmilesError, RdkitSmilesParams, RdkitViewAtom,
+    RdkitViewBond, Transform3D, rdkit_2d_coords, rdkit_align_mol, rdkit_align_points,
     rdkit_atom_stereocenter_counts, rdkit_best_rms, rdkit_calc_rms, rdkit_canonical_smiles,
-    rdkit_chiral_centers, rdkit_cx_smarts, rdkit_cx_smiles, rdkit_fragment_smiles,
-    rdkit_legacy_stereo, rdkit_mol_block, rdkit_mol_block_2d, rdkit_mol_from_mol2_block,
-    rdkit_mol_from_pdb_block, rdkit_mol_from_xyz_block, rdkit_mol_hash, rdkit_mol_view,
-    rdkit_molecule_from_inchi_output, rdkit_murcko_scaffold, rdkit_num_atoms, rdkit_pdb_block,
-    rdkit_random_smiles, rdkit_random_smiles_with, rdkit_smarts, rdkit_smiles,
-    rdkit_stereoisomer_count, rdkit_stereoisomer_smiles,
+    rdkit_chiral_centers, rdkit_cx_smarts, rdkit_cx_smiles, rdkit_detect_chemistry_problems,
+    rdkit_distance_matrix, rdkit_distance_matrix_3d, rdkit_fragment_smiles, rdkit_legacy_stereo,
+    rdkit_mol_block, rdkit_mol_block_2d, rdkit_mol_from_mol2_block, rdkit_mol_from_pdb_block,
+    rdkit_mol_from_xyz_block, rdkit_mol_hash, rdkit_mol_view, rdkit_molecule_from_inchi_output,
+    rdkit_murcko_scaffold, rdkit_num_atoms, rdkit_pdb_block, rdkit_random_smiles,
+    rdkit_random_smiles_with, rdkit_smarts, rdkit_smiles, rdkit_stereoisomer_count,
+    rdkit_stereoisomer_smiles,
 };
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,

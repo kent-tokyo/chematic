@@ -786,6 +786,23 @@ impl Mol {
     }
 
     /// `MolOps::symmetrizeSSSR`: (re)computes the ring information.
+    /// `MolOps::findSSSR` (no symmetrization), as `Kekulize` runs it on a
+    /// molecule without ring information.
+    pub(crate) fn find_sssr(&mut self) -> Result<(), RdkitSmilesError> {
+        let bonds: Vec<(usize, usize, bool)> = self
+            .bonds
+            .iter()
+            .map(|b| (b.begin, b.end, b.bt != BondType::Dative))
+            .collect();
+        let rings = chematic_perception::rdkit_sssr(self.atoms.len(), &bonds).ok_or_else(|| {
+            RdkitSmilesError::Unsupported(
+                "ring perception falls back to RDKit's approximate ring finder".into(),
+            )
+        })?;
+        self.set_rings(rings);
+        Ok(())
+    }
+
     pub(crate) fn find_rings(&mut self) -> Result<(), RdkitSmilesError> {
         let bonds: Vec<(usize, usize, bool)> = self
             .bonds
