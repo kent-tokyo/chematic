@@ -855,8 +855,19 @@ def _rdkit_new_ops(Chem):
     return ops
 
 
+_RD_EMBED_MEMO: list = [None, None]
+
+
 def _rd_embed_from_mol(m):
-    """RDKit's embedded explicit-H copy of an RDKit molecule (input order)."""
+    """RDKit's embedded explicit-H copy of an RDKit molecule (input order),
+    memoized for the molecule the ops are currently running on."""
+    if _RD_EMBED_MEMO[0] is m:
+        return _RD_EMBED_MEMO[1]
+    _RD_EMBED_MEMO[0], _RD_EMBED_MEMO[1] = m, _rd_embed_uncached(m)
+    return _RD_EMBED_MEMO[1]
+
+
+def _rd_embed_uncached(m):
     Chem = _rd()
     from rdkit.Chem import AllChem
     mh = Chem.AddHs(m)
@@ -884,8 +895,18 @@ def _with_input_smiles(parse):
     return wrapped
 
 
+_EMBED_MEMO: dict = {}
+
+
 def _embedded_input():
-    return None if _InputSmiles.value is None else rdkit_embedded_h(_InputSmiles.value)
+    """``rdkit_embedded_h`` of the current input SMILES (memoized for it)."""
+    smi = _InputSmiles.value
+    if smi is None:
+        return None
+    if smi not in _EMBED_MEMO:
+        _EMBED_MEMO.clear()
+        _EMBED_MEMO[smi] = rdkit_embedded_h(smi)
+    return _EMBED_MEMO[smi]
 
 
 def _chematic_new_ops(c):
