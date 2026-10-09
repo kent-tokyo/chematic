@@ -1829,7 +1829,13 @@ pub fn with_rdkit_parity_view<R>(
 }
 
 fn apply_aromaticity_rdkit_parity_uncached(mol: &Molecule) -> Result<Molecule, AromaticityError> {
-    let Some(hook) = crate::rdkit_model_hook::hook_for(mol) else {
+    // The gate flags only molecules whose (memoized) shortcut is `Full`.
+    let hook = if parity_shortcut(mol) == ParityShortcut::Full {
+        crate::rdkit_model_hook::hook_for(mol)
+    } else {
+        None
+    };
+    let Some(hook) = hook else {
         return apply_aromaticity_rdkit_parity_parity_only(mol);
     };
     let view = apply_aromaticity_rdkit_parity_parity_only(mol);
