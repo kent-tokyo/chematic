@@ -19,6 +19,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   exposes a typed JSON result for checked legacy MMFF94 charges.
 - Added `num_rings()` to the WASM molecule handle and regression fixtures for
   coordination and disconnected-component ring-closure notation.
+- Added opt-in RDKit-profile reaction rejection diagnostics across Rust,
+  Python, and WASM. Rejected product sets now report stable valence,
+  aromaticity, kekulization, or unknown reasons plus bounded atom indices,
+  template maps, elements, explicit H counts, and reliable valence limits.
 
 ### Changed
 

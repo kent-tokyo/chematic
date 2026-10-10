@@ -3461,7 +3461,10 @@ def run_smirks_checked(
     ``typed_unsupported``. ``partial_products`` is not a parity claim.
     With ``rdkit_compat=True``, ``rejected_products`` holds the
     valence-rejected product sets as RDKit returns them, as
-    ``[[(mol, sanitizable), ...], ...]``.
+    ``[[(mol, sanitizable), ...], ...]``. ``rejection_diagnostics`` is aligned
+    with those sets and gives a stable rejection reason plus implicated atom
+    indices, product-template maps, elements, explicit H counts and reliable
+    observed/maximum valences.
     """
     ...
 

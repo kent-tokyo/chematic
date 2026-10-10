@@ -313,6 +313,24 @@ struct ReactantAtomJson {
 }
 
 #[derive(Serialize)]
+struct ProductRejectionAtomJson {
+    atom_index: u32,
+    atom_map: Option<u16>,
+    element: &'static str,
+    explicit_hydrogen_count: Option<u8>,
+    observed_valence: Option<i16>,
+    max_allowed_valence: Option<i16>,
+}
+
+#[derive(Serialize)]
+struct ProductRejectionJson {
+    product_index: usize,
+    accepted: bool,
+    reason: Option<&'static str>,
+    atoms: Vec<ProductRejectionAtomJson>,
+}
+
+#[derive(Serialize)]
 struct CheckedReactionResponse {
     profile: &'static str,
     status: &'static str,
@@ -321,6 +339,7 @@ struct CheckedReactionResponse {
     products: Vec<Vec<String>>,
     product_atom_sources: Vec<Vec<Vec<Option<ReactantAtomJson>>>>,
     product_template_maps: Vec<Vec<Vec<Option<u16>>>>,
+    rejection_diagnostics: Vec<Vec<ProductRejectionJson>>,
     accepted_matches: usize,
     applied_products: usize,
     valence_rejected_matches: usize,
@@ -342,6 +361,7 @@ impl CheckedReactionResponse {
             products: Vec::new(),
             product_atom_sources: Vec::new(),
             product_template_maps: Vec::new(),
+            rejection_diagnostics: Vec::new(),
             accepted_matches: 0,
             applied_products: 0,
             valence_rejected_matches: 0,
@@ -425,6 +445,7 @@ fn prepare_checked_reaction(
 fn checked_reaction_response(
     profile: &'static str,
     report: chematic_rxn::TracedReactionTransformReport,
+    rejection_diagnostics: Vec<Vec<chematic_rxn::ProductSanitizationDiagnostic>>,
 ) -> CheckedReactionResponse {
     let diagnostics = report.diagnostics;
     let mut result = CheckedReactionResponse {
@@ -451,6 +472,30 @@ fn checked_reaction_response(
         products: Vec::new(),
         product_atom_sources: Vec::new(),
         product_template_maps: Vec::new(),
+        rejection_diagnostics: rejection_diagnostics
+            .into_iter()
+            .map(|set| {
+                set.into_iter()
+                    .map(|product| ProductRejectionJson {
+                        product_index: product.product_index,
+                        accepted: product.accepted,
+                        reason: product.reason.map(|reason| reason.reason_code()),
+                        atoms: product
+                            .atoms
+                            .into_iter()
+                            .map(|atom| ProductRejectionAtomJson {
+                                atom_index: atom.atom.0,
+                                atom_map: atom.template_map,
+                                element: atom.element.symbol(),
+                                explicit_hydrogen_count: atom.explicit_hydrogen_count,
+                                observed_valence: atom.observed_valence,
+                                max_allowed_valence: atom.max_allowed_valence,
+                            })
+                            .collect(),
+                    })
+                    .collect()
+            })
+            .collect(),
         accepted_matches: diagnostics.accepted_matches,
         applied_products: diagnostics.applied_products,
         valence_rejected_matches: diagnostics.valence_rejected_matches,
@@ -536,41 +581,60 @@ pub fn run_reactants_checked(smirks: &str, reactants_smiles: &str, rdkit_compat:
     let limits = chematic_rxn::ReactionTransformLimits {
         max_matches: WASM_MAX_BATCH_ITEMS,
     };
-    let outcome = match &prepared {
-        Some(prepared) => prepared
-            .run_reactants_traced_with_diagnostics(&refs, &limits)
-            .map(chematic_rxn::RdkitProfileOutcome::Report),
-        None => chematic_rxn::run_reactants_traced_rdkit_2026_03_6(smirks, &refs, &limits),
+    let (report, rejection_diagnostics) = match &prepared {
+        Some(prepared) => match prepared.run_reactants_traced_with_diagnostics(&refs, &limits) {
+            Ok(report) => (report, Vec::new()),
+            Err(error) => {
+                let reason = match &error {
+                    chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
+                    chematic_rxn::TransformError::ReactantCountMismatch { .. } => {
+                        "reactant_count_mismatch"
+                    }
+                    chematic_rxn::TransformError::SmirksParse(_) => "smirks_parse",
+                };
+                return CheckedReactionResponse::refusal(
+                    profile,
+                    "typed_refusal",
+                    reason,
+                    error.to_string(),
+                )
+                .json();
+            }
+        },
+        None => match chematic_rxn::run_reactants_traced_rdkit_2026_03_6_detailed(
+            smirks, &refs, &limits,
+        ) {
+            Ok(chematic_rxn::RdkitDetailedProfileOutcome::Report(report)) => {
+                (report.report, report.rejection_diagnostics)
+            }
+            Ok(chematic_rxn::RdkitDetailedProfileOutcome::Unsupported(unsupported)) => {
+                return CheckedReactionResponse::refusal(
+                    profile,
+                    "typed_unsupported",
+                    unsupported.reason_code(),
+                    "RDKit 2026.03.6 reaction semantics cannot be reproduced for this input",
+                )
+                .json();
+            }
+            Err(error) => {
+                let reason = match &error {
+                    chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
+                    chematic_rxn::TransformError::ReactantCountMismatch { .. } => {
+                        "reactant_count_mismatch"
+                    }
+                    chematic_rxn::TransformError::SmirksParse(_) => "smirks_parse",
+                };
+                return CheckedReactionResponse::refusal(
+                    profile,
+                    "typed_refusal",
+                    reason,
+                    error.to_string(),
+                )
+                .json();
+            }
+        },
     };
-    let report = match outcome {
-        Ok(chematic_rxn::RdkitProfileOutcome::Report(report)) => report,
-        Ok(chematic_rxn::RdkitProfileOutcome::Unsupported(unsupported)) => {
-            return CheckedReactionResponse::refusal(
-                profile,
-                "typed_unsupported",
-                unsupported.reason_code(),
-                "RDKit 2026.03.6 reaction semantics cannot be reproduced for this input",
-            )
-            .json();
-        }
-        Err(error) => {
-            let reason = match &error {
-                chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
-                chematic_rxn::TransformError::ReactantCountMismatch { .. } => {
-                    "reactant_count_mismatch"
-                }
-                chematic_rxn::TransformError::SmirksParse(_) => "smirks_parse",
-            };
-            return CheckedReactionResponse::refusal(
-                profile,
-                "typed_refusal",
-                reason,
-                error.to_string(),
-            )
-            .json();
-        }
-    };
-    let mut result = checked_reaction_response(profile, report);
+    let mut result = checked_reaction_response(profile, report, rejection_diagnostics);
     let json = result.json();
     if json.len() > WASM_MAX_OUTPUT_BYTES {
         result.status = "typed_refusal";
@@ -579,6 +643,7 @@ pub fn run_reactants_checked(smirks: &str, reactants_smiles: &str, rdkit_compat:
         result.products.clear();
         result.product_atom_sources.clear();
         result.product_template_maps.clear();
+        result.rejection_diagnostics.clear();
         result.json()
     } else {
         json

@@ -90,6 +90,14 @@ def test_rdkit_reaction_profile_maps_and_rejected_products():
     r = chematic.run_smirks_checked("[CH2:1][OH:2]>>[CH:1]=[O:2]",
                                     [chematic.from_smiles("[OH+3](C)CO")], rdkit_compat=True)
     assert r["reason"] == "product_valence" and len(r["rejected_products"]) == 1
+    diagnostic = r["rejection_diagnostics"][0][0]
+    assert diagnostic["reason"] == "valence"
+    assert diagnostic["accepted"] is False
+    assert all(
+        {"atom_index", "atom_map", "element", "explicit_hydrogen_count",
+         "observed_valence", "max_allowed_valence"} <= atom.keys()
+        for atom in diagnostic["atoms"]
+    )
     # A * atom has atomic number 0: [#6] does not match it.
     r = chematic.run_smirks_checked("[C:1](=[O:2])([#6:3])[#6:4]>>[C:1]([OH:2])([#6:3])[#6:4]",
                                     [chematic.from_smiles("*C(=O)*")], rdkit_compat=True)

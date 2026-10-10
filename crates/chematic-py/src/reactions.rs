@@ -6,6 +6,44 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::sync::Arc;
 
+fn rejection_diagnostics_to_python<'py>(
+    py: Python<'py>,
+    diagnostics: Vec<Vec<chematic_rxn::ProductSanitizationDiagnostic>>,
+) -> PyResult<Vec<Vec<Bound<'py, PyDict>>>> {
+    diagnostics
+        .into_iter()
+        .map(|set| {
+            set.into_iter()
+                .map(|product| {
+                    let item = PyDict::new(py);
+                    item.set_item("product_index", product.product_index)?;
+                    item.set_item("accepted", product.accepted)?;
+                    item.set_item("reason", product.reason.map(|reason| reason.reason_code()))?;
+                    let atoms: Vec<Bound<'py, PyDict>> = product
+                        .atoms
+                        .into_iter()
+                        .map(|atom| {
+                            let detail = PyDict::new(py);
+                            detail.set_item("atom_index", atom.atom.0)?;
+                            detail.set_item("atom_map", atom.template_map)?;
+                            detail.set_item("element", atom.element.symbol())?;
+                            detail.set_item(
+                                "explicit_hydrogen_count",
+                                atom.explicit_hydrogen_count,
+                            )?;
+                            detail.set_item("observed_valence", atom.observed_valence)?;
+                            detail.set_item("max_allowed_valence", atom.max_allowed_valence)?;
+                            Ok(detail)
+                        })
+                        .collect::<PyResult<_>>()?;
+                    item.set_item("atoms", atoms)?;
+                    Ok(item)
+                })
+                .collect()
+        })
+        .collect()
+}
+
 /// Test whether a reaction SMARTS pattern matches a reaction SMILES.
 ///
 /// ``smarts``: reaction SMARTS (e.g. ``"[OH:1]>>[O-:1]"``).
@@ -542,7 +580,9 @@ fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
 /// ``RunReactants`` returns them, each product paired with whether RDKit's
 /// sanitization would accept it, and atoms carried over from a reactant
 /// keep its atom map numbers (as RDKit copies them). This option does not
-/// change :func:`run_smirks` semantics.
+/// change :func:`run_smirks` semantics. ``rejection_diagnostics`` is aligned
+/// with those sets and reports a stable ``valence``, ``aromaticity``,
+/// ``kekulization`` or ``unknown`` reason plus bounded atom-level context.
 #[pyfunction(signature = (smirks, reactants, rdkit_compat = false))]
 fn run_smirks_checked<'py>(
     smirks: &str,
@@ -562,6 +602,10 @@ fn run_smirks_checked<'py>(
         )?;
         result.set_item("product_template_maps", Vec::<Vec<Vec<Option<u16>>>>::new())?;
         result.set_item("rejected_products", Vec::<Vec<(Mol, bool)>>::new())?;
+        result.set_item(
+            "rejection_diagnostics",
+            Vec::<Vec<Bound<'py, PyDict>>>::new(),
+        )?;
         result.set_item("accepted_matches", 0)?;
         result.set_item("applied_products", 0)?;
         result.set_item("valence_rejected_matches", 0)?;
@@ -581,11 +625,13 @@ fn run_smirks_checked<'py>(
     }
     let refs: Vec<&chematic_core::Molecule> = reactants.iter().map(|m| m.inner.as_ref()).collect();
     let limits = chematic_rxn::ReactionTransformLimits::default();
-    let (report, rejected_products) = if rdkit_compat {
+    let (report, rejected_products, rejection_diagnostics) = if rdkit_compat {
         match chematic_rxn::run_reactants_traced_rdkit_2026_03_6_detailed(smirks, &refs, &limits) {
-            Ok(chematic_rxn::RdkitDetailedProfileOutcome::Report(report)) => {
-                (report.report, report.rejected_products)
-            }
+            Ok(chematic_rxn::RdkitDetailedProfileOutcome::Report(report)) => (
+                report.report,
+                report.rejected_products,
+                report.rejection_diagnostics,
+            ),
             Ok(chematic_rxn::RdkitDetailedProfileOutcome::Unsupported(unsupported)) => {
                 refuse(
                     "typed_unsupported",
@@ -611,7 +657,7 @@ fn run_smirks_checked<'py>(
         match chematic_rxn::PreparedReaction::shared(smirks)
             .and_then(|prepared| prepared.run_reactants_traced_with_diagnostics(&refs, &limits))
         {
-            Ok(report) => (report, Vec::new()),
+            Ok(report) => (report, Vec::new(), Vec::new()),
             Err(error) => {
                 let reason = match &error {
                     chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
@@ -635,6 +681,10 @@ fn run_smirks_checked<'py>(
         })
         .collect();
     result.set_item("rejected_products", rejected)?;
+    result.set_item(
+        "rejection_diagnostics",
+        rejection_diagnostics_to_python(py, rejection_diagnostics)?,
+    )?;
     let status = if diagnostics.valence_rejected_matches > 0 || diagnostics.truncated_matches {
         if report.products.is_empty() {
             "typed_refusal"

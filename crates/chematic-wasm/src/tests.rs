@@ -470,6 +470,12 @@ fn run_reactants_checked_counts_products_and_valence_refusal() {
     assert_eq!(refused["status"], "typed_refusal");
     assert_eq!(refused["reason"], "product_valence");
     assert!(refused["valence_rejected_matches"].as_u64().unwrap() > 0);
+    let diagnostic = &refused["rejection_diagnostics"][0][0];
+    assert_eq!(diagnostic["reason"], "valence");
+    assert_eq!(diagnostic["atoms"][0]["atom_map"], 1);
+    assert_eq!(diagnostic["atoms"][0]["element"], "N");
+    assert_eq!(diagnostic["atoms"][0]["observed_valence"], 4);
+    assert_eq!(diagnostic["atoms"][0]["max_allowed_valence"], 3);
 }
 
 #[test]

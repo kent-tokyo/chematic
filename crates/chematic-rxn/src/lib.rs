@@ -65,7 +65,8 @@ pub use stoichiometry::{
     StoichiometryStep, analyze_components, analyze_reaction_document, analyze_reaction_step,
 };
 pub use transform::{
-    PreparedReaction, RdkitDetailedProfileOutcome, RdkitProfileOutcome,
+    PreparedReaction, ProductAtomRejectionDiagnostic, ProductRejectionReason,
+    ProductSanitizationDiagnostic, RdkitDetailedProfileOutcome, RdkitProfileOutcome,
     RdkitTracedReactionTransformReport, ReactantAtom, ReactionCompatibilityUnsupported,
     ReactionMatch, ReactionMatchContext, ReactionTransformDiagnostics, ReactionTransformLimits,
     ReactionTransformReport, ReactionVariantDiagnostics, TracedProduct,
