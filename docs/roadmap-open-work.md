@@ -1,6 +1,6 @@
 # Open-work ledger
 
-Updated 2026-10-10 for **v1.0.42**. This file lists unresolved work only.
+Updated 2026-10-11 for **v1.1.0**. This file lists unresolved work only.
 Completed implementation details belong in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
 measurements belong in the [validation report](validation.md) and

@@ -10,7 +10,7 @@ service (PubChem).
 ## Install and configure
 
 ```bash
-cargo install chematic-mcp --version 1.0.42 --locked
+cargo install chematic-mcp --version 1.1.0 --locked
 ```
 
 Ensure Cargo's binary directory is on `PATH` (`$CARGO_HOME/bin`, normally
@@ -38,7 +38,7 @@ cargo run -p chematic-mcp --release
 
 ```toml
 [dependencies]
-chematic-mcp = { version = "1.0.42", path = "../chematic-mcp" }
+chematic-mcp = { version = "1.1.0", path = "../chematic-mcp" }
 ```
 
 ## Transports and protocol

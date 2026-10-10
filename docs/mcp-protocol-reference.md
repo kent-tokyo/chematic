@@ -48,7 +48,7 @@ Install the published binary from crates.io. Pinning the version keeps the
 server and the documented protocol surface in sync:
 
 ```bash
-cargo install chematic-mcp --version 1.0.42 --locked
+cargo install chematic-mcp --version 1.1.0 --locked
 ```
 
 Make sure Cargo's binary directory is on `PATH` (`$CARGO_HOME/bin`, normally
@@ -99,7 +99,7 @@ published version and local path explicit:
 
 ```toml
 [dependencies]
-chematic-mcp = { version = "1.0.42", path = "../chematic-mcp" }
+chematic-mcp = { version = "1.1.0", path = "../chematic-mcp" }
 ```
 
 ## Protocol eras

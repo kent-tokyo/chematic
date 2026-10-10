@@ -1,11 +1,11 @@
 # Validation report
 
-Updated 2026-10-11 for **v1.0.42**. The broad chemistry and speed packet
+Updated 2026-10-11 for **v1.1.0**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
 artifacts, the two-platform published v1.0.42/RDKit packet, the published
 v1.0.42 macOS arm64 chemistry baseline, v1.0.40 source, and the v1.0.41 source
-candidate. v1.0.42 release channels are
-verified. Every comparison is
+candidate. v1.0.42 release channels are verified; v1.1.0 package measurements
+begin only after publication. Every comparison is
 limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
@@ -54,7 +54,7 @@ limited to its recorded artifact, comparator, corpus and operation.
 Earlier source diagnostics and per-release channel checks remain in the
 [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) and
 [versioned validation results](https://github.com/kent-tokyo/chematic/tree/main/validation/results/). They are not promoted
-to v1.0.42 package measurements.
+to v1.1.0 package measurements.
 
 ## Reproduce and interpret
 

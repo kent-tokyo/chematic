@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-10. Release line: **v1.0.42**. Source, published-package, and
+> Updated 2026-10-11. Release line: **v1.1.0**. Source, published-package, and
 > public-channel evidence are tracked separately.
 
 CheMatic is a safe, typed, local-first chemistry kernel for Rust, Python,
@@ -33,8 +33,9 @@ boundaries and reproducible evidence over feature-count parity.
   macOS, and Windows CI. Force-field and conformer quality remain experimental;
   quality evidence takes precedence over speed claims.
 - **Release channels:** v1.0.42 is verified through the recorded GitHub, PyPI,
-  crates.io, npm, docs.rs, and Pages channels. Availability alone is not
-  chemistry validation.
+  crates.io, npm, docs.rs, and Pages channels. v1.1.0 verification starts only
+  after its tagged artifacts are public. Availability alone is not chemistry
+  validation.
 
 See [validation](docs/validation.md) for denominators and
 [benchmark records](benchmarks/README.md) for exact versions, hashes, and
@@ -62,7 +63,7 @@ commands.
 input row in column output, and either matches the pinned RDKit fixture or
 returns a documented typed refusal.
 
-### 1. P0/A1 — Close the v1.0.42 correctness and API regressions
+### 1. P0/A1 — Verify v1.1.0 correctness and API contracts
 
 - The source candidate fixes the four false RDKit-compatible ring counts caused
   by treating every single SMILES closure as a graph cycle. Keep coordination,

@@ -4,7 +4,7 @@ WebAssembly bindings for [chematic](https://github.com/kent-tokyo/chematic), a p
 
 Published to npm as [`@kent-tokyo/chematic`](https://www.npmjs.com/package/@kent-tokyo/chematic).
 
-The current workspace line is 1.0.42. The binding keeps bounded parsing,
+The current workspace line is 1.1.0. The binding keeps bounded parsing,
 typed failures, and opt-in `embed_pipeline_v2_json`; 3D/MMFF94 behavior remains
 Experimental and is not a claim of full RDKit parity.
 
@@ -25,6 +25,9 @@ npm install @kent-tokyo/chematic
 - SA score: synthetic accessibility estimate [1, 10]
 - Functional group identification (Ertl 2017 IFG)
 - Canonical SMILES generation
+- Separately named RDKit 2026.03.1 compatibility bindings for SMARTS/PDB,
+  format readers, Murcko/stereo/hash/Morgan inspection, bounded alignment,
+  seeded ETKDG, and distance bounds
 - ECFP4/6, AtomPair, Torsion, path, and RDKit-compatible RDK fingerprints
   with Tanimoto similarity
 - BRICS fragment count
@@ -71,6 +74,7 @@ libraries):
 ```js
 import init, {
   parse_smiles,
+  add_hydrogens,
   tanimoto_ecfp4,
   tanimoto_atom_pair,
   tanimoto_torsion,
@@ -111,6 +115,28 @@ console.log(tanimoto_ecfp4(mol, caffeine));    // ECFP4 Tanimoto
 console.log(tanimoto_atom_pair(mol, caffeine)); // AtomPair Tanimoto
 console.log(tanimoto_torsion(mol, caffeine));   // Torsion Tanimoto
 ```
+
+### RDKit-compatible interoperability
+
+The `rdkit_*` methods are opt-in compatibility paths and do not replace the
+native browser APIs. JSON atom indices and coordinate rows are zero-based in
+`MolHandle` atom order:
+
+```js
+const smarts = mol.rdkit_smarts(true);
+const centers = JSON.parse(mol.rdkit_chiral_centers_json(true));
+const bitInfo = JSON.parse(mol.rdkit_morgan_bit_info_json(2, 2048, false));
+
+const withH = add_hydrogens(parse_smiles('CCO'));
+const coords = JSON.parse(withH.rdkit_embed_json(42, 0));
+const bounds = JSON.parse(withH.rdkit_bounds_matrix_json(true, true, false));
+```
+
+PDB, XYZ, and MOL2 readers return `RdkitReadResult`; call `molecule()` for a
+handle and `coords_json()` for index-aligned coordinates. Browser limits are
+explicit: at most 512 atoms for ETKDG/bounds, 4,096 stereoisomers, and
+1,000,000 alignment matches. Invalid or unsupported inputs throw a stable JS
+error instead of being silently coerced.
 
 ### Node.js
 

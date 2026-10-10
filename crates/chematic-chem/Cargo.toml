@@ -17,15 +17,15 @@ documentation = "https://docs.rs/chematic-chem"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "1.0.42" }
+chematic-core       = { path = "../chematic-core",       version = "1.1.0" }
 rustc-hash          = "2"
 smallvec            = "1"
-chematic-perception = { path = "../chematic-perception", version = "1.0.42" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.42" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.42" }
-chematic-fp         = { path = "../chematic-fp",         version = "1.0.42" }
-chematic-iupac      = { path = "../chematic-iupac",      version = "1.0.42" }
-chematic-cip        = { path = "../chematic-cip",        version = "1.0.42" }
+chematic-perception = { path = "../chematic-perception", version = "1.1.0" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "1.1.0" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "1.1.0" }
+chematic-fp         = { path = "../chematic-fp",         version = "1.1.0" }
+chematic-iupac      = { path = "../chematic-iupac",      version = "1.1.0" }
+chematic-cip        = { path = "../chematic-cip",        version = "1.1.0" }
 serde               = { version = "1.0", features = ["derive"], optional = true }
 serde_json          = { version = "1.0", optional = true }
 miniz_oxide         = { version = "0.9", optional = true, default-features = false, features = ["with-alloc"] }

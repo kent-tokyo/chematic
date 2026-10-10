@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.42</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.1.0</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,11 +80,11 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.0.42 reduces repeated work in selected RDKit-compatible chemistry paths and
-adds paired source-candidate performance records. The v1.0.41 source comparison
-still supplies the latest broad 161-operation accuracy evidence. The published
-83-row reaction gate remains 80 exact graph/origin/map rows and three inputs
-invalid in both engines. SMARTS/SMIRKS dialect work remains open.
+v1.1.0 adds label-stable R-group decomposition, broader cross-binding RDKit
+interoperability, and fixes across ring perception, reactions, and molecular
+file interchange. The latest broad published-package performance packet remains
+v1.0.42 until v1.1.0 artifacts are measured. The 83-row reaction gate remains
+80 exact graph/origin/map rows and three inputs invalid in both engines.
 
 Each result applies only to its named artifact, corpus, options, and failure
 policy. Release availability is not accuracy evidence, source results are not
