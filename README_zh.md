@@ -27,11 +27,12 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.0.41 范围
+### v1.0.42 范围
 
-v1.0.41 增加了有边界的 RDKit 兼容互变异构体、writer、矩阵、稀疏指纹、
-化学问题检测、反应和固定 seed 3D API。source 比较覆盖 161 个项目；公开 package
-和 stress corpus 的限制分别记录。详情见[验证报告](docs/validation.md)和
+v1.0.42 减少了部分 RDKit 兼容指纹、描述符、环、反应和 MMFF94 准备路径中的
+分配与重复计算，并扩展回归测试。与 RDKit、COSMolKit 的性能比较现采用交替顺序和
+重复采样。性能记录仅适用于一台主机上的 source candidate，尚未重新测量公开 artifact
+或其他主机。详情见[验证报告](docs/validation.md)和
 [CHANGELOG](CHANGELOG.md)。
 
 ## 使用

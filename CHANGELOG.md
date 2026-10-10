@@ -10,6 +10,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.42] - 2026-10-10
+
 ### Changed
 
 - Expanded Rust coverage measurement to exercise native InChI reconstruction,

@@ -12,7 +12,7 @@ or clinical judgement.
 Install the published binary:
 
 ```bash
-cargo install chematic-mcp --version 1.0.41 --locked
+cargo install chematic-mcp --version 1.0.42 --locked
 ```
 
 Then point the MCP client at `chematic-mcp`:

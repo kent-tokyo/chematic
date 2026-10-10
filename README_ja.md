@@ -27,11 +27,12 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.0.41 の対応範囲
+### v1.0.42 の対応範囲
 
-v1.0.41では、RDKit互換の互変異性体、writer、行列、疎なfingerprint、
-化学的問題の検出、反応、固定シードの3D APIを追加しました。ソース比較は161項目を
-対象とし、公開パッケージとstress corpusの限界は分けて記録しています。詳しくは
+v1.0.42では、RDKit互換fingerprint、記述子、環、反応、MMFF94準備処理の一部で、
+不要なallocationと重複計算を減らしました。回帰テストを拡充し、RDKitおよび
+COSMolKitとの比較を交互順・反復測定へ更新しています。性能記録は1台のhost上の
+source candidateを対象としており、公開artifactと他hostでは未再測定です。詳しくは
 [検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方

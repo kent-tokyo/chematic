@@ -2,7 +2,7 @@
 
 CheMatic is not a drop-in RDKit replacement. Choose a declared operation
 profile, preserve unsupported inputs, and compare results on your own data
-before changing a production workflow. The current release is **v1.0.41**;
+before changing a production workflow. The current release is **v1.0.42**;
 the latest published-package comparison packet is pinned to **v1.0.30**.
 
 For runnable calls, see the [RDKit cheat sheet](rdkit_cheatsheet.md). For

@@ -25,12 +25,14 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.0.41 release boundary
+### v1.0.42 release boundary
 
-v1.0.41 adds bounded RDKit-compatible tautomer, writer, matrix, sparse
-fingerprint, chemistry-problem, reaction, and seeded-3D APIs. The recorded
-source comparison covers 161 operations; package and stress-corpus limits are
-kept separate. See [validation](docs/validation.md) and
+v1.0.42 reduces allocation and repeated perception work in selected
+RDKit-compatible fingerprints, descriptors, rings, reactions, and MMFF94
+preparation. It also strengthens regression coverage and records paired,
+alternating-order comparisons against RDKit and COSMolKit. The performance
+records are source-candidate evidence on one host; published artifacts and
+additional hosts have not been rerun. See [validation](docs/validation.md) and
 [CHANGELOG](CHANGELOG.md).
 
 ## Use it
