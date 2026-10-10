@@ -89,11 +89,16 @@ struct literals compile, and unsupported calculations have a checked path.
   for the chemistry packet and 265-row A6 coordinates. Its explicit-H reaction
   counts are retained as historical v1.0.42 behavior, not silently replaced by
   the source candidate.
+- The selected v1.0.42/RDKit 2026.09.1 performance packet is now rerun from
+  exact PyPI and npm artifacts on hosted Linux x64 and macOS arm64. Python
+  parse-inclusive TPSA, Labute ASA and chiral Morgan win on both hosts; the six
+  published ring-count residuals suppress that speed lane, and mixed prepared
+  results remain host-scoped. npm exposes no equivalent-work speed win.
 - Run the same expected-value packet on the published Linux, macOS, and Windows
   artifacts. Keep platform output, comparator execution, and source-candidate
   results separate.
-- Rerun chemistry and performance gates from exact PyPI/npm/crates.io artifacts
-  rather than carrying source results forward.
+- Continue the broader chemistry/A6 packet on Windows and the applicable
+  crates.io surfaces rather than carrying source results forward.
 
 **Exit:** every published claim names its artifact hash, comparator, corpus,
 operation, options, and failure policy.

@@ -7,14 +7,15 @@ links the raw data and older measurements.
 
 ## Current published-package evidence
 
-The current release is **v1.0.42**. The latest broad published-package performance
-packet below is for **v1.0.30**, not a new v1.0.42 measurement. The v1.0.42
-performance records, v1.0.41 RDKit/COSMolKit 0.5 record, and v1.0.40 seeded
-ETKDG record are source-built evidence. None is a universal speed or
-compatibility claim.
+The current release is **v1.0.42**. A new bounded v1.0.42 packet measures four
+named RDKit 2026.09.1 Python lanes from exact PyPI wheels on hosted Linux x64
+and macOS arm64. The broader published-package matrix remains v1.0.30, and the
+v1.0.41 RDKit/COSMolKit and v1.0.40 seeded ETKDG records remain source-built
+evidence. None is a universal speed or compatibility claim.
 
 | Lane | Result | Boundary |
 |---|---|---|
+| [Published v1.0.42 / RDKit 2026.09.1](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) | Python TPSA, Labute ASA and chiral Morgan have exact/toleranced 10k output gates and favorable parse-inclusive intervals on both hosted runners. | Ring count is 9,994/10,000 and has no speed ratio. macOS prepared Labute loses and prepared Morgan crosses parity. npm Labute is asymmetric work and npm chiral Morgan differs on one row, so neither receives a speed claim. |
 | [Python 63-operation matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | 20 operations have exact output agreement and a favorable paired confidence interval against RDKit 2026.03.6 in 20 alternating blocks. | One host and exposed corpus; other operations are not wins. |
 | [Isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) and [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) | Parse-inclusive, prepared first-use and precomputed lanes use 20 fresh-process blocks. | Process peak RSS is not per-operation allocation. Changed HBA outputs cannot support an equivalent-output v1.0.29/v1.0.30 speed claim. |
 | [Published Node/WASM](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-rdkitjs-node-isolated-paired20.md) | Compatible Morgan is bit-identical on the 250-row speed corpus, with 20 fresh-process paired blocks against official RDKit.js. | Node is not browser evidence. |
@@ -52,6 +53,8 @@ python3 scripts/check_benchmark_index.py
 python3 scripts/check_v1030_artifact_packet.py
 python3 scripts/check_published_python_isolated_paired.py
 python3 scripts/check_published_rust_isolated_paired.py
+python3 scripts/check_published_v1042_rdkit_packet.py \
+  benchmarks/2026-10-11-v1042-published-rdkit-python-linux-x64.json
 ```
 
 A new measurement must record artifact/source hashes; corpus and failure

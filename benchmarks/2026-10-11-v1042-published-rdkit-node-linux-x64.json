@@ -1,0 +1,515 @@
+{
+  "schema": "published-v1.0.42-rdkit-packet/v1",
+  "binding": "node-wasm",
+  "versions": {
+    "chematic": "1.0.42",
+    "rdkit": "2026.9.1",
+    "rdkit_runtime": "2026.09.1"
+  },
+  "artifacts": [
+    {
+      "file": "kent-tokyo-chematic-1.0.42.tgz",
+      "bytes": 2145678,
+      "sha256": "aa29f1f17a08b0b34514c88a1cd384e26bde7f0bd6589dedbb76ea965785ef40"
+    },
+    {
+      "file": "rdkit-rdkit-2026.9.1.tgz",
+      "bytes": 2449562,
+      "sha256": "ae6b0e42b85114a2f38ef890fcb229a90b54b0b42d4636c50ae1c7f77d85ffe0"
+    }
+  ],
+  "corpus": {
+    "path": "rdkit-js-browser-10k-v1.smi",
+    "rows": 10000,
+    "timing_rows": 1000,
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+  },
+  "environment": {
+    "node": "v22.23.3",
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 4,
+    "runner_os": "Linux",
+    "runner_arch": "X64",
+    "runner_name": "GitHub Actions 1000115200"
+  },
+  "method": {
+    "blocks": 21,
+    "order": "alternating engines in one Node process for each block",
+    "prepared": "parse outside timing, then first operation call",
+    "pipeline": "parse plus operation inside timing",
+    "confidence_interval": "paired bootstrap of per-block RDKit/chematic ratios, 10000 resamples",
+    "speed_claim_policy": "withhold both intervals unless the 10000-row output gate passes and both APIs perform equivalent work",
+    "unavailable_v1042_lanes": {
+      "tpsa": "npm v1.0.42 exposes native TPSA, not the Python rdkit_tpsa profile",
+      "num_rings": "npm v1.0.42 exposes ring_count, not the Python rdkit_num_rings profile"
+    }
+  },
+  "accuracy": {
+    "labute_asa": {
+      "compared": 10000,
+      "matches": 10000,
+      "mismatch_count": 0,
+      "error_count": 0,
+      "mismatches": [],
+      "errors": [],
+      "equivalent": true
+    },
+    "morgan2_chiral": {
+      "compared": 10000,
+      "matches": 9999,
+      "mismatch_count": 1,
+      "error_count": 0,
+      "mismatches": [
+        {
+          "row": 2960,
+          "smiles": "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+          "chematic": "00000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000010000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000100000000000100000000000000000000000000000000000000000000001000000000000000010000000000000000000000000000000000000000000000000000001000000000000000000100000000000000000000000000000000000000000000000000000100000000000000000000000000000010000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000100000000000000000001000000000000100000000000100000000000000000000000000000000100000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000001001000000000000000000000000000100000000000000000000000000000000000000000000000000000000100000000000000000000100000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000001001000000000000000000000000000000000000000100000000000000000000000000000001000000000000000000000010000000000000000000000000000100000000000000000000000000010000000000000000000000000000000000010000001000001000000000000000000000000000000000000000000000000000000000000000000000000000000001000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100001000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "rdkit": "00000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000100000000000100000000000000000000000000000000000000000000001000000000000000010000000000000000000000000000000000000000000000000000001000000000000000000100000000000000000000000000000000000000000000000000000100000000000000000000000000000010000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000100000000000000000001000000000000100000000000100000000000000000000000000000000101000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000001001000000000000000000000000000100000000000000000000000000000000000000000000000000000000100000000000000000000100000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000001001000000000000000000000000000000000000000100000000000000000000000000000001000000000000000000000010000000000000000000000000000100000000000000000000000000010000000000000000000000000000000000010000001000001000000000000000000000000000000000000000000000000000000000000000000000000000000001000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100001000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "errors": [],
+      "equivalent": false
+    }
+  },
+  "raw_samples_seconds": {
+    "chematic": [
+      {
+        "labute_asa_prepared_seconds": 0.010111140000000888,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.014634044000000358,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.07505703700000049,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.0814481080000005,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.07164732000000004,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07902214800000001,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 0.008087586000001465,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.013312857000000804,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 0.008059204000001046,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.013007656000001588,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.07179026500000327,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07877577400000155,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.07106290199999785,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07780679400000008,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 0.007957704000000376,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.013029458999997587,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 0.00786973399999988,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.013173772000001919,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.07226764900000125,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07796599900000001,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.07068310899999779,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07889985200000228,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 0.008170835999997508,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.012962776000000304,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 0.007879906000001938,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.013184612999997626,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.07655934899999556,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.0776883949999974,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.07099023099999613,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.0776776170000012,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 0.007750045000000682,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.01275806300000113,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 0.007566233999998076,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.012807275999999547,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.07080531799999881,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07741137400000297,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.07021937400000024,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07783552400000189,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 0.00791435900000215,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.01294140100000368,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 0.0078221229999981,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.01284682199999952,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.07097154299999965,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.0782294849999962,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.07058276400000614,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07847944500000449,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 0.009160894999993615,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.012862887000002956,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 0.007782692000000679,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.012911998999996285,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.07117684100000042,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07716312299999845,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.07061269300000277,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07806549899999664,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 0.007955487000006542,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.012955555000000459,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 0.0078087410000007365,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.012895837000003667,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.07081610300000465,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07815808599999582,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.07110556199999701,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07804736300000513,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 0.007973322999998344,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.012929624999989755,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 0.007603017000001273,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.012849025999996228,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.07081816900000558,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07695177700000931,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.0698218029999989,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07794490700001189,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 0.007806597000002512,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.012853873999993083,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 0.007649365999997827,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.01281990400000359,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.07088567200000398,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07742015200000606,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.07011785900000542,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.0776012289999926,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 0.00788576400000602,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.0129201219999959,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 0.007782522000008612,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 0.012853734000003897,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.0707135580000031,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.07829108799999812,
+        "morgan2_chiral_pipeline_checksum": 13
+      }
+    ],
+    "rdkit": [
+      {
+        "labute_asa_prepared_seconds": 1.1719251800000001,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.457943577,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.06250473400000192,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.286712612000003,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.059855274000001374,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2893189480000001,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 1.1723416739999992,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4577518249999994,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 1.166571480999999,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4599703679999985,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.05917295499999818,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2874096979999995,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.05833758299999681,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2879915370000017,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 1.1649761969999999,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4556684190000015,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 1.1679791020000012,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4636885770000008,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.058717654000000036,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.28893507699999826,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.05852987799999755,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2871055979999983,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 1.1673660400000008,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4584345140000006,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 1.187437573999996,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4610666330000022,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.05851838000000134,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2861107839999968,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.060041787000001935,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2849679179999948,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 1.1493362080000007,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.430804431999997,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 1.1491032439999982,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4367259549999944,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.059526528000002146,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2840067710000003,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.05825033700000495,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2842796430000017,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 1.1478371249999981,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4318019940000013,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 1.1484547759999986,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4417227310000016,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.058498321999999464,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.28370113700000366,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.059917229000006046,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2847075030000051,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 1.1509504770000059,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4280027569999947,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 1.1453434239999987,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4310901509999967,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.05834663200000068,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2845792749999964,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.058842132999998284,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.28426392900000064,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 1.1489361329999956,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4268751030000058,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 1.1467914140000066,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4381010360000073,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.05847039800000493,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.28586109400000714,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.05868722799999523,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.28461856999999147,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 1.1480230209999864,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4268138739999996,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 1.1461128159999934,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4272246520000045,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.058294862999988255,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.28347060600000257,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.05808855799998855,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2857511899999954,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 1.1472253869999987,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4267393839999858,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 1.149505375000008,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4286336500000034,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.058408232999994654,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.28597947299999943,
+        "morgan2_chiral_pipeline_checksum": 13
+      },
+      {
+        "morgan2_chiral_prepared_seconds": 0.05850328399999125,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.28414848200000414,
+        "morgan2_chiral_pipeline_checksum": 13,
+        "labute_asa_prepared_seconds": 1.1483624999999884,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4305876430000062,
+        "labute_asa_pipeline_checksum": 14
+      },
+      {
+        "labute_asa_prepared_seconds": 1.146766306000005,
+        "labute_asa_prepared_checksum": 14,
+        "labute_asa_pipeline_seconds": 1.4276559229999983,
+        "labute_asa_pipeline_checksum": 14,
+        "morgan2_chiral_prepared_seconds": 0.0584263260000007,
+        "morgan2_chiral_prepared_checksum": 13,
+        "morgan2_chiral_pipeline_seconds": 0.2839987220000039,
+        "morgan2_chiral_pipeline_checksum": 13
+      }
+    ]
+  },
+  "speedup_rdkit_over_chematic": {
+    "labute_asa": {
+      "eligible": false,
+      "ineligible_reason": "RDKit.js exposes Labute ASA only through get_descriptors(), which computes a descriptor bundle",
+      "prepared": null,
+      "pipeline": null
+    },
+    "morgan2_chiral": {
+      "eligible": false,
+      "ineligible_reason": "10000-row output gate did not pass",
+      "prepared": null,
+      "pipeline": null
+    }
+  }
+}
