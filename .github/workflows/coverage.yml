@@ -66,6 +66,15 @@ jobs:
             --test canonical_smiles_reaction_product_order --test cross_binding_contract \
             --test issue455_explicit_h_valence --test issue769_neutral_valence \
             --test cip_lone_pair_ring_centre_rdkit_reading \
+            --test cross_binding_adversarial --test mmcif_pqr_integration \
+            --test square_planar_mol_io --test atom_tag_cache --test atom_tag_visit_order \
+            --test dative_bond_direction --test square_planar_stereo \
+            --test explicit_h_stereo --test ez_stash_stereo0d \
+            --test indexed_graph_relation --test invert_stereocenter_p0_stereo_invariance \
+            --test accurate_cip_preflight --test dedup_fixtures --test standard_inchi \
+            --test descriptor_contract --test rdkit_reference --test metal_disconnect_holdout \
+            --test standardize_stereo_table_preservation --test aromaticity_edge_gate \
+            --test issue415_fused_heteroaromatic_holdout \
             --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
             --no-report
           cargo llvm-cov report \
