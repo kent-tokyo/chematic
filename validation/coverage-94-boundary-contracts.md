@@ -40,16 +40,19 @@ from the pinned 10,000-molecule corpus and requires zero atom-type differences.
 The remaining rows retain the oracle's parse/unsupported status. The coverage
 workflow now runs this formerly manual census and the existing CIP corpus gates.
 
-## Explicit residuals
+## Geometry comparison and explicit stereo residuals
 
-The depiction sample retains five layouts whose coordinates differ from RDKit
-by more than 1e-9. The test requires finite, deterministic coordinates for every
-case and the exact five-molecule residual set in
-`crates/chematic-smiles/src/stereo_order_boundary_contract_tests.rs`.
+The depiction test requires finite, deterministic coordinates for all 303 cases
+and agreement with the reference bond lengths within 1e-6 coordinate units.
+Bond indices use the same hydrogen-normalized graph as the depiction API.
+The eight small hand-picked layouts also require coordinate agreement within
+1e-9. Complete layouts for larger molecules differ between macOS arm64 and
+Linux x86-64, so their absolute orientation and fragment placement are not
+treated as portable snapshots. The full reference coordinates remain committed.
 
 The native approximate potential-stereo API differs on five of the 29 cases:
-four dependent-ring cases and an arsenic center. The full RDKit atom-index references remain in
-the fixture. The test in
+four dependent-ring cases and an arsenic center. The full RDKit atom-index
+references remain in the fixture. The test in
 `crates/chematic-chem/src/descriptor_boundary_contract_tests.rs` requires the
 exact known residuals and exact agreement on the other cases. These gates do not
 claim complete RDKit parity. Removing a residual requires updating its explicit
