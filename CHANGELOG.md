@@ -13,9 +13,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ### Changed
 
 - Expanded Rust coverage measurement to exercise native InChI reconstruction,
-  canonical SMILES, stereochemical MOL readers, reaction caches, MMFF94 terms,
-  and cross-binding contracts. The report now excludes the ignored manual 3D
-  differential harness from the production-code denominator.
+  canonical SMILES, fixed-column PDB parsing, reaction SMARTS grammar,
+  stereochemical MOL readers, reaction caches, MMFF94 terms, and cross-binding
+  contracts. The report now excludes the ignored manual 3D differential
+  harness from the production-code denominator.
 - Reduced RDKit-compatible Morgan allocation for folded-bit callers, reused
   parser-proven acyclic/single-cycle ring facts, and removed duplicate MMFF
   force-field preparation. Existing detailed fingerprint and chemistry results
