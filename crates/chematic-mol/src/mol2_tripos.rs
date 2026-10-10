@@ -5,6 +5,8 @@
 //!
 //! Reference: Tripos MOL2 format specification (SYBYL 7.x).
 
+use core::fmt::Write as _;
+
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 
 /// One `@<TRIPOS>ATOM` row whose interchange fields are not representable by
@@ -646,7 +648,9 @@ fn bond_type_token(order: BondOrder) -> &'static str {
 pub fn write_mol2_record(record: &Mol2Record) -> String {
     let mol = &record.molecule;
     let coords = &record.coords;
-    let mut out = String::new();
+    let mut out = String::with_capacity(
+        256 + mol.atom_count().saturating_mul(96) + mol.bond_count().saturating_mul(32),
+    );
 
     // MOLECULE section.
     out.push_str("@<TRIPOS>MOLECULE\n");
@@ -663,11 +667,12 @@ pub fn write_mol2_record(record: &Mol2Record) -> String {
                 .filter(|line| !line.trim().is_empty())
                 .count()
         });
-    out.push_str(&format!(
-        "{} {} {substructures} 0 0\n",
+    let _ = writeln!(
+        out,
+        "{} {} {substructures} 0 0",
         mol.atom_count(),
         mol.bond_count() + record.duplicate_bonds.len()
-    ));
+    );
     out.push_str(&record.molecule_type);
     out.push('\n');
     out.push_str(&record.charge_type);
@@ -699,13 +704,17 @@ pub fn write_mol2_record(record: &Mol2Record) -> String {
             .and_then(|row| row.subst_name.as_deref())
             .unwrap_or("LIG");
         let partial_charge = source.and_then(|row| row.partial_charge).unwrap_or(0.0);
-        let status = source
-            .filter(|row| !row.status_bits.is_empty())
-            .map(|row| format!(" {}", row.status_bits.join(" ")))
-            .unwrap_or_default();
-        out.push_str(&format!(
-            "{atom_id:>6} {atom_name:<8} {x:>10.4} {y:>10.4} {z:>10.4} {atom_type:<8} {subst_id:>4}  {subst_name:<8} {partial_charge:>10.4}{status}\n"
-        ));
+        let _ = write!(
+            out,
+            "{atom_id:>6} {atom_name:<8} {x:>10.4} {y:>10.4} {z:>10.4} {atom_type:<8} {subst_id:>4}  {subst_name:<8} {partial_charge:>10.4}"
+        );
+        if let Some(row) = source {
+            for status in &row.status_bits {
+                out.push(' ');
+                out.push_str(status);
+            }
+        }
+        out.push('\n');
     }
 
     let mut unity_groups = record.unity_atom_attributes.clone();
@@ -746,9 +755,9 @@ pub fn write_mol2_record(record: &Mol2Record) -> String {
     if !unity_groups.is_empty() {
         out.push_str("@<TRIPOS>UNITY_ATOM_ATTR\n");
         for group in &unity_groups {
-            out.push_str(&format!("{} {}\n", group.atom_id, group.attributes.len()));
+            let _ = writeln!(out, "{} {}", group.atom_id, group.attributes.len());
             for (name, value) in &group.attributes {
-                out.push_str(&format!("{name} {value}\n"));
+                let _ = writeln!(out, "{name} {value}");
             }
         }
     }
@@ -769,25 +778,26 @@ pub fn write_mol2_record(record: &Mol2Record) -> String {
         let btype = source
             .map(|row| row.bond_type.as_str())
             .unwrap_or_else(|| bond_type_token(bond.order));
-        let status = source
-            .filter(|row| !row.status_bits.is_empty())
-            .map(|row| format!(" {}", row.status_bits.join(" ")))
-            .unwrap_or_default();
-        out.push_str(&format!("{bi:>6} {a1:>6} {a2:>6} {btype}{status}\n"));
+        let _ = write!(out, "{bi:>6} {a1:>6} {a2:>6} {btype}");
+        if let Some(row) = source {
+            for status in &row.status_bits {
+                out.push(' ');
+                out.push_str(status);
+            }
+        }
+        out.push('\n');
     }
     for bond in &record.duplicate_bonds {
-        out.push_str(&format!(
-            "{:>6} {:>6} {:>6} {}{}\n",
-            bond.bond_id,
-            bond.atom1_id,
-            bond.atom2_id,
-            bond.bond_type,
-            if bond.status_bits.is_empty() {
-                String::new()
-            } else {
-                format!(" {}", bond.status_bits.join(" "))
-            }
-        ));
+        let _ = write!(
+            out,
+            "{:>6} {:>6} {:>6} {}",
+            bond.bond_id, bond.atom1_id, bond.atom2_id, bond.bond_type
+        );
+        for status in &bond.status_bits {
+            out.push(' ');
+            out.push_str(status);
+        }
+        out.push('\n');
     }
 
     for section in &record.opaque_sections {
