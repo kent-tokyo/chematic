@@ -249,26 +249,187 @@ pub(crate) fn normalize_product_query_atoms_reading(
     Ok(out)
 }
 
+#[derive(Default)]
+struct ProductAtomFields {
+    symbol: Option<String>,
+    atomic_number: Option<u8>,
+    aromatic: Option<bool>,
+    isotope: Option<u16>,
+    chirality: Option<u8>,
+    hcount: Option<u8>,
+    charge: Option<i8>,
+}
+
+fn product_query_conjuncts<'q>(
+    query: &'q chematic_smarts::AtomQuery,
+    out: &mut Vec<&'q chematic_smarts::AtomQuery>,
+) {
+    match query {
+        chematic_smarts::AtomQuery::And(left, right) => {
+            product_query_conjuncts(left, out);
+            product_query_conjuncts(right, out);
+        }
+        other => out.push(other),
+    }
+}
+
+fn set_product_field<T: PartialEq>(slot: &mut Option<T>, value: T) -> bool {
+    let conflict = slot.as_ref().is_some_and(|current| *current != value);
+    *slot = Some(value);
+    conflict
+}
+
+fn first_product_primitive<T: Copy>(
+    query: &chematic_smarts::AtomQuery,
+    pick: &impl Fn(&chematic_smarts::AtomPrimitive) -> Option<T>,
+) -> Option<T> {
+    use chematic_smarts::AtomQuery;
+    match query {
+        AtomQuery::Primitive(primitive) => pick(primitive),
+        AtomQuery::And(left, right) | AtomQuery::Or(left, right) => {
+            first_product_primitive(left, pick).or_else(|| first_product_primitive(right, pick))
+        }
+        AtomQuery::Not(_) => None,
+    }
+}
+
+impl ProductAtomFields {
+    fn from_query(query: &chematic_smarts::AtomQuery) -> Option<Self> {
+        use chematic_smarts::{AtomPrimitive, AtomQuery};
+
+        let mut fields = Self::default();
+        let mut parts = Vec::new();
+        product_query_conjuncts(query, &mut parts);
+        let mut conflict = false;
+        for part in parts {
+            let AtomQuery::Primitive(primitive) = part else {
+                continue;
+            };
+            conflict |= match primitive {
+                AtomPrimitive::Symbol(value) => {
+                    set_product_field(&mut fields.symbol, value.clone())
+                }
+                AtomPrimitive::AtomicNum(value) => {
+                    set_product_field(&mut fields.atomic_number, *value)
+                }
+                AtomPrimitive::Aromatic(value) => set_product_field(&mut fields.aromatic, *value),
+                AtomPrimitive::Isotope(value) => set_product_field(&mut fields.isotope, *value),
+                AtomPrimitive::Chirality(value) => set_product_field(&mut fields.chirality, *value),
+                AtomPrimitive::HCount(value) => set_product_field(&mut fields.hcount, *value),
+                AtomPrimitive::Charge(value) => set_product_field(&mut fields.charge, *value),
+                _ => false,
+            };
+        }
+        (!conflict).then_some(fields)
+    }
+
+    fn fill_alternative_defaults(&mut self, query: &chematic_smarts::AtomQuery) {
+        use chematic_smarts::AtomPrimitive;
+        if self.hcount.is_none() {
+            self.hcount = first_product_primitive(query, &|primitive| match primitive {
+                AtomPrimitive::HCount(value) => Some(*value),
+                _ => None,
+            });
+        }
+        if self.charge.is_none() {
+            self.charge = first_product_primitive(query, &|primitive| match primitive {
+                AtomPrimitive::Charge(value) => Some(*value),
+                _ => None,
+            });
+        }
+    }
+
+    fn element(&self) -> Option<Option<chematic_core::Element>> {
+        match (&self.symbol, self.atomic_number) {
+            (Some(symbol), atomic_number) => {
+                let element = chematic_core::Element::from_symbol(symbol)?;
+                if atomic_number.is_some_and(|number| number != element.atomic_number()) {
+                    return None;
+                }
+                Some(Some(element))
+            }
+            (None, Some(number)) => Some(Some(chematic_core::Element::from_atomic_number(number)?)),
+            (None, None) => Some(None),
+        }
+    }
+}
+
+fn atomic_number_product_spec(
+    fields: &ProductAtomFields,
+    element: Option<chematic_core::Element>,
+    atom_map: Option<u16>,
+) -> Option<String> {
+    let element = element?;
+    if fields.symbol.is_some()
+        || fields.aromatic.is_some()
+        || fields.isotope.is_some()
+        || fields.chirality.is_some()
+        || fields.hcount.is_some_and(|h| h > 9)
+        || fields
+            .charge
+            .is_some_and(|charge| !(-9..=9).contains(&charge))
+    {
+        return None;
+    }
+
+    let mut spec = format!("[#{}", element.atomic_number());
+    if let Some(hcount) = fields.hcount {
+        spec.push_str(&format!(";H{hcount}"));
+    }
+    match fields.charge {
+        Some(charge) if charge >= 0 => spec.push_str(&format!(";+{charge}")),
+        Some(charge) => spec.push_str(&format!(";-{}", -i16::from(charge))),
+        None => {}
+    }
+    if let Some(atom_map) = atom_map {
+        spec.push_str(&format!(":{atom_map}"));
+    }
+    spec.push(']');
+    Some(spec)
+}
+
+fn render_product_atom_spec(
+    fields: &ProductAtomFields,
+    element: Option<chematic_core::Element>,
+    atom_map: Option<u16>,
+    rdkit_reading: bool,
+) -> Option<String> {
+    let mut spec = String::from("[");
+    if let Some(isotope) = fields.isotope {
+        spec.push_str(&isotope.to_string());
+    }
+    match element {
+        Some(element) if fields.aromatic == Some(true) => {
+            spec.push_str(&element.symbol().to_ascii_lowercase());
+        }
+        Some(element) => spec.push_str(element.symbol()),
+        None if atom_map.is_some() && fields.chirality.is_none() => spec.push('*'),
+        None if rdkit_reading && fields.chirality.is_none() => spec.push('*'),
+        None => return None,
+    }
+    match fields.chirality {
+        Some(1) => spec.push('@'),
+        Some(2) => spec.push_str("@@"),
+        _ => {}
+    }
+    if let Some(hcount) = fields.hcount {
+        spec.push_str(&format!("H{hcount}"));
+    }
+    match fields.charge {
+        Some(0) => spec.push_str("+0"),
+        Some(charge) if charge > 0 => spec.push_str(&format!("+{charge}")),
+        Some(charge) => spec.push_str(&format!("-{}", -i16::from(charge))),
+        None => {}
+    }
+    if let Some(atom_map) = atom_map {
+        spec.push_str(&format!(":{atom_map}"));
+    }
+    spec.push(']');
+    Some(spec)
+}
+
 /// One product bracket atom rewritten per [`normalize_product_query_atoms`].
 fn product_atom_spec(atom: &str, rdkit_reading: bool) -> Result<String, RxnError> {
-    use chematic_smarts::{AtomPrimitive, AtomQuery};
-
-    fn conjuncts<'q>(q: &'q AtomQuery, out: &mut Vec<&'q AtomQuery>) {
-        match q {
-            AtomQuery::And(a, b) => {
-                conjuncts(a, out);
-                conjuncts(b, out);
-            }
-            other => out.push(other),
-        }
-    }
-    fn put<T: PartialEq>(slot: &mut Option<T>, value: T, conflict: &mut bool) {
-        if slot.as_ref().is_some_and(|v| *v != value) {
-            *conflict = true;
-        }
-        *slot = Some(value);
-    }
-
     // SMILES-valid atoms are already specifications.
     if chematic_smiles::parse_template(atom).is_ok() {
         return Ok(atom.to_string());
@@ -280,148 +441,26 @@ fn product_atom_spec(atom: &str, rdkit_reading: bool) -> Result<String, RxnError
     if query.atoms.len() != 1 {
         return Err(unsupported());
     }
-    let map = query.atoms[0].atom_map;
-
-    let mut parts = Vec::new();
-    conjuncts(&query.atoms[0].query, &mut parts);
-    let mut symbol: Option<String> = None;
-    let mut atomic_number: Option<u8> = None;
-    let mut aromatic: Option<bool> = None;
-    let mut isotope: Option<u16> = None;
-    let mut chirality: Option<u8> = None;
-    let mut hcount: Option<u8> = None;
-    let mut charge: Option<i8> = None;
-    let mut conflict = false;
-    for part in parts {
-        // `,` / `!` alternatives are query-only.
-        let AtomQuery::Primitive(p) = part else {
-            continue;
-        };
-        match p {
-            AtomPrimitive::Symbol(sym) => put(&mut symbol, sym.clone(), &mut conflict),
-            AtomPrimitive::AtomicNum(n) => put(&mut atomic_number, *n, &mut conflict),
-            AtomPrimitive::Aromatic(a) => put(&mut aromatic, *a, &mut conflict),
-            AtomPrimitive::Isotope(m) => put(&mut isotope, *m, &mut conflict),
-            AtomPrimitive::Chirality(c) => put(&mut chirality, *c, &mut conflict),
-            AtomPrimitive::HCount(h) => put(&mut hcount, *h, &mut conflict),
-            AtomPrimitive::Charge(c) => put(&mut charge, *c, &mut conflict),
-            // X, D, R, r, x, v, h, ^, $(), *: query-only.
-            _ => {}
-        }
-    }
-    if conflict {
-        return Err(unsupported());
-    }
-    if rdkit_reading && symbol.is_none() {
-        aromatic = None;
+    let product_atom = &query.atoms[0];
+    let mut fields = ProductAtomFields::from_query(&product_atom.query).ok_or_else(unsupported)?;
+    if rdkit_reading && fields.symbol.is_none() {
+        fields.aromatic = None;
     }
     // An H count or charge spelled only inside a list of alternatives
     // (`[N;X3H1+0,X4H2+:1]`): RDKit applies the first one written, with a
     // warning; elements in such a list name no single element and stay
     // unapplied.
-    fn first_in_text<T: Copy>(
-        q: &AtomQuery,
-        pick: &impl Fn(&AtomPrimitive) -> Option<T>,
-    ) -> Option<T> {
-        match q {
-            AtomQuery::Primitive(p) => pick(p),
-            AtomQuery::And(a, b) | AtomQuery::Or(a, b) => {
-                first_in_text(a, pick).or_else(|| first_in_text(b, pick))
-            }
-            AtomQuery::Not(_) => None,
-        }
-    }
-    let root = &query.atoms[0].query;
-    if hcount.is_none() {
-        hcount = first_in_text(root, &|p| match p {
-            AtomPrimitive::HCount(h) => Some(*h),
-            _ => None,
-        });
-    }
-    if charge.is_none() {
-        charge = first_in_text(root, &|p| match p {
-            AtomPrimitive::Charge(c) => Some(*c),
-            _ => None,
-        });
-    }
-    let symbol_absent = symbol.is_none();
-    let element = match (symbol, atomic_number) {
-        (Some(sym), _) => {
-            let e = chematic_core::Element::from_symbol(&sym).ok_or_else(unsupported)?;
-            if atomic_number.is_some_and(|n| n != e.atomic_number()) {
-                return Err(unsupported());
-            }
-            Some(e)
-        }
-        (None, Some(n)) => {
-            Some(chematic_core::Element::from_atomic_number(n).ok_or_else(unsupported)?)
-        }
-        (None, None) => None,
-    };
+    fields.fill_alternative_defaults(&product_atom.query);
+    let element = fields.element().ok_or_else(unsupported)?;
 
     // An atomic-number atom with unspelled aromaticity and nothing but an H
     // count, a charge and a map stays `[#n(;Hh)(;±c)(:m)]`, so the
     // atomic-number expansion picks its spelling from the reactant side (#679).
-    if let Some(e) = element
-        && symbol_absent
-        && aromatic.is_none()
-        && isotope.is_none()
-        && chirality.is_none()
-        && hcount.is_none_or(|h| h <= 9)
-        && charge.is_none_or(|c| (-9..=9).contains(&c))
-    {
-        let mut spec = format!("[#{}", e.atomic_number());
-        if let Some(h) = hcount {
-            spec.push_str(&format!(";H{h}"));
-        }
-        match charge {
-            Some(c) if c >= 0 => spec.push_str(&format!(";+{c}")),
-            Some(c) => spec.push_str(&format!(";-{}", -i16::from(c))),
-            None => {}
-        }
-        if let Some(m) = map {
-            spec.push_str(&format!(":{m}"));
-        }
-        spec.push(']');
+    if let Some(spec) = atomic_number_product_spec(&fields, element, product_atom.atom_map) {
         return Ok(spec);
     }
-
-    let mut spec = String::from("[");
-    if let Some(m) = isotope {
-        spec.push_str(&m.to_string());
-    }
-    match element {
-        Some(e) if aromatic == Some(true) => spec.push_str(&e.symbol().to_ascii_lowercase()),
-        Some(e) => spec.push_str(e.symbol()),
-        // Mapped: the reactant atom's element is kept (RDKit semantics);
-        // a spelled charge, H count or isotope still applies
-        // (`[F,Cl,Br,I;-:7]` makes the matched halogen a halide).
-        None if map.is_some() && chirality.is_none() => spec.push('*'),
-        // Unmapped: RDKit builds a dummy atom (`*`) from a product query atom
-        // that names no single element (BioTransformer's
-        // `P([!#1!#6;O,$([O-])])` phosphates give `*P(*)(=O)...`).
-        None if rdkit_reading && chirality.is_none() => spec.push('*'),
-        None => return Err(unsupported()),
-    }
-    match chirality {
-        Some(1) => spec.push('@'),
-        Some(2) => spec.push_str("@@"),
-        _ => {}
-    }
-    if let Some(h) = hcount {
-        spec.push_str(&format!("H{h}"));
-    }
-    match charge {
-        Some(0) => spec.push_str("+0"),
-        Some(c) if c > 0 => spec.push_str(&format!("+{c}")),
-        Some(c) => spec.push_str(&format!("-{}", -i16::from(c))),
-        None => {}
-    }
-    if let Some(m) = map {
-        spec.push_str(&format!(":{m}"));
-    }
-    spec.push(']');
-    Ok(spec)
+    render_product_atom_spec(&fields, element, product_atom.atom_map, rdkit_reading)
+        .ok_or_else(unsupported)
 }
 
 fn expand_atomic_number_primitives_normalized(
