@@ -17,9 +17,10 @@ boundaries and reproducible evidence over feature-count parity.
   0.5.0rc22; older comparator results remain historical.
 - **Performance:** the current macOS arm64 candidate wins every measured
   parse-inclusive pipeline, but does not yet win every prepared operation.
-  RDKit-compatible TPSA now narrowly beats RDKit in the pinned 21-block run;
-  ring count, Labute ASA, chiral Morgan, and amide/amine reaction still lose
-  to at least one comparator. Public-artifact replication remains open.
+  RDKit-compatible TPSA is statistically tied with RDKit in the pinned
+  21-block run; ring count, Labute ASA, chiral Morgan, and amide/amine reaction
+  still lose to at least one comparator. Public-artifact replication remains
+  open.
 - **Reactions:** the published 83-row gate is 80 exact graph/origin/map rows
   and three inputs invalid in both engines. Broader SMIRKS behavior remains
   intentionally bounded.
@@ -99,8 +100,8 @@ artifacts, not a universal claim over every chemistry operation or workload.
 - The current follow-up caches the shared RDKit-model safety predicate,
   removes a redundant cleanup scan, and avoids Labute bond-order allocation.
   On the pinned 1,000-row/21-block run, all six parse-inclusive pipelines win
-  every block. Prepared TPSA wins narrowly against RDKit, and the amide/amine
-  reaction wins against RDKit; neither yet beats COSMolKit.
+  every block. Prepared TPSA is statistically tied with RDKit, and the
+  amide/amine reaction wins against RDKit; neither yet beats COSMolKit.
 - Fix the benchmark before trusting it: API drift or any per-row comparator
   error invalidates that operation's speed ratio and confidence interval.
 - Rerun from exact PyPI/npm/crates.io artifacts and on a second host.

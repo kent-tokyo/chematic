@@ -6,8 +6,9 @@ not a claim of universal superiority.
 
 ## Scope
 
-- Candidate: local source candidate based on `origin/main`; final clean commit
-  and wheel hashes are recorded in the adjacent JSON files.
+- Candidate: clean commit `0972ca64d6781ebb96a61327763dce712599dc4a`.
+  macOS arm64 CPython 3.13 wheel SHA-256:
+  `afab8432c8ede45c96cbc739c86fd690218f27caa3c9256968a3f0d5b813eae4`.
 - Comparators: RDKit 2026.09.1 and COSMolKit 0.5.0rc22.
 - Host: Apple silicon macOS, CPython 3.13.6.
 - Accuracy: ChEMBL 5,000 and NCI 5,000 input rows, using the repository's
@@ -31,16 +32,21 @@ prepared-operation result is intentionally less favorable:
 
 | Prepared operation | vs COSMolKit median (95% CI) | vs RDKit median (95% CI) | Result |
 |---|---:|---:|---|
-| parse | 18.082x (17.984–18.156) | 18.300x (18.144–18.483) | gate passed |
-| TPSA | 0.469x (0.458–0.479) | 1.014x (1.003–1.036) | RDKit only |
-| Labute ASA | 0.266x (0.262–0.270) | 0.522x (0.511–0.532) | open |
-| ring count | 0.049x (0.048–0.050) | 0.033x (0.033–0.035) | open |
-| chiral Morgan | 0.638x (0.633–0.640) | 0.966x (0.958–0.971) | open |
-| amide/amine reaction | 0.768x (0.762–0.770) | 1.194x (1.189–1.198) | RDKit only |
+| parse | 18.120x (17.921–18.167) | 18.348x (18.239–18.525) | gate passed |
+| TPSA | 0.453x (0.446–0.470) | 0.999x (0.977–1.020) | open |
+| Labute ASA | 0.268x (0.263–0.275) | 0.524x (0.521–0.531) | open |
+| ring count | 0.050x (0.049–0.051) | 0.035x (0.033–0.038) | open |
+| chiral Morgan | 0.636x (0.633–0.644) | 0.967x (0.953–0.974) | open |
+| amide/amine reaction | 0.765x (0.762–0.769) | 1.189x (1.182–1.198) | RDKit only |
 
 “Passed” requires all 21 blocks to win and the paired 95% lower bound to be
 above 1.0. The current candidate therefore does **not** satisfy the complete
 prepared-operation target.
+
+Machine-readable evidence:
+
+- [`2026-10-10-rdkit-cosmolkit-championship-accuracy.json`](2026-10-10-rdkit-cosmolkit-championship-accuracy.json)
+- [`2026-10-10-rdkit-cosmolkit-championship-performance.json`](2026-10-10-rdkit-cosmolkit-championship-performance.json)
 
 ## Changes measured
 

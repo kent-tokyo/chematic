@@ -376,6 +376,9 @@ see [`docs/benchmark.md`](../docs/benchmark.md).
 Current development baseline: [RDKit/COSMolKit championship start
 (2026-10-10)](2026-10-10-rdkit-cosmolkit-championship-start.md). This is a
 source-candidate record, not a v1.0.42 registry-artifact claim.
+
+- [Accuracy JSON](2026-10-10-rdkit-cosmolkit-championship-accuracy.json)
+- [21-block performance JSON](2026-10-10-rdkit-cosmolkit-championship-performance.json)
 - [2026-09-09 canonical identity focused gate (JSON)](2026-09-09-canonical-identity-focused-v1.0.10.json) / [report](2026-09-09-canonical-identity-focused-v1.0.10.md)
 - [2026-09-09 identity budget gate (JSON)](2026-09-09-identity-budget-gate-v1.0.10.json) / [report](2026-09-09-identity-budget-gate-v1.0.10.md)
 - [2026-09-09 reaction and 3D focused gate (JSON)](2026-09-09-reaction-3d-focus-v1.0.10.json) / [report](2026-09-09-reaction-3d-focus-v1.0.10.md)
