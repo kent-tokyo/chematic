@@ -119,9 +119,7 @@ function adapters(engines) {
     parse: (smiles) => engines.schematic.parse_smiles(smiles),
     free: (mol) => mol.free(),
     labute_asa: (mol) => mol.labute_asa(),
-    morgan2_chiral: (mol) => packedBits(
-      engines.schematic.rdkit_ecfp_config_chiral_bitvec(mol, 2, 2048),
-    ),
+    morgan2_chiral: (mol) => engines.schematic.rdkit_ecfp_config_chiral_bitvec(mol, 2, 2048),
   };
   const rd = {
     parse: (smiles) => {
@@ -152,8 +150,9 @@ function compareOutputs(rows, engines) {
       rdMol = api.rdkit.parse(smiles);
       for (const op of OPS) {
         try {
-          const actual = api.chematic[op](chMol);
+          const actualRaw = api.chematic[op](chMol);
           const expected = api.rdkit[op](rdMol);
+          const actual = op === "morgan2_chiral" ? packedBits(actualRaw) : actualRaw;
           const matches = op === "labute_asa"
             ? Math.abs(actual - expected) <= 1e-9
             : actual === expected;
@@ -190,7 +189,10 @@ function measureBlock(rows, api, block) {
     const prepared = rows.map((smiles) => api.parse(smiles));
     let checksum = 0;
     let started = performance.now();
-    for (const mol of prepared) checksum ^= digest(String(api[op](mol))).charCodeAt(0);
+    for (const mol of prepared) {
+      const value = api[op](mol);
+      checksum ^= typeof value === "number" ? Math.trunc(value * 1e6) : value.length;
+    }
     result[`${op}_prepared_seconds`] = (performance.now() - started) / 1000;
     result[`${op}_prepared_checksum`] = checksum;
     prepared.forEach((mol) => api.free(mol));
@@ -199,7 +201,8 @@ function measureBlock(rows, api, block) {
     started = performance.now();
     for (const smiles of rows) {
       const mol = api.parse(smiles);
-      checksum ^= digest(String(api[op](mol))).charCodeAt(0);
+      const value = api[op](mol);
+      checksum ^= typeof value === "number" ? Math.trunc(value * 1e6) : value.length;
       api.free(mol);
     }
     result[`${op}_pipeline_seconds`] = (performance.now() - started) / 1000;
@@ -278,6 +281,7 @@ async function main() {
       pipeline: "parse plus operation inside timing",
       confidence_interval: "paired bootstrap of per-block RDKit/chematic ratios, 10000 resamples",
       speed_claim_policy: "withhold both intervals unless the 10000-row output gate passes and both APIs perform equivalent work",
+      timed_result: "each operation returns its native published-package value; bit normalization is accuracy-only",
       unavailable_v1042_lanes: {
         tpsa: "npm v1.0.42 exposes native TPSA, not the Python rdkit_tpsa profile",
         num_rings: "npm v1.0.42 exposes ring_count, not the Python rdkit_num_rings profile",
