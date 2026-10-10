@@ -101,3 +101,70 @@ impl DetMath for f32 {
         libm::hypotf(self, other)
     }
 }
+
+#[cfg(test)]
+mod numerical_contract_tests {
+    use super::DetMath;
+
+    macro_rules! contracts {
+        ($name:ident, $ty:ty, $pi:expr, $tol:expr) => {
+            #[test]
+            fn $name() {
+                let close = |actual: $ty, expected: $ty| {
+                    assert!(
+                        (actual - expected).abs() <= $tol * (1.0 + expected.abs()),
+                        "{actual} != {expected}"
+                    );
+                };
+                let pi: $ty = $pi;
+                close((pi / 6.0).dsin(), 0.5);
+                close((pi / 3.0).dcos(), 0.5);
+                let (s, c) = (pi / 4.0).dsin_cos();
+                close(s, c);
+                close(s * s + c * c, 1.0);
+                close((0.5 as $ty).dasin(), pi / 6.0);
+                close((0.5 as $ty).dacos(), pi / 3.0);
+                close((1.0 as $ty).datan(), pi / 4.0);
+                for (y, x, expected) in [
+                    (1.0, 1.0, pi / 4.0),
+                    (1.0, -1.0, 3.0 * pi / 4.0),
+                    (-1.0, -1.0, -3.0 * pi / 4.0),
+                    (-1.0, 1.0, -pi / 4.0),
+                ] {
+                    close((y as $ty).datan2(x), expected);
+                }
+                for x in [-3.0 as $ty, -0.5, 0.0, 0.5, 3.0] {
+                    close(x.dexp().dln(), x);
+                }
+                close((9.0 as $ty).dpowf(0.5), 3.0);
+                close((-2.0 as $ty).dpowf(3.0), -8.0);
+                close((-27.0 as $ty).dcbrt(), -3.0);
+                close((3.0 as $ty).dhypot(4.0), 5.0);
+                close((3e30 as $ty).dhypot(4e30) / (5e30 as $ty), 1.0);
+                close((3e-30 as $ty).dhypot(4e-30) / (5e-30 as $ty), 1.0);
+                assert!((2.0 as $ty).dasin().is_nan());
+                assert!((2.0 as $ty).dacos().is_nan());
+                assert!((-1.0 as $ty).dln().is_nan());
+                assert!((-2.0 as $ty).dpowf(0.5).is_nan());
+                assert_eq!((0.0 as $ty).dln(), <$ty>::NEG_INFINITY);
+                assert_eq!(<$ty>::NEG_INFINITY.dexp(), 0.0);
+                assert_eq!((-0.0 as $ty).dsin().to_bits(), (-0.0 as $ty).to_bits());
+                assert_eq!((-0.0 as $ty).dcbrt().to_bits(), (-0.0 as $ty).to_bits());
+                assert_eq!((-0.0 as $ty).datan2(1.0).to_bits(), (-0.0 as $ty).to_bits());
+            }
+        };
+    }
+
+    contracts!(
+        f32_math_identities_and_ieee_domains,
+        f32,
+        std::f32::consts::PI,
+        2e-6
+    );
+    contracts!(
+        f64_math_identities_and_ieee_domains,
+        f64,
+        std::f64::consts::PI,
+        2e-13
+    );
+}

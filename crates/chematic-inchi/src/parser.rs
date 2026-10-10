@@ -1357,3 +1357,47 @@ mod tests {
         assert_eq!(mol.bond_count(), 4, "neopentane /c should yield 4 bonds");
     }
 }
+
+#[cfg(test)]
+mod layer_update_contract_tests {
+    use super::*;
+
+    #[test]
+    fn sparse_layer_updates_follow_inchi_atom_numbers_and_preserve_graph() {
+        let source = chematic_smiles::parse("[13CH3]C[O-]").unwrap();
+        // Deliberately permute the external numbering, as connectivity parsing may do.
+        let numbering = HashMap::from([(7, AtomIdx(0)), (3, AtomIdx(1)), (11, AtomIdx(2))]);
+        let changed = apply_charges(
+            source.clone(),
+            &numbering,
+            &HashMap::from([(11, 0), (999, 1)]),
+        );
+        assert_eq!(changed.atom(AtomIdx(0)).isotope, Some(13));
+        assert_eq!(changed.atom(AtomIdx(2)).charge, 0);
+        let changed = apply_isotopes(changed, &numbering, &HashMap::from([(3, 14), (999, 18)]));
+        assert_eq!(changed.atom(AtomIdx(0)).isotope, Some(13));
+        assert_eq!(changed.atom(AtomIdx(1)).isotope, Some(14));
+        assert_eq!(changed.atom(AtomIdx(2)).isotope, None);
+        assert_eq!(changed.atom_count(), source.atom_count());
+        assert_eq!(changed.bond_count(), source.bond_count());
+        for (idx, bond) in source.bonds() {
+            let actual = changed.bond(idx);
+            assert_eq!(
+                (actual.atom1, actual.atom2, actual.order),
+                (bond.atom1, bond.atom2, bond.order)
+            );
+        }
+        for (idx, atom) in source.atoms() {
+            assert_eq!(changed.atom(idx).element, atom.element);
+            assert_eq!(changed.atom(idx).hydrogen_count, atom.hydrogen_count);
+        }
+        // Omitted numbering entries must leave existing atom attributes intact.
+        let sparse = HashMap::from([(3, AtomIdx(1))]);
+        let untouched = apply_isotopes(source.clone(), &sparse, &HashMap::new());
+        let untouched = apply_charges(untouched, &sparse, &HashMap::new());
+        for (idx, atom) in source.atoms() {
+            assert_eq!(untouched.atom(idx).isotope, atom.isotope);
+            assert_eq!(untouched.atom(idx).charge, atom.charge);
+        }
+    }
+}

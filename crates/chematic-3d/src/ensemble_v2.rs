@@ -718,7 +718,11 @@ mod tests {
             let mut config = config_none(1, 1);
             config.rmsd_threshold = bad;
             match embed_ensemble_v2(&mol, &config) {
-                Err(EnsembleV2ConfigError::InvalidRmsdThreshold(_)) => {}
+                Err(error @ EnsembleV2ConfigError::InvalidRmsdThreshold(_)) => {
+                    let message = error.to_string();
+                    assert!(message.contains("rmsd_threshold"));
+                    assert!(message.contains(&format!("got {bad}")));
+                }
                 Ok(_) => panic!("rmsd_threshold {bad} must be rejected"),
             }
         }

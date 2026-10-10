@@ -39,7 +39,19 @@ for text in smiles:
         block=f'@<TRIPOS>MOLECULE\nfixture\n{len(atoms)} {len(bonds)} 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n'+'\n'.join(atoms)+'\n@<TRIPOS>BOND\n'+'\n'.join(bonds)+'\n'
         rebuilt=Chem.MolFromMol2Block(block)
         assert rebuilt is not None,text
-        rows.append(dict(source_smiles=text,block=block,smiles=Chem.MolToSmiles(rebuilt)))
+        variants=[]
+        for sanitize in [True,False]:
+            for remove_hs in [True,False]:
+                for cleanup in [True,False]:
+                    variant=Chem.MolFromMol2Block(block,sanitize=sanitize,removeHs=remove_hs,cleanupSubstructures=cleanup)
+                    expected=dict(sanitize=sanitize,remove_hs=remove_hs,cleanup=cleanup,accepted=variant is not None)
+                    if variant is not None:
+                        expected.update(smiles=Chem.MolToSmiles(variant) if sanitize else '',
+                            atom_count=variant.GetNumAtoms(),bond_count=variant.GetNumBonds(),
+                            atomic_numbers=[a.GetAtomicNum() for a in variant.GetAtoms()],
+                            charges=[a.GetFormalCharge() for a in variant.GetAtoms()])
+                    variants.append(expected)
+        rows.append(dict(source_smiles=text,block=block,smiles=Chem.MolToSmiles(rebuilt),variants=variants))
 root=Path(__file__).resolve().parents[1]
-(root/'validation/rdkit-2026.03.1-mol2-boundary.json').write_text(json.dumps(dict(rdkit_version=rdBase.rdkitVersion,rows=rows),indent=2)+'\n')
+(root/'validation/rdkit-2026.03.1-mol2-boundary.json').write_text(json.dumps(dict(rdkit_version=rdBase.rdkitVersion,rows=rows),separators=(',',':'))+'\n')
 print(f'wrote {len(rows)} cases')
