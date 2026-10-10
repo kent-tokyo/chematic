@@ -12,6 +12,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added bounded, label-stable R-group decomposition for Rust and Python.
+  Terminal mapped wildcards such as `[*:1]` and mapped core atoms now produce
+  stable `R1`/`R2` rows and RDKit-style column dictionaries. Input atom order
+  is normalized before matching, output wildcards retain their labels, and
+  duplicate labels, non-terminal placeholders, ambiguous multiple
+  attachments, and match-limit exhaustion fail explicitly. Multi-core/MCS
+  alignment, tautomer/enumeration expansion, and RDKit's GA scoring remain out
+  of scope for this bounded API.
 - Added a versioned Open Babel 3.2.1 file-I/O comparison contract for eight
   production formats, a static CI checker, and a unified record-accounting
   runner. The initial 20-repetition record proves fixture provenance and

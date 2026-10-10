@@ -3353,6 +3353,32 @@ def rgroup_decompose(
     """
     ...
 
+def rgroup_decompose_labeled(
+    scaffold_smarts: str, mols: list[Mol]
+) -> list[dict[str, object] | None]:
+    """Decompose molecules into stable, explicitly labelled R-group rows.
+
+    The core may use terminal mapped wildcards such as
+    ``c1cc([*:1])ccc1[*:2]`` or mapped core atoms such as
+    ``[c:1]1ccccc1``. Returned dictionaries contain ``Core`` and stable
+    ``R1``, ``R2``, ... keys. Output wildcards retain their atom-map labels.
+
+    This is a bounded subset of RDKit's R-group decomposition. Ambiguous
+    multiple attachments, duplicate labels, non-terminal mapped wildcards,
+    and searches that reach the match cap raise ``ValueError``.
+    """
+    ...
+
+def rgroup_decompose_columns(
+    scaffold_smarts: str, mols: list[Mol]
+) -> dict[str, list[str | None]]:
+    """Return labelled R-group decomposition as ``Core``/``R<n>`` columns.
+
+    Every column remains parallel to ``mols``. Unmatched molecules and missing
+    substituents are represented by ``None``.
+    """
+    ...
+
 def similarity_map_svg(mol: Mol, weights: list[float]) -> str:
     """Render a molecule SVG with atoms coloured by per-atom weights.
 
