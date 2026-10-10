@@ -20,6 +20,19 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   attachments, and match-limit exhaustion fail explicitly. Multi-core/MCS
   alignment, tautomer/enumeration expansion, and RDKit's GA scoring remain out
   of scope for this bounded API.
+- Added a version-pinned CDK 2.13 and Indigo 1.46.0 comparison gate with
+  common-schema adapters, a 24-structure stratified smoke corpus, separate
+  parse-inclusive/prepared timing lanes, rotating 21-block measurements, and
+  paired bootstrap confidence intervals. The smoke result is source-candidate
+  evidence only; broad corpora, memory, a second host, and published packages
+  remain required for a superiority claim.
+- Added reusable Python `SmartsQuery` / `compile_smarts()` APIs, including
+  `matches_many()` and Rust-retained `MoleculeBatch` / `matches_batch()`, so
+  repeated substructure searches compile a query once and avoid repeated
+  Python-object extraction. `MoleculeBatch.from_smiles()` moves parse-inclusive
+  batches across the boundary once, and `hbd_counts()` provides the same
+  retained-batch path for donor counts.
+
 - Added a versioned Open Babel 3.2.1 file-I/O comparison contract for eight
   production formats, a static CI checker, and a unified record-accounting
   runner. The initial 20-repetition record proves fixture provenance and
@@ -54,6 +67,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Short-circuited isolated atomic-number SMARTS existence queries before VF2
+  state allocation and before aromaticity-cleanup screening. Query results are
+  unchanged because sanitization cannot change atomic numbers; the path is
+  covered against the ordinary first-embedding search.
+- Replaced the fixed RDKit HBD SMARTS traversal with equivalent direct local
+  atom conditions. The result remains exact on the pinned 10,000-row corpus
+  while avoiding VF2 setup for every descriptor call.
+
 - Reduced temporary allocation in loss-aware MOL2 serialization while
   retaining the common-observer semantic result.
 - Kept rejected RDKit-profile reaction products in a new opt-in detailed
@@ -80,6 +101,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Isolated every CDK/Indigo accuracy operation on a freshly parsed molecule;
+  mutating competitor operations can no longer make later results depend on
+  evaluation order.
+- Preserved RDKit-style V2000 `M  ISO` isotope records in both diagnostic and
+  graph-only MOL readers.
+- Carried coordinate-derived E/Z directions from MOL/SDF single bonds into
+  the RDKit-compatible SMILES model. Fumaric/maleic acid and isotopic chiral
+  MOL round trips now retain their declared identity.
 - Matched RDKit 2026.09.1's RingDecomposerLib ring counts for large symmetric
   macrocycles while retaining the legacy-equivalent fast path for compact
   ring systems. The pinned 10k corpus improves from 9,994 to 10,000 exact ring

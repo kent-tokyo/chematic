@@ -33,6 +33,38 @@ class SmartsParityRefusal(TypedDict):
 
 SmartsParityResult = Union[SmartsParityOk, SmartsParityRefusal]
 
+class SmartsQuery:
+    """A SMARTS query compiled once for repeated matching."""
+
+    def __init__(self, smarts: str) -> None: ...
+
+    @property
+    def source(self) -> str: ...
+
+    def matches(self, mol: Mol) -> bool: ...
+
+    def matches_many(self, molecules: Iterable[Mol]) -> list[bool]: ...
+
+    def matches_batch(self, batch: MoleculeBatch) -> list[bool]: ...
+
+    def find_matches(self, mol: Mol) -> list[list[int]]: ...
+
+def compile_smarts(smarts: str) -> SmartsQuery:
+    """Compile a SMARTS query for repeated matching."""
+    ...
+
+class MoleculeBatch:
+    """Molecules retained in Rust for repeated batch operations."""
+
+    def __init__(self, molecules: Iterable[Mol]) -> None: ...
+
+    @staticmethod
+    def from_smiles(smiles: Iterable[str]) -> MoleculeBatch: ...
+
+    def __len__(self) -> int: ...
+
+    def hbd_counts(self) -> list[int]: ...
+
 # ---------------------------------------------------------------------------
 # Mol
 # ---------------------------------------------------------------------------

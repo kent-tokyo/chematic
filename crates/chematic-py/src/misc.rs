@@ -35,6 +35,135 @@ pub(crate) fn cached_smarts(
     Ok(query)
 }
 
+/// A SMARTS query compiled once and reusable across molecules.
+///
+/// Use this for a query that is applied repeatedly; it avoids the process-wide
+/// string-cache lookup performed by the convenience string APIs.
+#[pyclass(name = "SmartsQuery", frozen)]
+pub(crate) struct PySmartsQuery {
+    source: String,
+    query: Arc<chematic_smarts::QueryMolecule>,
+}
+
+/// Molecules retained in Rust for repeated batch operations.
+#[pyclass(name = "MoleculeBatch", frozen)]
+pub(crate) struct PyMoleculeBatch {
+    molecules: Vec<Arc<chematic_core::Molecule>>,
+}
+
+#[pymethods]
+impl PyMoleculeBatch {
+    #[new]
+    fn new(molecules: Vec<PyRef<'_, Mol>>) -> Self {
+        Self {
+            molecules: molecules
+                .into_iter()
+                .map(|mol| Arc::clone(&mol.inner))
+                .collect(),
+        }
+    }
+
+    /// Parse SMILES into a Rust-retained molecule batch.
+    #[staticmethod]
+    fn from_smiles(smiles: Vec<String>) -> PyResult<Self> {
+        let molecules = smiles
+            .into_iter()
+            .map(|text| {
+                chematic_smiles::parse(&text)
+                    .map(Arc::new)
+                    .map_err(|e| crate::errors::malformed("smiles", e.to_string()))
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        Ok(Self { molecules })
+    }
+
+    fn __len__(&self) -> usize {
+        self.molecules.len()
+    }
+
+    /// RDKit-compatible hydrogen-bond donor counts for every molecule.
+    fn hbd_counts(&self) -> Vec<usize> {
+        self.molecules
+            .iter()
+            .map(|mol| chematic_chem::hbd_count(mol))
+            .collect()
+    }
+}
+
+#[pymethods]
+impl PySmartsQuery {
+    #[new]
+    fn new(smarts: &str) -> PyResult<Self> {
+        let query = chematic_smarts::parse_smarts(smarts)
+            .map_err(|e| crate::errors::malformed("smarts", e.to_string()))?;
+        Ok(Self {
+            source: smarts.to_owned(),
+            query: Arc::new(query),
+        })
+    }
+
+    #[getter]
+    fn source(&self) -> &str {
+        &self.source
+    }
+
+    /// Return whether this query has at least one match in ``mol``.
+    fn matches(&self, mol: &Mol) -> bool {
+        let config = chematic_smarts::MatchConfig {
+            max_matches: Some(1),
+            uniquify: false,
+            ..chematic_smarts::MatchConfig::default()
+        };
+        chematic_smarts::has_match_perceived(&self.query, &mol.inner, &config)
+    }
+
+    /// Match this query against many molecules with one Python/Rust call.
+    fn matches_many(&self, molecules: Vec<PyRef<'_, Mol>>) -> Vec<bool> {
+        let config = chematic_smarts::MatchConfig {
+            max_matches: Some(1),
+            uniquify: false,
+            ..chematic_smarts::MatchConfig::default()
+        };
+        molecules
+            .into_iter()
+            .map(|mol| chematic_smarts::has_match_perceived(&self.query, &mol.inner, &config))
+            .collect()
+    }
+
+    /// Match a Rust-retained molecule batch without re-extracting Python objects.
+    fn matches_batch(&self, batch: &PyMoleculeBatch) -> Vec<bool> {
+        let config = chematic_smarts::MatchConfig {
+            max_matches: Some(1),
+            uniquify: false,
+            ..chematic_smarts::MatchConfig::default()
+        };
+        batch
+            .molecules
+            .iter()
+            .map(|mol| chematic_smarts::has_match_perceived(&self.query, mol, &config))
+            .collect()
+    }
+
+    /// Return sorted target-atom indices for every unique match.
+    fn find_matches(&self, mol: &Mol) -> Vec<Vec<usize>> {
+        chematic_smarts::find_match_atom_sets_perceived(
+            &self.query,
+            &mol.inner,
+            &chematic_smarts::MatchConfig::default(),
+        )
+    }
+
+    fn __repr__(&self) -> String {
+        format!("SmartsQuery({:?})", self.source)
+    }
+}
+
+/// Compile a SMARTS query for repeated matching.
+#[pyfunction]
+fn compile_smarts(smarts: &str) -> PyResult<PySmartsQuery> {
+    PySmartsQuery::new(smarts)
+}
+
 /// Test whether a SMARTS pattern matches a molecule.
 ///
 ///     if chematic.smarts_match("[OH]", mol):
@@ -286,6 +415,9 @@ fn rdkit_smarts_to_smarts(smarts: &str) -> PyResult<String> {
 }
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyMoleculeBatch>()?;
+    m.add_class::<PySmartsQuery>()?;
+    m.add_function(wrap_pyfunction!(compile_smarts, m)?)?;
     m.add_function(wrap_pyfunction!(rdkit_reaction_to_smarts, m)?)?;
     m.add_function(wrap_pyfunction!(rdkit_smarts_to_smarts, m)?)?;
     m.add_function(wrap_pyfunction!(rdkit_detect_chemistry_problems, m)?)?;

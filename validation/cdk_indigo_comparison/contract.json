@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-10",
+  "comparators": {
+    "cdk": {
+      "version": "2.13",
+      "distribution": "org.openscience.cdk:cdk-bundle:2.13",
+      "license": "LGPL-2.1-or-later"
+    },
+    "indigo": {
+      "version": "1.46.0",
+      "distribution": "epam.indigo==1.46.0",
+      "license": "Apache-2.0"
+    }
+  },
+  "reference": "rdkit 2026.3.6",
+  "operations": [
+    "canonical_stable",
+    "formula",
+    "molecular_weight_centi_da",
+    "tpsa_milli",
+    "hba",
+    "hbd",
+    "rings",
+    "mol_roundtrip",
+    "smarts:[#6]",
+    "smarts:[#7]",
+    "smarts:[#8]",
+    "smarts:c1ccccc1",
+    "smarts:[C,c](=O)[O,N]",
+    "smarts:[N;H1,H2,H3;+0]"
+  ],
+  "performance_lanes": ["pipeline", "prepared"],
+  "batch_semantics": "An adapter may use a documented public batch API for an equivalent operation; every output row is retained in the digest and the adapter declares batch_operations in metadata.",
+  "diagnostic_only_operations": {
+    "rings": "RDKit/CheMatic use the pinned RDKit ring-count model while CDK and Indigo expose SSSR counts; a mismatch is reported but is not a chemistry-accuracy verdict."
+  },
+  "corpus_tiers": {
+    "smoke": "24 checked-in stratified structures; verifies adapters and catches obvious regressions only.",
+    "claim": "A frozen broad corpus plus adversarial structures, exact package hashes, a second host, and a separate peak-RSS lane are required before a published superiority claim."
+  },
+  "acceptance": {
+    "accuracy": "No mismatch or unclassified error on the frozen supported corpus; unsupported rows do not count as wins.",
+    "speed": "At least 21 alternating blocks, every block faster, paired 95% speedup lower bound above 1.0, equivalent successful output, separate pipeline and prepared lanes.",
+    "memory": "Peak RSS is reported separately before any published superiority claim.",
+    "claim_boundary": "A pass is a win for the named operation, version, corpus, platform and artifact only; it is not universal superiority over CDK or Indigo."
+  }
+}

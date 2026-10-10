@@ -21,6 +21,11 @@ boundaries and reproducible evidence over feature-count parity.
   21-block run; ring count, Labute ASA, chiral Morgan, and amide/amine reaction
   still lose to at least one comparator. Public-artifact replication remains
   open.
+- **CDK/Indigo:** a source-only smoke gate now pins CDK 2.13 and Indigo
+  1.46.0. CheMatic is exact on all 15 measured operations of the 24-row common
+  matrix. Every rankable speed median and paired 95% interval favours
+  CheMatic; one high-repetition `[#8]` lane wins 20/21 blocks, so the strict
+  every-block exit remains open. This is not broad or package evidence.
 - **Reactions:** the published 83-row gate is 80 exact graph/origin/map rows
   and three inputs invalid in both engines. Broader SMIRKS behavior remains
   intentionally bounded.
@@ -126,6 +131,28 @@ artifacts, not a universal claim over every chemistry operation or workload.
   error invalidates that operation's speed ratio and confidence interval.
 - Rerun from exact PyPI/npm/crates.io artifacts and on a second host.
 
+#### CDK 2.13 and Indigo 1.46.0 lane
+
+- Keep the checked-in common-schema adapters independent and public-API-only;
+  do not copy LGPL CDK or Apache Indigo implementation code.
+- Promote the 24-row smoke corpus to a frozen broad corpus plus adversarial
+  metal, isotope, stereo, aromatic, disconnected, and hypervalent strata.
+- Separate semantic-common operations from comparator-specific definitions.
+  In particular, report the RDKit-model/SSSR ring-count difference without
+  treating cubane's basis choice as an accuracy failure.
+- Expand exact-output speed gates from parse, formula, canonical stability,
+  and six SMARTS queries to MOL/SDF round trip, descriptors, fingerprints,
+  reactions, and batch file I/O only where all engines perform equivalent
+  work.
+- Add cold start and peak RSS, repeat on a second host, then rerun from exact
+  published CheMatic artifacts before making a public claim.
+
+**Exit:** CheMatic has no wrong-confident row on the frozen common matrix and
+is at least as accurate as both comparators. Every declared speed win passes
+21 rotating blocks, wins every block, and has a paired 95% lower bound above
+1.0 in both pipeline and prepared lanes; package, host, and memory evidence
+are recorded separately.
+
 **Exit:** on the frozen common-operation matrix, chematic is at least as
 accurate as each comparator row by row, with no wrong-confident result. For
 every equivalent-output performance lane, 21 or more alternating blocks, all
@@ -168,10 +195,11 @@ reproducible equivalent-work comparison against pinned Open Babel 3.2.1.
 
 See [the comparison contract](docs/openbabel-file-io.md).
 
-### 5. P1/A4 — Close the remaining SMARTS/SMIRKS contract
+### 5. P1/A4 — Maintain the closed SMARTS/SMIRKS contract
 
 Issues [#734](https://github.com/kent-tokyo/chematic/issues/734) and
-[#754](https://github.com/kent-tokyo/chematic/issues/754) remain open.
+[#754](https://github.com/kent-tokyo/chematic/issues/754) are closed. Their
+corpora remain active regression gates rather than release-completion claims.
 
 - Keep the 83-row reaction gate and the original 57 fixtures unchanged.
 - Classify every fuzz difference as exact, typed refusal, unsupported dialect,
@@ -180,8 +208,9 @@ Issues [#734](https://github.com/kent-tokyo/chematic/issues/734) and
   package lanes.
 - Do not count refusals or jointly invalid inputs as matches.
 
-**Exit:** no wrong-confident supported result in the pinned corpora, all rows
-accounted for, and package evidence recorded separately from source evidence.
+**Maintenance rule:** no wrong-confident supported result in the pinned
+corpora, all rows accounted for, and package evidence recorded separately from
+source evidence.
 
 ### 6. P2/A6 — Maintain stereo, identity, and 3D quality
 

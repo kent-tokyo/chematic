@@ -533,6 +533,18 @@ pub fn has_match_with_config(query: &QueryMolecule, mol: &Molecule, config: &Mat
     if query.atoms.is_empty() || query.atoms.len() > mol.atom_count() {
         return false;
     }
+    // The most common existence queries (`[#6]`, `[#7]`, ...) need neither
+    // VF2 state nor an evaluation context. This is an exact fast path: an
+    // isolated atomic-number primitive has no bond, aromaticity, ring,
+    // isotope or chirality semantics to evaluate.
+    if query.atoms.len() == 1
+        && query.bonds.is_empty()
+        && let AtomQuery::Primitive(AtomPrimitive::AtomicNum(atomic_number)) = &query.atoms[0].query
+    {
+        return mol
+            .atoms()
+            .any(|(_, atom)| !atom.wildcard && atom.element.atomic_number() == *atomic_number);
+    }
     // The element screen skips work a budgeted search would have counted, so
     // it is only used when no visit budget is configured.
     if config.max_visit_budget.is_none() && !element_counts_allow_match(query, mol) {
@@ -1538,6 +1550,27 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn single_atomic_number_existence_query_is_exact() {
+        let mol = parse("CCN").unwrap();
+        let config = MatchConfig::default();
+        assert!(has_match_with_config(
+            &parse_smarts("[#6]").unwrap(),
+            &mol,
+            &config
+        ));
+        assert!(has_match_with_config(
+            &parse_smarts("[#7]").unwrap(),
+            &mol,
+            &config
+        ));
+        assert!(!has_match_with_config(
+            &parse_smarts("[#8]").unwrap(),
+            &mol,
+            &config
+        ));
     }
 
     #[test]

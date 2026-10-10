@@ -1154,9 +1154,11 @@ fn read_mol_internal(
     }
 
     // Read property lines until `M  END` (or EOF if absent). Even the graph-only
-    // supplier must consume `M  CHG`: RDKit uses it for valid formal charges
-    // that are not encoded in V2000's fixed-width atom charge field.
+    // supplier must consume `M  CHG` and `M  ISO`: RDKit uses them for values
+    // that do not fit, or are intentionally omitted from, the atom block's
+    // fixed-width charge and mass-difference fields.
     let mut property_charges = Vec::new();
+    let mut property_isotopes = Vec::new();
     let mut property_rgroups = Vec::new();
     for (line_number, line) in lines.by_ref() {
         let fields: Vec<&str> = line.split_whitespace().collect();
@@ -1202,6 +1204,47 @@ fn read_mol_internal(
                             detail: format!("M CHG charge '{}' is not an i8", pair[1]),
                         })?;
                 property_charges.push((AtomIdx((atom_id - 1) as u32), charge));
+            }
+        } else if fields.len() >= 2 && fields[0] == "M" && fields[1] == "ISO" {
+            let count = fields
+                .get(2)
+                .and_then(|value| value.parse::<usize>().ok())
+                .ok_or_else(|| MolParseError::InvalidPropertyLine {
+                    line: line_number,
+                    detail: "M ISO lacks a valid entry count".to_string(),
+                })?;
+            if fields.len() != 3 + count.saturating_mul(2) {
+                return Err(MolParseError::InvalidPropertyLine {
+                    line: line_number,
+                    detail: format!(
+                        "M ISO declares {count} entries but has {} values",
+                        fields.len().saturating_sub(3)
+                    ),
+                });
+            }
+            for pair in fields[3..].chunks(2) {
+                let atom_id = pair[0]
+                    .parse::<usize>()
+                    .ok()
+                    .filter(|id| *id > 0 && *id <= natoms)
+                    .ok_or_else(|| MolParseError::InvalidPropertyLine {
+                        line: line_number,
+                        detail: format!("M ISO atom id '{}' is outside 1..={natoms}", pair[0]),
+                    })?;
+                let isotope =
+                    pair[1]
+                        .parse::<u16>()
+                        .map_err(|_| MolParseError::InvalidPropertyLine {
+                            line: line_number,
+                            detail: format!("M ISO mass '{}' is not a u16", pair[1]),
+                        })?;
+                if isotope == 0 {
+                    return Err(MolParseError::InvalidPropertyLine {
+                        line: line_number,
+                        detail: "M ISO mass must be greater than zero".to_string(),
+                    });
+                }
+                property_isotopes.push((AtomIdx((atom_id - 1) as u32), isotope));
             }
         } else if fields.len() >= 2 && fields[0] == "M" && fields[1] == "RGP" {
             let count = fields
@@ -1249,6 +1292,9 @@ fn read_mol_internal(
     flag_aromatic_bond_atoms(&mut mol);
     for (atom, charge) in property_charges {
         mol.set_charge(atom, charge);
+    }
+    for (atom, isotope) in property_isotopes {
+        mol.set_isotope(atom, Some(isotope));
     }
     // A valence field fixes the atom's hydrogens (as RDKit reads it); skipped
     // on aromatic-bond atoms, whose integer valence the bonds do not give.
@@ -2946,6 +2992,70 @@ M  END
             assert_eq!(mol.atom(AtomIdx(0)).charge, 1);
             assert_eq!(mol.atom(AtomIdx(1)).charge, -1);
         }
+    }
+
+    #[test]
+    fn m_iso_property_overrides_fixed_width_mass_in_all_reader_paths() {
+        let mol_str = "\
+isotope_property
+  RDKit          2D
+
+  2  1  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+M  ISO  1   1  13
+M  END
+";
+        let (ordinary, _) = parse_mol(mol_str).expect("ordinary parse");
+        let (fast, _) = parse_mol_fast(mol_str).expect("fast parse");
+        for mol in [&ordinary, &fast] {
+            assert_eq!(mol.atom(AtomIdx(0)).isotope, Some(13));
+            assert_eq!(mol.atom(AtomIdx(1)).isotope, None);
+        }
+    }
+
+    #[test]
+    fn malformed_m_iso_is_a_typed_property_error() {
+        let mol_str = "\
+bad_isotope_property
+  RDKit          2D
+
+  1  0  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+M  ISO  1   2  13
+M  END
+";
+        assert!(matches!(
+            parse_mol(mol_str),
+            Err(MolParseError::InvalidPropertyLine { .. })
+        ));
+    }
+
+    #[test]
+    fn rdkit_2d_mol_roundtrip_preserves_alkene_stereo_and_isotope() {
+        for smiles in ["O=C(O)/C=C/C(=O)O", "O=C(O)/C=C\\C(=O)O"] {
+            let original = chematic_smiles::parse(smiles).expect("SMILES parse");
+            let block = chematic_smiles::rdkit_mol_block_2d(&original).expect("MOL write");
+            let report = read_mol_with_diagnostics(&block).expect("MOL read");
+            assert!(
+                report.ez_diagnostics.is_empty(),
+                "{smiles}: {:?}",
+                report.ez_diagnostics
+            );
+            let expected = chematic_smiles::rdkit_canonical_smiles(&original);
+            let actual = chematic_smiles::rdkit_canonical_smiles(&report.mol);
+            assert_eq!(actual, expected, "{smiles}\n{block}");
+        }
+
+        let original = chematic_smiles::parse("[13CH3][C@H](O)Cl").expect("SMILES parse");
+        let block = chematic_smiles::rdkit_mol_block_2d(&original).expect("MOL write");
+        let report = read_mol_with_diagnostics(&block).expect("MOL read");
+        assert_eq!(report.mol.atom(AtomIdx(0)).isotope, Some(13));
+        assert_eq!(
+            chematic_smiles::rdkit_canonical_smiles(&report.mol),
+            chematic_smiles::rdkit_canonical_smiles(&original)
+        );
     }
 
     #[test]

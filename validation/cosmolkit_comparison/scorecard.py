@@ -26,6 +26,12 @@ def parse_result(value: str) -> tuple[str, Path]:
 def status_for(row: dict | None, operation: str) -> dict:
     if row is None:
         return {"status": "missing"}
+    if operation == "parse":
+        if row.get("status") == "ok":
+            return {"status": "ok", "value": True}
+        return row["operations"].get(
+            "parse", {"status": row.get("status", "parse_error")}
+        )
     return row["operations"].get(operation, {"status": "unsupported"})
 
 
@@ -37,6 +43,8 @@ def main() -> None:
     )
     parser.add_argument("--reference", default="rdkit", help="engine used as comparison reference")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--corpus", type=Path)
+    parser.add_argument("--manifest", type=Path)
     parser.add_argument("--fail-on-mismatch", action="store_true")
     args = parser.parse_args()
 
@@ -49,7 +57,12 @@ def main() -> None:
     errors = []
     results = {}
     for engine, path in paths.items():
-        file_errors = validate(path)
+        validate_kwargs = {}
+        if args.corpus is not None:
+            validate_kwargs["corpus_path"] = args.corpus
+        if args.manifest is not None:
+            validate_kwargs["manifest_path"] = args.manifest
+        file_errors = validate(path, **validate_kwargs)
         errors.extend(f"{engine}: {error}" for error in file_errors)
         if not file_errors:
             results[engine] = load(path)
@@ -65,7 +78,7 @@ def main() -> None:
         raise SystemExit(2)
 
     engines = {}
-    operations = sorted({
+    operations = sorted({"parse"} | {
         operation
         for records in rows
         for row in records.values()
