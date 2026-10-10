@@ -1768,14 +1768,14 @@ mod tests {
 }
 
 #[cfg(test)]
-mod parse_error_context_contract_tests {
+mod parse_error_boundary_contract_tests {
     use super::*;
 
     #[test]
     fn actual_parse_failures_keep_positions_and_relevant_labels() {
         for (source, context) in [
             ("C%", "unexpected end"),
-            ("[Xx]", "unknown element 'Xx'"),
+            ("[Xx]", "missing element symbol"),
             ("C%(256)", "extended ring closure 256"),
             (
                 "C/%(256)CC/%(256)",

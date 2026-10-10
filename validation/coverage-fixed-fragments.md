@@ -19,4 +19,4 @@ The alignment reference points are `(0,0,0)`, `(2,0,0)`, `(0,3,0)`, `(0,0,4)`. P
 
 Coverage is execution evidence for these contracts, not a general guarantee of chemistry correctness or RDKit equivalence.
 
-Validation: 197 boundary tests passed with zero failures or ignored tests. Workspace all-target Clippy, formatting, and diff checks passed. The complete clean coverage command and processed Linux service result are recorded on the accompanying PR.
+Validation: 198 boundary tests passed with zero failures or ignored tests. Workspace all-target Clippy, formatting, and diff checks passed. The complete clean coverage command and processed Linux service result are recorded on the accompanying PR.
