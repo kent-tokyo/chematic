@@ -917,6 +917,14 @@ export class MolHandle {
         return ret >>> 0;
     }
     /**
+     * Number of rings using RDKit's symmetrized-SSSR semantics.
+     * @returns {number}
+     */
+    num_rings() {
+        const ret = wasm.molhandle_num_rings(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
      * Number of fully saturated rings containing at least one heteroatom.
      * @returns {number}
      */
@@ -1009,6 +1017,340 @@ export class MolHandle {
         return ret;
     }
     /**
+     * RDKit `AlignMol` result JSON. Coordinates and optional atom map and
+     * weights use zero-based molecule atom order.
+     * @param {string} probe_coords_json
+     * @param {string} reference_coords_json
+     * @param {string | null | undefined} atom_map_json
+     * @param {string | null | undefined} weights_json
+     * @param {boolean} reflect
+     * @param {number} max_iterations
+     * @returns {string}
+     */
+    rdkit_align_json(probe_coords_json, reference_coords_json, atom_map_json, weights_json, reflect, max_iterations) {
+        let deferred6_0;
+        let deferred6_1;
+        try {
+            const ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len1 = WASM_VECTOR_LEN;
+            var ptr2 = isLikeNone(atom_map_json) ? 0 : passStringToWasm0(atom_map_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            var len2 = WASM_VECTOR_LEN;
+            var ptr3 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            var len3 = WASM_VECTOR_LEN;
+            const ret = wasm.molhandle_rdkit_align_json(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, reflect, max_iterations);
+            var ptr5 = ret[0];
+            var len5 = ret[1];
+            if (ret[3]) {
+                ptr5 = 0; len5 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred6_0 = ptr5;
+            deferred6_1 = len5;
+            return getStringFromWasm0(ptr5, len5);
+        } finally {
+            wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
+        }
+    }
+    /**
+     * RDKit `GetBestAlignmentTransform` as JSON, bounded by `max_matches`.
+     * @param {string} probe_coords_json
+     * @param {string} reference_coords_json
+     * @param {number} max_matches
+     * @param {boolean} symmetrize
+     * @param {string | null} [weights_json]
+     * @returns {string}
+     */
+    rdkit_best_alignment_json(probe_coords_json, reference_coords_json, max_matches, symmetrize, weights_json) {
+        let deferred5_0;
+        let deferred5_1;
+        try {
+            const ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len1 = WASM_VECTOR_LEN;
+            var ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            var len2 = WASM_VECTOR_LEN;
+            const ret = wasm.molhandle_rdkit_best_alignment_json(this.__wbg_ptr, ptr0, len0, ptr1, len1, max_matches, symmetrize, ptr2, len2);
+            var ptr4 = ret[0];
+            var len4 = ret[1];
+            if (ret[3]) {
+                ptr4 = 0; len4 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred5_0 = ptr4;
+            deferred5_1 = len4;
+            return getStringFromWasm0(ptr4, len4);
+        } finally {
+            wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+        }
+    }
+    /**
+     * RDKit `GetBestRMS`, bounded by `max_matches <= 1_000_000`.
+     * @param {string} probe_coords_json
+     * @param {string} reference_coords_json
+     * @param {number} max_matches
+     * @param {boolean} symmetrize
+     * @param {string | null} [weights_json]
+     * @returns {number}
+     */
+    rdkit_best_rms(probe_coords_json, reference_coords_json, max_matches, symmetrize, weights_json) {
+        const ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        var ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len2 = WASM_VECTOR_LEN;
+        const ret = wasm.molhandle_rdkit_best_rms(this.__wbg_ptr, ptr0, len0, ptr1, len1, max_matches, symmetrize, ptr2, len2);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return ret[0];
+    }
+    /**
+     * RDKit distance-geometry bounds matrix JSON. Row and column `i`
+     * refer to zero-based molecule atom `i`; upper bounds are above the
+     * diagonal and lower bounds below it. At most 512 atoms are accepted.
+     * @param {boolean} set15bounds
+     * @param {boolean} do_triangle_smoothing
+     * @param {boolean} use_macrocycle_14_config
+     * @returns {string}
+     */
+    rdkit_bounds_matrix_json(set15bounds, do_triangle_smoothing, use_macrocycle_14_config) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_rdkit_bounds_matrix_json(this.__wbg_ptr, set15bounds, do_triangle_smoothing, use_macrocycle_14_config);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * RDKit `CalcRMS`, bounded by `max_matches <= 1_000_000`.
+     * @param {string} probe_coords_json
+     * @param {string} reference_coords_json
+     * @param {number} max_matches
+     * @param {boolean} symmetrize
+     * @param {string | null} [weights_json]
+     * @returns {number}
+     */
+    rdkit_calc_rms(probe_coords_json, reference_coords_json, max_matches, symmetrize, weights_json) {
+        const ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        var ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len2 = WASM_VECTOR_LEN;
+        const ret = wasm.molhandle_rdkit_calc_rms(this.__wbg_ptr, ptr0, len0, ptr1, len1, max_matches, symmetrize, ptr2, len2);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return ret[0];
+    }
+    /**
+     * Chiral centres as `[[atomIndex,"R"|"S"|"?"], ...]` JSON.
+     * @param {boolean} include_unassigned
+     * @returns {string}
+     */
+    rdkit_chiral_centers_json(include_unassigned) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_rdkit_chiral_centers_json(this.__wbg_ptr, include_unassigned);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * RDKit-compatible CXSMARTS.
+     * @returns {string}
+     */
+    rdkit_cx_smarts() {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_rdkit_cx_smarts(this.__wbg_ptr);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * Seeded RDKit ETKDGv3 coordinates as JSON. Call on an
+     * explicit-hydrogen molecule. At most 512 atoms are accepted.
+     * @param {number} random_seed
+     * @param {number} max_iterations
+     * @returns {string}
+     */
+    rdkit_embed_json(random_seed, max_iterations) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_rdkit_embed_json(this.__wbg_ptr, random_seed, max_iterations);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * RDKit MolHash by case-insensitive function name.
+     * @param {string} _function
+     * @param {boolean} use_cx_smiles
+     * @returns {string}
+     */
+    rdkit_mol_hash(_function, use_cx_smiles) {
+        let deferred3_0;
+        let deferred3_1;
+        try {
+            const ptr0 = passStringToWasm0(_function, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.molhandle_rdkit_mol_hash(this.__wbg_ptr, ptr0, len0, use_cx_smiles);
+            var ptr2 = ret[0];
+            var len2 = ret[1];
+            if (ret[3]) {
+                ptr2 = 0; len2 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred3_0 = ptr2;
+            deferred3_1 = len2;
+            return getStringFromWasm0(ptr2, len2);
+        } finally {
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        }
+    }
+    /**
+     * RDKit Morgan folded bitInfo as `{bit:[[atomIndex,radius],...]}` JSON.
+     * @param {number} radius
+     * @param {number} n_bits
+     * @param {boolean} include_chirality
+     * @returns {string}
+     */
+    rdkit_morgan_bit_info_json(radius, n_bits, include_chirality) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_rdkit_morgan_bit_info_json(this.__wbg_ptr, radius, n_bits, include_chirality);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * RDKit-compatible Murcko scaffold SMILES.
+     * @returns {string}
+     */
+    rdkit_murcko_scaffold() {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_rdkit_murcko_scaffold(this.__wbg_ptr);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * RDKit-compatible PDB block. Optional coordinates are a JSON array in
+     * zero-based molecule atom order; omit them to write zero coordinates.
+     * @param {string | null} [coords_json]
+     * @returns {string}
+     */
+    rdkit_pdb_block(coords_json) {
+        let deferred3_0;
+        let deferred3_1;
+        try {
+            var ptr0 = isLikeNone(coords_json) ? 0 : passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            var len0 = WASM_VECTOR_LEN;
+            const ret = wasm.molhandle_rdkit_pdb_block(this.__wbg_ptr, ptr0, len0);
+            var ptr2 = ret[0];
+            var len2 = ret[1];
+            if (ret[3]) {
+                ptr2 = 0; len2 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred3_0 = ptr2;
+            deferred3_1 = len2;
+            return getStringFromWasm0(ptr2, len2);
+        } finally {
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        }
+    }
+    /**
+     * RDKit-compatible SMARTS in input atom order.
+     * @param {boolean} isomeric
+     * @param {number | null} [rooted_at_atom]
+     * @returns {string}
+     */
+    rdkit_smarts(isomeric, rooted_at_atom) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_rdkit_smarts(this.__wbg_ptr, isomeric, isLikeNone(rooted_at_atom) ? Number.MAX_SAFE_INTEGER : (rooted_at_atom) >>> 0);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
      * Canonical SMILES exactly as RDKit 2026.03.1 writes it
      * (`Chem.MolToSmiles(Chem.MolFromSmiles(s))` for a molecule parsed
      * from the SMILES `s`). Throws instead of returning a string for
@@ -1021,6 +1363,52 @@ export class MolHandle {
         let deferred2_1;
         try {
             const ret = wasm.molhandle_rdkit_smiles(this.__wbg_ptr);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * Number of default RDKit stereoisomers as a decimal string (u128-safe).
+     * @returns {string}
+     */
+    rdkit_stereoisomer_count() {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_rdkit_stereoisomer_count(this.__wbg_ptr);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * Sorted RDKit stereoisomer SMILES JSON. `max_isomers` is required and
+     * must be between 1 and 4096 so browser work remains bounded.
+     * @param {number} max_isomers
+     * @returns {string}
+     */
+    rdkit_stereoisomer_smiles_json(max_isomers) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.molhandle_rdkit_stereoisomer_smiles_json(this.__wbg_ptr, max_isomers);
             var ptr1 = ret[0];
             var len1 = ret[1];
             if (ret[3]) {
@@ -1169,6 +1557,78 @@ export class PreparedRdkitEcfp4Handle {
     }
 }
 if (Symbol.dispose) PreparedRdkitEcfp4Handle.prototype[Symbol.dispose] = PreparedRdkitEcfp4Handle.prototype.free;
+
+/**
+ * Result of an RDKit-compatible PDB, XYZ, or MOL2 reader.
+ *
+ * `coords_json()` is a JSON array with one `[x,y,z]` row per zero-based
+ * molecule atom. `smiles` is empty for XYZ and unsanitized readers.
+ */
+export class RdkitReadResult {
+    static __wrap(ptr) {
+        const obj = Object.create(RdkitReadResult.prototype);
+        obj.__wbg_ptr = ptr;
+        RdkitReadResultFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        RdkitReadResultFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_rdkitreadresult_free(ptr, 0);
+    }
+    /**
+     * Coordinates as JSON, in zero-based molecule atom order.
+     * @returns {string}
+     */
+    coords_json() {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.rdkitreadresult_coords_json(this.__wbg_ptr);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * A cloned handle to the parsed molecule.
+     * @returns {MolHandle}
+     */
+    molecule() {
+        const ret = wasm.rdkitreadresult_molecule(this.__wbg_ptr);
+        return MolHandle.__wrap(ret);
+    }
+    /**
+     * RDKit canonical SMILES when the reader sanitized the molecule.
+     * @returns {string}
+     */
+    get smiles() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.rdkitreadresult_smiles(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+}
+if (Symbol.dispose) RdkitReadResult.prototype[Symbol.dispose] = RdkitReadResult.prototype.free;
 
 /**
  * Reusable prepared index for the RDKit-compatible Morgan profile.
@@ -4172,6 +4632,28 @@ export function mmcif_to_json(text) {
 }
 
 /**
+ * Checked legacy MMFF94 charges.
+ *
+ * Returns `{"charges":[...]}` or a typed `{"error":"unsupported_element",...}`
+ * object instead of silently returning zeros for an unparameterized atom.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function mmff94_charges_checked_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.mmff94_charges_checked_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * MMFF94 partial charges (BCI table, ±0.1e accuracy) as a JSON array of f64.
  *
  * Uses Bond Charge Increment (BCI) model (Halgren 1996) for 25 common bond types.
@@ -6080,6 +6562,58 @@ export function rdkit_ecfp_config_detail_json(mol, radius, nbits) {
     } finally {
         wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
+}
+
+/**
+ * RDKit-compatible `MolFromMol2Block` with molecule and coordinates.
+ * @param {string} text
+ * @param {boolean} sanitize
+ * @param {boolean} remove_hs
+ * @param {boolean} cleanup_substructures
+ * @returns {RdkitReadResult}
+ */
+export function rdkit_from_mol2_block(text, sanitize, remove_hs, cleanup_substructures) {
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.rdkit_from_mol2_block(ptr0, len0, sanitize, remove_hs, cleanup_substructures);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return RdkitReadResult.__wrap(ret[0]);
+}
+
+/**
+ * RDKit-compatible `MolFromPDBBlock` with molecule and coordinates.
+ * @param {string} text
+ * @param {boolean} sanitize
+ * @param {boolean} remove_hs
+ * @param {number} flavor
+ * @param {boolean} proximity_bonding
+ * @returns {RdkitReadResult}
+ */
+export function rdkit_from_pdb_block(text, sanitize, remove_hs, flavor, proximity_bonding) {
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.rdkit_from_pdb_block(ptr0, len0, sanitize, remove_hs, flavor, proximity_bonding);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return RdkitReadResult.__wrap(ret[0]);
+}
+
+/**
+ * RDKit-compatible `MolFromXYZBlock`; the molecule has atoms but no bonds.
+ * @param {string} text
+ * @returns {RdkitReadResult}
+ */
+export function rdkit_from_xyz_block(text) {
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.rdkit_from_xyz_block(ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return RdkitReadResult.__wrap(ret[0]);
 }
 
 /**
@@ -8342,6 +8876,9 @@ const MolHandleFinalization = (typeof FinalizationRegistry === 'undefined')
 const PreparedRdkitEcfp4HandleFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_preparedrdkitecfp4handle_free(ptr, 1));
+const RdkitReadResultFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_rdkitreadresult_free(ptr, 1));
 const RdkitSearchIndexFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_rdkitsearchindex_free(ptr, 1));

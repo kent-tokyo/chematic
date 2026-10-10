@@ -385,6 +385,10 @@ export class MolHandle {
      */
     num_heteroatoms(): number;
     /**
+     * Number of rings using RDKit's symmetrized-SSSR semantics.
+     */
+    num_rings(): number;
+    /**
      * Number of fully saturated rings containing at least one heteroatom.
      */
     num_saturated_heterocycles(): number;
@@ -431,6 +435,63 @@ export class MolHandle {
      */
     randic_index(): number;
     /**
+     * RDKit `AlignMol` result JSON. Coordinates and optional atom map and
+     * weights use zero-based molecule atom order.
+     */
+    rdkit_align_json(probe_coords_json: string, reference_coords_json: string, atom_map_json: string | null | undefined, weights_json: string | null | undefined, reflect: boolean, max_iterations: number): string;
+    /**
+     * RDKit `GetBestAlignmentTransform` as JSON, bounded by `max_matches`.
+     */
+    rdkit_best_alignment_json(probe_coords_json: string, reference_coords_json: string, max_matches: number, symmetrize: boolean, weights_json?: string | null): string;
+    /**
+     * RDKit `GetBestRMS`, bounded by `max_matches <= 1_000_000`.
+     */
+    rdkit_best_rms(probe_coords_json: string, reference_coords_json: string, max_matches: number, symmetrize: boolean, weights_json?: string | null): number;
+    /**
+     * RDKit distance-geometry bounds matrix JSON. Row and column `i`
+     * refer to zero-based molecule atom `i`; upper bounds are above the
+     * diagonal and lower bounds below it. At most 512 atoms are accepted.
+     */
+    rdkit_bounds_matrix_json(set15bounds: boolean, do_triangle_smoothing: boolean, use_macrocycle_14_config: boolean): string;
+    /**
+     * RDKit `CalcRMS`, bounded by `max_matches <= 1_000_000`.
+     */
+    rdkit_calc_rms(probe_coords_json: string, reference_coords_json: string, max_matches: number, symmetrize: boolean, weights_json?: string | null): number;
+    /**
+     * Chiral centres as `[[atomIndex,"R"|"S"|"?"], ...]` JSON.
+     */
+    rdkit_chiral_centers_json(include_unassigned: boolean): string;
+    /**
+     * RDKit-compatible CXSMARTS.
+     */
+    rdkit_cx_smarts(): string;
+    /**
+     * Seeded RDKit ETKDGv3 coordinates as JSON. Call on an
+     * explicit-hydrogen molecule. At most 512 atoms are accepted.
+     */
+    rdkit_embed_json(random_seed: number, max_iterations: number): string;
+    /**
+     * RDKit MolHash by case-insensitive function name.
+     */
+    rdkit_mol_hash(_function: string, use_cx_smiles: boolean): string;
+    /**
+     * RDKit Morgan folded bitInfo as `{bit:[[atomIndex,radius],...]}` JSON.
+     */
+    rdkit_morgan_bit_info_json(radius: number, n_bits: number, include_chirality: boolean): string;
+    /**
+     * RDKit-compatible Murcko scaffold SMILES.
+     */
+    rdkit_murcko_scaffold(): string;
+    /**
+     * RDKit-compatible PDB block. Optional coordinates are a JSON array in
+     * zero-based molecule atom order; omit them to write zero coordinates.
+     */
+    rdkit_pdb_block(coords_json?: string | null): string;
+    /**
+     * RDKit-compatible SMARTS in input atom order.
+     */
+    rdkit_smarts(isomeric: boolean, rooted_at_atom?: number | null): string;
+    /**
      * Canonical SMILES exactly as RDKit 2026.03.1 writes it
      * (`Chem.MolToSmiles(Chem.MolFromSmiles(s))` for a molecule parsed
      * from the SMILES `s`). Throws instead of returning a string for
@@ -438,6 +499,15 @@ export class MolHandle {
      * rejects; `canonical_smiles` is unchanged.
      */
     rdkit_smiles(): string;
+    /**
+     * Number of default RDKit stereoisomers as a decimal string (u128-safe).
+     */
+    rdkit_stereoisomer_count(): string;
+    /**
+     * Sorted RDKit stereoisomer SMILES JSON. `max_isomers` is required and
+     * must be between 1 and 4096 so browser work remains bounded.
+     */
+    rdkit_stereoisomer_smiles_json(max_isomers: number): string;
     /**
      * Returns `true` if the molecule passes the REOS (Rapid Elimination Of Swill) filter.
      */
@@ -495,6 +565,30 @@ export class PreparedRdkitEcfp4Handle {
      * Compute the cached radius-2, 2048-bit fingerprint as 256 packed bytes.
      */
     bitvec(): Uint8Array;
+}
+
+/**
+ * Result of an RDKit-compatible PDB, XYZ, or MOL2 reader.
+ *
+ * `coords_json()` is a JSON array with one `[x,y,z]` row per zero-based
+ * molecule atom. `smiles` is empty for XYZ and unsanitized readers.
+ */
+export class RdkitReadResult {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Coordinates as JSON, in zero-based molecule atom order.
+     */
+    coords_json(): string;
+    /**
+     * A cloned handle to the parsed molecule.
+     */
+    molecule(): MolHandle;
+    /**
+     * RDKit canonical SMILES when the reader sanitized the molecule.
+     */
+    readonly smiles: string;
 }
 
 /**
@@ -1648,6 +1742,14 @@ export function mmcif_coords_json(text: string): string;
 export function mmcif_to_json(text: string): string;
 
 /**
+ * Checked legacy MMFF94 charges.
+ *
+ * Returns `{"charges":[...]}` or a typed `{"error":"unsupported_element",...}`
+ * object instead of silently returning zeros for an unparameterized atom.
+ */
+export function mmff94_charges_checked_json(mol: MolHandle): string;
+
+/**
  * MMFF94 partial charges (BCI table, ±0.1e accuracy) as a JSON array of f64.
  *
  * Uses Bond Charge Increment (BCI) model (Halgren 1996) for 25 common bond types.
@@ -2358,6 +2460,21 @@ export function rdkit_ecfp_config_chiral_detail_json(mol: MolHandle, radius: num
  * function's `radius`/`nbits`).
  */
 export function rdkit_ecfp_config_detail_json(mol: MolHandle, radius: number, nbits: number): string;
+
+/**
+ * RDKit-compatible `MolFromMol2Block` with molecule and coordinates.
+ */
+export function rdkit_from_mol2_block(text: string, sanitize: boolean, remove_hs: boolean, cleanup_substructures: boolean): RdkitReadResult;
+
+/**
+ * RDKit-compatible `MolFromPDBBlock` with molecule and coordinates.
+ */
+export function rdkit_from_pdb_block(text: string, sanitize: boolean, remove_hs: boolean, flavor: number, proximity_bonding: boolean): RdkitReadResult;
+
+/**
+ * RDKit-compatible `MolFromXYZBlock`; the molecule has atoms but no bonds.
+ */
+export function rdkit_from_xyz_block(text: string): RdkitReadResult;
 
 /**
  * Find the k nearest neighbours using the RDKit-compatible Morgan/ECFP4
@@ -3087,6 +3204,7 @@ export interface InitOutput {
     readonly __wbg_mhfplshhandle_free: (a: number, b: number) => void;
     readonly __wbg_molhandle_free: (a: number, b: number) => void;
     readonly __wbg_preparedrdkitecfp4handle_free: (a: number, b: number) => void;
+    readonly __wbg_rdkitreadresult_free: (a: number, b: number) => void;
     readonly __wbg_rdkitsearchindex_free: (a: number, b: number) => void;
     readonly __wbg_smilesbatchstreamhandle_free: (a: number, b: number) => void;
     readonly add_hydrogens: (a: number) => number;
@@ -3226,6 +3344,7 @@ export interface InitOutput {
     readonly minimize_uff_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly mmcif_coords_json: (a: number, b: number) => [number, number, number, number];
     readonly mmcif_to_json: (a: number, b: number) => [number, number, number, number];
+    readonly mmff94_charges_checked_json: (a: number) => [number, number];
     readonly mmff94_charges_json: (a: number) => [number, number];
     readonly mmff94_charges_typed_json: (a: number) => [number, number];
     readonly mmff94_energy_breakdown_from_coords_json: (a: number, b: number, c: number) => [number, number];
@@ -3318,6 +3437,7 @@ export interface InitOutput {
     readonly molhandle_num_aromatic_heterocycles: (a: number) => number;
     readonly molhandle_num_bridgehead_atoms: (a: number) => number;
     readonly molhandle_num_heteroatoms: (a: number) => number;
+    readonly molhandle_num_rings: (a: number) => number;
     readonly molhandle_num_saturated_heterocycles: (a: number) => number;
     readonly molhandle_num_saturated_rings: (a: number) => number;
     readonly molhandle_num_spiro_atoms: (a: number) => number;
@@ -3329,7 +3449,22 @@ export interface InitOutput {
     readonly molhandle_potential_stereocenter_indices: (a: number) => [number, number];
     readonly molhandle_qed: (a: number) => number;
     readonly molhandle_randic_index: (a: number) => number;
+    readonly molhandle_rdkit_align_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => [number, number, number, number];
+    readonly molhandle_rdkit_best_alignment_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number, number];
+    readonly molhandle_rdkit_best_rms: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number];
+    readonly molhandle_rdkit_bounds_matrix_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly molhandle_rdkit_calc_rms: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number];
+    readonly molhandle_rdkit_chiral_centers_json: (a: number, b: number) => [number, number, number, number];
+    readonly molhandle_rdkit_cx_smarts: (a: number) => [number, number, number, number];
+    readonly molhandle_rdkit_embed_json: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly molhandle_rdkit_mol_hash: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly molhandle_rdkit_morgan_bit_info_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly molhandle_rdkit_murcko_scaffold: (a: number) => [number, number, number, number];
+    readonly molhandle_rdkit_pdb_block: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly molhandle_rdkit_smarts: (a: number, b: number, c: number) => [number, number, number, number];
     readonly molhandle_rdkit_smiles: (a: number) => [number, number, number, number];
+    readonly molhandle_rdkit_stereoisomer_count: (a: number) => [number, number, number, number];
+    readonly molhandle_rdkit_stereoisomer_smiles_json: (a: number, b: number) => [number, number, number, number];
     readonly molhandle_reos_passes: (a: number) => number;
     readonly molhandle_ring_count: (a: number) => number;
     readonly molhandle_rotatable_bond_count: (a: number) => number;
@@ -3383,10 +3518,16 @@ export interface InitOutput {
     readonly rdkit_ecfp_config_chiral_bitvec: (a: number, b: number, c: number) => [number, number, number, number];
     readonly rdkit_ecfp_config_chiral_detail_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly rdkit_ecfp_config_detail_json: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly rdkit_from_mol2_block: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+    readonly rdkit_from_pdb_block: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
+    readonly rdkit_from_xyz_block: (a: number, b: number) => [number, number, number];
     readonly rdkit_nearest_neighbors_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly rdkit_path_bitvec: (a: number) => [number, number];
     readonly rdkit_rdk_bitvec: (a: number) => [number, number];
     readonly rdkit_torsion_bitvec: (a: number) => [number, number];
+    readonly rdkitreadresult_coords_json: (a: number) => [number, number, number, number];
+    readonly rdkitreadresult_molecule: (a: number) => number;
+    readonly rdkitreadresult_smiles: (a: number) => [number, number];
     readonly rdkitsearchindex_is_empty: (a: number) => number;
     readonly rdkitsearchindex_len: (a: number) => number;
     readonly rdkitsearchindex_new: (a: number, b: number) => [number, number, number];

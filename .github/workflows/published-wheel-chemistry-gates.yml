@@ -20,7 +20,7 @@ on:
       version:
         description: Published chematic version to install from PyPI
         required: true
-        default: "1.0.42"
+        default: "1.1.0"
         type: string
       biotransformer_corpus:
         description: Also run the BioTransformer rule corpus (about 15 minutes)

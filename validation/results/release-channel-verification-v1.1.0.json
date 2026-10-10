@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "release": {
+    "version": "1.1.0",
+    "tag": "v1.1.0",
+    "commit": null
+  },
+  "checked_at": "2026-10-11T07:34:15+09:00",
+  "release_ready": false,
+  "channels": [
+    {
+      "id": "github_release",
+      "status": "not_measured",
+      "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.1.0",
+      "detail": "Pending tag publication and GitHub Release verification."
+    },
+    {
+      "id": "npm",
+      "status": "not_measured",
+      "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.1.0",
+      "detail": "Pending npm publication and registry verification."
+    },
+    {
+      "id": "pypi",
+      "status": "not_measured",
+      "url": "https://pypi.org/pypi/chematic/1.1.0/json",
+      "detail": "Pending PyPI publication and artifact verification."
+    },
+    {
+      "id": "crates_io",
+      "status": "not_measured",
+      "url": "https://crates.io/crates/chematic/1.1.0",
+      "detail": "Pending publication and verification of all 20 workspace crates."
+    },
+    {
+      "id": "docs_rs",
+      "status": "not_measured",
+      "url": "https://docs.rs/chematic/1.1.0/chematic/",
+      "detail": "Pending docs.rs build and HTTP verification."
+    },
+    {
+      "id": "site",
+      "status": "not_measured",
+      "url": "https://kent-tokyo.github.io/chematic/",
+      "detail": "Pending GitHub Pages deployment and displayed-version verification."
+    }
+  ]
+}

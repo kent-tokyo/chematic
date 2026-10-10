@@ -7,7 +7,8 @@ links the raw data and older measurements.
 
 ## Current published-package evidence
 
-The current release is **v1.0.42**. A new bounded v1.0.42 packet measures four
+The current release is **v1.1.0**. The latest bounded published-package packet
+remains v1.0.42 and measures four
 named RDKit 2026.09.1 Python lanes from exact PyPI wheels on hosted Linux x64
 and macOS arm64. The broader published-package matrix remains v1.0.30, and the
 v1.0.41 RDKit/COSMolKit and v1.0.40 seeded ETKDG records remain source-built
@@ -41,7 +42,7 @@ retains 200 SMARTS failures, five typed CIP abstentions and four npm API gaps.
 - The [v1.0.12 similarity-search record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-similarity-search-v1.0.12.md)
   separates native/native, RDKit-compatible/RDKit and cross-profile overlap.
   Source A/B and older operation timings remain in the
-  [index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md); they do not update v1.0.42 package claims.
+  [index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md); they do not establish v1.1.0 package claims.
 
 ## Reproduction and interpretation
 

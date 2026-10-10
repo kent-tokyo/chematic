@@ -10,7 +10,7 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.0.42 release** retains the named RDKit 2026.03.1-compatible surface
+The **v1.1.0 release** retains the named RDKit 2026.03.1-compatible surface
 and reduces repeated work in selected fingerprint, descriptor, ring, reaction,
 and MMFF94 paths. In the recorded v1.0.41 source comparison, chematic matches RDKit at
 least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and
