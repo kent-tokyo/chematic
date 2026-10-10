@@ -1,0 +1,735 @@
+{
+  "rdkit_version": "2026.03.1",
+  "queries": [
+    {
+      "input": "B",
+      "expected": "B"
+    },
+    {
+      "input": "P",
+      "expected": "P"
+    },
+    {
+      "input": "S",
+      "expected": "S"
+    },
+    {
+      "input": "I",
+      "expected": "I"
+    },
+    {
+      "input": "b1ccccc1",
+      "expected": "b1ccccc1"
+    },
+    {
+      "input": "o1cccc1",
+      "expected": "o1cccc1"
+    },
+    {
+      "input": "s1cccc1",
+      "expected": "s1cccc1"
+    },
+    {
+      "input": "p1ccccc1",
+      "expected": "p1ccccc1"
+    },
+    {
+      "input": "[a]",
+      "expected": "a"
+    },
+    {
+      "input": "[A]",
+      "expected": "A"
+    },
+    {
+      "input": "[13]",
+      "expected": "[13*]"
+    },
+    {
+      "input": "[2H]",
+      "expected": "[#1&2*]"
+    },
+    {
+      "input": "[13H]",
+      "expected": "[#1&13*]"
+    },
+    {
+      "input": "[H:1]",
+      "expected": "[#1:1]"
+    },
+    {
+      "input": "[C++]",
+      "expected": "[C&+2]"
+    },
+    {
+      "input": "[O--]",
+      "expected": "[O&-2]"
+    },
+    {
+      "input": "[N-3]",
+      "expected": "[N&-3]"
+    },
+    {
+      "input": "[C+3]",
+      "expected": "[C&+3]"
+    },
+    {
+      "input": "[d2]",
+      "expected": "[d2]"
+    },
+    {
+      "input": "[r]",
+      "expected": "[R]"
+    },
+    {
+      "input": "[k]",
+      "expected": "[R]"
+    },
+    {
+      "input": "[D{2-4}]",
+      "expected": "[D{2-4}]"
+    },
+    {
+      "input": "[D{2-}]",
+      "expected": "[D{2-}]"
+    },
+    {
+      "input": "[D{-4}]",
+      "expected": "[D{-4}]"
+    },
+    {
+      "input": "[!D{2-4}]",
+      "expected": "[!D{2-4}]"
+    },
+    {
+      "input": "[r5,r6]",
+      "expected": "[r5,r6]"
+    },
+    {
+      "input": "[!C;!N]",
+      "expected": "[!C&!N]"
+    },
+    {
+      "input": "[!$(C=O)]",
+      "expected": "[!$(C=O)]"
+    },
+    {
+      "input": "[$(C=O),$(N#N)]",
+      "expected": "[$(C=O),$(N#N)]"
+    },
+    {
+      "input": "[C,N;H1,H2]",
+      "expected": "[C,N;H1,H2]"
+    },
+    {
+      "input": "[C;!$(C=O)]",
+      "expected": "[C&!$(C=O)]"
+    },
+    {
+      "input": "[!C&!N]",
+      "expected": "[!C&!N]"
+    },
+    {
+      "input": "[C;N,O]",
+      "expected": "[C;N,O]"
+    },
+    {
+      "input": "C-&!@C",
+      "expected": "C-&!@C"
+    },
+    {
+      "input": "C-;!@C",
+      "expected": "C-&!@C"
+    },
+    {
+      "input": "C!@C",
+      "expected": "C!@C"
+    },
+    {
+      "input": "C!,=C",
+      "expected": null
+    },
+    {
+      "input": "C!-,!#C",
+      "expected": "C!-,!#C"
+    },
+    {
+      "input": "C~C",
+      "expected": "C~C"
+    },
+    {
+      "input": "C/C=C\\C",
+      "expected": "C/C=C\\C"
+    },
+    {
+      "input": "C\\C=C/C",
+      "expected": "C/C=C\\C"
+    },
+    {
+      "input": "C/1CCCCC1",
+      "expected": "C1CCCCC1"
+    },
+    {
+      "input": "C=1CCCCC1",
+      "expected": "C1CCCCC=1"
+    },
+    {
+      "input": "C%12CCCCC%12",
+      "expected": "C1CCCCC1"
+    },
+    {
+      "input": "[se]1cccc1",
+      "expected": "[se]1cccc1"
+    },
+    {
+      "input": "[as]1ccccc1",
+      "expected": "[as]1ccccc1"
+    },
+    {
+      "input": "[te]1cccc1",
+      "expected": "[te]1cccc1"
+    },
+    {
+      "input": "[C:0]",
+      "expected": "[C:0]"
+    },
+    {
+      "input": "[C:12]",
+      "expected": "[C:12]"
+    },
+    {
+      "input": "C=",
+      "expected": null
+    },
+    {
+      "input": "C%",
+      "expected": null
+    },
+    {
+      "input": "C%1",
+      "expected": null
+    },
+    {
+      "input": "C%a1",
+      "expected": null
+    },
+    {
+      "input": "[$(CC]",
+      "expected": null
+    },
+    {
+      "input": "[D{4-2}]",
+      "expected": "[D{4-2}]"
+    },
+    {
+      "input": "[D{a-2}]",
+      "expected": null
+    },
+    {
+      "input": "[C",
+      "expected": null
+    },
+    {
+      "input": "C(C",
+      "expected": null
+    },
+    {
+      "input": "C1CC",
+      "expected": null
+    },
+    {
+      "input": "[foo]",
+      "expected": null
+    },
+    {
+      "input": "[C:]",
+      "expected": null
+    },
+    {
+      "input": "[C;$(C(=O)O)]",
+      "expected": "[C&$(C(=O)O)]"
+    },
+    {
+      "input": "[!$([N;H0]);H1]",
+      "expected": "[!$([N&H0])&H1]"
+    },
+    {
+      "input": "C-O",
+      "expected": "C-O"
+    },
+    {
+      "input": "C=O",
+      "expected": "C=O"
+    },
+    {
+      "input": "C#O",
+      "expected": "C#O"
+    },
+    {
+      "input": "C-&!@O",
+      "expected": "C-&!@O"
+    },
+    {
+      "input": "C-,=O",
+      "expected": "C-,=O"
+    },
+    {
+      "input": "C!#O",
+      "expected": "C!#O"
+    },
+    {
+      "input": "C-S",
+      "expected": "C-S"
+    },
+    {
+      "input": "C=S",
+      "expected": "C=S"
+    },
+    {
+      "input": "C#S",
+      "expected": "C#S"
+    },
+    {
+      "input": "C-&!@S",
+      "expected": "C-&!@S"
+    },
+    {
+      "input": "C-,=S",
+      "expected": "C-,=S"
+    },
+    {
+      "input": "C!#S",
+      "expected": "C!#S"
+    },
+    {
+      "input": "C-[N+]",
+      "expected": "C-[N&+]"
+    },
+    {
+      "input": "C=[N+]",
+      "expected": "C=[N&+]"
+    },
+    {
+      "input": "C#[N+]",
+      "expected": "C#[N&+]"
+    },
+    {
+      "input": "C-&!@[N+]",
+      "expected": "C-&!@[N&+]"
+    },
+    {
+      "input": "C-,=[N+]",
+      "expected": "C-,=[N&+]"
+    },
+    {
+      "input": "C!#[N+]",
+      "expected": "C!#[N&+]"
+    },
+    {
+      "input": "N-O",
+      "expected": "N-O"
+    },
+    {
+      "input": "N=O",
+      "expected": "N=O"
+    },
+    {
+      "input": "N#O",
+      "expected": "N#O"
+    },
+    {
+      "input": "N-&!@O",
+      "expected": "N-&!@O"
+    },
+    {
+      "input": "N-,=O",
+      "expected": "N-,=O"
+    },
+    {
+      "input": "N!#O",
+      "expected": "N!#O"
+    },
+    {
+      "input": "N-S",
+      "expected": "N-S"
+    },
+    {
+      "input": "N=S",
+      "expected": "N=S"
+    },
+    {
+      "input": "N#S",
+      "expected": "N#S"
+    },
+    {
+      "input": "N-&!@S",
+      "expected": "N-&!@S"
+    },
+    {
+      "input": "N-,=S",
+      "expected": "N-,=S"
+    },
+    {
+      "input": "N!#S",
+      "expected": "N!#S"
+    },
+    {
+      "input": "N-[N+]",
+      "expected": "N-[N&+]"
+    },
+    {
+      "input": "N=[N+]",
+      "expected": "N=[N&+]"
+    },
+    {
+      "input": "N#[N+]",
+      "expected": "N#[N&+]"
+    },
+    {
+      "input": "N-&!@[N+]",
+      "expected": "N-&!@[N&+]"
+    },
+    {
+      "input": "N-,=[N+]",
+      "expected": "N-,=[N&+]"
+    },
+    {
+      "input": "N!#[N+]",
+      "expected": "N!#[N&+]"
+    },
+    {
+      "input": "[a]-O",
+      "expected": "a-O"
+    },
+    {
+      "input": "[a]=O",
+      "expected": "a=O"
+    },
+    {
+      "input": "[a]#O",
+      "expected": "a#O"
+    },
+    {
+      "input": "[a]-&!@O",
+      "expected": "a-&!@O"
+    },
+    {
+      "input": "[a]-,=O",
+      "expected": "a-,=O"
+    },
+    {
+      "input": "[a]!#O",
+      "expected": "a!#O"
+    },
+    {
+      "input": "[a]-S",
+      "expected": "a-S"
+    },
+    {
+      "input": "[a]=S",
+      "expected": "a=S"
+    },
+    {
+      "input": "[a]#S",
+      "expected": "a#S"
+    },
+    {
+      "input": "[a]-&!@S",
+      "expected": "a-&!@S"
+    },
+    {
+      "input": "[a]-,=S",
+      "expected": "a-,=S"
+    },
+    {
+      "input": "[a]!#S",
+      "expected": "a!#S"
+    },
+    {
+      "input": "[a]-[N+]",
+      "expected": "a-[N&+]"
+    },
+    {
+      "input": "[a]=[N+]",
+      "expected": "a=[N&+]"
+    },
+    {
+      "input": "[a]#[N+]",
+      "expected": "a#[N&+]"
+    },
+    {
+      "input": "[a]-&!@[N+]",
+      "expected": "a-&!@[N&+]"
+    },
+    {
+      "input": "[a]-,=[N+]",
+      "expected": "a-,=[N&+]"
+    },
+    {
+      "input": "[a]!#[N+]",
+      "expected": "a!#[N&+]"
+    },
+    {
+      "input": "[A]-O",
+      "expected": "A-O"
+    },
+    {
+      "input": "[A]=O",
+      "expected": "A=O"
+    },
+    {
+      "input": "[A]#O",
+      "expected": "A#O"
+    },
+    {
+      "input": "[A]-&!@O",
+      "expected": "A-&!@O"
+    },
+    {
+      "input": "[A]-,=O",
+      "expected": "A-,=O"
+    },
+    {
+      "input": "[A]!#O",
+      "expected": "A!#O"
+    },
+    {
+      "input": "[A]-S",
+      "expected": "A-S"
+    },
+    {
+      "input": "[A]=S",
+      "expected": "A=S"
+    },
+    {
+      "input": "[A]#S",
+      "expected": "A#S"
+    },
+    {
+      "input": "[A]-&!@S",
+      "expected": "A-&!@S"
+    },
+    {
+      "input": "[A]-,=S",
+      "expected": "A-,=S"
+    },
+    {
+      "input": "[A]!#S",
+      "expected": "A!#S"
+    },
+    {
+      "input": "[A]-[N+]",
+      "expected": "A-[N&+]"
+    },
+    {
+      "input": "[A]=[N+]",
+      "expected": "A=[N&+]"
+    },
+    {
+      "input": "[A]#[N+]",
+      "expected": "A#[N&+]"
+    },
+    {
+      "input": "[A]-&!@[N+]",
+      "expected": "A-&!@[N&+]"
+    },
+    {
+      "input": "[A]-,=[N+]",
+      "expected": "A-,=[N&+]"
+    },
+    {
+      "input": "[A]!#[N+]",
+      "expected": "A!#[N&+]"
+    },
+    {
+      "input": "[13C]-O",
+      "expected": "[C&13*]-O"
+    },
+    {
+      "input": "[13C]=O",
+      "expected": "[C&13*]=O"
+    },
+    {
+      "input": "[13C]#O",
+      "expected": "[C&13*]#O"
+    },
+    {
+      "input": "[13C]-&!@O",
+      "expected": "[C&13*]-&!@O"
+    },
+    {
+      "input": "[13C]-,=O",
+      "expected": "[C&13*]-,=O"
+    },
+    {
+      "input": "[13C]!#O",
+      "expected": "[C&13*]!#O"
+    },
+    {
+      "input": "[13C]-S",
+      "expected": "[C&13*]-S"
+    },
+    {
+      "input": "[13C]=S",
+      "expected": "[C&13*]=S"
+    },
+    {
+      "input": "[13C]#S",
+      "expected": "[C&13*]#S"
+    },
+    {
+      "input": "[13C]-&!@S",
+      "expected": "[C&13*]-&!@S"
+    },
+    {
+      "input": "[13C]-,=S",
+      "expected": "[C&13*]-,=S"
+    },
+    {
+      "input": "[13C]!#S",
+      "expected": "[C&13*]!#S"
+    },
+    {
+      "input": "[13C]-[N+]",
+      "expected": "[C&13*]-[N&+]"
+    },
+    {
+      "input": "[13C]=[N+]",
+      "expected": "[C&13*]=[N&+]"
+    },
+    {
+      "input": "[13C]#[N+]",
+      "expected": "[C&13*]#[N&+]"
+    },
+    {
+      "input": "[13C]-&!@[N+]",
+      "expected": "[C&13*]-&!@[N&+]"
+    },
+    {
+      "input": "[13C]-,=[N+]",
+      "expected": "[C&13*]-,=[N&+]"
+    },
+    {
+      "input": "[13C]!#[N+]",
+      "expected": "[C&13*]!#[N&+]"
+    },
+    {
+      "input": "[!C]-O",
+      "expected": "[!C]-O"
+    },
+    {
+      "input": "[!C]=O",
+      "expected": "[!C]=O"
+    },
+    {
+      "input": "[!C]#O",
+      "expected": "[!C]#O"
+    },
+    {
+      "input": "[!C]-&!@O",
+      "expected": "[!C]-&!@O"
+    },
+    {
+      "input": "[!C]-,=O",
+      "expected": "[!C]-,=O"
+    },
+    {
+      "input": "[!C]!#O",
+      "expected": "[!C]!#O"
+    },
+    {
+      "input": "[!C]-S",
+      "expected": "[!C]-S"
+    },
+    {
+      "input": "[!C]=S",
+      "expected": "[!C]=S"
+    },
+    {
+      "input": "[!C]#S",
+      "expected": "[!C]#S"
+    },
+    {
+      "input": "[!C]-&!@S",
+      "expected": "[!C]-&!@S"
+    },
+    {
+      "input": "[!C]-,=S",
+      "expected": "[!C]-,=S"
+    },
+    {
+      "input": "[!C]!#S",
+      "expected": "[!C]!#S"
+    },
+    {
+      "input": "[!C]-[N+]",
+      "expected": "[!C]-[N&+]"
+    },
+    {
+      "input": "[!C]=[N+]",
+      "expected": "[!C]=[N&+]"
+    },
+    {
+      "input": "[!C]#[N+]",
+      "expected": "[!C]#[N&+]"
+    },
+    {
+      "input": "[!C]-&!@[N+]",
+      "expected": "[!C]-&!@[N&+]"
+    },
+    {
+      "input": "[!C]-,=[N+]",
+      "expected": "[!C]-,=[N&+]"
+    },
+    {
+      "input": "[!C]!#[N+]",
+      "expected": "[!C]!#[N&+]"
+    }
+  ],
+  "reactions": [
+    {
+      "input": "[C:1]>>[C:1]",
+      "expected": "[C:1]>>[C:1]"
+    },
+    {
+      "input": "[C:1]>O>[C:1]",
+      "expected": "[C:1]>O>[C:1]"
+    },
+    {
+      "input": "[N:1].[C:2]>>[N:1][C:2]",
+      "expected": "[N:1].[C:2]>>[N:1][C:2]"
+    },
+    {
+      "input": "([C:1].[O:2])>>[C:1][O:2]",
+      "expected": "([C:1].[O:2])>>[C:1][O:2]"
+    },
+    {
+      "input": "[C:1]/[C:2]=[C:3]\\[C:4]>>[C:1]/[C:2]=[C:3]/[C:4]",
+      "expected": "[C:1]/[C:2]=[C:3]\\[C:4]>>[C:1]/[C:2]=[C:3]/[C:4]"
+    },
+    {
+      "input": ">>",
+      "expected": ">>"
+    },
+    {
+      "input": "C>>",
+      "expected": "C>>"
+    },
+    {
+      "input": ">>O",
+      "expected": ">>O"
+    },
+    {
+      "input": "C>O>",
+      "expected": "C>O>"
+    },
+    {
+      "input": "[13C:1]>>[13C:1]",
+      "expected": "[C&13*:1]>>[C&13*:1]"
+    },
+    {
+      "input": "[a:1]>>[a:1]",
+      "expected": "[a:1]>>[a:1]"
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "rdkit_version": "2026.03.1",
+  "rows": [
+    {
+      "smiles": "CN(=O)=O",
+      "charges": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          -1
+        ]
+      ],
+      "bonds": [
+        [
+          1,
+          "SINGLE",
+          null
+        ]
+      ]
+    },
+    {
+      "smiles": "CN(=O)(C)C",
+      "charges": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          -1
+        ]
+      ],
+      "bonds": [
+        [
+          1,
+          "SINGLE",
+          null
+        ]
+      ]
+    },
+    {
+      "smiles": "CP(=O)=C",
+      "charges": [],
+      "bonds": []
+    },
+    {
+      "smiles": "OP(=O)=C",
+      "charges": [],
+      "bonds": []
+    },
+    {
+      "smiles": "O=Cl(=O)=O",
+      "charges": [],
+      "bonds": []
+    },
+    {
+      "smiles": "O=Br(=O)=O",
+      "charges": [],
+      "bonds": []
+    },
+    {
+      "smiles": "O=I(=O)=O",
+      "charges": [],
+      "bonds": []
+    },
+    {
+      "smiles": "O=Cl(=O)(=O)O",
+      "charges": [
+        [
+          0,
+          -1
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          3,
+          -1
+        ]
+      ],
+      "bonds": [
+        [
+          0,
+          "SINGLE",
+          null
+        ],
+        [
+          1,
+          "SINGLE",
+          null
+        ],
+        [
+          2,
+          "SINGLE",
+          null
+        ]
+      ]
+    },
+    {
+      "smiles": "CN(C)(C)[Cu]",
+      "charges": [],
+      "bonds": [
+        [
+          3,
+          "DATIVE",
+          1
+        ]
+      ]
+    },
+    {
+      "smiles": "CN(C)(C)[Fe]",
+      "charges": [],
+      "bonds": [
+        [
+          3,
+          "DATIVE",
+          1
+        ]
+      ]
+    },
+    {
+      "smiles": "CO(C)[Zn]",
+      "charges": [],
+      "bonds": [
+        [
+          2,
+          "DATIVE",
+          1
+        ]
+      ]
+    },
+    {
+      "smiles": "C[N+](=O)[O-]",
+      "charges": [],
+      "bonds": []
+    },
+    {
+      "smiles": "CCO",
+      "charges": [],
+      "bonds": []
+    }
+  ]
+}
