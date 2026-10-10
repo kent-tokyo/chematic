@@ -11,13 +11,15 @@ boundaries and reproducible evidence over feature-count parity.
 
 - **Core:** selected SMILES/SMARTS, descriptor, fingerprint, search, and
   MOL/SDF paths are stable and share one Rust implementation across bindings.
-- **Compatibility:** the v1.0.41 source comparison covers 161 operations on
-  ChEMBL 5k and RDKit.js 10k. It is not a claim of universal or
-  published-package parity.
-- **Performance:** a clean source candidate beats RDKit 2026.03.1 and
-  COSMolKit 0.5.0rc15 for the seven recorded parse-inclusive pipelines on one
-  Apple-silicon host. MMFF also wins prepared; five other prepared-operation
-  lanes and public-artifact replication remain open.
+- **Compatibility:** the source comparison covers 161 operations on ChEMBL 5k
+  and RDKit.js 10k. It is not a claim of universal or published-package
+  parity. Current work is rebaselined to RDKit 2026.09.1 and COSMolKit
+  0.5.0rc22; older comparator results remain historical.
+- **Performance:** the current macOS arm64 candidate wins every measured
+  parse-inclusive pipeline, but does not yet win every prepared operation.
+  RDKit-compatible TPSA now narrowly beats RDKit in the pinned 21-block run;
+  ring count, Labute ASA, chiral Morgan, and amide/amine reaction still lose
+  to at least one comparator. Public-artifact replication remains open.
 - **Reactions:** the published 83-row gate is 80 exact graph/origin/map rows
   and three inputs invalid in both engines. Broader SMIRKS behavior remains
   intentionally bounded.
@@ -72,23 +74,43 @@ operation, options, and failure policy.
 
 ### 3. P0/A3 — Complete the equivalent-work performance gate
 
+The target is a bounded, reproducible win over the pinned distributed
+artifacts, not a universal claim over every chemistry operation or workload.
+
+- Freeze the primary comparator set at RDKit 2026.09.1 and COSMolKit
+  0.5.0rc22 until the acceptance packet closes. A comparator upgrade starts a
+  new packet; it does not rewrite historical results.
+- Accuracy comes first: on every declared supported row, chematic must equal
+  the pinned oracle or return the documented typed refusal. A faster wrong
+  result, comparator exception, or skipped row is not a win.
+- Maintain two performance contracts: parse-inclusive pipelines and prepared
+  operation-only calls. Parsing cannot absorb expensive perception solely to
+  make the prepared lane look faster.
+
 - Preserve the existing RDKit agreement denominators before accepting a speed
   change; a typed refusal or changed result is not a performance win.
 - Keep parsing, first use, prepared/hot calls, 3D preparation, and memory as
   separate lanes. Do not move costly perception into parsing only to improve a
   downstream benchmark.
-- Close the five remaining prepared-operation deficits: ring count, TPSA,
-  Labute ASA, chiral Morgan, and amide/amine reaction.
-- The first follow-up removed redundant TPSA/Labute allocations and made the
-  ordinary SSSR count O(number of SMILES ring closures), but did not close the
-  RDKit symmetrized-ring or isolated descriptor gates. Continue from measured
-  profiles rather than shifting their cost into parsing.
+- Close the remaining prepared-operation deficits in this order: ring count,
+  Labute ASA, chiral Morgan, and amide/amine reaction against COSMolKit. Keep
+  TPSA above the RDKit lower-confidence-bound gate while closing its COSMolKit
+  deficit.
+- The current follow-up caches the shared RDKit-model safety predicate,
+  removes a redundant cleanup scan, and avoids Labute bond-order allocation.
+  On the pinned 1,000-row/21-block run, all six parse-inclusive pipelines win
+  every block. Prepared TPSA wins narrowly against RDKit, and the amide/amine
+  reaction wins against RDKit; neither yet beats COSMolKit.
+- Fix the benchmark before trusting it: API drift or any per-row comparator
+  error invalidates that operation's speed ratio and confidence interval.
 - Rerun from exact PyPI/npm/crates.io artifacts and on a second host.
 
-**Exit:** for every declared equivalent-output lane, 21 or more alternating
-blocks, all blocks faster, and the paired 95% speedup lower bound above 1.0
-against both RDKit and COSMolKit. Published-package claims require exact
-artifact hashes.
+**Exit:** on the frozen common-operation matrix, chematic is at least as
+accurate as each comparator row by row, with no wrong-confident result. For
+every equivalent-output performance lane, 21 or more alternating blocks, all
+blocks faster, and the paired 95% speedup lower bound above 1.0 against both
+RDKit and COSMolKit. Published-package claims require exact artifact hashes,
+a second host, and separate peak-memory results.
 
 ### 4. P1/A4 — Close the remaining SMARTS/SMIRKS contract
 
