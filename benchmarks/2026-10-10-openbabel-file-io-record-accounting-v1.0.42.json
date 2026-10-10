@@ -2,8 +2,8 @@
   "schema_version": 1,
   "target_version": "1.0.42",
   "source": {
-    "commit": "9b425ca7790f0fff42d066b906106fc031c5ba95",
-    "dirty": true
+    "commit": "f6ff49b64ce334b0019de168239d18c70c4a2e6f",
+    "dirty": false
   },
   "status": "local-verified",
   "gate": "openbabel_file_io_record_accounting_v1",
@@ -39,9 +39,9 @@
             "max_records": 100000,
             "max_atoms": 1000000
           },
-          "seconds": 0.004101,
-          "records_per_second": 9754.41,
-          "bytes_per_second": 3087271.01
+          "seconds": 0.004187,
+          "records_per_second": 9553.85,
+          "bytes_per_second": 3023794.83
         },
         "rdkit": {
           "engine": "rdkit",
@@ -51,9 +51,9 @@
           "records": 40,
           "failures": 0,
           "input_bytes": 12660,
-          "seconds": 0.009722,
-          "records_per_second": 4114.49,
-          "bytes_per_second": 1302234.67,
+          "seconds": 0.008882,
+          "records_per_second": 4503.51,
+          "bytes_per_second": 1425361.38,
           "comparison_boundary": "RDKit ForwardSDMolSupplier in one Python process"
         },
         "openbabel": {
@@ -64,9 +64,9 @@
           "records": 40,
           "failures": 0,
           "input_bytes": 12660,
-          "seconds": 2.798052,
-          "records_per_second": 14.3,
-          "bytes_per_second": 4524.58,
+          "seconds": 2.737186,
+          "records_per_second": 14.61,
+          "bytes_per_second": 4625.19,
           "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
         }
       },
@@ -109,9 +109,9 @@
             "max_records": 100000,
             "max_atoms": 1000000
           },
-          "seconds": 0.002854,
-          "records_per_second": 14015.83,
-          "bytes_per_second": 4436010.03
+          "seconds": 0.002518,
+          "records_per_second": 15883.52,
+          "bytes_per_second": 5027133.02
         },
         "rdkit": {
           "engine": "rdkit",
@@ -120,9 +120,9 @@
           "records": 40,
           "failures": 0,
           "input_bytes": 12660,
-          "seconds": 0.004017,
-          "records_per_second": 9958.3,
-          "bytes_per_second": 3151801.81,
+          "seconds": 0.003989,
+          "records_per_second": 10028.41,
+          "bytes_per_second": 3173992.77,
           "comparison_boundary": "Python block API, not file-backed BufRead streaming"
         },
         "openbabel": {
@@ -133,9 +133,9 @@
           "records": 40,
           "failures": 0,
           "input_bytes": 12660,
-          "seconds": 2.754008,
-          "records_per_second": 14.52,
-          "bytes_per_second": 4596.94,
+          "seconds": 2.74569,
+          "records_per_second": 14.57,
+          "bytes_per_second": 4610.86,
           "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
         }
       },
@@ -178,9 +178,9 @@
             "max_records": 100000,
             "max_atoms": 1000000
           },
-          "seconds": 0.002682,
-          "records_per_second": 7457.82,
-          "bytes_per_second": 2222429.38
+          "seconds": 0.002526,
+          "records_per_second": 7917.0,
+          "bytes_per_second": 2359267.33
         },
         "rdkit": {
           "engine": "rdkit",
@@ -189,9 +189,9 @@
           "records": 20,
           "failures": 0,
           "input_bytes": 5960,
-          "seconds": 0.003971,
-          "records_per_second": 5036.62,
-          "bytes_per_second": 1500912.77,
+          "seconds": 0.003986,
+          "records_per_second": 5017.77,
+          "bytes_per_second": 1495296.0,
           "comparison_boundary": "Python block API, not file-backed BufRead streaming"
         },
         "openbabel": {
@@ -202,9 +202,9 @@
           "records": 20,
           "failures": 0,
           "input_bytes": 5960,
-          "seconds": 2.747037,
-          "records_per_second": 7.28,
-          "bytes_per_second": 2169.61,
+          "seconds": 2.776255,
+          "records_per_second": 7.2,
+          "bytes_per_second": 2146.78,
           "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
         }
       },
@@ -247,9 +247,9 @@
             "max_records": 100000,
             "max_atoms": 1000000
           },
-          "seconds": 0.001091,
-          "records_per_second": 18331.81,
-          "bytes_per_second": 6617781.85
+          "seconds": 0.001624,
+          "records_per_second": 12312.74,
+          "bytes_per_second": 4444898.65
         },
         "rdkit": {
           "engine": "rdkit",
@@ -258,9 +258,9 @@
           "records": 20,
           "failures": 0,
           "input_bytes": 7220,
-          "seconds": 0.00388,
-          "records_per_second": 5154.42,
-          "bytes_per_second": 1860745.09,
+          "seconds": 0.00383,
+          "records_per_second": 5222.1,
+          "bytes_per_second": 1885179.01,
           "comparison_boundary": "Python block API, not file-backed BufRead streaming"
         },
         "openbabel": {
@@ -271,9 +271,9 @@
           "records": 20,
           "failures": 0,
           "input_bytes": 7220,
-          "seconds": 2.771821,
-          "records_per_second": 7.22,
-          "bytes_per_second": 2604.79,
+          "seconds": 2.810075,
+          "records_per_second": 7.12,
+          "bytes_per_second": 2569.33,
           "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
         }
       },
@@ -318,9 +318,9 @@
             "max_records": 100000,
             "max_atoms": 1000000
           },
-          "seconds": 0.002207,
-          "records_per_second": 9062.59,
-          "bytes_per_second": 3470971.4
+          "seconds": 0.001453,
+          "records_per_second": 13766.6,
+          "bytes_per_second": 5272606.13
         },
         "openbabel": {
           "records": 20,
@@ -369,9 +369,9 @@
             "max_records": 100000,
             "max_atoms": 1000000
           },
-          "seconds": 0.001489,
-          "records_per_second": 13432.58,
-          "bytes_per_second": 4311858.89
+          "seconds": 0.001739,
+          "records_per_second": 11502.24,
+          "bytes_per_second": 3692218.51
         },
         "openbabel": {
           "records": 20,
@@ -420,9 +420,9 @@
             "max_records": 100000,
             "max_atoms": 1000000
           },
-          "seconds": 0.001929,
-          "records_per_second": 10367.39,
-          "bytes_per_second": 7236441.39
+          "seconds": 0.003284,
+          "records_per_second": 6089.44,
+          "bytes_per_second": 4250428.16
         },
         "openbabel": {
           "records": 20,
@@ -471,9 +471,9 @@
             "max_records": 100000,
             "max_atoms": 1000000
           },
-          "seconds": 0.000552,
-          "records_per_second": 36250.99,
-          "bytes_per_second": 10367784.47
+          "seconds": 0.00084,
+          "records_per_second": 23813.07,
+          "bytes_per_second": 6810537.28
         },
         "openbabel": {
           "records": 20,
