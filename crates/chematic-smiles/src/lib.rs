@@ -83,3 +83,11 @@ pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,
 };
 pub use writer::{write, write_with_atom_order};
+#[cfg(test)]
+mod mol2_boundary_contract_tests;
+
+#[cfg(test)]
+mod stereo_order_boundary_contract_tests;
+
+#[cfg(test)]
+mod pdb_boundary_contract_tests;

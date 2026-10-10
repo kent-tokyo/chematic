@@ -226,7 +226,13 @@ pub(crate) fn from_chematic_ordered(
         let unsaturated = out.atom_bonds[a]
             .iter()
             .any(|&b| out.bonds[b].bt.as_double() > 1.0);
-        if degree == 3
+        if degree == 3 && text.contains(&STEREO_H_SENTINEL) {
+            // Readers and reaction products may record the H in any ligand
+            // slot. Move that recorded slot to RDKit's implicit-H-last order;
+            // atom indices alone only describe a molecule parsed from SMILES.
+            let h_slot = text.iter().position(|&n| n == STEREO_H_SENTINEL).unwrap();
+            n_swaps += text.len() - 1 - h_slot;
+        } else if degree == 3
             && ((is_start && n_hs == 1) || (n_hs != 1 && n_closures == 1 && !unsaturated))
         {
             n_swaps += 1;

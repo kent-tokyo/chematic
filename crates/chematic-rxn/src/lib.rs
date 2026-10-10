@@ -76,3 +76,5 @@ pub use transform::{
     run_reactants_traced_rdkit_2026_03_6, run_reactants_traced_rdkit_2026_03_6_detailed,
     run_reactants_with_diagnostics, run_reactants_with_limits,
 };
+#[cfg(test)]
+mod reaction_boundary_contract_tests;

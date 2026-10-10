@@ -168,3 +168,5 @@ pub use workflow::{
     molecule_report_with_options, screen_smiles, screen_smiles_with_options,
 };
 pub use xlogp3::{xlogp3, xlogp3_per_atom};
+#[cfg(test)]
+mod descriptor_boundary_contract_tests;

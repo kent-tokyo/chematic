@@ -200,3 +200,16 @@ mod orca_boundary_tests;
 
 #[cfg(test)]
 mod xml_boundary_tests;
+
+#[cfg(test)]
+mod lammps_boundary_contract_tests;
+#[cfg(test)]
+mod mol_boundary_contract_tests;
+#[cfg(test)]
+mod stream_boundary_contract_tests;
+
+#[cfg(test)]
+mod docking_boundary_contract_tests;
+
+#[cfg(test)]
+mod cdxml_boundary_contract_tests;

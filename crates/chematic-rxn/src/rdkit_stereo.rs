@@ -774,10 +774,10 @@ pub(crate) fn apply_product_stereo(
         .filter(|&i| chiral_source(i) || template[i].tag.is_some())
         .collect();
     if involved.is_empty() {
-        // Neither a template tag nor a chiral mapped atom: RDKit leaves
-        // every template atom without a tag, as does the native build.
+        // Without tetrahedral stereo, clear tetrahedral tags only. The
+        // builder retains a matched coordination center's unnumbered class.
         for &idx in template_idx_to_new.iter().flatten() {
-            if product.atom(idx).chirality != Chirality::None {
+            if product.atom(idx).chirality.is_tetrahedral() {
                 product.set_chirality(idx, Chirality::None);
             }
         }
@@ -1016,7 +1016,7 @@ fn set_config(product: &mut Molecule, idx: AtomIdx, config: &Config) {
             product.set_stereo_neighbor_order(idx, order.clone());
         }
         None => {
-            if product.atom(idx).chirality != Chirality::None {
+            if product.atom(idx).chirality.is_tetrahedral() {
                 product.set_chirality(idx, Chirality::None);
             }
         }

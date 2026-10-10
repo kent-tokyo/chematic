@@ -179,12 +179,12 @@ pub fn write_pdbqt(
         let atom_name = if sym.len() == 1 {
             format!(" {sym}  ")
         } else {
-            format!("{sym}   ")
+            format!("{sym}  ")
         };
 
         // ATOM serial resname chain resnum    x        y        z     occ   bfac           charge type
         out.push_str(&format!(
-            "ATOM  {:>5} {:<4} {:<3} {:>1}{:>4}    {:>8.3}{:>8.3}{:>8.3}{:>6.2}{:>6.2}    {:>+7.4} {:<2}\n",
+            "ATOM  {:>5} {:<4} {:<3} {:>1}{:>4}    {:>8.3}{:>8.3}{:>8.3}{:>6.2}{:>6.2}    {:>6.3} {:<2}\n",
             serial + 1,  // serial
             atom_name,   // atom name
             "LIG",       // residue name

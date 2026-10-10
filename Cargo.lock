@@ -374,6 +374,7 @@ dependencies = [
  "libm",
  "rayon",
  "rustc-hash",
+ "serde_json",
 ]
 
 [[package]]
