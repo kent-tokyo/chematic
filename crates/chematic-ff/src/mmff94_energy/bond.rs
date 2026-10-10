@@ -789,3 +789,35 @@ mod tests {
         assert!((p.r0 - 1.508).abs() < 0.001);
     }
 }
+
+#[cfg(test)]
+mod interhalogen_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn interhalogen_empirical_parameters_match_pinned_rdkit() {
+        // RDKit 2026.03.1, MMFFGetMoleculeProperties(AddHs(MolFromSmiles(s)))
+        // followed by GetMMFFBondStretchParams(m, 0, 1). These are real
+        // interhalogen molecules, with no MMFFBndk pair entry.
+        for (source, types, kb, r0) in [
+            ("ClBr", [12, 13], 3.8440630898674333, 2.1570801641341424),
+            ("ClI", [12, 14], 2.499375186808644, 2.2964721425110266),
+            ("BrI", [13, 14], 1.7863119097674447, 2.445053382772597),
+            ("FCl", [11, 12], 7.480465917592369, 1.6285927784776462),
+            ("FBr", [11, 13], 4.642386193457866, 1.7565711795729944),
+            ("FI", [11, 14], 7.6089498922466134, 1.859687231739248),
+        ] {
+            let mol = chematic_smiles::parse(source).unwrap();
+            let actual_types = crate::assign_mmff94_numeric_types(&mol).unwrap();
+            assert_eq!(actual_types, types);
+            assert!(mmff94_bond_energy(0, types[0], types[1]).is_none());
+            for pair in [types, [types[1], types[0]]] {
+                let (params, resolution) =
+                    mmff94_bond_energy_resolved(0, pair[0], pair[1]).unwrap();
+                assert_eq!(resolution, Mmff94Resolution::EmpiricalBond);
+                assert!((params.kb - kb).abs() < 1e-9, "{source}: kb={}", params.kb);
+                assert!((params.r0 - r0).abs() < 1e-9, "{source}: r0={}", params.r0);
+            }
+        }
+    }
+}

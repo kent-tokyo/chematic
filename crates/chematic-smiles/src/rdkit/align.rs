@@ -623,3 +623,74 @@ mod tests {
         assert_eq!(best.atom_map.len(), 3);
     }
 }
+
+#[cfg(test)]
+mod weighted_fit_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn weighted_rigid_and_reflected_fits_recover_known_geometry() {
+        let reference = [
+            [0.0, 0.0, 0.0],
+            [2.0, 0.0, 0.0],
+            [0.0, 3.0, 0.0],
+            [0.0, 0.0, 4.0],
+        ];
+        for reflect in [false, true] {
+            for weights in [[1.0, 1.0, 1.0, 1.0], [1.0, 2.0, 3.0, 4.0]] {
+                let sign = if reflect { -1.0 } else { 1.0 };
+                let probe: Vec<_> = reference
+                    .iter()
+                    .map(|p| [5.0 - sign * p[1], -2.0 + sign * p[0], 7.0 + sign * p[2]])
+                    .collect();
+                let (ssr, transform) =
+                    align_points(&reference, &probe, Some(&weights), reflect, 100).unwrap();
+                let mut residual = 0.0;
+                for ((&probe, reference), weight) in probe.iter().zip(reference).zip(weights) {
+                    let actual = transform.transform_point(probe);
+                    for axis in 0..3 {
+                        let difference = actual[axis] - reference[axis];
+                        assert!(
+                            difference.abs() < 2e-6,
+                            "reflect={reflect}, weights={weights:?}, axis={axis}: actual={actual:?}, reference={reference:?}, ssr={ssr}"
+                        );
+                        residual += weight * difference * difference;
+                    }
+                }
+                assert!(ssr.abs() < 1e-9);
+                assert!((ssr - residual).abs() < 1e-9);
+                let rows = transform.rows();
+                let determinant = rows[0][0] * (rows[1][1] * rows[2][2] - rows[1][2] * rows[2][1])
+                    - rows[0][1] * (rows[1][0] * rows[2][2] - rows[1][2] * rows[2][0])
+                    + rows[0][2] * (rows[1][0] * rows[2][1] - rows[1][1] * rows[2][0]);
+                assert!((determinant - sign).abs() < 1e-12);
+                assert_eq!(rows[3], [0.0, 0.0, 0.0, 1.0]);
+            }
+        }
+    }
+
+    #[test]
+    fn point_and_weight_mismatches_are_explicit_errors() {
+        let points = [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]];
+        for result in [
+            align_points(&points, &points[..1], None, false, 50),
+            align_points(&points, &points, Some(&[1.0]), false, 50),
+        ] {
+            assert!(
+                result
+                    .unwrap_err()
+                    .to_string()
+                    .contains("Mismatch in number of points")
+            );
+        }
+        for weight in [0.0, -1.0] {
+            let result = align_points(&points, &points, Some(&[1.0, weight]), false, 50);
+            assert!(
+                result
+                    .unwrap_err()
+                    .to_string()
+                    .contains("weight specified for a point")
+            );
+        }
+    }
+}

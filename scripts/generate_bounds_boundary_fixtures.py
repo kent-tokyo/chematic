@@ -1,4 +1,4 @@
-"""Generate RDKit 2026.03.1 distance-bound references for rings and amides."""
+"""Generate RDKit 2026.03.1 distance-bound references for rings, amides, and disulfides."""
 import itertools
 import json
 from pathlib import Path
@@ -22,10 +22,17 @@ for i,line in enumerate((root/'validation/benchmark_corpora/rdkit-js-browser-10k
         smiles.append(text)
     if len(smiles) == 88:
         break
+# Append after the fixed-stride corpus so the original holdout stays intact.
+sulfur_cases=['CSSC','CCSSCC','SS','CSSSC','C1CSSC1',
+              'N[C@@H](CSSC[C@H](N)C(=O)O)C(=O)O']
+smiles.extend(sulfur_cases)
 rows=[]
 for text in smiles:
     mol=Chem.MolFromSmiles(text);assert mol is not None,text
-    for h in [False,True] if text in ['CC(=O)NC','NCCN','OCCO'] else [False]:
+    # The public bounds API requires explicit Hs; sulfur UFF charge flags
+    # depend on that valence. Keep every new sulfur entry in that domain.
+    hs=[True] if text in sulfur_cases else ([False,True] if text in ['CC(=O)NC','NCCN','OCCO'] else [False])
+    for h in hs:
         source=Chem.AddHs(mol) if h else mol
         for set15,smooth,macro in itertools.product([False,True],repeat=3):
             bounds=rdDistGeom.GetMoleculeBoundsMatrix(source,set15bounds=set15,doTriangleSmoothing=smooth,useMacrocycle14config=macro)

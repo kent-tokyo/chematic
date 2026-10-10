@@ -2633,7 +2633,9 @@ M  END
             let v2000 = parse_mol(&write_mol(&mol, &MolMetadata::default()))
                 .unwrap()
                 .0;
-            let coords = vec![(0.0, 0.0); mol.atom_count()];
+            let coords: Vec<_> = (0..mol.atom_count())
+                .map(|i| (1.5 * i as f64, 0.0))
+                .collect();
             let v3000 = crate::parse_mol_v3000(&crate::write_mol_v3000(
                 &mol,
                 &MolMetadata::default(),
@@ -3372,10 +3374,9 @@ mod square_planar_tests {
             Point3::new(-1.0, 1.0, -1.0),
             Point3::new(-1.0, -1.0, 1.0),
         ];
-        assert_eq!(
-            classify_square_planar_geometry(center, neighbors),
-            Err(SquarePlanarRejectionReason::NotCoplanar)
-        );
+        let result = classify_square_planar_geometry(center, neighbors);
+        assert_eq!(result, Err(SquarePlanarRejectionReason::NotCoplanar));
+        assert!(result.unwrap_err().to_string().contains("not coplanar"));
     }
 
     #[test]
@@ -3383,9 +3384,16 @@ mod square_planar_tests {
         let center = Point3::zero();
         let mut neighbors = ideal_square_planar_neighbors(SquarePlanarPermutation::SP1);
         neighbors[0] = center; // coincides with the center itself
+        let result = classify_square_planar_geometry(center, neighbors);
         assert_eq!(
-            classify_square_planar_geometry(center, neighbors),
+            result,
             Err(SquarePlanarRejectionReason::DegenerateBondVector)
+        );
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("degenerate bond vector")
         );
     }
 
@@ -3399,10 +3407,12 @@ mod square_planar_tests {
             Point3::new(1.5 * r.cos(), 1.5 * r.sin(), 1.5)
         };
         let neighbors = [at(0.0), at(20.0), at(40.0), at(60.0)];
+        let result = classify_square_planar_geometry(center, neighbors);
         assert_eq!(
-            classify_square_planar_geometry(center, neighbors),
+            result,
             Err(SquarePlanarRejectionReason::AmbiguousTransPairing)
         );
+        assert!(result.unwrap_err().to_string().contains("trans-pairing"));
     }
 
     /// Build a 5-atom (center + 4 ligand) molecule plus a matching `Coords3D`
@@ -3635,5 +3645,38 @@ mod square_planar_tests {
             diagnostics.is_empty(),
             "square-planar chirality must never reach the tetrahedral-only conflict check: {diagnostics:?}"
         );
+    }
+}
+
+#[cfg(test)]
+mod stereo_loss_message_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn actual_degenerate_layout_loss_reports_the_unexpressed_stereo_identity() {
+        for (source, atom, bond) in [
+            ("C[C@H](F)Cl", Some(AtomIdx(1)), None),
+            ("F/C=C/F", None, Some(chematic_core::BondIdx(1))),
+        ] {
+            let mol = chematic_smiles::parse(source).unwrap();
+            let coords: Vec<_> = (0..mol.atom_count())
+                .map(|i| (1.5 * i as f64, 0.0))
+                .collect();
+            let (_, loss) = write_mol_with_stereo_report(&mol, &MolMetadata::default(), &coords);
+            assert!(!loss.is_empty(), "{source}");
+            let message = loss.to_string();
+            if let Some(atom) = atom {
+                assert!(loss.centres.contains(&atom));
+                assert!(message.contains("tetrahedral centres without a wedge (atoms 1)"));
+            }
+            if let Some(bond) = bond {
+                assert!(loss.double_bonds.contains(&bond));
+                assert!(message.contains("E/Z written as either (bonds 1)"));
+            }
+        }
+        let mol = chematic_smiles::parse("CCO").unwrap();
+        let (_, loss) = write_mol_with_stereo_report(&mol, &MolMetadata::default(), &[]);
+        assert!(loss.is_empty());
+        assert_eq!(loss.to_string(), "no stereo lost");
     }
 }

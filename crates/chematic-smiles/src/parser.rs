@@ -1766,3 +1766,40 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod parse_error_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn actual_parse_failures_keep_positions_and_relevant_labels() {
+        for (source, context) in [
+            ("C%", "unexpected end"),
+            ("[Xx]", "missing element symbol"),
+            ("C%(256)", "extended ring closure 256"),
+            (
+                "C/%(256)CC/%(256)",
+                "conflicting bond types for extended ring closure 256",
+            ),
+            ("C=1CC-1", "conflicting bond types for ring closure 1"),
+            ("[Pt@SP4](F)(Cl)(Br)I", "unsupported chirality class '@SP4'"),
+        ] {
+            let error = parse(source).err().unwrap();
+            let message = error.to_string();
+            assert!(message.contains(context), "{source}: {message}");
+            assert!(message.contains("position"), "{source}: {message}");
+        }
+        let empty = parse("").err().unwrap();
+        assert_eq!(empty, SmilesError::EmptyInput);
+        assert!(empty.to_string().contains("input is empty"));
+        let depth = MAX_BRANCH_DEPTH + 1;
+        let source = format!("C{}{}", "(C".repeat(depth), ")".repeat(depth));
+        let error = parse(&source).err().unwrap();
+        assert!(matches!(error, SmilesError::NestingTooDeep { .. }));
+        assert!(
+            error
+                .to_string()
+                .contains("branch nesting too deep at position")
+        );
+    }
+}

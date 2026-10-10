@@ -456,3 +456,34 @@ mod tests {
         assert!(PeriodicSite::new(species, FractionalCoord::new([0.0, 0.0, 0.0]), None).is_ok());
     }
 }
+
+#[cfg(test)]
+mod distance_metric_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn cartesian_distance_agrees_with_integer_geometry_and_rigid_motion() {
+        for scale in [1e-6, 1.0, 1e6] {
+            for shift in [[0.0, 0.0, 0.0], [1.25, -3.5, 2.75]] {
+                let origin = CartesianCoord::new(shift);
+                let a = CartesianCoord::new([
+                    shift[0] + 3.0 * scale,
+                    shift[1] + 4.0 * scale,
+                    shift[2] + 12.0 * scale,
+                ]);
+                let rotated = CartesianCoord::new([
+                    shift[0] - 4.0 * scale,
+                    shift[1] + 3.0 * scale,
+                    shift[2] + 12.0 * scale,
+                ]);
+                let expected = 13.0 * scale;
+                for point in [a, rotated] {
+                    assert!(point.is_finite());
+                    assert!((point.distance(&origin) - expected).abs() < 1e-9 * expected);
+                    assert_eq!(point.distance(&origin), origin.distance(&point));
+                    assert_eq!(point.distance(&point), 0.0);
+                }
+            }
+        }
+    }
+}
