@@ -193,3 +193,102 @@ impl fmt::Display for CrystalError {
 }
 
 impl std::error::Error for CrystalError {}
+
+#[cfg(test)]
+mod tests {
+    use super::CrystalError;
+
+    #[test]
+    fn display_messages_cover_every_error_variant() {
+        let cases = [
+            (
+                CrystalError::NonFinite {
+                    field: "matrix[1][2]",
+                },
+                "matrix[1][2] must be finite (got NaN or Infinity)",
+            ),
+            (
+                CrystalError::NonPositiveLength {
+                    axis: "a",
+                    value: 0.0,
+                },
+                "lattice length a must be a positive finite number, got 0",
+            ),
+            (
+                CrystalError::InvalidAngle {
+                    angle: "gamma",
+                    value: 180.0,
+                },
+                "lattice angle gamma must be in the open interval (0, 180) degrees, got 180",
+            ),
+            (
+                CrystalError::SingularMatrix,
+                "lattice matrix is singular (zero volume): lattice vectors are linearly dependent",
+            ),
+            (
+                CrystalError::NearSingularMatrix {
+                    condition: 0.0001,
+                    threshold: 0.001,
+                },
+                "lattice matrix is near-singular: condition indicator 0.0001 is below the minimum 0.001",
+            ),
+            (
+                CrystalError::NonFiniteVolume,
+                "lattice volume computed to a non-finite value",
+            ),
+            (
+                CrystalError::NegativeOccupancy { value: -0.25 },
+                "occupancy must be >= 0, got -0.25",
+            ),
+            (
+                CrystalError::NonFiniteOccupancy,
+                "occupancy must be finite (got NaN or Infinity)",
+            ),
+            (
+                CrystalError::OccupancySumExceeded {
+                    sum: 1.2,
+                    tolerance: 0.01,
+                },
+                "species occupancies sum to 1.2, which exceeds 1.0 + tolerance (0.01)",
+            ),
+            (
+                CrystalError::EmptySpeciesList,
+                "species list must not be empty",
+            ),
+            (
+                CrystalError::IncompatibleAngles {
+                    alpha: 170.0,
+                    beta: 170.0,
+                    gamma: 170.0,
+                },
+                "angles alpha=170, beta=170, gamma=170 do not define a valid (non-degenerate) parallelepiped cell",
+            ),
+            (
+                CrystalError::InvalidSite {
+                    index: 3,
+                    source: Box::new(CrystalError::EmptySpeciesList),
+                },
+                "site 3: species list must not be empty",
+            ),
+            (
+                CrystalError::NonPositiveSupercellMultiplier { axis: 2, value: 0 },
+                "supercell multiplier for axis 2 must be >= 1, got 0",
+            ),
+            (
+                CrystalError::NeighborSearchTooLarge {
+                    candidate_count: 1_000_001,
+                    limit: 1_000_000,
+                },
+                "neighbor search would examine 1000001 candidate periodic images, exceeding the limit of 1000000 -- check that the cutoff is not far larger than the cell",
+            ),
+            (
+                CrystalError::InvalidCutoff { value: -1.0 },
+                "cutoff must be a finite, positive number, got -1",
+            ),
+        ];
+
+        for (error, expected) in cases {
+            assert_eq!(error.to_string(), expected);
+        }
+    }
+}
