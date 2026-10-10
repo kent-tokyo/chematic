@@ -403,6 +403,93 @@ fn rdkit_writers_match_rdkit() {
     );
 }
 
+/// Keep the Rust surface for query and reaction SMARTS aligned with the
+/// Python binding fixtures. These paths are substantial parsers/writers in
+/// their own right and must not rely on binding-only coverage.
+#[test]
+fn rdkit_query_and_reaction_smarts_match_rdkit() {
+    for (input, want) in [
+        ("[N;H2,H1;!$(NC=O)]", "[N;H2,H1;!$(NC=O)]"),
+        ("[#6;$([C;H3,H2])]-[O,N]", "[#6&$([C;H3,H2])]-[O,N]"),
+    ] {
+        assert_eq!(super::rdkit_smarts_to_smarts(input).as_deref(), Ok(want));
+    }
+
+    for (input, want) in [
+        (
+            "[C@@H:1]([NH2:2])([#6:3])[C:4]=[O:5]>>[C@@H:1]([NH:2]C(C)=O)([#6:3])[C:4]=[O:5]",
+            "[N&H2:2][C@&H1:1]([#6:3])[C:4]=[O:5]>>[N&H1:2]([C@&H1:1]([#6:3])[C:4]=[O:5])C(C)=O",
+        ),
+        (
+            "([C:1](=[O:2])[OH].[NH2:3])>>[C:1](=[O:2])[N:3]",
+            "([C:1](=[O:2])[O&H1].[N&H2:3])>>[C:1](=[O:2])[N:3]",
+        ),
+    ] {
+        assert_eq!(
+            super::rdkit_reaction_to_smarts(input).as_deref(),
+            Ok(want),
+            "{input}"
+        );
+    }
+
+    for invalid in ["([C:1].[O:2]>>[C:1][O:2]", "[C:1]>[O:2]"] {
+        assert!(
+            super::rdkit_reaction_to_smarts(invalid).is_err(),
+            "{invalid}"
+        );
+    }
+}
+
+/// Exercise the pure-Rust half of `MolFromInchi` without requiring the
+/// optional native IUPAC library. The adapter consumes exactly the plain data
+/// returned by `GetStructFromINCHI`.
+#[test]
+fn rdkit_inchi_output_adapter_builds_and_validates_molecules() {
+    use super::{InchiOutputAtom, rdkit_molecule_from_inchi_output};
+
+    let atoms = vec![
+        InchiOutputAtom {
+            element: "C".into(),
+            bonds: vec![(1, 1, 0)],
+            num_iso_h: [3, 0, 0, 0],
+            ..Default::default()
+        },
+        InchiOutputAtom {
+            element: "C".into(),
+            bonds: vec![(0, 1, 0), (2, 1, 0)],
+            num_iso_h: [2, 0, 0, 0],
+            ..Default::default()
+        },
+        InchiOutputAtom {
+            element: "O".into(),
+            bonds: vec![(1, 1, 0)],
+            num_iso_h: [1, 0, 0, 0],
+            ..Default::default()
+        },
+    ];
+    let mol = rdkit_molecule_from_inchi_output(&atoms, &[]).expect("ethanol output");
+    assert_eq!(super::rdkit_canonical_smiles(&mol).as_deref(), Ok("CCO"));
+
+    let unknown = [InchiOutputAtom {
+        element: "Xx".into(),
+        ..Default::default()
+    }];
+    assert!(rdkit_molecule_from_inchi_output(&unknown, &[]).is_err());
+
+    let bad_bond = [
+        InchiOutputAtom {
+            element: "C".into(),
+            bonds: vec![(1, 9, 0)],
+            ..Default::default()
+        },
+        InchiOutputAtom {
+            element: "C".into(),
+            ..Default::default()
+        },
+    ];
+    assert!(rdkit_molecule_from_inchi_output(&bad_bond, &[]).is_err());
+}
+
 /// `GetStereoisomerCount` cases that need `FindPotentialStereo`'s
 /// dependent ("possible") stereo (RDKit 2026.03.1).
 #[test]

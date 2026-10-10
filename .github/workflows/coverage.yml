@@ -50,6 +50,11 @@ jobs:
           mkdir -p target/coverage
           cargo llvm-cov --locked --workspace --lib --bins \
             --test qcschema --test nucleic_acid_contract --test v3000_semantic_interop \
+            --test rdkit_embed --test streamable_http \
+            --test format_binding_parity --test conformer_3d_io --test schema_conformance \
+            --test rdkit_g1_parity --test issue739_platform_stereo \
+            --test rdkit_count_and_chiral_fps --test rdkit_morgan_stable_api_fixtures \
+            --test rdkit_2026_09_1_ring_count --test issue769_template_valence \
             --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
             --lcov --output-path target/coverage/lcov.info
       - name: Generate HTML report

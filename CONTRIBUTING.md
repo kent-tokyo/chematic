@@ -90,11 +90,12 @@ measures Rust library and binary unit tests with `cargo-llvm-cov` and uploads
 LCOV to [Codecov](https://app.codecov.io/github/kent-tokyo/chematic). It also saves
 LCOV and an HTML report as the `rust-unit-coverage` Actions artifact.
 
-The initial scope uses default features and excludes `chematic-py`,
-`chematic-wasm`, and the offline `gen-sa-table` tool. Integration tests,
-Python/WASM runtime tests, doctests, and optional-feature lanes are not part of
-this percentage. Coverage describes executed code; chemistry correctness and
-cross-engine compatibility still depend on their separate validation gates.
+The scope uses default features and excludes `chematic-py`, `chematic-wasm`,
+and the offline `gen-sa-table` tool. It includes the named Rust integration
+contracts in the command below; other integration tests, Python/WASM runtime
+tests, doctests, and optional-feature lanes are not part of this percentage.
+Coverage describes executed code; chemistry correctness and cross-engine
+compatibility still depend on their separate validation gates.
 
 To reproduce locally:
 
@@ -103,6 +104,12 @@ rustup component add llvm-tools-preview
 cargo install cargo-llvm-cov --version 0.8.7 --locked
 mkdir -p target/coverage
 cargo llvm-cov --locked --workspace --lib --bins \
+  --test qcschema --test nucleic_acid_contract --test v3000_semantic_interop \
+  --test rdkit_embed --test streamable_http \
+  --test format_binding_parity --test conformer_3d_io --test schema_conformance \
+  --test rdkit_g1_parity --test issue739_platform_stereo \
+  --test rdkit_count_and_chiral_fps --test rdkit_morgan_stable_api_fixtures \
+  --test rdkit_2026_09_1_ring_count --test issue769_template_valence \
   --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
   --lcov --output-path target/coverage/lcov.info
 cargo llvm-cov report \
