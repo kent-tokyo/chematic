@@ -75,6 +75,9 @@ jobs:
             --test descriptor_contract --test rdkit_reference --test metal_disconnect_holdout \
             --test standardize_stereo_table_preservation --test aromaticity_edge_gate \
             --test issue415_fused_heteroaromatic_holdout \
+            --test mmff94_rdkit_bfgs_trajectory \
+            --test g1_regression_byte_identical --test torsion_knowledge_negative_controls \
+            --test canonical_stereo_d0_cip_multiset_invariance \
             --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
             --no-report
           cargo llvm-cov report \
