@@ -788,3 +788,89 @@ mod tests {
         assert!(report.descriptors.hba > 0); // N is an acceptor
     }
 }
+
+#[cfg(test)]
+mod limit_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn workflow_limits_preserve_rejected_record_identity_and_context() {
+        let options = CompareOptions {
+            limits: WorkflowLimits {
+                max_molecules: 2,
+                max_atoms: 2,
+            },
+            ..CompareOptions::default()
+        };
+        let error = compare_molecules_with_options(&["C", "N", "O"], &options).unwrap_err();
+        assert_eq!(
+            error,
+            WorkflowError::TooManyMolecules {
+                count: 3,
+                max_molecules: 2
+            }
+        );
+        assert!(error.to_string().contains("3 molecules; max is 2"));
+        let error = compare_molecules_with_options(&["C", "CCC"], &options).unwrap_err();
+        assert_eq!(
+            error,
+            WorkflowError::TooManyAtoms {
+                index: 1,
+                smiles: "CCC".into(),
+                atom_count: 3,
+                max_atoms: 2,
+            }
+        );
+        assert!(
+            error
+                .to_string()
+                .contains("index 1 (\"CCC\") has 3 atoms; max is 2")
+        );
+        let error = compare_molecules_with_options(&["C"], &options).unwrap_err();
+        assert!(error.to_string().contains("at least two molecules"));
+        assert_eq!(
+            compare_molecules_with_options(&["CC", "CO"], &options)
+                .unwrap()
+                .reports
+                .len(),
+            2
+        );
+
+        let options = ScreenOptions {
+            limits: WorkflowLimits {
+                max_molecules: 2,
+                max_atoms: 2,
+            },
+            maxmin_pick_count: 2,
+            ..ScreenOptions::default()
+        };
+        let sources = ["CC", "CCC", "CO", "C1CC"];
+        let result = screen_smiles_with_options(&sources, &options);
+        assert_eq!(result.records.len(), sources.len());
+        for (index, record) in result.records.iter().enumerate() {
+            assert_eq!(record.input_index, index);
+            assert_eq!(record.input_smiles, sources[index]);
+        }
+        assert!(result.records[0].report.is_some());
+        assert!(result.records[0].error.is_none());
+        assert!(
+            result.records[1]
+                .error
+                .as_ref()
+                .unwrap()
+                .contains("has 3 atoms; max is 2")
+        );
+        for record in &result.records[2..] {
+            assert!(record.report.is_none());
+            assert!(record.error.as_ref().unwrap().contains("max_molecules=2"));
+        }
+        assert!(result.maxmin_picks.iter().all(|&index| index == 0));
+        assert!(
+            result
+                .butina_clusters
+                .iter()
+                .flatten()
+                .all(|&index| index == 0)
+        );
+    }
+}

@@ -779,6 +779,60 @@ mod tests {
     }
 
     #[test]
+    fn matching_budgets_boundary_fail_closed_and_report_the_exhausted_limit() {
+        let mol = benzene();
+        let cases = [
+            (
+                MancudeBudget {
+                    max_atoms: 5,
+                    ..MancudeBudget::default()
+                },
+                MancudeError::TooManyAtoms { count: 6, max: 5 },
+                "6 must-match atoms, over budget 5",
+            ),
+            (
+                MancudeBudget {
+                    max_matchings: 1,
+                    ..MancudeBudget::default()
+                },
+                MancudeError::TooManyMatchings { max: 1 },
+                "more than 1 valid Kekulé matchings",
+            ),
+            (
+                MancudeBudget {
+                    max_search_steps: 0,
+                    ..MancudeBudget::default()
+                },
+                MancudeError::SearchBudgetExceeded { max: 0 },
+                "search exceeded 0 steps",
+            ),
+        ];
+        for (budget, expected, context) in cases {
+            let error = enumerate_kekule_matchings(&mol, budget).unwrap_err();
+            assert_eq!(error, expected);
+            assert!(error.to_string().contains(context));
+            assert_eq!(mol.atom_count(), 6);
+            assert!(mol.bonds().all(|(_, b)| b.order == BondOrder::Aromatic));
+        }
+        let all = enumerate_kekule_matchings(
+            &mol,
+            MancudeBudget {
+                max_atoms: 6,
+                max_matchings: 2,
+                ..MancudeBudget::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(all.len(), 2);
+        assert!(all.iter().all(|form| {
+            form.values()
+                .filter(|&&order| order == BondOrder::Double)
+                .count()
+                == 3
+        }));
+    }
+
+    #[test]
     fn no_aromatic_bonds_is_one_empty_matching() {
         let mut b = MoleculeBuilder::new();
         let c1 = b.add_atom(Atom::new(Element::C));

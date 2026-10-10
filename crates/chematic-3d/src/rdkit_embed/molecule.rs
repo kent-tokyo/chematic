@@ -351,3 +351,32 @@ pub fn rdkit_bounds_matrix(
     let raw = m.raw();
     Ok((0..n).map(|i| raw[i * n..(i + 1) * n].to_vec()).collect())
 }
+
+#[cfg(test)]
+mod input_diagnostic_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn embedding_rejects_empty_graphs_and_unsupported_modes_with_context() {
+        let empty = chematic_core::MoleculeBuilder::new().build();
+        let error = rdkit_embed_molecule(&empty, &RdkitEmbedOptions::default()).unwrap_err();
+        assert_eq!(
+            error,
+            RdkitEmbedError::RdkitException("molecule has no atoms".into())
+        );
+        assert!(error.to_string().contains("molecule has no atoms"));
+        let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCO").unwrap());
+        let options = RdkitEmbedOptions {
+            use_basic_knowledge: false,
+            ..RdkitEmbedOptions::default()
+        };
+        let error = rdkit_embed_molecule(&molecule, &options).unwrap_err();
+        assert!(matches!(error, RdkitEmbedError::Unsupported(_)));
+        assert!(
+            error
+                .to_string()
+                .contains("plain ETDG (no basic knowledge)")
+        );
+        assert_eq!(molecule.atom_count(), 9);
+    }
+}

@@ -2226,3 +2226,78 @@ fn compute(mol_in: &Mol, cip: &[u32], canon_orient: bool) -> DResult<Vec<[f64; 2
     }
     Ok(out)
 }
+
+#[cfg(test)]
+mod fixed_fragment_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn partial_fixed_fragments_keep_coordinates_and_place_remaining_ligands() {
+        let input = crate::parse("C(F)(Cl)(Br)I").unwrap();
+        let mut mol = super::super::parse::from_chematic(&input).unwrap();
+        mol.set_rings(Vec::new());
+        let ctx = Ctx {
+            mol: &mol,
+            cip: None,
+            n: mol.atoms.len(),
+            dmat: Vec::new(),
+        };
+        for placed in 0..=3 {
+            for rotation in [0.0_f64, 0.37, -1.1] {
+                let centre = P::new(3.0, -2.0);
+                let mut map = BTreeMap::from([(0, centre)]);
+                for i in 0..placed {
+                    let angle = rotation + i as f64 * PI / 2.0;
+                    map.insert(
+                        i + 1,
+                        centre.add(P::new(angle.cos(), angle.sin()).scale(BOND_LEN)),
+                    );
+                }
+                let mut fragment = EFrag::from_coord_map(&ctx, &map).unwrap();
+                if placed >= 2 {
+                    // Two ligands store their occupied angle; three store
+                    // the complementary sector of the widest pair.
+                    let expected = if placed == 2 { PI / 2.0 } else { PI };
+                    let actual = fragment.get(0).unwrap().angle;
+                    // acos loses about sqrt(epsilon) angular precision at pi.
+                    assert!(
+                        (actual - expected).abs() < 1e-7,
+                        "fixed={placed}, rotation={rotation}: {actual} != {expected}"
+                    );
+                }
+                let mut remaining: Vec<_> = (0..ctx.n).filter(|a| !map.contains_key(a)).collect();
+                fragment.expand(&ctx, &mut remaining, &mut []).unwrap();
+                assert!(remaining.is_empty());
+                assert!(fragment.attach.is_empty());
+                assert_eq!(fragment.size(), ctx.n);
+                for (&atom, &position) in &map {
+                    assert_eq!(fragment.loc(atom).unwrap(), position);
+                    assert!(fragment.get(atom).unwrap().fixed);
+                }
+                for atom in 1..ctx.n {
+                    let position = fragment.loc(atom).unwrap();
+                    assert!(position.x.is_finite() && position.y.is_finite());
+                    assert!((position.sub(centre).length() - BOND_LEN).abs() < 1e-12);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn fixed_fragment_rejects_coincident_vectors_with_context() {
+        let input = crate::parse("CCO").unwrap();
+        let mut mol = super::super::parse::from_chematic(&input).unwrap();
+        mol.set_rings(Vec::new());
+        let ctx = Ctx {
+            mol: &mol,
+            cip: None,
+            n: mol.atoms.len(),
+            dmat: Vec::new(),
+        };
+        let map = BTreeMap::from([(0, P::new(1.0, 1.0)), (1, P::new(1.0, 1.0))]);
+        let error = EFrag::from_coord_map(&ctx, &map).err().unwrap();
+        assert!(error.0.contains("zero length vector"));
+        assert_eq!(map.len(), 2);
+        assert_eq!(map[&0], map[&1]);
+    }
+}
