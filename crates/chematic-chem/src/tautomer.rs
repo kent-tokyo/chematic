@@ -4902,3 +4902,89 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod parent_budget_boundary_tests {
+    use super::*;
+    use crate::parent::{ParentAudit, ParentComputationStatus};
+    use chematic_smiles::{canonical_smiles, parse};
+
+    #[test]
+    fn zero_timeout_and_transform_budget_preserve_input_and_report_incomplete() {
+        for source in ["CCN=O", "Nc1cc[nH]c(=O)n1", "Nc1nc2[nH]cnc2c(=O)[nH]1"] {
+            let mol = parse(source).unwrap();
+            let before = canonical_smiles(&mol);
+            let limits = TautomerLimits {
+                timeout_ms: Some(0),
+                ..Default::default()
+            };
+            let result = tautomer_parent(&mol, &limits);
+            assert_eq!(result.status, ParentComputationStatus::TimedOut);
+            assert_eq!(canonical_smiles(&result.molecule), before);
+            let ParentAudit::Tautomer(audit) = result.audit else {
+                panic!("tautomer audit required")
+            };
+            assert!(audit.applied_transforms.is_empty());
+            assert_eq!(audit.candidate_count, 1);
+            if source != "CCN=O" {
+                continue;
+            }
+            let limits = TautomerLimits {
+                max_transforms: 0,
+                ..Default::default()
+            };
+            let result = tautomer_parent(&mol, &limits);
+            assert_eq!(canonical_smiles(&result.molecule), before);
+            assert_eq!(canonical_smiles(&mol), before);
+            assert_eq!(result.status, ParentComputationStatus::MaxTransformsReached);
+        }
+    }
+
+    #[test]
+    fn dual_flank_parent_audit_tracks_real_atoms_and_converges_across_forms() {
+        for forms in [
+            ["Nc1cc[nH]c(=O)n1", "Nc1ccnc(O)n1"],
+            ["Nc1nc2[nH]cnc2c(=O)[nH]1", "Nc1nc2[nH]cnc2c(O)n1"],
+        ] {
+            let mut parents = Vec::new();
+            for source in forms {
+                let mol = parse(source).unwrap();
+                let before = canonical_smiles(&mol);
+                let result = tautomer_parent(&mol, &TautomerLimits::default());
+                assert_eq!(
+                    result.status,
+                    ParentComputationStatus::Completed,
+                    "{source}"
+                );
+                assert_eq!(result.molecule.atom_count(), mol.atom_count());
+                assert_eq!(result.molecule.bond_count(), mol.bond_count());
+                let ParentAudit::Tautomer(audit) = result.audit else {
+                    panic!("tautomer audit required")
+                };
+                for step in &audit.applied_transforms {
+                    assert_eq!(step.affected_atoms.len(), 3);
+                    assert!(
+                        step.affected_atoms
+                            .iter()
+                            .all(|a| (a.0 as usize) < mol.atom_count())
+                    );
+                    assert!(
+                        step.affected_bonds
+                            .iter()
+                            .all(|b| (b.0 as usize) < mol.bond_count())
+                    );
+                }
+                let parent = canonical_smiles(&result.molecule);
+                assert_eq!(
+                    canonical_smiles(
+                        &tautomer_parent(&result.molecule, &TautomerLimits::default()).molecule
+                    ),
+                    parent
+                );
+                parents.push(parent);
+                assert_eq!(canonical_smiles(&mol), before);
+            }
+            assert_eq!(parents[0], parents[1]);
+        }
+    }
+}

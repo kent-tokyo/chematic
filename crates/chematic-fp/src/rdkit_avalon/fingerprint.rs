@@ -741,6 +741,9 @@ pub(crate) fn count_fingerprint_patterns(
 
     if which_bits & USE_ATOM_COUNT != 0 {
         let mut type_count_hash = [0i32; NCOUNT_HASH];
+        // Upstream defines NCOUNT_SEED_HASH as the unparenthesized 128*128.
+        // Thus seed%NCOUNT_SEED_HASH expands to (seed%128)*128. Preserve
+        // that slot mapping for RDKit-compatible fingerprints above 2048 bits.
         let mut type_count_seed_hash = vec![0i32; NCOUNT_SEED_HASH];
         let (mut nringch2, mut nfusionch, mut nspiro) = (0, 0, 0);
         for i in 0..n {
@@ -763,19 +766,19 @@ pub(crate) fn count_fingerprint_patterns(
             let mut hash: i32 = 0;
             let mut seed = ns(317 * ATOM_COUNT_SEED, 507);
             seed = ns(seed, i64::from(c) + 17);
-            type_count_seed_hash[(seed % NCOUNT_SEED_HASH as u64) as usize] += 1;
+            type_count_seed_hash[((seed % 128) * 128) as usize] += 1;
             if (c == 7 || c == 8) && h_count[i + 1] <= 0 {
                 continue;
             }
             hash = hash.wrapping_mul(7).wrapping_add(c + 13);
             type_count_hash[(hash as usize) % NCOUNT_HASH] += 1;
             seed = ns(seed, i64::from(c) + 13);
-            type_count_seed_hash[(seed % NCOUNT_SEED_HASH as u64) as usize] += 1;
+            type_count_seed_hash[((seed % 128) * 128) as usize] += 1;
             if c != 7 && c != 8 {
                 hash = hash.wrapping_mul(7).wrapping_add(c + 2 * 13);
                 type_count_hash[(hash as usize) % NCOUNT_HASH] += 1;
                 seed = ns(seed, i64::from(c) + 2 * 13);
-                type_count_seed_hash[(seed % NCOUNT_SEED_HASH as u64) as usize] += 1;
+                type_count_seed_hash[((seed % 128) * 128) as usize] += 1;
             }
         }
         if ncounts <= 2048 {
@@ -2034,7 +2037,9 @@ pub(crate) fn count_fingerprint_patterns(
                 continue;
             }
             if which_bits & USE_SCAFFOLD_IDS != 0 {
-                add_bit!(ns(seed, i64::from(extcon[j].wrapping_mul(10013))));
+                // RDKit's compiled Avalon hashes the full positive product.
+                // Truncating it to signed i32 changes non-power-of-two sizes.
+                add_bit!(ns(seed, i64::from(extcon[j]) * 10013));
             }
             if which_bits & USE_SCAFFOLD_LINKS != 0 {
                 if degree[j] <= atom_status[j] {
@@ -2051,22 +2056,14 @@ pub(crate) fn count_fingerprint_patterns(
                         continue;
                     }
                     let k = i64::from(k);
-                    let v1 = extcon[j]
-                        .wrapping_mul(1013)
-                        .wrapping_add(extcon[jj].wrapping_mul(2003));
-                    add_bit!(ns(ns(seed, 3 * k), i64::from(v1)));
-                    let v2 = extcon2[j]
-                        .wrapping_mul(2013)
-                        .wrapping_add(extcon[jj].wrapping_mul(1003));
-                    add_bit!(ns(ns(seed, 5 * k), i64::from(v2)));
-                    let v3 = extcon[j]
-                        .wrapping_mul(2013)
-                        .wrapping_add(extcon2[jj].wrapping_mul(1003));
-                    add_bit!(ns(ns(seed, 5 * k), i64::from(v3)));
-                    let v4 = extcon2[j]
-                        .wrapping_mul(3013)
-                        .wrapping_add(extcon2[jj].wrapping_mul(3003));
-                    add_bit!(ns(ns(seed, 7 * k), i64::from(v4)));
+                    let v1 = i64::from(extcon[j]) * 1013 + i64::from(extcon[jj]) * 2003;
+                    add_bit!(ns(ns(seed, 3 * k), v1));
+                    let v2 = i64::from(extcon2[j]) * 2013 + i64::from(extcon[jj]) * 1003;
+                    add_bit!(ns(ns(seed, 5 * k), v2));
+                    let v3 = i64::from(extcon[j]) * 2013 + i64::from(extcon2[jj]) * 1003;
+                    add_bit!(ns(ns(seed, 5 * k), v3));
+                    let v4 = i64::from(extcon2[j]) * 3013 + i64::from(extcon2[jj]) * 3003;
+                    add_bit!(ns(ns(seed, 7 * k), v4));
                 }
             }
         }
@@ -2088,7 +2085,7 @@ pub(crate) fn count_fingerprint_patterns(
             }
             relax_extcon(&mut extcon, &mut extcon2, &atom_status, &bond_status, &nbp);
             for &e in &extcon {
-                add_bit!(ns(ns(seed, 4), i64::from(e.wrapping_mul(3013))));
+                add_bit!(ns(ns(seed, 4), i64::from(e) * 3013));
             }
         }
     }

@@ -623,3 +623,91 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod annotation_diagnostic_boundary_tests {
+    use super::*;
+    use chematic_core::{Atom, Element, MoleculeBuilder};
+
+    fn tagged_carbon(ligands: &[Element], orders: &[BondOrder]) -> Molecule {
+        let mut builder = MoleculeBuilder::new();
+        let mut atom = Atom::new(Element::C);
+        atom.chirality = Chirality::Clockwise;
+        atom.hydrogen_count = Some(0);
+        let center = builder.add_atom(atom);
+        for (&element, &order) in ligands.iter().zip(orders) {
+            let ligand = builder.add_atom(Atom::new(element));
+            builder.add_bond(center, ligand, order).unwrap();
+        }
+        builder.build()
+    }
+
+    #[test]
+    fn contradictory_wedges_report_the_original_center_without_editing_tags() {
+        let molecule = tagged_carbon(
+            &[Element::F, Element::CL, Element::BR, Element::I],
+            &[
+                BondOrder::Up,
+                BondOrder::Down,
+                BondOrder::Single,
+                BondOrder::Single,
+            ],
+        );
+        let before: Vec<_> = molecule.bonds().map(|(i, b)| (i, b.order)).collect();
+        let errors = validate_stereo(&molecule);
+        assert_eq!(
+            errors,
+            vec![StereoError {
+                atom_idx: 0,
+                kind: StereoErrorKind::ConflictingWedges
+            }]
+        );
+        assert_eq!(
+            errors[0].to_string(),
+            "atom 0: conflicting wedge directions"
+        );
+        assert_eq!(molecule.atom(AtomIdx(0)).chirality, Chirality::Clockwise);
+        assert_eq!(
+            molecule
+                .bonds()
+                .map(|(i, b)| (i, b.order))
+                .collect::<Vec<_>>(),
+            before
+        );
+        assert_eq!(validate_stereo(&molecule), errors);
+    }
+
+    #[test]
+    fn redundant_and_undercoordinated_annotations_have_distinct_diagnostics() {
+        let symmetric = tagged_carbon(&[Element::F; 4], &[BondOrder::Single; 4]);
+        let errors = validate_stereo(&symmetric);
+        assert_eq!(
+            errors,
+            vec![StereoError {
+                atom_idx: 0,
+                kind: StereoErrorKind::RedundantStereo
+            }]
+        );
+        assert_eq!(
+            errors[0].to_string(),
+            "atom 0: redundant stereo on symmetric atom"
+        );
+        let incomplete = tagged_carbon(&[Element::F, Element::CL], &[BondOrder::Single; 2]);
+        let errors = validate_stereo(&incomplete);
+        assert_eq!(
+            errors,
+            vec![StereoError {
+                atom_idx: 0,
+                kind: StereoErrorKind::ImpossibleCenter
+            }]
+        );
+        assert!(
+            errors[0]
+                .to_string()
+                .contains("atom 0: impossible stereocenter")
+        );
+        for molecule in [&symmetric, &incomplete] {
+            assert_eq!(molecule.atom(AtomIdx(0)).chirality, Chirality::Clockwise);
+        }
+    }
+}

@@ -20,10 +20,11 @@ fn avalon_boundary_fingerprints_match_pinned_rdkit() {
         let block = chematic_smiles::rdkit_mol_block_2d(&mol).unwrap();
         let av = read_molblock(&block).unwrap();
         let flags = row["bit_flags"].as_u64().unwrap() as u32;
-        let actual = on_bits(&avalon_fp_bytes(&av, 512, flags));
+        let bits = row["n_bits"].as_u64().unwrap_or(512) as usize;
+        let actual = on_bits(&avalon_fp_bytes(&av, bits, flags));
         if actual != expected {
             failures.push(format!(
-                "{text},flags={flags}: actual {actual:?}, expected {expected:?}"
+                "{text},bits={bits},flags={flags}: actual {actual:?}, expected {expected:?}"
             ));
         }
     }

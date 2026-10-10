@@ -135,7 +135,7 @@ static MMFF94_PBCI: &[(u8, f64, f64)] = &[
     (84, 0.000, 0.000),  // placeholder
     (85, 0.000, 0.000),  // placeholder
     (86, 0.000, 0.000),  // placeholder
-    (87, 2.000, 0.000),  // NA+2     doubly protonated N (q=+2)
+    (87, 2.000, 0.000),  // FE+2     dipositive iron
     (88, 3.000, 0.000),  // FE+3     tripositive iron
     (89, -1.000, 0.000), // F-       fluoride anion
     (90, -1.000, 0.000), // CL-      chloride anion
@@ -143,11 +143,11 @@ static MMFF94_PBCI: &[(u8, f64, f64)] = &[
     (92, 1.000, 0.000),  // LI+      lithium cation
     (93, 1.000, 0.000),  // NA+      sodium cation
     (94, 1.000, 0.000),  // K+       potassium cation
-    (95, 2.000, 0.000),  // CA2+     calcium dication
-    (96, 2.000, 0.000),  // MG2+     magnesium dication
-    (97, 1.000, 0.000),  // ZN2+     zinc dication (formal +1 per ligand)
-    (98, 2.000, 0.000),  // ZN+2     zinc dication
-    (99, 2.000, 0.000),  // CU+2     copper dication
+    (95, 2.000, 0.000),  // ZN+2     zinc dication
+    (96, 2.000, 0.000),  // CA+2     calcium dication
+    (97, 1.000, 0.000),  // CU+1     copper cation
+    (98, 2.000, 0.000),  // CU+2     copper dication
+    (99, 2.000, 0.000),  // MG+2     magnesium dication
 ];
 
 // ── CHG table: (bond_type, a, b, bci) ────────────────────────────────────────
@@ -809,12 +809,28 @@ pub fn assign_mmff94_numeric_types_with_view(
             Element::S => assign_s_type(&mmff_mol, &rings, idx)?,
             Element::P => assign_p_type(&mmff_mol, idx)?,
             Element::SI => 19,
+            // Isolated ions use MMFF's ionic rows, not the covalent
+            // halogen rows. The registered charge and vdW parameters are
+            // already present (RDKit AtomTyper.cpp, Release_2026_03_1).
+            Element::F if total_degree(&mmff_mol, idx) == 0 && atom.charge == -1 => 89,
             Element::F => 11,
             // RDKit: chlorine with four oxygens is perchlorate Cl (77).
             Element::CL if total_degree(&mmff_mol, idx) == 4 => 77,
+            Element::CL if total_degree(&mmff_mol, idx) == 0 && atom.charge == -1 => 90,
             Element::CL => 12,
+            Element::BR if total_degree(&mmff_mol, idx) == 0 && atom.charge == -1 => 91,
             Element::BR => 13,
             Element::I => 14,
+            Element::LI if total_degree(&mmff_mol, idx) == 0 && atom.charge == 1 => 92,
+            Element::NA if total_degree(&mmff_mol, idx) == 0 && atom.charge == 1 => 93,
+            Element::K if total_degree(&mmff_mol, idx) == 0 && atom.charge == 1 => 94,
+            Element::MG if total_degree(&mmff_mol, idx) == 0 && atom.charge == 2 => 99,
+            Element::CA if total_degree(&mmff_mol, idx) == 0 && atom.charge == 2 => 96,
+            Element::ZN if total_degree(&mmff_mol, idx) == 0 && atom.charge == 2 => 95,
+            Element::FE if total_degree(&mmff_mol, idx) == 0 && atom.charge == 2 => 87,
+            Element::FE if total_degree(&mmff_mol, idx) == 0 && atom.charge == 3 => 88,
+            Element::CU if total_degree(&mmff_mol, idx) == 0 && atom.charge == 1 => 97,
+            Element::CU if total_degree(&mmff_mol, idx) == 0 && atom.charge == 2 => 98,
             // Hydrogens are typed from their parent's MMFF type in a second
             // pass below (RDKit / MMFFHDEF semantics).
             Element::H => 0,

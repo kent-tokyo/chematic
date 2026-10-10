@@ -50,3 +50,56 @@ fn invalid_inchi_is_an_error() {
     assert!(rdkit_mol_from_inchi("InChI=1S/garbage").is_err());
     assert!(rdkit_mol_from_inchi("not an inchi").is_err());
 }
+
+#[test]
+fn official_inchi_reader_boundary_regressions_match_pinned_rdkit() {
+    let mut mismatches = Vec::new();
+    let mut count = 0;
+    for line in
+        include_str!("../../../validation/rdkit-2026.03.1-inchi-reader-boundary.tsv").lines()
+    {
+        let (inchi, expected) = line.split_once('\t').unwrap();
+        let result = rdkit_mol_from_inchi(inchi)
+            .map_err(|e| e.to_string())
+            .and_then(|m| rdkit_canonical_smiles(&m).map_err(|e| e.to_string()));
+        let agrees = match &result {
+            Ok(actual) => actual == expected,
+            Err(_) => expected == "<NONE>",
+        };
+        if !agrees {
+            mismatches.push(format!("{inchi}: expected {expected}, got {result:?}"));
+        }
+        count += 1;
+    }
+    assert_eq!(count, 37);
+    assert!(mismatches.is_empty(), "{}", mismatches.join("\n"));
+}
+
+#[test]
+fn unusual_valence_identifier_boundary_inputs_match_native_read_or_rejection() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.1-inchi-unusual-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    let mut failures = Vec::new();
+    for row in fixture["rows"].as_array().unwrap() {
+        let inchi = row["inchi"].as_str().unwrap();
+        let expected = row["canonical"].as_str();
+        let result = rdkit_mol_from_inchi(inchi)
+            .map_err(|e| e.to_string())
+            .and_then(|mol| rdkit_canonical_smiles(&mol).map_err(|e| e.to_string()));
+        let agrees = match &result {
+            Ok(actual) => Some(actual.as_str()) == expected,
+            Err(_) => expected.is_none(),
+        };
+        if !agrees {
+            failures.push(format!(
+                "{} ({inchi}): {result:?} != {expected:?}",
+                row["raw_source"]
+            ));
+        }
+    }
+    assert_eq!(fixture["rows"].as_array().unwrap().len(), 25);
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}

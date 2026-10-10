@@ -1446,3 +1446,91 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod legacy_score_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn legacy_preferences_on_real_paths_have_finite_periodic_nonnegative_scores() {
+        // Compatibility/numerical contract of the retained legacy API.
+        // This does not validate its heuristic preferred angles as physical
+        // torsion minima; see docs/rfcs/3d_torsion_knowledge_audit.md.
+        let mut preferred = 0;
+        let mut unspecified = 0;
+        for source in [
+            "CCCC",
+            "Cc1ccccc1",
+            "CC(=O)NC",
+            "COC(=O)C",
+            "c1ccccc1-c1ccccc1",
+            "CC=CN(C)C",
+            "CC(=O)C=C",
+            "CC(=O)c1ccccc1",
+            "CSC(=O)C",
+            "CS(=O)CC",
+            "CSSC",
+            "CCO",
+            "CCN(C)C",
+            "CCC#N",
+            "CCP(C)C",
+            "CC(=O)NNC",
+            "CS(=O)(=O)NC",
+            "COc1ccccc1",
+            "CC=NOC",
+            "COOC",
+            "C#CC#C",
+            "CC(=O)N(C)C",
+            "c1ccc([N+](=O)[O-])cc1",
+        ] {
+            let input = chematic_smiles::parse(source).unwrap();
+            for explicit_h in [false, true] {
+                let mol = if explicit_h {
+                    chematic_chem::add_hydrogens(&input)
+                } else {
+                    input.clone()
+                };
+                for (b, _) in mol.atoms() {
+                    for (c, _) in mol.neighbors(b) {
+                        for (a, _) in mol.neighbors(b).filter(|(a, _)| *a != c) {
+                            for (d, _) in mol.neighbors(c).filter(|(d, _)| *d != b && *d != a) {
+                                let Some(preference) = get_torsion_preference(&mol, a, b, c, d)
+                                else {
+                                    unspecified += 1;
+                                    continue;
+                                };
+                                preferred += 1;
+                                assert!(preference.angle_deg.is_finite());
+                                assert!((-180.0..=180.0).contains(&preference.angle_deg));
+                                assert!(
+                                    preference.penalty_per_degree.is_finite()
+                                        && preference.penalty_per_degree > 0.0
+                                );
+                                assert_eq!(score_torsion(preference.angle_deg, &preference), 0.0);
+                                for offset in [-180.0_f64, -30.0, -1.0, 0.0, 1.0, 30.0, 180.0] {
+                                    let score =
+                                        score_torsion(preference.angle_deg + offset, &preference);
+                                    assert!(score.is_finite() && score >= 0.0);
+                                    assert!(
+                                        (score - offset.abs() * preference.penalty_per_degree)
+                                            .abs()
+                                            < 1e-12
+                                    );
+                                    for turns in [-2.0, -1.0, 1.0, 2.0] {
+                                        let periodic = score_torsion(
+                                            preference.angle_deg + offset + 360.0 * turns,
+                                            &preference,
+                                        );
+                                        assert!((score - periodic).abs() < 1e-12, "{source}");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        assert!(preferred > 0);
+        assert!(unspecified > 0);
+    }
+}

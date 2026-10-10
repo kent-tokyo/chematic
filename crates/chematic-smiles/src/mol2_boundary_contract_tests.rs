@@ -89,3 +89,35 @@ fn mol2_sanitization_hydrogen_and_cleanup_flags_match_pinned_rdkit() {
     }
     assert_eq!(checked, 672);
 }
+
+#[test]
+fn mol2_phosphate_quaternary_n_and_invalid_sybyl_types_match_native_cleanup() {
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.1-mol2-ionic-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    let mut failures = Vec::new();
+    for row in fixture["rows"].as_array().unwrap() {
+        let result = rdkit_mol_from_mol2_block(
+            row["block"].as_str().unwrap(),
+            true,
+            true,
+            row["cleanup"].as_bool().unwrap(),
+        );
+        match (result, row["expected"].as_str()) {
+            (Ok(actual), Some(expected)) if actual.smiles == expected => {}
+            (Err(_), None) => {}
+            (Ok(actual), expected) => failures.push(format!(
+                "{} {} cleanup={}: {} != {expected:?}",
+                row["smiles"], row["mode"], row["cleanup"], actual.smiles
+            )),
+            (Err(error), expected) => failures.push(format!(
+                "{} {} cleanup={}: {error} != {expected:?}",
+                row["smiles"], row["mode"], row["cleanup"]
+            )),
+        }
+    }
+    assert_eq!(fixture["rows"].as_array().unwrap().len(), 36);
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}

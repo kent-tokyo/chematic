@@ -1946,3 +1946,29 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod sphere_overlap_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn sphere_overlap_agrees_with_analytic_lenses_containment_and_scaling() {
+        // Two unit spheres one radius apart have two caps of height 1/2:
+        // their combined lens volume is 5*pi/12.
+        for (r1, r2, distance, expected) in [
+            (1.0, 1.0, 1.0, 5.0 * PI / 12.0),
+            (1.0, 3.0, 1.0, 4.0 * PI / 3.0),
+            (1.0, 3.0, 4.0, 0.0),
+            (1.0, 3.0, 5.0, 0.0),
+        ] {
+            for scale in [0.25_f64, 1.0, 2.5] {
+                let expected = expected * scale.powi(3);
+                let direct = sphere_intersection(r1 * scale, r2 * scale, distance * scale);
+                let reverse = sphere_intersection(r2 * scale, r1 * scale, distance * scale);
+                assert!((direct - expected).abs() < 1e-12 * expected.abs().max(1.0));
+                assert!((direct - reverse).abs() < 1e-12);
+                assert!(direct.is_finite() && direct >= 0.0);
+            }
+        }
+    }
+}

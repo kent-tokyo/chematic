@@ -1945,3 +1945,184 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+mod expansion_boundary_contract_tests {
+    use super::*;
+    use chematic_smiles::{canonical_smiles, parse};
+
+    fn polymer(repeats: u32) -> SemanticModel {
+        SemanticModel {
+            atom_ids: vec!["a1".into(), "a2".into()],
+            polymer_units: vec![PolymerRepeatUnit {
+                id: "p1".into(),
+                attachment_atoms: vec![
+                    AtomRef {
+                        atom_id: "a1".into(),
+                    },
+                    AtomRef {
+                        atom_id: "a2".into(),
+                    },
+                ],
+                end_groups: vec![],
+                end_group_definitions: vec![],
+                repeat_count: Some(repeats),
+                repeat_smiles: Some("[*]CC[*]".into()),
+                repeat_endpoint_atoms: None,
+            }],
+            ..Default::default()
+        }
+    }
+
+    fn rejected_without_mutation(model: &SemanticModel, context: &str) -> SemanticError {
+        let base = parse("CC").unwrap();
+        let before = model.to_json();
+        let error = model
+            .expand(&base)
+            .err()
+            .expect("invalid expansion must fail");
+        assert!(error.to_string().contains(context), "{context}: {error}");
+        assert_eq!(model.to_json(), before);
+        assert_eq!(canonical_smiles(&base), "CC");
+        assert_eq!(base.atom_count(), 2);
+        assert_eq!(base.bond_count(), 1);
+        error
+    }
+
+    #[test]
+    fn capped_repeat_expansion_preserves_identity_mapping_at_exact_atom_limits() {
+        let base = parse("CC").unwrap();
+        for (repeats, expected) in [(1, "NC1CCC1O"), (2, "NC1CCCCC1O"), (3, "NC1CCCCCCC1O")] {
+            for typed in [false, true] {
+                let mut model = polymer(repeats);
+                let ids = if typed {
+                    model.polymer_units[0].end_group_definitions = vec![
+                        PolymerEndGroup {
+                            id: "left-cap".into(),
+                            smiles: "[*]O".into(),
+                        },
+                        PolymerEndGroup {
+                            id: "right-cap".into(),
+                            smiles: "[*]N".into(),
+                        },
+                    ];
+                    ["left-cap", "right-cap"]
+                } else {
+                    model.polymer_units[0].end_groups = vec!["[*]O".into(), "[*]N".into()];
+                    ["p1.end_group_left", "p1.end_group_right"]
+                };
+                let before = model.to_json();
+                let total = 2 * repeats as usize + 4;
+                let limits = SemanticExpansionLimits {
+                    max_atoms: total,
+                    max_repeat_count: repeats,
+                };
+                let result = model.expand_with_limits(&base, &limits).unwrap();
+                assert_eq!(result.molecule.atom_count(), total);
+                assert_eq!(
+                    canonical_smiles(&result.molecule),
+                    canonical_smiles(&parse(expected).unwrap())
+                );
+                assert_eq!(result.source_to_expanded["a1"], vec![AtomIdx(0)]);
+                assert_eq!(result.source_to_expanded["a2"], vec![AtomIdx(1)]);
+                assert_eq!(result.source_to_expanded["p1"].len(), total - 2);
+                assert_eq!(
+                    result.source_to_expanded[ids[0]],
+                    vec![AtomIdx((total - 2) as u32)]
+                );
+                assert_eq!(
+                    result.source_to_expanded[ids[1]],
+                    vec![AtomIdx((total - 1) as u32)]
+                );
+                let error = model
+                    .expand_with_limits(
+                        &base,
+                        &SemanticExpansionLimits {
+                            max_atoms: total - 1,
+                            ..limits
+                        },
+                    )
+                    .err()
+                    .unwrap();
+                assert_eq!(
+                    error,
+                    SemanticError::ExpansionLimit {
+                        id: "p1".into(),
+                        resource: "atoms",
+                        requested: total,
+                        limit: total - 1
+                    }
+                );
+                assert_eq!(model.to_json(), before);
+                assert_eq!(canonical_smiles(&base), "CC");
+            }
+        }
+    }
+
+    #[test]
+    fn malformed_repeat_and_cap_topologies_fail_before_returning_a_graph() {
+        for (pattern, endpoints, context) in [
+            ("CC", None, "two [*] markers or explicit endpoint atoms"),
+            ("CC", Some([0, 0]), "must be distinct"),
+            ("CC", Some([0, 2]), "endpoint atom index is invalid"),
+            ("CC", Some([3, 1]), "endpoint atom index is invalid"),
+            ("[*]C1C[*]", None, "unmatched ring closure"),
+            ("[*]C[*]", None, "exactly one neighbor at each linkage"),
+            ("[*](C)CC[*]", None, "exactly one neighbor at each linkage"),
+        ] {
+            let mut model = polymer(2);
+            model.polymer_units[0].repeat_smiles = Some(pattern.into());
+            model.polymer_units[0].repeat_endpoint_atoms = endpoints;
+            rejected_without_mutation(&model, context);
+        }
+        for (cap, context) in [
+            ("O", "exactly one [*] marker"),
+            ("[*]", "exactly one [*] marker"),
+            ("[*]O[*]", "exactly one [*] marker"),
+            ("[*]C1", "invalid end-group 0"),
+            ("[*](C)O", "ambiguous attachment topology: p1"),
+        ] {
+            let mut model = polymer(2);
+            model.polymer_units[0].end_groups = vec![cap.into(), "[*]N".into()];
+            rejected_without_mutation(&model, context);
+        }
+        let mut model = polymer(2);
+        model.polymer_units[0].repeat_smiles = None;
+        assert!(matches!(
+            rejected_without_mutation(&model, "repeat_smiles is not provided"),
+            SemanticError::Unsupported { .. }
+        ));
+        let mut model = polymer(2);
+        model.polymer_units[0].repeat_count = None;
+        assert!(matches!(
+            rejected_without_mutation(&model, "repeat count must be explicit"),
+            SemanticError::Unsupported { .. }
+        ));
+    }
+
+    #[test]
+    fn selected_r_group_alternatives_require_an_unambiguous_linkage() {
+        for (pattern, context) in [
+            ("C", "0 wildcard attachment markers for 1"),
+            ("[*]", "alternative has"),
+            ("[*]C[*]", "2 wildcard attachment markers for 1"),
+            ("[*](C)O", "ambiguous attachment topology: r1"),
+            ("[*]C1", "unmatched ring closure"),
+        ] {
+            let model = SemanticModel {
+                atom_ids: vec!["a1".into(), "a2".into()],
+                r_groups: vec![RGroupDefinition {
+                    id: "r1".into(),
+                    attachment_atoms: vec![AtomRef {
+                        atom_id: "a2".into(),
+                    }],
+                    alternatives: vec![pattern.into()],
+                    selected_alternative: Some(0),
+                    nested_groups: vec![],
+                }],
+                ..Default::default()
+            };
+            rejected_without_mutation(&model, context);
+        }
+    }
+}
