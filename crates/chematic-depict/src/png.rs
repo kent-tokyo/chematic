@@ -213,3 +213,92 @@ fn empty_png() -> Vec<u8> {
         0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
     ]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::layout::Point;
+    use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
+
+    fn assert_png(bytes: &[u8]) {
+        assert!(bytes.starts_with(&[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]));
+        assert!(bytes.windows(4).any(|chunk| chunk == b"IHDR"));
+        assert!(bytes.windows(4).any(|chunk| chunk == b"IEND"));
+    }
+
+    #[test]
+    fn cpk_colors_and_label_bitmaps_cover_supported_elements() {
+        for (atomic_number, expected) in [
+            (1, (255, 255, 255)),
+            (6, (80, 80, 80)),
+            (7, (48, 80, 248)),
+            (8, (255, 13, 13)),
+            (9, (144, 224, 80)),
+            (15, (255, 128, 0)),
+            (16, (255, 200, 50)),
+            (17, (31, 240, 31)),
+            (35, (166, 41, 41)),
+            (53, (148, 0, 148)),
+            (54, (255, 20, 147)),
+        ] {
+            assert_eq!(cpk_color(atomic_number), expected);
+        }
+
+        for ch in ['C', 'n', 'O', 'H', 'F', 'P', 'S', 'B', 'I', 'K', 'X'] {
+            assert!(get_char_bitmap(ch).is_some(), "missing bitmap for {ch}");
+        }
+        assert!(get_char_bitmap('?').is_none());
+    }
+
+    #[test]
+    fn empty_molecule_returns_the_one_pixel_fallback() {
+        let mol = MoleculeBuilder::new().build();
+        let png = render_png(&mol, &Layout { coords: Vec::new() });
+        assert_eq!(png, empty_png());
+        assert_png(&png);
+    }
+
+    #[test]
+    fn render_png_draws_labels_and_stereo_bond_styles() {
+        let mut builder = MoleculeBuilder::new();
+        let elements = [
+            Element::C,
+            Element::N,
+            Element::O,
+            Element::F,
+            Element::P,
+            Element::S,
+            Element::CL,
+            Element::BR,
+            Element::I,
+            Element::XE,
+        ];
+        let atoms: Vec<_> = elements
+            .into_iter()
+            .map(|element| builder.add_atom(Atom::new(element)))
+            .collect();
+        builder.add_bond(atoms[0], atoms[1], BondOrder::Up).unwrap();
+        builder
+            .add_bond(atoms[0], atoms[2], BondOrder::Down)
+            .unwrap();
+        builder
+            .add_bond(atoms[1], atoms[3], BondOrder::Double)
+            .unwrap();
+        let mol = builder.build();
+        let layout = Layout {
+            coords: atoms
+                .iter()
+                .enumerate()
+                .map(|(index, _)| Point::new((index % 5) as f64 * 4.0, (index / 5) as f64 * 4.0))
+                .collect(),
+        };
+
+        let png = render_png(&mol, &layout);
+        assert_png(&png);
+        assert!(png.len() > empty_png().len());
+        assert_eq!(
+            png,
+            render_png_opts(&mol, &layout, &RenderOptions::default())
+        );
+    }
+}

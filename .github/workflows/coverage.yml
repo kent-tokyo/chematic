@@ -43,24 +43,55 @@ jobs:
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --version 0.8.7 --locked
       # Include public format contracts as well as library and binary unit tests.
-      # Binding runtimes and optional features remain separate CI lanes.
+      # Native InChI reconstruction is measured here; binding runtimes remain
+      # separate CI lanes.
       - name: Measure Rust coverage
         id: measure
         run: |
           mkdir -p target/coverage
           cargo llvm-cov --locked --workspace --lib --bins \
+            --features chematic-inchi/native-inchi \
             --test qcschema --test nucleic_acid_contract --test v3000_semantic_interop \
             --test rdkit_embed --test streamable_http \
             --test format_binding_parity --test conformer_3d_io --test schema_conformance \
             --test rdkit_g1_parity --test issue739_platform_stereo \
             --test rdkit_count_and_chiral_fps --test rdkit_morgan_stable_api_fixtures \
             --test rdkit_2026_09_1_ring_count --test issue769_template_valence \
+            --test rdkit_inchi_read --test rdkit_canonical_smiles \
+            --test stereo2d_ez_reader_integration --test stereo_reader_integration \
+            --test mmff94_rdkit_per_term_energy --test mmff94_rdkit_residuals_734 \
+            --test prepared_cache --test lowercase_symbol_primitives \
+            --test rdkit_tpsa_sign --test rdkit_canonical_ranks_ez \
+            --test atom_order --test pseudoatom_roundtrip \
+            --test canonical_smiles_reaction_product_order --test cross_binding_contract \
+            --test issue455_explicit_h_valence --test issue769_neutral_valence \
+            --test cip_lone_pair_ring_centre_rdkit_reading \
+            --test cross_binding_adversarial --test mmcif_pqr_integration \
+            --test square_planar_mol_io --test atom_tag_cache --test atom_tag_visit_order \
+            --test dative_bond_direction --test square_planar_stereo \
+            --test explicit_h_stereo --test ez_stash_stereo0d \
+            --test indexed_graph_relation --test invert_stereocenter_p0_stereo_invariance \
+            --test accurate_cip_preflight --test dedup_fixtures --test standard_inchi \
+            --test descriptor_contract --test rdkit_reference --test metal_disconnect_holdout \
+            --test standardize_stereo_table_preservation --test aromaticity_edge_gate \
+            --test issue415_fused_heteroaromatic_holdout \
+            --test mmff94_rdkit_bfgs_trajectory \
+            --test g1_regression_byte_identical --test torsion_knowledge_negative_controls \
+            --test canonical_stereo_d0_cip_multiset_invariance \
+            --test neighbor --test periodicity \
+            --test canonical_ez_planner_order --test canonical_ez_residual \
+            --test canonical_robustness \
+            --test chembl_roundtrip --test canonical_idempotency_corpus \
+            --test canonical_idempotency_corpus_standardized \
             --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
+            --no-report
+          cargo llvm-cov report \
+            --ignore-filename-regex '(crates/(chematic-py|chematic-wasm)/|tools/gen_sa_table/|crates/chematic-3d/src/issue256_255_phase2_evaluation.rs)' \
             --lcov --output-path target/coverage/lcov.info
       - name: Generate HTML report
         run: >-
           cargo llvm-cov report
-          --ignore-filename-regex '(crates/(chematic-py|chematic-wasm)/|tools/gen_sa_table/)'
+          --ignore-filename-regex '(crates/(chematic-py|chematic-wasm)/|tools/gen_sa_table/|crates/chematic-3d/src/issue256_255_phase2_evaluation.rs)'
           --html --output-dir target/coverage
       - name: Save coverage reports
         if: ${{ !cancelled() && steps.measure.outcome == 'success' }}
