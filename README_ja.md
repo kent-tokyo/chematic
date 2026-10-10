@@ -3,6 +3,7 @@
 [English](README.md) | [中文](README_zh.md)
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/github/actions/workflow/status/kent-tokyo/chematic/pages.yml?branch=main&label=docs)](https://github.com/kent-tokyo/chematic/actions/workflows/pages.yml)
 [![Coverage](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
 [![codecov](https://codecov.io/gh/kent-tokyo/chematic/branch/main/graph/badge.svg)](https://app.codecov.io/github/kent-tokyo/chematic)
 [![PyPI](https://img.shields.io/pypi/v/chematic?logo=pypi)](https://pypi.org/project/chematic/)
