@@ -268,6 +268,11 @@ impl MolHandle {
         chematic_chem::ring_count(&self.inner)
     }
 
+    /// Number of rings using RDKit's symmetrized-SSSR semantics.
+    pub fn num_rings(&self) -> usize {
+        chematic_chem::rdkit_num_rings(&self.inner)
+    }
+
     /// Number of assigned stereocenters (R/S).
     pub fn num_stereocenters(&self) -> usize {
         chematic_chem::num_stereocenters(&self.inner)

@@ -204,6 +204,11 @@ binding and the WASM package
 | SMILES, SMARTS, MOL block, InChI parse | malformed | `ChematicInputError(ValueError)`: `category`, `code` (`smiles_parse`, …), `format` | thrown string (not an `Error`), message only |
 | mmCIF parse past `max_input_bytes` | resource_limit | `ChematicInputError`: `category="resource_limit"`, `code="input_too_large"` | thrown string, message only |
 | SMIRKS (`run_smirks_checked` / `run_reactants_checked`) | malformed, unsupported | envelope `status: typed_refusal`, `reason` (`smirks_parse`, `reactant_count_mismatch`) | same envelope |
+
+The RDKit-compatible checked reaction path also returns bounded
+`rejection_diagnostics` for filtered product sets. Reasons are `valence`,
+`aromaticity`, `kekulization`, or `unknown`; implicated product atom indices
+and template maps never turn a rejected molecule into a successful product.
 | 3D pipeline v2 | unsupported (Pt complex, no MMFF94 type) | `PipelineV2Error(ValueError)` with `diagnostics.cause.kind` | envelope `ok: false`, `error.cause.kind` |
 | Nucleic-acid document | ambiguous, unsupported, resource_limit | envelope `ok: false`, `error.code`, `error.path` | same envelope |
 

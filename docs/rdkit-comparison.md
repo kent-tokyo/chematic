@@ -19,8 +19,9 @@ SMILES round-trip result. This is source-build evidence, not a universal or
 published-package parity claim. The latest
 published-package chemistry and speed comparison packet is pinned to
 **v1.0.30** against RDKit 2026.03.6. Later dated records cover v1.0.36
-and v1.0.37 packages plus later source evidence. v1.0.42 release channels are
-verified; package-output chemistry reruns remain separate work.
+and v1.0.42 packages plus later source evidence. v1.0.42 release channels and
+the macOS arm64 chemistry/A6 packet are verified; other published platforms
+remain separate runs.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|
@@ -29,7 +30,7 @@ verified; package-output chemistry reruns remain separate work.
 | Python timing | Of 63 operations, 20 meet exact-output and favorable paired-interval gates in 20 alternating blocks on one host. | A universal speed lead; output-mismatched operations are not wins. |
 | Browser Morgan | Published v1.0.30 npm/WASM on Ubuntu 24.04: Chromium, Firefox and WebKit each match 250/250 direct and prepared rows; 20-block speed intervals favor chematic on the measured lane. | Other browser hosts, operations or library-only memory. |
 | Reactions | Published v1.0.38: 80/83 exact graph/origin/map rows and three inputs invalid in both engines. | General SMIRKS parity, yield or selectivity prediction. |
-| 3D/MMFF94 | Experimental. Published v1.0.37 Linux and current cross-platform CI pass the 265-row geometry/stereo/clash gate; source-only typing, energy, and conformer records are separate. | Universal convergence or conformer quality; a public-artifact MMFF94 speed win. |
+| 3D/MMFF94 | Experimental. The hash-pinned published v1.0.42 macOS arm64 wheel and current cross-platform CI pass the 265-row geometry/stereo/clash gate; source-only typing, energy, and conformer records are separate. | Universal convergence or conformer quality; a public-artifact MMFF94 speed win. |
 | Seeded ETKDGv3 | v1.0.40 source lane on Linux x86-64: 4,977/4,977 ChEMBL and 9,947/9,947 RDKit.js successful rows match RDKit 2026.03.1 coordinates exactly. macOS regression tests use a 5e-4 Å per-coordinate tolerance. | Other seeds, topologies, platforms, conformer ensembles, or published artifacts. |
 
 The [validation report](validation.md) links the exact artifacts, corpus

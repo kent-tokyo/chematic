@@ -74,7 +74,8 @@ pub use descriptors::{
     num_sulfurs, num_unspecified_stereocenters, pfizer_3_75_passes, potential_stereocenter_indices,
     rdkit_aromatic_ring_count, rdkit_hba_count, rdkit_molecular_weight, rdkit_num_rings,
     rdkit_tpsa, reos_passes, ring_bundle, ring_count, ring_system_count, ro3_passes,
-    rotatable_bond_atom_pairs, rotatable_bond_count, tpsa, tpsa_per_atom, usrcat, veber_passes,
+    rotatable_bond_atom_pairs, rotatable_bond_count, tpsa, tpsa_per_atom, try_balaban_j, try_ipc,
+    usrcat, veber_passes,
 };
 pub use iupac_stereo::iupac_name_stereo;
 #[cfg(feature = "serde")]
@@ -115,7 +116,10 @@ pub use ifg::{FunctionalGroup, identify_functional_groups};
 pub use isotope_distribution::isotope_distribution;
 pub use logd::{logd_from_logp, logd_profile, logd_simple};
 pub use mlp::{MLP_SOLUBILITY_TRAINED, mlp_solubility};
-pub use mmff94_bci::{MmffType, assign_mmff94_type, mmff94_charges_bci, mmff94_charges_typed};
+pub use mmff94_bci::{
+    LegacyMmff94ChargeError, MmffType, assign_mmff94_type, mmff94_charges_bci,
+    mmff94_charges_typed, try_mmff94_charges_bci,
+};
 pub use mmp::{MmpPair, MmsMember, MmsSeries, find_mmp, find_mms};
 pub use named_groups::{NamedGroup, detect_named_functional_groups};
 pub use parent::{
@@ -124,6 +128,7 @@ pub use parent::{
 };
 pub use pka::{PkaSite, PkaSiteType, pka_acid, pka_base, pka_both, predict_pka};
 pub use qed::{qed, qed_with_bundle};
+pub use rdkit_graph::GraphDescriptorError;
 pub use recap::{recap_breakable_bond_count, recap_fragment};
 pub use rgroup::{RGroupError, RGroupResult, rgroup_decompose};
 pub use sa_score::{sa_score, sa_score_with_bundle};

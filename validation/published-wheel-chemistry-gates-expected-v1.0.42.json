@@ -1,0 +1,87 @@
+{
+  "schema": "published-wheel-chemistry-gates-expected/v1",
+  "chematic_version": "1.0.42",
+  "rdkit": "2026.03.6",
+  "source": "published PyPI v1.0.42 macOS arm64 CPython 3.13 wheel chematic-1.0.42-cp313-cp313-macosx_11_0_arm64.whl (sha256 1f9a0e7878e2b3957e3d0dae7c70eaa5ea5218efca6141e2285cba63301a71f0), measured 2026-10-10 (benchmarks/2026-10-10-v1042-regression-followups.md)",
+  "gates": {
+    "reaction_83": {
+      "graph_origin_map_match": 80,
+      "joint_invalid_input": 3
+    },
+    "smarts_310k": {
+      "counts": {
+        "exact": 310000,
+        "fixed_original_boolean": 43,
+        "fixed_original_residual": 200
+      },
+      "unexpected_total": 0
+    },
+    "exposed_10k": {
+      "cip_accurate": {
+        "agree": 4395,
+        "kekule_dependent": 0
+      },
+      "hybridization": {
+        "atoms": 220015,
+        "agree": 220015
+      },
+      "mmff94": {
+        "compared_rows": 9796,
+        "heavy": 215565,
+        "hydrogen": 191148,
+        "rdkit_unsupported": 204
+      },
+      "mol_writer": {
+        "stereo_rows": 1687,
+        "read_back_as_input": 1687,
+        "strict_refused": 0
+      }
+    },
+    "chembl_5k": {
+      "cip_accurate": {
+        "agree": 4186,
+        "kekule_dependent": 20
+      },
+      "hybridization": {
+        "atoms": 138655,
+        "agree": 138655
+      },
+      "mmff94": {
+        "compared_rows": 4990,
+        "heavy": 138500,
+        "hydrogen": 116364,
+        "rdkit_unsupported": 10
+      },
+      "mol_writer": {
+        "stereo_rows": 1670,
+        "read_back_as_input": 1670,
+        "strict_refused": 0
+      }
+    },
+    "biotransformer_corpus": {
+      "explicit_h:both_none": 382090,
+      "explicit_h:both_none_refused": 680,
+      "explicit_h:differ": 153,
+      "explicit_h:exact": 6486,
+      "explicit_h:rdkit_raw_unsanitizable": 165,
+      "explicit_h:rdkit_resanitize_fails_same_products": 14,
+      "explicit_h:rdkit_truncated_subset": 12,
+      "implicit:both_none": 388406,
+      "implicit:both_none_refused": 143,
+      "implicit:exact": 1051,
+      "multi_reactant_rules_skipped": 6,
+      "rdkit_parse_error_rules": 3,
+      "rules_run": 974
+    }
+  },
+  "a6": {
+    "note": "#739. The 265 A6 rows, arm chematic_pipeline_v2_mmff94_strict_stereo_safe at the harness default of 200 iterations (seed 20260801, 8 attempts), scored by pipeline_v2_vs_rdkit_common_scorer and gated by scripts/a6_platform_gate.py. coordinates_sha256 is the published v1.0.42 macOS arm64 CPython 3.13 wheel result; other platforms report against it.",
+    "arm": "chematic_pipeline_v2_mmff94_strict_stereo_safe",
+    "rows": 265,
+    "successes": 265,
+    "independently_sound": 265,
+    "stereo_clean": 265,
+    "with_gross_clash": 0,
+    "coordinates_sha256": "b1ce930f542ee3ac7a674acadc4caa43bc2d63df570381557db76fb5fd9de804"
+  }
+}

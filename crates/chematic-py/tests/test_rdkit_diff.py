@@ -14,6 +14,8 @@ import os
 
 import pytest
 
+import chematic
+
 rdkit = pytest.importorskip("rdkit")
 from rdkit import Chem as RDChem
 from rdkit.Chem import Descriptors as RDDesc, rdMolDescriptors as RDmd
@@ -98,6 +100,19 @@ def test_diff_ring_count(smi):
     rn = rm.GetRingInfo().NumRings()
     _record(smi, "NumRings", cn, rn, cn == rn, cn - rn)
     assert cn == rn, f"NumRings {smi}: {cn} vs {rn}"
+
+
+@pytest.mark.parametrize(
+    "smi",
+    [
+        "[Fe]1(Cl)(Cl)Cl.Cl1",
+        "C=C(C)N1C=NC<-C1",
+        "N1CCN->[Cu]1",
+        "C1CCN->[Cu]1",
+    ],
+)
+def test_num_rings_ignores_non_ring_smiles_closures(smi):
+    assert chematic.from_smiles(smi).num_rings == 0
 
 
 @pytest.mark.parametrize("smarts", ["[OH]", "c", "[#7]", "C=O"])

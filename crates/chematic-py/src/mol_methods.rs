@@ -4942,6 +4942,15 @@ impl Mol {
         chematic_chem::mmff94_charges_bci(&self.inner)
     }
 
+    /// Checked legacy MMFF94 BCI charges.
+    ///
+    /// Unlike :meth:`mmff94_charges`, this raises ``ValueError`` when the
+    /// legacy element-pair table cannot represent an atom.
+    fn mmff94_charges_checked(&self) -> PyResult<Vec<f64>> {
+        chematic_chem::try_mmff94_charges_bci(&self.inner)
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
     /// Balaban J topological complexity index.
     ///
     /// High J → more complex/branched; related to molecular uniqueness.
@@ -4950,10 +4959,22 @@ impl Mol {
         chematic_chem::balaban_j(&self.inner)
     }
 
+    /// Checked Balaban J calculation.
+    fn balaban_j_checked(&self) -> PyResult<f64> {
+        chematic_chem::try_balaban_j(&self.inner)
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
     /// Information-theoretic connectivity index (IPC).
     #[getter]
     fn ipc(&self) -> f64 {
         chematic_chem::ipc(&self.inner)
+    }
+
+    /// Checked IPC calculation.
+    fn ipc_checked(&self) -> PyResult<f64> {
+        chematic_chem::try_ipc(&self.inner)
+            .map_err(|error| PyValueError::new_err(error.to_string()))
     }
 
     /// Zagreb M1 index — sum of squared vertex degrees.
