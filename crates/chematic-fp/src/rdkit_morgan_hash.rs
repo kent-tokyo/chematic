@@ -431,18 +431,20 @@ where
     if n == 0 {
         return Some(());
     }
-    let mut current: Vec<u32> = Vec::with_capacity(n);
+    let mut current: SmallVec<[u32; 64]> = SmallVec::with_capacity(n);
     for i in 0..n {
         let id = connectivity_invariant(mol, AtomIdx(i as u32), ring_atoms);
         current.push(id);
         emit(i as u32, 0, id);
     }
-    let mut next = vec![0u32; n];
-    let mut dead = vec![false; n];
-    let mut env = vec![0u128; n];
-    let mut next_env = vec![0u128; n];
-    let mut seen: Vec<u128> = Vec::new();
-    let mut round: Vec<(u128, u32, u32)> = Vec::with_capacity(n);
+    // Most drug-like molecules fit in these inline buffers. Larger inputs
+    // transparently spill to the heap with unchanged indexing and ordering.
+    let mut next: SmallVec<[u32; 64]> = SmallVec::from_elem(0, n);
+    let mut dead: SmallVec<[bool; 64]> = SmallVec::from_elem(false, n);
+    let mut env: SmallVec<[u128; 64]> = SmallVec::from_elem(0, n);
+    let mut next_env: SmallVec<[u128; 64]> = SmallVec::from_elem(0, n);
+    let mut seen: SmallVec<[u128; 128]> = SmallVec::new();
+    let mut round: SmallVec<[(u128, u32, u32); 64]> = SmallVec::with_capacity(n);
     let mut pairs: SmallVec<[(u32, u32); 6]> = SmallVec::new();
 
     for layer in 0..max_radius {

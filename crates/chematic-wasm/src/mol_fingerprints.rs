@@ -979,9 +979,9 @@ pub fn rdkit_ecfp_config_bitvec(
     nbits: usize,
 ) -> Result<Vec<u8>, JsValue> {
     let config = wasm_rdkit_morgan_config(radius, nbits, false)?;
-    let result = chematic_fp::rdkit_morgan_fingerprint(&mol.inner, &config)
+    let fingerprint = chematic_fp::rdkit_morgan_bitvec(&mol.inner, &config)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    Ok(bitvecn_to_bytes(&result.fingerprint))
+    Ok(bitvecn_to_bytes(&fingerprint))
 }
 
 /// Same fingerprint as `rdkit_ecfp_config_bitvec`, plus the raw (unfolded) data -- see
@@ -1013,9 +1013,9 @@ pub fn rdkit_ecfp_config_chiral_bitvec(
     nbits: usize,
 ) -> Result<Vec<u8>, JsValue> {
     let config = wasm_rdkit_morgan_config(radius, nbits, true)?;
-    let result = chematic_fp::rdkit_morgan_fingerprint(&mol.inner, &config)
+    let fingerprint = chematic_fp::rdkit_morgan_bitvec(&mol.inner, &config)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    Ok(bitvecn_to_bytes(&result.fingerprint))
+    Ok(bitvecn_to_bytes(&fingerprint))
 }
 
 /// Chirality-enabled variant of [`rdkit_ecfp_config_detail_json`].

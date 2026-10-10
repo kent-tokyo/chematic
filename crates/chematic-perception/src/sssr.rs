@@ -22,6 +22,7 @@
 //! 5. Convert the chosen bond-sets back to ordered atom sequences for the public API.
 
 use rustc_hash::{FxHashMap, FxHashSet};
+use smallvec::SmallVec;
 use std::collections::VecDeque;
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder};
@@ -1366,6 +1367,9 @@ fn ring_bond_flags_uncached(mol: &Molecule) -> (Vec<bool>, RingComponents) {
 /// Return an index-aligned flag for every atom that belongs to at least one
 /// cycle. Uses [`ring_bond_flags`] so this remains linear in graph size.
 pub fn ring_atom_flags(mol: &Molecule) -> Vec<bool> {
+    if let Some(flags) = single_smiles_cycle_atom_flags(mol) {
+        return flags;
+    }
     let ring_bonds = ring_bond_flags_shared(mol);
     let mut flags = vec![false; mol.atom_count()];
     for (bond_idx, bond) in mol.bonds() {
@@ -1375,6 +1379,62 @@ pub fn ring_atom_flags(mol: &Molecule) -> Vec<bool> {
         }
     }
     flags
+}
+
+/// Fast path for an unmodified SMILES graph with exactly one closure bond.
+/// Removing that bond leaves a forest, so its endpoints have one unique path;
+/// that path plus the closure is the molecule's only cycle. This computes the
+/// same atom predicate as the bridge algorithm with fewer allocations on the
+/// common monocyclic case. Zero closures is deliberately not a shortcut: it
+/// is also how non-SMILES molecules represent unknown provenance.
+fn single_smiles_cycle_atom_flags(mol: &Molecule) -> Option<Vec<bool>> {
+    if mol.smiles_ring_closure_bond_count() != 1 {
+        return None;
+    }
+    let (closure_idx, closure) = mol
+        .bonds()
+        .find(|(idx, _)| mol.is_smiles_ring_closure(*idx))?;
+    if !is_ring_eligible(closure.order) {
+        return None;
+    }
+
+    const UNSEEN: u32 = u32::MAX;
+    let n = mol.atom_count();
+    let start = closure.atom1;
+    let end = closure.atom2;
+    let mut predecessor: SmallVec<[u32; 64]> = SmallVec::from_elem(UNSEEN, n);
+    let mut stack: SmallVec<[AtomIdx; 64]> = SmallVec::new();
+    predecessor[start.0 as usize] = start.0;
+    stack.push(start);
+    while let Some(atom) = stack.pop() {
+        if atom == end {
+            break;
+        }
+        for (neighbor, bond_idx) in mol.neighbors(atom) {
+            if bond_idx == closure_idx || !is_ring_eligible(mol.bond(bond_idx).order) {
+                continue;
+            }
+            let slot = &mut predecessor[neighbor.0 as usize];
+            if *slot == UNSEEN {
+                *slot = atom.0;
+                stack.push(neighbor);
+            }
+        }
+    }
+    if predecessor[end.0 as usize] == UNSEEN {
+        return None;
+    }
+
+    let mut flags = vec![false; n];
+    let mut atom = end.0;
+    loop {
+        flags[atom as usize] = true;
+        if atom == start.0 {
+            break;
+        }
+        atom = predecessor[atom as usize];
+    }
+    Some(flags)
 }
 
 fn single_cycle_sssr(mol: &Molecule) -> RingSet {
@@ -3048,6 +3108,9 @@ mod tests {
     fn ring_atom_flags_match_sssr_membership_on_representative_topologies() {
         let cases = [
             cyclohexane(),
+            // Exercises the one-closure SMILES fast path with both a branch
+            // and a disconnected acyclic component.
+            chematic_smiles::parse("C1CCC(CC1)O.CC").expect("monocycle SMILES"),
             naphthalene(),
             adamantane(),
             chematic_smiles::parse("C12C3C4C1C5C4C3C25").expect("cubane SMILES"),

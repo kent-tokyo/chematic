@@ -1574,6 +1574,12 @@ pub fn num_heteroatoms(mol: &Molecule) -> usize {
 /// its symmetrized SSSR. It exceeds [`ring_count`] (the SSSR size, i.e. the
 /// cycle rank) for cages and bridged systems such as cubane or adamantane.
 pub fn rdkit_num_rings(mol: &Molecule) -> usize {
+    // A graph of cycle rank one has exactly one ring under every SSSR
+    // symmetrization. The SMILES parser records each closure bond, so the
+    // overwhelmingly common monocycle needs no bridge pass or allocation.
+    if mol.smiles_ring_closure_bond_count() == 1 {
+        return 1;
+    }
     simple_ring_system_count(mol).unwrap_or_else(|| rdkit_ring_list(mol).len())
 }
 
@@ -3621,6 +3627,19 @@ mod tests {
     /// Parse a SMILES string, panicking on failure.
     fn mol(smiles: &str) -> Molecule {
         parse(smiles).unwrap_or_else(|e| panic!("failed to parse {smiles:?}: {e}"))
+    }
+
+    #[test]
+    fn rdkit_num_rings_uses_and_invalidates_smiles_cycle_rank_shortcut() {
+        let mut m = mol("C1CCCCC1");
+        assert_eq!(m.smiles_ring_closure_bond_count(), 1);
+        assert_eq!(rdkit_num_rings(&m), 1);
+
+        let bridge = m.add_atom(chematic_core::Atom::new(Element::C));
+        m.add_bond(AtomIdx(0), bridge, BondOrder::Single).unwrap();
+        m.add_bond(AtomIdx(3), bridge, BondOrder::Single).unwrap();
+        assert_eq!(m.smiles_ring_closure_bond_count(), 0);
+        assert_eq!(rdkit_num_rings(&m), 2);
     }
 
     /// RDKit sanitization rewrites perchloric acid as

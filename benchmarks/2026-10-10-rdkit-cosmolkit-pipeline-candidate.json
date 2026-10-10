@@ -1,0 +1,1101 @@
+{
+ "blocks": 21,
+ "chematic_pipeline_speedup_vs_cosmolkit": {
+  "labute_asa": 18.18,
+  "mmff_energy_gradient": 2.11,
+  "morgan2_chiral": 5.27,
+  "num_rings": 20.36,
+  "parse": 39.43,
+  "rxn_amide_amine": 4.74,
+  "tpsa": 17.99
+ },
+ "chematic_pipeline_speedup_vs_rdkit": {
+  "labute_asa": 9.91,
+  "mmff_energy_gradient": 1.86,
+  "morgan2_chiral": 3.35,
+  "num_rings": 10.89,
+  "parse": 21.09,
+  "rxn_amide_amine": 3.19,
+  "tpsa": 9.91
+ },
+ "chematic_speedup_vs_cosmolkit": {
+  "labute_asa": 0.18,
+  "mmff_energy_gradient": 1.53,
+  "morgan2_chiral": 0.59,
+  "num_rings": 0.04,
+  "parse": 39.43,
+  "rxn_amide_amine": 0.5,
+  "tpsa": 0.25
+ },
+ "chematic_speedup_vs_rdkit": {
+  "labute_asa": 0.43,
+  "mmff_energy_gradient": 1.61,
+  "morgan2_chiral": 0.91,
+  "num_rings": 0.02,
+  "parse": 21.09,
+  "rxn_amide_amine": 0.99,
+  "tpsa": 0.67
+ },
+ "corpus": "chembl_accuracy_corpus_4999.smi",
+ "cosmolkit_speedup_vs_rdkit": {
+  "labute_asa": 2.37,
+  "mmff_energy_gradient": 1.05,
+  "morgan2_chiral": 1.53,
+  "num_rings": 0.6,
+  "parse": 0.53,
+  "rxn_amide_amine": 2.0,
+  "tpsa": 2.64
+ },
+ "errors": {
+  "chematic": {},
+  "cosmolkit": {},
+  "rdkit": {}
+ },
+ "host": {
+  "cpus": 10,
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6"
+ },
+ "limit": 1000,
+ "load_average_end": [
+  2.9091796875,
+  3.2470703125,
+  3.10498046875
+ ],
+ "load_average_start": [
+  2.73291015625,
+  3.47998046875,
+  3.15576171875
+ ],
+ "median_pipeline_seconds": {
+  "chematic": {
+   "labute_asa": 0.006906333961524069,
+   "mmff_energy_gradient": 0.3573509578127414,
+   "morgan2_chiral": 0.026321834069676697,
+   "num_rings": 0.006142209051176906,
+   "parse": 0.003168583963997662,
+   "rxn_amide_amine": 0.029128332855179906,
+   "tpsa": 0.007003833074122667
+  },
+  "cosmolkit": {
+   "labute_asa": 0.12558762496337295,
+   "mmff_energy_gradient": 0.7538573340279981,
+   "morgan2_chiral": 0.13880229089409113,
+   "num_rings": 0.1250399589771405,
+   "parse": 0.12492337496951222,
+   "rxn_amide_amine": 0.13801362505182624,
+   "tpsa": 0.12596770888194442
+  },
+  "rdkit": {
+   "labute_asa": 0.06841270788572729,
+   "mmff_energy_gradient": 0.6635427509900182,
+   "morgan2_chiral": 0.08806699886918068,
+   "num_rings": 0.06689079105854034,
+   "parse": 0.06682066607754678,
+   "rxn_amide_amine": 0.09282566595356911,
+   "tpsa": 0.0694037911016494
+  }
+ },
+ "median_seconds": {
+  "chematic": {
+   "labute_asa": 0.0037353329826146364,
+   "mmff_energy_gradient": 0.3493639169028029,
+   "morgan2_chiral": 0.023133500013500452,
+   "num_rings": 0.0029777090530842543,
+   "parse": 0.003168583963997662,
+   "rxn_amide_amine": 0.02599658304825425,
+   "tpsa": 0.003833833965472877
+  },
+  "cosmolkit": {
+   "labute_asa": 0.0006721670506522059,
+   "mmff_energy_gradient": 0.5349042910384014,
+   "morgan2_chiral": 0.01371466601267457,
+   "num_rings": 0.0001230419147759676,
+   "parse": 0.12492337496951222,
+   "rxn_amide_amine": 0.012931082979775965,
+   "tpsa": 0.0009701669914647937
+  },
+  "rdkit": {
+   "labute_asa": 0.0015907920897006989,
+   "mmff_energy_gradient": 0.5623961250530556,
+   "morgan2_chiral": 0.020943166920915246,
+   "num_rings": 7.43749551475048e-05,
+   "parse": 0.06682066607754678,
+   "rxn_amide_amine": 0.0258144160034135,
+   "tpsa": 0.00256508297752589
+  }
+ },
+ "paired_pipeline_speedup_ci95_vs_cosmolkit": {
+  "labute_asa": {
+   "blocks": 21,
+   "ci95": [
+    17.837,
+    18.314
+   ],
+   "median": 18.075,
+   "winning_blocks": 21
+  },
+  "mmff_energy_gradient": {
+   "blocks": 21,
+   "ci95": [
+    2.098,
+    2.122
+   ],
+   "median": 2.108,
+   "winning_blocks": 21
+  },
+  "morgan2_chiral": {
+   "blocks": 21,
+   "ci95": [
+    5.149,
+    5.324
+   ],
+   "median": 5.252,
+   "winning_blocks": 21
+  },
+  "num_rings": {
+   "blocks": 21,
+   "ci95": [
+    19.967,
+    20.644
+   ],
+   "median": 20.432,
+   "winning_blocks": 21
+  },
+  "parse": {
+   "blocks": 21,
+   "ci95": [
+    38.436,
+    40.202
+   ],
+   "median": 39.592,
+   "winning_blocks": 21
+  },
+  "rxn_amide_amine": {
+   "blocks": 21,
+   "ci95": [
+    4.685,
+    4.751
+   ],
+   "median": 4.734,
+   "winning_blocks": 21
+  },
+  "tpsa": {
+   "blocks": 21,
+   "ci95": [
+    17.574,
+    18.134
+   ],
+   "median": 18.072,
+   "winning_blocks": 21
+  }
+ },
+ "paired_pipeline_speedup_ci95_vs_rdkit": {
+  "labute_asa": {
+   "blocks": 21,
+   "ci95": [
+    9.742,
+    9.994
+   ],
+   "median": 9.92,
+   "winning_blocks": 21
+  },
+  "mmff_energy_gradient": {
+   "blocks": 21,
+   "ci95": [
+    1.853,
+    1.861
+   ],
+   "median": 1.857,
+   "winning_blocks": 21
+  },
+  "morgan2_chiral": {
+   "blocks": 21,
+   "ci95": [
+    3.257,
+    3.365
+   ],
+   "median": 3.342,
+   "winning_blocks": 21
+  },
+  "num_rings": {
+   "blocks": 21,
+   "ci95": [
+    10.776,
+    11.018
+   ],
+   "median": 10.898,
+   "winning_blocks": 21
+  },
+  "parse": {
+   "blocks": 21,
+   "ci95": [
+    20.569,
+    21.274
+   ],
+   "median": 21.215,
+   "winning_blocks": 21
+  },
+  "rxn_amide_amine": {
+   "blocks": 21,
+   "ci95": [
+    3.16,
+    3.207
+   ],
+   "median": 3.189,
+   "winning_blocks": 21
+  },
+  "tpsa": {
+   "blocks": 21,
+   "ci95": [
+    9.72,
+    10.003
+   ],
+   "median": 9.928,
+   "winning_blocks": 21
+  }
+ },
+ "paired_speedup_ci95_vs_cosmolkit": {
+  "labute_asa": {
+   "blocks": 21,
+   "ci95": [
+    0.173,
+    0.179
+   ],
+   "median": 0.178,
+   "winning_blocks": 0
+  },
+  "mmff_energy_gradient": {
+   "blocks": 21,
+   "ci95": [
+    1.522,
+    1.537
+   ],
+   "median": 1.528,
+   "winning_blocks": 21
+  },
+  "morgan2_chiral": {
+   "blocks": 21,
+   "ci95": [
+    0.587,
+    0.599
+   ],
+   "median": 0.592,
+   "winning_blocks": 0
+  },
+  "num_rings": {
+   "blocks": 21,
+   "ci95": [
+    0.039,
+    0.042
+   ],
+   "median": 0.04,
+   "winning_blocks": 0
+  },
+  "parse": {
+   "blocks": 21,
+   "ci95": [
+    38.436,
+    40.202
+   ],
+   "median": 39.592,
+   "winning_blocks": 21
+  },
+  "rxn_amide_amine": {
+   "blocks": 21,
+   "ci95": [
+    0.495,
+    0.503
+   ],
+   "median": 0.501,
+   "winning_blocks": 0
+  },
+  "tpsa": {
+   "blocks": 21,
+   "ci95": [
+    0.247,
+    0.254
+   ],
+   "median": 0.252,
+   "winning_blocks": 0
+  }
+ },
+ "paired_speedup_ci95_vs_rdkit": {
+  "labute_asa": {
+   "blocks": 21,
+   "ci95": [
+    0.417,
+    0.426
+   ],
+   "median": 0.425,
+   "winning_blocks": 0
+  },
+  "mmff_energy_gradient": {
+   "blocks": 21,
+   "ci95": [
+    1.605,
+    1.612
+   ],
+   "median": 1.61,
+   "winning_blocks": 21
+  },
+  "morgan2_chiral": {
+   "blocks": 21,
+   "ci95": [
+    0.892,
+    0.911
+   ],
+   "median": 0.907,
+   "winning_blocks": 0
+  },
+  "num_rings": {
+   "blocks": 21,
+   "ci95": [
+    0.024,
+    0.026
+   ],
+   "median": 0.025,
+   "winning_blocks": 0
+  },
+  "parse": {
+   "blocks": 21,
+   "ci95": [
+    20.569,
+    21.274
+   ],
+   "median": 21.215,
+   "winning_blocks": 21
+  },
+  "rxn_amide_amine": {
+   "blocks": 21,
+   "ci95": [
+    0.99,
+    1.004
+   ],
+   "median": 0.999,
+   "winning_blocks": 9
+  },
+  "tpsa": {
+   "blocks": 21,
+   "ci95": [
+    0.659,
+    0.672
+   ],
+   "median": 0.664,
+   "winning_blocks": 0
+  }
+ },
+ "parsed": {
+  "chematic": 990,
+  "cosmolkit": 990,
+  "rdkit": 990
+ },
+ "rdkit_seed42_coords_sha256": "d9eb6ce030bf56323db6fa5f4e0b39e6426c84dd8b50a1833563e9467922ee3f",
+ "samples_seconds": {
+  "chematic": [
+   {
+    "labute_asa": 0.0039794170297682285,
+    "mmff_energy_gradient": 0.34999445802532136,
+    "mmff_energy_gradient__prepare": 0.007841833052225411,
+    "morgan2_chiral": 0.024364208104088902,
+    "num_rings": 0.0031090830452740192,
+    "parse": 0.0033051250502467155,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026574374991469085,
+    "tpsa": 0.004045707988552749
+   },
+   {
+    "labute_asa": 0.0040166249964386225,
+    "mmff_energy_gradient": 0.34917779196985066,
+    "mmff_energy_gradient__prepare": 0.008455749950371683,
+    "morgan2_chiral": 0.023173582972958684,
+    "num_rings": 0.0029767919331789017,
+    "parse": 0.0032267500646412373,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026203957968391478,
+    "tpsa": 0.0039587089559063315
+   },
+   {
+    "labute_asa": 0.0038066250272095203,
+    "mmff_energy_gradient": 0.3504475000081584,
+    "mmff_energy_gradient__prepare": 0.007941916934214532,
+    "morgan2_chiral": 0.024557541008107364,
+    "num_rings": 0.002987958025187254,
+    "parse": 0.0032864579698070884,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026490874937735498,
+    "tpsa": 0.0039507499895989895
+   },
+   {
+    "labute_asa": 0.0037035829154774547,
+    "mmff_energy_gradient": 0.35025333298835903,
+    "mmff_energy_gradient__prepare": 0.008286540978588164,
+    "morgan2_chiral": 0.02382966608274728,
+    "num_rings": 0.003157166065648198,
+    "parse": 0.0033123750472441316,
+    "parsed": 990,
+    "rxn_amide_amine": 0.02557654189877212,
+    "tpsa": 0.0038171670166775584
+   },
+   {
+    "labute_asa": 0.003788582980632782,
+    "mmff_energy_gradient": 0.3507178339641541,
+    "mmff_energy_gradient__prepare": 0.007898624986410141,
+    "morgan2_chiral": 0.023620624910108745,
+    "num_rings": 0.00317445897962898,
+    "parse": 0.003297167015261948,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026320624980144203,
+    "tpsa": 0.004121375037357211
+   },
+   {
+    "labute_asa": 0.003712874953635037,
+    "mmff_energy_gradient": 0.348276500008069,
+    "mmff_energy_gradient__prepare": 0.008429958019405603,
+    "morgan2_chiral": 0.023133500013500452,
+    "num_rings": 0.002963125007227063,
+    "parse": 0.003188334056176245,
+    "parsed": 990,
+    "rxn_amide_amine": 0.02606591593939811,
+    "tpsa": 0.0037989580305293202
+   },
+   {
+    "labute_asa": 0.003786874935030937,
+    "mmff_energy_gradient": 0.3501067500328645,
+    "mmff_energy_gradient__prepare": 0.007961084018461406,
+    "morgan2_chiral": 0.024253832991234958,
+    "num_rings": 0.0029753749258816242,
+    "parse": 0.0031128328992053866,
+    "parsed": 990,
+    "rxn_amide_amine": 0.02601549995597452,
+    "tpsa": 0.003795584081672132
+   },
+   {
+    "labute_asa": 0.0037844169419258833,
+    "mmff_energy_gradient": 0.3542551250429824,
+    "mmff_energy_gradient__prepare": 0.007943792035803199,
+    "morgan2_chiral": 0.02300062496215105,
+    "num_rings": 0.0029076250502839684,
+    "parse": 0.0030591250397264957,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026475041988305748,
+    "tpsa": 0.003887792001478374
+   },
+   {
+    "labute_asa": 0.003721291897818446,
+    "mmff_energy_gradient": 0.3472204169956967,
+    "mmff_energy_gradient__prepare": 0.00786758295726031,
+    "morgan2_chiral": 0.022920125047676265,
+    "num_rings": 0.0029865000396966934,
+    "parse": 0.003086708951741457,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025544999982230365,
+    "tpsa": 0.0038263340247794986
+   },
+   {
+    "labute_asa": 0.003725209040567279,
+    "mmff_energy_gradient": 0.3486878330586478,
+    "mmff_energy_gradient__prepare": 0.007859749952331185,
+    "morgan2_chiral": 0.022981249960139394,
+    "num_rings": 0.00295908295083791,
+    "parse": 0.0031134580494835973,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025659415987320244,
+    "tpsa": 0.0038195420056581497
+   },
+   {
+    "labute_asa": 0.004088292014785111,
+    "mmff_energy_gradient": 0.35102762503083795,
+    "mmff_energy_gradient__prepare": 0.008027874981053174,
+    "morgan2_chiral": 0.024724749964661896,
+    "num_rings": 0.0031742079881951213,
+    "parse": 0.0033439170802012086,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025709542096592486,
+    "tpsa": 0.0040920410538092256
+   },
+   {
+    "labute_asa": 0.003773457952775061,
+    "mmff_energy_gradient": 0.35050283302553,
+    "mmff_energy_gradient__prepare": 0.007910249987617135,
+    "morgan2_chiral": 0.02307529200334102,
+    "num_rings": 0.00298604101408273,
+    "parse": 0.0031462499173358083,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025893167010508478,
+    "tpsa": 0.003833833965472877
+   },
+   {
+    "labute_asa": 0.0037351659266278148,
+    "mmff_energy_gradient": 0.34869399992749095,
+    "mmff_energy_gradient__prepare": 0.008393249940127134,
+    "morgan2_chiral": 0.023190666921436787,
+    "num_rings": 0.0029644169844686985,
+    "parse": 0.003161416039802134,
+    "parsed": 990,
+    "rxn_amide_amine": 0.0258616249775514,
+    "tpsa": 0.0038424170343205333
+   },
+   {
+    "labute_asa": 0.0037313749780878425,
+    "mmff_energy_gradient": 0.34941416699439287,
+    "mmff_energy_gradient__prepare": 0.007983457995578647,
+    "morgan2_chiral": 0.02386720897629857,
+    "num_rings": 0.002967250067740679,
+    "parse": 0.003174958983436227,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025827000034041703,
+    "tpsa": 0.003883874975144863
+   },
+   {
+    "labute_asa": 0.0037348329788073897,
+    "mmff_energy_gradient": 0.3493639169028029,
+    "mmff_energy_gradient__prepare": 0.007987040909938514,
+    "morgan2_chiral": 0.022928541991859674,
+    "num_rings": 0.0029814590234309435,
+    "parse": 0.0031345830066129565,
+    "parsed": 990,
+    "rxn_amide_amine": 0.02599658304825425,
+    "tpsa": 0.0038190839113667607
+   },
+   {
+    "labute_asa": 0.0037600420182570815,
+    "mmff_energy_gradient": 0.34909537504427135,
+    "mmff_energy_gradient__prepare": 0.007885208004154265,
+    "morgan2_chiral": 0.02307612495496869,
+    "num_rings": 0.0029654999962076545,
+    "parse": 0.0031978749902918935,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025443707942031324,
+    "tpsa": 0.003833582974039018
+   },
+   {
+    "labute_asa": 0.0037128750700503588,
+    "mmff_energy_gradient": 0.34863045800011605,
+    "mmff_energy_gradient__prepare": 0.007908207946456969,
+    "morgan2_chiral": 0.022914833039976656,
+    "num_rings": 0.003187833004631102,
+    "parse": 0.003306000027805567,
+    "parsed": 990,
+    "rxn_amide_amine": 0.02643291698768735,
+    "tpsa": 0.00386699999216944
+   },
+   {
+    "labute_asa": 0.0037353329826146364,
+    "mmff_energy_gradient": 0.3481032500276342,
+    "mmff_energy_gradient__prepare": 0.007871999987401068,
+    "morgan2_chiral": 0.02305579197127372,
+    "num_rings": 0.0029777090530842543,
+    "parse": 0.003168583963997662,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026128583936952055,
+    "tpsa": 0.00382583390455693
+   },
+   {
+    "labute_asa": 0.0037161249201744795,
+    "mmff_energy_gradient": 0.3494442499941215,
+    "mmff_energy_gradient__prepare": 0.00783812499139458,
+    "morgan2_chiral": 0.022812959039583802,
+    "num_rings": 0.0029392919968813658,
+    "parse": 0.0030760419322177768,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026451332960277796,
+    "tpsa": 0.0037830419605597854
+   },
+   {
+    "labute_asa": 0.0037293749628588557,
+    "mmff_energy_gradient": 0.3487811250379309,
+    "mmff_energy_gradient__prepare": 0.007822540937922895,
+    "morgan2_chiral": 0.02296870795544237,
+    "num_rings": 0.002947542001493275,
+    "parse": 0.0031007499201223254,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025478916009888053,
+    "tpsa": 0.0037999580381438136
+   },
+   {
+    "labute_asa": 0.003994833095930517,
+    "mmff_energy_gradient": 0.3481227499432862,
+    "mmff_energy_gradient__prepare": 0.007863500039093196,
+    "morgan2_chiral": 0.02343883307185024,
+    "num_rings": 0.002987832995131612,
+    "parse": 0.003141000051982701,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025745166931301355,
+    "tpsa": 0.003999208100140095
+   }
+  ],
+  "cosmolkit": [
+   {
+    "labute_asa": 0.000708957901224494,
+    "mmff_energy_gradient": 0.5392217080807313,
+    "mmff_energy_gradient__prepare": 0.22052604192867875,
+    "morgan2_chiral": 0.016116500017233193,
+    "num_rings": 0.0003688330762088299,
+    "parse": 0.12386220798362046,
+    "parsed": 990,
+    "rxn_amide_amine": 0.015680499956943095,
+    "tpsa": 0.0026595829986035824
+   },
+   {
+    "labute_asa": 0.0006872500525787473,
+    "mmff_energy_gradient": 0.5466929579852149,
+    "mmff_energy_gradient__prepare": 0.2180672090034932,
+    "morgan2_chiral": 0.013681874959729612,
+    "num_rings": 0.000124584068544209,
+    "parse": 0.12496112496592104,
+    "parsed": 990,
+    "rxn_amide_amine": 0.01300533302128315,
+    "tpsa": 0.0010065839160233736
+   },
+   {
+    "labute_asa": 0.0006477501010522246,
+    "mmff_energy_gradient": 0.5382562919985503,
+    "mmff_energy_gradient__prepare": 0.21851000003516674,
+    "morgan2_chiral": 0.013757917098701,
+    "num_rings": 0.00011516700033098459,
+    "parse": 0.1261841249652207,
+    "parsed": 990,
+    "rxn_amide_amine": 0.013322124956175685,
+    "tpsa": 0.001002499950118363
+   },
+   {
+    "labute_asa": 0.0006993330316618085,
+    "mmff_energy_gradient": 0.5339672500267625,
+    "mmff_energy_gradient__prepare": 0.21934095805045217,
+    "morgan2_chiral": 0.013671791995875537,
+    "num_rings": 0.00011612498201429844,
+    "parse": 0.12449812504928559,
+    "parsed": 990,
+    "rxn_amide_amine": 0.012684790999628603,
+    "tpsa": 0.00093495799228549
+   },
+   {
+    "labute_asa": 0.0006419999990612268,
+    "mmff_energy_gradient": 0.5328442080644891,
+    "mmff_energy_gradient__prepare": 0.21924366697203368,
+    "morgan2_chiral": 0.014102666988037527,
+    "num_rings": 0.00011749996338039637,
+    "parse": 0.12449129100423306,
+    "parsed": 990,
+    "rxn_amide_amine": 0.013034625095315278,
+    "tpsa": 0.0009464999893680215
+   },
+   {
+    "labute_asa": 0.000680458964779973,
+    "mmff_energy_gradient": 0.533664625021629,
+    "mmff_energy_gradient__prepare": 0.22115783405024558,
+    "morgan2_chiral": 0.013684250065125525,
+    "num_rings": 0.00012666697148233652,
+    "parse": 0.12628404202405363,
+    "parsed": 990,
+    "rxn_amide_amine": 0.012903499999083579,
+    "tpsa": 0.0009880419820547104
+   },
+   {
+    "labute_asa": 0.000651167007163167,
+    "mmff_energy_gradient": 0.5349042910384014,
+    "mmff_energy_gradient__prepare": 0.21634804201312363,
+    "morgan2_chiral": 0.01371466601267457,
+    "num_rings": 0.00010841595940291882,
+    "parse": 0.12557816703338176,
+    "parsed": 990,
+    "rxn_amide_amine": 0.01281225006096065,
+    "tpsa": 0.0009340830147266388
+   },
+   {
+    "labute_asa": 0.0006642499938607216,
+    "mmff_energy_gradient": 0.5351800420321524,
+    "mmff_energy_gradient__prepare": 0.21808550006244332,
+    "morgan2_chiral": 0.013878915924578905,
+    "num_rings": 0.00011658400762826204,
+    "parse": 0.12492337496951222,
+    "parsed": 990,
+    "rxn_amide_amine": 0.01326679193880409,
+    "tpsa": 0.0009268330177292228
+   },
+   {
+    "labute_asa": 0.0006425000028684735,
+    "mmff_energy_gradient": 0.5336068340111524,
+    "mmff_energy_gradient__prepare": 0.22025050001684576,
+    "morgan2_chiral": 0.013810375006869435,
+    "num_rings": 0.00011066696606576443,
+    "parse": 0.12561225006356835,
+    "parsed": 990,
+    "rxn_amide_amine": 0.013348124921321869,
+    "tpsa": 0.0009748330339789391
+   },
+   {
+    "labute_asa": 0.0006451249355450273,
+    "mmff_energy_gradient": 0.5397836250485852,
+    "mmff_energy_gradient__prepare": 0.2172322920523584,
+    "morgan2_chiral": 0.013772125006653368,
+    "num_rings": 0.000112209003418684,
+    "parse": 0.12296387495007366,
+    "parsed": 990,
+    "rxn_amide_amine": 0.012859958922490478,
+    "tpsa": 0.0009780420223250985
+   },
+   {
+    "labute_asa": 0.0006801249692216516,
+    "mmff_energy_gradient": 0.5412556249648333,
+    "mmff_energy_gradient__prepare": 0.22095687501132488,
+    "morgan2_chiral": 0.013579666032455862,
+    "num_rings": 0.00012666697148233652,
+    "parse": 0.12460274994373322,
+    "parsed": 990,
+    "rxn_amide_amine": 0.012931082979775965,
+    "tpsa": 0.0009646669495850801
+   },
+   {
+    "labute_asa": 0.0006759159732609987,
+    "mmff_energy_gradient": 0.5353041660273448,
+    "mmff_energy_gradient__prepare": 0.22017733298707753,
+    "morgan2_chiral": 0.013609166955575347,
+    "num_rings": 0.00011995900422334671,
+    "parse": 0.12922208406962454,
+    "parsed": 990,
+    "rxn_amide_amine": 0.012940207961946726,
+    "tpsa": 0.0009647080441936851
+   },
+   {
+    "labute_asa": 0.0006842500297352672,
+    "mmff_energy_gradient": 0.5287706669187173,
+    "mmff_energy_gradient__prepare": 0.21879737498238683,
+    "morgan2_chiral": 0.013555167010053992,
+    "num_rings": 0.00012345798313617706,
+    "parse": 0.12709379196166992,
+    "parsed": 990,
+    "rxn_amide_amine": 0.013546957983635366,
+    "tpsa": 0.0009626249084249139
+   },
+   {
+    "labute_asa": 0.0006687090499326587,
+    "mmff_energy_gradient": 0.5288491249084473,
+    "mmff_energy_gradient__prepare": 0.21900991699658334,
+    "morgan2_chiral": 0.013598708901554346,
+    "num_rings": 0.00012250000145286322,
+    "parse": 0.12252112501300871,
+    "parsed": 990,
+    "rxn_amide_amine": 0.013104666955769062,
+    "tpsa": 0.0010346249910071492
+   },
+   {
+    "labute_asa": 0.0006494160043075681,
+    "mmff_energy_gradient": 0.5315979159204289,
+    "mmff_energy_gradient__prepare": 0.21766520908568054,
+    "morgan2_chiral": 0.013759416062384844,
+    "num_rings": 0.00011433393228799105,
+    "parse": 0.1251539170043543,
+    "parsed": 990,
+    "rxn_amide_amine": 0.01285970804747194,
+    "tpsa": 0.0009433339582756162
+   },
+   {
+    "labute_asa": 0.000698207993991673,
+    "mmff_energy_gradient": 0.5395768749294803,
+    "mmff_energy_gradient__prepare": 0.22437499999068677,
+    "morgan2_chiral": 0.013896458083763719,
+    "num_rings": 0.00012358406092971563,
+    "parse": 0.12291395803913474,
+    "parsed": 990,
+    "rxn_amide_amine": 0.012819041963666677,
+    "tpsa": 0.0009743749396875501
+   },
+   {
+    "labute_asa": 0.0006634161109104753,
+    "mmff_energy_gradient": 0.5319647090509534,
+    "mmff_energy_gradient__prepare": 0.2190070829819888,
+    "morgan2_chiral": 0.013594208052381873,
+    "num_rings": 0.0001230419147759676,
+    "parse": 0.12411133397836238,
+    "parsed": 990,
+    "rxn_amide_amine": 0.012841291958466172,
+    "tpsa": 0.0009701669914647937
+   },
+   {
+    "labute_asa": 0.0006687080021947622,
+    "mmff_energy_gradient": 0.5360536669613793,
+    "mmff_energy_gradient__prepare": 0.21940658299718052,
+    "morgan2_chiral": 0.013537749997340143,
+    "num_rings": 0.00012916699051856995,
+    "parse": 0.1254517079796642,
+    "parsed": 990,
+    "rxn_amide_amine": 0.012596084037795663,
+    "tpsa": 0.0009537080768495798
+   },
+   {
+    "labute_asa": 0.0006813328946009278,
+    "mmff_energy_gradient": 0.536852416000329,
+    "mmff_energy_gradient__prepare": 0.2177668750518933,
+    "morgan2_chiral": 0.013667499995790422,
+    "num_rings": 0.00013062497600913048,
+    "parse": 0.1241687920410186,
+    "parsed": 990,
+    "rxn_amide_amine": 0.012891166959889233,
+    "tpsa": 0.0009589999681338668
+   },
+   {
+    "labute_asa": 0.0006721670506522059,
+    "mmff_energy_gradient": 0.5281212910776958,
+    "mmff_energy_gradient__prepare": 0.21967770799528807,
+    "morgan2_chiral": 0.013830999960191548,
+    "num_rings": 0.00013112497981637716,
+    "parse": 0.1241351249627769,
+    "parsed": 990,
+    "rxn_amide_amine": 0.013705292018130422,
+    "tpsa": 0.0009884170722216368
+   },
+   {
+    "labute_asa": 0.0007006670348346233,
+    "mmff_energy_gradient": 0.5283067499985918,
+    "mmff_energy_gradient__prepare": 0.22023845801595598,
+    "morgan2_chiral": 0.013752916944213212,
+    "num_rings": 0.00012645800597965717,
+    "parse": 0.12826445803511888,
+    "parsed": 990,
+    "rxn_amide_amine": 0.012900208937935531,
+    "tpsa": 0.0009824170265346766
+   }
+  ],
+  "rdkit": [
+   {
+    "labute_asa": 0.0016005829675123096,
+    "mmff_energy_gradient": 0.5643627090612426,
+    "mmff_energy_gradient__prepare": 0.10145962506067008,
+    "morgan2_chiral": 0.020764457993209362,
+    "num_rings": 7.350009400397539e-05,
+    "parse": 0.06677029200363904,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025769083993509412,
+    "tpsa": 0.002540125045925379
+   },
+   {
+    "labute_asa": 0.001705499948002398,
+    "mmff_energy_gradient": 0.5656944169895723,
+    "mmff_energy_gradient__prepare": 0.10305833409074694,
+    "morgan2_chiral": 0.021549375029280782,
+    "num_rings": 7.745798211544752e-05,
+    "parse": 0.06637250003404915,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026282166014425457,
+    "tpsa": 0.002530834055505693
+   },
+   {
+    "labute_asa": 0.0015717500355094671,
+    "mmff_energy_gradient": 0.5641385420458391,
+    "mmff_energy_gradient__prepare": 0.10036962502636015,
+    "morgan2_chiral": 0.02082108403556049,
+    "num_rings": 8.379097562283278e-05,
+    "parse": 0.06752983294427395,
+    "parsed": 990,
+    "rxn_amide_amine": 0.02644400007557124,
+    "tpsa": 0.0026277920696884394
+   },
+   {
+    "labute_asa": 0.0015458749840036035,
+    "mmff_energy_gradient": 0.5689657080220059,
+    "mmff_energy_gradient__prepare": 0.10293100005947053,
+    "morgan2_chiral": 0.021244666073471308,
+    "num_rings": 7.949990686029196e-05,
+    "parse": 0.06716295797377825,
+    "parsed": 990,
+    "rxn_amide_amine": 0.02585937490221113,
+    "tpsa": 0.002579250023700297
+   },
+   {
+    "labute_asa": 0.0015907920897006989,
+    "mmff_energy_gradient": 0.5601462910417467,
+    "mmff_energy_gradient__prepare": 0.10306733299512416,
+    "morgan2_chiral": 0.020899042021483183,
+    "num_rings": 7.43749551475048e-05,
+    "parse": 0.06666574999690056,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026060041971504688,
+    "tpsa": 0.0025914169382303953
+   },
+   {
+    "labute_asa": 0.0016145419795066118,
+    "mmff_energy_gradient": 0.5623961250530556,
+    "mmff_energy_gradient__prepare": 0.10217545798514038,
+    "morgan2_chiral": 0.02116275008302182,
+    "num_rings": 7.774995174258947e-05,
+    "parse": 0.06770166696514934,
+    "parsed": 990,
+    "rxn_amide_amine": 0.02560016594361514,
+    "tpsa": 0.0026011670706793666
+   },
+   {
+    "labute_asa": 0.00154954195022583,
+    "mmff_energy_gradient": 0.5641263329889625,
+    "mmff_energy_gradient__prepare": 0.1013780840439722,
+    "morgan2_chiral": 0.020779084064997733,
+    "num_rings": 7.916695903986692e-05,
+    "parse": 0.06730795791372657,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025279666995629668,
+    "tpsa": 0.0025663330452516675
+   },
+   {
+    "labute_asa": 0.0016096249455586076,
+    "mmff_energy_gradient": 0.5647470830008388,
+    "mmff_energy_gradient__prepare": 0.09957683400716633,
+    "morgan2_chiral": 0.021545791998505592,
+    "num_rings": 7.299997378140688e-05,
+    "parse": 0.06693533295765519,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025890332995913923,
+    "tpsa": 0.002552625024691224
+   },
+   {
+    "labute_asa": 0.0016235000221058726,
+    "mmff_energy_gradient": 0.5598905000369996,
+    "mmff_energy_gradient__prepare": 0.10048024996649474,
+    "morgan2_chiral": 0.02088029100559652,
+    "num_rings": 7.029192056506872e-05,
+    "parse": 0.06660220806952566,
+    "parsed": 990,
+    "rxn_amide_amine": 0.02580958290491253,
+    "tpsa": 0.0025412499671801925
+   },
+   {
+    "labute_asa": 0.0015885410830378532,
+    "mmff_energy_gradient": 0.5591799160465598,
+    "mmff_energy_gradient__prepare": 0.10055700002703816,
+    "morgan2_chiral": 0.020943166920915246,
+    "num_rings": 7.483293302357197e-05,
+    "parse": 0.0682265410432592,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025498959003016353,
+    "tpsa": 0.00256508297752589
+   },
+   {
+    "labute_asa": 0.0015492920065298676,
+    "mmff_energy_gradient": 0.5698327500140294,
+    "mmff_energy_gradient__prepare": 0.10351499996613711,
+    "morgan2_chiral": 0.02097704098559916,
+    "num_rings": 7.070903666317463e-05,
+    "parse": 0.06788312504068017,
+    "parsed": 990,
+    "rxn_amide_amine": 0.02570075006224215,
+    "tpsa": 0.0026437080232426524
+   },
+   {
+    "labute_asa": 0.0016209169989451766,
+    "mmff_energy_gradient": 0.5598152918973938,
+    "mmff_energy_gradient__prepare": 0.10123383300378919,
+    "morgan2_chiral": 0.02102758304681629,
+    "num_rings": 7.800001185387373e-05,
+    "parse": 0.06666979205328971,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025715624913573265,
+    "tpsa": 0.0026313329581171274
+   },
+   {
+    "labute_asa": 0.001732666976749897,
+    "mmff_energy_gradient": 0.5603798340307549,
+    "mmff_energy_gradient__prepare": 0.10196212504524738,
+    "morgan2_chiral": 0.02138695796020329,
+    "num_rings": 7.625005673617125e-05,
+    "parse": 0.06668004090897739,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026258625090122223,
+    "tpsa": 0.0026460420340299606
+   },
+   {
+    "labute_asa": 0.0015931250527501106,
+    "mmff_energy_gradient": 0.5712823750218377,
+    "mmff_energy_gradient__prepare": 0.09958758403081447,
+    "morgan2_chiral": 0.020825625048018992,
+    "num_rings": 7.429101970046759e-05,
+    "parse": 0.06650479196105152,
+    "parsed": 990,
+    "rxn_amide_amine": 0.02610554196871817,
+    "tpsa": 0.0025589580181986094
+   },
+   {
+    "labute_asa": 0.0015914170071482658,
+    "mmff_energy_gradient": 0.5582092499826103,
+    "mmff_energy_gradient__prepare": 0.09965391689911485,
+    "morgan2_chiral": 0.02078658400569111,
+    "num_rings": 7.112498860806227e-05,
+    "parse": 0.0665679998928681,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025499874958768487,
+    "tpsa": 0.0025527080288156867
+   },
+   {
+    "labute_asa": 0.0015861670253798366,
+    "mmff_energy_gradient": 0.5603100410662591,
+    "mmff_energy_gradient__prepare": 0.10112904198467731,
+    "morgan2_chiral": 0.02070104202721268,
+    "num_rings": 7.345795165747404e-05,
+    "parse": 0.0678413329878822,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025413707946427166,
+    "tpsa": 0.0025442499900236726
+   },
+   {
+    "labute_asa": 0.0015811249613761902,
+    "mmff_energy_gradient": 0.5591857909457758,
+    "mmff_energy_gradient__prepare": 0.10050070798024535,
+    "morgan2_chiral": 0.02083395898807794,
+    "num_rings": 6.962497718632221e-05,
+    "parse": 0.06656375003512949,
+    "parsed": 990,
+    "rxn_amide_amine": 0.025450416025705636,
+    "tpsa": 0.002559083979576826
+   },
+   {
+    "labute_asa": 0.001650584046728909,
+    "mmff_energy_gradient": 0.5603376670042053,
+    "mmff_energy_gradient__prepare": 0.10065487504471093,
+    "morgan2_chiral": 0.020907041965983808,
+    "num_rings": 7.78749817982316e-05,
+    "parse": 0.06734654097817838,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026449791970662773,
+    "tpsa": 0.002547584008425474
+   },
+   {
+    "labute_asa": 0.0015749579761177301,
+    "mmff_energy_gradient": 0.5627587919589132,
+    "mmff_energy_gradient__prepare": 0.10078395903110504,
+    "morgan2_chiral": 0.021294708945788443,
+    "num_rings": 6.891705561429262e-05,
+    "parse": 0.06714787508826703,
+    "parsed": 990,
+    "rxn_amide_amine": 0.026546500041149557,
+    "tpsa": 0.0026817499892786145
+   },
+   {
+    "labute_asa": 0.0015521669993177056,
+    "mmff_energy_gradient": 0.5680013329256326,
+    "mmff_energy_gradient__prepare": 0.10606933303643018,
+    "morgan2_chiral": 0.021234916988760233,
+    "num_rings": 7.679103873670101e-05,
+    "parse": 0.06680062506347895,
+    "parsed": 990,
+    "rxn_amide_amine": 0.027438916033133864,
+    "tpsa": 0.0025201670359820127
+   },
+   {
+    "labute_asa": 0.001580707961693406,
+    "mmff_energy_gradient": 0.5590809580171481,
+    "mmff_energy_gradient__prepare": 0.10147258301731199,
+    "morgan2_chiral": 0.020950500038452446,
+    "num_rings": 7.01249809935689e-05,
+    "parse": 0.06682066607754678,
+    "parsed": 990,
+    "rxn_amide_amine": 0.0258144160034135,
+    "tpsa": 0.0025831250241026282
+   }
+  ]
+ },
+ "schema": "cosmolkit-corpus-bench/v2",
+ "versions": {
+  "chematic": "1.0.41",
+  "cosmolkit": "0.5.0-rc.15",
+  "rdkit": "2026.03.1"
+ }
+}

@@ -373,6 +373,7 @@ dependencies = [
  "criterion",
  "libm",
  "rayon",
+ "rustc-hash",
 ]
 
 [[package]]
