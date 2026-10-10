@@ -531,3 +531,6 @@ mod tests {
 }
 #[cfg(test)]
 mod export_boundary_contract_tests;
+
+#[cfg(test)]
+mod public_boundary_contract_tests;

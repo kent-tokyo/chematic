@@ -4,6 +4,74 @@ use chematic_core::MoleculeBuilder;
 use serde_json::Value;
 
 #[test]
+fn carbon_distance_edges_match_closed_form_stars_and_double_stars() {
+    use chematic_core::{Atom, BondOrder, Element};
+    let mut graphs = Vec::new();
+    let inv_sqrt2 = 1.0 / 2.0_f64.sqrt();
+    for degree in 1..=4 {
+        let mut builder = MoleculeBuilder::new();
+        let center = builder.add_atom(Atom::new(Element::C));
+        for _ in 0..degree {
+            let leaf = builder.add_atom(Atom::new(Element::C));
+            builder.add_bond(center, leaf, BondOrder::Single).unwrap();
+        }
+        let mut expected = [0.0; 10];
+        if degree == 1 {
+            expected[0] = 1.0;
+        } else {
+            expected[0] = f64::from(degree * (degree - 1) / 2) * inv_sqrt2;
+            expected[degree as usize - 1] = f64::from(degree);
+        }
+        graphs.push((builder.build(), expected));
+    }
+    for (a, b, slot) in [
+        (2, 2, 4),
+        (2, 3, 5),
+        (2, 4, 6),
+        (3, 3, 7),
+        (3, 4, 8),
+        (4, 4, 9),
+    ] {
+        let mut builder = MoleculeBuilder::new();
+        let left = builder.add_atom(Atom::new(Element::C));
+        let right = builder.add_atom(Atom::new(Element::C));
+        builder.add_bond(left, right, BondOrder::Single).unwrap();
+        for (center, degree) in [(left, a), (right, b)] {
+            for _ in 1..degree {
+                let leaf = builder.add_atom(Atom::new(Element::C));
+                builder.add_bond(center, leaf, BondOrder::Single).unwrap();
+            }
+        }
+        let (la, lb) = ((a - 1) as f64, (b - 1) as f64);
+        let mut expected = [0.0; 10];
+        expected[0] =
+            (la * (la - 1.0) + lb * (lb - 1.0)) * 0.5 * inv_sqrt2 + la * lb / 3.0_f64.sqrt();
+        expected[a - 1] += la + lb * inv_sqrt2;
+        expected[b - 1] += lb + la * inv_sqrt2;
+        expected[slot] = 1.0;
+        graphs.push((builder.build(), expected));
+    }
+    for (mol, expected) in graphs {
+        let actual = mde_carbon(&mol);
+        for (actual, expected) in actual.into_iter().zip(expected) {
+            assert!((actual - expected).abs() < 1e-12);
+        }
+        let disconnected =
+            chematic_smiles::parse(&format!("{}.N", chematic_smiles::write(&mol))).unwrap();
+        for (actual, expected) in mde_carbon(&disconnected).into_iter().zip(expected) {
+            assert!((actual - expected).abs() < 1e-12);
+        }
+    }
+    for mol in [
+        MoleculeBuilder::new().build(),
+        chematic_smiles::parse("[H][H]").unwrap(),
+        chematic_smiles::parse("N.O.C").unwrap(),
+    ] {
+        assert_eq!(mde_carbon(&mol), [0.0; 10]);
+    }
+}
+
+#[test]
 fn condensed_formula_branches_and_diagnostics_preserve_context() {
     use crate::condensed::{CondensedError, parse_condensed};
     for (source, smiles) in [("C(C)C", "CCC"), ("CCOOH", "CC(=O)O"), ("CCHO", "CC=O")] {
@@ -550,4 +618,129 @@ fn graph_descriptor_resource_sentinels_and_analytic_path_matchings_are_defined()
         assert!(hall_kier_alpha(&mol).is_finite());
         assert!(vabc(&mol).is_finite() && vabc(&mol) > 0.0);
     }
+}
+
+#[test]
+fn precomputed_admet_scores_and_fallible_descriptors_agree_with_molecule_apis() {
+    use crate::admet::*;
+    for source in [
+        "CCO",
+        "CC(=O)O",
+        "c1ccncc1",
+        "CN(C)CCC(c1ccccc1)c1ccccc1",
+        "NCC(=O)O",
+    ] {
+        let mol = chematic_smiles::parse(source).unwrap();
+        let (mw, lp, polar) = (molecular_weight(&mol), logp_crippen(&mol), tpsa(&mol));
+        assert_eq!(bbb_score_from_parts(polar, lp), bbb_score(&mol));
+        assert_eq!(caco2_precomputed(polar, lp), caco2_permeability(&mol));
+        assert_eq!(
+            cyp3a4_precomputed(mw, lp, num_aromatic_heterocycles(&mol), hba_count(&mol)),
+            cyp3a4_inhibition_risk(&mol)
+        );
+        assert_eq!(herg_risk_precomputed(&mol, lp, mw), herg_risk_score(&mol));
+        assert_eq!(
+            crate::pka::pka_both(&mol),
+            (crate::pka::pka_acid(&mol), crate::pka::pka_base(&mol))
+        );
+        assert_eq!(try_balaban_j(&mol).unwrap(), balaban_j(&mol));
+        assert_eq!(try_ipc(&mol).unwrap(), ipc(&mol));
+        let crippen = crippen_types_rdkit_model(&mol).unwrap();
+        assert_eq!(crippen.len(), crate::add_hydrogens(&mol).atom_count());
+        assert!(crippen.iter().all(Option::is_some));
+    }
+    let mut builder = MoleculeBuilder::new();
+    for _ in 0..=1_000 {
+        builder.add_atom(chematic_core::Atom::new(chematic_core::Element::C));
+    }
+    let large = builder.build();
+    for result in [try_balaban_j(&large), try_ipc(&large)] {
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains(&large.atom_count().to_string()));
+        assert!(error.to_string().contains(&error.max_atoms.to_string()));
+    }
+}
+
+#[test]
+fn legacy_charge_models_conserve_formal_charge_and_ignore_bond_storage_orientation() {
+    use crate::mmff94_bci::{mmff94_charges_bci, mmff94_charges_typed, try_mmff94_charges_bci};
+    use chematic_core::{AtomIdx, Element};
+    // These are legacy BCI models, not the RDKit MMFF numeric typer. This
+    // checks charge conservation and graph-index invariance, not accuracy.
+    for source in [
+        "CC",
+        "C=C",
+        "C#C",
+        "CN",
+        "C=N",
+        "C#N",
+        "CO",
+        "C=O",
+        "CF",
+        "CCl",
+        "CBr",
+        "CI",
+        "CS",
+        "C=S",
+        "CP",
+        "NO",
+        "N=O",
+        "OS",
+        "O=S=O",
+        "OP",
+        "O=P(O)O",
+        "CC(=O)NC",
+        "CC(=O)OC",
+        "c1ccccc1N",
+        "c1ccccc1O",
+        "c1ccccc1F",
+        "c1ccccc1Cl",
+        "c1ccccc1Br",
+        "c1ccccc1I",
+        "c1ccoc1",
+        "c1ccsc1",
+        "c1ccncc1",
+        "c1nn[nH]c1",
+        "[NH4+]",
+        "[O-]C=O",
+        "[H]",
+    ] {
+        let base = chematic_smiles::parse(source).unwrap();
+        for mol in [base.clone(), crate::add_hydrogens(&base)] {
+            let mut builder = MoleculeBuilder::new();
+            for (_, atom) in mol.atoms() {
+                builder.add_atom(atom.clone());
+            }
+            for (_, bond) in mol.bonds() {
+                builder
+                    .add_bond(bond.atom2, bond.atom1, bond.order)
+                    .unwrap();
+            }
+            let reversed = builder.build();
+            let formal: f64 = mol.atoms().map(|(_, atom)| f64::from(atom.charge)).sum();
+            assert_eq!(
+                try_mmff94_charges_bci(&mol).unwrap(),
+                mmff94_charges_bci(&mol)
+            );
+            for model in [mmff94_charges_bci, mmff94_charges_typed] {
+                let charges = model(&mol);
+                assert_eq!(charges.len(), mol.atom_count());
+                assert!(charges.iter().all(|q| q.is_finite()));
+                assert!(
+                    (charges.iter().sum::<f64>() - formal).abs() < 1e-12,
+                    "{source}"
+                );
+                for (forward, reversed) in charges.into_iter().zip(model(&reversed)) {
+                    assert!((forward - reversed).abs() < 1e-12, "{source}");
+                }
+            }
+        }
+    }
+    let mut unsupported = MoleculeBuilder::new();
+    unsupported.add_atom(chematic_core::Atom::new(Element::C));
+    unsupported.add_atom(chematic_core::Atom::new(Element::FE));
+    let error = try_mmff94_charges_bci(&unsupported.build()).unwrap_err();
+    assert_eq!(error.atom_index, AtomIdx(1).0 as usize);
+    assert_eq!(error.atomic_number, 26);
+    assert!(error.to_string().contains("atom 1 (atomic number 26)"));
 }

@@ -1776,6 +1776,814 @@
     {
       "smiles": "[C@H]1(C)CC[C@H](C)CC1",
       "canonical": "C[C@H]1CC[C@H](C)CC1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C/C=C/C=C/C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C/C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C/C=C/C=C/C=C/C=C/C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C\\C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C\\C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C\\C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C\\C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C/C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C/C=C\\C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C/C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C/C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C/C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C\\C=C/C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C\\C=C\\C=C/C=C/C=C/C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C\\C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C\\C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C\\C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C/C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C/C=C/C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C/C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C/C=C\\C=C\\C=C\\C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C/C=C/C=C\\C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C\\C=C/C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C/C=C\\C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
+    },
+    {
+      "smiles": "C1=C\\C=C\\C=C\\C=C/C=C\\C=C\\C=C/C=C/1",
+      "canonical": "C1=C\\C=C\\C=C/C=C/C=C\\C=C\\C=C\\C=C/1"
     }
   ]
 }

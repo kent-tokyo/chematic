@@ -1122,3 +1122,46 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod sort_boundary_contract_tests {
+    use super::libstdcxx_sort;
+
+    #[test]
+    fn introsort_matches_integer_oracle_for_partition_and_depth_stress_patterns() {
+        for n in [0, 1, 2, 15, 16, 17, 31, 128, 1024, 8192] {
+            let ascending: Vec<i32> = (0..n).collect();
+            let mut patterns = vec![
+                ascending.clone(),
+                ascending.iter().rev().copied().collect(),
+                vec![7; n as usize],
+                (0..n).map(|i| i % 7).collect(),
+                (0..n).map(|i| i.min(n - 1 - i)).collect(),
+            ];
+            let mut state = 96u64;
+            patterns.push(
+                (0..n)
+                    .map(|_| {
+                        state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+                        (state >> 32) as i32
+                    })
+                    .collect(),
+            );
+            for pattern in patterns {
+                let mut expected = pattern.clone();
+                expected.sort_unstable();
+                let mut actual = pattern.clone();
+                libstdcxx_sort(&mut actual, |a, b| a < b);
+                assert_eq!(actual, expected, "ascending {n}");
+                expected.reverse();
+                libstdcxx_sort(&mut actual, |a, b| a > b);
+                assert_eq!(actual, expected, "descending {n}");
+                let mut tagged: Vec<_> = pattern.iter().copied().enumerate().collect();
+                libstdcxx_sort(&mut tagged, |a, b| a.1 < b.1);
+                assert!(tagged.windows(2).all(|p| p[0].1 <= p[1].1));
+                tagged.sort_unstable();
+                assert_eq!(tagged, pattern.into_iter().enumerate().collect::<Vec<_>>());
+            }
+        }
+    }
+}

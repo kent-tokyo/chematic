@@ -73,3 +73,38 @@ fn ecfp_public_shortcuts_match_explicit_configuration() {
     );
     assert_eq!(tanimoto_ecfp4(&mol, &mol), 1.0);
 }
+
+#[test]
+fn fingerprint_aliases_and_similarity_helpers_preserve_their_public_contracts() {
+    for source in ["CCO", "c1ccccc1", "N[C@@H](C)C(=O)O", "[Na+].[Cl-]"] {
+        let mol = chematic_smiles::parse(source).unwrap();
+        let six = EcfpConfig {
+            radius: 3,
+            ..EcfpConfig::default()
+        };
+        assert_eq!(fcfp6(&mol), fcfp(&mol, &six));
+        assert_eq!(erg_extended(&mol).bits, erg(&mol).bits);
+        assert_eq!(mhfp::mhfp_128(&mol).hashes, mhfp::mhfp(&mol).hashes);
+        assert_eq!(tanimoto_avalon(&mol, &mol), 1.0);
+        assert_eq!(
+            pattern::tanimoto_pattern(&pattern::pattern_fp(&mol), &pattern::pattern_fp(&mol)),
+            1.0
+        );
+        assert_eq!(
+            rdkit_layered::tanimoto_rdkit_layered(&rdkit_layered_fp(&mol), &rdkit_layered_fp(&mol)),
+            1.0
+        );
+    }
+    let zero = [0.0; ERG_VEC_LEN];
+    let mut x = zero;
+    let mut y = zero;
+    x[0] = 3.0;
+    x[1] = 4.0;
+    y[0] = 4.0;
+    y[1] = 3.0;
+    assert_eq!(cosine_erg_vec(&zero, &x), 0.0);
+    assert_eq!(cosine_erg_vec(&x, &zero), 0.0);
+    assert_eq!(cosine_erg_vec(&x, &x), 1.0);
+    assert!((cosine_erg_vec(&x, &y) - 24.0 / 25.0).abs() < 1e-12);
+    assert_eq!(cosine_erg_vec(&x, &y), cosine_erg_vec(&y, &x));
+}
