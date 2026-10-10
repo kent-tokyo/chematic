@@ -1020,23 +1020,13 @@ impl PreparedReaction {
             Profile::Rdkit => reactants
                 .iter()
                 .map(|m| {
-                    // An AddHs molecule that has been written and parsed no
-                    // longer carries the in-memory H-node sentinel, but every
-                    // heavy atom still has its implicit-H count pinned to
-                    // zero. RDKit keeps those graph hydrogens. In ordinary
-                    // SMILES such as `[H]/C=C/[H]`, at least one heavy atom
-                    // remains implicit-H capable and MolFromSmiles removes
-                    // the graph H atoms.
-                    let has_graph_h = m.atoms().any(|(_, atom)| {
-                        !atom.wildcard && atom.element == chematic_core::Element::H
-                    });
-                    let fully_explicit = has_graph_h
-                        && m.atoms()
-                            .filter(|(_, atom)| {
-                                !atom.wildcard && atom.element != chematic_core::Element::H
-                            })
-                            .all(|(_, atom)| atom.hydrogen_count == Some(0));
-                    if fully_explicit {
+                    // An explicit H atom is part of the caller's molecule,
+                    // as with RDKit `AddHs`; keep it. Suppression is only for
+                    // bracket-H counts that RDKit's SMILES parser folds into
+                    // their heavy atom.
+                    if m.atoms()
+                        .any(|(_, atom)| atom.element == chematic_core::Element::H)
+                    {
                         None
                     } else {
                         chematic_smiles::rdkit_hydrogen_suppressed_with_map(m)
