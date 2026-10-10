@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "contract_id": "openbabel-production-file-io-v1",
+  "comparator": {
+    "name": "Open Babel",
+    "version": "3.2.1",
+    "executable": "obabel",
+    "release_url": "https://github.com/openbabel/openbabel/releases/tag/openbabel-3-2-1"
+  },
+  "claim_scope": "selected production formats; not total format-count parity",
+  "accounting_categories": [
+    "success",
+    "typed_refusal",
+    "unsupported",
+    "invalid_input",
+    "internal_error"
+  ],
+  "formats": [
+    {
+      "id": "sdf",
+      "tier": "A",
+      "fixture": "benchmarks/fixtures/streaming.sdf",
+      "fixture_sha256": "627e7814694f7d00a9212712ec697f2174d30327b459d983d2a10f717cae0465",
+      "read": true,
+      "write": true,
+      "semantics": ["graph", "formal_charge", "isotope", "bond_order", "stereo", "coordinates", "record_properties"]
+    },
+    {
+      "id": "mol_v2000",
+      "tier": "A",
+      "fixture": "benchmarks/fixtures/streaming.sdf",
+      "fixture_sha256": "627e7814694f7d00a9212712ec697f2174d30327b459d983d2a10f717cae0465",
+      "read": true,
+      "write": true,
+      "semantics": ["graph", "formal_charge", "isotope", "bond_order", "stereo", "coordinates"]
+    },
+    {
+      "id": "mol_v3000",
+      "tier": "A",
+      "fixture": "benchmarks/fixtures/ethanol.v3000",
+      "fixture_sha256": "64ac11b3de1c186deae555d54d6a47e7f3c72607ef0a90b0d93f467496bbd3ad",
+      "read": true,
+      "write": true,
+      "semantics": ["graph", "formal_charge", "isotope", "bond_order", "stereo", "coordinates", "sgroup", "collection"]
+    },
+    {
+      "id": "mol2",
+      "tier": "A",
+      "fixture": "benchmarks/fixtures/ethanol.mol2",
+      "fixture_sha256": "80144aad97332e2f58eb42bb2da1472587a9dfc2466f9d2fe081eb9834c2224d",
+      "read": true,
+      "write": true,
+      "semantics": ["graph", "formal_charge", "bond_order", "coordinates", "atom_type", "partial_charge"]
+    },
+    {
+      "id": "cml",
+      "tier": "A",
+      "fixture": "benchmarks/fixtures/ethanol.cml",
+      "fixture_sha256": "0d89c3e1250890147debd2ae097b27f8128f73b8d44bb60cbe3279242053e06c",
+      "read": true,
+      "write": true,
+      "semantics": ["graph", "formal_charge", "isotope", "bond_order", "coordinates"]
+    },
+    {
+      "id": "cdxml",
+      "tier": "A",
+      "fixture": "benchmarks/fixtures/ethanol.cdxml",
+      "fixture_sha256": "b74560cfaf369e4bc32d5c710f7b488ded05e801c54934d7a709013825ce290c",
+      "read": true,
+      "write": true,
+      "semantics": ["graph", "formal_charge", "isotope", "bond_order", "stereo", "coordinates", "opaque_document_objects"]
+    },
+    {
+      "id": "pdb",
+      "tier": "A",
+      "fixture": "benchmarks/fixtures/minimal.pdb",
+      "fixture_sha256": "69d1e5a2d6cbdb39377325cbbf077face011ef0893718e28b42d0563901ad15b",
+      "read": true,
+      "write": true,
+      "semantics": ["element", "coordinates", "residue", "chain", "occupancy", "temperature_factor"]
+    },
+    {
+      "id": "mmcif",
+      "tier": "A",
+      "fixture": "benchmarks/fixtures/minimal.mmcif",
+      "fixture_sha256": "d583d8047758d0e804c98729796d76eea3fa87f3b5b8ed85962717e784e98998",
+      "read": true,
+      "write": true,
+      "semantics": ["element", "coordinates", "residue", "chain", "occupancy", "temperature_factor"]
+    }
+  ],
+  "win_criteria": {
+    "correctness": {
+      "silent_loss_rows": 0,
+      "wrong_confident_rows": 0,
+      "required_outcomes": ["exact_semantic_match", "typed_refusal", "documented_unsupported"]
+    },
+    "reliability": {
+      "accounting_identity": "input_count = success + typed_refusal + unsupported + invalid_input + internal_error",
+      "internal_errors": 0,
+      "panics_or_crashes": 0,
+      "bounded_time_and_memory": true
+    },
+    "performance": {
+      "alternating_blocks_minimum": 21,
+      "require_equivalent_output": true,
+      "require_all_blocks_faster": true,
+      "paired_speedup_ci95_lower_bound": 1.0,
+      "separate_lanes": ["cold_start", "parse", "write", "round_trip", "peak_rss"]
+    }
+  },
+  "current_gate": "record accounting is complete for eight fixtures; V3000/MOL2/CML/CDXML have a shared-observer fixture semantic gate and a source-candidate fresh-process CLI round-trip lane; broad corpora, parser/write isolation, memory, malformed input, PDB/mmCIF semantics, and published artifacts remain open"
+}

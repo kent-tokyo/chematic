@@ -28,9 +28,11 @@ MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML) so that JavaScript
 and Python share a predictable core contract. Use the existing coordinate APIs
 for PDB/XYZ/PDBQT in browser workflows.
 
-This is intentionally a bounded interoperability layer, not an Open Babel
-replacement. The format-specific APIs remain available when coordinates,
-metadata, multiple records, or domain-specific options must be preserved.
+This is intentionally a bounded interoperability layer, not a claim of broad
+Open Babel replacement. The format-specific APIs remain available when
+coordinates, metadata, multiple records, or domain-specific options must be
+preserved. The narrower production-format comparison and its strict win
+criteria are documented in [`openbabel-file-io.md`](openbabel-file-io.md).
 
 ---
 

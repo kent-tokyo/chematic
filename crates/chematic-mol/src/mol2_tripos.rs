@@ -5,7 +5,69 @@
 //!
 //! Reference: Tripos MOL2 format specification (SYBYL 7.x).
 
+use core::fmt::Write as _;
+
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
+
+/// One `@<TRIPOS>ATOM` row whose interchange fields are not representable by
+/// [`Molecule`]. The vector is index-aligned with [`Mol2Record::molecule`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct Mol2AtomRecord {
+    pub atom_id: u32,
+    pub atom_name: String,
+    pub atom_type: String,
+    pub subst_id: Option<i32>,
+    pub subst_name: Option<String>,
+    pub partial_charge: Option<f64>,
+    pub status_bits: Vec<String>,
+}
+
+/// One `@<TRIPOS>BOND` row whose source identifier and status bits are not
+/// represented by [`Molecule`]. The vector is index-aligned with its bonds.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Mol2BondRecord {
+    pub bond_id: u32,
+    pub atom1_id: u32,
+    pub atom2_id: u32,
+    pub bond_type: String,
+    pub status_bits: Vec<String>,
+}
+
+/// An untyped Tripos section retained verbatim across a checked MOL2
+/// parse/write round trip.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Mol2OpaqueSection {
+    pub name: String,
+    pub lines: Vec<String>,
+}
+
+/// One `UNITY_ATOM_ATTR` group. Unknown attributes remain explicit instead of
+/// being dropped while the recognized `charge` attribute feeds `Atom.charge`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Mol2UnityAtomAttributes {
+    pub atom_id: u32,
+    pub attributes: Vec<(String, String)>,
+}
+
+/// Loss-aware Tripos MOL2 record.
+///
+/// The ordinary [`parse_mol2`] API remains available for graph-only callers.
+/// Interchange code should use this type so atom types, partial charges,
+/// residue labels, status bits, and extension sections are not silently lost.
+#[derive(Clone)]
+pub struct Mol2Record {
+    pub molecule: Molecule,
+    pub coords: Vec<(f64, f64, f64)>,
+    pub name: String,
+    pub molecule_type: String,
+    pub charge_type: String,
+    pub molecule_tail: Vec<String>,
+    pub atoms: Vec<Mol2AtomRecord>,
+    pub bonds: Vec<Mol2BondRecord>,
+    pub duplicate_bonds: Vec<Mol2BondRecord>,
+    pub unity_atom_attributes: Vec<Mol2UnityAtomAttributes>,
+    pub opaque_sections: Vec<Mol2OpaqueSection>,
+}
 
 /// Resource limits for Tripos MOL2 parsing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,6 +102,8 @@ impl Default for Mol2ParseLimits {
 pub enum Mol2Error {
     /// Required section not found.
     MissingSection(String),
+    /// This one-record API received a multi-molecule MOL2 stream.
+    MultipleMolecules { count: usize },
     /// An atom line is malformed.
     InvalidAtomLine { line: usize, detail: String },
     /// A bond line is malformed.
@@ -58,6 +122,10 @@ impl core::fmt::Display for Mol2Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::MissingSection(s) => write!(f, "MOL2: missing section @<TRIPOS>{s}"),
+            Self::MultipleMolecules { count } => write!(
+                f,
+                "MOL2: this API accepts one molecule, but the input contains {count} MOLECULE sections"
+            ),
             Self::InvalidAtomLine { line, detail } => {
                 write!(f, "MOL2: invalid atom line {line}: {detail}")
             }
@@ -117,6 +185,98 @@ fn strip_atom_type(sym: &str) -> &str {
     sym.split('.').next().unwrap_or(sym)
 }
 
+fn parse_unity_formal_charges(
+    lines: &[(usize, &str)],
+) -> Result<
+    (
+        std::collections::HashMap<u32, i8>,
+        Vec<Mol2UnityAtomAttributes>,
+    ),
+    Mol2Error,
+> {
+    let rows = section_lines(lines, "UNITY_ATOM_ATTR");
+    let mut charges = std::collections::HashMap::new();
+    let mut groups = Vec::new();
+    let mut cursor = 0usize;
+    while cursor < rows.len() {
+        let (line_no, header) = rows[cursor];
+        let fields = header.split_whitespace().collect::<Vec<_>>();
+        if fields.len() != 2 {
+            return Err(Mol2Error::InvalidAtomLine {
+                line: line_no,
+                detail: "UNITY_ATOM_ATTR header must be '<atom_id> <attribute_count>'".into(),
+            });
+        }
+        let atom_id = fields[0]
+            .parse::<u32>()
+            .map_err(|_| Mol2Error::InvalidAtomLine {
+                line: line_no,
+                detail: format!("cannot parse UNITY atom_id from '{}'", fields[0]),
+            })?;
+        let count = fields[1]
+            .parse::<usize>()
+            .map_err(|_| Mol2Error::InvalidAtomLine {
+                line: line_no,
+                detail: format!("cannot parse UNITY attribute count from '{}'", fields[1]),
+            })?;
+        cursor += 1;
+        if cursor.saturating_add(count) > rows.len() {
+            return Err(Mol2Error::InvalidAtomLine {
+                line: line_no,
+                detail: "UNITY_ATOM_ATTR ends before all declared attributes".into(),
+            });
+        }
+        let mut attributes = Vec::with_capacity(count);
+        for &(attribute_line, attribute) in &rows[cursor..cursor + count] {
+            let mut parts = attribute.split_whitespace();
+            let Some(name) = parts.next() else { continue };
+            let Some(value) = parts.next() else { continue };
+            attributes.push((name.to_string(), value.to_string()));
+            if name.eq_ignore_ascii_case("charge") {
+                let charge = value
+                    .parse::<i8>()
+                    .map_err(|_| Mol2Error::InvalidAtomLine {
+                        line: attribute_line,
+                        detail: format!("cannot parse formal charge from '{value}'"),
+                    })?;
+                charges.insert(atom_id, charge);
+            }
+        }
+        groups.push(Mol2UnityAtomAttributes {
+            atom_id,
+            attributes,
+        });
+        cursor += count;
+    }
+    Ok((charges, groups))
+}
+
+fn opaque_sections(lines: &[(usize, &str)]) -> Vec<Mol2OpaqueSection> {
+    let mut sections = Vec::new();
+    let mut current: Option<Mol2OpaqueSection> = None;
+    for &(_, line) in lines {
+        let trimmed = line.trim();
+        if let Some(name) = trimmed.strip_prefix("@<TRIPOS>") {
+            if let Some(section) = current.take() {
+                sections.push(section);
+            }
+            current =
+                (!matches!(name, "MOLECULE" | "ATOM" | "BOND" | "UNITY_ATOM_ATTR")).then(|| {
+                    Mol2OpaqueSection {
+                        name: name.to_string(),
+                        lines: Vec::new(),
+                    }
+                });
+        } else if let Some(section) = current.as_mut() {
+            section.lines.push(line.to_string());
+        }
+    }
+    if let Some(section) = current {
+        sections.push(section);
+    }
+    sections
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -130,7 +290,7 @@ fn strip_atom_type(sym: &str) -> &str {
 /// molecule's atom indices.
 #[allow(clippy::type_complexity)]
 pub fn parse_mol2(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error> {
-    parse_mol2_with_limits(s, &Mol2ParseLimits::default())
+    parse_mol2_record(s).map(|record| (record.molecule, record.coords))
 }
 
 /// Parse a Tripos MOL2 string with explicit resource limits.
@@ -139,6 +299,19 @@ pub fn parse_mol2_with_limits(
     s: &str,
     limits: &Mol2ParseLimits,
 ) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error> {
+    parse_mol2_record_with_limits(s, limits).map(|record| (record.molecule, record.coords))
+}
+
+/// Parse a MOL2 string without discarding interchange-only fields.
+pub fn parse_mol2_record(s: &str) -> Result<Mol2Record, Mol2Error> {
+    parse_mol2_record_with_limits(s, &Mol2ParseLimits::default())
+}
+
+/// Parse a loss-aware MOL2 record with explicit resource limits.
+pub fn parse_mol2_record_with_limits(
+    s: &str,
+    limits: &Mol2ParseLimits,
+) -> Result<Mol2Record, Mol2Error> {
     if s.len() > limits.max_input_bytes {
         return Err(Mol2Error::ResourceLimit {
             resource: "input bytes",
@@ -174,13 +347,43 @@ pub fn parse_mol2_with_limits(
             limit: limits.max_sections,
         });
     }
+    let molecule_count = lines
+        .iter()
+        .filter(|line| line.trim().eq_ignore_ascii_case("@<TRIPOS>MOLECULE"))
+        .count();
+    if molecule_count > 1 {
+        return Err(Mol2Error::MultipleMolecules {
+            count: molecule_count,
+        });
+    }
     let all_lines: Vec<(usize, &str)> = lines
         .into_iter()
         .enumerate()
         .map(|(i, l)| (i + 1, l))
         .collect();
 
-    // -- MOLECULE section: we read it but only need it for sanity; skip for now.
+    let molecule_lines = section_lines(&all_lines, "MOLECULE");
+    if molecule_lines.is_empty() {
+        return Err(Mol2Error::MissingSection("MOLECULE".into()));
+    }
+    let name = molecule_lines
+        .first()
+        .map(|(_, line)| line.trim().to_string())
+        .unwrap_or_default();
+    let molecule_type = molecule_lines
+        .get(2)
+        .map(|(_, line)| line.trim().to_string())
+        .unwrap_or_else(|| "SMALL".to_string());
+    let charge_type = molecule_lines
+        .get(3)
+        .map(|(_, line)| line.trim().to_string())
+        .unwrap_or_else(|| "NO_CHARGES".to_string());
+    let molecule_tail = molecule_lines
+        .iter()
+        .skip(4)
+        .map(|(_, line)| (*line).to_string())
+        .collect::<Vec<_>>();
+    let (unity_formal_charges, unity_atom_attributes) = parse_unity_formal_charges(&all_lines)?;
 
     // -- ATOM section ----------------------------------------------------------
     let atom_lines = section_lines(&all_lines, "ATOM");
@@ -190,6 +393,7 @@ pub fn parse_mol2_with_limits(
 
     let mut builder = MoleculeBuilder::new();
     let mut coords: Vec<(f64, f64, f64)> = Vec::new();
+    let mut atom_records = Vec::new();
     // Map from MOL2 1-based atom_id → builder AtomIdx.
     let mut atom_id_map: Vec<(u32, AtomIdx)> = Vec::new();
 
@@ -242,10 +446,17 @@ pub fn parse_mol2_with_limits(
             }
         };
 
-        // Optional partial charge (field 9, 0-indexed as parts[8]).
-        let charge_f: f64 = parts.get(8).and_then(|s| s.parse().ok()).unwrap_or(0.0);
-        // Round to nearest integer for formal charge (MOL2 uses partial charges).
-        let formal_charge: i8 = charge_f.round() as i8;
+        let partial_charge = parts
+            .get(8)
+            .map(|value| {
+                value
+                    .parse::<f64>()
+                    .map_err(|_| Mol2Error::InvalidAtomLine {
+                        line: *lineno,
+                        detail: format!("cannot parse partial charge from '{value}'"),
+                    })
+            })
+            .transpose()?;
 
         let element = Element::from_symbol(&sym).ok_or_else(|| Mol2Error::UnknownElement {
             symbol: sym.clone(),
@@ -253,11 +464,27 @@ pub fn parse_mol2_with_limits(
         })?;
 
         let mut atom = Atom::new(element);
-        atom.charge = formal_charge;
+        atom.charge = unity_formal_charges.get(&atom_id).copied().unwrap_or(0);
+        atom.aromatic = atom_type_raw
+            .split_once('.')
+            .is_some_and(|(_, suffix)| suffix.eq_ignore_ascii_case("ar"));
 
         let builder_idx = builder.add_atom(atom);
         atom_id_map.push((atom_id, builder_idx));
         coords.push((x, y, z));
+        atom_records.push(Mol2AtomRecord {
+            atom_id,
+            atom_name: parts[1].to_string(),
+            atom_type: atom_type_raw.to_string(),
+            subst_id: parts.get(6).and_then(|value| value.parse().ok()),
+            subst_name: parts.get(7).map(|value| (*value).to_string()),
+            partial_charge,
+            status_bits: parts
+                .iter()
+                .skip(9)
+                .map(|value| (*value).to_string())
+                .collect(),
+        });
     }
 
     // -- BOND section ----------------------------------------------------------
@@ -271,6 +498,8 @@ pub fn parse_mol2_with_limits(
             limit: limits.max_bonds,
         });
     }
+    let mut bond_records = Vec::new();
+    let mut duplicate_bonds = Vec::new();
     for (lineno, line) in &bond_lines {
         // bond_id  origin_atom_id  target_atom_id  bond_type
         let parts: Vec<&str> = line.split_whitespace().collect();
@@ -281,6 +510,10 @@ pub fn parse_mol2_with_limits(
             });
         }
 
+        let bond_id: u32 = parts[0].parse().map_err(|_| Mol2Error::InvalidBondLine {
+            line: *lineno,
+            detail: format!("cannot parse bond_id from '{}'", parts[0]),
+        })?;
         let a1_id: u32 = parts[1].parse().map_err(|_| Mol2Error::InvalidBondLine {
             line: *lineno,
             detail: format!("cannot parse origin atom_id from '{}'", parts[1]),
@@ -319,11 +552,39 @@ pub fn parse_mol2_with_limits(
             _ => BondOrder::Single,
         };
 
-        // Ignore duplicate bond errors (some MOL2 files repeat bonds).
-        let _ = builder.add_bond(a1, a2, order);
+        let source = Mol2BondRecord {
+            bond_id,
+            atom1_id: a1_id,
+            atom2_id: a2_id,
+            bond_type: bond_type.to_string(),
+            status_bits: parts
+                .iter()
+                .skip(4)
+                .map(|value| (*value).to_string())
+                .collect(),
+        };
+        // Keep the graph API's historical tolerance while retaining repeated
+        // rows for a loss-aware same-format rewrite.
+        if builder.add_bond(a1, a2, order).is_ok() {
+            bond_records.push(source);
+        } else {
+            duplicate_bonds.push(source);
+        }
     }
 
-    Ok((builder.build(), coords))
+    Ok(Mol2Record {
+        molecule: builder.build(),
+        coords,
+        name,
+        molecule_type,
+        charge_type,
+        molecule_tail,
+        atoms: atom_records,
+        bonds: bond_records,
+        duplicate_bonds,
+        unity_atom_attributes,
+        opaque_sections: opaque_sections(&all_lines),
+    })
 }
 
 /// Write a molecule and its 3D coordinates to Tripos MOL2 format.
@@ -331,53 +592,222 @@ pub fn parse_mol2_with_limits(
 /// `coords` must have one entry per atom in `mol`.  Missing entries use
 /// `(0.0, 0.0, 0.0)`.
 pub fn write_mol2(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
-    let mut out = String::new();
+    let record = Mol2Record {
+        molecule: mol.clone(),
+        coords: coords.to_vec(),
+        name: "chematic".into(),
+        molecule_type: "SMALL".into(),
+        charge_type: "NO_CHARGES".into(),
+        molecule_tail: Vec::new(),
+        atoms: mol
+            .atoms()
+            .map(|(idx, atom)| Mol2AtomRecord {
+                atom_id: idx.0 + 1,
+                atom_name: format!("{}{}", atom.element.symbol(), idx.0 + 1),
+                atom_type: atom.element.symbol().to_string(),
+                subst_id: Some(1),
+                subst_name: Some("LIG".into()),
+                partial_charge: Some(0.0),
+                status_bits: Vec::new(),
+            })
+            .collect(),
+        bonds: mol
+            .bonds()
+            .map(|(idx, bond)| Mol2BondRecord {
+                bond_id: idx.0 + 1,
+                atom1_id: bond.atom1.0 + 1,
+                atom2_id: bond.atom2.0 + 1,
+                bond_type: bond_type_token(bond.order).to_string(),
+                status_bits: Vec::new(),
+            })
+            .collect(),
+        duplicate_bonds: Vec::new(),
+        unity_atom_attributes: Vec::new(),
+        opaque_sections: Vec::new(),
+    };
+    write_mol2_record(&record)
+}
+
+fn bond_type_token(order: BondOrder) -> &'static str {
+    match order {
+        BondOrder::Zero => "nc",
+        BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => "1",
+        BondOrder::Double => "2",
+        BondOrder::Triple => "3",
+        BondOrder::Aromatic => "ar",
+        BondOrder::Quadruple => "4",
+        BondOrder::QueryAny
+        | BondOrder::QuerySingleOrDouble
+        | BondOrder::QuerySingleOrAromatic
+        | BondOrder::QueryDoubleOrAromatic => "un",
+    }
+}
+
+/// Serialize a loss-aware MOL2 record, retaining atom types, partial charges,
+/// residue fields, status bits, formal-charge attributes, and opaque sections.
+pub fn write_mol2_record(record: &Mol2Record) -> String {
+    let mol = &record.molecule;
+    let coords = &record.coords;
+    let mut out = String::with_capacity(
+        256 + mol.atom_count().saturating_mul(96) + mol.bond_count().saturating_mul(32),
+    );
 
     // MOLECULE section.
     out.push_str("@<TRIPOS>MOLECULE\n");
-    out.push_str("chematic\n");
-    out.push_str(&format!(
-        "{} {} 0 0 0\n",
+    out.push_str(&record.name);
+    out.push('\n');
+    let substructures = record
+        .opaque_sections
+        .iter()
+        .find(|section| section.name.eq_ignore_ascii_case("SUBSTRUCTURE"))
+        .map_or(0, |section| {
+            section
+                .lines
+                .iter()
+                .filter(|line| !line.trim().is_empty())
+                .count()
+        });
+    let _ = writeln!(
+        out,
+        "{} {} {substructures} 0 0",
         mol.atom_count(),
-        mol.bond_count()
-    ));
-    out.push_str("SMALL\n");
-    out.push_str("GASTEIGER\n\n");
+        mol.bond_count() + record.duplicate_bonds.len()
+    );
+    out.push_str(&record.molecule_type);
+    out.push('\n');
+    out.push_str(&record.charge_type);
+    out.push('\n');
+    for line in &record.molecule_tail {
+        out.push_str(line);
+        out.push('\n');
+    }
+    out.push('\n');
 
     // ATOM section.
     out.push_str("@<TRIPOS>ATOM\n");
     for (idx, atom) in mol.atoms() {
-        let i = idx.0 + 1; // 1-based
-        let sym = atom.element.symbol();
+        let fallback_id = idx.0 + 1;
+        let source = record.atoms.get(idx.0 as usize);
+        let atom_id = source.map_or(fallback_id, |row| row.atom_id);
+        let atom_name = source
+            .map(|row| row.atom_name.as_str())
+            .unwrap_or_else(|| atom.element.symbol());
+        let atom_type = source
+            .map(|row| row.atom_type.as_str())
+            .unwrap_or_else(|| atom.element.symbol());
         let (x, y, z) = coords
             .get(idx.0 as usize)
             .copied()
             .unwrap_or((0.0, 0.0, 0.0));
-        // Use symbol as atom type (simplified; no hybridisation-based suffix).
-        out.push_str(&format!(
-            "{i:>6} {sym:<4} {x:>10.4} {y:>10.4} {z:>10.4} {sym:<8} 1  LIG  0.0000\n"
-        ));
+        let subst_id = source.and_then(|row| row.subst_id).unwrap_or(1);
+        let subst_name = source
+            .and_then(|row| row.subst_name.as_deref())
+            .unwrap_or("LIG");
+        let partial_charge = source.and_then(|row| row.partial_charge).unwrap_or(0.0);
+        let _ = write!(
+            out,
+            "{atom_id:>6} {atom_name:<8} {x:>10.4} {y:>10.4} {z:>10.4} {atom_type:<8} {subst_id:>4}  {subst_name:<8} {partial_charge:>10.4}"
+        );
+        if let Some(row) = source {
+            for status in &row.status_bits {
+                out.push(' ');
+                out.push_str(status);
+            }
+        }
+        out.push('\n');
+    }
+
+    let mut unity_groups = record.unity_atom_attributes.clone();
+    for group in &mut unity_groups {
+        let Some((idx, atom)) = mol.atoms().find(|(idx, _)| {
+            record
+                .atoms
+                .get(idx.0 as usize)
+                .is_some_and(|row| row.atom_id == group.atom_id)
+        }) else {
+            continue;
+        };
+        let _ = idx;
+        if let Some((_, value)) = group
+            .attributes
+            .iter_mut()
+            .find(|(name, _)| name.eq_ignore_ascii_case("charge"))
+        {
+            *value = atom.charge.to_string();
+        } else if atom.charge != 0 {
+            group
+                .attributes
+                .push(("charge".into(), atom.charge.to_string()));
+        }
+    }
+    for (idx, atom) in mol.atoms().filter(|(_, atom)| atom.charge != 0) {
+        let atom_id = record
+            .atoms
+            .get(idx.0 as usize)
+            .map_or(idx.0 + 1, |row| row.atom_id);
+        if !unity_groups.iter().any(|group| group.atom_id == atom_id) {
+            unity_groups.push(Mol2UnityAtomAttributes {
+                atom_id,
+                attributes: vec![("charge".into(), atom.charge.to_string())],
+            });
+        }
+    }
+    if !unity_groups.is_empty() {
+        out.push_str("@<TRIPOS>UNITY_ATOM_ATTR\n");
+        for group in &unity_groups {
+            let _ = writeln!(out, "{} {}", group.atom_id, group.attributes.len());
+            for (name, value) in &group.attributes {
+                let _ = writeln!(out, "{name} {value}");
+            }
+        }
     }
 
     // BOND section.
     out.push_str("@<TRIPOS>BOND\n");
     for (bidx, bond) in mol.bonds() {
-        let bi = bidx.0 + 1;
-        let a1 = bond.atom1.0 + 1;
-        let a2 = bond.atom2.0 + 1;
-        let btype = match bond.order {
-            BondOrder::Zero => "nc",
-            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => "1",
-            BondOrder::Double => "2",
-            BondOrder::Triple => "3",
-            BondOrder::Aromatic => "ar",
-            BondOrder::Quadruple => "4",
-            BondOrder::QueryAny
-            | BondOrder::QuerySingleOrDouble
-            | BondOrder::QuerySingleOrAromatic
-            | BondOrder::QueryDoubleOrAromatic => "un",
-        };
-        out.push_str(&format!("{bi:>6} {a1:>6} {a2:>6} {btype}\n"));
+        let source = record.bonds.get(bidx.0 as usize);
+        let bi = source.map_or(bidx.0 + 1, |row| row.bond_id);
+        let a1 = record
+            .atoms
+            .get(bond.atom1.0 as usize)
+            .map_or(bond.atom1.0 + 1, |row| row.atom_id);
+        let a2 = record
+            .atoms
+            .get(bond.atom2.0 as usize)
+            .map_or(bond.atom2.0 + 1, |row| row.atom_id);
+        let btype = source
+            .map(|row| row.bond_type.as_str())
+            .unwrap_or_else(|| bond_type_token(bond.order));
+        let _ = write!(out, "{bi:>6} {a1:>6} {a2:>6} {btype}");
+        if let Some(row) = source {
+            for status in &row.status_bits {
+                out.push(' ');
+                out.push_str(status);
+            }
+        }
+        out.push('\n');
+    }
+    for bond in &record.duplicate_bonds {
+        let _ = write!(
+            out,
+            "{:>6} {:>6} {:>6} {}",
+            bond.bond_id, bond.atom1_id, bond.atom2_id, bond.bond_type
+        );
+        for status in &bond.status_bits {
+            out.push(' ');
+            out.push_str(status);
+        }
+        out.push('\n');
+    }
+
+    for section in &record.opaque_sections {
+        out.push_str("@<TRIPOS>");
+        out.push_str(&section.name);
+        out.push('\n');
+        for line in &section.lines {
+            out.push_str(line);
+            out.push('\n');
+        }
     }
 
     out
@@ -447,6 +877,78 @@ GASTEIGER
     }
 
     #[test]
+    fn partial_charge_is_not_guessed_as_formal_charge() {
+        let input = ETHANOL_MOL2.replace("-0.3940", "-0.7500");
+        let record = parse_mol2_record(&input).unwrap();
+        assert_eq!(record.molecule.atom(AtomIdx(2)).charge, 0);
+        assert_eq!(record.atoms[2].partial_charge, Some(-0.75));
+    }
+
+    #[test]
+    fn record_roundtrip_preserves_interchange_fields() {
+        let input = ETHANOL_MOL2.replace(
+            "@<TRIPOS>BOND",
+            "@<TRIPOS>SUBSTRUCTURE\n     1 LIG1        1 RESIDUE\n@<TRIPOS>BOND",
+        );
+        let record = parse_mol2_record(&input).unwrap();
+        assert_eq!(record.name, "ethanol");
+        assert_eq!(record.molecule_type, "SMALL");
+        assert_eq!(record.charge_type, "GASTEIGER");
+        assert_eq!(record.atoms[0].atom_name, "C1");
+        assert_eq!(record.atoms[0].atom_type, "C.3");
+        assert_eq!(record.atoms[2].partial_charge, Some(-0.394));
+        assert_eq!(record.atoms[0].subst_name.as_deref(), Some("LIG1"));
+        assert_eq!(record.opaque_sections[0].name, "SUBSTRUCTURE");
+
+        let rewritten = write_mol2_record(&record);
+        let reparsed = parse_mol2_record(&rewritten).unwrap();
+        assert_eq!(reparsed.name, record.name);
+        assert_eq!(reparsed.molecule_type, record.molecule_type);
+        assert_eq!(reparsed.charge_type, record.charge_type);
+        assert_eq!(reparsed.atoms, record.atoms);
+        assert_eq!(reparsed.bonds, record.bonds);
+        assert_eq!(reparsed.opaque_sections, record.opaque_sections);
+    }
+
+    #[test]
+    fn unity_formal_charge_is_distinct_from_partial_charge() {
+        let input = "@<TRIPOS>MOLECULE\nammonium\n 1 0 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n      1 N 0.0 0.0 0.0 N.4 1 UNL1 0.2500\n@<TRIPOS>UNITY_ATOM_ATTR\n1 2\ncharge 1\ncolor red\n@<TRIPOS>BOND\n";
+        let record = parse_mol2_record(input).unwrap();
+        assert_eq!(record.molecule.atom(AtomIdx(0)).charge, 1);
+        assert_eq!(record.atoms[0].partial_charge, Some(0.25));
+        assert_eq!(
+            record.unity_atom_attributes[0].attributes[1],
+            ("color".into(), "red".into())
+        );
+
+        let reparsed = parse_mol2_record(&write_mol2_record(&record)).unwrap();
+        assert_eq!(reparsed.molecule.atom(AtomIdx(0)).charge, 1);
+        assert_eq!(reparsed.atoms[0].partial_charge, Some(0.25));
+        assert_eq!(reparsed.unity_atom_attributes, record.unity_atom_attributes);
+    }
+
+    #[test]
+    fn duplicate_bond_rows_are_retained_for_same_format_rewrite() {
+        let input = "@<TRIPOS>MOLECULE\nduplicate\n 2 2 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 0 0 0 C.3 1 LIG 0\n2 C2 1 0 0 C.3 1 LIG 0\n@<TRIPOS>BOND\n1 1 2 1\n2 1 2 1 DUP\n";
+        let record = parse_mol2_record(input).unwrap();
+        assert_eq!(record.molecule.bond_count(), 1);
+        assert_eq!(record.duplicate_bonds.len(), 1);
+        let reparsed = parse_mol2_record(&write_mol2_record(&record)).unwrap();
+        assert_eq!(reparsed.molecule.bond_count(), 1);
+        assert_eq!(reparsed.duplicate_bonds, record.duplicate_bonds);
+    }
+
+    #[test]
+    fn aromatic_atom_type_sets_aromatic_atom_state() {
+        let record = parse_mol2_record(
+            "@<TRIPOS>MOLECULE\nbenzene-fragment\n 2 1 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 0 0 0 C.ar 1 BNZ 0\n2 C2 1 0 0 C.ar 1 BNZ 0\n@<TRIPOS>BOND\n1 1 2 ar\n",
+        )
+        .unwrap();
+        assert!(record.molecule.atom(AtomIdx(0)).aromatic);
+        assert!(record.molecule.atom(AtomIdx(1)).aromatic);
+    }
+
+    #[test]
     fn shared_mol2_roundtrip_contract_matches() {
         let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
@@ -504,6 +1006,15 @@ GASTEIGER
     fn test_missing_atom_section() {
         let bad = "@<TRIPOS>MOLECULE\nbad\n";
         assert!(parse_mol2(bad).is_err());
+    }
+
+    #[test]
+    fn multi_molecule_stream_is_a_typed_refusal() {
+        let input = format!("{ETHANOL_MOL2}{ETHANOL_MOL2}");
+        assert!(matches!(
+            parse_mol2_record(&input),
+            Err(Mol2Error::MultipleMolecules { count: 2 })
+        ));
     }
 
     #[test]

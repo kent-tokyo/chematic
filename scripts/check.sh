@@ -13,6 +13,7 @@ echo "=== shared cross-binding manifest ===" && python3 scripts/check_cross_bind
 echo "=== strict PDB binding contract ===" && python3 scripts/check_pdb_strict_binding_contract.py
 echo "=== static binding surface ===" && python3 scripts/check_binding_surface.py >/dev/null
 echo "=== benchmark record index ===" && python3 scripts/check_benchmark_index.py
+echo "=== Open Babel file-I/O evidence ===" && python3 scripts/check_openbabel_file_io_evidence.py
 echo "=== cross-engine streaming matrix ===" && SCHEMATIC_BENCHMARK_VERSION="$STREAMING_EVIDENCE_VERSION" python3 scripts/validate_streaming_cross_engine_matrix.py
 echo "=== same-process contract bundle ===" && SCHEMATIC_BENCHMARK_VERSION="$STREAMING_EVIDENCE_VERSION" python3 scripts/check_same_process_contracts.py
 echo "=== 3D quality evidence bundle ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_3d_quality_evidence.py
