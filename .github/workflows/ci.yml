@@ -41,7 +41,9 @@ jobs:
       - name: Static binding surface inventory
         run: python3 scripts/check_binding_surface.py > /dev/null
       - name: Release documentation consistency
-        run: python3 scripts/check_release_docs_consistency.py
+        run: |
+          python3 scripts/check_release_docs_consistency.py
+          python3 scripts/check_openbabel_file_io_contract.py
       - name: Compatibility Contract
         run: |
           python3 scripts/check_compatibility_profiles.py

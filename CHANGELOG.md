@@ -12,6 +12,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added a versioned Open Babel 3.2.1 file-I/O comparison contract for eight
+  production formats, a static CI checker, and a unified record-accounting
+  runner. The initial 20-repetition record proves fixture provenance and
+  record/failure accounting only; semantic round-trip and equivalent-work
+  speed claims remain open.
 - Exposed the v1.0.40+ RDKit interoperability surface to WASM/Node: SMARTS
   and structure writers, PDB/XYZ/MOL2 readers, Murcko/stereo/hash/Morgan
   helpers, bounded alignment/RMSD, and separately named seeded ETKDG and

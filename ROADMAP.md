@@ -90,7 +90,32 @@ blocks, all blocks faster, and the paired 95% speedup lower bound above 1.0
 against both RDKit and COSMolKit. Published-package claims require exact
 artifact hashes.
 
-### 4. P1/A4 — Close the remaining SMARTS/SMIRKS contract
+### 4. P0/A4 — Beat Open Babel on bounded production file I/O
+
+- Use the versioned contract in
+  [`validation/openbabel_file_io_contract_v1.json`](validation/openbabel_file_io_contract_v1.json)
+  for SDF, MOL V2000/V3000, MOL2, CML, CDXML, PDB, and mmCIF. Do not use raw
+  format count as the success metric.
+- First close semantic round trips in both directions: graph, charge, isotope,
+  bond order, stereo, coordinates, record properties, and format-specific
+  metadata. Any loss must be reported or refused; silent loss is a defect.
+- Preserve `input = success + typed refusal + unsupported + invalid + internal
+  error` for batch work. Require zero internal errors, panics, and crashes on
+  malformed and resource-limit corpora.
+- Compare cold start, parse, write, round trip, and peak RSS as separate lanes.
+  Require equivalent outputs, at least 21 alternating blocks, every block
+  faster, and a paired 95% speedup lower bound above 1.0 before declaring a
+  format win.
+- Publish source and package evidence separately. A win on the Tier-A profile
+  is not a claim to match Open Babel's total format breadth.
+
+**Exit:** every Tier-A format has bidirectional semantic evidence, zero silent
+loss, complete typed accounting, bounded malformed-input behavior, and a
+reproducible equivalent-work comparison against pinned Open Babel 3.2.1.
+
+See [the comparison contract](docs/openbabel-file-io.md).
+
+### 5. P1/A4 — Close the remaining SMARTS/SMIRKS contract
 
 Issues [#734](https://github.com/kent-tokyo/chematic/issues/734) and
 [#754](https://github.com/kent-tokyo/chematic/issues/754) remain open.
@@ -105,7 +130,7 @@ Issues [#734](https://github.com/kent-tokyo/chematic/issues/734) and
 **Exit:** no wrong-confident supported result in the pinned corpora, all rows
 accounted for, and package evidence recorded separately from source evidence.
 
-### 5. P2/A6 — Maintain stereo, identity, and 3D quality
+### 6. P2/A6 — Maintain stereo, identity, and 3D quality
 
 - Preserve atom-order, spelling, and round-trip invariance gates for CIP/E/Z.
 - Keep lossy MOL output observable through report/strict APIs.
@@ -116,7 +141,7 @@ accounted for, and package evidence recorded separately from source evidence.
 **Exit:** no silent information loss and no wrong-confident stereo result in
 the declared domain.
 
-### 6. External — Rebaseline new RDKit distributions
+### 7. External — Rebaseline new RDKit distributions
 
 Pin the exact distributed Python, npm/WASM, and native artifacts before a
 rebaseline. Preserve old results as historical records; do not substitute a
