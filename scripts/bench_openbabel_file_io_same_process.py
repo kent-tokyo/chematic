@@ -4,10 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
+import platform
 import statistics
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +34,19 @@ def ci95_lower(values: list[float]) -> float:
     if len(values) < 2:
         return values[0]
     return statistics.mean(values) - 2.086 * statistics.stdev(values) / math.sqrt(len(values))
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def tool_version(command: list[str]) -> str:
+    completed = subprocess.run(command, check=True, text=True, capture_output=True)
+    return (completed.stdout or completed.stderr).strip()
 
 
 def run_row(binary: Path, fmt: str, fixture: Path, operation: str, repeats: int) -> dict[str, Any]:
@@ -157,6 +173,32 @@ def main() -> int:
         "alternating_process_order": True,
         "timer_boundary": "internal steady-clock loop; process startup excluded",
         "semantic_prerequisite": "scripts/check_openbabel_file_io_semantics.py",
+        "tool_versions": {
+            "openbabel": tool_version(["obabel", "-V"]),
+            "python": sys.version.split()[0],
+        },
+        "host": {
+            "platform": platform.platform(),
+            "machine": platform.machine(),
+            "processor": platform.processor(),
+        },
+        "harnesses": {
+            "chematic": {
+                "path": str(args.chematic_harness),
+                "sha256": sha256(args.chematic_harness),
+            },
+            "openbabel": {
+                "path": str(args.openbabel_harness),
+                "sha256": sha256(args.openbabel_harness),
+            },
+        },
+        "fixtures": {
+            fmt: {
+                "path": str(path.relative_to(ROOT)),
+                "sha256": sha256(path),
+            }
+            for fmt, path in FIXTURES.items()
+        },
         "lanes": lanes,
         "claim_boundary": (
             "tiny checked-in fixtures; parser/write/round-trip hot loops only; "
