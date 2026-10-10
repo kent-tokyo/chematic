@@ -1,0 +1,478 @@
+{
+  "configuration": {
+    "operations": [
+      "canonical_stable",
+      "formula",
+      "hba",
+      "hbd",
+      "mol_roundtrip",
+      "molecular_weight_centi_da",
+      "parse",
+      "rings",
+      "smarts:[#6]",
+      "smarts:[#7]",
+      "smarts:[#8]",
+      "smarts:[C,c](=O)[O,N]",
+      "smarts:[N;H1,H2,H3;+0]",
+      "smarts:c1ccccc1",
+      "tpsa_milli"
+    ],
+    "reference_engine": "rdkit"
+  },
+  "corpus_records": 24,
+  "corpus_sha256": "6bd9b6c34d42e9645fd4a8a50e4dbd1565b42b813fcf5b21d69a4786878498bd",
+  "engines": {
+    "cdk": {
+      "engine_version": "2.13",
+      "records": 24,
+      "source_commits": [
+        null
+      ]
+    },
+    "chematic": {
+      "engine_version": "1.0.42",
+      "records": 24,
+      "source_commits": [
+        "ca1efa847a007b7be30ee73b427d504da0aedbc7"
+      ]
+    },
+    "indigo": {
+      "engine_version": "1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013",
+      "records": 24,
+      "source_commits": [
+        null
+      ]
+    },
+    "rdkit": {
+      "engine_version": "2026.03.6",
+      "records": 24,
+      "source_commits": [
+        null
+      ]
+    }
+  },
+  "operations": {
+    "canonical_stable": {
+      "against_reference": {
+        "cdk": {
+          "match": 24
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 24
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "formula": {
+      "against_reference": {
+        "cdk": {
+          "match": 24
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 24
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "hba": {
+      "against_reference": {
+        "cdk": {
+          "match": 16,
+          "mismatch": 8
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 10,
+          "mismatch": 14
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "hbd": {
+      "against_reference": {
+        "cdk": {
+          "match": 24
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 16,
+          "mismatch": 4,
+          "uncomparable": 4
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "error": 4,
+          "ok": 20
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "mol_roundtrip": {
+      "against_reference": {
+        "cdk": {
+          "match": 19,
+          "mismatch": 5
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 19,
+          "mismatch": 5
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "molecular_weight_centi_da": {
+      "against_reference": {
+        "cdk": {
+          "match": 20,
+          "mismatch": 4
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 22,
+          "mismatch": 2
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "parse": {
+      "against_reference": {
+        "cdk": {
+          "match": 24
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 24
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "rings": {
+      "against_reference": {
+        "cdk": {
+          "match": 23,
+          "mismatch": 1
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 23,
+          "mismatch": 1
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "smarts:[#6]": {
+      "against_reference": {
+        "cdk": {
+          "match": 24
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 24
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "smarts:[#7]": {
+      "against_reference": {
+        "cdk": {
+          "match": 24
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 24
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "smarts:[#8]": {
+      "against_reference": {
+        "cdk": {
+          "match": 24
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 24
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "smarts:[C,c](=O)[O,N]": {
+      "against_reference": {
+        "cdk": {
+          "match": 24
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 24
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "smarts:[N;H1,H2,H3;+0]": {
+      "against_reference": {
+        "cdk": {
+          "match": 24
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 24
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "smarts:c1ccccc1": {
+      "against_reference": {
+        "cdk": {
+          "match": 24
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 24
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "ok": 24
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    },
+    "tpsa_milli": {
+      "against_reference": {
+        "cdk": {
+          "match": 22,
+          "mismatch": 2
+        },
+        "chematic": {
+          "match": 24
+        },
+        "indigo": {
+          "match": 20,
+          "uncomparable": 4
+        }
+      },
+      "status_counts": {
+        "cdk": {
+          "ok": 24
+        },
+        "chematic": {
+          "ok": 24
+        },
+        "indigo": {
+          "error": 4,
+          "ok": 20
+        },
+        "rdkit": {
+          "ok": 24
+        }
+      }
+    }
+  },
+  "reference_engine": "rdkit",
+  "schema_version": 1,
+  "valid": true
+}

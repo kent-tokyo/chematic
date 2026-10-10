@@ -63,6 +63,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   state allocation and before aromaticity-cleanup screening. Query results are
   unchanged because sanitization cannot change atomic numbers; the path is
   covered against the ordinary first-embedding search.
+- Replaced the fixed RDKit HBD SMARTS traversal with equivalent direct local
+  atom conditions. The result remains exact on the pinned 10,000-row corpus
+  while avoiding VF2 setup for every descriptor call.
 
 - Reduced temporary allocation in loss-aware MOL2 serialization while
   retaining the common-observer semantic result.

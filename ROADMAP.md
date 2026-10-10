@@ -22,9 +22,10 @@ boundaries and reproducible evidence over feature-count parity.
   still lose to at least one comparator. Public-artifact replication remains
   open.
 - **CDK/Indigo:** a source-only smoke gate now pins CDK 2.13 and Indigo
-  1.46.0. CheMatic is exact on the 24-row common matrix and wins the measured
-  parsing, formula, canonical-stability, and six SMARTS lanes. This verifies
-  the adapters and candidate direction; it is not broad or package evidence.
+  1.46.0. CheMatic is exact on all 15 measured operations of the 24-row common
+  matrix. Every rankable speed median and paired 95% interval favours
+  CheMatic; one high-repetition `[#8]` lane wins 20/21 blocks, so the strict
+  every-block exit remains open. This is not broad or package evidence.
 - **Reactions:** the published 83-row gate is 80 exact graph/origin/map rows
   and three inputs invalid in both engines. Broader SMIRKS behavior remains
   intentionally bounded.

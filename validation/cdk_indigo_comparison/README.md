@@ -69,11 +69,13 @@ RDKit reference on all 15 measured operations. The MOL V2000 round trip now
 retains `M  ISO` isotopes and coordinate-derived E/Z; those defects were found
 by this comparison and are covered by Rust regressions.
 
-The paired macOS arm64 smoke benchmark records source-candidate wins over CDK
-2.13 and Indigo 1.46.0 for parsing, formula, canonical stability, and all six
-SMARTS existence queries in the parse-inclusive lane. In the prepared lane it
-also wins every SMARTS query after the single-atomic-number fast path. These
-are development signals, not a broad or published-package superiority claim.
+The paired macOS arm64 smoke benchmark records source-candidate median and 95%
+interval wins over CDK 2.13 and Indigo 1.46.0 for every rankable lane. HBD is
+2.3x faster than CDK in the parse-inclusive lane and 6.6x in the prepared
+lane; the direct implementation remains 10,000/10,000 exact against RDKit.
+One high-repetition `[#8]` lane wins 20/21 blocks, so the contract's stricter
+every-block exit remains open. These are development signals, not a broad or
+published-package superiority claim. See the dated benchmark record.
 
 `rings` is diagnostic only. RDKit/CheMatic report the pinned RDKit ring model,
 whereas CDK and Indigo expose SSSR counts; cubane therefore differs without
