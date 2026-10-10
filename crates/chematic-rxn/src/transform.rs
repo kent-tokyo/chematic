@@ -80,17 +80,86 @@ pub struct ReactionTransformReport {
 pub struct TracedReactionTransformReport {
     pub products: Vec<Vec<TracedProduct>>,
     pub diagnostics: ReactionTransformDiagnostics,
+}
+
+/// RDKit-profile report including product sets rejected during sanitization.
+///
+/// Kept separate from [`TracedReactionTransformReport`] so adding RDKit-only
+/// diagnostics does not break existing Rust callers that construct the
+/// general report with a struct literal.
+pub struct RdkitTracedReactionTransformReport {
+    pub report: TracedReactionTransformReport,
     /// RDKit profile only: the valence-rejected product sets as RDKit's
     /// `RunReactants` returns them (unsanitized), each product with whether
-    /// RDKit's sanitization would accept it. Empty for native semantics.
+    /// RDKit's sanitization would accept it.
     pub rejected_products: Vec<Vec<(TracedProduct, bool)>>,
+    /// Stable, bounded explanations aligned with [`Self::rejected_products`].
+    /// Each outer entry is one rejected product set and each inner entry is
+    /// the verdict for the product at the same position in that set.
+    pub rejection_diagnostics: Vec<Vec<ProductSanitizationDiagnostic>>,
+}
+
+/// Why RDKit-compatible product sanitization rejected a generated product.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProductRejectionReason {
+    /// An aromatic atom or bond is inconsistent with ring membership.
+    Aromaticity,
+    /// The aromatic bond system cannot be assigned a valid Kekule form.
+    Kekulization,
+    /// One or more atoms exceed RDKit's allowed explicit valence.
+    Valence,
+    /// The product was rejected but no reliable narrower cause was found.
+    Unknown,
+}
+
+impl ProductRejectionReason {
+    /// Stable machine-readable code shared by Rust, Python and WASM.
+    pub const fn reason_code(self) -> &'static str {
+        match self {
+            Self::Aromaticity => "aromaticity",
+            Self::Kekulization => "kekulization",
+            Self::Valence => "valence",
+            Self::Unknown => "unknown",
+        }
+    }
+}
+
+/// Reliable atom-level context for one rejected product.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProductAtomRejectionDiagnostic {
+    /// Atom index in the generated product before any serialization reorder.
+    pub atom: AtomIdx,
+    /// Product-template map label, when this atom came from a mapped slot.
+    pub template_map: Option<u16>,
+    /// Element of the generated product atom.
+    pub element: chematic_core::Element,
+    /// Explicit hydrogen count recorded on the generated atom.
+    pub explicit_hydrogen_count: Option<u8>,
+    /// Kekule explicit valence after RDKit cleanup rules, when applicable.
+    pub observed_valence: Option<i16>,
+    /// Largest valence RDKit permits after cleanup, when bounded.
+    pub max_allowed_valence: Option<i16>,
+}
+
+/// Sanitization verdict for one generated product in a rejected product set.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProductSanitizationDiagnostic {
+    /// Zero-based product position within the generated product set.
+    pub product_index: usize,
+    /// Whether this product itself is sanitizable. A set is rejected when at
+    /// least one product is not, so accepted siblings remain visible here.
+    pub accepted: bool,
+    /// Typed rejection reason (`None` for an accepted sibling product).
+    pub reason: Option<ProductRejectionReason>,
+    /// At most 32 implicated atoms, in ascending product atom order.
+    pub atoms: Vec<ProductAtomRejectionDiagnostic>,
 }
 
 /// One match's product set: accepted, or rejected by product valence (with
 /// each product's own verdict).
 enum ProductSetOutcome {
     Valid(Vec<TracedProduct>),
-    Rejected(Vec<TracedProduct>, Vec<bool>),
+    Rejected(Vec<TracedProduct>, Vec<ProductSanitizationDiagnostic>),
 }
 
 /// Why the pinned RDKit 2026.03.6 compatibility profile cannot safely claim
@@ -441,6 +510,19 @@ pub fn run_reactants_traced_rdkit_2026_03_6(
         .run_reactants_traced_rdkit_2026_03_6(reactants, limits)
 }
 
+/// Apply `smirks` with the pinned RDKit profile and retain rejected products.
+///
+/// This additive API carries RDKit-only sanitization diagnostics without
+/// extending [`TracedReactionTransformReport`]'s stable struct-literal shape.
+pub fn run_reactants_traced_rdkit_2026_03_6_detailed(
+    smirks: &str,
+    reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
+) -> Result<RdkitDetailedProfileOutcome, TransformError> {
+    PreparedReaction::shared_with_reading(smirks, true)?
+        .run_reactants_traced_rdkit_2026_03_6_detailed(reactants, limits)
+}
+
 /// Prepared templates by SMIRKS text, for the free functions that take a
 /// SMIRKS string: a batch applies the same template to many molecules, and
 /// preparing it (parsing and normalizing every component) took about a
@@ -545,6 +627,12 @@ pub enum RdkitProfileOutcome {
     Unsupported(ReactionCompatibilityUnsupported),
 }
 
+/// Detailed outcome of the pinned RDKit profile, including rejected products.
+pub enum RdkitDetailedProfileOutcome {
+    Report(RdkitTracedReactionTransformReport),
+    Unsupported(ReactionCompatibilityUnsupported),
+}
+
 /// Which reaction semantics a run follows.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Profile {
@@ -618,9 +706,27 @@ impl PreparedReaction {
         reactants: &[&Molecule],
         limits: &ReactionTransformLimits,
     ) -> Result<RdkitProfileOutcome, TransformError> {
+        Ok(
+            match self.run_reactants_traced_rdkit_2026_03_6_detailed(reactants, limits)? {
+                RdkitDetailedProfileOutcome::Report(report) => {
+                    RdkitProfileOutcome::Report(report.report)
+                }
+                RdkitDetailedProfileOutcome::Unsupported(reason) => {
+                    RdkitProfileOutcome::Unsupported(reason)
+                }
+            },
+        )
+    }
+
+    /// Detailed RDKit-profile application including valence-rejected products.
+    pub fn run_reactants_traced_rdkit_2026_03_6_detailed(
+        &self,
+        reactants: &[&Molecule],
+        limits: &ReactionTransformLimits,
+    ) -> Result<RdkitDetailedProfileOutcome, TransformError> {
         crate::perf_counters::record_run_reactants_call();
         if let Some(reason) = self.rdkit_2026_03_6_unsupported_reason() {
-            return Ok(RdkitProfileOutcome::Unsupported(reason));
+            return Ok(RdkitDetailedProfileOutcome::Unsupported(reason));
         }
         let variants: Vec<&PreparedReaction> = match &self.variants {
             Some(variants) => variants.iter().collect(),
@@ -628,6 +734,7 @@ impl PreparedReaction {
         };
         let mut products = Vec::new();
         let mut rejected_products = Vec::new();
+        let mut rejection_diagnostics = Vec::new();
         let mut diagnostics = ReactionTransformDiagnostics {
             accepted_matches: 0,
             applied_products: 0,
@@ -638,20 +745,27 @@ impl PreparedReaction {
             let report =
                 match variant.run_traced_profile(reactants, true, limits, Profile::Rdkit)? {
                     Ok(report) => report,
-                    Err(reason) => return Ok(RdkitProfileOutcome::Unsupported(reason)),
+                    Err(reason) => return Ok(RdkitDetailedProfileOutcome::Unsupported(reason)),
                 };
-            diagnostics.accepted_matches += report.diagnostics.accepted_matches;
-            diagnostics.applied_products += report.diagnostics.applied_products;
-            diagnostics.valence_rejected_matches += report.diagnostics.valence_rejected_matches;
-            diagnostics.truncated_matches |= report.diagnostics.truncated_matches;
-            products.extend(report.products);
+            diagnostics.accepted_matches += report.report.diagnostics.accepted_matches;
+            diagnostics.applied_products += report.report.diagnostics.applied_products;
+            diagnostics.valence_rejected_matches +=
+                report.report.diagnostics.valence_rejected_matches;
+            diagnostics.truncated_matches |= report.report.diagnostics.truncated_matches;
+            products.extend(report.report.products);
             rejected_products.extend(report.rejected_products);
+            rejection_diagnostics.extend(report.rejection_diagnostics);
         }
-        Ok(RdkitProfileOutcome::Report(TracedReactionTransformReport {
-            products,
-            diagnostics,
-            rejected_products,
-        }))
+        Ok(RdkitDetailedProfileOutcome::Report(
+            RdkitTracedReactionTransformReport {
+                report: TracedReactionTransformReport {
+                    products,
+                    diagnostics,
+                },
+                rejected_products,
+                rejection_diagnostics,
+            },
+        ))
     }
 
     /// Whether the reactant pattern has tetrahedral `@`/`@@` constraints.
@@ -882,7 +996,8 @@ impl PreparedReaction {
     ) -> Result<TracedReactionTransformReport, TransformError> {
         Ok(self
             .run_traced_profile(reactants, carry_substituents, limits, Profile::Native)?
-            .unwrap_or_else(|_| unreachable!("the native profile never declines")))
+            .unwrap_or_else(|_| unreachable!("the native profile never declines"))
+            .report)
     }
 
     fn run_traced_profile(
@@ -892,7 +1007,7 @@ impl PreparedReaction {
         limits: &ReactionTransformLimits,
         profile: Profile,
     ) -> Result<
-        Result<TracedReactionTransformReport, ReactionCompatibilityUnsupported>,
+        Result<RdkitTracedReactionTransformReport, ReactionCompatibilityUnsupported>,
         TransformError,
     > {
         // RDKit's SMILES parser removes hydrogen atoms (`removeHs`): the
@@ -904,7 +1019,19 @@ impl PreparedReaction {
             Profile::Native => Vec::new(),
             Profile::Rdkit => reactants
                 .iter()
-                .map(|m| chematic_smiles::rdkit_hydrogen_suppressed_with_map(m))
+                .map(|m| {
+                    // An explicit H atom is part of the caller's molecule,
+                    // as with RDKit `AddHs`; keep it. Suppression is only for
+                    // bracket-H counts that RDKit's SMILES parser folds into
+                    // their heavy atom.
+                    if m.atoms()
+                        .any(|(_, atom)| atom.element == chematic_core::Element::H)
+                    {
+                        None
+                    } else {
+                        chematic_smiles::rdkit_hydrogen_suppressed_with_map(m)
+                    }
+                })
                 .collect(),
         };
         let suppressed_refs: Vec<&Molecule>;
@@ -952,31 +1079,40 @@ impl PreparedReaction {
         let mut products = Vec::with_capacity(accepted_matches);
         let mut valence_rejected_matches = 0;
         let mut rejected_products = Vec::new();
+        let mut rejection_diagnostics = Vec::new();
         for m in &matches {
             match apply_match_profile(self, reactants, m, carry_substituents, profile) {
                 Ok(ProductSetOutcome::Valid(mut product_set)) => {
                     product_set.iter_mut().for_each(restore_sources);
                     products.push(product_set);
                 }
-                Ok(ProductSetOutcome::Rejected(mut set, ok)) => {
+                Ok(ProductSetOutcome::Rejected(mut set, set_diagnostics)) => {
                     valence_rejected_matches += 1;
                     if profile == Profile::Rdkit {
                         set.iter_mut().for_each(restore_sources);
-                        rejected_products.push(set.into_iter().zip(ok).collect());
+                        rejected_products.push(
+                            set.into_iter()
+                                .zip(set_diagnostics.iter().map(|item| item.accepted))
+                                .collect(),
+                        );
+                        rejection_diagnostics.push(set_diagnostics);
                     }
                 }
                 Err(reason) => return Ok(Err(reason)),
             }
         }
-        Ok(Ok(TracedReactionTransformReport {
-            diagnostics: ReactionTransformDiagnostics {
-                accepted_matches,
-                applied_products: products.len(),
-                valence_rejected_matches,
-                truncated_matches: false,
+        Ok(Ok(RdkitTracedReactionTransformReport {
+            report: TracedReactionTransformReport {
+                diagnostics: ReactionTransformDiagnostics {
+                    accepted_matches,
+                    applied_products: products.len(),
+                    valence_rejected_matches,
+                    truncated_matches: false,
+                },
+                products,
             },
-            products,
             rejected_products,
+            rejection_diagnostics,
         }))
     }
 
@@ -1021,7 +1157,6 @@ impl PreparedReaction {
             return Ok(TracedReactionTransformReport {
                 products,
                 diagnostics,
-                rejected_products: Vec::new(),
             });
         }
         self.run_reactants_traced_with_diagnostics_impl(reactants, true, limits)
@@ -2484,15 +2619,16 @@ fn apply_match_profile(
     }
 
     // Skip product sets RDKit's sanitize step would reject (issue #734).
-    let ok: Vec<bool> = products
+    let sanitization: Vec<ProductSanitizationDiagnostic> = products
         .iter()
-        .map(|p| sanitizable_product(&p.molecule))
+        .enumerate()
+        .map(|(product_index, product)| product_sanitization_diagnostic(product, product_index))
         .collect();
-    if ok.iter().all(|&o| o) {
+    if sanitization.iter().all(|item| item.accepted) {
         crate::perf_counters::record_product_set();
         Ok(ProductSetOutcome::Valid(products))
     } else {
-        Ok(ProductSetOutcome::Rejected(products, ok))
+        Ok(ProductSetOutcome::Rejected(products, sanitization))
     }
 }
 
@@ -3004,27 +3140,67 @@ fn rdkit_mark_dbond_cand(mol: &Molecule, idx: AtomIdx) -> Option<bool> {
 /// (a dative bond counts for its acceptor only) plus its explicit H count —
 /// must not exceed RDKit's largest allowed valence for its element and
 /// charge (see [`crate::rdkit_valence`]).
-fn sanitizable_product(mol: &Molecule) -> bool {
+fn product_sanitization_diagnostic(
+    product: &TracedProduct,
+    product_index: usize,
+) -> ProductSanitizationDiagnostic {
     use crate::rdkit_valence::max_valence;
+    const MAX_DIAGNOSTIC_ATOMS: usize = 32;
+
+    let mol = &product.molecule;
+    let atom_context =
+        |idx: AtomIdx, observed_valence: Option<i16>, max_allowed_valence: Option<i16>| {
+            let atom = mol.atom(idx);
+            ProductAtomRejectionDiagnostic {
+                atom: idx,
+                template_map: product.template_maps.get(idx.0 as usize).copied().flatten(),
+                element: atom.element,
+                explicit_hydrogen_count: atom.hydrogen_count,
+                observed_valence,
+                max_allowed_valence,
+            }
+        };
+    let rejected = |reason: ProductRejectionReason,
+                    mut atoms: Vec<ProductAtomRejectionDiagnostic>| {
+        atoms.sort_unstable_by_key(|atom| atom.atom.0);
+        atoms.dedup_by_key(|atom| atom.atom.0);
+        atoms.truncate(MAX_DIAGNOSTIC_ATOMS);
+        ProductSanitizationDiagnostic {
+            product_index,
+            accepted: false,
+            reason: Some(reason),
+            atoms,
+        }
+    };
+
     if mol.atoms().any(|(_, a)| a.aromatic) {
         let in_ring = atoms_in_rings(mol);
-        if mol
+        let outside_ring: Vec<_> = mol
             .atoms()
-            .any(|(idx, a)| a.aromatic && !in_ring[idx.0 as usize])
-        {
-            return false;
+            .filter(|(idx, atom)| atom.aromatic && !in_ring[idx.0 as usize])
+            .take(MAX_DIAGNOSTIC_ATOMS)
+            .map(|(idx, _)| atom_context(idx, None, None))
+            .collect();
+        if !outside_ring.is_empty() {
+            return rejected(ProductRejectionReason::Aromaticity, outside_ring);
         }
         // A plain double bond between two aromatic ring atoms (an aromatic
         // ring bond a template rewrote as `=`, `c1cc=ncc1`) is not a form
         // RDKit's kekulization accepts; the written SMILES would not parse.
-        if mol.bonds().any(|(_, b)| {
-            b.order == BondOrder::Double
-                && mol.atom(b.atom1).aromatic
-                && mol.atom(b.atom2).aromatic
-                && in_ring[b.atom1.0 as usize]
-                && in_ring[b.atom2.0 as usize]
+        if let Some((_, bond)) = mol.bonds().find(|(_, bond)| {
+            bond.order == BondOrder::Double
+                && mol.atom(bond.atom1).aromatic
+                && mol.atom(bond.atom2).aromatic
+                && in_ring[bond.atom1.0 as usize]
+                && in_ring[bond.atom2.0 as usize]
         }) {
-            return false;
+            return rejected(
+                ProductRejectionReason::Aromaticity,
+                [bond.atom1, bond.atom2]
+                    .into_iter()
+                    .map(|idx| atom_context(idx, None, None))
+                    .collect(),
+            );
         }
     }
     // Kekulé orders of the aromatic bonds, read in place (the product is
@@ -3037,7 +3213,15 @@ fn sanitizable_product(mol: &Molecule) -> bool {
                     orders[b.0 as usize] = order;
                 }
             }
-            Err(_) => return false,
+            Err(_) => {
+                let atoms = mol
+                    .atoms()
+                    .filter(|(_, atom)| atom.aromatic)
+                    .take(MAX_DIAGNOSTIC_ATOMS)
+                    .map(|(idx, _)| atom_context(idx, None, None))
+                    .collect();
+                return rejected(ProductRejectionReason::Kekulization, atoms);
+            }
         }
     }
     let order_of = |b: BondIdx| orders[b.0 as usize];
@@ -3054,9 +3238,10 @@ fn sanitizable_product(mol: &Molecule) -> bool {
             .sum();
         bonds + i16::from(mol.atom(idx).hydrogen_count.unwrap_or(0))
     };
-    mol.atoms().all(|(idx, atom)| {
+    let mut invalid_atoms = Vec::new();
+    for (idx, atom) in mol.atoms() {
         if atom.wildcard {
-            return true;
+            continue;
         }
         let z = atom.element.atomic_number();
         let mut charge = atom.charge;
@@ -3091,8 +3276,20 @@ fn sanitizable_product(mol: &Molecule) -> bool {
                 used -= doubles;
             }
         }
-        max_valence(z, charge).is_none_or(|max| used <= max)
-    })
+        let max = max_valence(z, charge);
+        if max.is_some_and(|max| used > max) && invalid_atoms.len() < MAX_DIAGNOSTIC_ATOMS {
+            invalid_atoms.push(atom_context(idx, Some(used), max));
+        }
+    }
+    if !invalid_atoms.is_empty() {
+        return rejected(ProductRejectionReason::Valence, invalid_atoms);
+    }
+    ProductSanitizationDiagnostic {
+        product_index,
+        accepted: true,
+        reason: None,
+        atoms: Vec::new(),
+    }
 }
 
 /// Copy each reactant bond's stashed direction ([`Molecule::bond_direction`]
@@ -4922,6 +5119,10 @@ mod tests {
             ("[C:1]>>[C:1]", "CC"),
             ("[N:1]>>[N+:1]", "CN"),
             ("[C:1][O:2]>>[C:1].[O:2]", "CCO"),
+            (
+                "[#6:1](-[OX2:2])-;@[CX4&+0:3]>>[*:1]-[*:3]",
+                "CC(=O)C1=C(O)CN(C2OCCc3ccccc32)C1=O",
+            ),
         ] {
             let implicit = parse(reactant).unwrap();
             let explicit = chematic_chem::add_hydrogens(&implicit);
@@ -5229,6 +5430,24 @@ mod tests {
         explicit.dedup();
         assert!(!implicit.is_empty());
         assert_eq!(explicit, implicit);
+
+        // Deleting an explicitly hydrogenated atom can lower the valence of
+        // a mapped core reached through a ring. The RDKit profile must refill
+        // that core instead of emitting a carbon radical (v1.0.42 residual).
+        let explicit_reactant =
+            chematic_chem::add_hydrogens(&parse("CC(=O)C1=C(O)CN(C2OCCc3ccccc32)C1=O").unwrap());
+        let explicit_reactant = chematic_smiles::write(&explicit_reactant);
+        let mut products = rdkit_profile_sets(
+            "[#6:1](-[OX2:2])-;@[CX4&+0:3]>>[*:1]-[*:3]",
+            &explicit_reactant,
+        );
+        products.sort();
+        let mut expected = vec![
+            vec![canon_of("CC(=O)C1=CCN(C2OCCc3ccccc32)C1=O")],
+            vec![canon_of("CCc1ccccc1CN1CC(O)=C(C(C)=O)C1=O")],
+        ];
+        expected.sort();
+        assert_eq!(products, expected);
     }
 
     #[test]
@@ -7575,6 +7794,66 @@ mod tests {
         assert_eq!(report.diagnostics.valence_rejected_matches, 1);
         assert!(!report.diagnostics.truncated_matches);
         assert!(run_reactants(smirks, &[&ethanol]).unwrap().is_empty());
+    }
+
+    #[test]
+    fn detailed_diagnostics_report_typed_reason_and_mapped_atom_context() {
+        let ethanol = parse("CCO").unwrap();
+        let outcome = run_reactants_traced_rdkit_2026_03_6_detailed(
+            "[O:1]>>[O:1](C)C",
+            &[&ethanol],
+            &ReactionTransformLimits::default(),
+        )
+        .unwrap();
+        let RdkitDetailedProfileOutcome::Report(report) = outcome else {
+            panic!("ordinary valence rejection must be diagnosable");
+        };
+        assert_eq!(report.rejected_products.len(), 1);
+        let diagnostic = &report.rejection_diagnostics[0][0];
+        assert!(!diagnostic.accepted);
+        assert_eq!(diagnostic.reason, Some(ProductRejectionReason::Valence));
+        assert_eq!(diagnostic.atoms.len(), 1);
+        let atom = &diagnostic.atoms[0];
+        assert_eq!(atom.template_map, Some(1));
+        assert_eq!(atom.element, chematic_core::Element::O);
+        assert_eq!(atom.observed_valence, Some(3));
+        assert_eq!(atom.max_allowed_valence, Some(2));
+    }
+
+    #[test]
+    fn detailed_diagnostics_distinguish_aromaticity_and_kekulization() {
+        let mut outside_ring = parse("c1ccccc1").unwrap();
+        outside_ring.remove_bond(BondIdx(0));
+        let outside_ring = TracedProduct {
+            atom_sources: vec![None; outside_ring.atom_count()],
+            template_maps: vec![None; outside_ring.atom_count()],
+            molecule: outside_ring,
+        };
+        let aromaticity = product_sanitization_diagnostic(&outside_ring, 0);
+        assert_eq!(
+            aromaticity.reason,
+            Some(ProductRejectionReason::Aromaticity)
+        );
+        assert!(!aromaticity.atoms.is_empty());
+
+        let mut odd_aromatic_ring = parse("C1CCCC1").unwrap();
+        for atom in 0..odd_aromatic_ring.atom_count() {
+            odd_aromatic_ring.set_atom_aromatic(AtomIdx(atom as u32), true);
+        }
+        for bond in 0..odd_aromatic_ring.bond_count() {
+            odd_aromatic_ring.set_bond_order(BondIdx(bond as u32), BondOrder::Aromatic);
+        }
+        let odd_aromatic_ring = TracedProduct {
+            atom_sources: vec![None; odd_aromatic_ring.atom_count()],
+            template_maps: vec![None; odd_aromatic_ring.atom_count()],
+            molecule: odd_aromatic_ring,
+        };
+        let kekulization = product_sanitization_diagnostic(&odd_aromatic_ring, 0);
+        assert_eq!(
+            kekulization.reason,
+            Some(ProductRejectionReason::Kekulization)
+        );
+        assert_eq!(kekulization.atoms.len(), 5);
     }
 
     #[test]

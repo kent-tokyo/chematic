@@ -9,17 +9,16 @@
   "sha256": "93c58882df9a33b96308ebe90a842a6471de8aa4af035534cdc082920d52ad00",
   "count": 400
  },
- "note": "Counts of scripts/smirks_property_fuzz.py --templates 2000 --seed 754 on the 400 BioTransformer reactants. 'differ' and 'chematic_refused' cases are listed with their minimized probes in the batch record; update this file when a change moves a count.",
+ "note": "Counts and overlapping explicit-H residual facets from scripts/smirks_property_fuzz.py --templates 2000 --seed 754 on the 400 BioTransformer reactants. The v1.0.42 follow-up preserves caller-supplied H atoms in the RDKit profile; 'differ' falls from 141 to 70 and exact rises from 1051 to 1184. Reported residuals remain non-parity and are listed with minimized probes in the dated record.",
  "counts": {
-  "explicit_h:both_none": 3892,
-  "explicit_h:both_none_refused": 1781,
+  "explicit_h:both_none": 4764,
+  "explicit_h:both_none_refused": 1135,
   "explicit_h:chematic_refused": 20,
-  "explicit_h:differ": 141,
-  "explicit_h:exact": 1051,
-  "explicit_h:implicit_h_equivalent": 577,
-  "explicit_h:rdkit_raw_unsanitizable": 505,
-  "explicit_h:rdkit_resanitize_fails_same_products": 3,
-  "explicit_h:same_graph_kekule_order": 30,
+  "explicit_h:differ": 70,
+  "explicit_h:exact": 1184,
+  "explicit_h:implicit_h_equivalent": 90,
+  "explicit_h:rdkit_raw_unsanitizable": 721,
+  "explicit_h:same_graph_kekule_order": 16,
   "implicit:both_none": 3899,
   "implicit:both_none_refused": 1484,
   "implicit:chematic_refused": 18,
@@ -27,5 +26,18 @@
   "implicit:exact": 2482,
   "implicit:rdkit_raw_unsanitizable": 12,
   "implicit:same_graph_kekule_order": 77
+ },
+ "explicit_h_residual_facets": {
+  "atom_deletion_after_explicit_h": 10,
+  "bond_break_after_explicit_h": 8,
+  "edit:add": 20,
+  "edit:bond_order": 3,
+  "edit:break": 8,
+  "edit:charge": 13,
+  "edit:delete": 10,
+  "edit:element": 50,
+  "edit:hcount": 20,
+  "radical_product": 29,
+  "resanitize_or_valence_refusal": 20
  }
 }

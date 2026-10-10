@@ -34,7 +34,43 @@ commands.
 
 ## Priority order
 
-### 1. P0/A3 — Complete the equivalent-work performance gate
+### 1. P0/A1 — Close the v1.0.42 correctness and API regressions
+
+- The source candidate fixes the four false RDKit-compatible ring counts caused
+  by treating every single SMILES closure as a graph cycle. Keep coordination,
+  disconnected-component closure, and mutation/cache regressions in Rust,
+  Python, and WASM.
+- Classify the v1.0.42 explicit-hydrogen reaction residuals by deletion,
+  bond-breaking, radical, and re-sanitization causes. The first confirmed
+  radical-producing defect is fixed in source; rerun the complete pinned
+  corpus before changing the published baseline.
+- Preserve the Rust reaction report's existing struct-literal shape. Add
+  diagnostics through separate opt-in report types rather than public fields
+  on an existing struct.
+- Prefer checked descriptor and legacy-MMFF APIs where an unsupported result
+  could otherwise be mistaken for `0.0`; keep legacy calls only for source
+  compatibility.
+
+**Exit:** the four ring regressions pass in every exposed binding, no confirmed
+explicit-H implementation defect remains in the pinned corpus, old Rust report
+struct literals compile, and unsupported calculations have a checked path.
+
+### 2. P0 — Refresh public-artifact evidence
+
+- The v1.0.42 macOS arm64 CPython 3.13 wheel is now hash-pinned and measured
+  for the chemistry packet and 265-row A6 coordinates. Its explicit-H reaction
+  counts are retained as historical v1.0.42 behavior, not silently replaced by
+  the source candidate.
+- Run the same expected-value packet on the published Linux, macOS, and Windows
+  artifacts. Keep platform output, comparator execution, and source-candidate
+  results separate.
+- Rerun chemistry and performance gates from exact PyPI/npm/crates.io artifacts
+  rather than carrying source results forward.
+
+**Exit:** every published claim names its artifact hash, comparator, corpus,
+operation, options, and failure policy.
+
+### 3. P0/A3 — Complete the equivalent-work performance gate
 
 - Preserve the existing RDKit agreement denominators before accepting a speed
   change; a typed refusal or changed result is not a performance win.
@@ -54,7 +90,7 @@ blocks, all blocks faster, and the paired 95% speedup lower bound above 1.0
 against both RDKit and COSMolKit. Published-package claims require exact
 artifact hashes.
 
-### 2. P1/A4 — Close the remaining SMARTS/SMIRKS contract
+### 4. P1/A4 — Close the remaining SMARTS/SMIRKS contract
 
 Issues [#734](https://github.com/kent-tokyo/chematic/issues/734) and
 [#754](https://github.com/kent-tokyo/chematic/issues/754) remain open.
@@ -69,7 +105,7 @@ Issues [#734](https://github.com/kent-tokyo/chematic/issues/734) and
 **Exit:** no wrong-confident supported result in the pinned corpora, all rows
 accounted for, and package evidence recorded separately from source evidence.
 
-### 3. P3 — Complete binding parity
+### 5. P3 — Complete binding parity
 
 Issue [#784](https://github.com/kent-tokyo/chematic/issues/784) tracks the
 v1.0.40+ RDKit-interoperability APIs that are not yet exposed consistently in
@@ -78,7 +114,7 @@ WASM/Node.
 **Exit:** the selected APIs have typed signatures, bounded inputs, Node tests,
 and cross-binding fixtures that agree with the Rust implementation.
 
-### 4. P1/A4 — Add opt-in reaction rejection diagnostics
+### 6. P1/A4 — Add opt-in reaction rejection diagnostics
 
 Issue [#786](https://github.com/kent-tokyo/chematic/issues/786) tracks a stable
 diagnostic model for rejected products and mapped atoms.
@@ -86,19 +122,7 @@ diagnostic model for rejected products and mapped atoms.
 **Exit:** diagnostics are opt-in, preserve input/product indices, use stable
 typed reasons, and do not change the existing fast path or accepted products.
 
-### 5. P0 — Refresh public-artifact evidence
-
-- Rerun chemistry and performance gates from exact PyPI/npm/crates.io
-  artifacts rather than carrying source results forward.
-- Keep parse, perception, prepared/reused work, and memory measurements
-  separate.
-- Use alternating order, repeated blocks, confidence intervals, and an
-  explicit no-claim result when outputs or work differ.
-
-**Exit:** every published claim names its artifact hash, comparator, corpus,
-operation, options, and failure policy.
-
-### 6. P2/A6 — Maintain stereo, identity, and 3D quality
+### 7. P2/A6 — Maintain stereo, identity, and 3D quality
 
 - Preserve atom-order, spelling, and round-trip invariance gates for CIP/E/Z.
 - Keep lossy MOL output observable through report/strict APIs.
@@ -109,7 +133,7 @@ operation, options, and failure policy.
 **Exit:** no silent information loss and no wrong-confident stereo result in
 the declared domain.
 
-### 7. External — Rebaseline new RDKit distributions
+### 8. External — Rebaseline new RDKit distributions
 
 Pin the exact distributed Python, npm/WASM, and native artifacts before a
 rebaseline. Preserve old results as historical records; do not substitute a

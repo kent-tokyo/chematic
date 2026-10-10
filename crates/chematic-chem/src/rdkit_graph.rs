@@ -15,6 +15,27 @@
 use chematic_core::{BondOrder, Molecule};
 use std::collections::HashMap;
 
+/// A graph descriptor cannot be computed within its documented resource
+/// bound.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GraphDescriptorError {
+    pub descriptor: &'static str,
+    pub atom_count: usize,
+    pub max_atoms: usize,
+}
+
+impl std::fmt::Display for GraphDescriptorError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} is unavailable for {} atoms (maximum {})",
+            self.descriptor, self.atom_count, self.max_atoms
+        )
+    }
+}
+
+impl std::error::Error for GraphDescriptorError {}
+
 /// RDKit's `LOCAL_INF` distance for unconnected atom pairs.
 const LOCAL_INF: f64 = 1e8;
 
@@ -151,10 +172,14 @@ fn numpy_pairwise_sum(a: &[f64]) -> f64 {
 ///
 /// Returns 0.0 for molecules larger than 1000 atoms (the O(n³) all-pairs
 /// path computation is impractical at that scale).
-pub fn balaban_j(mol: &Molecule) -> f64 {
+pub fn try_balaban_j(mol: &Molecule) -> Result<f64, GraphDescriptorError> {
     let n = mol.atom_count();
     if n > 1000 {
-        return 0.0;
+        return Err(GraphDescriptorError {
+            descriptor: "BalabanJ",
+            atom_count: n,
+            max_atoms: 1000,
+        });
     }
     let view = crate::descriptors::descriptor_aromaticity(mol);
     let view: &Molecule = &view;
@@ -183,11 +208,20 @@ pub fn balaban_j(mol: &Molecule) -> f64 {
             }
         }
     }
-    if mu + 1 != 0 {
+    Ok(if mu + 1 != 0 {
         q as f64 / (mu + 1) as f64 * sum
     } else {
         0.0
-    }
+    })
+}
+
+/// Legacy Balaban J API.
+///
+/// This preserves the historical `0.0` sentinel above 1000 atoms. New code
+/// should use [`try_balaban_j`] so an unavailable result cannot be confused
+/// with a valid descriptor value.
+pub fn balaban_j(mol: &Molecule) -> f64 {
+    try_balaban_j(mol).unwrap_or(0.0)
 }
 
 /// Connection-dictionary key of [`bertz_ct`]: a bond (pair of symmetry
@@ -340,10 +374,14 @@ fn python_percent_4f(x: f64) -> String {
 /// Le Verrier–Faddeev–Frame recursion; Ipc = Σ|cᵢ| · H(|c|).
 ///
 /// Returns 0.0 for molecules larger than 1000 atoms.
-pub fn ipc(mol: &Molecule) -> f64 {
+pub fn try_ipc(mol: &Molecule) -> Result<f64, GraphDescriptorError> {
     let n = mol.atom_count();
     if n > 1000 {
-        return 0.0;
+        return Err(GraphDescriptorError {
+            descriptor: "Ipc",
+            atom_count: n,
+            max_atoms: 1000,
+        });
     }
     let mut nbrs: Vec<Vec<usize>> = vec![Vec::new(); n];
     for (_, bond) in mol.bonds() {
@@ -402,7 +440,16 @@ pub fn ipc(mol: &Molecule) -> f64 {
     for &x in &cpoly {
         total += x;
     }
-    total * info_entropy(&cpoly)
+    Ok(total * info_entropy(&cpoly))
+}
+
+/// Legacy Ipc API.
+///
+/// This preserves the historical `0.0` sentinel above 1000 atoms. New code
+/// should use [`try_ipc`] so an unavailable result cannot be confused with a
+/// valid descriptor value.
+pub fn ipc(mol: &Molecule) -> f64 {
+    try_ipc(mol).unwrap_or(0.0)
 }
 
 #[cfg(test)]
@@ -429,6 +476,18 @@ mod tests {
         assert_eq!(ipc(&mol("CC")), 2.0);
         assert_eq!(ipc(&mol("C")), 0.0);
         assert_eq!(ipc(&mol("CC(=O)Oc1ccccc1C(=O)O")), 729.6807528797516);
+    }
+
+    #[test]
+    fn checked_graph_descriptors_reject_oversized_molecules() {
+        let large = mol(&"C".repeat(1001));
+        let balaban = try_balaban_j(&large).unwrap_err();
+        let ipc_error = try_ipc(&large).unwrap_err();
+        assert_eq!(balaban.descriptor, "BalabanJ");
+        assert_eq!(ipc_error.descriptor, "Ipc");
+        assert_eq!(balaban.atom_count, 1001);
+        assert_eq!(balaban_j(&large), 0.0);
+        assert_eq!(ipc(&large), 0.0);
     }
 
     #[test]

@@ -2,7 +2,7 @@
 
 This directory contains dated, reproducible measurement records. Numbers are
 scoped to each record's source or package, corpus, host, runtime and operation.
-The current release is **v1.0.41**. Its new RDKit/COSMolKit 0.5 results and the
+The current release is **v1.0.42**. Its new RDKit/COSMolKit 0.5 results and the
 v1.0.40 seeded ETKDG results are source-build evidence; published-package
 reruns remain separate. Older records stay scoped to their stated artifacts,
 comparators and hosts.
@@ -11,6 +11,7 @@ comparators and hosts.
 
 | Need | Start with |
 |---|---|
+| Review the v1.0.42 regression follow-up | [`2026-10-10-v1042-regression-followups.md`](2026-10-10-v1042-regression-followups.md): hash-pinned published-wheel chemistry/A6 baseline, four false ring counts, explicit-H reaction classification, Rust API compatibility, and checked failure APIs; published and source-candidate results kept separate |
 | Review the RDKit/COSMolKit 0.5 comparison | [`2026-10-10-cosmolkit-050.md`](2026-10-10-cosmolkit-050.md): 161 operations on ChEMBL 5k and RDKit.js 10k, a 4,072-row unusual-SMILES stress corpus, and equal-work timings; source-built evidence against RDKit 2026.03.1 and COSMolKit 0.5.0rc15, not a published-package claim |
 | Review the output-preserving performance candidate | [`2026-10-10-rdkit-cosmolkit-performance-candidate.md`](2026-10-10-rdkit-cosmolkit-performance-candidate.md) and [raw JSON](2026-10-10-rdkit-cosmolkit-pipeline-candidate.json): clean-commit arm64 wheel, 21 rotating-order blocks, paired confidence intervals, direct ChEMBL/NCI ring and Morgan agreement; all seven parse-inclusive pipelines win, while five prepared-operation lanes remain open |
 | Review the direct ring/descriptor follow-up | [`2026-10-10-direct-descriptor-fastpaths-candidate.md`](2026-10-10-direct-descriptor-fastpaths-candidate.md) and [raw JSON](2026-10-10-direct-descriptor-fastpaths-candidate.json): parser-known SSSR count plus allocation reductions in RDKit TPSA and Labute ASA; complete ChEMBL/NCI output gates unchanged; direct TPSA/Labute calls remain explicit deficits |
@@ -106,7 +107,7 @@ comparators and hosts.
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.0.39. Older records remain versioned historical
+The current release line is v1.0.42. Older records remain versioned historical
 measurements where their headers say so; a release does not imply that an older
 measurement was rerun.
 

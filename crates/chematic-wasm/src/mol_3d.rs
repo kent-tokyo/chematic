@@ -83,6 +83,24 @@ pub fn mmff94_charges_json(mol: &MolHandle) -> String {
     format!("[{}]", parts.join(","))
 }
 
+/// Checked legacy MMFF94 charges.
+///
+/// Returns `{"charges":[...]}` or a typed `{"error":"unsupported_element",...}`
+/// object instead of silently returning zeros for an unparameterized atom.
+#[wasm_bindgen]
+pub fn mmff94_charges_checked_json(mol: &MolHandle) -> String {
+    match chematic_chem::try_mmff94_charges_bci(&mol.inner) {
+        Ok(charges) => {
+            let values: Vec<String> = charges.iter().map(|v| format!("{v:.6}")).collect();
+            format!(r#"{{"charges":[{}]}}"#, values.join(","))
+        }
+        Err(error) => format!(
+            r#"{{"error":"unsupported_element","atomIndex":{},"atomicNumber":{}}}"#,
+            error.atom_index, error.atomic_number
+        ),
+    }
+}
+
 /// Compute MMFF94-style atom-typed partial charges (improved over element-pair BCI).
 /// Returns JSON: {"charges":[f64,...]} or {"error":"..."}.
 /// Uses atom-type classification (Csp3/Ccarbonyl/Ohydroxyl/Oester/Nar/NarH etc.)
