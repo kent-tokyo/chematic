@@ -225,6 +225,23 @@ pub fn sssr_ring_count(mol: &Molecule) -> usize {
     if v == 0 {
         return 0;
     }
+    // Every ring-closure bond written by a valid SMILES adds exactly one to
+    // the graph's cycle rank. The parser already records those bonds for
+    // RDKit-compatible bond ordering, so parsed cyclic molecules need no
+    // union-find pass here. Edits clear the provenance together with the
+    // derived caches, making this shortcut safe for mutable molecules.
+    let parsed_cycle_rank = mol.smiles_ring_closure_bond_count();
+    if parsed_cycle_rank != 0 && mol.bonds().all(|(_, bond)| is_ring_eligible(bond.order)) {
+        return parsed_cycle_rank;
+    }
+    // Acyclic SMILES seed exact all-false flags. Non-SMILES molecules do not,
+    // so an empty/missing value cannot accidentally classify them as trees.
+    if let Some(flags) =
+        mol.derived_if_computed::<Vec<bool>>(chematic_core::DerivedSlot::RingBondFlags)
+        && !flags.iter().any(|&is_ring| is_ring)
+    {
+        return 0;
+    }
     // E - V + C is zero for a forest, so no acyclicity pre-check is needed;
     // one union-find pass counts both E and C.
     let mut parent: Vec<u32> = (0..v as u32).collect();
