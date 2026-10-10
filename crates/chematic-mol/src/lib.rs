@@ -192,3 +192,11 @@ pub use xyz::{
 mod semantic_contract_tests;
 #[cfg(test)]
 mod xyz_contract_tests;
+
+#[cfg(test)]
+mod nucleic_acid_boundary_tests;
+#[cfg(test)]
+mod orca_boundary_tests;
+
+#[cfg(test)]
+mod xml_boundary_tests;

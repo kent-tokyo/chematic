@@ -1554,3 +1554,12 @@ mod tests;
 
 #[cfg(test)]
 mod api_contract_tests;
+
+#[cfg(test)]
+mod format_boundary_tests;
+
+#[cfg(test)]
+mod depict_contract_tests;
+
+#[cfg(test)]
+mod pdb_contract_tests;

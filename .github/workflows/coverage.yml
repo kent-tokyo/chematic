@@ -51,7 +51,7 @@ jobs:
           mkdir -p target/coverage
           cargo llvm-cov --locked --workspace --lib --bins \
             --features chematic-inchi/native-inchi \
-            --test qcschema --test nucleic_acid_contract --test v3000_semantic_interop \
+            --test cli_contracts --test qcschema --test nucleic_acid_contract --test v3000_semantic_interop \
             --test rdkit_embed --test streamable_http \
             --test format_binding_parity --test conformer_3d_io --test schema_conformance \
             --test rdkit_g1_parity --test issue739_platform_stereo \

@@ -250,3 +250,89 @@ fn expansion_checks_resource_limits_before_modifying_the_base() {
     assert_eq!(base.atom_count(), 2);
     assert_eq!(base.bond_count(), 1);
 }
+
+#[test]
+fn unresolved_or_invalid_semantic_fragments_do_not_change_the_base() {
+    let base = chematic_smiles::parse("CC").unwrap();
+    let original_smiles = chematic_smiles::write(&base);
+    for (pattern, diagnostic) in [
+        ("invalid?", "unexpected"),
+        ("C", "wildcard"),
+        ("[*](C)C", "ambiguous"),
+    ] {
+        let mut candidate = model();
+        candidate.polymer_units.clear();
+        candidate.s_groups.clear();
+        candidate.r_groups[0].alternatives = vec![pattern.into()];
+        let error = candidate.expand(&base).err().unwrap();
+        assert!(error.to_string().contains(diagnostic), "{pattern}: {error}");
+        assert_eq!(chematic_smiles::write(&base), original_smiles);
+    }
+    let mut unresolved = model();
+    unresolved.polymer_units.clear();
+    unresolved.s_groups.clear();
+    unresolved.r_groups[0].selected_alternative = None;
+    assert!(
+        unresolved
+            .expand(&base)
+            .err()
+            .unwrap()
+            .to_string()
+            .contains("selected")
+    );
+}
+
+#[test]
+fn polymer_expansion_requires_explicit_valid_linkages_and_end_groups() {
+    let base = chematic_smiles::parse("CC").unwrap();
+    let mut original = model();
+    original.r_groups.clear();
+    original.s_groups.clear();
+    let mut cases = Vec::new();
+    let mut bad = original.clone();
+    bad.polymer_units[0].repeat_smiles = None;
+    cases.push((bad, "repeat_smiles"));
+    let mut bad = original.clone();
+    bad.polymer_units[0].repeat_count = None;
+    cases.push((bad, "explicit"));
+    for (pattern, diagnostic) in [
+        ("CC", "markers"),
+        ("[*]C[*]", "neighbor"),
+        ("[*]BAD[*]", "unexpected"),
+    ] {
+        let mut bad = original.clone();
+        bad.polymer_units[0].repeat_smiles = Some(pattern.into());
+        cases.push((bad, diagnostic));
+    }
+    let mut bad = original.clone();
+    bad.polymer_units[0].repeat_smiles = Some("CC".into());
+    bad.polymer_units[0].repeat_endpoint_atoms = Some([0, 99]);
+    cases.push((bad, "index"));
+    for (end, diagnostic) in [
+        ("[*]C(", "end-group"),
+        ("CC", "marker"),
+        ("[*]C[*]", "marker"),
+        ("[*](C)C", "ambiguous"),
+    ] {
+        let mut bad = original.clone();
+        bad.polymer_units[0].end_groups = vec![end.into(), "[*]C".into()];
+        cases.push((bad, diagnostic));
+    }
+    for (candidate, diagnostic) in cases {
+        let error = candidate.expand(&base).err().unwrap();
+        assert!(error.to_string().contains(diagnostic), "{error}");
+        assert_eq!(base.atom_count(), 2);
+        assert_eq!(base.bond_count(), 1);
+    }
+    let error = original
+        .expand_with_limits(
+            &base,
+            &SemanticExpansionLimits {
+                max_atoms: 100,
+                max_repeat_count: 1,
+            },
+        )
+        .err()
+        .unwrap();
+    assert!(error.to_string().contains("repeats"));
+}
