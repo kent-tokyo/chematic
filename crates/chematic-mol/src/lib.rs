@@ -207,3 +207,9 @@ mod lammps_boundary_contract_tests;
 mod mol_boundary_contract_tests;
 #[cfg(test)]
 mod stream_boundary_contract_tests;
+
+#[cfg(test)]
+mod docking_boundary_contract_tests;
+
+#[cfg(test)]
+mod cdxml_boundary_contract_tests;

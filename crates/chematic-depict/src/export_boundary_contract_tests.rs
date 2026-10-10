@@ -163,3 +163,80 @@ fn svg_query_and_degenerate_bonds_keep_valid_numeric_output() {
         }
     }
 }
+
+#[test]
+fn metadata_export_keeps_graph_styles_and_escapes_authored_text() {
+    let mol = chematic_smiles::parse("c1ccncc1.[NH4+]").unwrap();
+    let layout = crate::compute_layout(&mol);
+    for kekulize in [false, true] {
+        let mut opts = RenderOptions {
+            kekulize,
+            atom_ids: true,
+            show_atom_indices: true,
+            background: "transparent".into(),
+            ..Default::default()
+        };
+        opts.highlight_atoms.extend([AtomIdx(0), AtomIdx(999)]);
+        opts.highlight_bonds.insert(BondIdx(0));
+        opts.atom_color_map.insert(AtomIdx(0), "red".into());
+        opts.atom_color_map.insert(AtomIdx(1), "blue".into());
+        opts.atom_color_map.insert(AtomIdx(999), "invalid".into());
+        for text in ["", "C<&\"' >"] {
+            let svg = crate::render_svg_with_metadata(&mol, &layout, &opts, text);
+            if text.is_empty() {
+                let metadata = svg
+                    .split("<smiles>")
+                    .nth(1)
+                    .unwrap()
+                    .split("</smiles>")
+                    .next()
+                    .unwrap();
+                let recovered = chematic_smiles::parse(metadata).unwrap();
+                assert_eq!(
+                    chematic_smiles::rdkit_canonical_smiles(&recovered).unwrap(),
+                    chematic_smiles::rdkit_canonical_smiles(&mol).unwrap()
+                );
+            } else {
+                assert!(svg.contains("<smiles>C&lt;&amp;&quot;' &gt;</smiles>"));
+            }
+            assert_eq!(svg.matches("<circle ").count(), 2);
+            assert!(svg.contains("#FF8C00"));
+            assert!(svg.contains("data-atom-idx"));
+            assert!(!svg.contains("NaN"));
+        }
+    }
+}
+
+#[test]
+fn styled_grid_defaults_match_plain_grid_and_keep_per_cell_styles() {
+    let a = chematic_smiles::parse("CO").unwrap();
+    let b = chematic_smiles::parse("N#N").unwrap();
+    let layouts = vec![crate::compute_layout(&a), crate::compute_layout(&b)];
+    let default = RenderOptions::default();
+    assert_eq!(
+        crate::depict_svg_grid_with_opts_and_layouts(
+            &[(&a, None), (&b, Some(&default))],
+            &layouts,
+            1
+        ),
+        crate::depict_svg_grid_with_layouts(&[&a, &b], &layouts, 1)
+    );
+    let dark = RenderOptions {
+        dark: true,
+        ..Default::default()
+    };
+    let grid = crate::depict_svg_grid_with_opts_and_layouts(
+        &[(&a, Some(&dark)), (&b, None)],
+        &layouts,
+        99,
+    );
+    assert_eq!(grid.matches("<g id=\"mol-").count(), 2);
+    assert!(grid.contains("mol-0") && grid.contains("mol-1"));
+    assert!(!grid.contains("NaN"));
+    for (mols, cols) in [(vec![], 2), (vec![(&a, Some(&dark))], 0)] {
+        assert!(
+            crate::depict_svg_grid_with_opts_and_layouts(&mols, &layouts, cols)
+                .contains("width=\"0\"")
+        );
+    }
+}

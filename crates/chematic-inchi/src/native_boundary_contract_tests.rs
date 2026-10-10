@@ -18,7 +18,7 @@ fn native_inchi_boundary_reconstruction_matches_pinned_rdkit() {
         });
         if let Some(expected) = row["smiles"].as_str() {
             match actual {
-                Ok(got) if got == expected => (),
+                Ok(got) if got == expected => {}
                 other => failures.push(format!(
                     "{}: {other:?}; expected {expected}",
                     row["source_smiles"]

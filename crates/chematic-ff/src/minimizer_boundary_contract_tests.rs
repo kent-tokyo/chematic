@@ -141,10 +141,7 @@ fn mmff_boundary_types_and_charges_match_pinned_rdkit() {
                     && actual
                         .iter()
                         .zip(&expected)
-                        .all(|(a, e)| (a - e).abs() < 1e-8) =>
-            {
-                ()
-            }
+                        .all(|(a, e)| (a - e).abs() < 1e-8) => {}
             other => failures.push(format!("charges {text}: {other:?} != {expected:?}")),
         }
     }

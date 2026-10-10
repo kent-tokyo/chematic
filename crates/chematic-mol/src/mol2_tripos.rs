@@ -312,6 +312,7 @@ pub fn parse_mol2_with_limits(
             "1" | "1.5" => BondOrder::Single,
             "2" => BondOrder::Double,
             "3" => BondOrder::Triple,
+            "4" => BondOrder::Quadruple,
             "ar" | "am" => BondOrder::Aromatic,
             "un" => BondOrder::QueryAny,
             "du" | "nc" => BondOrder::Zero,

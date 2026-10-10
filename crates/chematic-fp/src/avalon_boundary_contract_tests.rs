@@ -1,4 +1,4 @@
-use crate::rdkit_avalon::{on_bits, rdkit_avalon_fp};
+use crate::rdkit_avalon::{avalon_fp_bytes, on_bits, read_molblock};
 use serde_json::Value;
 #[test]
 fn avalon_boundary_fingerprints_match_pinned_rdkit() {
@@ -17,9 +17,14 @@ fn avalon_boundary_fingerprints_match_pinned_rdkit() {
             .iter()
             .map(|v| v.as_u64().unwrap() as usize)
             .collect();
-        let actual = on_bits(&rdkit_avalon_fp(&mol, 512).unwrap());
+        let block = chematic_smiles::rdkit_mol_block_2d(&mol).unwrap();
+        let av = read_molblock(&block).unwrap();
+        let flags = row["bit_flags"].as_u64().unwrap() as u32;
+        let actual = on_bits(&avalon_fp_bytes(&av, 512, flags));
         if actual != expected {
-            failures.push(format!("{text}: actual {actual:?}, expected {expected:?}"));
+            failures.push(format!(
+                "{text},flags={flags}: actual {actual:?}, expected {expected:?}"
+            ));
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));

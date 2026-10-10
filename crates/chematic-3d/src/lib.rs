@@ -957,4 +957,9 @@ mod dynamics_contract_tests;
 mod torsion_contract_tests;
 
 #[cfg(test)]
+mod bounds_boundary_contract_tests;
+#[cfg(test)]
 mod legacy_geometry_tests;
+
+#[cfg(test)]
+mod torsion_boundary_contract_tests;

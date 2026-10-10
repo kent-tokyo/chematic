@@ -17,7 +17,8 @@ smiles=[row['smiles'] for row in parents if row['smiles']]+[
 rows=[]
 for text in smiles:
     mol=Chem.MolFromSmiles(text);assert mol is not None,text
-    rows.append(dict(smiles=text,on_bits=list(pyAvalonTools.GetAvalonFP(mol,nBits=512).GetOnBits())))
+    for flags in [15761407, (1 << 24) - 1] + [1 << i for i in range(24)]:
+        rows.append(dict(smiles=text,bit_flags=flags,on_bits=list(pyAvalonTools.GetAvalonFP(mol,nBits=512,bitFlags=flags).GetOnBits())))
 path=root/'validation/rdkit-2026.03.1-avalon-boundary.json'
 path.write_text('{\n  "rdkit_version": "'+rdBase.rdkitVersion+'",\n  "rows": [\n'+',\n'.join('    '+json.dumps(row) for row in rows)+'\n  ]\n}\n')
 print(f'wrote {len(rows)} cases')

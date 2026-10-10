@@ -147,3 +147,93 @@ fn compatibility_refusal_codes_are_stable_for_bindings() {
         assert_eq!(reason.reason_code(), code);
     }
 }
+
+#[test]
+fn reaction_tetrahedral_permutations_and_carried_centers_match_pinned_rdkit() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.6-reaction-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.6");
+    let mut failures = Vec::new();
+    for row in fixture["rows"].as_array().unwrap() {
+        let source = row["reactant"].as_str().unwrap();
+        let template = row["template"].as_str().unwrap();
+        let mol = parse(source).unwrap();
+        let outcome =
+            run_reactants_traced_rdkit_2026_03_6(template, &[&mol], &Default::default()).unwrap();
+        let RdkitProfileOutcome::Report(report) = outcome else {
+            panic!("unexpected refusal: {template}");
+        };
+        let actual = report
+            .products
+            .iter()
+            .map(|set| {
+                set.iter()
+                    .map(|p| chematic_smiles::rdkit_canonical_smiles(&p.molecule).unwrap())
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        let expected: Vec<Vec<String>> = serde_json::from_value(row["products"].clone()).unwrap();
+        if actual != expected {
+            failures.push(format!(
+                "{source} with {template}: {actual:?} != {expected:?}"
+            ));
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn document_boundary_errors_preserve_the_authored_document() {
+    use crate::document::*;
+    use serde_json::json;
+    let doc = ReactionDocument::from_reaction_smiles("[CH3:1][OH:2]>>[CH2:1]=[O:2]").unwrap();
+    let original = serde_json::to_value(&doc).unwrap();
+    let mutations = [
+        ("/steps/0/id", json!("")),
+        ("/steps/0/conditions", json!([{"key":"","value":"x"}])),
+        (
+            "/steps/0/conditions",
+            json!([{"key":"pH","value":"1"},{"key":"pH","value":"2"}]),
+        ),
+        ("/steps/0/provenance", json!([{"source":"","kind":"test"}])),
+        ("/provenance", json!([{"source":"test","kind":""}])),
+        ("/steps/0/components/0/coefficient", json!(0)),
+        ("/steps/0/components/0/smiles", json!("invalid")),
+        (
+            "/steps/0/components/0/atom_maps",
+            json!([{"map_number":1,"atom_index":99}]),
+        ),
+        (
+            "/steps/0/components/0/atom_maps",
+            json!([{"map_number":1,"atom_index":0},{"map_number":1,"atom_index":0}]),
+        ),
+        (
+            "/steps/0/components/0/atom_maps",
+            json!([{"map_number":9,"atom_index":0}]),
+        ),
+        (
+            "/steps/0/components/0/atom_maps",
+            json!([{"map_number":1,"atom_index":0}]),
+        ),
+    ];
+    for (path, value) in mutations {
+        let mut changed = original.clone();
+        *changed.pointer_mut(path).unwrap() = value;
+        let error = ReactionDocument::from_json_str(&changed.to_string()).unwrap_err();
+        assert!(!error.to_string().is_empty(), "{path}");
+        assert_eq!(serde_json::to_value(&doc).unwrap(), original);
+    }
+    for edit in [
+        json!({"op":"set_step_condition","step_id":"missing","key":"pH","value":"7"}),
+        json!({"op":"set_component_coefficient","component_id":"missing","coefficient":2}),
+        json!({"op":"set_document_id","id":""}),
+    ] {
+        assert!(doc.apply_json_edit(&edit.to_string()).is_err());
+        assert_eq!(serde_json::to_value(&doc).unwrap(), original);
+    }
+    assert!(doc.apply_json_edit("{").is_err());
+    assert!(ReactionDocument::from_json_str("{").is_err());
+    assert!(ReactionDocument::from_reaction_smiles("invalid").is_err());
+}
