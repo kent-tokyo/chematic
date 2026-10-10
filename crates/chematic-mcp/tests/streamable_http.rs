@@ -564,3 +564,57 @@ fn the_binary_serves_http_on_request_and_stdio_by_default() {
     let answer: Value = serde_json::from_str(&out).unwrap();
     assert_eq!(answer, stdio_answer(&request));
 }
+
+#[test]
+fn binary_usage_errors_and_stdio_framing_have_separate_output_channels() {
+    let exe = env!("CARGO_BIN_EXE_chematic-mcp");
+    for (args, context) in [
+        (vec!["--unknown"], "unknown argument"),
+        (vec!["--transport"], "needs a value"),
+        (vec!["--transport", "unknown"], "unknown transport"),
+        (vec!["--bind", "invalid"], "--bind"),
+        (vec!["--port", "nope"], "--port"),
+        (vec!["--max-concurrency", "nope"], "--max-concurrency"),
+        (vec!["--allowed-origin"], "needs a value"),
+        (vec!["--allow-non-loopback"], "streamable-http only"),
+        (
+            vec!["--allowed-origin", "https://example.test"],
+            "streamable-http only",
+        ),
+        (vec!["--max-concurrency", "2"], "streamable-http only"),
+    ] {
+        let output = Command::new(exe).args(&args).output().unwrap();
+        assert_eq!(output.status.code(), Some(2), "{args:?}");
+        assert!(output.stdout.is_empty());
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains(context),
+            "{args:?}"
+        );
+    }
+    for args in [["--help"], ["--version"]] {
+        let output = Command::new(exe).args(args).output().unwrap();
+        assert!(output.status.success());
+        assert!(output.stderr.is_empty());
+        assert!(String::from_utf8_lossy(&output.stdout).contains("chematic-mcp"));
+    }
+    for input in [b"invalid-json\n".as_slice(), b"\xff\n"] {
+        let mut child = Command::new(exe)
+            .args(["--transport", "stdio"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child.stdin.take().unwrap().write_all(input).unwrap();
+        let output = child.wait_with_output().unwrap();
+        assert!(output.status.success());
+        if input[0] == 0xff {
+            assert!(output.stdout.is_empty());
+            assert!(String::from_utf8_lossy(&output.stderr).contains("invalid UTF-8"));
+        } else {
+            assert!(output.stderr.is_empty());
+            let reply: Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_eq!(reply["error"]["code"], -32700);
+        }
+    }
+}

@@ -170,3 +170,6 @@ pub use workflow::{
 pub use xlogp3::{xlogp3, xlogp3_per_atom};
 #[cfg(test)]
 mod descriptor_boundary_contract_tests;
+
+#[cfg(all(test, feature = "serde"))]
+mod interchange_boundary_contract_tests;

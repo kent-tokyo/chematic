@@ -4,6 +4,88 @@ use crate::orca::*;
 use crate::record::MoleculeRecord;
 
 #[test]
+fn cif_missing_columns_cells_and_degenerate_geometry_return_typed_diagnostics() {
+    use crate::cif::*;
+    let frac = "loop_\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nC 0 0 0\n";
+    for (text, expected) in [
+        (
+            "data_empty\nloop_\n_other_field\nx\n".to_string(),
+            CifError::NoAtomSiteLoop,
+        ),
+        (
+            "loop_\n_atom_site_label\nC1\n".to_string(),
+            CifError::MissingCoordinateColumns,
+        ),
+        (frac.into(), CifError::MissingCellParameters),
+        (
+            frac.replace("fract", "Cartn").replace("C 0", "Xx 0"),
+            CifError::UnknownElement("Xx".into()),
+        ),
+        (
+            frac.replace("fract", "Cartn").replace("C 0", "C nope"),
+            CifError::InvalidCoordinate("nope".into()),
+        ),
+        (
+            frac.lines()
+                .take(5)
+                .collect::<Vec<_>>()
+                .join("\n")
+                .replace("fract", "Cartn"),
+            CifError::NoAtomSiteLoop,
+        ),
+    ] {
+        let error = parse_cif(&text).err().unwrap();
+        assert_eq!(error, expected);
+        assert!(!error.to_string().is_empty());
+    }
+    for cell in [
+        "_cell_angle_gamma 0\n",
+        "_cell_angle_gamma 60\n_cell_angle_alpha 0\n_cell_angle_beta 0\n",
+    ] {
+        let error = parse_cif(&format!("_cell_length_a 1\n{cell}{frac}"))
+            .err()
+            .unwrap();
+        assert!(
+            matches!(error, CifError::InvalidCellParameters(_)),
+            "{error}"
+        );
+        assert!(error.to_string().contains("cell"));
+    }
+    let cart = frac.replace("fract", "Cartn");
+    for limits in [
+        CifParseLimits {
+            max_input_bytes: 0,
+            ..Default::default()
+        },
+        CifParseLimits {
+            max_line_bytes: 0,
+            ..Default::default()
+        },
+        CifParseLimits {
+            max_tokens: 0,
+            ..Default::default()
+        },
+        CifParseLimits {
+            max_atoms: 0,
+            ..Default::default()
+        },
+    ] {
+        let error = parse_cif_with_limits(&cart, &limits).err().unwrap();
+        assert!(matches!(error, CifError::ResourceLimit { .. }));
+        assert!(error.to_string().contains("limit 0"));
+    }
+}
+
+#[test]
+fn cif_cartesian_rows_ignore_other_loops_and_preserve_quoted_metadata() {
+    let input = "data_contract\n_title\n;multi\nline # text\n;\nloop_\n_other_id\n1\nloop_\n_atom_site_label\n_atom_site_Cartn_x\n_atom_site_Cartn_y\n_atom_site_Cartn_z\n'C1' 1.25(2) 2 3\n\"O2\" -1 0 4\ndata_second\nignored ignored ignored ignored\n";
+    let result = crate::cif::parse_cif(input).unwrap();
+    assert_eq!(result.mol.atom_count(), 2);
+    assert_eq!(result.coords, vec![(1.25, 2.0, 3.0), (-1.0, 0.0, 4.0)]);
+    assert!(result.cell.is_none());
+}
+
+#[test]
 fn orca_input_limits_accept_exact_sizes_and_reject_the_next_item() {
     let text = "! B3LYP def2-SVP Opt\n%pal nprocs 2 end\n%scf MaxIter 20 end\n* xyz 0 1\nO 0 0 0\nH 0 1 0\nH 0 -1 0\n*\n";
     let parsed = parse_orca_input(text).unwrap();

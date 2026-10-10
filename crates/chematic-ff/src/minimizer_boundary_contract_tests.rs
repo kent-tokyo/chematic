@@ -417,3 +417,64 @@ fn legacy_charge_assignment_preserves_formal_charge_across_functional_groups() {
     ));
     assert!(e.to_string().contains("54"));
 }
+
+#[test]
+fn dreiding_parameter_families_have_finite_physical_scales() {
+    use crate::dreiding::DREIDINGType::*;
+    use crate::params::*;
+    use chematic_core::BondOrder;
+    let types = [
+        H_, C_3, C_2, C_1, C_R, N_3, N_2, N_1, N_R, O_3, O_2, O_R, S_3, S_R, P_3, F_, Cl, Br, I_,
+        X_,
+    ];
+    for &a in &types {
+        let (radius, depth) = dreiding_vdw(a);
+        assert!((2.0..5.0).contains(&radius));
+        assert!(depth.is_finite() && depth > 0.0);
+        assert!((0.0..=std::f64::consts::PI).contains(&dreiding_angle(a)));
+        assert!(!a.symbol().is_empty());
+        for &b in &types {
+            for order in [
+                BondOrder::Single,
+                BondOrder::Double,
+                BondOrder::Triple,
+                BondOrder::Quadruple,
+                BondOrder::Aromatic,
+                BondOrder::Up,
+                BondOrder::Down,
+                BondOrder::QueryAny,
+            ] {
+                let distance = dreiding_bond_len(a, b, order);
+                assert!(distance.is_finite() && (0.5..3.0).contains(&distance));
+                assert!(dreiding_torsion_barrier(a, b) >= 0.0);
+            }
+        }
+    }
+    assert!(
+        dreiding_bond_len(C_3, C_3, BondOrder::Single)
+            > dreiding_bond_len(C_2, C_2, BondOrder::Double)
+    );
+    assert!(
+        dreiding_bond_len(C_2, C_2, BondOrder::Double)
+            > dreiding_bond_len(C_1, C_1, BondOrder::Triple)
+    );
+}
+
+#[test]
+fn uff_parameter_families_have_positive_radii_and_well_depths() {
+    use crate::uff::UffType::*;
+    for atom_type in [
+        C_3, C_2, C_1, C_R, N_3, N_2, N_1, N_R, O_3, O_2, O_1, O_R, S_3, S_2, S_R, P_3, P_R, H_,
+        F_, Cl, Br, I_, Li, Na, K, Ca, Mg, Fe, Co, Ni, Cu, Zn, Mn, Cr, V_, Mo, W_, Pd, Pt, Au, Ag,
+        Hg, Al, Si, Unknown,
+    ] {
+        assert!((0.2..2.5).contains(&atom_type.r1()));
+        assert!((0.0..=180.0).contains(&atom_type.theta0()));
+        assert!((2.0..5.0).contains(&atom_type.x1()));
+        assert!(atom_type.d1().is_finite() && atom_type.d1() > 0.0);
+    }
+    assert!(C_3.r1() > C_2.r1() && C_2.r1() > C_1.r1());
+    assert!(F_.r1() < Cl.r1() && Cl.r1() < Br.r1() && Br.r1() < I_.r1());
+    assert_eq!(C_1.theta0(), 180.0);
+    assert_eq!(C_2.theta0(), 120.0);
+}
