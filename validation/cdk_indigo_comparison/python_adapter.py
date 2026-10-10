@@ -65,6 +65,7 @@ class Engine:
     source_commit: str | None = None
     batch_operations: dict[str, Callable[[Any], list[Any]]] = field(default_factory=dict)
     prepare_batch: Callable[[list[Any]], Any] | None = None
+    parse_batch: Callable[[list[str]], Any] | None = None
 
 
 def rdkit_engine() -> Engine:
@@ -138,6 +139,7 @@ def chematic_engine() -> Engine:
             "hbd": lambda batch: batch.hbd_counts(),
         },
         prepare_batch=chematic.MoleculeBatch,
+        parse_batch=chematic.MoleculeBatch.from_smiles,
     )
 
 
@@ -265,6 +267,14 @@ def benchmark(engine: Engine, request: dict[str, Any]) -> dict[str, Any]:
             if prepared_batch is not None:
                 batch = prepared_batch
                 molecule_indices = list(range(len(smiles)))
+            elif engine.parse_batch is not None:
+                try:
+                    batch = engine.parse_batch(smiles)
+                    molecule_indices = list(range(len(smiles)))
+                except Exception:
+                    errors += len(smiles)
+                    values.extend(iteration_values)
+                    continue
             else:
                 molecule_indices = []
                 for index, text in enumerate(smiles):

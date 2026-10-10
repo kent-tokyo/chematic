@@ -63,6 +63,20 @@ impl PyMoleculeBatch {
         }
     }
 
+    /// Parse SMILES into a Rust-retained molecule batch.
+    #[staticmethod]
+    fn from_smiles(smiles: Vec<String>) -> PyResult<Self> {
+        let molecules = smiles
+            .into_iter()
+            .map(|text| {
+                chematic_smiles::parse(&text)
+                    .map(Arc::new)
+                    .map_err(|e| crate::errors::malformed("smiles", e.to_string()))
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        Ok(Self { molecules })
+    }
+
     fn __len__(&self) -> usize {
         self.molecules.len()
     }

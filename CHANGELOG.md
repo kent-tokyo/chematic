@@ -21,7 +21,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added reusable Python `SmartsQuery` / `compile_smarts()` APIs, including
   `matches_many()` and Rust-retained `MoleculeBatch` / `matches_batch()`, so
   repeated substructure searches compile a query once and avoid repeated
-  Python-object extraction. `MoleculeBatch.hbd_counts()` provides the same
+  Python-object extraction. `MoleculeBatch.from_smiles()` moves parse-inclusive
+  batches across the boundary once, and `hbd_counts()` provides the same
   retained-batch path for donor counts.
 
 - Added a versioned Open Babel 3.2.1 file-I/O comparison contract for eight
