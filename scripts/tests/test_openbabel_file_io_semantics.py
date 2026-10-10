@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from scripts.bench_openbabel_file_io_paired import ci95_lower
+from scripts.bench_openbabel_file_io_same_process import ci95_lower as same_process_ci95_lower
 from scripts.check_openbabel_file_io_semantics import compare, coordinate_comparison
 
 
@@ -51,3 +52,8 @@ def test_mol2_partial_charge_change_is_a_semantic_mismatch():
 def test_paired_speed_lower_bound_is_below_mean_for_variable_samples():
     values = [2.0 + index / 100 for index in range(21)]
     assert 1.0 < ci95_lower(values) < sum(values) / len(values)
+
+
+def test_same_process_speed_lower_bound_is_below_mean_for_variable_samples():
+    values = [2.0 + index / 100 for index in range(21)]
+    assert 1.0 < same_process_ci95_lower(values) < sum(values) / len(values)

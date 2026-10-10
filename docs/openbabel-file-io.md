@@ -51,6 +51,23 @@ superiority. All four lanes pass the 21-block rule in the
 Large-file throughput, peak RSS, the remaining Tier-A formats, and published
 packages stay open.
 
+The same-process comparison separates parse, write, and round-trip hot loops.
+Build the Rust probe in release mode, then compile the small Open Babel 3.2.1
+library harness with the installed `pkg-config` flags:
+
+```sh
+cargo build --release -p chematic-mol --example file_io_semantic_probe
+c++ -std=c++17 -O3 $(pkg-config --cflags openbabel-3) \
+  tools/openbabel_file_io_harness.cpp $(pkg-config --libs openbabel-3) \
+  -o target/release/openbabel_file_io_harness
+python3 scripts/bench_openbabel_file_io_same_process.py --blocks 21 --repeats 1000
+```
+
+Each process parses or writes the same fixture repeatedly and reports only the
+internal timed loop. This removes executable startup and plugin discovery, but
+it remains a tiny-fixture latency test rather than a large-file throughput or
+memory measurement.
+
 ## Loss-aware MOL2 API
 
 `parse_mol2_record` and `write_mol2_record` preserve Tripos atom types, partial

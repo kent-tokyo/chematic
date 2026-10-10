@@ -8,6 +8,7 @@ use std::env;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
+use std::time::Instant;
 
 use chematic_core::Molecule;
 use chematic_mol::{
@@ -140,6 +141,65 @@ fn argument(name: &str) -> Option<String> {
     None
 }
 
+fn benchmark(
+    format: &str,
+    text: &str,
+    operation: &str,
+    repeats: usize,
+) -> Result<(), Box<dyn Error>> {
+    if repeats == 0 {
+        return Err("--repeats must be positive".into());
+    }
+    let mut bytes = 0usize;
+    let mut records = 0usize;
+    let parsed = (operation == "write")
+        .then(|| parse_records(format, text))
+        .transpose()?;
+    let started = Instant::now();
+    for _ in 0..repeats {
+        match operation {
+            "parse" => {
+                let current = parse_records(format, text)?;
+                records += current.len();
+                bytes = bytes.wrapping_add(
+                    current
+                        .iter()
+                        .map(|record| record.molecule().atom_count())
+                        .sum::<usize>(),
+                );
+            }
+            "write" => {
+                let current = parsed.as_ref().expect("write input is parsed above");
+                records += current.len();
+                for record in current {
+                    bytes = bytes.wrapping_add(record.rewrite().len());
+                }
+            }
+            "roundtrip" => {
+                let current = parse_records(format, text)?;
+                records += current.len();
+                for record in &current {
+                    bytes = bytes.wrapping_add(record.rewrite().len());
+                }
+            }
+            _ => return Err(format!("unsupported benchmark operation {operation}").into()),
+        }
+    }
+    println!(
+        "{}",
+        json!({
+            "engine": "chematic",
+            "format": format,
+            "operation": operation,
+            "repeats": repeats,
+            "records": records,
+            "output_units": bytes,
+            "elapsed_ns": started.elapsed().as_nanos(),
+        })
+    );
+    Ok(())
+}
+
 fn parse_records(format: &str, text: &str) -> Result<Vec<ParsedRecord>, Box<dyn Error>> {
     match format {
         "v3000" => {
@@ -215,6 +275,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let format = argument("--format").ok_or("missing --format")?;
     let path = PathBuf::from(argument("--path").ok_or("missing --path")?);
     let text = fs::read_to_string(&path)?;
+    if let Some(operation) = argument("--benchmark-operation") {
+        let repeats = argument("--repeats")
+            .unwrap_or_else(|| "1000".into())
+            .parse::<usize>()?;
+        return benchmark(&format, &text, &operation, repeats);
+    }
     let records = parse_records(&format, &text)?;
     if let Some(output) = argument("--rewrite-output") {
         let rewritten = records
