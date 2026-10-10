@@ -303,7 +303,12 @@ mod tests {
             .map(|i| (Element::C, Point3::new(i as f64 * 2.0, 0.0, 0.0)))
             .collect();
         match determine_bonds(&atoms, 0.40) {
-            Err(DetermineError::TooManyAtoms(n)) => assert_eq!(n, MAX_ATOMS + 1),
+            Err(e @ DetermineError::TooManyAtoms(_)) => {
+                assert_eq!(e, DetermineError::TooManyAtoms(MAX_ATOMS + 1));
+                let message = e.to_string();
+                assert!(message.contains(&(MAX_ATOMS + 1).to_string()));
+                assert!(message.contains(&format!("maximum is {MAX_ATOMS}")));
+            }
             other => panic!("expected TooManyAtoms, got {:?}", other.err()),
         }
     }
@@ -311,7 +316,7 @@ mod tests {
     #[test]
     fn test_empty_molecule_error() {
         match determine_bonds(&[], 0.40) {
-            Err(DetermineError::EmptyMolecule) => {}
+            Err(e @ DetermineError::EmptyMolecule) => assert_eq!(e.to_string(), "empty molecule"),
             other => panic!("expected EmptyMolecule, got {:?}", other.err()),
         }
     }

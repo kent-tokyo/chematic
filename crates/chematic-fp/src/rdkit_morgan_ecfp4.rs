@@ -697,3 +697,48 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod large_input_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn polymer_fingerprints_match_pinned_rdkit_across_the_128_bond_fast_path_limit() {
+        // Independently measured with RDKit 2026.03.1, MorganGenerator radius=2,
+        // fpSize=2048, includeChirality=false, default suppression/bond types.
+        for (ring, sizes, bits) in [
+            (
+                false,
+                &[128, 129, 130, 256][..],
+                &[80, 294, 591, 794, 1057, 1143, 1444, 1911][..],
+            ),
+            (true, &[128, 129, 130][..], &[2, 926, 1028][..]),
+        ] {
+            for &n in sizes {
+                let text = if ring {
+                    format!("C1{}1", "C".repeat(n - 1))
+                } else {
+                    "C".repeat(n)
+                };
+                let mol = chematic_smiles::parse(&text).unwrap();
+                assert_eq!(mol.atom_count(), n);
+                assert_eq!(mol.bond_count(), if ring { n } else { n - 1 });
+                let mut expected = BitVec2048::new();
+                for &bit in bits {
+                    expected.set(bit);
+                }
+                let detailed = rdkit_morgan_ecfp4_experimental(&mol).unwrap();
+                let direct = rdkit_morgan_ecfp4_bitvec(&mol).unwrap();
+                let prepared = prepare_rdkit_morgan_ecfp4(&mol).unwrap();
+                assert_eq!(detailed.fingerprint, expected, "ring={ring}, atoms={n}");
+                assert_eq!(direct, expected, "direct: ring={ring}, atoms={n}");
+                assert_eq!(
+                    prepared.bitvec(),
+                    expected,
+                    "prepared: ring={ring}, atoms={n}"
+                );
+                assert_eq!(prepared.bitvec(), direct);
+            }
+        }
+    }
+}

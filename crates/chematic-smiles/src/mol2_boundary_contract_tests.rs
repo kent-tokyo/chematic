@@ -87,5 +87,5 @@ fn mol2_sanitization_hydrogen_and_cleanup_flags_match_pinned_rdkit() {
             checked += 1;
         }
     }
-    assert_eq!(checked, 464);
+    assert_eq!(checked, 672);
 }

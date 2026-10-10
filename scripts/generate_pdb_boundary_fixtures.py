@@ -36,6 +36,26 @@ for sequence, flavor in [('ARNDCEQGHILKMFPSTWYV',0), ('ARNDCEQGHILKMFPSTWYV',1),
     for atom in connectivity.GetAtoms():
         atom.SetIsAromatic(False)
     blocks.append((f'biopolymer-{sequence}-{flavor}',Chem.MolToPDBBlock(connectivity)))
+# Fixed-width truncation, CRLF, multiple MODELs, and symmetric CONECT records
+# are independent PDB input shapes, with outcomes measured rather than guessed.
+blocks.append(('crlf-records',base.replace('\n','\r\n')))
+lines=base.splitlines();lines[0]=lines[0][:77]
+blocks.append(('one-character-element-at-eof','\n'.join(lines)+'\n'))
+body='\n'.join(line for line in base.splitlines() if line!='END')+'\n'
+blocks.append(('two-models','MODEL        1\n'+body+'ENDMDL\nMODEL        2\n'+body+'ENDMDL\nEND\n'))
+for source in ['O=S(=O)(O)O','C#N']:
+    block=next(block for label,block in blocks if label==source)
+    lines=block.splitlines();reverse=[]
+    for line in lines:
+        if line.startswith('CONECT'):
+            fields=[int(line[i:i+5]) for i in range(6,len(line),5) if line[i:i+5].strip()]
+            src=fields[0]
+            for dst in sorted(set(fields[1:])):
+                reverse.append(f'CONECT{dst:5d}'+f'{src:5d}'*fields[1:].count(dst))
+    blocks.append(('bidirectional-connect-'+source,'\n'.join(line for line in lines if line!='END')+'\n'+'\n'.join(reverse)+'\nEND\n'))
+for off,n,value in [(54,6,'badocc'),(60,6,'badbf'),(16,1,'B')]:
+    lines=base.splitlines();line=lines[0].ljust(80);lines[0]=line[:off]+value.ljust(n)+line[off+n:]
+    blocks.append((f'field-boundary-{off}','\n'.join(lines)+'\n'))
 for off,n,value in [(6,5,'abcde'),(30,8,' 1.2e+03'),(38,8,'badcoord'),(22,4,'abcd'),(76,2,'Xx'),(78,2,'x+')]:
     lines=base.splitlines();line=lines[0].ljust(80);lines[0]=line[:off]+value.ljust(n)+line[off+n:]
     blocks.append((f'invalid-{off}','\n'.join(lines)+'\n'))

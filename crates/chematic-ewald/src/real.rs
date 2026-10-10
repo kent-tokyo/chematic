@@ -349,3 +349,32 @@ mod tests {
         energy
     }
 }
+
+#[cfg(test)]
+mod fallback_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn infinite_cutoff_is_the_direct_sum_and_unordered_coordinates_remain_guarded() {
+        let coords = [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 3.0, 0.0]];
+        let charges = [1.0, -0.5, 0.25];
+        let expected = K_COULOMB * (-0.5 / 2.0 + 0.25 / 3.0 - 0.125 / 13.0_f64.sqrt());
+        assert!((direct_coulomb_cutoff(&coords, &charges, f64::INFINITY) - expected).abs() < 1e-12);
+        for cutoff in [0.0, -1.0, f64::NAN] {
+            assert_eq!(direct_coulomb_cutoff(&coords, &charges, cutoff), 0.0);
+        }
+        let invalid = [[f64::NAN, 0.0, 0.0], [0.0, 0.0, 0.0], [2.0, 0.0, 0.0]];
+        assert!(
+            (direct_coulomb_cutoff(&invalid, &charges, 3.0) - K_COULOMB * (-0.5) * 0.25 / 2.0)
+                .abs()
+                < 1e-12
+        );
+        for cutoff in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+            // The damped API explicitly falls back to its direct, uncut sum.
+            assert_eq!(
+                direct_coulomb_damped_cutoff(&coords, &charges, 0.7, cutoff),
+                direct_coulomb_damped(&coords, &charges, 0.7)
+            );
+        }
+    }
+}

@@ -586,6 +586,8 @@ mod tests {
         let wrong = Coords3D::new_zeroed(5);
         let mut ens = ConformerEnsemble::new(mol);
         let err = ens.add_conformer(wrong).unwrap_err();
+        assert_eq!(err.to_string(), "conformer has 5 atoms but molecule has 2");
+        assert_eq!(ens.conformer_count(), 0);
         assert!(matches!(
             err,
             ConformerError::AtomCountMismatch {

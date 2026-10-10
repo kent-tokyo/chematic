@@ -653,3 +653,22 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod parent_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn direct_parent_removes_one_biphenyl_ring_and_stops_at_one_ring() {
+        for text in ["CC", "c1ccccc1", "Cc1ccccc1"] {
+            assert!(schuffenhauer_parents(&chematic_smiles::parse(text).unwrap()).is_empty());
+        }
+        let mol = chematic_smiles::parse("Cc1ccccc1-c1ccccc1").unwrap();
+        let before = chematic_smiles::canonical_smiles(&mol);
+        let parents = schuffenhauer_parents(&mol);
+        assert_eq!(parents.len(), 1);
+        assert_eq!(chematic_smiles::canonical_smiles(&parents[0]), "c1ccccc1");
+        assert_eq!(find_sssr(&parents[0]).ring_count(), 1);
+        assert_eq!(chematic_smiles::canonical_smiles(&mol), before);
+    }
+}

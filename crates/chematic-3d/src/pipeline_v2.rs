@@ -2148,6 +2148,11 @@ mod tests {
             .ring_torsion_evidence
             .expect("evidence must be attached");
         assert!(evidence.potentials.iter().any(|p| !p.applied_to_geometry));
+        assert!(evidence.n_scored_only() > 0);
+        assert_eq!(
+            evidence.n_applied() + evidence.n_scored_only(),
+            evidence.potentials.len()
+        );
     }
 
     #[test]
@@ -2158,6 +2163,11 @@ mod tests {
         config.ring_torsion_policy = RingTorsionApplicationPolicy::DiagnosticOnly;
         let result = embed_pipeline_v2(&mol, &config).expect("DiagnosticOnly must succeed");
         assert!(result.ring_torsion_evidence.diagnostic_only);
+        assert!(result.ring_torsion_evidence.n_scored_only() > 0);
+        assert_eq!(
+            result.ring_torsion_evidence.n_applied() + result.ring_torsion_evidence.n_scored_only(),
+            result.ring_torsion_evidence.potentials.len()
+        );
         assert!(
             result
                 .ring_torsion_evidence
@@ -2185,6 +2195,11 @@ mod tests {
         config.embed.use_exp_torsions = true;
         config.ring_torsion_policy = RingTorsionApplicationPolicy::FailClosed;
         let result = embed_pipeline_v2(&mol, &config).expect("acyclic torsions must not gate");
+        assert_eq!(result.ring_torsion_evidence.n_scored_only(), 0);
+        assert_eq!(
+            result.ring_torsion_evidence.n_applied(),
+            result.ring_torsion_evidence.potentials.len()
+        );
         for p in &result.ring_torsion_evidence.potentials {
             assert!(p.applied_to_geometry, "acyclic potential must be applied");
         }

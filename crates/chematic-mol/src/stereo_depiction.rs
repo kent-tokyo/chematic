@@ -1381,3 +1381,96 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod layout_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn reverse_order_layout_preserves_original_atom_and_bond_geometry() {
+        for text in [
+            "",
+            "C",
+            "CCO",
+            "c1ccccc1",
+            "C1CCC2CCCCC2C1",
+            "F/C=C/F",
+            "F[C@H](Cl)Br",
+        ] {
+            let mol = if text.is_empty() {
+                MoleculeBuilder::new().build()
+            } else {
+                chematic_smiles::parse(text).unwrap()
+            };
+            let before = chematic_smiles::canonical_smiles(&mol);
+            let coords = layout_angstrom(&mol, true);
+            assert_eq!(coords.len(), mol.atom_count(), "{text}");
+            assert!(coords.iter().all(|(x, y)| x.is_finite() && y.is_finite()));
+            for (_, bond) in mol.bonds() {
+                let a = coords[bond.atom1.0 as usize];
+                let b = coords[bond.atom2.0 as usize];
+                let length = (a.0 - b.0).hypot(a.1 - b.1);
+                assert!((length - 1.5).abs() < 1e-8, "{text}: {length}");
+            }
+            assert_eq!(chematic_smiles::canonical_smiles(&mol), before);
+        }
+    }
+
+    #[test]
+    fn draw_callback_can_round_trip_the_supplied_stereo_depiction() {
+        for text in ["CCO", "F[C@H](Cl)Br", "F/C=C/F", "F/C=C\\F"] {
+            let mol = chematic_smiles::parse(text).unwrap();
+            let expected = chematic_smiles::canonical_smiles(&mol);
+            let restored = with_stereo_depiction(&mol, |drawn, layout| {
+                assert_eq!(drawn.atom_count(), mol.atom_count());
+                assert_eq!(layout.coords.len(), mol.atom_count());
+                let scale = 1.5 / chematic_depict::layout::BOND_LEN;
+                let coords: Vec<_> = layout
+                    .coords
+                    .iter()
+                    .map(|p| (p.x * scale, -p.y * scale))
+                    .collect();
+                let block = crate::mol2000::write_mol_with_coords(
+                    drawn,
+                    &crate::mol2000::MolMetadata::default(),
+                    &coords,
+                );
+                crate::mol2000::read_mol_with_diagnostics(&block)
+                    .unwrap()
+                    .mol
+            });
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&restored),
+                expected,
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn arbitrary_size_permutation_parity_agrees_with_inversion_count() {
+        for n in 0..=9 {
+            let original: Vec<_> = (0..n).collect();
+            for shift in 0..n.max(1) {
+                let mut perm = original.clone();
+                if n > 0 {
+                    perm.rotate_left(shift as usize);
+                }
+                for reversed in [false, true] {
+                    let mut order = perm.clone();
+                    if reversed {
+                        order.reverse();
+                    }
+                    let inversions = (0..order.len())
+                        .map(|i| order[i + 1..].iter().filter(|&&x| x < order[i]).count())
+                        .sum::<usize>();
+                    assert_eq!(
+                        permutation_is_odd(&original, &order),
+                        Some(inversions % 2 == 1)
+                    );
+                }
+            }
+        }
+        assert_eq!(permutation_is_odd(&[1, 2, 3], &[1, 2, 4]), None);
+    }
+}

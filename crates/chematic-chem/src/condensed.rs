@@ -344,12 +344,21 @@ mod tests {
         // A very large repeat count must return an error, not OOM.
         let result = parse_condensed("C9999999");
         // parse::<u32> on "9999999" succeeds (< u32::MAX) but > MAX_REPEAT
+        assert!(
+            result
+                .as_ref()
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("repeat")
+        );
         assert!(result.is_err(), "huge repeat count should be rejected");
     }
 
     #[test]
     fn test_empty_input() {
         let result = parse_condensed("");
+        assert_eq!(result.as_ref().err().unwrap().to_string(), "empty input");
         assert!(matches!(result, Err(CondensedError::EmptyInput)));
     }
 
@@ -389,6 +398,14 @@ mod tests {
     #[test]
     fn test_unknown_element() {
         let result = parse_condensed("CXC");
+        assert!(
+            result
+                .as_ref()
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("unknown element: X")
+        );
         assert!(result.is_err());
     }
 }

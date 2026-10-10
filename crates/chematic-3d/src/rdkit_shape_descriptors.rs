@@ -716,6 +716,12 @@ mod tests {
     fn zero_atoms_is_typed_error() {
         let mol = mol_from_symbols(&[]);
         let coords = coords_from(&[]);
+        assert!(
+            rdkit_pmi1(&mol, &coords)
+                .unwrap_err()
+                .to_string()
+                .contains("zero atoms")
+        );
         assert_eq!(
             rdkit_pmi1(&mol, &coords),
             Err(RdkitDescriptorError::ZeroAtoms)
@@ -730,6 +736,8 @@ mod tests {
     fn atom_coord_count_mismatch_is_typed_error() {
         let mol = mol_from_symbols(&[6, 6]);
         let coords = coords_from(&[[0.0, 0.0, 0.0]]); // only 1, mol has 2
+        let message = rdkit_pmi1(&mol, &coords).unwrap_err().to_string();
+        assert!(message.contains("atom count (2)") && message.contains("coordinate count (1)"));
         assert_eq!(
             rdkit_pmi1(&mol, &coords),
             Err(RdkitDescriptorError::AtomCoordCountMismatch {
@@ -743,6 +751,12 @@ mod tests {
     fn nan_coordinate_is_typed_error() {
         let mol = mol_from_symbols(&[6, 6]);
         let coords = coords_from(&[[0.0, 0.0, 0.0], [1.5, f64::NAN, 0.0]]);
+        assert!(
+            rdkit_pmi1(&mol, &coords)
+                .unwrap_err()
+                .to_string()
+                .contains("non-finite coordinate at atom index 1")
+        );
         assert_eq!(
             rdkit_pmi1(&mol, &coords),
             Err(RdkitDescriptorError::NonFiniteCoordinate { atom_index: 1 })
@@ -777,6 +791,8 @@ mod tests {
         // But NPR1 = PMI1/PMI3 = 0/0 for a single atom -- genuinely undefined.
         let mol = mol_from_symbols(&[6]);
         let coords = coords_from(&[[1.0, 2.0, 3.0]]);
+        let message = rdkit_npr1(&mol, &coords).unwrap_err().to_string();
+        assert!(message.contains("degenerate geometry:") && message.contains("PMI3"));
         assert!(matches!(
             rdkit_npr1(&mol, &coords),
             Err(RdkitDescriptorError::DegenerateGeometry { .. })
@@ -828,6 +844,8 @@ mod tests {
     fn pbf_too_few_atoms_is_typed_error() {
         let mol = mol_from_symbols(&[6, 6, 6]);
         let coords = coords_from(&[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]);
+        let message = rdkit_pbf(&mol, &coords).unwrap_err().to_string();
+        assert!(message.contains("needs >= 4 atoms") && message.contains("found 3"));
         assert_eq!(
             rdkit_pbf(&mol, &coords),
             Err(RdkitDescriptorError::TooFewAtoms {

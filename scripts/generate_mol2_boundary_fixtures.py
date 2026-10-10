@@ -16,10 +16,30 @@ def sybyl(a):
     if z in ['C','N','O','S','P']:
         h=str(a.GetHybridization());return z+'.'+{'SP':'1','SP2':'2','SP3':'3'}.get(h,'3')
     return z
+smiles += ['[NH2+]=C(N)N','CN(C)C(=[NH2+])N','[O-]C(=O)C(=O)[O-]',
+           '[O-]C(=O)OC','C[N+](C)(C)CC(=O)[O-]']
+cases=[(text,'default') for text in smiles]
+# A linear/coincident controlling substituent must use an available second
+# substituent, or leave the double-bond stereo unspecified when all are linear.
+cases += [('Cl/C(F)=C(Br)/I',mode) for mode in
+          ['left-first-linear','left-second-linear','right-first-linear','right-second-linear',
+           'both-first-linear','all-linear','left-coincident','right-coincident']]
 rows=[]
-for text in smiles:
+for text,geometry in cases:
     mol=Chem.MolFromSmiles(text);assert mol is not None,text
     mol=Chem.AddHs(mol);rdDepictor.Compute2DCoords(mol)
+    if geometry != 'default':
+        conf=mol.GetConformer()
+        positions=[(-0.7,1,0),(0,0,0),(-0.7,-1,0),(1.5,0,0),(2.2,-1,0),(2.2,1,0)]
+        if geometry in ['left-first-linear','both-first-linear']:positions[0]=(-1,0,0)
+        if geometry=='left-second-linear':positions[2]=(-1,0,0)
+        if geometry in ['right-first-linear','both-first-linear']:positions[4]=(2.5,0,0)
+        if geometry=='right-second-linear':positions[5]=(2.5,0,0)
+        if geometry=='all-linear':positions=[(-1,0,0),(0,0,0),(-2,0,0),(1.5,0,0),(2.5,0,0),(3.5,0,0)]
+        if geometry=='left-coincident':positions[0]=(0,0,0)
+        if geometry=='right-coincident':positions[4]=(1.5,0,0)
+        assert mol.GetNumAtoms()==len(positions)
+        for i,position in enumerate(positions):conf.SetAtomPosition(i,position)
     types=[sybyl(a) for a in mol.GetAtoms()]
     for a in mol.GetAtoms():
         if a.GetAtomicNum()==6 and sum(n.GetAtomicNum()==7 for n in a.GetNeighbors())>=2:
@@ -51,7 +71,7 @@ for text in smiles:
                             atomic_numbers=[a.GetAtomicNum() for a in variant.GetAtoms()],
                             charges=[a.GetFormalCharge() for a in variant.GetAtoms()])
                     variants.append(expected)
-        rows.append(dict(source_smiles=text,block=block,smiles=Chem.MolToSmiles(rebuilt),variants=variants))
+        rows.append(dict(source_smiles=text,geometry=geometry,block=block,smiles=Chem.MolToSmiles(rebuilt),variants=variants))
 root=Path(__file__).resolve().parents[1]
 (root/'validation/rdkit-2026.03.1-mol2-boundary.json').write_text(json.dumps(dict(rdkit_version=rdBase.rdkitVersion,rows=rows),separators=(',',':'))+'\n')
 print(f'wrote {len(rows)} cases')

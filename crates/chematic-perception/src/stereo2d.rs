@@ -434,8 +434,8 @@ mod tests {
     fn test_r_s_bromochlorofluoromethane() {
         // CHFClBr — 4 heavy-atom neighbors, wedge C-Br above plane
         // Build: C bonded to F, Cl, Br, H via explicit H
-        // We won't test R vs S deterministically (depends on atom ordering),
-        // just that an assignment is returned when a wedge bond is present.
+        // RDKit 2026.03.1 AssignChiralTypesFromBondDirs + AssignStereochemistry
+        // reads this single-wedge drawing as S and its mirror as R.
         use chematic_core::{Atom, BondOrder as BO, Element, MoleculeBuilder};
         let mut b = MoleculeBuilder::new();
         let c = b.add_atom(Atom::new(Element::C));
@@ -446,7 +446,7 @@ mod tests {
         b.add_bond(c, f, BO::Single).unwrap();
         b.add_bond(c, cl, BO::Single).unwrap();
         b.add_bond(c, br, BO::Up).unwrap(); // Br is in front of plane
-        b.add_bond(c, h, BO::Down).unwrap(); // H is behind plane
+        b.add_bond(c, h, BO::Single).unwrap(); // H stays in the drawing plane
         let mol = b.build();
         // Use non-degenerate 2D positions to avoid a zero-volume determinant.
         let coords = vec![
@@ -454,11 +454,22 @@ mod tests {
             (-1.0, -0.5), // F
             (1.0, -0.5),  // Cl
             (0.0, 1.0),   // Br  (z = +1 from Up bond)
-            (0.0, -1.0),  // H   (z = -1 from Down bond)
+            (0.0, -1.0),  // H   (in plane)
         ];
         let result = assign_stereo_from_2d(&mol, &coords);
         // Should assign one chiral center.
         assert_eq!(result.assignments.len(), 1);
         assert_eq!(result.assignments[0].0, c);
+        assert_eq!(result.get(c), Some(CipCode::S));
+        let mut assigned = mol.clone();
+        apply_stereo_from_2d(&mut assigned, &coords);
+        assert_eq!(assigned.atom(c).cip_code, Some(CipCode::S));
+        let mirrored: Vec<_> = coords.iter().map(|&(x, y)| (-x, y)).collect();
+        apply_stereo_from_2d(&mut assigned, &mirrored);
+        assert_eq!(assigned.atom(c).cip_code, Some(CipCode::R));
+        for idx in [f, cl, br, h] {
+            assert_eq!(assigned.atom(idx).cip_code, None);
+        }
+        assert_eq!(assigned.bond_count(), mol.bond_count());
     }
 }
