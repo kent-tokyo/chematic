@@ -34,7 +34,8 @@ silently.
    source-candidate gate observes both outputs through the same Rust reader for
    V3000, MOL2, CML, and CDXML. On the checked-in fixtures CheMatic preserves
    all observed fields; Open Babel 3.2.1 changes the MOL2 residue label. This is
-   one small fixture per format, not broad corpus evidence.
+   one small fixture per format, not broad corpus evidence. See the
+   [clean-commit semantic record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-openbabel-file-io-semantics-v1.0.42.json).
 3. **Malformed and bounded-input behavior.** Require zero panic/crash/internal
    errors and enforce time, memory, line, record, atom, and bond limits.
 4. **Equivalent-work performance.** Measure cold start, parse, write,
