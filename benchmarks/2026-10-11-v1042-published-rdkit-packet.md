@@ -44,18 +44,18 @@ candidate's 10,000/10,000 ring result or any ring speed statement.
 
 | Operation | Prepared ratio (95% CI) | Parse-inclusive ratio (95% CI) |
 |---|---:|---:|
-| TPSA | 4.270x (3.933–4.518), 21/21 | 18.056x (17.612–18.243), 21/21 |
-| Labute ASA | 5.717x (4.566–5.956), 16/21 | 16.834x (16.561–17.094), 21/21 |
-| Chiral Morgan R2 | 1.901x (1.804–1.951), 21/21 | 5.341x (5.186–5.424), 21/21 |
+| TPSA | 5.626x (4.540–6.172), 21/21 | 15.595x (15.144–15.865), 21/21 |
+| Labute ASA | 6.683x (6.331–7.618), 21/21 | 14.470x (13.909–14.624), 21/21 |
+| Chiral Morgan R2 | 2.097x (1.976–2.192), 21/21 | 4.917x (4.815–4.993), 21/21 |
 | Ring count | withheld: output mismatch | withheld: output mismatch |
 
 ### macOS 14 arm64
 
 | Operation | Prepared ratio (95% CI) | Parse-inclusive ratio (95% CI) |
 |---|---:|---:|
-| TPSA | 1.385x (1.129–1.499), 16/21 | 16.365x (10.250–18.211), 21/21 |
-| Labute ASA | 0.547x (0.506–0.759), 2/21 | 11.627x (10.782–15.142), 21/21 |
-| Chiral Morgan R2 | 1.038x (0.878–1.205), 11/21 | 4.077x (3.875–4.475), 21/21 |
+| TPSA | 1.227x (1.149–1.271), 21/21 | 13.095x (12.638–16.364), 21/21 |
+| Labute ASA | 0.697x (0.663–0.746), 1/21 | 11.894x (11.691–14.523), 21/21 |
+| Chiral Morgan R2 | 1.019x (0.983–1.044), 12/21 | 3.952x (3.913–4.043), 21/21 |
 | Ring count | withheld: output mismatch | withheld: output mismatch |
 
 The parse-inclusive TPSA, Labute ASA, and chiral Morgan pipelines have a
@@ -84,7 +84,7 @@ comparing a Rust binary with Python would change the runtime boundary.
 The source candidate's exact ring-count result does not apply to the published
 v1.0.42 wheel. Its direct every-block TPSA and chiral Morgan result also does
 not reproduce as a two-platform published-artifact statement: the macOS
-chiral-Morgan interval crosses parity and wins only 11/21 blocks. The strictly
+chiral-Morgan interval crosses parity and wins only 12/21 blocks. The strictly
 supported public statement is limited to the three Python parse-inclusive
 pipelines on the two recorded hosted runners.
 
@@ -94,4 +94,4 @@ pipelines on the two recorded hosted runners.
 - [Python, macOS arm64](2026-10-11-v1042-published-rdkit-python-macos-arm64.json)
 - [Node/WASM, Linux x64](2026-10-11-v1042-published-rdkit-node-linux-x64.json)
 - [Node/WASM, macOS arm64](2026-10-11-v1042-published-rdkit-node-macos-arm64.json)
-- [GitHub Actions run](https://github.com/kent-tokyo/chematic/actions/runs/38086615954)
+- [GitHub Actions run](https://github.com/kent-tokyo/chematic/actions/runs/38087058208)
