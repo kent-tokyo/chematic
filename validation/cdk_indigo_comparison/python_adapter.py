@@ -257,23 +257,26 @@ def benchmark(engine: Engine, request: dict[str, Any]) -> dict[str, Any]:
         if operation != "parse" and operation in engine.batch_operations:
             iteration_values: list[Any] = [["error", "parse"] for _ in smiles]
             molecules = []
-            molecule_indices = []
-            for index, text in enumerate(smiles):
-                try:
-                    molecules.append(engine.parse(text) if prepared is None else prepared[index])
-                    molecule_indices.append(index)
-                except Exception:
-                    errors += 1
-            try:
+            molecule_indices: list[int]
+            if prepared_batch is not None:
+                batch = prepared_batch
+                molecule_indices = list(range(len(smiles)))
+            else:
+                molecule_indices = []
+                for index, text in enumerate(smiles):
+                    try:
+                        molecules.append(engine.parse(text))
+                        molecule_indices.append(index)
+                    except Exception:
+                        errors += 1
                 batch = (
-                    prepared_batch
-                    if prepared_batch is not None
-                    else engine.prepare_batch(molecules)
+                    engine.prepare_batch(molecules)
                     if engine.prepare_batch is not None
                     else molecules
                 )
+            try:
                 results = engine.batch_operations[operation](batch)
-                if len(results) != len(molecules):
+                if len(results) != len(molecule_indices):
                     raise ValueError("batch operation returned the wrong number of rows")
                 for index, value in zip(molecule_indices, results):
                     iteration_values[index] = value
