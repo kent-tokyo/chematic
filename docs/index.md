@@ -80,25 +80,14 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.0.41 expands the named RDKit 2026.03.1-compatible surface with tautomer,
-writer, matrix, sparse-fingerprint, chemistry-problem and reaction APIs. The
-recorded source comparison covers 161 operations on ChEMBL 5k and RDKit.js 10k,
-plus a 4,072-row unusual-SMILES stress corpus. Release availability is not an
-accuracy or speed result; package-output reruns remain separate.
+The v1.0.41 source comparison covers 161 RDKit 2026.03.1-compatible operations
+on ChEMBL 5k and RDKit.js 10k, plus a 4,072-row unusual-SMILES stress corpus.
+The published 83-row reaction gate is 80 exact graph/origin/map rows and three
+inputs invalid in both engines. SMARTS/SMIRKS dialect work remains open.
 
-The latest published-package comparison packet is for v1.0.30. It records
-20 exact-output, favorable paired-interval Python operations on one host;
-the browser Morgan lanes are limited to their named engines and corpus.
-The exposed CIP comparison has 9,995 exact rows and five typed abstentions;
-200 of 310,000 SMARTS cells remain incompatible. These are bounded results,
-not general RDKit parity or superiority.
-
-The checked-reaction APIs expose product atom origins and template maps in
-Python and WASM/Node. Linux/macOS release-profile source wheels on PR #755
-classify the exposed 83-row comparison as 80 exact graph/origin/map and three
-invalid in both engines; the WASM Node 83-row test passes. These are not
-v1.0.34 registry-package results or general SMIRKS parity. See
-[PR #755 and CI](https://github.com/kent-tokyo/chematic/pull/755).
+Each result applies only to its named artifact, corpus, options, and failure
+policy. Release availability is not accuracy evidence, source results are not
+package results, and typed refusals are not matches.
 
 See [validation](validation.md) for denominators, [benchmarks](benchmark.md)
 for timed boundaries, and [compatibility scope](compatibility-scope.md) for
@@ -116,8 +105,8 @@ editing, and the RDKit-style API are experimental or intentionally bounded.
 `canonical_smiles()` is not always a safe identity key; use the fail-closed
 `canonical_smiles_stable_key()` where the documented domain is sufficient.
 
-RDKit remains the better choice for maximum ecosystem coverage, mature ETKDG
-and force-field workflows, or APIs that chematic marks unsupported.
+RDKit remains the better choice for maximum ecosystem coverage, broader 3D
+workflows, or APIs that chematic marks unsupported.
 
 ## Reference
 
@@ -125,5 +114,6 @@ and force-field workflows, or APIs that chematic marks unsupported.
 - [Format support](format-capabilities.md)
 - [API reference](api/chematic.md)
 - [Errors and resource limits](error-and-limits.md)
+- [MCP protocol and transport](mcp-protocol-reference.md)
 - [Benchmark records](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
 - [GitHub](https://github.com/kent-tokyo/chematic)

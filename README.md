@@ -26,15 +26,11 @@ Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
 ### v1.0.41 release boundary
 
-v1.0.41 expands the named RDKit 2026.03.1-compatible surface with tautomer
-enumeration, CXSMILES, random and fragment SMILES, distance matrices, sparse
-fingerprints, chemistry-problem detection, and reaction writers. In the
-recorded source comparison, chematic matches RDKit at least as often as
-COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and RDKit.js 10k.
-The separate 4,072-row stress corpus retains one weaker native canonical
-SMILES round-trip result. These are source-build results, not yet a claim
-about every published v1.0.41 artifact. See
-[validation](docs/validation.md) and [CHANGELOG](CHANGELOG.md).
+v1.0.41 adds bounded RDKit-compatible tautomer, writer, matrix, sparse
+fingerprint, chemistry-problem, reaction, and seeded-3D APIs. The recorded
+source comparison covers 161 operations; package and stress-corpus limits are
+kept separate. See [validation](docs/validation.md) and
+[CHANGELOG](CHANGELOG.md).
 
 ## Use it
 

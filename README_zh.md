@@ -28,12 +28,10 @@ Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
 ### v1.0.41 范围
 
-v1.0.41 扩展了与 RDKit 2026.03.1 对齐的 API，加入互变异构体枚举、CXSMILES、
-随机和片段 SMILES、距离矩阵、稀疏指纹、化学问题检测和反应 writer。在记录的
-source 比较中，ChEMBL 5k 和 RDKit.js 10k 的 161 个项目均不低于 COSMolKit
-0.5.0rc15 与 RDKit 的一致数。另一个 4,072 条 stress corpus 中，native canonical
-SMILES 往返仍有一个项目较弱。该结果不代表所有已发布 v1.0.41 artifact 已完成重新测量。详情见
-[验证报告](docs/validation.md)，变更见 [CHANGELOG](CHANGELOG.md)。
+v1.0.41 增加了有边界的 RDKit 兼容互变异构体、writer、矩阵、稀疏指纹、
+化学问题检测、反应和固定 seed 3D API。source 比较覆盖 161 个项目；公开 package
+和 stress corpus 的限制分别记录。详情见[验证报告](docs/validation.md)和
+[CHANGELOG](CHANGELOG.md)。
 
 ## 使用
 

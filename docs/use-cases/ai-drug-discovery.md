@@ -1,26 +1,28 @@
 # AI-assisted molecular analysis with MCP
 
-`chematic-mcp` is a local stdio server that lets an MCP-compatible agent call
-named cheminformatics operations on SMILES. The agent supplies language and
+`chematic-mcp` is a local MCP server that lets an agent call named
+cheminformatics operations on SMILES. It uses stdio by default and can expose
+the same tools through an opt-in loopback HTTP listener. The agent supplies language and
 workflow logic; chematic returns structured chemical results. It is not a
 remote service, a general reaction planner, or a substitute for experimental
 or clinical judgement.
 
 ## Start locally
 
-Build the server from this checkout:
+Install the published binary:
 
 ```bash
-cargo build --release -p chematic-mcp
+cargo install chematic-mcp --version 1.0.41 --locked
 ```
 
-Then point the MCP client at the resulting local binary:
+Then point the MCP client at `chematic-mcp`:
 
 ```json
 {
   "mcpServers": {
     "chematic": {
-      "command": "/absolute/path/to/target/release/chematic-mcp"
+      "command": "chematic-mcp",
+      "args": []
     }
   }
 }
@@ -31,8 +33,9 @@ By default the server uses newline-delimited JSON-RPC over stdio.
 `http://127.0.0.1:3000/mcp` instead. That adapter is self-hosted and
 loopback-only by default, and it has no authentication layer. There is no
 hosted endpoint and no SLA. See the
-[`chematic-mcp` README](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mcp/README.md) for the legacy
-and modern protocol envelopes.
+[`chematic-mcp` README](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mcp/README.md)
+for setup and the [protocol reference](../mcp-protocol-reference.md) for legacy
+and modern envelopes, HTTP headers, limits, and conformance evidence.
 
 ## What an agent can call
 

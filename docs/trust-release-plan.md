@@ -1,125 +1,81 @@
-# chematic 1.x Trust Release 実行計画
+# chematic 1.x Trust Release rules
 
-更新日: 2026-10-10。**v1.0.41リリース系列**です。v1.0.41の配布経路は
-確認済みです。RDKit/COSMolKit 0.5比較はsource buildの記録であり、
-公開成果物の化学ゲートとは分けて扱います。
+Updated 2026-10-10 for the **v1.0.41** release line.
 
-この文書は実行順と合格条件だけを定義します。機能別の優先順位は
-[`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)、未完了項目と依存関係は
-[`roadmap-open-work.md`](roadmap-open-work.md)、実測値は
-[`validation.md`](validation.md) と
-[benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks) を参照してください。
+This document defines release rules. Priorities are in the
+[roadmap](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md), open
+dependencies in the [open-work ledger](roadmap-open-work.md), and measurements
+in [validation](validation.md).
 
-## 目的
+## Objective
 
-Trust Releaseの目的は、機能数を増やすことではありません。利用者が次を確認できる
-状態を作ることです。
+A Trust Release must make five things inspectable:
 
-1. どのAPIが安定・実験的・非対応か。
-2. どの版、コーパス、設定、失敗方針で比較したか。
-3. Rust/Python/Node/WASMで入力件数と結果が失われないか。
-4. 壊れた入力や不確実な化学を、推測せず型付きで拒否できるか。
-5. source候補、公開package、公開channelの証拠を混同していないか。
+1. which APIs are stable, experimental, or unsupported;
+2. which versions, artifacts, corpora, options, and failure policy were tested;
+3. whether Rust, Python, Node, and WASM preserve result accounting;
+4. whether malformed or uncertain chemistry fails with a typed outcome;
+5. whether evidence comes from source, a built package, or a public channel.
 
-## 現在地
+## Required contracts
 
-- A0の8記述子は、凍結候補でdevelopment 2,000件と一度限りのsealed 8,000件に
-  合格しました。使用済みデータは再びsealedとして扱いません。
-- 公開v1.0.30の比較では、SMARTSに200/310,000セルの差、CIPに5件の理由付き
-  判定保留が残ります。出力監査は完了しましたが、RDKit完全互換ではありません。
-- 公開v1.0.30の速度証拠は、出力一致と区間条件を満たすPython 20操作など、
-  記録された環境・操作に限ります。3D/MMFF94はExperimentalです。
-- 反応83件はPR #755のchecked sourceで80件が生成物グラフ・原子由来・テンプレートマップの
-  全軸で一致。残り3件は双方無効です。
-  Linux/macOSの公開用設定で作ったsource wheelとWASM NodeテストはCI通過。
-  公開レジストリのartifactは未測定です。
-- SMARTSのopt-in source-wheelは309,982/310,000一致し、残り18件を型付きで
-  非対応とします。公開v1.0.30の200件の差分を置き換える測定ではありません。
-- 3Dは公開v1.0.31 macOSで265/265の構造・立体・clash判定を通過しましたが、
-  収束は100/265です。Linuxでの2件の立体失敗と独立conformer品質が残ります。
+### Compatibility
 
-版・コーパス・残差は[検証報告](validation.md)と
-[benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)に固定します。
+Each comparison record must contain the chematic and comparator versions or
+hashes, corpus identity, operation and options, supported domain, comparison
+type, and counts for success, failure, refusal, and skipped inputs.
 
-## 実行順
+### Bindings
 
-優先順位と各数値の詳細は[ROADMAP](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)と
-[検証報告](validation.md)に置き、この文書では判定条件だけを保持します。
-
-| 順 | ゲート | 合格条件 |
-|---:|---|---|
-| 1 | 反応・SMARTS | 83反応のgraph/origin/mapを全行分類し、元の57件を維持する。SMARTSはmatch-set、Boolean、typed refusalを別計上し、公開artifactと独立コーパスで再測定する。 |
-| 2 | A6 MMFF94 | [#739](https://github.com/kent-tokyo/chematic/issues/739)のLinux立体失敗を解き、atom type、同一座標の各energy term、収束、stereo/clash、独立conformer品質を別gateにする。品質前に速度や新しいembedding optionを成果扱いしない。 |
-| 3 | CIP・E/Z | 既知の5件は理由付き棄権を維持し、原子順・SMILES表記・file往復で誤った確信ラベルを出さない。E/Zの既存source回帰を保つ。 |
-| 4 | 新RDKit版 | 公式stable公開後に版・hashを固定して再比較する。RDKit 2026.03.6の証拠はhistoricalとして残す。 |
-
-棄権や無効入力を一致に数えません。対応外と実装誤りを分け、修正時は小さな
-回帰テストと版固定の全量比較を要求します。
-
-## 常設ゲート
-
-### Compatibility Contract
-
-各比較profileは次を機械可読に保持します。
-
-- chematicと比較対象のversion/hash;
-- corpus identityと重複・露出状態;
-- operation、options、support domain;
-- success、failed、refused、skippedの件数;
-- exact、numeric tolerance、semanticのどの比較か;
-- 再現commandと生成artifact。
-
-### Binding Contract
-
-共有操作はRustを参照実装とし、Python/Node/WASMで次を守ります。
+For batch APIs:
 
 `input_count = success + failed + refused + skipped`
 
-各結果はoriginal index、stage、typed reasonを保持し、cancel時は未処理範囲を
-明示します。`failed == 0`だけを全件成功の意味にしません。
+Results retain original indices, stage, and typed reason. Cancellation must
+identify unprocessed input. `failed == 0` does not mean every row succeeded.
 
-### Parser Security
+### Parser and runtime safety
 
-固定malformed corpusをprocess isolation下で実行し、panic/crash 0、時間・memory
-上限、全入力のterminal accounting、typed refusalを確認します。Rustであること
-自体を安全性の証拠にはしません。
+Malformed-input tests run with explicit time, memory, depth, and size bounds.
+The required outcome is zero panic/crash, terminal accounting for every input,
+and typed errors. Rust alone is not safety evidence.
 
-### Stereo Torture Suite
+### Stereo and interchange
 
-atom-order permutation、SMILES spelling、file round-trip、selected-center label、
-macrocycle/atrop、競合で確認された再現可能な不具合を収録します。競合の不具合を
-取り込む目的は優越宣言ではなく、同種の退行を防ぐことです。
+Regression suites cover atom-order and spelling permutations, file round trips,
+CIP/E/Z, and declared representation limits. Lossy writers expose report or
+strict modes; unsupported chemistry is never silently promoted to parity.
 
-## 共通リリース候補の合格条件
+## Release-candidate gate
 
-- roadmapで今回対象にしたissueが、回帰・証拠・境界説明付きでclose可能である。
-- workspace test、clippy、binding contract、documentation/evidence consistency、
-  parser-security、dependency/license gateが宣言した環境で通る。
-- README 3言語、CHANGELOG、validation、benchmark index、version metadataが一致する。
-- source-onlyの数値を公開packageの数値として書いていない。
-- tag、push、registry publish、GitHub release、Pages更新は個別に確認する。
+- Workspace tests, clippy, binding tests, documentation checks, dependency and
+  license checks pass in the declared environments.
+- Corrected behavior has focused regression tests and any required full-corpus
+  rerun.
+- README files, CHANGELOG, validation summary, benchmark index, package
+  versions, and release metadata agree.
+- Source-only measurements are not described as package or public-channel
+  results.
+- Tags, registry publication, GitHub Release, docs, and Pages are verified
+  independently.
 
-## 中断と再開
+Open issues may remain when they are explicitly outside the release boundary.
+A release note must not imply they are complete.
 
-長時間gateが1時間を超える場合は、安全な区切りで中断し、次を記録します。
+## Long-running gates
 
-- 実行commandとsource SHA;
-- 完了した範囲と未完了範囲;
-- 中断が正しさ判定へ与える影響;
-- 再開command。
+If a gate is stopped, record its command, source SHA, completed and unfinished
+scope, effect on the conclusion, and restart command. An interrupted run is not
+a pass.
 
-中断したgateを合格として扱いません。ローカル候補が通っても、公開packageや
-公開channelの確認を省略しません。
+## Records
 
-## 記録先
+- [Roadmap](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)
+- [Open work](roadmap-open-work.md)
+- [Compatibility scope](compatibility-scope.md)
+- [Validation summary](validation.md)
+- [Benchmark methodology](benchmark.md)
+- [Dated benchmark records](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
+- [Release history](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md)
 
-- 現在の優先順位: [`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)
-- 未完了と依存関係: [`roadmap-open-work.md`](roadmap-open-work.md)
-- 互換性境界: [`compatibility-scope.md`](compatibility-scope.md)
-- 検証概要: [`validation.md`](validation.md)
-- benchmark方法: [`benchmark.md`](benchmark.md)
-- 日付付き実測: [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
-- 完了した利用者向け変更: [`CHANGELOG.md`](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md)
-
-過去の長い計画本文はGit historyに残します。完了した実装経緯をこの文書へ追記し
-続けず、必要な場合だけ日付付きevidenceへリンクします。
+Detailed historical plans remain in Git history and are not repeated here.
