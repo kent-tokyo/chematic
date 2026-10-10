@@ -45,6 +45,29 @@ pub(crate) struct PySmartsQuery {
     query: Arc<chematic_smarts::QueryMolecule>,
 }
 
+/// Molecules retained in Rust for repeated batch operations.
+#[pyclass(name = "MoleculeBatch", frozen)]
+pub(crate) struct PyMoleculeBatch {
+    molecules: Vec<Arc<chematic_core::Molecule>>,
+}
+
+#[pymethods]
+impl PyMoleculeBatch {
+    #[new]
+    fn new(molecules: Vec<PyRef<'_, Mol>>) -> Self {
+        Self {
+            molecules: molecules
+                .into_iter()
+                .map(|mol| Arc::clone(&mol.inner))
+                .collect(),
+        }
+    }
+
+    fn __len__(&self) -> usize {
+        self.molecules.len()
+    }
+}
+
 #[pymethods]
 impl PySmartsQuery {
     #[new]
@@ -82,6 +105,20 @@ impl PySmartsQuery {
         molecules
             .into_iter()
             .map(|mol| chematic_smarts::has_match_perceived(&self.query, &mol.inner, &config))
+            .collect()
+    }
+
+    /// Match a Rust-retained molecule batch without re-extracting Python objects.
+    fn matches_batch(&self, batch: &PyMoleculeBatch) -> Vec<bool> {
+        let config = chematic_smarts::MatchConfig {
+            max_matches: Some(1),
+            uniquify: false,
+            ..chematic_smarts::MatchConfig::default()
+        };
+        batch
+            .molecules
+            .iter()
+            .map(|mol| chematic_smarts::has_match_perceived(&self.query, mol, &config))
             .collect()
     }
 
@@ -356,6 +393,7 @@ fn rdkit_smarts_to_smarts(smarts: &str) -> PyResult<String> {
 }
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyMoleculeBatch>()?;
     m.add_class::<PySmartsQuery>()?;
     m.add_function(wrap_pyfunction!(compile_smarts, m)?)?;
     m.add_function(wrap_pyfunction!(rdkit_reaction_to_smarts, m)?)?;

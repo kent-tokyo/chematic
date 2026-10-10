@@ -19,8 +19,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   evidence only; broad corpora, memory, a second host, and published packages
   remain required for a superiority claim.
 - Added reusable Python `SmartsQuery` / `compile_smarts()` APIs, including
-  `matches_many()`, so repeated and batch substructure searches compile a
-  query once and cross the Python/Rust boundary once per batch.
+  `matches_many()` and Rust-retained `MoleculeBatch` / `matches_batch()`, so
+  repeated substructure searches compile a query once and avoid repeated
+  Python-object extraction.
 
 - Added a versioned Open Babel 3.2.1 file-I/O comparison contract for eight
   production formats, a static CI checker, and a unified record-accounting

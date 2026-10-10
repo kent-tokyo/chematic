@@ -63,7 +63,8 @@ class Engine:
     parse: Callable[[str], Any]
     operations: dict[str, Callable[[Any], Any]]
     source_commit: str | None = None
-    batch_operations: dict[str, Callable[[list[Any]], list[Any]]] = field(default_factory=dict)
+    batch_operations: dict[str, Callable[[Any], list[Any]]] = field(default_factory=dict)
+    prepare_batch: Callable[[list[Any]], Any] | None = None
 
 
 def rdkit_engine() -> Engine:
@@ -130,8 +131,9 @@ def chematic_engine() -> Engine:
         operations,
         source_commit=_commit(),
         batch_operations={
-            f"smarts:{query}": compiled.matches_many for query, compiled in queries.items()
+            f"smarts:{query}": compiled.matches_batch for query, compiled in queries.items()
         },
+        prepare_batch=chematic.MoleculeBatch,
     )
 
 
@@ -240,8 +242,11 @@ def benchmark(engine: Engine, request: dict[str, Any]) -> dict[str, Any]:
     if operation != "parse" and operation not in engine.operations:
         raise ValueError(f"unsupported operation: {operation}")
     prepared = None
+    prepared_batch = None
     if lane == "prepared":
         prepared = [engine.parse(text) for text in smiles]
+        if engine.prepare_batch is not None:
+            prepared_batch = engine.prepare_batch(prepared)
     elif lane != "pipeline":
         raise ValueError(f"unsupported lane: {lane}")
 
@@ -260,7 +265,14 @@ def benchmark(engine: Engine, request: dict[str, Any]) -> dict[str, Any]:
                 except Exception:
                     errors += 1
             try:
-                results = engine.batch_operations[operation](molecules)
+                batch = (
+                    prepared_batch
+                    if prepared_batch is not None
+                    else engine.prepare_batch(molecules)
+                    if engine.prepare_batch is not None
+                    else molecules
+                )
+                results = engine.batch_operations[operation](batch)
                 if len(results) != len(molecules):
                     raise ValueError("batch operation returned the wrong number of rows")
                 for index, value in zip(molecule_indices, results):

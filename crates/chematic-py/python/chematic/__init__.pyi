@@ -45,11 +45,20 @@ class SmartsQuery:
 
     def matches_many(self, molecules: Iterable[Mol]) -> list[bool]: ...
 
+    def matches_batch(self, batch: MoleculeBatch) -> list[bool]: ...
+
     def find_matches(self, mol: Mol) -> list[list[int]]: ...
 
 def compile_smarts(smarts: str) -> SmartsQuery:
     """Compile a SMARTS query for repeated matching."""
     ...
+
+class MoleculeBatch:
+    """Molecules retained in Rust for repeated batch operations."""
+
+    def __init__(self, molecules: Iterable[Mol]) -> None: ...
+
+    def __len__(self) -> int: ...
 
 # ---------------------------------------------------------------------------
 # Mol
