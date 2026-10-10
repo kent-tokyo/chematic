@@ -252,7 +252,9 @@ fn reaction_tetrahedral_permutations_and_carried_centers_match_pinned_rdkit() {
     for row in fixture["rows"].as_array().unwrap() {
         let source = row["reactant"].as_str().unwrap();
         let template = row["template"].as_str().unwrap();
-        let mol = parse(source).unwrap();
+        // The fixture uses MolFromSmiles, which suppresses removable H atoms.
+        // The reaction API itself preserves explicit H atoms supplied by callers.
+        let mol = chematic_smiles::rdkit_parsed_molecule(&parse(source).unwrap()).unwrap();
         let outcome =
             run_reactants_traced_rdkit_2026_03_6(template, &[&mol], &Default::default()).unwrap();
         let RdkitProfileOutcome::Report(report) = outcome else {
