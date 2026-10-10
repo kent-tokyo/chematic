@@ -109,6 +109,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Pinned the documentation highlighter dependency to a version compatible with
+  `mkdocstrings` so GitHub Pages builds no longer fail in the API reference,
+  and made documentation dependency changes trigger the Pages workflow.
 - Isolated every CDK/Indigo accuracy operation on a freshly parsed molecule;
   mutating competitor operations can no longer make later results depend on
   evaluation order.

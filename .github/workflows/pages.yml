@@ -8,6 +8,7 @@ on:
       - 'demo/**'
       - 'docs/**'
       - 'mkdocs.yml'
+      - 'requirements-docs.txt'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
