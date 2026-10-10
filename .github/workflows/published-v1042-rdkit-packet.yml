@@ -1,0 +1,93 @@
+name: Published v1.0.42 RDKit Packet
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/published-v1042-rdkit-packet.yml"
+      - "scripts/run_published_v1042_rdkit_python_packet.py"
+      - "scripts/run_published_v1042_rdkit_node_packet.mjs"
+      - "scripts/check_published_v1042_rdkit_packet.py"
+      - "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi"
+
+permissions:
+  contents: read
+
+jobs:
+  python-published:
+    name: Python published (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Download and install exact wheels
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/python-artifacts"
+          python -m pip download --only-binary=:all: --no-deps \
+            --dest "$RUNNER_TEMP/python-artifacts" \
+            'chematic==1.0.42' 'rdkit==2026.9.1'
+          python -m pip install "$RUNNER_TEMP"/python-artifacts/*.whl
+      - name: Run output-gated paired packet
+        shell: bash
+        run: |
+          mkdir -p published-results
+          python scripts/run_published_v1042_rdkit_python_packet.py \
+            --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
+            --artifact-dir "$RUNNER_TEMP/python-artifacts" \
+            --output "published-results/python-${RUNNER_OS}-${RUNNER_ARCH}.json"
+          python scripts/check_published_v1042_rdkit_packet.py \
+            "published-results/python-${RUNNER_OS}-${RUNNER_ARCH}.json"
+      - uses: actions/upload-artifact@v5
+        with:
+          name: published-v1042-rdkit-python-${{ runner.os }}-${{ runner.arch }}
+          path: published-results/*.json
+          if-no-files-found: error
+
+  node-published:
+    name: Node WASM published (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Download and install exact npm tarballs
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-artifacts" "$RUNNER_TEMP/node-env"
+          npm pack '@kent-tokyo/chematic@1.0.42' \
+            --pack-destination "$RUNNER_TEMP/npm-artifacts" --ignore-scripts
+          npm pack '@rdkit/rdkit@2026.9.1' \
+            --pack-destination "$RUNNER_TEMP/npm-artifacts" --ignore-scripts
+          npm install --prefix "$RUNNER_TEMP/node-env" --ignore-scripts --no-audit --no-fund \
+            "$RUNNER_TEMP"/npm-artifacts/*.tgz
+      - name: Run output-gated paired packet
+        shell: bash
+        run: |
+          mkdir -p published-results
+          node scripts/run_published_v1042_rdkit_node_packet.mjs \
+            --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
+            --artifact-dir "$RUNNER_TEMP/npm-artifacts" \
+            --schematic-dir "$RUNNER_TEMP/node-env/node_modules/@kent-tokyo/chematic" \
+            --rdkit-dir "$RUNNER_TEMP/node-env/node_modules/@rdkit/rdkit" \
+            --output "published-results/node-${RUNNER_OS}-${RUNNER_ARCH}.json"
+          python3 scripts/check_published_v1042_rdkit_packet.py \
+            "published-results/node-${RUNNER_OS}-${RUNNER_ARCH}.json"
+      - uses: actions/upload-artifact@v5
+        with:
+          name: published-v1042-rdkit-node-${{ runner.os }}-${{ runner.arch }}
+          path: published-results/*.json
+          if-no-files-found: error
