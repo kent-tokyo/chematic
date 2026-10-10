@@ -66,6 +66,14 @@ impl PyMoleculeBatch {
     fn __len__(&self) -> usize {
         self.molecules.len()
     }
+
+    /// RDKit-compatible hydrogen-bond donor counts for every molecule.
+    fn hbd_counts(&self) -> Vec<usize> {
+        self.molecules
+            .iter()
+            .map(|mol| chematic_chem::hbd_count(mol))
+            .collect()
+    }
 }
 
 #[pymethods]

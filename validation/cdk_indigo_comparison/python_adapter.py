@@ -131,7 +131,11 @@ def chematic_engine() -> Engine:
         operations,
         source_commit=_commit(),
         batch_operations={
-            f"smarts:{query}": compiled.matches_batch for query, compiled in queries.items()
+            **{
+                f"smarts:{query}": compiled.matches_batch
+                for query, compiled in queries.items()
+            },
+            "hbd": lambda batch: batch.hbd_counts(),
         },
         prepare_batch=chematic.MoleculeBatch,
     )
