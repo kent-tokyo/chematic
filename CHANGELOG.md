@@ -18,9 +18,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   paired bootstrap confidence intervals. The smoke result is source-candidate
   evidence only; broad corpora, memory, a second host, and published packages
   remain required for a superiority claim.
-- Added reusable Python `SmartsQuery` / `compile_smarts()` APIs so repeated
-  substructure searches can compile a query once instead of consulting the
-  string-query cache for every molecule.
+- Added reusable Python `SmartsQuery` / `compile_smarts()` APIs, including
+  `matches_many()`, so repeated and batch substructure searches compile a
+  query once and cross the Python/Rust boundary once per batch.
 
 - Added a versioned Open Babel 3.2.1 file-I/O comparison contract for eight
   production formats, a static CI checker, and a unified record-accounting

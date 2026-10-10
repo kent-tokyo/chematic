@@ -72,6 +72,19 @@ impl PySmartsQuery {
         chematic_smarts::has_match_perceived(&self.query, &mol.inner, &config)
     }
 
+    /// Match this query against many molecules with one Python/Rust call.
+    fn matches_many(&self, molecules: Vec<PyRef<'_, Mol>>) -> Vec<bool> {
+        let config = chematic_smarts::MatchConfig {
+            max_matches: Some(1),
+            uniquify: false,
+            ..chematic_smarts::MatchConfig::default()
+        };
+        molecules
+            .into_iter()
+            .map(|mol| chematic_smarts::has_match_perceived(&self.query, &mol.inner, &config))
+            .collect()
+    }
+
     /// Return sorted target-atom indices for every unique match.
     fn find_matches(&self, mol: &Mol) -> Vec<Vec<usize>> {
         chematic_smarts::find_match_atom_sets_perceived(

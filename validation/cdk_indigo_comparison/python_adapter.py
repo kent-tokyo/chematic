@@ -14,7 +14,7 @@ import json
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
@@ -63,6 +63,7 @@ class Engine:
     parse: Callable[[str], Any]
     operations: dict[str, Callable[[Any], Any]]
     source_commit: str | None = None
+    batch_operations: dict[str, Callable[[list[Any]], list[Any]]] = field(default_factory=dict)
 
 
 def rdkit_engine() -> Engine:
@@ -127,7 +128,10 @@ def chematic_engine() -> Engine:
         getattr(chematic, "__version__", "unknown"),
         chematic.from_smiles,
         operations,
-        _commit(),
+        source_commit=_commit(),
+        batch_operations={
+            f"smarts:{query}": compiled.matches_many for query, compiled in queries.items()
+        },
     )
 
 
@@ -245,6 +249,28 @@ def benchmark(engine: Engine, request: dict[str, Any]) -> dict[str, Any]:
     errors = 0
     start = time.perf_counter_ns()
     for _ in range(iterations):
+        if operation != "parse" and operation in engine.batch_operations:
+            iteration_values: list[Any] = [["error", "parse"] for _ in smiles]
+            molecules = []
+            molecule_indices = []
+            for index, text in enumerate(smiles):
+                try:
+                    molecules.append(engine.parse(text) if prepared is None else prepared[index])
+                    molecule_indices.append(index)
+                except Exception:
+                    errors += 1
+            try:
+                results = engine.batch_operations[operation](molecules)
+                if len(results) != len(molecules):
+                    raise ValueError("batch operation returned the wrong number of rows")
+                for index, value in zip(molecule_indices, results):
+                    iteration_values[index] = value
+            except Exception as exc:
+                errors += len(molecules)
+                for index in molecule_indices:
+                    iteration_values[index] = ["error", type(exc).__name__]
+            values.extend(iteration_values)
+            continue
         for index, text in enumerate(smiles):
             try:
                 molecule = engine.parse(text) if prepared is None else prepared[index]
@@ -276,6 +302,7 @@ def serve(engine: Engine) -> None:
                     "engine": engine.name,
                     "engine_version": engine.version,
                     "operations": ["parse", *OPERATIONS],
+                    "batch_operations": sorted(engine.batch_operations),
                 }
             elif command == "benchmark":
                 response = benchmark(engine, request)

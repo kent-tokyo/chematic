@@ -57,6 +57,7 @@ def test_compiled_smarts_query_is_reusable(ethanol):
     assert query.source == "[#8]"
     assert query.matches(ethanol)
     assert not query.matches(chematic.from_smiles("CC"))
+    assert query.matches_many([ethanol, chematic.from_smiles("CC")]) == [True, False]
     assert query.find_matches(ethanol) == [[2]]
     assert "[#8]" in repr(query)
 

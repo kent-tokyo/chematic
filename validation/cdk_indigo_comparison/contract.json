@@ -31,6 +31,7 @@
     "smarts:[N;H1,H2,H3;+0]"
   ],
   "performance_lanes": ["pipeline", "prepared"],
+  "batch_semantics": "An adapter may use a documented public batch API for an equivalent operation; every output row is retained in the digest and the adapter declares batch_operations in metadata.",
   "diagnostic_only_operations": {
     "rings": "RDKit/CheMatic use the pinned RDKit ring-count model while CDK and Indigo expose SSSR counts; a mismatch is reported but is not a chemistry-accuracy verdict."
   },

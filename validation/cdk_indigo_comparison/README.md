@@ -44,7 +44,9 @@ $PY validation/cosmolkit_comparison/scorecard.py \
 
 The persistent-process benchmark keeps JVM and native-library startup outside
 the hot lanes, rotates engine order between blocks, and records every raw
-sample. Pass the same scorecard so mismatched operations are never ranked:
+sample. CheMatic's prepared SMARTS lane uses the public
+`SmartsQuery.matches_many()` batch API; the report records this in engine
+metadata. Pass the same scorecard so mismatched operations are never ranked:
 
 ```bash
 $PY validation/cdk_indigo_comparison/benchmark.py \
