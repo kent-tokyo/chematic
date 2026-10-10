@@ -6495,3 +6495,77 @@ mod explicit_implicit_h_invariance {
         }
     }
 }
+
+#[cfg(test)]
+mod legacy_boundary_contract_tests {
+    use super::*;
+    use chematic_core::MoleculeBuilder;
+
+    #[test]
+    fn equivalent_atom_api_agrees_with_known_chain_and_ring_symmetries() {
+        for (text, a, b, expected) in [
+            ("CC", 0, 1, true),
+            ("CCC", 0, 2, true),
+            ("CCC", 0, 1, false),
+            ("c1ccccc1", 0, 3, true),
+            ("CC(=O)O", 2, 3, false),
+            ("[13CH3]C", 0, 1, false),
+            ("[NH3+]CCN", 0, 3, false),
+        ] {
+            let mol = crate::parse(text).unwrap();
+            assert_eq!(
+                are_atoms_equivalent(&mol, AtomIdx(a), AtomIdx(b)),
+                expected,
+                "{text}"
+            );
+            assert_eq!(
+                are_atoms_equivalent(&mol, AtomIdx(b), AtomIdx(a)),
+                expected,
+                "{text}"
+            );
+            assert!(!are_atoms_equivalent(&mol, AtomIdx(a), AtomIdx(u32::MAX)));
+        }
+        let empty = MoleculeBuilder::new().build();
+        assert!(!are_atoms_equivalent(&empty, AtomIdx(0), AtomIdx(0)));
+        assert_eq!(legacy_branch_count_for_benchmark(&empty), 0);
+        assert_eq!(legacy_canonical_smiles_for_benchmark(&empty), "");
+        assert_eq!(canonical_smiles_exhaustive_oracle(&empty), "");
+        assert_eq!(
+            canonical_smiles_exhaustive_oracle_with_ranks(&empty),
+            (vec![], String::new())
+        );
+    }
+
+    #[test]
+    fn capped_legacy_and_tied_rank_writers_preserve_graph_and_stereo() {
+        for text in [
+            "CCO",
+            "CC(C)C",
+            "[13CH3]C[O-]",
+            "C[NH2+]CC[O-]",
+            "c1ccccc1",
+            "C1CC1",
+            "F[C@H](Cl)Br",
+            "F/C=C/F",
+            "[Mo]$[Mo]",
+            "[Co@OH1](F)(Cl)(Br)(I)(N)O",
+        ] {
+            let mol = crate::parse(text).unwrap_or_else(|e| panic!("{text}: {e}"));
+            let expected = canonical_smiles(&mol);
+            assert!(legacy_branch_count_for_benchmark(&mol) > 0, "{text}");
+            let ties = vec![0; mol.atom_count()];
+            let oversized = vec![mol.atom_count() as u64; mol.atom_count()];
+            for written in [
+                legacy_canonical_smiles_for_benchmark(&mol),
+                CanonicalWriter::new(&mol, &ties).write_all(),
+                CanonicalWriter::new(&mol, &oversized).write_all(),
+            ] {
+                let restored =
+                    crate::parse(&written).unwrap_or_else(|e| panic!("{text} -> {written}: {e}"));
+                assert_eq!(restored.atom_count(), mol.atom_count(), "{text}");
+                assert_eq!(restored.bond_count(), mol.bond_count(), "{text}");
+                assert_eq!(canonical_smiles(&restored), expected, "{text} -> {written}");
+            }
+        }
+    }
+}

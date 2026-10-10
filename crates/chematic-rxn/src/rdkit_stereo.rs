@@ -1238,6 +1238,19 @@ fn ez_cleanup(mol: &Molecule) -> Option<Molecule> {
 
 /// The tags RDKit's parser drops (see [`rdkit_parse_cleanup`]).
 fn chirality_cleanup(mol: &Molecule) -> Option<Molecule> {
+    chirality_cleanup_with_perception(mol, |m| {
+        chematic_smiles::rdkit_legacy_stereo(m)
+            .ok()
+            .map(|s| s.atom_tagged)
+    })
+}
+
+// Keep the approximation independently testable when the normal perception
+// engine cannot model a graph. Production still uses the same engine first.
+fn chirality_cleanup_with_perception(
+    mol: &Molecule,
+    perceive: impl FnOnce(&Molecule) -> Option<Vec<bool>>,
+) -> Option<Molecule> {
     let tagged: Vec<AtomIdx> = mol
         .atoms()
         .filter(|(_, a)| a.chirality.is_tetrahedral())
@@ -1262,11 +1275,11 @@ fn chirality_cleanup(mol: &Molecule) -> Option<Molecule> {
     // The SMILES port's legacy stereo perception decides as RDKit does
     // (bridgehead nitrogens, ring special cases, CIP-ranked duplicates);
     // the approximation below serves molecules it cannot model.
-    if let Ok(st) = chematic_smiles::rdkit_legacy_stereo(mol) {
+    if let Some(atom_tagged) = perceive(mol) {
         let mut out = mol.clone();
         let mut changed = false;
         for &a in &tagged {
-            if !st.atom_tagged[a.0 as usize] {
+            if !atom_tagged[a.0 as usize] {
                 clear(&mut out, a);
                 changed = true;
             }
@@ -1493,5 +1506,121 @@ mod tests {
         assert_eq!(count_swaps(&[0, 1, 2, 3], &[1, 0, 2, 3]), Some(1));
         assert_eq!(count_swaps(&[0, 1, 2, 3], &[1, 2, 3, 0]), Some(3));
         assert_eq!(count_swaps(&[0, 1, 2, 3], &[1, 2, 0, 3]), Some(2));
+    }
+}
+
+#[cfg(test)]
+mod fallback_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn fallback_cleanup_matches_normal_perception_on_supported_stereo_examples() {
+        for (text, expected_tags) in [
+            ("F[C@H](Cl)Br", 1),
+            ("C[C@H](C)O", 0),
+            ("[C@](F)(Cl)(Br)I", 1),
+            ("[C@](F)(F)(Cl)Br", 0),
+            ("[P@](C)(N)O", 1),
+            ("[As@](C)(N)O", 1),
+            ("C[S@](=O)CC", 1),
+            ("C[S@+](CC)CCC", 1),
+            ("C[Se@](=O)CC", 1),
+            ("C[C@H]1CC[C@H](C)CC1", 2),
+            ("C[C@H]1CCCCC1", 0),
+            ("[C@H](F)Cl", 0),
+            ("C[N@](CC)CCC", 0),
+            ("[N@]1(C)CC1", 0),
+            ("[O@](C)CC", 0),
+            ("C[C@](F)Cl", 0),
+            ("[P@H](C)N", 1),
+            ("[As@H](C)N", 1),
+            ("C[S@](N)O", 0),
+            ("C[Se@](N)O", 0),
+            ("C[S@+](C)CC", 0),
+            ("C[C@]1(F)CCCC1", 0),
+            ("C[C@]12CC1C2", 0),
+            ("O[C@H]([C@H](F)Cl)[C@@H](F)Cl", 3),
+        ] {
+            let mol = chematic_smiles::parse(text).unwrap_or_else(|e| panic!("{text}: {e}"));
+            let fallback =
+                chirality_cleanup_with_perception(&mol, |_| None).unwrap_or_else(|| mol.clone());
+            let ordinary = chirality_cleanup(&mol).unwrap_or_else(|| mol.clone());
+            let tags = |m: &Molecule| {
+                m.atoms()
+                    .filter(|(_, a)| a.chirality.is_tetrahedral())
+                    .count()
+            };
+            assert_eq!(tags(&fallback), expected_tags, "{text}");
+            assert_eq!(tags(&ordinary), expected_tags, "normal {text}");
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&fallback),
+                chematic_smiles::canonical_smiles(&ordinary),
+                "{text}"
+            );
+            assert_eq!(fallback.atom_count(), mol.atom_count());
+            assert_eq!(fallback.bond_count(), mol.bond_count());
+            for (idx, atom) in mol.atoms() {
+                let actual = fallback.atom(idx);
+                assert_eq!(
+                    (actual.element, actual.charge, actual.isotope),
+                    (atom.element, atom.charge, atom.isotope)
+                );
+                assert_eq!(
+                    actual.chirality,
+                    ordinary.atom(idx).chirality,
+                    "{text}: {idx:?}"
+                );
+                assert_eq!(
+                    actual.hydrogen_count,
+                    ordinary.atom(idx).hydrogen_count,
+                    "{text}: {idx:?}"
+                );
+            }
+        }
+        let unmarked = chematic_smiles::parse("CCO").unwrap();
+        assert!(
+            chirality_cleanup_with_perception(&unmarked, |_| panic!(
+                "untagged graph needs no perception"
+            ))
+            .is_none()
+        );
+    }
+
+    #[test]
+    fn ring_bonds_match_independent_edge_removal_connectivity() {
+        for text in [
+            "",
+            "CCO",
+            "C1CC1",
+            "C1CCCCC1.CCC",
+            "C1CC2CCC1C2",
+            "C1CCC2(CC1)CCCC2",
+            "c1ccc2ccccc2c1",
+            "C12C3C4C1C5C2C3C45",
+        ] {
+            let mol = if text.is_empty() {
+                chematic_core::MoleculeBuilder::new().build()
+            } else {
+                chematic_smiles::parse(text).unwrap()
+            };
+            let actual = ring_bonds(&mol);
+            assert_eq!(actual.len(), mol.bond_count());
+            for (excluded, bond) in mol.bonds() {
+                let mut seen = FxHashSet::from_iter([bond.atom1]);
+                let mut queue = vec![bond.atom1];
+                while let Some(atom) = queue.pop() {
+                    for (neighbor, edge) in mol.neighbors(atom) {
+                        if edge != excluded && seen.insert(neighbor) {
+                            queue.push(neighbor);
+                        }
+                    }
+                }
+                assert_eq!(
+                    actual[excluded.0 as usize],
+                    seen.contains(&bond.atom2),
+                    "{text}: {excluded:?}"
+                );
+            }
+        }
     }
 }

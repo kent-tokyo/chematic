@@ -542,3 +542,71 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+mod loss_boundary_contract_tests {
+    use super::*;
+    use chematic_rxn::{ProvenanceRecord, ReactionCondition};
+
+    #[test]
+    fn rxn_writer_reports_all_unrepresentable_document_fields() {
+        let mut doc = ReactionDocument::from_reaction_smiles("[CH3:7]O>>[CH3:7]O").unwrap();
+        let provenance = ProvenanceRecord {
+            source: "experiment-17".into(),
+            kind: "measurement".into(),
+            note: Some("retained in source document".into()),
+        };
+        doc.provenance.push(provenance.clone());
+        doc.steps[0].provenance.push(provenance);
+        doc.steps[0].conditions.push(ReactionCondition {
+            key: "temperature".into(),
+            value: "298 K".into(),
+        });
+        doc.steps[0].components[0].coefficient = 2;
+        let mut second = doc.steps[0].clone();
+        second.id = "step-2".into();
+        for c in &mut second.components {
+            c.id = format!("second-{}", c.id);
+        }
+        doc.steps.push(second);
+        doc.validate().unwrap();
+        let before = doc.clone();
+        let error = write_rxn_document(&doc).unwrap_err();
+        let text = error.to_string();
+        let RxnDocumentError::Document(ReactionDocumentError::Losses(losses)) = error else {
+            panic!("{text}");
+        };
+        let mut fields: Vec<_> = losses.iter().map(|l| l.field.as_str()).collect();
+        fields.sort_unstable();
+        let coefficient = format!("{}.coefficient", doc.steps[0].components[0].id);
+        let mut expected = vec![
+            "steps",
+            "provenance",
+            "conditions",
+            "step.provenance",
+            coefficient.as_str(),
+        ];
+        expected.sort_unstable();
+        assert_eq!(fields, expected);
+        assert!(losses.iter().all(|l| !l.detail.is_empty()));
+        assert!(text.contains("conversion"));
+        assert_eq!(doc, before);
+        // The same document becomes representable only after removing those fields.
+        doc.steps.truncate(1);
+        doc.provenance.clear();
+        doc.steps[0].provenance.clear();
+        doc.steps[0].conditions.clear();
+        doc.steps[0].components[0].coefficient = 1;
+        let written = write_rxn_document(&doc).unwrap();
+        let restored = parse_rxn_document(&written).unwrap();
+        assert_eq!(restored.steps[0].components.len(), 2);
+        for (a, b) in doc.steps[0]
+            .components
+            .iter()
+            .zip(&restored.steps[0].components)
+        {
+            assert_eq!(a.role, b.role);
+            assert_eq!(a.atom_maps, b.atom_maps);
+        }
+    }
+}

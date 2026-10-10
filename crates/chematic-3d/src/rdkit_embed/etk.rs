@@ -854,3 +854,147 @@ pub(crate) fn minimize_with_exp_torsions(
     let planarity_tolerance = 0.7;
     Some(field2.energy(pos3) <= d.improper_atoms.len() as f64 * planarity_tolerance)
 }
+
+#[cfg(test)]
+mod numerical_contract_tests {
+    use super::*;
+
+    fn close(actual: f64, expected: f64, tolerance: f64) {
+        assert!(
+            (actual - expected).abs() <= tolerance * (1.0 + expected.abs()),
+            "{actual} != {expected}"
+        );
+    }
+
+    fn check_gradient(field: &Etk3dField, pos: &[f64]) {
+        let mut grad = vec![0.0; pos.len()];
+        field.grad(pos, &mut grad);
+        for i in 0..pos.len() {
+            let mut plus = pos.to_vec();
+            let mut minus = pos.to_vec();
+            plus[i] += 1e-6;
+            minus[i] -= 1e-6;
+            let numerical = (field.energy(&plus) - field.energy(&minus)) / 2e-6;
+            close(grad[i], numerical, 2e-5);
+        }
+        for axis in 0..3 {
+            close(grad.iter().skip(axis).step_by(3).sum(), 0.0, 1e-8);
+        }
+    }
+
+    #[test]
+    fn interval_angle_restraints_have_expected_energy_and_gradient() {
+        let field = Etk3dField {
+            contribs: vec![Contrib::Angles(vec![AngleC {
+                idx: [0, 1, 2],
+                min_angle: 60.0,
+                max_angle: 120.0,
+                fc: 2.0,
+            }])],
+        };
+        for (degrees, expected) in [
+            (30.0_f64, 1800.0),
+            (60.0, 0.0),
+            (90.0, 0.0),
+            (120.0, 0.0),
+            (150.0, 1800.0),
+        ] {
+            let theta = degrees.to_radians();
+            let pos = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, theta.cos(), theta.sin(), 0.0];
+            close(field.energy(&pos), expected, 1e-10);
+            if degrees != 60.0 && degrees != 120.0 {
+                check_gradient(&field, &pos);
+            } else {
+                // Central differences cross the piecewise restraint boundary.
+                let mut grad = [0.0; 9];
+                field.grad(&pos, &mut grad);
+                assert!(grad.iter().all(|v| v.abs() < 1e-8));
+            }
+            let translated: Vec<_> = pos
+                .as_chunks::<3>()
+                .0
+                .iter()
+                .flat_map(|p| [p[0] + 3.0, p[1] - 2.0, p[2] + 4.0])
+                .collect();
+            close(field.energy(&translated), expected, 1e-10);
+            let rotated: Vec<_> = pos
+                .as_chunks::<3>()
+                .0
+                .iter()
+                .flat_map(|p| [-p[1], p[0], p[2]])
+                .collect();
+            close(field.energy(&rotated), expected, 1e-10);
+        }
+        // Coincident/collinear coordinates must remain finite at the guarded denominator.
+        for pos in [[0.0; 9], [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0]] {
+            assert!(field.energy(&pos).is_finite());
+            let mut grad = [0.0; 9];
+            field.grad(&pos, &mut grad);
+            assert!(grad.iter().all(|v| v.is_finite()));
+        }
+    }
+
+    #[test]
+    fn distance_interval_is_symmetric_and_its_gradient_matches_energy() {
+        for (i, j) in [(0, 1), (1, 0)] {
+            let field = Etk3dField {
+                contribs: vec![Contrib::Distances(vec![DistC {
+                    i,
+                    j,
+                    min_len: 1.0,
+                    max_len: 2.0,
+                    fc: 4.0,
+                }])],
+            };
+            for (distance, expected) in [(0.5, 0.5), (1.5, 0.0), (3.0, 2.0)] {
+                let pos = [0.0, 0.0, 0.0, distance, 0.0, 0.0];
+                close(field.energy(&pos), expected, 1e-12);
+                check_gradient(&field, &pos);
+            }
+            let mut coincident = [0.0; 6];
+            field.grad(&[0.0; 6], &mut coincident);
+            assert_eq!(coincident, [0.0; 6]);
+        }
+    }
+
+    #[test]
+    fn empty_force_field_is_already_minimized() {
+        let field = Etk3dField { contribs: vec![] };
+        let mut pos = [1.0, 2.0, 3.0];
+        assert_eq!(field.energy(&pos), 0.0);
+        assert_eq!(field.minimize(&mut pos, 100, 1e-4), 0);
+        assert_eq!(pos, [1.0, 2.0, 3.0]);
+        let mut grad = [0.0; 3];
+        field.grad(&pos, &mut grad);
+        assert_eq!(grad, [0.0; 3]);
+    }
+
+    #[test]
+    fn inversion_normal_and_degenerate_geometry_contracts() {
+        let field = Etk3dField {
+            contribs: vec![Contrib::Inversions(vec![Inversion {
+                idx: [0, 1, 2, 3],
+                c0: 1.0,
+                c1: -1.0,
+                c2: 0.0,
+                force_constant: 6.0,
+            }])],
+        };
+        let planar = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0, -1.0, 0.0];
+        close(field.energy(&planar), 0.0, 1e-12);
+        check_gradient(&field, &planar);
+        let nonplanar = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0, -1.0, 0.5];
+        check_gradient(&field, &nonplanar);
+        let orthogonal = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+        close(field.energy(&orthogonal), 6.0, 1e-12);
+        for pos in [
+            [0.0; 12],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+        ] {
+            assert!(field.energy(&pos).is_finite());
+            let mut grad = [0.0; 12];
+            field.grad(&pos, &mut grad);
+            assert!(grad.iter().all(|v| v.is_finite()));
+        }
+    }
+}

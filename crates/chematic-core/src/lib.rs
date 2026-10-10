@@ -63,3 +63,6 @@ mod mutation_contract_tests;
 
 #[cfg(test)]
 mod token_boundary_contract_tests;
+
+#[cfg(test)]
+mod diagnostic_boundary_contract_tests;

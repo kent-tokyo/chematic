@@ -4102,3 +4102,71 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod electron_trace_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn charged_and_heavier_heterocycles_explain_their_pi_contribution() {
+        use ContributionReason::*;
+        let cases = [
+            ("[CH+]1C=CC=C1", 0, Some(0), CarbonCationVacant),
+            ("[CH-]1C=CC=C1", 0, Some(2), CarbonCarbanionLonePair),
+            ("[N+]1(C)(C)CCCC1", 0, None, NitrogenIneligible),
+            ("[OH+]1CCCC1", 0, None, ChalcogenIneligible),
+            ("[O+]1=CC=CC=C1", 0, Some(1), ChalcogenCationPyridineType),
+            ("[S+]1=CC=CC=C1", 0, Some(1), ChalcogenCationPyridineType),
+            ("O=S1C=CC=C1", 1, None, ChalcogenIneligible),
+            ("P1C=CC=C1", 0, Some(2), PnictogenOrChalcogenLonePair),
+            ("[Se]1C=CC=C1", 0, Some(2), PnictogenOrChalcogenLonePair),
+            ("[Te]1C=CC=C1", 0, Some(2), PnictogenOrChalcogenLonePair),
+            ("O=[Se]1C=CC=C1", 1, None, ChalcogenIneligible),
+            ("O=[Te]1C=CC=C1", 1, None, ChalcogenIneligible),
+            ("[SiH2]1C=CC=C1", 0, None, UnsupportedElement),
+        ];
+        for (text, atom, electrons, reason) in cases {
+            let mol = chematic_smiles::parse(text).unwrap_or_else(|e| panic!("{text}: {e}"));
+            let rings = find_sssr(&mol);
+            assert_eq!(rings.rings().len(), 1, "{text}");
+            let ring = &rings.rings()[0];
+            let ring_bonds = ring
+                .iter()
+                .zip(ring.iter().cycle().skip(1))
+                .map(|(&a, &b)| mol.bond_between(a, b).unwrap().0)
+                .collect();
+            let trace = trace_ring_pi_electrons(
+                &mol,
+                ring,
+                &FxHashSet::default(),
+                AromaticityAlgorithm::RdkitLike,
+                &ring_bonds,
+            );
+            let selected = trace
+                .atoms
+                .iter()
+                .find(|a| a.atom_idx == AtomIdx(atom))
+                .unwrap();
+            assert_eq!(selected.contribution, electrons, "{text}");
+            assert_eq!(selected.reason, reason, "{text}");
+            assert_eq!(selected.reason.is_eligible(), electrons.is_some(), "{text}");
+            assert_eq!(trace.atoms.len(), ring.len());
+            let expected_total: Option<u32> = trace
+                .atoms
+                .iter()
+                .map(|a| a.contribution.map(u32::from))
+                .sum();
+            assert_eq!(trace.total, expected_total, "{text}");
+            if mol.atom(AtomIdx(atom)).element.atomic_number() == 15 {
+                let strict = trace_ring_pi_electrons(
+                    &mol,
+                    ring,
+                    &FxHashSet::default(),
+                    AromaticityAlgorithm::Huckel,
+                    &ring_bonds,
+                );
+                assert_eq!(strict.total, None, "the strict model excludes phosphorus");
+            }
+        }
+    }
+}

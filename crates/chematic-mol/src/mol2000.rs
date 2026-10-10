@@ -3527,6 +3527,11 @@ mod square_planar_tests {
         assert_eq!(err.reason, UnsupportedStereoReason::NoConformerSupplied);
         assert_eq!(err.format, MolFormat::V2000);
         assert_eq!(err.geometry, StereoGeometry::SquarePlanar);
+        assert!(
+            err.to_string()
+                .contains("atom 0 (SquarePlanar stereo) to MOL V2000")
+        );
+        assert!(err.to_string().contains("no 3D conformer supplied"));
     }
 
     #[test]
@@ -3550,6 +3555,8 @@ mod square_planar_tests {
             err.reason,
             UnsupportedStereoReason::WholeMoleculeConformerFlat
         );
+        assert!(err.to_string().contains("MOL V3000"));
+        assert!(err.to_string().contains("flat/indeterminate"));
     }
 
     #[test]
@@ -3569,6 +3576,8 @@ mod square_planar_tests {
                 computed: SquarePlanarPermutation::SP2
             }
         );
+        assert!(err.to_string().contains("geometry encodes SP2"));
+        assert!(err.to_string().contains("does not match the declared tag"));
     }
 
     #[test]
@@ -3585,6 +3594,7 @@ mod square_planar_tests {
             err.reason,
             UnsupportedStereoReason::ImplicitHydrogenNeighbor
         );
+        assert!(err.to_string().contains("implicit-hydrogen slot"));
     }
 
     #[test]
