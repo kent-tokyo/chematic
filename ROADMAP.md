@@ -14,6 +14,10 @@ boundaries and reproducible evidence over feature-count parity.
 - **Compatibility:** the v1.0.41 source comparison covers 161 operations on
   ChEMBL 5k and RDKit.js 10k. It is not a claim of universal or
   published-package parity.
+- **Performance:** a clean source candidate beats RDKit 2026.03.1 and
+  COSMolKit 0.5.0rc15 for the seven recorded parse-inclusive pipelines on one
+  Apple-silicon host. MMFF also wins prepared; five other prepared-operation
+  lanes and public-artifact replication remain open.
 - **Reactions:** the published 83-row gate is 80 exact graph/origin/map rows
   and three inputs invalid in both engines. Broader SMIRKS behavior remains
   intentionally bounded.
@@ -30,7 +34,23 @@ commands.
 
 ## Priority order
 
-### 1. P1/A4 — Close the remaining SMARTS/SMIRKS contract
+### 1. P0/A3 — Complete the equivalent-work performance gate
+
+- Preserve the existing RDKit agreement denominators before accepting a speed
+  change; a typed refusal or changed result is not a performance win.
+- Keep parsing, first use, prepared/hot calls, 3D preparation, and memory as
+  separate lanes. Do not move costly perception into parsing only to improve a
+  downstream benchmark.
+- Close the five remaining prepared-operation deficits: ring count, TPSA,
+  Labute ASA, chiral Morgan, and amide/amine reaction.
+- Rerun from exact PyPI/npm/crates.io artifacts and on a second host.
+
+**Exit:** for every declared equivalent-output lane, 21 or more alternating
+blocks, all blocks faster, and the paired 95% speedup lower bound above 1.0
+against both RDKit and COSMolKit. Published-package claims require exact
+artifact hashes.
+
+### 2. P1/A4 — Close the remaining SMARTS/SMIRKS contract
 
 Issues [#734](https://github.com/kent-tokyo/chematic/issues/734) and
 [#754](https://github.com/kent-tokyo/chematic/issues/754) remain open.
@@ -45,7 +65,7 @@ Issues [#734](https://github.com/kent-tokyo/chematic/issues/734) and
 **Exit:** no wrong-confident supported result in the pinned corpora, all rows
 accounted for, and package evidence recorded separately from source evidence.
 
-### 2. P3 — Complete binding parity
+### 3. P3 — Complete binding parity
 
 Issue [#784](https://github.com/kent-tokyo/chematic/issues/784) tracks the
 v1.0.40+ RDKit-interoperability APIs that are not yet exposed consistently in
@@ -54,7 +74,7 @@ WASM/Node.
 **Exit:** the selected APIs have typed signatures, bounded inputs, Node tests,
 and cross-binding fixtures that agree with the Rust implementation.
 
-### 3. P1/A4 — Add opt-in reaction rejection diagnostics
+### 4. P1/A4 — Add opt-in reaction rejection diagnostics
 
 Issue [#786](https://github.com/kent-tokyo/chematic/issues/786) tracks a stable
 diagnostic model for rejected products and mapped atoms.
@@ -62,7 +82,7 @@ diagnostic model for rejected products and mapped atoms.
 **Exit:** diagnostics are opt-in, preserve input/product indices, use stable
 typed reasons, and do not change the existing fast path or accepted products.
 
-### 4. P0 — Refresh public-artifact evidence
+### 5. P0 — Refresh public-artifact evidence
 
 - Rerun chemistry and performance gates from exact PyPI/npm/crates.io
   artifacts rather than carrying source results forward.
@@ -74,7 +94,7 @@ typed reasons, and do not change the existing fast path or accepted products.
 **Exit:** every published claim names its artifact hash, comparator, corpus,
 operation, options, and failure policy.
 
-### 5. P2/A6 — Maintain stereo, identity, and 3D quality
+### 6. P2/A6 — Maintain stereo, identity, and 3D quality
 
 - Preserve atom-order, spelling, and round-trip invariance gates for CIP/E/Z.
 - Keep lossy MOL output observable through report/strict APIs.
@@ -85,7 +105,7 @@ operation, options, and failure policy.
 **Exit:** no silent information loss and no wrong-confident stereo result in
 the declared domain.
 
-### 6. External — Rebaseline new RDKit distributions
+### 7. External — Rebaseline new RDKit distributions
 
 Pin the exact distributed Python, npm/WASM, and native artifacts before a
 rebaseline. Preserve old results as historical records; do not substitute a
@@ -95,7 +115,7 @@ source build for an unavailable package.
 
 | Phase | Area | Status |
 |---|---|---|
-| P0 | Core chemistry and reproducible comparison | Stable core; artifact refresh continues |
+| P0 | Core chemistry and reproducible comparison | Active: prepared-operation and artifact performance gates |
 | P1 | Parsing, files, reactions, SMARTS | Active: #734, #754, #786 |
 | P2 | Stereo, identity, canonicalization | Active maintenance |
 | P3 | Browser, Node, Python, agents | Active: #784 |
@@ -113,7 +133,7 @@ silent-corruption regressions always take priority.
 | A0 Evaluation contract | Complete |
 | A1 Perception and descriptors | Open |
 | A2 Stereo and identity | Active |
-| A3 Fingerprints and retrieval | Open |
+| A3 Fingerprints and retrieval | Active: output-preserving performance |
 | A4 Workflows and interchange | Active |
 | A5 Independent adjudication | External |
 | A6 3D and force fields | Active |

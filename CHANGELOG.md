@@ -10,6 +10,24 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Reduced RDKit-compatible Morgan allocation for folded-bit callers, reused
+  parser-proven acyclic/single-cycle ring facts, and removed duplicate MMFF
+  force-field preparation. Existing detailed fingerprint and chemistry results
+  remain covered by the same output gates.
+- Upgraded the RDKit/COSMolKit benchmark to retain raw alternating-order
+  samples, report operation-only and parse-inclusive pipelines separately, and
+  calculate paired bootstrap confidence intervals.
+
+### Evidence boundary
+
+- A clean-commit macOS arm64 candidate beats RDKit 2026.03.1 and COSMolKit
+  0.5.0rc15 in all 21 measured blocks for the seven recorded parse-inclusive
+  pipelines. Five operation-only lanes remain slower, and registry artifacts
+  and additional hosts have not been rerun. See the
+  [dated record](benchmarks/2026-10-10-rdkit-cosmolkit-performance-candidate.md).
+
 ### Documentation
 
 - Added a crates.io-first `chematic-mcp` quick start with direct stdio client
