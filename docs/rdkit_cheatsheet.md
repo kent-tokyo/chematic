@@ -152,6 +152,27 @@ mcs = chematic.find_mcs([mol1, mol2])
 print(mcs.smiles)
 ```
 
+## Labelled R-group decomposition
+
+```python
+# RDKit
+from rdkit.Chem import rdRGroupDecomposition
+rows, unmatched = rdRGroupDecomposition.RGroupDecompose(
+    [core], mols, asSmiles=True
+)
+
+# chematic: bounded mapped-label subset, with row preservation
+rows = chematic.rgroup_decompose_labeled(
+    "c1cc([*:1])ccc1[*:2]", mols
+)
+columns = chematic.rgroup_decompose_columns(
+    "c1cc([*:1])ccc1[*:2]", mols
+)
+```
+
+CheMatic does not yet implement RDKit's multi-core MCS alignment, tautomer or
+core enumeration, non-terminal R-groups, or GA scoring.
+
 ## SMIRKS reactions
 
 ```python

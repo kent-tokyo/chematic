@@ -42,6 +42,26 @@ commands.
 
 ## Priority order
 
+### 0. P1 — Close high-value RDKit workflow gaps without feature-count chasing
+
+- The first gap is label-stable R-group decomposition for SAR tables. The
+  source candidate accepts mapped terminal wildcards and mapped core atoms,
+  preserves labels in both core and substituent output, returns row and column
+  Python forms, and refuses ambiguous mappings. Before calling this complete,
+  add a stratified labelled-core corpus and repeat it across Rust/Python/WASM.
+- Keep the boundary explicit: RDKit's multi-core MCS alignment, tautomer/core
+  enumeration, non-terminal R-groups, multiple R-groups per site, and GA
+  scoring are not implemented by the bounded API. Add them only behind typed
+  options and independent agreement fixtures.
+- Evaluate the next breadth candidates in this order: configurable filter
+  catalogs, BRICS assembly, then synthon-space search. ETKDGv4 and
+  shape-based synthon search remain beta/new RDKit 2026.09 surfaces and should
+  not displace correctness and publication gates for stable APIs.
+
+**Exit:** the declared R-group subset is atom-order invariant, preserves every
+input row in column output, and either matches the pinned RDKit fixture or
+returns a documented typed refusal.
+
 ### 1. P0/A1 — Close the v1.0.42 correctness and API regressions
 
 - The source candidate fixes the four false RDKit-compatible ring counts caused
