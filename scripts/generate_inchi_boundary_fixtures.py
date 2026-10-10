@@ -16,8 +16,16 @@ smiles=[
     "N[C@@H](C)C(=O)O","N[C@H](C)C(=O)O","C1CC2CCC1C2","c1ccc2[nH]ccc2c1",
     "O=c1cccc[nH]1","c1cc[n+]([O-])cc1","[nH]1nnnc1","N#CC#N","N=C(N)N",
 ]
+root=Path(__file__).resolve().parents[1]
+# A fixed stride keeps this chemically varied census bounded and reproducible.
+for i,line in enumerate((root/'validation/results/descriptor_census_unbound.jsonl').read_text().splitlines()):
+    if i % 3 == 0 and i < 10000:
+        row=json.loads(line)
+        if row.get('parse_ok') and row.get('smiles'):
+            smiles.append(row['smiles'])
+smiles += ['[2H]N([2H])[2H]','[3H]C([3H])([3H])[3H]', '[2H]S[3H]']
 rows=[]
-for text in smiles:
+for text in dict.fromkeys(smiles):
     mol=Chem.MolFromSmiles(text)
     assert mol is not None,text
     inchi=Chem.MolToInchi(mol)

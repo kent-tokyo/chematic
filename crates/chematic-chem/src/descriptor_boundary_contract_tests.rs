@@ -2,6 +2,50 @@
 use crate::{descriptors::*, topo_descriptors::*};
 use chematic_core::MoleculeBuilder;
 use serde_json::Value;
+
+#[test]
+fn detailed_alerts_preserve_catalog_names_and_original_heavy_atom_indices() {
+    use crate::alerts::*;
+    for text in [
+        "CCO",
+        "Oc1ccccc1O",
+        "C[N+](=O)[O-]",
+        "O=C1CSC(=S)N1",
+        "O=C1C=CC(=O)C=C1",
+    ] {
+        let mol = chematic_smiles::parse(text).unwrap();
+        for (names, detailed) in [
+            (pains_matches(&mol), pains_matches_detailed(&mol)),
+            (brenk_matches(&mol), brenk_matches_detailed(&mol)),
+        ] {
+            assert_eq!(
+                names,
+                detailed.iter().map(|(name, _)| *name).collect::<Vec<_>>(),
+                "{text}"
+            );
+            for (_, atoms) in detailed {
+                assert!(
+                    !atoms.is_empty(),
+                    "bounded molecule must complete enumeration: {text}"
+                );
+                assert!(atoms.windows(2).all(|pair| pair[0] < pair[1]));
+                assert!(atoms.iter().all(|idx| (idx.0 as usize) < mol.atom_count()
+                    && mol.atom(*idx).element.atomic_number() != 1));
+            }
+        }
+        let (passes, names) = brenk_passes_and_matches(&mol);
+        assert_eq!(passes, names.is_empty());
+        assert_eq!(names, brenk_matches(&mol));
+    }
+    let catechol = chematic_smiles::parse("Oc1ccccc1O").unwrap();
+    let hits = pains_matches_detailed(&catechol);
+    let atoms = &hits
+        .iter()
+        .find(|(name, _)| *name == "catechol_A(92)")
+        .unwrap()
+        .1;
+    assert_eq!(atoms.len(), 8);
+}
 fn near(actual: f64, expected: f64, label: &str) {
     assert!(
         (actual - expected).abs() < 1e-8,
@@ -29,6 +73,21 @@ fn descriptor_boundary_references_match_rdkit_2026_03_1() {
             .map(|v| v.as_u64().unwrap() as u32)
             .collect();
         assert_eq!(mqn(&mol), mq, "MQN {text}");
+        let contributions = chematic_smiles::rdkit_crippen_contribs_no_hs(&mol).unwrap();
+        let expected = row["crippen_no_hs"].as_array().unwrap();
+        assert_eq!(contributions.len(), expected.len(), "Crippen {text}");
+        for (i, (logp, mr)) in contributions.iter().enumerate() {
+            near(
+                *logp,
+                expected[i][0].as_f64().unwrap(),
+                &format!("atom {i} logP {text}"),
+            );
+            near(
+                *mr,
+                expected[i][1].as_f64().unwrap(),
+                &format!("atom {i} MR {text}"),
+            );
+        }
         near(
             hall_kier_alpha(&mol),
             row["alpha"].as_f64().unwrap(),

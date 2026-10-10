@@ -4309,6 +4309,22 @@ fn build_product(
     for &((mol_idx, src_idx), new_idx) in &sourced_atoms {
         let src = input_mols[mol_idx];
         if keep_carried_maps
+            && let Some((class, _)) = src.atom(src_idx).chirality.nontetrahedral()
+            && let Some(template_idx) = template_idx_to_new
+                .iter()
+                .position(|idx| *idx == Some(new_idx))
+            && product_template
+                .atom(AtomIdx(template_idx as u32))
+                .chirality
+                == Chirality::None
+        {
+            // RDKit resets the permutation of a matched coordination center
+            // when the product template has no stereo, but retains its class
+            // (@SP/@TB/@OH). This differs from an unmatched carried center.
+            product.set_chirality(new_idx, Chirality::from_nontetrahedral(class, 0).unwrap());
+            continue;
+        }
+        if keep_carried_maps
             && src.atom(src_idx).chirality.nontetrahedral().is_some()
             && !template_idx_to_new.contains(&Some(new_idx))
         {

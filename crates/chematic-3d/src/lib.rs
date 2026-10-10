@@ -26,6 +26,8 @@ pub mod etkdg;
 pub mod etkdg_knowledge;
 pub(crate) mod fmath;
 #[cfg(test)]
+mod geometry_boundary_contract_tests;
+#[cfg(test)]
 mod issue256_255_phase2_evaluation;
 pub mod md;
 pub mod minimize;

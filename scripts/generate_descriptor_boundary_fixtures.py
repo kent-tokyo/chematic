@@ -34,6 +34,7 @@ for text in smiles:
             key = (atom.GetHybridization(), sum(a.GetAtomicNum()!=1 for a in atom.GetNeighbors()))
             if atom.GetAtomicNum()==6 and key in keys: c[keys.index(key)]+=1
         rows.append(dict(smiles=encoded,mqn=list(d.MQNs_(heavy)),alpha=d.CalcHallKierAlpha(heavy),
+                         crippen_no_hs=list(d._CalcCrippenContribs(Chem.MolFromSmiles(encoded))),
                          chi_v=[getattr(d,f"CalcChi{i}v")(heavy) for i in range(5)],
                          rings=d.CalcNumRings(heavy),carbon_types=c,
                          counts=[sum(a.GetAtomicNum()==z for a in heavy.GetAtoms()) for z in [6,7,8,9,17,35,53,16,15]]))

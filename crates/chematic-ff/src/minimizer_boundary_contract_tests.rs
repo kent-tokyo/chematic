@@ -158,3 +158,68 @@ fn mmff_unsupported_metal_typing_returns_an_actionable_error() {
         assert!(error.to_string().contains("type assignment failed"));
     }
 }
+
+#[test]
+fn empty_minimizers_converge_without_allocating_a_search() {
+    let mol = chematic_core::MoleculeBuilder::new().build();
+    let model = Mmff94EnergyModel::new(&mol).unwrap();
+    for result in [
+        minimize_mmff94_full(&mol, &mut [], 10).unwrap(),
+        model.minimize_lbfgs(&mut [], 10).unwrap(),
+        model
+            .minimize_bfgs(&mut [], 10, Mmff94Convergence::default())
+            .unwrap(),
+    ] {
+        assert_eq!(result.iterations, 0);
+        assert!(result.converged);
+        assert_eq!(result.energy, 0.);
+        assert_eq!(
+            result.termination,
+            Mmff94TerminationReason::GradientConverged
+        );
+    }
+}
+
+#[test]
+fn cutoff_neighbor_list_energy_gradient_and_large_bfgs_fallback_are_consistent() {
+    let mol = parse(&"CO".repeat(40)).unwrap();
+    let model = Mmff94EnergyModel::new(&mol).unwrap();
+    let coords = geometry(mol.atom_count());
+    let gradients = model.cutoff_nonbonded_gradient(&coords);
+    let step = 1e-5;
+    for atom in [0, 19, 40, 79] {
+        for axis in 0..3 {
+            let mut plus = coords.clone();
+            let mut minus = coords.clone();
+            plus[atom][axis] += step;
+            minus[atom][axis] -= step;
+            let (v1, e1) = model.cutoff_nonbonded_energy(&plus);
+            let (v2, e2) = model.cutoff_nonbonded_energy(&minus);
+            let reference = (v1 + e1 - v2 - e2) / (2. * step);
+            assert!((reference - gradients[atom][axis]).abs() < 1e-5 * (1. + reference.abs()));
+        }
+    }
+    let mut work = coords.clone();
+    let initial = model.energy(&coords);
+    let result = model
+        .minimize_lbfgs_bounded_analytic_cutoff(&mut work, 2)
+        .unwrap();
+    assert!(result.energy.is_finite());
+    assert!(result.iterations <= 2);
+    assert!(initial.is_finite());
+    let mol = parse(&"C".repeat(crate::mmff94_minimizer::BFGS_DENSE_MAX_ATOMS + 1)).unwrap();
+    let model = Mmff94EnergyModel::new(&mol).unwrap();
+    let coords = geometry(mol.atom_count());
+    let mut bfgs = coords.clone();
+    let mut lbfgs = coords.clone();
+    let a = model
+        .minimize_bfgs(&mut bfgs, 0, Mmff94Convergence::default())
+        .unwrap();
+    let b = model
+        .minimize_lbfgs_bounded_analytic(&mut lbfgs, 0)
+        .unwrap();
+    assert_eq!(bfgs, coords);
+    assert_eq!(lbfgs, coords);
+    near(a.energy, b.energy);
+    assert_eq!(a.termination, b.termination);
+}

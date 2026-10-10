@@ -68,3 +68,6 @@ mod uff_contract_tests;
 
 #[cfg(test)]
 mod minimizer_boundary_contract_tests;
+
+#[cfg(test)]
+mod uff_boundary_contract_tests;

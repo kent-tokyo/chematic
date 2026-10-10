@@ -50,3 +50,6 @@ pub use rdkit_ring_model::{
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod matching_boundary_contract_tests;
