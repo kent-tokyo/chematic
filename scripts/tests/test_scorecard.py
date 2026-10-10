@@ -58,9 +58,12 @@ def test_scorecard_separates_statuses_and_mismatches(tmp_path):
         "mismatch": 1,
     }
     assert json.loads(output.read_text())["configuration"] == {
-        "operations": ["formula"],
+        "operations": ["formula", "parse"],
         "reference_engine": "rdkit",
     }
+    assert json.loads(output.read_text())["operations"]["parse"]["against_reference"][
+        "chematic"
+    ] == {"match": 10}
     assert json.loads(completed.stdout)["valid"] is True
 
 

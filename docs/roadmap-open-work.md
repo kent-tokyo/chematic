@@ -6,15 +6,17 @@ Completed implementation details belong in the
 measurements belong in the [validation report](validation.md) and
 [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks).
 
-## Open issues
+## Tracked follow-up
 
-| Priority | Issue | Remaining work | Exit |
-|---:|---|---|---|
-| 1 | [#734 — SMIRKS differences](https://github.com/kent-tokyo/chematic/issues/734) | Broad reaction-rule validation, including the contributor corpus and classified fuzz residuals | All pinned rows classified; no wrong-confident supported result; public artifacts rerun |
-| 2 | [#754 — xsmarts-autoconf](https://github.com/kent-tokyo/chematic/issues/754) | Upstream probe contribution and continued dialect/fuzz accounting | Minimized probes submitted; remaining differences documented as specification, policy, unsupported, or defect |
+Issues #734 and #754 are closed. Their reaction, SMARTS, autoconf, and fuzz
+corpora remain recurring regression gates. Issues #739, #769, #779, and #785
+are also closed; implementation and verification records remain linked from
+the changelog and validation pages.
 
-Issues #739, #769, #779, and #785 are closed. Their implementation and
-verification records remain linked from the changelog and validation pages.
+The active external-comparison follow-up is the bounded CDK 2.13 / Indigo
+1.46.0 program: promote the 24-row smoke gate to a frozen broad corpus, add
+peak RSS and a second host, and rerun exact published artifacts before making
+a public superiority claim.
 
 ## Evidence refreshes
 

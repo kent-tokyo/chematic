@@ -139,6 +139,18 @@ pub fn find_match_atom_sets_perceived(
 /// Whether `query` matches the perceived aromatic view of `mol` at least once.
 /// `max_matches` and `uniquify` in `config` are ignored.
 pub fn has_match_perceived(query: &QueryMolecule, mol: &Molecule, config: &MatchConfig) -> bool {
+    // Sanitization cleanup can change charges and bond representation, but it
+    // cannot change an atom's element. Route the overwhelmingly common
+    // isolated `[#n]` screen straight to the exact atomic-number fast path.
+    if query.atoms.len() == 1
+        && query.bonds.is_empty()
+        && matches!(
+            query.atoms[0].query,
+            AtomQuery::Primitive(AtomPrimitive::AtomicNum(_))
+        )
+    {
+        return has_match_with_config(query, mol, config);
+    }
     if is_aromaticity_insensitive(query)
         && !chematic_perception::rdkit_sanitize_cleanup_may_apply(mol)
     {
@@ -266,6 +278,22 @@ mod tests {
         assert!(has_match_perceived(
             &parse_smarts("c1ccncc1").unwrap(),
             &parse("C1=CC=CC=N1").unwrap(),
+            &MatchConfig::default()
+        ));
+    }
+
+    #[test]
+    fn isolated_atomic_number_skips_element_preserving_cleanup() {
+        let mol = parse("[Na+].[Cl-]").unwrap();
+        assert!(chematic_perception::rdkit_sanitize_cleanup_may_apply(&mol));
+        assert!(has_match_perceived(
+            &parse_smarts("[#11]").unwrap(),
+            &mol,
+            &MatchConfig::default()
+        ));
+        assert!(!has_match_perceived(
+            &parse_smarts("[#6]").unwrap(),
+            &mol,
             &MatchConfig::default()
         ));
     }

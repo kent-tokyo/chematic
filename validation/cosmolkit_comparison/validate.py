@@ -15,24 +15,35 @@ MANIFEST = Path(__file__).with_name("corpus_manifest.json")
 STATUSES = {"ok", "parse_error", "unsupported", "error"}
 
 
-def corpus() -> tuple[str, dict[str, str]]:
-    rows = [json.loads(line) for line in CORPUS.read_text().splitlines() if line.strip()]
-    manifest = json.loads(MANIFEST.read_text())
-    actual_hash = hashlib.sha256(CORPUS.read_bytes()).hexdigest()
+def corpus(
+    corpus_path: Path | None = None, manifest_path: Path | None = None
+) -> tuple[str, dict[str, str]]:
+    corpus_path = CORPUS if corpus_path is None else corpus_path
+    manifest_path = MANIFEST if manifest_path is None else manifest_path
+    rows = [json.loads(line) for line in corpus_path.read_text().splitlines() if line.strip()]
+    manifest = json.loads(manifest_path.read_text())
+    actual_hash = hashlib.sha256(corpus_path.read_bytes()).hexdigest()
     expected_rows = manifest["records"]
-    if manifest["corpus"] != CORPUS.name:
+    if manifest["corpus"] != corpus_path.name:
         raise ValueError("corpus manifest names a different corpus file")
     if manifest["sha256"] != actual_hash:
-        raise ValueError("corpus manifest sha256 does not match smoke_corpus.jsonl")
+        raise ValueError(f"corpus manifest sha256 does not match {corpus_path.name}")
     if rows != expected_rows:
-        raise ValueError("smoke_corpus.jsonl rows do not match corpus_manifest.json")
+        raise ValueError(f"{corpus_path.name} rows do not match {manifest_path.name}")
     return actual_hash, {row["id"]: row["smiles"] for row in rows}
 
 
-def validate(path: Path, expected_engine: str | None = None) -> list[str]:
+def validate(
+    path: Path,
+    expected_engine: str | None = None,
+    corpus_path: Path | None = None,
+    manifest_path: Path | None = None,
+) -> list[str]:
     errors: list[str] = []
+    corpus_path = CORPUS if corpus_path is None else corpus_path
+    manifest_path = MANIFEST if manifest_path is None else manifest_path
     try:
-        expected_hash, expected_smiles = corpus()
+        expected_hash, expected_smiles = corpus(corpus_path, manifest_path)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         return [f"corpus manifest invalid: {exc}"]
     seen: set[str] = set()
@@ -55,7 +66,7 @@ def validate(path: Path, expected_engine: str | None = None) -> list[str]:
         if expected_engine is not None and record["engine"] != expected_engine:
             errors.append(f"line {number}: engine does not match requested {expected_engine!r}")
         if record["corpus_sha256"] != expected_hash:
-            errors.append(f"line {number}: corpus_sha256 does not match smoke_corpus.jsonl")
+            errors.append(f"line {number}: corpus_sha256 does not match {corpus_path.name}")
         if record["status"] not in STATUSES:
             errors.append(f"line {number}: invalid record status {record['status']!r}")
         ident = record["id"]
@@ -83,8 +94,10 @@ def validate(path: Path, expected_engine: str | None = None) -> list[str]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("results", type=Path)
+    parser.add_argument("--corpus", type=Path, default=CORPUS)
+    parser.add_argument("--manifest", type=Path, default=MANIFEST)
     args = parser.parse_args()
-    errors = validate(args.results)
+    errors = validate(args.results, corpus_path=args.corpus, manifest_path=args.manifest)
     if errors:
         print(json.dumps({"valid": False, "errors": errors}, indent=2, sort_keys=True))
         raise SystemExit(1)

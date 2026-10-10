@@ -470,8 +470,6 @@ fn descriptor_attached_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
 // 4. Hydrogen bond donor count
 // ---------------------------------------------------------------------------
 
-/// RDKit's `CalcNumHBD` pattern (Lipinski.cpp, version 2.0.1).
-const RDKIT_HBD_SMARTS: &str = "[N&!H0&v3,N&!H0&+1&v4,O&H1&+0,S&H1&+0,n&H1&+0]";
 /// RDKit's `CalcNumHBA` pattern (Lipinski.cpp, version 2.0.2).
 const RDKIT_HBA_SMARTS: &str = "[$([O,S;H1;v2]-[!$(*=[O,N,P,S])]),$([O,S;H0;v2]),$([O,S;-]),\
 $([N;v3;!$(N-*=!@[O,N,P,S])]),$([nH0X2,o,s;+0])]";
@@ -503,8 +501,41 @@ pub fn hbd_count(mol: &Molecule) -> usize {
 }
 
 fn hbd_count_impl(mol: &Molecule) -> usize {
-    static QUERY: std::sync::OnceLock<chematic_smarts::QueryMolecule> = std::sync::OnceLock::new();
-    count_rdkit_pattern(&QUERY, RDKIT_HBD_SMARTS, mol)
+    mol.atoms()
+        .filter(|&(idx, atom)| {
+            let hydrogen_count = implicit_hcount(mol, idx)
+                + mol
+                    .neighbors(idx)
+                    .filter(|(neighbor, _)| mol.atom(*neighbor).element == Element::H)
+                    .count() as u8;
+            if hydrogen_count == 0 {
+                return false;
+            }
+
+            if atom.aromatic {
+                return atom.element == Element::N && atom.charge == 0 && hydrogen_count == 1;
+            }
+
+            match atom.element {
+                Element::N => {
+                    let valence = mol
+                        .neighbors(idx)
+                        .map(|(_, bond)| {
+                            let entry = mol.bond(bond);
+                            if entry.order == BondOrder::Dative && entry.atom1 == idx {
+                                0
+                            } else {
+                                entry.order.order_int()
+                            }
+                        })
+                        .fold(implicit_hcount(mol, idx), u8::saturating_add);
+                    valence == 3 || (atom.charge == 1 && valence == 4)
+                }
+                Element::O | Element::S => atom.charge == 0 && hydrogen_count == 1,
+                _ => false,
+            }
+        })
+        .count()
 }
 
 // ---------------------------------------------------------------------------

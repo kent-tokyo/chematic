@@ -7,7 +7,7 @@
 //! closure begin atoms, `/` `\` directions relative to each bond's begin
 //! atom and chiral tags relative to RDKit's bond order.
 
-use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
 
 use super::RdkitSmilesError;
 use super::mol::{
@@ -16,6 +16,34 @@ use super::mol::{
 
 fn unsupported(what: impl Into<String>) -> RdkitSmilesError {
     RdkitSmilesError::Unsupported(what.into())
+}
+
+/// Direction on a chematic bond, normalized to its stored atom1 -> atom2
+/// orientation. MOL/SDF readers keep a geometric E/Z marker in the side
+/// table while leaving the chemical bond order as `Single`; SMILES input may
+/// instead use the literal `Up`/`Down` orders. The RDKit compatibility model
+/// must accept both representations before sanitization and stereo
+/// perception.
+fn input_bond_direction(mol: &Molecule, bidx: BondIdx, literal: BondOrder) -> BondDir {
+    let bond = mol.bond(bidx);
+    let (direction, anchor) = match mol.bond_direction(bidx) {
+        Some(direction) => (
+            direction,
+            mol.bond_direction_anchor(bidx).unwrap_or(bond.atom1),
+        ),
+        None if matches!(literal, BondOrder::Up | BondOrder::Down) => (literal, bond.atom1),
+        None => return BondDir::None,
+    };
+    let value = if direction == BondOrder::Up {
+        BondDir::EndUpRight
+    } else {
+        BondDir::EndDownRight
+    };
+    if anchor == bond.atom2 {
+        value.flipped()
+    } else {
+        value
+    }
 }
 
 /// The parser-state molecule (before `removeHs`/sanitization).
@@ -78,30 +106,20 @@ pub(crate) fn from_chematic_ordered(
         let bond = mol.bond(bidx);
         let (a1, a2) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
         let (bt, aromatic, dir12) = match bond.order {
-            BondOrder::Single => (BondType::Single, false, BondDir::None),
-            BondOrder::Up => (BondType::Single, false, BondDir::EndUpRight),
-            BondOrder::Down => (BondType::Single, false, BondDir::EndDownRight),
+            BondOrder::Single | BondOrder::Up | BondOrder::Down => (
+                BondType::Single,
+                false,
+                input_bond_direction(mol, bidx, bond.order),
+            ),
             BondOrder::Double => (BondType::Double, false, BondDir::None),
             BondOrder::Triple => (BondType::Triple, false, BondDir::None),
             BondOrder::Quadruple => (BondType::Quadruple, false, BondDir::None),
             BondOrder::Dative => (BondType::Dative, false, BondDir::None),
-            BondOrder::Aromatic => {
-                let dir = match mol.bond_direction(bidx) {
-                    Some(d) => {
-                        let d = if d == BondOrder::Up {
-                            BondDir::EndUpRight
-                        } else {
-                            BondDir::EndDownRight
-                        };
-                        match mol.bond_direction_anchor(bidx) {
-                            Some(anchor) if anchor.0 as usize == a2 => d.flipped(),
-                            _ => d,
-                        }
-                    }
-                    None => BondDir::None,
-                };
-                (BondType::Aromatic, true, dir)
-            }
+            BondOrder::Aromatic => (
+                BondType::Aromatic,
+                true,
+                input_bond_direction(mol, bidx, bond.order),
+            ),
             other => return Err(unsupported(format!("bond order {other:?}"))),
         };
         // `CloseMolRings` keeps the opening partial bond (begin = opening
