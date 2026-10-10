@@ -1068,3 +1068,51 @@ fn sdf_string_readers_handle_terminal_delimiters_fields_and_each_record_budget()
             .is_err()
     );
 }
+
+#[test]
+fn cml_preserves_each_supported_bond_and_explicit_atom_annotation() {
+    use crate::cml::{parse_cml, parse_cml_strict, write_cml};
+    use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
+    for order in [
+        BondOrder::Zero,
+        BondOrder::Single,
+        BondOrder::Double,
+        BondOrder::Triple,
+        BondOrder::Quadruple,
+        BondOrder::Aromatic,
+        BondOrder::Dative,
+        BondOrder::QueryAny,
+        BondOrder::QuerySingleOrDouble,
+        BondOrder::QuerySingleOrAromatic,
+        BondOrder::QueryDoubleOrAromatic,
+    ] {
+        let mut builder = MoleculeBuilder::new();
+        let mut atom = Atom::new(Element::C);
+        atom.isotope = Some(13);
+        atom.charge = -1;
+        atom.hydrogen_count = Some(1);
+        builder.add_atom(atom);
+        builder.add_atom(Atom::new(Element::N));
+        builder.add_bond(AtomIdx(0), AtomIdx(1), order).unwrap();
+        let mol = builder.build();
+        let text = write_cml(&mol, Some(&[(1.25, -2.5), (3.75, 4.5)]));
+        let (restored, coords) = parse_cml(&text).unwrap();
+        assert_eq!(restored.bond_count(), 1);
+        assert_eq!(restored.bonds().next().unwrap().1.order, order);
+        assert_eq!(restored.atom(AtomIdx(0)).isotope, Some(13));
+        assert_eq!(restored.atom(AtomIdx(0)).charge, -1);
+        assert_eq!(restored.atom(AtomIdx(0)).hydrogen_count, Some(1));
+        assert_eq!(coords, vec![(1.25, -2.5), (3.75, 4.5)]);
+    }
+    for input in [
+        "<?unfinished",
+        "<molecule></wrong>",
+        "<molecule><atomArray><atom id='a1' elementType='C' x2='0' y2='NaN'/></atomArray></molecule>",
+        "<molecule/>",
+    ] {
+        assert!(parse_cml_strict(input).is_err(), "{input}");
+    }
+    let input = "<?xml version='1.0'?><molecule><atomArray><atom id='a1' elementType='C'/><atom id='a2' elementType='C'/></atomArray><bondArray><bond atomRefs2='a1 a2' order='A'/></bondArray></molecule>";
+    let (mol, _) = parse_cml_strict(input).unwrap();
+    assert!(mol.atoms().all(|(_, a)| a.aromatic));
+}

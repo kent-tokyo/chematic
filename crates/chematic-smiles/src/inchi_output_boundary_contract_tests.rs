@@ -152,3 +152,37 @@ fn inchi_raw_isotope_hydrogen_and_radical_metadata_survive_conversion() {
         assert_eq!(canonical(&raw, &[]), expected);
     }
 }
+
+#[test]
+fn unusual_inchi_valence_cleanup_preserves_connectivity_and_localizes_charge() {
+    // These are deliberately pre-sanitization InChI output graphs. The
+    // reader's cleanup transfers bond order and charge without deleting atoms
+    // or changing connectivity. Compare to explicit, valence-correct products.
+    for (source, expected) in [
+        ("CN(=C)=N", "C=[N+](C)[NH-]"),
+        ("CN(=C)=[NH2+]", "C=[N+](C)N"),
+        ("CN(=C)=O", "C=[N+](C)[O-]"),
+        ("CN(=C)=S", "C=[N+](C)[S-]"),
+        ("[S-](=N)(=C)#N", "C=[S](=[N])=N"),
+        ("Cl#S", "ClS"),
+    ] {
+        let raw = atoms(source);
+        let actual = rdkit_molecule_from_inchi_output(&raw, &[]).unwrap();
+        let original = crate::parse(source).unwrap();
+        assert_eq!(actual.atom_count(), original.atom_count(), "{source}");
+        assert_eq!(actual.bond_count(), original.bond_count(), "{source}");
+        for (idx, atom) in original.atoms() {
+            assert_eq!(actual.atom(idx).element, atom.element, "{source}");
+            let mut before: Vec<_> = original.neighbors(idx).map(|(n, _)| n).collect();
+            let mut after: Vec<_> = actual.neighbors(idx).map(|(n, _)| n).collect();
+            before.sort_unstable();
+            after.sort_unstable();
+            assert_eq!(after, before, "{source}");
+        }
+        assert_eq!(
+            rdkit_canonical_smiles(&actual).unwrap(),
+            rdkit_canonical_smiles(&crate::parse(expected).unwrap()).unwrap(),
+            "{source}"
+        );
+    }
+}

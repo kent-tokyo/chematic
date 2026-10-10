@@ -1234,6 +1234,31 @@ fn tool_lipinski_check(args: &Value) -> Result<Value, ToolCallError> {
 }
 
 fn tool_name_to_smiles(args: &Value) -> Result<Value, ToolCallError> {
+    tool_name_to_smiles_with_lookup(args, |url| {
+        let agent = ureq::config::Config::builder()
+            .timeout_global(Some(std::time::Duration::from_secs(10)))
+            .build()
+            .new_agent();
+        let mut resp = agent.get(url).call().map_err(|e| {
+            ToolCallError::domain(
+                "PUBCHEM_LOOKUP_FAILED",
+                format!("PubChem request failed: {e}"),
+            )
+        })?;
+        let mut response_reader = resp.body_mut().as_reader();
+        read_bounded_response(&mut response_reader).map_err(|e| {
+            ToolCallError::domain(
+                "PUBCHEM_LOOKUP_FAILED",
+                format!("PubChem response read error: {e}"),
+            )
+        })
+    })
+}
+
+fn tool_name_to_smiles_with_lookup(
+    args: &Value,
+    lookup: impl FnOnce(&str) -> Result<String, ToolCallError>,
+) -> Result<Value, ToolCallError> {
     let name = get_str(args, "name")?;
     if name.len() > 500 {
         return Err(ToolCallError::invalid_args(
@@ -1266,24 +1291,7 @@ fn tool_name_to_smiles(args: &Value) -> Result<Value, ToolCallError> {
         encoded
     );
 
-    let agent = ureq::config::Config::builder()
-        .timeout_global(Some(std::time::Duration::from_secs(10)))
-        .build()
-        .new_agent();
-    let mut resp = agent.get(&url).call().map_err(|e| {
-        ToolCallError::domain(
-            "PUBCHEM_LOOKUP_FAILED",
-            format!("PubChem request failed: {e}"),
-        )
-    })?;
-
-    let mut response_reader = resp.body_mut().as_reader();
-    let raw = read_bounded_response(&mut response_reader).map_err(|e| {
-        ToolCallError::domain(
-            "PUBCHEM_LOOKUP_FAILED",
-            format!("PubChem response read error: {e}"),
-        )
-    })?;
+    let raw = lookup(&url)?;
     let body: Value = serde_json::from_str(&raw).map_err(|e| {
         ToolCallError::domain(
             "PUBCHEM_LOOKUP_FAILED",
@@ -1784,6 +1792,71 @@ mod tests {
         let mut body = std::io::Cursor::new(vec![b'x'; MAX_PUBCHEM_RESPONSE_BYTES + 1]);
         let err = read_bounded_response(&mut body).unwrap_err();
         assert!(err.contains("exceeds maximum size"));
+    }
+
+    #[test]
+    fn pubchem_lookup_encodes_names_and_preserves_response_error_taxonomy() {
+        for (name, encoded) in [
+            ("sodium chloride", "sodium%20chloride"),
+            ("é水+/#", "%c3%a9%e6%b0%b4%2b%2f%23"),
+            ("X-_.~9", "X-_.~9"),
+        ] {
+            let value = tool_name_to_smiles_with_lookup(&json!({"name":name}), |url| {
+                assert_eq!(url, format!("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{encoded}/property/IsomericSMILES/JSON"));
+                Ok(json!({"PropertyTable":{"Properties":[{"IsomericSMILES":"CCO"}]}}).to_string())
+            }).unwrap();
+            assert_eq!(
+                value,
+                json!({"name":name,"smiles":"CCO","source":"PubChem"})
+            );
+        }
+        for raw in [
+            "not json",
+            "{}",
+            r#"{"PropertyTable":{"Properties":[]}}"#,
+            r#"{"PropertyTable":{"Properties":[{"IsomericSMILES":3}]}}"#,
+        ] {
+            let error =
+                tool_name_to_smiles_with_lookup(&json!({"name":"ethanol"}), |_| Ok(raw.into()))
+                    .unwrap_err();
+            assert!(matches!(
+                error,
+                ToolCallError::Domain {
+                    code: "PUBCHEM_LOOKUP_FAILED",
+                    ..
+                }
+            ));
+            assert!(error.legacy_message().contains(if raw == "not json" {
+                "parse error"
+            } else {
+                "ethanol"
+            }));
+        }
+        let error = tool_name_to_smiles_with_lookup(&json!({"name":"ethanol"}), |_| {
+            Err(ToolCallError::domain(
+                "PUBCHEM_LOOKUP_FAILED",
+                "synthetic request failure",
+            ))
+        })
+        .unwrap_err();
+        assert!(!error.is_invalid_args());
+        assert_eq!(error.legacy_message(), "synthetic request failure");
+        for args in [
+            json!({}),
+            json!({"name":3}),
+            json!({"name":"x".repeat(501)}),
+        ] {
+            let error = tool_name_to_smiles_with_lookup(&args, |_| {
+                panic!("invalid arguments must not perform a lookup")
+            })
+            .unwrap_err();
+            assert!(error.is_invalid_args());
+        }
+        let value = tool_name_to_smiles_with_lookup(&json!({"name":"x".repeat(500)}), |_| {
+            Ok(json!({"PropertyTable":{"Properties":[{"IsomericSMILES":"C"}]}}).to_string())
+        })
+        .unwrap();
+        assert_eq!(value["name"].as_str().unwrap().len(), 500);
     }
 
     #[test]

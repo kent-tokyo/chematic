@@ -4327,3 +4327,101 @@ mod policy_bridge_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod diagnostic_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn missing_parameter_citations_are_invariant_under_term_symmetries() {
+        let mol = chematic_smiles::parse("FC(N)O").unwrap();
+        let types = [11, 1, 8, 6];
+        for (kind, permutations) in [
+            (Mmff94TermKind::Bond, vec![vec![0, 1], vec![1, 0]]),
+            (Mmff94TermKind::Angle, vec![vec![0, 1, 2], vec![2, 1, 0]]),
+            (
+                Mmff94TermKind::StretchBend,
+                vec![vec![0, 1, 2], vec![2, 1, 0]],
+            ),
+            (
+                Mmff94TermKind::Torsion,
+                vec![vec![0, 1, 2, 3], vec![3, 2, 1, 0]],
+            ),
+            (
+                Mmff94TermKind::Oop,
+                vec![
+                    vec![1, 0, 2, 3],
+                    vec![1, 0, 3, 2],
+                    vec![1, 2, 0, 3],
+                    vec![1, 2, 3, 0],
+                    vec![1, 3, 0, 2],
+                    vec![1, 3, 2, 0],
+                ],
+            ),
+        ] {
+            let mut expected = None;
+            for permutation in permutations {
+                let atoms: Vec<_> = permutation.into_iter().map(AtomIdx).collect();
+                let term = missing_term(&mol, &types, kind, &atoms);
+                for &idx in &term.atoms {
+                    assert!(term.description.contains(&format!(
+                        "{}({})",
+                        mol.atom(idx).element.symbol(),
+                        types[idx.0 as usize]
+                    )));
+                }
+                assert!(term.description.contains("atom indices"));
+                let citation = (term.atoms, term.description);
+                if let Some(expected) = &expected {
+                    assert_eq!(&citation, expected);
+                } else {
+                    expected = Some(citation);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn force_field_errors_preserve_setup_context_and_numerical_failure_evidence() {
+        let helium = chematic_smiles::parse("[He]").unwrap();
+        let setup_error =
+            chematic_ff::mmff94_minimizer::mmff94_total_energy(&helium, &[[0.0; 3]]).unwrap_err();
+        let message = setup_error.to_string();
+        assert!(
+            ForceFieldBridgeError::from(setup_error)
+                .to_string()
+                .contains(&message)
+        );
+        let numeric = chematic_ff::assign_mmff94_numeric_types(&helium).unwrap_err();
+        assert!(
+            ForceFieldBridgeError::from(numeric.clone())
+                .to_string()
+                .contains(&numeric.to_string())
+        );
+        assert_eq!(
+            ForceFieldBridgeError::MissingParameters(Box::default()).to_string(),
+            "MMFF94 parameters missing for 0 internal coordinate(s) (0 bond, 0 angle, 0 torsion, 0 oop, 0 stretch-bend)"
+        );
+        let detail = MinimizationFailureDetail {
+            policy: ForceFieldPolicy::UffOnly,
+            reason: MinimizationFailureReason::CatastrophicBondBlowup,
+            converged: false,
+            iterations: 17,
+            mmff94_termination: None,
+            max_residual_force: 123.5,
+            worst_bond_length: 9.75,
+            distance_geometry_v2_retry_attempted: true,
+        };
+        let message = ForceFieldBridgeError::MinimizationFailed(Box::new(detail)).to_string();
+        for value in [
+            "UffOnly",
+            "CatastrophicBondBlowup",
+            "iterations=17",
+            "9.75",
+            "123.50",
+        ] {
+            assert!(message.contains(value), "{message}");
+        }
+        assert_eq!(EnergyReport::None.total(), 0.0);
+    }
+}
