@@ -10,6 +10,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Documentation
+
+- `chematic-mcp` quick start now begins with the pinned crates.io installation
+  and direct stdio client configuration; the source-checkout command remains
+  available as the contributor workflow (#785).
+
 ## [1.0.41] - 2026-10-10
 
 ### Added

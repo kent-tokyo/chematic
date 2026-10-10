@@ -37,12 +37,37 @@ noted under "Network & privacy".
 See this README for the protocol behavior and compatibility notes; the tool
 registry in `src/tools.rs` is the source of truth for the available tools.
 
-```toml
-[dependencies]
-chematic-mcp = { version = "1.0.41", path = "../chematic-mcp" }
+## Quick start
+
+Install the published binary from crates.io. Pinning the version keeps the
+server and the documented protocol surface in sync:
+
+```bash
+cargo install chematic-mcp --version 1.0.41 --locked
 ```
 
-## Running the server
+Make sure Cargo's binary directory is on `PATH` (`$CARGO_HOME/bin`, normally
+`~/.cargo/bin`), then configure an MCP client to run the installed binary over
+the default stdio transport:
+
+```json
+{
+  "mcpServers": {
+    "chematic": {
+      "command": "chematic-mcp",
+      "args": []
+    }
+  }
+}
+```
+
+No repository checkout is required for this path. Streamable HTTP remains an
+opt-in, self-hosted transport; this package does not provide a hosted endpoint,
+authentication, OAuth, or a service SLA.
+
+## Running from a source checkout
+
+Contributors working in this repository can run the workspace binary directly:
 
 ```bash
 cargo run -p chematic-mcp --release
@@ -50,8 +75,8 @@ cargo run -p chematic-mcp --release
 
 The server reads newline-delimited JSON-RPC 2.0 requests from stdin and writes
 responses to stdout, and auto-detects which protocol era the client speaks
-from the *first* request on the connection (see "Protocol eras" below). Add
-it to your Claude Desktop or Claude Code MCP config:
+from the *first* request on the connection (see "Protocol eras" below). A
+checkout-based client configuration is:
 
 ```json
 {
@@ -62,6 +87,14 @@ it to your Claude Desktop or Claude Code MCP config:
     }
   }
 }
+```
+
+Workspace users that link the protocol/server crate directly can keep the
+published version and local path explicit:
+
+```toml
+[dependencies]
+chematic-mcp = { version = "1.0.41", path = "../chematic-mcp" }
 ```
 
 ## Protocol eras
