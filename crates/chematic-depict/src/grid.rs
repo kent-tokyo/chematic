@@ -259,3 +259,56 @@ mod tests {
         assert!(svg.contains("<svg"), "grid with excess cols still renders");
     }
 }
+
+#[cfg(test)]
+mod highlighted_grid_boundary_tests {
+    use super::*;
+    use chematic_core::{AtomIdx, BondIdx};
+
+    #[test]
+    fn highlights_stay_in_their_cell_and_escape_colors_in_stable_atom_order() {
+        let mol = chematic_smiles::parse("CCO").unwrap();
+        let mut opts = RenderOptions {
+            highlight_color: "red\"<&".into(),
+            ..Default::default()
+        };
+        opts.highlight_atoms
+            .extend([AtomIdx(2), AtomIdx(0), AtomIdx(99)]);
+        opts.atom_color_map.insert(AtomIdx(2), "blue\"<&".into());
+        opts.highlight_bonds.insert(BondIdx(1));
+        let svg = depict_svg_grid_with_opts_and_layouts(
+            &[(&mol, Some(&opts)), (&mol, None)],
+            &[compute_layout(&mol), compute_layout(&mol)],
+            2,
+        );
+        assert_eq!(svg.matches("<circle ").count(), 2);
+        assert!(svg.contains("red&quot;&lt;&amp;"));
+        assert!(svg.contains("blue&quot;&lt;&amp;"));
+        assert!(!svg.contains("fill=\"red\"<&"));
+        let first = svg
+            .split("id=\"mol-0\"")
+            .nth(1)
+            .unwrap()
+            .split("</g>")
+            .next()
+            .unwrap();
+        let second = svg
+            .split("id=\"mol-1\"")
+            .nth(1)
+            .unwrap()
+            .split("</g>")
+            .next()
+            .unwrap();
+        assert!(first.find("red&quot;").unwrap() < first.find("blue&quot;").unwrap());
+        assert!(first.contains("#FF8C00"));
+        assert!(!second.contains("<circle "));
+        assert!(!second.contains("#FF8C00"));
+        assert!(!svg.contains("NaN") && !svg.contains("inf"));
+        for _ in 0..5 {
+            assert_eq!(
+                depict_svg_grid_with_opts(&[(&mol, Some(&opts)), (&mol, None)], 2),
+                svg
+            );
+        }
+    }
+}
