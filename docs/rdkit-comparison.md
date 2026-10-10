@@ -10,9 +10,9 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.0.41 release** expands the named RDKit 2026.03.1-compatible surface
-with tautomer, writer, matrix, sparse-fingerprint, chemistry-problem and
-reaction APIs. In the recorded source comparison, chematic matches RDKit at
+The **v1.0.42 release** retains the named RDKit 2026.03.1-compatible surface
+and reduces repeated work in selected fingerprint, descriptor, ring, reaction,
+and MMFF94 paths. In the recorded v1.0.41 source comparison, chematic matches RDKit at
 least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and
 RDKit.js 10k; the separate stress corpus retains one weaker native canonical
 SMILES round-trip result. This is source-build evidence, not a universal or
@@ -20,7 +20,8 @@ published-package parity claim. The latest
 published-package chemistry and speed comparison packet is pinned to
 **v1.0.30** against RDKit 2026.03.6. Later dated records cover v1.0.36
 and v1.0.37 packages plus later source evidence. v1.0.41 release channels are
-verified; package-output chemistry reruns remain separate work.
+verified; v1.0.42 publication and package-output chemistry reruns remain
+separate work.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|

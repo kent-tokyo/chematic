@@ -3,7 +3,7 @@
 Generated from checked-in manifests by `python3 scripts/generate_compatibility_dashboard.py`.
 This is a compatibility-contract dashboard, not a universal RDKit parity or speed claim.
 
-- Target version: `1.0.41`
+- Target version: `1.0.42`
 - Regeneration: deterministic, offline, clean-checkout compatible
 - Contract manifest: `validation/cross_binding_contract.json` (SHA-256 `a30b177a6381c5372e9e1fd069bdf42836e5dd8b1a8f7c5da7ce26f2a8d2c3e9`)
 - Streaming matrix: `validation/results/cross-engine-matrix-v1.0.13.json` (SHA-256 `84870b6ee1b402327fec33df7fc76cb0f36301f595758d575467066818405330`)
