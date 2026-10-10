@@ -26,6 +26,14 @@ for kind, count, prefix, suffix in [
     ("SP", 3, "F[Pt@", "](Cl)(Br)I"),
     ("TB", 20, "F[P@", "](Cl)(Br)(I)N"),
     ("OH", 30, "F[Co@", "](Cl)(Br)(I)(N)O"),
+    ("SP", 3, "CC[Pt@", "](NCC)(N(C)C)Cl"),
+    ("TB", 20, "CC[P@", "](Cl)(Br)(NC)N(C)C"),
+    ("OH", 30, "CC[Co@", "](Cl)(Br)(I)(NC)N(C)C"),
+    ("SP", 3, "N1CCN[Pt@", "]1(Cl)Br"),
+    ("OH", 30, "N1CCN[Co@", "]1(Cl)(Br)(I)O"),
+    ("SP", 3, "CC[Pt@", "](Cl)Br"),
+    ("TB", 20, "CC[P@", "](Cl)(Br)N"),
+    ("OH", 30, "CC[Co@", "](Cl)(Br)(I)N"),
 ]:
     smiles.extend(f"{prefix}{kind}{n}{suffix}" for n in range(1, count + 1))
 depictions = []
