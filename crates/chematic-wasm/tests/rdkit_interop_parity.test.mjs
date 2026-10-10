@@ -88,11 +88,39 @@ assert.throws(() => wasm.rdkit_from_pdb_block("not pdb", true, true, 0, true), /
 assert.throws(() => wasm.rdkit_from_xyz_block("not xyz"), /rdkit_compatibility_error/);
 assert.throws(() => wasm.rdkit_from_mol2_block("not mol2", true, true, true), /rdkit_compatibility_error/);
 
+const enhancedStereoBlock = `enhanced
+  chematic
+
+  0  0  0  0  0  0  0  0  0  0999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 2 1 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 C 0 0 0 0
+M  V30 2 C 1 0 0 0
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 1 1 2
+M  V30 END BOND
+M  V30 BEGIN COLLECTION
+M  V30 MDLV30/STEREL1 ATOMS=(1 1)
+M  V30 END COLLECTION
+M  V30 END CTAB
+M  END
+`;
+const enhanced = wasm.mol_from_v3000_block(enhancedStereoBlock);
+assert.throws(() => enhanced.rdkit_cx_smarts(), /rdkit_compatibility_error/);
+assert.throws(() => enhanced.rdkit_stereoisomer_count(), /rdkit_compatibility_error/);
+assert.throws(
+  () => enhanced.rdkit_stereoisomer_smiles_json(16),
+  /rdkit_compatibility_error/,
+);
+
 // Bounds output is O(n^2), so the WASM contract refuses more than 512 atoms.
 const oversized = wasm.parse_smiles("C".repeat(513));
 assert.throws(() => oversized.rdkit_bounds_matrix_json(true, true, false), /rdkit_3d_limit/);
 
 oversized.free();
+enhanced.free();
 ethanolH.free();
 ethanol.free();
 mol2Result.molecule().free();
