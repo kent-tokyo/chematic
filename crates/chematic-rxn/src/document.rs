@@ -625,3 +625,53 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod legacy_loss_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn legacy_export_reports_all_authored_metadata_losses_without_editing_document() {
+        let mut document = ReactionDocument::from_reaction_smiles("CCO>>CC=O").unwrap();
+        let provenance = ProvenanceRecord {
+            source: "lab-notebook:42".into(),
+            kind: "authored".into(),
+            note: Some("retain this citation".into()),
+        };
+        document.provenance.push(provenance.clone());
+        document.steps[0].provenance.push(provenance);
+        document.steps[0].conditions.push(ReactionCondition {
+            key: "temperature".into(),
+            value: "25 C".into(),
+        });
+        document.steps[0].components[0].coefficient = 2;
+        let coefficient_field = format!("{}.coefficient", document.steps[0].components[0].id);
+        let mut next = document.steps[0].clone();
+        next.id = "second-step".into();
+        for component in &mut next.components {
+            component.id = format!("second-{}", component.id);
+        }
+        document.steps.push(next);
+        document.validate().unwrap();
+        let before = serde_json::to_value(&document).unwrap();
+        let ReactionDocumentError::Losses(losses) = document.to_reaction_smiles().unwrap_err()
+        else {
+            panic!("loss report required")
+        };
+        let fields: Vec<_> = losses.iter().map(|loss| loss.field.as_str()).collect();
+        assert_eq!(
+            fields,
+            [
+                "steps",
+                "provenance",
+                "conditions.temperature",
+                "step.provenance",
+                coefficient_field.as_str()
+            ]
+        );
+        assert!(losses.iter().all(|loss| !loss.detail.is_empty()));
+        assert_eq!(serde_json::to_value(&document).unwrap(), before);
+        let plain = ReactionDocument::from_reaction_smiles("CCO>>CC=O").unwrap();
+        assert_eq!(plain.to_reaction_smiles().unwrap(), "CCO>>CC=O");
+    }
+}

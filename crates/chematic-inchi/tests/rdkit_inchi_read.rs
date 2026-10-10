@@ -50,3 +50,27 @@ fn invalid_inchi_is_an_error() {
     assert!(rdkit_mol_from_inchi("InChI=1S/garbage").is_err());
     assert!(rdkit_mol_from_inchi("not an inchi").is_err());
 }
+
+#[test]
+fn official_inchi_reader_boundary_regressions_match_pinned_rdkit() {
+    let mut mismatches = Vec::new();
+    let mut count = 0;
+    for line in
+        include_str!("../../../validation/rdkit-2026.03.1-inchi-reader-boundary.tsv").lines()
+    {
+        let (inchi, expected) = line.split_once('\t').unwrap();
+        let result = rdkit_mol_from_inchi(inchi)
+            .map_err(|e| e.to_string())
+            .and_then(|m| rdkit_canonical_smiles(&m).map_err(|e| e.to_string()));
+        let agrees = match &result {
+            Ok(actual) => actual == expected,
+            Err(_) => expected == "<NONE>",
+        };
+        if !agrees {
+            mismatches.push(format!("{inchi}: expected {expected}, got {result:?}"));
+        }
+        count += 1;
+    }
+    assert_eq!(count, 37);
+    assert!(mismatches.is_empty(), "{}", mismatches.join("\n"));
+}

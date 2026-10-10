@@ -19,6 +19,19 @@ for text in smiles:
     mol=Chem.MolFromSmiles(text);assert mol is not None,text
     for flags in [15761407, (1 << 24) - 1] + [1 << i for i in range(24)]:
         rows.append(dict(smiles=text,bit_flags=flags,on_bits=list(pyAvalonTools.GetAvalonFP(mol,nBits=512,bitFlags=flags).GetOnBits())))
+# Above 2048 bits Avalon switches to seeded atom-type counters. Include
+# repeated heteroatoms on either side of that boundary, and a padded size.
+for text in ['CCO','c1ccccc1','CC(=O)Oc1ccccc1C(=O)O',
+             'NCCNCCNCCNCCNCCNCCNCCNCCNCCNCCNCCNCCNCCNCCNCCNCCNCCN',
+             'FC(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F',
+             'N(N(NN)NN)N(NN)NN',
+             'c1ccccc1-c1ccccc1','c1ccccc1Cc1ccccc1','c1ccccc1CCc1ccccc1',
+             'c1ccc(CCc2ccc(Cc3ccccc3)cc2)cc1']:
+    mol=Chem.MolFromSmiles(text);assert mol is not None,text
+    for bits in [2048,2056,4096]:
+        for flags in [15761407, (1 << 24) - 1] + [1 << i for i in range(24)]:
+            rows.append(dict(smiles=text,n_bits=bits,bit_flags=flags,
+                             on_bits=list(pyAvalonTools.GetAvalonFP(mol,nBits=bits,bitFlags=flags).GetOnBits())))
 path=root/'validation/rdkit-2026.03.1-avalon-boundary.json'
 path.write_text('{\n  "rdkit_version": "'+rdBase.rdkitVersion+'",\n  "rows": [\n'+',\n'.join('    '+json.dumps(row) for row in rows)+'\n  ]\n}\n')
 print(f'wrote {len(rows)} cases')
