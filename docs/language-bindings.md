@@ -8,8 +8,7 @@ have different API and error shapes. This page names those differences.
 The atom-tracking APIs expose only mappings with a documented atom order.
 The checked reaction additions below are included since v1.0.32; the published
 v1.0.38 83-row gate is 80 exact graph/origin/map rows and three inputs invalid
-in both engines. Missing WASM/Node surfaces are tracked in
-[#784](https://github.com/kent-tokyo/chematic/issues/784).
+in both engines.
 
 | Capability | Rust | Python | WASM / Node |
 |---|---|---|---|
@@ -55,6 +54,20 @@ assert legacy.GetOnBits() == stable.GetOnBits()
 count-simulation Morgan fingerprints raise `NotImplementedError`; they are not
 silently substituted with a different algorithm. This is a Python API
 compatibility surface, not a claim of bit parity with RDKit's C++ implementation.
+
+## RDKit-compatible WASM / Node surface
+
+`MolHandle` exposes the separately named `rdkit_*` writer, scaffold, stereo,
+hash, Morgan, alignment, seeded-embedding, and bounds-matrix operations. The
+free functions `rdkit_from_pdb_block`, `rdkit_from_xyz_block`, and
+`rdkit_from_mol2_block` return a `RdkitReadResult` with `molecule()`,
+`coords_json()`, and sanitized `smiles` where applicable.
+
+All atom indices and coordinate rows are zero-based and follow the returned
+`MolHandle` order. Alignment search is capped at 1,000,000 matches, stereo
+enumeration at 4,096 isomers, and ETKDG/bounds output at 512 atoms. These are
+the RDKit 2026.03.1 compatibility paths; the existing native browser APIs are
+unchanged.
 
 ---
 
