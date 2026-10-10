@@ -650,3 +650,45 @@ fn test_issue92_explicit_h_substituent_matches_implicit_h_name() {
         "4-methylaniline"
     );
 }
+
+#[test]
+fn disubstituted_benzene_names_cover_halogen_and_principal_group_positions() {
+    for (source, expected) in [
+        ("Fc1ccccc1F", "1,2-difluorobenzene"),
+        ("Fc1cccc(F)c1", "1,3-difluorobenzene"),
+        ("Fc1ccc(F)cc1", "1,4-difluorobenzene"),
+        ("Clc1ccccc1Cl", "1,2-dichlorobenzene"),
+        ("Brc1cccc(Br)c1", "1,3-dibromobenzene"),
+        ("Ic1ccc(I)cc1", "1,4-diiodobenzene"),
+        ("Fc1ccccc1O", "2-fluorophenol"),
+        ("Clc1cccc(O)c1", "3-chlorophenol"),
+        ("Brc1ccc(O)cc1", "4-bromophenol"),
+        ("Ic1ccc(N)cc1", "4-iodoaniline"),
+        ("Nc1ccccc1O", "2-aminophenol"),
+        ("Nc1cccc(O)c1", "3-aminophenol"),
+        ("Nc1ccc(O)cc1", "4-aminophenol"),
+    ] {
+        assert_eq!(name(&mol(source)).unwrap(), expected, "{source}");
+    }
+}
+
+#[test]
+fn benzene_substituents_outside_the_local_naming_scope_are_not_partially_named() {
+    for source in [
+        "CCOc1ccccc1F",
+        "CC(=O)Oc1ccccc1F",
+        "[13CH3]c1ccccc1F",
+        "[NH3+]c1ccccc1F",
+        "C=Cc1ccccc1F",
+        "N#Cc1ccccc1F",
+        "O=Cc1ccccc1F",
+        "SCc1ccccc1F",
+        "[O-]c1ccccc1F",
+    ] {
+        assert_eq!(
+            name(&mol(source)),
+            Err(IupacError::NotSupported),
+            "{source}"
+        );
+    }
+}

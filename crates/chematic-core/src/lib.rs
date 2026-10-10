@@ -57,3 +57,6 @@ pub use valence::{
 };
 #[doc(hidden)]
 pub use valence::{implicit_hcount_with, valence_inferred_hcount_with};
+
+#[cfg(test)]
+mod mutation_contract_tests;

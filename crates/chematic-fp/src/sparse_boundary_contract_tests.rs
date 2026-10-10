@@ -82,3 +82,54 @@ fn sparse_count_fingerprint_codes_and_multiplicities_match_pinned_rdkit() {
         );
     }
 }
+
+#[test]
+fn fps_errors_explain_headers_hex_lengths_and_bad_digits_before_stopping() {
+    use crate::fps::*;
+    use std::io::Cursor;
+    for (text, context) in [
+        ("01\tname\n", "num_bits"),
+        ("#num_bits=zero\n", "zero"),
+        ("#num_bits=0\n", "num_bits"),
+    ] {
+        let error = FpsReader::new(Cursor::new(text)).err().unwrap();
+        assert!(error.to_string().contains(context));
+    }
+    for (text, context) in [
+        ("missing-tab", "missing-tab"),
+        ("0\tname", "expected 2"),
+        ("gg\tname", "'g'"),
+    ] {
+        let mut reader =
+            FpsReader::new(Cursor::new(format!("#num_bits=8\n{text}\n01\tgood\n"))).unwrap();
+        let error = reader.next().unwrap().unwrap_err();
+        assert!(error.to_string().contains(context), "{error}");
+        assert!(reader.next().is_none());
+    }
+}
+
+#[test]
+fn prepared_morgan_rejects_query_only_bond_types_with_the_original_index() {
+    use crate::rdkit_morgan_ecfp4::*;
+    use chematic_core::{BondIdx, BondOrder};
+    for order in [
+        BondOrder::QueryAny,
+        BondOrder::QuerySingleOrDouble,
+        BondOrder::QuerySingleOrAromatic,
+        BondOrder::QueryDoubleOrAromatic,
+    ] {
+        let mut mol = chematic_smiles::parse("CCC").unwrap();
+        mol.set_bond_order(BondIdx(1), order);
+        let e = prepare_rdkit_morgan_ecfp4(&mol).err().unwrap();
+        assert!(matches!(
+            e,
+            RdkitMorganError::UnsupportedBondOrder {
+                bond_idx: BondIdx(1),
+                ..
+            }
+        ));
+        assert!(
+            e.to_string().contains("BondIdx(1)") && e.to_string().contains(&format!("{order:?}"))
+        );
+    }
+}

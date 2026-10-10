@@ -1,0 +1,274 @@
+{
+  "rdkit_version": "2026.03.1",
+  "rows": [
+    {
+      "smiles": "CCO",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 3 2 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 O 2.598076 -0.000000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        42,
+        67,
+        198,
+        222,
+        262,
+        334,
+        479,
+        490
+      ]
+    },
+    {
+      "smiles": "c1ccccc1",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 6 6 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 1.500000 0.000000 0.000000 0\nM  V30 2 C 0.750000 -1.299038 0.000000 0\nM  V30 3 C -0.750000 -1.299038 0.000000 0\nM  V30 4 C -1.500000 0.000000 0.000000 0\nM  V30 5 C -0.750000 1.299038 0.000000 0\nM  V30 6 C 0.750000 1.299038 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 2 2 3\nM  V30 3 1 3 4\nM  V30 4 2 4 5\nM  V30 5 1 5 6\nM  V30 6 2 6 1\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        138,
+        157,
+        293,
+        341,
+        343,
+        351,
+        455,
+        464
+      ]
+    },
+    {
+      "smiles": "c1cc[nH]c1",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 5 5 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 1.275976 0.000000 0.000000 0\nM  V30 2 C 0.394298 1.213525 0.000000 0\nM  V30 3 C -1.032286 0.750000 0.000000 0\nM  V30 4 N -1.032286 -0.750000 0.000000 0\nM  V30 5 C 0.394298 -1.213525 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 2 2 3\nM  V30 3 1 3 4\nM  V30 4 1 4 5\nM  V30 5 2 5 1\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        6,
+        10,
+        13,
+        15,
+        16,
+        17,
+        18,
+        28,
+        36,
+        43,
+        57,
+        60,
+        81,
+        84,
+        88,
+        94,
+        105,
+        117,
+        125,
+        138,
+        145,
+        150,
+        157,
+        163,
+        172,
+        176,
+        181,
+        194,
+        196,
+        212,
+        220,
+        225,
+        240,
+        242,
+        251,
+        258,
+        263,
+        273,
+        277,
+        281,
+        293,
+        294,
+        304,
+        307,
+        325,
+        343,
+        345,
+        350,
+        351,
+        370,
+        381,
+        382,
+        385,
+        397,
+        411,
+        414,
+        488,
+        490,
+        492,
+        505,
+        507
+      ]
+    },
+    {
+      "smiles": "[NH4+]",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 N 0.000000 0.000000 0.000000 0 CHG=1\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        46,
+        49,
+        67,
+        125,
+        472
+      ]
+    },
+    {
+      "smiles": "CC(=O)[O-]",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 4 3 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 O 1.299038 2.250000 0.000000 0\nM  V30 4 O 2.598076 -0.000000 0.000000 0 CHG=-1\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 2 2 3\nM  V30 3 1 2 4\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        67,
+        116,
+        222,
+        262,
+        510
+      ]
+    },
+    {
+      "smiles": "[CH3]",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0 RAD=2 VAL=3\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        67
+      ]
+    },
+    {
+      "smiles": "[O][O]",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 O 0.000000 0.000000 0.000000 0 RAD=2 VAL=1\nM  V30 2 O 1.299038 0.750000 0.000000 0 RAD=2 VAL=1\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        67,
+        445
+      ]
+    },
+    {
+      "smiles": "[13CH3][15NH2]",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0 MASS=13\nM  V30 2 N 1.299038 0.750000 0.000000 0 MASS=15\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        49,
+        57,
+        67,
+        125,
+        220,
+        454
+      ]
+    },
+    {
+      "smiles": "F[C@H](Cl)Br",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 4 3 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 F 1.299038 0.750000 0.000000 0\nM  V30 2 C 0.000000 0.000000 0.000000 0\nM  V30 3 Cl -1.299038 0.750000 0.000000 0\nM  V30 4 Br -0.000000 -1.500000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 2 1 CFG=1\nM  V30 2 1 2 3\nM  V30 3 1 2 4\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        7,
+        17,
+        35,
+        46,
+        67,
+        69,
+        80,
+        93,
+        137,
+        156,
+        159,
+        168,
+        182,
+        234,
+        238,
+        253,
+        328,
+        335,
+        423,
+        424,
+        426,
+        492,
+        505,
+        508
+      ]
+    },
+    {
+      "smiles": "*CC*",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 4 3 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 R 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 C 2.598076 -0.000000 0.000000 0\nM  V30 4 R 3.897114 0.750000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\nM  V30 3 1 3 4\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        67
+      ]
+    },
+    {
+      "smiles": "CC.CN",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 4 2 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 C 0.000000 1.750000 0.000000 0\nM  V30 4 N 1.299038 2.500000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 3 4\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        49,
+        57,
+        67,
+        125,
+        220,
+        454
+      ]
+    },
+    {
+      "smiles": "C#N",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 N -0.000000 -1.500000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 3 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        67,
+        115,
+        154,
+        183,
+        315,
+        322,
+        335,
+        361
+      ]
+    },
+    {
+      "smiles": "C1CC2CCC1C2",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 7 8 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 1.275976 0.000000 0.000000 0\nM  V30 2 C 0.394298 1.213525 0.000000 0\nM  V30 3 C -1.032286 0.750000 0.000000 0\nM  V30 4 C -1.913964 -0.463525 0.000000 0\nM  V30 5 C -1.032286 -1.677051 0.000000 0\nM  V30 6 C 0.394298 -1.213525 0.000000 0\nM  V30 7 C -1.032286 -0.750000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\nM  V30 3 1 3 4\nM  V30 4 1 4 5\nM  V30 5 1 5 6\nM  V30 6 1 6 7\nM  V30 7 1 6 1\nM  V30 8 1 7 3\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        34,
+        41,
+        59,
+        70,
+        72,
+        80,
+        94,
+        109,
+        116,
+        125,
+        143,
+        209,
+        229,
+        242,
+        246,
+        250,
+        314,
+        315,
+        321,
+        348,
+        356,
+        384,
+        409,
+        417,
+        440,
+        441,
+        453,
+        490
+      ]
+    },
+    {
+      "smiles": "CS(=O)(=O)C",
+      "block": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 5 4 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 S 1.299038 0.750000 0.000000 0\nM  V30 3 O 2.049038 -0.549038 0.000000 0\nM  V30 4 O 0.549038 2.049038 0.000000 0\nM  V30 5 C 2.598076 1.500000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 2 2 3\nM  V30 3 2 2 4\nM  V30 4 1 2 5\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "on_bits": [
+        1,
+        58,
+        67,
+        100,
+        105,
+        161,
+        189,
+        200,
+        259,
+        262,
+        267,
+        269,
+        283,
+        292,
+        297,
+        303,
+        314,
+        326,
+        342,
+        352,
+        390,
+        471
+      ]
+    }
+  ]
+}

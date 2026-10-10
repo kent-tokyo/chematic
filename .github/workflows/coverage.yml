@@ -81,6 +81,11 @@ jobs:
             --test neighbor --test periodicity \
             --test canonical_ez_planner_order --test canonical_ez_residual \
             --test canonical_robustness \
+            --test mmff_type_census --test public_api_compat \
+            --test kekule_s0_stereo_invariance --test mancude_decision_regression \
+            --test corpus_smoke --test mancude_context --test mancude_corpus_classification \
+            --test uncharacterized_diagnosis --test mancude_digraph_diff \
+            --test rule4b_production_parity --test corpus_report \
             --test chembl_roundtrip --test canonical_idempotency_corpus \
             --test canonical_idempotency_corpus_standardized \
             --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \

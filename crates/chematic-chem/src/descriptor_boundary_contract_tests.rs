@@ -210,3 +210,190 @@ fn cns_mpo_piecewise_scores_respect_the_documented_boundaries() {
         "PSA descending",
     );
 }
+
+#[test]
+fn xlogp_atom_contributions_are_invariant_under_atom_reordering_and_fragment_addition() {
+    use crate::{xlogp3, xlogp3_per_atom};
+    use chematic_core::AtomIdx;
+    for source in [
+        "C#C",
+        "CC#N",
+        "C1=CCCCC1",
+        "CC(C)(C)C",
+        "CN",
+        "CNC",
+        "CN(C)C",
+        "[NH4+]",
+        "N(=O)O",
+        "c1ccncc1",
+        "c1cc[nH]c1",
+        "C=N",
+        "C=NC",
+        "C1=NCCCC1",
+        "C1CCNCC1",
+        "c1ccoc1",
+        "S",
+        "CSC",
+        "C=S",
+        "CS(=O)C",
+        "CS(=O)(=O)C",
+        "c1ccsc1",
+        "CP(=O)(O)O",
+        "FC(Cl)(Br)I",
+        "[SiH4]",
+        "[H][H]",
+    ] {
+        let mol = chematic_smiles::parse(source).unwrap();
+        let expected = xlogp3_per_atom(&mol);
+        let mut builder = MoleculeBuilder::new();
+        for index in (0..mol.atom_count()).rev() {
+            builder.add_atom(mol.atom(AtomIdx(index as u32)).clone());
+        }
+        let reverse = |i: AtomIdx| AtomIdx((mol.atom_count() - 1 - i.0 as usize) as u32);
+        for (_, bond) in mol.bonds() {
+            builder
+                .add_bond(reverse(bond.atom1), reverse(bond.atom2), bond.order)
+                .unwrap();
+        }
+        let reversed = builder.build();
+        let actual = xlogp3_per_atom(&reversed);
+        assert_eq!(
+            actual,
+            expected.iter().rev().copied().collect::<Vec<_>>(),
+            "{source}"
+        );
+        near(xlogp3(&mol), xlogp3(&reversed), source);
+        assert!(actual.iter().all(|x| x.is_finite()));
+        let combined = chematic_smiles::parse(&format!("{source}.CC")).unwrap();
+        near(
+            xlogp3(&combined),
+            xlogp3(&mol) + xlogp3(&chematic_smiles::parse("CC").unwrap()),
+            source,
+        );
+    }
+}
+
+#[test]
+fn typed_legacy_charges_conserve_total_charge_and_follow_atom_permutations() {
+    for source in [
+        "C",
+        "C=C",
+        "C#N",
+        "c1ccccc1",
+        "c1ccncc1",
+        "c1cc[nH]c1",
+        "CCN",
+        "CC(=O)N",
+        "CC(=O)NC(=O)C",
+        "CO",
+        "COC",
+        "CC=O",
+        "CC(=O)O",
+        "CC(=O)OC",
+        "CC(=O)[O-]",
+        "CS",
+        "CSC",
+        "CSSC",
+        "CS(=O)C",
+        "CS(=O)(=O)C",
+        "c1ccsc1",
+        "CP(=O)(O)O",
+        "C[SiH3]",
+        "CF",
+        "CCl",
+        "CBr",
+        "CI",
+        "[NH4+]",
+        "[H][H]",
+    ] {
+        let mol = crate::add_hydrogens(&chematic_smiles::parse(source).unwrap());
+        let charges = crate::mmff94_bci::mmff94_charges_typed(&mol);
+        let expected = mol.atoms().map(|(_, a)| f64::from(a.charge)).sum::<f64>();
+        near(charges.iter().sum(), expected, source);
+        let mut builder = MoleculeBuilder::new();
+        let n = mol.atom_count();
+        for i in (0..n).rev() {
+            builder.add_atom(mol.atom(chematic_core::AtomIdx(i as u32)).clone());
+        }
+        for (_, b) in mol.bonds() {
+            builder
+                .add_bond(
+                    chematic_core::AtomIdx((n - 1 - b.atom1.0 as usize) as u32),
+                    chematic_core::AtomIdx((n - 1 - b.atom2.0 as usize) as u32),
+                    b.order,
+                )
+                .unwrap();
+        }
+        let reversed = crate::mmff94_bci::mmff94_charges_typed(&builder.build());
+        for (a, b) in charges.iter().rev().zip(reversed) {
+            near(*a, b, source);
+        }
+    }
+}
+
+#[test]
+fn potential_stereo_atom_sets_match_the_reference_or_known_native_residuals() {
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.1-potential-stereo-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    let mut failures = Vec::new();
+    for row in fixture["rows"].as_array().unwrap() {
+        let source = row["smiles"].as_str().unwrap();
+        let mol = chematic_smiles::parse(source).unwrap();
+        let actual: Vec<u32> = potential_stereocenter_indices(&mol)
+            .into_iter()
+            .map(|a| a.0)
+            .collect();
+        let expected: Vec<u32> = serde_json::from_value(row["centers"].clone()).unwrap();
+        if actual != expected {
+            failures.push(format!("{source}: {actual:?} != {expected:?}"));
+        }
+    }
+    // The native CIP/Rule-5 approximation does not reproduce RDKit's
+    // dependent ring stereo or arsenic perception for these five cases.
+    // Retain the full external reference and fail on any residual change.
+    assert_eq!(
+        failures,
+        [
+            "O[C@H](C1C[C@H](F)CCC1)C1C[C@H](F)CCC1: [2, 4, 9, 11] != [1, 2, 4, 9, 11]",
+            "O[C@H](C1C[C@@H](F)CCC1)C1C[C@@H](F)CCC1: [2, 4, 9, 11] != [1, 2, 4, 9, 11]",
+            "C[C@H]1CC[C@@H](C)CC1: [] != [1, 4]",
+            "C[C@H]1CC[C@H](C)CC1: [] != [1, 4]",
+            "C[As@](F)Cl: [] != [1]",
+        ]
+    );
+}
+
+#[test]
+fn tetrahedral_neighbors_agree_when_text_provenance_is_replaced_by_graph_order() {
+    use crate::cip::tetrahedral_stereo_neighbors;
+    use chematic_core::AtomIdx;
+    for source in [
+        "[C@H](F)(Cl)Br",
+        "[C@@H](F)(Cl)Br",
+        "F[C@H](Cl)Br",
+        "F[C@@H](Cl)Br",
+        "F[C@](Cl)(Br)I",
+        "F[C@@](Cl)(Br)I",
+    ] {
+        let mol = chematic_smiles::parse(source).unwrap();
+        let mut builder = MoleculeBuilder::new();
+        for (_, a) in mol.atoms() {
+            builder.add_atom(a.clone());
+        }
+        for (_, b) in mol.bonds() {
+            builder.add_bond(b.atom1, b.atom2, b.order).unwrap();
+        }
+        let rebuilt = builder.build();
+        for i in 0..mol.atom_count() {
+            let idx = AtomIdx(i as u32);
+            assert_eq!(
+                tetrahedral_stereo_neighbors(&mol, idx),
+                tetrahedral_stereo_neighbors(&rebuilt, idx),
+                "{source} atom {i}"
+            );
+        }
+    }
+}

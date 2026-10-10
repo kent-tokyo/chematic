@@ -240,3 +240,101 @@ fn styled_grid_defaults_match_plain_grid_and_keep_per_cell_styles() {
         );
     }
 }
+
+#[test]
+fn preflight_reports_graph_limits_overlapping_labels_and_crossings_at_their_paths() {
+    use crate::{Layout, Point, RenderOptions, preflight::*};
+    let mol = chematic_smiles::parse("NN.NN").unwrap();
+    let layout = Layout {
+        coords: vec![
+            Point::new(0., 0.),
+            Point::new(20., 20.),
+            Point::new(0., 20.),
+            Point::new(20., 0.),
+        ],
+    };
+    let options = RenderOptions {
+        padding: 0.,
+        ..Default::default()
+    };
+    let report = preflight_svg(
+        &mol,
+        &layout,
+        &options,
+        &PreflightLimits {
+            max_atoms: 3,
+            max_bonds: 1,
+            max_labels: 3,
+        },
+    );
+    assert!(!report.ready);
+    for path in ["molecule.atoms", "molecule.bonds", "molecule.labels"] {
+        assert!(
+            report
+                .diagnostics
+                .iter()
+                .any(|d| d.code == PreflightCode::ResourceLimit && d.path == path),
+            "{path}: {:?}",
+            report.diagnostics
+        );
+    }
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|d| d.code == PreflightCode::CrossingBond && d.path == "bonds[0]/bonds[1]")
+    );
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|d| d.code == PreflightCode::ClippedAtom)
+    );
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|d| d.code == PreflightCode::ClippedLabel)
+    );
+    let crowded = Layout {
+        coords: vec![
+            Point::new(0., 0.),
+            Point::new(1., 0.),
+            Point::new(2., 0.),
+            Point::new(3., 0.),
+        ],
+    };
+    let report = preflight_svg(
+        &mol,
+        &crowded,
+        &RenderOptions::default(),
+        &PreflightLimits::default(),
+    );
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|d| d.code == PreflightCode::LabelOverlap)
+    );
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|d| d.code == PreflightCode::AtomOverlap)
+    );
+    let short = Layout {
+        coords: vec![Point::new(0., 0.)],
+    };
+    let report = preflight_svg(
+        &mol,
+        &short,
+        &RenderOptions::default(),
+        &PreflightLimits::default(),
+    );
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|d| d.code == PreflightCode::ResourceLimit && d.path == "layout.coords")
+    );
+}

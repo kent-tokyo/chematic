@@ -336,3 +336,68 @@ fn polymer_expansion_requires_explicit_valid_linkages_and_end_groups() {
         .unwrap();
     assert!(error.to_string().contains("repeats"));
 }
+
+#[test]
+fn nested_r_groups_and_typed_end_groups_reject_ambiguous_or_duplicate_ids() {
+    let mut cases = Vec::new();
+    for (pointer, value, context) in [
+        ("/r_groups/0/attachment_atoms", json!([]), "attachment"),
+        ("/r_groups/0/attachment_atoms", json!(["gone"]), "gone"),
+        (
+            "/r_groups/0/attachment_atoms",
+            json!(["a1", "a1"]),
+            "attachment",
+        ),
+        ("/r_groups/0/alternatives", json!([""]), "empty query"),
+        ("/r_groups/0/selected_alternative", json!(4), "alternative"),
+        (
+            "/polymer_units/0/repeat_count",
+            json!("two"),
+            "integer or null",
+        ),
+    ] {
+        let mut value_json = model().to_json();
+        *value_json.pointer_mut(pointer).unwrap() = value;
+        cases.push((value_json, context));
+    }
+    for (definitions, context) in [
+        (json!([{"id":"e1", "smiles":"[*]O"}]), "exactly two"),
+        (
+            json!([{"id":"", "smiles":"[*]O"}, {"id":"e2", "smiles":"[*]N"}]),
+            "duplicate",
+        ),
+        (
+            json!([{"id":"e1", "smiles":"[*]O"}, {"id":"e1", "smiles":"[*]N"}]),
+            "duplicate",
+        ),
+        (
+            json!([{"id":"a1", "smiles":"[*]O"}, {"id":"e2", "smiles":"[*]N"}]),
+            "duplicate",
+        ),
+        (
+            json!([{"id":"e1", "smiles":""}, {"id":"e2", "smiles":"[*]N"}]),
+            "empty",
+        ),
+    ] {
+        let mut value = model().to_json();
+        value["polymer_units"][0]["end_group_definitions"] = definitions;
+        cases.push((value, context));
+    }
+    for count in [json!(-1), json!(4294967296u64), json!(1.5), json!("two")] {
+        let candidate = model();
+        let before = candidate.clone();
+        let error = candidate
+            .apply_json_command(&json!({"unit_id":"p1", "repeat_count":count}))
+            .unwrap_err();
+        assert!(error.to_string().contains("positive u32"));
+        assert_eq!(candidate, before);
+    }
+    let mut duplicate_nested = model().to_json();
+    duplicate_nested["r_groups"][0]["nested_groups"] =
+        json!([duplicate_nested["r_groups"][0].clone()]);
+    cases.push((duplicate_nested, "duplicate"));
+    for (value, context) in cases {
+        let error = SemanticModel::from_json(&value).err().unwrap();
+        assert!(error.to_string().contains(context), "{error}");
+    }
+}

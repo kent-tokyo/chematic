@@ -10,7 +10,7 @@ for center, ligands, coords in [
     (15,[9,17,35,53,7],[(0,0,2),(0,0,-2),(2,0,0),(-1,1.732,0),(-1,-1.732,0)]),
     (27,[9,17,35,53,7,8],[(2,0,0),(-2,0,0),(0,2,0),(0,-2,0),(0,0,2),(0,0,-2)]),
 ]:
-    for order in list(itertools.permutations(range(len(ligands))))[:24]:
+    for order in itertools.permutations(range(len(ligands))):
         rw=Chem.RWMol(); rw.AddAtom(Chem.Atom(center))
         for number in ligands:
             j=rw.AddAtom(Chem.Atom(number));rw.AddBond(0,j,Chem.BondType.SINGLE)
@@ -27,12 +27,12 @@ for off,n,value in [(6,5,'abcde'),(30,8,' 1.2e+03'),(38,8,'badcoord'),(22,4,'abc
     blocks.append((f'invalid-{off}','\n'.join(lines)+'\n'))
 rows=[]
 for label,block in blocks:
-    for sanitize,remove_hs,flavor,proximity in [(True,True,0,False),(True,False,0,False),(False,False,1,False),(True,True,8,False)]:
+    for sanitize,remove_hs,flavor,proximity in ([(True,True,0,False)] if label.startswith('geometry-') else [(True,True,0,False),(True,False,0,False),(False,False,1,False),(True,True,8,False)]):
         mol=Chem.MolFromPDBBlock(block,sanitize=sanitize,removeHs=remove_hs,flavor=flavor,proximityBonding=proximity)
         row=dict(label=label,block=block,sanitize=sanitize,remove_hs=remove_hs,flavor=flavor,proximity=proximity,valid=mol is not None)
         if mol is not None:
             row.update(atoms=mol.GetNumAtoms(),bonds=mol.GetNumBonds(),smiles=Chem.MolToSmiles(mol) if sanitize else '')
         rows.append(row)
 root=Path(__file__).resolve().parents[1]
-(root/'validation/rdkit-2026.03.1-pdb-boundary.json').write_text(json.dumps(dict(rdkit_version=rdBase.rdkitVersion,rows=rows),indent=2)+'\n')
+(root/'validation/rdkit-2026.03.1-pdb-boundary.json').write_text('{\n  \"rdkit_version\": \"'+rdBase.rdkitVersion+'\",\n  \"rows\": [\n'+',\n'.join('    '+json.dumps(row) for row in rows)+'\n  ]\n}\n')
 print('wrote',len(rows),'cases')

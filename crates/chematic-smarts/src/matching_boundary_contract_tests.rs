@@ -121,3 +121,29 @@ fn cached_ring_matching_survives_eviction_and_applies_per_call_limits() {
         );
     }
 }
+
+#[test]
+fn malformed_smarts_reports_unclosed_syntax_and_recursive_depth_limits() {
+    use crate::parse_smarts;
+    use crate::parser::{SmartsParserConfig, parse_smarts_with_config};
+    for source in [
+        "[", "[C", "C(", "C(()", "C1", "C%12", "[#]", "[C;]", "[C,]", "[C&]", "[!]",
+    ] {
+        let e = parse_smarts(source)
+            .err()
+            .unwrap_or_else(|| panic!("accepted {source}"));
+        assert!(!e.to_string().is_empty(), "{source}");
+    }
+    let source = "[$([$([C])])]";
+    assert!(parse_smarts(source).is_ok());
+    let e = parse_smarts_with_config(
+        source,
+        &SmartsParserConfig {
+            max_recursion_depth: 0,
+        },
+    )
+    .err()
+    .unwrap();
+    assert_eq!(e, crate::SmartsError::RecursionDepthExceeded);
+    assert!(e.to_string().contains("nesting depth"));
+}
