@@ -134,6 +134,8 @@ cargo llvm-cov --locked --workspace --lib --bins \
   --test g1_regression_byte_identical --test torsion_knowledge_negative_controls \
   --test canonical_stereo_d0_cip_multiset_invariance \
   --test neighbor --test periodicity \
+  --test canonical_ez_planner_order --test canonical_ez_residual \
+  --test canonical_robustness \
   --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
   --no-report
 cargo llvm-cov report \
