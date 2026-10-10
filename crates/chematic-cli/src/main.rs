@@ -267,6 +267,18 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
         }
         return Ok(chematic_mol::write_mol_v3000(&mol, &metadata, &coords));
     }
+    // MOL2 carries atom types, partial charges, residue labels, status bits,
+    // and extension sections outside the ordinary Molecule graph. Keep them
+    // on a same-format rewrite instead of routing through the graph-only API.
+    if input == "mol2" && output == "mol2" {
+        let record = chematic_mol::parse_mol2_record(text).map_err(|e| e.to_string())?;
+        if record.molecule.atom_count() > MAX_SMILES_ATOMS {
+            return Err(format!(
+                "molecule exceeds maximum atom count ({MAX_SMILES_ATOMS})"
+            ));
+        }
+        return Ok(chematic_mol::write_mol2_record(&record));
+    }
     let mol = match input.as_str() {
         "smiles" => chematic_smiles::parse(text).map_err(|e| e.to_string())?,
         "mol" => chematic_mol::parse_mol(text)
@@ -1271,6 +1283,16 @@ mod tests {
         let expected = chematic_smiles::parse("CCO").unwrap();
         assert_eq!(reparsed.atom_count(), expected.atom_count());
         assert_eq!(reparsed.bond_count(), expected.bond_count());
+    }
+
+    #[test]
+    fn converts_mol2_to_mol2_without_dropping_interchange_fields() {
+        let input = "@<TRIPOS>MOLECULE\nethanol\n 3 2 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n1 C1 0 0 0 C.3 1 LIG1 0.125\n2 C2 1.5 0 0 C.3 1 LIG1 0.250\n3 O1 3 0 0 O.3 1 LIG1 -0.375\n@<TRIPOS>BOND\n1 1 2 1\n2 2 3 1\n";
+        let rewritten = convert_text(input, "mol2", "mol2").unwrap();
+        let record = chematic_mol::parse_mol2_record(&rewritten).unwrap();
+        assert_eq!(record.atoms[0].atom_type, "C.3");
+        assert_eq!(record.atoms[2].partial_charge, Some(-0.375));
+        assert_eq!(record.atoms[0].subst_name.as_deref(), Some("LIG1"));
     }
 
     #[test]

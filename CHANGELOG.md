@@ -12,6 +12,20 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added a versioned Open Babel 3.2.1 file-I/O comparison contract for eight
+  production formats, a static CI checker, and a unified record-accounting
+  runner. The initial 20-repetition record proves fixture provenance and
+  record/failure accounting only; semantic round-trip and equivalent-work
+  speed claims remain open.
+- Added a shared-observer semantic round-trip gate and a paired 21-block CLI
+  round-trip benchmark for V3000, MOL2, CML, and CDXML. Evidence remains scoped
+  to the checked-in fixtures and source candidate. A same-process harness now
+  separates parse, write, and round-trip hot loops; all 12 bounded lanes pass
+  the paired speed gate against Open Babel 3.2.1. Broad corpora, large-file
+  throughput, memory, and published artifacts remain open.
+- Added loss-aware `parse_mol2_record` and `write_mol2_record` Rust APIs. They
+  retain Tripos atom types, partial charges, residue data, status bits,
+  `UNITY_ATOM_ATTR` formal charges, and opaque extension sections.
 - Exposed the v1.0.40+ RDKit interoperability surface to WASM/Node: SMARTS
   and structure writers, PDB/XYZ/MOL2 readers, Murcko/stereo/hash/Morgan
   helpers, bounded alignment/RMSD, and separately named seeded ETKDG and
@@ -32,6 +46,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Reduced temporary allocation in loss-aware MOL2 serialization while
+  retaining the common-observer semantic result.
 - Kept rejected RDKit-profile reaction products in a new opt-in detailed
   report. The existing Rust `TracedReactionTransformReport` again has its
   original two-field struct-literal shape, avoiding a source-compatibility
@@ -51,6 +67,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and NCI agreement corpora.
 
 ### Fixed
+
+- Stopped interpreting MOL2 partial charges as rounded formal charges and
+  retained `.ar` atom aromaticity independently of aromatic bond rows.
 
 - Fixed RDKit-compatible ring counts for SMILES closure notation that creates
   a coordination or disconnected-component bond without a graph cycle. Four

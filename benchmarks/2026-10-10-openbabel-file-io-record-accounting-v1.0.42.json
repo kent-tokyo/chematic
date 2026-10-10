@@ -1,0 +1,497 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.42",
+  "source": {
+    "commit": "f6ff49b64ce334b0019de168239d18c70c4a2e6f",
+    "dirty": false
+  },
+  "status": "local-verified",
+  "gate": "openbabel_file_io_record_accounting_v1",
+  "contract": "validation/openbabel_file_io_contract_v1.json",
+  "repeats": 20,
+  "formats": {
+    "sdf": {
+      "schema_version": 1,
+      "target_version": "1.0.42",
+      "format": "sdf",
+      "fixture": {
+        "path": "benchmarks/fixtures/streaming.sdf",
+        "bytes": 633,
+        "sha256": "627e7814694f7d00a9212712ec697f2174d30327b459d983d2a10f717cae0465"
+      },
+      "repeats": 20,
+      "expected_records": 40,
+      "rows": {
+        "chematic": {
+          "format": "sdf",
+          "compression": "none",
+          "execution_mode": "file_backed_bufread",
+          "path": "benchmarks/fixtures/streaming.sdf",
+          "repeats": 20,
+          "records": 40,
+          "failures": 0,
+          "failure_kinds": {},
+          "input_bytes": 12660,
+          "limits": {
+            "max_input_bytes": 1073741824,
+            "max_record_bytes": 16777216,
+            "max_line_bytes": 16777216,
+            "max_records": 100000,
+            "max_atoms": 1000000
+          },
+          "seconds": 0.004187,
+          "records_per_second": 9553.85,
+          "bytes_per_second": 3023794.83
+        },
+        "rdkit": {
+          "engine": "rdkit",
+          "format": "sdf",
+          "mode": "file_backed_supplier",
+          "repeats": 20,
+          "records": 40,
+          "failures": 0,
+          "input_bytes": 12660,
+          "seconds": 0.008882,
+          "records_per_second": 4503.51,
+          "bytes_per_second": 1425361.38,
+          "comparison_boundary": "RDKit ForwardSDMolSupplier in one Python process"
+        },
+        "openbabel": {
+          "engine": "openbabel",
+          "format": "sdf",
+          "mode": "file_backed_cli",
+          "repeats": 20,
+          "records": 40,
+          "failures": 0,
+          "input_bytes": 12660,
+          "seconds": 2.737186,
+          "records_per_second": 14.61,
+          "bytes_per_second": 4625.19,
+          "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
+        }
+      },
+      "comparison_boundary": {
+        "chematic": "Rust SDF file-backed BufRead reader",
+        "rdkit": "RDKit Python block parser over blocks split from the identical file",
+        "openbabel": "Open Babel CLI conversion per repetition, including process startup"
+      },
+      "tool_versions": {
+        "rdkit": "2025.09.3",
+        "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+      }
+    },
+    "mol": {
+      "schema_version": 1,
+      "target_version": "1.0.42",
+      "format": "mol",
+      "fixture": {
+        "path": "benchmarks/fixtures/streaming.sdf",
+        "bytes": 633,
+        "sha256": "627e7814694f7d00a9212712ec697f2174d30327b459d983d2a10f717cae0465"
+      },
+      "repeats": 20,
+      "expected_records": 40,
+      "rows": {
+        "chematic": {
+          "format": "mol",
+          "compression": "none",
+          "execution_mode": "file_backed_bufread",
+          "path": "benchmarks/fixtures/streaming.sdf",
+          "repeats": 20,
+          "records": 40,
+          "failures": 0,
+          "failure_kinds": {},
+          "input_bytes": 12660,
+          "limits": {
+            "max_input_bytes": 1073741824,
+            "max_record_bytes": 16777216,
+            "max_line_bytes": 16777216,
+            "max_records": 100000,
+            "max_atoms": 1000000
+          },
+          "seconds": 0.002518,
+          "records_per_second": 15883.52,
+          "bytes_per_second": 5027133.02
+        },
+        "rdkit": {
+          "engine": "rdkit",
+          "format": "mol",
+          "repeats": 20,
+          "records": 40,
+          "failures": 0,
+          "input_bytes": 12660,
+          "seconds": 0.003989,
+          "records_per_second": 10028.41,
+          "bytes_per_second": 3173992.77,
+          "comparison_boundary": "Python block API, not file-backed BufRead streaming"
+        },
+        "openbabel": {
+          "engine": "openbabel",
+          "format": "mol",
+          "mode": "file_backed_cli",
+          "repeats": 20,
+          "records": 40,
+          "failures": 0,
+          "input_bytes": 12660,
+          "seconds": 2.74569,
+          "records_per_second": 14.57,
+          "bytes_per_second": 4610.86,
+          "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
+        }
+      },
+      "comparison_boundary": {
+        "chematic": "Rust MOL file-backed BufRead reader",
+        "rdkit": "RDKit Python block parser over blocks split from the identical file",
+        "openbabel": "Open Babel CLI conversion per repetition, including process startup"
+      },
+      "tool_versions": {
+        "rdkit": "2025.09.3",
+        "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+      }
+    },
+    "v3000": {
+      "schema_version": 1,
+      "target_version": "1.0.42",
+      "format": "v3000",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.v3000",
+        "bytes": 298,
+        "sha256": "64ac11b3de1c186deae555d54d6a47e7f3c72607ef0a90b0d93f467496bbd3ad"
+      },
+      "repeats": 20,
+      "expected_records": 20,
+      "rows": {
+        "chematic": {
+          "format": "v3000",
+          "compression": "none",
+          "execution_mode": "materialized_one_shot",
+          "path": "benchmarks/fixtures/ethanol.v3000",
+          "repeats": 20,
+          "records": 20,
+          "failures": 0,
+          "failure_kinds": {},
+          "input_bytes": 5960,
+          "limits": {
+            "max_input_bytes": 1073741824,
+            "max_record_bytes": 16777216,
+            "max_line_bytes": 16777216,
+            "max_records": 100000,
+            "max_atoms": 1000000
+          },
+          "seconds": 0.002526,
+          "records_per_second": 7917.0,
+          "bytes_per_second": 2359267.33
+        },
+        "rdkit": {
+          "engine": "rdkit",
+          "format": "mol",
+          "repeats": 20,
+          "records": 20,
+          "failures": 0,
+          "input_bytes": 5960,
+          "seconds": 0.003986,
+          "records_per_second": 5017.77,
+          "bytes_per_second": 1495296.0,
+          "comparison_boundary": "Python block API, not file-backed BufRead streaming"
+        },
+        "openbabel": {
+          "engine": "openbabel",
+          "format": "mol",
+          "mode": "file_backed_cli",
+          "repeats": 20,
+          "records": 20,
+          "failures": 0,
+          "input_bytes": 5960,
+          "seconds": 2.776255,
+          "records_per_second": 7.2,
+          "bytes_per_second": 2146.78,
+          "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
+        }
+      },
+      "comparison_boundary": {
+        "chematic": "Rust V3000 file-backed BufRead reader",
+        "rdkit": "RDKit Python block parser over blocks split from the identical file",
+        "openbabel": "Open Babel CLI conversion per repetition, including process startup"
+      },
+      "tool_versions": {
+        "rdkit": "2025.09.3",
+        "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+      }
+    },
+    "mol2": {
+      "schema_version": 1,
+      "target_version": "1.0.42",
+      "format": "mol2",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.mol2",
+        "bytes": 361,
+        "sha256": "80144aad97332e2f58eb42bb2da1472587a9dfc2466f9d2fe081eb9834c2224d"
+      },
+      "repeats": 20,
+      "expected_records": 20,
+      "rows": {
+        "chematic": {
+          "format": "mol2",
+          "compression": "none",
+          "execution_mode": "materialized_one_shot",
+          "path": "benchmarks/fixtures/ethanol.mol2",
+          "repeats": 20,
+          "records": 20,
+          "failures": 0,
+          "failure_kinds": {},
+          "input_bytes": 7220,
+          "limits": {
+            "max_input_bytes": 1073741824,
+            "max_record_bytes": 16777216,
+            "max_line_bytes": 16777216,
+            "max_records": 100000,
+            "max_atoms": 1000000
+          },
+          "seconds": 0.001624,
+          "records_per_second": 12312.74,
+          "bytes_per_second": 4444898.65
+        },
+        "rdkit": {
+          "engine": "rdkit",
+          "format": "mol2",
+          "repeats": 20,
+          "records": 20,
+          "failures": 0,
+          "input_bytes": 7220,
+          "seconds": 0.00383,
+          "records_per_second": 5222.1,
+          "bytes_per_second": 1885179.01,
+          "comparison_boundary": "Python block API, not file-backed BufRead streaming"
+        },
+        "openbabel": {
+          "engine": "openbabel",
+          "format": "mol2",
+          "mode": "file_backed_cli",
+          "repeats": 20,
+          "records": 20,
+          "failures": 0,
+          "input_bytes": 7220,
+          "seconds": 2.810075,
+          "records_per_second": 7.12,
+          "bytes_per_second": 2569.33,
+          "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
+        }
+      },
+      "comparison_boundary": {
+        "chematic": "Rust MOL2 file-backed BufRead reader",
+        "rdkit": "RDKit Python block parser over blocks split from the identical file",
+        "openbabel": "Open Babel CLI conversion per repetition, including process startup"
+      },
+      "tool_versions": {
+        "rdkit": "2025.09.3",
+        "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+      }
+    },
+    "cml": {
+      "schema_version": 1,
+      "target_version": "1.0.42",
+      "status": "local-verified",
+      "gate": "openbabel_record_accounting",
+      "format": "cml",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.cml",
+        "bytes": 383,
+        "sha256": "0d89c3e1250890147debd2ae097b27f8128f73b8d44bb60cbe3279242053e06c"
+      },
+      "repeats": 20,
+      "expected_records": 20,
+      "rows": {
+        "chematic": {
+          "format": "cml",
+          "compression": "none",
+          "execution_mode": "materialized_one_shot",
+          "path": "benchmarks/fixtures/ethanol.cml",
+          "repeats": 20,
+          "records": 20,
+          "failures": 0,
+          "failure_kinds": {},
+          "input_bytes": 7660,
+          "limits": {
+            "max_input_bytes": 1073741824,
+            "max_record_bytes": 16777216,
+            "max_line_bytes": 16777216,
+            "max_records": 100000,
+            "max_atoms": 1000000
+          },
+          "seconds": 0.001453,
+          "records_per_second": 13766.6,
+          "bytes_per_second": 5272606.13
+        },
+        "openbabel": {
+          "records": 20,
+          "failures": 0,
+          "input_bytes": 7660,
+          "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
+        }
+      },
+      "comparison_boundary": {
+        "chematic": "Rust CML materialized one-shot parser",
+        "openbabel": "Open Babel CML CLI conversion per repetition"
+      },
+      "tool_versions": {
+        "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+      },
+      "claim_boundary": "record and failure accounting only; not semantic round-trip or speed parity"
+    },
+    "cdxml": {
+      "schema_version": 1,
+      "target_version": "1.0.42",
+      "status": "local-verified",
+      "gate": "openbabel_record_accounting",
+      "format": "cdxml",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.cdxml",
+        "bytes": 321,
+        "sha256": "b74560cfaf369e4bc32d5c710f7b488ded05e801c54934d7a709013825ce290c"
+      },
+      "repeats": 20,
+      "expected_records": 20,
+      "rows": {
+        "chematic": {
+          "format": "cdxml",
+          "compression": "none",
+          "execution_mode": "materialized_one_shot",
+          "path": "benchmarks/fixtures/ethanol.cdxml",
+          "repeats": 20,
+          "records": 20,
+          "failures": 0,
+          "failure_kinds": {},
+          "input_bytes": 6420,
+          "limits": {
+            "max_input_bytes": 1073741824,
+            "max_record_bytes": 16777216,
+            "max_line_bytes": 16777216,
+            "max_records": 100000,
+            "max_atoms": 1000000
+          },
+          "seconds": 0.001739,
+          "records_per_second": 11502.24,
+          "bytes_per_second": 3692218.51
+        },
+        "openbabel": {
+          "records": 20,
+          "failures": 0,
+          "input_bytes": 6420,
+          "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
+        }
+      },
+      "comparison_boundary": {
+        "chematic": "Rust CDXML materialized one-shot parser",
+        "openbabel": "Open Babel CDXML CLI conversion per repetition"
+      },
+      "tool_versions": {
+        "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+      },
+      "claim_boundary": "record and failure accounting only; not semantic round-trip or speed parity"
+    },
+    "mmcif": {
+      "schema_version": 1,
+      "target_version": "1.0.42",
+      "status": "local-verified",
+      "gate": "openbabel_record_accounting",
+      "format": "mmcif",
+      "fixture": {
+        "path": "benchmarks/fixtures/minimal.mmcif",
+        "bytes": 698,
+        "sha256": "d583d8047758d0e804c98729796d76eea3fa87f3b5b8ed85962717e784e98998"
+      },
+      "repeats": 20,
+      "expected_records": 20,
+      "rows": {
+        "chematic": {
+          "format": "mmcif",
+          "compression": "none",
+          "execution_mode": "materialized_one_shot",
+          "path": "benchmarks/fixtures/minimal.mmcif",
+          "repeats": 20,
+          "records": 20,
+          "failures": 0,
+          "failure_kinds": {},
+          "input_bytes": 13960,
+          "limits": {
+            "max_input_bytes": 1073741824,
+            "max_record_bytes": 16777216,
+            "max_line_bytes": 16777216,
+            "max_records": 100000,
+            "max_atoms": 1000000
+          },
+          "seconds": 0.003284,
+          "records_per_second": 6089.44,
+          "bytes_per_second": 4250428.16
+        },
+        "openbabel": {
+          "records": 20,
+          "failures": 0,
+          "input_bytes": 13960,
+          "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
+        }
+      },
+      "comparison_boundary": {
+        "chematic": "Rust MMCIF materialized one-shot parser",
+        "openbabel": "Open Babel MMCIF CLI conversion per repetition"
+      },
+      "tool_versions": {
+        "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+      },
+      "claim_boundary": "record and failure accounting only; not semantic round-trip or speed parity"
+    },
+    "pdb": {
+      "schema_version": 1,
+      "target_version": "1.0.42",
+      "status": "local-verified",
+      "gate": "openbabel_record_accounting",
+      "format": "pdb",
+      "fixture": {
+        "path": "benchmarks/fixtures/minimal.pdb",
+        "bytes": 286,
+        "sha256": "69d1e5a2d6cbdb39377325cbbf077face011ef0893718e28b42d0563901ad15b"
+      },
+      "repeats": 20,
+      "expected_records": 20,
+      "rows": {
+        "chematic": {
+          "format": "pdb",
+          "compression": "none",
+          "execution_mode": "materialized_one_shot",
+          "path": "benchmarks/fixtures/minimal.pdb",
+          "repeats": 20,
+          "records": 20,
+          "failures": 0,
+          "failure_kinds": {},
+          "input_bytes": 5720,
+          "limits": {
+            "max_input_bytes": 1073741824,
+            "max_record_bytes": 16777216,
+            "max_line_bytes": 16777216,
+            "max_records": 100000,
+            "max_atoms": 1000000
+          },
+          "seconds": 0.00084,
+          "records_per_second": 23813.07,
+          "bytes_per_second": 6810537.28
+        },
+        "openbabel": {
+          "records": 20,
+          "failures": 0,
+          "input_bytes": 5720,
+          "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"
+        }
+      },
+      "comparison_boundary": {
+        "chematic": "Rust PDB materialized one-shot parser",
+        "openbabel": "Open Babel PDB CLI conversion per repetition"
+      },
+      "tool_versions": {
+        "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+      },
+      "claim_boundary": "record and failure accounting only; not semantic round-trip or speed parity"
+    }
+  },
+  "claim_boundary": "record/failure accounting and fixture provenance only; no semantic or speed superiority claim",
+  "errors": []
+}

@@ -12,6 +12,7 @@ current issue or benchmark links to them.
 | Release/version checks | `check_release_*.py`, `check_publish_graph.py`, `bump_version.py` |
 | Compatibility dashboard | `check_compatibility_profiles.py`, `generate_compatibility_dashboard.py` |
 | Benchmark index | `check_benchmark_index.py` |
+| Open Babel file-I/O comparison | `check_openbabel_file_io_contract.py`, `check_openbabel_file_io_gate.py`, `check_openbabel_file_io_semantics.py`, `bench_openbabel_file_io_paired.py`, `bench_openbabel_file_io_same_process.py`, and `check_openbabel_file_io_evidence.py` |
 | Parser security | `run_isolated_parser_security.py` |
 | Browser comparison | `bench_browser_wasm_vs_rdkit_isolated.py` |
 | Published browser replication | `check_published_browser_paired.py`, `check_v1030_published_browser_morgan_rows.py`, and `check_published_linux_browser_replication.py` validate the pinned Chromium and Ubuntu three-engine records |

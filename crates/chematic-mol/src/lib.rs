@@ -104,7 +104,11 @@ pub use mmcif::{
     MmcifAtomRecord, MmcifError, MmcifParseLimits, MmcifResult, parse_mmcif,
     parse_mmcif_with_limits, write_mmcif,
 };
-pub use mol2_tripos::{Mol2Error, Mol2ParseLimits, parse_mol2, parse_mol2_with_limits, write_mol2};
+pub use mol2_tripos::{
+    Mol2AtomRecord, Mol2BondRecord, Mol2Error, Mol2OpaqueSection, Mol2ParseLimits, Mol2Record,
+    Mol2UnityAtomAttributes, parse_mol2, parse_mol2_record, parse_mol2_record_with_limits,
+    parse_mol2_with_limits, write_mol2, write_mol2_record,
+};
 pub use mol2000::{
     CoordinateDimension, GeometryRank, MolFormat, MolMetadata, MolReadReport, MolStereoLoss,
     MolStereoWriteError, SquarePlanarPerceptionDiagnostic, SquarePlanarRejectionReason,

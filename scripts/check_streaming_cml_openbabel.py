@@ -10,7 +10,20 @@ import re
 import subprocess
 from pathlib import Path
 
+from benchmark_version import workspace_version
+
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def executable_version(executable: str) -> str:
+    completed = subprocess.run(
+        [executable, "-V"],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    output = (completed.stdout or completed.stderr).strip()
+    return output.splitlines()[0] if output else "unknown"
 
 
 def main() -> int:
@@ -23,6 +36,7 @@ def main() -> int:
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--openbabel", default="obabel")
     parser.add_argument("--binary", nargs="+", default=["cargo", "run", "-p", "chematic-mol", "--example", "streaming_benchmark", "--offline", "--"])
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
@@ -48,11 +62,43 @@ def main() -> int:
             errors.append(f"{name} count mismatch: {row}")
         if row.get("input_bytes") != len(payload) * args.repeats:
             errors.append(f"{name} input byte mismatch: {row.get('input_bytes')}")
-    report = {"schema_version": 1, "target_version": "1.0.9", "format": args.format, "fixture": {"path": str(path.relative_to(ROOT)), "bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest()}, "repeats": args.repeats, "expected_records": expected, "rows": {"chematic": chematic, "openbabel": {"records": converted, "failures": failures, "input_bytes": len(payload) * args.repeats, "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"}}, "comparison_boundary": {"chematic": f"Rust {args.format.upper()} materialized one-shot parser", "openbabel": f"Open Babel {args.format.upper()} CLI conversion per repetition"}}
+    report = {
+        "schema_version": 1,
+        "target_version": workspace_version(ROOT),
+        "status": "local-verified" if not errors else "failed",
+        "gate": "openbabel_record_accounting",
+        "format": args.format,
+        "fixture": {
+            "path": str(path.relative_to(ROOT)),
+            "bytes": len(payload),
+            "sha256": hashlib.sha256(payload).hexdigest(),
+        },
+        "repeats": args.repeats,
+        "expected_records": expected,
+        "rows": {
+            "chematic": chematic,
+            "openbabel": {
+                "records": converted,
+                "failures": failures,
+                "input_bytes": len(payload) * args.repeats,
+                "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included",
+            },
+        },
+        "comparison_boundary": {
+            "chematic": f"Rust {args.format.upper()} materialized one-shot parser",
+            "openbabel": f"Open Babel {args.format.upper()} CLI conversion per repetition",
+        },
+        "tool_versions": {"openbabel": executable_version(args.openbabel)},
+        "claim_boundary": "record and failure accounting only; not semantic round-trip or speed parity",
+    }
     if errors:
         print(f"streaming {args.format.upper()} contract failures:", *errors, sep="\n")
         return 1
-    print(json.dumps(report, indent=2))
+    encoded = json.dumps(report, indent=2) + "\n"
+    if args.output:
+        target = args.output if args.output.is_absolute() else ROOT / args.output
+        target.write_text(encoded, encoding="utf-8")
+    print(encoded, end="")
     return 0
 
 
