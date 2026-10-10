@@ -187,3 +187,16 @@ pub use xyz::{
     parse_extxyz, parse_extxyz_all, parse_extxyz_with_limits, parse_xyz, parse_xyz_all,
     parse_xyz_all_with_limits, parse_xyz_with_limits, write_extxyz, write_xyz,
 };
+
+#[cfg(test)]
+mod semantic_contract_tests;
+#[cfg(test)]
+mod xyz_contract_tests;
+
+#[cfg(test)]
+mod nucleic_acid_boundary_tests;
+#[cfg(test)]
+mod orca_boundary_tests;
+
+#[cfg(test)]
+mod xml_boundary_tests;

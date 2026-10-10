@@ -950,3 +950,11 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod dynamics_contract_tests;
+#[cfg(test)]
+mod torsion_contract_tests;
+
+#[cfg(test)]
+mod legacy_geometry_tests;
