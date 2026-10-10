@@ -4,6 +4,88 @@ use chematic_perception::find_sssr;
 use chematic_smiles::{canonical_smiles, parse};
 
 #[test]
+fn atomic_number_expansion_preserves_element_charge_hydrogens_and_shared_maps() {
+    use crate::reaction::expand_atomic_number_primitives;
+    for z in 1..=118 {
+        let element = chematic_core::Element::from_atomic_number(z).unwrap();
+        let variants = expand_atomic_number_primitives(&format!("[#{z}:9]")).unwrap();
+        assert_eq!(variants[0], format!("[{}:9]", element.symbol()));
+        if [5, 6, 7, 8, 15, 16].contains(&z) {
+            assert_eq!(
+                variants,
+                vec![
+                    format!("[{}:9]", element.symbol()),
+                    format!("[{}:9]", element.symbol().to_lowercase())
+                ]
+            );
+        } else {
+            assert_eq!(variants.len(), 1);
+        }
+    }
+    for (input, expected) in [
+        ("[#7;H2;+0:9]", "[NH2+0:9]"),
+        ("[#7H+2:9]", "[NH+2:9]"),
+        ("[#8-2:9]", "[O-2:9]"),
+        ("[#7++:9]", "[N+2:9]"),
+        ("[#8--:9]", "[O-2:9]"),
+    ] {
+        assert_eq!(expand_atomic_number_primitives(input).unwrap()[0], expected);
+    }
+    assert_eq!(
+        expand_atomic_number_primitives("[#7:01]>>[#7:1]C").unwrap(),
+        vec!["[N:01]>>[N:1]C", "[n:01]>>[n:1]C"]
+    );
+    let many = (1..=10)
+        .map(|i| format!("[#6:{i}]"))
+        .collect::<Vec<_>>()
+        .join("");
+    let template = format!("{many}>>[C:1]");
+    assert_eq!(
+        expand_atomic_number_primitives(&template).unwrap(),
+        vec![template]
+    );
+    for input in ["[#0]", "[#119]", "[#999]", "[#x]"] {
+        let error = expand_atomic_number_primitives(input).unwrap_err();
+        assert!(matches!(
+            error,
+            crate::reaction::RxnError::UnsupportedAtomicNumberPrimitive { .. }
+        ));
+        assert!(error.to_string().contains(input));
+    }
+}
+
+#[test]
+fn reaction_bond_budget_and_product_rejection_codes_are_explicit() {
+    use crate::reaction::*;
+    let error = parse_reaction_with_limits(
+        "CC>>C",
+        &ReactionParseLimits {
+            max_bonds_per_molecule: 0,
+            ..Default::default()
+        },
+    )
+    .err()
+    .unwrap();
+    assert!(matches!(
+        error,
+        RxnError::ResourceLimit {
+            resource: "bonds per molecule",
+            actual: 1,
+            limit: 0
+        }
+    ));
+    assert!(error.to_string().contains("bonds per molecule"));
+    for (reason, code) in [
+        (ProductRejectionReason::Aromaticity, "aromaticity"),
+        (ProductRejectionReason::Kekulization, "kekulization"),
+        (ProductRejectionReason::Valence, "valence"),
+        (ProductRejectionReason::Unknown, "unknown"),
+    ] {
+        assert_eq!(reason.reason_code(), code);
+    }
+}
+
+#[test]
 fn bounded_pattern_library_preserves_matrix_counts_and_rejects_oversized_batches() {
     use crate::query::*;
     let reactions: Vec<_> = ["CO>>C=O", "CCO>>CC=O", "CN>>C=N", "CC>>CC"]

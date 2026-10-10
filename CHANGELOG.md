@@ -39,6 +39,16 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Updated published-wheel chemistry and A6 workflow defaults to v1.0.42 and
   added the hash-pinned v1.0.42 chemistry baseline. Historical v1.0.38 results
   remain available under their own expected-value file.
+- Rebased the active performance gate to RDKit 2026.09.1 and COSMolKit
+  0.5.0rc22. The benchmark adapter follows the rc22 Morgan and SMILES APIs,
+  treats any per-row engine error as an invalid timing, and supports one
+  interpreter override for all three engines without creating a spurious
+  fourth engine.
+- Cached the shared RDKit-model disagreement predicate during validated SMILES
+  parsing, skipped a duplicate cleanup scan for ordinary molecules, and
+  removed Labute ASA bond-order and per-atom heap allocations. Descriptor,
+  fingerprint, and ring-count outputs remain unchanged on the pinned ChEMBL
+  and NCI agreement corpora.
 
 ### Fixed
 

@@ -590,13 +590,13 @@ def _cosmolkit_05_engine():
 
     def morgan(radius, **kw):
         gen = ck.MorganFingerprintGenerator(params=ck.MorganParams(radius=radius, fp_size=2048, **kw))
-        return lambda m: on(m.morgan_fingerprint_with_generator(gen))
+        return lambda m: on(m.fingerprint_morgan_with_generator(gen))
 
     def morgan_bitinfo(m):
         gen = ck.MorganFingerprintGenerator(params=ck.MorganParams(radius=2, fp_size=2048))
         out = ck.FingerprintAdditionalOutput()
         out.allocate_bit_info_map()
-        m.morgan_fingerprint_with_generator(gen, output=out)
+        m.fingerprint_morgan_with_generator(gen, output=out)
         return _bit_info(out.bit_info_map())
 
     def smiles_with(**kw):
@@ -677,7 +677,7 @@ def _cosmolkit_05_engine():
         "num_spiro_atoms": lambda m: m.num_spiro_atoms(),
         "heavy_atoms": lambda m: m.num_heavy_atoms(),
         "unspecified_stereocenters": lambda m: m.num_unspecified_atom_stereo_centers(),
-        "smiles_kekule": smiles_with(do_kekule=True),
+        "smiles_kekule": smiles_with(kekule=True),
         "smiles_noniso": smiles_with(do_isomeric_smiles=False),
         "smiles_explicit": smiles_with(all_bonds_explicit=True, all_hydrogens_explicit=True),
         "smiles_addhs": lambda m: m.with_hydrogens().to_smiles(),

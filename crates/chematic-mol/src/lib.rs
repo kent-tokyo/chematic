@@ -213,3 +213,6 @@ mod docking_boundary_contract_tests;
 
 #[cfg(test)]
 mod cdxml_boundary_contract_tests;
+
+#[cfg(test)]
+mod format_limit_contract_tests;

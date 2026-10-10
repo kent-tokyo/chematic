@@ -639,28 +639,33 @@ fn labute_asa_core(mol: &Molecule, collect_per_atom: bool) -> (Vec<f64>, f64, f6
     }
     let view = crate::descriptors::descriptor_aromaticity(mol);
     let view: &Molecule = &view;
-    let radii: Vec<f64> = mol.atoms().map(|(_, a)| rb0(a)).collect();
-    let mut v: Vec<f64> = vec![0.0; n];
-    // Bonds in RDKit's numbering (ring closures last), as RDKit accumulates.
-    for bidx in mol.rdkit_bond_order() {
+    // Most drug-like molecules fit inline.  Keeping radius and overlap in one
+    // buffer avoids two heap allocations and improves locality without
+    // changing RDKit's accumulation order.
+    let mut atom_data: smallvec::SmallVec<[(f64, f64); 64]> =
+        mol.atoms().map(|(_, a)| (rb0(a), 0.0)).collect();
+    let mut accumulate_bond = |bidx| {
         let bond = view.bond(bidx);
         let i = bond.atom1.0 as usize;
         let j = bond.atom2.0 as usize;
-        let (ri, rj) = (radii[i], radii[j]);
+        let (ri, rj) = (atom_data[i].0, atom_data[j].0);
         let mut bij = ri + rj;
         bij -= bond_scale(view, bidx);
         let dij = (ri - rj).abs().max(bij).min(ri + rj);
-        v[i] += rj * rj - (ri - dij) * (ri - dij) / dij;
-        v[j] += ri * ri - (rj - dij) * (rj - dij) / dij;
-    }
+        atom_data[i].1 += rj * rj - (ri - dij) * (ri - dij) / dij;
+        atom_data[j].1 += ri * ri - (rj - dij) * (rj - dij) / dij;
+    };
+    // Bonds in RDKit's numbering (ring closures last), without materializing
+    // the complete order vector for every molecule.
+    mol.for_each_bond_in_rdkit_order(&mut accumulate_bond);
     // One hydrogen per atom, pooled into a single term (as RDKit does).
     let rh = crate::descriptors::RDKIT_RB0[0];
     let mut h_contrib = 0.0f64;
     for i in 0..n {
-        let ri = radii[i];
+        let ri = atom_data[i].0;
         let bij = ri + rh;
         let dij = (ri - rh).abs().max(bij).min(ri + rh);
-        v[i] += rh * rh - (ri - dij) * (ri - dij) / dij;
+        atom_data[i].1 += rh * rh - (ri - dij) * (ri - dij) / dij;
         h_contrib += ri * ri - (rh - dij) * (rh - dij) / dij;
     }
     let mut per_atom = if collect_per_atom {
@@ -670,8 +675,8 @@ fn labute_asa_core(mol: &Molecule, collect_per_atom: bool) -> (Vec<f64>, f64, f6
     };
     let mut total = 0.0;
     for i in 0..n {
-        let ri = radii[i];
-        let contribution = PI * ri * (4.0 * ri - v[i]);
+        let (ri, overlap) = atom_data[i];
+        let contribution = PI * ri * (4.0 * ri - overlap);
         total += contribution;
         if collect_per_atom {
             per_atom.push(contribution);

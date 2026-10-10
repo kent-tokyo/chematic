@@ -4,6 +4,70 @@ use chematic_core::MoleculeBuilder;
 use serde_json::Value;
 
 #[test]
+fn condensed_formula_branches_and_diagnostics_preserve_context() {
+    use crate::condensed::{CondensedError, parse_condensed};
+    for (source, smiles) in [("C(C)C", "CCC"), ("CCOOH", "CC(=O)O"), ("CCHO", "CC=O")] {
+        let actual = parse_condensed(source).unwrap();
+        let expected = chematic_smiles::parse(smiles).unwrap();
+        assert_eq!(
+            chematic_smiles::rdkit_canonical_smiles(&actual).unwrap(),
+            chematic_smiles::rdkit_canonical_smiles(&expected).unwrap()
+        );
+    }
+    for source in ["", "c", "C@", "Cq", "2C", "C(C", "C)C"] {
+        let error = parse_condensed(source).err().unwrap();
+        assert!(!error.to_string().is_empty());
+        match source {
+            "" => assert!(matches!(error, CondensedError::EmptyInput)),
+            "C(C" | "C)C" => assert!(matches!(error, CondensedError::UnbalancedParens)),
+            "2C" => assert!(matches!(error, CondensedError::ParseError(_))),
+            _ => assert!(matches!(error, CondensedError::UnknownElement(_))),
+        }
+    }
+}
+
+#[test]
+fn isotope_envelopes_are_sorted_normalized_and_keep_explicit_labels_pure() {
+    use chematic_core::{Atom, Element};
+    // Single atoms with H suppressed isolate natural isotope tables from
+    // convolution. The peak count includes only abundances above pruning.
+    for (element, peaks) in [
+        (Element::F, 1),
+        (Element::NA, 1),
+        (Element::SI, 3),
+        (Element::P, 1),
+        (Element::S, 4),
+        (Element::K, 2),
+        (Element::AS, 1),
+        (Element::SE, 6),
+        (Element::I, 1),
+    ] {
+        let mut builder = MoleculeBuilder::new();
+        let mut atom = Atom::new(element);
+        atom.hydrogen_count = Some(0);
+        builder.add_atom(atom);
+        let mol = builder.build();
+        let distribution = crate::isotope_distribution(&mol, 0.0);
+        assert_eq!(distribution.len(), peaks, "{element:?}");
+        assert!(distribution.windows(2).all(|x| x[0].0 < x[1].0));
+        assert!(
+            distribution
+                .iter()
+                .all(|&(mass, intensity)| mass > 0.0 && intensity > 0.0 && intensity <= 1.0)
+        );
+        assert!(distribution.iter().any(|&(_, intensity)| intensity == 1.0));
+        let mut builder = MoleculeBuilder::new();
+        let mut atom = mol.atom(chematic_core::AtomIdx(0)).clone();
+        atom.isotope = Some(99);
+        builder.add_atom(atom);
+        assert_eq!(
+            crate::isotope_distribution(&builder.build(), 0.0),
+            vec![(99.0, 1.0)]
+        );
+    }
+}
+
+#[test]
 fn catalog_salt_removal_keeps_the_largest_organic_fragment_and_its_stereo() {
     use crate::standardize::{SaltCatalog, remove_salts_with_catalog};
     let catalog = SaltCatalog::new();
@@ -209,4 +273,281 @@ fn cns_mpo_piecewise_scores_respect_the_documented_boundaries() {
         5.5,
         "PSA descending",
     );
+}
+
+#[test]
+fn xlogp_atom_contributions_are_invariant_under_atom_reordering_and_fragment_addition() {
+    use crate::{xlogp3, xlogp3_per_atom};
+    use chematic_core::AtomIdx;
+    for source in [
+        "C#C",
+        "CC#N",
+        "C1=CCCCC1",
+        "CC(C)(C)C",
+        "CN",
+        "CNC",
+        "CN(C)C",
+        "[NH4+]",
+        "N(=O)O",
+        "c1ccncc1",
+        "c1cc[nH]c1",
+        "C=N",
+        "C=NC",
+        "C1=NCCCC1",
+        "C1CCNCC1",
+        "c1ccoc1",
+        "S",
+        "CSC",
+        "C=S",
+        "CS(=O)C",
+        "CS(=O)(=O)C",
+        "c1ccsc1",
+        "CP(=O)(O)O",
+        "FC(Cl)(Br)I",
+        "[SiH4]",
+        "[H][H]",
+    ] {
+        let mol = chematic_smiles::parse(source).unwrap();
+        let expected = xlogp3_per_atom(&mol);
+        let mut builder = MoleculeBuilder::new();
+        for index in (0..mol.atom_count()).rev() {
+            builder.add_atom(mol.atom(AtomIdx(index as u32)).clone());
+        }
+        let reverse = |i: AtomIdx| AtomIdx((mol.atom_count() - 1 - i.0 as usize) as u32);
+        for (_, bond) in mol.bonds() {
+            builder
+                .add_bond(reverse(bond.atom1), reverse(bond.atom2), bond.order)
+                .unwrap();
+        }
+        let reversed = builder.build();
+        let actual = xlogp3_per_atom(&reversed);
+        assert_eq!(
+            actual,
+            expected.iter().rev().copied().collect::<Vec<_>>(),
+            "{source}"
+        );
+        near(xlogp3(&mol), xlogp3(&reversed), source);
+        assert!(actual.iter().all(|x| x.is_finite()));
+        let combined = chematic_smiles::parse(&format!("{source}.CC")).unwrap();
+        near(
+            xlogp3(&combined),
+            xlogp3(&mol) + xlogp3(&chematic_smiles::parse("CC").unwrap()),
+            source,
+        );
+    }
+}
+
+#[test]
+fn typed_legacy_charges_conserve_total_charge_and_follow_atom_permutations() {
+    for source in [
+        "C",
+        "C=C",
+        "C#N",
+        "c1ccccc1",
+        "c1ccncc1",
+        "c1cc[nH]c1",
+        "CCN",
+        "CC(=O)N",
+        "CC(=O)NC(=O)C",
+        "CO",
+        "COC",
+        "CC=O",
+        "CC(=O)O",
+        "CC(=O)OC",
+        "CC(=O)[O-]",
+        "CS",
+        "CSC",
+        "CSSC",
+        "CS(=O)C",
+        "CS(=O)(=O)C",
+        "c1ccsc1",
+        "CP(=O)(O)O",
+        "C[SiH3]",
+        "CF",
+        "CCl",
+        "CBr",
+        "CI",
+        "[NH4+]",
+        "[H][H]",
+    ] {
+        let mol = crate::add_hydrogens(&chematic_smiles::parse(source).unwrap());
+        let charges = crate::mmff94_bci::mmff94_charges_typed(&mol);
+        let expected = mol.atoms().map(|(_, a)| f64::from(a.charge)).sum::<f64>();
+        near(charges.iter().sum(), expected, source);
+        let mut builder = MoleculeBuilder::new();
+        let n = mol.atom_count();
+        for i in (0..n).rev() {
+            builder.add_atom(mol.atom(chematic_core::AtomIdx(i as u32)).clone());
+        }
+        for (_, b) in mol.bonds() {
+            builder
+                .add_bond(
+                    chematic_core::AtomIdx((n - 1 - b.atom1.0 as usize) as u32),
+                    chematic_core::AtomIdx((n - 1 - b.atom2.0 as usize) as u32),
+                    b.order,
+                )
+                .unwrap();
+        }
+        let reversed = crate::mmff94_bci::mmff94_charges_typed(&builder.build());
+        for (a, b) in charges.iter().rev().zip(reversed) {
+            near(*a, b, source);
+        }
+    }
+}
+
+#[test]
+fn potential_stereo_atom_sets_match_the_reference_or_known_native_residuals() {
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.1-potential-stereo-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    let mut failures = Vec::new();
+    for row in fixture["rows"].as_array().unwrap() {
+        let source = row["smiles"].as_str().unwrap();
+        let mol = chematic_smiles::parse(source).unwrap();
+        let actual: Vec<u32> = potential_stereocenter_indices(&mol)
+            .into_iter()
+            .map(|a| a.0)
+            .collect();
+        let expected: Vec<u32> = serde_json::from_value(row["centers"].clone()).unwrap();
+        if actual != expected {
+            failures.push(format!("{source}: {actual:?} != {expected:?}"));
+        }
+    }
+    // The native CIP/Rule-5 approximation does not reproduce RDKit's
+    // dependent ring stereo or arsenic perception for these five cases.
+    // Retain the full external reference and fail on any residual change.
+    assert_eq!(
+        failures,
+        [
+            "O[C@H](C1C[C@H](F)CCC1)C1C[C@H](F)CCC1: [2, 4, 9, 11] != [1, 2, 4, 9, 11]",
+            "O[C@H](C1C[C@@H](F)CCC1)C1C[C@@H](F)CCC1: [2, 4, 9, 11] != [1, 2, 4, 9, 11]",
+            "C[C@H]1CC[C@@H](C)CC1: [] != [1, 4]",
+            "C[C@H]1CC[C@H](C)CC1: [] != [1, 4]",
+            "C[As@](F)Cl: [] != [1]",
+        ]
+    );
+}
+
+#[test]
+fn tetrahedral_neighbors_agree_when_text_provenance_is_replaced_by_graph_order() {
+    use crate::cip::tetrahedral_stereo_neighbors;
+    use chematic_core::AtomIdx;
+    for source in [
+        "[C@H](F)(Cl)Br",
+        "[C@@H](F)(Cl)Br",
+        "F[C@H](Cl)Br",
+        "F[C@@H](Cl)Br",
+        "F[C@](Cl)(Br)I",
+        "F[C@@](Cl)(Br)I",
+    ] {
+        let mol = chematic_smiles::parse(source).unwrap();
+        let mut builder = MoleculeBuilder::new();
+        for (_, a) in mol.atoms() {
+            builder.add_atom(a.clone());
+        }
+        for (_, b) in mol.bonds() {
+            builder.add_bond(b.atom1, b.atom2, b.order).unwrap();
+        }
+        let rebuilt = builder.build();
+        for i in 0..mol.atom_count() {
+            let idx = AtomIdx(i as u32);
+            assert_eq!(
+                tetrahedral_stereo_neighbors(&mol, idx),
+                tetrahedral_stereo_neighbors(&rebuilt, idx),
+                "{source} atom {i}"
+            );
+        }
+    }
+}
+
+#[test]
+fn heavy_topological_descriptors_normalize_ordinary_explicit_hydrogens_in_smiles() {
+    use crate::topo_descriptors::*;
+    for source in [
+        "CCO",
+        "CC#N",
+        "C1CCCCC1",
+        "c1ccncc1",
+        "CC(=O)N",
+        "F[Si](F)(F)F",
+        "B(O)(O)O",
+        "P(=O)(O)(O)O",
+        "CCS",
+        "C[As](C)C",
+        "C[Se]C",
+        "CBr",
+        "CI",
+    ] {
+        let mol = chematic_smiles::parse(source).unwrap();
+        let explicit =
+            chematic_smiles::parse(&chematic_smiles::write(&crate::add_hydrogens(&mol))).unwrap();
+        for f in [
+            kappa1, kappa2, kappa3, chi0, chi1, chi2, chi3, chi4, bertz_ct, labute_asa,
+        ] {
+            let a = f(&mol);
+            let b = f(&explicit);
+            assert!((a - b).abs() < 1e-9, "{source}: {a} != {b}");
+        }
+        assert_eq!(kappa_all(&mol), kappa_all(&explicit));
+    }
+}
+
+#[test]
+fn graph_descriptor_resource_sentinels_and_analytic_path_matchings_are_defined() {
+    use crate::topo_descriptors::*;
+    use chematic_core::{Atom, Element, MoleculeBuilder};
+    let empty = MoleculeBuilder::new().build();
+    assert_eq!(hosoya_index(&empty), 1);
+    for (source, matchings) in [
+        ("C", 1),
+        ("CC", 2),
+        ("CCC", 3),
+        ("CCCC", 5),
+        ("CCCCC", 8),
+        ("CCCCCC", 13),
+    ] {
+        assert_eq!(
+            hosoya_index(&chematic_smiles::parse(source).unwrap()),
+            matchings
+        );
+    }
+    let mut builder = MoleculeBuilder::new();
+    for _ in 0..1001 {
+        builder.add_atom(Atom::new(Element::C));
+    }
+    let large = builder.build();
+    assert_eq!(hosoya_index(&large), 0);
+    assert_eq!(padmakar_ivan_index(&large), u64::MAX);
+    for (z, valence) in [
+        (2, 2),
+        (3, 1),
+        (4, 2),
+        (5, 3),
+        (6, 4),
+        (7, 5),
+        (8, 6),
+        (9, 7),
+        (10, 8),
+        (11, 1),
+        (12, 2),
+        (13, 3),
+        (14, 4),
+        (15, 5),
+        (16, 6),
+        (17, 7),
+        (18, 8),
+        (35, 7),
+        (53, 7),
+    ] {
+        let mut builder = MoleculeBuilder::new();
+        let mut atom = Atom::new(Element::from_atomic_number(z).unwrap());
+        atom.hydrogen_count = Some(0);
+        builder.add_atom(atom);
+        let mol = builder.build();
+        assert_eq!(num_valence_electrons(&mol), valence);
+        assert!(hall_kier_alpha(&mol).is_finite());
+        assert!(vabc(&mol).is_finite() && vabc(&mol) > 0.0);
+    }
 }

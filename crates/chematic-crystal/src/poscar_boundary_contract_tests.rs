@@ -2,6 +2,46 @@ use crate::*;
 
 const POSCAR: &str = "contract\n1\n2 0 0\n0 2 0\n0 0 2\nSi O\n1 1\nDirect\n0 0 0\n0.5 0.5 0.5\n";
 #[test]
+fn poscar_restart_sections_reject_malformed_or_unsupported_data() {
+    assert!(matches!(parse_poscar(""), Err(PoscarError::Empty)));
+    for suffix in ["\n0 0 0\n", "Lattice velocities and vectors\n"] {
+        assert!(matches!(
+            parse_poscar(&format!("{POSCAR}{suffix}")),
+            Err(PoscarError::UnsupportedSection { .. })
+        ));
+    }
+    for bad in ["1 2", "x 0 0", "NaN 0 0", "0 inf 0"] {
+        let error = parse_poscar(&format!("{POSCAR}\n{bad}\n0 0 0\n")).unwrap_err();
+        match error {
+            PoscarError::InvalidLine { line, .. } | PoscarError::NonFiniteValue { line, .. } => {
+                assert_eq!(line, 12)
+            }
+            other => panic!("unexpected velocity error: {other}"),
+        }
+    }
+    let velocities = format!("{POSCAR}\n1 2 3\n4 5 6\n");
+    assert!(matches!(
+        parse_poscar(&format!("{velocities}\na\nb\n")),
+        Err(PoscarError::InvalidLine { .. })
+    ));
+    assert!(matches!(
+        parse_poscar(&format!("{velocities}\na\nb\nc\n\nextra\n")),
+        Err(PoscarError::UnsupportedSection { .. })
+    ));
+    let mut doc = parse_poscar(&velocities).unwrap();
+    doc.velocities = Some(vec![[0.0; 3]]);
+    assert!(matches!(
+        write_poscar(&doc),
+        Err(PoscarError::Unwritable { .. })
+    ));
+    doc.velocities = None;
+    doc.selective_dynamics = Some(vec![[true; 3]]);
+    assert!(matches!(
+        write_poscar(&doc),
+        Err(PoscarError::Unwritable { .. })
+    ));
+}
+#[test]
 fn malformed_poscar_fields_report_the_affected_line() {
     for (line, replacement, diagnostic) in [
         (1, "nope", "scale"),

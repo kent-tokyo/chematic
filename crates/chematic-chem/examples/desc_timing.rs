@@ -36,6 +36,9 @@ fn main() {
     t!("parity_arom", |m| {
         chematic_perception::with_rdkit_parity_view(m, |v| v.is_ok())
     });
+    t!("parity_identity", |m| {
+        chematic_perception::rdkit_parity_view_is_identity(m)
+    });
     t!("sssr_count", |m| chematic_perception::sssr_ring_count(m));
     t!("ring_flags", |m| {
         chematic_perception::ring_bond_flags_shared(m).len()

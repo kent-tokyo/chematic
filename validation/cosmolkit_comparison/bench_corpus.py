@@ -85,6 +85,25 @@ def pipeline_seconds(sample: dict, op: str) -> float | None:
     return sample["parse"] + value
 
 
+def python_interpreters(overrides: list[str], default: str) -> dict[str, str]:
+    """Resolve per-engine interpreters without inventing benchmark engines."""
+    result = {"rdkit": default, "chematic": default, "cosmolkit": default}
+    for override in overrides:
+        engine, interpreter = override.split("=", 1)
+        if engine == "all":
+            result.update({name: interpreter for name in result})
+        elif engine in result:
+            result[engine] = interpreter
+        else:
+            raise ValueError(f"unknown benchmark engine: {engine}")
+    return result
+
+
+def operation_succeeded(samples: dict[str, list[dict]], engine: str, op: str) -> bool:
+    """Return true only when every block completed every row for ``op``."""
+    return all(sample.get(f"{op}__errors", 0) == 0 for sample in samples[engine])
+
+
 def table(engine: str):
     from corpus_engines import SMARTS_QUERIES
     if engine == "rdkit":
@@ -228,7 +247,10 @@ def _cosmolkit_05_table(ck):
     gens = {key: ck.MorganFingerprintGenerator(params=ck.MorganParams(fp_size=2048, **kw))
             for key, kw in (("m2", {"radius": 2}), ("m3", {"radius": 3}),
                             ("m2c", {"radius": 2, "include_chirality": True}))}
-    kek = ck.SmilesWriteParams(do_kekule=True)
+    # 0.5.0-rc.22 renamed the constructor keyword from ``do_kekule`` to
+    # ``kekule``.  The scorecard pins rc22, so keep the adapter aligned with
+    # the distributed package instead of silently benchmarking an older RC.
+    kek = ck.SmilesWriteParams(kekule=True)
     rxn = ck.parse_smirks(RXN_AMIDE)
     acid = ck.Molecule.from_smiles("CC(=O)O")
     run_params = ck.ReactionRunParams()
@@ -249,9 +271,9 @@ def _cosmolkit_05_table(ck):
         "logp": lambda m: m.crippen_descriptors().logp, "qed": lambda m: m.qed(),
         "hba": lambda m: m.num_hba(), "hbd": lambda m: m.num_hbd(),
         "rotatable_bonds": lambda m: m.num_rotatable_bonds(),
-        "morgan2_2048": lambda m: m.morgan_fingerprint_with_generator(gens["m2"]),
-        "morgan3_2048": lambda m: m.morgan_fingerprint_with_generator(gens["m3"]),
-        "morgan2_chiral": lambda m: m.morgan_fingerprint_with_generator(gens["m2c"]),
+        "morgan2_2048": lambda m: m.fingerprint_morgan_with_generator(gens["m2"]),
+        "morgan3_2048": lambda m: m.fingerprint_morgan_with_generator(gens["m3"]),
+        "morgan2_chiral": lambda m: m.fingerprint_morgan_with_generator(gens["m2c"]),
         "maccs": lambda m: m.maccs_fingerprint(),
         "fp_atom_pair": lambda m: m.atom_pair_fingerprint(),
         "fp_torsion": lambda m: m.legacy_topological_torsion_fingerprint(),
@@ -370,8 +392,7 @@ def main() -> int:
     if args._child:
         print(json.dumps(measure(args._child, args.corpus, ops, args.limit, args._coords)))
         return 0
-    pythons = {"rdkit": sys.executable, "chematic": sys.executable, "cosmolkit": sys.executable}
-    pythons.update(dict(p.split("=", 1) for p in args.python))
+    pythons = python_interpreters(args.python, sys.executable)
     engines = list(pythons)
     samples: dict[str, list[dict]] = {e: [] for e in engines}
     load_start = list(os.getloadavg())
@@ -427,24 +448,37 @@ def main() -> int:
         }
         report["errors"][e] = {k: v for k, v in samples[e][0].items() if k.endswith("__errors")}
     ck, ch, rd = (report["median_seconds"][e] for e in ("cosmolkit", "chematic", "rdkit"))
+    valid = {
+        engine: {op: operation_succeeded(samples, engine, op) for op in ops}
+        for engine in engines
+    }
+    report["valid_operations"] = valid
     report["chematic_speedup_vs_cosmolkit"] = {
-        op: (round(ck[op] / ch[op], 2) if ck.get(op) and ch.get(op) else None) for op in ops}
+        op: (round(ck[op] / ch[op], 2)
+             if valid["cosmolkit"][op] and valid["chematic"][op]
+             and ck.get(op) and ch.get(op) else None) for op in ops}
     report["chematic_speedup_vs_rdkit"] = {
-        op: (round(rd[op] / ch[op], 2) if rd.get(op) and ch.get(op) else None) for op in ops}
+        op: (round(rd[op] / ch[op], 2)
+             if valid["rdkit"][op] and valid["chematic"][op]
+             and rd.get(op) and ch.get(op) else None) for op in ops}
     report["cosmolkit_speedup_vs_rdkit"] = {
-        op: (round(rd[op] / ck[op], 2) if rd.get(op) and ck.get(op) else None) for op in ops}
+        op: (round(rd[op] / ck[op], 2)
+             if valid["rdkit"][op] and valid["cosmolkit"][op]
+             and rd.get(op) and ck.get(op) else None) for op in ops}
     ck_pipeline, ch_pipeline, rd_pipeline = (
         report["median_pipeline_seconds"][e]
         for e in ("cosmolkit", "chematic", "rdkit")
     )
     report["chematic_pipeline_speedup_vs_cosmolkit"] = {
         op: (round(ck_pipeline[op] / ch_pipeline[op], 2)
-             if ck_pipeline.get(op) and ch_pipeline.get(op) else None)
+             if valid["cosmolkit"][op] and valid["chematic"][op]
+             and ck_pipeline.get(op) and ch_pipeline.get(op) else None)
         for op in ops
     }
     report["chematic_pipeline_speedup_vs_rdkit"] = {
         op: (round(rd_pipeline[op] / ch_pipeline[op], 2)
-             if rd_pipeline.get(op) and ch_pipeline.get(op) else None)
+             if valid["rdkit"][op] and valid["chematic"][op]
+             and rd_pipeline.get(op) and ch_pipeline.get(op) else None)
         for op in ops
     }
     report["paired_speedup_ci95_vs_cosmolkit"] = {}
@@ -453,7 +487,8 @@ def main() -> int:
     report["paired_pipeline_speedup_ci95_vs_rdkit"] = {}
     for index, op in enumerate(ops):
         for competitor, seed in (("cosmolkit", 0xC05_000), ("rdkit", 0xD17_000)):
-            if all(s.get(op) for e in ("chematic", competitor) for s in samples[e]):
+            if (valid["chematic"][op] and valid[competitor][op]
+                    and all(s.get(op) for e in ("chematic", competitor) for s in samples[e])):
                 report[f"paired_speedup_ci95_vs_{competitor}"][op] = paired_median_ratio_ci(
                     [s[op] for s in samples[competitor]],
                     [s[op] for s in samples["chematic"]],

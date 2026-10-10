@@ -91,3 +91,6 @@ mod stereo_order_boundary_contract_tests;
 
 #[cfg(test)]
 mod pdb_boundary_contract_tests;
+
+#[cfg(test)]
+mod inchi_output_boundary_contract_tests;
