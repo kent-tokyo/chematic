@@ -1365,6 +1365,10 @@ mod tests {
         let coords = rdkit_quaternary_ccw_coords(&m_wrong_tag);
         let report = verify_stereo(&m_wrong_tag, &coords);
         assert_eq!(report.tetrahedral[0].status, StereoStatus::Violated);
+        assert_eq!(
+            report.violations(),
+            vec![StereoElement::Tetrahedral(report.tetrahedral[0].atom)]
+        );
     }
 
     #[test]
@@ -1692,6 +1696,7 @@ mod tests {
         let report = verify_stereo(&m, &coords);
         assert_eq!(report.double_bond.len(), 1);
         assert_eq!(report.double_bond[0].status, StereoStatus::Satisfied);
+        assert!(report.violations().is_empty());
     }
 
     #[test]
@@ -1700,6 +1705,10 @@ mod tests {
         let coords = cis_but2ene_coords(&m); // but built cis
         let report = verify_stereo(&m, &coords);
         assert_eq!(report.double_bond[0].status, StereoStatus::Violated);
+        assert_eq!(
+            report.violations(),
+            vec![StereoElement::DoubleBond(report.double_bond[0].bond)]
+        );
     }
 
     #[test]

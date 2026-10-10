@@ -516,6 +516,10 @@ mod tests {
         let coords_short = vec![[0.0, 0.0, 0.0]];
         let coords_ok = vec![[0.0, 0.0, 0.0], [1.4, 0.0, 0.0]];
         let err = correspondence_search(&mol, &coords_short, &mol, &coords_ok).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("coords length does not match atom count")
+        );
         assert!(matches!(err, O3AError::CoordinateMismatch));
     }
 

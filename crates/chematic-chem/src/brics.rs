@@ -472,6 +472,26 @@ mod tests {
         // CCCC: one central C-C cut → 2 fragments, each with a [*] dummy.
         let frags = brics_fragments(&mol("CCCC"));
         assert_eq!(frags.len(), 2, "butane should split into 2 fragments");
+        assert_eq!(
+            brics_fragments_with_config(
+                &mol("CCCC"),
+                &BricsConfig {
+                    min_fragment_size: 2
+                }
+            )
+            .len(),
+            2
+        );
+        assert!(
+            brics_fragments_with_config(
+                &mol("CCCC"),
+                &BricsConfig {
+                    min_fragment_size: 3
+                }
+            )
+            .is_empty(),
+            "attachment wildcards do not satisfy the physical-atom size threshold"
+        );
         // Each fragment should have a wildcard atom.
         for frag in &frags {
             assert!(

@@ -683,6 +683,11 @@ Generated for chematic tests\n\
         assert_eq!(grid.atoms.len(), 1);
         assert_eq!(grid.atoms[0].element, Element::from_symbol("O").unwrap());
         assert_eq!(grid.atoms[0].charge, 8.0);
+        let (mol, coords) = grid.to_molecule();
+        assert_eq!((mol.atom_count(), mol.bond_count()), (1, 0));
+        assert_eq!(mol.atom(chematic_core::AtomIdx(0)).element, Element::O);
+        assert_eq!(mol.atom(chematic_core::AtomIdx(0)).charge, 0); // Nuclear charge is not formal charge.
+        assert_eq!(coords, vec![(0.5, 0.5, 0.5)]); // Retains the grid's Bohr unit.
     }
 
     #[test]
