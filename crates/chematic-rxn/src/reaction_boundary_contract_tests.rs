@@ -269,8 +269,7 @@ fn reaction_tetrahedral_permutations_and_carried_centers_match_pinned_rdkit() {
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>();
-        let expected: Vec<Vec<String>> =
-            serde_json::from_value(row["products"].clone()).unwrap();
+        let expected: Vec<Vec<String>> = serde_json::from_value(row["products"].clone()).unwrap();
         if actual != expected {
             failures.push(format!(
                 "{source} with {template}: {actual:?} != {expected:?}"
