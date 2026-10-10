@@ -1,8 +1,8 @@
 # chematic 1.x Trust Release 実行計画
 
-更新日: 2026-10-10。**v1.0.41リリース系列**です。v1.0.40までの配布経路は
-確認済みです。v1.0.41のRDKit/COSMolKit 0.5比較はsource buildの記録であり、
-配布経路と公開成果物の化学ゲートは公開後に確認します。
+更新日: 2026-10-10。**v1.0.41リリース系列**です。v1.0.41の配布経路は
+確認済みです。RDKit/COSMolKit 0.5比較はsource buildの記録であり、
+公開成果物の化学ゲートとは分けて扱います。
 
 この文書は実行順と合格条件だけを定義します。機能別の優先順位は
 [`ROADMAP.md`](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md)、未完了項目と依存関係は

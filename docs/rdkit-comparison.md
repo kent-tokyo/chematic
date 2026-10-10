@@ -19,9 +19,8 @@ SMILES round-trip result. This is source-build evidence, not a universal or
 published-package parity claim. The latest
 published-package chemistry and speed comparison packet is pinned to
 **v1.0.30** against RDKit 2026.03.6. Later dated records cover v1.0.36
-and v1.0.37 packages plus later source evidence. v1.0.40 release channels are
-verified; v1.0.41 channel verification and package-output reruns remain
-separate publication work.
+and v1.0.37 packages plus later source evidence. v1.0.41 release channels are
+verified; package-output chemistry reruns remain separate work.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|
