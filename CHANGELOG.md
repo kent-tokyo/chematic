@@ -12,6 +12,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added bounded, label-stable R-group decomposition for Rust and Python.
+  Terminal mapped wildcards such as `[*:1]` and mapped core atoms now produce
+  stable `R1`/`R2` rows and RDKit-style column dictionaries. Input atom order
+  is normalized before matching, output wildcards retain their labels, and
+  duplicate labels, non-terminal placeholders, ambiguous multiple
+  attachments, and match-limit exhaustion fail explicitly. Multi-core/MCS
+  alignment, tautomer/enumeration expansion, and RDKit's GA scoring remain out
+  of scope for this bounded API.
 - Added a version-pinned CDK 2.13 and Indigo 1.46.0 comparison gate with
   common-schema adapters, a 24-structure stratified smoke corpus, separate
   parse-inclusive/prepared timing lanes, rotating 21-block measurements, and

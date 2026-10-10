@@ -220,7 +220,26 @@ if mcs:
     print(mcs.smiles)   # common substructure
 ```
 
-## 18. Apply a reaction with SMIRKS
+## 18. Build a labelled R-group table
+
+```python
+mols = [
+    chematic.from_smiles("Cc1ccc(CC)cc1"),
+    chematic.from_smiles("CCc1ccc(N)cc1"),
+]
+
+columns = chematic.rgroup_decompose_columns(
+    "c1cc([*:1])ccc1[*:2]", mols
+)
+print(columns["R1"])
+print(columns["R2"])
+```
+
+The mapped wildcards define stable column labels. Unmatched rows are retained
+as `None`. This is a bounded subset of RDKit R-group decomposition; ambiguous
+or unsupported label contracts raise `ValueError`.
+
+## 19. Apply a reaction with SMIRKS
 
 ```python
 # Deprotonate a phenol
@@ -232,7 +251,7 @@ for product_set in products:
         print(p.smiles)  # [O-]c1ccccc1
 ```
 
-## 19. Render SVG in Jupyter
+## 20. Render SVG in Jupyter
 
 ```python
 from IPython.display import SVG, display
@@ -252,7 +271,7 @@ mols = [chematic.from_smiles(s) for s in ["CCO", "c1ccccc1", "CC(=O)O", "CCCC"]]
 display(SVG(chematic.depict_grid(mols, cols=2)))
 ```
 
-## 20. Export all descriptors + filter results to a DataFrame
+## 21. Export all descriptors + filter results to a DataFrame
 
 ```python
 import pandas as pd

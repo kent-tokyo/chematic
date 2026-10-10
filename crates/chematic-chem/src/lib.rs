@@ -130,7 +130,9 @@ pub use pka::{PkaSite, PkaSiteType, pka_acid, pka_base, pka_both, predict_pka};
 pub use qed::{qed, qed_with_bundle};
 pub use rdkit_graph::GraphDescriptorError;
 pub use recap::{recap_breakable_bond_count, recap_fragment};
-pub use rgroup::{RGroupError, RGroupResult, rgroup_decompose};
+pub use rgroup::{
+    LabeledRGroupResult, RGroupError, RGroupResult, rgroup_decompose, rgroup_decompose_labeled,
+};
 pub use sa_score::{sa_score, sa_score_with_bundle};
 pub use scaffold::{
     ScaffoldNetwork, generic_murcko_scaffold, murcko_scaffold, scaffold_network,

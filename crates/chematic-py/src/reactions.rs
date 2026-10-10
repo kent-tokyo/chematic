@@ -131,6 +131,78 @@ fn rgroup_decompose<'py>(
         .collect()
 }
 
+/// Label-stable R-group decomposition using mapped core attachment points.
+///
+/// This bounded RDKit-style surface accepts terminal mapped wildcards such as
+/// ``c1cc([*:1])ccc1[*:2]`` and mapped core atoms such as
+/// ``[c:1]1ccccc1``. Output wildcard atoms retain the corresponding map
+/// number, so rows can be joined safely by ``R1``, ``R2``, and so on.
+#[pyfunction]
+fn rgroup_decompose_labeled<'py>(
+    scaffold_smarts: &str,
+    mols: Vec<Mol>,
+    py: Python<'py>,
+) -> PyResult<Vec<Option<Bound<'py, PyDict>>>> {
+    let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
+    let results = chematic_chem::rgroup_decompose_labeled(scaffold_smarts, &refs)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    results
+        .into_iter()
+        .map(|opt| match opt {
+            None => Ok(None),
+            Some(r) => {
+                let d = PyDict::new(py);
+                d.set_item("mol_idx", r.mol_idx)?;
+                d.set_item("Core", &r.core_smiles)?;
+                for (label, value) in &r.r_groups {
+                    d.set_item(format!("R{label}"), value)?;
+                }
+                Ok(Some(d))
+            }
+        })
+        .collect()
+}
+
+/// Label-stable R-group decomposition returned as table columns.
+///
+/// The result mirrors RDKit's ``GetRGroupsAsColumns(asSmiles=True)`` shape:
+/// ``Core`` and every discovered ``R<n>`` label map to a list parallel to the
+/// input molecules. Missing core matches or substituents are represented by
+/// ``None`` rather than silently dropping rows.
+#[pyfunction]
+fn rgroup_decompose_columns<'py>(
+    scaffold_smarts: &str,
+    mols: Vec<Mol>,
+    py: Python<'py>,
+) -> PyResult<Bound<'py, PyDict>> {
+    let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
+    let results = chematic_chem::rgroup_decompose_labeled(scaffold_smarts, &refs)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let labels: std::collections::BTreeSet<u16> = results
+        .iter()
+        .flatten()
+        .flat_map(|row| row.r_groups.keys().copied())
+        .collect();
+
+    let columns = PyDict::new(py);
+    let core: Vec<Option<&str>> = results
+        .iter()
+        .map(|row| row.as_ref().map(|r| r.core_smiles.as_str()))
+        .collect();
+    columns.set_item("Core", core)?;
+    for label in labels {
+        let values: Vec<Option<&str>> = results
+            .iter()
+            .map(|row| {
+                row.as_ref()
+                    .and_then(|r| r.r_groups.get(&label).map(String::as_str))
+            })
+            .collect();
+        columns.set_item(format!("R{label}"), values)?;
+    }
+    Ok(columns)
+}
+
 /// Detect activity cliffs in a set of molecules with known activity values.
 ///
 /// An activity cliff is a structurally similar pair with a large activity difference —
@@ -1027,6 +1099,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(reaction_smarts_match, m)?)?;
     m.add_function(wrap_pyfunction!(find_mmp, m)?)?;
     m.add_function(wrap_pyfunction!(rgroup_decompose, m)?)?;
+    m.add_function(wrap_pyfunction!(rgroup_decompose_labeled, m)?)?;
+    m.add_function(wrap_pyfunction!(rgroup_decompose_columns, m)?)?;
     m.add_function(wrap_pyfunction!(activity_cliffs, m)?)?;
     m.add_function(wrap_pyfunction!(find_reaction_center, m)?)?;
     m.add_function(wrap_pyfunction!(e_factor, m)?)?;

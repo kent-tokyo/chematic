@@ -222,7 +222,26 @@ if mcs:
     print(mcs.smiles)   # 共通部分構造
 ```
 
-## 18. SMIRKS で反応を適用する
+## 18. ラベル付き R-group 表を作る
+
+```python
+mols = [
+    chematic.from_smiles("Cc1ccc(CC)cc1"),
+    chematic.from_smiles("CCc1ccc(N)cc1"),
+]
+
+columns = chematic.rgroup_decompose_columns(
+    "c1cc([*:1])ccc1[*:2]", mols
+)
+print(columns["R1"])
+print(columns["R2"])
+```
+
+マップ付きワイルドカードが列ラベルになります。コアに一致しない行も
+`None` として保持されます。RDKit R-group 分解の限定的な部分集合であり、
+曖昧または未対応のラベル指定は `ValueError` になります。
+
+## 19. SMIRKS で反応を適用する
 
 ```python
 # フェノールを脱プロトン化
@@ -234,7 +253,7 @@ for product_set in products:
         print(p.smiles)  # [O-]c1ccccc1
 ```
 
-## 19. Jupyter で SVG 描画する
+## 20. Jupyter で SVG 描画する
 
 ```python
 from IPython.display import SVG, display
@@ -254,7 +273,7 @@ mols = [chematic.from_smiles(s) for s in ["CCO", "c1ccccc1", "CC(=O)O", "CCCC"]]
 display(SVG(chematic.depict_grid(mols, cols=2)))
 ```
 
-## 20. 全記述子 + フィルター結果を一括出力する
+## 21. 全記述子 + フィルター結果を一括出力する
 
 ```python
 import pandas as pd
