@@ -32,8 +32,8 @@ fn atom_removal_remaps_stereo_directions_tags_and_rgroups_consistently() {
             copy.bond_count(),
             if removed == 0 || removed == 5 { 4 } else { 3 }
         );
-        for old in 0..6 {
-            if let Some(new) = map[old] {
+        for (old, &mapped) in map.iter().enumerate() {
+            if let Some(new) = mapped {
                 for result in [&copy, &changed] {
                     assert_eq!(result.atom(new), original.atom(AtomIdx(old as u32)));
                     assert_eq!(result.atom_tag(new), original.atom_tag(AtomIdx(old as u32)));
