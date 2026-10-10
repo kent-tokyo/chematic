@@ -1,0 +1,5249 @@
+{
+  "rdkit_version": "2026.03.1",
+  "rows": [
+    {
+      "smiles": "",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "0,0"
+    },
+    {
+      "smiles": "",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "_0"
+    },
+    {
+      "smiles": "",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "_0_0"
+    },
+    {
+      "smiles": "",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "_0"
+    },
+    {
+      "smiles": "",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R1"
+    },
+    {
+      "smiles": "",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R1L0"
+    },
+    {
+      "smiles": "",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000000000000000000000000000000"
+    },
+    {
+      "smiles": "",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "_0_0"
+    },
+    {
+      "smiles": "",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "_0"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "*"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "[Na]"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[Na+]"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "Na+"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[Na]_1"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[Na]_0_1"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[Na]_-1"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[Na]"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[Na+]"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "1"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00010000010000000000000b000100"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[Na+]_0_0"
+    },
+    {
+      "smiles": "[Na+]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[Na+]_0"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "*"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "[Ca]"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[Ca+2]"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "Ca+2"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[Ca]_2"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[Ca]_0_2"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[Ca]_-2"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[Ca]"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[Ca+2]"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "2"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000000000014000100"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[Ca+2]_0_0"
+    },
+    {
+      "smiles": "[Ca+2]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[Ca+2]_0"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "[Fe]"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[Fe+3]"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "Fe+3"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[Fe]_3"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[Fe]_0_3"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[Fe]_-3"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[Fe]"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[Fe+3]"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "3"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00010000010000000000001a000100"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[Fe+3]_0_0"
+    },
+    {
+      "smiles": "[Fe+3]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[Fe+3]_0"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "*"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "O"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[O-2]"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "O-2"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[O]_-2"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[O]_0_-2"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[O]_2"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[O]"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[O-2]"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "-2"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000001000008010100"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[O-2]_0_0"
+    },
+    {
+      "smiles": "[O-2]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[O-2]_0"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "P"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[P-2]"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "P-2"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[P]_-2"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[P]_0_-2"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[P]_2"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[P]"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[P-2]"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "-2"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00010000010000000100000f000100"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[P-2]_0_0"
+    },
+    {
+      "smiles": "[P-2]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[P-2]_0"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "*"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "N"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[NH4+]"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "H4N+"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[NH4]_1"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N]_4_1"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N]_3"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[NH4]"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[NH4+]"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "1"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000001000007000100"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[NH4+]_0_0"
+    },
+    {
+      "smiles": "[NH4+]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[NH4+]_0"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "N"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[NH2+]"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "H2N+"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[NH2]_1"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N]_2_1"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N]_1"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[NH2]"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[NH2+]"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "1"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000001000007000100"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[NH2+]_0_0"
+    },
+    {
+      "smiles": "[NH2+]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[NH2+]_0"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "N"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[NH+]"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "HN+"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[NH]_1"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N]_1_1"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N]_0"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[NH]"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[NH+]"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "1"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000001000007000100"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[NH+]_0_0"
+    },
+    {
+      "smiles": "[NH+]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[NH+]_0"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "N"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[N+2]"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "N+2"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[N]_2"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N]_0_2"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N]_-2"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[N]"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[N+2]"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "2"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000001000007000100"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[N+2]_0_0"
+    },
+    {
+      "smiles": "[N+2]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[N+2]_0"
+    },
+    {
+      "smiles": "[S]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[S]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "S"
+    },
+    {
+      "smiles": "[S]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[S]"
+    },
+    {
+      "smiles": "[S]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[S]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[S]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "S"
+    },
+    {
+      "smiles": "[S]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[S]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[S]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[S]_0"
+    },
+    {
+      "smiles": "[S]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[S]_0_0"
+    },
+    {
+      "smiles": "[S]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[S]_0"
+    },
+    {
+      "smiles": "[S]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[S]"
+    },
+    {
+      "smiles": "[S]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[S]"
+    },
+    {
+      "smiles": "[S]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[S]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[S]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[S]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000001000010010000"
+    },
+    {
+      "smiles": "[S]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[S]_0_0"
+    },
+    {
+      "smiles": "[S]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[S]_0"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "S"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[SH]"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[SH]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[SH]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "HS"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[SH]_0"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[S]_1_0"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[S]_1"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[SH]"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[SH]"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000001000010010000"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[SH]_0_0"
+    },
+    {
+      "smiles": "[SH]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[SH]_0"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "*"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "S"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "S"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "H2S"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "S_0"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[S]_2_0"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[S]_2"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "S"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "S"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000001000010000000"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[SH2]_0_0"
+    },
+    {
+      "smiles": "[SH2]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[SH2]_0"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "S"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[SH3]"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "H3S"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[SH3]_0"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[S]_3_0"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[S]_3"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[SH3]"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[SH3]"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000001000010010000"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[SH3]_0_0"
+    },
+    {
+      "smiles": "[SH3]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[SH3]_0"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "S"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[S+2]"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "S+2"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[S]_2"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[S]_0_2"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[S]_-2"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[S]"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[S+2]"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "2"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000001000010000100"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[S+2]_0_0"
+    },
+    {
+      "smiles": "[S+2]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[S+2]_0"
+    },
+    {
+      "smiles": "[P]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[P]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "P"
+    },
+    {
+      "smiles": "[P]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[P]"
+    },
+    {
+      "smiles": "[P]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[P]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[P]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "P"
+    },
+    {
+      "smiles": "[P]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[P]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[P]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[P]_0"
+    },
+    {
+      "smiles": "[P]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[P]_0_0"
+    },
+    {
+      "smiles": "[P]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[P]_0"
+    },
+    {
+      "smiles": "[P]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[P]"
+    },
+    {
+      "smiles": "[P]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[P]"
+    },
+    {
+      "smiles": "[P]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[P]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[P]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[P]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00010000010000000100000f010000"
+    },
+    {
+      "smiles": "[P]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[P]_0_0"
+    },
+    {
+      "smiles": "[P]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[P]_0"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "P"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[PH]"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[PH]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[PH]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "HP"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[PH]_0"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[P]_1_0"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[P]_1"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[PH]"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[PH]"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00010000010000000100000f010000"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[PH]_0_0"
+    },
+    {
+      "smiles": "[PH]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[PH]_0"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "*"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "B"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "B"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "BH3"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "B_0"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[B]_3_0"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[B]_3"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "B"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "B"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000000000005000000"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[BH3]_0_0"
+    },
+    {
+      "smiles": "[BH3]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[BH3]_0"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "B"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[BH2]"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "BH2"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[BH2]_0"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[B]_2_0"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[B]_2"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[BH2]"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[BH2]"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000000000005000000"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[BH2]_0_0"
+    },
+    {
+      "smiles": "[BH2]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[BH2]_0"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "[*]"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "B"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[BH]"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[BH]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[BH]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "BH"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "1,0"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[BH]_0"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[B]_1_0"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[B]_1"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[BH]"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[BH]"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R0"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R0L0"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000100000100000000000005000000"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[BH]_0_0"
+    },
+    {
+      "smiles": "[BH]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[BH]_0"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**(*)*"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "FB(F)F"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "FB(F)F"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "BF3"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "4,3"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,1,0,3"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "FB(F)F_0"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "FB(F)F_0_0"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "FB(F)F_0"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "FB(F)F"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "FB(F)F"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B3R0"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B3R0L0"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000400030100000003000020000000"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[F]-[B](-[F])-[F]_0_0"
+    },
+    {
+      "smiles": "B(F)(F)F",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[F]-[B](-[F])-[F]_0"
+    },
+    {
+      "smiles": "C#N",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**"
+    },
+    {
+      "smiles": "C#N",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "CN"
+    },
+    {
+      "smiles": "C#N",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "C#N"
+    },
+    {
+      "smiles": "C#N",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "C#N",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "C#N",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "CHN"
+    },
+    {
+      "smiles": "C#N",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "2,1"
+    },
+    {
+      "smiles": "C#N",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,2"
+    },
+    {
+      "smiles": "C#N",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[CH][N]_0"
+    },
+    {
+      "smiles": "C#N",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[CH][N]_0_0"
+    },
+    {
+      "smiles": "C#N",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[CH][N]_0"
+    },
+    {
+      "smiles": "C#N",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[CH][N]"
+    },
+    {
+      "smiles": "C#N",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "C#N"
+    },
+    {
+      "smiles": "C#N",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "C#N",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B1R0"
+    },
+    {
+      "smiles": "C#N",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B1R0L0"
+    },
+    {
+      "smiles": "C#N",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00020001010001000100000d000000"
+    },
+    {
+      "smiles": "C#N",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[CH]#[N]_0_0"
+    },
+    {
+      "smiles": "C#N",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[CH]#[N]_0"
+    },
+    {
+      "smiles": "C#C",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**"
+    },
+    {
+      "smiles": "C#C",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "CC"
+    },
+    {
+      "smiles": "C#C",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "C#C"
+    },
+    {
+      "smiles": "C#C",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "C#C",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "C#C",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C2H2"
+    },
+    {
+      "smiles": "C#C",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "2,1"
+    },
+    {
+      "smiles": "C#C",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,2"
+    },
+    {
+      "smiles": "C#C",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[CH][CH]_0"
+    },
+    {
+      "smiles": "C#C",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "C#C_0_0"
+    },
+    {
+      "smiles": "C#C",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "C#C_0"
+    },
+    {
+      "smiles": "C#C",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[CH][CH]"
+    },
+    {
+      "smiles": "C#C",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "C#C"
+    },
+    {
+      "smiles": "C#C",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "C#C",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B1R0"
+    },
+    {
+      "smiles": "C#C",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B1R0L0"
+    },
+    {
+      "smiles": "C#C",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00020001010002000000000c000000"
+    },
+    {
+      "smiles": "C#C",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[CH]#[CH]_0_0"
+    },
+    {
+      "smiles": "C#C",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[CH]#[CH]_0"
+    },
+    {
+      "smiles": "C$C",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**"
+    },
+    {
+      "smiles": "C$C",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "CC"
+    },
+    {
+      "smiles": "C$C",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "C$C"
+    },
+    {
+      "smiles": "C$C",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "C$C",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "C$C",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C2"
+    },
+    {
+      "smiles": "C$C",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "2,1"
+    },
+    {
+      "smiles": "C$C",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,2"
+    },
+    {
+      "smiles": "C$C",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[C][C]_0"
+    },
+    {
+      "smiles": "C$C",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "C$C_0_0"
+    },
+    {
+      "smiles": "C$C",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "C$C_0"
+    },
+    {
+      "smiles": "C$C",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[C][C]"
+    },
+    {
+      "smiles": "C$C",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "C$C"
+    },
+    {
+      "smiles": "C$C",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "C$C",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B1R0"
+    },
+    {
+      "smiles": "C$C",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B1R0L0"
+    },
+    {
+      "smiles": "C$C",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00020001010002000000000c000000"
+    },
+    {
+      "smiles": "C$C",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[C]$[C]_0_0"
+    },
+    {
+      "smiles": "C$C",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[C]$[C]_0"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "[Cr][Cr]"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[Cr]$[Cr]"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "Cr2"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "2,1"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,2"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[Cr][Cr]_0"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[Cr][Cr]_0_0"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[Cr][Cr]_0"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[Cr][Cr]"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[Cr]$[Cr]"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B1R0"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B1R0L0"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000200010100000000000030000000"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[Cr]$[Cr]_0_0"
+    },
+    {
+      "smiles": "[Cr]$[Cr]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[Cr]$[Cr]_0"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "[H][H]"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[H][H]"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "H2"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "2,1"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,2"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[H][H]_0"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[H][H]_0_0"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[H][H]_0"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[H][H]"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[H][H]"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B1R0"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B1R0L0"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000200010100000000000002000000"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[H]-[H]_0_0"
+    },
+    {
+      "smiles": "[H][H]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[H]-[H]_0"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "***"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "[2H]O[3H]"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[2H]O[3H]"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "H2O"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "3,2"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,1,2"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[2H]O[3H]_0"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[2H]O[3H]_0_0"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[2H]O[3H]_0"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[2H]O[3H]"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[2H]O[3H]"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B2R0"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B2R0L1"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00030002010000000100000a000002"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[2H]-[O]-[3H]_0_0"
+    },
+    {
+      "smiles": "[2H]O[3H]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[2H]-[O]-[3H]_0"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "[13CH3]N"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[13CH3][NH3+]"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "CH6N+"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "2,1"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,2"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[13CH3][NH3]_1"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[13CH3][N]_3_1"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[13CH3][N]_2"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[13CH3][NH3]"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "*[NH3+].[13CH4]"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "1"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B1R0"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B1R0L0"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00020001010001000100000d000101"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[13CH3]-[NH3+]_0_0"
+    },
+    {
+      "smiles": "[13CH3][NH3+]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[13CH3]-[NH3+]_0"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "*.*"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "Cl.[Na]"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[Cl-].[Na+]"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "ClNa"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "2,0"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,0,0"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[Cl].[Na]_0"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[Cl].[Na]_0_0"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[Cl].[Na]_0"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[Cl].[Na]"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[Cl-].[Na+]"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B0R4294967295"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B0R4294967295L0"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00020000020000000100001c000200"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[Cl-].[Na+]_0_0"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[Cl-].[Na+]_0"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "*.**(*)*.**(*)*"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "CC(O)O.CC(O)O.[Mg]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "CC(=O)[O-].CC(=O)[O-].[Mg+2]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C4H6MgO4"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "9,6"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,2,0,6"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "C[C]([O])[O].C[C]([O])[O].[Mg]_0"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "C[C]([O])[O].C[C]([O])[O].[Mg]_0_0"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "C[C]([O])[O].C[C]([O])[O].[Mg]_0"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "C[C]([O])[O].C[C]([O])[O].[Mg]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "CC(=O)[O-].CC(=O)[O-].[Mg+2]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B6R4294967294"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B6R4294967294L0"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000900060300040004000044020300"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[CH3]-[C](=[O])-[O-].[CH3]-[C](=[O])-[O-].[Mg+2]_0_0"
+    },
+    {
+      "smiles": "[Mg+2].[O-]C(=O)C.[O-]C(=O)C",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[CH3]-[C](=[O])-[O-].[CH3]-[C](=[O])-[O-].[Mg+2]_0"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "***"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "NNN"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[N-]=[N+]=N"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "HN3"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "3,2"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,1,2"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[N][N][NH]_0"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N][N][N]_1_0"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N][N][N]_1"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[N][N][NH]"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[N-]=[N+]=N"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B2R0"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B2R0L1"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000300020100000003000015000200"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[N]:[N]:[N]_1_0"
+    },
+    {
+      "smiles": "N=[N+]=[N-]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[N]:[N]:[N]_1"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "*****"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "ONCNO"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "O=NC=NO"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "CH2N2O2"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "5,4"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,3,2"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[O][N][CH][N]O_0"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[O][N][CH][N][O]_1_0"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[O][N][CH][N][O]_1"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[O][N][CH][N]O"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "O=NC=NO"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B4R0"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B4R0L3"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000500040100010004000024000000"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[O]:[N]:[C]:[N]:[O]_2_0"
+    },
+    {
+      "smiles": "O=NC=NO",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[O]:[N]:[C]:[N]:[O]_2"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**(*)*(*)*"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "NC(N)C(N)N"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "N=C(N)C(=N)N"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C2H6N4"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "6,5"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,2,0,4"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[NH][C](N)[C]([NH])N_0"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N][C]([N])[C]([N])[N]_6_0"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N][C]([N])[C]([N])[N]_6"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[NH][C](N)[C]([NH])N"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "N=C(N)C(=N)N"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B5R0"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B5R0L0"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000600050100020004000028000000"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[N]:[C](:[N]):[C](:[N]):[N]_6_0"
+    },
+    {
+      "smiles": "NC(=N)C(=N)N",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[N]:[C](:[N]):[C](:[N]):[N]_6"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**1****(*)*1"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "NC1NCNC(O)N1"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "N=c1[nH]cnc(=O)[nH]1"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": "c1nc[nH]c[nH]1"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": "*=c1nc[nH]c(=*)[nH]1"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C3H4N4O"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "8,8"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,2,4,2"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[NH][C]1N[CH][N][C]([O])N1_0"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N][C]1[N][CH][N][C]([O])[N]1_3_0"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N][C]1[N][CH][N][C]([O])[N]1_3"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[NH][C]1N[CH][N][C]([O])N1"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "N=c1[nH]cnc(=O)[nH]1"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B8R1"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B8R1L4"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000800080100030005000036000000"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[N]:[C]1:[N]:[C]:[N]:[C](:[O]):[N]:1_4_0"
+    },
+    {
+      "smiles": "N=C1NC=NC(=O)N1",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[N]:[C]1:[N]:[C]:[N]:[C](:[O]):[N]:1_4"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "***(*)**"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "OCC(O)CO"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "O=CC(O)=CO"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C3H4O3"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "6,5"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,1,2,3"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[O][CH][C](O)[CH]O_0"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[O][CH][C]([O])[CH][O]_2_0"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[O][CH][C]([O])[CH][O]_2"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[O][CH][C](O)[CH]O"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "O=CC(O)=CO"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B5R0"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B5R0L2"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00060005010003000300002a000000"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[O]:[C]:[C](:[O]):[C]:[O]_4_0"
+    },
+    {
+      "smiles": "OC=C(O)C=O",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[O]:[C]:[C](:[O]):[C]:[O]_4"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**(*)**(*)*"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "CC(O)NC(C)O"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "CC(=O)NC(C)=O"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C4H7NO2"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "7,6"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,2,1,4"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "C[C]([O])N[C](C)[O]_0"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "C[C]([O])[N][C](C)[O]_1_0"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "C[C]([O])[N][C](C)[O]_1"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "C[C]([O])N[C](C)[O]"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "CC(=O)NC(C)=O"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B6R0"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B6R0L1"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00070006010004000300002f000000"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[CH3]-[C](:[O]):[N]:[C](-[CH3]):[O]_1_0"
+    },
+    {
+      "smiles": "CC(=O)NC(=O)C",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[CH3]-[C](:[O]):[N]:[C](-[CH3]):[O]_1"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "***(*)**"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "NNC(O)NN"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "NNC(=O)NN"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "CH6N4O"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "6,5"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,1,2,3"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "NN[C]([O])NN_0"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N][N][C]([O])[N][N]_6_0"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N][N][C]([O])[N][N]_6"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "NN[C]([O])NN"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "NNC(=O)NN"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B5R0"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B5R0L2"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00060005010001000500002a000000"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[NH2]-[N]:[C](:[O]):[N]-[NH2]_2_0"
+    },
+    {
+      "smiles": "NNC(=O)NN",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[NH2]-[N]:[C](:[O]):[N]-[NH2]_2"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "******"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "OCCCCO"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "O=CC=CC=O"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C4H4O2"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "6,5"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,4,2"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[O][CH][CH][CH][CH][O]_0"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[O][CH][CH][CH][CH][O]_0_0"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[O][CH][CH][CH][CH][O]_0"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[O][CH][CH][CH][CH][O]"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "O=CC=CC=O"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B5R0"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B5R0L4"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000600050100040002000028000000"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[O]:[C]:[C]:[C]:[C]:[O]_4_0"
+    },
+    {
+      "smiles": "O=CC=CC=O",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[O]:[C]:[C]:[C]:[C]:[O]_4"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "***(*)**(*)*"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "OCC(O)CC(O)O"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "O=CC(O)=CC(=O)O"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C4H4O4"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "8,7"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,2,2,4"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[O][CH][C](O)[CH][C]([O])O_0"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[O][CH][C]([O])[CH][C]([O])[O]_2_0"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[O][CH][C]([O])[CH][C]([O])[O]_2"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[O][CH][C](O)[CH][C]([O])O"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "O=CC(O)=CC(=O)O"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B7R0"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B7R0L2"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000800070100040004000038000000"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[O]:[C]:[C](:[O]):[C]:[C](:[O]):[O]_4_0"
+    },
+    {
+      "smiles": "O=C(O)C=C(O)C=O",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[O]:[C]:[C](:[O]):[C]:[C](:[O]):[O]_4"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "*****"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "NCCCN"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "N=CC=CN"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C3H6N2"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "5,4"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,3,2"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[NH][CH][CH][CH]N_0"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N][CH][CH][CH][N]_3_0"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N][CH][CH][CH][N]_3"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[NH][CH][CH][CH]N"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "N=CC=CN"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B4R0"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B4R0L3"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000500040100030002000020000000"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[N]:[C]:[C]:[C]:[N]_6_0"
+    },
+    {
+      "smiles": "N=CC=CN",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[N]:[C]:[C]:[C]:[N]_6"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**(*)*"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "NC(N)S"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "NC(N)=S"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "CH4N2S"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "4,3"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,1,0,3"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "N[C](N)[S]_0"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N][C]([N])[S]_4_0"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N][C]([N])[S]_4"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "N[C](N)[S]"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "NC(N)=S"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B3R0"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B3R0L0"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000400030100010003000024000000"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[N]:[C](:[N]):[S]_4_0"
+    },
+    {
+      "smiles": "S=C(N)N",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[N]:[C](:[N]):[S]_4"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**(*)*"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "NC(N)O"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "NC(N)=O"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "CH4N2O"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "4,3"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,1,0,3"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "N[C](N)[O]_0"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N][C]([N])[O]_4_0"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N][C]([N])[O]_4"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "N[C](N)[O]"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "NC(N)=O"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B3R0"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B3R0L0"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00040003010001000300001c000000"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[N]:[C](:[N]):[O]_4_0"
+    },
+    {
+      "smiles": "O=C(N)N",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[N]:[C](:[N]):[O]_4"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "***"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "NCN"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[N-]=C=[N-]"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "CN2-2"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "3,2"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,1,2"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[N][C][N]_-2"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[N][C][N]_0_-2"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[N][C][N]_2"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[N][C][N]"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "[N-]=C=[N-]"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "-2"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B2R0"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B2R0L1"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000300020100010002000014000200"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[N-]=[C]=[N-]_0_0"
+    },
+    {
+      "smiles": "[N-]=C=[N-]",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[N-]=[C]=[N-]_0"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "***"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "CNC"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "C=[N+]=C"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": ""
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C2H4N+"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "3,2"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,1,2"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[CH2][N][CH2]_1"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[CH2][N][CH2]_0_1"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[CH2][N][CH2]_-1"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[CH2][N][CH2]"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "C=[N+]=C"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "1"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B2R0"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B2R0L1"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000300020100020001000013000100"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[C]:[N]:[C]_4_1"
+    },
+    {
+      "smiles": "C=[N+]=C",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[C]:[N]:[C]_3"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "*1****1"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "C1CNCN1"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "c1c[nH]cn1"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": "c1c[nH]cn1"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": "c1c[nH]cn1"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C3H4N2"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "5,5"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,0,5,0"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[CH]1[CH]N[CH][N]1_0"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[CH]1[CH][N][CH][N]1_1_0"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[CH]1[CH][N][CH][N]1_1"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[CH]1[CH]N[CH][N]1"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "c1c[nH]cn1"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B5R1"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B5R1L5"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "000500050100030002000020000000"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[C]1:[C]:[N]:[C]:[N]:1_4_0"
+    },
+    {
+      "smiles": "c1ncc[nH]1",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[C]1:[C]:[N]:[C]:[N]:1_4"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "AnonymousGraph",
+      "use_cx": false,
+      "expected": "**1*****1"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "ElementGraph",
+      "use_cx": false,
+      "expected": "ON1CCCCC1"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "CanonicalSmiles",
+      "use_cx": false,
+      "expected": "[O-][n+]1ccccc1"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "MurckoScaffold",
+      "use_cx": false,
+      "expected": "c1cc[nH+]cc1"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "ExtendedMurcko",
+      "use_cx": false,
+      "expected": "*[n+]1ccccc1"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "MolFormula",
+      "use_cx": false,
+      "expected": "C5H5NO"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "AtomBondCounts",
+      "use_cx": false,
+      "expected": "7,7"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "DegreeVector",
+      "use_cx": false,
+      "expected": "0,1,5,1"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "Mesomer",
+      "use_cx": false,
+      "expected": "[O]N1[CH][CH][CH][CH][CH]1_0"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "HetAtomTautomer",
+      "use_cx": false,
+      "expected": "[O]N1[CH][CH][CH][CH][CH]1_0_0"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "HetAtomProtomer",
+      "use_cx": false,
+      "expected": "[O]N1[CH][CH][CH][CH][CH]1_0"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "RedoxPair",
+      "use_cx": false,
+      "expected": "[O]N1[CH][CH][CH][CH][CH]1"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "Regioisomer",
+      "use_cx": false,
+      "expected": "*[O-].c1cc[nH+]cc1"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "NetCharge",
+      "use_cx": false,
+      "expected": "0"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "SmallWorldIndexBR",
+      "use_cx": false,
+      "expected": "B7R1"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "SmallWorldIndexBRL",
+      "use_cx": false,
+      "expected": "B7R1L5"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "ArthorSubstructureOrder",
+      "use_cx": false,
+      "expected": "00070007010005000200002d010200"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "HetAtomTautomerv2",
+      "use_cx": false,
+      "expected": "[O-]-[n+]1:[cH]:[cH]:[cH]:[cH]:[cH]:1_0_0"
+    },
+    {
+      "smiles": "c1cc[n+]([O-])cc1",
+      "function": "HetAtomProtomerv2",
+      "use_cx": false,
+      "expected": "[O-]-[n+]1:[cH]:[cH]:[cH]:[cH]:[cH]:1_0"
+    }
+  ]
+}
