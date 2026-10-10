@@ -69,16 +69,7 @@ Issues [#734](https://github.com/kent-tokyo/chematic/issues/734) and
 **Exit:** no wrong-confident supported result in the pinned corpora, all rows
 accounted for, and package evidence recorded separately from source evidence.
 
-### 3. P3 — Complete binding parity
-
-Issue [#784](https://github.com/kent-tokyo/chematic/issues/784) tracks the
-v1.0.40+ RDKit-interoperability APIs that are not yet exposed consistently in
-WASM/Node.
-
-**Exit:** the selected APIs have typed signatures, bounded inputs, Node tests,
-and cross-binding fixtures that agree with the Rust implementation.
-
-### 4. P1/A4 — Add opt-in reaction rejection diagnostics
+### 3. P1/A4 — Add opt-in reaction rejection diagnostics
 
 Issue [#786](https://github.com/kent-tokyo/chematic/issues/786) tracks a stable
 diagnostic model for rejected products and mapped atoms.
@@ -86,7 +77,7 @@ diagnostic model for rejected products and mapped atoms.
 **Exit:** diagnostics are opt-in, preserve input/product indices, use stable
 typed reasons, and do not change the existing fast path or accepted products.
 
-### 5. P0 — Refresh public-artifact evidence
+### 4. P0 — Refresh public-artifact evidence
 
 - Rerun chemistry and performance gates from exact PyPI/npm/crates.io
   artifacts rather than carrying source results forward.
@@ -122,7 +113,7 @@ source build for an unavailable package.
 | P0 | Core chemistry and reproducible comparison | Active: prepared-operation and artifact performance gates |
 | P1 | Parsing, files, reactions, SMARTS | Active: #734, #754, #786 |
 | P2 | Stereo, identity, canonicalization | Active maintenance |
-| P3 | Browser, Node, Python, agents | Active: #784 |
+| P3 | Browser, Node, Python, agents | RDKit WASM parity implemented; maintain cross-binding gates |
 | P4 | Medicinal chemistry workflows | Bounded implementation |
 | P5 | 3D, force fields, materials | Experimental; quality-gated |
 | P6 | Release operations and ecosystem trust | Automated with recurring review |

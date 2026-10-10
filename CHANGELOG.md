@@ -10,6 +10,15 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Exposed the v1.0.40+ RDKit interoperability surface to WASM/Node: SMARTS
+  and structure writers, PDB/XYZ/MOL2 readers, Murcko/stereo/hash/Morgan
+  helpers, bounded alignment/RMSD, and separately named seeded ETKDG and
+  bounds-matrix operations. JSON atom indices and coordinate rows use the
+  zero-based `MolHandle` atom order; malformed, unsupported, and oversized
+  inputs throw stable JS errors instead of panicking (#784).
+
 ## [1.0.42] - 2026-10-10
 
 ### Changed

@@ -12,8 +12,7 @@ measurements belong in the [validation report](validation.md) and
 |---:|---|---|---|
 | 1 | [#734 — SMIRKS differences](https://github.com/kent-tokyo/chematic/issues/734) | Broad reaction-rule validation, including the contributor corpus and classified fuzz residuals | All pinned rows classified; no wrong-confident supported result; public artifacts rerun |
 | 2 | [#754 — xsmarts-autoconf](https://github.com/kent-tokyo/chematic/issues/754) | Upstream probe contribution and continued dialect/fuzz accounting | Minimized probes submitted; remaining differences documented as specification, policy, unsupported, or defect |
-| 3 | [#784 — WASM binding parity](https://github.com/kent-tokyo/chematic/issues/784) | Expose the selected v1.0.40+ interoperability APIs in WASM/Node | Typed API, bounds, Node tests, and Rust/Python/WASM fixture parity |
-| 4 | [#786 — reaction rejection diagnostics](https://github.com/kent-tokyo/chematic/issues/786) | Design opt-in product-rejection reasons and mapped-atom reporting | Stable typed schema, preserved indices, no fast-path or accepted-product regression |
+| 3 | [#786 — reaction rejection diagnostics](https://github.com/kent-tokyo/chematic/issues/786) | Design opt-in product-rejection reasons and mapped-atom reporting | Stable typed schema, preserved indices, no fast-path or accepted-product regression |
 
 Issues #739, #769, #779, and #785 are closed. Their implementation and
 verification records remain linked from the changelog and validation pages.
