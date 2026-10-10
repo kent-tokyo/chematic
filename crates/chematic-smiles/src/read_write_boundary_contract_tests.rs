@@ -147,3 +147,33 @@ fn cleanup_reports_native_charge_bond_and_dative_donor_edits_without_mutation() 
     assert_eq!(changed, 6);
     assert_eq!(fixture["rows"].as_array().unwrap().len(), 13);
 }
+
+#[test]
+fn molecular_hashes_of_ions_radicals_and_unusual_orders_match_native_defaults() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.1-hash-ions-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    let mut failures = Vec::new();
+    for row in fixture["rows"].as_array().unwrap() {
+        let source = row["smiles"].as_str().unwrap();
+        let mol = if source.is_empty() {
+            chematic_core::MoleculeBuilder::new().build()
+        } else {
+            crate::parse(source).unwrap()
+        };
+        let function =
+            crate::RdkitHashFunction::from_name(row["function"].as_str().unwrap()).unwrap();
+        let result = crate::rdkit_mol_hash(&mol, function, false);
+        match result {
+            Ok(actual) if actual == row["expected"].as_str().unwrap() => {}
+            other => failures.push(format!(
+                "{source},{function:?}: {other:?} != {}",
+                row["expected"]
+            )),
+        }
+    }
+    assert_eq!(fixture["rows"].as_array().unwrap().len(), 874);
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}

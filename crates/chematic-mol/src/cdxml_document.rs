@@ -755,29 +755,55 @@ fn xml_escape(value: &str) -> String {
 /// Split markup boundaries that share one physical line into parser records.
 /// CDXML is XML, so a producer may legally emit a minified document. Attribute
 /// values can contain `>`; those bytes must not be treated as tag boundaries.
-fn logical_cdxml_lines(input: &str) -> Vec<String> {
+pub(crate) fn logical_cdxml_lines(input: &str) -> Vec<String> {
     let mut records = Vec::new();
-    for physical_line in input.lines() {
-        let mut start = 0usize;
-        let mut quote = None;
-        for (offset, ch) in physical_line.char_indices() {
-            match (quote, ch) {
-                (None, '\"') | (None, '\'') => quote = Some(ch),
-                (Some(q), ch) if q == ch => quote = None,
-                (None, '>') => {
-                    let end = offset + ch.len_utf8();
-                    let record = &physical_line[start..end];
-                    if !record.trim().is_empty() {
-                        records.push(record.to_string());
-                    }
-                    start = end;
-                }
-                _ => {}
+    let mut position = 0;
+    while position < input.len() {
+        let Some(offset) = input[position..].find('<') else {
+            let tail = &input[position..];
+            if !tail.trim().is_empty() {
+                records.push(tail.to_string());
             }
+            break;
+        };
+        let start = position + offset;
+        let text = &input[position..start];
+        if !text.trim().is_empty() {
+            records.push(text.to_string());
         }
-        if !physical_line[start..].trim().is_empty() {
-            records.push(physical_line[start..].to_string());
-        }
+        let markup = &input[start..];
+        // XML comments, CDATA and processing instructions can themselves
+        // contain '>' or apparent atom tags. Keep them in one opaque record.
+        let terminator = if markup.starts_with("<!--") {
+            Some("-->")
+        } else if markup.starts_with("<![CDATA[") {
+            Some("]]>")
+        } else if markup.starts_with("<?") {
+            Some("?>")
+        } else {
+            None
+        };
+        let length = if let Some(terminator) = terminator {
+            markup
+                .find(terminator)
+                .map_or(markup.len(), |i| i + terminator.len())
+        } else {
+            let mut quote = None;
+            markup
+                .char_indices()
+                .find_map(|(offset, ch)| {
+                    match (quote, ch) {
+                        (None, '"') | (None, '\'') => quote = Some(ch),
+                        (Some(q), ch) if q == ch => quote = None,
+                        (None, '>') => return Some(offset + ch.len_utf8()),
+                        _ => {}
+                    }
+                    None
+                })
+                .unwrap_or(markup.len())
+        };
+        position = start + length;
+        records.push(input[start..position].to_string());
     }
     records
 }
