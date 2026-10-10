@@ -372,3 +372,5 @@ mod tests {
         );
     }
 }
+#[cfg(all(test, feature = "native-inchi"))]
+mod native_boundary_contract_tests;

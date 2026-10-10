@@ -14,6 +14,8 @@
 //!   ([`fps`])
 
 #![forbid(unsafe_code)]
+#[cfg(test)]
+mod sparse_boundary_contract_tests;
 
 pub mod atom_pair;
 pub mod avalon;
@@ -154,3 +156,5 @@ pub(crate) fn rdkit_atomic_num(mol: &chematic_core::Molecule, idx: chematic_core
         u32::from(atom.element.atomic_number())
     }
 }
+#[cfg(test)]
+mod avalon_boundary_contract_tests;

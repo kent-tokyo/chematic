@@ -349,3 +349,6 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod mcp_boundary_contract_tests;

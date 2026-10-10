@@ -4089,7 +4089,7 @@ mod policy_bridge_tests {
     /// materialized implicit hydrogens through UFF and return only after the
     /// truncated heavy-atom geometry independently verifies every declaration.
     #[test]
-    #[ignore = "Experimental 3D long-run gate; run with cargo test -p chematic-3d --lib -- --ignored"]
+    // Runs in CI: the bounded stereo regression completes within seconds.
     fn uff_only_rescue_preserves_ring_fused_declared_stereochemistry() {
         for (name, smiles) in [
             (
@@ -4147,7 +4147,7 @@ mod policy_bridge_tests {
     /// `examples/issue210_rescue_measurement.rs`; this focused test keeps the
     /// original high-stress flexible-molecule regression independently pinned.
     #[test]
-    #[ignore = "Experimental 3D long-run gate; run with cargo test -p chematic-3d --lib -- --ignored"]
+    // Runs in CI: the bounded stereo regression completes within seconds.
     fn uff_only_rescue_now_preserves_stereo_for_atorvastatin_fragment() {
         let mol = parse(
             "CC(C)c1c(C(=O)Nc2ccccc2)c(-c2ccccc2)c(-c2ccc(F)cc2)n1CC[C@@H](O)C[C@@H](O)CC(=O)O",

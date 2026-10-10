@@ -168,7 +168,7 @@ const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 66;
 const NCI_FIRST_5K_KNOWN_FAILURES: usize = 0;
 
 #[test]
-#[ignore = "corpus-scale canonical measurement; run with cargo test -p chematic-chem --test canonical_idempotency_corpus_standardized -- --ignored"]
+// Bounded corpus regression: runs in the default integration suite.
 fn descriptor_census_corpus_standardized_is_canonically_idempotent() {
     assert_corpus_idempotent(
         "descriptor_census_corpus.smi",
@@ -178,7 +178,7 @@ fn descriptor_census_corpus_standardized_is_canonically_idempotent() {
 }
 
 #[test]
-#[ignore = "corpus-scale canonical measurement; run with cargo test -p chematic-chem --test canonical_idempotency_corpus_standardized -- --ignored"]
+// Bounded corpus regression: runs in the default integration suite.
 fn chembl_accuracy_corpus_standardized_is_canonically_idempotent() {
     assert_corpus_idempotent(
         "chembl_accuracy_corpus_4999.smi",
