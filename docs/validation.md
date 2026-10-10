@@ -1,9 +1,10 @@
 # Validation report
 
-Updated 2026-10-10 for **v1.0.42**. The broad chemistry and speed packet
+Updated 2026-10-11 for **v1.0.42**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
-artifacts, the published v1.0.42 macOS arm64 chemistry baseline, v1.0.40
-source, and the v1.0.41 source candidate. v1.0.42 release channels are
+artifacts, the two-platform published v1.0.42/RDKit packet, the published
+v1.0.42 macOS arm64 chemistry baseline, v1.0.40 source, and the v1.0.41 source
+candidate. v1.0.42 release channels are
 verified. Every comparison is
 limited to its recorded artifact, comparator, corpus and operation.
 
@@ -11,6 +12,7 @@ limited to its recorded artifact, comparator, corpus and operation.
 
 | Gate | Result and limit | Record |
 |---|---|---|
+| Published v1.0.42 / RDKit 2026.09.1 packet | Exact CPython 3.13 wheels on hosted Linux x64 and macOS arm64: TPSA, Labute ASA and chiral Morgan pass the 10k output gates and their parse-inclusive 21-block intervals favor CheMatic on both hosts. Published ring count is 9,994/10,000 and receives no speed ratio. Prepared macOS Labute loses and Morgan crosses parity. npm Labute is asymmetric bundled work and npm chiral Morgan differs on one row, so neither receives a speed claim. | [Published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) |
 | RDKit/COSMolKit 0.5 source comparison | Against RDKit 2026.03.1, the v1.0.41 source candidate matches RDKit at least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and RDKit.js 10k. On the separate 4,072-row unusual-SMILES stress corpus, native canonical-SMILES round trip is 4,048 versus 4,064; the other covered operations are equal or favorable. This is source evidence, not universal parity or a published-package result. | [COSMolKit 0.5 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-cosmolkit-050.md) |
 | RDKit/COSMolKit source comparison and seeded ETKDG | Against RDKit 2026.03.1 on the recorded Linux x86-64 source lane, seeded ETKDG coordinates match on 4,977/4,977 ChEMBL and 9,947/9,947 RDKit.js rows where RDKit succeeds. Other platforms use a 5e-4 Å per-coordinate regression tolerance. The same record covers named writer, reader, MolHash, alignment, stereoisomer and non-tetrahedral stereo surfaces. It is not published-package evidence or universal parity. | [Round 2 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-cosmolkit-parity-2.md) |
 | RDKit 2026.09.1 npm rebaseline | Published RDKit.js 2026.03.6 → 2026.09.1 on exposed 10k: both 9,999/9,999 exact CheMatic 1.0.33 Morgan bits with one typed Fe refusal. Graph-checked CIP: 9,988 exact, five typed abstentions, six pre-existing imine E/Z mismatches and one unproven row in both versions. Published CheMatic WASM SMARTS atom sets: 194 → 195 mismatches among 310,000 cells, with 31 index-unproven cells in each lane; the two RDKit versions differ on 12 `[R2]`/`[R3]` cells. No old/new parse/canonical/Morgan changes. Isolated 20-run browser timing and hashes recorded. Python/nanobind/native 2026.09.1 lanes are unmeasured pending a distributed artifact. | [npm rebaseline](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-04-rdkit-2026-09-1-npm-rebaseline.md) |

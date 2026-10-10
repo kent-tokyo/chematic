@@ -12,6 +12,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added a published v1.0.42 / RDKit 2026.09.1 replication packet for hosted
+  Linux x64 and macOS arm64. It records exact PyPI/npm artifact hashes, 10,000
+  output rows, 21 alternating timing blocks, raw samples, prepared and
+  parse-inclusive lanes, and automatically withholds speed intervals for
+  unequal output or asymmetric APIs. The resulting claim is intentionally
+  narrower than the source candidate: published ring count differs on six
+  rows, macOS prepared-operation results are mixed, and npm has no eligible
+  speed lane.
 - Added bounded, label-stable R-group decomposition for Rust and Python.
   Terminal mapped wildcards such as `[*:1]` and mapped core atoms now produce
   stable `R1`/`R2` rows and RDKit-style column dictionaries. Input atom order
