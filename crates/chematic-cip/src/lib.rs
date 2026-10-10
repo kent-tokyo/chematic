@@ -90,3 +90,6 @@ impl core::fmt::Display for CipError {
 }
 
 impl std::error::Error for CipError {}
+
+#[cfg(test)]
+mod debug_boundary_contract_tests;

@@ -692,3 +692,14 @@ fn benzene_substituents_outside_the_local_naming_scope_are_not_partially_named()
         );
     }
 }
+#[test]
+fn boundary_branched_alcohol_names_keep_the_hydroxyl_locant() {
+    for (smiles, expected) in [
+        ("CC(C)O", "propan-2-ol"),
+        ("CC(C)(C)O", "2-methyl-propan-2-ol"),
+        ("CCC(C)CO", "2-methyl-butan-1-ol"),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        assert_eq!(crate::name(&mol).unwrap(), expected, "{smiles}");
+    }
+}

@@ -2,6 +2,75 @@ use crate::{AngleConstraint, BondConstraint, ConstraintSet, Coords3D, Point3};
 use chematic_core::AtomIdx;
 
 #[test]
+fn torsion_preferences_have_periodic_scores_minimized_at_the_declared_angle() {
+    use crate::etkdg_knowledge::{get_torsion_preference, score_torsion};
+    let mut checked = 0;
+    for source in [
+        "CCCC",
+        "CCOC",
+        "CCNC",
+        "CCSC",
+        "CCPC",
+        "CC(=O)OC",
+        "CCNC(=O)C",
+        "CC=CNC",
+        "CC=CC(=O)C",
+        "CC(=O)CC",
+        "CCN(S(=O)(=O)C)C",
+        "CCONC",
+        "COc1ccccc1",
+        "CSc1ccccc1",
+        "CN(C)c1ccccc1",
+        "CCc1ccccc1",
+        "C=Cc1ccccc1",
+        "CC(=O)c1ccccc1",
+        "c1ccccc1-c1ccccc1",
+        "CCn1ccnc1",
+        "C=CN1C=CC=C1",
+        "CCN1CCOCC1",
+        "CCN1CCNCC1",
+        "CCOC(=O)n1ccnc1",
+        "CCSc1ncccn1",
+        "COc1ncccn1",
+        "CCOc1ccoc1",
+        "CCSc1ccsc1",
+        "CC(=O)c1ccoc1",
+        "CC(=O)c1ccsc1",
+        "c1ccoc1-c1ncccn1",
+        "c1ccsc1-c1ncccn1",
+        "CCN=C=O",
+        "CCN=C=S",
+        "CCC#N",
+        "CCS(=O)(=O)NCC",
+    ] {
+        let mol = chematic_smiles::parse(source).unwrap();
+        for (b, _) in mol.atoms() {
+            for (c, _) in mol.neighbors(b) {
+                for (a, _) in mol.neighbors(b).filter(|&(a, _)| a != c) {
+                    for (d, _) in mol.neighbors(c).filter(|&(d, _)| d != b && d != a) {
+                        if let Some(preference) = get_torsion_preference(&mol, a, b, c, d) {
+                            assert!(preference.angle_deg.is_finite());
+                            assert!(preference.penalty_per_degree > 0.0);
+                            assert_eq!(score_torsion(preference.angle_deg, &preference), 0.0);
+                            let shifted = score_torsion(preference.angle_deg + 10.0, &preference);
+                            assert!(shifted > 0.0 && shifted.is_finite());
+                            assert!(
+                                (score_torsion(preference.angle_deg + 370.0, &preference)
+                                    - shifted)
+                                    .abs()
+                                    < 1e-9
+                            );
+                            checked += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    assert!(checked > 100, "insufficient matched torsions: {checked}");
+}
+
+#[test]
 fn constraint_diagnostics_and_projection_preserve_pair_centroids() {
     let mol = chematic_smiles::parse("CC").unwrap();
     let constraint = BondConstraint::new(AtomIdx(0), AtomIdx(1), 1.5);

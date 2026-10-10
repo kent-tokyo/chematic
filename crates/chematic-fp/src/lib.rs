@@ -15,6 +15,8 @@
 
 #![forbid(unsafe_code)]
 #[cfg(test)]
+mod ecfp_config_boundary_contract_tests;
+#[cfg(test)]
 mod sparse_boundary_contract_tests;
 
 pub mod atom_pair;

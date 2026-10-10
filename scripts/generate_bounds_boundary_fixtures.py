@@ -11,6 +11,17 @@ smiles=['CC#CC','CC(=O)NC','CC(=O)N(C)C','CC(=O)OC','NCCN','OCCO',
         'O=C1N(C)CCCCCCCCCCC1','O=C1NCCNC(=O)NCCNCC1','C1CC2CCC1C2',
         'F/C=C/F','F/C=C\\F','CC=C=C(C)C','c1ccc2ccccc2c1',
         'P(F)(F)(F)(F)F','S(F)(F)(F)(F)(F)F']
+root=Path(__file__).resolve().parents[1]
+# Fixed-stride sample, bounded before comparing either implementation.
+for i,line in enumerate((root/'validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi').read_text().splitlines()):
+    if i % 29:
+        continue
+    text=line.split()[0]
+    mol=Chem.MolFromSmiles(text)
+    if mol is not None and 6 <= mol.GetNumAtoms() <= 24 and len(Chem.GetMolFrags(mol)) == 1:
+        smiles.append(text)
+    if len(smiles) == 88:
+        break
 rows=[]
 for text in smiles:
     mol=Chem.MolFromSmiles(text);assert mol is not None,text

@@ -22,6 +22,20 @@ for source in ['F[C@H](Cl)Br','F/C=C/Cl','N[C@@H](C)C(=O)O','[2H]O[3H]','c1ccncc
     mol=Chem.AddHs(Chem.MolFromSmiles(source));assert AllChem.EmbedMolecule(mol,randomSeed=12)==0
     blocks.append((source,Chem.MolToPDBBlock(mol)))
 base=blocks[-1][1]
+# Standard biological residue names restore bond orders when CONECT records
+# carry connectivity only. Keep the full amino acid/base topology, including
+# side chains and optional terminal phosphate caps, as the external oracle.
+for sequence, flavor in [('ARNDCEQGHILKMFPSTWYV',0), ('ARNDCEQGHILKMFPSTWYV',1),
+                         ('ACGU',2), ('ACGU',5), ('ACGT',6), ('ACGT',9)]:
+    mol=Chem.MolFromFASTA(sequence,flavor=flavor)
+    assert mol is not None,(sequence,flavor)
+    connectivity=Chem.RWMol(mol)
+    for bond in connectivity.GetBonds():
+        bond.SetBondType(Chem.BondType.SINGLE)
+        bond.SetIsAromatic(False)
+    for atom in connectivity.GetAtoms():
+        atom.SetIsAromatic(False)
+    blocks.append((f'biopolymer-{sequence}-{flavor}',Chem.MolToPDBBlock(connectivity)))
 for off,n,value in [(6,5,'abcde'),(30,8,' 1.2e+03'),(38,8,'badcoord'),(22,4,'abcd'),(76,2,'Xx'),(78,2,'x+')]:
     lines=base.splitlines();line=lines[0].ljust(80);lines[0]=line[:off]+value.ljust(n)+line[off+n:]
     blocks.append((f'invalid-{off}','\n'.join(lines)+'\n'))

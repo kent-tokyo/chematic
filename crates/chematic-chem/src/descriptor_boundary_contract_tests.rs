@@ -4,6 +4,70 @@ use chematic_core::MoleculeBuilder;
 use serde_json::Value;
 
 #[test]
+fn condensed_formula_branches_and_diagnostics_preserve_context() {
+    use crate::condensed::{CondensedError, parse_condensed};
+    for (source, smiles) in [("C(C)C", "CCC"), ("CCOOH", "CC(=O)O"), ("CCHO", "CC=O")] {
+        let actual = parse_condensed(source).unwrap();
+        let expected = chematic_smiles::parse(smiles).unwrap();
+        assert_eq!(
+            chematic_smiles::rdkit_canonical_smiles(&actual).unwrap(),
+            chematic_smiles::rdkit_canonical_smiles(&expected).unwrap()
+        );
+    }
+    for source in ["", "c", "C@", "Cq", "2C", "C(C", "C)C"] {
+        let error = parse_condensed(source).err().unwrap();
+        assert!(!error.to_string().is_empty());
+        match source {
+            "" => assert!(matches!(error, CondensedError::EmptyInput)),
+            "C(C" | "C)C" => assert!(matches!(error, CondensedError::UnbalancedParens)),
+            "2C" => assert!(matches!(error, CondensedError::ParseError(_))),
+            _ => assert!(matches!(error, CondensedError::UnknownElement(_))),
+        }
+    }
+}
+
+#[test]
+fn isotope_envelopes_are_sorted_normalized_and_keep_explicit_labels_pure() {
+    use chematic_core::{Atom, Element};
+    // Single atoms with H suppressed isolate natural isotope tables from
+    // convolution. The peak count includes only abundances above pruning.
+    for (element, peaks) in [
+        (Element::F, 1),
+        (Element::NA, 1),
+        (Element::SI, 3),
+        (Element::P, 1),
+        (Element::S, 4),
+        (Element::K, 2),
+        (Element::AS, 1),
+        (Element::SE, 6),
+        (Element::I, 1),
+    ] {
+        let mut builder = MoleculeBuilder::new();
+        let mut atom = Atom::new(element);
+        atom.hydrogen_count = Some(0);
+        builder.add_atom(atom);
+        let mol = builder.build();
+        let distribution = crate::isotope_distribution(&mol, 0.0);
+        assert_eq!(distribution.len(), peaks, "{element:?}");
+        assert!(distribution.windows(2).all(|x| x[0].0 < x[1].0));
+        assert!(
+            distribution
+                .iter()
+                .all(|&(mass, intensity)| mass > 0.0 && intensity > 0.0 && intensity <= 1.0)
+        );
+        assert!(distribution.iter().any(|&(_, intensity)| intensity == 1.0));
+        let mut builder = MoleculeBuilder::new();
+        let mut atom = mol.atom(chematic_core::AtomIdx(0)).clone();
+        atom.isotope = Some(99);
+        builder.add_atom(atom);
+        assert_eq!(
+            crate::isotope_distribution(&builder.build(), 0.0),
+            vec![(99.0, 1.0)]
+        );
+    }
+}
+
+#[test]
 fn catalog_salt_removal_keeps_the_largest_organic_fragment_and_its_stereo() {
     use crate::standardize::{SaltCatalog, remove_salts_with_catalog};
     let catalog = SaltCatalog::new();
@@ -395,5 +459,95 @@ fn tetrahedral_neighbors_agree_when_text_provenance_is_replaced_by_graph_order()
                 "{source} atom {i}"
             );
         }
+    }
+}
+
+#[test]
+fn heavy_topological_descriptors_normalize_ordinary_explicit_hydrogens_in_smiles() {
+    use crate::topo_descriptors::*;
+    for source in [
+        "CCO",
+        "CC#N",
+        "C1CCCCC1",
+        "c1ccncc1",
+        "CC(=O)N",
+        "F[Si](F)(F)F",
+        "B(O)(O)O",
+        "P(=O)(O)(O)O",
+        "CCS",
+        "C[As](C)C",
+        "C[Se]C",
+        "CBr",
+        "CI",
+    ] {
+        let mol = chematic_smiles::parse(source).unwrap();
+        let explicit =
+            chematic_smiles::parse(&chematic_smiles::write(&crate::add_hydrogens(&mol))).unwrap();
+        for f in [
+            kappa1, kappa2, kappa3, chi0, chi1, chi2, chi3, chi4, bertz_ct, labute_asa,
+        ] {
+            let a = f(&mol);
+            let b = f(&explicit);
+            assert!((a - b).abs() < 1e-9, "{source}: {a} != {b}");
+        }
+        assert_eq!(kappa_all(&mol), kappa_all(&explicit));
+    }
+}
+
+#[test]
+fn graph_descriptor_resource_sentinels_and_analytic_path_matchings_are_defined() {
+    use crate::topo_descriptors::*;
+    use chematic_core::{Atom, Element, MoleculeBuilder};
+    let empty = MoleculeBuilder::new().build();
+    assert_eq!(hosoya_index(&empty), 1);
+    for (source, matchings) in [
+        ("C", 1),
+        ("CC", 2),
+        ("CCC", 3),
+        ("CCCC", 5),
+        ("CCCCC", 8),
+        ("CCCCCC", 13),
+    ] {
+        assert_eq!(
+            hosoya_index(&chematic_smiles::parse(source).unwrap()),
+            matchings
+        );
+    }
+    let mut builder = MoleculeBuilder::new();
+    for _ in 0..1001 {
+        builder.add_atom(Atom::new(Element::C));
+    }
+    let large = builder.build();
+    assert_eq!(hosoya_index(&large), 0);
+    assert_eq!(padmakar_ivan_index(&large), u64::MAX);
+    for (z, valence) in [
+        (2, 2),
+        (3, 1),
+        (4, 2),
+        (5, 3),
+        (6, 4),
+        (7, 5),
+        (8, 6),
+        (9, 7),
+        (10, 8),
+        (11, 1),
+        (12, 2),
+        (13, 3),
+        (14, 4),
+        (15, 5),
+        (16, 6),
+        (17, 7),
+        (18, 8),
+        (35, 7),
+        (53, 7),
+    ] {
+        let mut builder = MoleculeBuilder::new();
+        let mut atom = Atom::new(Element::from_atomic_number(z).unwrap());
+        atom.hydrogen_count = Some(0);
+        builder.add_atom(atom);
+        let mol = builder.build();
+        assert_eq!(num_valence_electrons(&mol), valence);
+        assert!(hall_kier_alpha(&mol).is_finite());
+        assert!(vabc(&mol).is_finite() && vabc(&mol) > 0.0);
     }
 }

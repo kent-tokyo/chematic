@@ -30,6 +30,47 @@ fn json_output(args: &[&str], stdin: &str) -> Value {
 }
 
 #[test]
+fn conversion_round_trips_all_advertised_molecular_formats() {
+    for format in ["v3000", "cml", "cjson", "moljson", "cdxml"] {
+        let out = invoke(
+            &[
+                "convert",
+                "--input-format",
+                "smiles",
+                "--output-format",
+                format,
+            ],
+            "CCO",
+        );
+        assert!(
+            out.status.success(),
+            "{format}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        let encoded = String::from_utf8(out.stdout).unwrap();
+        let out = invoke(
+            &[
+                "convert",
+                "--input-format",
+                format,
+                "--output-format",
+                "smiles",
+            ],
+            &encoded,
+        );
+        assert!(
+            out.status.success(),
+            "{format}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        let decoded = String::from_utf8(out.stdout).unwrap();
+        let report = json_output(&["parse", decoded.trim()], "");
+        assert_eq!(report["formula"], "C2H6O", "{format}");
+        assert_eq!(report["bonds"], 2, "{format}");
+    }
+}
+
+#[test]
 fn molecule_and_reaction_commands_emit_inspectable_json() {
     for (args, path, expected) in [
         (vec!["parse", "CCO"], "/atoms", json!(3)),
