@@ -30,13 +30,31 @@ silently.
 2. **Semantic round trip.** Compare graph, charge, isotope, bond order,
    stereochemistry, coordinates, and format-specific metadata after
    CheMatic→Open Babel and Open Babel→CheMatic conversion. Publish every row as
-   exact, typed refusal, documented unsupported, or defect.
+   exact, typed refusal, documented unsupported, or defect. The first bounded
+   source-candidate gate observes both outputs through the same Rust reader for
+   V3000, MOL2, CML, and CDXML. On the checked-in fixtures CheMatic preserves
+   all observed fields; Open Babel 3.2.1 changes the MOL2 residue label. This is
+   one small fixture per format, not broad corpus evidence.
 3. **Malformed and bounded-input behavior.** Require zero panic/crash/internal
    errors and enforce time, memory, line, record, atom, and bond limits.
 4. **Equivalent-work performance.** Measure cold start, parse, write,
    parse+write, and peak RSS separately. Use at least 21 alternating blocks;
    output must already pass the semantic gate. A win requires every block to
    be faster and the paired 95% speedup lower bound to exceed 1.0.
+
+The first performance lane is a fresh-process CLI parse-plus-same-format-write
+measurement for those four semantically checked fixtures. It includes process
+startup and therefore does not establish parser-only or writer-only
+superiority. Large-file throughput, peak RSS, the remaining Tier-A formats,
+and published packages stay open.
+
+## Loss-aware MOL2 API
+
+`parse_mol2_record` and `write_mol2_record` preserve Tripos atom types, partial
+charges, residue identifiers and names, atom/bond status bits, formal charges
+from `UNITY_ATOM_ATTR`, and opaque extension sections. The older `parse_mol2`
+and `write_mol2` graph-oriented APIs remain available. Partial charges are no
+longer rounded into formal charges; these are distinct MOL2 fields.
 
 Until gates 2–4 pass for a named format and exact package artifact, the valid
 claim is only that CheMatic has a bounded comparison program. It is not valid

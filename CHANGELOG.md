@@ -17,6 +17,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   runner. The initial 20-repetition record proves fixture provenance and
   record/failure accounting only; semantic round-trip and equivalent-work
   speed claims remain open.
+- Added a shared-observer semantic round-trip gate and a paired 21-block CLI
+  round-trip benchmark for V3000, MOL2, CML, and CDXML. Evidence remains scoped
+  to the checked-in fixtures and source candidate; broad corpora, isolated
+  parse/write lanes, memory, and published artifacts remain open.
+- Added loss-aware `parse_mol2_record` and `write_mol2_record` Rust APIs. They
+  retain Tripos atom types, partial charges, residue data, status bits,
+  `UNITY_ATOM_ATTR` formal charges, and opaque extension sections.
 - Exposed the v1.0.40+ RDKit interoperability surface to WASM/Node: SMARTS
   and structure writers, PDB/XYZ/MOL2 readers, Murcko/stereo/hash/Morgan
   helpers, bounded alignment/RMSD, and separately named seeded ETKDG and
@@ -46,6 +53,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   remain available under their own expected-value file.
 
 ### Fixed
+
+- Stopped interpreting MOL2 partial charges as rounded formal charges and
+  retained `.ar` atom aromaticity independently of aromatic bond rows.
 
 - Fixed RDKit-compatible ring counts for SMILES closure notation that creates
   a coordination or disconnected-component bond without a graph cycle. Four

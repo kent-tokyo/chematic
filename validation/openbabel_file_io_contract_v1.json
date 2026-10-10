@@ -109,5 +109,5 @@
       "separate_lanes": ["cold_start", "parse", "write", "round_trip", "peak_rss"]
     }
   },
-  "current_gate": "record accounting and fixture provenance; semantic and equivalent-work performance gates remain open"
+  "current_gate": "record accounting is complete for eight fixtures; V3000/MOL2/CML/CDXML have a shared-observer fixture semantic gate and a source-candidate fresh-process CLI round-trip lane; broad corpora, parser/write isolation, memory, malformed input, PDB/mmCIF semantics, and published artifacts remain open"
 }

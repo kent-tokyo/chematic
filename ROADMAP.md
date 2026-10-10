@@ -99,6 +99,11 @@ artifact hashes.
 - First close semantic round trips in both directions: graph, charge, isotope,
   bond order, stereo, coordinates, record properties, and format-specific
   metadata. Any loss must be reported or refused; silent loss is a defect.
+- Current source progress: V3000, MOL2, CML, and CDXML have a common-observer
+  single-fixture semantic gate. The new loss-aware MOL2 record API preserves
+  partial charges, atom types, residue fields, status bits, formal charges,
+  and opaque sections. Expand this from one fixture to stratified corpora before
+  making a broad accuracy claim.
 - Preserve `input = success + typed refusal + unsupported + invalid + internal
   error` for batch work. Require zero internal errors, panics, and crashes on
   malformed and resource-limit corpora.
@@ -106,6 +111,10 @@ artifact hashes.
   Require equivalent outputs, at least 21 alternating blocks, every block
   faster, and a paired 95% speedup lower bound above 1.0 before declaring a
   format win.
+- Current source progress: the fresh-process CLI round-trip lane passes the
+  strict 21-block rule for all four semantic-gated fixtures. Parser-only,
+  writer-only, large-file throughput, peak RSS, PDB/mmCIF, and published
+  artifacts remain open.
 - Publish source and package evidence separately. A win on the Tier-A profile
   is not a claim to match Open Babel's total format breadth.
 
