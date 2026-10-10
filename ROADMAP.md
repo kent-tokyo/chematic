@@ -32,10 +32,10 @@ boundaries and reproducible evidence over feature-count parity.
 - **3D:** A6 now passes its 265-row geometry, stereo, and clash gate on Linux,
   macOS, and Windows CI. Force-field and conformer quality remain experimental;
   quality evidence takes precedence over speed claims.
-- **Release channels:** v1.0.42 is verified through the recorded GitHub, PyPI,
-  crates.io, npm, docs.rs, and Pages channels. v1.1.0 verification starts only
-  after its tagged artifacts are public. Availability alone is not chemistry
-  validation.
+- **Release channels:** v1.1.0 is verified through the recorded GitHub, PyPI,
+  crates.io, npm, docs.rs, and Pages channels. Availability alone is not
+  chemistry validation; the broad published-package performance packet remains
+  pinned to v1.0.42 until v1.1.0 is measured under the same protocol.
 
 See [validation](docs/validation.md) for denominators and
 [benchmark records](benchmarks/README.md) for exact versions, hashes, and
