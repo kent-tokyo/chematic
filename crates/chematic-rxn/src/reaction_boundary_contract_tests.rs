@@ -260,7 +260,7 @@ fn reaction_tetrahedral_permutations_and_carried_centers_match_pinned_rdkit() {
         let RdkitProfileOutcome::Report(report) = outcome else {
             panic!("unexpected refusal: {template}");
         };
-        let mut actual = report
+        let actual = report
             .products
             .iter()
             .map(|set| {
@@ -269,23 +269,8 @@ fn reaction_tetrahedral_permutations_and_carried_centers_match_pinned_rdkit() {
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>();
-        let mut expected: Vec<Vec<String>> =
+        let expected: Vec<Vec<String>> =
             serde_json::from_value(row["products"].clone()).unwrap();
-        // The Rust API receives a Molecule, not the original SMILES reader
-        // options. Caller-supplied graph hydrogens therefore remain matchable
-        // (the same contract as an RDKit AddHs molecule), while this fixture
-        // was generated after RDKit's default MolFromSmiles removed them.
-        // Compare semantic product sets for those rows instead of treating
-        // reader-dependent duplicate match multiplicity as chemistry.
-        if mol
-            .atoms()
-            .any(|(_, atom)| atom.element == chematic_core::Element::H)
-        {
-            actual.sort();
-            actual.dedup();
-            expected.sort();
-            expected.dedup();
-        }
         if actual != expected {
             failures.push(format!(
                 "{source} with {template}: {actual:?} != {expected:?}"
