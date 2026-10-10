@@ -1136,3 +1136,170 @@ fn inchi_clean_up(m: &mut Mol) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn graph(atoms: &[(u32, i32)], bonds: &[(usize, usize, BondType)]) -> Mol {
+        let mut mol = Mol::default();
+        for &(anum, charge) in atoms {
+            let mut atom = Atom::new(anum);
+            atom.charge = charge;
+            atom.no_implicit = true;
+            mol.add_atom(atom);
+        }
+        for &(a, b, bt) in bonds {
+            mol.add_bond(Bond::new(a, b, bt));
+        }
+        mol
+    }
+
+    #[test]
+    fn bond_direction_constraints_detect_conflicts() {
+        let mut mol = graph(&[(6, 0); 4], &[(0, 1, S), (1, 2, S), (2, 3, S)]);
+        assert!(assign_bond_dirs(&mut mol, &[(0, 1)], &[(1, 2)]));
+        assert_eq!(mol.bonds[0].dir, mol.bonds[1].dir);
+        assert_ne!(mol.bonds[1].dir, mol.bonds[2].dir);
+
+        let mut conflict = graph(&[(6, 0); 3], &[(0, 1, S), (1, 2, S)]);
+        assert!(!assign_bond_dirs(&mut conflict, &[(0, 1)], &[(0, 1)]));
+    }
+
+    #[test]
+    fn alternating_path_and_substructure_helpers_are_deterministic() {
+        let mut mol = graph(
+            &[(7, 0), (6, 0), (7, 1), (8, 0)],
+            &[(0, 1, D), (1, 2, S), (1, 3, S)],
+        );
+        let (target, path) = find_alt(&mol, 0, 7, 1, D, S, 3).unwrap();
+        assert_eq!(target, 2);
+        assert_eq!(path.len(), 2);
+        flip_path(&mut mol, &path);
+        assert_eq!(mol.bonds[0].bt, S);
+        assert_eq!(mol.bonds[1].bt, D);
+
+        let matches = substruct_matches(&mol, &[7, 6, 8], &[(0, 1, Some(S)), (1, 2, None)]);
+        assert_eq!(matches, vec![vec![0, 1, 3]]);
+        assert!(find_alt(&mol, 3, 17, 0, S, S, 1).is_none());
+    }
+
+    #[test]
+    fn inchi_cleanup_normalizes_common_hypervalent_groups() {
+        let mut perchlorate = graph(
+            &[(17, -1), (8, 0), (8, 0), (8, 0), (8, 0)],
+            &[(0, 1, D), (0, 2, D), (0, 3, D), (0, 4, D)],
+        );
+        inchi_clean_up(&mut perchlorate);
+        assert_eq!(perchlorate.atoms[0].charge, 3);
+        assert!(perchlorate.atoms[1..].iter().all(|a| a.charge == -1));
+        assert!(perchlorate.bonds.iter().all(|b| b.bt == S));
+
+        let mut sulfonate = graph(
+            &[(16, -1), (6, 0), (8, 0), (8, 0), (8, 0)],
+            &[(0, 1, S), (0, 2, D), (0, 3, D), (0, 4, D)],
+        );
+        inchi_clean_up(&mut sulfonate);
+        assert_eq!(sulfonate.atoms[0].charge, 0);
+        assert_eq!(sulfonate.atoms.iter().filter(|a| a.charge == -1).count(), 1);
+
+        let mut azide_like = graph(
+            &[(7, -1), (7, 0), (6, 0), (6, 0)],
+            &[(0, 1, D), (0, 2, S), (0, 3, S)],
+        );
+        inchi_clean_up(&mut azide_like);
+        assert_eq!(azide_like.atoms[0].charge, 0);
+        assert_eq!(azide_like.atoms[1].charge, -1);
+        assert_eq!(azide_like.bonds[0].bt, S);
+
+        let mut selenium_bromide = graph(&[(35, 0), (34, 0)], &[(0, 1, T)]);
+        inchi_clean_up(&mut selenium_bromide);
+        assert_eq!(selenium_bromide.bonds[0].bt, S);
+    }
+
+    #[test]
+    fn inchi_output_preserves_isotopes_radicals_and_stereo() {
+        let alkene = [
+            InchiOutputAtom {
+                element: "C".into(),
+                bonds: vec![(1, 1, 0)],
+                num_iso_h: [3, 0, 0, 0],
+                ..Default::default()
+            },
+            InchiOutputAtom {
+                element: "C".into(),
+                bonds: vec![(0, 1, 0), (2, 2, 0)],
+                num_iso_h: [1, 0, 0, 0],
+                ..Default::default()
+            },
+            InchiOutputAtom {
+                element: "C".into(),
+                bonds: vec![(1, 2, 0), (3, 1, 0)],
+                num_iso_h: [1, 0, 0, 0],
+                ..Default::default()
+            },
+            InchiOutputAtom {
+                element: "C".into(),
+                bonds: vec![(2, 1, 0)],
+                num_iso_h: [3, 0, 0, 0],
+                ..Default::default()
+            },
+        ];
+        let stereo = [InchiOutputStereo0D {
+            neighbor: [0, 1, 2, 3],
+            central_atom: -1,
+            stereo_type: INCHI_STEREO_TYPE_DOUBLE_BOND,
+            parity: INCHI_PARITY_ODD,
+        }];
+        let mol = rdkit_molecule_from_inchi_output(&alkene, &stereo).unwrap();
+        let written = crate::canonical_smiles(&mol);
+        assert!(written.contains('/') || written.contains('\\'));
+
+        let isotopic = [InchiOutputAtom {
+            element: "C".into(),
+            isotopic_mass: (ISOTOPIC_SHIFT_FLAG + 1) as i16,
+            radical: 3,
+            num_iso_h: [1, 0, 1, 0],
+            ..Default::default()
+        }];
+        let mol = rdkit_molecule_from_inchi_output(&isotopic, &[]).unwrap();
+        assert_eq!(mol.atom_count(), 2);
+        assert!(mol.atoms().any(|(_, a)| a.isotope == Some(2)));
+    }
+
+    #[test]
+    fn inchi_output_rejects_bond_stereo_and_bad_tetrahedral_neighbors() {
+        let bad_bond_stereo = [
+            InchiOutputAtom {
+                element: "C".into(),
+                bonds: vec![(1, 1, 1)],
+                ..Default::default()
+            },
+            InchiOutputAtom {
+                element: "C".into(),
+                ..Default::default()
+            },
+        ];
+        assert!(rdkit_molecule_from_inchi_output(&bad_bond_stereo, &[]).is_err());
+
+        let tetra = [
+            InchiOutputAtom {
+                element: "C".into(),
+                bonds: vec![(1, 1, 0)],
+                ..Default::default()
+            },
+            InchiOutputAtom {
+                element: "F".into(),
+                bonds: vec![(0, 1, 0)],
+                ..Default::default()
+            },
+        ];
+        let stereo = [InchiOutputStereo0D {
+            neighbor: [0, 1, 2, 3],
+            central_atom: 0,
+            stereo_type: INCHI_STEREO_TYPE_TETRAHEDRAL,
+            parity: INCHI_PARITY_EVEN,
+        }];
+        assert!(rdkit_molecule_from_inchi_output(&tetra, &stereo).is_err());
+    }
+}

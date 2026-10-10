@@ -1545,6 +1545,133 @@ mod tests {
         assert!((1..=3).contains(&tag.1));
     }
 
+    fn coordination_mol(vectors: &[[f64; 3]]) -> (Mol, Vec<[f64; 3]>) {
+        let mut mol = Mol::default();
+        mol.add_atom(Atom::new(15));
+        for _ in vectors {
+            let nb = mol.add_atom(Atom::new(6));
+            mol.add_bond(Bond::new(0, nb, BondType::Single));
+        }
+        let mut coords = vec![[0.0, 0.0, 0.0]];
+        coords.extend_from_slice(vectors);
+        (mol, coords)
+    }
+
+    #[test]
+    fn non_tetrahedral_geometry_classes_and_fail_closed_cases() {
+        let cases: &[(&[[f64; 3]], ChiralTag)] = &[
+            (
+                &[[1.0, 0.0, 0.0], [-1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+                ChiralTag::SquarePlanar,
+            ),
+            (
+                &[
+                    [1.0, 0.0, 0.0],
+                    [-1.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                ],
+                ChiralTag::Octahedral,
+            ),
+            (
+                &[
+                    [1.0, 0.0, 0.0],
+                    [-1.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, -0.5, 0.866],
+                ],
+                ChiralTag::TrigonalBipyramidal,
+            ),
+            (
+                &[
+                    [1.0, 0.0, 0.0],
+                    [-1.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, -1.0, 0.0],
+                ],
+                ChiralTag::SquarePlanar,
+            ),
+            (
+                &[
+                    [1.0, 0.0, 0.0],
+                    [-1.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, -1.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                ],
+                ChiralTag::Octahedral,
+            ),
+            (
+                &[
+                    [1.0, 0.0, 0.0],
+                    [-1.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, -1.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                    [0.0, 0.0, -1.0],
+                ],
+                ChiralTag::Octahedral,
+            ),
+        ];
+        for (vectors, expected) in cases {
+            let (mol, coords) = coordination_mol(vectors);
+            let (tag, permutation) = nontetrahedral_from_3d(&mol, &coords, 0).unwrap().unwrap();
+            assert_eq!(tag, *expected, "{vectors:?}");
+            assert!(permutation > 0);
+        }
+
+        let (mut carbon, coords) =
+            coordination_mol(&[[1.0, 0.0, 0.0], [-1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]);
+        carbon.atoms[0].anum = 6;
+        assert_eq!(nontetrahedral_from_3d(&carbon, &coords, 0).unwrap(), None);
+
+        let (mol, mut coords) =
+            coordination_mol(&[[1.0, 0.0, 0.0], [-1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]);
+        coords[1] = [0.0; 3];
+        assert!(nontetrahedral_from_3d(&mol, &coords, 0).is_err());
+    }
+
+    #[test]
+    fn conect_repetitions_reach_triple_and_quadruple_orders() {
+        for (repeat, expected) in [
+            ("    2    2    2", BondType::Triple),
+            ("    2    2    2    2", BondType::Quadruple),
+        ] {
+            let block = [
+                pdb_atom("HETATM", 1, " C1 ", ("UNL", 1), [0.0; 3], ("C", "")),
+                pdb_atom("HETATM", 2, " N1 ", ("UNL", 1), [1.2, 0.0, 0.0], ("N", "")),
+                format!("CONECT    1{repeat}\nEND\n"),
+            ]
+            .concat();
+            let pdb = mol_from_pdb_block(&block, false, false, 0, false)
+                .unwrap()
+                .unwrap();
+            assert_eq!(pdb.mol.bonds[0].bt, expected);
+        }
+    }
+
+    #[test]
+    fn proximity_predicate_covers_distance_and_hydrogen_boundaries() {
+        let entry = |x: f32, elem: u32| ProximityEntry {
+            x,
+            y: 0.0,
+            z: 0.0,
+            r: 0.7,
+            hash: 0,
+            next: 0,
+            elem,
+        };
+        assert!(!is_bonded(&entry(0.0, 1), &entry(1.0, 1)));
+        assert!(!is_bonded(&entry(0.0, 6), &entry(0.1, 8)));
+        assert!(is_bonded(&entry(0.0, 6), &entry(1.3, 8)));
+        assert!(!is_bonded(&entry(0.0, 6), &entry(6.0, 8)));
+
+        assert!(is_blacklisted_atom(1));
+        assert!(!is_blacklisted_atom(6));
+        assert!(!is_blacklisted_atom(16));
+        assert!(is_blacklisted_atom(17));
+    }
+
     #[test]
     fn reads_rdkit_written_ethanol() {
         // Chem.MolToPDBBlock of an embedded ethanol (heavy atoms).
