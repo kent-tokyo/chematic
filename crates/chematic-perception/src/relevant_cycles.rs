@@ -58,6 +58,322 @@ struct RootSearch {
 
 const UNREACHED: usize = usize::MAX;
 
+struct CycleGraph {
+    adj: Vec<Vec<(usize, usize)>>,
+    alive: Vec<bool>,
+    edge_count: usize,
+}
+
+impl CycleGraph {
+    fn from_molecule(mol: &Molecule) -> Self {
+        let mut adj: Vec<Vec<(usize, usize)>> = vec![Vec::new(); mol.atom_count()];
+        let mut edge_count = 0usize;
+        for (_, bond) in mol.bonds() {
+            if matches!(bond.order, BondOrder::Zero | BondOrder::Dative) {
+                continue;
+            }
+            let (a, b) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
+            if a == b {
+                continue;
+            }
+            adj[a].push((b, edge_count));
+            adj[b].push((a, edge_count));
+            edge_count += 1;
+        }
+
+        // Retain the 2-core: only atoms on a cycle (or on a path between
+        // cycles) can contribute a relevant cycle.
+        let mut alive = vec![true; mol.atom_count()];
+        let mut degree: Vec<usize> = adj.iter().map(Vec::len).collect();
+        let mut stack: Vec<usize> = (0..mol.atom_count())
+            .filter(|&vertex| degree[vertex] < 2)
+            .collect();
+        while let Some(vertex) = stack.pop() {
+            if !alive[vertex] {
+                continue;
+            }
+            alive[vertex] = false;
+            for &(other, _) in &adj[vertex] {
+                if alive[other] {
+                    degree[other] -= 1;
+                    if degree[other] < 2 {
+                        stack.push(other);
+                    }
+                }
+            }
+        }
+
+        Self {
+            adj,
+            alive,
+            edge_count,
+        }
+    }
+
+    fn has_cycles(&self) -> bool {
+        self.alive.iter().any(|&alive| alive)
+    }
+
+    fn words(&self) -> usize {
+        self.edge_count.div_ceil(64)
+    }
+
+    fn edge_between(&self, a: usize, b: usize) -> usize {
+        self.adj[a]
+            .iter()
+            .find(|&&(other, _)| other == b)
+            .map(|&(_, edge)| edge)
+            .expect("bonded")
+    }
+
+    fn search_from(&self, root: usize) -> RootSearch {
+        let mut dist = vec![UNREACHED; self.adj.len()];
+        let mut preds: Vec<Vec<usize>> = vec![Vec::new(); self.adj.len()];
+        let mut queue = std::collections::VecDeque::new();
+        dist[root] = 0;
+        queue.push_back(root);
+        while let Some(vertex) = queue.pop_front() {
+            for &(other, _) in &self.adj[vertex] {
+                if other > root || !self.alive[other] {
+                    continue;
+                }
+                if dist[other] == UNREACHED {
+                    dist[other] = dist[vertex] + 1;
+                    queue.push_back(other);
+                }
+                if dist[other] == dist[vertex] + 1 {
+                    preds[other].push(vertex);
+                }
+            }
+        }
+        for predecessors in &mut preds {
+            predecessors.sort_unstable();
+        }
+        RootSearch { dist, preds }
+    }
+
+    fn fixed_path(search: &RootSearch, mut vertex: usize) -> Vec<usize> {
+        let mut path = vec![vertex];
+        while search.dist[vertex] > 0 {
+            vertex = search.preds[vertex][0];
+            path.push(vertex);
+        }
+        path
+    }
+
+    fn path_edges(&self, path: &[usize], bits: &mut [u64]) {
+        for pair in path.windows(2) {
+            let edge = self.edge_between(pair[0], pair[1]);
+            bits[edge / 64] ^= 1 << (edge % 64);
+        }
+    }
+
+    fn collect_candidates(&self) -> (Vec<Candidate>, Vec<Option<RootSearch>>) {
+        let mut candidates = Vec::new();
+        let mut searches: Vec<Option<RootSearch>> = (0..self.adj.len()).map(|_| None).collect();
+        for (root, search_slot) in searches.iter_mut().enumerate() {
+            if !self.alive[root] {
+                continue;
+            }
+            let search = self.search_from(root);
+            self.collect_root_candidates(root, &search, &mut candidates);
+            *search_slot = Some(search);
+        }
+        candidates.sort_by_key(|candidate| candidate.len);
+        (candidates, searches)
+    }
+
+    fn collect_root_candidates(
+        &self,
+        root: usize,
+        search: &RootSearch,
+        candidates: &mut Vec<Candidate>,
+    ) {
+        for y in 0..=root {
+            if y == root || !self.alive[y] || search.dist[y] == UNREACHED {
+                continue;
+            }
+            let path_y = Self::fixed_path(search, y);
+            self.collect_odd_candidates(root, y, search, &path_y, candidates);
+            self.collect_even_candidates(root, y, search, candidates);
+        }
+    }
+
+    fn collect_odd_candidates(
+        &self,
+        root: usize,
+        y: usize,
+        search: &RootSearch,
+        path_y: &[usize],
+        candidates: &mut Vec<Candidate>,
+    ) {
+        for &(z, edge) in &self.adj[y] {
+            if z >= y || z > root || !self.alive[z] || search.dist[z] != search.dist[y] {
+                continue;
+            }
+            let path_z = Self::fixed_path(search, z);
+            if !meet_only_at_root(path_y, &path_z) {
+                continue;
+            }
+            let mut edges = vec![0u64; self.words()];
+            self.path_edges(path_y, &mut edges);
+            self.path_edges(&path_z, &mut edges);
+            edges[edge / 64] ^= 1 << (edge % 64);
+            candidates.push(Candidate {
+                r: root,
+                closure: Closure::Odd { y, z },
+                len: 2 * search.dist[y] + 1,
+                edges,
+            });
+        }
+    }
+
+    fn collect_even_candidates(
+        &self,
+        root: usize,
+        y: usize,
+        search: &RootSearch,
+        candidates: &mut Vec<Candidate>,
+    ) {
+        let predecessors = &search.preds[y];
+        for left in 0..predecessors.len() {
+            for right in (left + 1)..predecessors.len() {
+                let (p, q) = (predecessors[left], predecessors[right]);
+                let path_p = Self::fixed_path(search, p);
+                let path_q = Self::fixed_path(search, q);
+                if !meet_only_at_root(&path_p, &path_q) {
+                    continue;
+                }
+                let mut edges = vec![0u64; self.words()];
+                self.path_edges(&path_p, &mut edges);
+                self.path_edges(&path_q, &mut edges);
+                for edge in [self.edge_between(p, y), self.edge_between(q, y)] {
+                    edges[edge / 64] ^= 1 << (edge % 64);
+                }
+                candidates.push(Candidate {
+                    r: root,
+                    closure: Closure::Even { p, y, q },
+                    len: 2 * search.dist[y],
+                    edges,
+                });
+            }
+        }
+    }
+}
+
+fn meet_only_at_root(a: &[usize], b: &[usize]) -> bool {
+    let (a, b) = (&a[..a.len() - 1], &b[..b.len() - 1]);
+    a.iter().all(|vertex| !b.contains(vertex))
+}
+
+fn reduce_by_basis(basis: &[(usize, Vec<u64>)], vector: &mut [u64]) {
+    for (pivot, row) in basis {
+        if vector[pivot / 64] >> (pivot % 64) & 1 == 1 {
+            for (value, basis_value) in vector.iter_mut().zip(row) {
+                *value ^= basis_value;
+            }
+        }
+    }
+}
+
+fn leading_bit(vector: &[u64]) -> Option<usize> {
+    vector
+        .iter()
+        .enumerate()
+        .find(|(_, word)| **word != 0)
+        .map(|(index, word)| index * 64 + word.trailing_zeros() as usize)
+}
+
+fn relevant_candidate_indices(candidates: &[Candidate]) -> Vec<usize> {
+    let mut basis: Vec<(usize, Vec<u64>)> = Vec::new();
+    let mut relevant = Vec::new();
+    let mut first = 0;
+    while first < candidates.len() {
+        let len = candidates[first].len;
+        let mut end = first;
+        while end < candidates.len() && candidates[end].len == len {
+            end += 1;
+        }
+
+        let shorter_basis_len = basis.len();
+        for (index, candidate) in candidates.iter().enumerate().take(end).skip(first) {
+            let mut vector = candidate.edges.clone();
+            reduce_by_basis(&basis[..shorter_basis_len], &mut vector);
+            if leading_bit(&vector).is_some() {
+                relevant.push(index);
+            }
+        }
+
+        for candidate in &candidates[first..end] {
+            let mut vector = candidate.edges.clone();
+            reduce_by_basis(&basis, &mut vector);
+            if let Some(pivot) = leading_bit(&vector) {
+                for (_, row) in &mut basis {
+                    if row[pivot / 64] >> (pivot % 64) & 1 == 1 {
+                        for (value, candidate_value) in row.iter_mut().zip(&vector) {
+                            *value ^= candidate_value;
+                        }
+                    }
+                }
+                basis.push((pivot, vector));
+            }
+        }
+        first = end;
+    }
+    relevant
+}
+
+fn expand_relevant_families(
+    graph: &CycleGraph,
+    candidates: &[Candidate],
+    searches: &[Option<RootSearch>],
+    relevant: &[usize],
+    max_cycles: usize,
+) -> Result<Vec<Vec<AtomIdx>>, RelevantCyclesTooMany> {
+    let mut seen = std::collections::HashSet::new();
+    let mut rings = Vec::new();
+    for &candidate_index in relevant {
+        let candidate = &candidates[candidate_index];
+        let search = searches[candidate.r].as_ref().expect("searched");
+        let (a, b, middle) = match candidate.closure {
+            Closure::Odd { y, z } => (y, z, None),
+            Closure::Even { p, y, q } => (p, q, Some(y)),
+        };
+        let paths_a = all_shortest_paths(search, a, max_cycles)
+            .ok_or(RelevantCyclesTooMany { cap: max_cycles })?;
+        let paths_b = all_shortest_paths(search, b, max_cycles)
+            .ok_or(RelevantCyclesTooMany { cap: max_cycles })?;
+        for path_a in &paths_a {
+            for path_b in &paths_b {
+                if !meet_only_at_root(path_a, path_b) {
+                    continue;
+                }
+                let mut ring = path_a.clone();
+                ring.extend(path_b.iter().rev().skip(1));
+                if let Some(middle) = middle {
+                    ring.push(middle);
+                }
+                let mut bits = vec![0u64; graph.words()];
+                for index in 0..ring.len() {
+                    let edge = graph.edge_between(ring[index], ring[(index + 1) % ring.len()]);
+                    bits[edge / 64] ^= 1 << (edge % 64);
+                }
+                if seen.insert(bits) {
+                    if rings.len() >= max_cycles {
+                        return Err(RelevantCyclesTooMany { cap: max_cycles });
+                    }
+                    rings.push(
+                        ring.into_iter()
+                            .map(|vertex| AtomIdx(vertex as u32))
+                            .collect(),
+                    );
+                }
+            }
+        }
+    }
+    Ok(rings)
+}
+
 /// The relevant cycles of `mol` as atom rings (each in ring order), at most
 /// `max_cycles` of them. Bonds of order zero and dative bonds are not part
 /// of any ring; bonds to metals otherwise are (as in RDKit's ring finding).
@@ -65,247 +381,13 @@ pub fn relevant_cycles(
     mol: &Molecule,
     max_cycles: usize,
 ) -> Result<Vec<Vec<AtomIdx>>, RelevantCyclesTooMany> {
-    let n = mol.atom_count();
-    let mut adj: Vec<Vec<(usize, usize)>> = vec![Vec::new(); n];
-    let mut n_edges = 0usize;
-    for (_, bond) in mol.bonds() {
-        if matches!(bond.order, BondOrder::Zero | BondOrder::Dative) {
-            continue;
-        }
-        let (a, b) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
-        if a == b {
-            continue;
-        }
-        adj[a].push((b, n_edges));
-        adj[b].push((a, n_edges));
-        n_edges += 1;
-    }
-    // 2-core: only atoms on a cycle (or on a path between cycles) remain.
-    let mut alive = vec![true; n];
-    let mut degree: Vec<usize> = adj.iter().map(Vec::len).collect();
-    let mut stack: Vec<usize> = (0..n).filter(|&v| degree[v] < 2).collect();
-    while let Some(v) = stack.pop() {
-        if !alive[v] {
-            continue;
-        }
-        alive[v] = false;
-        for &(w, _) in &adj[v] {
-            if alive[w] {
-                degree[w] -= 1;
-                if degree[w] < 2 {
-                    stack.push(w);
-                }
-            }
-        }
-    }
-    if !alive.iter().any(|&a| a) {
+    let graph = CycleGraph::from_molecule(mol);
+    if !graph.has_cycles() {
         return Ok(Vec::new());
     }
-    let words = n_edges.div_ceil(64);
-    let edge_between = |a: usize, b: usize| -> usize {
-        adj[a]
-            .iter()
-            .find(|&&(w, _)| w == b)
-            .map(|&(_, e)| e)
-            .expect("bonded")
-    };
-
-    let search = |r: usize| -> RootSearch {
-        let mut dist = vec![UNREACHED; n];
-        let mut preds: Vec<Vec<usize>> = vec![Vec::new(); n];
-        let mut queue = std::collections::VecDeque::new();
-        dist[r] = 0;
-        queue.push_back(r);
-        while let Some(v) = queue.pop_front() {
-            for &(w, _) in &adj[v] {
-                if w > r || !alive[w] {
-                    continue;
-                }
-                if dist[w] == UNREACHED {
-                    dist[w] = dist[v] + 1;
-                    queue.push_back(w);
-                }
-                if dist[w] == dist[v] + 1 {
-                    preds[w].push(v);
-                }
-            }
-        }
-        for p in &mut preds {
-            p.sort_unstable();
-        }
-        RootSearch { dist, preds }
-    };
-
-    // The fixed shortest path from `v` back to the root (lowest-index
-    // predecessor at each step), root last.
-    let fixed_path = |s: &RootSearch, mut v: usize| -> Vec<usize> {
-        let mut path = vec![v];
-        while s.dist[v] > 0 {
-            v = s.preds[v][0];
-            path.push(v);
-        }
-        path
-    };
-    let meet_only_at_root = |a: &[usize], b: &[usize]| -> bool {
-        // Both end at the root; compare the rest.
-        let (a, b) = (&a[..a.len() - 1], &b[..b.len() - 1]);
-        a.iter().all(|x| !b.contains(x))
-    };
-    let path_edges = |path: &[usize], bits: &mut [u64]| {
-        for w in path.windows(2) {
-            let e = edge_between(w[0], w[1]);
-            bits[e / 64] ^= 1 << (e % 64);
-        }
-    };
-
-    let mut candidates: Vec<Candidate> = Vec::new();
-    let mut searches: Vec<Option<RootSearch>> = (0..n).map(|_| None).collect();
-    for r in 0..n {
-        if !alive[r] {
-            continue;
-        }
-        let s = search(r);
-        for y in 0..=r {
-            if y == r || !alive[y] || s.dist[y] == UNREACHED {
-                continue;
-            }
-            let py = fixed_path(&s, y);
-            for &(z, e) in &adj[y] {
-                if z < y && z <= r && alive[z] && s.dist[z] == s.dist[y] {
-                    let pz = fixed_path(&s, z);
-                    if meet_only_at_root(&py, &pz) {
-                        let mut edges = vec![0u64; words];
-                        path_edges(&py, &mut edges);
-                        path_edges(&pz, &mut edges);
-                        edges[e / 64] ^= 1 << (e % 64);
-                        candidates.push(Candidate {
-                            r,
-                            closure: Closure::Odd { y, z },
-                            len: 2 * s.dist[y] + 1,
-                            edges,
-                        });
-                    }
-                }
-            }
-            let preds = &s.preds[y];
-            for i in 0..preds.len() {
-                for j in (i + 1)..preds.len() {
-                    let (p, q) = (preds[i], preds[j]);
-                    let pp = fixed_path(&s, p);
-                    let pq = fixed_path(&s, q);
-                    if meet_only_at_root(&pp, &pq) {
-                        let mut edges = vec![0u64; words];
-                        path_edges(&pp, &mut edges);
-                        path_edges(&pq, &mut edges);
-                        let (e1, e2) = (edge_between(p, y), edge_between(q, y));
-                        edges[e1 / 64] ^= 1 << (e1 % 64);
-                        edges[e2 / 64] ^= 1 << (e2 % 64);
-                        candidates.push(Candidate {
-                            r,
-                            closure: Closure::Even { p, y, q },
-                            len: 2 * s.dist[y],
-                            edges,
-                        });
-                    }
-                }
-            }
-        }
-        searches[r] = Some(s);
-    }
-    candidates.sort_by_key(|c| c.len);
-
-    // GF(2) elimination by length class.
-    let mut basis: Vec<(usize, Vec<u64>)> = Vec::new(); // (pivot bit, row)
-    let reduce = |basis: &[(usize, Vec<u64>)], v: &mut Vec<u64>| {
-        for (pivot, row) in basis {
-            if v[pivot / 64] >> (pivot % 64) & 1 == 1 {
-                for (a, b) in v.iter_mut().zip(row) {
-                    *a ^= b;
-                }
-            }
-        }
-    };
-    let leading = |v: &[u64]| -> Option<usize> {
-        v.iter()
-            .enumerate()
-            .find(|(_, w)| **w != 0)
-            .map(|(i, w)| i * 64 + w.trailing_zeros() as usize)
-    };
-    let mut relevant: Vec<usize> = Vec::new();
-    let mut i = 0;
-    while i < candidates.len() {
-        let len = candidates[i].len;
-        let mut j = i;
-        while j < candidates.len() && candidates[j].len == len {
-            j += 1;
-        }
-        let shorter = basis.len();
-        for (k, cand) in candidates.iter().enumerate().take(j).skip(i) {
-            let mut v = cand.edges.clone();
-            reduce(&basis[..shorter], &mut v);
-            if leading(&v).is_some() {
-                relevant.push(k);
-            }
-        }
-        for cand in &candidates[i..j] {
-            let mut v = cand.edges.clone();
-            reduce(&basis, &mut v);
-            if let Some(pivot) = leading(&v) {
-                // Keep rows reduced at their pivots so later reductions see
-                // a triangular basis.
-                for (_, row) in basis.iter_mut() {
-                    if row[pivot / 64] >> (pivot % 64) & 1 == 1 {
-                        for (a, b) in row.iter_mut().zip(&v) {
-                            *a ^= b;
-                        }
-                    }
-                }
-                basis.push((pivot, v));
-            }
-        }
-        i = j;
-    }
-
-    // Expand each relevant prototype into its family.
-    let mut seen: std::collections::HashSet<Vec<u64>> = std::collections::HashSet::new();
-    let mut out: Vec<Vec<AtomIdx>> = Vec::new();
-    for k in relevant {
-        let cand = &candidates[k];
-        let s = searches[cand.r].as_ref().expect("searched");
-        let (a, b, middle) = match cand.closure {
-            Closure::Odd { y, z } => (y, z, None),
-            Closure::Even { p, y, q } => (p, q, Some(y)),
-        };
-        let paths_a = all_shortest_paths(s, a, max_cycles)
-            .ok_or(RelevantCyclesTooMany { cap: max_cycles })?;
-        let paths_b = all_shortest_paths(s, b, max_cycles)
-            .ok_or(RelevantCyclesTooMany { cap: max_cycles })?;
-        for pa in &paths_a {
-            for pb in &paths_b {
-                if !meet_only_at_root(pa, pb) {
-                    continue;
-                }
-                // Ring order: a ... r ... b (, y).
-                let mut ring: Vec<usize> = pa.clone();
-                ring.extend(pb.iter().rev().skip(1));
-                if let Some(y) = middle {
-                    ring.push(y);
-                }
-                let mut bits = vec![0u64; words];
-                for w in 0..ring.len() {
-                    let e = edge_between(ring[w], ring[(w + 1) % ring.len()]);
-                    bits[e / 64] ^= 1 << (e % 64);
-                }
-                if seen.insert(bits) {
-                    if out.len() >= max_cycles {
-                        return Err(RelevantCyclesTooMany { cap: max_cycles });
-                    }
-                    out.push(ring.into_iter().map(|v| AtomIdx(v as u32)).collect());
-                }
-            }
-        }
-    }
-    Ok(out)
+    let (candidates, searches) = graph.collect_candidates();
+    let relevant = relevant_candidate_indices(&candidates);
+    expand_relevant_families(&graph, &candidates, &searches, &relevant, max_cycles)
 }
 
 /// Every shortest path from `v` back to the search root (root last), or
