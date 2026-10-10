@@ -1,0 +1,2732 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.42",
+  "source": {
+    "commit": "5f247956519a1650e1e4c9caa526859ed2e48667",
+    "dirty": false
+  },
+  "gate": "openbabel_file_io_paired_same_process_v1",
+  "status": "local-verified",
+  "blocks": 21,
+  "repeats_per_process": 5000,
+  "alternating_process_order": true,
+  "timer_boundary": "internal steady-clock loop; process startup excluded",
+  "semantic_prerequisite": "scripts/check_openbabel_file_io_semantics.py",
+  "tool_versions": {
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "python": "3.13.6"
+  },
+  "host": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "processor": "arm"
+  },
+  "harnesses": {
+    "chematic": {
+      "path": "/Users/k_tanabe/.codex/worktrees/openbabel-io-gate/chematic/target/release/examples/file_io_semantic_probe",
+      "sha256": "28503ddf67927ee905abe347efe6a76332bddd644eab6906532d56cb3621c284"
+    },
+    "openbabel": {
+      "path": "/Users/k_tanabe/.codex/worktrees/openbabel-io-gate/chematic/target/release/openbabel_file_io_harness",
+      "sha256": "20fb5ee79ca1493442c0f261861bffbdb8fb901d6f9000676c033def53801a2d"
+    }
+  },
+  "fixtures": {
+    "v3000": {
+      "path": "benchmarks/fixtures/ethanol.v3000",
+      "sha256": "64ac11b3de1c186deae555d54d6a47e7f3c72607ef0a90b0d93f467496bbd3ad"
+    },
+    "mol2": {
+      "path": "benchmarks/fixtures/ethanol.mol2",
+      "sha256": "80144aad97332e2f58eb42bb2da1472587a9dfc2466f9d2fe081eb9834c2224d"
+    },
+    "cml": {
+      "path": "benchmarks/fixtures/ethanol.cml",
+      "sha256": "0d89c3e1250890147debd2ae097b27f8128f73b8d44bb60cbe3279242053e06c"
+    },
+    "cdxml": {
+      "path": "benchmarks/fixtures/ethanol.cdxml",
+      "sha256": "b74560cfaf369e4bc32d5c710f7b488ded05e801c54934d7a709013825ce290c"
+    }
+  },
+  "lanes": {
+    "v3000_parse": {
+      "format": "v3000",
+      "operation": "parse",
+      "fixture": "benchmarks/fixtures/ethanol.v3000",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 24920417,
+          "openbabel_ns": 68526167,
+          "speedup": 2.749800173889546
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10206209,
+          "openbabel_ns": 67050541,
+          "speedup": 6.569583378118163
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10487666,
+          "openbabel_ns": 65402083,
+          "speedup": 6.236095142618005
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10255000,
+          "openbabel_ns": 65458959,
+          "speedup": 6.383126182350074
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10949417,
+          "openbabel_ns": 67325500,
+          "speedup": 6.148774861711815
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10162375,
+          "openbabel_ns": 66127250,
+          "speedup": 6.507066507583119
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10354167,
+          "openbabel_ns": 67315334,
+          "speedup": 6.501279533158003
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10285542,
+          "openbabel_ns": 64667000,
+          "speedup": 6.287174754621584
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10834084,
+          "openbabel_ns": 65474875,
+          "speedup": 6.043415853153806
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10052875,
+          "openbabel_ns": 65761167,
+          "speedup": 6.5415283687502335
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10245250,
+          "openbabel_ns": 66569417,
+          "speedup": 6.497588345818794
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10450042,
+          "openbabel_ns": 64623417,
+          "speedup": 6.184034188570726
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10429541,
+          "openbabel_ns": 65220667,
+          "speedup": 6.253455161641342
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10391958,
+          "openbabel_ns": 66840417,
+          "speedup": 6.431936791892346
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10192625,
+          "openbabel_ns": 66967916,
+          "speedup": 6.5702324965354855
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10347167,
+          "openbabel_ns": 65620583,
+          "speedup": 6.3418888474497415
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10117833,
+          "openbabel_ns": 64740083,
+          "speedup": 6.398611540633256
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10177500,
+          "openbabel_ns": 64945375,
+          "speedup": 6.3812699582412185
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10431916,
+          "openbabel_ns": 65095417,
+          "speedup": 6.2400250347107855
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10198417,
+          "openbabel_ns": 66428458,
+          "speedup": 6.513604807491202
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10272958,
+          "openbabel_ns": 66080917,
+          "speedup": 6.432511161828949
+        }
+      ],
+      "median_chematic_ns": 10285542,
+      "median_openbabel_ns": 65761167,
+      "median_speedup": 6.383126182350074,
+      "paired_speedup_ci95_lower_bound": 5.834460745933879,
+      "every_block_faster": true,
+      "status": "faster"
+    },
+    "v3000_write": {
+      "format": "v3000",
+      "operation": "write",
+      "fixture": "benchmarks/fixtures/ethanol.v3000",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4232750,
+          "openbabel_ns": 16254041,
+          "speedup": 3.8400663871005847
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4080375,
+          "openbabel_ns": 16867666,
+          "speedup": 4.13385191312073
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4095083,
+          "openbabel_ns": 16731709,
+          "speedup": 4.08580461006529
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4087084,
+          "openbabel_ns": 16495209,
+          "speedup": 4.035935889744375
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4013459,
+          "openbabel_ns": 16518208,
+          "speedup": 4.115703686022456
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4128625,
+          "openbabel_ns": 16360166,
+          "speedup": 3.9626185473371884
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4332167,
+          "openbabel_ns": 16387875,
+          "speedup": 3.7828354724090736
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 3999334,
+          "openbabel_ns": 16422791,
+          "speedup": 4.106381462513508
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4165709,
+          "openbabel_ns": 16506458,
+          "speedup": 3.9624606519562455
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4062083,
+          "openbabel_ns": 16401583,
+          "speedup": 4.03772719562845
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4099792,
+          "openbabel_ns": 17128875,
+          "speedup": 4.177986346624414
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4227166,
+          "openbabel_ns": 16351667,
+          "speedup": 3.8682339420784517
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4257625,
+          "openbabel_ns": 16229000,
+          "speedup": 3.811749508235225
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4232958,
+          "openbabel_ns": 17618458,
+          "speedup": 4.162209499834395
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4028875,
+          "openbabel_ns": 16164459,
+          "speedup": 4.0121520275511156
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4109125,
+          "openbabel_ns": 16685458,
+          "speedup": 4.060586621239315
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4063041,
+          "openbabel_ns": 16505042,
+          "speedup": 4.062238604040668
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 3997958,
+          "openbabel_ns": 16364709,
+          "speedup": 4.093266862733425
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4177541,
+          "openbabel_ns": 16694834,
+          "speedup": 3.996330377128555
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4136708,
+          "openbabel_ns": 17110958,
+          "speedup": 4.136370756649974
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4045666,
+          "openbabel_ns": 16806375,
+          "speedup": 4.1541676945155634
+        }
+      ],
+      "median_chematic_ns": 4099792,
+      "median_openbabel_ns": 16505042,
+      "median_speedup": 4.060586621239315,
+      "paired_speedup_ci95_lower_bound": 3.974577380574107,
+      "every_block_faster": true,
+      "status": "faster"
+    },
+    "v3000_roundtrip": {
+      "format": "v3000",
+      "operation": "roundtrip",
+      "fixture": "benchmarks/fixtures/ethanol.v3000",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14786917,
+          "openbabel_ns": 85500000,
+          "speedup": 5.782138359199554
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 14757416,
+          "openbabel_ns": 84677458,
+          "speedup": 5.737959680746277
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14957291,
+          "openbabel_ns": 84794625,
+          "speedup": 5.6691164864011805
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 14722125,
+          "openbabel_ns": 85995708,
+          "speedup": 5.8412564762220125
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14730417,
+          "openbabel_ns": 84148208,
+          "speedup": 5.712547580968007
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 14941542,
+          "openbabel_ns": 82653333,
+          "speedup": 5.531780655570891
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14726000,
+          "openbabel_ns": 85052417,
+          "speedup": 5.775663248675811
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 14556917,
+          "openbabel_ns": 83731167,
+          "speedup": 5.751984915487256
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14976542,
+          "openbabel_ns": 83520000,
+          "speedup": 5.576721248469774
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 14721792,
+          "openbabel_ns": 82018584,
+          "speedup": 5.571236436433826
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14884291,
+          "openbabel_ns": 82440875,
+          "speedup": 5.538784144975398
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 14998542,
+          "openbabel_ns": 85872083,
+          "speedup": 5.725362038523478
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 15062125,
+          "openbabel_ns": 83216500,
+          "speedup": 5.5248844369569365
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 15138875,
+          "openbabel_ns": 83607750,
+          "speedup": 5.522718828182411
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 15163084,
+          "openbabel_ns": 83666167,
+          "speedup": 5.51775397405963
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 15044209,
+          "openbabel_ns": 86275833,
+          "speedup": 5.734820155715731
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 15315834,
+          "openbabel_ns": 83686500,
+          "speedup": 5.464051125129719
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 15041500,
+          "openbabel_ns": 83268000,
+          "speedup": 5.535884054116943
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14851958,
+          "openbabel_ns": 89583458,
+          "speedup": 6.031760795445288
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 15041875,
+          "openbabel_ns": 80999375,
+          "speedup": 5.384925416545477
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14696542,
+          "openbabel_ns": 88672083,
+          "speedup": 6.033533806796184
+        }
+      ],
+      "median_chematic_ns": 14941542,
+      "median_openbabel_ns": 83731167,
+      "median_speedup": 5.6691164864011805,
+      "paired_speedup_ci95_lower_bound": 5.586258656669418,
+      "every_block_faster": true,
+      "status": "faster"
+    },
+    "mol2_parse": {
+      "format": "mol2",
+      "operation": "parse",
+      "fixture": "benchmarks/fixtures/ethanol.mol2",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10977667,
+          "openbabel_ns": 31321917,
+          "speedup": 2.8532398550621
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 11051084,
+          "openbabel_ns": 31793708,
+          "speedup": 2.876976412449675
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10999625,
+          "openbabel_ns": 30726709,
+          "speedup": 2.793432412468607
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 11037208,
+          "openbabel_ns": 30476625,
+          "speedup": 2.7612621778986135
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 11087833,
+          "openbabel_ns": 31386375,
+          "speedup": 2.830704160136611
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10903791,
+          "openbabel_ns": 30715083,
+          "speedup": 2.816917804092173
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 11108334,
+          "openbabel_ns": 30351583,
+          "speedup": 2.7323253874073288
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 11718041,
+          "openbabel_ns": 31247833,
+          "speedup": 2.6666430847954876
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 12172667,
+          "openbabel_ns": 30584083,
+          "speedup": 2.5125211262248444
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 10992708,
+          "openbabel_ns": 30361333,
+          "speedup": 2.761952104977227
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 11007333,
+          "openbabel_ns": 30396125,
+          "speedup": 2.7614432124475567
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 11191916,
+          "openbabel_ns": 30383750,
+          "speedup": 2.714794321186828
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10890083,
+          "openbabel_ns": 30653125,
+          "speedup": 2.8147742308300128
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 11056375,
+          "openbabel_ns": 30109083,
+          "speedup": 2.7232327955591233
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10970125,
+          "openbabel_ns": 31203791,
+          "speedup": 2.8444334955162316
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 11095375,
+          "openbabel_ns": 30804209,
+          "speedup": 2.7763107601140113
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 11005959,
+          "openbabel_ns": 30753500,
+          "speedup": 2.794259000964841
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 11055333,
+          "openbabel_ns": 31470708,
+          "speedup": 2.846654008522403
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10877584,
+          "openbabel_ns": 30565083,
+          "speedup": 2.8099146832605477
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 11215375,
+          "openbabel_ns": 30748625,
+          "speedup": 2.741649298396175
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 10847875,
+          "openbabel_ns": 35629000,
+          "speedup": 3.2844220642291693
+        }
+      ],
+      "median_chematic_ns": 11037208,
+      "median_openbabel_ns": 30726709,
+      "median_speedup": 2.793432412468607,
+      "paired_speedup_ci95_lower_bound": 2.7337211238685386,
+      "every_block_faster": true,
+      "status": "faster"
+    },
+    "mol2_write": {
+      "format": "mol2",
+      "operation": "write",
+      "fixture": "benchmarks/fixtures/ethanol.mol2",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 5155750,
+          "openbabel_ns": 14629000,
+          "speedup": 2.8374145371672403
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4499292,
+          "openbabel_ns": 14518500,
+          "speedup": 3.2268410229876165
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4610958,
+          "openbabel_ns": 14358041,
+          "speedup": 3.113895420431069
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4771125,
+          "openbabel_ns": 14611208,
+          "speedup": 3.0624240614110927
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4628750,
+          "openbabel_ns": 14765084,
+          "speedup": 3.1898642182014583
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4646917,
+          "openbabel_ns": 14556125,
+          "speedup": 3.1324262946809682
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4627916,
+          "openbabel_ns": 14687083,
+          "speedup": 3.173584611302366
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4736625,
+          "openbabel_ns": 14526917,
+          "speedup": 3.0669341567044044
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4669875,
+          "openbabel_ns": 14476042,
+          "speedup": 3.0998778339891326
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4694667,
+          "openbabel_ns": 14475125,
+          "speedup": 3.083312405331411
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4715083,
+          "openbabel_ns": 14360625,
+          "speedup": 3.045678093047355
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 5032042,
+          "openbabel_ns": 14311917,
+          "speedup": 2.8441569048906983
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4738208,
+          "openbabel_ns": 14870208,
+          "speedup": 3.138361169454781
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4668500,
+          "openbabel_ns": 14499708,
+          "speedup": 3.1058601263789227
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4463958,
+          "openbabel_ns": 14263750,
+          "speedup": 3.1953145616513416
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4711875,
+          "openbabel_ns": 14415416,
+          "speedup": 3.059379970818411
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4622958,
+          "openbabel_ns": 14578584,
+          "speedup": 3.1535185913434645
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4666750,
+          "openbabel_ns": 15064916,
+          "speedup": 3.2281386403814216
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4533792,
+          "openbabel_ns": 15597875,
+          "speedup": 3.440359637142595
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 4719334,
+          "openbabel_ns": 14469000,
+          "speedup": 3.0658987051986575
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 4556625,
+          "openbabel_ns": 14901291,
+          "speedup": 3.2702473870463336
+        }
+      ],
+      "median_chematic_ns": 4668500,
+      "median_openbabel_ns": 14526917,
+      "median_speedup": 3.113895420431069,
+      "paired_speedup_ci95_lower_bound": 3.0613319276707687,
+      "every_block_faster": true,
+      "status": "faster"
+    },
+    "mol2_roundtrip": {
+      "format": "mol2",
+      "operation": "roundtrip",
+      "fixture": "benchmarks/fixtures/ethanol.mol2",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 16368458,
+          "openbabel_ns": 46772666,
+          "speedup": 2.8574876142884076
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 16215834,
+          "openbabel_ns": 46673666,
+          "speedup": 2.878277244327982
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 16273584,
+          "openbabel_ns": 45931125,
+          "speedup": 2.822434504900703
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 15917834,
+          "openbabel_ns": 46892791,
+          "speedup": 2.9459278818964942
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 16047792,
+          "openbabel_ns": 46017125,
+          "speedup": 2.8675050748414486
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 16128208,
+          "openbabel_ns": 46567083,
+          "speedup": 2.8873066989215417
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 15948750,
+          "openbabel_ns": 46069917,
+          "speedup": 2.8886224312250177
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 16143042,
+          "openbabel_ns": 46763250,
+          "speedup": 2.8968053233089526
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 16462292,
+          "openbabel_ns": 47451958,
+          "speedup": 2.8824636326460493
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 16137958,
+          "openbabel_ns": 45944917,
+          "speedup": 2.8470093304245805
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 16477125,
+          "openbabel_ns": 46073875,
+          "speedup": 2.796232655878984
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 16023708,
+          "openbabel_ns": 46269291,
+          "speedup": 2.8875520572391857
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 16003625,
+          "openbabel_ns": 45833667,
+          "speedup": 2.8639553226222185
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 16278667,
+          "openbabel_ns": 46164875,
+          "speedup": 2.8359124859547773
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 16075833,
+          "openbabel_ns": 45958584,
+          "speedup": 2.8588617460756156
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 16127417,
+          "openbabel_ns": 45570667,
+          "speedup": 2.8256643329802906
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 16227792,
+          "openbabel_ns": 46109000,
+          "speedup": 2.841360056870337
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 16495083,
+          "openbabel_ns": 46226666,
+          "speedup": 2.8024512516851234
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 16249459,
+          "openbabel_ns": 46359125,
+          "speedup": 2.8529642125316297
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 15843167,
+          "openbabel_ns": 45559375,
+          "speedup": 2.8756482210911494
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 16075375,
+          "openbabel_ns": 46632000,
+          "speedup": 2.900834350676112
+        }
+      ],
+      "median_chematic_ns": 16137958,
+      "median_openbabel_ns": 46164875,
+      "median_speedup": 2.8639553226222185,
+      "paired_speedup_ci95_lower_bound": 2.8465830252679343,
+      "every_block_faster": true,
+      "status": "faster"
+    },
+    "cml_parse": {
+      "format": "cml",
+      "operation": "parse",
+      "fixture": "benchmarks/fixtures/ethanol.cml",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20739250,
+          "openbabel_ns": 87976083,
+          "speedup": 4.242008896175127
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 21111084,
+          "openbabel_ns": 89321000,
+          "speedup": 4.231000170337061
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20935708,
+          "openbabel_ns": 87364250,
+          "speedup": 4.172978052617088
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20845667,
+          "openbabel_ns": 90017000,
+          "speedup": 4.318259521271255
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20986917,
+          "openbabel_ns": 87305000,
+          "speedup": 4.159972615320297
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20651667,
+          "openbabel_ns": 87665458,
+          "speedup": 4.244957949399436
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20611917,
+          "openbabel_ns": 88901667,
+          "speedup": 4.31311978405502
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 21135291,
+          "openbabel_ns": 88273083,
+          "speedup": 4.176572870465801
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20881666,
+          "openbabel_ns": 86418333,
+          "speedup": 4.1384788455097405
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 21276000,
+          "openbabel_ns": 89646916,
+          "speedup": 4.213523030644858
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20713542,
+          "openbabel_ns": 87917125,
+          "speedup": 4.244427389579243
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20895750,
+          "openbabel_ns": 89035250,
+          "speedup": 4.260926264910329
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20579208,
+          "openbabel_ns": 88211833,
+          "speedup": 4.286454221173138
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20733708,
+          "openbabel_ns": 87286041,
+          "speedup": 4.209861593497893
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20851417,
+          "openbabel_ns": 89324417,
+          "speedup": 4.283853562566036
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20965458,
+          "openbabel_ns": 87569542,
+          "speedup": 4.176848509581808
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20614667,
+          "openbabel_ns": 88446875,
+          "speedup": 4.290482839232863
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20951125,
+          "openbabel_ns": 87739000,
+          "speedup": 4.18779421152802
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20682583,
+          "openbabel_ns": 89533958,
+          "speedup": 4.32895436706334
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20807250,
+          "openbabel_ns": 88773417,
+          "speedup": 4.266465630969974
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 21117000,
+          "openbabel_ns": 87617125,
+          "speedup": 4.1491274802291995
+        }
+      ],
+      "median_chematic_ns": 20851417,
+      "median_openbabel_ns": 88211833,
+      "median_speedup": 4.242008896175127,
+      "paired_speedup_ci95_lower_bound": 4.2065836968946275,
+      "every_block_faster": true,
+      "status": "faster"
+    },
+    "cml_write": {
+      "format": "cml",
+      "operation": "write",
+      "fixture": "benchmarks/fixtures/ethanol.cml",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 7397167,
+          "openbabel_ns": 25146375,
+          "speedup": 3.3994602257864397
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 7924416,
+          "openbabel_ns": 24704084,
+          "speedup": 3.117464302732214
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 7638458,
+          "openbabel_ns": 25152667,
+          "speedup": 3.292898514333652
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 7630083,
+          "openbabel_ns": 24458125,
+          "speedup": 3.205486100216734
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 7669208,
+          "openbabel_ns": 25097791,
+          "speedup": 3.2725401371301963
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 7558375,
+          "openbabel_ns": 24832250,
+          "speedup": 3.2853953396067275
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 7553417,
+          "openbabel_ns": 25190292,
+          "speedup": 3.3349531741726954
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 7734833,
+          "openbabel_ns": 24932334,
+          "speedup": 3.2233836205642707
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 7667417,
+          "openbabel_ns": 24947166,
+          "speedup": 3.253659739648959
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 7692958,
+          "openbabel_ns": 25069833,
+          "speedup": 3.258802790812065
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 7654208,
+          "openbabel_ns": 24966458,
+          "speedup": 3.2617950805622216
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 7715542,
+          "openbabel_ns": 24914458,
+          "speedup": 3.2291260937987247
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 7747958,
+          "openbabel_ns": 25737500,
+          "speedup": 3.3218429939862864
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 7593084,
+          "openbabel_ns": 25223584,
+          "speedup": 3.3219155747519715
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 7560583,
+          "openbabel_ns": 25415250,
+          "speedup": 3.3615463251974087
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 7498667,
+          "openbabel_ns": 24952292,
+          "speedup": 3.3275636856523967
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 7657500,
+          "openbabel_ns": 24803208,
+          "speedup": 3.239073849167483
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 7760625,
+          "openbabel_ns": 25151041,
+          "speedup": 3.2408525086574858
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 7581500,
+          "openbabel_ns": 25137208,
+          "speedup": 3.315598232539735
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 7475542,
+          "openbabel_ns": 25516375,
+          "speedup": 3.4133143790777978
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 7689000,
+          "openbabel_ns": 24688041,
+          "speedup": 3.2108259851736247
+        }
+      ],
+      "median_chematic_ns": 7654208,
+      "median_openbabel_ns": 25069833,
+      "median_speedup": 3.2725401371301963,
+      "paired_speedup_ci95_lower_bound": 3.2487820190668377,
+      "every_block_faster": true,
+      "status": "faster"
+    },
+    "cml_roundtrip": {
+      "format": "cml",
+      "operation": "roundtrip",
+      "fixture": "benchmarks/fixtures/ethanol.cml",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 29498458,
+          "openbabel_ns": 118452584,
+          "speedup": 4.01555172816152
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 30056375,
+          "openbabel_ns": 116081584,
+          "speedup": 3.8621285500996043
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 29011166,
+          "openbabel_ns": 118623958,
+          "speedup": 4.088906940176069
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 29006375,
+          "openbabel_ns": 119460042,
+          "speedup": 4.118406453753701
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 31176416,
+          "openbabel_ns": 118914209,
+          "speedup": 3.8142360237943964
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 29036542,
+          "openbabel_ns": 116241458,
+          "speedup": 4.0032817268667875
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 29594833,
+          "openbabel_ns": 118940250,
+          "speedup": 4.018953240925536
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 29017209,
+          "openbabel_ns": 120259959,
+          "speedup": 4.144435772578955
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 28477208,
+          "openbabel_ns": 119739500,
+          "speedup": 4.204748583498776
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 29580875,
+          "openbabel_ns": 117507917,
+          "speedup": 3.972428706047404
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 29310750,
+          "openbabel_ns": 116458833,
+          "speedup": 3.9732464368874902
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 29636958,
+          "openbabel_ns": 118019625,
+          "speedup": 3.9821774218528097
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 29347750,
+          "openbabel_ns": 116232209,
+          "speedup": 3.9605151672615446
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 29846083,
+          "openbabel_ns": 119879333,
+          "speedup": 4.016585124419844
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 29448542,
+          "openbabel_ns": 117655083,
+          "speedup": 3.9952770157517477
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 30109875,
+          "openbabel_ns": 118157000,
+          "speedup": 3.9241943050245145
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 29670958,
+          "openbabel_ns": 117411792,
+          "speedup": 3.957128448633172
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 29209875,
+          "openbabel_ns": 120309792,
+          "speedup": 4.118805438229366
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 29281500,
+          "openbabel_ns": 116912917,
+          "speedup": 3.9927229479364104
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 29610084,
+          "openbabel_ns": 117828584,
+          "speedup": 3.979339741150346
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 28871709,
+          "openbabel_ns": 119518667,
+          "speedup": 4.139646426887996
+        }
+      ],
+      "median_chematic_ns": 29448542,
+      "median_openbabel_ns": 118157000,
+      "median_speedup": 3.9952770157517477,
+      "paired_speedup_ci95_lower_bound": 3.9702351072388615,
+      "every_block_faster": true,
+      "status": "faster"
+    },
+    "cdxml_parse": {
+      "format": "cdxml",
+      "operation": "parse",
+      "fixture": "benchmarks/fixtures/ethanol.cdxml",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14844750,
+          "openbabel_ns": 82661958,
+          "speedup": 5.5684304552114385
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 14308792,
+          "openbabel_ns": 81363542,
+          "speedup": 5.686262124713253
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14619750,
+          "openbabel_ns": 82879458,
+          "speedup": 5.669006515159288
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 13857084,
+          "openbabel_ns": 81695583,
+          "speedup": 5.895582577113626
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14164209,
+          "openbabel_ns": 80180916,
+          "speedup": 5.660811415589815
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 13765625,
+          "openbabel_ns": 81638167,
+          "speedup": 5.930581938706016
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 13685583,
+          "openbabel_ns": 82834334,
+          "speedup": 6.05267119420488
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 13721666,
+          "openbabel_ns": 80713834,
+          "speedup": 5.882218237931166
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14178833,
+          "openbabel_ns": 81503583,
+          "speedup": 5.748257490584733
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 14248625,
+          "openbabel_ns": 81501375,
+          "speedup": 5.719946661519971
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14167292,
+          "openbabel_ns": 82330000,
+          "speedup": 5.811272895342314
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 14445916,
+          "openbabel_ns": 80609333,
+          "speedup": 5.580077649627756
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 13829125,
+          "openbabel_ns": 81242291,
+          "speedup": 5.874723888893911
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 13880042,
+          "openbabel_ns": 83207958,
+          "speedup": 5.994791514319625
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 13824500,
+          "openbabel_ns": 80741833,
+          "speedup": 5.8404884805960435
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 14095417,
+          "openbabel_ns": 80579834,
+          "speedup": 5.716739987188744
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 14626791,
+          "openbabel_ns": 80316125,
+          "speedup": 5.491028414913428
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 14431916,
+          "openbabel_ns": 82585792,
+          "speedup": 5.722441289153845
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 13907292,
+          "openbabel_ns": 80273584,
+          "speedup": 5.772049943295935
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 13834000,
+          "openbabel_ns": 81305625,
+          "speedup": 5.877231820153246
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 13884250,
+          "openbabel_ns": 81136708,
+          "speedup": 5.843794803464357
+        }
+      ],
+      "median_chematic_ns": 14095417,
+      "median_openbabel_ns": 81363542,
+      "median_speedup": 5.772049943295935,
+      "paired_speedup_ci95_lower_bound": 5.712879534415151,
+      "every_block_faster": true,
+      "status": "faster"
+    },
+    "cdxml_write": {
+      "format": "cdxml",
+      "operation": "write",
+      "fixture": "benchmarks/fixtures/ethanol.cdxml",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 6377042,
+          "openbabel_ns": 15970292,
+          "speedup": 2.5043416681276365
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 6018292,
+          "openbabel_ns": 16120208,
+          "speedup": 2.6785353718297484
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 6085625,
+          "openbabel_ns": 15818708,
+          "speedup": 2.599356352059156
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 6184167,
+          "openbabel_ns": 15925667,
+          "speedup": 2.5752323635503376
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 6204166,
+          "openbabel_ns": 15824084,
+          "speedup": 2.550557802611987
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 6124708,
+          "openbabel_ns": 15908083,
+          "speedup": 2.5973618660677373
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 6237250,
+          "openbabel_ns": 16441625,
+          "speedup": 2.6360375165337286
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 6122417,
+          "openbabel_ns": 15835792,
+          "speedup": 2.58652620362187
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 6159625,
+          "openbabel_ns": 15622208,
+          "speedup": 2.5362271242161656
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 6012583,
+          "openbabel_ns": 16038792,
+          "speedup": 2.6675377287930995
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 6042459,
+          "openbabel_ns": 15953666,
+          "speedup": 2.640260529694947
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 6302625,
+          "openbabel_ns": 15729833,
+          "speedup": 2.49575898931001
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 6133416,
+          "openbabel_ns": 15820625,
+          "speedup": 2.579414962233118
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 6272333,
+          "openbabel_ns": 15937000,
+          "speedup": 2.5408408641569253
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 6059291,
+          "openbabel_ns": 16160750,
+          "speedup": 2.66710247122972
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 6254375,
+          "openbabel_ns": 16042541,
+          "speedup": 2.5650110522634155
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 6151208,
+          "openbabel_ns": 16223625,
+          "speedup": 2.637469745780016
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 6027333,
+          "openbabel_ns": 16135041,
+          "speedup": 2.676978524332404
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 6143875,
+          "openbabel_ns": 16050042,
+          "speedup": 2.612364672132815
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 6132792,
+          "openbabel_ns": 15851083,
+          "speedup": 2.584643829433641
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 6486792,
+          "openbabel_ns": 15647833,
+          "speedup": 2.4122606366906787
+        }
+      ],
+      "median_chematic_ns": 6143875,
+      "median_openbabel_ns": 15937000,
+      "median_speedup": 2.58652620362187,
+      "paired_speedup_ci95_lower_bound": 2.557185568639821,
+      "every_block_faster": true,
+      "status": "faster"
+    },
+    "cdxml_roundtrip": {
+      "format": "cdxml",
+      "operation": "roundtrip",
+      "fixture": "benchmarks/fixtures/ethanol.cdxml",
+      "blocks": [
+        {
+          "block": 1,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 21251333,
+          "openbabel_ns": 100331667,
+          "speedup": 4.721194054038869
+        },
+        {
+          "block": 2,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 21639375,
+          "openbabel_ns": 101421500,
+          "speedup": 4.686895993992433
+        },
+        {
+          "block": 3,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20349250,
+          "openbabel_ns": 99698708,
+          "speedup": 4.899379977149035
+        },
+        {
+          "block": 4,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20989625,
+          "openbabel_ns": 100555542,
+          "speedup": 4.790725989625827
+        },
+        {
+          "block": 5,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20410750,
+          "openbabel_ns": 99124041,
+          "speedup": 4.85646245238416
+        },
+        {
+          "block": 6,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 21416750,
+          "openbabel_ns": 99273584,
+          "speedup": 4.635324407298026
+        },
+        {
+          "block": 7,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 21067500,
+          "openbabel_ns": 100793459,
+          "speedup": 4.784310383291801
+        },
+        {
+          "block": 8,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20853250,
+          "openbabel_ns": 100759417,
+          "speedup": 4.831832783858631
+        },
+        {
+          "block": 9,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 21316209,
+          "openbabel_ns": 100958375,
+          "speedup": 4.736225611223834
+        },
+        {
+          "block": 10,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 21076416,
+          "openbabel_ns": 99880000,
+          "speedup": 4.73894612822218
+        },
+        {
+          "block": 11,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 21386542,
+          "openbabel_ns": 100417584,
+          "speedup": 4.6953632803283485
+        },
+        {
+          "block": 12,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20900500,
+          "openbabel_ns": 99730958,
+          "speedup": 4.771702016698165
+        },
+        {
+          "block": 13,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20586750,
+          "openbabel_ns": 99397625,
+          "speedup": 4.828232965378216
+        },
+        {
+          "block": 14,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20271834,
+          "openbabel_ns": 99129250,
+          "speedup": 4.8899990992428215
+        },
+        {
+          "block": 15,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20673291,
+          "openbabel_ns": 103640375,
+          "speedup": 5.013249946513112
+        },
+        {
+          "block": 16,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20917000,
+          "openbabel_ns": 99920042,
+          "speedup": 4.7769776736625715
+        },
+        {
+          "block": 17,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 20583792,
+          "openbabel_ns": 102046750,
+          "speedup": 4.957626369329811
+        },
+        {
+          "block": 18,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 20563125,
+          "openbabel_ns": 100575833,
+          "speedup": 4.891077256010456
+        },
+        {
+          "block": 19,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 21383167,
+          "openbabel_ns": 107338291,
+          "speedup": 5.01975647480095
+        },
+        {
+          "block": 20,
+          "order": [
+            "openbabel",
+            "chematic"
+          ],
+          "chematic_ns": 26190125,
+          "openbabel_ns": 114242750,
+          "speedup": 4.362054400274912
+        },
+        {
+          "block": 21,
+          "order": [
+            "chematic",
+            "openbabel"
+          ],
+          "chematic_ns": 25976875,
+          "openbabel_ns": 101320458,
+          "speedup": 3.9004098067993165
+        }
+      ],
+      "median_chematic_ns": 20989625,
+      "median_openbabel_ns": 100555542,
+      "median_speedup": 4.784310383291801,
+      "paired_speedup_ci95_lower_bound": 4.641760922057644,
+      "every_block_faster": true,
+      "status": "faster"
+    }
+  },
+  "claim_boundary": "tiny checked-in fixtures; parser/write/round-trip hot loops only; not large-file throughput, peak memory, or published-package evidence",
+  "errors": []
+}

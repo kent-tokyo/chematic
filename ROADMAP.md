@@ -112,9 +112,10 @@ artifact hashes.
   faster, and a paired 95% speedup lower bound above 1.0 before declaring a
   format win.
 - Current source progress: the fresh-process CLI round-trip lane passes the
-  strict 21-block rule for all four semantic-gated fixtures. Parser-only,
-  writer-only, large-file throughput, peak RSS, PDB/mmCIF, and published
-  artifacts remain open.
+  strict 21-block rule for all four semantic-gated fixtures. The same-process
+  hot-loop gate also passes all 12 parse, write, and round-trip lanes for
+  V3000, MOL2, CML, and CDXML. Large-file throughput, peak RSS, broad semantic
+  corpora, PDB/mmCIF, and published artifacts remain open.
 - Publish source and package evidence separately. A win on the Tier-A profile
   is not a claim to match Open Babel's total format breadth.
 

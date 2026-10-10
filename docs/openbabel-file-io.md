@@ -68,6 +68,11 @@ internal timed loop. This removes executable startup and plugin discovery, but
 it remains a tiny-fixture latency test rather than a large-file throughput or
 memory measurement.
 
+The first clean-commit run used 5,000 repetitions per process. CheMatic won
+all 21 blocks in all 12 lanes, with median paired speedups from 2.59x to 6.38x
+and a weakest paired 95% lower bound of 2.56x. See the
+[bounded same-process record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-openbabel-file-io-same-process-v1.0.42.md).
+
 ## Loss-aware MOL2 API
 
 `parse_mol2_record` and `write_mol2_record` preserve Tripos atom types, partial

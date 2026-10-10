@@ -19,8 +19,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   speed claims remain open.
 - Added a shared-observer semantic round-trip gate and a paired 21-block CLI
   round-trip benchmark for V3000, MOL2, CML, and CDXML. Evidence remains scoped
-  to the checked-in fixtures and source candidate; broad corpora, isolated
-  parse/write lanes, memory, and published artifacts remain open.
+  to the checked-in fixtures and source candidate. A same-process harness now
+  separates parse, write, and round-trip hot loops; all 12 bounded lanes pass
+  the paired speed gate against Open Babel 3.2.1. Broad corpora, large-file
+  throughput, memory, and published artifacts remain open.
 - Added loss-aware `parse_mol2_record` and `write_mol2_record` Rust APIs. They
   retain Tripos atom types, partial charges, residue data, status bits,
   `UNITY_ATOM_ATTR` formal charges, and opaque extension sections.
@@ -44,6 +46,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Reduced temporary allocation in loss-aware MOL2 serialization while
+  retaining the common-observer semantic result.
 - Kept rejected RDKit-profile reaction products in a new opt-in detailed
   report. The existing Rust `TracedReactionTransformReport` again has its
   original two-field struct-literal shape, avoiding a source-compatibility
