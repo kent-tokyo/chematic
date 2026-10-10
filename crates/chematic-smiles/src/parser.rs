@@ -329,7 +329,19 @@ impl<'a> Parser<'a> {
             mol.set_stereo_neighbor_order(atom_idx, order);
         }
 
-        Ok(mol.build())
+        let molecule = mol.build();
+        // A SMILES graph with no ring-closure token is a forest by
+        // construction. Publish that already-known result so the first
+        // fingerprint or descriptor call does not need a full bridge DFS to
+        // rediscover it. This is parser provenance, not eager ring
+        // perception; edits invalidate the derived cache as usual.
+        if molecule.smiles_ring_closure_bond_count() == 0 {
+            molecule.seed_derived(
+                chematic_core::DerivedSlot::RingBondFlags,
+                std::sync::Arc::new(vec![false; molecule.bond_count()]),
+            );
+        }
+        Ok(molecule)
     }
 
     // Parse one atom-chain, attaching it to `attach_to` via `attach_bond`.
@@ -1706,5 +1718,22 @@ mod tests {
                 ..
             })
         ));
+    }
+
+    #[test]
+    fn acyclic_parse_seeds_empty_ring_flags() {
+        let molecule = parse("CCO.CN").unwrap();
+        let flags = molecule
+            .derived_if_computed::<Vec<bool>>(chematic_core::DerivedSlot::RingBondFlags)
+            .expect("acyclic SMILES proves that every bond is non-cyclic");
+        assert_eq!(&*flags, &vec![false; molecule.bond_count()]);
+
+        let cyclic = parse("C1CCCCC1").unwrap();
+        assert!(
+            cyclic
+                .derived_if_computed::<Vec<bool>>(chematic_core::DerivedSlot::RingBondFlags)
+                .is_none(),
+            "cyclic inputs still require perception"
+        );
     }
 }

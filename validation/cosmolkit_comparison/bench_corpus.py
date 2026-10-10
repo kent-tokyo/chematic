@@ -3,10 +3,11 @@
 
 Each engine runs in its own interpreter. A block runs every engine once, in
 an order that rotates between blocks; per operation the median over blocks is
-reported. Molecules are re-parsed (untimed) before each operation so that a
-result cached on a molecule object cannot be reused. Calls return each
-library's native result object (no normalisation), and SMARTS queries are
-compiled once where the library offers a compiled query.
+reported. Molecules are re-parsed before each operation so that a result cached
+on a molecule object cannot be reused. Both the operation-only time and the
+full pipeline time (parse + operation, or 3D preparation + operation) are
+reported. Calls return each library's native result object (no normalisation),
+and SMARTS queries are compiled once where the library offers a compiled query.
 
 Timings depend on the host; the report records it. Speed is only meaningful
 next to the correctness summary from ``compare_corpus.py``: an operation whose
@@ -18,12 +19,15 @@ outputs differ is a different amount of work.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform
+import random
 import statistics
 import subprocess
 import sys
+import tempfile
 import time
 import warnings
 from pathlib import Path
@@ -45,6 +49,40 @@ OPS_05 = ["parse", "canonical_smiles", "smiles_kekule", "formula", "mol_wt", "ex
 # (prepared untimed): fn(prepared) where prepared = prep3d(mol, coords).
 THREE_D = {"mmff_energy_gradient", "uff_energy_gradient"}
 RXN_AMIDE = "[N;!H0;!$(NC=O);!$(N=*);!$(N#*);!$(Nc);!$([N+]):1].[C:2](=[O:3])[OH]>>[N:1][C:2]=[O:3]"
+
+
+def paired_median_ratio_ci(
+    numerator: list[float], denominator: list[float], *, seed: int
+) -> dict | None:
+    """Return the paired median speedup and a deterministic bootstrap CI."""
+    ratios = [n / d for n, d in zip(numerator, denominator) if n > 0 and d > 0]
+    if not ratios:
+        return None
+    rng = random.Random(seed)
+    estimates = [
+        statistics.median(ratios[rng.randrange(len(ratios))] for _ in ratios)
+        for _ in range(10_000)
+    ]
+    estimates.sort()
+    return {
+        "median": round(statistics.median(ratios), 3),
+        "ci95": [round(estimates[249], 3), round(estimates[9749], 3)],
+        "winning_blocks": sum(r > 1.0 for r in ratios),
+        "blocks": len(ratios),
+    }
+
+
+def pipeline_seconds(sample: dict, op: str) -> float | None:
+    """Return the work needed from text/preparation through ``op``."""
+    value = sample.get(op)
+    if value is None:
+        return None
+    if op == "parse":
+        return value
+    if op in THREE_D:
+        preparation = sample.get(op + "__prepare")
+        return None if preparation is None else preparation + value
+    return sample["parse"] + value
 
 
 def table(engine: str):
@@ -238,10 +276,18 @@ def _cosmolkit_05_table(ck):
     }
 
 
-def measure(engine: str, corpus: Path, ops: list[str]) -> dict:
+def measure(
+    engine: str,
+    corpus: Path,
+    ops: list[str],
+    limit: int | None = None,
+    coords_path: Path | None = None,
+) -> dict:
     warnings.simplefilter("ignore")
     parse, fns = table(engine)
     rows = [l.split()[0] for l in corpus.read_text().splitlines() if l.strip()]
+    if limit is not None:
+        rows = rows[:limit]
 
     def parsed():
         out = []
@@ -256,10 +302,13 @@ def measure(engine: str, corpus: Path, ops: list[str]) -> dict:
 
     coords = None
     if THREE_D & set(ops):
-        # RDKit-embedded coordinates of every input (untimed, shared by the
-        # engines through the same seeded embedding).
-        from corpus_engines import rdkit_embedded_h
-        coords = [(e[1] if (e := rdkit_embedded_h(s)) is not None else None) for s in rows]
+        if coords_path is not None:
+            coords = json.loads(coords_path.read_text())
+        else:
+            # Child-only fallback. Normal parent-driven runs prepare this
+            # once and share it across engines and blocks.
+            from corpus_engines import rdkit_embedded_h
+            coords = [(e[1] if (e := rdkit_embedded_h(s)) is not None else None) for s in rows]
 
     def prepared():
         out = []
@@ -284,7 +333,12 @@ def measure(engine: str, corpus: Path, ops: list[str]) -> dict:
         if fn is None:
             res[op] = None
             continue
-        mols = prepared() if op in THREE_D else parsed()
+        if op in THREE_D:
+            t = time.perf_counter()
+            mols = prepared()
+            res[op + "__prepare"] = time.perf_counter() - t
+        else:
+            mols = parsed()
         errors = 0
         t = time.perf_counter()
         for m in mols:
@@ -304,14 +358,17 @@ def main() -> int:
     ap.add_argument("--corpus", type=Path, required=True)
     ap.add_argument("--output", type=Path)
     ap.add_argument("--blocks", type=int, default=5)
+    ap.add_argument("--limit", type=int,
+                    help="use only the first N non-empty corpus rows")
     ap.add_argument("--ops", default=",".join(OPS))
     ap.add_argument("--python", action="append", metavar="ENGINE=PYTHON", default=[],
                     help="interpreter per engine (default: this one)")
     ap.add_argument("--_child")
+    ap.add_argument("--_coords", type=Path)
     args = ap.parse_args()
     ops = OPS_05 if args.ops == "all05" else args.ops.split(",")
     if args._child:
-        print(json.dumps(measure(args._child, args.corpus, ops)))
+        print(json.dumps(measure(args._child, args.corpus, ops, args.limit, args._coords)))
         return 0
     pythons = {"rdkit": sys.executable, "chematic": sys.executable, "cosmolkit": sys.executable}
     pythons.update(dict(p.split("=", 1) for p in args.python))
@@ -319,11 +376,30 @@ def main() -> int:
     samples: dict[str, list[dict]] = {e: [] for e in engines}
     load_start = list(os.getloadavg())
     versions = {}
+    coord_tmp = None
+    coords_path = None
+    coords_sha256 = None
+    if THREE_D & set(ops):
+        from corpus_engines import rdkit_embedded_h
+        rows = [l.split()[0] for l in args.corpus.read_text().splitlines() if l.strip()]
+        if args.limit is not None:
+            rows = rows[:args.limit]
+        coords = [(e[1] if (e := rdkit_embedded_h(s)) is not None else None) for s in rows]
+        coord_tmp = tempfile.TemporaryDirectory(prefix="chematic-bench-coords-")
+        coords_path = Path(coord_tmp.name) / "rdkit-seed42.json"
+        coords_text = json.dumps(coords, separators=(",", ":"))
+        coords_path.write_text(coords_text)
+        coords_sha256 = hashlib.sha256(coords_text.encode()).hexdigest()
     for block in range(args.blocks):
         order = engines[block % len(engines):] + engines[: block % len(engines)]
         for e in order:
-            out = subprocess.run([pythons[e], __file__, "--corpus", str(args.corpus), "--ops", ",".join(ops),
-                                  "--_child", e], capture_output=True, text=True, check=True)
+            command = [pythons[e], __file__, "--corpus", str(args.corpus),
+                       "--ops", ",".join(ops), "--_child", e]
+            if args.limit is not None:
+                command.extend(["--limit", str(args.limit)])
+            if coords_path is not None:
+                command.extend(["--_coords", str(coords_path)])
+            out = subprocess.run(command, capture_output=True, text=True, check=True)
             samples[e].append(json.loads(out.stdout))
         print(f"block {block + 1}/{args.blocks} done", file=sys.stderr)
     for e in engines:
@@ -331,16 +407,24 @@ def main() -> int:
                 "chematic": "import chematic;print(chematic.__version__)",
                 "cosmolkit": "import cosmolkit;print(cosmolkit.__version__)"}[e]
         versions[e] = subprocess.run([pythons[e], "-c", code], capture_output=True, text=True).stdout.strip()
-    report = {"schema": "cosmolkit-corpus-bench/v1", "corpus": args.corpus.name,
-              "blocks": args.blocks, "host": {"platform": platform.platform(),
+    report = {"schema": "cosmolkit-corpus-bench/v2", "corpus": args.corpus.name,
+              "blocks": args.blocks, "limit": args.limit,
+              "rdkit_seed42_coords_sha256": coords_sha256,
+              "host": {"platform": platform.platform(),
                                                "cpus": os.cpu_count(), "python": platform.python_version()},
-              "versions": versions, "median_seconds": {}, "parsed": {}, "errors": {},
+              "versions": versions, "samples_seconds": samples, "median_seconds": {},
+              "median_pipeline_seconds": {}, "parsed": {}, "errors": {},
               "load_average_start": load_start, "load_average_end": list(os.getloadavg())}
     for e in engines:
         report["parsed"][e] = samples[e][0]["parsed"]
         report["median_seconds"][e] = {
             op: (None if samples[e][0].get(op) is None
                  else statistics.median(s[op] for s in samples[e])) for op in ops}
+        report["median_pipeline_seconds"][e] = {
+            op: (None if pipeline_seconds(samples[e][0], op) is None else
+                 statistics.median(pipeline_seconds(s, op) for s in samples[e]))
+            for op in ops
+        }
         report["errors"][e] = {k: v for k, v in samples[e][0].items() if k.endswith("__errors")}
     ck, ch, rd = (report["median_seconds"][e] for e in ("cosmolkit", "chematic", "rdkit"))
     report["chematic_speedup_vs_cosmolkit"] = {
@@ -349,14 +433,52 @@ def main() -> int:
         op: (round(rd[op] / ch[op], 2) if rd.get(op) and ch.get(op) else None) for op in ops}
     report["cosmolkit_speedup_vs_rdkit"] = {
         op: (round(rd[op] / ck[op], 2) if rd.get(op) and ck.get(op) else None) for op in ops}
+    ck_pipeline, ch_pipeline, rd_pipeline = (
+        report["median_pipeline_seconds"][e]
+        for e in ("cosmolkit", "chematic", "rdkit")
+    )
+    report["chematic_pipeline_speedup_vs_cosmolkit"] = {
+        op: (round(ck_pipeline[op] / ch_pipeline[op], 2)
+             if ck_pipeline.get(op) and ch_pipeline.get(op) else None)
+        for op in ops
+    }
+    report["chematic_pipeline_speedup_vs_rdkit"] = {
+        op: (round(rd_pipeline[op] / ch_pipeline[op], 2)
+             if rd_pipeline.get(op) and ch_pipeline.get(op) else None)
+        for op in ops
+    }
+    report["paired_speedup_ci95_vs_cosmolkit"] = {}
+    report["paired_pipeline_speedup_ci95_vs_cosmolkit"] = {}
+    report["paired_speedup_ci95_vs_rdkit"] = {}
+    report["paired_pipeline_speedup_ci95_vs_rdkit"] = {}
+    for index, op in enumerate(ops):
+        for competitor, seed in (("cosmolkit", 0xC05_000), ("rdkit", 0xD17_000)):
+            if all(s.get(op) for e in ("chematic", competitor) for s in samples[e]):
+                report[f"paired_speedup_ci95_vs_{competitor}"][op] = paired_median_ratio_ci(
+                    [s[op] for s in samples[competitor]],
+                    [s[op] for s in samples["chematic"]],
+                    seed=seed + index,
+                )
+                report[f"paired_pipeline_speedup_ci95_vs_{competitor}"][op] = (
+                    paired_median_ratio_ci(
+                        [pipeline_seconds(s, op) for s in samples[competitor]],
+                        [pipeline_seconds(s, op) for s in samples["chematic"]],
+                        seed=seed + 0x100_000 + index,
+                    )
+                )
     text = json.dumps(report, indent=1, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(text)
-    print(f"{'op':18}{'chematic ms':>13}{'COSMolKit ms':>14}{'RDKit ms':>11}{'ch/ck':>8}")
+    print(f"{'op':18}{'chematic ms':>13}{'COSMolKit ms':>14}{'RDKit ms':>11}"
+          f"{'op ch/ck':>10}{'pipe ch/ck':>12}")
     for op in ops:
         f = lambda v: f"{v * 1000:.0f}" if v else "-"  # noqa: E731
+        cold = report["chematic_speedup_vs_cosmolkit"][op]
+        pipeline = report["chematic_pipeline_speedup_vs_cosmolkit"][op]
         print(f"{op:18}{f(ch.get(op)):>13}{f(ck.get(op)):>14}{f(rd.get(op)):>11}"
-              f"{str(report['chematic_speedup_vs_cosmolkit'][op] or '-') + 'x':>8}")
+              f"{str(cold or '-') + 'x':>10}{str(pipeline or '-') + 'x':>12}")
+    if coord_tmp is not None:
+        coord_tmp.cleanup()
     return 0
 
 

@@ -277,24 +277,6 @@ impl Mmff94EnergyModel {
         })
     }
 
-    /// The prepared bonded parameters, for the RDKit-order force field
-    /// ([`crate::rdkit_mmff`]).
-    pub(crate) fn rdkit_parts(&self) -> crate::rdkit_mmff::PreparedParts {
-        crate::rdkit_mmff::PreparedParts {
-            bonds: self
-                .bonds
-                .iter()
-                .map(|b| (b.i, b.j, b.params.r0, b.params.kb))
-                .collect(),
-            oops: self.oops.iter().map(|o| (o.j, o.koop)).collect(),
-            torsions: self
-                .torsions
-                .iter()
-                .map(|t| (t.i, t.j, t.k, t.l, t.params.v1, t.params.v2, t.params.v3))
-                .collect(),
-        }
-    }
-
     /// Evaluate total MMFF94 energy for coordinates matching the prepared molecule.
     pub fn energy(&self, coords: &[[f64; 3]]) -> f64 {
         self.bond_energy(coords)
@@ -570,6 +552,31 @@ impl Mmff94EnergyModel {
     fn electrostatic_energy(&self, coords: &[[f64; 3]]) -> f64 {
         electrostatic_energy_pairs(coords, &self.electrostatic_pairs)
     }
+}
+
+/// Prepare only the topology state consumed by the RDKit-order force-field
+/// builder. The general [`Mmff94EnergyModel`] also constructs its own angle,
+/// stretch-bend and non-bonded tables; rebuilding those here was redundant
+/// because [`crate::rdkit_mmff`] must create them in RDKit contribution order.
+pub(crate) fn rdkit_prepared_parts(
+    mol: &Molecule,
+) -> Result<(crate::rdkit_mmff::PreparedParts, Vec<u8>, Molecule), MinimizerError> {
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
+    let bonds = build_bond_terms(&mmff_mol, &types);
+    let torsions = build_torsion_terms(&mmff_mol, &types);
+    let oops = build_oop_terms(&mmff_mol, &types);
+    let parts = crate::rdkit_mmff::PreparedParts {
+        bonds: bonds
+            .iter()
+            .map(|b| (b.i, b.j, b.params.r0, b.params.kb))
+            .collect(),
+        oops: oops.iter().map(|o| (o.j, o.koop)).collect(),
+        torsions: torsions
+            .iter()
+            .map(|t| (t.i, t.j, t.k, t.l, t.params.v1, t.params.v2, t.params.v3))
+            .collect(),
+    };
+    Ok((parts, types, mmff_mol))
 }
 
 /// Compute total MMFF94 energy for a given geometry (kcal/mol).

@@ -553,9 +553,13 @@ impl Mol {
             mask,
         )?;
         let pos = coords.as_flattened();
+        // Match RDKit's public call order used by the comparison surface:
+        // CalcEnergy() followed by CalcGrad(). Keeping the energy walk first
+        // also leaves the term and coordinate data warm for the gradient.
+        let energy = ff.energy(pos);
         let mut grad = vec![0.0; pos.len()];
         ff.gradient(pos, &mut grad);
-        Ok((ff.energy(pos), grad))
+        Ok((energy, grad))
     }
 
     /// Per-atom MMFF94 force field type names.
@@ -2075,9 +2079,9 @@ impl Mol {
                 .map_err(|e| PyValueError::new_err(e.to_string()))?;
             return Ok(bitvecn_to_bytes(&fp));
         }
-        let result = chematic_fp::rdkit_morgan_fingerprint(&self.inner, &config)
+        let fingerprint = chematic_fp::rdkit_morgan_bitvec(&self.inner, &config)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
-        Ok(bitvecn_to_bytes(&result.fingerprint))
+        Ok(bitvecn_to_bytes(&fingerprint))
     }
 
     /// Same fingerprint as :meth:`rdkit_ecfp_config`, plus the raw (unfolded) data --

@@ -17,10 +17,10 @@
 #![allow(clippy::neg_multiply, clippy::type_complexity)]
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
-use std::collections::HashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
-use crate::mmff94_minimizer::{MinimizerError, Mmff94EnergyModel};
-use crate::mmff94_numeric::{assign_mmff94_numeric_types_with_view, mmff94_charges_rdkit_order};
+use crate::mmff94_minimizer::{MinimizerError, rdkit_prepared_parts};
+use crate::mmff94_numeric::mmff94_charges_rdkit_order;
 
 const MDYNE_A_TO_KCAL_MOL: f64 = 143.9325;
 const DEG2RAD: f64 = std::f64::consts::PI / 180.0;
@@ -191,9 +191,7 @@ impl RdkitMmffField {
     ) -> Result<Self, MinimizerError> {
         let mmffs = variant == MmffVariant::Mmff94s;
         let n = mol.atom_count();
-        let model = Mmff94EnergyModel::new(mol)?;
-        let parts = model.rdkit_parts();
-        let (types, view) = assign_mmff94_numeric_types_with_view(mol)?;
+        let (parts, types, view) = rdkit_prepared_parts(mol)?;
 
         // Neighbour lists in RDKit's adjacency order (bond creation order).
         let order = rdkit_bond_order_with_added_hs(mol);
@@ -223,7 +221,7 @@ impl RdkitMmffField {
         };
 
         // Bond stretch: bonds in RDKit order.
-        let bond_params: HashMap<(usize, usize), (f64, f64)> = parts
+        let bond_params: FxHashMap<(usize, usize), (f64, f64)> = parts
             .bonds
             .iter()
             .map(|&(i, j, r0, kb)| ((i.min(j), i.max(j)), (r0, kb)))
@@ -243,7 +241,7 @@ impl RdkitMmffField {
         field.stretch_bends = stretch_bends;
 
         // Out-of-plane: trivalent centres, three terms each.
-        let oop_params: HashMap<usize, f64> = parts.oops.iter().copied().collect();
+        let oop_params: FxHashMap<usize, f64> = parts.oops.iter().copied().collect();
         for j in 0..n {
             if adj[j].len() != 3 {
                 continue;
@@ -274,7 +272,7 @@ impl RdkitMmffField {
 
         // Torsions: matches of `[!$(*#*)&!D1]~[!$(*#*)&!D1]` in RDKit's
         // match order, central atoms SP2/SP3.
-        let tor_params: HashMap<(usize, usize, usize, usize), (f64, f64, f64)> = parts
+        let tor_params: FxHashMap<(usize, usize, usize, usize), (f64, f64, f64)> = parts
             .torsions
             .iter()
             .flat_map(|&(i, j, k, l, v1, v2, v3)| {
@@ -293,7 +291,7 @@ impl RdkitMmffField {
                 Some(2) | Some(3)
             )
         };
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = FxHashSet::default();
         for j in 0..n {
             if !torsion_end(j) {
                 continue;

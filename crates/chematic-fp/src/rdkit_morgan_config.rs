@@ -34,7 +34,8 @@ use crate::rdkit_morgan_ecfp4::{
     RdkitMorganError, reject_known_rdkit_coordination_sanitization_gap,
 };
 use crate::rdkit_morgan_hash::{
-    MorganChirality, checked_bond_invariant, expand_one_pass_with_chirality,
+    MorganChirality, checked_bond_invariant, expand_emissions_small,
+    expand_one_pass_with_chirality_into,
 };
 
 /// Morgan/ECFP radius, restricted to the four values independently re-verified
@@ -133,19 +134,13 @@ pub struct RdkitMorganFingerprint {
     pub folded_counts: FxHashMap<usize, u32>,
 }
 
-/// RDKit-bit-exact Morgan/ECFP fingerprint at a caller-chosen [`RdkitMorganConfig`] --
-/// generalizes [`crate::rdkit_morgan_ecfp4::rdkit_morgan_ecfp4_experimental`]'s fixed
-/// radius=2/2048-bit point to every independently oracle-verified `(radius, fp_size)`
-/// cell (see the module docs). Uses the same RDKit-parity aromaticity preprocessing,
-/// with the same no-silent-fallback contract: a preprocessing failure is always an
-/// `Err`, never a result computed under a different (non-bit-exact) aromaticity
-/// engine.
-pub fn rdkit_morgan_fingerprint(
+fn with_rdkit_morgan_input<R>(
     mol: &Molecule,
     config: &RdkitMorganConfig,
-) -> Result<RdkitMorganFingerprint, RdkitMorganError> {
+    consume: impl FnOnce(&Molecule, &[bool], &[u32], Option<&MorganChirality>) -> R,
+) -> Result<R, RdkitMorganError> {
     if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
-        return rdkit_morgan_fingerprint(&h, config);
+        return with_rdkit_morgan_input(&h, config, consume);
     }
     reject_known_rdkit_coordination_sanitization_gap(mol)?;
     let view = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol);
@@ -154,22 +149,27 @@ pub fn rdkit_morgan_fingerprint(
         Err(e) => return Err(e.clone().into()),
     };
 
-    let fp_size = config.fp_size.bits();
-    let mut result = RdkitMorganFingerprint {
-        fingerprint: BitVecN::new(fp_size),
-        sparse_counts: FxHashMap::default(),
-        raw_bit_info: FxHashMap::default(),
-        folded_bit_info: FxHashMap::default(),
-        folded_counts: FxHashMap::default(),
+    let ring_atoms = if aromatized.smiles_ring_closure_bond_count() == 1 {
+        chematic_perception::ring_atom_flags(aromatized)
+    } else {
+        let ring_bonds = chematic_perception::ring_bond_flags_shared(aromatized);
+        if ring_bonds.iter().any(|&is_ring| is_ring) {
+            let mut atoms = vec![false; aromatized.atom_count()];
+            for (bond_idx, bond) in aromatized.bonds() {
+                if ring_bonds[bond_idx.0 as usize] {
+                    atoms[bond.atom1.0 as usize] = true;
+                    atoms[bond.atom2.0 as usize] = true;
+                }
+            }
+            atoms
+        } else {
+            // `connectivity_invariant` treats a missing entry as false, so
+            // an empty slice avoids one allocation for acyclic molecules.
+            Vec::new()
+        }
     };
-    if aromatized.atom_count() == 0 {
-        return Ok(result);
-    }
-
-    let ring_atoms = chematic_perception::ring_atom_flags(aromatized);
-    let bond_count = aromatized.bond_count();
-    let mut bond_invariants: Vec<u32> = Vec::with_capacity(bond_count);
-    for b in 0..bond_count {
+    let mut bond_invariants = Vec::with_capacity(aromatized.bond_count());
+    for b in 0..aromatized.bond_count() {
         let bond_idx = BondIdx(b as u32);
         let order = aromatized.bond(bond_idx).order;
         let invariant = checked_bond_invariant(order)
@@ -182,19 +182,14 @@ pub fn rdkit_morgan_fingerprint(
     // port of it gives them for the molecule as RDKit parses it. Where the
     // port declines, fall back to chematic's tags and accurate CIP labels.
     let chirality = if config.include_chirality && !has_stereo_input(mol) {
-        // Without chiral tags or directional bonds RDKit's legacy perception
-        // tags nothing and leaves every double bond STEREONONE.
-        let n = aromatized.atom_count();
-        Some(MorganChirality {
-            tagged: vec![false; n],
-            code: vec![1; n],
-        })
+        // No atom or bond stereo can contribute. `None` is semantically
+        // identical to all-false tags/all-one codes and avoids two per-call
+        // allocations in the common case.
+        None
     } else if config.include_chirality {
         match chematic_smiles::rdkit_legacy_stereo(mol) {
             Ok(stereo) if stereo.atom_tagged.len() == aromatized.atom_count() => {
                 for (b, &st) in stereo.bond_stereo.iter().enumerate() {
-                    // MorganBondInvGenerator: 100 + 10 * bondType + stereo
-                    // for a DOUBLE bond whose stereo is not STEREONONE.
                     if st != 0 && aromatized.bond(BondIdx(b as u32)).order == BondOrder::Double {
                         bond_invariants[b] = 100 + 10 * 2 + u32::from(st);
                     }
@@ -233,33 +228,113 @@ pub fn rdkit_morgan_fingerprint(
     } else {
         None
     };
-    let emitted = expand_one_pass_with_chirality(
+
+    Ok(consume(
         aromatized,
         &ring_atoms,
         &bond_invariants,
-        config.radius.as_u32(),
-        true,
         chirality.as_ref(),
-    );
+    ))
+}
 
-    for ((atom_idx, radius), raw_id) in emitted {
-        let folded = (raw_id as usize) % fp_size;
-        result.fingerprint.set(folded);
-        *result.sparse_counts.entry(raw_id).or_insert(0) += 1;
-        result
-            .raw_bit_info
-            .entry(raw_id)
-            .or_default()
-            .push((atom_idx, radius));
-        result
-            .folded_bit_info
-            .entry(folded)
-            .or_default()
-            .push((atom_idx, radius));
-        *result.folded_counts.entry(folded).or_insert(0) += 1;
-    }
+/// RDKit-bit-exact Morgan/ECFP fingerprint at a caller-chosen [`RdkitMorganConfig`] --
+/// generalizes [`crate::rdkit_morgan_ecfp4::rdkit_morgan_ecfp4_experimental`]'s fixed
+/// radius=2/2048-bit point to every independently oracle-verified `(radius, fp_size)`
+/// cell (see the module docs). Uses the same RDKit-parity aromaticity preprocessing,
+/// with the same no-silent-fallback contract: a preprocessing failure is always an
+/// `Err`, never a result computed under a different (non-bit-exact) aromaticity
+/// engine.
+pub fn rdkit_morgan_fingerprint(
+    mol: &Molecule,
+    config: &RdkitMorganConfig,
+) -> Result<RdkitMorganFingerprint, RdkitMorganError> {
+    let fp_size = config.fp_size.bits();
+    let mut result = RdkitMorganFingerprint {
+        fingerprint: BitVecN::new(fp_size),
+        sparse_counts: FxHashMap::default(),
+        raw_bit_info: FxHashMap::default(),
+        folded_bit_info: FxHashMap::default(),
+        folded_counts: FxHashMap::default(),
+    };
+    with_rdkit_morgan_input(
+        mol,
+        config,
+        |molecule, ring_atoms, bond_invariants, chirality| {
+            expand_one_pass_with_chirality_into(
+                molecule,
+                ring_atoms,
+                bond_invariants,
+                config.radius.as_u32(),
+                true,
+                chirality,
+                |atom_idx, radius, raw_id| {
+                    let folded = (raw_id as usize) % fp_size;
+                    result.fingerprint.set(folded);
+                    *result.sparse_counts.entry(raw_id).or_insert(0) += 1;
+                    result
+                        .raw_bit_info
+                        .entry(raw_id)
+                        .or_default()
+                        .push((atom_idx, radius));
+                    result
+                        .folded_bit_info
+                        .entry(folded)
+                        .or_default()
+                        .push((atom_idx, radius));
+                    *result.folded_counts.entry(folded).or_insert(0) += 1;
+                },
+            );
+        },
+    )?;
 
     Ok(result)
+}
+
+/// RDKit-bit-exact folded Morgan bits without materializing sparse counts or
+/// bit provenance. The preprocessing and emission lifecycle are shared with
+/// [`rdkit_morgan_fingerprint`]; callers needing explanations must use that
+/// detailed API.
+pub fn rdkit_morgan_bitvec(
+    mol: &Molecule,
+    config: &RdkitMorganConfig,
+) -> Result<BitVecN, RdkitMorganError> {
+    let fp_size = config.fp_size.bits();
+    let mut fingerprint = BitVecN::new(fp_size);
+    with_rdkit_morgan_input(
+        mol,
+        config,
+        |molecule, ring_atoms, bond_invariants, chirality| {
+            let mut set_bit = |_: u32, _: u32, raw_id: u32| {
+                fingerprint.set((raw_id as usize) % fp_size);
+            };
+            // `includeChirality` changes the atom hash only when a
+            // tetrahedral tag survives RDKit's stereo perception. E/Z is
+            // already encoded in `bond_invariants`, so the compact u128
+            // environment path remains exact for the common no-tag case.
+            if chirality.is_none_or(|c| !c.tagged.iter().any(|&tagged| tagged))
+                && expand_emissions_small(
+                    molecule,
+                    ring_atoms,
+                    bond_invariants,
+                    config.radius.as_u32(),
+                    &mut set_bit,
+                )
+                .is_some()
+            {
+                return;
+            }
+            expand_one_pass_with_chirality_into(
+                molecule,
+                ring_atoms,
+                bond_invariants,
+                config.radius.as_u32(),
+                true,
+                chirality,
+                set_bit,
+            );
+        },
+    )?;
+    Ok(fingerprint)
 }
 
 /// RDKit's `countSimulation` fingerprint for a Morgan generator with
@@ -432,6 +507,44 @@ mod tests {
                 .unwrap()
                 .sparse_counts
         );
+    }
+
+    #[test]
+    fn bit_only_path_matches_detailed_path_for_all_supported_configs() {
+        for smi in [
+            "c1ccncc1",
+            "CC(=O)[O-]",
+            "C[C@H](N)C(=O)O",
+            "F/C=C\\Cl",
+            "[13CH3][C@@H](O)Cl",
+        ] {
+            let mol = parse(smi).unwrap();
+            for radius in [
+                RdkitMorganRadius::R0,
+                RdkitMorganRadius::R1,
+                RdkitMorganRadius::R2,
+                RdkitMorganRadius::R3,
+            ] {
+                for fp_size in [
+                    RdkitMorganFpSize::B128,
+                    RdkitMorganFpSize::B256,
+                    RdkitMorganFpSize::B512,
+                    RdkitMorganFpSize::B1024,
+                    RdkitMorganFpSize::B2048,
+                ] {
+                    for include_chirality in [false, true] {
+                        let config = RdkitMorganConfig {
+                            radius,
+                            fp_size,
+                            include_chirality,
+                        };
+                        let detailed = rdkit_morgan_fingerprint(&mol, &config).unwrap();
+                        let bits = rdkit_morgan_bitvec(&mol, &config).unwrap();
+                        assert_eq!(bits, detailed.fingerprint, "{smi} {config:?}");
+                    }
+                }
+            }
+        }
     }
 
     #[test]

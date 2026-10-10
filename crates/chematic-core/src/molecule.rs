@@ -814,6 +814,10 @@ impl Molecule {
         order: BondOrder,
     ) -> Result<BondIdx, MolError> {
         self.invalidate_derived();
+        // Parser provenance describes the original graph. Adding a bond can
+        // change its cycle rank, so retaining the old closure count would
+        // make provenance-backed ring shortcuts stale.
+        self.smiles_ring_closure_keys.clear();
         let n = self.atoms.len() as u32;
         if a.0 >= n {
             return Err(MolError::InvalidAtomIdx(a));
@@ -1091,6 +1095,15 @@ impl Molecule {
         self.neighbors(idx)
             .filter(|(_, b)| self.smiles_ring_closure_keys.contains_key(&b.0))
             .count()
+    }
+
+    /// Number of ring-closure bonds recorded by the SMILES parser.
+    ///
+    /// For an unmodified SMILES graph this is its cycle rank. A non-SMILES
+    /// molecule, or an acyclic SMILES, returns zero; callers must therefore
+    /// only use positive values as provenance-backed shortcuts.
+    pub fn smiles_ring_closure_bond_count(&self) -> usize {
+        self.smiles_ring_closure_keys.len()
     }
 
     /// Whether bond `idx` was written as a SMILES ring closure (a digit

@@ -58,6 +58,7 @@ def catalog(which) -> FilterCatalog:
 
 
 MORGAN = rfg.GetMorganGenerator(radius=2, fpSize=2048)
+MORGAN_CHIRAL = rfg.GetMorganGenerator(radius=2, fpSize=2048, includeChirality=True)
 ATOM_PAIR = rfg.GetAtomPairGenerator(fpSize=2048)
 TORSION = rfg.GetTopologicalTorsionGenerator(fpSize=2048)
 PAINS = catalog(FilterCatalogParams.FilterCatalogs.PAINS)
@@ -79,6 +80,10 @@ OPERATIONS = {
     "morgan_r2_2048(rdkit-compatible)": (
         lambda m: on_bits(m.rdkit_ecfp4(), 2048), lambda r: set(MORGAN.GetFingerprint(r).GetOnBits()),
         lambda a, b: a == b, "bit-identical"),
+    "morgan_r2_2048_chiral(rdkit-compatible)": (
+        lambda m: on_bits(m.rdkit_ecfp_config(2, 2048, include_chirality=True), 2048),
+        lambda r: set(MORGAN_CHIRAL.GetFingerprint(r).GetOnBits()),
+        lambda a, b: a == b, "bit-identical"),
     "atom_pair(rdkit-compatible)": (
         lambda m: on_bits(m.rdkit_atom_pair_fp(), 2048), lambda r: set(ATOM_PAIR.GetFingerprint(r).GetOnBits()),
         lambda a, b: a == b, "bit-identical"),
@@ -95,6 +100,7 @@ OPERATIONS = {
     "rdkit_mw": (lambda m: m.rdkit_mw, Descriptors.MolWt, close(1e-3), "|diff| <= 1e-3"),
     "hbd": (lambda m: m.hbd, rdMolDescriptors.CalcNumHBD, close(0), "exact"),
     "rotatable_bonds": (lambda m: m.rotatable_bonds, rdMolDescriptors.CalcNumRotatableBonds, close(0), "exact"),
+    "num_rings": (lambda m: m.num_rings, rdMolDescriptors.CalcNumRings, close(0), "exact"),
     "murcko_scaffold": (lambda m: canon(m.scaffold()), lambda r: canon(MurckoScaffold.GetScaffoldForMol(r)),
                         lambda a, b: a is not None and a == b, "same RDKit canonical SMILES"),
     "pains_passes": (lambda m: m.pains_passes, lambda r: not PAINS.HasMatch(r), lambda a, b: a == b,

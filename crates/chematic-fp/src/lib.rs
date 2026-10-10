@@ -102,7 +102,7 @@ pub use pharmacophore_fp::{
 };
 pub use rdkit_morgan_config::{
     RdkitMorganConfig, RdkitMorganFingerprint, RdkitMorganFpSize, RdkitMorganRadius,
-    rdkit_morgan_count_simulation, rdkit_morgan_fingerprint,
+    rdkit_morgan_bitvec, rdkit_morgan_count_simulation, rdkit_morgan_fingerprint,
 };
 pub use rdkit_morgan_ecfp4::{
     PreparedRdkitMorganEcfp4, RdkitMorganEcfp4, RdkitMorganError, prepare_rdkit_morgan_ecfp4,
