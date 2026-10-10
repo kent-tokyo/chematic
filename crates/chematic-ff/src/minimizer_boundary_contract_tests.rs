@@ -284,3 +284,136 @@ fn cutoff_neighbor_list_energy_gradient_and_large_bfgs_fallback_are_consistent()
     near(a.energy, b.energy);
     assert_eq!(a.termination, b.termination);
 }
+
+#[test]
+fn legacy_bond_charge_increments_are_antisymmetric_for_every_public_type() {
+    use crate::mmff94::MMFF94Type::*;
+    let types = [
+        C_sp3,
+        C_sp2_Alkene,
+        C_sp_Alkyne,
+        C_Aromatic,
+        C_Carbonyl,
+        C_Carboxylic,
+        C_Carbamate,
+        C_Ester,
+        C_Amide,
+        C_Imide,
+        C_CarbamideN,
+        N_sp3_Amine,
+        N_sp3_AmineAromatic,
+        N_sp2_Imine,
+        N_sp2_Aromatic,
+        N_sp2_Carbonyl,
+        N_sp_Nitrile,
+        N_Amide,
+        N_Carbamate,
+        N_Ester,
+        N_Imide,
+        N_Aromatic_5ring,
+        N_Aromatic_6ring,
+        N_Aromatic_Pyridine,
+        N_Aromatic_Pyrrole,
+        N_Aromatic_Imidazole,
+        N_Aromatic_Triazole,
+        N_Aromatic_Tetrazole,
+        N_Aromatic_Pyrimidine,
+        N_Aromatic_Pyrazine,
+        O_Alcohol,
+        O_Phenol,
+        O_Ether,
+        O_Carbonyl,
+        O_Carboxylic,
+        O_Carbamate,
+        O_Ester,
+        O_Amide,
+        O_Imide,
+        O_CarbamideN,
+        O_Sulfoxide,
+        O_Sulfone,
+        S_Thiol,
+        S_Thioether,
+        S_Disulfide,
+        S_Sulfoxide,
+        S_Sulfone,
+        S_Aromatic,
+        P_sp3,
+        P_Oxide,
+        Si_sp3,
+        Si_sp2,
+        F,
+        Cl,
+        Br,
+        I,
+        H_Carbon,
+        H_Nitrogen,
+        H_Oxygen,
+        H_Sulfur,
+        H_Halogen,
+        H_Aromatic,
+        Generic,
+    ];
+    for a in types {
+        for b in types {
+            let forward = crate::mmff94_bci::bci(a, b);
+            let reverse = crate::mmff94_bci::bci(b, a);
+            assert!(forward.is_finite() && reverse.is_finite());
+            assert!(
+                (forward + reverse).abs() < 1e-12,
+                "{a:?} -> {b:?}: {forward} vs {reverse}"
+            );
+        }
+    }
+}
+
+#[test]
+fn legacy_charge_assignment_preserves_formal_charge_across_functional_groups() {
+    for source in [
+        "C",
+        "C=C",
+        "C#C",
+        "c1ccccc1",
+        "CN",
+        "CNC",
+        "CC(=O)N",
+        "CC(=O)NC(=O)C",
+        "CO",
+        "COC",
+        "CC=O",
+        "CC(=O)O",
+        "CC(=O)OC",
+        "CC(=O)[O-]",
+        "CS",
+        "CSC",
+        "CSSC",
+        "CS(=O)C",
+        "CS(=O)(=O)C",
+        "c1ccsc1",
+        "CP",
+        "CP(=O)(O)O",
+        "C[SiH3]",
+        "C[SiH]=C",
+        "CF",
+        "CCl",
+        "CBr",
+        "CI",
+        "[NH4+]",
+        "[H]F",
+        "[H]Cl",
+        "[H]Br",
+    ] {
+        let mol = chematic_chem::add_hydrogens(&parse(source).unwrap());
+        let expected = mol.atoms().map(|(_, a)| f64::from(a.charge)).sum::<f64>();
+        let charges = crate::mmff94_bci::mmff94_charges_bci(&mol).unwrap();
+        assert_eq!(charges.len(), mol.atom_count());
+        assert!(charges.iter().all(|x| x.is_finite()));
+        near(charges.iter().sum(), expected);
+    }
+    let mol = parse("[Xe]").unwrap();
+    let e = crate::mmff94_bci::mmff94_charges_bci(&mol).unwrap_err();
+    assert!(matches!(
+        e,
+        crate::mmff94::AssignError::UnsupportedElement(_)
+    ));
+    assert!(e.to_string().contains("54"));
+}

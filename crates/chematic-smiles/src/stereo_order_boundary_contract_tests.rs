@@ -62,3 +62,95 @@ fn tetrahedral_output_preserves_each_recorded_hydrogen_slot() {
         }
     }
 }
+
+#[test]
+fn query_logical_combinations_serialize_like_pinned_rdkit() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.1-serialization-geometry-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    let mut failures = Vec::new();
+    for row in fixture["queries"].as_array().unwrap() {
+        let query = row["query"].as_str().unwrap();
+        let result = crate::rdkit_smarts_to_smarts(query);
+        match result {
+            Ok(actual) if actual == row["canonical"].as_str().unwrap() => {}
+            other => failures.push(format!("{query}: {other:?} != {}", row["canonical"])),
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+#[test]
+fn census_depictions_preserve_reference_bond_lengths_and_are_deterministic() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.1-serialization-geometry-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    for (case, row) in fixture["geometries"].as_array().unwrap().iter().enumerate() {
+        let source = row["smiles"].as_str().unwrap();
+        let mol = crate::parse(source).unwrap();
+        let actual = crate::rdkit_2d_coords(&mol).unwrap();
+        let expected: Vec<[f64; 2]> = serde_json::from_value(row["coords"].clone()).unwrap();
+        assert_eq!(actual.len(), expected.len(), "{source}");
+        assert!(actual.iter().flatten().all(|v| v.is_finite()), "{source}");
+        assert_eq!(actual, crate::rdkit_2d_coords(&mol).unwrap(), "{source}");
+        let parsed = crate::rdkit_parsed_molecule(&mol).unwrap();
+        assert_eq!(parsed.atom_count(), actual.len(), "{source}");
+        // Complete layouts can differ across CPU architectures at floating-
+        // point tie breaks. Bond lengths are invariant under rigid motion and
+        // independent of alternative fragment placement.
+        for bi in 0..parsed.bond_count() {
+            let bond = parsed.bond(chematic_core::BondIdx(bi as u32));
+            let a = bond.atom1.0 as usize;
+            let b = bond.atom2.0 as usize;
+            let length = |points: &[[f64; 2]]| {
+                (points[a][0] - points[b][0]).hypot(points[a][1] - points[b][1])
+            };
+            let actual_length = length(&actual);
+            let expected_length = length(&expected);
+            // Collision repair may shrink a terminal bond by 0.9 (depict.rs). This
+            // one observed platform tie selects either the 1.35 or 1.5 layout.
+            let known_collision_scale = source
+                == "CCCCc1cn(-c2c(C(C)C)cccc2C(C)C)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1"
+                && [actual_length, expected_length]
+                    .iter()
+                    .all(|v| (*v - 1.35).abs() < 1e-6 || (*v - 1.5).abs() < 1e-6);
+            assert!(
+                (actual_length - expected_length).abs() < 1e-6 || known_collision_scale,
+                "bond {bi} in {source}: {} != {}",
+                actual_length,
+                expected_length
+            );
+        }
+        // The eight small hand-picked layouts have stable exact references.
+        if case < 8 {
+            for (point, reference) in actual.iter().zip(&expected) {
+                for (value, expected) in point.iter().zip(reference) {
+                    assert!((value - expected).abs() < 1e-9, "{source}");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn conjugated_directional_smiles_respelling_matches_pinned_rdkit() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.1-canonical-direction-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    let mut failures = Vec::new();
+    for row in fixture["rows"].as_array().unwrap() {
+        let source = row["smiles"].as_str().unwrap();
+        let actual = crate::parse(source)
+            .map_err(|e| e.to_string())
+            .and_then(|mol| crate::rdkit_canonical_smiles(&mol).map_err(|e| e.to_string()));
+        if actual.as_ref().ok().map(String::as_str) != row["canonical"].as_str() {
+            failures.push(format!("{source}: {actual:?} != {}", row["canonical"]));
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}

@@ -374,3 +374,6 @@ mod tests {
 }
 #[cfg(all(test, feature = "native-inchi"))]
 mod native_boundary_contract_tests;
+
+#[cfg(test)]
+mod parser_boundary_contract_tests;

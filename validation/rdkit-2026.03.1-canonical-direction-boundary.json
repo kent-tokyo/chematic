@@ -1,0 +1,1781 @@
+{
+  "rdkit_version": "2026.03.1",
+  "rows": [
+    {
+      "smiles": "C(/C)=C\\C=C\\C",
+      "canonical": "C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C(/C=C/C)=C\\C",
+      "canonical": "C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C(=C\\C)/C=C/C",
+      "canonical": "C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C(=C\\C=C\\C)/C",
+      "canonical": "C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C/C=C/C=C/C",
+      "canonical": "C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C(/C)=C/C=C\\C",
+      "canonical": "C/C=C\\C=C/C"
+    },
+    {
+      "smiles": "C(/C=C\\C)=C/C",
+      "canonical": "C/C=C\\C=C/C"
+    },
+    {
+      "smiles": "C(=C/C)/C=C\\C",
+      "canonical": "C/C=C\\C=C/C"
+    },
+    {
+      "smiles": "C(=C/C=C\\C)/C",
+      "canonical": "C/C=C\\C=C/C"
+    },
+    {
+      "smiles": "C/C=C\\C=C/C",
+      "canonical": "C/C=C\\C=C/C"
+    },
+    {
+      "smiles": "BrC(/C(=C\\F)Cl)=C\\I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "BrC(/C(Cl)=C\\F)=C\\I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "BrC(=C\\I)/C(=C\\F)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "BrC(=C\\I)/C(Cl)=C\\F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(/C(=C/I)Br)(Cl)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(/C(Br)=C/I)(=C/F)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(/C(Br)=C/I)(Cl)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(/F)=C(Cl)/C(=C/I)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(/F)=C(Cl)/C(Br)=C/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(/I)=C(Br)\\C(=C/F)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(/I)=C(\\C(Cl)=C/F)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(=C(/C(=C/I)Br)Cl)/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(=C(Br)\\C(=C/F)Cl)/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(=C(Br)\\C(Cl)=C/F)/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(=C(Cl)/C(Br)=C/I)/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(=C(\\C(=C/F)Cl)Br)/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(=C/F)(/C(Br)=C/I)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(=C/I)(Br)\\C(=C/F)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(=C/I)(Br)\\C(Cl)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(=C\\F)(Cl)\\C(=C\\I)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(=C\\I)(/C(=C\\F)Cl)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(=C\\I)(/C(Cl)=C\\F)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(Br)(=C/I)\\C(=C/F)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "C(Cl)(/C(Br)=C/I)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "ClC(/C(=C/I)Br)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "ClC(=C/F)/C(=C/I)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "ClC(=C/F)/C(Br)=C/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "F/C=C(/Cl)C(/Br)=C/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "F/C=C(Cl)\\C(=C\\I)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "F/C=C(Cl)\\C(Br)=C\\I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "F/C=C(\\C(=C\\I)Br)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "I/C=C(/C(=C\\F)Cl)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "I/C=C(Br)/C(=C\\F)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "I/C=C(Br)/C(Cl)=C\\F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C\\I"
+    },
+    {
+      "smiles": "BrC(/C(=C/F)Cl)=C\\I",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "BrC(=C\\I)/C(=C/F)Cl",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/C(=C/F)Cl)(=C\\I)Br",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/C(Br)=C/I)(=C\\F)Cl",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/C(Br)=C/I)(Cl)=C\\F",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/C(Cl)=C/F)(=C\\I)Br",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/C(Cl)=C/F)(Br)=C\\I",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/F)=C(Cl)\\C(=C\\I)Br",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/F)=C(Cl)\\C(Br)=C\\I",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/F)=C(\\C(=C\\I)Br)Cl",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/F)=C(\\C(Br)=C\\I)Cl",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/I)=C(Br)\\C(=C\\F)Cl",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/I)=C(Br)\\C(Cl)=C\\F",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/I)=C(\\C(Cl)=C\\F)Br",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C(Br)\\C(=C\\F)Cl)/I",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C(Br)\\C(Cl)=C\\F)/I",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C(Cl)\\C(=C\\I)Br)/F",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C(\\C(=C\\I)Br)Cl)/F",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C(\\C(Cl)=C\\F)Br)/I",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C/I)(Br)\\C(=C\\F)Cl",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C\\F)(/C(Br)=C/I)Cl",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(Br)(/C(=C/F)Cl)=C\\I",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(Br)(=C/I)\\C(=C\\F)Cl",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(Br)(=C/I)\\C(Cl)=C\\F",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(Cl)(/C(=C/I)Br)=C\\F",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "C(Cl)(=C/F)\\C(Br)=C\\I",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "ClC(/C(=C/I)Br)=C\\F",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "ClC(/C(Br)=C/I)=C\\F",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "ClC(=C\\F)/C(=C/I)Br",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "ClC(=C\\F)/C(Br)=C/I",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "F/C=C(/C(Br)=C/I)Cl",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "F/C=C(Cl)/C(=C/I)Br",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "F/C=C(\\Cl)C(/Br)=C/I",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "I/C=C(/C(=C/F)Cl)Br",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "I/C=C(/C(Cl)=C/F)Br",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "I/C=C(Br)/C(=C/F)Cl",
+      "canonical": "F/C=C(Cl)/C(Br)=C/I"
+    },
+    {
+      "smiles": "BrC(=C/I)/C(=C\\F)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "BrC(=C/I)/C(Cl)=C\\F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/C(=C\\F)Cl)(=C/I)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/C(=C\\F)Cl)(Br)=C/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/C(=C\\I)Br)(=C/F)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/C(Br)=C\\I)(Cl)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/C(Cl)=C\\F)(=C/I)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/F)=C(/C(=C\\I)Br)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/F)=C(/C(Br)=C\\I)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/F)=C(Cl)/C(=C\\I)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/I)=C(/C(=C\\F)Cl)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/I)=C(Br)/C(Cl)=C\\F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C(/C(=C\\I)Br)Cl)/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C(/C(Cl)=C\\F)Br)/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C(Br)/C(Cl)=C\\F)/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C(Cl)/C(=C\\I)Br)/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C(Cl)/C(Br)=C\\I)/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C/I)(/C(Cl)=C\\F)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C\\F)(Cl)\\C(Br)=C/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C\\I)(Br)\\C(=C/F)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(=C\\I)(Br)\\C(Cl)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(Br)(/C(Cl)=C\\F)=C/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(Br)(=C\\I)\\C(Cl)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(Cl)(/C(=C\\I)Br)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(Cl)(=C\\F)\\C(=C/I)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "ClC(/C(=C\\I)Br)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "ClC(/C(Br)=C\\I)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "ClC(=C/F)/C(=C\\I)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "ClC(=C/F)/C(Br)=C\\I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "F/C=C(/Cl)C(\\Br)=C/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "F/C=C(Cl)\\C(=C/I)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "F/C=C(Cl)\\C(Br)=C/I",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "F/C=C(\\C(=C/I)Br)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "F/C=C(\\C(Br)=C/I)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "I/C=C(Br)\\C(=C/F)Cl",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "I/C=C(Br)\\C(Cl)=C/F",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "I/C=C(\\C(=C/F)Cl)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "I/C=C(\\C(Cl)=C/F)Br",
+      "canonical": "F/C=C(Cl)\\C(Br)=C/I"
+    },
+    {
+      "smiles": "C(/C(=C\\C)F)=CC",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(/C(F)=C\\C)=CC",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(/C)=C(/C=CC)F",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(/C)=C(\\F)C=CC",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(/C=CC)(F)=C/C",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(/F)(=C\\C)C=CC",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(=C(/C=CC)F)/C",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(=C/C(=C\\C)F)C",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(=C/C(F)=C\\C)C",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(=C/C)(/C=CC)F",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(=CC)/C(=C\\C)F",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(=CC)/C(F)=C\\C",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(=C\\C)(/F)C=CC",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(C)=C/C(=C\\C)F",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C/C=C(/F)C=C/C",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C/C=C(/F)C=CC",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C/C=C(\\C=CC)F",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "CC=C/C(=C\\C)F",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "CC=C/C(F)=C\\C",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "F/C(=C/C)C=CC",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "F/C(C=CC)=C/C",
+      "canonical": "CC=C/C(F)=C\\C"
+    },
+    {
+      "smiles": "C(/C(=C/C)F)=CC",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(/C)=C(/F)C=CC",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(/C)=C(\\C=CC)F",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(/C=CC)(=C\\C)F",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(/F)(=C/C)C=CC",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(=C(/F)C=CC)/C",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(=C(\\C=CC)F)/C",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(=C/C(=C/C)F)C",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(=C/C(F)=C/C)C",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(=C/C)(/F)C=CC",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(=CC)/C(=C/C)F",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(=CC)/C(F)=C/C",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(=C\\C)(/C=CC)F",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(C)=C/C(=C/C)F",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(C)=C/C(F)=C/C",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C/C=C(/C=CC)F",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C/C=C(\\F)C=C/C",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C/C=C(\\F)C=CC",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "CC=C/C(=C/C)F",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "CC=C/C(F)=C/C",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "F/C(=C\\C)C=CC",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "F/C(C=CC)=C\\C",
+      "canonical": "CC=C/C(F)=C/C"
+    },
+    {
+      "smiles": "C(/C=C/C)=C\\C=C\\C",
+      "canonical": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C(/C=C/C=C/C)=C\\C",
+      "canonical": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C(=C/C=C/C=C/C)\\C",
+      "canonical": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C(=C\\C)/C=C/C=C/C",
+      "canonical": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C(=C\\C=C\\C)/C=C/C",
+      "canonical": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C(\\C)=C/C=C/C=C/C",
+      "canonical": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C/C=C/C=C/C=C/C",
+      "canonical": "C/C=C/C=C/C=C/C"
+    },
+    {
+      "smiles": "C(/C)=C/C=C\\C=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(/C=C/C)=C/C=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(/C=C\\C)=C/C=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(/C=C\\C=C/C)=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(/C=C\\C=C\\C)=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C/C)/C=C\\C=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C/C=C/C)/C=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C/C=C\\C)/C=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C/C=C\\C=C/C)\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C/C=C\\C=C\\C)/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C\\C)/C=C\\C=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(\\C)=C/C=C\\C=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C/C=C/C=C\\C=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C\\C=C/C=C\\C=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(/C)=C/C=C\\C=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(/C=C/C)=C/C=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(/C=C\\C)=C/C=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(/C=C\\C=C/C)=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(/C=C\\C=C\\C)=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C/C)/C=C\\C=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C/C=C/C)/C=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C/C=C\\C)/C=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C/C=C\\C=C/C)\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C/C=C\\C=C\\C)/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C\\C)/C=C\\C=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(\\C)=C/C=C\\C=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C/C=C/C=C\\C=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C/C=C\\C=C/C=C/C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C\\C=C/C=C\\C=C\\C",
+      "canonical": "C\\C=C/C=C\\C=C\\C"
+    },
+    {
+      "smiles": "C(=C1CCCCCCC1)C",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C(C)=C1CCCCCCC1",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C/C=C1/CCCCCCC1",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1(=CC)CCCCCCC1",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1C(=CC)CCCCCC1",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CC(=CC)CCCCC1",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CCC(=CC)CCCC1",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CCCC(=CC)CCC1",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CCCCC(=CC)CC1",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CCCCCC(=CC)C1",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CCCCCCC1=CC",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "CC=C1CCCCCCC1",
+      "canonical": "CC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C(=C1CCCCCCC1)F",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C(F)=C1CCCCCCC1",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1(=CF)CCCCCCC1",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1C(=CF)CCCCCC1",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CC(=CF)CCCCC1",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CCC(=CF)CCCC1",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CCCC(=CF)CCC1",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CCCCC(=CF)CC1",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CCCCCC(=CF)C1",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1CCCCCCC1=CF",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "F/C=C1/CCCCCCC1",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "FC=C1CCCCCCC1",
+      "canonical": "FC=C1CCCCCCC1"
+    },
+    {
+      "smiles": "C1/C=C/CCCCCCC1",
+      "canonical": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1=C/CCCCCCCC/1",
+      "canonical": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1C/C=C/CCCCCC1",
+      "canonical": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CC/C=C/CCCCC1",
+      "canonical": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CCC/C=C/CCCC1",
+      "canonical": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CCCC/C=C/CCC1",
+      "canonical": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CCCCC/C=C/CC1",
+      "canonical": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CCCCCC/C=C/C1",
+      "canonical": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CCCCCCC/C=C/1",
+      "canonical": "C1=C/CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1/C=C\\CCCCCCC1",
+      "canonical": "C1=C\\CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1=C\\CCCCCCCC/1",
+      "canonical": "C1=C\\CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1C/C=C\\CCCCCC1",
+      "canonical": "C1=C\\CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CC/C=C\\CCCCC1",
+      "canonical": "C1=C\\CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CCC/C=C\\CCCC1",
+      "canonical": "C1=C\\CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CCCC/C=C\\CCC1",
+      "canonical": "C1=C\\CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CCCCC/C=C\\CC1",
+      "canonical": "C1=C\\CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CCCCCC/C=C\\C1",
+      "canonical": "C1=C\\CCCCCCCC/1"
+    },
+    {
+      "smiles": "C1CCCCCCC/C=C\\1",
+      "canonical": "C1=C\\CCCCCCCC/1"
+    },
+    {
+      "smiles": "BrC(=C/C(=C\\F)Cl)I",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "BrC(I)=C/C(=C\\F)Cl",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "BrC(I)=C/C(Cl)=C\\F",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(/C(=C\\F)Cl)=C(Br)I",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(/C(Cl)=C\\F)=C(Br)I",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(/C(Cl)=C\\F)=C(I)Br",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(/C=C(Br)I)(=C/F)Cl",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(/C=C(I)Br)(Cl)=C/F",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(/Cl)(C=C(Br)I)=C\\F",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(/F)=C(/C=C(I)Br)Cl",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(/F)=C(\\Cl)C=C(Br)I",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(/F)=C(\\Cl)C=C(I)Br",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(=C(/C=C(Br)I)Cl)/F",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(=C(I)Br)/C(=C\\F)Cl",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(=C(\\Cl)C=C(Br)I)/F",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(=C/C(=C\\F)Cl)(I)Br",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(=C/C(Cl)=C\\F)(Br)I",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(=C/C(Cl)=C\\F)(I)Br",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(=C\\F)(/Cl)C=C(I)Br",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(Br)(=C/C(=C\\F)Cl)I",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(Br)(=C/C(Cl)=C\\F)I",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(Br)(I)=C/C(=C\\F)Cl",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(I)(=C/C(Cl)=C\\F)Br",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "C(I)(Br)=C/C(Cl)=C\\F",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "Cl/C(=C/F)C=C(Br)I",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "Cl/C(=C/F)C=C(I)Br",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "Cl/C(C=C(Br)I)=C/F",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "Cl/C(C=C(I)Br)=C/F",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "F/C=C(/Cl)C=C(/Br)I",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "F/C=C(/Cl)C=C(Br)I",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "F/C=C(/Cl)C=C(I)Br",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "F/C=C(\\C=C(I)Br)Cl",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "IC(=C/C(=C\\F)Cl)Br",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "IC(=C/C(Cl)=C\\F)Br",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "IC(Br)=C/C(=C\\F)Cl",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "IC(Br)=C/C(Cl)=C\\F",
+      "canonical": "F/C=C(/Cl)C=C(Br)I"
+    },
+    {
+      "smiles": "Br/C(=C(\\Cl)F)I",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "Br/C(I)=C(/F)Cl",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "Br/C(I)=C(\\Cl)F",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(/Cl)(=C(\\I)Br)F",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(/Cl)(F)=C(/Br)I",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(/Cl)(F)=C(\\I)Br",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(/F)(=C(\\Br)I)Cl",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(/I)(=C(/F)Cl)Br",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(/I)(=C(\\Cl)F)Br",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(/I)(Br)=C(\\Cl)F",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(=C(/Br)I)(/Cl)F",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(=C(/F)Cl)(/I)Br",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(=C(\\Br)I)(/F)Cl",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(=C(\\Cl)F)(/I)Br",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "C(=C(\\I)Br)(/Cl)F",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "Cl/C(=C(/I)Br)F",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "Cl/C(=C(\\Br)I)F",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "Cl/C(F)=C(/I)Br",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "Cl/C(F)=C(Br)/I",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "Cl/C(F)=C(\\Br)I",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "F/C(=C(/Br)I)Cl",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "F/C(=C(\\I)Br)Cl",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "F/C(Cl)=C(/Br)I",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "F/C(Cl)=C(\\I)Br",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "I/C(=C(/Cl)F)Br",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "I/C(=C(\\F)Cl)Br",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "I/C(Br)=C(/Cl)F",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "I/C(Br)=C(\\F)Cl",
+      "canonical": "F/C(Cl)=C(/Br)I"
+    },
+    {
+      "smiles": "Br/C(=C(/Cl)F)I",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "Br/C(=C(\\F)Cl)I",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "Br/C(I)=C(/Cl)F",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "Br/C(I)=C(\\F)Cl",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/Br)(=C(/F)Cl)I",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/Br)(I)=C(\\Cl)F",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/Cl)(=C(/I)Br)F",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/Cl)(=C(\\Br)I)F",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/Cl)(F)=C(\\Br)I",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/F)(=C(/Br)I)Cl",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/F)(=C(\\I)Br)Cl",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/F)(Cl)=C(/Br)I",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/F)(Cl)=C(\\I)Br",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/I)(=C(\\F)Cl)Br",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/I)(Br)=C(/Cl)F",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/I)(Br)=C(\\F)Cl",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(=C(/Br)I)(/F)Cl",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(=C(/Cl)F)(/I)Br",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(=C(/I)Br)(/Cl)F",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(=C(\\Br)I)(/Cl)F",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(=C(\\I)Br)(/F)Cl",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "Cl/C(=C(/Br)I)F",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "Cl/C(=C(\\I)Br)F",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "Cl/C(F)=C(/Br)I",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "Cl/C(F)=C(Br)\\I",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "F/C(=C(/I)Br)Cl",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "F/C(Cl)=C(/I)Br",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "F/C(Cl)=C(\\Br)I",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "I/C(=C(/F)Cl)Br",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "I/C(=C(\\Cl)F)Br",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "I/C(Br)=C(/F)Cl",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "I/C(Br)=C(\\Cl)F",
+      "canonical": "F/C(Cl)=C(\\Br)I"
+    },
+    {
+      "smiles": "C(/C=C/N)=N\\O",
+      "canonical": "N/C=C/C=N/O"
+    },
+    {
+      "smiles": "C(/C=N/O)=C\\N",
+      "canonical": "N/C=C/C=N/O"
+    },
+    {
+      "smiles": "C(/N)=C\\C=N\\O",
+      "canonical": "N/C=C/C=N/O"
+    },
+    {
+      "smiles": "C(=C\\C=N\\O)/N",
+      "canonical": "N/C=C/C=N/O"
+    },
+    {
+      "smiles": "C(=C\\N)/C=N/O",
+      "canonical": "N/C=C/C=N/O"
+    },
+    {
+      "smiles": "C(=N\\O)/C=C/N",
+      "canonical": "N/C=C/C=N/O"
+    },
+    {
+      "smiles": "N(/O)=C\\C=C\\N",
+      "canonical": "N/C=C/C=N/O"
+    },
+    {
+      "smiles": "N(=C\\C=C\\N)/O",
+      "canonical": "N/C=C/C=N/O"
+    },
+    {
+      "smiles": "N/C=C/C=N/O",
+      "canonical": "N/C=C/C=N/O"
+    },
+    {
+      "smiles": "O/N=C/C=C/N",
+      "canonical": "N/C=C/C=N/O"
+    },
+    {
+      "smiles": "C(/C=C\\N)=N/O",
+      "canonical": "N/C=C\\C=N/O"
+    },
+    {
+      "smiles": "C(/C=N\\O)=C/N",
+      "canonical": "N/C=C\\C=N/O"
+    },
+    {
+      "smiles": "C(/N)=C/C=N\\O",
+      "canonical": "N/C=C\\C=N/O"
+    },
+    {
+      "smiles": "C(=C/C=N\\O)/N",
+      "canonical": "N/C=C\\C=N/O"
+    },
+    {
+      "smiles": "C(=C/N)/C=N\\O",
+      "canonical": "N/C=C\\C=N/O"
+    },
+    {
+      "smiles": "C(=N/O)/C=C\\N",
+      "canonical": "N/C=C\\C=N/O"
+    },
+    {
+      "smiles": "N(/O)=C/C=C\\N",
+      "canonical": "N/C=C\\C=N/O"
+    },
+    {
+      "smiles": "N(=C/C=C\\N)/O",
+      "canonical": "N/C=C\\C=N/O"
+    },
+    {
+      "smiles": "N/C=C\\C=N/O",
+      "canonical": "N/C=C\\C=N/O"
+    },
+    {
+      "smiles": "O/N=C\\C=C/N",
+      "canonical": "N/C=C\\C=N/O"
+    },
+    {
+      "smiles": "*1=CC=CC=C1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "*1ccccc1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "c1*cccc1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "c1c*ccc1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "c1cc*cc1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "c1ccc*c1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "c1cccc*1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "*1=CC=CC=C1*",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "*1c(*)cccc1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "*1ccccc1*",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "*c1*cccc1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "*c1cccc*1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "c1(*)*cccc1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "c1(*)cccc*1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "c1*c(*)ccc1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "c1c(*)*ccc1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "c1c*c(*)cc1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "c1cc(*)*cc1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "c1cc*c(*)c1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "c1ccc(*)*c1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "c1ccc*c1*",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "c1cccc(*)*1",
+      "canonical": "*c1*cccc1"
+    },
+    {
+      "smiles": "*1ccccc1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "C1=*C=CC=C1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "c1*cccc1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "c1c*ccc1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "c1cc*cc1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "c1ccc*c1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "c1cccc*1",
+      "canonical": "*1ccccc1"
+    },
+    {
+      "smiles": "*1:*ccc1",
+      "canonical": "*1:*ccc1"
+    },
+    {
+      "smiles": "*1=CC=C*1",
+      "canonical": "*1:*ccc1"
+    },
+    {
+      "smiles": "*1ccc*:1",
+      "canonical": "*1:*ccc1"
+    },
+    {
+      "smiles": "c1*:*cc1",
+      "canonical": "*1:*ccc1"
+    },
+    {
+      "smiles": "c1c*:*c1",
+      "canonical": "*1:*ccc1"
+    },
+    {
+      "smiles": "c1cc*:*1",
+      "canonical": "*1:*ccc1"
+    },
+    {
+      "smiles": "C1(=O)C=CC(=O)C=C1",
+      "canonical": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "smiles": "C1=CC(=O)C=CC1=O",
+      "canonical": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "smiles": "O=C1C=CC(=O)C=C1",
+      "canonical": "O=C1C=CC(=O)C=C1"
+    },
+    {
+      "smiles": "C(/C)=N\\c1[nH]ccn1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "C(/C)=N\\c1ncc[nH]1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "C(=N\\c1[nH]ccn1)/C",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "C(=N\\c1ncc[nH]1)/C",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "C/C=N/c1[nH]ccn1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "C/C=N/c1ncc[nH]1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "N(/c1[nH]ccn1)=C\\C",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "N(/c1ncc[nH]1)=C\\C",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "N(=C\\C)/c1[nH]ccn1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "[nH]1c(/N=C/C)ncc1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "[nH]1ccnc1/N=C/C",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1(/N=C/C)[nH]ccn1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1(/N=C/C)ncc[nH]1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1[nH]c(/N=C/C)nc1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1c[nH]c(/N=C/C)n1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1cnc(/N=C/C)[nH]1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1nc(/N=C/C)[nH]c1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "n1c(/N=C/C)[nH]cc1",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "n1cc[nH]c1/N=C/C",
+      "canonical": "C/C=N/c1ncc[nH]1"
+    },
+    {
+      "smiles": "C(/C)=N/c1[nH]ccn1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "C(/C)=N/c1ncc[nH]1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "C(=N/c1[nH]ccn1)/C",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "C(=N/c1ncc[nH]1)/C",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "C/C=N\\c1[nH]ccn1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "C/C=N\\c1ncc[nH]1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "N(/c1[nH]ccn1)=C/C",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "N(/c1ncc[nH]1)=C/C",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "N(=C/C)/c1[nH]ccn1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "N(=C/C)/c1ncc[nH]1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "[nH]1c(/N=C\\C)ncc1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "[nH]1ccnc1/N=C\\C",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1(/N=C\\C)[nH]ccn1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1(/N=C\\C)ncc[nH]1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1[nH]c(/N=C\\C)nc1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1c[nH]c(/N=C\\C)n1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1cnc(/N=C\\C)[nH]1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "c1nc(/N=C\\C)[nH]c1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "n1c(/N=C\\C)[nH]cc1",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "n1cc[nH]c1/N=C\\C",
+      "canonical": "C/C=N\\c1ncc[nH]1"
+    },
+    {
+      "smiles": "C1C[C@H](Cl)CC[C@@H]1F",
+      "canonical": "F[C@H]1CC[C@@H](Cl)CC1"
+    },
+    {
+      "smiles": "C1C[C@H](F)CC[C@@H]1Cl",
+      "canonical": "F[C@H]1CC[C@@H](Cl)CC1"
+    },
+    {
+      "smiles": "C1[C@H](Cl)CC[C@H](F)C1",
+      "canonical": "F[C@H]1CC[C@@H](Cl)CC1"
+    },
+    {
+      "smiles": "C1[C@H](F)CC[C@H](Cl)C1",
+      "canonical": "F[C@H]1CC[C@@H](Cl)CC1"
+    },
+    {
+      "smiles": "Cl[C@H]1CC[C@@H](F)CC1",
+      "canonical": "F[C@H]1CC[C@@H](Cl)CC1"
+    },
+    {
+      "smiles": "F[C@H]1CC[C@@H](Cl)CC1",
+      "canonical": "F[C@H]1CC[C@@H](Cl)CC1"
+    },
+    {
+      "smiles": "[C@H]1(Cl)CC[C@@H](F)CC1",
+      "canonical": "F[C@H]1CC[C@@H](Cl)CC1"
+    },
+    {
+      "smiles": "[C@H]1(F)CC[C@@H](Cl)CC1",
+      "canonical": "F[C@H]1CC[C@@H](Cl)CC1"
+    },
+    {
+      "smiles": "C1C[C@H](C)CC[C@H]1C",
+      "canonical": "C[C@H]1CC[C@H](C)CC1"
+    },
+    {
+      "smiles": "C1[C@H](C)CC[C@@H](C)C1",
+      "canonical": "C[C@H]1CC[C@H](C)CC1"
+    },
+    {
+      "smiles": "C[C@H]1CC[C@H](C)CC1",
+      "canonical": "C[C@H]1CC[C@H](C)CC1"
+    },
+    {
+      "smiles": "[C@H]1(C)CC[C@H](C)CC1",
+      "canonical": "C[C@H]1CC[C@H](C)CC1"
+    }
+  ]
+}

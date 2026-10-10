@@ -8,7 +8,7 @@ smiles=['N=C(N)N','CN=C(N)N','NC(N)=NC','CN(C)C(N)=N','NC(=N)NC(=N)N',
         'N=C1NCCN1','CC(=O)[O-]','O=C(O)C','C[N+](=O)[O-]','[O-][N+](=O)c1ccccc1',
         'F/C=C/F','F/C=C\\F','CC/C=C(C)/C','Cl/C(F)=C(Br)/I',
         'C/C=C/C=C/C','C/C=C\\C=C/C','C/C=C(C)/C=C/C','CC/C(Cl)=C(Br)/CC',
-        'C1=CCCCC1','CC(=O)NC','c1cc[nH]c1']
+        'C1=CCCCC1','CC(=O)NC','c1cc[nH]c1', 'NC=N', 'N(C)=CN(C)', 'N=C1NCC1', 'N=C1NCCC1', '[O-][N+](C)C=N', 'N=C(N)O', 'N=C(N)S', 'N=C1NC=CC=C1']
 def sybyl(a):
     z=a.GetSymbol()
     if a.GetIsAromatic():
@@ -18,7 +18,8 @@ def sybyl(a):
     return z
 rows=[]
 for text in smiles:
-    mol=Chem.AddHs(Chem.MolFromSmiles(text));rdDepictor.Compute2DCoords(mol)
+    mol=Chem.MolFromSmiles(text);assert mol is not None,text
+    mol=Chem.AddHs(mol);rdDepictor.Compute2DCoords(mol)
     types=[sybyl(a) for a in mol.GetAtoms()]
     for a in mol.GetAtoms():
         if a.GetAtomicNum()==6 and sum(n.GetAtomicNum()==7 for n in a.GetNeighbors())>=2:

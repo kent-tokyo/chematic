@@ -258,6 +258,30 @@ mod tests {
     use super::*;
 
     #[test]
+    fn bounded_reader_preserves_frames_across_small_buffers_and_eof() {
+        use std::io::{BufReader, Cursor};
+        for capacity in [1, 2, 7, 64] {
+            let mut input = BufReader::with_capacity(capacity, Cursor::new(b"12345678\n\nlast"));
+            for expected in [b"12345678\n".as_slice(), b"\n", b"last"] {
+                assert_eq!(read_bounded_line(&mut input, 8).unwrap().unwrap(), expected);
+            }
+            assert!(read_bounded_line(&mut input, 8).unwrap().is_none());
+            let mut input = BufReader::with_capacity(capacity, Cursor::new(b"1234567890\n"));
+            let error = read_bounded_line(&mut input, 8).unwrap_err();
+            assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        }
+        assert_eq!(
+            read_bounded_line(&mut Cursor::new(b"\n"), 0).unwrap(),
+            Some(vec![b'\n'])
+        );
+        assert!(
+            read_bounded_line(&mut Cursor::new(b""), 0)
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    #[test]
     fn bounded_reader_rejects_an_oversized_frame_before_full_allocation() {
         let mut input = std::io::Cursor::new(b"123456789\nnext\n".to_vec());
         let error = read_bounded_line(&mut input, 8).unwrap_err();

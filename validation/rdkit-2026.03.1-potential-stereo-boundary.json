@@ -1,0 +1,208 @@
+{
+  "rdkit_version": "2026.03.1",
+  "rows": [
+    {
+      "smiles": "C[C@H](F)C(O)[C@H](C)F",
+      "centers": [
+        1,
+        5
+      ]
+    },
+    {
+      "smiles": "O[C@H](C[C@H](F)Cl)C[C@H](F)Cl",
+      "centers": [
+        3,
+        7
+      ]
+    },
+    {
+      "smiles": "O[C@H](C(=O)[C@H](F)Cl)C(=O)[C@H](F)Cl",
+      "centers": [
+        4,
+        9
+      ]
+    },
+    {
+      "smiles": "O[C@H](C1C[C@H](F)CCC1)C1C[C@H](F)CCC1",
+      "centers": [
+        1,
+        2,
+        4,
+        9,
+        11
+      ]
+    },
+    {
+      "smiles": "C[C@H](F)C(O)[C@@H](C)F",
+      "centers": [
+        1,
+        3,
+        5
+      ]
+    },
+    {
+      "smiles": "O[C@H](C[C@H](F)Cl)C[C@@H](F)Cl",
+      "centers": [
+        1,
+        3,
+        7
+      ]
+    },
+    {
+      "smiles": "O[C@H](C(=O)[C@H](F)Cl)C(=O)[C@@H](F)Cl",
+      "centers": [
+        1,
+        4,
+        9
+      ]
+    },
+    {
+      "smiles": "O[C@H](C1C[C@H](F)CCC1)C1C[C@@H](F)CCC1",
+      "centers": [
+        1,
+        2,
+        4,
+        9,
+        11
+      ]
+    },
+    {
+      "smiles": "C[C@@H](F)C(O)[C@H](C)F",
+      "centers": [
+        1,
+        3,
+        5
+      ]
+    },
+    {
+      "smiles": "O[C@H](C[C@@H](F)Cl)C[C@H](F)Cl",
+      "centers": [
+        1,
+        3,
+        7
+      ]
+    },
+    {
+      "smiles": "O[C@H](C(=O)[C@@H](F)Cl)C(=O)[C@H](F)Cl",
+      "centers": [
+        1,
+        4,
+        9
+      ]
+    },
+    {
+      "smiles": "O[C@H](C1C[C@@H](F)CCC1)C1C[C@H](F)CCC1",
+      "centers": [
+        1,
+        2,
+        4,
+        9,
+        11
+      ]
+    },
+    {
+      "smiles": "C[C@@H](F)C(O)[C@@H](C)F",
+      "centers": [
+        1,
+        5
+      ]
+    },
+    {
+      "smiles": "O[C@H](C[C@@H](F)Cl)C[C@@H](F)Cl",
+      "centers": [
+        3,
+        7
+      ]
+    },
+    {
+      "smiles": "O[C@H](C(=O)[C@@H](F)Cl)C(=O)[C@@H](F)Cl",
+      "centers": [
+        4,
+        9
+      ]
+    },
+    {
+      "smiles": "O[C@H](C1C[C@@H](F)CCC1)C1C[C@@H](F)CCC1",
+      "centers": [
+        1,
+        2,
+        4,
+        9,
+        11
+      ]
+    },
+    {
+      "smiles": "CCC(F)Cl",
+      "centers": [
+        2
+      ]
+    },
+    {
+      "smiles": "CC(F)(Cl)Br",
+      "centers": [
+        1
+      ]
+    },
+    {
+      "smiles": "CC(C)C",
+      "centers": []
+    },
+    {
+      "smiles": "C1CCCCC1",
+      "centers": []
+    },
+    {
+      "smiles": "C[C@H]1CC[C@@H](C)CC1",
+      "centers": [
+        1,
+        4
+      ]
+    },
+    {
+      "smiles": "C[C@H]1CC[C@H](C)CC1",
+      "centers": [
+        1,
+        4
+      ]
+    },
+    {
+      "smiles": "C[P@](F)Cl",
+      "centers": [
+        1
+      ]
+    },
+    {
+      "smiles": "C[As@](F)Cl",
+      "centers": [
+        1
+      ]
+    },
+    {
+      "smiles": "C[S@](=O)CC",
+      "centers": [
+        1
+      ]
+    },
+    {
+      "smiles": "C[Se@](=O)CC",
+      "centers": [
+        1
+      ]
+    },
+    {
+      "smiles": "C[N@]1CC1",
+      "centers": []
+    },
+    {
+      "smiles": "N1CC2CCC1C2",
+      "centers": [
+        2,
+        5
+      ]
+    },
+    {
+      "smiles": "CC(=O)N(C)CC",
+      "centers": []
+    }
+  ]
+}
