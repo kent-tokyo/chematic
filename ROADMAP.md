@@ -43,6 +43,10 @@ commands.
   downstream benchmark.
 - Close the five remaining prepared-operation deficits: ring count, TPSA,
   Labute ASA, chiral Morgan, and amide/amine reaction.
+- The first follow-up removed redundant TPSA/Labute allocations and made the
+  ordinary SSSR count O(number of SMILES ring closures), but did not close the
+  RDKit symmetrized-ring or isolated descriptor gates. Continue from measured
+  profiles rather than shifting their cost into parsing.
 - Rerun from exact PyPI/npm/crates.io artifacts and on a second host.
 
 **Exit:** for every declared equivalent-output lane, 21 or more alternating

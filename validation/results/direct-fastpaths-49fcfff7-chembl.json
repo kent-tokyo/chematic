@@ -1,0 +1,111 @@
+{
+ "schema": "chematic-rdkit-output-agreement/v1",
+ "created_utc": "2026-10-10T03:23:22.643673Z",
+ "chematic": {
+  "version": "1.0.41",
+  "revision": "49fcfff7",
+  "artifact": "chematic-1.0.41-cp313-cp313-macosx_11_0_arm64.whl",
+  "artifact_sha256": "86da1280e3547833fe6a22c86929318f96e315df2fd04a645bd56735547c647f"
+ },
+ "rdkit": {
+  "version": "2026.03.1"
+ },
+ "python": "3.13.6",
+ "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+ "operations": {
+  "morgan_r2_2048(rdkit-compatible)": {
+   "note": "bit-identical",
+   "available": true
+  },
+  "morgan_r2_2048_chiral(rdkit-compatible)": {
+   "note": "bit-identical",
+   "available": true
+  },
+  "atom_pair(rdkit-compatible)": {
+   "note": "bit-identical",
+   "available": true
+  },
+  "torsion(rdkit-compatible)": {
+   "note": "bit-identical",
+   "available": true
+  },
+  "maccs": {
+   "note": "all 166 keys identical",
+   "available": true
+  },
+  "logp": {
+   "note": "|diff| <= 1e-6",
+   "available": true
+  },
+  "mr": {
+   "note": "|diff| <= 0.01",
+   "available": true
+  },
+  "rdkit_tpsa": {
+   "note": "|diff| <= 0.1; N/O-only TPSA",
+   "available": true
+  },
+  "tpsa(S/P included)": {
+   "note": "|diff| <= 0.1 vs includeSandP=True",
+   "available": true
+  },
+  "qed": {
+   "note": "|diff| <= 1e-3",
+   "available": true
+  },
+  "rdkit_mw": {
+   "note": "|diff| <= 1e-3",
+   "available": true
+  },
+  "hbd": {
+   "note": "exact",
+   "available": true
+  },
+  "rotatable_bonds": {
+   "note": "exact",
+   "available": true
+  },
+  "num_rings": {
+   "note": "exact",
+   "available": true
+  },
+  "murcko_scaffold": {
+   "note": "same RDKit canonical SMILES",
+   "available": true
+  },
+  "pains_passes": {
+   "note": "vs RDKit PAINS FilterCatalog",
+   "available": true
+  },
+  "brenk_passes": {
+   "note": "vs RDKit BRENK FilterCatalog (chematic uses its own alert list)",
+   "available": true
+  }
+ },
+ "corpora": [
+  {
+   "path": "scripts/chembl_accuracy_corpus_4999.smi",
+   "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+   "rows_compared": 5000,
+   "agree": {
+    "morgan_r2_2048(rdkit-compatible)": 5000,
+    "morgan_r2_2048_chiral(rdkit-compatible)": 5000,
+    "atom_pair(rdkit-compatible)": 5000,
+    "torsion(rdkit-compatible)": 5000,
+    "maccs": 5000,
+    "logp": 5000,
+    "mr": 5000,
+    "rdkit_tpsa": 5000,
+    "tpsa(S/P included)": 5000,
+    "qed": 5000,
+    "rdkit_mw": 5000,
+    "hbd": 5000,
+    "rotatable_bonds": 5000,
+    "num_rings": 5000,
+    "murcko_scaffold": 4998,
+    "pains_passes": 5000,
+    "brenk_passes": 2565
+   }
+  }
+ ]
+}

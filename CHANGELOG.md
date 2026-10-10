@@ -16,6 +16,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   parser-proven acyclic/single-cycle ring facts, and removed duplicate MMFF
   force-field preparation. Existing detailed fingerprint and chemistry results
   remain covered by the same output gates.
+- Reused parser-known SMILES cycle rank for SSSR counts and removed discarded
+  S/P typing and per-atom output allocation from whole-molecule RDKit TPSA and
+  Labute ASA calculations. ChEMBL/NCI agreement remains unchanged.
 - Upgraded the RDKit/COSMolKit benchmark to retain raw alternating-order
   samples, report operation-only and parse-inclusive pipelines separately, and
   calculate paired bootstrap confidence intervals.
@@ -27,6 +30,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   pipelines. Five operation-only lanes remain slower, and registry artifacts
   and additional hosts have not been rerun. See the
   [dated record](benchmarks/2026-10-10-rdkit-cosmolkit-performance-candidate.md).
+- A second candidate trims direct ring/descriptor work while retaining exact
+  ChEMBL/NCI outputs. TPSA and Labute pipelines still win, but their isolated
+  calls remain slower than both comparators; see the
+  [follow-up record](benchmarks/2026-10-10-direct-descriptor-fastpaths-candidate.md).
 
 ### Documentation
 
