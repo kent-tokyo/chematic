@@ -12,6 +12,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added a version-pinned CDK 2.13 and Indigo 1.46.0 comparison gate with
+  common-schema adapters, a 24-structure stratified smoke corpus, separate
+  parse-inclusive/prepared timing lanes, rotating 21-block measurements, and
+  paired bootstrap confidence intervals. The smoke result is source-candidate
+  evidence only; broad corpora, memory, a second host, and published packages
+  remain required for a superiority claim.
+
 - Added a versioned Open Babel 3.2.1 file-I/O comparison contract for eight
   production formats, a static CI checker, and a unified record-accounting
   runner. The initial 20-repetition record proves fixture provenance and
@@ -46,6 +53,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Short-circuited isolated atomic-number SMARTS existence queries before VF2
+  state allocation. Query results are unchanged; the path is covered against
+  the ordinary first-embedding search.
+
 - Reduced temporary allocation in loss-aware MOL2 serialization while
   retaining the common-observer semantic result.
 - Kept rejected RDKit-profile reaction products in a new opt-in detailed
@@ -67,6 +78,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and NCI agreement corpora.
 
 ### Fixed
+
+- Preserved RDKit-style V2000 `M  ISO` isotope records in both diagnostic and
+  graph-only MOL readers.
+- Carried coordinate-derived E/Z directions from MOL/SDF single bonds into
+  the RDKit-compatible SMILES model. Fumaric/maleic acid and isotopic chiral
+  MOL round trips now retain their declared identity.
 
 - Stopped interpreting MOL2 partial charges as rounded formal charges and
   retained `.ar` atom aromaticity independently of aromatic bond rows.
