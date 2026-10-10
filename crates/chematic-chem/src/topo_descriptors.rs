@@ -630,12 +630,12 @@ fn bond_scale(view: &Molecule, bond: chematic_core::BondIdx) -> f64 {
 /// term, which is excluded from the per-atom values (RDKit's `ats`) and only
 /// added into the whole-molecule total ([`labute_asa`]). This is a faithful,
 /// numerically-verified port of RDKit's behavior, not a simplification.
-fn labute_asa_parts(mol: &Molecule) -> (Vec<f64>, f64) {
+fn labute_asa_core(mol: &Molecule, collect_per_atom: bool) -> (Vec<f64>, f64, f64) {
     // RDKit's getLabuteAtomContribs (MolSurf.cpp) with includeHs, operation
     // for operation; bond aromaticity as RDKit perceives it.
     let n = mol.atom_count();
     if n == 0 {
-        return (Vec::new(), 0.0);
+        return (Vec::new(), 0.0, 0.0);
     }
     let view = crate::descriptors::descriptor_aromaticity(mol);
     let view: &Molecule = &view;
@@ -663,17 +663,30 @@ fn labute_asa_parts(mol: &Molecule) -> (Vec<f64>, f64) {
         v[i] += rh * rh - (ri - dij) * (ri - dij) / dij;
         h_contrib += ri * ri - (rh - dij) * (rh - dij) / dij;
     }
-    let per_atom: Vec<f64> = (0..n)
-        .map(|i| {
-            let ri = radii[i];
-            PI * ri * (4.0 * ri - v[i])
-        })
-        .collect();
+    let mut per_atom = if collect_per_atom {
+        Vec::with_capacity(n)
+    } else {
+        Vec::new()
+    };
+    let mut total = 0.0;
+    for i in 0..n {
+        let ri = radii[i];
+        let contribution = PI * ri * (4.0 * ri - v[i]);
+        total += contribution;
+        if collect_per_atom {
+            per_atom.push(contribution);
+        }
+    }
     let h_pool_area = if h_contrib.abs() > 1e-4 {
         PI * rh * (4.0 * rh - h_contrib)
     } else {
         0.0
     };
+    (per_atom, h_pool_area, total + h_pool_area)
+}
+
+fn labute_asa_parts(mol: &Molecule) -> (Vec<f64>, f64) {
+    let (per_atom, h_pool_area, _) = labute_asa_core(mol, true);
     (per_atom, h_pool_area)
 }
 
@@ -1126,8 +1139,7 @@ pub fn labute_asa(mol: &Molecule) -> f64 {
     if let Some(h) = chematic_smiles::rdkit_hydrogen_suppressed(mol) {
         return labute_asa(&h);
     }
-    let (per_atom, h_pool_area) = labute_asa_parts(mol);
-    per_atom.iter().fold(0.0, |acc, x| acc + x) + h_pool_area
+    labute_asa_core(mol, false).2
 }
 
 // ─── VABC — van der Waals atomic bonded-contribution volume ──────────────────

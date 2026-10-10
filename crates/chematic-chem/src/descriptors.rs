@@ -852,14 +852,30 @@ pub fn rdkit_tpsa(mol: &Molecule) -> f64 {
 }
 
 fn rdkit_tpsa_impl(mol: &Molecule) -> f64 {
-    tpsa_contributions(mol)
-        .into_iter()
-        .zip(mol.atoms())
-        .filter(|(_, (_, atom))| matches!(atom.element.atomic_number(), 7 | 8))
-        .map(|(contribution, _)| contribution)
-        // RDKit accumulates from +0.0; `Iterator::sum` for f64 starts from
-        // -0.0, which would give -0.0 for a molecule without N or O.
-        .fold(0.0, |acc, c| acc + c)
+    let mol_arom = descriptor_aromaticity(mol);
+    // RDKit's default excludes S/P. Compute only N/O instead of allocating a
+    // full contribution vector and typing atoms whose values are discarded.
+    // Iteration and accumulation order remain atom-index order, exactly as in
+    // `tpsa_contributions`, so floating-point results are unchanged.
+    mol.atoms().fold(0.0, |acc, (idx, atom)| {
+        let contribution = match atom.element.atomic_number() {
+            7 => {
+                let hydrogens = descriptor_attached_hcount(mol, idx);
+                let environment_mol = if use_perceived_nitrogen_environment(mol, &mol_arom, idx) {
+                    &mol_arom
+                } else {
+                    mol
+                };
+                tpsa_nitrogen(tpsa_environment(environment_mol, idx, hydrogens))
+            }
+            8 => {
+                let hydrogens = descriptor_attached_hcount(&mol_arom, idx);
+                tpsa_oxygen(tpsa_environment(&mol_arom, idx, hydrogens))
+            }
+            _ => 0.0,
+        };
+        acc + contribution
+    })
 }
 
 // ---------------------------------------------------------------------------
