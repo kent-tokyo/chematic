@@ -136,6 +136,8 @@ cargo llvm-cov --locked --workspace --lib --bins \
   --test neighbor --test periodicity \
   --test canonical_ez_planner_order --test canonical_ez_residual \
   --test canonical_robustness \
+  --test chembl_roundtrip --test canonical_idempotency_corpus \
+  --test canonical_idempotency_corpus_standardized \
   --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
   --no-report
 cargo llvm-cov report \
