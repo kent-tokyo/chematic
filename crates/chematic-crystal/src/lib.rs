@@ -47,3 +47,6 @@ pub use poscar::{
 };
 pub use site::{CartesianCoord, FractionalCoord, Occupancy, PeriodicSite, SiteSpecies};
 pub use structure::{CompositionSummary, PeriodicStructure};
+
+#[cfg(test)]
+mod poscar_boundary_contract_tests;
