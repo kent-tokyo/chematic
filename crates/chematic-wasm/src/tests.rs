@@ -269,6 +269,18 @@ fn aromatic_ring_count_benzene() {
 }
 
 #[test]
+fn num_rings_ignores_non_ring_smiles_closures() {
+    for smiles in [
+        "[Fe]1(Cl)(Cl)Cl.Cl1",
+        "C=C(C)N1C=NC<-C1",
+        "N1CCN->[Cu]1",
+        "C1CCN->[Cu]1",
+    ] {
+        assert_eq!(parse(smiles).num_rings(), 0, "{smiles}");
+    }
+}
+
+#[test]
 fn qed_aspirin_range() {
     let q = parse("CC(=O)Oc1ccccc1C(=O)O").qed();
     assert!(q > 0.0 && q <= 1.0, "aspirin QED = {q:.3}");
@@ -1062,6 +1074,21 @@ fn test_mmff94_charges_json_length() {
         .split(',')
         .count();
     assert_eq!(count, 4, "acetic acid should have 4 charges, got {count}");
+}
+
+#[test]
+fn checked_legacy_mmff94_charges_report_unsupported_elements() {
+    let copper = parse("[Cu]");
+    let value: serde_json::Value =
+        serde_json::from_str(&mmff94_charges_checked_json(&copper)).unwrap();
+    assert_eq!(value["error"], "unsupported_element");
+    assert_eq!(value["atomIndex"], 0);
+    assert_eq!(value["atomicNumber"], 29);
+
+    let ethanol = parse("CCO");
+    let value: serde_json::Value =
+        serde_json::from_str(&mmff94_charges_checked_json(&ethanol)).unwrap();
+    assert_eq!(value["charges"].as_array().unwrap().len(), 3);
 }
 
 #[test]

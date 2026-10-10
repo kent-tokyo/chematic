@@ -324,7 +324,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.9'
-      - name: Build source wheel and compare fixed A6 rows with published v1.0.37
+      - name: Build source wheel and compare fixed A6 rows with published v1.0.42
         run: |
           python -m venv .venv
           .venv/bin/pip install --index-url https://pypi.org/simple maturin numpy
@@ -333,7 +333,7 @@ jobs:
           git diff --quiet
           .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-source-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-linux-cp39.jsonl --metadata-output validation/results/a6-source-265-linux-cp39.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
           .venv/bin/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-linux-cp39.jsonl --metadata validation/results/a6-source-265-linux-cp39.meta.json --output validation/results/a6-source-265-linux-cp39.summary.json --build-profile release
-          .venv/bin/pip download --index-url https://pypi.org/simple --only-binary=:all: --no-deps 'chematic==1.0.37' --dest dist/a6-published-wheel
+          .venv/bin/pip download --index-url https://pypi.org/simple --only-binary=:all: --no-deps 'chematic==1.0.42' --dest dist/a6-published-wheel
           .venv/bin/pip install --force-reinstall --no-deps dist/a6-published-wheel/chematic-*.whl
           .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-linux-cp39.jsonl --metadata-output validation/results/a6-published-265-linux-cp39.meta.json --wall-budget-seconds 1200 --package-kind published
           .venv/bin/python scripts/compare_a6_source_published_rows.py --source-rows validation/results/a6-source-265-linux-cp39.jsonl --source-metadata validation/results/a6-source-265-linux-cp39.meta.json --published-rows validation/results/a6-published-265-linux-cp39.jsonl --published-metadata validation/results/a6-published-265-linux-cp39.meta.json --output validation/results/a6-source-vs-published-265-linux-cp39.json
@@ -389,7 +389,7 @@ jobs:
           .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-macos.jsonl --scored validation/results/a6-source-265-macos.scored.jsonl --scope source-macos-arm64 --output validation/results/a6-source-265-macos.gate.json
       - name: Compare A6 published wheel on the same macOS host
         run: |
-          .venv/bin/pip download --only-binary=:all: --no-deps 'chematic==1.0.37' --dest dist/a6-published-wheel
+          .venv/bin/pip download --only-binary=:all: --no-deps 'chematic==1.0.42' --dest dist/a6-published-wheel
           .venv/bin/pip install --force-reinstall --no-deps dist/a6-published-wheel/chematic-*.whl
           .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-macos.jsonl --metadata-output validation/results/a6-published-265-macos.meta.json --wall-budget-seconds 1200 --package-kind published
           .venv/bin/python scripts/compare_a6_source_published_rows.py --source-rows validation/results/a6-source-265-macos.jsonl --source-metadata validation/results/a6-source-265-macos.meta.json --published-rows validation/results/a6-published-265-macos.jsonl --published-metadata validation/results/a6-published-265-macos.meta.json --output validation/results/a6-source-vs-published-265-macos.json
@@ -484,11 +484,11 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.9'
-      - name: Rerun published v1.0.37 A6 rows with the Linux lane Python ABI
+      - name: Rerun published v1.0.42 A6 rows with the Linux lane Python ABI
         run: |
           test "$(uname -m)" = arm64
           python -m venv .venv
-          .venv/bin/pip download --index-url https://pypi.org/simple --only-binary=:all: --no-deps 'chematic==1.0.37' --dest dist/a6-published-wheel
+          .venv/bin/pip download --index-url https://pypi.org/simple --only-binary=:all: --no-deps 'chematic==1.0.42' --dest dist/a6-published-wheel
           .venv/bin/pip install --no-deps dist/a6-published-wheel/chematic-*.whl
           .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-macos-cp39.jsonl --metadata-output validation/results/a6-published-265-macos-cp39.meta.json --wall-budget-seconds 1200 --package-kind published
           cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-published-265-macos-cp39.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-published-265-macos-cp39.scored.jsonl
@@ -541,8 +541,8 @@ jobs:
           }
           compare rdkit-hba-source-wheel-5k-macos/a6-source-265-macos rdkit-hba-source-wheel-5k/a6-source-265-linux source-macos-vs-linux
           compare source-wheel-windows/a6-source-265-windows rdkit-hba-source-wheel-5k/a6-source-265-linux source-windows-vs-linux
-          compare a6-published-macos-cp39/a6-published-265-macos-cp39 a6-paired-linux-cp39/a6-published-265-linux-cp39 published-v1.0.37-macos-vs-linux-cp39
-          compare a6-paired-linux-cp39/a6-published-265-linux-cp39 a6-paired-linux-cp39/a6-source-265-linux-cp39 published-v1.0.37-vs-source-linux-cp39
+          compare a6-published-macos-cp39/a6-published-265-macos-cp39 a6-paired-linux-cp39/a6-published-265-linux-cp39 published-v1.0.42-macos-vs-linux-cp39
+          compare a6-paired-linux-cp39/a6-published-265-linux-cp39 a6-paired-linux-cp39/a6-source-265-linux-cp39 published-v1.0.42-vs-source-linux-cp39
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:

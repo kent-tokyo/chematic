@@ -311,6 +311,35 @@ def outcome(backend, smirks: str, smiles: str, explicit_h: bool, max_products: i
     }
 
 
+def explicit_h_residual_facets(result: str, edits: list[str], detail: dict) -> set[str]:
+    """Describe, without reclassifying, why an explicit-H residual needs review.
+
+    Facets intentionally overlap. A deletion can both leave a radical and fail
+    the final valence/sanitize check; retaining both facts is more useful than
+    forcing the case into one optimistic root cause.
+    """
+    if result not in REPORTED:
+        return set()
+    facets = {f"edit:{edit}" for edit in set(edits)}
+    if "delete" in edits:
+        facets.add("atom_deletion_after_explicit_h")
+    if "break" in edits:
+        facets.add("bond_break_after_explicit_h")
+    if result == "chematic_refused":
+        facets.add("resanitize_or_valence_refusal")
+
+    for backend in ("rdkit", "chematic"):
+        for product_set in detail.get(backend, []):
+            for smiles in product_set.split("."):
+                mol = Chem.MolFromSmiles(smiles)
+                if mol is None:
+                    mol = Chem.MolFromSmiles(smiles, sanitize=False)
+                if mol is not None and any(atom.GetNumRadicalElectrons() for atom in mol.GetAtoms()):
+                    facets.add("radical_product")
+                    return facets
+    return facets
+
+
 def simplifications(smirks: str) -> list[str]:
     """Templates with one primitive, bond primitive or bracket term fewer."""
     out = []
@@ -395,6 +424,7 @@ def main() -> int:
     backend = Worker(args.chematic_python) if args.chematic_python else InProcess()
     counts: Counter = Counter()
     edits: Counter = Counter()
+    explicit_h_residuals: Counter = Counter()
     reported: list[dict] = []
     probes: dict[tuple, dict] = {}
     started = time.time()
@@ -414,6 +444,10 @@ def main() -> int:
                 result, detail = outcome(backend, template["smirks"], smi, explicit_h, args.max_products)
                 mode = "explicit_h" if explicit_h else "implicit"
                 counts[f"{mode}:{result}"] += 1
+                if explicit_h:
+                    explicit_h_residuals.update(
+                        explicit_h_residual_facets(result, template["edits"], detail)
+                    )
                 if result in REPORTED:
                     case = {"smirks": template["smirks"], "reactant": smi, "mode": mode,
                             "outcome": result, "edits": template["edits"], **detail}
@@ -441,6 +475,7 @@ def main() -> int:
         "elapsed_seconds": round(time.time() - started, 1),
         "edits": dict(sorted(edits.items())),
         "counts": dict(sorted(counts.items())),
+        "explicit_h_residual_facets": dict(sorted(explicit_h_residuals.items())),
         "reported_cases": len(reported),
         "distinct_minimized_probes": len(rows),
     }
@@ -454,6 +489,15 @@ def main() -> int:
         problems = [f"{k}: expected {expected['counts'].get(k, 0)}, got {counts.get(k, 0)}"
                     for k in sorted(set(expected["counts"]) | set(counts))
                     if expected["counts"].get(k, 0) != counts.get(k, 0)]
+        expected_facets = expected.get("explicit_h_residual_facets")
+        if expected_facets is not None:
+            actual_facets = summary["explicit_h_residual_facets"]
+            problems.extend(
+                f"explicit_h_residual_facets.{key}: expected "
+                f"{expected_facets.get(key, 0)}, got {actual_facets.get(key, 0)}"
+                for key in sorted(set(expected_facets) | set(actual_facets))
+                if expected_facets.get(key, 0) != actual_facets.get(key, 0)
+            )
         summary["expected"] = str(args.expected)
         summary["differences"] = problems
     args.output.write_text(json.dumps(summary, indent=1) + "\n", encoding="utf-8")

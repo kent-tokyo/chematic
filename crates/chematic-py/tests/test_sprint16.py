@@ -336,6 +336,12 @@ def test_mmff94_charges_length():
     assert len(charges) == m.heavy_atoms
 
 
+def test_checked_legacy_mmff94_charges_reject_unsupported_elements():
+    with pytest.raises(ValueError, match="do not support atom 0"):
+        chematic.from_smiles("[Cu]").mmff94_charges_checked()
+    assert len(chematic.from_smiles("CCO").mmff94_charges_checked()) == 3
+
+
 def test_mmff94_bounded_analytic_gradient_matches_energy_difference():
     """The Python validation surface must differentiate its documented energy."""
     m = chematic.from_smiles("CCCC").add_hydrogens()

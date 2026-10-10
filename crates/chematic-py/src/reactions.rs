@@ -581,41 +581,52 @@ fn run_smirks_checked<'py>(
     }
     let refs: Vec<&chematic_core::Molecule> = reactants.iter().map(|m| m.inner.as_ref()).collect();
     let limits = chematic_rxn::ReactionTransformLimits::default();
-    let outcome = if rdkit_compat {
-        chematic_rxn::run_reactants_traced_rdkit_2026_03_6(smirks, &refs, &limits)
-    } else {
-        chematic_rxn::PreparedReaction::shared(smirks).and_then(|prepared| {
-            prepared
-                .run_reactants_traced_with_diagnostics(&refs, &limits)
-                .map(chematic_rxn::RdkitProfileOutcome::Report)
-        })
-    };
-    let report = match outcome {
-        Ok(chematic_rxn::RdkitProfileOutcome::Report(report)) => report,
-        Ok(chematic_rxn::RdkitProfileOutcome::Unsupported(unsupported)) => {
-            refuse(
-                "typed_unsupported",
-                unsupported.reason_code(),
-                "RDKit 2026.03.6 reaction semantics cannot be reproduced for this input"
-                    .to_string(),
-            )?;
-            return Ok(result);
+    let (report, rejected_products) = if rdkit_compat {
+        match chematic_rxn::run_reactants_traced_rdkit_2026_03_6_detailed(smirks, &refs, &limits) {
+            Ok(chematic_rxn::RdkitDetailedProfileOutcome::Report(report)) => {
+                (report.report, report.rejected_products)
+            }
+            Ok(chematic_rxn::RdkitDetailedProfileOutcome::Unsupported(unsupported)) => {
+                refuse(
+                    "typed_unsupported",
+                    unsupported.reason_code(),
+                    "RDKit 2026.03.6 reaction semantics cannot be reproduced for this input"
+                        .to_string(),
+                )?;
+                return Ok(result);
+            }
+            Err(error) => {
+                let reason = match &error {
+                    chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
+                    chematic_rxn::TransformError::ReactantCountMismatch { .. } => {
+                        "reactant_count_mismatch"
+                    }
+                    chematic_rxn::TransformError::SmirksParse(_) => "smirks_parse",
+                };
+                refuse("typed_refusal", reason, error.to_string())?;
+                return Ok(result);
+            }
         }
-        Err(error) => {
-            let reason = match &error {
-                chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
-                chematic_rxn::TransformError::ReactantCountMismatch { .. } => {
-                    "reactant_count_mismatch"
-                }
-                chematic_rxn::TransformError::SmirksParse(_) => "smirks_parse",
-            };
-            refuse("typed_refusal", reason, error.to_string())?;
-            return Ok(result);
+    } else {
+        match chematic_rxn::PreparedReaction::shared(smirks)
+            .and_then(|prepared| prepared.run_reactants_traced_with_diagnostics(&refs, &limits))
+        {
+            Ok(report) => (report, Vec::new()),
+            Err(error) => {
+                let reason = match &error {
+                    chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
+                    chematic_rxn::TransformError::ReactantCountMismatch { .. } => {
+                        "reactant_count_mismatch"
+                    }
+                    chematic_rxn::TransformError::SmirksParse(_) => "smirks_parse",
+                };
+                refuse("typed_refusal", reason, error.to_string())?;
+                return Ok(result);
+            }
         }
     };
     let diagnostics = report.diagnostics;
-    let rejected: Vec<Vec<(Mol, bool)>> = report
-        .rejected_products
+    let rejected: Vec<Vec<(Mol, bool)>> = rejected_products
         .into_iter()
         .map(|set| {
             set.into_iter()

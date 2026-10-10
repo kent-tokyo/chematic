@@ -80,9 +80,18 @@ pub struct ReactionTransformReport {
 pub struct TracedReactionTransformReport {
     pub products: Vec<Vec<TracedProduct>>,
     pub diagnostics: ReactionTransformDiagnostics,
+}
+
+/// RDKit-profile report including product sets rejected during sanitization.
+///
+/// Kept separate from [`TracedReactionTransformReport`] so adding RDKit-only
+/// diagnostics does not break existing Rust callers that construct the
+/// general report with a struct literal.
+pub struct RdkitTracedReactionTransformReport {
+    pub report: TracedReactionTransformReport,
     /// RDKit profile only: the valence-rejected product sets as RDKit's
     /// `RunReactants` returns them (unsanitized), each product with whether
-    /// RDKit's sanitization would accept it. Empty for native semantics.
+    /// RDKit's sanitization would accept it.
     pub rejected_products: Vec<Vec<(TracedProduct, bool)>>,
 }
 
@@ -441,6 +450,19 @@ pub fn run_reactants_traced_rdkit_2026_03_6(
         .run_reactants_traced_rdkit_2026_03_6(reactants, limits)
 }
 
+/// Apply `smirks` with the pinned RDKit profile and retain rejected products.
+///
+/// This additive API carries RDKit-only sanitization diagnostics without
+/// extending [`TracedReactionTransformReport`]'s stable struct-literal shape.
+pub fn run_reactants_traced_rdkit_2026_03_6_detailed(
+    smirks: &str,
+    reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
+) -> Result<RdkitDetailedProfileOutcome, TransformError> {
+    PreparedReaction::shared_with_reading(smirks, true)?
+        .run_reactants_traced_rdkit_2026_03_6_detailed(reactants, limits)
+}
+
 /// Prepared templates by SMIRKS text, for the free functions that take a
 /// SMIRKS string: a batch applies the same template to many molecules, and
 /// preparing it (parsing and normalizing every component) took about a
@@ -545,6 +567,12 @@ pub enum RdkitProfileOutcome {
     Unsupported(ReactionCompatibilityUnsupported),
 }
 
+/// Detailed outcome of the pinned RDKit profile, including rejected products.
+pub enum RdkitDetailedProfileOutcome {
+    Report(RdkitTracedReactionTransformReport),
+    Unsupported(ReactionCompatibilityUnsupported),
+}
+
 /// Which reaction semantics a run follows.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Profile {
@@ -618,9 +646,27 @@ impl PreparedReaction {
         reactants: &[&Molecule],
         limits: &ReactionTransformLimits,
     ) -> Result<RdkitProfileOutcome, TransformError> {
+        Ok(
+            match self.run_reactants_traced_rdkit_2026_03_6_detailed(reactants, limits)? {
+                RdkitDetailedProfileOutcome::Report(report) => {
+                    RdkitProfileOutcome::Report(report.report)
+                }
+                RdkitDetailedProfileOutcome::Unsupported(reason) => {
+                    RdkitProfileOutcome::Unsupported(reason)
+                }
+            },
+        )
+    }
+
+    /// Detailed RDKit-profile application including valence-rejected products.
+    pub fn run_reactants_traced_rdkit_2026_03_6_detailed(
+        &self,
+        reactants: &[&Molecule],
+        limits: &ReactionTransformLimits,
+    ) -> Result<RdkitDetailedProfileOutcome, TransformError> {
         crate::perf_counters::record_run_reactants_call();
         if let Some(reason) = self.rdkit_2026_03_6_unsupported_reason() {
-            return Ok(RdkitProfileOutcome::Unsupported(reason));
+            return Ok(RdkitDetailedProfileOutcome::Unsupported(reason));
         }
         let variants: Vec<&PreparedReaction> = match &self.variants {
             Some(variants) => variants.iter().collect(),
@@ -638,20 +684,25 @@ impl PreparedReaction {
             let report =
                 match variant.run_traced_profile(reactants, true, limits, Profile::Rdkit)? {
                     Ok(report) => report,
-                    Err(reason) => return Ok(RdkitProfileOutcome::Unsupported(reason)),
+                    Err(reason) => return Ok(RdkitDetailedProfileOutcome::Unsupported(reason)),
                 };
-            diagnostics.accepted_matches += report.diagnostics.accepted_matches;
-            diagnostics.applied_products += report.diagnostics.applied_products;
-            diagnostics.valence_rejected_matches += report.diagnostics.valence_rejected_matches;
-            diagnostics.truncated_matches |= report.diagnostics.truncated_matches;
-            products.extend(report.products);
+            diagnostics.accepted_matches += report.report.diagnostics.accepted_matches;
+            diagnostics.applied_products += report.report.diagnostics.applied_products;
+            diagnostics.valence_rejected_matches +=
+                report.report.diagnostics.valence_rejected_matches;
+            diagnostics.truncated_matches |= report.report.diagnostics.truncated_matches;
+            products.extend(report.report.products);
             rejected_products.extend(report.rejected_products);
         }
-        Ok(RdkitProfileOutcome::Report(TracedReactionTransformReport {
-            products,
-            diagnostics,
-            rejected_products,
-        }))
+        Ok(RdkitDetailedProfileOutcome::Report(
+            RdkitTracedReactionTransformReport {
+                report: TracedReactionTransformReport {
+                    products,
+                    diagnostics,
+                },
+                rejected_products,
+            },
+        ))
     }
 
     /// Whether the reactant pattern has tetrahedral `@`/`@@` constraints.
@@ -882,7 +933,8 @@ impl PreparedReaction {
     ) -> Result<TracedReactionTransformReport, TransformError> {
         Ok(self
             .run_traced_profile(reactants, carry_substituents, limits, Profile::Native)?
-            .unwrap_or_else(|_| unreachable!("the native profile never declines")))
+            .unwrap_or_else(|_| unreachable!("the native profile never declines"))
+            .report)
     }
 
     fn run_traced_profile(
@@ -892,7 +944,7 @@ impl PreparedReaction {
         limits: &ReactionTransformLimits,
         profile: Profile,
     ) -> Result<
-        Result<TracedReactionTransformReport, ReactionCompatibilityUnsupported>,
+        Result<RdkitTracedReactionTransformReport, ReactionCompatibilityUnsupported>,
         TransformError,
     > {
         // RDKit's SMILES parser removes hydrogen atoms (`removeHs`): the
@@ -904,7 +956,19 @@ impl PreparedReaction {
             Profile::Native => Vec::new(),
             Profile::Rdkit => reactants
                 .iter()
-                .map(|m| chematic_smiles::rdkit_hydrogen_suppressed_with_map(m))
+                .map(|m| {
+                    // An explicit H atom is part of the caller's molecule,
+                    // as with RDKit `AddHs`; keep it. Suppression is only for
+                    // bracket-H counts that RDKit's SMILES parser folds into
+                    // their heavy atom.
+                    if m.atoms()
+                        .any(|(_, atom)| atom.element == chematic_core::Element::H)
+                    {
+                        None
+                    } else {
+                        chematic_smiles::rdkit_hydrogen_suppressed_with_map(m)
+                    }
+                })
                 .collect(),
         };
         let suppressed_refs: Vec<&Molecule>;
@@ -968,14 +1032,16 @@ impl PreparedReaction {
                 Err(reason) => return Ok(Err(reason)),
             }
         }
-        Ok(Ok(TracedReactionTransformReport {
-            diagnostics: ReactionTransformDiagnostics {
-                accepted_matches,
-                applied_products: products.len(),
-                valence_rejected_matches,
-                truncated_matches: false,
+        Ok(Ok(RdkitTracedReactionTransformReport {
+            report: TracedReactionTransformReport {
+                diagnostics: ReactionTransformDiagnostics {
+                    accepted_matches,
+                    applied_products: products.len(),
+                    valence_rejected_matches,
+                    truncated_matches: false,
+                },
+                products,
             },
-            products,
             rejected_products,
         }))
     }
@@ -1021,7 +1087,6 @@ impl PreparedReaction {
             return Ok(TracedReactionTransformReport {
                 products,
                 diagnostics,
-                rejected_products: Vec::new(),
             });
         }
         self.run_reactants_traced_with_diagnostics_impl(reactants, true, limits)
@@ -4922,6 +4987,10 @@ mod tests {
             ("[C:1]>>[C:1]", "CC"),
             ("[N:1]>>[N+:1]", "CN"),
             ("[C:1][O:2]>>[C:1].[O:2]", "CCO"),
+            (
+                "[#6:1](-[OX2:2])-;@[CX4&+0:3]>>[*:1]-[*:3]",
+                "CC(=O)C1=C(O)CN(C2OCCc3ccccc32)C1=O",
+            ),
         ] {
             let implicit = parse(reactant).unwrap();
             let explicit = chematic_chem::add_hydrogens(&implicit);
@@ -5229,6 +5298,24 @@ mod tests {
         explicit.dedup();
         assert!(!implicit.is_empty());
         assert_eq!(explicit, implicit);
+
+        // Deleting an explicitly hydrogenated atom can lower the valence of
+        // a mapped core reached through a ring. The RDKit profile must refill
+        // that core instead of emitting a carbon radical (v1.0.42 residual).
+        let explicit_reactant =
+            chematic_chem::add_hydrogens(&parse("CC(=O)C1=C(O)CN(C2OCCc3ccccc32)C1=O").unwrap());
+        let explicit_reactant = chematic_smiles::write(&explicit_reactant);
+        let mut products = rdkit_profile_sets(
+            "[#6:1](-[OX2:2])-;@[CX4&+0:3]>>[*:1]-[*:3]",
+            &explicit_reactant,
+        );
+        products.sort();
+        let mut expected = vec![
+            vec![canon_of("CC(=O)C1=CCN(C2OCCc3ccccc32)C1=O")],
+            vec![canon_of("CCc1ccccc1CN1CC(O)=C(C(C)=O)C1=O")],
+        ];
+        expected.sort();
+        assert_eq!(products, expected);
     }
 
     #[test]

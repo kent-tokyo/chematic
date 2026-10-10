@@ -67,3 +67,23 @@ def test_simplifications_drop_one_term_at_a_time():
     out = module.simplifications("[#6;H1:1]-;!@[#7&D2:2]>>[*:1].[*:2]")
     assert "[#6:1]-;!@[#7&D2:2]>>[*:1].[*:2]" in out
     assert "[#6;H1:1]-[#7&D2:2]>>[*:1].[*:2]" in out
+
+
+def test_explicit_h_residual_facets_keep_overlapping_causes():
+    facets = module.explicit_h_residual_facets(
+        "chematic_refused",
+        ["delete", "break"],
+        {"rdkit": ["[CH3]"], "chematic": []},
+    )
+    assert facets == {
+        "edit:delete",
+        "edit:break",
+        "atom_deletion_after_explicit_h",
+        "bond_break_after_explicit_h",
+        "resanitize_or_valence_refusal",
+        "radical_product",
+    }
+
+
+def test_non_residuals_have_no_explicit_h_facets():
+    assert module.explicit_h_residual_facets("exact", ["delete"], {}) == set()

@@ -21,6 +21,29 @@
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
 
+/// The legacy element-pair charge model has no parameters for an atom.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LegacyMmff94ChargeError {
+    pub atom_index: usize,
+    pub atomic_number: u8,
+}
+
+impl std::fmt::Display for LegacyMmff94ChargeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "legacy MMFF94 BCI charges do not support atom {} (atomic number {})",
+            self.atom_index, self.atomic_number
+        )
+    }
+}
+
+impl std::error::Error for LegacyMmff94ChargeError {}
+
+fn legacy_bci_supports(atomic_number: u8) -> bool {
+    matches!(atomic_number, 1 | 6 | 7 | 8 | 9 | 15 | 16 | 17 | 35 | 53)
+}
+
 /// Context flags used to select the right BCI entry.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum BondCtx {
@@ -167,6 +190,24 @@ pub fn mmff94_charges_bci(mol: &Molecule) -> Vec<f64> {
     }
 
     q
+}
+
+/// Checked form of [`mmff94_charges_bci`].
+///
+/// The original API silently applies a zero bond-charge increment to elements
+/// outside its small legacy table. This function rejects those molecules so
+/// an unsupported calculation cannot look like a real all-zero result.
+pub fn try_mmff94_charges_bci(mol: &Molecule) -> Result<Vec<f64>, LegacyMmff94ChargeError> {
+    for (idx, atom) in mol.atoms() {
+        let atomic_number = atom.element.atomic_number();
+        if !legacy_bci_supports(atomic_number) {
+            return Err(LegacyMmff94ChargeError {
+                atom_index: idx.0 as usize,
+                atomic_number,
+            });
+        }
+    }
+    Ok(mmff94_charges_bci(mol))
 }
 
 // ─── Atom-typed BCI (improved accuracy, ≈ ±0.02e) ────────────────────────────
@@ -880,6 +921,22 @@ mod tests {
             q_b[o_idx] < -0.3,
             "bci   acetone O should be < -0.3 (got {:.3})",
             q_b[o_idx]
+        );
+    }
+
+    #[test]
+    fn checked_legacy_charges_reject_unparameterized_elements() {
+        for smiles in ["[Cu]", "[Xe]", "[U]"] {
+            let molecule = parse(smiles).unwrap();
+            let error = try_mmff94_charges_bci(&molecule).unwrap_err();
+            assert_eq!(error.atom_index, 0, "{smiles}");
+            assert_ne!(error.atomic_number, 0, "{smiles}");
+            assert_eq!(mmff94_charges_bci(&molecule), vec![0.0], "{smiles}");
+        }
+        let ethanol = parse("CCO").unwrap();
+        assert_eq!(
+            try_mmff94_charges_bci(&ethanol).unwrap(),
+            mmff94_charges_bci(&ethanol)
         );
     }
 }

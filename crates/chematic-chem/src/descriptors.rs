@@ -1590,13 +1590,62 @@ pub fn num_heteroatoms(mol: &Molecule) -> usize {
 /// its symmetrized SSSR. It exceeds [`ring_count`] (the SSSR size, i.e. the
 /// cycle rank) for cages and bridged systems such as cubane or adamantane.
 pub fn rdkit_num_rings(mol: &Molecule) -> usize {
-    // A graph of cycle rank one has exactly one ring under every SSSR
-    // symmetrization. The SMILES parser records each closure bond, so the
-    // overwhelmingly common monocycle needs no bridge pass or allocation.
-    if mol.smiles_ring_closure_bond_count() == 1 {
-        return 1;
+    single_smiles_closure_ring_count(mol)
+        .or_else(|| simple_ring_system_count(mol))
+        .unwrap_or_else(|| rdkit_ring_list(mol).len())
+}
+
+/// Fast path for an unmodified SMILES graph with one ring-closure bond.
+///
+/// A ring digit only establishes a graph cycle when the closure's endpoints
+/// are already connected through RDKit's ring graph. It may instead join two
+/// dot-separated components, or the only alternate path may contain a metal
+/// coordination bond that RDKit excludes from ring finding.
+fn single_smiles_closure_ring_count(mol: &Molecule) -> Option<usize> {
+    if mol.smiles_ring_closure_bond_count() != 1 {
+        return None;
     }
-    simple_ring_system_count(mol).unwrap_or_else(|| rdkit_ring_list(mol).len())
+    let (closure_idx, closure) = mol
+        .bonds()
+        .find(|(bond_idx, _)| mol.is_smiles_ring_closure(*bond_idx))?;
+    if mol.bonds().any(|(_, bond)| {
+        matches!(
+            bond.order,
+            BondOrder::QueryAny
+                | BondOrder::QuerySingleOrDouble
+                | BondOrder::QuerySingleOrAromatic
+                | BondOrder::QueryDoubleOrAromatic
+        )
+    }) {
+        return None;
+    }
+
+    let excluded = chematic_perception::rdkit_organometallic_dative_bonds(mol);
+    if excluded[closure_idx.0 as usize] || closure.order == BondOrder::Dative {
+        return Some(0);
+    }
+    let mut seen = vec![false; mol.atom_count()];
+    let mut stack = vec![closure.atom1];
+    seen[closure.atom1.0 as usize] = true;
+    while let Some(atom) = stack.pop() {
+        for (neighbor, bond_idx) in mol.neighbors(atom) {
+            if bond_idx == closure_idx
+                || excluded[bond_idx.0 as usize]
+                || mol.bond(bond_idx).order == BondOrder::Dative
+            {
+                continue;
+            }
+            if neighbor == closure.atom2 {
+                return Some(1);
+            }
+            let visited = &mut seen[neighbor.0 as usize];
+            if !*visited {
+                *visited = true;
+                stack.push(neighbor);
+            }
+        }
+    }
+    Some(0)
 }
 
 /// The number of ring systems when every ring system is a single simple
@@ -2862,9 +2911,16 @@ pub fn distance_descriptor_bundle(mol: &Molecule) -> DistanceDescriptorBundle {
 /// μ = m − n + 1 and Sᵢ the row sum of the bond-order-weighted distance
 /// matrix (edge weight 1/bond order, aromatic 2/3).
 ///
-/// Returns 0.0 for molecules larger than 1000 atoms.
+/// Returns 0.0 for molecules larger than 1000 atoms for compatibility.
+/// Prefer [`try_balaban_j`] when failure must be distinguishable from a valid
+/// zero.
 pub fn balaban_j(mol: &Molecule) -> f64 {
     crate::rdkit_graph::balaban_j(mol)
+}
+
+/// Checked Balaban J calculation.
+pub fn try_balaban_j(mol: &Molecule) -> Result<f64, crate::rdkit_graph::GraphDescriptorError> {
+    crate::rdkit_graph::try_balaban_j(mol)
 }
 
 // ---------------------------------------------------------------------------
@@ -2876,9 +2932,15 @@ pub fn balaban_j(mol: &Molecule) -> f64 {
 /// Trinajstić, *J. Chem. Phys.* **67**, 4517–4533, 1977), as RDKit's
 /// `GraphDescriptors.Ipc`.
 ///
-/// Returns 0.0 for molecules larger than 1000 atoms.
+/// Returns 0.0 for molecules larger than 1000 atoms for compatibility.
+/// Prefer [`try_ipc`] when failure must be distinguishable from a valid zero.
 pub fn ipc(mol: &Molecule) -> f64 {
     crate::rdkit_graph::ipc(mol)
+}
+
+/// Checked Ipc calculation.
+pub fn try_ipc(mol: &Molecule) -> Result<f64, crate::rdkit_graph::GraphDescriptorError> {
+    crate::rdkit_graph::try_ipc(mol)
 }
 
 // ---------------------------------------------------------------------------
@@ -3656,6 +3718,23 @@ mod tests {
         m.add_bond(AtomIdx(3), bridge, BondOrder::Single).unwrap();
         assert_eq!(m.smiles_ring_closure_bond_count(), 0);
         assert_eq!(rdkit_num_rings(&m), 2);
+    }
+
+    #[test]
+    fn rdkit_num_rings_does_not_treat_every_smiles_closure_as_a_ring() {
+        // A ring digit can connect components or close a path through a bond
+        // RDKit excludes from its ring graph. Parser provenance is therefore
+        // not, by itself, a safe ring count.
+        for smiles in [
+            "[Fe]1(Cl)(Cl)Cl.Cl1",
+            "C=C(C)N1C=NC<-C1",
+            "N1CCN->[Cu]1",
+            "C1CCN->[Cu]1",
+        ] {
+            let m = mol(smiles);
+            assert_eq!(m.smiles_ring_closure_bond_count(), 1, "{smiles}");
+            assert_eq!(rdkit_num_rings(&m), 0, "{smiles}");
+        }
     }
 
     /// RDKit sanitization rewrites perchloric acid as
