@@ -5406,3 +5406,52 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod oop_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn direct_and_prepared_out_of_plane_terms_agree_on_distorted_geometries() {
+        for text in [
+            "C=C(C)C",
+            "CC(=O)N",
+            "C[N+](=O)[O-]",
+            "NC(=[NH2+])N",
+            "c1ccccc1",
+        ] {
+            let mol = chematic_chem::add_hydrogens(&chematic_smiles::parse(text).unwrap());
+            let (types, view) = assign_mmff94_numeric_types_with_view(&mol).unwrap();
+            let model = Mmff94EnergyModel::new(&mol).unwrap();
+            assert!(!model.oops.is_empty(), "{text}");
+            // A deterministic nonsymmetric geometry avoids accidentally planar centres.
+            let coords: Vec<_> = (0..mol.atom_count())
+                .map(|i| {
+                    let t = i as f64 + 0.25;
+                    [t.dcos(), t.dsin(), (t * 0.7).dsin()]
+                })
+                .collect();
+            let direct = oop_energy(&view, &coords, &types);
+            let prepared = model.oop_energy(&coords);
+            // Fitted MMFF OOP constants can be negative (e.g. amide N).
+            assert!(direct.is_finite() && direct.abs() > 0.0, "{text}: {direct}");
+            assert!(
+                (direct - prepared).abs() < 1e-10 * (1.0 + prepared.abs()),
+                "{text}: {direct} != {prepared}"
+            );
+            let moved: Vec<_> = coords
+                .iter()
+                .map(|p| [-p[1] + 3.0, p[0] - 2.0, p[2] + 1.0])
+                .collect();
+            let transformed = oop_energy(&view, &moved, &types);
+            assert!(
+                (direct - transformed).abs() < 1e-10 * (1.0 + direct.abs()),
+                "{text}"
+            );
+            assert_eq!(
+                oop_energy(&view, &vec![[0.0; 3]; mol.atom_count()], &types),
+                0.0
+            );
+        }
+    }
+}
