@@ -3,46 +3,52 @@
   "release": {
     "version": "1.0.42",
     "tag": "v1.0.42",
-    "commit": null
+    "commit": "a7f2a84b48ebeb6ed3b456556433301c10500256"
   },
-  "checked_at": "2026-10-10T14:23:17+09:00",
-  "release_ready": false,
+  "checked_at": "2026-10-10T06:15:05Z",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.42",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.42",
-      "detail": "Pending tag publication and GitHub Release verification."
+      "detail": "Non-draft, non-prerelease GitHub Release published at 2026-10-10T05:53:07Z; its metadata asset records the exact annotated tag target a7f2a84b48ebeb6ed3b456556433301c10500256."
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.42",
       "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic/1.0.42",
-      "detail": "Pending npm publication and registry verification."
+      "detail": "Registry reports @kent-tokyo/chematic 1.0.42 with a versioned tarball and integrity digest."
     },
     {
       "id": "pypi",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.42",
       "url": "https://pypi.org/pypi/chematic/1.0.42/json",
-      "detail": "Pending PyPI publication and artifact verification."
+      "detail": "PyPI reports 26 files: 25 wheels for CPython 3.9-3.13 across Linux x86_64/aarch64, macOS x86_64/arm64 and Windows x86_64, plus one sdist."
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.42",
       "url": "https://crates.io/crates/chematic/1.0.42",
-      "detail": "Pending publication and verification of all 20 workspace crates."
+      "detail": "All 20 publishable workspace crates returned HTTP 200 for version 1.0.42 from the crates.io API."
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.42",
       "url": "https://docs.rs/chematic/1.0.42/chematic/",
-      "detail": "Pending docs.rs build and HTTP verification."
+      "detail": "Versioned docs.rs page returned HTTP 200."
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.42",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "Pending GitHub Pages deployment and displayed-version verification."
+      "detail": "GitHub Pages deployment succeeded and the rendered homepage displays v1.0.42."
     }
   ]
 }

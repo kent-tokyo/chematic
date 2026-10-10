@@ -4,15 +4,15 @@
   "release": {
     "version": "1.0.42",
     "tag": "v1.0.42",
-    "commit": null,
-    "commit_source": "Pre-publication placeholder; replace with the exact annotated tag target after v1.0.42 is published.",
-    "released_at": "2026-10-10T14:23:17+09:00"
+    "commit": "a7f2a84b48ebeb6ed3b456556433301c10500256",
+    "commit_source": "Exact annotated v1.0.42 tag target, verified after publication.",
+    "released_at": "2026-10-10T14:52:48+09:00"
   },
   "evidence_context": {
     "stable_release": {
       "version": "1.0.42",
       "tag": "v1.0.42",
-      "commit": null
+      "commit": "a7f2a84b48ebeb6ed3b456556433301c10500256"
     },
     "candidate": null,
     "oracle_lanes": [],
@@ -84,5 +84,5 @@
       }
     ]
   },
-  "generated_at": "2026-10-10T05:23:26Z"
+  "generated_at": "2026-10-10T06:15:05Z"
 }
