@@ -1015,14 +1015,17 @@ enum ParityShortcut {
 /// explicit representation is kept ([`unchanged_without_kekulization_with`]).
 fn parity_shortcut(mol: &Molecule) -> ParityShortcut {
     *mol.derived(chematic_core::DerivedSlot::RdkitParityShortcut, || {
+        let model_may_disagree = crate::rdkit_model_hook::rdkit_model_may_disagree(mol);
         // Molecules whose view the RDKit-model hook may correct take the
         // full path, where the hook runs.
-        if crate::rdkit_model_hook::hook_for(mol).is_some() {
+        if model_may_disagree && crate::rdkit_model_hook::hook_for(mol).is_some() {
             return ParityShortcut::Full;
         }
         // RDKit's sanitization rewrites some graphs (perchlorate,
-        // organometallic dative bonds); the view is then never `mol`.
-        if crate::rdkit_cleanup::rdkit_sanitize_cleanup_needed(mol) {
+        // organometallic dative bonds); the view is then never `mol`. Every
+        // cleanup candidate is already included in the broader model gate,
+        // so ordinary molecules do not need a second full atom scan.
+        if model_may_disagree && crate::rdkit_cleanup::rdkit_sanitize_cleanup_needed(mol) {
             return ParityShortcut::Full;
         }
         let info = ComponentInfo::new(mol);

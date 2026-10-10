@@ -1129,19 +1129,50 @@ impl Molecule {
     /// For molecules not read from SMILES this is the bond index order, which
     /// is also RDKit's for MOL/SDF input.
     pub fn rdkit_bond_order(&self) -> Vec<BondIdx> {
-        let mut order: Vec<BondIdx> = (0..self.bonds.len() as u32)
-            .filter(|b| !self.smiles_ring_closure_keys.contains_key(b))
-            .map(BondIdx)
-            .collect();
+        let mut order = Vec::with_capacity(self.bonds.len());
+        self.for_each_bond_in_rdkit_order(|bond| order.push(bond));
+        order
+    }
+
+    /// Visit bonds in [`Self::rdkit_bond_order`] without allocating the full
+    /// order vector. The usual SMILES has at most eight closure bonds, which
+    /// are sorted in a small stack buffer; unusually closure-heavy inputs use
+    /// a heap fallback. Intended for hot read-only descriptor paths.
+    #[doc(hidden)]
+    pub fn for_each_bond_in_rdkit_order(&self, mut visit: impl FnMut(BondIdx)) {
+        for bond in 0..self.bonds.len() as u32 {
+            if !self.smiles_ring_closure_keys.contains_key(&bond) {
+                visit(BondIdx(bond));
+            }
+        }
+
+        const INLINE_CLOSURES: usize = 8;
+        if self.smiles_ring_closure_keys.len() <= INLINE_CLOSURES {
+            let mut closures = [(0u64, 0u32); INLINE_CLOSURES];
+            let mut len = 0usize;
+            for (&bond, &key) in &self.smiles_ring_closure_keys {
+                if (bond as usize) < self.bonds.len() {
+                    closures[len] = (key, bond);
+                    len += 1;
+                }
+            }
+            closures[..len].sort_unstable();
+            for &(_, bond) in &closures[..len] {
+                visit(BondIdx(bond));
+            }
+            return;
+        }
+
         let mut closures: Vec<(u64, u32)> = self
             .smiles_ring_closure_keys
             .iter()
-            .filter(|(b, _)| (**b as usize) < self.bonds.len())
-            .map(|(&b, &k)| (k, b))
+            .filter(|(bond, _)| (**bond as usize) < self.bonds.len())
+            .map(|(&bond, &key)| (key, bond))
             .collect();
         closures.sort_unstable();
-        order.extend(closures.into_iter().map(|(_, b)| BondIdx(b)));
-        order
+        for (_, bond) in closures {
+            visit(BondIdx(bond));
+        }
     }
 
     /// SMILES-text-order neighbor sequence for a chiral atom.
@@ -1646,6 +1677,31 @@ mod tests {
         let mol = ethane();
         assert_eq!(mol.atom_count(), 2);
         assert_eq!(mol.bond_count(), 1);
+    }
+
+    #[test]
+    fn rdkit_bond_order_visitor_keeps_chain_then_sorted_closures() {
+        let mut builder = MoleculeBuilder::new();
+        let atoms: Vec<_> = (0..4)
+            .map(|_| builder.add_atom(Atom::new(Element::C)))
+            .collect();
+        let early_closure = builder
+            .add_bond(atoms[0], atoms[1], BondOrder::Single)
+            .unwrap();
+        let chain = builder
+            .add_bond(atoms[1], atoms[2], BondOrder::Single)
+            .unwrap();
+        let late_closure = builder
+            .add_bond(atoms[2], atoms[3], BondOrder::Single)
+            .unwrap();
+        builder.set_smiles_ring_closure(early_closure, 2, 0);
+        builder.set_smiles_ring_closure(late_closure, 9, 0);
+        let molecule = builder.build();
+
+        let mut visited = Vec::new();
+        molecule.for_each_bond_in_rdkit_order(|bond| visited.push(bond));
+        assert_eq!(visited, vec![chain, early_closure, late_closure]);
+        assert_eq!(molecule.rdkit_bond_order(), visited);
     }
 
     #[test]
