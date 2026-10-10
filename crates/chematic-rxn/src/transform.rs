@@ -4076,14 +4076,501 @@ fn rdkit_carried_bond_order(
     Some(order)
 }
 
+fn add_product_template_bonds(
+    builder: &mut MoleculeBuilder,
+    product_template: &Molecule,
+    template_idx_to_new: &[Option<AtomIdx>],
+    source_of: &[Option<(usize, AtomIdx)>],
+    input_mols: &[&Molecule],
+) -> Vec<AtomIdx> {
+    // Atoms of a product `:` bond are flagged aromatic, as RDKit does.
+    let mut colon_atoms = Vec::new();
+    for (_bidx, bond) in product_template.bonds() {
+        let a_new = template_idx_to_new[bond.atom1.0 as usize].unwrap();
+        let b_new = template_idx_to_new[bond.atom2.0 as usize].unwrap();
+        if bond.order == BondOrder::Aromatic {
+            colon_atoms.extend([a_new, b_new]);
+        }
+        let mut order = bond.order;
+        let (mut from, mut to) = (a_new, b_new);
+        // A template single bond over a reactant `/`/`\` bond keeps the
+        // direction: it carries the E/Z of an adjacent double bond the
+        // template leaves alone.
+        if order == BondOrder::Single
+            && let (Some((ma, sa)), Some((mb, sb))) =
+                (source_of[a_new.0 as usize], source_of[b_new.0 as usize])
+            && ma == mb
+            && let Some((_, ob)) = input_mols[ma].bond_between(sa, sb)
+            && matches!(ob.order, BondOrder::Up | BondOrder::Down)
+        {
+            order = ob.order;
+            if ob.atom1 != sa {
+                (from, to) = (b_new, a_new);
+            }
+        }
+        // A product `~` keeps the reactant bond between mapped atoms and is
+        // a zero-order bond otherwise.
+        if order == BondOrder::QueryAny {
+            order = BondOrder::Zero;
+            if let (Some((ma, sa)), Some((mb, sb))) =
+                (source_of[a_new.0 as usize], source_of[b_new.0 as usize])
+                && ma == mb
+                && let Some((_, ob)) = input_mols[ma].bond_between(sa, sb)
+            {
+                order = ob.order;
+                if ob.atom1 != sa {
+                    (from, to) = (b_new, a_new);
+                }
+            }
+        }
+        let _ = builder.add_bond(from, to, order);
+    }
+    colon_atoms
+}
+
+#[allow(clippy::too_many_arguments)]
+fn carry_source_bonds(
+    builder: &mut MoleculeBuilder,
+    source_of: &[Option<(usize, AtomIdx)>],
+    new_of: &[Vec<Option<AtomIdx>>],
+    input_mols: &[&Molecule],
+    all_template_atoms: &FxHashSet<(usize, AtomIdx)>,
+    global_map: &FxHashMap<u16, (usize, AtomIdx)>,
+    reactant_bond_maps: &FxHashSet<(u16, u16)>,
+) {
+    let map_of = |key: (usize, AtomIdx)| {
+        global_map
+            .iter()
+            .find(|&(_, &mapped)| mapped == key)
+            .map(|(&atom_map, _)| atom_map)
+    };
+    let carried = source_of
+        .iter()
+        .enumerate()
+        .filter_map(|(new, src)| src.map(|src| (src, AtomIdx(new as u32))));
+    for ((mol_idx, src_idx), a_new) in carried {
+        for (nb_idx, bond_idx) in input_mols[mol_idx].neighbors(src_idx) {
+            let nb_key = (mol_idx, nb_idx);
+            let Some(b_new) = new_of[mol_idx][nb_idx.0 as usize] else {
+                continue;
+            };
+            if all_template_atoms.contains(&(mol_idx, src_idx))
+                && all_template_atoms.contains(&nb_key)
+            {
+                // Both ends matched: templates decide this bond, except for
+                // a reactant bond between mapped atoms the template does not
+                // itself connect (RDKit, github #1387).
+                let kept = match (map_of((mol_idx, src_idx)), map_of(nb_key)) {
+                    (Some(a), Some(b)) => !reactant_bond_maps.contains(&(a.min(b), a.max(b))),
+                    _ => false,
+                };
+                if !kept {
+                    continue;
+                }
+            }
+            let source_bond = input_mols[mol_idx].bond(bond_idx);
+            let (a, b) = if source_bond.atom1 == src_idx {
+                (a_new, b_new)
+            } else {
+                (b_new, a_new)
+            };
+            let _ = builder.add_bond(a, b, source_bond.order);
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn restore_carried_atom_stereo(
+    product: &mut Molecule,
+    product_template: &Molecule,
+    template_idx_to_new: &[Option<AtomIdx>],
+    input_mols: &[&Molecule],
+    source_of: &[Option<(usize, AtomIdx)>],
+    discoverer: &FxHashMap<(usize, AtomIdx), AtomIdx>,
+    src_to_new: &FxHashMap<(usize, AtomIdx), AtomIdx>,
+    keep_carried_maps: bool,
+) -> Vec<((usize, AtomIdx), AtomIdx)> {
+    let sourced_atoms: Vec<_> = source_of
+        .iter()
+        .enumerate()
+        .filter_map(|(new, src)| src.map(|src| (src, AtomIdx(new as u32))))
+        .collect();
+    for &((mol_idx, src_idx), new_idx) in &sourced_atoms {
+        let src = input_mols[mol_idx];
+        if keep_carried_maps
+            && let Some((class, _)) = src.atom(src_idx).chirality.nontetrahedral()
+            && let Some(template_idx) = template_idx_to_new
+                .iter()
+                .position(|idx| *idx == Some(new_idx))
+            && product_template
+                .atom(AtomIdx(template_idx as u32))
+                .chirality
+                == Chirality::None
+        {
+            product.set_chirality(new_idx, Chirality::from_nontetrahedral(class, 0).unwrap());
+            continue;
+        }
+        if keep_carried_maps
+            && src.atom(src_idx).chirality.nontetrahedral().is_some()
+            && !template_idx_to_new.contains(&Some(new_idx))
+        {
+            let order = rdkit_carried_bond_order(
+                src,
+                src_idx,
+                discoverer.get(&(mol_idx, src_idx)).copied(),
+            )
+            .and_then(|order| remap_reactant_stereo_order(&order, mol_idx, src_to_new))
+            .filter(|order| order_matches_final_topology(product, new_idx, order));
+            match order {
+                Some(order) => {
+                    product.set_chirality(new_idx, src.atom(src_idx).chirality);
+                    product.set_stereo_neighbor_order(new_idx, order);
+                }
+                None => product.set_chirality(new_idx, Chirality::None),
+            }
+            continue;
+        }
+        if !src.atom(src_idx).chirality.is_tetrahedral()
+            || template_idx_to_new.contains(&Some(new_idx))
+        {
+            continue;
+        }
+        match src
+            .stereo_neighbor_order(src_idx)
+            .and_then(|order| remap_reactant_stereo_order(order, mol_idx, src_to_new))
+            .filter(|order| order_matches_final_topology(product, new_idx, order))
+        {
+            Some(order) => product.set_stereo_neighbor_order(new_idx, order),
+            None => product.set_chirality(new_idx, Chirality::None),
+        }
+    }
+    sourced_atoms
+}
+
+fn transfer_folded_h_stereo(
+    product: &mut Molecule,
+    folded_h: &FxHashSet<(usize, AtomIdx)>,
+    input_mols: &[&Molecule],
+    new_of: &[Vec<Option<AtomIdx>>],
+) {
+    let from_core = |order: BondOrder, atom1: AtomIdx, at: AtomIdx| match (order, atom1 == at) {
+        (o, true) => o,
+        (BondOrder::Up, false) => BondOrder::Down,
+        (BondOrder::Down, false) => BondOrder::Up,
+        (o, false) => o,
+    };
+    for &(mol_idx, h) in folded_h {
+        let src = input_mols[mol_idx];
+        let Some((core, h_bond_idx)) = src.neighbors(h).next() else {
+            continue;
+        };
+        let h_bond = src.bond(h_bond_idx);
+        let h_dir = from_core(h_bond.order, h_bond.atom1, core);
+        if !matches!(h_dir, BondOrder::Up | BondOrder::Down) {
+            continue;
+        }
+        let Some(core_new) = new_of[mol_idx][core.0 as usize] else {
+            continue;
+        };
+        let on_double = product
+            .neighbors(core_new)
+            .any(|(_, bond)| product.bond(bond).order == BondOrder::Double);
+        let marked = product
+            .neighbors(core_new)
+            .any(|(_, bond)| matches!(product.bond(bond).order, BondOrder::Up | BondOrder::Down));
+        if !on_double || marked {
+            continue;
+        }
+        let other = if h_dir == BondOrder::Up {
+            BondOrder::Down
+        } else {
+            BondOrder::Up
+        };
+        let carrier = product
+            .neighbors(core_new)
+            .find(|&(_, bond)| product.bond(bond).order == BondOrder::Single)
+            .map(|(_, bond)| bond);
+        if let Some(bond) = carrier {
+            let atom1 = product.bond(bond).atom1;
+            product.set_bond_order(bond, from_core(other, atom1, core_new));
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn carry_substituent_atoms(
+    builder: &mut MoleculeBuilder,
+    input_mols: &[&Molecule],
+    all_template_atoms: &FxHashSet<(usize, AtomIdx)>,
+    folded_h: &FxHashSet<(usize, AtomIdx)>,
+    core_keys: Vec<(usize, AtomIdx)>,
+    carry_substituents: bool,
+    keep_carried_maps: bool,
+    src_to_new: &mut FxHashMap<(usize, AtomIdx), AtomIdx>,
+) -> FxHashMap<(usize, AtomIdx), AtomIdx> {
+    let mut visited: Vec<Vec<bool>> = input_mols
+        .iter()
+        .map(|molecule| vec![false; molecule.atom_count()])
+        .collect();
+    for &(mol_idx, atom) in all_template_atoms.iter().chain(folded_h.iter()) {
+        visited[mol_idx][atom.0 as usize] = true;
+    }
+
+    // Each carried atom's neighbour from which the walk reached it. RDKit's
+    // product bond order around that atom starts with this bond.
+    let mut discoverer = FxHashMap::default();
+    if !carry_substituents {
+        return discoverer;
+    }
+
+    // The seeds are in reactant atom order so product atom order never
+    // depends on hash-table iteration order.
+    let mut queue: VecDeque<(usize, AtomIdx)> = core_keys.into();
+    while let Some((mol_idx, current)) = queue.pop_front() {
+        for (neighbor, _bond) in input_mols[mol_idx].neighbors(current) {
+            let key = (mol_idx, neighbor);
+            if std::mem::replace(&mut visited[mol_idx][neighbor.0 as usize], true) {
+                continue;
+            }
+            discoverer.insert(key, current);
+            let mut atom = input_mols[mol_idx].atom(neighbor).clone();
+            if !keep_carried_maps {
+                atom.atom_map = None;
+            }
+            let product_atom = builder.add_atom(atom);
+            src_to_new.insert(key, product_atom);
+            queue.push_back(key);
+        }
+    }
+    discoverer
+}
+
+struct DenseAtomMaps {
+    source_of: Vec<Option<(usize, AtomIdx)>>,
+    new_of: Vec<Vec<Option<AtomIdx>>>,
+}
+
+fn dense_atom_maps(
+    builder_atom_count: usize,
+    input_mols: &[&Molecule],
+    src_to_new: &FxHashMap<(usize, AtomIdx), AtomIdx>,
+) -> DenseAtomMaps {
+    let mut source_of = vec![None; builder_atom_count];
+    let mut new_of: Vec<Vec<Option<AtomIdx>>> = input_mols
+        .iter()
+        .map(|molecule| vec![None; molecule.atom_count()])
+        .collect();
+    for (&source, &product) in src_to_new {
+        source_of[product.0 as usize] = Some(source);
+        new_of[source.0][source.1.0 as usize] = Some(product);
+    }
+    DenseAtomMaps { source_of, new_of }
+}
+
+fn restore_product_aromaticity(
+    molecule: &mut Molecule,
+    colon_atoms: &[AtomIdx],
+    dearomatized: &[AtomIdx],
+) {
+    for &atom in colon_atoms {
+        if !molecule.atom(atom).aromatic {
+            molecule.set_atom_aromatic(atom, true);
+        }
+    }
+    for &atom in dearomatized {
+        let aromatic_bonds = molecule
+            .neighbors(atom)
+            .filter(|&(_, bond)| molecule.bond(bond).order == BondOrder::Aromatic)
+            .count();
+        if aromatic_bonds >= 2 {
+            molecule.set_atom_aromatic(atom, true);
+        }
+    }
+}
+
+fn reactant_has_explicit_h(
+    input_mols: &[&Molecule],
+    cache: &[std::cell::OnceCell<bool>],
+    mol_idx: usize,
+) -> bool {
+    *cache[mol_idx].get_or_init(|| {
+        let molecule = input_mols[mol_idx];
+        molecule.atoms().any(|(atom_idx, atom)| {
+            atom.element == chematic_core::Element::H && molecule.degree(atom_idx) == 1
+        })
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn refill_product_hydrogens(
+    molecule: &mut Molecule,
+    sourced_atoms: &[((usize, AtomIdx), AtomIdx)],
+    input_mols: &[&Molecule],
+    template_idx_to_new: &[Option<AtomIdx>],
+    explicit_h_cache: &[std::cell::OnceCell<bool>],
+    mut folded_cores: Vec<AtomIdx>,
+    source_of: &[Option<(usize, AtomIdx)>],
+    folded_h: &FxHashSet<(usize, AtomIdx)>,
+) {
+    // A carried atom of an explicit-H reactant that lost a bond gets its
+    // hydrogens back, matching RDKit's refill after an edit.
+    for &((mol_idx, source_idx), product_idx) in sourced_atoms {
+        let source = input_mols[mol_idx];
+        let atom = source.atom(source_idx);
+        if atom.hydrogen_count != Some(0)
+            || atom.charge != 0
+            || atom.aromatic
+            || !atom.element.is_organic_subset()
+            || atom.element == chematic_core::Element::H
+            || molecule.degree(product_idx) >= source.degree(source_idx)
+            || template_idx_to_new.contains(&Some(product_idx))
+        {
+            continue;
+        }
+        if reactant_has_explicit_h(input_mols, explicit_h_cache, mol_idx) {
+            molecule.set_hydrogen_count(product_idx, None);
+            folded_cores.push(product_idx);
+        }
+    }
+
+    for core in folded_cores {
+        let atom = molecule.atom(core);
+        let mixed_aromatic = !atom.aromatic
+            && molecule
+                .neighbors(core)
+                .any(|(_, bond)| molecule.bond(bond).order == BondOrder::Aromatic);
+        let element_changed = source_of[core.0 as usize].is_some_and(|(mol_idx, source_idx)| {
+            input_mols[mol_idx].atom(source_idx).element != atom.element
+        });
+        if mixed_aromatic && element_changed {
+            molecule.set_hydrogen_count(core, None);
+            continue;
+        }
+        let count = if mixed_aromatic {
+            source_of[core.0 as usize].map_or(0, |(mol_idx, source_idx)| {
+                input_mols[mol_idx]
+                    .neighbors(source_idx)
+                    .filter(|&(neighbor, _)| folded_h.contains(&(mol_idx, neighbor)))
+                    .count() as u8
+            })
+        } else if atom.charge != 0 && !atom.aromatic {
+            let bond_order_sum: i16 = molecule
+                .neighbors(core)
+                .map(|(_, bond)| i16::from(molecule.bond(bond).order.order_int()))
+                .sum();
+            crate::rdkit_valence::implicit_hydrogens(
+                atom.element.atomic_number(),
+                atom.charge,
+                bond_order_sum,
+            )
+        } else {
+            chematic_core::implicit_hcount(molecule, core)
+        };
+        molecule.set_hydrogen_count(core, Some(0));
+        for _ in 0..count {
+            let mut hydrogen = chematic_core::Atom::new(chematic_core::Element::H);
+            hydrogen.hydrogen_count = Some(0);
+            let hydrogen_idx = molecule.add_atom(hydrogen);
+            let _ = molecule.add_bond(core, hydrogen_idx, BondOrder::Single);
+        }
+    }
+}
+
+fn apply_rdkit_template_hydrogens(
+    molecule: &mut Molecule,
+    template_idx_to_new: &[Option<AtomIdx>],
+) {
+    for &idx in template_idx_to_new.iter().flatten() {
+        let atom = molecule.atom(idx);
+        let aromatic_bonds = molecule
+            .neighbors(idx)
+            .filter(|&(_, bond)| molecule.bond(bond).order == BondOrder::Aromatic)
+            .count();
+        if atom.aromatic
+            && atom.charge != 0
+            && atom.hydrogen_count.is_none()
+            && !atom.wildcard
+            && aromatic_bonds == 2
+        {
+            let other_bonds: i16 = molecule
+                .neighbors(idx)
+                .filter(|&(_, bond)| molecule.bond(bond).order != BondOrder::Aromatic)
+                .map(|(_, bond)| i16::from(molecule.bond(bond).order.order_int()))
+                .sum();
+            let rdkit_h = crate::rdkit_valence::implicit_hydrogens(
+                atom.element.atomic_number(),
+                atom.charge,
+                3 + other_bonds,
+            );
+            if rdkit_h != chematic_core::implicit_hcount(molecule, idx) {
+                molecule.set_hydrogen_count(idx, Some(rdkit_h));
+            }
+            continue;
+        }
+        if (atom.charge == 0 && atom.element.is_organic_subset())
+            || atom.hydrogen_count.is_some()
+            || atom.wildcard
+            || atom.aromatic
+            || molecule
+                .neighbors(idx)
+                .any(|(_, bond)| molecule.bond(bond).order == BondOrder::Aromatic)
+        {
+            continue;
+        }
+        let bond_order_sum: i16 = molecule
+            .neighbors(idx)
+            .map(|(_, bond)| {
+                let bond = molecule.bond(bond);
+                match bond.order {
+                    BondOrder::Dative if bond.atom1 == idx => 0,
+                    order => i16::from(order.order_int()),
+                }
+            })
+            .sum();
+        let rdkit_h = crate::rdkit_valence::implicit_hydrogens(
+            atom.element.atomic_number(),
+            atom.charge,
+            bond_order_sum,
+        );
+        if rdkit_h != chematic_core::implicit_hcount(molecule, idx) {
+            molecule.set_hydrogen_count(idx, Some(rdkit_h));
+        }
+    }
+}
+
+fn traced_product(
+    molecule: Molecule,
+    product_template: &Molecule,
+    template_idx_to_new: Vec<Option<AtomIdx>>,
+    sourced_atoms: &[((usize, AtomIdx), AtomIdx)],
+) -> (TracedProduct, Vec<Option<AtomIdx>>) {
+    let mut atom_sources = vec![None; molecule.atom_count()];
+    for &((reactant, atom), product_atom) in sourced_atoms {
+        atom_sources[product_atom.0 as usize] = Some(ReactantAtom { reactant, atom });
+    }
+    let mut template_maps = vec![None; molecule.atom_count()];
+    for (template_atom, product_atom) in template_idx_to_new.iter().enumerate() {
+        if let Some(product_atom) = product_atom {
+            template_maps[product_atom.0 as usize] = product_template
+                .atom(AtomIdx(template_atom as u32))
+                .atom_map;
+        }
+    }
+    (
+        TracedProduct {
+            molecule,
+            atom_sources,
+            template_maps,
+        },
+        template_idx_to_new,
+    )
+}
+
 /// Build one product molecule applying full SMIRKS semantics.
 ///
-/// 1. Atom-mapped product atoms: copy source atom + override aromatic/charge/H from template.
-/// 2. New product atoms (no map): clone from template.
-/// 3. BFS from core (mapped) atoms through input molecules, collecting substituents
-///    (non-template atoms reachable without crossing template-atom walls).
-/// 4. Add product-template bonds (new/changed bonds).
-/// 5. Carry through bonds from source molecules where at least one endpoint is a substituent.
+/// Atom-mapped and new template atoms are assembled first. Substituents and
+/// source bonds are then carried into the product before stereo, explicit-H,
+/// aromaticity, and trace metadata are finalized.
 #[allow(clippy::too_many_arguments)]
 fn build_product(
     product_template: &Molecule,
@@ -4167,13 +4654,6 @@ fn build_product(
         .iter()
         .map(|_| std::cell::OnceCell::new())
         .collect();
-    let explicit_h_reactant = |mol_idx: usize| {
-        *explicit_h_cache[mol_idx].get_or_init(|| {
-            let m = input_mols[mol_idx];
-            m.atoms()
-                .any(|(i, a)| a.element == chematic_core::Element::H && m.degree(i) == 1)
-        })
-    };
     for (i, slot) in template_idx_to_new.iter_mut().enumerate() {
         let tmpl_atom = product_template.atom(AtomIdx(i as u32));
         let new_idx = if let Some(am) = tmpl_atom.atom_map {
@@ -4272,7 +4752,7 @@ fn build_product(
                     && src_atom.element.is_organic_subset()
                     && new_atom.element.is_organic_subset()
                     && template_h(i).is_none()
-                    && explicit_h_reactant(mol_idx);
+                    && reactant_has_explicit_h(input_mols, &explicit_h_cache, mol_idx);
                 if !explicit_h.is_empty() || refill {
                     // The folded H atoms are re-derived from valence below.
                     new_atom.hydrogen_count = template_h(i);
@@ -4329,156 +4809,37 @@ fn build_product(
         *slot = Some(new_idx);
     }
 
-    // --- Step 2: BFS from core atoms to collect substituents ---
-    // Skipped when carry_substituents = false (run_reactants_strict mode).
-    // Seed visited with all template atoms so BFS cannot cross into the template region.
-    let mut visited: Vec<Vec<bool>> = input_mols
-        .iter()
-        .map(|m| vec![false; m.atom_count()])
-        .collect();
-    for &(mol_idx, atom) in all_template_atoms.iter().chain(folded_h.iter()) {
-        visited[mol_idx][atom.0 as usize] = true;
-    }
-    // Each carried atom's neighbour the walk reached it from (RDKit's
-    // product bond order around it starts with that bond).
-    let mut discoverer: FxHashMap<(usize, AtomIdx), AtomIdx> = FxHashMap::default();
-    if carry_substituents {
-        // Seeded in reactant atom order, so the product's atom order does not
-        // follow the hash set's iteration order.
-        let mut queue: VecDeque<(usize, AtomIdx)> = core_keys.into();
+    // --- Step 2: collect substituents and index source/product atoms ---
+    let discoverer = carry_substituent_atoms(
+        &mut builder,
+        input_mols,
+        all_template_atoms,
+        &folded_h,
+        core_keys,
+        carry_substituents,
+        keep_carried_maps,
+        &mut src_to_new,
+    );
+    let DenseAtomMaps { source_of, new_of } =
+        dense_atom_maps(builder.atom_count(), input_mols, &src_to_new);
 
-        while let Some((mol_idx, cur_idx)) = queue.pop_front() {
-            for (nb_idx, _bond_idx) in input_mols[mol_idx].neighbors(cur_idx) {
-                let key = (mol_idx, nb_idx);
-                if std::mem::replace(&mut visited[mol_idx][nb_idx.0 as usize], true) {
-                    continue;
-                }
-                discoverer.insert(key, cur_idx);
-                let src_atom = input_mols[mol_idx].atom(nb_idx);
-                let mut new_atom = src_atom.clone();
-                // RDKit copies an unmatched reactant atom whole
-                // (`addMissingProductAtom`), its atom map number included.
-                if !keep_carried_maps {
-                    new_atom.atom_map = None;
-                }
-                let new_idx = builder.add_atom(new_atom);
-                src_to_new.insert(key, new_idx);
-                queue.push_back(key);
-            }
-        }
-    }
-
-    // Each product atom's reactant atom, and each reactant atom's product
-    // atom (`src_to_new` as dense tables, iterated in product atom order).
-    let mut source_of: Vec<Option<(usize, AtomIdx)>> = vec![None; builder.atom_count()];
-    let mut new_of: Vec<Vec<Option<AtomIdx>>> = input_mols
-        .iter()
-        .map(|m| vec![None; m.atom_count()])
-        .collect();
-    for (&src, &new) in &src_to_new {
-        source_of[new.0 as usize] = Some(src);
-        new_of[src.0][src.1.0 as usize] = Some(new);
-    }
-
-    // --- Step 3: add product template bonds ---
-
-    // Atoms of a product `:` bond are flagged aromatic, as RDKit does
-    // (`[#6:1]-[#6:2]>>[#6:1]:[#6:2]` on ethane gives aromatic atoms outside
-    // a ring, which its sanitize, and so the product filter, rejects).
-    let mut colon_atoms: Vec<AtomIdx> = Vec::new();
-    // A product `~` (RDKit's "any" bond) keeps the reactant bond between the
-    // two atoms it joins and is a zero-order bond otherwise, as in RDKit
-    // (`[C:1][O:2]>>[C:1]~[O:2]` leaves `CO`; `[C:1]>>[C:1]~O` gives a
-    // bond that adds nothing to valence).
-    for (_bidx, bond) in product_template.bonds() {
-        let a_new = template_idx_to_new[bond.atom1.0 as usize].unwrap();
-        let b_new = template_idx_to_new[bond.atom2.0 as usize].unwrap();
-        if bond.order == BondOrder::Aromatic {
-            colon_atoms.extend([a_new, b_new]);
-        }
-        let mut order = bond.order;
-        let (mut from, mut to) = (a_new, b_new);
-        // A template single bond over a reactant `/`/`\` bond keeps the
-        // direction: it carries the E/Z of an adjacent double bond the
-        // template leaves alone (RDKit keeps that stereo on the double bond).
-        if order == BondOrder::Single
-            && let (Some((ma, sa)), Some((mb, sb))) =
-                (source_of[a_new.0 as usize], source_of[b_new.0 as usize])
-            && ma == mb
-            && let Some((_, ob)) = input_mols[ma].bond_between(sa, sb)
-            && matches!(ob.order, BondOrder::Up | BondOrder::Down)
-        {
-            order = ob.order;
-            if ob.atom1 != sa {
-                (from, to) = (b_new, a_new);
-            }
-        }
-        if order == BondOrder::QueryAny {
-            order = BondOrder::Zero;
-            if let (Some((ma, sa)), Some((mb, sb))) =
-                (source_of[a_new.0 as usize], source_of[b_new.0 as usize])
-                && ma == mb
-                && let Some((_, ob)) = input_mols[ma].bond_between(sa, sb)
-            {
-                order = ob.order;
-                if ob.atom1 != sa {
-                    (from, to) = (b_new, a_new);
-                }
-            }
-        }
-        let _ = builder.add_bond(from, to, order);
-    }
-
-    // --- Step 4: carry-through bonds from source molecules ---
-    let map_of = |key: (usize, AtomIdx)| {
-        global_map
-            .iter()
-            .find(|&(_, &k)| k == key)
-            .map(|(&am, _)| am)
-    };
-    // Bonds where both endpoints are template atoms are replaced or broken by the template;
-    // bonds where at least one endpoint is a substituent are carried through.
-    // In product atom order, not the map's: the product's bond order decides
-    // its Kekulé form, and with it whether RDKit's sanitize accepts a mixed
-    // aromatic product (BTMR1032 changed with the map's capacity).
-    let carried = source_of
-        .iter()
-        .enumerate()
-        .filter_map(|(new, src)| src.map(|src| (src, AtomIdx(new as u32))));
-    for ((mol_idx, src_idx), a_new) in carried {
-        for (nb_idx, bond_idx) in input_mols[mol_idx].neighbors(src_idx) {
-            let nb_key = (mol_idx, nb_idx);
-            let Some(b_new) = new_of[mol_idx][nb_idx.0 as usize] else {
-                continue;
-            };
-            if all_template_atoms.contains(&(mol_idx, src_idx))
-                && all_template_atoms.contains(&nb_key)
-            {
-                // Both ends matched: the templates decide this bond, except
-                // between two mapped atoms the reactant template does not
-                // bond, whose reactant bond is kept (RDKit, github #1387).
-                let kept = match (map_of((mol_idx, src_idx)), map_of(nb_key)) {
-                    (Some(a), Some(b)) => !reactant_bond_maps.contains(&(a.min(b), a.max(b))),
-                    _ => false,
-                };
-                if !kept {
-                    continue;
-                }
-            }
-            let ob = input_mols[mol_idx].bond(bond_idx);
-            // Preserve the original atom1→atom2 orientation. Up/Down (E/Z)
-            // bond semantics are direction-dependent, so adding the bond with
-            // endpoints swapped relative to the source would flip the geometry.
-            let (a, b) = if ob.atom1 == src_idx {
-                (a_new, b_new)
-            } else {
-                (b_new, a_new)
-            };
-            // A pair already bonded (by the template, or from the other
-            // end) is refused by the builder.
-            let _ = builder.add_bond(a, b, ob.order);
-        }
-    }
+    // --- Steps 3 and 4: template bonds, then carried source bonds ---
+    let colon_atoms = add_product_template_bonds(
+        &mut builder,
+        product_template,
+        &template_idx_to_new,
+        &source_of,
+        input_mols,
+    );
+    carry_source_bonds(
+        &mut builder,
+        &source_of,
+        &new_of,
+        input_mols,
+        all_template_atoms,
+        global_map,
+        reactant_bond_maps,
+    );
 
     // Parity-aware atom chirality correction (see the doc above
     // correct_product_stereo) -- must run after all bonds above are added,
@@ -4498,114 +4859,22 @@ fn build_product(
     // them can differ from the reactant's (a ring re-entered from another
     // side).
     let mut product = product;
-    let sourced_atoms: Vec<((usize, AtomIdx), AtomIdx)> = source_of
-        .iter()
-        .enumerate()
-        .filter_map(|(new, src)| src.map(|src| (src, AtomIdx(new as u32))))
-        .collect();
-    for &((mol_idx, src_idx), new_idx) in &sourced_atoms {
-        let src = input_mols[mol_idx];
-        if keep_carried_maps
-            && let Some((class, _)) = src.atom(src_idx).chirality.nontetrahedral()
-            && let Some(template_idx) = template_idx_to_new
-                .iter()
-                .position(|idx| *idx == Some(new_idx))
-            && product_template
-                .atom(AtomIdx(template_idx as u32))
-                .chirality
-                == Chirality::None
-        {
-            // RDKit resets the permutation of a matched coordination center
-            // when the product template has no stereo, but retains its class
-            // (@SP/@TB/@OH). This differs from an unmatched carried center.
-            product.set_chirality(new_idx, Chirality::from_nontetrahedral(class, 0).unwrap());
-            continue;
-        }
-        if keep_carried_maps
-            && src.atom(src_idx).chirality.nontetrahedral().is_some()
-            && !template_idx_to_new.contains(&Some(new_idx))
-        {
-            // RDKit leaves a carried atom's non-tetrahedral tag as it was
-            // (`checkAndCorrectChiralityOfProduct` only corrects tetrahedral
-            // ones): the same permutation, now relative to the product's
-            // bond order, which starts with the bond the walk came in by.
-            let order = rdkit_carried_bond_order(
-                src,
-                src_idx,
-                discoverer.get(&(mol_idx, src_idx)).copied(),
-            )
-            .and_then(|order| remap_reactant_stereo_order(&order, mol_idx, &src_to_new))
-            .filter(|order| order_matches_final_topology(&product, new_idx, order));
-            match order {
-                Some(order) => {
-                    product.set_chirality(new_idx, src.atom(src_idx).chirality);
-                    product.set_stereo_neighbor_order(new_idx, order);
-                }
-                None => product.set_chirality(new_idx, Chirality::None),
-            }
-            continue;
-        }
-        if !src.atom(src_idx).chirality.is_tetrahedral()
-            || template_idx_to_new.contains(&Some(new_idx))
-        {
-            continue;
-        }
-        match src
-            .stereo_neighbor_order(src_idx)
-            .and_then(|order| remap_reactant_stereo_order(order, mol_idx, &src_to_new))
-            .filter(|order| order_matches_final_topology(&product, new_idx, order))
-        {
-            Some(order) => product.set_stereo_neighbor_order(new_idx, order),
-            None => product.set_chirality(new_idx, Chirality::None),
-        }
-    }
+    let sourced_atoms = restore_carried_atom_stereo(
+        &mut product,
+        product_template,
+        &template_idx_to_new,
+        input_mols,
+        &source_of,
+        &discoverer,
+        &src_to_new,
+        keep_carried_maps,
+    );
 
     // A folded H atom (explicit-H reactant, see above) can be the only
     // `/`/`\` carrier of its double-bond end (`[H]/C(=C(/[H])C)C`). Move
     // its direction to another substituent of that end, on the other side,
     // so the E/Z survives as it does in RDKit.
-    for &(mol_idx, h) in &folded_h {
-        let src = input_mols[mol_idx];
-        let Some((core, hb)) = src.neighbors(h).next() else {
-            continue;
-        };
-        let hbond = src.bond(hb);
-        let from_core = |order: BondOrder, atom1: AtomIdx, at: AtomIdx| match (order, atom1 == at) {
-            (o, true) => o,
-            (BondOrder::Up, false) => BondOrder::Down,
-            (BondOrder::Down, false) => BondOrder::Up,
-            (o, false) => o,
-        };
-        let h_dir = from_core(hbond.order, hbond.atom1, core);
-        if !matches!(h_dir, BondOrder::Up | BondOrder::Down) {
-            continue;
-        }
-        let Some(c) = new_of[mol_idx][core.0 as usize] else {
-            continue;
-        };
-        let on_double = product
-            .neighbors(c)
-            .any(|(_, b)| product.bond(b).order == BondOrder::Double);
-        let marked = product
-            .neighbors(c)
-            .any(|(_, b)| matches!(product.bond(b).order, BondOrder::Up | BondOrder::Down));
-        if !on_double || marked {
-            continue;
-        }
-        let other = if h_dir == BondOrder::Up {
-            BondOrder::Down
-        } else {
-            BondOrder::Up
-        };
-        let carrier = product
-            .neighbors(c)
-            .find(|&(_, b)| product.bond(b).order == BondOrder::Single)
-            .map(|(_, b)| b);
-        if let Some(b) = carrier {
-            let atom1 = product.bond(b).atom1;
-            product.set_bond_order(b, from_core(other, atom1, c));
-        }
-    }
+    transfer_folded_h_stereo(&mut product, &folded_h, input_mols, &new_of);
 
     // A `/`/`\` read on an aromatic ring bond is stashed beside the bond
     // (`Molecule::bond_direction`): it carries the E/Z of an exocyclic
@@ -4624,193 +4893,24 @@ fn build_product(
     // to a double bond (e.g. after C=C → C=O conversion via SMIRKS).
     let mut molecule = clear_orphaned_stereo_bonds(product);
 
-    // A carried atom of an explicit-H reactant that lost a bond (its
-    // neighbour went to another product or was deleted) gets its hydrogens
-    // back, as RDKit refills them: `add_hydrogens` pinned its count, which
-    // would otherwise leave a radical (#754).
-    for &((mol_idx, src_idx), new_idx) in &sourced_atoms {
-        let src = input_mols[mol_idx];
-        let atom = src.atom(src_idx);
-        if atom.hydrogen_count != Some(0)
-            || atom.charge != 0
-            || atom.aromatic
-            || !atom.element.is_organic_subset()
-            || atom.element == chematic_core::Element::H
-            || molecule.degree(new_idx) >= src.degree(src_idx)
-            || template_idx_to_new.contains(&Some(new_idx))
-        {
-            continue;
-        }
-        if explicit_h_reactant(mol_idx) {
-            molecule.set_hydrogen_count(new_idx, None);
-            folded_cores.push(new_idx);
-        }
-    }
+    refill_product_hydrogens(
+        &mut molecule,
+        &sourced_atoms,
+        input_mols,
+        &template_idx_to_new,
+        &explicit_h_cache,
+        folded_cores,
+        &source_of,
+        &folded_h,
+    );
 
-    // Re-add the folded explicit hydrogens (see Step 1): as many H atoms as
-    // the product valence implies, after which the atom's count is pinned to
-    // its explicit H atoms, as `add_hydrogens` leaves it.
-    for &core in &folded_cores {
-        // A charged atom takes RDKit's count (`[O:1]>>[O+:1]` on explicit-H
-        // dimethyl ether gives `C[OH+]C`).
-        let atom = molecule.atom(core);
-        // A core the template spells aliphatic that still has an aromatic
-        // bond is judged by RDKit after kekulizing that bond, which this
-        // count cannot see; RDKit keeps its H atoms as carried substituents,
-        // so it keeps its reactant H count (BTMR0254: the ring CH beside a
-        // rewritten C=C gained a second H and failed the valence check).
-        let mixed = !atom.aromatic
-            && molecule
-                .neighbors(core)
-                .any(|(_, b)| molecule.bond(b).order == BondOrder::Aromatic);
-        // An element change leaves nothing to keep: the implicit-H form
-        // re-derives the new element's hydrogens after kekulizing, so the
-        // core does too (`[#6:1]:[cH1:2]>>[*:1]-[S:2]` on explicit-H
-        // 2-chloropyridine gave `[SH]`, a radical, where the implicit form
-        // gives the H-free thioether).
-        let element_changed = source_of[core.0 as usize]
-            .is_some_and(|(mol_idx, src)| input_mols[mol_idx].atom(src).element != atom.element);
-        if mixed && element_changed {
-            molecule.set_hydrogen_count(core, None);
-            continue;
-        }
-        let n = if mixed {
-            source_of[core.0 as usize].map_or(0, |(mol_idx, src)| {
-                input_mols[mol_idx]
-                    .neighbors(src)
-                    .filter(|&(nb, _)| folded_h.contains(&(mol_idx, nb)))
-                    .count() as u8
-            })
-        } else if atom.charge != 0 && !atom.aromatic {
-            let bonds: i16 = molecule
-                .neighbors(core)
-                .map(|(_, b)| i16::from(molecule.bond(b).order.order_int()))
-                .sum();
-            crate::rdkit_valence::implicit_hydrogens(
-                atom.element.atomic_number(),
-                atom.charge,
-                bonds,
-            )
-        } else {
-            chematic_core::implicit_hcount(&molecule, core)
-        };
-        molecule.set_hydrogen_count(core, Some(0));
-        for _ in 0..n {
-            let mut h = chematic_core::Atom::new(chematic_core::Element::H);
-            h.hydrogen_count = Some(0);
-            let h_idx = molecule.add_atom(h);
-            let _ = molecule.add_bond(core, h_idx, BondOrder::Single);
-        }
-    }
-
-    // A mapped aromatic atom spelled aliphatic in the product (`[#6:1]` from
-    // a SMARTS reactant expands to `[C:1]`) that still sits in its aromatic
-    // ring stays aromatic, as RDKit's sanitize re-perceives it.
-    for &idx in &colon_atoms {
-        if !molecule.atom(idx).aromatic {
-            molecule.set_atom_aromatic(idx, true);
-        }
-    }
-
-    for &idx in &dearomatized {
-        if molecule
-            .neighbors(idx)
-            .filter(|&(_, b)| molecule.bond(b).order == BondOrder::Aromatic)
-            .count()
-            >= 2
-        {
-            molecule.set_atom_aromatic(idx, true);
-        }
-    }
-
-    // Template atoms whose H count is left to valence get RDKit's implicit
-    // count where the native inference differs: chematic infers hydrogens
-    // for the organic subset only and with its own valence lists, RDKit for
-    // every element (`[C:1]>>[Se:1]` gives `C[SeH]`, `[Cl+](C)(C)C` gains an
-    // H). Atoms in aromatic systems keep the native, kekulization-aware
-    // count.
-    // Neutral organic-subset atoms are skipped: the native inference already
-    // agrees with RDKit wherever the product can be valid.
-    for &idx in template_idx_to_new.iter().flatten() {
-        let atom = molecule.atom(idx);
-        // A charged aromatic atom with two aromatic bonds: RDKit counts them
-        // as 3 (`[c:1]>>[c+:1]` on benzene gives an H-free cation, which
-        // its sanitize keeps).
-        let aromatic_bonds = molecule
-            .neighbors(idx)
-            .filter(|&(_, b)| molecule.bond(b).order == BondOrder::Aromatic)
-            .count();
-        if atom.aromatic
-            && atom.charge != 0
-            && atom.hydrogen_count.is_none()
-            && !atom.wildcard
-            && aromatic_bonds == 2
-        {
-            let other: i16 = molecule
-                .neighbors(idx)
-                .filter(|&(_, b)| molecule.bond(b).order != BondOrder::Aromatic)
-                .map(|(_, b)| i16::from(molecule.bond(b).order.order_int()))
-                .sum();
-            let rdkit_h = crate::rdkit_valence::implicit_hydrogens(
-                atom.element.atomic_number(),
-                atom.charge,
-                3 + other,
-            );
-            if rdkit_h != chematic_core::implicit_hcount(&molecule, idx) {
-                molecule.set_hydrogen_count(idx, Some(rdkit_h));
-            }
-            continue;
-        }
-        if (atom.charge == 0 && atom.element.is_organic_subset())
-            || atom.hydrogen_count.is_some()
-            || atom.wildcard
-            || atom.aromatic
-            || molecule
-                .neighbors(idx)
-                .any(|(_, b)| molecule.bond(b).order == BondOrder::Aromatic)
-        {
-            continue;
-        }
-        let bonds: i16 = molecule
-            .neighbors(idx)
-            .map(|(_, b)| {
-                let bond = molecule.bond(b);
-                match bond.order {
-                    BondOrder::Dative if bond.atom1 == idx => 0,
-                    order => i16::from(order.order_int()),
-                }
-            })
-            .sum();
-        let rdkit_h = crate::rdkit_valence::implicit_hydrogens(
-            atom.element.atomic_number(),
-            atom.charge,
-            bonds,
-        );
-        if rdkit_h != chematic_core::implicit_hcount(&molecule, idx) {
-            molecule.set_hydrogen_count(idx, Some(rdkit_h));
-        }
-    }
-
-    // Both passes above keep atom indices, so `src_to_new` indexes the final
-    // product. Atoms absent from it were created from the product template.
-    let mut atom_sources = vec![None; molecule.atom_count()];
-    for &((reactant, atom), new_idx) in &sourced_atoms {
-        atom_sources[new_idx.0 as usize] = Some(ReactantAtom { reactant, atom });
-    }
-    let mut template_maps = vec![None; molecule.atom_count()];
-    for (template_idx, product_idx) in template_idx_to_new.iter().enumerate() {
-        if let Some(product_idx) = product_idx {
-            template_maps[product_idx.0 as usize] =
-                product_template.atom(AtomIdx(template_idx as u32)).atom_map;
-        }
-    }
-    (
-        TracedProduct {
-            molecule,
-            atom_sources,
-            template_maps,
-        },
+    restore_product_aromaticity(&mut molecule, &colon_atoms, &dearomatized);
+    apply_rdkit_template_hydrogens(&mut molecule, &template_idx_to_new);
+    traced_product(
+        molecule,
+        product_template,
         template_idx_to_new,
+        &sourced_atoms,
     )
 }
 
