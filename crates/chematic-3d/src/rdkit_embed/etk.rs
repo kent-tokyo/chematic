@@ -911,12 +911,16 @@ mod numerical_contract_tests {
                 assert!(grad.iter().all(|v| v.abs() < 1e-8));
             }
             let translated: Vec<_> = pos
-                .chunks_exact(3)
+                .as_chunks::<3>()
+                .0
+                .iter()
                 .flat_map(|p| [p[0] + 3.0, p[1] - 2.0, p[2] + 4.0])
                 .collect();
             close(field.energy(&translated), expected, 1e-10);
             let rotated: Vec<_> = pos
-                .chunks_exact(3)
+                .as_chunks::<3>()
+                .0
+                .iter()
                 .flat_map(|p| [-p[1], p[0], p[2]])
                 .collect();
             close(field.energy(&rotated), expected, 1e-10);
