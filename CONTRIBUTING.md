@@ -133,6 +133,7 @@ cargo llvm-cov --locked --workspace --lib --bins \
   --test mmff94_rdkit_bfgs_trajectory \
   --test g1_regression_byte_identical --test torsion_knowledge_negative_controls \
   --test canonical_stereo_d0_cip_multiset_invariance \
+  --test neighbor --test periodicity \
   --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
   --no-report
 cargo llvm-cov report \
