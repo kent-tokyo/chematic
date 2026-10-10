@@ -1,0 +1,130 @@
+{
+  "rdkit_version": "2026.03.1",
+  "rows": [
+    {
+      "raw_source": "C1=NN=[N-]=N1",
+      "inchi": "InChI=1S/CHN4/c1-2-4-5-3-1/h1H/q-1",
+      "canonical": "c1nn[n-]n1"
+    },
+    {
+      "raw_source": "CN1=CCN=CC=1",
+      "inchi": "InChI=1S/C5H8N2/c1-7-4-2-6-3-5-7/h2,4-5H,3H2,1H3",
+      "canonical": null
+    },
+    {
+      "raw_source": "CN1=NCOCC=1",
+      "inchi": "InChI=1S/C4H8N2O/c1-6-2-3-7-4-5-6/h2H,3-4H2,1H3",
+      "canonical": "C[N+]1=CCOC[N-]1"
+    },
+    {
+      "raw_source": "CN1=NC(=O)OCC=1",
+      "inchi": "InChI=1S/C4H6N2O2/c1-6-2-3-8-4(7)5-6/h2H,3H2,1H3",
+      "canonical": "CN1[CH]COC([O-])=N1"
+    },
+    {
+      "raw_source": "N=C1N=CN=N1",
+      "inchi": "InChI=1S/C2H2N4/c3-2-4-1-5-6-2/h1,3H",
+      "canonical": "N=C1N=CN=N1"
+    },
+    {
+      "raw_source": "N=C1C=CN=N1",
+      "inchi": "InChI=1S/C3H3N3/c4-3-1-2-5-6-3/h1-2,4H",
+      "canonical": "N=C1C=CN=N1"
+    },
+    {
+      "raw_source": "CN(=CC=NNC)=C",
+      "inchi": "InChI=1S/C5H11N3/c1-6-7-4-5-8(2)3/h4-6H,2H2,1,3H3",
+      "canonical": "[CH2-][N+](C)=CC=NNC"
+    },
+    {
+      "raw_source": "CN(=C)=C",
+      "inchi": "InChI=1S/C3H7N/c1-4(2)3/h1-2H2,3H3",
+      "canonical": "C=[N+]([CH2-])C"
+    },
+    {
+      "raw_source": "CN(=C)=[NH2+]",
+      "inchi": "InChI=1S/C2H6N2/c1-4(2)3/h3H,1H2,2H3/p+1",
+      "canonical": "C=[N+](C)N"
+    },
+    {
+      "raw_source": "CN(=C)#C[NH-]",
+      "inchi": "InChI=1S/C3H6N2/c1-5(2)3-4/h4H,1H2,2H3/q-1",
+      "canonical": "[CH2-][N+](C)=[C][NH-]"
+    },
+    {
+      "raw_source": "CN(=[Si-](C)(C)C)=[Si-](C)(C)C",
+      "inchi": "InChI=1S/C7H21NSi2/c1-8(9(2,3)4)10(5,6)7/h1-7H3/q-2",
+      "canonical": "CN([Si](C)(C)C)[Si](C)(C)C"
+    },
+    {
+      "raw_source": "CN(=C)=O",
+      "inchi": "InChI=1S/C2H5NO/c1-3(2)4/h1H2,2H3",
+      "canonical": "C=[N+](C)[O-]"
+    },
+    {
+      "raw_source": "CN(=C)=S",
+      "inchi": "InChI=1S/C2H5NS/c1-3(2)4/h1H2,2H3",
+      "canonical": "C=[N+](C)[S-]"
+    },
+    {
+      "raw_source": "CN(=C)=F",
+      "inchi": "InChI=1S/C2H5FN/c1-4(2)3/h1H2,2H3",
+      "canonical": "[CH2]N(C)F"
+    },
+    {
+      "raw_source": "CN(=C)=Cl",
+      "inchi": "InChI=1S/C2H6ClN/c1-4(2)3/h3H,1H2,2H3",
+      "canonical": null
+    },
+    {
+      "raw_source": "C[S-](=O)(=O)=O",
+      "inchi": "InChI=1S/CH4O3S/c1-5(2,3)4/h1H3,(H,2,3,4)/p-1",
+      "canonical": "CS(=O)(=O)[O-]"
+    },
+    {
+      "raw_source": "[S-](=N)(=O)(=O)C",
+      "inchi": "InChI=1S/CH5NO2S/c1-5(2,3)4/h1H3,(H2,2,3,4)/p-1",
+      "canonical": "CS(=N)(=O)[O-]"
+    },
+    {
+      "raw_source": "[S-](=O)(=O)=CC=N",
+      "inchi": "InChI=1S/C2H3NO2S/c3-1-2-6(4)5/h1-3H/q-1",
+      "canonical": "[NH-]C=CS([O])=O"
+    },
+    {
+      "raw_source": "[S-](=N)(=C)#N",
+      "inchi": "InChI=1S/CH3N2S/c1-4(2)3/h2H,1H2/q-1",
+      "canonical": "C=S(#N)[NH-]"
+    },
+    {
+      "raw_source": "[Cl-](=O)(=O)(=O)=O",
+      "inchi": "InChI=1S/ClHO4/c2-1(3,4)5/h(H,2,3,4,5)/p-1",
+      "canonical": "[O-][Cl+3]([O-])([O-])[O-]"
+    },
+    {
+      "raw_source": "[Cl+](=O)(=O)[O-]",
+      "inchi": "InChI=1S/ClHO3/c2-1(3)4/h1H",
+      "canonical": "[O-][ClH+3]([O-])[O-]"
+    },
+    {
+      "raw_source": "Cl#S",
+      "inchi": "InChI=1S/ClHS/c1-2/h2H",
+      "canonical": "SCl"
+    },
+    {
+      "raw_source": "Br#[Se]",
+      "inchi": "InChI=1S/BrSe/c1-2",
+      "canonical": "[Se]Br"
+    },
+    {
+      "raw_source": "C[N-](=N)=C",
+      "inchi": "InChI=1S/C2H6N2/c1-4(2)3/h3H,1H2,2H3/q-1",
+      "canonical": "[CH2]N(C)[NH-]"
+    },
+    {
+      "raw_source": "CN(=C)=[NH+]C",
+      "inchi": "InChI=1S/C3H8N2/c1-4-5(2)3/h2H2,1,3H3/p+1",
+      "canonical": "C=[N+](C)NC"
+    }
+  ]
+}

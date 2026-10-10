@@ -74,3 +74,32 @@ fn official_inchi_reader_boundary_regressions_match_pinned_rdkit() {
     assert_eq!(count, 37);
     assert!(mismatches.is_empty(), "{}", mismatches.join("\n"));
 }
+
+#[test]
+fn unusual_valence_identifier_boundary_inputs_match_native_read_or_rejection() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.1-inchi-unusual-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    let mut failures = Vec::new();
+    for row in fixture["rows"].as_array().unwrap() {
+        let inchi = row["inchi"].as_str().unwrap();
+        let expected = row["canonical"].as_str();
+        let result = rdkit_mol_from_inchi(inchi)
+            .map_err(|e| e.to_string())
+            .and_then(|mol| rdkit_canonical_smiles(&mol).map_err(|e| e.to_string()));
+        let agrees = match &result {
+            Ok(actual) => Some(actual.as_str()) == expected,
+            Err(_) => expected.is_none(),
+        };
+        if !agrees {
+            failures.push(format!(
+                "{} ({inchi}): {result:?} != {expected:?}",
+                row["raw_source"]
+            ));
+        }
+    }
+    assert_eq!(fixture["rows"].as_array().unwrap().len(), 25);
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}

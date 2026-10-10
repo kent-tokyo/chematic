@@ -94,3 +94,6 @@ mod pdb_boundary_contract_tests;
 
 #[cfg(test)]
 mod inchi_output_boundary_contract_tests;
+
+#[cfg(test)]
+mod read_write_boundary_contract_tests;

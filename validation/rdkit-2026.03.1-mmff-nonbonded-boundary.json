@@ -1,0 +1,2293 @@
+{
+  "rdkit_version": "2026.03.1",
+  "rows": [
+    {
+      "smiles": "[Cl-].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 395132143.4649959,
+      "gradient": [
+        0.06835498046204941,
+        0.06835498046204941,
+        0.06835498046204941,
+        -0.06835498046204941,
+        -0.06835498046204941,
+        -0.06835498046204941
+      ],
+      "atom_types": [
+        90,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 395132061.7501708,
+      "gradient": [
+        8171481568.066779,
+        0.0,
+        0.0,
+        -8171481568.066779,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 26446.358210982373,
+      "gradient": [
+        136987.61512613314,
+        0.0,
+        0.0,
+        -136987.61512613314,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": 82.85449815579823,
+      "gradient": [
+        24.957127169732235,
+        0.0,
+        0.0,
+        -24.957127169732235,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Na+]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 96955780.20270723,
+      "gradient": [
+        0.06329077744060105,
+        0.06329077744060105,
+        0.06329077744060105,
+        -0.06329077744060105,
+        -0.06329077744060105,
+        -0.06329077744060105
+      ],
+      "atom_types": [
+        90,
+        93
+      ],
+      "charges": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Na+]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        93
+      ],
+      "charges": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Na+]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 96955757.80609897,
+      "gradient": [
+        2239660535.4871902,
+        0.0,
+        0.0,
+        -2239660535.4871902,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        93
+      ],
+      "charges": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Na+]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        93
+      ],
+      "charges": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Na+]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 3249.912622934955,
+      "gradient": [
+        18865.819159679995,
+        0.0,
+        0.0,
+        -18865.819159679995,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        93
+      ],
+      "charges": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Na+]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        93
+      ],
+      "charges": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Na+]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": -82.03710983342894,
+      "gradient": [
+        -20.051927646050935,
+        0.0,
+        0.0,
+        20.051927646050935,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        93
+      ],
+      "charges": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "smiles": "[Cl-].[Na+]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        90,
+        93
+      ],
+      "charges": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "smiles": "[Br-].[Br-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 556044479.976814,
+      "gradient": [
+        0.06992619810433787,
+        0.06992619810433787,
+        0.06992619810433787,
+        -0.06992619810433787,
+        -0.06992619810433787,
+        -0.06992619810433787
+      ],
+      "atom_types": [
+        91,
+        91
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Br-].[Br-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        91,
+        91
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Br-].[Br-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 556044368.603541,
+      "gradient": [
+        11137325973.167206,
+        0.0,
+        0.0,
+        -11137325973.167206,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        91,
+        91
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Br-].[Br-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        91,
+        91
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Br-].[Br-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 43753.04936061446,
+      "gradient": [
+        225656.92858121236,
+        0.0,
+        0.0,
+        -225656.92858121236,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        91,
+        91
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Br-].[Br-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        91,
+        91
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Br-].[Br-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": 84.24665286887026,
+      "gradient": [
+        30.05379294943446,
+        0.0,
+        0.0,
+        -30.05379294943446,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        91,
+        91
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Br-].[Br-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        91,
+        91
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[F-].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 193628774.58371207,
+      "gradient": [
+        0.06580475779317314,
+        0.06580475779317314,
+        0.06580475779317314,
+        -0.06580475779317314,
+        -0.06580475779317314,
+        -0.06580475779317314
+      ],
+      "atom_types": [
+        89,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[F-].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        89,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[F-].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 193628732.3112054,
+      "gradient": [
+        4227250145.003516,
+        0.0,
+        0.0,
+        -4227250145.003516,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        89,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[F-].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        89,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[F-].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 9941.925457712547,
+      "gradient": [
+        51338.81354205332,
+        0.0,
+        0.0,
+        -51338.81354205332,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        89,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[F-].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        89,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[F-].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": 82.06098181644856,
+      "gradient": [
+        21.320629620484972,
+        0.0,
+        0.0,
+        -21.320629620484972,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        89,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[F-].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        89,
+        90
+      ],
+      "charges": [
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Li+].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 47166588.92450405,
+      "gradient": [
+        0.06181040281686434,
+        0.06181040281686434,
+        0.06181040281686434,
+        -0.06181040281686434,
+        -0.06181040281686434,
+        -0.06181040281686434
+      ],
+      "atom_types": [
+        92,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Li+].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        92,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Li+].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 47166577.64317999,
+      "gradient": [
+        1128132251.0075572,
+        0.0,
+        0.0,
+        -1128132251.0075572,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        92,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Li+].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        92,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Li+].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 1121.69813171135,
+      "gradient": [
+        7490.3123508495,
+        0.0,
+        0.0,
+        -7490.3123508495,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        92,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Li+].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        92,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Li+].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": -82.02328880539477,
+      "gradient": [
+        -20.207656829621897,
+        0.0,
+        0.0,
+        20.207656829621897,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        92,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Li+].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        92,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[K+].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 175222861.91023055,
+      "gradient": [
+        0.06507646802626114,
+        0.06507646802626114,
+        0.06507646802626114,
+        -0.06507646802626114,
+        -0.06507646802626114,
+        -0.06507646802626114
+      ],
+      "atom_types": [
+        94,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[K+].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        94,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[K+].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 175222823.03773203,
+      "gradient": [
+        3887249359.6740084,
+        0.0,
+        0.0,
+        -3887249359.6740084,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        94,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[K+].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        94,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[K+].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 7683.987991044151,
+      "gradient": [
+        42284.04245948882,
+        0.0,
+        0.0,
+        -42284.04245948882,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        94,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[K+].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        94,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[K+].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": -81.98650559273571,
+      "gradient": [
+        -19.494155926539626,
+        0.0,
+        0.0,
+        19.494155926539626,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        94,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[K+].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        94,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Mg+2].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 88621458.90274836,
+      "gradient": [
+        0.0631000589962452,
+        0.0631000589962452,
+        0.0631000589962452,
+        -0.0631000589962452,
+        -0.0631000589962452,
+        -0.0631000589962452
+      ],
+      "atom_types": [
+        99,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Mg+2].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        99,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Mg+2].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 88621438.34053056,
+      "gradient": [
+        2056221510.7848113,
+        0.0,
+        0.0,
+        -2056221510.7848113,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        99,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Mg+2].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        99,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Mg+2].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 2550.883414411167,
+      "gradient": [
+        16525.1520610946,
+        0.0,
+        0.0,
+        -16525.1520610946,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        99,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Mg+2].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        99,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Mg+2].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": -164.02928111452263,
+      "gradient": [
+        -40.33017487665532,
+        0.0,
+        0.0,
+        40.33017487665532,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        99,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Mg+2].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        99,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Ca+2].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 179414579.50003204,
+      "gradient": [
+        0.06479010027489325,
+        0.06479010027489325,
+        0.06479010027489325,
+        -0.06479010027489325,
+        -0.06479010027489325,
+        -0.06479010027489325
+      ],
+      "atom_types": [
+        96,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Ca+2].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        96,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Ca+2].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 179414539.4429793,
+      "gradient": [
+        4005704757.7235737,
+        0.0,
+        0.0,
+        -4005704757.7235737,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        96,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Ca+2].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        96,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Ca+2].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 7285.955846556903,
+      "gradient": [
+        41612.57447282528,
+        0.0,
+        0.0,
+        -41612.57447282528,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        96,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Ca+2].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        96,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Ca+2].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": -163.99791936480526,
+      "gradient": [
+        -39.80060028577888,
+        0.0,
+        0.0,
+        39.80060028577888,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        96,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Ca+2].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        96,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Zn+2].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 117061199.47138953,
+      "gradient": [
+        0.06339620138557893,
+        0.06339620138557893,
+        0.06339620138557893,
+        -0.06339620138557893,
+        -0.06339620138557893,
+        -0.06339620138557893
+      ],
+      "atom_types": [
+        95,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Zn+2].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        95,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Zn+2].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 117061172.49600127,
+      "gradient": [
+        2697538476.951328,
+        0.0,
+        0.0,
+        -2697538476.951328,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        95,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Zn+2].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        95,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Zn+2].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 3729.9963210516516,
+      "gradient": [
+        22831.246211812282,
+        0.0,
+        0.0,
+        -22831.246211812282,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        95,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Zn+2].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        95,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Zn+2].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": -164.036918484922,
+      "gradient": [
+        -40.24448379015733,
+        0.0,
+        0.0,
+        40.24448379015733,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        95,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Zn+2].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        95,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+2].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 120753520.15760632,
+      "gradient": [
+        0.06346369882419083,
+        0.06346369882419083,
+        0.06346369882419083,
+        -0.06346369882419083,
+        -0.06346369882419083,
+        -0.06346369882419083
+      ],
+      "atom_types": [
+        87,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+2].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        87,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+2].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 120753492.37459564,
+      "gradient": [
+        2778300698.972222,
+        0.0,
+        0.0,
+        -2778300698.972222,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        87,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+2].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        87,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+2].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 3905.3009749648027,
+      "gradient": [
+        23763.959480157166,
+        0.0,
+        0.0,
+        -23763.959480157166,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        87,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+2].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        87,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+2].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": -164.03692208616485,
+      "gradient": [
+        -40.22824254307114,
+        0.0,
+        0.0,
+        40.22824254307114,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        87,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+2].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        87,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+3].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 138029432.90209976,
+      "gradient": [
+        0.06377904933927363,
+        0.06377904933927363,
+        0.06377904933927363,
+        -0.06377904933927363,
+        -0.06377904933927363,
+        -0.06377904933927363
+      ],
+      "atom_types": [
+        88,
+        90
+      ],
+      "charges": [
+        3.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+3].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        88,
+        90
+      ],
+      "charges": [
+        3.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+3].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 138029401.3728875,
+      "gradient": [
+        3152920812.9368415,
+        0.0,
+        0.0,
+        -3152920812.9368415,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        88,
+        90
+      ],
+      "charges": [
+        3.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+3].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        88,
+        90
+      ],
+      "charges": [
+        3.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+3].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 4443.575457775065,
+      "gradient": [
+        28001.703908590243,
+        0.0,
+        0.0,
+        -28001.703908590243,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        88,
+        90
+      ],
+      "charges": [
+        3.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+3].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        88,
+        90
+      ],
+      "charges": [
+        3.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+3].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": -246.02785559685026,
+      "gradient": [
+        -60.38810351932469,
+        0.0,
+        0.0,
+        60.38810351932469,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        88,
+        90
+      ],
+      "charges": [
+        3.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Fe+3].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        88,
+        90
+      ],
+      "charges": [
+        3.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 101484796.95119476,
+      "gradient": [
+        0.0631000589962452,
+        0.0631000589962452,
+        0.0631000589962452,
+        -0.0631000589962452,
+        -0.0631000589962452,
+        -0.0631000589962452
+      ],
+      "atom_types": [
+        97,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        97,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 101484773.40466091,
+      "gradient": [
+        2354653077.39516,
+        0.0,
+        0.0,
+        -2354653077.39516,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        97,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        97,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 3328.9025240655965,
+      "gradient": [
+        19310.74577668067,
+        0.0,
+        0.0,
+        -19310.74577668067,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        97,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        97,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": -82.04257507841184,
+      "gradient": [
+        -20.06175685689825,
+        0.0,
+        0.0,
+        20.06175685689825,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        97,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        97,
+        90
+      ],
+      "charges": [
+        1.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+2].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": false,
+      "energy": 111371556.3164168,
+      "gradient": [
+        0.06329077744060105,
+        0.06329077744060105,
+        0.06329077744060105,
+        -0.06329077744060105,
+        -0.06329077744060105,
+        -0.06329077744060105
+      ],
+      "atom_types": [
+        98,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+2].[Cl-]",
+      "distance": 0.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        98,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+2].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": false,
+      "energy": 111371530.5896153,
+      "gradient": [
+        2572679814.3681374,
+        0.0,
+        0.0,
+        -2572679814.3681374,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        98,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+2].[Cl-]",
+      "distance": 1e-08,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        98,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+2].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": false,
+      "energy": 3464.0946209200256,
+      "gradient": [
+        21415.567533078247,
+        0.0,
+        0.0,
+        -21415.567533078247,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        98,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+2].[Cl-]",
+      "distance": 1.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        98,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+2].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": false,
+      "energy": -164.03666032394352,
+      "gradient": [
+        -40.26836465762149,
+        0.0,
+        0.0,
+        40.26836465762149,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        98,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    },
+    {
+      "smiles": "[Cu+2].[Cl-]",
+      "distance": 4.0,
+      "ignore_interfrag": true,
+      "energy": 0.0,
+      "gradient": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "atom_types": [
+        98,
+        90
+      ],
+      "charges": [
+        2.0,
+        -1.0
+      ]
+    }
+  ]
+}

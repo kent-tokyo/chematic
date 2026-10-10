@@ -346,3 +346,64 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod parameter_boundary_contract_tests {
+    use super::*;
+
+    #[test]
+    fn peoe_parameter_modes_explicit_hydrogens_and_fallbacks_match_pinned_rdkit() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../validation/rdkit-2026.03.1-gasteiger-boundary.json"
+        ))
+        .unwrap();
+        assert_eq!(fixture["rdkit_version"], "2026.03.1");
+        let mut failures = Vec::new();
+        let mut nonfinite_rows = 0;
+        for row in fixture["rows"].as_array().unwrap() {
+            let source = row["smiles"].as_str().unwrap();
+            let base = chematic_smiles::parse(source).unwrap();
+            let explicit = row["add_hs"].as_bool().unwrap();
+            let mol = if explicit {
+                crate::add_hydrogens(&base)
+            } else {
+                base
+            };
+            let charges = gasteiger_charges(&mol);
+            let expected = row["charges"].as_array().unwrap();
+            assert_eq!(charges.len(), expected.len(), "{source},add_hs={explicit}");
+            for (index, (actual, value)) in charges.iter().zip(expected).enumerate() {
+                let agrees = match value.as_str() {
+                    Some("nan") => actual.is_nan(),
+                    Some("+inf") => *actual == f64::INFINITY,
+                    Some("-inf") => *actual == f64::NEG_INFINITY,
+                    None => actual.is_finite() && (*actual - value.as_f64().unwrap()).abs() < 1e-12,
+                    other => panic!("unexpected reference {other:?}"),
+                };
+                if !agrees {
+                    failures.push(format!(
+                        "{source},add_hs={explicit},atom={index}: {actual:?} != {value}"
+                    ));
+                }
+            }
+            if charges.iter().all(|v| v.is_finite()) {
+                if explicit {
+                    assert!(
+                        (charges.iter().sum::<f64>() - row["formal_charge"].as_f64().unwrap())
+                            .abs()
+                            < 1e-9,
+                        "{source}"
+                    );
+                }
+            } else {
+                nonfinite_rows += 1;
+            }
+        }
+        assert!(
+            nonfinite_rows > 0,
+            "native unsupported-parameter fallback must occur"
+        );
+        assert_eq!(fixture["rows"].as_array().unwrap().len(), 78);
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
+    }
+}

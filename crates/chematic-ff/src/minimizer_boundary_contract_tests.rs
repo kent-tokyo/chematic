@@ -211,7 +211,7 @@ fn mmff_boundary_types_and_charges_match_pinned_rdkit() {
 
 #[test]
 fn mmff_unsupported_metal_typing_returns_an_actionable_error() {
-    for text in ["[Na+]", "[Mg+2]", "[Zn+2]", "[U]"] {
+    for text in ["[Na]", "[Mg]", "[Zn]", "[Fe+]", "[Cu+3]", "C[Na]", "[U]"] {
         let mol = parse(text).unwrap();
         let error = assign_mmff94_numeric_types(&mol).unwrap_err();
         assert!(error.to_string().contains("unsupported element"));

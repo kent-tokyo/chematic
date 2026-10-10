@@ -1,0 +1,1251 @@
+{
+  "rdkit_version": "2026.03.1",
+  "rows": [
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[#6]-[#6].[#6]-[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[#6]-[#6].[#6]-[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#6]-[#6].[#6]-[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[#6]-[#6]-[#6].[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": false,
+      "root": 3,
+      "smarts": "[#6](-[#6])-[#6].[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": false,
+      "root": 4,
+      "smarts": "[#6]-[#6]-[#6].[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": false,
+      "root": 5,
+      "smarts": "[#8].[#6]-[#6].[#6]-[#6]-[#6]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[#6]-[#6].[#6]-[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[#6]-[#6].[#6]-[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#6]-[#6].[#6]-[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[#6]-[#6]-[#6].[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": true,
+      "root": 3,
+      "smarts": "[#6](-[#6])-[#6].[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": true,
+      "root": 4,
+      "smarts": "[#6]-[#6]-[#6].[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "CC.CCC.O",
+      "isomeric": true,
+      "root": 5,
+      "smarts": "[#8].[#6]-[#6].[#6]-[#6]-[#6]"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[Na+].[#17-]"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[Na+].[#17-]"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#17-].[Na+]"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[Na+].[#17-]"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[Na+].[#17-]"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#17-].[Na+]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[Mg+2].[#8-]-[#16](=[#8])(=[#8])-[#8-]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[Mg+2].[#8-]-[#16](=[#8])(=[#8])-[#8-]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#8-]-[#16](=[#8])(=[#8])-[#8-].[Mg+2]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[#16](-[#8-])(=[#8])(=[#8])-[#8-].[Mg+2]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": false,
+      "root": 3,
+      "smarts": "[#8]=[#16](-[#8-])(=[#8])-[#8-].[Mg+2]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": false,
+      "root": 4,
+      "smarts": "[#8]=[#16](-[#8-])(=[#8])-[#8-].[Mg+2]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": false,
+      "root": 5,
+      "smarts": "[#8-]-[#16](-[#8-])(=[#8])=[#8].[Mg+2]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[Mg+2].[#8-]-[#16](=[#8])(=[#8])-[#8-]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[Mg+2].[#8-]-[#16](=[#8])(=[#8])-[#8-]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#8-]-[#16](=[#8])(=[#8])-[#8-].[Mg+2]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[#16](-[#8-])(=[#8])(=[#8])-[#8-].[Mg+2]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": true,
+      "root": 3,
+      "smarts": "[#8]=[#16](-[#8-])(=[#8])-[#8-].[Mg+2]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": true,
+      "root": 4,
+      "smarts": "[#8]=[#16](-[#8-])(=[#8])-[#8-].[Mg+2]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "isomeric": true,
+      "root": 5,
+      "smarts": "[#8-]-[#16](-[#8-])(=[#8])=[#8].[Mg+2]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[Ca+2].[#8-]-[#6](=[#8])-[#6].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[Ca+2].[#8-]-[#6](=[#8])-[#6].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#8-]-[#6](=[#8])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[#6](-[#8-])(=[#8])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": false,
+      "root": 3,
+      "smarts": "[#8]=[#6](-[#8-])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": false,
+      "root": 4,
+      "smarts": "[#6]-[#6](-[#8-])=[#8].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": false,
+      "root": 5,
+      "smarts": "[#8-]-[#6](=[#8])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": false,
+      "root": 6,
+      "smarts": "[#6](-[#8-])(=[#8])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": false,
+      "root": 7,
+      "smarts": "[#8]=[#6](-[#8-])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": false,
+      "root": 8,
+      "smarts": "[#6]-[#6](-[#8-])=[#8].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[Ca+2].[#8-]-[#6](=[#8])-[#6].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[Ca+2].[#8-]-[#6](=[#8])-[#6].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#8-]-[#6](=[#8])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[#6](-[#8-])(=[#8])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": true,
+      "root": 3,
+      "smarts": "[#8]=[#6](-[#8-])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": true,
+      "root": 4,
+      "smarts": "[#6]-[#6](-[#8-])=[#8].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": true,
+      "root": 5,
+      "smarts": "[#8-]-[#6](=[#8])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": true,
+      "root": 6,
+      "smarts": "[#6](-[#8-])(=[#8])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": true,
+      "root": 7,
+      "smarts": "[#8]=[#6](-[#8-])-[#6].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "isomeric": true,
+      "root": 8,
+      "smarts": "[#6]-[#6](-[#8-])=[#8].[Ca+2].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[13CH3:2][NH2:4].[Cl-]",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[13#6:2]-[#7:4].[#17-]"
+    },
+    {
+      "smiles": "[13CH3:2][NH2:4].[Cl-]",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[13#6:2]-[#7:4].[#17-]"
+    },
+    {
+      "smiles": "[13CH3:2][NH2:4].[Cl-]",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#7:4]-[13#6:2].[#17-]"
+    },
+    {
+      "smiles": "[13CH3:2][NH2:4].[Cl-]",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[#17-].[13#6:2]-[#7:4]"
+    },
+    {
+      "smiles": "[13CH3:2][NH2:4].[Cl-]",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[13#6:2]-[#7:4].[#17-]"
+    },
+    {
+      "smiles": "[13CH3:2][NH2:4].[Cl-]",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[13#6:2]-[#7:4].[#17-]"
+    },
+    {
+      "smiles": "[13CH3:2][NH2:4].[Cl-]",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#7:4]-[13#6:2].[#17-]"
+    },
+    {
+      "smiles": "[13CH3:2][NH2:4].[Cl-]",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[#17-].[13#6:2]-[#7:4]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[#9]-[#6](-[#17])-[#35].[K+]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[#9]-[#6](-[#17])-[#35].[K+]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#6](-[#9])(-[#17])-[#35].[K+]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[#17]-[#6](-[#9])-[#35].[K+]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": false,
+      "root": 3,
+      "smarts": "[#35]-[#6](-[#9])-[#17].[K+]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": false,
+      "root": 4,
+      "smarts": "[K+].[#9]-[#6](-[#17])-[#35]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[#9]-[#6@H](-[#17])-[#35].[K+]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[#9]-[#6@H](-[#17])-[#35].[K+]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#6@@H](-[#9])(-[#17])-[#35].[K+]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[#17]-[#6@@H](-[#9])-[#35].[K+]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": true,
+      "root": 3,
+      "smarts": "[#35]-[#6@H](-[#9])-[#17].[K+]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "isomeric": true,
+      "root": 4,
+      "smarts": "[K+].[#9]-[#6@H](-[#17])-[#35]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[#9]-[#6]=[#6]-[#9].[#6]-[#6]=[#6]-[#6]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[#9]-[#6]=[#6]-[#9].[#6]-[#6]=[#6]-[#6]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#6](-[#9])=[#6]-[#9].[#6]-[#6]=[#6]-[#6]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[#6](=[#6]-[#9])-[#9].[#6]-[#6]=[#6]-[#6]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": false,
+      "root": 3,
+      "smarts": "[#9]-[#6]=[#6]-[#9].[#6]-[#6]=[#6]-[#6]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": false,
+      "root": 4,
+      "smarts": "[#6]-[#6]=[#6]-[#6].[#9]-[#6]=[#6]-[#9]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": false,
+      "root": 5,
+      "smarts": "[#6](-[#6])=[#6]-[#6].[#9]-[#6]=[#6]-[#9]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": false,
+      "root": 6,
+      "smarts": "[#6](=[#6]-[#6])-[#6].[#9]-[#6]=[#6]-[#9]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": false,
+      "root": 7,
+      "smarts": "[#6]-[#6]=[#6]-[#6].[#9]-[#6]=[#6]-[#9]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[#9]/[#6]=[#6]/[#9].[#6]/[#6]=[#6]\\[#6]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[#9]/[#6]=[#6]/[#9].[#6]/[#6]=[#6]\\[#6]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#6](/[#9])=[#6]\\[#9].[#6]/[#6]=[#6]\\[#6]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[#6](=[#6]\\[#9])/[#9].[#6]/[#6]=[#6]\\[#6]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": true,
+      "root": 3,
+      "smarts": "[#9]/[#6]=[#6]/[#9].[#6]/[#6]=[#6]\\[#6]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": true,
+      "root": 4,
+      "smarts": "[#6]/[#6]=[#6]\\[#6].[#9]/[#6]=[#6]/[#9]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": true,
+      "root": 5,
+      "smarts": "[#6](/[#6])=[#6]/[#6].[#9]/[#6]=[#6]/[#9]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": true,
+      "root": 6,
+      "smarts": "[#6](=[#6]/[#6])/[#6].[#9]/[#6]=[#6]/[#9]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "isomeric": true,
+      "root": 7,
+      "smarts": "[#6]/[#6]=[#6]\\[#6].[#9]/[#6]=[#6]/[#9]"
+    },
+    {
+      "smiles": "[CH3].[OH]",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[#6].[#8]"
+    },
+    {
+      "smiles": "[CH3].[OH]",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[#6].[#8]"
+    },
+    {
+      "smiles": "[CH3].[OH]",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#8].[#6]"
+    },
+    {
+      "smiles": "[CH3].[OH]",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[#6].[#8]"
+    },
+    {
+      "smiles": "[CH3].[OH]",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[#6].[#8]"
+    },
+    {
+      "smiles": "[CH3].[OH]",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#8].[#6]"
+    },
+    {
+      "smiles": "[O].[N]",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[#8].[#7]"
+    },
+    {
+      "smiles": "[O].[N]",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[#8].[#7]"
+    },
+    {
+      "smiles": "[O].[N]",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#7].[#8]"
+    },
+    {
+      "smiles": "[O].[N]",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[#8].[#7]"
+    },
+    {
+      "smiles": "[O].[N]",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[#8].[#7]"
+    },
+    {
+      "smiles": "[O].[N]",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#7].[#8]"
+    },
+    {
+      "smiles": "[Fe+3].[Cl-].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[Fe+3].[#17-].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[Fe+3].[Cl-].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[Fe+3].[#17-].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[Fe+3].[Cl-].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#17-].[Fe+3].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[Fe+3].[Cl-].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[#17-].[Fe+3].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[Fe+3].[Cl-].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": 3,
+      "smarts": "[#17-].[Fe+3].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[Fe+3].[Cl-].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[Fe+3].[#17-].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[Fe+3].[Cl-].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[Fe+3].[#17-].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[Fe+3].[Cl-].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#17-].[Fe+3].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[Fe+3].[Cl-].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[#17-].[Fe+3].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[Fe+3].[Cl-].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": 3,
+      "smarts": "[#17-].[Fe+3].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[#7]->[Cu+2](<-[#7])<-[#7].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[#7]->[Cu+2](<-[#7])<-[#7].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[Cu+2](<-[#7])(<-[#7])<-[#7].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[#7]->[Cu+2](<-[#7])<-[#7].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": 3,
+      "smarts": "[#7]->[Cu+2](<-[#7])<-[#7].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": 4,
+      "smarts": "[#17-].[#7]->[Cu+2](<-[#7])<-[#7].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": false,
+      "root": 5,
+      "smarts": "[#17-].[#7]->[Cu+2](<-[#7])<-[#7].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[#7]->[Cu+2](<-[#7])<-[#7].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[#7]->[Cu+2](<-[#7])<-[#7].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[Cu+2](<-[#7])(<-[#7])<-[#7].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[#7]->[Cu+2](<-[#7])<-[#7].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": 3,
+      "smarts": "[#7]->[Cu+2](<-[#7])<-[#7].[#17-].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": 4,
+      "smarts": "[#17-].[#7]->[Cu+2](<-[#7])<-[#7].[#17-]"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "isomeric": true,
+      "root": 5,
+      "smarts": "[#17-].[#7]->[Cu+2](<-[#7])<-[#7].[#17-]"
+    },
+    {
+      "smiles": "[H][H].[He]",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[H]-[H].[He]"
+    },
+    {
+      "smiles": "[H][H].[He]",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[H]-[H].[He]"
+    },
+    {
+      "smiles": "[H][H].[He]",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[H]-[H].[He]"
+    },
+    {
+      "smiles": "[H][H].[He]",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[He].[H]-[H]"
+    },
+    {
+      "smiles": "[H][H].[He]",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[H]-[H].[He]"
+    },
+    {
+      "smiles": "[H][H].[He]",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[H]-[H].[He]"
+    },
+    {
+      "smiles": "[H][H].[He]",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[H]-[H].[He]"
+    },
+    {
+      "smiles": "[H][H].[He]",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[He].[H]-[H]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[2H]-[#6](-[3H])(-[#8])-[#6].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[2H]-[#6](-[3H])(-[#8])-[#6].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#6](-[2H])(-[3H])(-[#8])-[#6].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[3H]-[#6](-[2H])(-[#8])-[#6].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": false,
+      "root": 3,
+      "smarts": "[#8]-[#6](-[2H])(-[3H])-[#6].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": false,
+      "root": 4,
+      "smarts": "[#6]-[#6](-[2H])(-[3H])-[#8].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": false,
+      "root": 5,
+      "smarts": "[Ne].[2H]-[#6](-[3H])(-[#8])-[#6]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[2H]-[#6](-[3H])(-[#8])-[#6].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[2H]-[#6](-[3H])(-[#8])-[#6].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#6](-[2H])(-[3H])(-[#8])-[#6].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[3H]-[#6](-[2H])(-[#8])-[#6].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": true,
+      "root": 3,
+      "smarts": "[#8]-[#6](-[2H])(-[3H])-[#6].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": true,
+      "root": 4,
+      "smarts": "[#6]-[#6](-[2H])(-[3H])-[#8].[Ne]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "isomeric": true,
+      "root": 5,
+      "smarts": "[Ne].[2H]-[#6](-[3H])(-[#8])-[#6]"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 3,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 4,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 5,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 6,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 7,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 8,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 9,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 10,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": false,
+      "root": 11,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 3,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 4,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 5,
+      "smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 6,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 7,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 8,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 9,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 10,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "isomeric": true,
+      "root": 11,
+      "smarts": "[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1.[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1"
+    },
+    {
+      "smiles": "",
+      "isomeric": false,
+      "root": null,
+      "smarts": ""
+    },
+    {
+      "smiles": "",
+      "isomeric": true,
+      "root": null,
+      "smarts": ""
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[#7+].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[#7+].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[#8-]-[#6](=[#8])-[#6].[#7+]"
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": false,
+      "root": 2,
+      "smarts": "[#6](-[#8-])(=[#8])-[#6].[#7+]"
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": false,
+      "root": 3,
+      "smarts": "[#8]=[#6](-[#8-])-[#6].[#7+]"
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": false,
+      "root": 4,
+      "smarts": "[#6]-[#6](-[#8-])=[#8].[#7+]"
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[#7+].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[#7+].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[#8-]-[#6](=[#8])-[#6].[#7+]"
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": true,
+      "root": 2,
+      "smarts": "[#6](-[#8-])(=[#8])-[#6].[#7+]"
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": true,
+      "root": 3,
+      "smarts": "[#8]=[#6](-[#8-])-[#6].[#7+]"
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "isomeric": true,
+      "root": 4,
+      "smarts": "[#6]-[#6](-[#8-])=[#8].[#7+]"
+    },
+    {
+      "smiles": "[O-2].[Zn+2]",
+      "isomeric": false,
+      "root": null,
+      "smarts": "[#8-2].[Zn+2]"
+    },
+    {
+      "smiles": "[O-2].[Zn+2]",
+      "isomeric": false,
+      "root": 0,
+      "smarts": "[#8-2].[Zn+2]"
+    },
+    {
+      "smiles": "[O-2].[Zn+2]",
+      "isomeric": false,
+      "root": 1,
+      "smarts": "[Zn+2].[#8-2]"
+    },
+    {
+      "smiles": "[O-2].[Zn+2]",
+      "isomeric": true,
+      "root": null,
+      "smarts": "[#8-2].[Zn+2]"
+    },
+    {
+      "smiles": "[O-2].[Zn+2]",
+      "isomeric": true,
+      "root": 0,
+      "smarts": "[#8-2].[Zn+2]"
+    },
+    {
+      "smiles": "[O-2].[Zn+2]",
+      "isomeric": true,
+      "root": 1,
+      "smarts": "[Zn+2].[#8-2]"
+    }
+  ],
+  "cx": [
+    {
+      "smiles": "CC.CCC.O",
+      "cx_smarts": "[#6]-[#6].[#6]-[#6]-[#6].[#8]"
+    },
+    {
+      "smiles": "[Na+].[Cl-]",
+      "cx_smarts": "[Na+].[#17-]"
+    },
+    {
+      "smiles": "[Mg+2].[O-]S(=O)(=O)[O-]",
+      "cx_smarts": "[Mg+2].[#8-]-[#16](=[#8])(=[#8])-[#8-]"
+    },
+    {
+      "smiles": "[Ca+2].[O-]C(=O)C.[O-]C(=O)C",
+      "cx_smarts": "[Ca+2].[#8-]-[#6](=[#8])-[#6].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[13CH3:2][NH2:4].[Cl-]",
+      "cx_smarts": "[13#6:2]-[#7:4].[#17-]"
+    },
+    {
+      "smiles": "F[C@H](Cl)Br.[K+]",
+      "cx_smarts": "[#9]-[#6@H](-[#17])-[#35].[K+]"
+    },
+    {
+      "smiles": "F/C=C/F.C/C=C\\C",
+      "cx_smarts": "[#9]/[#6]=[#6]/[#9].[#6]/[#6]=[#6]\\[#6]"
+    },
+    {
+      "smiles": "[CH3].[OH]",
+      "cx_smarts": "[#6].[#8] |^1:0,1|"
+    },
+    {
+      "smiles": "[O].[N]",
+      "cx_smarts": "[#8].[#7] |^2:0,^5:1|"
+    },
+    {
+      "smiles": "[Fe+3].[Cl-].[Cl-].[Cl-]",
+      "cx_smarts": "[Fe+3].[#17-].[#17-].[#17-] |^1:0|"
+    },
+    {
+      "smiles": "[NH3]->[Cu+2](<-[NH3])<-[NH3].[Cl-].[Cl-]",
+      "cx_smarts": "[#7]-[Cu+2](-[#7])-[#7].[#17-].[#17-] |C:0.0,2.1,3.2|"
+    },
+    {
+      "smiles": "[H][H].[He]",
+      "cx_smarts": "[H]-[H].[He]"
+    },
+    {
+      "smiles": "[2H]C([3H])(O)C.[Ne]",
+      "cx_smarts": "[2H]-[#6](-[3H])(-[#8])-[#6].[Ne]"
+    },
+    {
+      "smiles": "C1CCCCC1.c1ccccc1",
+      "cx_smarts": "[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1.[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1"
+    },
+    {
+      "smiles": "",
+      "cx_smarts": ""
+    },
+    {
+      "smiles": "[NH4+].[O-]C(=O)C",
+      "cx_smarts": "[#7+].[#8-]-[#6](=[#8])-[#6]"
+    },
+    {
+      "smiles": "[O-2].[Zn+2]",
+      "cx_smarts": "[#8-2].[Zn+2]"
+    }
+  ]
+}
