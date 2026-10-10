@@ -4,6 +4,31 @@ use chematic_core::MoleculeBuilder;
 use serde_json::Value;
 
 #[test]
+fn catalog_salt_removal_keeps_the_largest_organic_fragment_and_its_stereo() {
+    use crate::standardize::{SaltCatalog, remove_salts_with_catalog};
+    let catalog = SaltCatalog::new();
+    for (source, parent) in [
+        ("[Na+].CC(=O)[O-]", "CC(=O)[O-]"),
+        ("[Cl-].N[C@@H](C)C(=O)O", "N[C@@H](C)C(=O)O"),
+        ("O.CCO.C", "CCO"),
+        ("[Na+].[Cl-]", "[Na+]"),
+    ] {
+        let mol = chematic_smiles::parse(source).unwrap();
+        let result = remove_salts_with_catalog(&mol, &catalog);
+        assert_eq!(
+            chematic_smiles::rdkit_canonical_smiles(&result).unwrap(),
+            chematic_smiles::rdkit_canonical_smiles(&chematic_smiles::parse(parent).unwrap())
+                .unwrap(),
+            "{source}"
+        );
+    }
+    assert_eq!(
+        remove_salts_with_catalog(&MoleculeBuilder::new().build(), &catalog).atom_count(),
+        0
+    );
+}
+
+#[test]
 fn detailed_alerts_preserve_catalog_names_and_original_heavy_atom_indices() {
     use crate::alerts::*;
     for text in [

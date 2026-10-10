@@ -12,6 +12,67 @@ fn geometry(n: usize) -> Vec<[f64; 3]> {
         })
         .collect()
 }
+
+#[test]
+fn heteroatom_force_field_gradients_match_numerical_energy_derivatives() {
+    // These less common central bonds exercise empirical MMFF torsion rules.
+    // Numerical differentiation checks the independent energy/force contract.
+    for source in [
+        "COOC",
+        "CSSC",
+        "COSC",
+        "CSOC",
+        "C[SiH2][SiH2]C",
+        "CPPC",
+        "CSPC",
+        "CPSC",
+        "CNP(C)C",
+        "C=NN=C",
+        "CC=NNC",
+        "CN=NC",
+        "C=CNC",
+        "C=CPC",
+        "C=CSC",
+        "C=COC",
+        "CC=CC",
+        "C[NH+]=NC",
+        "C=NSC",
+        "C=NPC",
+        "CS(=O)SC",
+        "CP(=O)(C)PC",
+        "C[SiH2]OC",
+        "C[SiH2]NC",
+    ] {
+        let mol = chematic_chem::add_hydrogens(&parse(source).unwrap());
+        let model = Mmff94EnergyModel::new(&mol).unwrap();
+        let xyz = geometry(mol.atom_count());
+        let gradient = model.bounded_analytic_gradient(&xyz);
+        assert!(model.energy(&xyz).is_finite(), "{source}");
+        let mut work = xyz.clone();
+        let h = 1e-5;
+        for i in 0..xyz.len() {
+            for axis in 0..3 {
+                work[i][axis] = xyz[i][axis] + h;
+                let plus = model.energy(&work);
+                work[i][axis] = xyz[i][axis] - h;
+                let minus = model.energy(&work);
+                work[i][axis] = xyz[i][axis];
+                let expected = (plus - minus) / (2.0 * h);
+                assert!(
+                    (gradient[i][axis] - expected).abs() < 2e-4 * (1.0 + expected.abs()),
+                    "{source} atom {i} axis {axis}: {} != {expected}",
+                    gradient[i][axis]
+                );
+            }
+        }
+        for axis in 0..3 {
+            assert!(
+                gradient.iter().map(|g| g[axis]).sum::<f64>().abs() < 1e-6,
+                "net internal force: {source}"
+            );
+        }
+    }
+}
 fn near(a: f64, b: f64) {
     assert!(
         (a - b).abs() < 1e-8 * (1. + a.abs().max(b.abs())),

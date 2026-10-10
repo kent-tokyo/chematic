@@ -14,6 +14,8 @@
 //!   ([`fps`])
 
 #![forbid(unsafe_code)]
+#[cfg(test)]
+mod sparse_boundary_contract_tests;
 
 pub mod atom_pair;
 pub mod avalon;
