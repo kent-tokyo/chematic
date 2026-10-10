@@ -167,9 +167,12 @@ public final class CdkAdapter {
         record.put("status", "ok");
         Map<String, Object> operations = new LinkedHashMap<>();
         try {
-          IAtomContainer mol = parse((String) row.get("smiles"));
+          String smiles = (String) row.get("smiles");
+          parse(smiles);
           for (String operation : OPERATIONS.keySet()) {
-            operations.put(operation, operationResult(mol, operation));
+            // CDK descriptors and writers are allowed to mutate atom-container
+            // state. Accuracy rows must not depend on which operation ran first.
+            operations.put(operation, operationResult(parse(smiles), operation));
           }
         } catch (Exception exc) {
           record.put("status", "parse_error");

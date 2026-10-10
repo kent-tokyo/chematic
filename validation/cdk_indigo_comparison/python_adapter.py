@@ -99,6 +99,8 @@ def rdkit_engine() -> Engine:
 def chematic_engine() -> Engine:
     import chematic
 
+    queries = {query: chematic.compile_smarts(query) for query in SMARTS}
+
     def canonical(mol):
         return mol.rdkit_smiles
 
@@ -117,8 +119,8 @@ def chematic_engine() -> Engine:
         "mol_roundtrip": mol_roundtrip,
     }
     operations.update({
-        f"smarts:{query}": (lambda query: lambda mol: mol.has_substructure(query))(query)
-        for query in SMARTS
+        f"smarts:{query}": (lambda compiled: lambda mol: compiled.matches(mol))(compiled)
+        for query, compiled in queries.items()
     })
     return Engine(
         "chematic",
@@ -180,6 +182,17 @@ def operation_result(engine: Engine, molecule: Any, operation: str) -> dict[str,
         return {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
 
 
+def fresh_operation_result(engine: Engine, smiles: str, operation: str) -> dict[str, Any]:
+    """Evaluate one operation without inheriting another operation's mutations."""
+    try:
+        molecule = engine.parse(smiles)
+        if molecule is None:
+            raise ValueError("parser returned no molecule")
+    except Exception as exc:
+        return {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
+    return operation_result(engine, molecule, operation)
+
+
 def emit_results(engine: Engine, corpus: Path) -> None:
     corpus_hash = hashlib.sha256(corpus.read_bytes()).hexdigest()
     for line in corpus.read_text().splitlines():
@@ -209,7 +222,7 @@ def emit_results(engine: Engine, corpus: Path) -> None:
             }
         else:
             record["operations"] = {
-                operation: operation_result(engine, molecule, operation)
+                operation: fresh_operation_result(engine, row["smiles"], operation)
                 for operation in OPERATIONS
             }
         print(json.dumps(record, sort_keys=True, separators=(",", ":")))

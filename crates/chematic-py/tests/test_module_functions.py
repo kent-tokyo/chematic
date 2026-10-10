@@ -51,6 +51,21 @@ def test_smarts_invalid():
         chematic.smarts_match("[INVALID???", chematic.from_smiles("C"))
 
 
+def test_compiled_smarts_query_is_reusable(ethanol):
+    query = chematic.compile_smarts("[#8]")
+    assert isinstance(query, chematic.SmartsQuery)
+    assert query.source == "[#8]"
+    assert query.matches(ethanol)
+    assert not query.matches(chematic.from_smiles("CC"))
+    assert query.find_matches(ethanol) == [[2]]
+    assert "[#8]" in repr(query)
+
+
+def test_compiled_smarts_rejects_invalid_query():
+    with pytest.raises(ValueError):
+        chematic.compile_smarts("[C;")
+
+
 # ---------------------------------------------------------------------------
 # from_inchi / InChI round-trip (C3: InChI parser)
 # ---------------------------------------------------------------------------
