@@ -39,19 +39,19 @@ limited to its recorded artifact, comparator, corpus and operation.
   309,982/310,000 RDKit 2026.03.6 match sets; the other 18 are typed
   unsupported. This does not change the published v1.0.30 baseline of 200
   differing sets. [Source packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-python-source-smarts-optin-310k.md).
-- **3D/MMFF94:** Experimental. Published v1.0.31 macOS quality checks pass
-  geometry/stereo/clash on 265/265, but only 100/265 converge at the declared
-  limit; 262 comparable same-coordinate total energies are within 1 kcal/mol.
-  Linux/Python 3.9 published wheels have typed stereo failures on rows
-  53/246; unreleased source, which takes its math from the `libm` crate,
-  passes 265/265 on Linux ([record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-04-stereo-integrity-smarts-a6-followups.md)).
-  A macOS rerun of that build and independent conformer quality remain open. [Quality record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-a6-published-v1031-mmff94-quality.md)
-  · [platform diagnosis](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-a6-source-mmff94-termination.md).
+- **3D/MMFF94:** Experimental. The published v1.0.37 Linux A6 lane and the
+  current Linux/macOS/Windows CI gates pass all 265 geometry, stereo, and clash
+  checks after stereo-safe re-embedding. Source MMFF typing and same-coordinate
+  per-term energies match the pinned RDKit lanes; seeded ETKDG source results
+  match on the recorded Linux success rows. These results do not establish
+  other seeds, conformer ensembles, public artifacts, or a speed advantage.
+  [A6 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-08-issues-769-739.md) ·
+  [ETKDG record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-cosmolkit-parity-2.md).
 
 Earlier source diagnostics and per-release channel checks remain in the
 [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) and
 [versioned validation results](https://github.com/kent-tokyo/chematic/tree/main/validation/results/). They are not promoted
-to v1.0.34 measurements.
+to v1.0.41 package measurements.
 
 ## Reproduce and interpret
 

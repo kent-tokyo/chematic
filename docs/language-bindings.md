@@ -6,8 +6,10 @@ have different API and error shapes. This page names those differences.
 ## Atom provenance and output order
 
 The atom-tracking APIs expose only mappings with a documented atom order.
-The checked reaction additions below are included since v1.0.32. Their measured
-comparison is a source-wheel result; published-package parity remains open.
+The checked reaction additions below are included since v1.0.32; the published
+v1.0.38 83-row gate is 80 exact graph/origin/map rows and three inputs invalid
+in both engines. Missing WASM/Node surfaces are tracked in
+[#784](https://github.com/kent-tokyo/chematic/issues/784).
 
 | Capability | Rust | Python | WASM / Node |
 |---|---|---|---|
@@ -22,9 +24,8 @@ template. Python arrays follow the returned `Mol` atom indices; WASM/Node
 arrays follow the returned canonical SMILES parse order. Template-map labels
 may be `None` even when an atom has a reactant origin. These are additive APIs:
 ordinary SMILES writing, connected components, and reaction application retain
-their existing return values. The [83-row source gate](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-reaction-83-python-provenance-source.md)
-records Linux/macOS release-profile source-wheel and WASM Node CI results,
-not published-package verification.
+their existing return values. The [published rerun](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-08-754-734-followups-batch24.md)
+records the current bounded reaction result; it is not general SMIRKS parity.
 
 See also: [`format-capabilities.md`](format-capabilities.md) for the
 per-format read/write/streaming/limits matrix this page's examples are

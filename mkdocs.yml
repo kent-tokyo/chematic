@@ -73,6 +73,7 @@ nav:
     - Browser App (WASM): use-cases/browser-app.md
     - AI-Assisted Molecular Analysis (MCP): use-cases/ai-drug-discovery.md
     - Rust Server: use-cases/rust-server.md
+  - MCP Protocol Reference: mcp-protocol-reference.md
   - Cookbook (EN): cookbook.md
   - Cookbook (日本語): cookbook_ja.md
   - Benchmark: benchmark.md

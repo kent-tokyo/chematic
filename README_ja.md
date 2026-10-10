@@ -28,12 +28,9 @@ Python wheelはC/C++コンパイラを必要とせず、各バインディング
 
 ### v1.0.41 の対応範囲
 
-v1.0.41では、RDKit 2026.03.1互換APIに、互変異性体列挙、CXSMILES、
-ランダム／部分SMILES、距離行列、疎なfingerprint、化学的問題の検出、
-反応writerを追加しました。記録したsource比較では、ChEMBL 5kとRDKit.js
-10kの161項目すべてで、RDKitとの一致件数がCOSMolKit 0.5.0rc15以上です。
-別の4,072件stress corpusでは、native canonical SMILESの往復が1項目だけ
-下回ります。これはsource buildの結果であり、全公開artifactの再測定結果ではありません。詳しくは
+v1.0.41では、RDKit互換の互変異性体、writer、行列、疎なfingerprint、
+化学的問題の検出、反応、固定シードの3D APIを追加しました。ソース比較は161項目を
+対象とし、公開パッケージとstress corpusの限界は分けて記録しています。詳しくは
 [検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方
