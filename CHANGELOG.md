@@ -73,9 +73,17 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   removed Labute ASA bond-order and per-atom heap allocations. Descriptor,
   fingerprint, and ring-count outputs remain unchanged on the pinned ChEMBL
   and NCI agreement corpora.
+- Avoided per-bond closure-map probes when RDKit-order traversal has no SMILES
+  ring closures. The current arm64 source candidate keeps TPSA and chiral
+  Morgan faster than RDKit 2026.09.1 in all 21 measured blocks; direct Labute
+  ASA and first-use ring count remain explicit deficits.
 
 ### Fixed
 
+- Matched RDKit 2026.09.1's RingDecomposerLib ring counts for large symmetric
+  macrocycles while retaining the legacy-equivalent fast path for compact
+  ring systems. The pinned 10k corpus improves from 9,994 to 10,000 exact ring
+  counts; this is source-candidate evidence, not yet a published-package claim.
 - Stopped interpreting MOL2 partial charges as rounded formal charges and
   retained `.ar` atom aromaticity independently of aromatic bond rows.
 

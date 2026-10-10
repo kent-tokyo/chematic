@@ -511,6 +511,12 @@ pub fn parse_cdxml_all_with_options_and_limits(
                 limit: limits.max_line_bytes,
             });
         }
+    }
+
+    // Physical-line budgets apply before tokenization. Producers may place
+    // several tags on one line; reuse the document editor's quote-aware
+    // splitter so minified fragments cannot silently become empty graphs.
+    for raw_line in crate::cdxml_document::logical_cdxml_lines(input) {
         let line = raw_line.trim();
         if line.is_empty() {
             continue;

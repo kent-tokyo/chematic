@@ -1,0 +1,71 @@
+{
+ "corpus": "rdkit-js-browser-10k-v1.smi",
+ "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+ "engines": {
+  "chematic": {
+   "api_notes": {
+    "aromatic_rings": "Mol.rdkit_aromatic_ring_count",
+    "canonical_smiles": "Mol.rdkit_smiles (RDKit-compatible writer); canonical_smiles_rt reads back the native Mol.smiles",
+    "chemistry_problems": "Mol.rdkit_chemistry_problems()",
+    "chemistry_problems_unsanitized": "chematic.rdkit_detect_chemistry_problems(smiles)",
+    "chiral_centers": "Mol.rdkit_chiral_centers(include_unassigned=True)",
+    "cip": "Mol.rdkit_parsed().cip_stereo(mode='accurate'); abstentions from cip_stereo_unresolved()",
+    "cx_smarts": "Mol.rdkit_cx_smarts",
+    "cx_smiles": "Mol.rdkit_cx_smiles()",
+    "distance_matrix": "Mol.rdkit_distance_matrix()",
+    "distance_matrix_3d": "Mol.rdkit_add_hydrogens().rdkit_distance_matrix_3d(RDKit-embedded coords)",
+    "embed3d": "Mol.rdkit_add_hydrogens().rdkit_embed(random_seed=42)",
+    "extended_murcko": "Mol.rdkit_mol_hash('ExtendedMurcko')",
+    "fragment_smiles": "Mol.rdkit_fragment_smiles(first half of Mol.rdkit_num_atoms())",
+    "inchi": "Mol.standard_inchi (needs the native-inchi build feature)",
+    "mmff_energy_gradient": "Mol.rdkit_add_hydrogens()._rdkit_mmff_terms(RDKit-embedded coords)",
+    "mol_hash_*": "Mol.rdkit_mol_hash(<HashFunction name>)",
+    "mol_wt": "Mol.rdkit_mw",
+    "molblock_rt": "Mol.rdkit_mol_block_2d() (RDKit-compatible writer; Mol.to_mol_block() where it refuses)",
+    "morgan2_2048": "Mol.rdkit_ecfp_config(2, 2048)",
+    "morgan2_bitinfo": "Mol.rdkit_morgan_bit_info(2, 2048)",
+    "morgan2_sparse_counts": "Mol.rdkit_morgan_sparse_counts(2)",
+    "murcko_scaffold": "Mol.rdkit_murcko_scaffold (RDKit MurckoDecompose on the RDKit model)",
+    "pdb_block": "Mol.rdkit_pdb_block",
+    "pdb_read": "chematic.rdkit_pdb_block_to_smiles(Mol.rdkit_pdb_block())",
+    "random_smiles5": "Mol.rdkit_random_smiles(5, 42)",
+    "reaction_smarts_roundtrip": "chematic.rdkit_reaction_to_smarts(smirks)",
+    "rxn:*": "chematic.run_smirks_checked(smirks, [mol, *partners], rdkit_compat=True)",
+    "smarts": "Mol.find_matches_rdkit_parity (opt-in RDKit 2026.03.6 profile; typed refusals)",
+    "smarts_write": "Mol.rdkit_smarts",
+    "stereoisomer_count": "Mol.rdkit_stereoisomer_count",
+    "tautomer_*": "Mol.rdkit_canonical_tautomer() / rdkit_tautomers() (port of RDKit's TautomerEnumerator; older wheels: native canonical_tautomer() / enumerate_tautomers() read back by RDKit)",
+    "torsion_legacy_counts": "Mol.rdkit_legacy_torsion_counts()",
+    "tpsa": "Mol.rdkit_tpsa",
+    "uff_energy_gradient": "Mol.rdkit_add_hydrogens().rdkit_uff_energy/rdkit_uff_gradient(RDKit-embedded coords)"
+   },
+   "examples": {},
+   "operations": {
+    "labute_asa": {
+     "float_last_bits": 1137,
+     "match": 8863,
+     "match_1e-9": 10000
+    },
+    "num_rings": {
+     "match": 10000,
+     "match_1e-9": 10000
+    },
+    "smarts_31": {},
+    "tpsa": {
+     "match": 10000,
+     "match_1e-9": 10000
+    }
+   },
+   "parse": {
+    "ref_ok__engine_ok": 10000
+   },
+   "version": "1.0.42"
+  }
+ },
+ "reference": {
+  "engine": "rdkit",
+  "version": "2026.09.1"
+ },
+ "rows": 10000,
+ "schema": "cosmolkit-corpus-comparison-summary/v1"
+}

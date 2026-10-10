@@ -1140,6 +1140,16 @@ impl Molecule {
     /// a heap fallback. Intended for hot read-only descriptor paths.
     #[doc(hidden)]
     pub fn for_each_bond_in_rdkit_order(&self, mut visit: impl FnMut(BondIdx)) {
+        // Acyclic SMILES and non-SMILES inputs have no deferred closure
+        // bonds.  They are the common case for descriptor hot paths; avoid a
+        // hash-table probe for every bond when insertion order already is
+        // RDKit order.
+        if self.smiles_ring_closure_keys.is_empty() {
+            for bond in 0..self.bonds.len() as u32 {
+                visit(BondIdx(bond));
+            }
+            return;
+        }
         for bond in 0..self.bonds.len() as u32 {
             if !self.smiles_ring_closure_keys.contains_key(&bond) {
                 visit(BondIdx(bond));

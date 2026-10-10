@@ -154,3 +154,71 @@ fn conjugated_directional_smiles_respelling_matches_pinned_rdkit() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
+
+#[test]
+fn disconnected_rooted_smarts_and_cx_extensions_match_pinned_rdkit() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.1-smarts-components-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    let mut failures = Vec::new();
+    for row in fixture["rows"].as_array().unwrap() {
+        let source = row["smiles"].as_str().unwrap();
+        let mol = if source.is_empty() {
+            chematic_core::MoleculeBuilder::new().build()
+        } else {
+            parse(source).unwrap()
+        };
+        let root = row["root"].as_u64().map(|v| v as usize);
+        let result = crate::rdkit_smarts(&mol, row["isomeric"].as_bool().unwrap(), root);
+        match result {
+            Ok(actual) if actual == row["smarts"].as_str().unwrap() => {}
+            other => failures.push(format!(
+                "{source},root={root:?},isomeric={}: {other:?} != {}",
+                row["isomeric"], row["smarts"]
+            )),
+        }
+    }
+    for row in fixture["cx"].as_array().unwrap() {
+        let source = row["smiles"].as_str().unwrap();
+        let mol = if source.is_empty() {
+            chematic_core::MoleculeBuilder::new().build()
+        } else {
+            parse(source).unwrap()
+        };
+        let result = crate::rdkit_cx_smarts(&mol);
+        match result {
+            Ok(actual) if actual == row["cx_smarts"].as_str().unwrap() => {}
+            other => failures.push(format!("CX {source}: {other:?} != {}", row["cx_smarts"])),
+        }
+        if mol.atom_count() > 0 {
+            let error = crate::rdkit_smarts(&mol, true, Some(mol.atom_count())).unwrap_err();
+            assert!(error.to_string().contains("bad atom index"));
+        }
+    }
+    assert_eq!(fixture["rows"].as_array().unwrap().len(), 196);
+    assert_eq!(fixture["cx"].as_array().unwrap().len(), 17);
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn branched_polyene_direction_respelling_matches_native_reader_cleanup() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/rdkit-2026.03.1-branched-directions-boundary.json"
+    ))
+    .unwrap();
+    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    let mut failures = Vec::new();
+    for row in fixture["rows"].as_array().unwrap() {
+        let source = row["smiles"].as_str().unwrap();
+        let mol = parse(source).unwrap();
+        let result = rdkit_canonical_smiles(&mol);
+        match result {
+            Ok(actual) if actual == row["canonical"].as_str().unwrap() => {}
+            other => failures.push(format!("{source}: {other:?} != {}", row["canonical"])),
+        }
+    }
+    assert_eq!(fixture["rows"].as_array().unwrap().len(), 4698);
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
