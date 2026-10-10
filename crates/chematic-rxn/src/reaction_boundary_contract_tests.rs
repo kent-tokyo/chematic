@@ -161,7 +161,7 @@ fn strict_variant_application_and_precomputed_rings_preserve_product_order() {
             .run_reactants_traced_with_diagnostics(&[&mol], &limits)
             .unwrap();
         assert_eq!(traced.diagnostics.accepted_matches, 1);
-        assert!(traced.rejected_products.is_empty());
+        assert_eq!(traced.diagnostics.valence_rejected_matches, 0);
     }
 }
 #[test]

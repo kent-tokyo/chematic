@@ -49,6 +49,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   reaction profile. This fixes a deletion/edit case that emitted a carbon
   radical after an `AddHs`-style input; the fuzz report now records overlapping
   deletion, bond-break, radical, and re-sanitization facets separately.
+- Matched RDKit reaction multiplicity for ordinary SMILES that spell graph
+  hydrogens around an alkene while continuing to preserve fully explicit
+  `AddHs`-style reactants. The profile now distinguishes the two forms before
+  matching instead of treating every graph hydrogen as caller-added.
 
 ## [1.0.42] - 2026-10-10
 
