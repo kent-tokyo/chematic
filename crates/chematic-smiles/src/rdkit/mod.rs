@@ -1551,3 +1551,6 @@ mod profile_tests;
 mod tautomer_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod api_contract_tests;
