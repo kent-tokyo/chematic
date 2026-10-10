@@ -59,8 +59,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ### Changed
 
 - Short-circuited isolated atomic-number SMARTS existence queries before VF2
-  state allocation. Query results are unchanged; the path is covered against
-  the ordinary first-embedding search.
+  state allocation and before aromaticity-cleanup screening. Query results are
+  unchanged because sanitization cannot change atomic numbers; the path is
+  covered against the ordinary first-embedding search.
 
 - Reduced temporary allocation in loss-aware MOL2 serialization while
   retaining the common-observer semantic result.
