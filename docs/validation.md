@@ -2,9 +2,9 @@
 
 Updated 2026-10-10 for **v1.0.42**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
-artifacts, the published v1.0.38 chemistry baseline, v1.0.40 source, and the
-v1.0.41 source candidate. v1.0.42 release channels are verified; v1.0.42
-package-output chemistry reruns remain open. Every comparison is
+artifacts, the published v1.0.42 macOS arm64 chemistry baseline, v1.0.40
+source, and the v1.0.41 source candidate. v1.0.42 release channels are
+verified. Every comparison is
 limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
@@ -19,7 +19,8 @@ limited to its recorded artifact, comparator, corpus and operation.
 | RDKit-compatible HBA | The hash-verified published v1.0.30 macOS arm64 wheel matches RDKit 2026.03.6 on 5,000/5,000 exposed ChEMBL rows; published v1.0.29 matched 3,641/5,000. HBA only. | [Release-channel evidence](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.30.json) |
 | Paired speed (P0.2) | Published Python: 20 operations pass exact-output and paired-interval gates in 20 alternating blocks on one host. Isolated Python and Rust lanes split parse-inclusive, first-use and precomputed calls. Whole-process RSS is not library allocation; changed HBA output is not an equivalent-output speed win. | [Python matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) · [isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) · [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) |
 | Published browser Morgan | On Ubuntu 24.04, Chromium, Firefox and WebKit each have 250/250 direct and prepared bit parity and favorable 20-block speed intervals versus official RDKit.js (smallest lower bound 1.63×). A separate Chromium 10k lane has 9,999 exact and one typed Fe refusal. No universal browser or memory claim. | [Three-browser record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md) · [M4 Chromium](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md) |
-| Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.38 and current source retain the 83-row gate at 80 exact and three jointly invalid. Property fuzzing reduced implicit-H product differences from 125 to 28 and refusals from 52 to 18 on 2,000 generated templates; the remaining cases stay classified, not counted as parity. | [batch 24](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-08-754-734-followups-batch24.md) |
+| Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.42 and current source retain the 83-row gate at 80 exact and three jointly invalid. The v1.0.42 follow-up preserves caller-supplied explicit H atoms: full-corpus explicit-H differences fall from 153 to 35, while the remaining cases stay classified and are not counted as parity. | [v1.0.42 follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) |
+| Published v1.0.42 chemistry packet | The hash-pinned macOS arm64 CPython 3.13 wheel retains the 80+3 reaction gate, 310,000/310,000 SMARTS cells, the exposed/ChEMBL CIP, hybridization and MMFF counts, and lossless MOL stereo rows. Its BioTransformer explicit-H lane has 6,486 exact, 153 differing and 165 RDKit-raw-unsanitizable rows; these are the published baseline, not source-candidate results. | [v1.0.42 follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) |
 | MCP Streamable HTTP | Published v1.0.39 added the opt-in, loopback-first 2026-07-28 stateless transport retained here. The official suite produced 82 passes; its other checks require suite fixtures or capabilities the server does not declare. | [HTTP conformance record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-issues-769-779.md) |
 | Release channels | v1.0.42 is verified on GitHub Release, npm, PyPI (25 wheels plus one sdist), all 20 crates.io archives, docs.rs and Pages. Availability does not establish chemical accuracy. | [v1.0.42 verification](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.42.json) |
 
@@ -39,7 +40,7 @@ limited to its recorded artifact, comparator, corpus and operation.
   309,982/310,000 RDKit 2026.03.6 match sets; the other 18 are typed
   unsupported. This does not change the published v1.0.30 baseline of 200
   differing sets. [Source packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-python-source-smarts-optin-310k.md).
-- **3D/MMFF94:** Experimental. The published v1.0.37 Linux A6 lane and the
+- **3D/MMFF94:** Experimental. The published v1.0.42 macOS arm64 A6 lane and the
   current Linux/macOS/Windows CI gates pass all 265 geometry, stereo, and clash
   checks after stereo-safe re-embedding. Source MMFF typing and same-coordinate
   per-term energies match the pinned RDKit lanes; seeded ETKDG source results

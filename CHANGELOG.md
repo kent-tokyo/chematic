@@ -10,6 +10,36 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added checked Rust and Python entry points for Balaban J, IPC, and the legacy
+  MMFF94 BCI charge model. They return typed errors when the calculation is
+  outside its documented size or element table instead of making a valid
+  `0.0` result indistinguishable from an unavailable calculation. WASM also
+  exposes a typed JSON result for checked legacy MMFF94 charges.
+- Added `num_rings()` to the WASM molecule handle and regression fixtures for
+  coordination and disconnected-component ring-closure notation.
+
+### Changed
+
+- Kept rejected RDKit-profile reaction products in a new opt-in detailed
+  report. The existing Rust `TracedReactionTransformReport` again has its
+  original two-field struct-literal shape, avoiding a source-compatibility
+  break for downstream Rust users.
+- Updated published-wheel chemistry and A6 workflow defaults to v1.0.42 and
+  added the hash-pinned v1.0.42 chemistry baseline. Historical v1.0.38 results
+  remain available under their own expected-value file.
+
+### Fixed
+
+- Fixed RDKit-compatible ring counts for SMILES closure notation that creates
+  a coordination or disconnected-component bond without a graph cycle. Four
+  v1.0.42 regressions now return zero rings instead of one.
+- Preserved caller-supplied explicit hydrogen atoms in the RDKit 2026.03.6
+  reaction profile. This fixes a deletion/edit case that emitted a carbon
+  radical after an `AddHs`-style input; the fuzz report now records overlapping
+  deletion, bond-break, radical, and re-sanitization facets separately.
+
 ## [1.0.42] - 2026-10-10
 
 ### Changed
