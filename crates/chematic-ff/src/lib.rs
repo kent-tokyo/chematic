@@ -60,3 +60,8 @@ pub use uff::{
     UffMinimizeResult, UffType, assign_uff_types, minimize_uff, minimize_uff_with_constraint,
     uff_total_energy,
 };
+
+#[cfg(test)]
+mod parameter_contract_tests;
+#[cfg(test)]
+mod uff_contract_tests;
