@@ -46,8 +46,10 @@ silently.
 The first performance lane is a fresh-process CLI parse-plus-same-format-write
 measurement for those four semantically checked fixtures. It includes process
 startup and therefore does not establish parser-only or writer-only
-superiority. Large-file throughput, peak RSS, the remaining Tier-A formats,
-and published packages stay open.
+superiority. All four lanes pass the 21-block rule in the
+[clean-commit record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-openbabel-file-io-cli-roundtrip-v1.0.42.md).
+Large-file throughput, peak RSS, the remaining Tier-A formats, and published
+packages stay open.
 
 ## Loss-aware MOL2 API
 
