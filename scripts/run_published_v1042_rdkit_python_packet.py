@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Reproduce the v1.0.42 Python/RDKit packet from published wheels.
+"""Reproduce the Python/RDKit packet from pinned wheels.
 
 The parent process performs the output-equivalence gate and launches one fresh
 child per engine and block.  Child timings therefore do not load the competing
 binding in the same interpreter.  A speed interval is emitted only when the
 corresponding 10k output gate passes.
+
+The defaults reproduce the historical v1.0.42 packet.  ``--expected-chematic``
+and ``--schema`` allow the same protocol to record a later wheel without
+rewriting this runner or weakening the version check.
 """
 
 from __future__ import annotations
@@ -208,6 +212,10 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--blocks", type=int, default=21)
     parser.add_argument("--limit", type=int, default=1000)
+    parser.add_argument("--expected-chematic", default=EXPECTED_CHEMATIC)
+    parser.add_argument("--expected-rdkit", default=EXPECTED_RDKIT)
+    parser.add_argument("--schema", default="published-v1.0.42-rdkit-packet/v1")
+    parser.add_argument("--chematic-revision", default=None)
     parser.add_argument("--child", choices=("chematic", "rdkit"))
     parser.add_argument("--block", type=int, default=0)
     args = parser.parse_args()
@@ -217,9 +225,9 @@ def main() -> int:
 
     ch_version = importlib.metadata.version("chematic")
     rd_version = importlib.metadata.version("rdkit")
-    if ch_version != EXPECTED_CHEMATIC or rd_version != EXPECTED_RDKIT:
+    if ch_version != args.expected_chematic or rd_version != args.expected_rdkit:
         raise SystemExit(
-            f"expected chematic {EXPECTED_CHEMATIC} / rdkit {EXPECTED_RDKIT}, "
+            f"expected chematic {args.expected_chematic} / rdkit {args.expected_rdkit}, "
             f"got {ch_version} / {rd_version}"
         )
     samples = {"chematic": [], "rdkit": []}
@@ -264,9 +272,10 @@ def main() -> int:
 
     corpus_bytes = args.corpus.read_bytes()
     report = {
-        "schema": "published-v1.0.42-rdkit-packet/v1",
+        "schema": args.schema,
         "binding": "python",
         "versions": {"chematic": ch_version, "rdkit": rd_version},
+        "source": {"chematic_revision": args.chematic_revision},
         "artifacts": artifact_records(args.artifact_dir),
         "corpus": {
             "path": args.corpus.name,

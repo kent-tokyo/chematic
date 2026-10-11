@@ -48,6 +48,22 @@ class PublishedPacketTests(unittest.TestCase):
     def test_valid_equivalent_record(self):
         self.assertEqual(validate(record()), [])
 
+    def test_later_packet_can_pin_its_own_schema_and_version(self):
+        report = record()
+        report["schema"] = "current-source-v1.1.0-rdkit-packet/v1"
+        report["versions"]["chematic"] = "1.1.0"
+        report["source"] = {"chematic_revision": "44338e16"}
+        self.assertEqual(
+            validate(
+                report,
+                expected_schema="current-source-v1.1.0-rdkit-packet/v1",
+                expected_chematic="1.1.0",
+                expected_rdkit=("2026.9.1",),
+                expected_revision="44338e16",
+            ),
+            [],
+        )
+
     def test_non_equivalent_lane_must_withhold_speed(self):
         report = record()
         report["accuracy"]["num_rings"] = record(False)["accuracy"]["num_rings"]

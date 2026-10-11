@@ -11,7 +11,7 @@ from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[1]
 BENCHMARKS = ROOT / "benchmarks"
-INDEX = BENCHMARKS / "README.md"
+INDEXES = (BENCHMARKS / "README.md", BENCHMARKS / "archive-index.md")
 LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 RECORD_SUFFIXES = {".json", ".md"}
 
@@ -21,39 +21,40 @@ def benchmark_records() -> set[Path]:
         path.relative_to(BENCHMARKS)
         for path in BENCHMARKS.iterdir()
         if path.is_file()
-        and path.name != INDEX.name
+        and path not in INDEXES
         and path.suffix in RECORD_SUFFIXES
     }
 
 
 def main() -> int:
     errors: list[str] = []
-    try:
-        text = INDEX.read_text(encoding="utf-8")
-    except OSError as exc:
-        print(f"benchmark index check failed: {exc}", file=sys.stderr)
-        return 1
-
+    records = benchmark_records()
     linked_records: set[Path] = set()
-    for raw_target in LINK_PATTERN.findall(text):
-        target = raw_target.strip().split(None, 1)[0]
-        if target.startswith(("https://", "http://", "mailto:")):
-            continue
-        target_without_fragment = target.split("#", 1)[0]
-        if not target_without_fragment:
-            continue
-        target_path = Path(unquote(target_without_fragment))
-        resolved = (INDEX.parent / target_path).resolve()
+    for index in INDEXES:
         try:
-            relative = resolved.relative_to(BENCHMARKS.resolve())
-        except ValueError:
-            relative = None
-        if not resolved.is_file():
-            errors.append(f"broken local link: {target}")
-        elif relative is not None and relative.suffix in RECORD_SUFFIXES:
-            linked_records.add(relative)
+            text = index.read_text(encoding="utf-8")
+        except OSError as exc:
+            print(f"benchmark index check failed: {exc}", file=sys.stderr)
+            return 1
+        for raw_target in LINK_PATTERN.findall(text):
+            target = raw_target.strip().split(None, 1)[0]
+            if target.startswith(("https://", "http://", "mailto:")):
+                continue
+            target_without_fragment = target.split("#", 1)[0]
+            if not target_without_fragment:
+                continue
+            target_path = Path(unquote(target_without_fragment))
+            resolved = (index.parent / target_path).resolve()
+            try:
+                relative = resolved.relative_to(BENCHMARKS.resolve())
+            except ValueError:
+                relative = None
+            if not resolved.is_file():
+                errors.append(f"{index.name}: broken local link: {target}")
+            elif relative in records:
+                linked_records.add(relative)
 
-    missing = sorted(benchmark_records() - linked_records)
+    missing = sorted(records - linked_records)
     errors.extend(f"unindexed benchmark record: {path}" for path in missing)
 
     if errors:

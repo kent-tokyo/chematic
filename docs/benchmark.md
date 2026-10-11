@@ -5,17 +5,17 @@ corpus, host and timed operation. A speed result counts only when the stated
 outputs and work are equivalent. [The record index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md)
 links the raw data and older measurements.
 
-## Current published-package evidence
+## Current evidence
 
-The current release is **v1.1.0**. The latest bounded published-package packet
-remains v1.0.42 and measures four
-named RDKit 2026.09.1 Python lanes from exact PyPI wheels on hosted Linux x64
-and macOS arm64. The broader published-package matrix remains v1.0.30, and the
-v1.0.41 RDKit/COSMolKit and v1.0.40 seeded ETKDG records remain source-built
-evidence. None is a universal speed or compatibility claim.
+The current release is **v1.1.0**. A fresh current-source packet compares a
+wheel built from `main` commit `44338e16` with RDKit 2026.09.1 on macOS arm64.
+The latest bounded registry-package packet remains v1.0.42. Source and
+published-package evidence are intentionally separate; neither is a universal
+speed or compatibility claim.
 
 | Lane | Result | Boundary |
 |---|---|---|
+| [Current `main` / RDKit 2026.09.1](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1.1.0-main-vs-rdkit-2026.09.1.md) | TPSA, Labute ASA, RDKit ring count and chiral Morgan agree on 10,000/10,000 rows. Prepared TPSA and Morgan, plus all four parse-inclusive pipelines, have favorable paired intervals. A supplementary 63-operation matrix has 38 full-agreement lanes and 32 favorable paired intervals. | Source-built v1.1.0 wheel at `44338e16`, one macOS arm64 host. Prepared Labute ASA and first-use ring count remain slower; six full-agreement broad-matrix lanes do not demonstrate a win. |
 | [Published v1.0.42 / RDKit 2026.09.1](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) | Python TPSA, Labute ASA and chiral Morgan have exact/toleranced 10k output gates and favorable parse-inclusive intervals on both hosted runners. | Ring count is 9,994/10,000 and has no speed ratio. macOS prepared Labute loses and prepared Morgan crosses parity. npm Labute is asymmetric work and npm chiral Morgan differs on one row, so neither receives a speed claim. |
 | [Python 63-operation matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | 20 operations have exact output agreement and a favorable paired confidence interval against RDKit 2026.03.6 in 20 alternating blocks. | One host and exposed corpus; other operations are not wins. |
 | [Isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) and [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) | Parse-inclusive, prepared first-use and precomputed lanes use 20 fresh-process blocks. | Process peak RSS is not per-operation allocation. Changed HBA outputs cannot support an equivalent-output v1.0.29/v1.0.30 speed claim. |
@@ -42,7 +42,7 @@ retains 200 SMARTS failures, five typed CIP abstentions and four npm API gaps.
 - The [v1.0.12 similarity-search record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-similarity-search-v1.0.12.md)
   separates native/native, RDKit-compatible/RDKit and cross-profile overlap.
   Source A/B and older operation timings remain in the
-  [index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md); they do not establish v1.1.0 package claims.
+  [complete index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md); they do not establish v1.1.0 package claims.
 
 ## Reproduction and interpretation
 
