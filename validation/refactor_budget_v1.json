@@ -345,14 +345,6 @@
       "decisions": 15,
       "lines": 130
     },
-    "crates/chematic-mol/src/cdxml_document.rs::apply#1": {
-      "decisions": 54,
-      "lines": 195
-    },
-    "crates/chematic-mol/src/cdxml_document.rs::parse_with_limits#1": {
-      "decisions": 37,
-      "lines": 163
-    },
     "crates/chematic-perception/src/aromaticity.rs::assign_aromaticity_ex_impl#1": {
       "decisions": 14,
       "lines": 168
