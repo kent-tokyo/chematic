@@ -33,6 +33,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+excel = ["elixcee>=1.0.13,<2"]
 test = ["pytest<9", "pytest-asyncio>=0.23,<1"]
 
 [project.urls]
