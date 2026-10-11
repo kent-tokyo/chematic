@@ -4,16 +4,16 @@ Updated 2026-10-12 for **v1.1.1**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
 artifacts, the two-platform published v1.0.42/RDKit packet, the published
 v1.0.42 macOS arm64 chemistry baseline, v1.0.40 source, the v1.0.41 source
-candidate, and current-main v1.1.0-source records. v1.1.0 release channels are
-verified; v1.1.1 package measurements begin only after publication. Every
-comparison is
+candidate, current-main v1.1.0-source records, and focused v1.1.1 artifact
+checks. v1.1.1 release channels are verified; its full hosted multi-platform
+chemistry workflow remains pending. Every comparison is
 limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
 
 | Gate | Result and limit | Record |
 |---|---|---|
-| v1.1.1 contracts | Rust, Python, and WASM expose typed reaction rejection diagnostics; Rust, Python, and WASM/Node expose aligned R-group columns for the bounded labelled terminal-wildcard subset. Package-wide chemistry and performance claims still require exact v1.1.1 artifact reruns. | [v1.1.1 changelog](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md#111---2026-10-12) |
+| v1.1.1 descriptor follow-up | The published macOS arm64 CPython 3.13 wheel reproduces the unusual-SMILES HBD/QED residuals (4,069/4,072 HBD and 4,018/4,071 QED). The source candidate at `a46e17e0` restores the three representation-dependent rows (4,072 HBD and 4,021 QED) and removes eager Python parse preparation. Hosted Linux/macOS/Windows artifact reruns are still required before a cross-platform claim. | [candidate speed record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-v111-public-vs-lazy-fix.md) · [expected public-wheel counts](https://github.com/kent-tokyo/chematic/blob/main/validation/published-wheel-chemistry-gates-expected-v1.1.1.json) |
 | Indigo workflow source packet | Against Indigo 1.46.0 on one macOS arm64 host, CheMatic matches 15/15 versus 13/15 single-result reaction rows, 39/39 versus 38/39 largest-fragment rows, and ties at 16/16 bounded labelled R-group rows. On the common-correct subsets, all 21 timing blocks favor CheMatic, with median ratios of 10.66x, 1.27x, and 2.60x. This is source-built bounded evidence, not full standardization, reaction-enumeration, or R-group parity. | [Workflow packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-indigo-workflows-source.md) |
 | Current-main RDKit packet | A wheel built at `44338e16` matches RDKit 2026.09.1 on 10,000/10,000 TPSA, Labute ASA, ring-count and chiral-Morgan rows. Prepared TPSA and Morgan and all four parse-inclusive pipelines have favorable paired intervals on one macOS arm64 host. Prepared Labute ASA and first-use ring count remain deficits. The supplementary 63-operation matrix has 38 full-agreement lanes and 32 favorable intervals. This is source-built evidence, not the published v1.1.0 artifact. | [Current-source packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1.1.0-main-vs-rdkit-2026.09.1.md) |
 | Rust execution coverage | The processed Linux Codecov lane reports 96.93% line coverage (143,762/148,306) after discovering all integration-test targets. Python and WASM coverage are not included, and execution coverage is not chemical correctness evidence. | [Coverage workflow](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml) |
@@ -29,7 +29,7 @@ limited to its recorded artifact, comparator, corpus and operation.
 | Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.42 and current source retain the 83-row gate at 80 exact and three jointly invalid. The v1.0.42 follow-up preserves caller-supplied explicit H atoms: full-corpus explicit-H differences fall from 153 to 35, while the remaining cases stay classified and are not counted as parity. | [v1.0.42 follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) |
 | Published v1.0.42 chemistry packet | The hash-pinned macOS arm64 CPython 3.13 wheel retains the 80+3 reaction gate, 310,000/310,000 SMARTS cells, the exposed/ChEMBL CIP, hybridization and MMFF counts, and lossless MOL stereo rows. Its BioTransformer explicit-H lane has 6,486 exact, 153 differing and 165 RDKit-raw-unsanitizable rows; these are the published baseline, not source-candidate results. | [v1.0.42 follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) |
 | MCP Streamable HTTP | Published v1.0.39 added the opt-in, loopback-first 2026-07-28 stateless transport retained here. The official suite produced 82 passes; its other checks require suite fixtures or capabilities the server does not declare. | [HTTP conformance record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-issues-769-779.md) |
-| Release channels | v1.1.0 is verified on GitHub Release, npm, PyPI (25 wheels plus one sdist), all 20 crates.io archives, docs.rs and Pages. Availability does not establish chemical accuracy or rerun older comparison packets. | [v1.1.0 verification](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.1.0.json) |
+| Release channels | v1.1.1 is verified on GitHub Release, npm, PyPI (25 wheels plus one sdist), all 20 crates.io archives, docs.rs and Pages. Availability does not establish chemical accuracy or rerun older comparison packets. | [v1.1.1 verification](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.1.1.json) |
 
 ## Other bounded results
 
