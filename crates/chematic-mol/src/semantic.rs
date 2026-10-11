@@ -3,7 +3,7 @@
 //! This module is intentionally conservative: ambiguous references and unsafe
 //! expansions are rejected instead of being guessed into a molecular graph.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::{Map, Value};
 
@@ -197,6 +197,114 @@ pub enum SemanticCommand {
     },
 }
 
+fn parse_end_group_definitions(value: &Value) -> Result<Vec<PolymerEndGroup>, SemanticError> {
+    value
+        .get("end_group_definitions")
+        .map(|definitions| {
+            definitions
+                .as_array()
+                .ok_or_else(|| {
+                    SemanticError::InvalidJson("end_group_definitions must be an array".into())
+                })?
+                .iter()
+                .map(|definition| {
+                    Ok(PolymerEndGroup {
+                        id: json_string(definition, "id")?,
+                        smiles: json_string(definition, "smiles")?,
+                    })
+                })
+                .collect()
+        })
+        .transpose()
+        .map(Option::unwrap_or_default)
+}
+
+fn parse_optional_repeat_count(value: &Value) -> Result<Option<u32>, SemanticError> {
+    match value.get("repeat_count") {
+        None | Some(Value::Null) => Ok(None),
+        Some(count) => count
+            .as_u64()
+            .and_then(|count| u32::try_from(count).ok())
+            .map(Some)
+            .ok_or_else(|| {
+                SemanticError::InvalidJson("repeat_count must be an integer or null".into())
+            }),
+    }
+}
+
+fn parse_optional_endpoints(value: &Value) -> Result<Option<[u32; 2]>, SemanticError> {
+    let Some(endpoints) = value.get("repeat_endpoint_atoms") else {
+        return Ok(None);
+    };
+    if endpoints.is_null() {
+        return Ok(None);
+    }
+    let endpoints = endpoints.as_array().ok_or_else(|| {
+        SemanticError::InvalidJson("repeat_endpoint_atoms must be an array or null".into())
+    })?;
+    if endpoints.len() != 2 {
+        return Err(SemanticError::InvalidJson(
+            "repeat_endpoint_atoms must contain two indices".into(),
+        ));
+    }
+    let endpoint = |value: &Value| {
+        value
+            .as_u64()
+            .and_then(|index| u32::try_from(index).ok())
+            .ok_or_else(|| {
+                SemanticError::InvalidJson("endpoint indices must be u32 integers".into())
+            })
+    };
+    Ok(Some([endpoint(&endpoints[0])?, endpoint(&endpoints[1])?]))
+}
+
+fn parse_polymer_unit(value: &Value) -> Result<PolymerRepeatUnit, SemanticError> {
+    Ok(PolymerRepeatUnit {
+        id: json_string(value, "id")?,
+        attachment_atoms: json_string_array(value, "attachment_atoms")?
+            .into_iter()
+            .map(|atom_id| AtomRef { atom_id })
+            .collect(),
+        end_groups: json_string_array(value, "end_groups")?,
+        end_group_definitions: parse_end_group_definitions(value)?,
+        repeat_count: parse_optional_repeat_count(value)?,
+        repeat_smiles: value
+            .get("repeat_smiles")
+            .and_then(Value::as_str)
+            .map(str::to_owned),
+        repeat_endpoint_atoms: parse_optional_endpoints(value)?,
+    })
+}
+
+fn parse_array<T>(
+    value: &Value,
+    key: &str,
+    parse: impl FnMut(&Value) -> Result<T, SemanticError>,
+) -> Result<Vec<T>, SemanticError> {
+    value
+        .get(key)
+        .and_then(Value::as_array)
+        .ok_or_else(|| SemanticError::InvalidJson(format!("{key} must be an array")))?
+        .iter()
+        .map(parse)
+        .collect()
+}
+
+fn parse_optional_s_groups(value: &Value) -> Result<Vec<SemanticSGroup>, SemanticError> {
+    value
+        .get("s_groups")
+        .map(|groups| {
+            groups
+                .as_array()
+                .ok_or_else(|| SemanticError::InvalidJson("s_groups must be an array".into()))?
+                .iter()
+                .map(parse_s_group)
+                .collect()
+        })
+        .transpose()
+        .map(Option::unwrap_or_default)
+}
+
 impl SemanticModel {
     /// Decode the stable `chematic.semantic.v1` JSON representation.
     pub fn from_json(value: &Value) -> Result<Self, SemanticError> {
@@ -205,147 +313,25 @@ impl SemanticModel {
                 "schema must be chematic.semantic.v1".into(),
             ));
         }
-        let strings = |key: &str| -> Result<Vec<String>, SemanticError> {
-            value
-                .get(key)
-                .and_then(Value::as_array)
-                .ok_or_else(|| SemanticError::InvalidJson(format!("{key} must be an array")))?
-                .iter()
-                .map(|item| {
-                    item.as_str().map(str::to_owned).ok_or_else(|| {
-                        SemanticError::InvalidJson(format!("{key} entries must be strings"))
-                    })
-                })
-                .collect()
-        };
-        let atom_ids = strings("atom_ids")?;
-        let bond_ids = strings("bond_ids")?;
-        let r_groups = value
-            .get("r_groups")
-            .and_then(Value::as_array)
-            .ok_or_else(|| SemanticError::InvalidJson("r_groups must be an array".into()))?
-            .iter()
-            .map(parse_r_group)
-            .collect::<Result<Vec<_>, SemanticError>>()?;
-        let polymer_units = value
-            .get("polymer_units")
-            .and_then(Value::as_array)
-            .ok_or_else(|| SemanticError::InvalidJson("polymer_units must be an array".into()))?
-            .iter()
-            .map(|unit| {
-                let id = json_string(unit, "id")?;
-                let attachment_atoms = json_string_array(unit, "attachment_atoms")?
-                    .into_iter()
-                    .map(|atom_id| AtomRef { atom_id })
-                    .collect();
-                let end_groups = json_string_array(unit, "end_groups")?;
-                let end_group_definitions = unit
-                    .get("end_group_definitions")
-                    .map(|value| {
-                        value
-                            .as_array()
-                            .ok_or_else(|| {
-                                SemanticError::InvalidJson(
-                                    "end_group_definitions must be an array".into(),
-                                )
-                            })?
-                            .iter()
-                            .map(|definition| {
-                                Ok(PolymerEndGroup {
-                                    id: json_string(definition, "id")?,
-                                    smiles: json_string(definition, "smiles")?,
-                                })
-                            })
-                            .collect::<Result<Vec<_>, SemanticError>>()
-                    })
-                    .transpose()?
-                    .unwrap_or_default();
-                let repeat_count = match unit.get("repeat_count") {
-                    None | Some(Value::Null) => None,
-                    Some(value) => Some(
-                        value
-                            .as_u64()
-                            .and_then(|count| u32::try_from(count).ok())
-                            .ok_or_else(|| {
-                                SemanticError::InvalidJson(
-                                    "repeat_count must be an integer or null".into(),
-                                )
-                            })?,
-                    ),
-                };
-                let repeat_smiles = unit
-                    .get("repeat_smiles")
-                    .and_then(Value::as_str)
-                    .map(str::to_owned);
-                let repeat_endpoint_atoms = match unit.get("repeat_endpoint_atoms") {
-                    None | Some(Value::Null) => None,
-                    Some(value) => Some({
-                        let values = value.as_array().ok_or_else(|| {
-                            SemanticError::InvalidJson(
-                                "repeat_endpoint_atoms must be an array or null".into(),
-                            )
-                        })?;
-                        if values.len() != 2 {
-                            return Err(SemanticError::InvalidJson(
-                                "repeat_endpoint_atoms must contain two indices".into(),
-                            ));
-                        }
-                        let endpoint = |value: &Value| {
-                            value
-                                .as_u64()
-                                .and_then(|index| u32::try_from(index).ok())
-                                .ok_or_else(|| {
-                                    SemanticError::InvalidJson(
-                                        "endpoint indices must be u32 integers".into(),
-                                    )
-                                })
-                        };
-                        Ok([endpoint(&values[0])?, endpoint(&values[1])?])
-                    }?),
-                };
-                Ok(PolymerRepeatUnit {
-                    id,
-                    attachment_atoms,
-                    end_groups,
-                    end_group_definitions,
-                    repeat_count,
-                    repeat_smiles,
-                    repeat_endpoint_atoms,
-                })
-            })
-            .collect::<Result<Vec<_>, SemanticError>>()?;
-        let s_groups = value
-            .get("s_groups")
-            .map(|groups| {
-                groups
-                    .as_array()
-                    .ok_or_else(|| SemanticError::InvalidJson("s_groups must be an array".into()))?
-                    .iter()
-                    .map(parse_s_group)
-                    .collect::<Result<Vec<_>, SemanticError>>()
-            })
-            .transpose()?
-            .unwrap_or_default();
         if value.get("biomolecules").is_some() {
             return Err(SemanticError::Unsupported {
                 construct: "biomolecule".into(),
                 reason: "typed biomolecule semantics are not implemented".into(),
             });
         }
-        let extensions = value
-            .get("extensions")
-            .and_then(Value::as_object)
-            .cloned()
-            .unwrap_or_default()
-            .into_iter()
-            .collect();
         let model = Self {
-            atom_ids,
-            bond_ids,
-            r_groups,
-            polymer_units,
-            s_groups,
-            extensions,
+            atom_ids: json_string_array(value, "atom_ids")?,
+            bond_ids: json_string_array(value, "bond_ids")?,
+            r_groups: parse_array(value, "r_groups", parse_r_group)?,
+            polymer_units: parse_array(value, "polymer_units", parse_polymer_unit)?,
+            s_groups: parse_optional_s_groups(value)?,
+            extensions: value
+                .get("extensions")
+                .and_then(Value::as_object)
+                .cloned()
+                .unwrap_or_default()
+                .into_iter()
+                .collect(),
         };
         model.validate()?;
         Ok(model)
@@ -873,10 +859,167 @@ impl SemanticModel {
     }
 }
 
+fn validate_end_groups(
+    unit: &PolymerRepeatUnit,
+    ids: &mut BTreeSet<SemanticId>,
+) -> Result<(), SemanticError> {
+    if !unit.end_groups.is_empty() && unit.end_groups.len() != 2 {
+        return Err(SemanticError::InvalidExpansion {
+            id: unit.id.clone(),
+            reason: "end_groups must contain exactly [left, right] when provided".into(),
+        });
+    }
+    if !unit.end_group_definitions.is_empty() {
+        if !unit.end_groups.is_empty() || unit.end_group_definitions.len() != 2 {
+            return Err(SemanticError::InvalidExpansion {
+                id: unit.id.clone(),
+                reason:
+                    "use exactly two typed end_group_definitions or legacy end_groups, not both"
+                        .into(),
+            });
+        }
+        let mut local_ids = BTreeSet::new();
+        for definition in &unit.end_group_definitions {
+            if definition.id.trim().is_empty() || !local_ids.insert(&definition.id) {
+                return Err(SemanticError::DuplicateId(definition.id.clone()));
+            }
+            if !ids.insert(definition.id.clone()) {
+                return Err(SemanticError::DuplicateId(definition.id.clone()));
+            }
+            if definition.smiles.trim().is_empty() {
+                return Err(SemanticError::InvalidExpansion {
+                    id: definition.id.clone(),
+                    reason: "end-group SMILES must not be empty".into(),
+                });
+            }
+        }
+    }
+    if unit.end_groups.iter().any(|group| group.trim().is_empty()) {
+        return Err(SemanticError::InvalidExpansion {
+            id: unit.id.clone(),
+            reason: "end-group SMILES must not be empty".into(),
+        });
+    }
+    Ok(())
+}
+
+fn validate_repeat_pattern(unit: &PolymerRepeatUnit) -> Result<(), SemanticError> {
+    if let Some(pattern) = unit.repeat_smiles.as_deref() {
+        let pattern = pattern.trim();
+        let has_placeholders = pattern.starts_with("[*]")
+            && pattern.ends_with("[*]")
+            && pattern.matches("[*]").count() == 2;
+        if !has_placeholders && unit.repeat_endpoint_atoms.is_none() {
+            return Err(SemanticError::InvalidExpansion {
+                id: unit.id.clone(),
+                reason: "repeat requires two [*] markers or explicit endpoint atoms".into(),
+            });
+        }
+        if has_placeholders && pattern.matches("[*]").count() != 2 {
+            return Err(SemanticError::InvalidExpansion {
+                id: unit.id.clone(),
+                reason: "repeat_smiles must contain exactly two [*] markers".into(),
+            });
+        }
+    }
+    if let Some([left, right]) = unit.repeat_endpoint_atoms
+        && left == right
+    {
+        return Err(SemanticError::InvalidExpansion {
+            id: unit.id.clone(),
+            reason: "repeat endpoint atoms must be distinct".into(),
+        });
+    }
+    Ok(())
+}
+
+fn validate_polymer_unit(
+    unit: &PolymerRepeatUnit,
+    atom_ids: &[SemanticId],
+    ids: &mut BTreeSet<SemanticId>,
+) -> Result<(), SemanticError> {
+    if !ids.insert(unit.id.clone()) {
+        return Err(SemanticError::DuplicateId(unit.id.clone()));
+    }
+    if unit.attachment_atoms.len() != 2 {
+        return Err(SemanticError::AmbiguousAttachment(unit.id.clone()));
+    }
+    if unit.repeat_count == Some(0) {
+        return Err(SemanticError::InvalidExpansion {
+            id: unit.id.clone(),
+            reason: "repeat count must be greater than zero".into(),
+        });
+    }
+    validate_end_groups(unit, ids)?;
+    validate_repeat_pattern(unit)?;
+    for atom in &unit.attachment_atoms {
+        if !atom_ids.contains(&atom.atom_id) {
+            return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
+        }
+    }
+    Ok(())
+}
+
+fn validate_s_group(
+    group: &SemanticSGroup,
+    model: &SemanticModel,
+    ids: &mut BTreeSet<SemanticId>,
+) -> Result<(), SemanticError> {
+    if !ids.insert(group.id.clone()) {
+        return Err(SemanticError::DuplicateId(group.id.clone()));
+    }
+    if group.kind.trim().is_empty() {
+        return Err(SemanticError::Unsupported {
+            construct: "S-group".into(),
+            reason: format!("S-group {} has an empty kind", group.id),
+        });
+    }
+    if group.member_atoms.is_empty() {
+        return Err(SemanticError::InvalidExpansion {
+            id: group.id.clone(),
+            reason: "S-group must contain at least one member atom".into(),
+        });
+    }
+    for atom in &group.member_atoms {
+        if !model.atom_ids.contains(&atom.atom_id) {
+            return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
+        }
+    }
+    if let Some(unit_id) = &group.repeat_unit_id
+        && !model.polymer_units.iter().any(|unit| &unit.id == unit_id)
+    {
+        return Err(SemanticError::InvalidExpansion {
+            id: group.id.clone(),
+            reason: format!("unknown repeat unit reference: {unit_id}"),
+        });
+    }
+    let Some(linkage) = &group.linkage else {
+        return Ok(());
+    };
+    if linkage.id.trim().is_empty() || !ids.insert(linkage.id.clone()) {
+        return Err(SemanticError::DuplicateId(linkage.id.clone()));
+    }
+    for atom in [&linkage.left_atom, &linkage.right_atom] {
+        if !model.atom_ids.contains(&atom.atom_id) {
+            return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
+        }
+    }
+    if linkage.left_atom.atom_id == linkage.right_atom.atom_id {
+        return Err(SemanticError::AmbiguousAttachment(linkage.id.clone()));
+    }
+    if !matches!(linkage.bond_order, 1..=4) {
+        return Err(SemanticError::Unsupported {
+            construct: "polymer linkage".into(),
+            reason: format!("unsupported bond order: {}", linkage.bond_order),
+        });
+    }
+    Ok(())
+}
+
 impl SemanticModel {
     /// Validate IDs, references, attachment arity, and SMARTS-like alternatives.
     pub fn validate(&self) -> Result<(), SemanticError> {
-        let mut ids = std::collections::BTreeSet::new();
+        let mut ids = BTreeSet::new();
         for id in self.atom_ids.iter().chain(self.bond_ids.iter()) {
             if !ids.insert(id.clone()) {
                 return Err(SemanticError::DuplicateId(id.clone()));
@@ -886,135 +1029,10 @@ impl SemanticModel {
             validate_r_group(group, &self.atom_ids, &mut ids)?;
         }
         for unit in &self.polymer_units {
-            if !ids.insert(unit.id.clone()) {
-                return Err(SemanticError::DuplicateId(unit.id.clone()));
-            }
-            if unit.attachment_atoms.len() != 2 {
-                return Err(SemanticError::AmbiguousAttachment(unit.id.clone()));
-            }
-            if unit.repeat_count == Some(0) {
-                return Err(SemanticError::InvalidExpansion {
-                    id: unit.id.clone(),
-                    reason: "repeat count must be greater than zero".into(),
-                });
-            }
-            if !unit.end_groups.is_empty() && unit.end_groups.len() != 2 {
-                return Err(SemanticError::InvalidExpansion {
-                    id: unit.id.clone(),
-                    reason: "end_groups must contain exactly [left, right] when provided".into(),
-                });
-            }
-            if !unit.end_group_definitions.is_empty() {
-                if !unit.end_groups.is_empty() || unit.end_group_definitions.len() != 2 {
-                    return Err(SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: "use exactly two typed end_group_definitions or legacy end_groups, not both".into(),
-                    });
-                }
-                let mut end_group_ids = std::collections::BTreeSet::new();
-                for definition in &unit.end_group_definitions {
-                    if definition.id.trim().is_empty() || !end_group_ids.insert(&definition.id) {
-                        return Err(SemanticError::DuplicateId(definition.id.clone()));
-                    }
-                    if !ids.insert(definition.id.clone()) {
-                        return Err(SemanticError::DuplicateId(definition.id.clone()));
-                    }
-                    if definition.smiles.trim().is_empty() {
-                        return Err(SemanticError::InvalidExpansion {
-                            id: definition.id.clone(),
-                            reason: "end-group SMILES must not be empty".into(),
-                        });
-                    }
-                }
-            }
-            for end_group in &unit.end_groups {
-                if end_group.trim().is_empty() {
-                    return Err(SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: "end-group SMILES must not be empty".into(),
-                    });
-                }
-            }
-            if let Some(pattern) = unit.repeat_smiles.as_deref() {
-                let pattern = pattern.trim();
-                let has_placeholders = pattern.starts_with("[*]")
-                    && pattern.ends_with("[*]")
-                    && pattern.matches("[*]").count() == 2;
-                if !has_placeholders && unit.repeat_endpoint_atoms.is_none() {
-                    return Err(SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: "repeat requires two [*] markers or explicit endpoint atoms".into(),
-                    });
-                }
-                if has_placeholders && pattern.matches("[*]").count() != 2 {
-                    return Err(SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: "repeat_smiles must contain exactly two [*] markers".into(),
-                    });
-                }
-            }
-            if let Some([left, right]) = unit.repeat_endpoint_atoms
-                && left == right
-            {
-                return Err(SemanticError::InvalidExpansion {
-                    id: unit.id.clone(),
-                    reason: "repeat endpoint atoms must be distinct".into(),
-                });
-            }
-            for a in &unit.attachment_atoms {
-                if !self.atom_ids.contains(&a.atom_id) {
-                    return Err(SemanticError::MissingAtom(a.atom_id.clone()));
-                }
-            }
+            validate_polymer_unit(unit, &self.atom_ids, &mut ids)?;
         }
         for group in &self.s_groups {
-            if !ids.insert(group.id.clone()) {
-                return Err(SemanticError::DuplicateId(group.id.clone()));
-            }
-            if group.kind.trim().is_empty() {
-                return Err(SemanticError::Unsupported {
-                    construct: "S-group".into(),
-                    reason: format!("S-group {} has an empty kind", group.id),
-                });
-            }
-            if group.member_atoms.is_empty() {
-                return Err(SemanticError::InvalidExpansion {
-                    id: group.id.clone(),
-                    reason: "S-group must contain at least one member atom".into(),
-                });
-            }
-            for atom in &group.member_atoms {
-                if !self.atom_ids.contains(&atom.atom_id) {
-                    return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
-                }
-            }
-            if let Some(unit_id) = &group.repeat_unit_id
-                && !self.polymer_units.iter().any(|unit| &unit.id == unit_id)
-            {
-                return Err(SemanticError::InvalidExpansion {
-                    id: group.id.clone(),
-                    reason: format!("unknown repeat unit reference: {unit_id}"),
-                });
-            }
-            if let Some(linkage) = &group.linkage {
-                if linkage.id.trim().is_empty() || !ids.insert(linkage.id.clone()) {
-                    return Err(SemanticError::DuplicateId(linkage.id.clone()));
-                }
-                for atom in [&linkage.left_atom, &linkage.right_atom] {
-                    if !self.atom_ids.contains(&atom.atom_id) {
-                        return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
-                    }
-                }
-                if linkage.left_atom.atom_id == linkage.right_atom.atom_id {
-                    return Err(SemanticError::AmbiguousAttachment(linkage.id.clone()));
-                }
-                if !matches!(linkage.bond_order, 1..=4) {
-                    return Err(SemanticError::Unsupported {
-                        construct: "polymer linkage".into(),
-                        reason: format!("unsupported bond order: {}", linkage.bond_order),
-                    });
-                }
-            }
+            validate_s_group(group, self, &mut ids)?;
         }
         Ok(())
     }
