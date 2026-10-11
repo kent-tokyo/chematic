@@ -45,6 +45,7 @@ CORPORA = {
     "exposed_10k": ROOT / "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
     "chembl_5k": ROOT / "scripts/chembl_accuracy_corpus_4999.smi",
 }
+DESCRIPTOR_STRESS = ROOT / "validation/cosmolkit_comparison/corpora/stress-v1.smi"
 REACTANTS_SHA256 = "ac68df7bc3133fa20d39bdf3384a38df0edd09e28032fdc2015322bf9d41119f"
 REQUESTS = ROOT / "validation/biotransformer-requests-400.tsv"
 RULE_FILES = {
@@ -162,6 +163,9 @@ def summarize(out_dir: Path, ran_corpus: bool) -> dict:
     if ran_corpus:
         b = json.loads((out_dir / "biotransformer-corpus.json").read_text())
         s["biotransformer_corpus"] = b["counts"]
+    descriptor_stress = out_dir / "descriptor-stress.json"
+    if descriptor_stress.is_file():
+        s["descriptor_stress"] = json.loads(descriptor_stress.read_text())["counts"]
     return s
 
 
@@ -203,6 +207,10 @@ def chematic_phase(args, cp: str, out: Path, log: Path, resume: bool) -> dict:
         run([cp, str(SCRIPTS / "chematic_chemistry_dump.py"), "--corpus", str(corpus),
              "--output", str(dump)], log)
         (out / f"dump-{name}.done").write_text("", encoding="utf-8")
+    run([cp, str(SCRIPTS / "chematic_chemistry_dump.py"),
+         "--corpus", str(DESCRIPTOR_STRESS),
+         "--output", str(out / "dump-descriptor-stress.jsonl"),
+         "--descriptors-only"], log, out / "dump-descriptor-stress.jsonl", resume)
     ran_corpus = False
     shards = 0
     if args.rules_dir:
@@ -243,6 +251,7 @@ def chematic_phase(args, cp: str, out: Path, log: Path, resume: bool) -> dict:
 def rdkit_phase(args, rp: str, src: Path, out: Path, log: Path, resume: bool) -> int:
     """RDKit's side: compare chematic's outputs in ``src`` and check the counts."""
     manifest = json.loads((src / "manifest.json").read_text(encoding="utf-8"))
+    expected_document = json.loads(args.expected.read_text())
     run([rp, str(SCRIPTS / "reaction_python_checked_provenance_gate.py"),
          "--candidates", str(src / "reaction-candidates-83.json"),
          "--output", str(out / "reaction-checked-provenance-83.json")], log,
@@ -253,6 +262,11 @@ def rdkit_phase(args, rp: str, src: Path, out: Path, log: Path, resume: bool) ->
         result = out / f"chemistry-{name}.json"
         run([rp, str(SCRIPTS / "compare_chemistry_dump_rdkit.py"), "--dump", str(src / f"dump-{name}.jsonl"),
              "--output", str(result)], log, result, resume)
+    if "descriptor_stress" in expected_document["gates"]:
+        result = out / "descriptor-stress.json"
+        run([rp, str(SCRIPTS / "compare_chemistry_dump_rdkit.py"),
+             "--dump", str(src / "dump-descriptor-stress.jsonl"),
+             "--output", str(result), "--descriptors-only"], log, result, resume)
     ran_corpus = manifest["biotransformer_corpus"]
     if ran_corpus:
         if not args.rules_dir:
@@ -267,7 +281,7 @@ def rdkit_phase(args, rp: str, src: Path, out: Path, log: Path, resume: bool) ->
              "--rows", str(out / "biotransformer-corpus-rows.jsonl")], log,
             out / "biotransformer-corpus.json", resume)
     got = summarize(out, ran_corpus)
-    expected = json.loads(args.expected.read_text())["gates"]
+    expected = expected_document["gates"]
     if not ran_corpus:
         expected = {k: v for k, v in expected.items() if k != "biotransformer_corpus"}
     problems = diff(expected, got)

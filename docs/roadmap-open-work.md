@@ -13,9 +13,10 @@ corpora remain recurring regression gates. Issues #739, #769, #779, and #785
 are also closed; implementation and verification records remain linked from
 the changelog and validation pages.
 
-- **v1.1.x artifact packet:** rerun chemistry, reaction, SMARTS, format, and
-  A6 gates from exact registry artifacts. The current broad package packet is
-  still v1.0.42.
+- **v1.1.x artifact packet:** the v1.1.1 expectation now includes the 4,072-row
+  HBD/QED stress lane and CI compares A6 with the current v1.1.1 wheel. Run the
+  full hosted Linux/macOS/Windows published-wheel workflow before replacing
+  the current broad v1.0.42 package packet.
 - **Equivalent-work performance:** close prepared-operation deficits without
   moving work into parsing; add second-host and peak-RSS records.
 - **File interchange:** expand the initial V3000/MOL2/CML/CDXML semantic gate
@@ -28,6 +29,13 @@ the changelog and validation pages.
 - **R-group contract:** maintain the bounded terminal-wildcard subset across
   Rust, Python, and WASM; broader multi-core and enumeration behavior remains
   outside the contract.
+- **A6 residuals:** isolate fullerene MMFF atom-type differences and the 130
+  rows that reach the iteration limit. Report atom typing, convergence,
+  stereochemistry, clashes, and same-coordinate energy separately; do not
+  describe all 265 successful outputs as converged.
+- **Independent workflow corpora:** expand beyond the current bounded lanes
+  with multi-reactant reactions, multi-core R-group cases, and real MOL2/CJSON
+  files. Keep refusals and semantic-loss reports in the denominator.
 
 ## Evidence refreshes
 

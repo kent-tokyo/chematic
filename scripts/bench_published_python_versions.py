@@ -22,7 +22,15 @@ import sys
 import time
 from pathlib import Path
 
-OPERATIONS = ("parse_smiles", "hba", "rdkit_ecfp4", "ring_count", "has_substructure")
+OPERATIONS = (
+    "parse_smiles",
+    "hba",
+    "tpsa",
+    "labute_asa",
+    "rdkit_ecfp4",
+    "ring_count",
+    "has_substructure",
+)
 MODES = ("parse_inclusive", "prepared", "precomputed")
 
 
@@ -37,6 +45,10 @@ def corpus_rows(path: Path, limit: int) -> list[str]:
 def evaluate(mol, operation: str):
     if operation == "hba":
         return str(mol.rdkit_hba)
+    if operation == "tpsa":
+        return float(mol.tpsa).hex()
+    if operation == "labute_asa":
+        return float(mol.labute_asa).hex()
     if operation == "rdkit_ecfp4":
         return bytes(mol.rdkit_ecfp4()).hex()
     if operation == "ring_count":
@@ -95,7 +107,7 @@ def ci(ratios: list[float]) -> dict:
     rng = random.Random(0)
     n = len(ratios)
     medians = sorted(statistics.median(ratios[rng.randrange(n)] for _ in range(n)) for _ in range(4000))
-    return {"median_b_over_a": statistics.median(ratios),
+    return {"median_a_over_b": statistics.median(ratios),
             "bootstrap_95pct": [medians[99], medians[3899]], "bootstrap_samples": 4000, "seed": 0}
 
 

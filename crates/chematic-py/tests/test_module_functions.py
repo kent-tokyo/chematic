@@ -73,6 +73,15 @@ def test_compiled_smarts_rejects_invalid_query():
         chematic.compile_smarts("[C;")
 
 
+def test_hbd_and_qed_are_invariant_to_kekule_aromatic_spelling():
+    kekule = chematic.from_smiles("[NH+]1=CC=CC=C1")
+    aromatic = chematic.from_smiles("c1cc[nH+]cc1")
+
+    assert kekule.hbd == aromatic.hbd == 0
+    assert kekule.qed == pytest.approx(0.4306198403222658, abs=1e-9)
+    assert aromatic.qed == pytest.approx(kekule.qed, abs=1e-12)
+
+
 # ---------------------------------------------------------------------------
 # from_inchi / InChI round-trip (C3: InChI parser)
 # ---------------------------------------------------------------------------

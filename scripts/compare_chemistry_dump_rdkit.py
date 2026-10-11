@@ -21,7 +21,7 @@ from collections import Counter
 from pathlib import Path
 
 from rdkit import Chem, RDLogger, rdBase
-from rdkit.Chem import AllChem, rdCIPLabeler
+from rdkit.Chem import AllChem, QED, rdCIPLabeler, rdMolDescriptors
 
 RDLogger.DisableLog("rdApp.*")
 HYB = {
@@ -35,9 +35,43 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dump", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
+    ap.add_argument("--descriptors-only", action="store_true")
     args = ap.parse_args()
     lines = args.dump.read_text().splitlines()
     header = json.loads(lines[0])
+    if args.descriptors_only:
+        counts = Counter()
+        for line in lines[1:]:
+            counts["rows"] += 1
+            r = json.loads(line)
+            m = Chem.MolFromSmiles(r["smiles"])
+            if m is None:
+                counts["rdkit_parse_error"] += 1
+                continue
+            if "error" in r:
+                counts["chematic_parse_error"] += 1
+                continue
+            counts["parsed_both"] += 1
+            want_hbd = rdMolDescriptors.CalcNumHBD(m)
+            counts["hbd_comparable"] += 1
+            counts["hbd_agree" if r["hbd"] == want_hbd else "hbd_differ"] += 1
+            try:
+                want_qed = QED.qed(m)
+            except Exception:  # noqa: BLE001 - oracle refusal is counted separately
+                counts["qed_rdkit_error"] += 1
+                continue
+            counts["qed_comparable"] += 1
+            tolerance = max(1e-12, 1e-9 * abs(want_qed))
+            counts["qed_agree" if abs(r["qed"] - want_qed) <= tolerance else "qed_differ"] += 1
+        report = {
+            "schema": "chematic-descriptor-stress-vs-rdkit/v1",
+            "rdkit": rdBase.rdkitVersion,
+            "chematic": header,
+            "counts": dict(counts),
+        }
+        args.output.write_text(json.dumps(report, indent=1) + "\n")
+        print(json.dumps(report["counts"]))
+        return 0
     cip = Counter()
     hyb = Counter()
     mmff = Counter()

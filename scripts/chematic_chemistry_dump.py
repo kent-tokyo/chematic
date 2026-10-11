@@ -19,12 +19,16 @@ import sys
 import chematic
 
 
-def row(smiles):
+def row(smiles, descriptors_only=False):
     out = {"smiles": smiles}
     try:
         mol = chematic.from_smiles(smiles)
     except ValueError as exc:
         out["error"] = str(exc)
+        return out
+    if descriptors_only:
+        out["hbd"] = mol.hbd
+        out["qed"] = mol.qed
         return out
     try:
         out["cip"] = [
@@ -54,6 +58,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--corpus", required=True)
     ap.add_argument("--output", required=True)
+    ap.add_argument("--descriptors-only", action="store_true")
     args = ap.parse_args()
     data = open(args.corpus, "rb").read()
     lines = [l.split()[0] for l in data.decode().splitlines() if l.strip()]
@@ -66,7 +71,7 @@ def main():
             "corpus_sha256": hashlib.sha256(data).hexdigest(),
         }) + "\n")
         for smiles in lines:
-            out.write(json.dumps(row(smiles)) + "\n")
+            out.write(json.dumps(row(smiles, args.descriptors_only)) + "\n")
     return 0
 
 
