@@ -32,8 +32,8 @@ authoritative.
 | R4 | Python and WASM bindings by API domain | Complete |
 | R5 | Descriptors and tautomer rules/search/scoring | Complete |
 | R6 | Canonicalization, ring perception, and aromaticity | Complete |
-| R7 | MMFF/UFF and 3D preparation, optimization, and quality policy | Active |
-| R8 | Legacy/dead-code inventory, exact helper deduplication, dependency cleanup | Planned |
+| R7 | MMFF/UFF and 3D preparation, optimization, and quality policy | Complete |
+| R8 | Legacy/dead-code inventory, exact helper deduplication, dependency cleanup | Active |
 
 R1 started by separating the MCP registry schemas from tool execution. The
 former 580-line `list_tools` function is now a short ordered registry assembled
@@ -105,6 +105,18 @@ The affected crates pass 774 library tests (with two documented ignored
 profiles), clippy with warnings denied, formatting, the budget scanner, and
 all six scanner unit tests. R6 removes seven file and seventeen function
 allowances from the debt baseline.
+
+R7 separates MMFF94 numeric typing, parameter/model construction, bonded and
+nonbonded terms, optimization, legacy policy, fallback bridging, and pipeline
+validation into bounded modules. UFF preparation and RDKit-compatible MMFF/UFF
+term assembly now use explicit construction stages. Distance-geometry bounds,
+ETKDG embedding attempts, torsion optimization, ring placement, and stereo
+repair are decomposed by algorithmic stage, while large embedded test suites
+live in dedicated test modules. The only remaining 3D exceptions are two
+ordered declarative compatibility registries whose priority and first-match
+semantics are regression-tested and documented at their definitions. All 273
+force-field and 635 3D library tests pass, as do affected-crate clippy with
+warnings denied, formatting, and the refactor-budget gate.
 
 ## Required checks per phase
 

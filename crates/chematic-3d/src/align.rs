@@ -67,117 +67,121 @@ pub fn align_coords(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> AlignResult 
         };
     }
 
-    let nf = n as f64;
-
-    // Centroids.
-    let mut cr = [0.0f64; 3];
-    let mut cm = [0.0f64; 3];
-    for i in 0..n {
-        for k in 0..3 {
-            cr[k] += reference[i][k];
-            cm[k] += mobile[i][k];
-        }
-    }
-    for k in 0..3 {
-        cr[k] /= nf;
-        cm[k] /= nf;
-    }
-
-    // Centered coordinates.
-    let p: Vec<[f64; 3]> = reference
-        .iter()
-        .map(|v| [v[0] - cr[0], v[1] - cr[1], v[2] - cr[2]])
-        .collect();
-    let q: Vec<[f64; 3]> = mobile
-        .iter()
-        .map(|v| [v[0] - cm[0], v[1] - cm[1], v[2] - cm[2]])
-        .collect();
-
-    // H = P^T * Q  (3×3 cross-covariance).
-    let mut h = [[0.0f64; 3]; 3];
-    for i in 0..n {
-        for r in 0..3 {
-            for c in 0..3 {
-                h[r][c] += p[i][r] * q[i][c];
-            }
-        }
-    }
-
-    // SVD via eigendecomposition of H^T * H.
-    let mut hth = [[0.0f64; 3]; 3];
-    for r in 0..3 {
-        for c in 0..3 {
-            for k in 0..3 {
-                hth[r][c] += h[k][r] * h[k][c];
-            }
-        }
-    }
-    let (evals, v) = jacobi3(hth);
-
-    // U = H * V * diag(1/σ).
-    let mut hv = [[0.0f64; 3]; 3];
-    for r in 0..3 {
-        for c in 0..3 {
-            for k in 0..3 {
-                hv[r][c] += h[r][k] * v[k][c];
-            }
-        }
-    }
-    let mut u = [[0.0f64; 3]; 3];
-    for j in 0..3 {
-        let sigma = evals[j].max(0.0).sqrt();
-        for r in 0..3 {
-            u[r][j] = if sigma > 1e-10 { hv[r][j] / sigma } else { 0.0 };
-        }
-    }
-
-    // R = U * V^T (maximises trace(H^T R), the Kabsch objective).
-    let mut rot = [[0.0f64; 3]; 3];
-    let mut v_final = v;
-    for r in 0..3 {
-        for c in 0..3 {
-            for k in 0..3 {
-                rot[r][c] += u[r][k] * v_final[c][k];
-            }
-        }
-    }
-
-    // Reflection correction: flip the column of V paired with the smallest
-    // singular value (index 0, ascending order) when det(R) < 0.
-    let det = det3(rot);
-    if det < 0.0 {
-        for r in 0..3 {
-            v_final[r][0] *= -1.0;
-        }
-        rot = [[0.0; 3]; 3];
-        for r in 0..3 {
-            for c in 0..3 {
-                for k in 0..3 {
-                    rot[r][c] += u[r][k] * v_final[c][k];
-                }
-            }
-        }
-    }
-
-    // RMSD after optimal rotation.
-    let mut sum_sq = 0.0f64;
-    for i in 0..n {
-        for row in 0..3 {
-            let rotated = (0..3).map(|k| rot[row][k] * q[i][k]).sum::<f64>();
-            let diff = p[i][row] - rotated;
-            sum_sq += diff * diff;
-        }
-    }
-    let rmsd = (sum_sq / nf).sqrt();
-
-    // Translation: after rotating mobile around its centroid, shift to reference centroid.
-    let translation = [cr[0] - cm[0], cr[1] - cm[1], cr[2] - cm[2]];
+    let reference_centroid = centroid(&reference[..n]);
+    let mobile_centroid = centroid(&mobile[..n]);
+    let reference_centered = center(&reference[..n], reference_centroid);
+    let mobile_centered = center(&mobile[..n], mobile_centroid);
+    let rotation = kabsch_rotation(&reference_centered, &mobile_centered);
+    let rmsd = aligned_rmsd(&reference_centered, &mobile_centered, rotation);
+    let translation = [
+        reference_centroid[0] - mobile_centroid[0],
+        reference_centroid[1] - mobile_centroid[1],
+        reference_centroid[2] - mobile_centroid[2],
+    ];
 
     AlignResult {
         rmsd,
-        rotation: rot,
+        rotation,
         translation,
     }
+}
+
+fn centroid(coords: &[[f64; 3]]) -> [f64; 3] {
+    let mut centroid = [0.0; 3];
+    for point in coords {
+        for axis in 0..3 {
+            centroid[axis] += point[axis];
+        }
+    }
+    for value in &mut centroid {
+        *value /= coords.len() as f64;
+    }
+    centroid
+}
+
+fn center(coords: &[[f64; 3]], centroid: [f64; 3]) -> Vec<[f64; 3]> {
+    coords
+        .iter()
+        .map(|point| {
+            [
+                point[0] - centroid[0],
+                point[1] - centroid[1],
+                point[2] - centroid[2],
+            ]
+        })
+        .collect()
+}
+
+fn multiply_transpose(left: [[f64; 3]; 3], right: [[f64; 3]; 3]) -> [[f64; 3]; 3] {
+    let mut product = [[0.0; 3]; 3];
+    for row in 0..3 {
+        for column in 0..3 {
+            for inner in 0..3 {
+                product[row][column] += left[row][inner] * right[column][inner];
+            }
+        }
+    }
+    product
+}
+
+fn kabsch_rotation(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> [[f64; 3]; 3] {
+    let mut covariance = [[0.0; 3]; 3];
+    for (reference, mobile) in reference.iter().zip(mobile) {
+        for row in 0..3 {
+            for column in 0..3 {
+                covariance[row][column] += reference[row] * mobile[column];
+            }
+        }
+    }
+    let mut square = [[0.0; 3]; 3];
+    for row in 0..3 {
+        for column in 0..3 {
+            for inner in 0..3 {
+                square[row][column] += covariance[inner][row] * covariance[inner][column];
+            }
+        }
+    }
+    let (values, mut right) = jacobi3(square);
+    let mut left = [[0.0; 3]; 3];
+    for column in 0..3 {
+        let sigma = values[column].max(0.0).sqrt();
+        for row in 0..3 {
+            let projected = (0..3)
+                .map(|inner| covariance[row][inner] * right[inner][column])
+                .sum::<f64>();
+            left[row][column] = if sigma > 1e-10 {
+                projected / sigma
+            } else {
+                0.0
+            };
+        }
+    }
+    let mut rotation = multiply_transpose(left, right);
+    if det3(rotation) < 0.0 {
+        for row in &mut right {
+            row[0] *= -1.0;
+        }
+        rotation = multiply_transpose(left, right);
+    }
+    rotation
+}
+
+fn aligned_rmsd(reference: &[[f64; 3]], mobile: &[[f64; 3]], rotation: [[f64; 3]; 3]) -> f64 {
+    let sum = reference
+        .iter()
+        .zip(mobile)
+        .map(|(reference, mobile)| {
+            (0..3)
+                .map(|row| {
+                    let rotated = (0..3)
+                        .map(|column| rotation[row][column] * mobile[column])
+                        .sum::<f64>();
+                    (reference[row] - rotated).powi(2)
+                })
+                .sum::<f64>()
+        })
+        .sum::<f64>();
+    (sum / reference.len() as f64).sqrt()
 }
 
 /// Apply an [`AlignResult`] to transform `mobile` coordinates.

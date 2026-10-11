@@ -101,6 +101,143 @@ pub struct CrystalFfDetails {
     pub bounds_mat_force_scaling: f64,
 }
 
+fn excluded_fused_ring_bonds(view: &RdkitMolView) -> Vec<bool> {
+    let mut excluded = vec![false; view.num_bonds()];
+    for (i, first_ring) in view.bond_rings.iter().enumerate() {
+        let mut first_membership = vec![false; view.num_bonds()];
+        for &bond in first_ring {
+            first_membership[bond] = true;
+        }
+        for second_ring in &view.bond_rings[i + 1..] {
+            if first_ring.len() >= MIN_MACROCYCLE_SIZE && second_ring.len() >= MIN_MACROCYCLE_SIZE {
+                continue;
+            }
+            let common = second_ring
+                .iter()
+                .filter(|&&bond| first_membership[bond])
+                .take(2)
+                .count();
+            if common > 1 {
+                mark_small_ring_bonds(first_ring, &mut excluded);
+                mark_small_ring_bonds(second_ring, &mut excluded);
+            }
+        }
+    }
+    excluded
+}
+
+fn mark_small_ring_bonds(ring: &[usize], excluded: &mut [bool]) {
+    if ring.len() < MIN_MACROCYCLE_SIZE {
+        for &bond in ring {
+            excluded[bond] = true;
+        }
+    }
+}
+
+fn bond_ring_counts(view: &RdkitMolView) -> Vec<usize> {
+    let mut counts = vec![0; view.num_bonds()];
+    for ring in &view.bond_rings {
+        for &bond in ring {
+            counts[bond] += 1;
+        }
+    }
+    counts
+}
+
+fn add_experimental_torsions(
+    view: &RdkitMolView,
+    details: &mut CrystalFfDetails,
+    done_bonds: &mut [bool],
+    excluded: &[bool],
+    ring_counts: &[usize],
+    use_small_ring_torsions: bool,
+    use_macrocycle_torsions: bool,
+    version: u32,
+) {
+    let target = Target::new(view);
+    for parameter in params(version, use_small_ring_torsions, use_macrocycle_torsions) {
+        for matched in substruct_match(&target, &parameter.pattern) {
+            let atoms = parameter.idx.map(|index| matched[index]);
+            let central = view
+                .bond_between(atoms[1], atoms[2])
+                .expect("bond between central atoms");
+            if excluded[central] || ring_counts[central] > 3 {
+                done_bonds[central] = true;
+            }
+            if !done_bonds[central] {
+                done_bonds[central] = true;
+                details.exp_torsion_atoms.push(atoms);
+                details
+                    .exp_torsion_angles
+                    .push((parameter.signs, parameter.v));
+            }
+        }
+        let _ = &parameter.smarts;
+    }
+}
+
+fn add_basic_impropers(view: &RdkitMolView, details: &mut CrystalFfDetails) {
+    for center in 0..view.num_atoms() {
+        let atom = &view.atoms[center];
+        let z = atom.atomic_num;
+        if !matches!(z, 6..=8) || atom.hybridization != 3 || view.degree(center) != 3 {
+            continue;
+        }
+        let mut atoms = [usize::MAX; 4];
+        atoms[1] = center;
+        let mut position = 0;
+        let mut bound_sp2_o = false;
+        for neighbor in view.neighbors(center) {
+            atoms[position] = neighbor;
+            bound_sp2_o |= z == 6
+                && view.atoms[neighbor].atomic_num == 8
+                && view.atoms[neighbor].hybridization == 3;
+            if position == 0 {
+                position += 1;
+            }
+            position += 1;
+        }
+        details.improper_atoms.push([
+            atoms[0],
+            atoms[1],
+            atoms[2],
+            atoms[3],
+            z as usize,
+            usize::from(bound_sp2_o),
+        ]);
+    }
+}
+
+fn add_basic_ring_torsions(
+    view: &RdkitMolView,
+    details: &mut CrystalFfDetails,
+    done_bonds: &mut [bool],
+) {
+    for ring in &view.atom_rings {
+        if !(4..=6).contains(&ring.len()) {
+            continue;
+        }
+        for position in 0..ring.len() {
+            let atoms = std::array::from_fn(|offset| ring[(position + offset) % ring.len()]);
+            let central = view.bond_between(atoms[1], atoms[2]).expect("ring bond");
+            if done_bonds[central]
+                || !atoms
+                    .iter()
+                    .all(|&atom| view.atoms[atom].hybridization == 3)
+            {
+                continue;
+            }
+            done_bonds[central] = true;
+            details.exp_torsion_atoms.push(atoms);
+            let mut signs = [1; 6];
+            signs[1] = -1;
+            let mut force_constants = [0.0; 6];
+            force_constants[1] = 100.0;
+            details.exp_torsion_angles.push((signs, force_constants));
+        }
+    }
+}
+
 /// `CrystalFF::getExperimentalTorsions` (no constrained atoms).
 pub fn get_experimental_torsions(
     v: &RdkitMolView,
@@ -110,126 +247,28 @@ pub fn get_experimental_torsions(
     use_basic_knowledge: bool,
     version: u32,
 ) -> CrystalFfDetails {
-    let nb = v.num_bonds();
-    let na = v.num_atoms();
     let mut d = CrystalFfDetails {
         bounds_mat_force_scaling: 1.0,
         ..Default::default()
     };
-    let mut excluded = vec![false; nb];
-    let br = &v.bond_rings;
-    for i in 0..br.len() {
-        let mut rs1 = vec![false; nb];
-        for &b in &br[i] {
-            rs1[b] = true;
-        }
-        for j in i + 1..br.len() {
-            if br[i].len() >= MIN_MACROCYCLE_SIZE && br[j].len() >= MIN_MACROCYCLE_SIZE {
-                continue;
-            }
-            let mut n_common = 0;
-            for &b in &br[j] {
-                if rs1[b] {
-                    n_common += 1;
-                    if n_common > 1 {
-                        break;
-                    }
-                }
-            }
-            if n_common > 1 {
-                if br[i].len() < MIN_MACROCYCLE_SIZE {
-                    for &b in &br[i] {
-                        excluded[b] = true;
-                    }
-                }
-                if br[j].len() < MIN_MACROCYCLE_SIZE {
-                    for &b in &br[j] {
-                        excluded[b] = true;
-                    }
-                }
-            }
-        }
-    }
-    let mut num_bond_rings = vec![0usize; nb];
-    for r in br {
-        for &b in r {
-            num_bond_rings[b] += 1;
-        }
-    }
-    let mut done_bonds = vec![false; nb];
+    let excluded = excluded_fused_ring_bonds(v);
+    let ring_counts = bond_ring_counts(v);
+    let mut done_bonds = vec![false; v.num_bonds()];
     if use_exp_torsions {
-        let target = Target::new(v);
-        for p in params(version, use_small_ring_torsions, use_macrocycle_torsions) {
-            for m in substruct_match(&target, &p.pattern) {
-                let (a1, a2, a3, a4) = (m[p.idx[0]], m[p.idx[1]], m[p.idx[2]], m[p.idx[3]]);
-                let bid2 = v.bond_between(a2, a3).expect("bond between central atoms");
-                if excluded[bid2] || num_bond_rings[bid2] > 3 {
-                    done_bonds[bid2] = true;
-                }
-                if !done_bonds[bid2] {
-                    done_bonds[bid2] = true;
-                    d.exp_torsion_atoms.push([a1, a2, a3, a4]);
-                    d.exp_torsion_angles.push((p.signs, p.v));
-                }
-            }
-            let _ = &p.smarts;
-        }
+        add_experimental_torsions(
+            v,
+            &mut d,
+            &mut done_bonds,
+            &excluded,
+            &ring_counts,
+            use_small_ring_torsions,
+            use_macrocycle_torsions,
+            version,
+        );
     }
     if use_basic_knowledge {
-        for aid2 in 0..na {
-            let at = &v.atoms[aid2];
-            let z = at.atomic_num;
-            if (z == 6 || z == 7 || z == 8) && at.hybridization == 3 && v.degree(aid2) == 3 {
-                let mut atoms = [usize::MAX; 4];
-                atoms[1] = aid2;
-                let mut i = 0;
-                let mut bound_sp2_o = false;
-                for x in v.neighbors(aid2) {
-                    atoms[i] = x;
-                    if !bound_sp2_o {
-                        bound_sp2_o =
-                            z == 6 && v.atoms[x].atomic_num == 8 && v.atoms[x].hybridization == 3;
-                    }
-                    if i == 0 {
-                        i += 1;
-                    }
-                    i += 1;
-                }
-                d.improper_atoms.push([
-                    atoms[0],
-                    atoms[1],
-                    atoms[2],
-                    atoms[3],
-                    z as usize,
-                    usize::from(bound_sp2_o),
-                ]);
-            }
-        }
-        for ring in &v.atom_rings {
-            let r = ring.len();
-            if !(4..=6).contains(&r) {
-                continue;
-            }
-            for i in 0..r {
-                let (a1, a2, a3, a4) = (
-                    ring[i],
-                    ring[(i + 1) % r],
-                    ring[(i + 2) % r],
-                    ring[(i + 3) % r],
-                );
-                let bid2 = v.bond_between(a2, a3).expect("ring bond");
-                let sp2 = |a: usize| v.atoms[a].hybridization == 3;
-                if !done_bonds[bid2] && sp2(a1) && sp2(a2) && sp2(a3) && sp2(a4) {
-                    done_bonds[bid2] = true;
-                    d.exp_torsion_atoms.push([a1, a2, a3, a4]);
-                    let mut signs = [1i32; 6];
-                    signs[1] = -1;
-                    let mut fc = [0f64; 6];
-                    fc[1] = 100.0;
-                    d.exp_torsion_angles.push((signs, fc));
-                }
-            }
-        }
+        add_basic_impropers(v, &mut d);
+        add_basic_ring_torsions(v, &mut d, &mut done_bonds);
     }
     d
 }
@@ -433,145 +472,12 @@ impl Etk3dField {
     }
 
     pub(crate) fn grad(&self, pos: &[f64], grad: &mut [f64]) {
-        for c in &self.contribs {
-            match c {
-                Contrib::Torsions(v) => {
-                    for t in v {
-                        let [ip, jp, kp, lp] = t.idx.map(|i| pt(pos, i));
-                        let r = [sub(ip, jp), sub(kp, jp), sub(jp, kp), sub(lp, kp)];
-                        let mut tt = [cross(r[0], r[1]), cross(r[2], r[3])];
-                        let d = [length(tt[0]), length(tt[1])];
-                        if is_double_zero(d[0]) || is_double_zero(d[1]) {
-                            // RDKit returns from the whole contribution here.
-                            break;
-                        }
-                        tt[0] = div(tt[0], d[0]);
-                        tt[1] = div(tt[1], d[1]);
-                        let cos_phi = dot(tt[0], tt[1]).clamp(-1.0, 1.0);
-                        let sin_phi_sq = 1.0 - cos_phi * cos_phi;
-                        let sin_phi = if sin_phi_sq > 0.0 {
-                            sin_phi_sq.sqrt()
-                        } else {
-                            0.0
-                        };
-                        let c2 = cos_phi * cos_phi;
-                        let c3 = cos_phi * c2;
-                        let c4 = cos_phi * c3;
-                        let c5 = cos_phi * c4;
-                        let fc = &t.fc;
-                        let s = t.signs.map(f64::from);
-                        let de_dphi = -fc[0] * s[0] * sin_phi
-                            - 2.0 * fc[1] * s[1] * (2.0 * cos_phi * sin_phi)
-                            - 3.0 * fc[2] * s[2] * (4.0 * c2 * sin_phi - sin_phi)
-                            - 4.0 * fc[3] * s[3] * (8.0 * c3 * sin_phi - 4.0 * cos_phi * sin_phi)
-                            - 5.0
-                                * fc[4]
-                                * s[4]
-                                * (16.0 * c4 * sin_phi - 12.0 * c2 * sin_phi + sin_phi)
-                            - 6.0
-                                * fc[4]
-                                * s[4]
-                                * (32.0 * c5 * sin_phi - 32.0 * c3 * sin_phi + 6.0 * sin_phi);
-                        let sin_term = -de_dphi
-                            * (if is_double_zero(sin_phi) {
-                                1.0 / cos_phi
-                            } else {
-                                1.0 / sin_phi
-                            });
-                        torsion_grad(&r, &tt, &d, t.idx, grad, sin_term, cos_phi);
-                    }
-                }
-                Contrib::Inversions(v) => {
-                    for t in v {
-                        let [p1, p2, p3, p4] = t.idx.map(|i| pt(pos, i));
-                        let mut rji = sub(p1, p2);
-                        let mut rjk = sub(p3, p2);
-                        let mut rjl = sub(p4, p2);
-                        let dji = length(rji);
-                        let djk = length(rjk);
-                        let djl = length(rjl);
-                        if is_double_zero(dji) || is_double_zero(djk) || is_double_zero(djl) {
-                            break;
-                        }
-                        rji = normalize(rji);
-                        rjk = normalize(rjk);
-                        rjl = normalize(rjl);
-                        let n = normalize(cross([-rji[0], -rji[1], -rji[2]], rjk));
-                        let cos_y = dot(n, rjl).clamp(-1.0, 1.0);
-                        let sin_y_sq = 1.0 - cos_y * cos_y;
-                        let sin_y = f64::max(sin_y_sq.sqrt(), 1.0e-8);
-                        let cos_theta = dot(rji, rjk).clamp(-1.0, 1.0);
-                        let sin_theta_sq = 1.0 - cos_theta * cos_theta;
-                        let sin_theta = f64::max(sin_theta_sq.sqrt(), 1.0e-8);
-                        let de_dw = -t.force_constant * (t.c1 * cos_y - 4.0 * t.c2 * cos_y * sin_y);
-                        let t1 = cross(rjl, rjk);
-                        let t2 = cross(rji, rjl);
-                        let t3 = cross(rjk, rji);
-                        let term1 = sin_y * sin_theta;
-                        let term2 = cos_y / (sin_y * sin_theta_sq);
-                        let mut tg1 = [0.0; 3];
-                        let mut tg3 = [0.0; 3];
-                        let mut tg4 = [0.0; 3];
-                        for k in 0..3 {
-                            tg1[k] = (t1[k] / term1 - (rji[k] - rjk[k] * cos_theta) * term2) / dji;
-                            tg3[k] = (t2[k] / term1 - (rjk[k] - rji[k] * cos_theta) * term2) / djk;
-                            tg4[k] = (t3[k] / term1 - rjl[k] * cos_y / sin_y) / djl;
-                        }
-                        for k in 0..3 {
-                            grad[3 * t.idx[0] + k] += de_dw * tg1[k];
-                            grad[3 * t.idx[1] + k] += -de_dw * (tg1[k] + tg3[k] + tg4[k]);
-                            grad[3 * t.idx[2] + k] += de_dw * tg3[k];
-                            grad[3 * t.idx[3] + k] += de_dw * tg4[k];
-                        }
-                    }
-                }
-                Contrib::Distances(v) => {
-                    for c in v {
-                        let d2 = len_sq(sub(pt(pos, c.i.min(c.j)), pt(pos, c.i.max(c.j))));
-                        let (dist, mut pre);
-                        if d2 < c.min_len * c.min_len {
-                            dist = d2.sqrt();
-                            pre = dist - c.min_len;
-                        } else if d2 > c.max_len * c.max_len {
-                            dist = d2.sqrt();
-                            pre = dist - c.max_len;
-                        } else {
-                            continue;
-                        }
-                        pre *= c.fc;
-                        pre /= f64::max(1.0e-8, dist);
-                        for k in 0..3 {
-                            let g = pre * (pos[3 * c.i + k] - pos[3 * c.j + k]);
-                            grad[3 * c.i + k] += g;
-                            grad[3 * c.j + k] -= g;
-                        }
-                    }
-                }
-                Contrib::Angles(v) => {
-                    for c in v {
-                        let [p1, p2, p3] = c.idx.map(|i| pt(pos, i));
-                        let r = [sub(p1, p2), sub(p3, p2)];
-                        let rl = [
-                            f64::max(1.0e-5, len_sq(r[0])),
-                            f64::max(1.0e-5, len_sq(r[1])),
-                        ];
-                        let cos_t = (dot(r[0], r[1]) / (rl[0] * rl[1]).sqrt()).clamp(-1.0, 1.0);
-                        let angle = RAD2DEG * cos_t.acos();
-                        let term = angle_term(angle, c);
-                        let de_dtheta = 2.0 * RAD2DEG * c.fc * term;
-                        let rp = cross(r[1], r[0]);
-                        let prefactor = de_dtheta / f64::max(1.0e-5, length(rp));
-                        let t = [-prefactor / rl[0], prefactor / rl[1]];
-                        let d0 = cross(r[0], rp).map(|x| x * t[0]);
-                        let d2 = cross(r[1], rp).map(|x| x * t[1]);
-                        let d1 = [-d0[0] - d2[0], -d0[1] - d2[1], -d0[2] - d2[2]];
-                        for (g, dd) in c.idx.iter().zip([d0, d1, d2]) {
-                            grad[3 * g] += dd[0];
-                            grad[3 * g + 1] += dd[1];
-                            grad[3 * g + 2] += dd[2];
-                        }
-                    }
-                }
+        for contribution in &self.contribs {
+            match contribution {
+                Contrib::Torsions(terms) => torsion_gradients(terms, pos, grad),
+                Contrib::Inversions(terms) => inversion_gradients(terms, pos, grad),
+                Contrib::Distances(terms) => distance_gradients(terms, pos, grad),
+                Contrib::Angles(terms) => angle_gradients(terms, pos, grad),
             }
         }
     }
@@ -591,6 +497,136 @@ impl Etk3dField {
                 chematic_ff::rdkit_bfgs::scale_gradient(g)
             },
         )
+    }
+}
+
+fn torsion_gradients(terms: &[Torsion], pos: &[f64], grad: &mut [f64]) {
+    for term in terms {
+        let [ip, jp, kp, lp] = term.idx.map(|i| pt(pos, i));
+        let r = [sub(ip, jp), sub(kp, jp), sub(jp, kp), sub(lp, kp)];
+        let mut tt = [cross(r[0], r[1]), cross(r[2], r[3])];
+        let d = [length(tt[0]), length(tt[1])];
+        if is_double_zero(d[0]) || is_double_zero(d[1]) {
+            break;
+        }
+        tt[0] = div(tt[0], d[0]);
+        tt[1] = div(tt[1], d[1]);
+        let cos_phi = dot(tt[0], tt[1]).clamp(-1.0, 1.0);
+        let sin_phi = (1.0 - cos_phi * cos_phi).max(0.0).sqrt();
+        let c2 = cos_phi * cos_phi;
+        let c3 = cos_phi * c2;
+        let c4 = cos_phi * c3;
+        let c5 = cos_phi * c4;
+        let fc = &term.fc;
+        let signs = term.signs.map(f64::from);
+        let de_dphi = -fc[0] * signs[0] * sin_phi
+            - 2.0 * fc[1] * signs[1] * (2.0 * cos_phi * sin_phi)
+            - 3.0 * fc[2] * signs[2] * (4.0 * c2 * sin_phi - sin_phi)
+            - 4.0 * fc[3] * signs[3] * (8.0 * c3 * sin_phi - 4.0 * cos_phi * sin_phi)
+            - 5.0 * fc[4] * signs[4] * (16.0 * c4 * sin_phi - 12.0 * c2 * sin_phi + sin_phi)
+            - 6.0 * fc[4] * signs[4] * (32.0 * c5 * sin_phi - 32.0 * c3 * sin_phi + 6.0 * sin_phi);
+        let divisor = if is_double_zero(sin_phi) {
+            cos_phi
+        } else {
+            sin_phi
+        };
+        torsion_grad(&r, &tt, &d, term.idx, grad, -de_dphi / divisor, cos_phi);
+    }
+}
+
+fn inversion_gradients(terms: &[Inversion], pos: &[f64], grad: &mut [f64]) {
+    for term in terms {
+        let [p1, p2, p3, p4] = term.idx.map(|i| pt(pos, i));
+        let mut rji = sub(p1, p2);
+        let mut rjk = sub(p3, p2);
+        let mut rjl = sub(p4, p2);
+        let dji = length(rji);
+        let djk = length(rjk);
+        let djl = length(rjl);
+        if is_double_zero(dji) || is_double_zero(djk) || is_double_zero(djl) {
+            break;
+        }
+        rji = normalize(rji);
+        rjk = normalize(rjk);
+        rjl = normalize(rjl);
+        let normal = normalize(cross([-rji[0], -rji[1], -rji[2]], rjk));
+        let cos_y = dot(normal, rjl).clamp(-1.0, 1.0);
+        let sin_y = f64::max((1.0 - cos_y * cos_y).sqrt(), 1.0e-8);
+        let cos_theta = dot(rji, rjk).clamp(-1.0, 1.0);
+        let sin_theta_sq = 1.0 - cos_theta * cos_theta;
+        let sin_theta = f64::max(sin_theta_sq.sqrt(), 1.0e-8);
+        let de_dw = -term.force_constant * (term.c1 * cos_y - 4.0 * term.c2 * cos_y * sin_y);
+        let vectors = [cross(rjl, rjk), cross(rji, rjl), cross(rjk, rji)];
+        let term1 = sin_y * sin_theta;
+        let term2 = cos_y / (sin_y * sin_theta_sq);
+        let tg1 = std::array::from_fn(|k| {
+            (vectors[0][k] / term1 - (rji[k] - rjk[k] * cos_theta) * term2) / dji
+        });
+        let tg3 = std::array::from_fn(|k| {
+            (vectors[1][k] / term1 - (rjk[k] - rji[k] * cos_theta) * term2) / djk
+        });
+        let tg4 = std::array::from_fn(|k| (vectors[2][k] / term1 - rjl[k] * cos_y / sin_y) / djl);
+        apply_inversion_gradient(term.idx, grad, de_dw, tg1, tg3, tg4);
+    }
+}
+
+fn apply_inversion_gradient(
+    idx: [usize; 4],
+    grad: &mut [f64],
+    factor: f64,
+    first: P3,
+    third: P3,
+    fourth: P3,
+) {
+    for k in 0..3 {
+        grad[3 * idx[0] + k] += factor * first[k];
+        grad[3 * idx[1] + k] += -factor * (first[k] + third[k] + fourth[k]);
+        grad[3 * idx[2] + k] += factor * third[k];
+        grad[3 * idx[3] + k] += factor * fourth[k];
+    }
+}
+
+fn distance_gradients(terms: &[DistC], pos: &[f64], grad: &mut [f64]) {
+    for term in terms {
+        let delta = sub(pt(pos, term.i.min(term.j)), pt(pos, term.i.max(term.j)));
+        let squared_distance = len_sq(delta);
+        let (distance, target) = if squared_distance < term.min_len * term.min_len {
+            (squared_distance.sqrt(), term.min_len)
+        } else if squared_distance > term.max_len * term.max_len {
+            (squared_distance.sqrt(), term.max_len)
+        } else {
+            continue;
+        };
+        let prefactor = (distance - target) * term.fc / f64::max(1.0e-8, distance);
+        for k in 0..3 {
+            let value = prefactor * (pos[3 * term.i + k] - pos[3 * term.j + k]);
+            grad[3 * term.i + k] += value;
+            grad[3 * term.j + k] -= value;
+        }
+    }
+}
+
+fn angle_gradients(terms: &[AngleC], pos: &[f64], grad: &mut [f64]) {
+    for term in terms {
+        let [p1, p2, p3] = term.idx.map(|i| pt(pos, i));
+        let r = [sub(p1, p2), sub(p3, p2)];
+        let lengths = [
+            f64::max(1.0e-5, len_sq(r[0])),
+            f64::max(1.0e-5, len_sq(r[1])),
+        ];
+        let cosine = (dot(r[0], r[1]) / (lengths[0] * lengths[1]).sqrt()).clamp(-1.0, 1.0);
+        let de_dtheta = 2.0 * RAD2DEG * term.fc * angle_term(RAD2DEG * cosine.acos(), term);
+        let normal = cross(r[1], r[0]);
+        let prefactor = de_dtheta / f64::max(1.0e-5, length(normal));
+        let scales = [-prefactor / lengths[0], prefactor / lengths[1]];
+        let d0 = cross(r[0], normal).map(|value| value * scales[0]);
+        let d2 = cross(r[1], normal).map(|value| value * scales[1]);
+        let d1 = [-d0[0] - d2[0], -d0[1] - d2[1], -d0[2] - d2[2]];
+        for (atom, delta) in term.idx.iter().zip([d0, d1, d2]) {
+            grad[3 * atom] += delta[0];
+            grad[3 * atom + 1] += delta[1];
+            grad[3 * atom + 2] += delta[2];
+        }
     }
 }
 

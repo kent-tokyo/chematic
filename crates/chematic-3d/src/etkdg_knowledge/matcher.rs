@@ -158,6 +158,11 @@ fn atom_in_ring_size_range(
 /// [`TorsionKnowledgeReport::default()`] (empty in every field) without
 /// even enumerating candidate bonds -- spec §11/§15's "true no-op" for the
 /// disabled-flags negative control.
+/// Refactor-budget exception: this function is the declarative registry for
+/// the six documented priority tiers. Keeping tier construction and the final
+/// first-applicable-tier resolution together makes precedence auditable; the
+/// per-tier matching and conflict algorithms remain in bounded helpers below.
+/// Changes must preserve the tier-order and atom-permutation regression gates.
 pub fn build_torsion_knowledge(
     mol: &Molecule,
     config: &TorsionKnowledgeConfig,

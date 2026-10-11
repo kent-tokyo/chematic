@@ -3,6 +3,7 @@
     "crates/chematic-3d/src/rdkit_embed/torsion_prefs.rs",
     "crates/chematic-chem/src/compressed_patterns.rs",
     "crates/chematic-chem/src/rdkit_isotope_mass_table.rs",
+    "crates/chematic-ff/src/mmff94_energy/angle/table.rs",
     "crates/chematic-ff/src/mmff94_energy/mmff94s.rs",
     "crates/chematic-ff/src/mmff94_numeric_type_registry.rs",
     "crates/chematic-fp/src/rdkit_isotope_delta_table.rs",
@@ -10,11 +11,6 @@
     "crates/chematic-smiles/src/rdkit/periodic.rs"
   ],
   "file_allowances": {
-    "crates/chematic-3d/src/distance_geometry_v2.rs": 1887,
-    "crates/chematic-3d/src/etkdg_knowledge.rs": 1536,
-    "crates/chematic-3d/src/minimize.rs": 4427,
-    "crates/chematic-3d/src/pipeline_v2.rs": 3031,
-    "crates/chematic-3d/src/stereo_constraints.rs": 2205,
     "crates/chematic-chem/src/alerts.rs": 2579,
     "crates/chematic-chem/src/cip.rs": 2766,
     "crates/chematic-chem/src/standardize.rs": 3513,
@@ -22,10 +18,6 @@
     "crates/chematic-crystal/src/poscar.rs": 1644,
     "crates/chematic-depict/src/layout.rs": 3740,
     "crates/chematic-depict/src/svg.rs": 1549,
-    "crates/chematic-ff/src/mmff94_energy/angle.rs": 2908,
-    "crates/chematic-ff/src/mmff94_minimizer.rs": 5457,
-    "crates/chematic-ff/src/mmff94_numeric.rs": 5425,
-    "crates/chematic-ff/src/uff.rs": 1807,
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
     "crates/chematic-inchi/src/dedup.rs": 2079,
     "crates/chematic-rxn/src/query.rs": 1969,
@@ -40,85 +32,13 @@
     "crates/chematic-smiles/src/rdkit/rxn_smarts.rs": 1680
   },
   "function_allowances": {
-    "crates/chematic-3d/src/align.rs::align_coords#1": {
-      "decisions": 26,
-      "lines": 122
-    },
-    "crates/chematic-3d/src/conformer.rs::kabsch_rmsd#1": {
-      "decisions": 26,
-      "lines": 118
-    },
-    "crates/chematic-3d/src/dg.rs::place_rings#1": {
-      "decisions": 19,
-      "lines": 242
-    },
-    "crates/chematic-3d/src/distance_geometry_v2.rs::try_embed_once#1": {
-      "decisions": 19,
-      "lines": 145
-    },
     "crates/chematic-3d/src/etkdg_knowledge.rs::get_torsion_preference#1": {
       "decisions": 211,
       "lines": 722
     },
-    "crates/chematic-3d/src/etkdg_knowledge/bounds14.rs::macrocycle_14_bound_adjustments#1": {
-      "decisions": 19,
-      "lines": 188
-    },
-    "crates/chematic-3d/src/etkdg_knowledge/energy.rs::optimize_torsions#1": {
-      "decisions": 19,
-      "lines": 134
-    },
     "crates/chematic-3d/src/etkdg_knowledge/matcher.rs::build_torsion_knowledge#1": {
       "decisions": 38,
       "lines": 344
-    },
-    "crates/chematic-3d/src/issue256_255_phase2_evaluation.rs::issue256_255_phase2_differential_evaluation#1": {
-      "decisions": 33,
-      "lines": 267
-    },
-    "crates/chematic-3d/src/minimize.rs::compute_mmff94_coverage#1": {
-      "decisions": 19,
-      "lines": 158
-    },
-    "crates/chematic-3d/src/minimize.rs::minimize_with_policy_gated_impl#1": {
-      "decisions": 8,
-      "lines": 132
-    },
-    "crates/chematic-3d/src/minimize.rs::rescue_with_distance_geometry_v2#1": {
-      "decisions": 17,
-      "lines": 157
-    },
-    "crates/chematic-3d/src/pipeline_v2.rs::embed_pipeline_v2_from_seed#1": {
-      "decisions": 50,
-      "lines": 674
-    },
-    "crates/chematic-3d/src/rdkit_embed/bounds.rs::set13_bounds#1": {
-      "decisions": 34,
-      "lines": 126
-    },
-    "crates/chematic-3d/src/rdkit_embed/bounds.rs::set14_bounds#1": {
-      "decisions": 28,
-      "lines": 77
-    },
-    "crates/chematic-3d/src/rdkit_embed/bounds.rs::set_chain14#1": {
-      "decisions": 37,
-      "lines": 163
-    },
-    "crates/chematic-3d/src/rdkit_embed/embed.rs::embed_points#1": {
-      "decisions": 30,
-      "lines": 73
-    },
-    "crates/chematic-3d/src/rdkit_embed/etk.rs::get_experimental_torsions#1": {
-      "decisions": 41,
-      "lines": 131
-    },
-    "crates/chematic-3d/src/rdkit_embed/etk.rs::grad#1": {
-      "decisions": 19,
-      "lines": 143
-    },
-    "crates/chematic-3d/src/stereo_constraints.rs::repair_stereo#1": {
-      "decisions": 16,
-      "lines": 129
     },
     "crates/chematic-chem/src/brics.rs::is_brics_breakable#1": {
       "decisions": 59,
@@ -219,54 +139,6 @@
     "crates/chematic-depict/src/preflight.rs::preflight_svg#1": {
       "decisions": 26,
       "lines": 167
-    },
-    "crates/chematic-ff/src/mmff94_minimizer.rs::minimize_mmff94_bfgs_prepared#1": {
-      "decisions": 27,
-      "lines": 207
-    },
-    "crates/chematic-ff/src/mmff94_minimizer.rs::minimize_mmff94_lbfgs_prepared_with_mode#1": {
-      "decisions": 18,
-      "lines": 199
-    },
-    "crates/chematic-ff/src/mmff94_minimizer.rs::torsion_empirical_rule#1": {
-      "decisions": 51,
-      "lines": 110
-    },
-    "crates/chematic-ff/src/mmff94_numeric.rs::aromatic_c_type#1": {
-      "decisions": 36,
-      "lines": 69
-    },
-    "crates/chematic-ff/src/mmff94_numeric.rs::assign_mmff94_numeric_types_with_view#1": {
-      "decisions": 42,
-      "lines": 115
-    },
-    "crates/chematic-ff/src/mmff94_numeric.rs::assign_s_type#1": {
-      "decisions": 27,
-      "lines": 76
-    },
-    "crates/chematic-ff/src/mmff94_numeric.rs::general_n_type#1": {
-      "decisions": 114,
-      "lines": 287
-    },
-    "crates/chematic-ff/src/mmff94_numeric.rs::mmff_aromatic_pass#1": {
-      "decisions": 47,
-      "lines": 206
-    },
-    "crates/chematic-ff/src/mmff94_params.rs::mmff94_bond_params#1": {
-      "decisions": 2,
-      "lines": 143
-    },
-    "crates/chematic-ff/src/rdkit_mmff.rs::with_terms#1": {
-      "decisions": 40,
-      "lines": 187
-    },
-    "crates/chematic-ff/src/rdkit_uff.rs::new#2": {
-      "decisions": 56,
-      "lines": 234
-    },
-    "crates/chematic-ff/src/uff.rs::new#1": {
-      "decisions": 24,
-      "lines": 148
     },
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs::count_fingerprint_patterns#1": {
       "decisions": 375,

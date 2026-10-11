@@ -271,130 +271,84 @@ pub fn mmff94_bond_params(
         (t2, t1)
     };
 
-    match key {
-        // C-C bonds
-        (C_sp3, C_sp3) => Some(BondParams {
-            r0: 1.540,
-            kb: 222.0,
-        }),
-        (C_sp3, C_sp2_Alkene) => Some(BondParams {
-            r0: 1.509,
-            kb: 268.0,
-        }),
-        (C_sp3, C_Aromatic) => Some(BondParams {
-            r0: 1.510,
-            kb: 265.0,
-        }),
-        (C_sp2_Alkene, C_sp2_Alkene) => Some(BondParams {
-            r0: 1.337,
-            kb: 549.0,
-        }),
-        (C_sp2_Alkene, C_Aromatic) => Some(BondParams {
-            r0: 1.399,
-            kb: 418.0,
-        }),
-        (C_sp_Alkyne, C_sp_Alkyne) => Some(BondParams {
+    match key.0 {
+        C_sp3 => c_sp3_bond_params(key.1),
+        C_sp2_Alkene => c_sp2_bond_params(key.1),
+        C_sp_Alkyne => (key.1 == C_sp_Alkyne).then_some(BondParams {
             r0: 1.207,
             kb: 929.0,
         }),
-        (C_Aromatic, C_Aromatic) => Some(BondParams {
-            r0: 1.397,
-            kb: 511.0,
-        }),
-
-        // C-N bonds
-        (C_sp3, N_sp3_Amine) => Some(BondParams {
-            r0: 1.463,
-            kb: 266.0,
-        }),
-        (C_sp3, N_sp2_Imine) => Some(BondParams {
-            r0: 1.419,
-            kb: 383.0,
-        }),
-        (C_sp3, N_Amide) => Some(BondParams {
-            r0: 1.448,
-            kb: 290.0,
-        }),
-        (C_sp2_Alkene, N_sp2_Imine) => Some(BondParams {
-            r0: 1.279,
-            kb: 680.0,
-        }),
-        (C_sp2_Alkene, N_Amide) => Some(BondParams {
-            r0: 1.330,
-            kb: 570.0,
-        }),
-        (C_Aromatic, N_sp2_Aromatic) => Some(BondParams {
-            r0: 1.388,
-            kb: 530.0,
-        }),
-
-        // C-O bonds
-        (C_sp3, O_Alcohol) => Some(BondParams {
-            r0: 1.420,
-            kb: 320.0,
-        }),
-        (C_sp3, O_Ether) => Some(BondParams {
-            r0: 1.415,
-            kb: 323.0,
-        }),
-        (C_sp2_Alkene, O_Carbonyl) => Some(BondParams {
-            r0: 1.229,
-            kb: 750.0,
-        }),
-        (C_sp2_Alkene, O_Alcohol) => Some(BondParams {
-            r0: 1.364,
-            kb: 476.0,
-        }),
-        (C_Aromatic, O_Ether) => Some(BondParams {
-            r0: 1.370,
-            kb: 450.0,
-        }),
-
-        // C-S bonds
-        (C_sp3, S_Thioether) => Some(BondParams {
-            r0: 1.819,
-            kb: 194.0,
-        }),
-        (C_sp2_Alkene, S_Thioether) => Some(BondParams {
-            r0: 1.713,
-            kb: 305.0,
-        }),
-
-        // C-H bonds
-        (C_sp3, H_Carbon) => Some(BondParams {
-            r0: 1.093,
-            kb: 340.0,
-        }),
-        (C_sp2_Alkene, H_Carbon) => Some(BondParams {
-            r0: 1.086,
-            kb: 367.0,
-        }),
-        (C_Aromatic, H_Carbon) => Some(BondParams {
-            r0: 1.080,
-            kb: 385.0,
-        }),
-
-        // N-O bonds
-        (N_sp3_Amine, O_Alcohol) => Some(BondParams {
-            r0: 1.450,
-            kb: 280.0,
-        }),
-
-        // N-H, O-H, S-H bonds
-        (N_sp3_Amine, H_Nitrogen) => Some(BondParams {
-            r0: 1.010,
-            kb: 391.0,
-        }),
-        (O_Alcohol, H_Oxygen) => Some(BondParams {
+        C_Aromatic => c_aromatic_bond_params(key.1),
+        N_sp3_Amine => n_sp3_bond_params(key.1),
+        O_Alcohol if key.1 == H_Oxygen => Some(BondParams {
             r0: 0.960,
             kb: 554.0,
         }),
-        (S_Thiol, H_Sulfur) => Some(BondParams {
+        S_Thiol if key.1 == H_Sulfur => Some(BondParams {
             r0: 1.336,
             kb: 274.0,
         }),
+        _ => None,
+    }
+}
 
-        // Fallback: use generic parameters
+fn c_sp3_bond_params(other: MMFF94Type) -> Option<BondParams> {
+    use MMFF94Type::*;
+    let (r0, kb) = match other {
+        C_sp3 => (1.540, 222.0),
+        C_sp2_Alkene => (1.509, 268.0),
+        C_Aromatic => (1.510, 265.0),
+        N_sp3_Amine => (1.463, 266.0),
+        N_sp2_Imine => (1.419, 383.0),
+        N_Amide => (1.448, 290.0),
+        O_Alcohol => (1.420, 320.0),
+        O_Ether => (1.415, 323.0),
+        S_Thioether => (1.819, 194.0),
+        H_Carbon => (1.093, 340.0),
+        _ => return None,
+    };
+    Some(BondParams { r0, kb })
+}
+
+fn c_sp2_bond_params(other: MMFF94Type) -> Option<BondParams> {
+    use MMFF94Type::*;
+    let (r0, kb) = match other {
+        C_sp2_Alkene => (1.337, 549.0),
+        C_Aromatic => (1.399, 418.0),
+        N_sp2_Imine => (1.279, 680.0),
+        N_Amide => (1.330, 570.0),
+        O_Carbonyl => (1.229, 750.0),
+        O_Alcohol => (1.364, 476.0),
+        S_Thioether => (1.713, 305.0),
+        H_Carbon => (1.086, 367.0),
+        _ => return None,
+    };
+    Some(BondParams { r0, kb })
+}
+
+fn c_aromatic_bond_params(other: MMFF94Type) -> Option<BondParams> {
+    use MMFF94Type::*;
+    let (r0, kb) = match other {
+        C_Aromatic => (1.397, 511.0),
+        N_sp2_Aromatic => (1.388, 530.0),
+        O_Ether => (1.370, 450.0),
+        H_Carbon => (1.080, 385.0),
+        _ => return None,
+    };
+    Some(BondParams { r0, kb })
+}
+
+fn n_sp3_bond_params(other: MMFF94Type) -> Option<BondParams> {
+    use MMFF94Type::*;
+    match other {
+        O_Alcohol => Some(BondParams {
+            r0: 1.450,
+            kb: 280.0,
+        }),
+        H_Nitrogen => Some(BondParams {
+            r0: 1.010,
+            kb: 391.0,
+        }),
         _ => None,
     }
 }
