@@ -2,7 +2,8 @@
 
 This directory contains dated, reproducible measurement records. Numbers are
 scoped to each record's source or package, corpus, host, runtime and operation.
-The current release is **v1.0.42**. Its new RDKit/COSMolKit 0.5 results and the
+The current release is **v1.1.0**. The latest broad published-package
+performance packet remains **v1.0.42**; its RDKit/COSMolKit 0.5 results and the
 v1.0.40 seeded ETKDG results are source-build evidence; published-package
 reruns remain separate. Older records stay scoped to their stated artifacts,
 comparators and hosts.
@@ -116,9 +117,9 @@ comparators and hosts.
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.0.42. Older records remain versioned historical
+The current release line is v1.1.0. Older records remain versioned historical
 measurements where their headers say so; a release does not imply that an older
-measurement was rerun.
+measurement was rerun or promoted to the current artifact.
 
 ## Performance and scaling
 

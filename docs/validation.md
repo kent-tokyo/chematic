@@ -4,14 +4,16 @@ Updated 2026-10-11 for **v1.1.0**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
 artifacts, the two-platform published v1.0.42/RDKit packet, the published
 v1.0.42 macOS arm64 chemistry baseline, v1.0.40 source, and the v1.0.41 source
-candidate. v1.0.42 release channels are verified; v1.1.0 package measurements
-begin only after publication. Every comparison is
+candidate. v1.1.0 release channels are verified; its broad package chemistry
+and performance rerun is still open. Every comparison is
 limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
 
 | Gate | Result and limit | Record |
 |---|---|---|
+| Current-source contracts | Rust, Python, and WASM expose typed reaction rejection diagnostics; Rust, Python, and WASM/Node expose aligned R-group columns for the bounded labelled terminal-wildcard subset. These are post-v1.1.0 source capabilities, not published v1.1.0 package claims. | [Unreleased changelog](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md#unreleased) |
+| Rust execution coverage | The processed Linux Codecov lane reports 96.93% line coverage (143,762/148,306) after discovering all integration-test targets. Python and WASM coverage are not included, and execution coverage is not chemical correctness evidence. | [Coverage workflow](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml) |
 | Published v1.0.42 / RDKit 2026.09.1 packet | Exact CPython 3.13 wheels on hosted Linux x64 and macOS arm64: TPSA, Labute ASA and chiral Morgan pass the 10k output gates and their parse-inclusive 21-block intervals favor CheMatic on both hosts. Published ring count is 9,994/10,000 and receives no speed ratio. Prepared macOS Labute loses and Morgan crosses parity. npm Labute is asymmetric bundled work and npm chiral Morgan differs on one row, so neither receives a speed claim. | [Published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) |
 | RDKit/COSMolKit 0.5 source comparison | Against RDKit 2026.03.1, the v1.0.41 source candidate matches RDKit at least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and RDKit.js 10k. On the separate 4,072-row unusual-SMILES stress corpus, native canonical-SMILES round trip is 4,048 versus 4,064; the other covered operations are equal or favorable. This is source evidence, not universal parity or a published-package result. | [COSMolKit 0.5 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-cosmolkit-050.md) |
 | RDKit/COSMolKit source comparison and seeded ETKDG | Against RDKit 2026.03.1 on the recorded Linux x86-64 source lane, seeded ETKDG coordinates match on 4,977/4,977 ChEMBL and 9,947/9,947 RDKit.js rows where RDKit succeeds. Other platforms use a 5e-4 Å per-coordinate regression tolerance. The same record covers named writer, reader, MolHash, alignment, stereoisomer and non-tetrahedral stereo surfaces. It is not published-package evidence or universal parity. | [Round 2 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-cosmolkit-parity-2.md) |
@@ -24,7 +26,7 @@ limited to its recorded artifact, comparator, corpus and operation.
 | Reactions (P1) | Legacy 57/57 fixtures match. Published v1.0.42 and current source retain the 83-row gate at 80 exact and three jointly invalid. The v1.0.42 follow-up preserves caller-supplied explicit H atoms: full-corpus explicit-H differences fall from 153 to 35, while the remaining cases stay classified and are not counted as parity. | [v1.0.42 follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) |
 | Published v1.0.42 chemistry packet | The hash-pinned macOS arm64 CPython 3.13 wheel retains the 80+3 reaction gate, 310,000/310,000 SMARTS cells, the exposed/ChEMBL CIP, hybridization and MMFF counts, and lossless MOL stereo rows. Its BioTransformer explicit-H lane has 6,486 exact, 153 differing and 165 RDKit-raw-unsanitizable rows; these are the published baseline, not source-candidate results. | [v1.0.42 follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-v1042-regression-followups.md) |
 | MCP Streamable HTTP | Published v1.0.39 added the opt-in, loopback-first 2026-07-28 stateless transport retained here. The official suite produced 82 passes; its other checks require suite fixtures or capabilities the server does not declare. | [HTTP conformance record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-issues-769-779.md) |
-| Release channels | v1.0.42 is verified on GitHub Release, npm, PyPI (25 wheels plus one sdist), all 20 crates.io archives, docs.rs and Pages. Availability does not establish chemical accuracy. | [v1.0.42 verification](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.0.42.json) |
+| Release channels | v1.1.0 is verified on GitHub Release, npm, PyPI (25 wheels plus one sdist), all 20 crates.io archives, docs.rs and Pages. Availability does not establish chemical accuracy or rerun older comparison packets. | [v1.1.0 verification](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.1.0.json) |
 
 ## Other bounded results
 

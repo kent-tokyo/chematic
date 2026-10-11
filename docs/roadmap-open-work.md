@@ -6,17 +6,25 @@ Completed implementation details belong in the
 measurements belong in the [validation report](validation.md) and
 [benchmark index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks).
 
-## Tracked follow-up
+## Active follow-up
 
 Issues #734 and #754 are closed. Their reaction, SMARTS, autoconf, and fuzz
 corpora remain recurring regression gates. Issues #739, #769, #779, and #785
 are also closed; implementation and verification records remain linked from
 the changelog and validation pages.
 
-The active external-comparison follow-up is the bounded CDK 2.13 / Indigo
-1.46.0 program: promote the 24-row smoke gate to a frozen broad corpus, add
-peak RSS and a second host, and rerun exact published artifacts before making
-a public superiority claim.
+- **v1.1.x artifact packet:** rerun chemistry, reaction, SMARTS, format, and
+  A6 gates from exact registry artifacts. The current broad package packet is
+  still v1.0.42.
+- **Equivalent-work performance:** close prepared-operation deficits without
+  moving work into parsing; add second-host and peak-RSS records.
+- **File interchange:** expand the initial V3000/MOL2/CML/CDXML semantic gate
+  to stratified corpora before broad Open Babel claims.
+- **CDK/Indigo comparison:** promote the 24-row smoke gate to a frozen broad
+  corpus and rerun exact published artifacts.
+- **R-group contract:** maintain the bounded terminal-wildcard subset across
+  Rust, Python, and WASM; broader multi-core and enumeration behavior remains
+  outside the contract.
 
 ## Evidence refreshes
 
@@ -44,12 +52,12 @@ These are recurring gates, not separate feature requests:
 | Package | State |
 |---|---|
 | A0 Evaluation contract | Complete |
-| A1 Perception and descriptors | Open |
+| A1 Perception and descriptors | Active |
 | A2 Stereo and identity | Active |
-| A3 Fingerprints and retrieval | Open |
+| A3 Fingerprints and retrieval | Maintenance |
 | A4 Workflows and interchange | Active |
 | A5 Independent adjudication | External |
-| A6 3D and force fields | Active |
+| A6 3D and force fields | Experimental |
 
 ## Completion rule
 
