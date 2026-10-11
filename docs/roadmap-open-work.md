@@ -20,8 +20,11 @@ the changelog and validation pages.
   moving work into parsing; add second-host and peak-RSS records.
 - **File interchange:** expand the initial V3000/MOL2/CML/CDXML semantic gate
   to stratified corpora before broad Open Babel claims.
-- **CDK/Indigo comparison:** promote the 24-row smoke gate to a frozen broad
-  corpus and rerun exact published artifacts.
+- **CDK/Indigo comparison:** the new source workflow packet covers bounded
+  reaction, parent-selection, and labelled R-group lanes with full mismatch
+  accounting and 21 alternating timing blocks. Expand beyond 15/39/16 rows,
+  add prepared-object and memory lanes plus a second host, then rerun exact
+  published artifacts. CDK still has only the earlier smoke gate.
 - **R-group contract:** maintain the bounded terminal-wildcard subset across
   Rust, Python, and WASM; broader multi-core and enumeration behavior remains
   outside the contract.

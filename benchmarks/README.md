@@ -18,6 +18,7 @@ is in [`archive-index.md`](archive-index.md).
 | How does similarity search compare? | [v1.0.13 similarity-search packet](2026-09-12-similarity-search-a3-v1.0.13.md) | Separates native/native, RDKit-compatible/RDKit and cross-profile overlap. |
 | How does file interchange compare? | [Open Babel file-I/O program](../docs/openbabel-file-io.md) · [same-process candidate](2026-10-10-openbabel-file-io-same-process-v1.0.42.md) | Small pinned fixtures and source candidate; not broad-corpus or published-package evidence. |
 | How do CDK and Indigo compare? | [bounded CDK/Indigo baseline](2026-10-10-cdk-indigo-bounded-baseline.md) | 24-row common matrix and 21 timing blocks; source-candidate smoke evidence. |
+| How do reaction, parent selection, and R-group workflows compare with Indigo? | [Indigo workflow packet](2026-10-12-indigo-workflows-source.md) · [raw JSON](2026-10-12-indigo-workflows-source.json) | Source-built, one-host bounded lanes. CheMatic has higher exact counts for reaction and parent selection; R-group is tied. Common-correct medians favor CheMatic in all three lanes. This is not a toolkit-wide or published-package claim. |
 | How does COSMolKit compare? | [RDKit/COSMolKit 0.5 comparison](2026-10-10-cosmolkit-050.md) | Source-built 161-operation and unusual-SMILES evidence; not a published-package claim. |
 
 ## What counts as a speed win
