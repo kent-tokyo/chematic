@@ -365,10 +365,6 @@
       "decisions": 63,
       "lines": 376
     },
-    "crates/chematic-mol/src/lammps_dump.rs::read_frame_from_feed#1": {
-      "decisions": 43,
-      "lines": 190
-    },
     "crates/chematic-mol/src/semantic.rs::expand_with_limits#1": {
       "decisions": 81,
       "lines": 358
