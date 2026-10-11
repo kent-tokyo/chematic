@@ -23,6 +23,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   order, schemas, dispatch, and protocol output are unchanged.
 - Moved reaction transformation and input-boundary tests out of the production
   implementation file while retaining child-module access to private helpers.
+- Isolated reaction transformation errors, resource limits, accounting,
+  sanitization diagnostics, and compatibility refusal types behind the same
+  existing public paths. Reaction matching and product behavior are unchanged.
 
 ## [1.1.0] - 2026-10-11
 

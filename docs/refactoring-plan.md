@@ -45,6 +45,11 @@ tests remain unchanged. Generated-table exclusions are now accepted only for
 existing crate source files whose headers identify them as generated, preventing
 the exclusion list from becoming an unchecked escape hatch.
 
+R2 begins with the stable diagnostic boundary: transformation errors, limits,
+accounting, sanitization diagnostics, compatibility refusals, and variant
+diagnostics now live in `transform/diagnostics.rs` while their existing
+`transform::*` public paths remain re-exported unchanged.
+
 ## Required checks per phase
 
 1. `cargo fmt --all -- --check`, affected crate tests, and affected-crate
