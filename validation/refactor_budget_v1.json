@@ -369,14 +369,6 @@
       "decisions": 43,
       "lines": 190
     },
-    "crates/chematic-mol/src/mol2_tripos.rs::parse_mol2_record_with_limits#1": {
-      "decisions": 36,
-      "lines": 278
-    },
-    "crates/chematic-mol/src/mol2_tripos.rs::write_mol2_record#1": {
-      "decisions": 22,
-      "lines": 167
-    },
     "crates/chematic-mol/src/nucleic_acid.rs::validate_with_limits#1": {
       "decisions": 44,
       "lines": 247
