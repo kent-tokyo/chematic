@@ -12,7 +12,15 @@
 //!
 //! Reference: AutoDock 4.2 manual, Section 7 (PDBQT format specification).
 
-use chematic_core::{AtomIdx, Element, Molecule};
+use chematic_core::{Atom, AtomIdx, Element, Molecule};
+
+type ParsedPdbqt = (Molecule, Vec<(f64, f64, f64)>, Vec<f64>);
+
+struct ParsedPdbqtAtom {
+    atom: Atom,
+    coord: (f64, f64, f64),
+    charge: f64,
+}
 
 /// Resource limits for PDBQT parsing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -213,14 +221,7 @@ pub fn parse_pdbqt(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>, Vec<f64>)
     parse_pdbqt_with_limits(s, &PdbqtParseLimits::default())
 }
 
-/// Parse a PDBQT string with explicit resource limits.
-#[allow(clippy::type_complexity)]
-pub fn parse_pdbqt_with_limits(
-    s: &str,
-    limits: &PdbqtParseLimits,
-) -> Result<(Molecule, Vec<(f64, f64, f64)>, Vec<f64>), PdbqtError> {
-    use chematic_core::MoleculeBuilder;
-
+fn pdbqt_lines<'a>(s: &'a str, limits: &PdbqtParseLimits) -> Result<Vec<&'a str>, PdbqtError> {
     if s.len() > limits.max_input_bytes {
         return Err(PdbqtError::ResourceLimit {
             resource: "input bytes",
@@ -236,19 +237,107 @@ pub fn parse_pdbqt_with_limits(
             limit: limits.max_lines,
         });
     }
-    if let Some(line_bytes) = lines.iter().map(|line| line.len()).max()
-        && line_bytes > limits.max_line_bytes
+    if let Some(actual) = lines.iter().map(|line| line.len()).max()
+        && actual > limits.max_line_bytes
     {
         return Err(PdbqtError::ResourceLimit {
             resource: "line bytes",
-            actual: line_bytes,
+            actual,
             limit: limits.max_line_bytes,
         });
     }
+    Ok(lines)
+}
 
+fn pdbqt_element_symbol(line: &str) -> &str {
+    match line.get(77..79).map(str::trim).unwrap_or("").trim() {
+        "A" => "C",
+        "NA" => "N",
+        "OA" | "OS" => "O",
+        "SA" => "S",
+        "HD" => "H",
+        other if !other.is_empty() => other,
+        _ => line.get(76..78).map(str::trim).unwrap_or("C").trim(),
+    }
+}
+
+fn pdbqt_float(
+    line: &str,
+    range: core::ops::Range<usize>,
+    name: &str,
+    number: usize,
+) -> Result<f64, PdbqtError> {
+    let raw = line.get(range).unwrap_or("").trim();
+    raw.parse::<f64>().map_err(|_| PdbqtError::InvalidAtomLine {
+        line: number,
+        detail: format!("cannot parse {name} coordinate: '{raw}'"),
+    })
+}
+
+fn finite_pdbqt(value: f64, line: usize, field: &'static str) -> Result<f64, PdbqtError> {
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(PdbqtError::NonFiniteValue { line, field })
+    }
+}
+
+fn parse_pdbqt_atom(line: &str, number: usize) -> Result<ParsedPdbqtAtom, PdbqtError> {
+    if line.len() < 54 {
+        return Err(PdbqtError::InvalidAtomLine {
+            line: number,
+            detail: "line too short (need at least 54 chars for coordinates)".into(),
+        });
+    }
+    let symbol = pdbqt_element_symbol(line);
+    let element = Element::from_symbol(symbol).ok_or_else(|| PdbqtError::UnknownElement {
+        symbol: symbol.to_owned(),
+        line: number,
+    })?;
+    let x = finite_pdbqt(
+        pdbqt_float(line, 30..38, "x", number)?,
+        number,
+        "x coordinate",
+    )?;
+    let y = finite_pdbqt(
+        pdbqt_float(line, 38..46, "y", number)?,
+        number,
+        "y coordinate",
+    )?;
+    let z = finite_pdbqt(
+        pdbqt_float(line, 46..54, "z", number)?,
+        number,
+        "z coordinate",
+    )?;
+    let raw_charge = line
+        .get(66..76)
+        .or_else(|| line.get(71..76))
+        .map(str::trim)
+        .unwrap_or("0.0");
+    let charge = raw_charge
+        .parse::<f64>()
+        .map_err(|_| PdbqtError::InvalidCharge {
+            line: number,
+            raw: raw_charge.to_owned(),
+        })?;
+    Ok(ParsedPdbqtAtom {
+        atom: Atom::new(element),
+        coord: (x, y, z),
+        charge: finite_pdbqt(charge, number, "partial charge")?,
+    })
+}
+
+/// Parse a PDBQT string with explicit resource limits.
+#[allow(clippy::type_complexity)]
+pub fn parse_pdbqt_with_limits(
+    s: &str,
+    limits: &PdbqtParseLimits,
+) -> Result<ParsedPdbqt, PdbqtError> {
+    use chematic_core::MoleculeBuilder;
+    let lines = pdbqt_lines(s, limits)?;
     let mut builder = MoleculeBuilder::new();
-    let mut coords: Vec<(f64, f64, f64)> = Vec::new();
-    let mut charges: Vec<f64> = Vec::new();
+    let mut coords = Vec::new();
+    let mut charges = Vec::new();
 
     for (lineno, line) in lines.into_iter().enumerate() {
         let record = line.get(..line.len().min(6)).unwrap_or("");
@@ -262,88 +351,10 @@ pub fn parse_pdbqt_with_limits(
                 limit: limits.max_atoms,
             });
         }
-        if line.len() < 54 {
-            return Err(PdbqtError::InvalidAtomLine {
-                line: lineno + 1,
-                detail: "line too short (need at least 54 chars for coordinates)".into(),
-            });
-        }
-
-        // Element from AutoDock type (cols 78-79, 0-indexed 77-78) or fallback to PDB col 77-78
-        let ad_type = line.get(77..79).map(str::trim).unwrap_or("").trim();
-        // Map AutoDock type back to element symbol
-        let elem_sym = match ad_type {
-            "A" => "C",
-            "NA" => "N",
-            "OA" | "OS" => "O",
-            "SA" => "S",
-            "HD" => "H",
-            other if !other.is_empty() => other,
-            _ => {
-                // Fall back to PDB element column (cols 77-78)
-                line.get(76..78).map(str::trim).unwrap_or("C").trim()
-            }
-        };
-
-        let element = Element::from_symbol(elem_sym).ok_or_else(|| PdbqtError::UnknownElement {
-            symbol: elem_sym.to_string(),
-            line: lineno + 1,
-        })?;
-
-        use chematic_core::Atom;
-        builder.add_atom(Atom::new(element));
-
-        // Coordinates: cols 31-38, 39-46, 47-54 (0-indexed 30-37, 38-45, 46-53)
-        let parse_f = |s: &str, col: &str| -> Result<f64, PdbqtError> {
-            s.trim()
-                .parse::<f64>()
-                .map_err(|_| PdbqtError::InvalidAtomLine {
-                    line: lineno + 1,
-                    detail: format!("cannot parse {col} coordinate: '{}'", s.trim()),
-                })
-        };
-        let x = parse_f(line.get(30..38).unwrap_or(""), "x")?;
-        let y = parse_f(line.get(38..46).unwrap_or(""), "y")?;
-        let z = parse_f(line.get(46..54).unwrap_or(""), "z")?;
-        if !x.is_finite() {
-            return Err(PdbqtError::NonFiniteValue {
-                line: lineno + 1,
-                field: "x coordinate",
-            });
-        }
-        if !y.is_finite() {
-            return Err(PdbqtError::NonFiniteValue {
-                line: lineno + 1,
-                field: "y coordinate",
-            });
-        }
-        if !z.is_finite() {
-            return Err(PdbqtError::NonFiniteValue {
-                line: lineno + 1,
-                field: "z coordinate",
-            });
-        }
-        coords.push((x, y, z));
-
-        // Partial charge: cols 67-76 (0-indexed 66-75), or fallback 71-76
-        let q_raw = line
-            .get(66..76)
-            .or_else(|| line.get(71..76))
-            .map(str::trim)
-            .unwrap_or("0.0");
-        let q = q_raw
-            .parse::<f64>()
-            .map_err(|_| PdbqtError::InvalidCharge {
-                line: lineno + 1,
-                raw: q_raw.to_string(),
-            })?;
-        if !q.is_finite() {
-            return Err(PdbqtError::NonFiniteValue {
-                line: lineno + 1,
-                field: "partial charge",
-            });
-        }
-        charges.push(q);
+        let parsed = parse_pdbqt_atom(line, lineno + 1)?;
+        builder.add_atom(parsed.atom);
+        coords.push(parsed.coord);
+        charges.push(parsed.charge);
     }
 
     Ok((builder.build(), coords, charges))
