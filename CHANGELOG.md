@@ -35,6 +35,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Decomposed the remaining long reaction matching, carried-E/Z, sanitization,
   and product assembly functions into bounded stages; the reaction transform
   area no longer needs file or function debt allowances.
+- Moved embedded tests for nine molecular format modules into dedicated child
+  test modules, reducing production parser size without changing format I/O.
 
 ## [1.1.0] - 2026-10-11
 

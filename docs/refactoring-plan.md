@@ -59,6 +59,11 @@ bounded input validation, query matching, E/Z transfer, aromaticity/Kekule/
 valence diagnostics, atom assembly, and product finalization helpers. R2 now
 has no refactoring-budget exceptions.
 
+R3 starts by moving embedded format tests for CDXML, CIF, LAMMPS data, V2000,
+V3000, ORCA, QCSchema, semantic documents, and XYZ into child test modules.
+This removes five parser file allowances immediately and leaves the production
+files organized for lexical/semantic/builder extraction.
+
 ## Required checks per phase
 
 1. `cargo fmt --all -- --check`, affected crate tests, and affected-crate
