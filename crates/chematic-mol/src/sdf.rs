@@ -512,107 +512,74 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
             diagnostics,
         }
     }
-}
 
-impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
-    type Item = Result<SdfRecord, MolParseError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.done {
-            return None;
-        }
-
+    fn fill_next_block(&mut self) -> Result<bool, MolParseError> {
         self.block.clear();
-
         loop {
-            // Append directly into the reusable record buffer. The previous
-            // path copied each line from a second buffer into this one.
             let line_start = self.block.len();
-            match self.reader.read_until(b'\n', &mut self.block) {
-                Err(e) => {
-                    self.done = true;
-                    return Some(Err(MolParseError::Io(e.to_string())));
-                }
-                Ok(0) => {
-                    // EOF
-                    self.done = true;
-                    if self.block.iter().all(u8::is_ascii_whitespace) {
-                        return None;
-                    }
-                    // Trailing block without $$$$ delimiter — parse it.
-                    break;
-                }
-                Ok(_) => {
-                    let line = &self.block[line_start..];
-                    if line.len() > self.limits.max_line_bytes {
-                        self.done = true;
-                        return Some(Err(MolParseError::ResourceLimit {
-                            resource: "line bytes",
-                            actual: line.len(),
-                            limit: self.limits.max_line_bytes,
-                        }));
-                    }
-                    self.bytes_read = self.bytes_read.saturating_add(line.len());
-                    if self.bytes_read > self.limits.max_input_bytes {
-                        self.done = true;
-                        return Some(Err(MolParseError::ResourceLimit {
-                            resource: "input bytes",
-                            actual: self.bytes_read,
-                            limit: self.limits.max_input_bytes,
-                        }));
-                    }
-                    let trimmed = line.strip_suffix(b"\n").unwrap_or(line);
-                    let trimmed = trimmed.strip_suffix(b"\r").unwrap_or(trimmed);
-                    if trimmed == b"$$$$" {
-                        self.block.truncate(line_start);
-                        break;
-                    }
-                }
+            let bytes = self
+                .reader
+                .read_until(b'\n', &mut self.block)
+                .map_err(|error| MolParseError::Io(error.to_string()))?;
+            if bytes == 0 {
+                self.done = true;
+                return Ok(!self.block.iter().all(u8::is_ascii_whitespace));
+            }
+            let line = &self.block[line_start..];
+            if line.len() > self.limits.max_line_bytes {
+                return Err(MolParseError::ResourceLimit {
+                    resource: "line bytes",
+                    actual: line.len(),
+                    limit: self.limits.max_line_bytes,
+                });
+            }
+            self.bytes_read = self.bytes_read.saturating_add(line.len());
+            if self.bytes_read > self.limits.max_input_bytes {
+                return Err(MolParseError::ResourceLimit {
+                    resource: "input bytes",
+                    actual: self.bytes_read,
+                    limit: self.limits.max_input_bytes,
+                });
+            }
+            let trimmed = line.strip_suffix(b"\n").unwrap_or(line);
+            let trimmed = trimmed.strip_suffix(b"\r").unwrap_or(trimmed);
+            if trimmed == b"$$$$" {
+                self.block.truncate(line_start);
+                return Ok(true);
             }
         }
+    }
 
-        if self.block.iter().all(u8::is_ascii_whitespace) {
-            // Empty block (e.g. two consecutive $$$$) — advance to next.
-            return self.next();
-        }
-
+    fn validate_record_limits(&mut self) -> Result<(), MolParseError> {
         if self.block.len() > self.limits.max_record_bytes {
-            self.done = true;
-            return Some(Err(MolParseError::ResourceLimit {
+            return Err(MolParseError::ResourceLimit {
                 resource: "record bytes",
                 actual: self.block.len(),
                 limit: self.limits.max_record_bytes,
-            }));
+            });
         }
         if self.records_read >= self.limits.max_records {
-            self.done = true;
-            return Some(Err(MolParseError::ResourceLimit {
+            return Err(MolParseError::ResourceLimit {
                 resource: "records",
                 actual: self.records_read.saturating_add(1),
                 limit: self.limits.max_records,
-            }));
+            });
         }
         self.records_read += 1;
+        Ok(())
+    }
 
-        let block = match std::str::from_utf8(&self.block) {
-            Ok(block) => block,
-            Err(error) => {
-                self.done = true;
-                return Some(Err(MolParseError::Io(error.to_string())));
-            }
-        };
+    fn parse_current_block(&self) -> Result<SdfRecord, MolParseError> {
+        let block = std::str::from_utf8(&self.block)
+            .map_err(|error| MolParseError::Io(error.to_string()))?;
         let data_part = block
             .find("M  END")
-            .map(|pos| &block[pos + 6..])
+            .map(|position| &block[position + 6..])
             .unwrap_or("");
         let properties = parse_sd_fields(data_part);
-
         if !self.diagnostics {
-            let (mol, meta) = match parse_mol_fast(block) {
-                Ok(parsed) => parsed,
-                Err(e) => return Some(Err(e)),
-            };
-            return Some(Ok(SdfRecord {
+            let (mol, meta) = parse_mol_fast(block)?;
+            return Ok(SdfRecord {
                 mol,
                 meta,
                 coords: Vec::new(),
@@ -623,16 +590,10 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
                 coordinate_dimension: CoordinateDimension::Unknown,
                 geometry_rank: GeometryRank::Indeterminate,
                 stereo3d_diagnostics: Vec::new(),
-            }));
+            });
         }
-
-        // Reuse the diagnostic-complete parse path for the default reader.
-        let report = match read_mol_with_diagnostics(block) {
-            Ok(report) => report,
-            Err(e) => return Some(Err(e)),
-        };
-
-        Some(Ok(SdfRecord {
+        let report = read_mol_with_diagnostics(block)?;
+        Ok(SdfRecord {
             mol: report.mol,
             meta: report.metadata,
             coords: report.coords,
@@ -643,7 +604,36 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
             coordinate_dimension: report.coordinate_dimension,
             geometry_rank: report.geometry_rank,
             stereo3d_diagnostics: report.stereo3d_diagnostics,
-        }))
+        })
+    }
+}
+
+impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
+    type Item = Result<SdfRecord, MolParseError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+        loop {
+            match self.fill_next_block() {
+                Ok(false) => return None,
+                Ok(true) if self.block.iter().all(u8::is_ascii_whitespace) => continue,
+                Ok(true) => break,
+                Err(error) => {
+                    self.done = true;
+                    return Some(Err(error));
+                }
+            }
+        }
+        if let Err(error) = self.validate_record_limits() {
+            self.done = true;
+            return Some(Err(error));
+        }
+        match self.parse_current_block() {
+            Ok(record) => Some(Ok(record)),
+            Err(error) => Some(Err(error)),
+        }
     }
 }
 

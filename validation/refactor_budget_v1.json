@@ -429,10 +429,6 @@
       "decisions": 21,
       "lines": 133
     },
-    "crates/chematic-mol/src/sdf.rs::next#3": {
-      "decisions": 14,
-      "lines": 128
-    },
     "crates/chematic-mol/src/semantic.rs::expand_with_limits#1": {
       "decisions": 81,
       "lines": 358
