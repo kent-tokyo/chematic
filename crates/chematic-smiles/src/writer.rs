@@ -180,7 +180,19 @@ pub fn write(mol: &Molecule) -> String {
     if mol.atom_count() == 0 {
         return String::new();
     }
-    SmilesWriter::new(mol).write_all()
+    SmilesWriter::new(mol).write_all().0
+}
+
+/// Write SMILES and return source atom indices in emitted atom-token order.
+///
+/// Entry `i` identifies the source atom corresponding to atom `i` after
+/// parsing the result. Ring-closure tokens do not add atoms. This is a writer
+/// correspondence, not by itself a proof of chemical equivalence.
+pub fn write_with_atom_order(mol: &Molecule) -> (String, Vec<AtomIdx>) {
+    let mut writer = SmilesWriter::new(mol);
+    writer.emitted_atoms = Some(Vec::with_capacity(mol.atom_count()));
+    let (text, order) = writer.write_all();
+    (text, order.unwrap_or_default())
 }
 
 struct SmilesWriter<'a> {
@@ -196,6 +208,7 @@ struct SmilesWriter<'a> {
     written: Vec<bool>,
     next_ring: u16,
     out: String,
+    emitted_atoms: Option<Vec<AtomIdx>>,
 }
 
 impl<'a> SmilesWriter<'a> {
@@ -208,10 +221,11 @@ impl<'a> SmilesWriter<'a> {
             written: vec![false; n],
             next_ring: 1,
             out: String::new(),
+            emitted_atoms: None,
         }
     }
 
-    fn write_all(mut self) -> String {
+    fn write_all(mut self) -> (String, Option<Vec<AtomIdx>>) {
         // Phase 1: find all back-edges and assign ring-closure numbers.
         self.find_ring_closures();
 
@@ -227,7 +241,7 @@ impl<'a> SmilesWriter<'a> {
             }
         }
 
-        self.out
+        (self.out, self.emitted_atoms)
     }
 
     fn find_ring_closures(&mut self) {
@@ -324,6 +338,9 @@ impl<'a> SmilesWriter<'a> {
         }
 
         // Write the atom symbol.
+        if let Some(order) = &mut self.emitted_atoms {
+            order.push(atom);
+        }
         self.emit_atom(atom);
 
         // Write ring-closure digits for this atom (both open and close digits).

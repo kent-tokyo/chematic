@@ -60,4 +60,4 @@ pub use random_smiles::{random_smiles, random_smiles_vect};
 pub use smi_file::{
     SmiFileParseLimits, parse_smi_file, parse_smi_file_with_limits, write_smi_file,
 };
-pub use writer::write;
+pub use writer::{write, write_with_atom_order};

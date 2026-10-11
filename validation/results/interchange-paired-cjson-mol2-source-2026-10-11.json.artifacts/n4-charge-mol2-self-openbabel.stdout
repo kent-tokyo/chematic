@@ -1,0 +1,12 @@
+@<TRIPOS>MOLECULE
+ammonium projection
+ 1 0 0 0 0
+SMALL
+USER_CHARGES
+
+@<TRIPOS>ATOM
+      1 ammonium      1.2500   -2.5000    3.7500 N.4     1  AMM1        0.8000
+@<TRIPOS>UNITY_ATOM_ATTR
+1 1
+charge 1
+@<TRIPOS>BOND

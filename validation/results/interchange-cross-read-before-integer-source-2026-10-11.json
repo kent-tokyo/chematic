@@ -1,0 +1,424 @@
+{
+  "schema": "chematic.interchange-cross-read-development.v1",
+  "scope": "Exposed common-lane cross reads plus Open Babel self-read control; no holdout or superiority claim.",
+  "paired_report": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-candidate-source-2026-10-11.json",
+    "sha256": "8388325c848faf0457670f51dc36da821354647ee598d57be0eefbe96285cb13",
+    "size_bytes": 111651
+  },
+  "runner": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/check_interchange_cross_read.py",
+    "sha256": "a6218c61d88bf6a458742545758333c99b680d8180e47ef6e90e256643255888",
+    "size_bytes": 6297
+  },
+  "engines": {
+    "chematic": {
+      "path": "/private/tmp/chematic-interchange-partial-native/chematic",
+      "sha256": "0043867a2b13c22d33017819de26a63902bf6dd8cf714a62c85b8870e8dbbe3e",
+      "size_bytes": 15669248,
+      "version": "chematic 1.0.20",
+      "lane": "archived source-built CLI",
+      "build_evidence": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-partial-build-source-2026-10-11.json",
+        "sha256": "b07f086282fef2d48fe0a6a18dcd20dba2ab7e85362b5bda6052a47d60ff0284",
+        "size_bytes": 22441
+      }
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728,
+      "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+      "lane": "installed CLI",
+      "runtime_artifacts": [
+        {
+          "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+          "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+          "size_bytes": 2794816
+        },
+        {
+          "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/mol2format.so",
+          "sha256": "d2d49ba300e14eedad7705018e0ec8bd30580081674eb1aa5bd4825cd8655b4f",
+          "size_bytes": 105856
+        },
+        {
+          "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/chemicaljsonformat.so",
+          "sha256": "39be1877bf787d7594058ca76173e3c7b418607bf1b7c1aaba5d96539571b6f2",
+          "size_bytes": 132736
+        }
+      ]
+    }
+  },
+  "protocol": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/protocol.json",
+    "sha256": "bdd744d452643f0bd28d576704f4f1b6d3b22d6c494b4a85ff8aeb2f77015741",
+    "size_bytes": 10514
+  },
+  "expected_terminal_count": 9,
+  "terminal_count": 9,
+  "outcomes": {
+    "parse_write_failure": 2,
+    "output_with_loss": 4,
+    "exact_source_retained": 3
+  },
+  "rows": [
+    {
+      "case": "acetamide",
+      "direction": "chematic_to_openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "input.cjson": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/acetamide-chematic_to_openbabel.input.cjson",
+        "sha256": "cd70622f2fd05c7dfb311bf2d56ca0f1335000aa0b15b4e071e5126c24678779",
+        "size_bytes": 295
+      },
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/acetamide-chematic_to_openbabel.stdout",
+        "sha256": "a631374e008db63084f137d9c8568ee9e59ca29d52c337125eb77433bf80d036",
+        "size_bytes": 460
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/acetamide-chematic_to_openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "outcome": "parse_write_failure",
+      "reason": "duplicate/unsupported MOL2 bond"
+    },
+    {
+      "case": "acetamide",
+      "direction": "openbabel_self_control",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "input.cjson": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/acetamide-openbabel_self_control.input.cjson",
+        "sha256": "2f1909e5105f266098b4dcffe7748a9ca94d4244eb1167bcf82bd3a0c9d8b034",
+        "size_bytes": 818
+      },
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/acetamide-openbabel_self_control.stdout",
+        "sha256": "dd51dae8539c816332975a7f21a3ab5f5a87170b31897a4adbcd66007d7b77ed",
+        "size_bytes": 460
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/acetamide-openbabel_self_control.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "lost",
+        "atom_names": "lost",
+        "atom_types": "preserved",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "lost",
+        "charge_method": "lost",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": false,
+      "outcome": "output_with_loss"
+    },
+    {
+      "case": "acetamide",
+      "direction": "openbabel_to_chematic_source",
+      "command": [
+        "/private/tmp/chematic-interchange-partial-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "strict"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "input.cjson": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/acetamide-openbabel_to_chematic_source.input.cjson",
+        "sha256": "2f1909e5105f266098b4dcffe7748a9ca94d4244eb1167bcf82bd3a0c9d8b034",
+        "size_bytes": 818
+      },
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/acetamide-openbabel_to_chematic_source.stdout",
+        "sha256": "75e80b354a4d61437a11d904032c677b071aa6193b877e4d42f6c58f847741a1",
+        "size_bytes": 1648
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/acetamide-openbabel_to_chematic_source.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "outcome": "exact_source_retained",
+      "opaque_semantics_interpreted": false
+    },
+    {
+      "case": "precision",
+      "direction": "chematic_to_openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "input.cjson": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/precision-chematic_to_openbabel.input.cjson",
+        "sha256": "3c1e054f89c918d68255cd0ae4ba08499692eee554ec5eb19fa10253873fb214",
+        "size_bytes": 314
+      },
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/precision-chematic_to_openbabel.stdout",
+        "sha256": "69414020731d0d7d0246a172b9a5739c6c502731e7cf7ab181e7d7dcb16ef6d2",
+        "size_bytes": 460
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/precision-chematic_to_openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "outcome": "parse_write_failure",
+      "reason": "duplicate/unsupported MOL2 bond"
+    },
+    {
+      "case": "precision",
+      "direction": "openbabel_self_control",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "input.cjson": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/precision-openbabel_self_control.input.cjson",
+        "sha256": "228acaaafa811310a59e6a5aa3c353bc6e230f77caa565db08013d6633095995",
+        "size_bytes": 837
+      },
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/precision-openbabel_self_control.stdout",
+        "sha256": "937e5fb36331e1887d814535522b87d849e58ed2b570baea66f29fb4b56b8b64",
+        "size_bytes": 460
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/precision-openbabel_self_control.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "lost",
+        "atom_names": "lost",
+        "atom_types": "preserved",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "lost",
+        "charge_method": "lost",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": false,
+      "outcome": "output_with_loss"
+    },
+    {
+      "case": "precision",
+      "direction": "openbabel_to_chematic_source",
+      "command": [
+        "/private/tmp/chematic-interchange-partial-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "strict"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "input.cjson": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/precision-openbabel_to_chematic_source.input.cjson",
+        "sha256": "228acaaafa811310a59e6a5aa3c353bc6e230f77caa565db08013d6633095995",
+        "size_bytes": 837
+      },
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/precision-openbabel_to_chematic_source.stdout",
+        "sha256": "b04fbbd99cfc76459e4855da2a847ececa7c2a6597cf548713ba359e8eb74fae",
+        "size_bytes": 1667
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/precision-openbabel_to_chematic_source.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "outcome": "exact_source_retained",
+      "opaque_semantics_interpreted": false
+    },
+    {
+      "case": "n4-charge",
+      "direction": "chematic_to_openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "input.cjson": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/n4-charge-chematic_to_openbabel.input.cjson",
+        "sha256": "cac2ac5306e5621c8f6e3e1789ee193b9908b8f7dc1c392b2fe34a5d0f5eff58",
+        "size_bytes": 239
+      },
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/n4-charge-chematic_to_openbabel.stdout",
+        "sha256": "7400d9e4319cefc2793e77a76bb01692b75d230462ce74bd936f73df1dc46e08",
+        "size_bytes": 157
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/n4-charge-chematic_to_openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "lost",
+        "coordinates": "preserved",
+        "partial_charges": "lost",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "lost",
+        "charge_method": "lost",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "output_with_loss"
+    },
+    {
+      "case": "n4-charge",
+      "direction": "openbabel_self_control",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "input.cjson": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/n4-charge-openbabel_self_control.input.cjson",
+        "sha256": "87d6ecb5b775b44c9bdad626ab4278cbe6ef755b7378c39d40a983fed20791ac",
+        "size_bytes": 425
+      },
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/n4-charge-openbabel_self_control.stdout",
+        "sha256": "7400d9e4319cefc2793e77a76bb01692b75d230462ce74bd936f73df1dc46e08",
+        "size_bytes": 157
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/n4-charge-openbabel_self_control.stderr",
+        "sha256": "903b5d79281cff054b9358c4ccbe5b8f8f146e50f9918c74f8e5b1f2d90cbf3a",
+        "size_bytes": 147
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "lost",
+        "coordinates": "preserved",
+        "partial_charges": "lost",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "lost",
+        "charge_method": "lost",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "output_with_loss"
+    },
+    {
+      "case": "n4-charge",
+      "direction": "openbabel_to_chematic_source",
+      "command": [
+        "/private/tmp/chematic-interchange-partial-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "strict"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "input.cjson": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/n4-charge-openbabel_to_chematic_source.input.cjson",
+        "sha256": "87d6ecb5b775b44c9bdad626ab4278cbe6ef755b7378c39d40a983fed20791ac",
+        "size_bytes": 425
+      },
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/n4-charge-openbabel_to_chematic_source.stdout",
+        "sha256": "7147b048624fec82e8c37c820108a8c7dfb9338f2b2f565020d190ca40200c97",
+        "size_bytes": 1212
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json.artifacts/n4-charge-openbabel_to_chematic_source.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "outcome": "exact_source_retained",
+      "opaque_semantics_interpreted": false
+    }
+  ],
+  "limitations": [
+    "Open Babel uses default CJSON-read/MOL2-write options; names, typing and charge generation can differ from its CJSON writer.",
+    "CheMatic reverse direction verifies exact source bytes only; opaque partial-charge/property semantics are not interpreted.",
+    "The same declared per-field tolerances and tiny independent reader are used; this is development evidence only."
+  ]
+}

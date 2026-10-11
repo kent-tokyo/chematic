@@ -763,6 +763,61 @@ fn from_mol2(mol2_str: &str) -> PyResult<Mol> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Inspect a source-preserving MOL2 record, including partial charges and types.
+/// Returns the shared ``chematic.mol2-record.v1`` JSON schema. Opaque source
+/// retention is reported separately from the bounded graph interpretation.
+#[pyfunction]
+fn parse_mol2_record_json(text: &str) -> PyResult<String> {
+    chematic_mol::parse_mol2_record(text)
+        .map(|record| record.to_json().to_string())
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
+/// Validate one MOL2 record and return its exact source, preserving metadata.
+#[pyfunction]
+fn roundtrip_mol2_record(text: &str) -> PyResult<String> {
+    chematic_mol::parse_mol2_record(text)
+        .map(|record| chematic_mol::write_mol2_record(&record))
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
+/// Inspect a strictly validated immutable CJSON record. Opaque fields are
+/// listed by JSON Pointer and retained verbatim, without interpretation.
+#[pyfunction]
+fn parse_cjson_record_json(text: &str) -> PyResult<String> {
+    chematic_mol::parse_cjson_record(text)
+        .map(|record| record.to_json().to_string())
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
+/// Validate the local CJSON profile and return its exact UTF-8 source.
+#[pyfunction]
+fn roundtrip_cjson_record(text: &str) -> PyResult<String> {
+    chematic_mol::parse_cjson_record(text)
+        .map(|record| chematic_mol::write_cjson_record(&record))
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
+/// Checked MOL2/CJSON conversion. Refusal is a JSON report with null output;
+/// malformed input, unsupported routes/policies and limits raise ValueError.
+#[pyfunction]
+#[pyo3(signature = (text, input_format, output_format, policy="strict"))]
+fn convert_with_report_json(
+    text: &str,
+    input_format: &str,
+    output_format: &str,
+    policy: &str,
+) -> PyResult<String> {
+    chematic_mol::convert_with_report_json(
+        text,
+        input_format,
+        output_format,
+        policy,
+        &Default::default(),
+    )
+    .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
 /// Parse an AutoDock PDBQT string and return a :class:`Mol`.
 ///
 /// Only the molecular graph (elements and bonds) is extracted; 3D coordinates
@@ -2585,6 +2640,11 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_mol_v3000_with_coords, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000_with_diagnostics, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol2, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_cjson_record_json, m)?)?;
+    m.add_function(wrap_pyfunction!(roundtrip_cjson_record, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_mol2_record_json, m)?)?;
+    m.add_function(wrap_pyfunction!(convert_with_report_json, m)?)?;
+    m.add_function(wrap_pyfunction!(roundtrip_mol2_record, m)?)?;
     m.add_function(wrap_pyfunction!(from_pdbqt, m)?)?;
     m.add_function(wrap_pyfunction!(from_gjf, m)?)?;
     m.add_function(wrap_pyfunction!(parse_gaussian_log, m)?)?;

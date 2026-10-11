@@ -22,7 +22,9 @@ pub mod cif;
 #[cfg(feature = "crystal")]
 mod cif_symmetry;
 pub mod cjson;
+pub mod cjson_record;
 pub mod cml;
+pub mod conversion;
 pub mod cube;
 pub mod error;
 pub mod gaussian;
@@ -50,6 +52,11 @@ pub mod volumetric;
 pub mod xyz;
 
 // Convenient re-exports at crate root.
+pub use conversion::{
+    ConversionAtomMapping, ConversionBondMapping, ConversionError, ConversionLimits,
+    ConversionObservation, ConversionPolicy, ConversionReport, PreservationStatus,
+    convert_with_report, convert_with_report_json, convert_with_report_with_limits,
+};
 pub use error::MolParseError;
 // Re-export MolParseError under the alias MolError as specified by the public API.
 pub use cdxml::{
@@ -72,6 +79,9 @@ pub use cif::{
     write_cif_periodic_structure,
 };
 pub use cjson::{CjsonError, CjsonParseLimits, parse_cjson, parse_cjson_with_limits, write_cjson};
+pub use cjson_record::{
+    CjsonRecord, parse_cjson_record, parse_cjson_record_with_limits, write_cjson_record,
+};
 pub use cml::{
     CmlError, CmlParseLimits, parse_cml, parse_cml_strict, parse_cml_strict_with_limits,
     parse_cml_with_limits, write_cml,
@@ -102,7 +112,11 @@ pub use mmcif::{
     MmcifAtomRecord, MmcifError, MmcifParseLimits, MmcifResult, parse_mmcif,
     parse_mmcif_with_limits, write_mmcif,
 };
-pub use mol2_tripos::{Mol2Error, Mol2ParseLimits, parse_mol2, parse_mol2_with_limits, write_mol2};
+pub use mol2_tripos::{
+    Mol2AtomRecord, Mol2BondRecord, Mol2Error, Mol2ParseLimits, Mol2Record, parse_mol2,
+    parse_mol2_record, parse_mol2_record_with_limits, parse_mol2_with_limits, write_mol2,
+    write_mol2_record,
+};
 pub use mol2000::{
     CoordinateDimension, GeometryRank, MolFormat, MolMetadata, MolReadReport, MolStereoWriteError,
     SquarePlanarPerceptionDiagnostic, SquarePlanarRejectionReason, Stereo3DDiagnostic,
