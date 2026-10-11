@@ -38,7 +38,6 @@
     "crates/chematic-perception/src/rdkit_canon.rs": 1636,
     "crates/chematic-perception/src/rdkit_parity.rs": 2633,
     "crates/chematic-perception/src/sssr.rs": 4011,
-    "crates/chematic-py/src/formats.rs": 2800,
     "crates/chematic-py/src/mol_methods.rs": 6087,
     "crates/chematic-rxn/src/query.rs": 1969,
     "crates/chematic-rxn/src/rdkit_stereo.rs": 1626,
@@ -413,14 +412,6 @@
       "decisions": 61,
       "lines": 405
     },
-    "crates/chematic-py/src/bulk.rs::register#1": {
-      "decisions": 28,
-      "lines": 17
-    },
-    "crates/chematic-py/src/formats.rs::register#1": {
-      "decisions": 145,
-      "lines": 76
-    },
     "crates/chematic-py/src/lammps.rs::lammps_data_to_pydict#1": {
       "decisions": 33,
       "lines": 75
@@ -428,10 +419,6 @@
     "crates/chematic-py/src/lammps.rs::pydict_to_lammps_data#1": {
       "decisions": 37,
       "lines": 82
-    },
-    "crates/chematic-py/src/misc.rs::register#1": {
-      "decisions": 34,
-      "lines": 21
     },
     "crates/chematic-py/src/mol_methods.rs::descriptors#1": {
       "decisions": 127,
@@ -449,10 +436,6 @@
       "decisions": 31,
       "lines": 58
     },
-    "crates/chematic-py/src/reactions.rs::register#1": {
-      "decisions": 50,
-      "lines": 28
-    },
     "crates/chematic-py/src/reactions.rs::run_smirks_checked#1": {
       "decisions": 43,
       "lines": 157
@@ -464,10 +447,6 @@
     "crates/chematic-py/src/reports.rs::mol_report_to_dict#1": {
       "decisions": 41,
       "lines": 71
-    },
-    "crates/chematic-py/src/similarity.rs::register#1": {
-      "decisions": 38,
-      "lines": 22
     },
     "crates/chematic-rxn/src/document.rs::validate#1": {
       "decisions": 26,

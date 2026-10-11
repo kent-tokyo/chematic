@@ -1298,19 +1298,21 @@ pub fn standardize(mols: Vec<Mol>) -> Vec<Mol> {
 // ---------------------------------------------------------------------------
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(parse, m)?)?;
-    m.add_function(wrap_pyfunction!(ecfp4, m)?)?;
-    m.add_function(wrap_pyfunction!(maccs, m)?)?;
-    m.add_function(wrap_pyfunction!(map4, m)?)?;
-    m.add_function(wrap_pyfunction!(hdf, m)?)?;
-    m.add_function(wrap_pyfunction!(descriptors, m)?)?;
-    m.add_function(wrap_pyfunction!(descriptors_array, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_search, m)?)?;
-    m.add_function(wrap_pyfunction!(substructure_search, m)?)?;
-    m.add_function(wrap_pyfunction!(substructure_match, m)?)?;
-    m.add_function(wrap_pyfunction!(generate_3d, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_matrix, m)?)?;
-    m.add_function(wrap_pyfunction!(standardize, m)?)?;
-    Ok(())
+    register_pyfunctions!(
+        m,
+        parse,
+        ecfp4,
+        maccs,
+        map4,
+        hdf,
+        descriptors,
+        descriptors_array,
+        tanimoto,
+        tanimoto_search,
+        substructure_search,
+        substructure_match,
+        generate_3d,
+        tanimoto_matrix,
+        standardize,
+    )
 }

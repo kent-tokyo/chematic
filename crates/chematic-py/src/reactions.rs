@@ -1096,30 +1096,32 @@ fn find_mcs_checked(
 // ---------------------------------------------------------------------------
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(reaction_smarts_match, m)?)?;
-    m.add_function(wrap_pyfunction!(find_mmp, m)?)?;
-    m.add_function(wrap_pyfunction!(rgroup_decompose, m)?)?;
-    m.add_function(wrap_pyfunction!(rgroup_decompose_labeled, m)?)?;
-    m.add_function(wrap_pyfunction!(rgroup_decompose_columns, m)?)?;
-    m.add_function(wrap_pyfunction!(activity_cliffs, m)?)?;
-    m.add_function(wrap_pyfunction!(find_reaction_center, m)?)?;
-    m.add_function(wrap_pyfunction!(e_factor, m)?)?;
-    m.add_function(wrap_pyfunction!(pmi_rxn, m)?)?;
-    m.add_function(wrap_pyfunction!(reaction_mass_efficiency, m)?)?;
-    m.add_function(wrap_pyfunction!(atom_economy, m)?)?;
-    m.add_function(wrap_pyfunction!(balance_check, m)?)?;
-    m.add_function(wrap_pyfunction!(enumerate_library, m)?)?;
-    m.add_function(wrap_pyfunction!(enumerate_library_2way, m)?)?;
-    m.add_function(wrap_pyfunction!(enumerate_library_3way, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_reaction_fp, m)?)?;
-    m.add_function(wrap_pyfunction!(query_reaction, m)?)?;
-    m.add_function(wrap_pyfunction!(batch_query_reactions, m)?)?;
-    m.add_function(wrap_pyfunction!(reaction_svg, m)?)?;
-    m.add_function(wrap_pyfunction!(scaffold_network_counts, m)?)?;
-    m.add_function(wrap_pyfunction!(run_smirks, m)?)?;
-    m.add_function(wrap_pyfunction!(run_smirks_checked, m)?)?;
-    m.add_function(wrap_pyfunction!(run_smirks_strict, m)?)?;
-    m.add_function(wrap_pyfunction!(find_mcs, m)?)?;
-    m.add_function(wrap_pyfunction!(find_mcs_checked, m)?)?;
-    Ok(())
+    register_pyfunctions!(
+        m,
+        reaction_smarts_match,
+        find_mmp,
+        rgroup_decompose,
+        rgroup_decompose_labeled,
+        rgroup_decompose_columns,
+        activity_cliffs,
+        find_reaction_center,
+        e_factor,
+        pmi_rxn,
+        reaction_mass_efficiency,
+        atom_economy,
+        balance_check,
+        enumerate_library,
+        enumerate_library_2way,
+        enumerate_library_3way,
+        tanimoto_reaction_fp,
+        query_reaction,
+        batch_query_reactions,
+        reaction_svg,
+        scaffold_network_counts,
+        run_smirks,
+        run_smirks_checked,
+        run_smirks_strict,
+        find_mcs,
+        find_mcs_checked,
+    )
 }
