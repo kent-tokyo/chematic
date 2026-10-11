@@ -20,6 +20,8 @@ use chematic_smiles::{
 };
 
 const STRESS: &str = include_str!("../../../validation/cosmolkit_comparison/corpora/stress-v1.smi");
+const BROWSER_10K: &str =
+    include_str!("../../../validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi");
 
 #[test]
 fn rdkit_compatible_public_surface_is_panic_free_on_stress_corpus() {
@@ -92,4 +94,29 @@ fn rdkit_compatible_public_surface_is_panic_free_on_stress_corpus() {
         }
     }
     assert!(parsed > 3_500, "stress corpus unexpectedly stopped parsing");
+}
+
+#[test]
+fn canonical_writer_handles_the_full_browser_corpus_in_multiple_profiles() {
+    let mut parsed = 0usize;
+    for (row, line) in BROWSER_10K.lines().enumerate() {
+        let smiles = line.split_whitespace().next().unwrap_or("");
+        let Ok(mol) = parse(smiles) else { continue };
+        parsed += 1;
+
+        let _ = rdkit_canonical_smiles(&mol);
+        let params = RdkitSmilesParams {
+            isomeric: row % 2 == 0,
+            kekule: row % 3 == 0,
+            canonical: row % 5 != 0,
+            all_bonds_explicit: row % 7 == 0,
+            all_hs_explicit: row % 11 == 0,
+            rooted_at_atom: (mol.atom_count() > 0).then_some(row % mol.atom_count().max(1)),
+        };
+        let _ = rdkit_smiles(&mol, &params);
+    }
+    assert!(
+        parsed >= 9_900,
+        "browser corpus unexpectedly stopped parsing"
+    );
 }

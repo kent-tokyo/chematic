@@ -8,6 +8,7 @@ use std::net::{SocketAddr, TcpStream};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
+use chematic_mcp::http::{HttpRequest, handle_http_request, read_request};
 use chematic_mcp::{HttpConfig, HttpServer};
 use serde_json::{Value, json};
 
@@ -616,5 +617,87 @@ fn binary_usage_errors_and_stdio_framing_have_separate_output_channels() {
             let reply: Value = serde_json::from_slice(&output.stdout).unwrap();
             assert_eq!(reply["error"]["code"], -32700);
         }
+    }
+}
+
+#[test]
+fn direct_http_boundary_matrix_rejects_ambiguous_or_malformed_metadata() {
+    let config = HttpConfig::default();
+    let valid_body = body(
+        42,
+        "tools/call",
+        json!({ "name": "parse_smiles", "arguments": { "smiles": "C" } }),
+    )
+    .into_bytes();
+    let request = |headers: Vec<(&str, &str)>, body: Vec<u8>| HttpRequest {
+        method: "POST".into(),
+        path: "/mcp".into(),
+        headers: headers
+            .into_iter()
+            .map(|(name, value)| (name.to_ascii_lowercase(), value.into()))
+            .collect(),
+        body,
+    };
+    let required = vec![
+        ("host", "127.0.0.1:3000"),
+        ("content-type", "application/json"),
+        ("mcp-protocol-version", "2026-07-28"),
+        ("mcp-method", "tools/call"),
+        ("mcp-name", "parse_smiles"),
+    ];
+
+    let mut duplicate = required.clone();
+    duplicate.push(("mcp-method", "tools/call"));
+    assert_eq!(
+        handle_http_request(&request(duplicate, valid_body.clone()), &config).status,
+        400
+    );
+    let mut control = required.clone();
+    control[3].1 = "tools/\u{7}call";
+    assert_eq!(
+        handle_http_request(&request(control, valid_body.clone()), &config).status,
+        400
+    );
+    let mut invalid_base64 = required.clone();
+    invalid_base64[4].1 = "=?base64?%%%?=";
+    assert_eq!(
+        handle_http_request(&request(invalid_base64, valid_body.clone()), &config).status,
+        400
+    );
+    let mut version_mismatch = required.clone();
+    version_mismatch[2].1 = "2026-07-29";
+    assert_eq!(
+        handle_http_request(&request(version_mismatch, valid_body.clone()), &config).status,
+        400
+    );
+    assert_eq!(
+        handle_http_request(&request(required.clone(), vec![0xff]), &config).status,
+        400
+    );
+
+    let non_loopback = HttpConfig {
+        bind: "0.0.0.0".parse().unwrap(),
+        allow_non_loopback: true,
+        allowed_origins: vec!["https://trusted.example".into()],
+        ..HttpConfig::default()
+    };
+    let mut exposed_headers = required.clone();
+    exposed_headers[0].1 = "example.test:3000";
+    exposed_headers.push(("origin", "https://trusted.example"));
+    assert_eq!(
+        handle_http_request(&request(exposed_headers, valid_body.clone()), &non_loopback).status,
+        200
+    );
+
+    for raw_request in [
+        b"\r\n".as_slice(),
+        b"POST /mcp\r\n\r\n",
+        b"POST /mcp HTTP/9.9\r\n\r\n",
+        b"POST /mcp HTTP/1.1\r\nBroken\r\n\r\n",
+        b"POST /mcp HTTP/1.1\r\nContent-Length: nope\r\n\r\n",
+        b"POST /mcp HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n",
+    ] {
+        let mut reader = BufReader::new(raw_request);
+        assert!(read_request(&mut reader).is_err());
     }
 }

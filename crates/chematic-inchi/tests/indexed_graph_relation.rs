@@ -13,6 +13,7 @@
 //! `inchikey`, which are simply `None` without the feature). So, unlike
 //! `tests/dedup_fixtures.rs`, this file runs in both feature configurations.
 
+use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
 use chematic_inchi::dedup::{
     AtomMapPolicy, GraphRelation, GraphStrictness, IndexedGraphRelationDiagnostic,
     IndexedGraphRelationMode, compare_indexed_graph_relation,
@@ -31,6 +32,14 @@ const CHEMICAL_IGNORE: IndexedGraphRelationMode = IndexedGraphRelationMode {
     graph_strictness: GraphStrictness::ChemicalGraphExact,
     atom_maps: AtomMapPolicy::Ignore,
 };
+
+fn two_carbon_graph(order: BondOrder) -> chematic_core::Molecule {
+    let mut builder = MoleculeBuilder::new();
+    let a = builder.add_atom(Atom::new(Element::C));
+    let b = builder.add_atom(Atom::new(Element::C));
+    builder.add_bond(a, b, order).expect("valid test bond");
+    builder.build()
+}
 
 #[test]
 fn same_molecule_twice_is_identical_under_both_strictness_modes() {
@@ -266,5 +275,87 @@ fn evidence_never_claims_identical_and_distinct_diagnostics_simultaneously() {
         !evidence
             .diagnostics
             .contains(&IndexedGraphRelationDiagnostic::AtomOrderCorrespondenceNotEstablished)
+    );
+}
+
+#[test]
+fn every_structural_bond_order_has_a_stable_identity_class() {
+    let orders = [
+        BondOrder::Single,
+        BondOrder::Double,
+        BondOrder::Triple,
+        BondOrder::Quadruple,
+        BondOrder::Aromatic,
+        BondOrder::Up,
+        BondOrder::Down,
+        BondOrder::Zero,
+        BondOrder::Dative,
+        BondOrder::QueryAny,
+        BondOrder::QuerySingleOrDouble,
+        BondOrder::QuerySingleOrAromatic,
+        BondOrder::QueryDoubleOrAromatic,
+    ];
+
+    for order in orders {
+        let a = two_carbon_graph(order);
+        let b = two_carbon_graph(order);
+        let evidence = compare_indexed_graph_relation(&a, &b, RAW_IGNORE);
+        assert_eq!(
+            evidence.graph_relation,
+            Some(GraphRelation::Identical),
+            "same structural bond class must compare identically: {order:?}: {evidence:?}"
+        );
+    }
+
+    // Directional single-bond spellings intentionally share one structural
+    // class; their E/Z direction is checked separately by the comparator.
+    for order in [BondOrder::Up, BondOrder::Down, BondOrder::Dative] {
+        let evidence = compare_indexed_graph_relation(
+            &two_carbon_graph(BondOrder::Single),
+            &two_carbon_graph(order),
+            RAW_IGNORE,
+        );
+        assert_eq!(evidence.graph_relation, Some(GraphRelation::Identical));
+    }
+
+    // The query/zero/metal bond classes must remain distinct from an ordinary
+    // single bond instead of being silently collapsed.
+    for order in [
+        BondOrder::Quadruple,
+        BondOrder::Aromatic,
+        BondOrder::Zero,
+        BondOrder::QueryAny,
+        BondOrder::QuerySingleOrDouble,
+        BondOrder::QuerySingleOrAromatic,
+        BondOrder::QueryDoubleOrAromatic,
+    ] {
+        let evidence = compare_indexed_graph_relation(
+            &two_carbon_graph(BondOrder::Single),
+            &two_carbon_graph(order),
+            RAW_IGNORE,
+        );
+        assert_eq!(evidence.graph_relation, Some(GraphRelation::Distinct));
+    }
+}
+
+#[test]
+fn chemical_graph_mode_abstains_when_aromatic_graph_cannot_be_kekulized() {
+    let mut builder = MoleculeBuilder::new();
+    let atoms: Vec<_> = (0..3)
+        .map(|_| builder.add_atom(Atom::aromatic(Element::C)))
+        .collect();
+    for i in 0..atoms.len() {
+        builder
+            .add_bond(atoms[i], atoms[(i + 1) % atoms.len()], BondOrder::Aromatic)
+            .expect("valid aromatic triangle");
+    }
+    let impossible = builder.build();
+    let evidence = compare_indexed_graph_relation(&impossible, &impossible, CHEMICAL_IGNORE);
+    assert_eq!(evidence.graph_relation, None, "{evidence:?}");
+    assert!(
+        evidence
+            .diagnostics
+            .contains(&IndexedGraphRelationDiagnostic::ChemicalGraphKekulizationFailed),
+        "{evidence:?}"
     );
 }

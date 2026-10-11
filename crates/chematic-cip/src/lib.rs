@@ -93,3 +93,18 @@ impl std::error::Error for CipError {}
 
 #[cfg(test)]
 mod debug_boundary_contract_tests;
+
+#[cfg(test)]
+mod error_contract_tests {
+    use super::*;
+
+    #[test]
+    fn budget_error_preserves_the_reason() {
+        let error = CipError::BudgetExceeded {
+            reason: "node limit".into(),
+        };
+        assert_eq!(error.to_string(), "CIP digraph budget exceeded: node limit");
+        let source: &dyn std::error::Error = &error;
+        assert!(source.source().is_none());
+    }
+}

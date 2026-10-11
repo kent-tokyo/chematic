@@ -85,21 +85,21 @@ fn detailed_native_and_rdkit_profiles_account_for_every_fixture_match() {
             }
         }
 
-        if let Ok(outcome) = run_reactants_traced_rdkit_2026_03_6_detailed(smirks, &refs, &limits) {
-            if let RdkitDetailedProfileOutcome::Report(report) = outcome {
-                let d = report.report.diagnostics;
-                assert_accounting(
-                    d.accepted_matches,
-                    d.applied_products,
-                    d.valence_rejected_matches,
-                    report.report.products.len(),
-                    report.rejection_diagnostics.len(),
-                );
-                assert_eq!(
-                    report.rejected_products.len(),
-                    report.rejection_diagnostics.len()
-                );
-            }
+        if let Ok(RdkitDetailedProfileOutcome::Report(report)) =
+            run_reactants_traced_rdkit_2026_03_6_detailed(smirks, &refs, &limits)
+        {
+            let d = report.report.diagnostics;
+            assert_accounting(
+                d.accepted_matches,
+                d.applied_products,
+                d.valence_rejected_matches,
+                report.report.products.len(),
+                report.rejection_diagnostics.len(),
+            );
+            assert_eq!(
+                report.rejected_products.len(),
+                report.rejection_diagnostics.len()
+            );
         }
         exercised += 1;
     }

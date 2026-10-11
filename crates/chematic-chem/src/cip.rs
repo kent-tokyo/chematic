@@ -524,7 +524,14 @@ impl<'a> SphereGen<'a> {
 
     fn new(mol: &'a Molecule, center: AtomIdx, start: AtomIdx) -> Self {
         let mut queue = VecDeque::new();
-        queue.push_back((start, center, 1usize, vec![center, start]));
+        // `u32::MAX` is the virtual hydrogen/lone-pair sentinel. It has an
+        // atom key, but it is terminal and must never enter the molecular
+        // adjacency walk. A real explicit H is terminal for the same reason,
+        // so both representations compare identically after their first
+        // sphere.
+        if start.0 != u32::MAX {
+            queue.push_back((start, center, 1usize, vec![center, start]));
+        }
         Self {
             mol,
             center,

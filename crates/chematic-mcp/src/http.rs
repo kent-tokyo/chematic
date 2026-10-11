@@ -806,6 +806,38 @@ fn validate_mirrored_headers(
 mod tests {
     use super::*;
 
+    fn modern_request(method: &str, params: Value) -> HttpRequest {
+        let body = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": method,
+            "params": params,
+        });
+        HttpRequest {
+            method: "POST".into(),
+            path: MCP_ENDPOINT.into(),
+            headers: vec![
+                ("host".into(), "127.0.0.1:3000".into()),
+                ("content-type".into(), "application/json".into()),
+                ("accept".into(), "application/json".into()),
+                (
+                    "mcp-protocol-version".into(),
+                    protocol::SUPPORTED_MODERN_VERSIONS[0].into(),
+                ),
+                ("mcp-method".into(), method.into()),
+            ],
+            body: serde_json::to_vec(&body).unwrap(),
+        }
+    }
+
+    fn modern_params() -> Value {
+        let mut params = json!({"_meta": {}});
+        params["_meta"][protocol::META_PROTOCOL_VERSION] =
+            json!(protocol::SUPPORTED_MODERN_VERSIONS[0]);
+        params["_meta"][protocol::META_CLIENT_CAPABILITIES] = json!({});
+        params
+    }
+
     #[test]
     fn loopback_hosts() {
         for host in [
@@ -861,6 +893,9 @@ mod tests {
             Some("Hello, 世界")
         );
         assert_eq!(decode_header_value("=?base64?***?="), None);
+        assert_eq!(base64_decode("++//"), Some(vec![251, 239, 255]));
+        assert_eq!(decode_header_value("=?base64?QQ=A?="), None);
+        assert_eq!(decode_header_value("=?base64?QQQ?="), None);
     }
 
     #[test]
@@ -872,5 +907,176 @@ mod tests {
         };
         let error = HttpServer::bind(config).err().unwrap();
         assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+    }
+
+    #[test]
+    fn response_writer_and_status_reasons_are_complete() {
+        for (status, phrase) in [
+            (200, "OK"),
+            (202, "Accepted"),
+            (400, "Bad Request"),
+            (403, "Forbidden"),
+            (404, "Not Found"),
+            (405, "Method Not Allowed"),
+            (406, "Not Acceptable"),
+            (408, "Request Timeout"),
+            (411, "Length Required"),
+            (413, "Content Too Large"),
+            (415, "Unsupported Media Type"),
+            (431, "Request Header Fields Too Large"),
+            (501, "Not Implemented"),
+            (503, "Service Unavailable"),
+            (599, "Error"),
+        ] {
+            assert_eq!(reason(status), phrase);
+        }
+
+        let response =
+            HttpResponse::json(200, &json!({"ok": true})).with_header("X-Test", "covered");
+        assert_eq!(response.json_body(), Some(json!({"ok": true})));
+        let mut bytes = Vec::new();
+        response.write_to(&mut bytes).unwrap();
+        let text = String::from_utf8(bytes).unwrap();
+        assert!(text.starts_with("HTTP/1.1 200 OK\r\n"));
+        assert!(text.contains("X-Test: covered\r\n"));
+        assert!(text.ends_with("{\"ok\":true}"));
+        assert!(HttpResponse::empty(202).json_body().is_none());
+    }
+
+    #[test]
+    fn parsed_http_request_rejects_transport_and_media_errors() {
+        let config = HttpConfig::default();
+        let mut request = modern_request("tools/list", modern_params());
+
+        request.path = "/elsewhere".into();
+        assert_eq!(handle_http_request(&request, &config).status, 404);
+        request.path = MCP_ENDPOINT.into();
+        request.method = "GET".into();
+        let response = handle_http_request(&request, &config);
+        assert_eq!(response.status, 405);
+        assert_eq!(
+            response.headers.last().unwrap(),
+            &("Allow".into(), "POST".into())
+        );
+
+        request.method = "POST".into();
+        request.headers.retain(|(name, _)| name != "host");
+        assert_eq!(handle_http_request(&request, &config).status, 403);
+        request.headers.push(("host".into(), "evil.example".into()));
+        assert_eq!(handle_http_request(&request, &config).status, 403);
+        request.headers.last_mut().unwrap().1 = "localhost:3000".into();
+        request
+            .headers
+            .push(("origin".into(), "https://evil.example".into()));
+        assert_eq!(handle_http_request(&request, &config).status, 403);
+        request.headers.last_mut().unwrap().1 = "http://localhost:4321".into();
+
+        request
+            .headers
+            .iter_mut()
+            .find(|(name, _)| name == "content-type")
+            .unwrap()
+            .1 = "text/plain".into();
+        assert_eq!(handle_http_request(&request, &config).status, 415);
+        request
+            .headers
+            .iter_mut()
+            .find(|(name, _)| name == "content-type")
+            .unwrap()
+            .1 = "application/json; charset=utf-8".into();
+        request
+            .headers
+            .iter_mut()
+            .find(|(name, _)| name == "accept")
+            .unwrap()
+            .1 = "text/plain".into();
+        assert_eq!(handle_http_request(&request, &config).status, 406);
+
+        request.headers.retain(|(name, _)| name != "accept");
+        request.body = vec![0xff];
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+        request.body = b"{".to_vec();
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+        request.body = b"[]".to_vec();
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+    }
+
+    #[test]
+    fn mirrored_headers_fail_closed_for_every_mismatch_class() {
+        let config = HttpConfig::default();
+        let mut request = modern_request("tools/list", modern_params());
+        assert_eq!(handle_http_request(&request, &config).status, 200);
+
+        request
+            .headers
+            .push(("mcp-method".into(), "tools/list".into()));
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+        request.headers.pop();
+        request
+            .headers
+            .iter_mut()
+            .find(|(name, _)| name == "mcp-method")
+            .unwrap()
+            .1 = "ping".into();
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+        request
+            .headers
+            .iter_mut()
+            .find(|(name, _)| name == "mcp-method")
+            .unwrap()
+            .1 = "tools/list".into();
+
+        request
+            .headers
+            .retain(|(name, _)| name != "mcp-protocol-version");
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+        request
+            .headers
+            .push(("mcp-protocol-version".into(), "1900-01-01".into()));
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+        request.headers.last_mut().unwrap().1 = protocol::SUPPORTED_MODERN_VERSIONS[0].into();
+        request.body = serde_json::to_vec(&json!({
+            "jsonrpc": "2.0", "id": 1, "method": "ping", "params": {}
+        }))
+        .unwrap();
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+
+        let mut params = modern_params();
+        params["_meta"][protocol::META_PROTOCOL_VERSION] = json!("1900-01-01");
+        request.body = serde_json::to_vec(&json!({
+            "jsonrpc": "2.0", "id": 1, "method": "ping", "params": params
+        }))
+        .unwrap();
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+
+        let mut call_params = modern_params();
+        call_params["name"] = json!("parse_smiles");
+        request = modern_request("tools/call", call_params);
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+        request
+            .headers
+            .push(("mcp-name".into(), "=?base64?***?=".into()));
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+        request.headers.last_mut().unwrap().1 = "wrong".into();
+        assert_eq!(handle_http_request(&request, &config).status, 400);
+    }
+
+    #[test]
+    fn server_can_bind_an_ephemeral_loopback_port() {
+        let server = HttpServer::bind(HttpConfig {
+            port: 0,
+            ..HttpConfig::default()
+        })
+        .unwrap();
+        assert!(server.local_addr().unwrap().ip().is_loopback());
+        assert_ne!(server.local_addr().unwrap().port(), 0);
+
+        let error = HttpServer::bind(HttpConfig {
+            max_concurrency: 0,
+            ..HttpConfig::default()
+        })
+        .err()
+        .unwrap();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
     }
 }

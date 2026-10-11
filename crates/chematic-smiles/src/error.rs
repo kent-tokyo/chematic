@@ -112,3 +112,17 @@ impl fmt::Display for SmilesError {
 }
 
 impl std::error::Error for SmilesError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unknown_element_display_preserves_symbol_and_position() {
+        let error = SmilesError::UnknownElement {
+            symbol: "Qq".into(),
+            pos: 7,
+        };
+        assert_eq!(error.to_string(), "unknown element 'Qq' at position 7");
+    }
+}

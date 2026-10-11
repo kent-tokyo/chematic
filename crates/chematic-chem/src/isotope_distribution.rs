@@ -206,6 +206,23 @@ mod tests {
     use super::*;
     use chematic_smiles::parse;
 
+    #[test]
+    fn isotope_tables_cover_supported_elements_and_monoisotopic_fallback() {
+        for atomic_number in [1, 6, 7, 8, 9, 11, 14, 15, 16, 17, 19, 33, 34, 35, 53] {
+            let element = Element::from_atomic_number(atomic_number).unwrap();
+            let distribution = isotope_list(element);
+            assert!(!distribution.is_empty());
+            assert!(
+                distribution
+                    .iter()
+                    .all(|(mass, abundance)| *mass > 0.0 && *abundance > 0.0)
+            );
+        }
+
+        let helium = isotope_list(Element::HE);
+        assert_eq!(helium, vec![(2.0, 1.0)]);
+    }
+
     /// Find the peak with the highest intensity.
     fn base_peak(dist: &[(f64, f64)]) -> (f64, f64) {
         dist.iter()

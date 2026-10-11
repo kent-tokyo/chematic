@@ -359,6 +359,66 @@ mod tests {
 #[cfg(test)]
 mod legacy_score_boundary_contract_tests {
     use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn every_atom_type_combination_is_safe_and_returns_a_valid_preference() {
+        // `get_torsion_preference` is a precedence-ordered compatibility
+        // table over four atom types.  Exercise the complete type product,
+        // including combinations that are unusual but can occur transiently
+        // in reaction products or partially sanitised input.
+        let mol = chematic_smiles::parse(
+            "[H].CC.C=C.c1ccccc1.C=O.C#N.N=C.n1ccccc1.CN(C)C.O.o1cccc1.S.s1cccc1.P.F.[Xe]",
+        )
+        .unwrap();
+        let mut representatives = HashMap::new();
+        for (idx, _) in mol.atoms() {
+            representatives
+                .entry(classify_atom_type(&mol, idx))
+                .or_insert(idx);
+        }
+        for required in [
+            AtomType::CSp3,
+            AtomType::CSp2Alkene,
+            AtomType::CAromatic,
+            AtomType::CCarbonyl,
+            AtomType::NSp,
+            AtomType::NSp2,
+            AtomType::NAromatic,
+            AtomType::NSp3,
+            AtomType::OSp2,
+            AtomType::OSp3,
+            AtomType::OAromatic,
+            AtomType::S,
+            AtomType::SAromatic,
+            AtomType::P,
+            AtomType::H,
+            AtomType::Halogen,
+            AtomType::Other,
+        ] {
+            assert!(
+                representatives.contains_key(&required),
+                "missing {required:?}"
+            );
+        }
+        let atoms: Vec<_> = representatives.values().copied().collect();
+        let mut matched = 0usize;
+        for &a in &atoms {
+            for &b in &atoms {
+                for &c in &atoms {
+                    for &d in &atoms {
+                        if let Some(preference) = get_torsion_preference(&mol, a, b, c, d) {
+                            matched += 1;
+                            assert!(preference.angle_deg.is_finite());
+                            assert!(preference.penalty_per_degree.is_finite());
+                            assert!(preference.penalty_per_degree > 0.0);
+                        }
+                    }
+                }
+            }
+        }
+        assert!(matched > 1_000);
+    }
 
     #[test]
     fn legacy_preferences_on_real_paths_have_finite_periodic_nonnegative_scores() {

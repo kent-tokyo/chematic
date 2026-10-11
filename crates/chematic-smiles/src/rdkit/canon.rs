@@ -1045,3 +1045,152 @@ fn remove_redundant_bond_dir_specs(mol: &mut Mol, st: &mut DirState, stack: &[St
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn canonical(text: &str) -> Result<String, RdkitSmilesError> {
+        let molecule = crate::parse(text).expect("test SMILES parses");
+        super::super::rdkit_canonical_smiles(&molecule)
+    }
+
+    #[test]
+    fn conjugated_and_branched_direction_conflicts_are_canonicalized() {
+        let cases = [
+            "F/C(Cl)=C(/Br)I",
+            "F/C(Cl)=C(\\Br)I",
+            "F/C(Cl)=C(/Br)\\C=C(/I)N",
+            "F/C=C/C=C/F",
+            "F/C=C\\C=C/F",
+            "C/C=C1\\CCCC/C1=C/C",
+            "C/C=C(/C)\\C(=C(/F)Cl)Br",
+            "F/C=C(/Cl)C(/Br)=C(/I)N",
+            "F/C=C(/Cl)C(\\Br)=C(\\I)N",
+            "C1(/F)=C(/Cl)C(/Br)=C(/I)C1",
+        ];
+        for text in cases {
+            let first = canonical(text).unwrap_or_else(|e| panic!("{text}: {e}"));
+            let second = canonical(&first).unwrap_or_else(|e| panic!("{text} -> {first}: {e}"));
+            assert_eq!(first, second, "{text}");
+        }
+    }
+
+    #[test]
+    fn low_level_direction_helpers_cover_conflict_and_cleanup_states() {
+        let molecule = crate::parse("F/C(Cl)=C(/Br)I").unwrap();
+        let mut mol = super::super::parse::from_chematic(&molecule).unwrap();
+        let mut st = DirState {
+            bond_dir_counts: vec![1; mol.bonds.len()],
+            atom_dir_counts: vec![2; mol.atoms.len()],
+            bond_visit: (0..mol.bonds.len()).collect(),
+            atom_visit: (0..mol.atoms.len()).collect(),
+            ring_closure: vec![false; mol.bonds.len()],
+        };
+        let directional = mol
+            .bonds
+            .iter()
+            .enumerate()
+            .filter_map(|(i, b)| b.can_have_direction().then_some(i))
+            .collect::<Vec<_>>();
+        assert!(directional.len() >= 2);
+        let first = Side {
+            bond: directional[0],
+            flipped: false,
+        };
+        let second = Side {
+            bond: directional[1],
+            flipped: true,
+        };
+        let before = mol.bonds[second.bond].dir;
+        set_direction_from_neighboring_bond(&mut mol, first, second);
+        assert_ne!(mol.bonds[second.bond].dir, before);
+        let _ = same_side_dirs_are_compatible(&mol, first, second);
+
+        let stack = directional
+            .iter()
+            .copied()
+            .map(|b| StackElem::Bond(b, mol.bonds[b].begin))
+            .collect::<Vec<_>>();
+        remove_unwanted_bond_dir_specs(&mut mol, &mut st, &stack);
+        remove_redundant_bond_dir_specs(&mut mol, &mut st, &stack);
+    }
+
+    #[test]
+    fn double_bond_conflict_solver_covers_all_consistency_combinations() {
+        let molecule = crate::parse("F/C(Cl)=C(/Br)I").unwrap();
+        let mut mol = super::super::parse::from_chematic(&molecule).unwrap();
+        let dbl = mol
+            .bonds
+            .iter()
+            .position(|bond| bond.bt == BondType::Double)
+            .expect("test molecule has a double bond");
+        let atom1 = mol.bonds[dbl].begin;
+        let atom2 = mol.bonds[dbl].end;
+        let sides = |atom: usize| {
+            let mut bonds = mol.atom_bonds[atom]
+                .iter()
+                .copied()
+                .filter(|&bond| bond != dbl)
+                .map(|bond| Side {
+                    bond,
+                    flipped: mol.bonds[bond].end == atom,
+                })
+                .collect::<Vec<_>>();
+            bonds.sort_by_key(|side| side.bond);
+            assert_eq!(bonds.len(), 2);
+            (bonds[0], bonds[1])
+        };
+        let (first1, second1) = sides(atom1);
+        let (first2, second2) = sides(atom2);
+        mol.bonds[dbl].stereo = BondStereo::E;
+        mol.bonds[dbl].stereo_atoms = vec![
+            mol.bonds[first1.bond].other(atom1),
+            mol.bonds[first2.bond].other(atom2),
+        ];
+        mol.bonds[first1.bond].dir = BondDir::EndUpRight;
+        mol.bonds[second1.bond].dir = BondDir::EndDownRight;
+        mol.bonds[first2.bond].dir = BondDir::EndUpRight;
+        mol.bonds[second2.bond].dir = BondDir::EndDownRight;
+
+        for (consistent1, consistent2) in
+            [(true, true), (true, false), (false, true), (false, false)]
+        {
+            let mut st = DirState {
+                bond_dir_counts: vec![1; mol.bonds.len()],
+                atom_dir_counts: vec![2; mol.atoms.len()],
+                bond_visit: (0..mol.bonds.len()).collect(),
+                atom_visit: (1..=mol.atoms.len()).collect(),
+                ring_closure: vec![false; mol.bonds.len()],
+            };
+            let result = handle_dir_conflicts_across_double_bond(
+                &mol,
+                &mut st,
+                dbl,
+                atom1,
+                consistent1,
+                first1,
+                (!consistent1).then_some(second1),
+                atom2,
+                consistent2,
+                first2,
+                (!consistent2).then_some(second2),
+            );
+            assert!(result.is_ok(), "{consistent1}/{consistent2}: {result:?}");
+        }
+
+        let mut unstereo = mol.clone();
+        unstereo.bonds[dbl].stereo = BondStereo::None;
+        assert!(get_reference_direction(&unstereo, dbl, atom1, atom2, first1, first2).is_err());
+
+        let mut unvisited = DirState {
+            bond_dir_counts: vec![0; mol.bonds.len()],
+            atom_dir_counts: vec![0; mol.atoms.len()],
+            bond_visit: vec![0; mol.bonds.len()],
+            atom_visit: vec![0; mol.atoms.len()],
+            ring_closure: vec![false; mol.bonds.len()],
+        };
+        let mut copy = mol.clone();
+        assert!(canonicalize_double_bond(&mut copy, &mut unvisited, dbl).is_err());
+    }
+}

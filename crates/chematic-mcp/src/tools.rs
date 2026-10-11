@@ -1213,6 +1213,70 @@ mod tests {
     }
 
     #[test]
+    fn bounded_pubchem_response_rejects_invalid_utf8_and_accepts_small_text() {
+        let mut invalid = std::io::Cursor::new(vec![0xff, 0xfe]);
+        assert!(
+            read_bounded_response(&mut invalid)
+                .unwrap_err()
+                .contains("not valid UTF-8")
+        );
+        let mut valid = std::io::Cursor::new(b"small response".to_vec());
+        assert_eq!(read_bounded_response(&mut valid).unwrap(), "small response");
+    }
+
+    #[test]
+    fn moljson_limits_and_roundtrip_are_exposed_through_tools() {
+        let oversized = "x".repeat(MAX_MOLECULE_INPUT_BYTES + 1);
+        let error = match parse_moljson_arg(&oversized) {
+            Err(error) => error,
+            Ok(_) => panic!("oversized MolJSON must be rejected"),
+        };
+        assert!(error.is_invalid_args());
+        assert!(parse_moljson_arg("not json").is_err());
+
+        let encoded = tool_smiles_to_moljson(&args(&[("smiles", "CCO")])).unwrap();
+        let decoded = tool_moljson_to_smiles(&json!({"json": encoded})).unwrap();
+        assert_eq!(decoded["canonical_smiles"], "C(C)O");
+        assert_eq!(component_count(&MoleculeBuilder::new().build()), 0);
+    }
+
+    #[test]
+    fn representation_router_covers_every_output_family() {
+        for (task, format) in [
+            ("structural_reasoning", "moljson"),
+            ("shortest_path", "moljson"),
+            ("graph_reasoning", "moljson"),
+            ("identification", "inchi"),
+            ("exact_match", "inchi"),
+            ("editing", "cml"),
+            ("default", "canonical_smiles"),
+        ] {
+            let value =
+                tool_representation_router(&json!({"smiles": "CCO", "task": task})).unwrap();
+            assert_eq!(value["format"], format);
+            assert!(!value["representation"].as_str().unwrap().is_empty());
+        }
+    }
+
+    #[test]
+    fn molecule_context_pack_covers_json_prompt_and_markdown() {
+        for format in ["json", "prompt", "markdown"] {
+            let value = tool_molecule_context_pack(&json!({
+                "smiles": "O=C1NC(=S)SC1",
+                "format": format,
+            }))
+            .unwrap();
+            match format {
+                "prompt" | "markdown" => {
+                    assert_eq!(value["format"], format);
+                    assert!(!value["context"].as_str().unwrap().is_empty());
+                }
+                _ => assert!(value["identifiers"]["smiles"].is_string()),
+            }
+        }
+    }
+
+    #[test]
     fn pubchem_lookup_encodes_names_and_preserves_response_error_taxonomy() {
         for (name, encoded) in [
             ("sodium chloride", "sodium%20chloride"),
