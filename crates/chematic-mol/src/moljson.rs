@@ -116,6 +116,87 @@ pub fn parse_moljson(input: &str) -> Result<Molecule, MolJsonError> {
     parse_moljson_with_limits(input, &MolJsonParseLimits::default())
 }
 
+fn parse_moljson_atoms(
+    atoms: &[serde_json::Value],
+) -> Result<(MoleculeBuilder, HashMap<String, AtomIdx>), MolJsonError> {
+    let mut builder = MoleculeBuilder::new();
+    let mut ids = HashMap::new();
+    for value in atoms {
+        let id = value
+            .get("id")
+            .and_then(|value| value.as_str())
+            .ok_or(MolJsonError::MissingField("atoms[].id"))?
+            .to_owned();
+        let symbol = value
+            .get("element")
+            .and_then(|value| value.as_str())
+            .ok_or(MolJsonError::MissingField("atoms[].element"))?;
+        let element = Element::from_symbol(symbol)
+            .ok_or_else(|| MolJsonError::UnknownElement(symbol.to_owned()))?;
+        let mut atom = Atom::new(element);
+        atom.charge = value
+            .get("charge")
+            .and_then(|value| value.as_i64())
+            .unwrap_or(0) as i8;
+        atom.isotope = value.get("isotope").and_then(|value| {
+            (!value.is_null())
+                .then(|| value.as_u64().map(|number| number as u16))
+                .flatten()
+        });
+        atom.aromatic = value
+            .get("aromatic")
+            .and_then(|value| value.as_bool())
+            .unwrap_or(false);
+        let index = builder.add_atom(atom);
+        ids.insert(id, index);
+    }
+    Ok((builder, ids))
+}
+
+fn parse_moljson_bonds(
+    bonds: &[serde_json::Value],
+    ids: &HashMap<String, AtomIdx>,
+    builder: &mut MoleculeBuilder,
+) -> Result<(), MolJsonError> {
+    for value in bonds {
+        let bond_id = value
+            .get("id")
+            .and_then(|value| value.as_str())
+            .unwrap_or("?")
+            .to_owned();
+        let endpoint = |key: &str, field: &'static str| {
+            let id = value
+                .get(key)
+                .and_then(|value| value.as_str())
+                .ok_or(MolJsonError::MissingField(field))?;
+            ids.get(id)
+                .copied()
+                .ok_or_else(|| MolJsonError::InvalidBondRef {
+                    bond_id: bond_id.clone(),
+                    ref_id: id.to_owned(),
+                })
+        };
+        let source = endpoint("source_id", "bonds[].source_id")?;
+        let target = endpoint("target_id", "bonds[].target_id")?;
+        let aromatic = value
+            .get("aromatic")
+            .and_then(|value| value.as_bool())
+            .unwrap_or(false);
+        let order = if aromatic {
+            BondOrder::Aromatic
+        } else {
+            float_to_bond_order(
+                value
+                    .get("order")
+                    .and_then(|value| value.as_f64())
+                    .unwrap_or(1.0),
+            )
+        };
+        let _ = builder.add_bond(source, target, order);
+    }
+    Ok(())
+}
+
 /// Parse MolJSON with explicit resource limits.
 pub fn parse_moljson_with_limits(
     input: &str,
@@ -144,48 +225,7 @@ pub fn parse_moljson_with_limits(
         });
     }
 
-    // ── Build atoms and id→AtomIdx map ──────────────────────────────────────
-    let mut builder = MoleculeBuilder::new();
-    let mut id_to_idx: HashMap<String, AtomIdx> = HashMap::new();
-
-    for atom_val in atoms_arr {
-        let id = atom_val
-            .get("id")
-            .and_then(|v| v.as_str())
-            .ok_or(MolJsonError::MissingField("atoms[].id"))?
-            .to_owned();
-
-        let element_sym = atom_val
-            .get("element")
-            .and_then(|v| v.as_str())
-            .ok_or(MolJsonError::MissingField("atoms[].element"))?;
-
-        let element = Element::from_symbol(element_sym)
-            .ok_or_else(|| MolJsonError::UnknownElement(element_sym.to_owned()))?;
-
-        let charge = atom_val.get("charge").and_then(|v| v.as_i64()).unwrap_or(0) as i8;
-
-        let isotope = atom_val.get("isotope").and_then(|v| {
-            if v.is_null() {
-                None
-            } else {
-                v.as_u64().map(|n| n as u16)
-            }
-        });
-
-        let aromatic = atom_val
-            .get("aromatic")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
-
-        let mut atom = Atom::new(element);
-        atom.charge = charge;
-        atom.isotope = isotope;
-        atom.aromatic = aromatic;
-
-        let idx = builder.add_atom(atom);
-        id_to_idx.insert(id, idx);
-    }
+    let (mut builder, id_to_idx) = parse_moljson_atoms(atoms_arr)?;
 
     // ── Bonds ────────────────────────────────────────────────────────────────
     if let Some(bonds_arr) = v.get("bonds").and_then(|b| b.as_array()) {
@@ -196,55 +236,7 @@ pub fn parse_moljson_with_limits(
                 limit: limits.max_bonds,
             });
         }
-        for bond_val in bonds_arr {
-            let bond_id = bond_val
-                .get("id")
-                .and_then(|v| v.as_str())
-                .unwrap_or("?")
-                .to_owned();
-
-            let src = bond_val
-                .get("source_id")
-                .and_then(|v| v.as_str())
-                .ok_or(MolJsonError::MissingField("bonds[].source_id"))?;
-            let tgt = bond_val
-                .get("target_id")
-                .and_then(|v| v.as_str())
-                .ok_or(MolJsonError::MissingField("bonds[].target_id"))?;
-
-            let src_idx =
-                id_to_idx
-                    .get(src)
-                    .copied()
-                    .ok_or_else(|| MolJsonError::InvalidBondRef {
-                        bond_id: bond_id.clone(),
-                        ref_id: src.to_owned(),
-                    })?;
-            let tgt_idx =
-                id_to_idx
-                    .get(tgt)
-                    .copied()
-                    .ok_or_else(|| MolJsonError::InvalidBondRef {
-                        bond_id: bond_id.clone(),
-                        ref_id: tgt.to_owned(),
-                    })?;
-
-            let aromatic = bond_val
-                .get("aromatic")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
-            let order_f = bond_val
-                .get("order")
-                .and_then(|v| v.as_f64())
-                .unwrap_or(1.0);
-            let order = if aromatic {
-                BondOrder::Aromatic
-            } else {
-                float_to_bond_order(order_f)
-            };
-
-            let _ = builder.add_bond(src_idx, tgt_idx, order);
-        }
+        parse_moljson_bonds(bonds_arr, &id_to_idx, &mut builder)?;
     }
 
     Ok(builder.build())

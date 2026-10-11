@@ -409,14 +409,6 @@
       "decisions": 22,
       "lines": 167
     },
-    "crates/chematic-mol/src/moljson.rs::parse_moljson_with_limits#1": {
-      "decisions": 21,
-      "lines": 132
-    },
-    "crates/chematic-mol/src/mrv.rs::parse_mrv_with_limits#1": {
-      "decisions": 30,
-      "lines": 130
-    },
     "crates/chematic-mol/src/nucleic_acid.rs::validate_with_limits#1": {
       "decisions": 44,
       "lines": 247
