@@ -36,7 +36,6 @@
     "crates/chematic-inchi/src/dedup.rs": 2079,
     "crates/chematic-mol/src/mol2000.rs": 2928,
     "crates/chematic-mol/src/mol3000.rs": 1785,
-    "crates/chematic-mol/src/qcschema.rs": 1616,
     "crates/chematic-mol/src/xyz.rs": 1717,
     "crates/chematic-perception/src/aromaticity.rs": 4172,
     "crates/chematic-perception/src/rdkit_canon.rs": 1636,
