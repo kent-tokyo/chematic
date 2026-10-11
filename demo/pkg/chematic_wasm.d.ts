@@ -925,11 +925,15 @@ export function conformer_ensemble_json(mol: MolHandle, n: number, rmsd_threshol
  *
  * This is the WASM counterpart of Python's `convert_format`. It supports
  * SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
- * Coordinates and format-specific metadata are intentionally not carried
- * across this topology-only bridge; use the format-specific coordinate APIs
- * when those fields must be preserved.
+ * MOL2-to-MOL2 validates and retains the exact source. Other conversions use
+ * the topology-only bridge and do not carry format-specific metadata.
  */
 export function convert_common_format(text: string, input_format: string, output_format: string): string;
+
+/**
+ * Checked MOL2/CJSON conversion using the shared report schema.
+ */
+export function convert_with_report_json(text: string, input_format: string, output_format: string, policy: string): string;
 
 /**
  * Return the CPK color (CSS hex string) for the given element symbol.
@@ -2220,6 +2224,11 @@ export function orca_output_to_json(text: string): string;
 export function pains_matches_json(mol: MolHandle): string;
 
 /**
+ * Inspect strictly validated CJSON with exact source and opaque field paths.
+ */
+export function parse_cjson_record_json(text: string): string;
+
+/**
  * Parse CXSMARTS and return preserved metadata as JSON.
  * Returns error if atom count exceeds 10,000.
  */
@@ -2234,6 +2243,11 @@ export function parse_cxsmarts_json(s: string): string;
  * Returns error if atom count exceeds 10,000.
  */
 export function parse_cxsmiles_json(s: string): string;
+
+/**
+ * Inspect partial charges, atom types and source retention for MOL2.
+ */
+export function parse_mol2_record_json(text: string): string;
 
 /**
  * Parse a SMILES string into a `MolHandle`.
@@ -2566,6 +2580,18 @@ export function remove_hydrogens(mol: MolHandle): MolHandle;
 export function retro_disconnect_json(mol: MolHandle, max_results: number, reaction_class: string): string;
 
 /**
+ * Label-stable R-group decomposition returned as RDKit-style table columns.
+ *
+ * `core_smarts` accepts the bounded mapped-core contract used by Rust and
+ * Python: terminal mapped wildcards such as `[*:2]`, or mapped core atoms.
+ * The returned JSON object contains `Core`, `R1`, `R2`, ... arrays parallel
+ * to the input rows. Unmatched rows and absent substituents are `null`.
+ * Output fragments retain their mapped attachment wildcard. The legacy
+ * [`super::rgroup_decompose_json`] function is unchanged.
+ */
+export function rgroup_decompose_columns_json(smiles_json: string, core_smarts: string): string;
+
+/**
  * Decompose a set of molecules against a core SMARTS, returning R-group SMILES.
  *
  * `smiles_json` — JSON array of SMILES strings.
@@ -2593,6 +2619,16 @@ export function rgroup_decompose_json(smiles_json: string, core_smarts: string):
  * Returns an array of ring families with their atoms, ring indices, and topology kind.
  */
 export function ring_families_json(mol: MolHandle): string;
+
+/**
+ * Validate the local CJSON profile and retain the exact UTF-8 source.
+ */
+export function roundtrip_cjson_record(text: string): string;
+
+/**
+ * Validate one MOL2 record and preserve its exact source, including metadata.
+ */
+export function roundtrip_mol2_record(text: string): string;
 
 /**
  * Parse and serialize a V3000 block while preserving V3000 metadata.
@@ -3245,6 +3281,7 @@ export interface InitOutput {
     readonly conformerhandle_new: (a: number, b: number) => [number, number, number];
     readonly conformerhandle_remove_conformer: (a: number, b: number) => number;
     readonly convert_common_format: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
+    readonly convert_with_report_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly cpk_color: (a: number, b: number) => [number, number];
     readonly cube_grid_json: (a: number, b: number) => [number, number, number, number];
     readonly cube_shape_u32: (a: number, b: number) => [number, number, number];
@@ -3491,8 +3528,10 @@ export interface InitOutput {
     readonly orca_input_to_json: (a: number, b: number) => [number, number, number, number];
     readonly orca_output_to_json: (a: number, b: number) => [number, number, number, number];
     readonly pains_matches_json: (a: number) => [number, number];
+    readonly parse_cjson_record_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_cxsmarts_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_cxsmiles_json: (a: number, b: number) => [number, number, number, number];
+    readonly parse_mol2_record_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_smiles: (a: number, b: number) => [number, number, number];
     readonly pdb_coords_json: (a: number, b: number) => [number, number];
     readonly peoe_vsa_json: (a: number) => [number, number];
@@ -3539,8 +3578,11 @@ export interface InitOutput {
     readonly reaction_smarts_match: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly remove_hydrogens: (a: number) => number;
     readonly retro_disconnect_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly rgroup_decompose_columns_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly rgroup_decompose_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly ring_families_json: (a: number) => [number, number, number, number];
+    readonly roundtrip_cjson_record: (a: number, b: number) => [number, number, number, number];
+    readonly roundtrip_mol2_record: (a: number, b: number) => [number, number, number, number];
     readonly roundtrip_mol_v3000_block: (a: number, b: number) => [number, number, number, number];
     readonly run_reactants: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly run_reactants_checked: (a: number, b: number, c: number, d: number, e: number) => [number, number];

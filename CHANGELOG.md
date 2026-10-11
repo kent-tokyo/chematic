@@ -10,8 +10,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-12
+
 ### Added
 
+- Added an optional `excel` extra and a bounded ElixCee-backed XLSX/XLSM batch
+  example. It preserves source rows, blank or invalid SMILES, and typed output
+  values without adding spreadsheet dependencies to the chemistry core.
 - Added a pinned Indigo 1.46.0 workflow comparison gate for bounded
   single-result reactions, Phase-1 largest-fragment selection, and labelled
   terminal R-group decomposition. The source packet keeps full accuracy

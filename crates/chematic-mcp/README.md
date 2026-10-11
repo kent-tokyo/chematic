@@ -38,7 +38,7 @@ cargo run -p chematic-mcp --release
 
 ```toml
 [dependencies]
-chematic-mcp = { version = "1.1.0", path = "../chematic-mcp" }
+chematic-mcp = { version = "1.1.1", path = "../chematic-mcp" }
 ```
 
 ## Transports and protocol

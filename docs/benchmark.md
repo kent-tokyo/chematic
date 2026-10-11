@@ -7,7 +7,7 @@ links the raw data and older measurements.
 
 ## Current evidence
 
-The current release is **v1.1.0**. A focused current-source follow-up compares
+The current release is **v1.1.1**. A focused current-source follow-up compares
 a wheel built from commit `f2d030fc` with RDKit 2026.09.1 on macOS arm64.
 The latest bounded registry-package packet remains v1.0.42. Source and
 published-package evidence are intentionally separate; neither is a universal
@@ -43,7 +43,7 @@ retains 200 SMARTS failures, five typed CIP abstentions and four npm API gaps.
 - The [v1.0.12 similarity-search record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-similarity-search-v1.0.12.md)
   separates native/native, RDKit-compatible/RDKit and cross-profile overlap.
   Source A/B and older operation timings remain in the
-  [complete index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md); they do not establish v1.1.0 package claims.
+  [complete index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md); they do not establish v1.1.1 package claims.
 
 ## Reproduction and interpretation
 

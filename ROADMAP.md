@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Updated 2026-10-11 for the **v1.1.0** release line. Source, published
-> packages, and historical measurements are kept separate.
+> Updated 2026-10-12. Release line: **v1.1.1**. Source, published packages,
+> and historical measurements are kept separate.
 
 CheMatic is a safe, typed, local-first chemistry kernel for Rust, Python,
 Node, WebAssembly, and agent workflows. The roadmap favors reliable contracts
@@ -14,13 +14,11 @@ and reproducible evidence over feature-count parity.
 - Issues #734 and #754 are closed. Their reaction, SMARTS, autoconf, and fuzz
   corpora remain regression gates; closure is not a universal SMIRKS-parity
   claim.
-- v1.1.0 adds bounded label-stable R-group decomposition. Rust, Python, and
-  WASM/Node expose input-aligned `Core`/`R1`/`R2` columns for the documented
-  terminal-wildcard subset.
-- Current source also exposes typed reaction rejection diagnostics across the
-  checked Rust, Python, and WASM APIs.
+- v1.1.1 exposes typed reaction rejection diagnostics across Rust, Python, and
+  WASM, and input-aligned `Core`/`R1`/`R2` columns across Rust, Python, and
+  WASM/Node for the documented terminal-wildcard subset.
 - The broadest published-package RDKit performance packet is still v1.0.42.
-  Source results and older package results are not relabeled as v1.1.0
+  Source results and older package results are not relabeled as v1.1.1
   evidence.
 - Rust line coverage on the processed Linux Codecov lane is 96.93%. Coverage
   demonstrates executed code, not chemical correctness or compatibility.
@@ -31,7 +29,7 @@ Exact denominators belong in [validation](docs/validation.md) and dated
 [benchmark records](benchmarks/README.md). Unresolved work is tracked in the
 [open-work ledger](docs/roadmap-open-work.md).
 
-## Priorities
+## Priority order
 
 ### P0 — Publish v1.1.x evidence from exact artifacts
 
@@ -127,15 +125,15 @@ unresolved cases are observable and typed.
 
 ## Accuracy packages
 
-| Package | Focus | State |
-|---|---|---|
-| A0 | Evaluation contract and provenance | Complete |
-| A1 | Perception and descriptors | Active |
-| A2 | Stereo and identity | Active |
-| A3 | Fingerprints and retrieval | Maintenance |
-| A4 | Reactions and interchange workflows | Active |
-| A5 | Independent adjudication | External |
-| A6 | 3D and force fields | Experimental |
+| Package | State |
+|---|---|
+| A0 Evaluation contract | Complete |
+| A1 Perception and descriptors | Active |
+| A2 Stereo and identity | Active |
+| A3 Fingerprints and retrieval | Maintenance |
+| A4 Workflows and interchange | Active |
+| A5 Independent adjudication | External |
+| A6 3D and force fields | Experimental |
 
 ## Completion rules
 
