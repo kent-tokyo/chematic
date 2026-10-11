@@ -1,0 +1,194 @@
+{
+  "baseline": {
+    "artifact": {
+      "bytes": 199671,
+      "path": "validation/results/mmff94-same-explicit-h-energy-current-main-v1.0.19-2026-09-23.jsonl",
+      "sha256": "5645a0413957ea938f73d6b3d27d569bfa277fe54a994419885f45870e89c621"
+    },
+    "kind": "historical_2026-09-23_v1.0.19_not_fresh_prechange_build"
+  },
+  "implementation_files": [
+    {
+      "bytes": 6425,
+      "path": "crates/chematic-ff/src/mmff94_energy/vdw.rs",
+      "sha256": "66e589b80a28dbd2ee0d52feebfba7bcf5fb984794ec1b72fbbb31b37deaa9f3"
+    },
+    {
+      "bytes": 219118,
+      "path": "crates/chematic-ff/src/mmff94_numeric.rs",
+      "sha256": "ed6b91115ba8a59a57cb4d4cb96f5da14277ec1bb3ba4794b497c9dc2b1ae1f9"
+    },
+    {
+      "bytes": 19240,
+      "path": "scripts/mmff94_same_explicit_h_energy.py",
+      "sha256": "8712df61a133ccb0498debc47e5680b6a23dbde061ca3b97f65bc366506bd124"
+    },
+    {
+      "bytes": 4947,
+      "path": "scripts/tests/test_mmff94_same_explicit_h_energy.py",
+      "sha256": "8f935ff05216fd90fe4b2f8236b483c687adc28d6c318fea30503b254243ed69"
+    },
+    {
+      "bytes": 3004,
+      "path": "crates/chematic-ff/tests/mmff94_oxygen_h_vdw.rs",
+      "sha256": "9be1cf24d7c0620047eb752302a190a25f49246a4e87d70f9e287c292c9de60f"
+    }
+  ],
+  "implementation_patch": {
+    "bytes": 19353,
+    "path": "validation/results/mmff94-correctness-2026-10-11/implementation.patch",
+    "sha256": "d097ddfea865f29ebaa122abd1886127a5ba69bdb9a01484b13c13c739a4fdc5"
+  },
+  "paired_energy": {
+    "abs_delta_improved": 163,
+    "abs_delta_unchanged": 70,
+    "abs_delta_worsened": 29,
+    "comparable_rows": 262,
+    "coordinate_hashes_identical": 262,
+    "largest_remaining": [
+      {
+        "abs_delta_kcal_mol": 2.104696150745042,
+        "input_index": 89,
+        "name": "chembl_tier_b_0024",
+        "term_delta_kcal_mol": {
+          "angle": 1.173393698446187,
+          "bond": 0.0,
+          "electrostatic": 1.0658141036401503e-13,
+          "oop": -0.0032216354343928572,
+          "stretch_bend": 0.9110306478978722,
+          "torsion": -7.105427357601002e-15,
+          "vdw": 0.023493439835334584
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.5031410705918802,
+        "input_index": 96,
+        "name": "chembl_tier_b_0031",
+        "term_delta_kcal_mol": {
+          "angle": 1.2899576850411378,
+          "bond": -1.7763568394002505e-15,
+          "electrostatic": 0.0,
+          "oop": -0.0026205020491596766,
+          "stretch_bend": 0.1895898416327818,
+          "torsion": 4.618527782440651e-14,
+          "vdw": 0.026214045967265065
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.4176805887270092,
+        "input_index": 168,
+        "name": "chembl_tier_b_0103",
+        "term_delta_kcal_mol": {
+          "angle": -0.007950704219670257,
+          "bond": 5.329070518200751e-15,
+          "electrostatic": 1.509903313490213e-14,
+          "oop": -1.0121210251262848e-09,
+          "stretch_bend": -1.4097313875577593,
+          "torsion": 1.7763568394002505e-15,
+          "vdw": 1.5040625456208545e-06
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.4129777642065307,
+        "input_index": 151,
+        "name": "chembl_tier_b_0086",
+        "term_delta_kcal_mol": {
+          "angle": -0.007279115608874065,
+          "bond": -1.0658141036401503e-14,
+          "electrostatic": -3.019806626980426e-14,
+          "oop": -1.9025442820247433e-09,
+          "stretch_bend": -1.4056986466950927,
+          "torsion": -2.1316282072803006e-14,
+          "vdw": 7.815970093361102e-14
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 1.4099007825332706,
+        "input_index": 88,
+        "name": "chembl_tier_b_0023",
+        "term_delta_kcal_mol": {
+          "angle": 0.13461102518089518,
+          "bond": 1.0658141036401503e-14,
+          "electrostatic": 0.0,
+          "oop": -0.017319657407963252,
+          "stretch_bend": 1.242680724102794,
+          "torsion": -0.00043552393378831766,
+          "vdw": 0.050364214591951395
+        }
+      }
+    ],
+    "old_outliers": [
+      {
+        "after_signed_delta_kcal_mol": 0.5013201318160441,
+        "before_signed_delta_kcal_mol": 9.874152506372653,
+        "input_index": 166
+      },
+      {
+        "after_signed_delta_kcal_mol": 0.047858348505599224,
+        "before_signed_delta_kcal_mol": 6.505361844496974,
+        "input_index": 231
+      }
+    ],
+    "per_term_max_abs_delta_kcal_mol": {
+      "angle": 1.2899576850411378,
+      "bond": 4.973799150320701e-14,
+      "electrostatic": 1.1368683772161603e-13,
+      "oop": 0.17275771311798543,
+      "stretch_bend": 1.4097313875577593,
+      "torsion": 0.7080000000000055,
+      "vdw": 0.0792470927643194
+    },
+    "rdkit_energies_identical": 262,
+    "statuses_identical": true
+  },
+  "quality": {
+    "artifacts": [
+      {
+        "bytes": 1461183,
+        "path": "validation/results/mmff94-correctness-2026-10-11/quality.jsonl",
+        "sha256": "387be7fe612a41584384539f3cd51980a10afe62ce0539214f99759cd38b1b52"
+      },
+      {
+        "bytes": 786103,
+        "path": "validation/results/mmff94-correctness-2026-10-11/quality-scored.jsonl",
+        "sha256": "77496d8efbc9c59aff2878f0dd01d143c267622fa28548f2bcda49778165af24"
+      },
+      {
+        "bytes": 12974,
+        "path": "scripts/public_package_3d_chematic.py",
+        "sha256": "3f7e375bb061664b5abeff25e94cc0efebf2de49002ca02ce885096289bba1ea"
+      },
+      {
+        "bytes": 18743,
+        "path": "crates/chematic-3d/examples/pipeline_v2_vs_rdkit_common_scorer.rs",
+        "sha256": "355e784fabb75cac05d4605cfaf0b8ae41751c271d9a0c94bdc66664a86a9c3d"
+      },
+      {
+        "bytes": 3023712,
+        "path": "target/debug/examples/pipeline_v2_vs_rdkit_common_scorer",
+        "sha256": "142e40cb7f2f230930c816d5382117f55419f2e77f4b1613e2c1bfd7784d8d4c"
+      }
+    ],
+    "force_field": "mmff94_bond_angle_strict",
+    "force_field_max_iterations": 200,
+    "kind": "source_extension_single_conformer_regression_diagnostic",
+    "limitations": [
+      "common scorer is separate from the generator but uses CheMatic geometry/stereo routines",
+      "single conformer only; no reference-ensemble coverage or independent QM validation",
+      "timing is diagnostic and was collected during concurrent work; no speed claim"
+    ],
+    "max_attempts": 8,
+    "rows": 265,
+    "scored": 265,
+    "seed": 20260801,
+    "sound_no_gross_clash_stereo_evaluable_and_satisfied": 265,
+    "status_counts": {
+      "success": 265
+    },
+    "stereo_safe": true,
+    "total_timeout_ms": 20000
+  },
+  "source_capture_note": "Relevant implementation and test files only. Other concurrent working-tree changes are excluded; this is not a complete build-tree snapshot. Exact compiled extension hash is in candidate-summary.json.",
+  "source_revision": "7f84ae4a98399086ce9f389c099f3fb77b66066e",
+  "status": "dirty_source_candidate_not_release_gate"
+}

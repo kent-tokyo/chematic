@@ -1,0 +1,24 @@
+[
+  {
+    "log": "gradient-run.log",
+    "command": [
+      "/private/tmp/chematic-mmff-development-20261011/bin/python",
+      "-B",
+      "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/optimizer-recovery/compare_gradients.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "log": "scorer.log",
+    "command": [
+      "target/debug/examples/pipeline_v2_vs_rdkit_common_scorer",
+      "--chematic-rows",
+      "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/optimizer-recovery/quality.jsonl",
+      "--rdkit-rows",
+      "validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl",
+      "--output",
+      "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/optimizer-recovery/quality-scored.jsonl"
+    ],
+    "exit_code": 0
+  }
+]

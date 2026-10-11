@@ -125,6 +125,14 @@ def rdkit_term_energies(rdkit_mol: Chem.Mol) -> dict[str, float] | None:
     return energies
 
 
+def rdkit_term_energy_breakdown(mol: Chem.Mol) -> dict[str, float]:
+    """Compatibility spelling used by the fixed-coordinate development regressions."""
+    terms = rdkit_term_energies(mol)
+    if terms is None:
+        raise ValueError("RDKit MMFF94 properties or force field unavailable")
+    return terms
+
+
 def gradient_diagnostic(mol: object, coords: list[list[float]], delta: float) -> dict:
     analytic = mol.mmff94_bounded_analytic_gradient(coords)
     absolute_errors: list[float] = []
@@ -191,6 +199,23 @@ def evaluate(
             "atom_order_mismatch",
             rdkit_atom_symbols=rdkit_symbols,
             schematic_atom_symbols=schematic_symbols,
+        )
+    # Element sequences alone cannot establish coordinate correspondence.
+    # Check indexed bonds before MMFF changes RDKit's aromatic representation.
+    rdkit_bonds = sorted(
+        (min(b.GetBeginAtomIdx(), b.GetEndAtomIdx()),
+         max(b.GetBeginAtomIdx(), b.GetEndAtomIdx()), str(b.GetBondType()))
+        for b in rdkit_mol.GetBonds()
+    )
+    schematic_bonds = sorted(
+        (min(a, b), max(a, b), order)
+        for a, b, order, _ in schematic_mol.bond_table
+    )
+    if rdkit_bonds != schematic_bonds:
+        return terminal(
+            row, input_index, "atom_order_mismatch",
+            reason="indexed_bond_graph_mismatch",
+            rdkit_bonds=rdkit_bonds, schematic_bonds=schematic_bonds,
         )
     if AllChem.EmbedMolecule(rdkit_mol, randomSeed=seed) != 0:
         return terminal(row, input_index, "embed_failure")
@@ -374,6 +399,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--expected-schematic")
     parser.add_argument("--gradient-input-index", type=int, action="append", default=[])
     parser.add_argument("--gradient-delta", type=float, default=1e-5)
+    parser.add_argument("--rdkit-term-breakdown", action="store_true",
+                        help="compatibility flag; per-term energies are always evaluated")
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be positive")

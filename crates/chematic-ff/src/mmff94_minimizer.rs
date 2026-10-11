@@ -125,9 +125,9 @@ pub struct MinimizeResult {
     pub energy: f64,
     /// RMSD of atom positions vs initial geometry (Å).
     pub rmsd: f64,
-    /// Whether the minimization converged before `max_iter`.
+    /// Whether the optimizer's gradient convergence check passed.
     pub converged: bool,
-    /// Number of gradient steps performed.
+    /// Number of optimizer loop iterations performed.
     pub iterations: usize,
     /// Why this run stopped; non-convergence is not always an iteration cap.
     pub termination: Mmff94TerminationReason,
@@ -140,9 +140,9 @@ pub enum Mmff94TerminationReason {
     GradientConverged,
     /// The configured iteration count was exhausted, including a zero budget.
     IterationLimit,
-    /// Backtracking found no accepted proposal and the caller's geometry
-    /// predicate rejected the final steepest-descent fallback proposal.
-    /// The last accepted coordinates were retained.
+    /// Backtracking and steepest-descent recovery could not produce a finite,
+    /// descending proposal accepted by the caller's geometry predicate.
+    /// Includes non-finite input states. The last accepted coordinates remain.
     ConstraintRejectedFallback,
 }
 
@@ -827,8 +827,6 @@ where
     // entry stores two coordinate-sized vectors and is discarded at run end.
     const DELTA: f64 = 1e-4; // finite-difference step (Å)
     const CONVERGENCE: f64 = 1e-4; // max |gradient| threshold
-    const C_ARMIJO: f64 = 1e-4; // Armijo sufficient-decrease constant
-    const TAU: f64 = 0.5; // Armijo backtracking factor
 
     if model.mmff_mol.atom_count() <= 1 {
         return Ok(MinimizeResult {
@@ -862,21 +860,18 @@ where
     };
 
     let mut iters = 0usize;
-    let mut converged = false;
     let mut termination = Mmff94TerminationReason::IterationLimit;
 
     'iterations: for _ in 0..max_iter {
         iters += 1;
 
         // Convergence check
-        let max_g = g
-            .iter()
-            .flat_map(|v| v.iter())
-            .map(|x| x.abs())
-            .fold(0.0_f64, f64::max);
+        let max_g = finite_max_gradient(&g);
+        if !f0.is_finite() || !max_g.is_finite() {
+            termination = Mmff94TerminationReason::ConstraintRejectedFallback;
+            break;
+        }
         if max_g < CONVERGENCE {
-            converged = true;
-            termination = Mmff94TerminationReason::GradientConverged;
             break;
         }
 
@@ -890,55 +885,35 @@ where
         let mut p = lbfgs_direction(&g, &history);
         let mut gp: f64 = g.iter().zip(p.iter()).map(|(gi, pi)| dot3(*gi, *pi)).sum();
         if !gp.is_finite() || gp >= 0.0 {
+            history.clear();
             p = g.iter().map(|gi| [-gi[0], -gi[1], -gi[2]]).collect();
             gp = -g.iter().map(|gi| dot3(*gi, *gi)).sum::<f64>();
         }
 
-        // Armijo backtracking line search along p
-        let mut alpha = 1.0_f64;
-        let step = loop {
-            let trial: Vec<[f64; 3]> = coords
-                .iter()
-                .zip(p.iter())
-                .map(|(c, pi)| {
-                    [
-                        c[0] + alpha * pi[0],
-                        c[1] + alpha * pi[1],
-                        c[2] + alpha * pi[2],
-                    ]
-                })
-                .collect();
-            let f_trial = if use_cutoff_nonbonded {
-                model.energy_cutoff_nonbonded(&trial)
+        let energy = |candidate: &[[f64; 3]]| {
+            if use_cutoff_nonbonded {
+                model.energy_cutoff_nonbonded(candidate)
             } else {
-                model.energy(&trial)
-            };
-            if f_trial <= f0 + C_ARMIJO * alpha * gp && accept(&trial) {
-                break Some((trial, f_trial));
-            }
-            alpha *= TAU;
-            if alpha < 1e-12 {
-                // Line search failed — take a tiny steepest descent step
-                let scale = 0.01 / max_g.max(1e-8);
-                let trial: Vec<[f64; 3]> = coords
-                    .iter()
-                    .zip(g.iter())
-                    .map(|(c, gi)| {
-                        [
-                            c[0] - scale * gi[0],
-                            c[1] - scale * gi[1],
-                            c[2] - scale * gi[2],
-                        ]
-                    })
-                    .collect();
-                let f_trial = if use_cutoff_nonbonded {
-                    model.energy_cutoff_nonbonded(&trial)
-                } else {
-                    model.energy(&trial)
-                };
-                break accept(&trial).then_some((trial, f_trial));
+                model.energy(candidate)
             }
         };
+        let step = armijo_backtracking(coords, &p, (f0, gp), 1.0, &energy, &accept).or_else(|| {
+            // A stale curvature history or a geometry constraint can
+            // exhaust the quasi-Newton search. Restart with a bounded
+            // steepest-descent step and backtrack it too: a fixed 0.01 A
+            // displacement can overshoot near a stationary point.
+            history.clear();
+            let direction: CoordVec = g.iter().map(|gi| [-gi[0], -gi[1], -gi[2]]).collect();
+            let slope = -g.iter().map(|gi| dot3(*gi, *gi)).sum::<f64>();
+            armijo_backtracking(
+                coords,
+                &direction,
+                (f0, slope),
+                0.01 / max_g,
+                &energy,
+                &accept,
+            )
+        });
         let Some((new_coords, f_new)) = step else {
             // No admissible bounded step exists along either the L-BFGS or
             // tiny steepest-descent direction. Preserve the last accepted
@@ -987,6 +962,13 @@ where
         f0 = f_new;
     }
 
+    // The last permitted step can reach the tolerance. Report the final
+    // accepted state rather than requiring one more loop iteration to see it.
+    let converged = f0.is_finite() && finite_max_gradient(&g) < CONVERGENCE;
+    if converged {
+        termination = Mmff94TerminationReason::GradientConverged;
+    }
+
     let rmsd = {
         let sum: f64 = coords
             .iter()
@@ -1008,6 +990,66 @@ where
         iterations: iters,
         termination,
     })
+}
+
+/// A non-finite component must never disappear through f64::max's NaN
+/// handling and turn an invalid gradient into apparent convergence.
+fn finite_max_gradient(gradient: &[[f64; 3]]) -> f64 {
+    gradient.iter().flatten().fold(0.0, |maximum, &value| {
+        if value.is_finite() {
+            maximum.max(value.abs())
+        } else {
+            f64::INFINITY
+        }
+    })
+}
+
+/// Both quasi-Newton and recovery steps must decrease the same objective
+/// and satisfy the caller's geometry constraint. Exhaustion preserves the
+/// last accepted state; no untested fixed-size step is committed.
+fn armijo_backtracking<E, A>(
+    coords: &[[f64; 3]],
+    direction: &[[f64; 3]],
+    objective_and_slope: (f64, f64),
+    initial_step: f64,
+    energy: &E,
+    accept: &A,
+) -> Option<(CoordVec, f64)>
+where
+    E: Fn(&[[f64; 3]]) -> f64,
+    A: Fn(&[[f64; 3]]) -> bool,
+{
+    let (objective, slope) = objective_and_slope;
+    if !objective.is_finite()
+        || !slope.is_finite()
+        || slope >= 0.0
+        || !initial_step.is_finite()
+        || initial_step <= 0.0
+    {
+        return None;
+    }
+    let mut alpha = initial_step;
+    for _ in 0..40 {
+        let trial: CoordVec = coords
+            .iter()
+            .zip(direction)
+            .map(|(c, p)| {
+                [
+                    c[0] + alpha * p[0],
+                    c[1] + alpha * p[1],
+                    c[2] + alpha * p[2],
+                ]
+            })
+            .collect();
+        if trial.iter().flatten().all(|value| value.is_finite()) {
+            let value = energy(&trial);
+            if value.is_finite() && value <= objective + 1e-4 * alpha * slope && accept(&trial) {
+                return Some((trial, value));
+            }
+        }
+        alpha *= 0.5;
+    }
+    None
 }
 
 /// Largest molecule (atoms, hydrogens included) for which
@@ -4683,6 +4725,99 @@ mod tests {
         assert!(!result.converged);
         assert_eq!(result.iterations, 0);
         assert_eq!(result.termination, Mmff94TerminationReason::IterationLimit);
+    }
+
+    #[test]
+    fn recovery_step_backtracks_instead_of_overshooting_a_nearby_minimum() {
+        let coords = [[1e-5, 0.0, 0.0]];
+        let direction = [[-0.001, 0.0, 0.0]];
+        let energy = |c: &[[f64; 3]]| 50.0 * c[0][0] * c[0][0];
+        let before = energy(&coords);
+        // The historical fixed recovery step moves x by 0.01, increasing
+        // this objective by six orders of magnitude.
+        assert!(energy(&[[-0.00999, 0.0, 0.0]]) > before);
+        let (after, value) =
+            armijo_backtracking(&coords, &direction, (before, -1e-6), 10.0, &energy, &|_| {
+                true
+            })
+            .expect("a smaller descending recovery step exists");
+        assert!(value < before);
+        assert!(after[0][0].abs() < coords[0][0].abs());
+    }
+
+    #[test]
+    fn line_search_rejects_nonfinite_energy_and_respects_geometry_boundaries() {
+        let coords = [[1.0, 0.0, 0.0]];
+        let direction = [[-1.0, 0.0, 0.0]];
+        assert!(
+            armijo_backtracking(
+                &coords,
+                &direction,
+                (1.0, -1.0),
+                1.0,
+                &|_| f64::NEG_INFINITY,
+                &|_| true
+            )
+            .is_none()
+        );
+        assert!(
+            armijo_backtracking(
+                &coords,
+                &direction,
+                (1.0, -1.0),
+                1.0,
+                &|c| c[0][0] * c[0][0],
+                &|_| false
+            )
+            .is_none()
+        );
+        assert_eq!(finite_max_gradient(&[[0.0, f64::NAN, 0.0]]), f64::INFINITY);
+    }
+
+    #[test]
+    fn last_allowed_step_reports_the_final_gradient_convergence() {
+        let mol = chematic_smiles::parse("CC").unwrap();
+        let model = Mmff94EnergyModel::new(&mol).unwrap();
+        let bond = model.bonds[0].params;
+        let offset = 1.1e-4 / (MDYNE_A_TO_KCAL_MOL * bond.kb);
+        let mut coords = vec![[0.0, 0.0, 0.0], [bond.r0 + offset, 0.0, 0.0]];
+        assert!(finite_max_gradient(&model.bounded_analytic_gradient(&coords)) > 1e-4);
+        let result = model
+            .minimize_lbfgs_bounded_analytic(&mut coords, 1)
+            .unwrap();
+        assert!(finite_max_gradient(&model.bounded_analytic_gradient(&coords)) < 1e-4);
+        assert!(
+            result.converged,
+            "the last accepted step reached the tolerance"
+        );
+        assert_eq!(result.iterations, 1);
+        assert_eq!(
+            result.termination,
+            Mmff94TerminationReason::GradientConverged
+        );
+    }
+
+    #[test]
+    fn zero_iteration_budget_reports_stationarity_of_the_returned_geometry() {
+        let mol = chematic_smiles::parse("CC").unwrap();
+        let model = Mmff94EnergyModel::new(&mol).unwrap();
+        let r0 = model.bonds[0].params.r0;
+        let mut coords = vec![[0.0, 0.0, 0.0], [r0, 0.0, 0.0]];
+        let stationary = model
+            .minimize_lbfgs_bounded_analytic(&mut coords, 0)
+            .unwrap();
+        assert!(stationary.converged);
+        assert_eq!(stationary.iterations, 0);
+        assert_eq!(
+            stationary.termination,
+            Mmff94TerminationReason::GradientConverged
+        );
+        coords[1][0] += 0.1;
+        let nonstationary = model
+            .minimize_lbfgs_bounded_analytic(&mut coords, 0)
+            .unwrap();
+        assert!(!nonstationary.converged);
+        assert_eq!(nonstationary.iterations, 0);
     }
 
     #[test]

@@ -453,6 +453,14 @@ fn mmff_oop_in(
     type_l: u8,
 ) -> Option<f64> {
     use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
+    // Invalid numeric types must not become a legitimate wildcard lookup.
+    // Zero is retained for explicit table-inspection queries.
+    if [type_i, type_k, type_l]
+        .into_iter()
+        .any(|t| t != 0 && mmff94_numeric_type_info(t).is_none())
+    {
+        return None;
+    }
     let level = |t: u8, stage: usize| {
         mmff94_numeric_type_info(t)
             .map(|info| info.equivalence_levels[stage])

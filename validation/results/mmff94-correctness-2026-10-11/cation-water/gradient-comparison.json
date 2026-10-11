@@ -1,0 +1,2137 @@
+{
+  "absolute_error_threshold_kcal_mol_angstrom": 1e-06,
+  "artifacts": {
+    "rdkit": {
+      "bytes": 2141824,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.venv-v1gate/lib/python3.13/site-packages/rdkit/rdBase.so",
+      "sha256": "dcc50095c6d95b29aae272f925514caf7134922a0b5ffa2864131926e0bd7c9d"
+    },
+    "schematic": {
+      "bytes": 11792752,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "59f46c835b1b95b071c3cb17ff2f120e5cddc7a7795a6571e95950e75502d1a4"
+    }
+  },
+  "comparable_rows": 262,
+  "components": 37407,
+  "energy_rows_sha256": "4f14cfac9610e2d27cbd7d1a99d42bf30b0fed114a1107cb9069123a1ef915c7",
+  "gate_passed": true,
+  "input_rows": 265,
+  "kind": "direct_rdkit_vs_chematic_analytic_gradient",
+  "max_abs_error_kcal_mol_angstrom": 3.811030246936298e-07,
+  "max_scaled_error": 7.609023152183738e-08,
+  "rows": [
+    {
+      "components": 36,
+      "coordinate_sha256": "ddb9a84eadf80b7ce8f26a53993fb753ac7073e82e3b4c28f630865d10c973ea",
+      "input_index": 0,
+      "max_abs_error_kcal_mol_angstrom": 4.973799150320701e-14,
+      "max_scaled_error": 1.4620432753341158e-14,
+      "status": "compared"
+    },
+    {
+      "components": 54,
+      "coordinate_sha256": "7de2a16e42ccf28ddebf27c1e9291e6d2980743461f76c11eeb9b89b5a197377",
+      "input_index": 1,
+      "max_abs_error_kcal_mol_angstrom": 1.6697754290362354e-13,
+      "max_scaled_error": 4.999971662112845e-14,
+      "status": "compared"
+    },
+    {
+      "components": 33,
+      "coordinate_sha256": "17ac1a9c59b4fecabeb8c5c714c6ebf200f0877d6263cfcd5a93faa6bf1ca4f7",
+      "input_index": 2,
+      "max_abs_error_kcal_mol_angstrom": 9.947598300641403e-14,
+      "max_scaled_error": 1.8966645868933116e-14,
+      "status": "compared"
+    },
+    {
+      "components": 27,
+      "coordinate_sha256": "dae399409f7f699880f7784aee134784f6124feec35f3c00f294de87141cf9cd",
+      "input_index": 3,
+      "max_abs_error_kcal_mol_angstrom": 9.947598300641403e-14,
+      "max_scaled_error": 5.739268470912206e-15,
+      "status": "compared"
+    },
+    {
+      "components": 27,
+      "coordinate_sha256": "c3e438c80239b158ccfdaea9a9b43507b76d5881c9f66c8e96df3f03dbfdab3a",
+      "input_index": 4,
+      "max_abs_error_kcal_mol_angstrom": 1.1368683772161603e-13,
+      "max_scaled_error": 4.209346266346594e-15,
+      "status": "compared"
+    },
+    {
+      "components": 87,
+      "coordinate_sha256": "9b18aebbd8c84016a8bc3cb560b8e22e4fdcbd911a10d872ce07cb26ccf93847",
+      "input_index": 5,
+      "max_abs_error_kcal_mol_angstrom": 1.758593271006248e-13,
+      "max_scaled_error": 4.8403000586243285e-14,
+      "status": "compared"
+    },
+    {
+      "energy_status": "embed_failure",
+      "input_index": 6,
+      "status": "not_compared"
+    },
+    {
+      "components": 54,
+      "coordinate_sha256": "1b20a5b6c12a5ce8f4715ce3c4141445adcdf77f9a27a7f268b6d7a1782e0fa4",
+      "input_index": 7,
+      "max_abs_error_kcal_mol_angstrom": 1.8118839761882555e-13,
+      "max_scaled_error": 5.4233023434941973e-14,
+      "status": "compared"
+    },
+    {
+      "components": 45,
+      "coordinate_sha256": "dc9e27aa4bdd0c5949a98eeb4a023942ab5c4de3ee916b71de01d38f3af8fcde",
+      "input_index": 8,
+      "max_abs_error_kcal_mol_angstrom": 1.4477308241112041e-13,
+      "max_scaled_error": 1.0843395904781599e-13,
+      "status": "compared"
+    },
+    {
+      "components": 48,
+      "coordinate_sha256": "95233d6c99df14045f52a56c99f024f8923f35d6fc2704c3d33405687f4b6cef",
+      "input_index": 9,
+      "max_abs_error_kcal_mol_angstrom": 2.1316282072803006e-13,
+      "max_scaled_error": 3.9425612628611944e-14,
+      "status": "compared"
+    },
+    {
+      "components": 39,
+      "coordinate_sha256": "3b22fea1140ac7513334a9287fff5e12d919679b6f409c5f5f681c3698055d0d",
+      "input_index": 10,
+      "max_abs_error_kcal_mol_angstrom": 2.362554596402333e-13,
+      "max_scaled_error": 2.3168994957198596e-14,
+      "status": "compared"
+    },
+    {
+      "components": 51,
+      "coordinate_sha256": "917ddd2d2d3bb5b5bc6d908f3d843df0568ffb3a544d45625e868185cedc4ea3",
+      "input_index": 11,
+      "max_abs_error_kcal_mol_angstrom": 2.5490720645393594e-13,
+      "max_scaled_error": 4.875568689501741e-14,
+      "status": "compared"
+    },
+    {
+      "components": 72,
+      "coordinate_sha256": "d49d44ceafe7685fee1f37b6898753d28bffba81d3a3435f1bfded39613088d8",
+      "input_index": 12,
+      "max_abs_error_kcal_mol_angstrom": 5.684341886080802e-14,
+      "max_scaled_error": 2.5956554790171114e-14,
+      "status": "compared"
+    },
+    {
+      "components": 78,
+      "coordinate_sha256": "78e38022080ba06a4b4ccbc2283438f894db546cb69efdbac519508553079be7",
+      "input_index": 13,
+      "max_abs_error_kcal_mol_angstrom": 8.888924796224273e-08,
+      "max_scaled_error": 2.8512871887063043e-08,
+      "status": "compared"
+    },
+    {
+      "components": 66,
+      "coordinate_sha256": "9775966301b25d11366bbf410398370fcff74b799e34bf2ddc3029c873bdb8a5",
+      "input_index": 14,
+      "max_abs_error_kcal_mol_angstrom": 1.8118839761882555e-13,
+      "max_scaled_error": 2.831393273710077e-14,
+      "status": "compared"
+    },
+    {
+      "components": 42,
+      "coordinate_sha256": "950ac16cbee0656b2c6d93287c3946d7b82629edfb8235d61812d9af2cad2264",
+      "input_index": 15,
+      "max_abs_error_kcal_mol_angstrom": 4.796163466380676e-14,
+      "max_scaled_error": 1.2830955229062823e-14,
+      "status": "compared"
+    },
+    {
+      "components": 60,
+      "coordinate_sha256": "f74ab3d6e9110ac16a1d54de3d1dd2e33972c113b107ed82e895a83661082d98",
+      "input_index": 16,
+      "max_abs_error_kcal_mol_angstrom": 1.758593271006248e-13,
+      "max_scaled_error": 1.2818052996224076e-13,
+      "status": "compared"
+    },
+    {
+      "components": 96,
+      "coordinate_sha256": "ea43bc6128fa910e6180b42eba1c80b8bd93957f0b8e1130f5ee10542cc1246d",
+      "input_index": 17,
+      "max_abs_error_kcal_mol_angstrom": 1.3145040611561853e-13,
+      "max_scaled_error": 5.931031370993169e-14,
+      "status": "compared"
+    },
+    {
+      "components": 72,
+      "coordinate_sha256": "e80140797d943d724b5f88e4a61e39ffafb96efe4872c10124ee4dffc683c53d",
+      "input_index": 18,
+      "max_abs_error_kcal_mol_angstrom": 1.9184653865522705e-13,
+      "max_scaled_error": 5.279486715333161e-14,
+      "status": "compared"
+    },
+    {
+      "components": 66,
+      "coordinate_sha256": "640ab3c474ba09d1ba00527bfdf82f9a1dd48afb6faf23162543fe404d7e526c",
+      "input_index": 19,
+      "max_abs_error_kcal_mol_angstrom": 1.1812772982011666e-13,
+      "max_scaled_error": 4.948479895417193e-14,
+      "status": "compared"
+    },
+    {
+      "components": 150,
+      "coordinate_sha256": "b13aa3ef1d8dbf357b159c972d43db2d0f2fd95aa6c4ecfcc6a1dc5545696634",
+      "input_index": 20,
+      "max_abs_error_kcal_mol_angstrom": 2.5224267119483557e-13,
+      "max_scaled_error": 1.0076020934959391e-13,
+      "status": "compared"
+    },
+    {
+      "components": 108,
+      "coordinate_sha256": "68b773627e14456414f4559ea39f7b76919a2dbe1573c0e2eb6e71db416f16d5",
+      "input_index": 21,
+      "max_abs_error_kcal_mol_angstrom": 1.2789769243681803e-13,
+      "max_scaled_error": 4.427561201682948e-14,
+      "status": "compared"
+    },
+    {
+      "components": 84,
+      "coordinate_sha256": "7375e926484bab67c1ccfa32f69714da3478459feb3cc85a83f3c7434b58c752",
+      "input_index": 22,
+      "max_abs_error_kcal_mol_angstrom": 2.8421709430404007e-13,
+      "max_scaled_error": 8.396246119822038e-14,
+      "status": "compared"
+    },
+    {
+      "components": 162,
+      "coordinate_sha256": "499832252d6a175de87f246bdad1d5326cafcc4f58ba9f4730e4b66cff7dc8a5",
+      "input_index": 23,
+      "max_abs_error_kcal_mol_angstrom": 1.6342482922482304e-13,
+      "max_scaled_error": 7.38184708758264e-14,
+      "status": "compared"
+    },
+    {
+      "components": 39,
+      "coordinate_sha256": "5525964d76f4d8ad9f5e92291b7dab24e6421fe89a88448bd48aac835abcd173",
+      "input_index": 24,
+      "max_abs_error_kcal_mol_angstrom": 1.4033219031261979e-13,
+      "max_scaled_error": 1.261218588635504e-14,
+      "status": "compared"
+    },
+    {
+      "components": 39,
+      "coordinate_sha256": "49f0900b27eae3926855de604378fcf97a9eaf119a6905150d4c41bb96f5cfc2",
+      "input_index": 25,
+      "max_abs_error_kcal_mol_angstrom": 1.5276668818842154e-13,
+      "max_scaled_error": 4.173600805683293e-14,
+      "status": "compared"
+    },
+    {
+      "components": 42,
+      "coordinate_sha256": "0cd646097cc87deaa8eb1a81f84a4e0bfef3d7ee6c8083070f7e5bc4b24eec8f",
+      "input_index": 26,
+      "max_abs_error_kcal_mol_angstrom": 2.4158453015843406e-13,
+      "max_scaled_error": 8.245309907941623e-14,
+      "status": "compared"
+    },
+    {
+      "components": 51,
+      "coordinate_sha256": "d7eaa4b65b1ffd6e4ede69ac5c3d26a7cecad516290d0d361aff728cd2018c6a",
+      "input_index": 27,
+      "max_abs_error_kcal_mol_angstrom": 4.973799150320701e-14,
+      "max_scaled_error": 1.406623118626009e-14,
+      "status": "compared"
+    },
+    {
+      "components": 45,
+      "coordinate_sha256": "dcc8469402a52ea9203906ef4f567e889b6b9333d23573a2079008a12bf84b82",
+      "input_index": 28,
+      "max_abs_error_kcal_mol_angstrom": 1.674216321134736e-13,
+      "max_scaled_error": 5.913180700796292e-14,
+      "status": "compared"
+    },
+    {
+      "components": 45,
+      "coordinate_sha256": "0876b349701c6a48d43196c0a2a21cda035a91a1bc321709c20c9cc8fe043b27",
+      "input_index": 29,
+      "max_abs_error_kcal_mol_angstrom": 1.7896795156957523e-13,
+      "max_scaled_error": 5.081878275139472e-14,
+      "status": "compared"
+    },
+    {
+      "components": 42,
+      "coordinate_sha256": "6219e466a3f005764027bc3bfdb098911e3e5edc15120dbb06ffd13f6a65f770",
+      "input_index": 30,
+      "max_abs_error_kcal_mol_angstrom": 1.509903313490213e-13,
+      "max_scaled_error": 3.4026032352512154e-14,
+      "status": "compared"
+    },
+    {
+      "components": 99,
+      "coordinate_sha256": "79169df1edd9a183d43d0c092520c563d4a859b91614db8fd6b9cad9f49513f8",
+      "input_index": 31,
+      "max_abs_error_kcal_mol_angstrom": 1.1191048088221578e-13,
+      "max_scaled_error": 4.4617744380191973e-14,
+      "status": "compared"
+    },
+    {
+      "components": 93,
+      "coordinate_sha256": "c695861a32ff6215b99cc2885ffd4c9d192f08843a2f90d2d5bab348e96ec923",
+      "input_index": 32,
+      "max_abs_error_kcal_mol_angstrom": 2.2470914018413168e-13,
+      "max_scaled_error": 4.773241821184047e-14,
+      "status": "compared"
+    },
+    {
+      "components": 93,
+      "coordinate_sha256": "d2492587e4a343517279a243051ab558dce75890605e608dbd382710f4403400",
+      "input_index": 33,
+      "max_abs_error_kcal_mol_angstrom": 1.6076029396572267e-13,
+      "max_scaled_error": 2.8785227425013357e-14,
+      "status": "compared"
+    },
+    {
+      "components": 15,
+      "coordinate_sha256": "b3c378cd80e50e27dcfd74d10db98d6f9e3127afb23a907528f30ac2c3155239",
+      "input_index": 34,
+      "max_abs_error_kcal_mol_angstrom": 7.549516567451064e-14,
+      "max_scaled_error": 3.3156373356809465e-14,
+      "status": "compared"
+    },
+    {
+      "components": 15,
+      "coordinate_sha256": "f19ec345cb5868365803394874e6009e198e6ecd2b7e4b3e5e3b6646c00230a7",
+      "input_index": 35,
+      "max_abs_error_kcal_mol_angstrom": 2.3092638912203256e-14,
+      "max_scaled_error": 9.575646693237398e-15,
+      "status": "compared"
+    },
+    {
+      "components": 15,
+      "coordinate_sha256": "666e96c95f35ae1726923b1da16fbb20b6882e1fb73897a9781eb8b432a366bb",
+      "input_index": 36,
+      "max_abs_error_kcal_mol_angstrom": 2.1316282072803006e-14,
+      "max_scaled_error": 2.972266881077875e-15,
+      "status": "compared"
+    },
+    {
+      "components": 15,
+      "coordinate_sha256": "46528b785d787932fa27b16aebe5769d541928fbb9faa0474279247dbdb31ed8",
+      "input_index": 37,
+      "max_abs_error_kcal_mol_angstrom": 1.5631940186722204e-13,
+      "max_scaled_error": 1.86012913906612e-14,
+      "status": "compared"
+    },
+    {
+      "components": 33,
+      "coordinate_sha256": "1fd7a899ee16c226e04248c43cf3131da5e9718978745c626c6d8a24491e330d",
+      "input_index": 38,
+      "max_abs_error_kcal_mol_angstrom": 7.105427357601002e-14,
+      "max_scaled_error": 1.559810761039329e-14,
+      "status": "compared"
+    },
+    {
+      "components": 33,
+      "coordinate_sha256": "8b3c464543b798b24c8ed6271ae084538fc9bbb7fee695da916183849c5154bb",
+      "input_index": 39,
+      "max_abs_error_kcal_mol_angstrom": 1.580957587066223e-13,
+      "max_scaled_error": 9.967425306413537e-15,
+      "status": "compared"
+    },
+    {
+      "components": 36,
+      "coordinate_sha256": "434c91a7fe7de207e3d9ee5053300951fc03d400eb1d620f6489506088bddd34",
+      "input_index": 40,
+      "max_abs_error_kcal_mol_angstrom": 5.3290705182007514e-14,
+      "max_scaled_error": 1.3206998033739163e-14,
+      "status": "compared"
+    },
+    {
+      "components": 36,
+      "coordinate_sha256": "cfec8c37971d4b3b348d9a942021a6997336eeccc279808f3cf2044a5966f906",
+      "input_index": 41,
+      "max_abs_error_kcal_mol_angstrom": 4.263256414560601e-14,
+      "max_scaled_error": 1.2210625831705385e-14,
+      "status": "compared"
+    },
+    {
+      "components": 36,
+      "coordinate_sha256": "875c6b6e3ef25ae1ee8896c3bfe43d1b8afb8dd285ecdfa75da68390756ec754",
+      "input_index": 42,
+      "max_abs_error_kcal_mol_angstrom": 4.263256414560601e-14,
+      "max_scaled_error": 5.1949292141801285e-15,
+      "status": "compared"
+    },
+    {
+      "components": 36,
+      "coordinate_sha256": "e74640c966c6b424bb4101c0d92840a1b0a203fbe527b4f8f982fad19a268aed",
+      "input_index": 43,
+      "max_abs_error_kcal_mol_angstrom": 1.2434497875801753e-13,
+      "max_scaled_error": 1.564050101574008e-14,
+      "status": "compared"
+    },
+    {
+      "components": 57,
+      "coordinate_sha256": "322dec892f9f0181f65bfe3adf9d5f75692292d088aa5662e040a3d08e331783",
+      "input_index": 44,
+      "max_abs_error_kcal_mol_angstrom": 7.815970093361102e-14,
+      "max_scaled_error": 1.9337580254874344e-14,
+      "status": "compared"
+    },
+    {
+      "components": 57,
+      "coordinate_sha256": "70da91cbc448b2e84a12f4481bcce4f6fdf9a9b67d0d900aba000ca2f6c40391",
+      "input_index": 45,
+      "max_abs_error_kcal_mol_angstrom": 1.723066134218243e-13,
+      "max_scaled_error": 4.0033083631954346e-14,
+      "status": "compared"
+    },
+    {
+      "components": 45,
+      "coordinate_sha256": "a621d3c6c64fff03bd78379d4b3295b9f21fe3b9d78703bb660fc6cdaa90bee0",
+      "input_index": 46,
+      "max_abs_error_kcal_mol_angstrom": 2.496614026625821e-13,
+      "max_scaled_error": 2.0037831044345917e-13,
+      "status": "compared"
+    },
+    {
+      "components": 45,
+      "coordinate_sha256": "8a48da61965bbc184dbca02cd58ff45ed32b69bcda9cf5a6a6b00f6ea1255923",
+      "input_index": 47,
+      "max_abs_error_kcal_mol_angstrom": 5.3290705182007514e-14,
+      "max_scaled_error": 1.6747840584792584e-14,
+      "status": "compared"
+    },
+    {
+      "components": 63,
+      "coordinate_sha256": "d9a0a48f94da50399f5e8b96b5d4420e349d19740e6db4a04cd590e87138bb33",
+      "input_index": 48,
+      "max_abs_error_kcal_mol_angstrom": 1.758593271006248e-13,
+      "max_scaled_error": 7.118343766216948e-14,
+      "status": "compared"
+    },
+    {
+      "components": 99,
+      "coordinate_sha256": "da10adddf11b99aed728289bbe26ab7a452f29fbccd80e67b8f794a36fa69040",
+      "input_index": 49,
+      "max_abs_error_kcal_mol_angstrom": 3.3306690738754696e-13,
+      "max_scaled_error": 6.359230372942078e-14,
+      "status": "compared"
+    },
+    {
+      "components": 72,
+      "coordinate_sha256": "32290f95f36d88f00b6798d041ead6c8853825246db63030ea484f05e20a0bf6",
+      "input_index": 50,
+      "max_abs_error_kcal_mol_angstrom": 2.3447910280083306e-13,
+      "max_scaled_error": 2.5379376066666654e-14,
+      "status": "compared"
+    },
+    {
+      "components": 60,
+      "coordinate_sha256": "5e5215a9460f73e467962cc7ddb3ceead23f919982f0bb79caa8425778af06ab",
+      "input_index": 51,
+      "max_abs_error_kcal_mol_angstrom": 2.4513724383723456e-13,
+      "max_scaled_error": 4.314647301527005e-14,
+      "status": "compared"
+    },
+    {
+      "components": 120,
+      "coordinate_sha256": "04cfc6c4a7bc9e1e90a6559a4e1336474e9ad849278f742e55a3dba736e5cb39",
+      "input_index": 52,
+      "max_abs_error_kcal_mol_angstrom": 1.6431300764452317e-13,
+      "max_scaled_error": 7.193753635106172e-14,
+      "status": "compared"
+    },
+    {
+      "components": 93,
+      "coordinate_sha256": "914fd6e0fb285dac3aa25a0cb1168582afb37faaabc39531d873b95ff0800c9c",
+      "input_index": 53,
+      "max_abs_error_kcal_mol_angstrom": 1.4921397450962104e-13,
+      "max_scaled_error": 7.173491052229016e-14,
+      "status": "compared"
+    },
+    {
+      "components": 138,
+      "coordinate_sha256": "232e38af4974fa64f09e06328082d2fbfbdd4b388e09bee8c6d8eb9010623a29",
+      "input_index": 54,
+      "max_abs_error_kcal_mol_angstrom": 1.7053025658242404e-13,
+      "max_scaled_error": 6.796147074997212e-14,
+      "status": "compared"
+    },
+    {
+      "components": 222,
+      "coordinate_sha256": "1b418a4f36c456f1d22bdc97ed7c45e1d80bedc277cf6bd68695a7114c1d6dd8",
+      "input_index": 55,
+      "max_abs_error_kcal_mol_angstrom": 1.3145040611561853e-13,
+      "max_scaled_error": 9.2972318424603e-14,
+      "status": "compared"
+    },
+    {
+      "components": 228,
+      "coordinate_sha256": "1f39f210d1a4dff6f2a9cce355cab519893ebf42308079c0d41cada96f738ddf",
+      "input_index": 56,
+      "max_abs_error_kcal_mol_angstrom": 2.2026824808563106e-13,
+      "max_scaled_error": 1.638593860345169e-13,
+      "status": "compared"
+    },
+    {
+      "components": 81,
+      "coordinate_sha256": "b65038e2700a890b0e06778d00c2a53d1b0b1cd2d8bff5967edacfd2229e19db",
+      "input_index": 57,
+      "max_abs_error_kcal_mol_angstrom": 1.3500311979441904e-13,
+      "max_scaled_error": 4.858107625453692e-15,
+      "status": "compared"
+    },
+    {
+      "components": 36,
+      "coordinate_sha256": "d5ed9d8abce02200cbec37df3bf34e5fb1bad1c08069755261a27dd67d69fa7d",
+      "input_index": 58,
+      "max_abs_error_kcal_mol_angstrom": 1.312283615106935e-13,
+      "max_scaled_error": 5.865392284609266e-14,
+      "status": "compared"
+    },
+    {
+      "components": 72,
+      "coordinate_sha256": "bb1e6b9939c6ed0fe9d52dc725d6ed5dfd2af1499c00cab636d849d28ca614e5",
+      "input_index": 59,
+      "max_abs_error_kcal_mol_angstrom": 1.7408297026122455e-13,
+      "max_scaled_error": 9.08113363812654e-14,
+      "status": "compared"
+    },
+    {
+      "components": 81,
+      "coordinate_sha256": "3db56a6b01892d46e5d416209dd51bd93bbb5c6f852e1907d1a9ded75c1e68b8",
+      "input_index": 60,
+      "max_abs_error_kcal_mol_angstrom": 2.8421709430404007e-13,
+      "max_scaled_error": 1.5925548486967113e-14,
+      "status": "compared"
+    },
+    {
+      "components": 84,
+      "coordinate_sha256": "c55bd853fb836d13eb1d2715a4dd31399ebea24be3a5444484b807cc0b50c6b9",
+      "input_index": 61,
+      "max_abs_error_kcal_mol_angstrom": 1.3145040611561853e-13,
+      "max_scaled_error": 1.0059315132094712e-13,
+      "status": "compared"
+    },
+    {
+      "components": 102,
+      "coordinate_sha256": "0c8ba3f2d08bee7f3b7685e6f1637bb65b8f09b4703303910e28ff3be186fd88",
+      "input_index": 62,
+      "max_abs_error_kcal_mol_angstrom": 1.2079226507921703e-13,
+      "max_scaled_error": 3.165650525592807e-14,
+      "status": "compared"
+    },
+    {
+      "components": 162,
+      "coordinate_sha256": "25c2a75423fa8414a1b6ddef95a55853d93ec001b326f91825351ba221283d30",
+      "input_index": 63,
+      "max_abs_error_kcal_mol_angstrom": 1.2789769243681803e-13,
+      "max_scaled_error": 4.832829403929226e-14,
+      "status": "compared"
+    },
+    {
+      "energy_status": "declared_unsupported",
+      "input_index": 64,
+      "status": "not_compared"
+    },
+    {
+      "components": 108,
+      "coordinate_sha256": "ef4a3c8c36fc27b45a79a3e09938262d376c7d4cf119da3bad9ff5426d139625",
+      "input_index": 65,
+      "max_abs_error_kcal_mol_angstrom": 3.197442310920451e-13,
+      "max_scaled_error": 7.193310691688803e-14,
+      "status": "compared"
+    },
+    {
+      "components": 111,
+      "coordinate_sha256": "52cc4cc20aaa76f9cf02494dbcf3ebfc915ca3f85dee5954532db6d681bd61d5",
+      "input_index": 66,
+      "max_abs_error_kcal_mol_angstrom": 2.1671553440683056e-13,
+      "max_scaled_error": 3.289031301612874e-14,
+      "status": "compared"
+    },
+    {
+      "components": 123,
+      "coordinate_sha256": "477f8984096a7995851573bb59062ac1cf861058f4e8f466c57401657ffb4840",
+      "input_index": 67,
+      "max_abs_error_kcal_mol_angstrom": 1.971756091734278e-13,
+      "max_scaled_error": 3.984544076785627e-14,
+      "status": "compared"
+    },
+    {
+      "components": 108,
+      "coordinate_sha256": "962679cc7fd4830b8a2e21d4dc11d7c6679921b680e02778005a721bcca68327",
+      "input_index": 68,
+      "max_abs_error_kcal_mol_angstrom": 1.6076029396572267e-13,
+      "max_scaled_error": 3.399687303532189e-14,
+      "status": "compared"
+    },
+    {
+      "components": 108,
+      "coordinate_sha256": "53ad860c944c45b1b68006f9f0db335244665ae1f076fdae84adcd9b721be102",
+      "input_index": 69,
+      "max_abs_error_kcal_mol_angstrom": 1.9184653865522705e-13,
+      "max_scaled_error": 5.925771999788995e-14,
+      "status": "compared"
+    },
+    {
+      "components": 108,
+      "coordinate_sha256": "369cef76a6deb41b0b2c05065277ecb3cdc6a87f822fea1af057490c93c91a85",
+      "input_index": 70,
+      "max_abs_error_kcal_mol_angstrom": 2.5579538487363607e-13,
+      "max_scaled_error": 1.474582027569035e-13,
+      "status": "compared"
+    },
+    {
+      "components": 108,
+      "coordinate_sha256": "27d2842e4a9f3acaf3a5839dff46e9cc6c9bb98c9703b462c641678eed2d12c7",
+      "input_index": 71,
+      "max_abs_error_kcal_mol_angstrom": 2.8421709430404007e-13,
+      "max_scaled_error": 3.3763695158730593e-14,
+      "status": "compared"
+    },
+    {
+      "components": 99,
+      "coordinate_sha256": "a3c76ce72ac778c0ae932b6fbea234b885cb850c1bcad60766b100d2fc7bd405",
+      "input_index": 72,
+      "max_abs_error_kcal_mol_angstrom": 2.8421709430404007e-13,
+      "max_scaled_error": 9.314085569872269e-14,
+      "status": "compared"
+    },
+    {
+      "components": 117,
+      "coordinate_sha256": "8a0a78d6d081a23cb246ad6c42760ed1a0872d8351373e24cf79da699202785c",
+      "input_index": 73,
+      "max_abs_error_kcal_mol_angstrom": 1.5987211554602254e-13,
+      "max_scaled_error": 3.1286699413236846e-14,
+      "status": "compared"
+    },
+    {
+      "components": 276,
+      "coordinate_sha256": "2f58663b2d70a79c6aff9419aade165f153e0073f113936e65be91efe95757dd",
+      "input_index": 74,
+      "max_abs_error_kcal_mol_angstrom": 2.8388402739665253e-13,
+      "max_scaled_error": 1.5390930383092355e-13,
+      "status": "compared"
+    },
+    {
+      "components": 111,
+      "coordinate_sha256": "63ae12a64db5b1efdc81cc1444670c57f359dde88a14d030ee7f1f1555e91ce3",
+      "input_index": 75,
+      "max_abs_error_kcal_mol_angstrom": 1.829647544582258e-13,
+      "max_scaled_error": 7.536505078482747e-14,
+      "status": "compared"
+    },
+    {
+      "components": 99,
+      "coordinate_sha256": "d16ed83855f91dea35d17e6c0d372643649e7390e9442b37be2fa914f5c77345",
+      "input_index": 76,
+      "max_abs_error_kcal_mol_angstrom": 1.91402449445377e-13,
+      "max_scaled_error": 5.345608441755444e-14,
+      "status": "compared"
+    },
+    {
+      "components": 96,
+      "coordinate_sha256": "806d84c57b354bd514ac7f0a675eed2469274f355aab2ce7d32d96edc116a928",
+      "input_index": 77,
+      "max_abs_error_kcal_mol_angstrom": 1.6209256159527285e-13,
+      "max_scaled_error": 7.091759583015223e-14,
+      "status": "compared"
+    },
+    {
+      "components": 96,
+      "coordinate_sha256": "1b3d97a54fe6989f903f83881e245f9caf2763920e3164ba3eab4bc8c2b53e37",
+      "input_index": 78,
+      "max_abs_error_kcal_mol_angstrom": 2.2248869413488137e-13,
+      "max_scaled_error": 5.997155457551693e-14,
+      "status": "compared"
+    },
+    {
+      "components": 102,
+      "coordinate_sha256": "2cb16d663cc6958cb0065846c2d585ecf96204fee0ad84bccdf0dc17ff896ca2",
+      "input_index": 79,
+      "max_abs_error_kcal_mol_angstrom": 2.5579538487363607e-13,
+      "max_scaled_error": 4.403909197948251e-14,
+      "status": "compared"
+    },
+    {
+      "components": 96,
+      "coordinate_sha256": "7de3b9dd3983172e756de89b9cffcf102281c1546f255f8e5a9a6a126b61b5e7",
+      "input_index": 80,
+      "max_abs_error_kcal_mol_angstrom": 1.7763568394002505e-13,
+      "max_scaled_error": 3.486145636910197e-14,
+      "status": "compared"
+    },
+    {
+      "components": 99,
+      "coordinate_sha256": "43259e376ae25ed0e4eb5a579c23deda637b2c736faa607f68f8f37a9589f4b7",
+      "input_index": 81,
+      "max_abs_error_kcal_mol_angstrom": 2.1671553440683056e-13,
+      "max_scaled_error": 1.1212827432574628e-13,
+      "status": "compared"
+    },
+    {
+      "components": 105,
+      "coordinate_sha256": "606fae04549f86372a4adfd2d74efba801f402c7b17dcb3d9f922452b72906bb",
+      "input_index": 82,
+      "max_abs_error_kcal_mol_angstrom": 2.0250467969162855e-13,
+      "max_scaled_error": 3.636202770334685e-14,
+      "status": "compared"
+    },
+    {
+      "components": 99,
+      "coordinate_sha256": "a3510676ac303356a6d0712785b3cb8c50347137bc5e02af8e880fc802d0105b",
+      "input_index": 83,
+      "max_abs_error_kcal_mol_angstrom": 2.0605739337042905e-13,
+      "max_scaled_error": 1.20843893587406e-13,
+      "status": "compared"
+    },
+    {
+      "components": 114,
+      "coordinate_sha256": "6f8a7fd0a3e92e2cc910d673ba5504ff60ed540e362d6620013026d84ff5411f",
+      "input_index": 84,
+      "max_abs_error_kcal_mol_angstrom": 2.3936408410918375e-13,
+      "max_scaled_error": 8.766194374692117e-14,
+      "status": "compared"
+    },
+    {
+      "components": 177,
+      "coordinate_sha256": "4fa4b6dfd8f971fa7953e45ffc5f19acabbbdddf4e49cbdbc983e7228242f6a3",
+      "input_index": 85,
+      "max_abs_error_kcal_mol_angstrom": 2.2561119639163962e-13,
+      "max_scaled_error": 2.077137350564454e-13,
+      "status": "compared"
+    },
+    {
+      "components": 111,
+      "coordinate_sha256": "d3d0095f668c84a0df3d03ca23d459614ec15d96d4446b56dc859f1925d943ec",
+      "input_index": 86,
+      "max_abs_error_kcal_mol_angstrom": 1.8474111129762605e-13,
+      "max_scaled_error": 1.699355983908354e-14,
+      "status": "compared"
+    },
+    {
+      "components": 150,
+      "coordinate_sha256": "485fec6b731857f974d64cb8f366cda0c099d497b12d7c86f35a04931175742e",
+      "input_index": 87,
+      "max_abs_error_kcal_mol_angstrom": 1.9895196601282805e-13,
+      "max_scaled_error": 6.876789292366793e-14,
+      "status": "compared"
+    },
+    {
+      "components": 276,
+      "coordinate_sha256": "deda154c2b6a6896dd0e716c098f18161a2dffbf1283df527fee368a4f12830f",
+      "input_index": 88,
+      "max_abs_error_kcal_mol_angstrom": 3.455014052633487e-13,
+      "max_scaled_error": 1.3137612878445601e-13,
+      "status": "compared"
+    },
+    {
+      "components": 192,
+      "coordinate_sha256": "fb4b04bd9c97765b547793e5cf3f069cedabf6b16b063b0f1421c8e2fc2595a5",
+      "input_index": 89,
+      "max_abs_error_kcal_mol_angstrom": 1.8030021919912542e-13,
+      "max_scaled_error": 7.10832849924734e-14,
+      "status": "compared"
+    },
+    {
+      "components": 210,
+      "coordinate_sha256": "b7367dfe30e8ae0527fb83528a1098119dc6408cd05f67efb74aaf2f8ff0e791",
+      "input_index": 90,
+      "max_abs_error_kcal_mol_angstrom": 2.327027459614328e-13,
+      "max_scaled_error": 1.853481827936044e-13,
+      "status": "compared"
+    },
+    {
+      "components": 204,
+      "coordinate_sha256": "fe1db79267d16d6ea92e68f9875abaf798ef95df93962a072304bd1c9c180a70",
+      "input_index": 91,
+      "max_abs_error_kcal_mol_angstrom": 2.6290081223123707e-13,
+      "max_scaled_error": 6.074735471936742e-14,
+      "status": "compared"
+    },
+    {
+      "components": 282,
+      "coordinate_sha256": "3209bb0a607f60317bc1f9d8b5c2a9c56824ea4f6162bd27beaead70698ae8de",
+      "input_index": 92,
+      "max_abs_error_kcal_mol_angstrom": 6.508571459562518e-11,
+      "max_scaled_error": 8.344424729731511e-12,
+      "status": "compared"
+    },
+    {
+      "components": 288,
+      "coordinate_sha256": "63b90058b06a729ef11cbee97e1365b9eb8571c2b559241525a92c28cf6babb5",
+      "input_index": 93,
+      "max_abs_error_kcal_mol_angstrom": 2.398081733190338e-13,
+      "max_scaled_error": 6.289252808157182e-14,
+      "status": "compared"
+    },
+    {
+      "components": 294,
+      "coordinate_sha256": "bb725810a3a1484cb6d417d70731f2d606e8c2c9050f9a433d7558d66481c9ae",
+      "input_index": 94,
+      "max_abs_error_kcal_mol_angstrom": 2.0605739337042905e-13,
+      "max_scaled_error": 5.308929045206341e-14,
+      "status": "compared"
+    },
+    {
+      "components": 285,
+      "coordinate_sha256": "8c9a8751daef099a28b5957223498dbd59c44faca66206168874f478f660ee70",
+      "input_index": 95,
+      "max_abs_error_kcal_mol_angstrom": 2.984279490192421e-13,
+      "max_scaled_error": 1.9477131351832064e-13,
+      "status": "compared"
+    },
+    {
+      "components": 195,
+      "coordinate_sha256": "1e6a0346348600f0b9b744c6ff46f59e3c01234fd0fb685a9c8d5d378baad031",
+      "input_index": 96,
+      "max_abs_error_kcal_mol_angstrom": 2.4158453015843406e-13,
+      "max_scaled_error": 5.918585415182706e-14,
+      "status": "compared"
+    },
+    {
+      "components": 192,
+      "coordinate_sha256": "022d25487aa2199b82c2538f7390aae3141ccde0f0481f41151e31ac6aa251ca",
+      "input_index": 97,
+      "max_abs_error_kcal_mol_angstrom": 1.5631940186722204e-13,
+      "max_scaled_error": 8.040674221531716e-14,
+      "status": "compared"
+    },
+    {
+      "components": 108,
+      "coordinate_sha256": "6d7061769f927d8f6ab2a58e8ed4fae5e9e30afcc913dc9eb7b1d3a92f3bd496",
+      "input_index": 98,
+      "max_abs_error_kcal_mol_angstrom": 2.4868995751603507e-13,
+      "max_scaled_error": 4.674047880796707e-14,
+      "status": "compared"
+    },
+    {
+      "components": 279,
+      "coordinate_sha256": "0336d1d7a272db6f50183652a86100f7819be2c4e8fe13d066761df32ac94468",
+      "input_index": 99,
+      "max_abs_error_kcal_mol_angstrom": 2.7711166694643907e-13,
+      "max_scaled_error": 1.9552003845440296e-13,
+      "status": "compared"
+    },
+    {
+      "components": 201,
+      "coordinate_sha256": "a20e6f61b893b84cda3f829e627d07e7fb97cab7b9e59bac1c4f5d59d6d4cbee",
+      "input_index": 100,
+      "max_abs_error_kcal_mol_angstrom": 3.730349362740526e-13,
+      "max_scaled_error": 8.468683645312767e-14,
+      "status": "compared"
+    },
+    {
+      "components": 234,
+      "coordinate_sha256": "11bd7553a6f4ba73d471cc477c278be978231d9c654dfbe063ef27a51d06f87f",
+      "input_index": 101,
+      "max_abs_error_kcal_mol_angstrom": 2.0250467969162855e-13,
+      "max_scaled_error": 1.1071500903621507e-13,
+      "status": "compared"
+    },
+    {
+      "components": 174,
+      "coordinate_sha256": "c5d1e682a9931bb522c750ec7bd4808d26c4572836e7bdd4fddb335b1fd29eb7",
+      "input_index": 102,
+      "max_abs_error_kcal_mol_angstrom": 2.5579538487363607e-13,
+      "max_scaled_error": 5.392001126631009e-14,
+      "status": "compared"
+    },
+    {
+      "components": 180,
+      "coordinate_sha256": "09adc7c7f5cf5b590f28e22c6b9288bcf3ee2f657522d8174be631c72016c52b",
+      "input_index": 103,
+      "max_abs_error_kcal_mol_angstrom": 2.3803181647963356e-13,
+      "max_scaled_error": 3.850258508014449e-14,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "314f3bbfdbc7f853a29564f40164763744ce9f6ccb8c5a029d3271b6814e3c01",
+      "input_index": 104,
+      "max_abs_error_kcal_mol_angstrom": 2.4513724383723456e-13,
+      "max_scaled_error": 3.6625009459015883e-14,
+      "status": "compared"
+    },
+    {
+      "components": 171,
+      "coordinate_sha256": "b342f113afa2db3ad2afade786ec4f45e5b198c85e3792410a36c88fd9d944f1",
+      "input_index": 105,
+      "max_abs_error_kcal_mol_angstrom": 1.4566126083082054e-13,
+      "max_scaled_error": 7.883867286827103e-14,
+      "status": "compared"
+    },
+    {
+      "components": 159,
+      "coordinate_sha256": "2a4eec943b9c7ade7f22cfa43f11a015820ebad7a43fea8917b42503de20f444",
+      "input_index": 106,
+      "max_abs_error_kcal_mol_angstrom": 1.5631940186722204e-13,
+      "max_scaled_error": 5.2517203110132516e-14,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "82a316fd3bec0c6c34fa11ef11129fb1146c38cf28d693cc9d47b4b3c0636426",
+      "input_index": 107,
+      "max_abs_error_kcal_mol_angstrom": 2.5579538487363607e-13,
+      "max_scaled_error": 3.679327048934739e-14,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "c29074c0c0a7300b8917e29553dd15d9d8a254af0ae5a89da851c81003ed4c20",
+      "input_index": 108,
+      "max_abs_error_kcal_mol_angstrom": 3.268496584496461e-13,
+      "max_scaled_error": 4.499542694417294e-14,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "bb82e7ce5ebe27277cdce14d75f94f50b81416d9aed929ee4571bc53600e4d26",
+      "input_index": 109,
+      "max_abs_error_kcal_mol_angstrom": 2.2737367544323206e-13,
+      "max_scaled_error": 6.690149670715462e-14,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "3d9b594a6f71321a23bc5a84838f5727440407cdc3f821635218c30cb7f5d10a",
+      "input_index": 110,
+      "max_abs_error_kcal_mol_angstrom": 2.495781359357352e-13,
+      "max_scaled_error": 7.128240749581531e-14,
+      "status": "compared"
+    },
+    {
+      "components": 162,
+      "coordinate_sha256": "5adf84b45d97ae2884812bb657a0e0c91407ccd563e6cd211a31f068f6ef8c54",
+      "input_index": 111,
+      "max_abs_error_kcal_mol_angstrom": 1.9539925233402755e-13,
+      "max_scaled_error": 1.1217028699280697e-13,
+      "status": "compared"
+    },
+    {
+      "components": 210,
+      "coordinate_sha256": "beb0106ca10f23e21eeb8c414ae547e493db18e988665a3f8a6a445cac475689",
+      "input_index": 112,
+      "max_abs_error_kcal_mol_angstrom": 2.7355895326763857e-13,
+      "max_scaled_error": 6.78848438203675e-14,
+      "status": "compared"
+    },
+    {
+      "components": 180,
+      "coordinate_sha256": "6d04be56887c004b2003c8ae3f2e5685ae4ac6c04eca68398d7835c908745a06",
+      "input_index": 113,
+      "max_abs_error_kcal_mol_angstrom": 1.6431300764452317e-13,
+      "max_scaled_error": 6.739542634368447e-14,
+      "status": "compared"
+    },
+    {
+      "components": 174,
+      "coordinate_sha256": "2eb7ac25a30d85a12c5d275fff980a112289b782e73f3895f1595babeb820417",
+      "input_index": 114,
+      "max_abs_error_kcal_mol_angstrom": 3.552713678800501e-13,
+      "max_scaled_error": 6.247554683213322e-14,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "70caaf1036a2078d020acd4d8197ac2fa6a1fa931ac2e20ffca4baf9f8c308f7",
+      "input_index": 115,
+      "max_abs_error_kcal_mol_angstrom": 4.263256414560601e-13,
+      "max_scaled_error": 8.268687231938959e-14,
+      "status": "compared"
+    },
+    {
+      "components": 162,
+      "coordinate_sha256": "bcde81f4c47b576cc4f18589ff33ab8bc54fedd77fa0650c5cce34e688e3f3bf",
+      "input_index": 116,
+      "max_abs_error_kcal_mol_angstrom": 1.5187850976872141e-13,
+      "max_scaled_error": 2.760743362106841e-14,
+      "status": "compared"
+    },
+    {
+      "components": 90,
+      "coordinate_sha256": "73c2731ff3b11c0e086926706d6cd179bf86082ef7ac2388007f223980f3e497",
+      "input_index": 117,
+      "max_abs_error_kcal_mol_angstrom": 8.526512829121202e-14,
+      "max_scaled_error": 1.8672651685382366e-14,
+      "status": "compared"
+    },
+    {
+      "components": 111,
+      "coordinate_sha256": "93fbe0c8098d75ac5d2ba2c75895ce7f3b8b198493fd400be1a368512682cc9c",
+      "input_index": 118,
+      "max_abs_error_kcal_mol_angstrom": 3.019806626980426e-13,
+      "max_scaled_error": 5.5334304373023965e-14,
+      "status": "compared"
+    },
+    {
+      "components": 108,
+      "coordinate_sha256": "ca8c23ce5a0c1969d814eccb6851d1fb61d781183de700afe1faa69b08fb3ea0",
+      "input_index": 119,
+      "max_abs_error_kcal_mol_angstrom": 1.900701818158268e-13,
+      "max_scaled_error": 7.57588759521347e-14,
+      "status": "compared"
+    },
+    {
+      "components": 99,
+      "coordinate_sha256": "f76932a192e2b6921622cf54fc450a5860af2bfad6b1e6a99211a3ab8d4243ec",
+      "input_index": 120,
+      "max_abs_error_kcal_mol_angstrom": 1.9895196601282805e-13,
+      "max_scaled_error": 4.644936784557106e-14,
+      "status": "compared"
+    },
+    {
+      "components": 117,
+      "coordinate_sha256": "4e45264a3f0a1b6cdcfec2bc43d049a08764026941ca3cf4b9097b22e4ef2cdf",
+      "input_index": 121,
+      "max_abs_error_kcal_mol_angstrom": 2.5579538487363607e-13,
+      "max_scaled_error": 8.816588205122797e-14,
+      "status": "compared"
+    },
+    {
+      "components": 117,
+      "coordinate_sha256": "acb02585981f2cea00ff929b89d626507169717e86e016e45c660a0cf66b9755",
+      "input_index": 122,
+      "max_abs_error_kcal_mol_angstrom": 2.7000623958883807e-13,
+      "max_scaled_error": 9.780786409518168e-14,
+      "status": "compared"
+    },
+    {
+      "components": 78,
+      "coordinate_sha256": "6e0745cd2f861b9e2ca8fad9432a2e5ca17cd894d1db0f2102749a0bd146a1d3",
+      "input_index": 123,
+      "max_abs_error_kcal_mol_angstrom": 1.438849039914203e-13,
+      "max_scaled_error": 1.4008006682861053e-14,
+      "status": "compared"
+    },
+    {
+      "components": 99,
+      "coordinate_sha256": "7aa02ea18a56d9465df0ec58ad4fe83c3bc01f581f93855517b654b4015fe917",
+      "input_index": 124,
+      "max_abs_error_kcal_mol_angstrom": 2.4158453015843406e-13,
+      "max_scaled_error": 8.3531588051324e-14,
+      "status": "compared"
+    },
+    {
+      "components": 126,
+      "coordinate_sha256": "0456a00b0561a73bcaff62f187f3fcab9521b0dd2c6bb9b61b16e7ba161341aa",
+      "input_index": 125,
+      "max_abs_error_kcal_mol_angstrom": 2.851052727237402e-13,
+      "max_scaled_error": 8.104563380844088e-14,
+      "status": "compared"
+    },
+    {
+      "components": 99,
+      "coordinate_sha256": "06b08dc9a4689e35df124864269fb460a4563e7dac784aabc450d75533b3d122",
+      "input_index": 126,
+      "max_abs_error_kcal_mol_angstrom": 2.0961010704922955e-13,
+      "max_scaled_error": 6.551540276187587e-14,
+      "status": "compared"
+    },
+    {
+      "components": 114,
+      "coordinate_sha256": "bda46ef139ddcdc7e45d45ea0e1b88c8a2a5b167c2c12a7fd6b4f7922092b56f",
+      "input_index": 127,
+      "max_abs_error_kcal_mol_angstrom": 1.6697754290362354e-13,
+      "max_scaled_error": 7.187236814996406e-14,
+      "status": "compared"
+    },
+    {
+      "components": 138,
+      "coordinate_sha256": "928265569c88610ab2932cca298004d545596bedc04cd51e793d080ccfcb2b2b",
+      "input_index": 128,
+      "max_abs_error_kcal_mol_angstrom": 1.438849039914203e-13,
+      "max_scaled_error": 3.810585751648806e-14,
+      "status": "compared"
+    },
+    {
+      "components": 138,
+      "coordinate_sha256": "49e4b5f89172c9116bc108664e3d77eae4ee64bc7a3a2e564c52d5f4da619708",
+      "input_index": 129,
+      "max_abs_error_kcal_mol_angstrom": 2.4158453015843406e-13,
+      "max_scaled_error": 6.64912137024536e-14,
+      "status": "compared"
+    },
+    {
+      "components": 147,
+      "coordinate_sha256": "a80bdf9471a6b2aab8f12fd1024b704715d8461be14ae69d2f1297b4ab1517fe",
+      "input_index": 130,
+      "max_abs_error_kcal_mol_angstrom": 2.3803181647963356e-13,
+      "max_scaled_error": 5.066265026059471e-14,
+      "status": "compared"
+    },
+    {
+      "components": 147,
+      "coordinate_sha256": "dc0cbcdf0a9cf2a800e10104594b9f566b30906696f1261fa335bf0a64d97945",
+      "input_index": 131,
+      "max_abs_error_kcal_mol_angstrom": 2.6290081223123707e-13,
+      "max_scaled_error": 3.846253116620778e-14,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "d9f93053301e4c881096f0147c3e60ea959dbd5776991bdd510f65b1d61349e6",
+      "input_index": 132,
+      "max_abs_error_kcal_mol_angstrom": 1.9606538614880265e-13,
+      "max_scaled_error": 8.243591952715363e-14,
+      "status": "compared"
+    },
+    {
+      "components": 96,
+      "coordinate_sha256": "e1a13732bca37328d82922fb25703dfbe11aefb96314b6ffe7198fcfcadc8d24",
+      "input_index": 133,
+      "max_abs_error_kcal_mol_angstrom": 1.9184653865522705e-13,
+      "max_scaled_error": 1.742842621534442e-13,
+      "status": "compared"
+    },
+    {
+      "components": 78,
+      "coordinate_sha256": "3acacbd838ef5afaaa89d2fe16325f4a82e6077072ba51a461cf94fdbe975697",
+      "input_index": 134,
+      "max_abs_error_kcal_mol_angstrom": 1.7408297026122455e-13,
+      "max_scaled_error": 1.2344845199053646e-14,
+      "status": "compared"
+    },
+    {
+      "components": 126,
+      "coordinate_sha256": "1bbb00fb4878563e7d75eccd1cb71a4735c1212d537e518d96bb4af8fcccc380",
+      "input_index": 135,
+      "max_abs_error_kcal_mol_angstrom": 3.410605131648481e-13,
+      "max_scaled_error": 5.641924346851626e-14,
+      "status": "compared"
+    },
+    {
+      "components": 162,
+      "coordinate_sha256": "b20d484abbc13dbea6af46ccd171e05a3f27451d3e805be6e11286abb10ea755",
+      "input_index": 136,
+      "max_abs_error_kcal_mol_angstrom": 2.2737367544323206e-13,
+      "max_scaled_error": 2.7925084985386322e-14,
+      "status": "compared"
+    },
+    {
+      "components": 192,
+      "coordinate_sha256": "93349c6a462b8258b762b83188d31030ab2d215517dbe08949cc819f09c72702",
+      "input_index": 137,
+      "max_abs_error_kcal_mol_angstrom": 1.7141843500212417e-13,
+      "max_scaled_error": 8.82548977757022e-14,
+      "status": "compared"
+    },
+    {
+      "components": 138,
+      "coordinate_sha256": "6730e04e37c0514e763d0de0eb5742669b5494792796e5077518bfbf9e7fea49",
+      "input_index": 138,
+      "max_abs_error_kcal_mol_angstrom": 3.5507333961959375e-08,
+      "max_scaled_error": 1.301306868340129e-08,
+      "status": "compared"
+    },
+    {
+      "components": 138,
+      "coordinate_sha256": "b5cc8900bf3cc20c066df1d5a325c150f3dc3cc23f3d52b87b7443df893806ae",
+      "input_index": 139,
+      "max_abs_error_kcal_mol_angstrom": 1.8118839761882555e-13,
+      "max_scaled_error": 9.314679740490231e-14,
+      "status": "compared"
+    },
+    {
+      "components": 147,
+      "coordinate_sha256": "459ab72ff066278aeba85720d9ae5c2cd2ba02a8d12a7b5af4c9929d7dc32739",
+      "input_index": 140,
+      "max_abs_error_kcal_mol_angstrom": 2.8421709430404007e-13,
+      "max_scaled_error": 1.0717700601751158e-13,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "91a71c4662a229c5d77f90bcc47b5f3272dec78f855e7cc65753cd09d19a9490",
+      "input_index": 141,
+      "max_abs_error_kcal_mol_angstrom": 2.5579538487363607e-13,
+      "max_scaled_error": 3.078091024405099e-14,
+      "status": "compared"
+    },
+    {
+      "components": 171,
+      "coordinate_sha256": "14326f8cef51df90372a8cf315e81f5ab866c770b59c201ff26e77376310c9b5",
+      "input_index": 142,
+      "max_abs_error_kcal_mol_angstrom": 1.8829382497642655e-13,
+      "max_scaled_error": 3.9023256270829815e-14,
+      "status": "compared"
+    },
+    {
+      "components": 174,
+      "coordinate_sha256": "83c440e5f723943e4787543dbbc8bf5247d068823d2d8906e27edee0453d9855",
+      "input_index": 143,
+      "max_abs_error_kcal_mol_angstrom": 1.9184653865522705e-13,
+      "max_scaled_error": 4.3668705828394055e-14,
+      "status": "compared"
+    },
+    {
+      "components": 174,
+      "coordinate_sha256": "580aca3a5e890d36191de40f3b59abba98cbff4893999e0b826d3d8db1065da8",
+      "input_index": 144,
+      "max_abs_error_kcal_mol_angstrom": 3.268496584496461e-13,
+      "max_scaled_error": 1.0769481674635184e-13,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "cf88af7d5cbd43321fe22524854911e2140f96688598de55d325bb697a6163d4",
+      "input_index": 145,
+      "max_abs_error_kcal_mol_angstrom": 2.3092638912203256e-13,
+      "max_scaled_error": 2.293828931961945e-14,
+      "status": "compared"
+    },
+    {
+      "components": 165,
+      "coordinate_sha256": "0eec91a4e60e18285341eecaa319a6124ee25feb56c124381f4e7f7ad43e2f59",
+      "input_index": 146,
+      "max_abs_error_kcal_mol_angstrom": 2.4513724383723456e-13,
+      "max_scaled_error": 9.196209736067814e-14,
+      "status": "compared"
+    },
+    {
+      "components": 174,
+      "coordinate_sha256": "7e9bd9bd1cb367eeb23e23991bb81fd118ae203f5ee12b7faa0829a49aa3f266",
+      "input_index": 147,
+      "max_abs_error_kcal_mol_angstrom": 2.753353101070388e-13,
+      "max_scaled_error": 8.021769923652944e-14,
+      "status": "compared"
+    },
+    {
+      "components": 189,
+      "coordinate_sha256": "8055934f176da23888f28bc70321ec4ff661f88f46ce44a3fe7f519440d3f481",
+      "input_index": 148,
+      "max_abs_error_kcal_mol_angstrom": 3.446132268436486e-13,
+      "max_scaled_error": 4.4938229017866216e-14,
+      "status": "compared"
+    },
+    {
+      "components": 78,
+      "coordinate_sha256": "488d21c1b71c2f71acbaeca788bd56dc216c25e313fffeb42d840c55ef78a13a",
+      "input_index": 149,
+      "max_abs_error_kcal_mol_angstrom": 1.1368683772161603e-13,
+      "max_scaled_error": 3.114923844577216e-14,
+      "status": "compared"
+    },
+    {
+      "components": 69,
+      "coordinate_sha256": "5d688a877ca16b7629e4e907afc91d7388cc08acde8a3657e9d78af0f8a60291",
+      "input_index": 150,
+      "max_abs_error_kcal_mol_angstrom": 2.0516921495072893e-13,
+      "max_scaled_error": 3.468992665760391e-14,
+      "status": "compared"
+    },
+    {
+      "components": 75,
+      "coordinate_sha256": "1385b3238db95c41da9e7fe72b95e0d9325abe56e4457ca12fb88c8463c10a45",
+      "input_index": 151,
+      "max_abs_error_kcal_mol_angstrom": 1.9539925233402755e-13,
+      "max_scaled_error": 4.805657019636531e-14,
+      "status": "compared"
+    },
+    {
+      "components": 75,
+      "coordinate_sha256": "66cf54821ef6910068d3ef2e8c96f3fa1b4ba1e931995711bf0f94a094186830",
+      "input_index": 152,
+      "max_abs_error_kcal_mol_angstrom": 1.1368683772161603e-13,
+      "max_scaled_error": 4.9906234845603527e-14,
+      "status": "compared"
+    },
+    {
+      "components": 81,
+      "coordinate_sha256": "71d2acbc0bd45fc41525149f5bf47a489eec8f1a8e4e389bdd2cc7c1d049d379",
+      "input_index": 153,
+      "max_abs_error_kcal_mol_angstrom": 3.161915174132446e-13,
+      "max_scaled_error": 1.757186837173195e-14,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "2d11759e55a8b018d3bd4f9a5efff7feb28a339b44333a8afe34c45f375d2b0f",
+      "input_index": 154,
+      "max_abs_error_kcal_mol_angstrom": 2.433608869978343e-13,
+      "max_scaled_error": 2.530181931137179e-14,
+      "status": "compared"
+    },
+    {
+      "components": 78,
+      "coordinate_sha256": "5d8b1d9c2f6ca17ffda02873543696684f6b80dc64badc779849d379381e281e",
+      "input_index": 155,
+      "max_abs_error_kcal_mol_angstrom": 1.3677947663381929e-13,
+      "max_scaled_error": 3.364965858124106e-14,
+      "status": "compared"
+    },
+    {
+      "components": 69,
+      "coordinate_sha256": "6b2c3aa3be19f302806dff5df1861f26be570eb1d6c19f8c62cea7e66127b34b",
+      "input_index": 156,
+      "max_abs_error_kcal_mol_angstrom": 2.3092638912203256e-13,
+      "max_scaled_error": 4.391370878239484e-14,
+      "status": "compared"
+    },
+    {
+      "components": 261,
+      "coordinate_sha256": "296f2865f0811f6d54f27912e1dc159109bfe2d32bc64b8f119989b1d25a8a29",
+      "input_index": 157,
+      "max_abs_error_kcal_mol_angstrom": 1.8474111129762605e-13,
+      "max_scaled_error": 7.768522776228451e-14,
+      "status": "compared"
+    },
+    {
+      "components": 270,
+      "coordinate_sha256": "fbd25b60228bc0dcd6f145e182916d5d66abcc914621fd86773d58b02ca3c3c3",
+      "input_index": 158,
+      "max_abs_error_kcal_mol_angstrom": 2.3803181647963356e-13,
+      "max_scaled_error": 4.0981088716205206e-14,
+      "status": "compared"
+    },
+    {
+      "components": 261,
+      "coordinate_sha256": "67ece8485929e3fa38bb74d093e74b0ad9c9145c9495707f8457462fe8ad7f14",
+      "input_index": 159,
+      "max_abs_error_kcal_mol_angstrom": 1.9539925233402755e-13,
+      "max_scaled_error": 6.453222201180785e-14,
+      "status": "compared"
+    },
+    {
+      "components": 135,
+      "coordinate_sha256": "eaf86d32fb6469c2502a9d861551e1c9abc737c8b5f4969b2c471bfcc2211d2d",
+      "input_index": 160,
+      "max_abs_error_kcal_mol_angstrom": 2.1671553440683056e-13,
+      "max_scaled_error": 4.0009325701065924e-14,
+      "status": "compared"
+    },
+    {
+      "components": 129,
+      "coordinate_sha256": "b003d994f55c0c51923e518a7d25bc799315d25f795df0d4ac65629358072a2b",
+      "input_index": 161,
+      "max_abs_error_kcal_mol_angstrom": 1.7763568394002505e-13,
+      "max_scaled_error": 3.643462402859847e-14,
+      "status": "compared"
+    },
+    {
+      "components": 129,
+      "coordinate_sha256": "c638cce4fc19efa1d508d9390eaf83e7eecb1f975758a167083df4be2ae317ec",
+      "input_index": 162,
+      "max_abs_error_kcal_mol_angstrom": 1.758593271006248e-13,
+      "max_scaled_error": 3.6837910388434026e-14,
+      "status": "compared"
+    },
+    {
+      "components": 75,
+      "coordinate_sha256": "bd31cd0210f55c869c6ae74a1274e17d6ab9047608534434e11f49f6a04ae1ea",
+      "input_index": 163,
+      "max_abs_error_kcal_mol_angstrom": 1.8185453143360064e-13,
+      "max_scaled_error": 6.519462991664577e-14,
+      "status": "compared"
+    },
+    {
+      "components": 75,
+      "coordinate_sha256": "029717c76bf2730147527a2e3caa2d6d527bc19c1948b42e863103db6c3e80c7",
+      "input_index": 164,
+      "max_abs_error_kcal_mol_angstrom": 2.3359092438113294e-13,
+      "max_scaled_error": 1.5703918205021743e-13,
+      "status": "compared"
+    },
+    {
+      "components": 84,
+      "coordinate_sha256": "c21f98fcbe6f13c7a6fd47af5011c7f74a5617e1869d0a8b45a6951875eb25c5",
+      "input_index": 165,
+      "max_abs_error_kcal_mol_angstrom": 1.8829382497642655e-13,
+      "max_scaled_error": 4.321649637958277e-14,
+      "status": "compared"
+    },
+    {
+      "components": 90,
+      "coordinate_sha256": "f6ad98e8b073e043fce3197a64faf8ee713fe2fa1ad581790425a47e4aeb7359",
+      "input_index": 166,
+      "max_abs_error_kcal_mol_angstrom": 2.113864638886298e-13,
+      "max_scaled_error": 1.191355275155666e-13,
+      "status": "compared"
+    },
+    {
+      "components": 78,
+      "coordinate_sha256": "2a5ca99487d305952c40bc83c199c53228df95f384acf1603ca1a75d7e7154ec",
+      "input_index": 167,
+      "max_abs_error_kcal_mol_angstrom": 1.4921397450962104e-13,
+      "max_scaled_error": 6.347995958965972e-14,
+      "status": "compared"
+    },
+    {
+      "components": 75,
+      "coordinate_sha256": "a3bf1e6e444b1aafa344f18df733defc5cfbe49fe73d3c54f76c4327831140f8",
+      "input_index": 168,
+      "max_abs_error_kcal_mol_angstrom": 1.580957587066223e-13,
+      "max_scaled_error": 3.761054879255021e-14,
+      "status": "compared"
+    },
+    {
+      "components": 75,
+      "coordinate_sha256": "60501d18a56828764a73ba4032bb52c241682a3b53735ac99569aa66b95be0f9",
+      "input_index": 169,
+      "max_abs_error_kcal_mol_angstrom": 8.042590593504428e-09,
+      "max_scaled_error": 2.4580556113732354e-09,
+      "status": "compared"
+    },
+    {
+      "components": 180,
+      "coordinate_sha256": "1366ba9e6172fe2de85bbed15b680ead96c1f442567ad015c0215cc477f5dc55",
+      "input_index": 170,
+      "max_abs_error_kcal_mol_angstrom": 2.3803181647963356e-13,
+      "max_scaled_error": 5.950549523612469e-14,
+      "status": "compared"
+    },
+    {
+      "components": 165,
+      "coordinate_sha256": "55725ac55fbebaa5fe4cbcafc2564b293750ee9f229f9c7e74b54e427d77442a",
+      "input_index": 171,
+      "max_abs_error_kcal_mol_angstrom": 2.4868995751603507e-13,
+      "max_scaled_error": 8.972402116890412e-14,
+      "status": "compared"
+    },
+    {
+      "components": 81,
+      "coordinate_sha256": "9a1093f0f71878d7ec62eb4a76b4b8a1f1ed780d55852de5f12ec1c2e670fb77",
+      "input_index": 172,
+      "max_abs_error_kcal_mol_angstrom": 2.2026824808563106e-13,
+      "max_scaled_error": 3.77070425938852e-14,
+      "status": "compared"
+    },
+    {
+      "components": 261,
+      "coordinate_sha256": "b8b38c5745f1717a5e24f12188cbb6fcc85ea0deed7e6ef8e857b0000b4a5573",
+      "input_index": 173,
+      "max_abs_error_kcal_mol_angstrom": 2.4513724383723456e-13,
+      "max_scaled_error": 8.24841500323888e-14,
+      "status": "compared"
+    },
+    {
+      "components": 252,
+      "coordinate_sha256": "c52098a618666fd2f25cbce93a43304c2d0189027847c518ec145b76a2bf8b11",
+      "input_index": 174,
+      "max_abs_error_kcal_mol_angstrom": 2.0961010704922955e-13,
+      "max_scaled_error": 1.8674787321082994e-13,
+      "status": "compared"
+    },
+    {
+      "energy_status": "embed_failure",
+      "input_index": 175,
+      "status": "not_compared"
+    },
+    {
+      "components": 291,
+      "coordinate_sha256": "eb06255653c8e20db4945bdca3acec114732cb5d5346a01028504d0976c00847",
+      "input_index": 176,
+      "max_abs_error_kcal_mol_angstrom": 2.7711166694643907e-13,
+      "max_scaled_error": 6.413283824886616e-14,
+      "status": "compared"
+    },
+    {
+      "components": 219,
+      "coordinate_sha256": "b2760ce44dd74d790811abc3edea2899a3d56a5dbde039854aea3ea3cc546d44",
+      "input_index": 177,
+      "max_abs_error_kcal_mol_angstrom": 1.6342482922482304e-13,
+      "max_scaled_error": 6.301266118201019e-14,
+      "status": "compared"
+    },
+    {
+      "components": 288,
+      "coordinate_sha256": "7db9337e4a54d150f8397cdeb3021d0aef8a98d98c3c5d5ec9cc6dac5566ce54",
+      "input_index": 178,
+      "max_abs_error_kcal_mol_angstrom": 2.1316282072803006e-13,
+      "max_scaled_error": 5.56359877134259e-14,
+      "status": "compared"
+    },
+    {
+      "components": 363,
+      "coordinate_sha256": "c55f857448f0650afd63e5d531eccb5280d8b0e75633fb307c953acf8fad587b",
+      "input_index": 179,
+      "max_abs_error_kcal_mol_angstrom": 1.9539925233402755e-13,
+      "max_scaled_error": 2.846186834723183e-14,
+      "status": "compared"
+    },
+    {
+      "components": 105,
+      "coordinate_sha256": "be1491d7b76b5e5fbec321411cc520821b08d83aacb70fbb6b639948b4d5d79b",
+      "input_index": 180,
+      "max_abs_error_kcal_mol_angstrom": 1.900701818158268e-13,
+      "max_scaled_error": 4.965207164398003e-14,
+      "status": "compared"
+    },
+    {
+      "components": 252,
+      "coordinate_sha256": "4eba4bbedfaa31d1d446a052767cb8b95e3d055352a82f253836c41deb2d0d1b",
+      "input_index": 181,
+      "max_abs_error_kcal_mol_angstrom": 2.4513724383723456e-13,
+      "max_scaled_error": 5.025629086652261e-14,
+      "status": "compared"
+    },
+    {
+      "components": 252,
+      "coordinate_sha256": "5d44b0851b2d606ff8b856a351d9d761e96b4006bd5e7996c88210155f90dfc2",
+      "input_index": 182,
+      "max_abs_error_kcal_mol_angstrom": 2.4868995751603507e-13,
+      "max_scaled_error": 9.137585507440073e-14,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "8d9a412c86b43e92b9461ec856860b69dbc27b25af4895806e0eee32331ac7d0",
+      "input_index": 183,
+      "max_abs_error_kcal_mol_angstrom": 2.2248869413488137e-13,
+      "max_scaled_error": 5.971921745579549e-14,
+      "status": "compared"
+    },
+    {
+      "components": 192,
+      "coordinate_sha256": "a1d95448fa21ab46636fb532d6f7e8c445cd22fecda4f9f28d4b4120d1125254",
+      "input_index": 184,
+      "max_abs_error_kcal_mol_angstrom": 2.3447910280083306e-13,
+      "max_scaled_error": 8.857839868497403e-14,
+      "status": "compared"
+    },
+    {
+      "components": 138,
+      "coordinate_sha256": "9676f32f7a68a054c26a4a10353dae594d7f7cc28304fc3cd1821b1f4a0096bc",
+      "input_index": 185,
+      "max_abs_error_kcal_mol_angstrom": 1.3677947663381929e-13,
+      "max_scaled_error": 3.9509776506948236e-14,
+      "status": "compared"
+    },
+    {
+      "components": 87,
+      "coordinate_sha256": "6717b9c61d30fa4fe2309fb1922fbad95f55ba1ea938b6897a0b8fc6b87dd265",
+      "input_index": 186,
+      "max_abs_error_kcal_mol_angstrom": 2.0250467969162855e-13,
+      "max_scaled_error": 5.205662017053711e-14,
+      "status": "compared"
+    },
+    {
+      "components": 84,
+      "coordinate_sha256": "20d8af11875fe63e2afb6dd3b9d4c6f7b62d0f3a9bc7f89eac5ea66fbb7167fe",
+      "input_index": 187,
+      "max_abs_error_kcal_mol_angstrom": 3.811030246936298e-07,
+      "max_scaled_error": 7.609023152183738e-08,
+      "status": "compared"
+    },
+    {
+      "components": 90,
+      "coordinate_sha256": "516a8070a389937217b85fae6c021ca220add1061682925038ec8ffdc0d29d19",
+      "input_index": 188,
+      "max_abs_error_kcal_mol_angstrom": 1.1901590823981678e-13,
+      "max_scaled_error": 5.025862647372816e-14,
+      "status": "compared"
+    },
+    {
+      "components": 258,
+      "coordinate_sha256": "99eaac0893d7d55f7316ca4f3792bc1440935f5b8bc884e8a673ce433f967d3a",
+      "input_index": 189,
+      "max_abs_error_kcal_mol_angstrom": 2.0961010704922955e-13,
+      "max_scaled_error": 3.4335032542697945e-14,
+      "status": "compared"
+    },
+    {
+      "components": 255,
+      "coordinate_sha256": "b8a1e9140e3fa7272c50655f394d4f88756061cb15208f6ecd1ae6300ab30444",
+      "input_index": 190,
+      "max_abs_error_kcal_mol_angstrom": 2.8421709430404007e-13,
+      "max_scaled_error": 5.798647062186036e-14,
+      "status": "compared"
+    },
+    {
+      "components": 114,
+      "coordinate_sha256": "7398e91abd80c185ca2aeb79df18046ba5004a305f2766bc9929f296290b33f5",
+      "input_index": 191,
+      "max_abs_error_kcal_mol_angstrom": 1.4210854715202004e-13,
+      "max_scaled_error": 4.032055927911421e-14,
+      "status": "compared"
+    },
+    {
+      "components": 144,
+      "coordinate_sha256": "4de8ad6a93e5c83bf166a8ab2a1570a94694b24b373f00fa97935bc1aae5f746",
+      "input_index": 192,
+      "max_abs_error_kcal_mol_angstrom": 2.7000623958883807e-13,
+      "max_scaled_error": 3.243294045588226e-14,
+      "status": "compared"
+    },
+    {
+      "components": 255,
+      "coordinate_sha256": "482daa70b35447db4f4c36e9d812e719a4be97c59c6a66c5ae5ef72db7a07a0f",
+      "input_index": 193,
+      "max_abs_error_kcal_mol_angstrom": 2.3447910280083306e-13,
+      "max_scaled_error": 7.583328296945732e-14,
+      "status": "compared"
+    },
+    {
+      "components": 339,
+      "coordinate_sha256": "9423db96b0b948250a2777fff624fb1fb0431177e14cec5e2685c19825c6f1ae",
+      "input_index": 194,
+      "max_abs_error_kcal_mol_angstrom": 2.4158453015843406e-13,
+      "max_scaled_error": 5.316729333138985e-14,
+      "status": "compared"
+    },
+    {
+      "components": 306,
+      "coordinate_sha256": "d6ebc98d5725e8c4210e53b13d60f424d5a4104493068bfef41d08509de50008",
+      "input_index": 195,
+      "max_abs_error_kcal_mol_angstrom": 1.3322676295501878e-13,
+      "max_scaled_error": 2.7216486234570663e-14,
+      "status": "compared"
+    },
+    {
+      "components": 288,
+      "coordinate_sha256": "80fe889557f5d2969bd51cdeb7a9de47b6f283ab0d7ac22b7c8bf6fd806a3483",
+      "input_index": 196,
+      "max_abs_error_kcal_mol_angstrom": 2.2382096176443156e-13,
+      "max_scaled_error": 7.256724915442102e-14,
+      "status": "compared"
+    },
+    {
+      "components": 237,
+      "coordinate_sha256": "e3fb4ac366a27aca2988aca847fa577dd90e68c0d7dfcbe93505fb79a6e18f1b",
+      "input_index": 197,
+      "max_abs_error_kcal_mol_angstrom": 2.2382096176443156e-13,
+      "max_scaled_error": 5.767154267074456e-14,
+      "status": "compared"
+    },
+    {
+      "components": 270,
+      "coordinate_sha256": "56328f2d1f3efac88430607d05d49b8b9a6ff0caf0355da641e5385a3e9e1457",
+      "input_index": 198,
+      "max_abs_error_kcal_mol_angstrom": 3.055333763768431e-13,
+      "max_scaled_error": 1.078217944880054e-13,
+      "status": "compared"
+    },
+    {
+      "components": 252,
+      "coordinate_sha256": "f0d0868c0d92b4d758003f82e72349451b5ccc5732aa4eb352b3a18f2933720e",
+      "input_index": 199,
+      "max_abs_error_kcal_mol_angstrom": 2.5579538487363607e-13,
+      "max_scaled_error": 1.4769329405232763e-13,
+      "status": "compared"
+    },
+    {
+      "components": 282,
+      "coordinate_sha256": "13fad50200be772198a7ddc8c636f6ec0e4e82d2e276cb0b1d0fe0e1c7207ff6",
+      "input_index": 200,
+      "max_abs_error_kcal_mol_angstrom": 2.0961010704922955e-13,
+      "max_scaled_error": 6.255562800791041e-14,
+      "status": "compared"
+    },
+    {
+      "components": 261,
+      "coordinate_sha256": "aa776ec6b6d9486505dbc7bd22f91276723b05edd5577248a66f6d74b1dc00e3",
+      "input_index": 201,
+      "max_abs_error_kcal_mol_angstrom": 2.6290081223123707e-13,
+      "max_scaled_error": 5.296640695104052e-14,
+      "status": "compared"
+    },
+    {
+      "components": 261,
+      "coordinate_sha256": "fce7c73b4575b8423dade7cf21572efced46401e3cc6035da4fb675835a2d896",
+      "input_index": 202,
+      "max_abs_error_kcal_mol_angstrom": 2.984279490192421e-13,
+      "max_scaled_error": 5.5639487805154386e-14,
+      "status": "compared"
+    },
+    {
+      "components": 288,
+      "coordinate_sha256": "cbcde0ae9673d4f15c1d7cb8131295147e698807773abf864c656e75f09afa27",
+      "input_index": 203,
+      "max_abs_error_kcal_mol_angstrom": 1.9340973267389927e-10,
+      "max_scaled_error": 3.825209445407675e-12,
+      "status": "compared"
+    },
+    {
+      "components": 261,
+      "coordinate_sha256": "0fe671d319b231827720637b0f66f0713d9d58cd8e581bad407eb6ebfc7b9f56",
+      "input_index": 204,
+      "max_abs_error_kcal_mol_angstrom": 1.9895196601282805e-13,
+      "max_scaled_error": 1.394250545086842e-13,
+      "status": "compared"
+    },
+    {
+      "components": 261,
+      "coordinate_sha256": "6af16a9b3af73eddeccca47ba97074772a3cef67364affd995658605b29daf84",
+      "input_index": 205,
+      "max_abs_error_kcal_mol_angstrom": 1.8118839761882555e-13,
+      "max_scaled_error": 9.495956539856265e-14,
+      "status": "compared"
+    },
+    {
+      "components": 240,
+      "coordinate_sha256": "68e3ea579e807a79799b145ed4e00e46ec3ee725dc89ef7b6d3737af79cd9a9e",
+      "input_index": 206,
+      "max_abs_error_kcal_mol_angstrom": 1.9895196601282805e-13,
+      "max_scaled_error": 1.2252254367266078e-13,
+      "status": "compared"
+    },
+    {
+      "components": 255,
+      "coordinate_sha256": "7b45d4d398196c464bad194cf70fe55fe51099fee1f801c3c4f5843a7f328eaf",
+      "input_index": 207,
+      "max_abs_error_kcal_mol_angstrom": 2.666755705149626e-13,
+      "max_scaled_error": 2.5155286926289233e-13,
+      "status": "compared"
+    },
+    {
+      "components": 285,
+      "coordinate_sha256": "fd24daebb309091e01c3e88bc26fbc7a2f6412f322c21f40bae33ae83e399be8",
+      "input_index": 208,
+      "max_abs_error_kcal_mol_angstrom": 3.339550858072471e-13,
+      "max_scaled_error": 9.261197226985622e-14,
+      "status": "compared"
+    },
+    {
+      "components": 246,
+      "coordinate_sha256": "19fcb137546b57fd658a17ac803c1eba45c0c93405894f8d1d9ea4d6a2e8c415",
+      "input_index": 209,
+      "max_abs_error_kcal_mol_angstrom": 2.717825964282383e-13,
+      "max_scaled_error": 1.1948568275426249e-13,
+      "status": "compared"
+    },
+    {
+      "components": 123,
+      "coordinate_sha256": "bde20c3f314bcf53dba91eef30eac2bccb00cdddd03d3b5e534c4a96c05543d8",
+      "input_index": 210,
+      "max_abs_error_kcal_mol_angstrom": 1.7674750552032492e-13,
+      "max_scaled_error": 3.856554402504055e-14,
+      "status": "compared"
+    },
+    {
+      "components": 135,
+      "coordinate_sha256": "d325dbc224538ae071ff586116e0fd0827638c7cb5c586924a703836188576bc",
+      "input_index": 211,
+      "max_abs_error_kcal_mol_angstrom": 1.5898393712632242e-13,
+      "max_scaled_error": 6.751186009670165e-14,
+      "status": "compared"
+    },
+    {
+      "components": 135,
+      "coordinate_sha256": "8801432bdad12873369cc0f72a8093aaac17a66eca96bc6fa0a48e345c3f8fc2",
+      "input_index": 212,
+      "max_abs_error_kcal_mol_angstrom": 1.2390088954816747e-13,
+      "max_scaled_error": 6.255137429943649e-14,
+      "status": "compared"
+    },
+    {
+      "components": 126,
+      "coordinate_sha256": "2246426d6e0640fc7b995480c5248ff5385e9882dcfaecca62d6114269040df7",
+      "input_index": 213,
+      "max_abs_error_kcal_mol_angstrom": 1.7408297026122455e-13,
+      "max_scaled_error": 4.207972562271929e-14,
+      "status": "compared"
+    },
+    {
+      "components": 126,
+      "coordinate_sha256": "0b277c0cc7b392052af84bd8b4782ee06b52aee3c0c94080ee3a204b1b24c5ab",
+      "input_index": 214,
+      "max_abs_error_kcal_mol_angstrom": 2.5224267119483557e-13,
+      "max_scaled_error": 1.0547707140984723e-13,
+      "status": "compared"
+    },
+    {
+      "components": 255,
+      "coordinate_sha256": "3b55b0d99662b1ea31b04d2183a5b11c75cb9c60532d0da641dc6fae653fc445",
+      "input_index": 215,
+      "max_abs_error_kcal_mol_angstrom": 2.8066438062523957e-13,
+      "max_scaled_error": 7.259891201969988e-14,
+      "status": "compared"
+    },
+    {
+      "components": 174,
+      "coordinate_sha256": "2190f1876260ee1968e2bac90d902fe1e0bda54810e863ece67f453deb84d5b4",
+      "input_index": 216,
+      "max_abs_error_kcal_mol_angstrom": 2.0961010704922955e-13,
+      "max_scaled_error": 3.5221856530754156e-14,
+      "status": "compared"
+    },
+    {
+      "components": 174,
+      "coordinate_sha256": "077a93206a2a02c3136608f0520bd5aee8f5c688173c67203bd883a3432d3989",
+      "input_index": 217,
+      "max_abs_error_kcal_mol_angstrom": 1.2079226507921703e-13,
+      "max_scaled_error": 1.698445950726127e-14,
+      "status": "compared"
+    },
+    {
+      "components": 261,
+      "coordinate_sha256": "c0f4dc88bb283683c8a12b41ef73e70e779a6cca55062ec5720130ea72e8c1e9",
+      "input_index": 218,
+      "max_abs_error_kcal_mol_angstrom": 2.091660178393795e-13,
+      "max_scaled_error": 9.406054516728987e-14,
+      "status": "compared"
+    },
+    {
+      "components": 180,
+      "coordinate_sha256": "059e8f33c677f895a27565e938897c68c2086029260f8d4347f9b376e9dbdda1",
+      "input_index": 219,
+      "max_abs_error_kcal_mol_angstrom": 1.5631940186722204e-13,
+      "max_scaled_error": 7.257789085485715e-14,
+      "status": "compared"
+    },
+    {
+      "components": 192,
+      "coordinate_sha256": "a51848a67f0c582ba44ec2c83d3255d8de4e61f254dac139b6aa501bd23ba51f",
+      "input_index": 220,
+      "max_abs_error_kcal_mol_angstrom": 2.682298827494378e-13,
+      "max_scaled_error": 4.60112185444917e-14,
+      "status": "compared"
+    },
+    {
+      "components": 294,
+      "coordinate_sha256": "5ed699407bba52d1c7eb25021242a83168f2543dbb159651785d6b57a5843569",
+      "input_index": 221,
+      "max_abs_error_kcal_mol_angstrom": 1.8474111129762605e-13,
+      "max_scaled_error": 9.195847134330888e-14,
+      "status": "compared"
+    },
+    {
+      "components": 285,
+      "coordinate_sha256": "47a0b072ee0d7c0a41390f15322975f62469bbac344233efe58f15e127e29116",
+      "input_index": 222,
+      "max_abs_error_kcal_mol_angstrom": 2.4158453015843406e-13,
+      "max_scaled_error": 8.210407689102614e-14,
+      "status": "compared"
+    },
+    {
+      "components": 252,
+      "coordinate_sha256": "68ab16ac245dab3d4a824381d1561aba3ecfdbabe4aaab62c46029448b8efce8",
+      "input_index": 223,
+      "max_abs_error_kcal_mol_angstrom": 1.9895196601282805e-13,
+      "max_scaled_error": 4.3588665659462594e-14,
+      "status": "compared"
+    },
+    {
+      "components": 96,
+      "coordinate_sha256": "15d952b71cf0d118a6b9024de5e63209ab04bd780f690497523307c9fa624528",
+      "input_index": 224,
+      "max_abs_error_kcal_mol_angstrom": 1.8118839761882555e-13,
+      "max_scaled_error": 4.384226959502884e-14,
+      "status": "compared"
+    },
+    {
+      "components": 51,
+      "coordinate_sha256": "778e1e499c65e17667fd7190d3291e93bbb0a980358faddce3af88d6db35fa55",
+      "input_index": 225,
+      "max_abs_error_kcal_mol_angstrom": 1.0302869668521453e-13,
+      "max_scaled_error": 2.3892197009909433e-14,
+      "status": "compared"
+    },
+    {
+      "components": 129,
+      "coordinate_sha256": "4d0ab8bd22a254ce8b238797e5b6c9a764d0f3ac0992d4f6a70fe82efc4a1b61",
+      "input_index": 226,
+      "max_abs_error_kcal_mol_angstrom": 1.6342482922482304e-13,
+      "max_scaled_error": 6.012112695341403e-14,
+      "status": "compared"
+    },
+    {
+      "components": 105,
+      "coordinate_sha256": "9706a39bac222c537b52e1586f7ba02e0b893658889503397047a6af9c325d9e",
+      "input_index": 227,
+      "max_abs_error_kcal_mol_angstrom": 2.5579538487363607e-13,
+      "max_scaled_error": 5.701708249527972e-14,
+      "status": "compared"
+    },
+    {
+      "components": 78,
+      "coordinate_sha256": "f9033b00e194d0ab356c343ce4009b9f6c49349e2f8d7a5de6a1ad1aae653f7f",
+      "input_index": 228,
+      "max_abs_error_kcal_mol_angstrom": 7.105427357601002e-14,
+      "max_scaled_error": 1.5942603940972117e-14,
+      "status": "compared"
+    },
+    {
+      "components": 144,
+      "coordinate_sha256": "7ebcf900e7861acd90cf0ffe41fc272e97d94db54d38dd378563ea68903d98d3",
+      "input_index": 229,
+      "max_abs_error_kcal_mol_angstrom": 2.1671553440683056e-13,
+      "max_scaled_error": 3.476213398459025e-14,
+      "status": "compared"
+    },
+    {
+      "components": 162,
+      "coordinate_sha256": "f4c13c349393d9010bef98c4b3568e58ecd0fa0e6876353c6496a0e9adb66784",
+      "input_index": 230,
+      "max_abs_error_kcal_mol_angstrom": 2.913225216616411e-13,
+      "max_scaled_error": 3.2780053287904326e-14,
+      "status": "compared"
+    },
+    {
+      "components": 378,
+      "coordinate_sha256": "fc4f3bf3087d43c93615432d91fe4b2fc1d0c58ed486a3a99cb01bef53dbe3f9",
+      "input_index": 231,
+      "max_abs_error_kcal_mol_angstrom": 2.7000623958883807e-13,
+      "max_scaled_error": 5.4403859856466423e-14,
+      "status": "compared"
+    },
+    {
+      "components": 285,
+      "coordinate_sha256": "e2307a4c2ffb4cec7b4f2b7b7a87eb11ef069303b20b4dd1936f64a659709494",
+      "input_index": 232,
+      "max_abs_error_kcal_mol_angstrom": 2.5934809855243657e-13,
+      "max_scaled_error": 1.2667477426649672e-13,
+      "status": "compared"
+    },
+    {
+      "components": 114,
+      "coordinate_sha256": "3e8ddee472316d4f1ea636f07f9792a43aff853c6ab868a21d8fc9f674ccfdf5",
+      "input_index": 233,
+      "max_abs_error_kcal_mol_angstrom": 1.4210854715202004e-13,
+      "max_scaled_error": 5.279392184109962e-14,
+      "status": "compared"
+    },
+    {
+      "components": 117,
+      "coordinate_sha256": "d5f962e7203724bb876a7b92b039b04ee2d61403412eee4344b2b7cbc0d0cc3c",
+      "input_index": 234,
+      "max_abs_error_kcal_mol_angstrom": 2.4158453015843406e-13,
+      "max_scaled_error": 7.240001660609855e-14,
+      "status": "compared"
+    },
+    {
+      "components": 159,
+      "coordinate_sha256": "dbbf1f1d50e6ccbb4f2eb80c69cb8e8debb79fa36f382d26da40aebb809e26de",
+      "input_index": 235,
+      "max_abs_error_kcal_mol_angstrom": 1.2967404927621828e-13,
+      "max_scaled_error": 3.455363028511185e-14,
+      "status": "compared"
+    },
+    {
+      "components": 171,
+      "coordinate_sha256": "e944a805217a98cb1650c9cecfff551cb70310594ea049e69c5ad212ad720adb",
+      "input_index": 236,
+      "max_abs_error_kcal_mol_angstrom": 1.7918999617450027e-13,
+      "max_scaled_error": 6.173337163835974e-14,
+      "status": "compared"
+    },
+    {
+      "components": 162,
+      "coordinate_sha256": "d56d44e77222a869e1300ac9678a835965305b3d6b6ed4fae85ae2bcbca9b4c4",
+      "input_index": 237,
+      "max_abs_error_kcal_mol_angstrom": 2.0961010704922955e-13,
+      "max_scaled_error": 4.243947363789818e-14,
+      "status": "compared"
+    },
+    {
+      "components": 144,
+      "coordinate_sha256": "3e9a9b0a05304b6460e567baf2769968b3bfbbd3fb181df90c029e1a00cdcba6",
+      "input_index": 238,
+      "max_abs_error_kcal_mol_angstrom": 4.547473508864641e-13,
+      "max_scaled_error": 3.1820303864286805e-14,
+      "status": "compared"
+    },
+    {
+      "components": 96,
+      "coordinate_sha256": "aad853dc72f50dc7a5125c2d317fac7c958d01a3dee8786fe93e642f084c8d4f",
+      "input_index": 239,
+      "max_abs_error_kcal_mol_angstrom": 1.851852005074761e-13,
+      "max_scaled_error": 5.538832257423922e-14,
+      "status": "compared"
+    },
+    {
+      "components": 150,
+      "coordinate_sha256": "2b3eae1f593d595b888ffd3b895ba07bef86251deef4db7895ab44c9ab0a7c44",
+      "input_index": 240,
+      "max_abs_error_kcal_mol_angstrom": 1.8118839761882555e-13,
+      "max_scaled_error": 4.241032214471729e-14,
+      "status": "compared"
+    },
+    {
+      "components": 138,
+      "coordinate_sha256": "6733bdb443e630ddcb694eecb8f71bad0a9aa9665f33ac46ffe9b24e297c98aa",
+      "input_index": 241,
+      "max_abs_error_kcal_mol_angstrom": 1.7674750552032492e-13,
+      "max_scaled_error": 6.182507497822624e-14,
+      "status": "compared"
+    },
+    {
+      "components": 132,
+      "coordinate_sha256": "0a139744962211320a294915acb408d85d1d0d325c3e29fa29750adfb50b1746",
+      "input_index": 242,
+      "max_abs_error_kcal_mol_angstrom": 2.6645352591003757e-13,
+      "max_scaled_error": 1.2617981009477952e-13,
+      "status": "compared"
+    },
+    {
+      "components": 141,
+      "coordinate_sha256": "412f1418b3ab434d2ce97742bfc36582945517de139d6b856115b4eac4fceb5c",
+      "input_index": 243,
+      "max_abs_error_kcal_mol_angstrom": 1.8207657603852567e-13,
+      "max_scaled_error": 6.702472675999383e-14,
+      "status": "compared"
+    },
+    {
+      "components": 180,
+      "coordinate_sha256": "bc910a5451ee281fc951b52f44bd6ebf491a3f22ce86335722c987dc995537f9",
+      "input_index": 244,
+      "max_abs_error_kcal_mol_angstrom": 3.5704772471945034e-13,
+      "max_scaled_error": 6.020123344047467e-14,
+      "status": "compared"
+    },
+    {
+      "components": 168,
+      "coordinate_sha256": "425d55de72cf1ddd26e5ddda2f2e66490aeeb68b41df9646b975bf25a289bfab",
+      "input_index": 245,
+      "max_abs_error_kcal_mol_angstrom": 1.8474111129762605e-13,
+      "max_scaled_error": 8.05024055838989e-14,
+      "status": "compared"
+    },
+    {
+      "components": 135,
+      "coordinate_sha256": "8231b451771efa604ed50ec5a7fdbffab817ace44ad8d56820fcde5a29c96025",
+      "input_index": 246,
+      "max_abs_error_kcal_mol_angstrom": 1.8474111129762605e-13,
+      "max_scaled_error": 8.037202623340746e-14,
+      "status": "compared"
+    },
+    {
+      "components": 141,
+      "coordinate_sha256": "0ae9313b629b719d76e94485b7c744a8e60c3f9bd57014ca926adeb7b0a73ba6",
+      "input_index": 247,
+      "max_abs_error_kcal_mol_angstrom": 2.4868995751603507e-13,
+      "max_scaled_error": 3.2448170239537353e-14,
+      "status": "compared"
+    },
+    {
+      "components": 171,
+      "coordinate_sha256": "6910fa4e016dee1c49108319bf8819a745dd2039354b6129b0a99127bfd4ee1e",
+      "input_index": 248,
+      "max_abs_error_kcal_mol_angstrom": 3.836930773104541e-13,
+      "max_scaled_error": 8.021673190648133e-14,
+      "status": "compared"
+    },
+    {
+      "components": 186,
+      "coordinate_sha256": "510b76b481279cb4a57dd9a3abf43c110a7521d9b38101fd491dffbebc7deb6d",
+      "input_index": 249,
+      "max_abs_error_kcal_mol_angstrom": 2.0605739337042905e-13,
+      "max_scaled_error": 6.790144908707071e-14,
+      "status": "compared"
+    },
+    {
+      "components": 174,
+      "coordinate_sha256": "e82a86568b89e8efd78d6f20d0f2d650b0d3101a59d75cf71be75f7d8db4ead2",
+      "input_index": 250,
+      "max_abs_error_kcal_mol_angstrom": 4.263256414560601e-13,
+      "max_scaled_error": 5.274292612113663e-14,
+      "status": "compared"
+    },
+    {
+      "components": 174,
+      "coordinate_sha256": "91a7e9590e8c97b30ab7eef34c55f4f4183707c02e9592198bf0c2c339aacaa2",
+      "input_index": 251,
+      "max_abs_error_kcal_mol_angstrom": 2.5224267119483557e-13,
+      "max_scaled_error": 8.80444720280065e-14,
+      "status": "compared"
+    },
+    {
+      "components": 156,
+      "coordinate_sha256": "a8f1817d126a8f5a064777b12a333a7da81a62037ad460952a11cba20e84b424",
+      "input_index": 252,
+      "max_abs_error_kcal_mol_angstrom": 2.531308496145357e-13,
+      "max_scaled_error": 9.4839178021783e-14,
+      "status": "compared"
+    },
+    {
+      "components": 150,
+      "coordinate_sha256": "2a63fdf8a13259ef836e8d06d7ccad87a095e2ab025b065f067bd9f1229d11f7",
+      "input_index": 253,
+      "max_abs_error_kcal_mol_angstrom": 4.405364961712621e-13,
+      "max_scaled_error": 9.323366300318369e-14,
+      "status": "compared"
+    },
+    {
+      "components": 153,
+      "coordinate_sha256": "8c8927476151a8039caa9542c5a84115d7cf879fa8c015dc17bfdf43d2da3069",
+      "input_index": 254,
+      "max_abs_error_kcal_mol_angstrom": 2.6290081223123707e-13,
+      "max_scaled_error": 4.9143099256758116e-14,
+      "status": "compared"
+    },
+    {
+      "components": 171,
+      "coordinate_sha256": "7f559b62a24bc45bfadd538a0a30526c286c45c4c4364d3d5e3ef13f7cfed143",
+      "input_index": 255,
+      "max_abs_error_kcal_mol_angstrom": 1.8385293287792592e-13,
+      "max_scaled_error": 8.118796557956213e-14,
+      "status": "compared"
+    },
+    {
+      "components": 135,
+      "coordinate_sha256": "d5ef1c276bf562e950e0cbd786f72bb4264681aef3a56fc90c394d1bec3d905f",
+      "input_index": 256,
+      "max_abs_error_kcal_mol_angstrom": 2.7000623958883807e-13,
+      "max_scaled_error": 1.0272796916600815e-13,
+      "status": "compared"
+    },
+    {
+      "components": 102,
+      "coordinate_sha256": "da10ebaa42388f2a2202d2c9b568db22b94b136c42370ef1e5ddf30016f2d599",
+      "input_index": 257,
+      "max_abs_error_kcal_mol_angstrom": 2.1316282072803006e-13,
+      "max_scaled_error": 5.11503873418868e-14,
+      "status": "compared"
+    },
+    {
+      "components": 117,
+      "coordinate_sha256": "90099dea27d6ed6d762eaa1456cdee94cbbfc9cd12200737af06305a37834be9",
+      "input_index": 258,
+      "max_abs_error_kcal_mol_angstrom": 2.4158453015843406e-13,
+      "max_scaled_error": 3.235910102621339e-14,
+      "status": "compared"
+    },
+    {
+      "components": 150,
+      "coordinate_sha256": "38f7d30a49001a5b964ac78b977c5f2852c529d8885689af49d250fd69323d2f",
+      "input_index": 259,
+      "max_abs_error_kcal_mol_angstrom": 2.4158453015843406e-13,
+      "max_scaled_error": 7.010553730687002e-14,
+      "status": "compared"
+    },
+    {
+      "components": 144,
+      "coordinate_sha256": "59ecd8e72700a49c12c0b1c6f74da1574a8e126d336e4702932bd208b6bc3230",
+      "input_index": 260,
+      "max_abs_error_kcal_mol_angstrom": 2.184918912462308e-13,
+      "max_scaled_error": 4.4228612730409135e-14,
+      "status": "compared"
+    },
+    {
+      "components": 153,
+      "coordinate_sha256": "f2e81938087624a2ee50947d725a8174405b461031450cfbbc6f2800b35ad5bd",
+      "input_index": 261,
+      "max_abs_error_kcal_mol_angstrom": 1.2079226507921703e-13,
+      "max_scaled_error": 8.558883194269521e-14,
+      "status": "compared"
+    },
+    {
+      "components": 162,
+      "coordinate_sha256": "6805b7df708ac09eb9401d32f0cdc31092cd1d7f2ccd7f797e9400677ad0109b",
+      "input_index": 262,
+      "max_abs_error_kcal_mol_angstrom": 1.509903313490213e-13,
+      "max_scaled_error": 9.969823615712675e-14,
+      "status": "compared"
+    },
+    {
+      "components": 171,
+      "coordinate_sha256": "22ed7afec2a0034a3a74f2cd10e8042b5483784cc65a553d926539a8615fee95",
+      "input_index": 263,
+      "max_abs_error_kcal_mol_angstrom": 2.6711965972481266e-13,
+      "max_scaled_error": 1.140356640633766e-13,
+      "status": "compared"
+    },
+    {
+      "components": 165,
+      "coordinate_sha256": "b98e6bccb95aabcd67b79f44e04cefdad0bc5e390a21a25f165bf26d21f5870f",
+      "input_index": 264,
+      "max_abs_error_kcal_mol_angstrom": 1.652011860642233e-13,
+      "max_scaled_error": 2.5163048842971166e-14,
+      "status": "compared"
+    }
+  ],
+  "scaled_error_threshold": 1e-07
+}

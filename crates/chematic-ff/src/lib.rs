@@ -33,7 +33,7 @@ pub use mmff94_energy::{
     AngleEnergyParams, BondEnergyParams, Mmff94Resolution, TorsionEnergyParams, VdwEnergyParams,
     mmff94_angle_energy, mmff94_angle_energy_resolved, mmff94_bond_energy,
     mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_stbn_type_only,
-    mmff94_torsion_energy, mmff94_vdw_combined, mmff94_vdw_energy,
+    mmff94_torsion_energy, mmff94_torsion_energy_with_bond, mmff94_vdw_combined, mmff94_vdw_energy,
 };
 pub use mmff94_minimizer::{
     BFGS_DENSE_MAX_ATOMS, BFGS_MAX_COORDINATE_STEP, EnergyBreakdown, MLTB_TYPES, MinimizeResult,

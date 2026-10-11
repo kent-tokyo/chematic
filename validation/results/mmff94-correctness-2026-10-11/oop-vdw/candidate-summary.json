@@ -1,0 +1,228 @@
+{
+  "artifacts": {
+    "rdkit": {
+      "bytes": 2141824,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.venv-v1gate/lib/python3.13/site-packages/rdkit/rdBase.so",
+      "sha256": "dcc50095c6d95b29aae272f925514caf7134922a0b5ffa2864131926e0bd7c9d"
+    },
+    "schematic": {
+      "bytes": 11790464,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "cf6f1e7f50122880dfc7160e52946fd8da0d55caee7f9daad767b44ce4a216d8"
+    }
+  },
+  "caveat": "RDKit generated the shared explicit-H coordinates. This measures total force-field energy agreement and per-term agreement; it does not measure conformer quality, minimization convergence, stereo preservation, or speed.",
+  "command": [
+    "/private/tmp/chematic-mmff-development-20261011/bin/python",
+    "scripts/mmff94_same_explicit_h_energy.py",
+    "--output",
+    "validation/results/mmff94-correctness-2026-10-11/oop-vdw/candidate.jsonl",
+    "--summary",
+    "validation/results/mmff94-correctness-2026-10-11/oop-vdw/candidate-summary.json",
+    "--rdkit-term-breakdown",
+    "--expected-schematic",
+    "1.0.20",
+    "--expected-rdkit",
+    "2026.03.6",
+    "--schematic-artifact",
+    "crates/chematic-py/python/chematic/chematic.cpython-313-darwin.so",
+    "--rdkit-artifact",
+    ".venv-v1gate/lib/python3.13/site-packages/rdkit/rdBase.so",
+    "--schematic-build-command",
+    "VIRTUAL_ENV=/private/tmp/chematic-mmff-development-20261011 .venv-v1gate/bin/maturin develop --release --offline -j 2 -m crates/chematic-py/Cargo.toml -- -C strip=none -C debuginfo=1",
+    "--gradient-input-index",
+    "99",
+    "--gradient-input-index",
+    "94",
+    "--gradient-input-index",
+    "91",
+    "--gradient-input-index",
+    "192",
+    "--gradient-input-index",
+    "222",
+    "--gradient-input-index",
+    "231"
+  ],
+  "gate": {
+    "input_indices_contiguous": true,
+    "provenance_complete": true,
+    "rdkit_version_matches": true,
+    "row_accounting_complete": true,
+    "schematic_version_matches": true,
+    "source_tree_clean": false
+  },
+  "gate_passed": false,
+  "generated_at_utc": "2026-10-11T04:12:29.091249+00:00",
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "processor": "arm"
+  },
+  "manifests": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json",
+      "rows": 65,
+      "sha256": "6a478ea0f5d4ef067a4d1739e77a7209e8f76ecaa837e3f487c723dd6f465d6b"
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
+      "rows": 200,
+      "sha256": "ec93ac160aa91c3c4416d57d3000d6e344e0b75cdf5c122211364c7495dce239"
+    }
+  ],
+  "measurements": {
+    "by_primary_category": {
+      "alkene_ez": {
+        "max_abs_delta_kcal_mol": 8.171241461241152e-14,
+        "median_abs_delta_kcal_mol": 1.509903313490213e-14,
+        "rows": 8
+      },
+      "drug_like": {
+        "max_abs_delta_kcal_mol": 9.094947017729282e-13,
+        "median_abs_delta_kcal_mol": 1.1368683772161603e-13,
+        "rows": 193
+      },
+      "druglike": {
+        "max_abs_delta_kcal_mol": 9.237055564881302e-14,
+        "median_abs_delta_kcal_mol": 4.263256414560601e-14,
+        "rows": 7
+      },
+      "druglike_rigid": {
+        "max_abs_delta_kcal_mol": 1.4210854715202004e-13,
+        "median_abs_delta_kcal_mol": 1.4210854715202004e-13,
+        "rows": 1
+      },
+      "druglike_stress": {
+        "max_abs_delta_kcal_mol": 2.2737367544323206e-13,
+        "median_abs_delta_kcal_mol": 1.5631940186722204e-13,
+        "rows": 2
+      },
+      "flexible_chain": {
+        "max_abs_delta_kcal_mol": 8.526512829121202e-14,
+        "median_abs_delta_kcal_mol": 3.552713678800501e-14,
+        "rows": 6
+      },
+      "fused_aromatic": {
+        "max_abs_delta_kcal_mol": 9.947598300641403e-14,
+        "median_abs_delta_kcal_mol": 1.4210854715202004e-14,
+        "rows": 7
+      },
+      "hindered_biaryl": {
+        "max_abs_delta_kcal_mol": 8.526512829121202e-14,
+        "median_abs_delta_kcal_mol": 8.526512829121202e-14,
+        "rows": 1
+      },
+      "known_fail_closed_case": {
+        "max_abs_delta_kcal_mol": 8.526512829121202e-14,
+        "median_abs_delta_kcal_mol": 8.526512829121202e-14,
+        "rows": 1
+      },
+      "macrocycle": {
+        "max_abs_delta_kcal_mol": 8.526512829121202e-13,
+        "median_abs_delta_kcal_mol": 3.979039320256561e-13,
+        "rows": 9
+      },
+      "macrocycle_amide": {
+        "max_abs_delta_kcal_mol": 3.197442310920451e-14,
+        "median_abs_delta_kcal_mol": 3.197442310920451e-14,
+        "rows": 1
+      },
+      "macrocycle_boundary": {
+        "max_abs_delta_kcal_mol": 7.105427357601002e-14,
+        "median_abs_delta_kcal_mol": 7.105427357601002e-14,
+        "rows": 1
+      },
+      "rigid_ring": {
+        "max_abs_delta_kcal_mol": 5.684341886080802e-14,
+        "median_abs_delta_kcal_mol": 1.5987211554602254e-14,
+        "rows": 8
+      },
+      "small_ring_boundary": {
+        "max_abs_delta_kcal_mol": 1.1368683772161603e-13,
+        "median_abs_delta_kcal_mol": 1.1368683772161603e-13,
+        "rows": 1
+      },
+      "stereocenter_implicit_h": {
+        "max_abs_delta_kcal_mol": 1.2079226507921703e-13,
+        "median_abs_delta_kcal_mol": 2.842170943040401e-14,
+        "rows": 10
+      },
+      "stereocenter_quaternary": {
+        "max_abs_delta_kcal_mol": 2.842170943040401e-14,
+        "median_abs_delta_kcal_mol": 1.4988010832439613e-15,
+        "rows": 6
+      }
+    },
+    "comparable_rows": 262,
+    "gradient_diagnostic": {
+      "input_indices": [
+        91,
+        94,
+        99,
+        192,
+        222,
+        231
+      ],
+      "max_abs_error_kcal_mol_angstrom": 1.4111149049256255e-07,
+      "max_scaled_error": 6.025237746903341e-08,
+      "rows": 6
+    },
+    "max_abs_delta_kcal_mol": 9.094947017729282e-13,
+    "median_abs_delta_kcal_mol": 8.526512829121202e-14,
+    "p90_abs_delta_kcal_mol": 2.913225216616411e-13,
+    "row_accounting": {
+      "input_count": 265,
+      "status_counts": {
+        "declared_unsupported": 1,
+        "embed_failure": 2,
+        "ok": 262
+      },
+      "terminal_count": 265
+    },
+    "within_1_kcal_mol": 262,
+    "within_5_kcal_mol": 262
+  },
+  "missing_dimensions": [],
+  "profile": "mmff94_same_explicit_h_current_source_v2",
+  "protocol": {
+    "comparison": "RDKit and CheMatic MMFF94 total energy on the same RDKit-generated explicit-H coordinates",
+    "coordinate_producer": "RDKit EmbedMolecule default parameters with per-row fixed random seed",
+    "excludes": [
+      "conformer_quality",
+      "minimization_convergence",
+      "stereo_preservation",
+      "runtime_speed"
+    ],
+    "gradient_central_difference_delta_angstrom": 1e-05,
+    "gradient_input_indices": [
+      91,
+      94,
+      99,
+      192,
+      222,
+      231
+    ],
+    "rdkit_term_breakdown": true,
+    "seed": 20260913
+  },
+  "rows_artifact": {
+    "bytes": 340818,
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/oop-vdw/candidate.jsonl",
+    "sha256": "4f14cfac9610e2d27cbd7d1a99d42bf30b0fed114a1107cb9069123a1ef915c7"
+  },
+  "schema_version": 2,
+  "source": {
+    "build_command": "VIRTUAL_ENV=/private/tmp/chematic-mmff-development-20261011 .venv-v1gate/bin/maturin develop --release --offline -j 2 -m crates/chematic-py/Cargo.toml -- -C strip=none -C debuginfo=1",
+    "git_revision": "7f84ae4a98399086ce9f389c099f3fb77b66066e",
+    "maturin": "maturin 1.13.3",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)\nbinary: rustc\ncommit-hash: 2d8144b7880597b6e6d3dfd63a9a9efae3f533d3\ncommit-date: 2026-07-07\nhost: aarch64-apple-darwin\nrelease: 1.97.0\nLLVM version: 22.1.6",
+    "tracked_tree_dirty": true
+  },
+  "status": "current_source_diagnostic_not_release_gate",
+  "versions": {
+    "chematic": "1.0.20",
+    "python": "3.13.6",
+    "rdkit_distribution": "2026.3.6",
+    "rdkit_runtime": "2026.03.6"
+  }
+}

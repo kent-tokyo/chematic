@@ -1,0 +1,10 @@
+{
+  "cause": "serde_json default number parser changed binary64 coordinate bits",
+  "input_index": 191,
+  "name": "chembl_tier_b_0126",
+  "direct_angle_deg": -90.0,
+  "json_decoded_angle_deg": -89.99999999999997,
+  "direct_status": "satisfied",
+  "json_decoded_status": "violated",
+  "production_stereo_verifier_unchanged": true
+}

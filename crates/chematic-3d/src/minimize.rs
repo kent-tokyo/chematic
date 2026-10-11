@@ -1775,9 +1775,8 @@ fn missing_term(
 /// stretch-bend, torsion, and out-of-plane center that chematic-ff's own
 /// energy functions would evaluate for `mol`. Mirrors
 /// `chematic_ff::mmff94_minimizer`'s private energy-term enumeration loops
-/// exactly (including its lack of an `i == l` guard on 3-membered-ring
-/// torsions) so the totals match what chematic-ff will actually compute
-/// over, not an idealized recount.
+/// exactly, including the four-distinct-atoms constraint on torsions, so
+/// the totals match the interactions evaluated by chematic-ff.
 fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport {
     let mut report = Mmff94CoverageReport::default();
     let rings = mmff94_rings(mol);
@@ -1884,7 +1883,7 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
                 continue;
             }
             for &l in &nbrs_k {
-                if l == j {
+                if l == j || l == i {
                     continue;
                 }
                 report.torsions_total += 1;
@@ -3272,6 +3271,42 @@ mod policy_bridge_tests {
             "carbonyl C=O (and Cα-C) bonds must be covered, not falsely missing: {:?}",
             report.bonds_missing
         );
+    }
+
+    #[test]
+    fn torsion_coverage_counts_only_four_distinct_atoms() {
+        for (smiles, expected_count) in [("C1CC1", 0), ("C1CCC1", 4), ("CCCC", 1)] {
+            let mol = parse(smiles).unwrap();
+            let types = assign_mmff94_numeric_types(&mol).unwrap();
+            let report = compute_mmff94_coverage(&mol, &types);
+            assert_eq!(report.torsions_total, expected_count, "{smiles}");
+        }
+    }
+
+    #[test]
+    fn iminium_torsion_empirical_parameters_are_included_in_coverage() {
+        let mol = parse("CC=[N+](C)c1ccccc1").unwrap();
+        let (types, view) = chematic_ff::assign_mmff94_numeric_types_with_view(&mol).unwrap();
+        assert_eq!((types[2], types[4]), (54, 37));
+        let report = compute_mmff94_coverage(&view, &types);
+        assert!(report.torsions_total > 0);
+        assert!(
+            report.torsions_missing.is_empty(),
+            "{:?}",
+            report.torsions_missing
+        );
+    }
+
+    #[test]
+    fn oop_coverage_includes_n_oxide_and_counts_centers() {
+        let mol = parse("[O-][n+]1ccccc1").unwrap();
+        let (types, view) = chematic_ff::assign_mmff94_numeric_types_with_view(&mol).unwrap();
+        assert_eq!(types[1], 69);
+        // Without explicit H, only the N-oxide has three neighbors. Its
+        // three Wilson angles share one parameter lookup/coverage center.
+        let report = compute_mmff94_coverage(&view, &types);
+        assert_eq!(report.oop_total, 1);
+        assert!(report.oop_missing.is_empty());
     }
 
     // --- Mechanism-3 repro: [C@H](F)(Cl)Br under old vs. new MMFF94 --------
