@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a raw published-v1.0.42/RDKit benchmark record."""
+"""Validate a pinned Python/RDKit packet (v1.0.42 defaults retained)."""
 
 from __future__ import annotations
 
@@ -8,18 +8,29 @@ import json
 from pathlib import Path
 
 
-def validate(report: dict) -> list[str]:
+def validate(
+    report: dict,
+    *,
+    expected_schema: str = "published-v1.0.42-rdkit-packet/v1",
+    expected_chematic: str = "1.0.42",
+    expected_rdkit: tuple[str, ...] = ("2026.9.1", "2026.09.1"),
+    expected_revision: str | None = None,
+) -> list[str]:
     errors: list[str] = []
-    if report.get("schema") != "published-v1.0.42-rdkit-packet/v1":
+    if report.get("schema") != expected_schema:
         errors.append("unexpected schema")
     binding = report.get("binding")
     if binding not in {"python", "node-wasm"}:
         errors.append("unexpected binding")
     versions = report.get("versions", {})
-    if versions.get("chematic") != "1.0.42":
-        errors.append("not a chematic 1.0.42 artifact")
-    if versions.get("rdkit") not in {"2026.9.1", "2026.09.1"}:
-        errors.append("not an RDKit 2026.09.1 artifact")
+    if versions.get("chematic") != expected_chematic:
+        errors.append(f"not a chematic {expected_chematic} artifact")
+    if versions.get("rdkit") not in expected_rdkit:
+        errors.append(f"not an expected RDKit artifact: {versions.get('rdkit')}")
+    if expected_revision is not None:
+        revision = report.get("source", {}).get("chematic_revision")
+        if revision != expected_revision:
+            errors.append(f"unexpected chematic revision: {revision}")
     corpus = report.get("corpus", {})
     if corpus.get("rows") != 10_000 or corpus.get("timing_rows") != 1_000:
         errors.append("unexpected corpus denominator")
@@ -69,9 +80,19 @@ def validate(report: dict) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("record", type=Path)
+    parser.add_argument("--expected-schema", default="published-v1.0.42-rdkit-packet/v1")
+    parser.add_argument("--expected-chematic", default="1.0.42")
+    parser.add_argument("--expected-rdkit", action="append", default=None)
+    parser.add_argument("--expected-revision", default=None)
     args = parser.parse_args()
     report = json.loads(args.record.read_text())
-    errors = validate(report)
+    errors = validate(
+        report,
+        expected_schema=args.expected_schema,
+        expected_chematic=args.expected_chematic,
+        expected_rdkit=tuple(args.expected_rdkit or ("2026.9.1", "2026.09.1")),
+        expected_revision=args.expected_revision,
+    )
     if errors:
         for error in errors:
             print(f"ERROR: {error}")

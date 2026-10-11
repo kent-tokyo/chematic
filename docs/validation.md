@@ -3,9 +3,10 @@
 Updated 2026-10-11 for **v1.1.0**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
 artifacts, the two-platform published v1.0.42/RDKit packet, the published
-v1.0.42 macOS arm64 chemistry baseline, v1.0.40 source, and the v1.0.41 source
-candidate. v1.1.0 release channels are verified; its broad package chemistry
-and performance rerun is still open. Every comparison is
+v1.0.42 macOS arm64 chemistry baseline, v1.0.40 source, the v1.0.41 source
+candidate, and a current-main v1.1.0-source/RDKit packet. v1.1.0 release
+channels are verified; its broad package chemistry and performance rerun is
+still open. Every comparison is
 limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
@@ -13,6 +14,7 @@ limited to its recorded artifact, comparator, corpus and operation.
 | Gate | Result and limit | Record |
 |---|---|---|
 | Current-source contracts | Rust, Python, and WASM expose typed reaction rejection diagnostics; Rust, Python, and WASM/Node expose aligned R-group columns for the bounded labelled terminal-wildcard subset. These are post-v1.1.0 source capabilities, not published v1.1.0 package claims. | [Unreleased changelog](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md#unreleased) |
+| Current-main RDKit packet | A wheel built at `44338e16` matches RDKit 2026.09.1 on 10,000/10,000 TPSA, Labute ASA, ring-count and chiral-Morgan rows. Prepared TPSA and Morgan and all four parse-inclusive pipelines have favorable paired intervals on one macOS arm64 host. Prepared Labute ASA and first-use ring count remain deficits. The supplementary 63-operation matrix has 38 full-agreement lanes and 32 favorable intervals. This is source-built evidence, not the published v1.1.0 artifact. | [Current-source packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1.1.0-main-vs-rdkit-2026.09.1.md) |
 | Rust execution coverage | The processed Linux Codecov lane reports 96.93% line coverage (143,762/148,306) after discovering all integration-test targets. Python and WASM coverage are not included, and execution coverage is not chemical correctness evidence. | [Coverage workflow](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml) |
 | Published v1.0.42 / RDKit 2026.09.1 packet | Exact CPython 3.13 wheels on hosted Linux x64 and macOS arm64: TPSA, Labute ASA and chiral Morgan pass the 10k output gates and their parse-inclusive 21-block intervals favor CheMatic on both hosts. Published ring count is 9,994/10,000 and receives no speed ratio. Prepared macOS Labute loses and Morgan crosses parity. npm Labute is asymmetric bundled work and npm chiral Morgan differs on one row, so neither receives a speed claim. | [Published packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) |
 | RDKit/COSMolKit 0.5 source comparison | Against RDKit 2026.03.1, the v1.0.41 source candidate matches RDKit at least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and RDKit.js 10k. On the separate 4,072-row unusual-SMILES stress corpus, native canonical-SMILES round trip is 4,048 versus 4,064; the other covered operations are equal or favorable. This is source evidence, not universal parity or a published-package result. | [COSMolKit 0.5 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-cosmolkit-050.md) |

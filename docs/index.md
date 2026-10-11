@@ -85,9 +85,11 @@ interoperability, and fixes across ring perception, reactions, and molecular
 file interchange. Current `main` also exposes R-group columns to WASM/Node and
 typed reaction rejection diagnostics across Rust, Python, and WASM; these are
 unreleased source capabilities. The latest broad published-package performance
-packet remains v1.0.42 until v1.1.x artifacts are measured. The 83-row reaction
-gate remains 80 exact graph/origin/map rows and three inputs invalid in both
-engines.
+packet remains v1.0.42 until v1.1.x artifacts are measured. A current-source
+macOS arm64 packet at `44338e16` matches RDKit 2026.09.1 on 10,000/10,000 TPSA,
+Labute ASA, ring-count and chiral-Morgan rows; it is not a published-package
+rerun. The 83-row reaction gate remains 80 exact graph/origin/map rows and
+three inputs invalid in both engines.
 
 Each result applies only to its named artifact, corpus, options, and failure
 policy. Release availability is not accuracy evidence, source results are not

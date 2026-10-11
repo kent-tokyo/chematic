@@ -22,6 +22,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Reorganized benchmark documentation into a short current-results guide and
+  a complete historical index. Added a current-`main` Python packet against
+  RDKit 2026.09.1 with exact wheel/corpus hashes, 10,000-row output gates, and
+  21 alternating fresh-process timing blocks.
 - Expanded downstream-visible coverage over descriptor, standardization,
   native InChI, 2D depiction, reaction, 3D, MOL, and MCP HTTP boundaries.
   The new stress lanes use checked-in special-chemistry and interoperability
