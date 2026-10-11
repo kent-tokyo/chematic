@@ -25,14 +25,15 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.1.0 release boundary
+### v1.1.1 release boundary
 
-v1.1.0 adds label-stable R-group decomposition, broadens the RDKit-compatible
-Rust, Python, and WebAssembly APIs, and fixes ring, reaction, MOL/SDF, MOL2,
-and CDXML edge cases. It also expands public API contract tests and introduces
-bounded comparison gates for Open Babel, CDK, and Indigo. Performance and
-compatibility claims remain limited to their recorded artifacts, corpora, and
-hosts. See [validation](docs/validation.md) and
+v1.1.1 adds typed reaction rejection diagnostics across Rust, Python, and
+WebAssembly, exposes aligned R-group columns to WASM/Node, and hardens parser,
+PME/SPME, molecular-dynamics, InChI stereo, and CIP boundaries. It also records
+bounded RDKit and Indigo workflow comparisons and improves prepared Labute ASA
+and ring-count performance without changing their pinned 10,000-row outputs.
+Performance and compatibility claims remain limited to their recorded
+artifacts, corpora, and hosts. See [validation](docs/validation.md) and
 [CHANGELOG](CHANGELOG.md).
 
 ## Use it

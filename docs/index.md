@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.1.0</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.1.1</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -80,12 +80,11 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-v1.1.0 adds label-stable R-group decomposition, broader cross-binding RDKit
-interoperability, and fixes across ring perception, reactions, and molecular
-file interchange. Current `main` also exposes R-group columns to WASM/Node and
-typed reaction rejection diagnostics across Rust, Python, and WASM; these are
-unreleased source capabilities. The latest broad published-package performance
-packet remains v1.0.42 until v1.1.x artifacts are measured. A current-source
+v1.1.1 adds typed reaction rejection diagnostics across Rust, Python, and
+WASM, exposes aligned R-group columns to WASM/Node, and hardens parser,
+simulation, InChI stereo, and CIP boundaries. The latest broad
+published-package performance packet remains v1.0.42 until v1.1.x artifacts
+are measured. A current-source
 macOS arm64 packet at `44338e16` matches RDKit 2026.09.1 on 10,000/10,000 TPSA,
 Labute ASA, ring-count and chiral-Morgan rows; it is not a published-package
 rerun. The 83-row reaction gate remains 80 exact graph/origin/map rows and

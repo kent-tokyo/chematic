@@ -1,19 +1,19 @@
 # Validation report
 
-Updated 2026-10-11 for **v1.1.0**. The broad chemistry and speed packet
+Updated 2026-10-12 for **v1.1.1**. The broad chemistry and speed packet
 remains pinned to published v1.0.30; separately named records cover later
 artifacts, the two-platform published v1.0.42/RDKit packet, the published
 v1.0.42 macOS arm64 chemistry baseline, v1.0.40 source, the v1.0.41 source
-candidate, and a current-main v1.1.0-source/RDKit packet. v1.1.0 release
-channels are verified; its broad package chemistry and performance rerun is
-still open. Every comparison is
+candidate, and current-main v1.1.0-source records. v1.1.0 release channels are
+verified; v1.1.1 package measurements begin only after publication. Every
+comparison is
 limited to its recorded artifact, comparator, corpus and operation.
 
 ## Current evidence
 
 | Gate | Result and limit | Record |
 |---|---|---|
-| Current-source contracts | Rust, Python, and WASM expose typed reaction rejection diagnostics; Rust, Python, and WASM/Node expose aligned R-group columns for the bounded labelled terminal-wildcard subset. These are post-v1.1.0 source capabilities, not published v1.1.0 package claims. | [Unreleased changelog](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md#unreleased) |
+| v1.1.1 contracts | Rust, Python, and WASM expose typed reaction rejection diagnostics; Rust, Python, and WASM/Node expose aligned R-group columns for the bounded labelled terminal-wildcard subset. Package-wide chemistry and performance claims still require exact v1.1.1 artifact reruns. | [v1.1.1 changelog](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md#111---2026-10-12) |
 | Indigo workflow source packet | Against Indigo 1.46.0 on one macOS arm64 host, CheMatic matches 15/15 versus 13/15 single-result reaction rows, 39/39 versus 38/39 largest-fragment rows, and ties at 16/16 bounded labelled R-group rows. On the common-correct subsets, all 21 timing blocks favor CheMatic, with median ratios of 10.66x, 1.27x, and 2.60x. This is source-built bounded evidence, not full standardization, reaction-enumeration, or R-group parity. | [Workflow packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-indigo-workflows-source.md) |
 | Current-main RDKit packet | A wheel built at `44338e16` matches RDKit 2026.09.1 on 10,000/10,000 TPSA, Labute ASA, ring-count and chiral-Morgan rows. Prepared TPSA and Morgan and all four parse-inclusive pipelines have favorable paired intervals on one macOS arm64 host. Prepared Labute ASA and first-use ring count remain deficits. The supplementary 63-operation matrix has 38 full-agreement lanes and 32 favorable intervals. This is source-built evidence, not the published v1.1.0 artifact. | [Current-source packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1.1.0-main-vs-rdkit-2026.09.1.md) |
 | Rust execution coverage | The processed Linux Codecov lane reports 96.93% line coverage (143,762/148,306) after discovering all integration-test targets. Python and WASM coverage are not included, and execution coverage is not chemical correctness evidence. | [Coverage workflow](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml) |
@@ -59,7 +59,7 @@ limited to its recorded artifact, comparator, corpus and operation.
 Earlier source diagnostics and per-release channel checks remain in the
 [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) and
 [versioned validation results](https://github.com/kent-tokyo/chematic/tree/main/validation/results/). They are not promoted
-to v1.1.0 package measurements.
+to v1.1.1 package measurements.
 
 ## Reproduce and interpret
 
