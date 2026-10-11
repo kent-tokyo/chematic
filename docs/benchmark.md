@@ -7,15 +7,16 @@ links the raw data and older measurements.
 
 ## Current evidence
 
-The current release is **v1.1.0**. A fresh current-source packet compares a
-wheel built from `main` commit `44338e16` with RDKit 2026.09.1 on macOS arm64.
+The current release is **v1.1.0**. A focused current-source follow-up compares
+a wheel built from commit `f2d030fc` with RDKit 2026.09.1 on macOS arm64.
 The latest bounded registry-package packet remains v1.0.42. Source and
 published-package evidence are intentionally separate; neither is a universal
 speed or compatibility claim.
 
 | Lane | Result | Boundary |
 |---|---|---|
-| [Current `main` / RDKit 2026.09.1](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1.1.0-main-vs-rdkit-2026.09.1.md) | TPSA, Labute ASA, RDKit ring count and chiral Morgan agree on 10,000/10,000 rows. Prepared TPSA and Morgan, plus all four parse-inclusive pipelines, have favorable paired intervals. A supplementary 63-operation matrix has 38 full-agreement lanes and 32 favorable paired intervals. | Source-built v1.1.0 wheel at `44338e16`, one macOS arm64 host. Prepared Labute ASA and first-use ring count remain slower; six full-agreement broad-matrix lanes do not demonstrate a win. |
+| [Labute ASA and ring-count source follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-v1.1.0-source-labute-ring-speed.md) | Labute ASA and RDKit-compatible ring count agree on 10,000/10,000 rows. Prepared medians are 1.71x and 1.22x faster than RDKit; their paired 95% interval lower bounds are 1.69x and 1.16x. Parse-inclusive medians are 7.42x and 7.78x. | Source-built v1.1.0 wheel at `f2d030fc`, 41 alternating blocks on one macOS arm64 host. Not yet a published-package or cross-platform result. |
+| [Earlier `main` / RDKit 2026.09.1](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1.1.0-main-vs-rdkit-2026.09.1.md) | TPSA, Labute ASA, RDKit ring count and chiral Morgan agree on 10,000/10,000 rows. Prepared TPSA and Morgan, plus all four parse-inclusive pipelines, have favorable paired intervals. A supplementary 63-operation matrix has 38 full-agreement lanes and 32 favorable paired intervals. | Historical source-built wheel at `44338e16`; prepared Labute ASA and first-use ring count were slower before this follow-up. |
 | [Published v1.0.42 / RDKit 2026.09.1](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-11-v1042-published-rdkit-packet.md) | Python TPSA, Labute ASA and chiral Morgan have exact/toleranced 10k output gates and favorable parse-inclusive intervals on both hosted runners. | Ring count is 9,994/10,000 and has no speed ratio. macOS prepared Labute loses and prepared Morgan crosses parity. npm Labute is asymmetric work and npm chiral Morgan differs on one row, so neither receives a speed claim. |
 | [Python 63-operation matrix](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | 20 operations have exact output agreement and a favorable paired confidence interval against RDKit 2026.03.6 in 20 alternating blocks. | One host and exposed corpus; other operations are not wins. |
 | [Isolated Python](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1.0.30-isolated-python-time-memory.md) and [Rust](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1029-v1030-published-rust-isolated-time-memory.md) | Parse-inclusive, prepared first-use and precomputed lanes use 20 fresh-process blocks. | Process peak RSS is not per-operation allocation. Changed HBA outputs cannot support an equivalent-output v1.0.29/v1.0.30 speed claim. |

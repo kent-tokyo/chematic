@@ -10,6 +10,7 @@ is in [`archive-index.md`](archive-index.md).
 
 | Question | Record | Boundary |
 |---|---|---|
+| Are the former Labute ASA and first-use ring-count deficits closed? | [v1.1.0 source follow-up](2026-10-12-v1.1.0-source-labute-ring-speed.md) · [raw JSON](2026-10-12-v1.1.0-source-rdkit-labute-ring-speed.json) | Yes on the recorded macOS arm64 source-built wheel: both are 10,000/10,000 equivalent, with prepared medians of 1.71x and 1.22x versus RDKit 2026.09.1 and favorable paired intervals. Not a published-package or cross-platform claim. |
 | How does current `main` compare with RDKit? | [v1.1.0-source / RDKit 2026.09.1 Python packet](2026-10-11-v1.1.0-main-vs-rdkit-2026.09.1.md) · [focused raw JSON](2026-10-11-v1.1.0-main-rdkit-python-macos-arm64.json) · [63-operation raw JSON](2026-10-11-v1.1.0-main-vs-rdkit-63op-paired20.json) | Source-built wheel at `44338e16`; four 10,000-row output gates plus 21 fresh-process blocks, and a 63-operation/20-block supplementary matrix on macOS arm64. Not a published-package result. |
 | What is the latest published-package comparison? | [v1.0.42 / RDKit 2026.09.1](2026-10-11-v1042-published-rdkit-packet.md) | Exact PyPI/npm artifacts on hosted Linux x64 and macOS arm64. |
 | What is the broad Python operation matrix? | [v1.0.30 63-operation matrix](2026-10-02-v1.0.30-vs-rdkit-python-63op-paired20.json) | Historical published-wheel result against RDKit 2026.03.6; only output-equivalent lanes with favorable confidence intervals count as wins. |
@@ -45,20 +46,24 @@ python scripts/run_published_v1042_rdkit_python_packet.py \
   --output /tmp/chematic-rdkit.json \
   --expected-chematic 1.1.0 \
   --expected-rdkit 2026.9.1 \
-  --schema current-source-v1.1.0-rdkit-packet/v1
+  --schema rdkit-labute-ring-optimization/v1 \
+  --blocks 41 \
+  --chematic-revision f2d030fc6a2760fc9ad3f168f98713584c20828c
 ```
 
 The runner checks all 10,000 outputs before emitting speed intervals and uses
-21 alternating fresh-process blocks over the first 1,000 rows.
+41 alternating fresh-process blocks over the first 1,000 rows.
 
 Validate the generated record with:
 
 ```bash
 python scripts/check_published_v1042_rdkit_packet.py /tmp/chematic-rdkit.json \
-  --expected-schema current-source-v1.1.0-rdkit-packet/v1 \
+  --expected-schema rdkit-labute-ring-optimization/v1 \
   --expected-chematic 1.1.0 \
   --expected-rdkit 2026.9.1 \
-  --expected-revision 44338e1607bd87320d70c2047210cfac76d8e244
+  --expected-revision f2d030fc6a2760fc9ad3f168f98713584c20828c \
+  --expected-blocks 41 \
+  --minimum-artifacts 1
 ```
 
 ## Record maintenance

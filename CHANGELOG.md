@@ -22,6 +22,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Prepared RDKit-compatible aromatic/ring metadata during Python SMILES
+  construction and added a mutation-invalidated scalar cache for compatible
+  ring count. On the recorded source-built macOS arm64 wheel, Labute ASA and
+  first-use ring count remain 10,000/10,000 equivalent to RDKit 2026.09.1 and
+  move from prepared-operation deficits to bounded speed wins: 1.71x and
+  1.22x median, with paired 95% lower bounds of 1.69x and 1.16x. This is
+  source-candidate evidence, not a published-package or cross-platform claim.
 - Reorganized benchmark documentation into a short current-results guide and
   a complete historical index. Added a current-`main` Python packet against
   RDKit 2026.09.1 with exact wheel/corpus hashes, 10,000-row output gates, and
