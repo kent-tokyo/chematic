@@ -10,6 +10,30 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Restored lazy aromatic/ring preparation in the Python SMILES constructor.
+  Descriptor and ring results still memoize after first use, but parse-only and
+  one-property workflows no longer pay for unrelated perception. In a bounded
+  20-block macOS arm64 comparison against the published v1.1.1 wheel, the
+  source candidate was 2.14x faster for parsing, 1.39x faster for
+  parse-plus-TPSA, and 1.19x faster for parse-plus-Morgan. Precomputed Morgan
+  was about 2% slower in that run, so no standalone Morgan speed improvement
+  is claimed.
+- Added HBD and QED over the 4,072-row unusual-SMILES corpus to the
+  cross-platform published-wheel chemistry gate. The v1.1.1 expectation file
+  records the public artifact's known residuals instead of inheriting counts
+  from an older release.
+- Updated the CI A6 published-wheel retention lane from v1.0.42 to v1.1.1 so
+  source candidates are compared with the current public release.
+
+### Fixed
+
+- Fixed the RDKit-compatible HBD/QED path depending on whether a charged
+  aromatic nitrogen was written in aromatic or Kekule form. Inputs such as
+  `[NH+]1=CC=CC=C1` now match RDKit with HBD 0; Rust, Python, and WASM retain
+  this spelling-invariance regression test.
+
 ## [1.1.1] - 2026-10-12
 
 ### Added

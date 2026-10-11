@@ -474,6 +474,15 @@ for (const expected of fixture.descriptor_contract.fixtures) {
   mol.free();
 }
 
+const kekulePyridinium = wasm.parse_smiles("[NH+]1=CC=CC=C1");
+const aromaticPyridinium = wasm.parse_smiles("c1cc[nH+]cc1");
+assert.equal(kekulePyridinium.hbd_count(), 0);
+assert.equal(aromaticPyridinium.hbd_count(), 0);
+assert.ok(Math.abs(kekulePyridinium.qed() - 0.4306198403222658) <= 1e-9);
+assert.ok(Math.abs(aromaticPyridinium.qed() - kekulePyridinium.qed()) <= 1e-12);
+kekulePyridinium.free();
+aromaticPyridinium.free();
+
 for (const expected of fixture.standardization_contract.fixtures) {
   const actual = JSON.parse(
     wasm.standardize_smiles_report_json(expected.smiles, true, true, true, true),

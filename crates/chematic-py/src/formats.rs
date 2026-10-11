@@ -82,18 +82,13 @@ pub(crate) fn flat_to_coords3d(coords: &[[f64; 3]]) -> chematic_3d::Coords3D {
 #[pyfunction]
 fn from_smiles(smiles: &str) -> PyResult<Mol> {
     chematic_smiles::parse(smiles)
-        .map(|mol| {
-            // RDKit's sanitized Mol already owns aromaticity and ring-info
-            // caches when Python receives it.  Populate the equivalent two
-            // decisions here as part of the binding's prepared-molecule
-            // contract.  This moves work out of the first descriptor call;
-            // graph mutation still clears both derived slots.
-            let _ = chematic_perception::rdkit_parity_view_is_identity(&mol);
-            let _ = chematic_chem::rdkit_num_rings(&mol);
-            Mol {
-                inner: Arc::new(mol),
-                props: Default::default(),
-            }
+        .map(|mol| Mol {
+            // Descriptor and ring preparation stays lazy.  Calling one of
+            // those APIs memoizes its result on the molecule, so repeated
+            // workflows still reuse the work without charging parse-only or
+            // single-property callers for unrelated perception.
+            inner: Arc::new(mol),
+            props: Default::default(),
         })
         .map_err(|e| match e {
             chematic_smiles::SmilesError::InvalidValence { .. } => {

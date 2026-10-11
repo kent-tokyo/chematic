@@ -58,6 +58,30 @@ def test_resume_only_skips_complete_json(tmp_path):
     assert MODULE.finished(path)
 
 
+def test_summary_includes_optional_descriptor_stress(tmp_path):
+    (tmp_path / "reaction-checked-provenance-83.json").write_text(json.dumps({
+        "accounting": {"outcomes": {"graph_origin_map_match": 80, "joint_invalid_input": 3}}
+    }))
+    (tmp_path / "smarts-optin-310k.json").write_text(json.dumps({
+        "counts": {"exact": 310_000}, "unexpected_total": 0
+    }))
+    chemistry = {
+        "cip_accurate": {"agree": 1},
+        "hybridization": {"agree": 1},
+        "mmff94": {"compared_rows": 1},
+        "mol_writer": {"stereo_rows": 1},
+    }
+    for name in MODULE.CORPORA:
+        (tmp_path / f"chemistry-{name}.json").write_text(json.dumps(chemistry))
+    counts = {"rows": 4072, "hbd_agree": 4072, "qed_agree": 4021}
+    (tmp_path / "descriptor-stress.json").write_text(json.dumps({"counts": counts}))
+
+    summary = MODULE.summarize(tmp_path, ran_corpus=False)
+
+    assert summary["descriptor_stress"] == counts
+    assert "biotransformer_corpus" not in summary
+
+
 CHEMATIC_SIDE = [
     "reaction_python_checked_candidates.py",
     "chematic_chemistry_dump.py",

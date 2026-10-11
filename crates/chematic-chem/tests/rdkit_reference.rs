@@ -15,6 +15,7 @@ use chematic_chem::descriptors::{
     num_aliphatic_heterocycles, num_aromatic_heterocycles, num_bridgehead_atoms,
     num_saturated_heterocycles, num_spiro_atoms, rotatable_bond_count, tpsa,
 };
+use chematic_chem::qed;
 use chematic_smiles::parse;
 
 fn mol(smi: &str) -> chematic_core::molecule::Molecule {
@@ -1365,4 +1366,19 @@ fn hbd_all_tsv_reference() {
         failures.len(),
         failures.join("\n")
     );
+}
+
+#[test]
+fn hbd_and_qed_are_invariant_to_kekule_aromatic_spelling() {
+    let kekule = mol("[NH+]1=CC=CC=C1");
+    let aromatic = mol("c1cc[nH+]cc1");
+
+    assert_eq!(hbd_count(&kekule), 0);
+    assert_eq!(hbd_count(&aromatic), 0);
+    let kekule_qed = qed(&kekule);
+    assert!(
+        (kekule_qed - 0.430_619_840_322_265_8).abs() < 1e-9,
+        "Kekule pyridinium QED={kekule_qed:.16}"
+    );
+    assert!((qed(&aromatic) - qed(&kekule)).abs() < 1e-12);
 }
