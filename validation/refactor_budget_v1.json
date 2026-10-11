@@ -36,7 +36,6 @@
     "crates/chematic-inchi/src/dedup.rs": 2079,
     "crates/chematic-mol/src/mol2000.rs": 2928,
     "crates/chematic-mol/src/mol3000.rs": 1785,
-    "crates/chematic-mol/src/xyz.rs": 1717,
     "crates/chematic-perception/src/aromaticity.rs": 4172,
     "crates/chematic-perception/src/rdkit_canon.rs": 1636,
     "crates/chematic-perception/src/rdkit_parity.rs": 2633,
@@ -491,10 +490,6 @@
     "crates/chematic-mol/src/tdt.rs::next#1": {
       "decisions": 20,
       "lines": 179
-    },
-    "crates/chematic-mol/src/xyz.rs::parse_one_frame_ext#1": {
-      "decisions": 28,
-      "lines": 167
     },
     "crates/chematic-perception/src/aromaticity.rs::assign_aromaticity_ex_impl#1": {
       "decisions": 14,
