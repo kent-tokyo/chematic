@@ -1,0 +1,428 @@
+diff --git a/crates/chematic-ff/src/mmff94_energy/vdw.rs b/crates/chematic-ff/src/mmff94_energy/vdw.rs
+index 03b07088..23002918 100644
+--- a/crates/chematic-ff/src/mmff94_energy/vdw.rs
++++ b/crates/chematic-ff/src/mmff94_energy/vdw.rs
+@@ -130,10 +130,16 @@ pub fn mmff94_vdw_combined(type_i: u8, type_j: u8) -> Option<(f64, f64)> {
+     let r_ii = pi.a_i * pi.alpha_i.powf(0.25);
+     let r_jj = pj.a_i * pj.alpha_i.powf(0.25);
+ 
+-    // Arithmetic mean + London asymmetry correction (MMFF94 eq. 2)
++    // A donor on EITHER side suppresses the asymmetry correction, even
++    // without an acceptor partner (RDKit Nonbonded.cpp,
++    // calcUnscaledVdWMinimum). Donor-acceptor scaling is a separate step.
+     let r_ij_unscaled = 0.5 * (r_ii + r_jj);
+     let delta = (r_ii - r_jj) / (r_ii + r_jj);
+-    let r_star_ij = r_ij_unscaled * (1.0 + 0.2 * (1.0 - (-12.0 * delta * delta).exp()));
++    let r_star_ij = if pi.da == 1 || pj.da == 1 {
++        r_ij_unscaled
++    } else {
++        r_ij_unscaled * (1.0 + 0.2 * (1.0 - (-12.0 * delta * delta).exp()))
++    };
+ 
+     // Epsilon combining rule: Slater-Kirkwood (eq. 3)
+     let eps_ij = 181.16 * pi.g_i * pj.g_i * pi.alpha_i * pj.alpha_i
+diff --git a/crates/chematic-ff/src/mmff94_numeric.rs b/crates/chematic-ff/src/mmff94_numeric.rs
+index 13e4b75c..97d3c100 100644
+--- a/crates/chematic-ff/src/mmff94_numeric.rs
++++ b/crates/chematic-ff/src/mmff94_numeric.rs
+@@ -72,16 +72,16 @@ static MMFF94_PBCI: &[(u8, f64, f64)] = &[
+     (21, 0.157, 0.000),  // =P       phosphorus =P
+     (22, -0.095, 0.000), // P=O      phosphoryl P
+     (23, 0.193, 0.000),  // HNR      H on amine N
+-    (24, 0.257, 0.000),  // HOCO     H on O in acid/alcohol
++    (24, 0.257, 0.000),  // HOCO     H on O in carboxylic/phospho acids
+     (25, 0.012, 0.000),  // PO4      phosphate P
+     (26, -0.142, 0.000), // P=S      P=S
+     (27, 0.094, 0.000),  // HN=C     H on imine N
+     (28, 0.058, 0.000),  // HNCO     H on amide N
+-    (29, 0.207, 0.000),  // HOCO     H on O in ester
++    (29, 0.207, 0.000),  // HOCC/HOCN H on O in phenols/enols/HO-C=N
+     (30, -0.166, 0.000), // N2OX     N-oxide N
+     (31, 0.161, 0.000),  // HOH      H in water
+     (32, -0.732, 0.500), // O2CM     carboxylate/nitro-nitrate/sulfate/phosphate O (fcadj=0.5) -- was mislabeled "NR+", value already correct
+-    (33, 0.257, 0.000),  // HOX      H on O in N-oxide
++    (33, 0.257, 0.000),  // HOS      H on O attached to sulfur
+     (34, -0.491, 0.000), // NR+      quaternary/protonated nitrogen -- was mislabeled "O-", value already correct
+     (35, -0.456, 0.500), // OM       oxide oxygen (fcadj=0.5)
+     (36, -0.031, 0.000), // HNR+     H on protonated N
+@@ -2342,11 +2342,11 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
+ 
+ /// Select the MMFF94 numeric type for an explicit hydrogen bonded to oxygen.
+ ///
+-/// RDKit distinguishes hydroxyl H (21), acid H (24), water H (31), and the
+-/// less common N-oxide hydroxyl H (33).  Treating every O-H bond as HOCO
+-/// changes both the bond charge-transfer term and the resulting electrostatic
+-/// energy when callers provide an AddHs topology.  The implicit-H path never
+-/// enters this function, so this is deliberately limited to explicit H.
++/// RDKit's `setMMFFHydrogenType` distinguishes ordinary hydroxyl H (21),
++/// carboxylic/phospho acid H (24), phenolic/enolic/HO-C=N H (29), water H
++/// (31), and H on oxygen attached to sulfur (33). These types also control
++/// charge transfer and bonded parameters. N-O-H alone is an ordinary
++/// hydroxyl, not HOS. The implicit-H path never enters this function.
+ fn assign_oxygen_bound_h_type(mol: &Molecule, oxygen_idx: AtomIdx) -> u8 {
+     let heavy_neighbors: Vec<_> = bonds_of(mol, oxygen_idx)
+         .into_iter()
+@@ -2357,20 +2357,36 @@ fn assign_oxygen_bound_h_type(mol: &Molecule, oxygen_idx: AtomIdx) -> u8 {
+         return 31; // HOH, water
+     }
+ 
+-    let heavy_neighbor = heavy_neighbors[0].neighbor;
+-    let heavy_atom = mol.atom(heavy_neighbor);
+-    if heavy_atom.element == Element::N {
+-        return 33; // HOX, N-oxide hydroxyl
++    let mut is_acid = false;
++    let mut is_conjugated = false;
++    let mut is_sulfur_bound = false;
++    for neighbor in heavy_neighbors {
++        match mol.atom(neighbor.neighbor).element {
++            Element::P => is_acid = true,
++            Element::S => is_sulfur_bound = true,
++            Element::C => {
++                for bond in bonds_of(mol, neighbor.neighbor) {
++                    if bond.neighbor == oxygen_idx {
++                        continue;
++                    }
++                    let element = mol.atom(bond.neighbor).element;
++                    is_acid |= element == Element::O && bond.order == BondOrder::Double;
++                    is_conjugated |= matches!(element, Element::C | Element::N)
++                        && matches!(bond.order, BondOrder::Double | BondOrder::Aromatic);
++                }
++            }
++            _ => {}
++        }
+     }
+-
+-    let is_carboxylic_acid = heavy_atom.element == Element::C
+-        && bonds_of(mol, heavy_neighbor).iter().any(|bond| {
+-            bond.order == BondOrder::Double && mol.atom(bond.neighbor).element == Element::O
+-        });
+-    if is_carboxylic_acid {
+-        24 // HOCO, acid hydroxyl
++    // Match RDKit's precedence: acid/phospho > conjugated > sulfur > generic.
++    if is_acid {
++        24 // HOCO
++    } else if is_conjugated {
++        29 // HOCC / HOCN
++    } else if is_sulfur_bound {
++        33 // HOS
+     } else {
+-        21 // HOR, alcohol/phenol hydroxyl
++        21 // HOR / generic hydroxyl
+     }
+ }
+ 
+diff --git a/scripts/mmff94_same_explicit_h_energy.py b/scripts/mmff94_same_explicit_h_energy.py
+index 267eeddd..c536fe47 100644
+--- a/scripts/mmff94_same_explicit_h_energy.py
++++ b/scripts/mmff94_same_explicit_h_energy.py
+@@ -42,6 +42,15 @@ TERMINAL_STATUSES = {
+     "rdkit_force_field_failure",
+     "schematic_unsupported",
+ }
++RDKIT_TERM_SETTERS = {
++    "bond": "Bond",
++    "angle": "Angle",
++    "stretch_bend": "StretchBend",
++    "torsion": "Torsion",
++    "oop": "Oop",
++    "vdw": "VdW",
++    "electrostatic": "Ele",
++}
+ 
+ 
+ def sha256_bytes(payload: bytes) -> str:
+@@ -123,12 +132,34 @@ def gradient_diagnostic(mol: object, coords: list[list[float]], delta: float) ->
+     }
+ 
+ 
++def rdkit_term_energy_breakdown(mol: Chem.Mol) -> dict[str, float]:
++    """Evaluate isolated MMFF94 terms at conformer 0 without minimizing.
++
++    Own the properties object so toggling terms cannot alter the caller's
++    force field. Keep all nonbonded settings identical to the total-energy
++    comparison above (including the default interfragment exclusion).
++    """
++    properties = AllChem.MMFFGetMoleculeProperties(mol, mmffVariant="MMFF94")
++    if properties is None:
++        raise ValueError("RDKit MMFF94 properties unavailable")
++    result = {}
++    for term in RDKIT_TERM_SETTERS:
++        for name, setter in RDKIT_TERM_SETTERS.items():
++            getattr(properties, f"SetMMFF{setter}Term")(name == term)
++        force_field = AllChem.MMFFGetMoleculeForceField(mol, properties, confId=0)
++        if force_field is None:
++            raise ValueError(f"RDKit MMFF94 force field unavailable for {term}")
++        result[term] = float(force_field.CalcEnergy())
++    return result
++
++
+ def evaluate(
+     row: dict,
+     input_index: int,
+     seed: int,
+     gradient_indices: set[int],
+     gradient_delta: float,
++    include_rdkit_terms: bool = False,
+ ) -> dict:
+     smiles = row["smiles"]
+     if row.get("primary_category") == "force_field_unsupported":
+@@ -159,6 +190,24 @@ def evaluate(
+             rdkit_atom_symbols=rdkit_symbols,
+             schematic_atom_symbols=schematic_symbols,
+         )
++    # Element sequences cannot prove coordinate correspondence: two carbons
++    # can be exchanged while leaving that sequence unchanged. Check the
++    # indexed bond graph, including bond orders, before embedding/MMFF mutates
++    # RDKit's aromatic representation.
++    rdkit_bonds = sorted(
++        (min(b.GetBeginAtomIdx(), b.GetEndAtomIdx()),
++         max(b.GetBeginAtomIdx(), b.GetEndAtomIdx()), str(b.GetBondType()))
++        for b in rdkit_mol.GetBonds()
++    )
++    schematic_bonds = sorted(
++        (min(a, b), max(a, b), order) for a, b, order, _ in schematic_mol.bond_table
++    )
++    if rdkit_bonds != schematic_bonds:
++        return terminal(
++            row, input_index, "atom_order_mismatch",
++            reason="indexed_bond_graph_mismatch",
++            rdkit_bonds=rdkit_bonds, schematic_bonds=schematic_bonds,
++        )
+     if AllChem.EmbedMolecule(rdkit_mol, randomSeed=seed) != 0:
+         return terminal(row, input_index, "embed_failure")
+     properties = AllChem.MMFFGetMoleculeProperties(rdkit_mol, mmffVariant="MMFF94")
+@@ -195,6 +244,15 @@ def evaluate(
+         if input_index in gradient_indices
+         else None
+     )
++    term_details = {}
++    if include_rdkit_terms:
++        rdkit_terms = rdkit_term_energy_breakdown(rdkit_mol)
++        term_details = {
++            "rdkit_energy_breakdown_kcal_mol": {**rdkit_terms, "total": rdkit_energy},
++            "term_delta_kcal_mol": {
++                term: breakdown[term] - rdkit_terms[term] for term in RDKIT_TERM_SETTERS
++            },
++        }
+     return terminal(
+         row,
+         input_index,
+@@ -207,6 +265,7 @@ def evaluate(
+         delta_kcal_mol=delta,
+         abs_delta_kcal_mol=abs(delta),
+         **({"gradient_diagnostic": gradient} if gradient is not None else {}),
++        **term_details,
+     )
+ 
+ 
+@@ -286,6 +345,11 @@ def parse_args() -> argparse.Namespace:
+     parser.add_argument("--expected-schematic")
+     parser.add_argument("--gradient-input-index", type=int, action="append", default=[])
+     parser.add_argument("--gradient-delta", type=float, default=1e-5)
++    parser.add_argument(
++        "--rdkit-term-breakdown",
++        action="store_true",
++        help="isolate RDKit's seven energy terms on each shared coordinate set",
++    )
+     args = parser.parse_args()
+     if args.limit is not None and args.limit < 1:
+         parser.error("--limit must be positive")
+@@ -331,6 +395,7 @@ def main() -> int:
+                 args.seed + index,
+                 gradient_indices,
+                 args.gradient_delta,
++                args.rdkit_term_breakdown,
+             )
+             results.append(result)
+             handle.write(json.dumps(result, sort_keys=True) + "\n")
+@@ -372,8 +437,9 @@ def main() -> int:
+                     "minimization_convergence",
+                     "stereo_preservation",
+                     "runtime_speed",
+-                    "RDKit_per_term_energy_parity",
+-                ],
++                ]
++                + ([] if args.rdkit_term_breakdown else ["RDKit_per_term_energy_parity"]),
++                "rdkit_term_breakdown": args.rdkit_term_breakdown,
+                 "seed": args.seed,
+                 "gradient_input_indices": sorted(gradient_indices),
+                 "gradient_central_difference_delta_angstrom": args.gradient_delta,
+@@ -411,7 +477,13 @@ def main() -> int:
+             "measurements": measurements,
+             "gate": gate,
+             "gate_passed": all(gate.values()),
+-            "caveat": "RDKit generated the shared explicit-H coordinates. This measures total force-field energy agreement, not per-term RDKit parity, conformer quality, minimization convergence, stereo preservation, or speed.",
++            "caveat": (
++                "RDKit generated the shared explicit-H coordinates. This measures "
++                "total force-field energy agreement"
++                + (" and per-term agreement" if args.rdkit_term_breakdown else "")
++                + "; it does not measure conformer quality, minimization convergence, "
++                "stereo preservation, or speed."
++            ),
+         }
+         args.summary.parent.mkdir(parents=True, exist_ok=True)
+         args.summary.write_text(
+diff --git a/scripts/tests/test_mmff94_same_explicit_h_energy.py b/scripts/tests/test_mmff94_same_explicit_h_energy.py
+index a81e8bce..213779e6 100644
+--- a/scripts/tests/test_mmff94_same_explicit_h_energy.py
++++ b/scripts/tests/test_mmff94_same_explicit_h_energy.py
+@@ -1,6 +1,8 @@
+ from scripts.mmff94_same_explicit_h_energy import (
++    evaluate,
+     gradient_diagnostic,
+     percentile_nearest_rank,
++    rdkit_term_energy_breakdown,
+     summarize,
+     terminal,
+ )
+@@ -51,3 +53,72 @@ def test_gradient_diagnostic_matches_quadratic_energy():
+     assert result["components"] == 3
+     assert result["max_abs_error_kcal_mol_angstrom"] < 1e-9
+     assert result["max_scaled_error"] < 1e-9
++
++
++def test_rdkit_isolated_terms_sum_to_total_without_changing_coordinates():
++    import pytest
++    from rdkit import Chem
++    from rdkit.Chem import AllChem
++
++    # Includes an O-H donor, an aromatic ring, and a carbonyl; exercising
++    # all seven terms rather than testing the setter loop against a mock.
++    mol = Chem.AddHs(Chem.MolFromSmiles("CC(=O)Nc1ccc(O)cc1"))
++    assert AllChem.EmbedMolecule(mol, randomSeed=43) == 0
++    properties = AllChem.MMFFGetMoleculeProperties(mol, mmffVariant="MMFF94")
++    force_field = AllChem.MMFFGetMoleculeForceField(mol, properties, confId=0)
++    before = mol.GetConformer().GetPositions().copy()
++    total = force_field.CalcEnergy()
++    terms = rdkit_term_energy_breakdown(mol)
++    assert set(terms) == {
++        "bond", "angle", "stretch_bend", "torsion", "oop", "vdw", "electrostatic"
++    }
++    assert sum(terms.values()) == pytest.approx(total, abs=1e-9)
++    assert force_field.CalcEnergy() == total
++    assert (mol.GetConformer().GetPositions() == before).all()
++
++
++def test_explicit_oxygen_hydrogen_vdw_and_charge_transfer_match_rdkit():
++    import pytest
++    import chematic
++    from rdkit import Chem
++    from rdkit.Chem import AllChem
++
++    for smiles in ["NCC(=O)O", "ON(C)C", "Oc1ccccc1", "CC(=O)Nc1ccc(O)cc1"]:
++        rdkit_mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
++        assert AllChem.EmbedMolecule(rdkit_mol, randomSeed=43) == 0
++        properties = AllChem.MMFFGetMoleculeProperties(rdkit_mol, mmffVariant="MMFF94")
++        mol = chematic.from_smiles(smiles).add_hydrogens()
++        # Check correspondence before sharing coordinates; matching element
++        # lists alone would miss permutations of two atoms of the same element.
++        assert [a["element"] for a in mol.depict_data()["atoms"]] == [
++            a.GetSymbol() for a in rdkit_mol.GetAtoms()
++        ]
++        assert {tuple(sorted((a, b))) for a, b, *_ in mol.bond_table} == {
++            tuple(sorted((b.GetBeginAtomIdx(), b.GetEndAtomIdx())))
++            for b in rdkit_mol.GetBonds()
++        }
++        types = mol.mmff94_numeric_atom_types()
++        charges = mol.mmff94_charges_numeric()
++        for atom in rdkit_mol.GetAtoms():
++            if atom.GetAtomicNum() == 1 and any(
++                nb.GetAtomicNum() == 8 for nb in atom.GetNeighbors()
++            ):
++                i = atom.GetIdx()
++                assert types[i] == properties.GetMMFFAtomType(i), smiles
++                assert charges[i] == pytest.approx(properties.GetMMFFPartialCharge(i)), smiles
++        coords = rdkit_mol.GetConformer().GetPositions().tolist()
++        assert mol.mmff94_energy_breakdown(coords)["vdw"] == pytest.approx(
++            rdkit_term_energy_breakdown(rdkit_mol)["vdw"], abs=1e-9
++        ), smiles
++
++
++def test_same_element_sequence_cannot_hide_an_indexed_graph_mismatch(monkeypatch):
++    import chematic
++
++    # Both isomers have C5H12 and the same AddHs element sequence. The
++    # branching still makes sharing atom-indexed coordinates invalid.
++    branched = chematic.from_smiles("CC(C)CC")
++    monkeypatch.setattr(chematic, "from_smiles", lambda _: branched)
++    result = evaluate({"smiles": "CCCCC"}, 0, 43, set(), 1e-5)
++    assert result["status"] == "atom_order_mismatch"
++    assert result["reason"] == "indexed_bond_graph_mismatch"
+diff --git a/crates/chematic-ff/tests/mmff94_oxygen_h_vdw.rs b/crates/chematic-ff/tests/mmff94_oxygen_h_vdw.rs
+new file mode 100644
+index 00000000..5814bfb4
+--- /dev/null
++++ b/crates/chematic-ff/tests/mmff94_oxygen_h_vdw.rs
+@@ -0,0 +1,72 @@
++use chematic_core::{AtomIdx, Element};
++use chematic_ff::mmff94_energy::mmff94_vdw_combined;
++use chematic_ff::{assign_mmff94_numeric_types, mmff94_charges_numeric};
++use chematic_smiles::parse;
++
++// Oracle: RDKit 2026.03.6, MMFFGetMoleculeProperties on explicit-H molecules.
++// Source: Release_2026_03_6/Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp,
++// setMMFFHydrogenType. In particular, 29 is HOCC/HOCN and 33 is HOS.
++#[test]
++fn oxygen_bound_hydrogen_types_and_charges_match_their_environment() {
++    for (smiles, expected_type, expected_charge) in [
++        ("CCO[H]", 21, 0.4),
++        ("[H]ON(C)C", 21, 0.4),
++        ("c1ccccc1O[H]", 29, 0.45),
++        ("[H]Oc1ccccc1", 29, 0.45),
++        ("[H]OC=C", 29, 0.45),
++        ("[H]OC=N", 29, 0.45),
++        ("CC(=O)O[H]", 24, 0.5),
++        ("[H]OP(=O)(O)O", 24, 0.5),
++        ("[H]OS(=O)(=O)O", 33, 0.5),
++    ] {
++        let mol = parse(smiles).unwrap();
++        let types = assign_mmff94_numeric_types(&mol).unwrap();
++        let charges = mmff94_charges_numeric(&mol).unwrap();
++        let mut checked = 0;
++        for i in 0..mol.atom_count() {
++            let idx = AtomIdx(i as u32);
++            if mol.atom(idx).element == Element::H
++                && mol
++                    .neighbors(idx)
++                    .any(|(nb, _)| mol.atom(nb).element == Element::O)
++            {
++                assert_eq!(types[i], expected_type, "{smiles}: H atom {i}");
++                assert!(
++                    (charges[i] - expected_charge).abs() < 1e-12,
++                    "{smiles}: H atom {i} charge {} != {expected_charge}",
++                    charges[i]
++                );
++                checked += 1;
++            }
++        }
++        assert!(checked > 0, "fixture must contain explicit O-H: {smiles}");
++    }
++}
++
++// Oracle: RDKit 2026.03.6 GetMMFFVdWParams (scaled radius/well depth).
++// Source: Release_2026_03_6/Code/ForceField/MMFF/Nonbonded.cpp,
++// calcUnscaledVdWMinimum: ANY donor suppresses the asymmetry correction,
++// including donor/nonacceptor pairs. Donor/acceptor scaling follows afterward.
++#[test]
++fn donor_vdw_pairs_use_the_rdkit_combining_rule_in_both_orders() {
++    for (a, b, expected_radius, expected_epsilon) in [
++        (3, 23, 3.2988003775750503, 0.03275316289992711),
++        (1, 23, 3.275768748270286, 0.03306703754626389),
++        (7, 23, 2.44265298442308, 0.019039914981539462),
++        (8, 23, 2.6568477686322076, 0.016843816258122306),
++        (5, 5, 2.9698484809835, 0.021574173607307283),
++        (1, 5, 3.598787981153042, 0.02807765636226562),
++    ] {
++        for (i, j) in [(a, b), (b, a)] {
++            let (radius, epsilon) = mmff94_vdw_combined(i, j).unwrap();
++            assert!(
++                (radius - expected_radius).abs() < 1e-12,
++                "types {i}/{j}: radius {radius} != {expected_radius}"
++            );
++            assert!(
++                (epsilon - expected_epsilon).abs() < 1e-12,
++                "types {i}/{j}: epsilon {epsilon} != {expected_epsilon}"
++            );
++        }
++    }
++}

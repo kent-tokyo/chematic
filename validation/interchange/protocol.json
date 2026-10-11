@@ -1,0 +1,441 @@
+{
+  "schema": "chematic.interchange-development-protocol.v1",
+  "scope": "Exposed hand-authored development fixtures; not an independent holdout or a superiority gate.",
+  "oracle": "Expected atoms, charges, coordinates, connectivity and metadata are explicitly declared; neither engine is the oracle. Formal charges use the declared N.4 +1 / other listed atom types neutral projection only.",
+  "profiles": {
+    "common": "Contiguous atom IDs, supported local MOL2 subset; common label describes this fixture lane, not universal dialect agreement.",
+    "stress": "Nonsequential IDs or opaque vendor sections; dialect expectations may differ.",
+    "negative": "Invalid in the declared bounded local profile; acceptance is reported as accepted_outside_profile, not asserted to be an Open Babel bug."
+  },
+  "routes": [
+    {
+      "id": "mol2-self",
+      "target": "mol2",
+      "chematic_policy": "strict"
+    },
+    {
+      "id": "mol2-cjson",
+      "target": "cjson",
+      "chematic_policy": "allow_loss"
+    }
+  ],
+  "coordinate_abs_tolerance": {
+    "mol2": 5e-05,
+    "cjson": 1e-12
+  },
+  "partial_charge_abs_tolerance": {
+    "mol2": 5e-05,
+    "cjson": 1e-12
+  },
+  "coordinate_bits": "Diagnostic only; the declared absolute tolerance determines required coordinate preservation.",
+  "limits": {
+    "max_input_bytes": 65536,
+    "max_output_bytes": 1048576,
+    "timeout_seconds": 10,
+    "max_atoms": 64,
+    "mapping_search_nodes": 10000
+  },
+  "cases": [
+    {
+      "id": "acetamide",
+      "file": "fixtures/acetamide.mol2",
+      "profile": "common",
+      "valid_in_declared_profile": true,
+      "expected": {
+        "atoms": [
+          {
+            "source_id": 1,
+            "element": 6,
+            "formal_charge": 0,
+            "partial_charge": 0.7,
+            "name": "methyl",
+            "atom_type": "C.3",
+            "coordinates": [
+              0.123456789,
+              0,
+              0
+            ]
+          },
+          {
+            "source_id": 2,
+            "element": 6,
+            "formal_charge": 0,
+            "partial_charge": 0.25,
+            "name": "carbonyl",
+            "atom_type": "C.2",
+            "coordinates": [
+              1.5,
+              0,
+              0
+            ]
+          },
+          {
+            "source_id": 3,
+            "element": 8,
+            "formal_charge": 0,
+            "partial_charge": -0.7,
+            "name": "oxygen",
+            "atom_type": "O.2",
+            "coordinates": [
+              2,
+              1.2,
+              0
+            ]
+          },
+          {
+            "source_id": 4,
+            "element": 7,
+            "formal_charge": 0,
+            "partial_charge": -0.25,
+            "name": "nitrogen",
+            "atom_type": "N.am",
+            "coordinates": [
+              2,
+              -1.2,
+              0
+            ]
+          }
+        ],
+        "bonds": [
+          {
+            "atoms": [
+              0,
+              1
+            ],
+            "order": "single"
+          },
+          {
+            "atoms": [
+              1,
+              2
+            ],
+            "order": "double"
+          },
+          {
+            "atoms": [
+              1,
+              3
+            ],
+            "order": "single"
+          }
+        ],
+        "name": "acetamide",
+        "charge_method": "USER_CHARGES",
+        "opaque_markers": []
+      }
+    },
+    {
+      "id": "precision",
+      "file": "fixtures/precision.mol2",
+      "profile": "common",
+      "valid_in_declared_profile": true,
+      "expected": {
+        "atoms": [
+          {
+            "source_id": 1,
+            "element": 6,
+            "formal_charge": 0,
+            "partial_charge": 0.7,
+            "name": "methyl",
+            "atom_type": "C.3",
+            "coordinates": [
+              -1.4175225513503917,
+              -0.0,
+              1.23456789e-08
+            ]
+          },
+          {
+            "source_id": 2,
+            "element": 6,
+            "formal_charge": 0,
+            "partial_charge": 0.25,
+            "name": "carbonyl",
+            "atom_type": "C.2",
+            "coordinates": [
+              1.5,
+              0,
+              0
+            ]
+          },
+          {
+            "source_id": 3,
+            "element": 8,
+            "formal_charge": 0,
+            "partial_charge": -0.7,
+            "name": "oxygen",
+            "atom_type": "O.2",
+            "coordinates": [
+              2,
+              1.2,
+              0
+            ]
+          },
+          {
+            "source_id": 4,
+            "element": 7,
+            "formal_charge": 0,
+            "partial_charge": -0.25,
+            "name": "nitrogen",
+            "atom_type": "N.am",
+            "coordinates": [
+              2,
+              -1.2,
+              0
+            ]
+          }
+        ],
+        "bonds": [
+          {
+            "atoms": [
+              0,
+              1
+            ],
+            "order": "single"
+          },
+          {
+            "atoms": [
+              1,
+              2
+            ],
+            "order": "double"
+          },
+          {
+            "atoms": [
+              1,
+              3
+            ],
+            "order": "single"
+          }
+        ],
+        "name": "acetamide",
+        "charge_method": "USER_CHARGES",
+        "opaque_markers": []
+      }
+    },
+    {
+      "id": "n4-charge",
+      "file": "fixtures/n4-charge.mol2",
+      "profile": "common",
+      "valid_in_declared_profile": true,
+      "expected": {
+        "atoms": [
+          {
+            "source_id": 1,
+            "element": 7,
+            "formal_charge": 1,
+            "partial_charge": 0.8,
+            "name": "ammonium",
+            "atom_type": "N.4",
+            "coordinates": [
+              1.25,
+              -2.5,
+              3.75
+            ]
+          }
+        ],
+        "bonds": [],
+        "name": "ammonium projection",
+        "charge_method": "USER_CHARGES",
+        "opaque_markers": []
+      }
+    },
+    {
+      "id": "opaque-extension",
+      "file": "fixtures/opaque-extension.mol2",
+      "profile": "stress",
+      "valid_in_declared_profile": true,
+      "expected": {
+        "atoms": [
+          {
+            "source_id": 1,
+            "element": 6,
+            "formal_charge": 0,
+            "partial_charge": 0.7,
+            "name": "methyl",
+            "atom_type": "C.3",
+            "coordinates": [
+              0.123456789,
+              0,
+              0
+            ]
+          },
+          {
+            "source_id": 2,
+            "element": 6,
+            "formal_charge": 0,
+            "partial_charge": 0.25,
+            "name": "carbonyl",
+            "atom_type": "C.2",
+            "coordinates": [
+              1.5,
+              0,
+              0
+            ]
+          },
+          {
+            "source_id": 3,
+            "element": 8,
+            "formal_charge": 0,
+            "partial_charge": -0.7,
+            "name": "oxygen",
+            "atom_type": "O.2",
+            "coordinates": [
+              2,
+              1.2,
+              0
+            ]
+          },
+          {
+            "source_id": 4,
+            "element": 7,
+            "formal_charge": 0,
+            "partial_charge": -0.25,
+            "name": "nitrogen",
+            "atom_type": "N.am",
+            "coordinates": [
+              2,
+              -1.2,
+              0
+            ]
+          }
+        ],
+        "bonds": [
+          {
+            "atoms": [
+              0,
+              1
+            ],
+            "order": "single"
+          },
+          {
+            "atoms": [
+              1,
+              2
+            ],
+            "order": "double"
+          },
+          {
+            "atoms": [
+              1,
+              3
+            ],
+            "order": "single"
+          }
+        ],
+        "name": "acetamide",
+        "charge_method": "USER_CHARGES",
+        "opaque_markers": [
+          "keep this extension verbatim"
+        ]
+      }
+    },
+    {
+      "id": "nonsequential-ids",
+      "file": "fixtures/nonsequential-ids.mol2",
+      "profile": "stress",
+      "valid_in_declared_profile": true,
+      "expected": {
+        "atoms": [
+          {
+            "source_id": 50,
+            "element": 6,
+            "formal_charge": 0,
+            "partial_charge": 0.7,
+            "name": "methyl",
+            "atom_type": "C.3",
+            "coordinates": [
+              0.123456789,
+              0,
+              0
+            ]
+          },
+          {
+            "source_id": 7,
+            "element": 6,
+            "formal_charge": 0,
+            "partial_charge": 0.25,
+            "name": "carbonyl",
+            "atom_type": "C.2",
+            "coordinates": [
+              1.5,
+              0,
+              0
+            ]
+          },
+          {
+            "source_id": 90,
+            "element": 8,
+            "formal_charge": 0,
+            "partial_charge": -0.7,
+            "name": "oxygen",
+            "atom_type": "O.2",
+            "coordinates": [
+              2,
+              1.2,
+              0
+            ]
+          },
+          {
+            "source_id": 3,
+            "element": 7,
+            "formal_charge": 0,
+            "partial_charge": -0.25,
+            "name": "nitrogen",
+            "atom_type": "N.am",
+            "coordinates": [
+              2,
+              -1.2,
+              0
+            ]
+          }
+        ],
+        "bonds": [
+          {
+            "atoms": [
+              0,
+              1
+            ],
+            "order": "single"
+          },
+          {
+            "atoms": [
+              1,
+              2
+            ],
+            "order": "double"
+          },
+          {
+            "atoms": [
+              1,
+              3
+            ],
+            "order": "single"
+          }
+        ],
+        "name": "acetamide",
+        "charge_method": "USER_CHARGES",
+        "opaque_markers": [
+          "keep this extension verbatim"
+        ]
+      }
+    },
+    {
+      "id": "nonfinite-charge",
+      "file": "fixtures/nonfinite-charge.mol2",
+      "profile": "negative",
+      "valid_in_declared_profile": false
+    },
+    {
+      "id": "dangling-bond",
+      "file": "fixtures/dangling-bond.mol2",
+      "profile": "negative",
+      "valid_in_declared_profile": false
+    },
+    {
+      "id": "unknown-bond",
+      "file": "fixtures/unknown-bond.mol2",
+      "profile": "negative",
+      "valid_in_declared_profile": false
+    }
+  ]
+}

@@ -34,6 +34,12 @@ coordinates, metadata, multiple records, or domain-specific options must be
 preserved. The narrower production-format comparison and its strict win
 criteria are documented in [`openbabel-file-io.md`](openbabel-file-io.md).
 
+MOL2 → MOL2 is a source-preserving exception in CLI, Python, and WASM:
+one validated record is returned exactly, including coordinates, partial
+charges, typing, comments, and opaque sections. Python rejects coordinate,
+charge, name, or comment overrides on this path. Cross-format conversion
+continues to use the bounded graph/coordinate bridge described above.
+
 ---
 
 ## Support matrix
@@ -135,12 +141,190 @@ Notes on the cells above that need qualification:
   length/count, and ATOM/HETATM records. The existing parser uses finite
   defaults.
 
+### Checked conversion reports (initial adapter)
+
+Rust `convert_with_report` / `convert_with_report_with_limits`, Python
+`convert_with_report` (dict) / `convert_with_report_json` (JSON string), WASM
+`convert_with_report_json`, and CLI `convert-with-report` share
+`chematic.conversion-report.v1`. Supported routes are MOL2 → MOL2/SMILES/CJSON
+and CJSON → CJSON/SMILES/MOL2 (`smi` aliases plain SMILES). Existing conversion
+APIs keep their graph/metadata contracts.
+
+```python
+report = chematic.convert_with_report(source, "mol2", "smiles")
+assert report["status"] == "refused"
+assert report["output"] is None
+lossy = chematic.convert_with_report(source, "mol2", "smiles", policy="allow_loss")
+# Inspect lossy["observations"] before using lossy["output"].
+```
+
+```sh
+chematic convert-with-report --input-format mol2 --output-format smiles \
+  --policy allow_loss --input ligand.mol2 --output report.json
+```
+
+- `strict` is the Rust policy variant and Python/CLI default. Cross-format
+  MOL2 → SMILES/CJSON and CJSON → SMILES/MOL2 refuse with `output: null` because source information is
+  lost or unverified. CLI writes the refusal JSON and exits nonzero.
+- `allow_loss` returns parseable candidate output with detected losses and
+  uncertainty. A graph mismatch is `unverified`; it cannot claim preservation.
+  A candidate that fails to parse is refused even under this policy.
+- `preserve_source` requires MOL2 → MOL2 or CJSON → CJSON. All three policies
+  retain exact source bytes on these routes after bounded structural validation. The scope
+  is `exact_source_bytes`; `source_semantics: opaque_retained` explicitly
+  excludes interpreted/editable chemical semantics. It is not a graph gate.
+- Observations identify a source field group, status, stage and reason in
+  source record zero. Coordinate/partial-charge/type/name/substructure/bond
+  metadata losses and opaque sections are reported before graph projection.
+  The aggregate `source_text` loss also covers comments and unparsed columns.
+- Candidate output is reparsed. SMILES emitted atom order or CJSON source-order
+  atom arrays establish correspondence. Counts, mapped elements, aromaticity, projected formal charges and bond
+  orders are checked. `candidate_atom_mapping` / `candidate_bond_mapping`
+  carry source IDs and zero-based source/candidate indices only if this check
+  passes. These mappings refer to the candidate even when strict policy
+  refuses to emit it. `verification_scope` defines the checked fields.
+- MOL2 formal-charge interpretation beyond `N.4`, coordinate/extension stereo,
+  and source implicit-hydrogen assignment remain unverified. SMILES hydrogen
+  counts are explicitly inferred under the graph valence model; CJSON does
+  not emit an inferred hydrogen count. A verified projected graph does not establish chemical equivalence to the full source record.
+- MOL2 → CJSON carries source x/y/z components and projected formal charges.
+  `coordinates: preserved` requires verified graph correspondence and bitwise
+  equality of reparsed f64 coordinates, including signed zero. Decimal spelling,
+  physical dimensionality and coordinate-derived stereo are outside this check.
+  `projected_formal_charges` is checked separately from the unverified source
+  formal-charge interpretation. Source atom types/names/IDs,
+  substructures, comments and opaque sections remain reported losses.
+  Complete declared partial-charge datasets now emit separately as
+  `partialCharges.<source method>` and are verified bit for bit through mapped
+  atoms. Values are not computed, rounded into formal charges or filled when
+  missing. Empty/`NO_CHARGES` method declarations do not produce a dataset.
+  The parsed molecule name emits as `properties.name` and is checked on
+  reparse. The source method label is retained without verifying its chemistry.
+  Atom names/types/IDs and unsupported metadata remain losses.
+- Invalid input, unsupported routes/policies and limits are errors (Python
+  `ValueError`, WASM throw, CLI nonzero without a report). CLI `--output` is
+  always a JSON report destination, never a standalone molecule destination.
+
+Default Rust/Python input and report/output limits are 16 MiB with 10,000
+reader atoms; WASM input is 1,000,000 bytes. This new SMILES route additionally
+caps projection at 512 atoms because the current writer traverses recursively.
+The cap does not apply to same-format source retention or CJSON/MOL2 output. JSON
+size checks include escaping and envelope overhead. The MOL crate enables serde_json's
+`float_roundtrip` feature: a finite f64 emitted as decimal JSON can be read
+back without the previous 1 ULP rounding error. This also applies to existing
+Rust/Python/WASM CJSON readers. Integral bond orders emit JSON integer
+numbers, while aromatic order 1.5 remains fractional; this avoids the observed
+Open Babel 3.2.1 CJSON reader converting floating integer orders into zero.
+[Paired development checks](../validation/interchange/README.md) record both
+engines' losses and targeted cross reads. No cross-engine superiority is established.
+
+### Immutable ChemicalJSON records
+
+Rust `parse_cjson_record` / `parse_cjson_record_with_limits`, `CjsonRecord`,
+and `write_cjson_record` retain the exact original UTF-8 source. Python/WASM
+`parse_cjson_record_json` expose `chematic.cjson-record.v1` inspection;
+`roundtrip_cjson_record` validates and returns the source. The record is
+immutable: opaque references are retained without editing or interpretation.
+
+The strict local profile accepts absent `chemicalJson` or integer version 1,
+atomic numbers, optional formal charges/isotopes/3D coordinates, bond
+indices/orders, `properties.name` and root `partialCharges` datasets. Present arrays must have matching lengths and correct types.
+Duplicate decoded JSON keys, self/duplicate bonds, dangling indices and
+unsupported orders are rejected. Supported order values are exactly 1, 1.5,
+2, 3 and 4; 4 is an explicit local alias for aromatic bond 1.5. Atom aromaticity
+and coordinate stereo are not perceived. The legacy `parse_cjson` API keeps
+its permissive behavior; strict validation is additive.
+
+Root `partialCharges` must be an object of complete finite numeric arrays, one
+value per atom; `properties` must be an object and its optional `name` a string.
+These fields are validated even during same-format retention. The inspection
+API exposes `name` and `partial_charge_datasets`; Rust has corresponding getters.
+Method keys remain source declarations, with no charge calculation or model
+validation. `atoms.partialCharges` remains opaque and is not conflated with the
+root dataset representation.
+
+Unknown fields, including other properties and stereo extensions, are listed
+as sorted JSON Pointer paths in `opaque_fields`. Whole opaque subtrees are
+represented by their root paths. They survive same-format source retention;
+CJSON → SMILES reports their loss and separately reports typed name/charge
+dataset losses. That route also reports coordinate loss,
+defaulted charges/isotopes/orders where absent, inferred hydrogen counts and
+unverified stereo. Candidate verification checks mapped elements, aromatic
+flags, formal charges, isotopes and bond orders. CJSON mapping `source_id`
+values are zero-based array indices; opaque user IDs are not interpreted.
+Strict CJSON → SMILES refuses even when the projected graph verifies.
+
+```python
+import json
+record = json.loads(chematic.parse_cjson_record_json(source))
+assert chematic.roundtrip_cjson_record(source) == source
+assert chematic.convert_with_report(source, "cjson", "cjson")["output"] == source
+lossy = chematic.convert_with_report(source, "cjson", "smiles", policy="allow_loss")
+```
+
+
+Checked CJSON → MOL2 accepts explicit 3D coordinates and at most one declared
+partial-charge dataset. It writes shortest round-trip decimal coordinates and
+charges, reparses the candidate and checks exact f64 bits (including signed
+zero/subnormals) through verified graph correspondence. `properties.name` and
+the charge-method label are checked separately on reparse. Missing datasets
+emit `NO_CHARGES` with no partial-charge columns; missing coordinates are never
+filled. Multiple datasets, unrepresentable method tokens and names with
+boundary whitespace, control characters, empty text or section markers refuse
+even under `allow_loss`. Exact CJSON retention remains available for valid
+records refused by this adapter.
+
+MOL2 atom IDs/names, element-only types and `SMALL` header are generated;
+charged atom rows use placeholder substructure `1 LIG`. Hybridization and
+force-field types are not inferred from chemistry. The sole nonzero formal
+charge representation is +1 nitrogen via `N.4`. Other nonzero formal charges
+and all specified isotopes are reported dropped; they disable projected graph
+verification and candidate mappings. Partial charges are never substituted for
+formal charges. Aromatic bond tokens retain the local projection, without
+perceiving atom aromaticity. Opaque fields and stereo remain lost/unverified.
+Strict policy refuses this cross-format route even when the candidate verifies.
+
+```python
+report = chematic.convert_with_report(source, "cjson", "mol2", policy="allow_loss")
+# Inspect status and observations; valid source data may still be refused.
+```
+
+Rust/Python record APIs use `CjsonParseLimits` defaults (256 MiB input,
+1,000,000 atoms); WASM record APIs cap input at 1,000,000 bytes and 10,000
+atoms, with 16 MiB inspection output. Checked conversion uses the smaller
+16 MiB / 10,000 atom defaults described above. JSON tree limits apply to
+opaque fields too. Existing `convert_format` remains a graph bridge for CJSON;
+use the record or checked API for source retention.
+
 ### MOL2 (Tripos)
 
-- **Rust**: `chematic_mol::{parse_mol2, parse_mol2_with_limits, write_mol2, Mol2Error, Mol2ParseLimits}`.
+- **Rust**: `chematic_mol::{parse_mol2, parse_mol2_with_limits, write_mol2}` retains the published graph/editable-record contract. Exact-source inspection uses the additive `Mol2SourceRecord`, `parse_mol2_source_record`, `parse_mol2_source_record_with_limits`, and `write_mol2_source_record` APIs. `Mol2SourceAtomRecord` and `Mol2SourceBondRecord` describe their metadata; the shared `Mol2Error`/`Mol2ParseLimits` types remain compatible.
+- **Python/WASM**: `parse_mol2_record_json` exposes the shared
+  `chematic.mol2-record.v1` inspection schema; `roundtrip_mol2_record` validates
+  and returns the original source. Rust exposes the same schema through
+  `Mol2SourceRecord::to_json()`.
 - **Coordinate units**: Ångström.
-- **Connectivity**: native MOL2 bond section; unsupported/unknown bond types
-  use the parser's documented conservative fallback.
+- **Immutable source-profile connectivity**: native MOL2 bond section. `am` projects to single;
+  `ar` to aromatic. Unknown bond tokens reject instead of becoming single.
+  Duplicate IDs/edges, self bonds, dangling references, mismatched counts,
+  nonfinite numbers, and multiple records/duplicate core sections reject.
+- **Immutable source-profile charges**: partial charges are validated separately from formal charge.
+  The graph recognizes `N.4` as +1; it does not round partial charges or
+  implement general formal-charge inference/UNITY semantics. Optional charge
+  columns remain optional in the record API, with the source charge-method
+  header retained. `NO_CHARGES` means numerical columns are not a claim of
+  assigned partial charges.
+- **Round-trip**: immutable `Mol2SourceRecord` retains the exact source and typed
+  atom/bond metadata, including source IDs, names, atom types, substructure
+  references, partial charges, and original bond tokens. Extra sections are
+  listed as opaque; source retention does not prove their interpretation.
+  Geometry-derived stereochemistry is not perceived by this reader.
+- **Graph-only write**: `write_mol2` emits `NO_CHARGES`, simplified atom types,
+  and zero numerical charge placeholders; it does not compute Gasteiger
+  charges or retain source metadata. Missing coordinates still default to
+  zero on this compatibility API. The published writer encodes formal charges
+  with UNITY attributes; isotope, atom-map and stereo annotations are not
+  generally encoded. Use the immutable source API for exact source retention.
 - **Parse limits**: `Mol2ParseLimits` bounds input bytes, physical line
   length/count, section count, atom records, and bond records. The existing
   parser uses finite defaults.
@@ -528,3 +712,16 @@ For the exact per-language function signatures, return-value shapes, and
 `None`/`null`/`Err` divergence points summarized above, see
 [`language-bindings.md`](language-bindings.md). For how these facts map to
 RDKit's equivalent APIs, see [`rdkit-migration.md`](rdkit-migration.md).
+
+
+Integration into v1.1.0 keeps its published editable `Mol2Record` and
+`parse_mol2_record`/`write_mol2_record` APIs intact, including UNITY formal-charge
+attributes and editable typed sections. The new immutable `Mol2SourceRecord`
+profile is separate: checked conversion and JSON inspection use its stricter
+validation and N.4-only charge projection. Legacy editable/graph parsing is not
+claimed to enforce this stricter profile. Earlier v1.0.20 evidence remains
+historical and is not relabeled as a v1.1.0 artifact result.
+
+Current-main integration validation is recorded in
+`validation/results/main-integration-2026-10-11/summary.json`.
+The earlier v1.0.20 development measurements remain historical evidence.

@@ -48,6 +48,23 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Emit a checked conversion report (MOL2 or CJSON input).
+    ConvertWithReport {
+        #[arg(long)]
+        input_format: String,
+        #[arg(long)]
+        output_format: String,
+        /// strict, allow_loss, or preserve_source.
+        #[arg(long, default_value = "strict")]
+        policy: String,
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        /// Write the JSON report here; molecule output is only inside the report.
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, default_value_t = 16 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
     /// Convert a topology-bearing molecule between common text formats.
     Convert {
         /// Input format: smiles, mol, mol_v3000, mol2, cml, cjson, moljson, or cdxml.
@@ -251,6 +268,18 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
     let output = format_name(output_format)
         .ok_or_else(|| format!("unsupported output format: {output_format}"))?;
 
+    if input == "mol2" && output == "mol2" {
+        let record = chematic_mol::parse_mol2_source_record_with_limits(
+            text,
+            &chematic_mol::Mol2ParseLimits {
+                max_atoms: MAX_SMILES_ATOMS,
+                ..Default::default()
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        return Ok(chematic_mol::write_mol2_source_record(&record));
+    }
+
     // A V3000-to-V3000 conversion is a file-format round trip, not merely a
     // topology conversion.  The generic path below intentionally discards
     // layout metadata because most output formats cannot represent it, but
@@ -266,18 +295,6 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
             ));
         }
         return Ok(chematic_mol::write_mol_v3000(&mol, &metadata, &coords));
-    }
-    // MOL2 carries atom types, partial charges, residue labels, status bits,
-    // and extension sections outside the ordinary Molecule graph. Keep them
-    // on a same-format rewrite instead of routing through the graph-only API.
-    if input == "mol2" && output == "mol2" {
-        let record = chematic_mol::parse_mol2_record(text).map_err(|e| e.to_string())?;
-        if record.molecule.atom_count() > MAX_SMILES_ATOMS {
-            return Err(format!(
-                "molecule exceeds maximum atom count ({MAX_SMILES_ATOMS})"
-            ));
-        }
-        return Ok(chematic_mol::write_mol2_record(&record));
     }
     let mol = match input.as_str() {
         "smiles" => chematic_smiles::parse(text).map_err(|e| e.to_string())?,
@@ -1117,6 +1134,37 @@ fn batch_reactions_json(text: &str, limits: &BatchLimits) -> Result<String, Stri
 
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
+        Command::ConvertWithReport {
+            input_format,
+            output_format,
+            policy,
+            input,
+            output,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let mut limits = chematic_mol::ConversionLimits::default();
+            limits.mol2.max_input_bytes = max_input_bytes;
+            let json = chematic_mol::convert_with_report_json(
+                &text,
+                &input_format,
+                &output_format,
+                &policy,
+                &limits,
+            )
+            .map_err(|error| error.to_string())?;
+            // A refusal report is useful output, but still signals failure to
+            // scripts. This command never writes a standalone molecule file.
+            let refused = serde_json::from_str::<serde_json::Value>(&json)
+                .map_err(|error| error.to_string())?["status"]
+                == "refused";
+            write_output(output.as_ref(), &format!("{json}\n"))?;
+            if refused {
+                Err("conversion refused; see JSON report".into())
+            } else {
+                Ok(())
+            }
+        }
         Command::Convert {
             input_format,
             output_format,
@@ -1293,6 +1341,14 @@ mod tests {
         assert_eq!(record.atoms[0].atom_type, "C.3");
         assert_eq!(record.atoms[2].partial_charge, Some(-0.375));
         assert_eq!(record.atoms[0].subst_name.as_deref(), Some("LIG1"));
+    }
+
+    #[test]
+    fn mol2_self_conversion_retains_source_metadata_and_geometry() {
+        let source = include_str!("../../../validation/mol2_preservation/amide.mol2");
+        assert_eq!(convert_text(source, ".mol2", "mol2").unwrap(), source);
+        let invalid = source.replace("ACM -0.70", "ACM NaN");
+        assert!(convert_text(&invalid, "mol2", "mol2").is_err());
     }
 
     #[test]

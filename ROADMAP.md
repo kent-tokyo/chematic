@@ -281,3 +281,78 @@ Every completed item must include:
 - [Accuracy plan](docs/rdkit-accuracy-plan.md)
 - [Trust Release rules](docs/trust-release-plan.md)
 - [Release history](CHANGELOG.md)
+
+### Open Babel interchange and semantic preservation (October 11 addition)
+
+The goal is to exceed Open Babel in useful format read/write coverage and
+verified semantic preservation. The
+[interchange execution plan](docs/openbabel-interchange-plan.md) records the
+inspected v1.0.20 local-source boundary, installed Open Babel 3.2.1, proposed
+conversion-report contract, and IO0–IO5 acceptance. No comparative gate is
+complete from this source audit.
+
+Prioritize a pinned paired harness and MOL2 charge/bond repairs, then shared
+checked conversion across CLI/Python/Node/WASM. Establish preservation for
+SMILES/CXSMILES, MOL V2000/V3000, SDF, MOL2, CML, and CDXML before expanding
+docking, reaction/document, and scientific-format workflows. Report opaque
+retention, inference, loss, refusal, and successful preservation separately.
+Useful coverage must grow alongside correctness; refusals and format aliases
+cannot count as successful interoperability.
+
+This is an A2/A4 execution addition. It does not close their broader acceptance
+or transfer evidence from later releases to this checkout.
+
+The October 11 source candidate implements separate MOL2 partial/formal
+charges, correct `am` projection, refusal of unknown bond tokens, honest
+`NO_CHARGES` graph output, and immutable source-retaining records. The shared
+checked-conversion API covers MOL2 → MOL2/SMILES/ChemicalJSON and
+ChemicalJSON → ChemicalJSON/SMILES across Rust, CLI, Python and WASM. It
+reports losses and uncertainty, refuses under strict policy, and checks
+candidate atom/bond correspondence after re-reading output.
+
+ChemicalJSON output retains source x/y/z values and projected formal charges.
+Coordinate f64 bits are compared through mapped atoms. A reproduced 1 ULP
+CJSON reader error is repaired with precise JSON float parsing. CJSON input
+now has an immutable record with exact source retention, opaque field paths,
+strict known-field validation and recursive duplicate-key rejection. Checked
+CJSON → SMILES also verifies mapped isotopes and formal charges, while
+reporting coordinate/metadata losses, defaulted fields and inferred hydrogens.
+Atom aromaticity, coordinate stereo and opaque fields are not interpreted.
+
+The CJSON-input milestone passed: MOL/CLI 835, source-wheel Python 211, five Node/WASM
+suites, 53 shared report/error cases, and 2,045 finite coordinate vectors
+through both CJSON readers. MOL/CLI Clippy passes with `--no-deps`; the
+unrestricted run encountered a warning in concurrent FF work. See the
+[CJSON-input verification record](validation/results/cjson-input-source-2026-10-11.json).
+Earlier milestones retain their own records for
+[MOL2 source retention](validation/results/mol2-preservation-source-2026-10-11.json),
+[initial checked conversion](validation/results/conversion-report-source-2026-10-11.json)
+and [CJSON output/precision](validation/results/conversion-cjson-source-2026-10-11.json).
+
+A paired development runner now records eight inputs × two routes × two
+engines, with fixed expectations, artifact hashes, resource limits and complete
+terminal accounting. The first measurements drove retention of complete
+partial-charge datasets, declared method labels and molecule names in checked
+MOL2 → CJSON. Cross reads drove integer JSON spelling of integral CJSON bond
+orders for Open Babel 3.2.1 compatibility. Remaining losses are retained in the
+[self-read and cross-read records](validation/interchange/README.md).
+This is exposed development evidence, not an independent superiority gate.
+Checked CJSON → MOL2 now reads typed root partial-charge datasets and
+`properties.name`, preserves finite coordinate/charge bits and checks reparsed
+name/method labels. Multiple datasets, absent geometry and unrepresentable
+header text refuse without guessing. Generated atom metadata, unsupported
+formal charges/isotopes, opaque fields and stereo remain declared losses or
+uncertainty.
+
+Latest local gates passed: MOL/CLI 848, source-wheel Python 230, five
+Node/WASM suites, 79 shared report/error cases and 33 runner tests. The expanded
+cross-read run retains 15 terminal outcomes. All six CheMatic MOL2 projections
+(from both engines' CJSON) preserve partial charges, method and molecule name
+on the three exposed common inputs; the six Open Babel default readbacks lose
+those fields. Atom names/types remain losses, and all original nine control
+outcomes/field checks are unchanged. See the
+[reverse-adapter evidence](validation/results/cjson-mol2-development-summary-2026-10-11.json).
+
+Other checked format pairs, broader source charge/stereo interpretation,
+independent comparative acceptance, and publication remain open. These local
+regressions do not establish superiority over Open Babel.

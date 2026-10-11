@@ -1,0 +1,295 @@
+{
+  "artifacts": {
+    "rdkit": {
+      "bytes": 2141824,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.venv-v1gate/lib/python3.13/site-packages/rdkit/rdBase.so",
+      "sha256": "dcc50095c6d95b29aae272f925514caf7134922a0b5ffa2864131926e0bd7c9d"
+    },
+    "schematic": {
+      "bytes": 11792752,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "59f46c835b1b95b071c3cb17ff2f120e5cddc7a7795a6571e95950e75502d1a4"
+    }
+  },
+  "baseline": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/oop-vdw",
+  "caveat": "Frozen-corpus and separate regression results measure MMFF94 implementation agreement; they do not establish superior physical accuracy, conformer search quality or speed. No published package was evaluated for this candidate.",
+  "comparable_rows": 262,
+  "energy_measurements": {
+    "by_primary_category": {
+      "alkene_ez": {
+        "max_abs_delta_kcal_mol": 8.171241461241152e-14,
+        "median_abs_delta_kcal_mol": 1.509903313490213e-14,
+        "rows": 8
+      },
+      "drug_like": {
+        "max_abs_delta_kcal_mol": 9.094947017729282e-13,
+        "median_abs_delta_kcal_mol": 1.1368683772161603e-13,
+        "rows": 193
+      },
+      "druglike": {
+        "max_abs_delta_kcal_mol": 9.237055564881302e-14,
+        "median_abs_delta_kcal_mol": 4.263256414560601e-14,
+        "rows": 7
+      },
+      "druglike_rigid": {
+        "max_abs_delta_kcal_mol": 1.4210854715202004e-13,
+        "median_abs_delta_kcal_mol": 1.4210854715202004e-13,
+        "rows": 1
+      },
+      "druglike_stress": {
+        "max_abs_delta_kcal_mol": 2.2737367544323206e-13,
+        "median_abs_delta_kcal_mol": 1.5631940186722204e-13,
+        "rows": 2
+      },
+      "flexible_chain": {
+        "max_abs_delta_kcal_mol": 8.526512829121202e-14,
+        "median_abs_delta_kcal_mol": 3.552713678800501e-14,
+        "rows": 6
+      },
+      "fused_aromatic": {
+        "max_abs_delta_kcal_mol": 9.947598300641403e-14,
+        "median_abs_delta_kcal_mol": 1.4210854715202004e-14,
+        "rows": 7
+      },
+      "hindered_biaryl": {
+        "max_abs_delta_kcal_mol": 8.526512829121202e-14,
+        "median_abs_delta_kcal_mol": 8.526512829121202e-14,
+        "rows": 1
+      },
+      "known_fail_closed_case": {
+        "max_abs_delta_kcal_mol": 8.526512829121202e-14,
+        "median_abs_delta_kcal_mol": 8.526512829121202e-14,
+        "rows": 1
+      },
+      "macrocycle": {
+        "max_abs_delta_kcal_mol": 8.526512829121202e-13,
+        "median_abs_delta_kcal_mol": 3.979039320256561e-13,
+        "rows": 9
+      },
+      "macrocycle_amide": {
+        "max_abs_delta_kcal_mol": 3.197442310920451e-14,
+        "median_abs_delta_kcal_mol": 3.197442310920451e-14,
+        "rows": 1
+      },
+      "macrocycle_boundary": {
+        "max_abs_delta_kcal_mol": 7.105427357601002e-14,
+        "median_abs_delta_kcal_mol": 7.105427357601002e-14,
+        "rows": 1
+      },
+      "rigid_ring": {
+        "max_abs_delta_kcal_mol": 5.684341886080802e-14,
+        "median_abs_delta_kcal_mol": 1.5987211554602254e-14,
+        "rows": 8
+      },
+      "small_ring_boundary": {
+        "max_abs_delta_kcal_mol": 1.1368683772161603e-13,
+        "median_abs_delta_kcal_mol": 1.1368683772161603e-13,
+        "rows": 1
+      },
+      "stereocenter_implicit_h": {
+        "max_abs_delta_kcal_mol": 1.2079226507921703e-13,
+        "median_abs_delta_kcal_mol": 2.842170943040401e-14,
+        "rows": 10
+      },
+      "stereocenter_quaternary": {
+        "max_abs_delta_kcal_mol": 2.842170943040401e-14,
+        "median_abs_delta_kcal_mol": 1.4988010832439613e-15,
+        "rows": 6
+      }
+    },
+    "comparable_rows": 262,
+    "gradient_diagnostic": {
+      "input_indices": [
+        91,
+        94,
+        99,
+        192,
+        222,
+        231
+      ],
+      "max_abs_error_kcal_mol_angstrom": 1.4111149049256255e-07,
+      "max_scaled_error": 6.025237746903341e-08,
+      "rows": 6
+    },
+    "max_abs_delta_kcal_mol": 9.094947017729282e-13,
+    "median_abs_delta_kcal_mol": 8.526512829121202e-14,
+    "p90_abs_delta_kcal_mol": 2.913225216616411e-13,
+    "row_accounting": {
+      "input_count": 265,
+      "status_counts": {
+        "declared_unsupported": 1,
+        "embed_failure": 2,
+        "ok": 262
+      },
+      "terminal_count": 265
+    },
+    "within_1_kcal_mol": 262,
+    "within_5_kcal_mol": 262
+  },
+  "evidence_files": [
+    {
+      "bytes": 8098,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/oop-vdw/candidate-summary.json",
+      "sha256": "968581cfe0a8bf8db46a39b32d43ff900de8d085b640946c533753215f53f944"
+    },
+    {
+      "bytes": 340818,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/oop-vdw/candidate.jsonl",
+      "sha256": "4f14cfac9610e2d27cbd7d1a99d42bf30b0fed114a1107cb9069123a1ef915c7"
+    },
+    {
+      "bytes": 8113,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/candidate-summary.json",
+      "sha256": "1a195d8c116e8c4341a055e261e314fa58fc8b98a9b9f75f66404f4f646e786e"
+    },
+    {
+      "bytes": 340818,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/candidate.jsonl",
+      "sha256": "4f14cfac9610e2d27cbd7d1a99d42bf30b0fed114a1107cb9069123a1ef915c7"
+    },
+    {
+      "bytes": 49156,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/candidate-holdout.json",
+      "sha256": "88d76829b945883af106838ac709c7259958d78d0bd30e373b1fab2352ddd08d"
+    },
+    {
+      "bytes": 79724,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/gradient-comparison.json",
+      "sha256": "20733a78c95042f702caed24c23669c54ec83a414c8b2a48ae0b566fab8e586a"
+    },
+    {
+      "bytes": 1453673,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/quality.jsonl",
+      "sha256": "b3adad3541ef1dd8d1f88429ec6e3487635fed56939a89f9af0924019598956b"
+    },
+    {
+      "bytes": 786096,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/quality-scored.jsonl",
+      "sha256": "ad5f287b4d0c97d32ec4e2c6a188e30ee520d0a7ae16d3359b0405c9f05fedbf"
+    },
+    {
+      "bytes": 2449,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/rust-tests.log",
+      "sha256": "fbdd1d0cc3ded5669cf3a6c4b410a10db210693e26a308fc2f47b50f86ee2d87"
+    },
+    {
+      "bytes": 840,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/python-tests.log",
+      "sha256": "f957a71a540e9e6d2866e97f1011705519eea518661481667d69325e4a58f151"
+    },
+    {
+      "bytes": 180,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/clippy.log",
+      "sha256": "95118a4a578baec651a3fd484ee4e3bb32e8fb2d097db6d74d4a0c6c1ea61829"
+    },
+    {
+      "bytes": 1998,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/build.log",
+      "sha256": "a760e64770dd3607d6f2cae7376bf99308ac5a2fdd4bbba3b831bda7e10a6718"
+    },
+    {
+      "bytes": 121877,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/implementation.patch",
+      "sha256": "a6f29a038bd5e853628fc5da20f85778cb32adf6b8dd67d677c3809306fa4d9a"
+    }
+  ],
+  "frozen_input_count": 265,
+  "gradient": {
+    "absolute_error_threshold_kcal_mol_angstrom": 1e-06,
+    "comparable_rows": 262,
+    "components": 37407,
+    "energy_rows_sha256": "4f14cfac9610e2d27cbd7d1a99d42bf30b0fed114a1107cb9069123a1ef915c7",
+    "gate_passed": true,
+    "input_rows": 265,
+    "kind": "direct_rdkit_vs_chematic_analytic_gradient",
+    "max_abs_error_kcal_mol_angstrom": 3.811030246936298e-07,
+    "max_scaled_error": 7.609023152183738e-08,
+    "scaled_error_threshold": 1e-07
+  },
+  "holdout": {
+    "all_types_match": true,
+    "input_count": 20,
+    "kind": "separate_cation_water_regression_holdout",
+    "max_charge_error": 2.220446049250313e-16,
+    "max_gradient_abs_error": 3.126388037344441e-13,
+    "max_gradient_scaled_error": 7.66015187896879e-14,
+    "max_internal_gradient_scaled_error": 6.443557147173036e-08,
+    "max_total_energy_error": 2.8421709430404007e-13,
+    "outside_frozen_265": true,
+    "protocol": {
+      "coordinate_z_perturbation": "0.03 * ((atom_index % 5) - 2)",
+      "explicit_hydrogens": true,
+      "seed": 43,
+      "source_tree": "dirty_candidate"
+    },
+    "rdkit_runtime": "2026.03.6"
+  },
+  "kind": "local_uncommitted_source_candidate",
+  "max_term_abs_errors": {
+    "angle": 7.105427357601002e-14,
+    "bond": 4.973799150320701e-14,
+    "electrostatic": 1.1368683772161603e-13,
+    "oop": 2.7755575615628914e-16,
+    "stretch_bend": 1.7763568394002505e-14,
+    "torsion": 7.105427357601002e-14,
+    "vdw": 2.8421709430404007e-13
+  },
+  "quality": {
+    "gross_clashes": 0,
+    "independently_sound": 265,
+    "iteration_limit": 200,
+    "previous_reported_converged": 88,
+    "reported_converged": 88,
+    "rows": 265,
+    "same_generated_coordinates_as_previous": true,
+    "stereo_unevaluable": 0,
+    "stereo_violated": 0,
+    "success": 265
+  },
+  "same_manifests_protocol_coordinates_and_energies": true,
+  "source_files": [
+    {
+      "bytes": 223051,
+      "path": "crates/chematic-ff/src/mmff94_numeric.rs",
+      "sha256": "ee7ef9eb5ebc54c1b2491db6bfa1b9d20b3910796110a5cbdffe0cce34398423"
+    },
+    {
+      "bytes": 10608,
+      "path": "crates/chematic-ff/tests/mmff94_cation_water.rs",
+      "sha256": "22d5134ab4d61beda0a07269a2904e1d65f80dee54f7696a7aebc562cde02c36"
+    },
+    {
+      "bytes": 13505,
+      "path": "scripts/tests/test_mmff94_same_explicit_h_energy.py",
+      "sha256": "153bb5bf013dade981ffff1ca7bb10b73ad46edace2b3c7b4cb5e7b41c179b97"
+    },
+    {
+      "bytes": 5637,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/measure_holdout.py",
+      "sha256": "f9e3552ac4e47c60596aafeb97243fedadc4914f6860761659d269d7b4ab62a6"
+    },
+    {
+      "bytes": 3809,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/compare_gradients.py",
+      "sha256": "a793e430968fef727a32a26a9a60d9aa2477ed967987b215c24245c5842de138"
+    },
+    {
+      "bytes": 5501,
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/cation-water/compare.py",
+      "sha256": "5099bdf2a25c7cf4a18217fe7ccdff85aad0d2cef1e01d0b8ec638275bce50ca"
+    }
+  ],
+  "status_counts": {
+    "declared_unsupported": 1,
+    "embed_failure": 2,
+    "ok": 262
+  },
+  "tests": {
+    "clippy": "passed",
+    "diff_check": "passed",
+    "fmt": "passed",
+    "python_passed": 92,
+    "rust_ignored": 15,
+    "rust_passed": 860
+  }
+}

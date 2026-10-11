@@ -117,6 +117,20 @@ def _materialize_smiles_batch(smiles):
     return values
 
 
+def convert_with_report(text, input_format, output_format, /, *, policy="strict"):
+    """Return a checked MOL2/CJSON conversion report as a dict.
+
+    Strict refusals return ``status="refused"`` and ``output=None``. Use
+    ``allow_loss`` to receive a candidate with explicit losses, or
+    ``preserve_source`` for exact same-format source retention. Candidate
+    graph verification does not verify source chemistry or stereo rules.
+    CJSON input supports exact retention and checked SMILES/MOL2 projection.
+    Unsupported routes/policies, malformed input and limits raise ValueError.
+    """
+    import json
+    return json.loads(convert_with_report_json(text, input_format, output_format, policy))
+
+
 def convert_format(text, input_format, output_format, /, *, coords=None,
                    charges=None, name="LIG", comment=""):
     """Convert a molecule between common interchange formats.
@@ -129,6 +143,8 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
 
     The molecular graph and supported stereochemistry are preserved. Format-
     specific metadata is not promised to survive conversion.
+    MOL2 to MOL2 instead validates and retains the exact source; coordinate,
+    charge, name, and comment overrides are rejected on that path.
     """
     def normalize(value):
         if not isinstance(value, str):
@@ -151,6 +167,11 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
             f"format input exceeds maximum input size ({input_bytes} > "
             f"{_CONVERT_MAX_INPUT_BYTES} bytes)"
         )
+    # A same-format MOL2 pass must not erase source typing, charges, or geometry.
+    if source == target == "mol2":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("MOL2 source-preserving conversion does not accept overrides")
+        return roundtrip_mol2_record(text)
     if source == "smiles":
         mol = from_smiles(text)
     elif source == "mol":

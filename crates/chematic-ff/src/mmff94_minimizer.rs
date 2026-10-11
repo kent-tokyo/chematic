@@ -827,8 +827,6 @@ where
     // entry stores two coordinate-sized vectors and is discarded at run end.
     const DELTA: f64 = 1e-4; // finite-difference step (Å)
     const CONVERGENCE: f64 = 1e-4; // max |gradient| threshold
-    const C_ARMIJO: f64 = 1e-4; // Armijo sufficient-decrease constant
-    const TAU: f64 = 0.5; // Armijo backtracking factor
 
     if model.mmff_mol.atom_count() <= 1 {
         return Ok(MinimizeResult {
@@ -894,51 +892,30 @@ where
             gp = -g.iter().map(|gi| dot3(*gi, *gi)).sum::<f64>();
         }
 
-        // Armijo backtracking line search along p
-        let mut alpha = 1.0_f64;
-        let step = loop {
-            let trial: Vec<[f64; 3]> = coords
-                .iter()
-                .zip(p.iter())
-                .map(|(c, pi)| {
-                    [
-                        c[0] + alpha * pi[0],
-                        c[1] + alpha * pi[1],
-                        c[2] + alpha * pi[2],
-                    ]
-                })
-                .collect();
-            let f_trial = if use_cutoff_nonbonded {
-                model.energy_cutoff_nonbonded(&trial)
+        let energy = |candidate: &[[f64; 3]]| {
+            if use_cutoff_nonbonded {
+                model.energy_cutoff_nonbonded(candidate)
             } else {
-                model.energy(&trial)
-            };
-            if f_trial <= f0 + C_ARMIJO * alpha * gp && accept(&trial) {
-                break Some((trial, f_trial));
-            }
-            alpha *= TAU;
-            if alpha < 1e-12 {
-                // Line search failed — take a tiny steepest descent step
-                let scale = 0.01 / max_g.max(1e-8);
-                let trial: Vec<[f64; 3]> = coords
-                    .iter()
-                    .zip(g.iter())
-                    .map(|(c, gi)| {
-                        [
-                            c[0] - scale * gi[0],
-                            c[1] - scale * gi[1],
-                            c[2] - scale * gi[2],
-                        ]
-                    })
-                    .collect();
-                let f_trial = if use_cutoff_nonbonded {
-                    model.energy_cutoff_nonbonded(&trial)
-                } else {
-                    model.energy(&trial)
-                };
-                break accept(&trial).then_some((trial, f_trial));
+                model.energy(candidate)
             }
         };
+        let step = armijo_backtracking(coords, &p, (f0, gp), 1.0, &energy, &accept).or_else(|| {
+            // A stale curvature history or a geometry constraint can
+            // exhaust the quasi-Newton search. Restart with a bounded
+            // steepest-descent step and backtrack it too: a fixed 0.01 A
+            // displacement can overshoot near a stationary point.
+            history.clear();
+            let direction: CoordVec = g.iter().map(|gi| [-gi[0], -gi[1], -gi[2]]).collect();
+            let slope = -g.iter().map(|gi| dot3(*gi, *gi)).sum::<f64>();
+            armijo_backtracking(
+                coords,
+                &direction,
+                (f0, slope),
+                0.01 / max_g,
+                &energy,
+                &accept,
+            )
+        });
         let Some((new_coords, f_new)) = step else {
             // No admissible bounded step exists along either the L-BFGS or
             // tiny steepest-descent direction. Preserve the last accepted
@@ -1392,6 +1369,54 @@ where
         iterations: iters,
         termination,
     })
+}
+
+/// Both quasi-Newton and recovery steps must decrease the same objective
+/// and satisfy the caller's geometry constraint. Exhaustion preserves the
+/// last accepted state; no untested fixed-size step is committed.
+fn armijo_backtracking<E, A>(
+    coords: &[[f64; 3]],
+    direction: &[[f64; 3]],
+    objective_and_slope: (f64, f64),
+    initial_step: f64,
+    energy: &E,
+    accept: &A,
+) -> Option<(CoordVec, f64)>
+where
+    E: Fn(&[[f64; 3]]) -> f64,
+    A: Fn(&[[f64; 3]]) -> bool,
+{
+    let (objective, slope) = objective_and_slope;
+    if !objective.is_finite()
+        || !slope.is_finite()
+        || slope >= 0.0
+        || !initial_step.is_finite()
+        || initial_step <= 0.0
+    {
+        return None;
+    }
+    let mut alpha = initial_step;
+    for _ in 0..40 {
+        let trial: CoordVec = coords
+            .iter()
+            .zip(direction)
+            .map(|(c, p)| {
+                [
+                    c[0] + alpha * p[0],
+                    c[1] + alpha * p[1],
+                    c[2] + alpha * p[2],
+                ]
+            })
+            .collect();
+        if trial.iter().flatten().all(|value| value.is_finite()) {
+            let value = energy(&trial);
+            if value.is_finite() && value <= objective + 1e-4 * alpha * slope && accept(&trial) {
+                return Some((trial, value));
+            }
+        }
+        alpha *= 0.5;
+    }
+    None
 }
 
 /// L-BFGS two-loop recursion: compute search direction p = -H_k × g.

@@ -1,0 +1,74 @@
+{
+  "source": {
+    "path": "crates/chematic-ff/src/mmff94_minimizer.rs",
+    "sha256": "22012db50c1009df81e0c941f67d3d9f2e511fbf2836050e7997f62a36cda648",
+    "additional_sources": [
+      {
+        "path": "crates/chematic-ff/tests/mmff94_optimizer_recovery.rs",
+        "sha256": "ff2fa94a3ee7dc38ee5a3a3f1ec7a92db072fdbefc0317ce9398647cf27479ba"
+      },
+      {
+        "path": "crates/chematic-3d/Cargo.toml",
+        "sha256": "6f241ea4c45668b1cdc0f18e497c0d6fd2b139dd9bf65051cbbe748118a4b0b9"
+      },
+      {
+        "path": "crates/chematic-3d/tests/stereo_coordinate_roundtrip.rs",
+        "sha256": "ea6ddfbad96fb2c26ed6cff61adabe14044e11cb78af417490f2d13a48eac1b1"
+      }
+    ]
+  },
+  "extension_sha256_before_and_after": "2173381da686d2935bf0d62cfd364f0a2ad4c5a34611f6eea320d6b74bd57434",
+  "scorer_binary": {
+    "path": "target/debug/examples/pipeline_v2_vs_rdkit_common_scorer",
+    "sha256": "f6210756a782d472aaf7e0e175acf1bb2f33e584b3d22794e2736cf849fbc654"
+  },
+  "commands": [
+    {
+      "log": "python-tests.log",
+      "command": [
+        "/private/tmp/chematic-mmff-development-20261011/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "scripts/tests/test_mmff94_same_explicit_h_energy.py",
+        "crates/chematic-py/tests/test_pipeline_v2.py",
+        "crates/chematic-py/tests/test_conformer_ensemble.py",
+        "crates/chematic-py/tests/test_conformer_ensemble_v2.py",
+        "-p",
+        "no:cacheprovider",
+        "-q"
+      ],
+      "exit_code": 0
+    },
+    {
+      "log": "holdout.log",
+      "command": [
+        "/private/tmp/chematic-mmff-development-20261011/bin/python",
+        "-B",
+        "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/optimizer-recovery/measure_holdout.py",
+        "candidate"
+      ],
+      "exit_code": 0
+    },
+    {
+      "log": "energy-run.log",
+      "command": [
+        "/private/tmp/chematic-mmff-development-20261011/bin/python",
+        "-B",
+        "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/optimizer-recovery/run_frozen_energy.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "log": "quality-run.log",
+      "command": [
+        "/private/tmp/chematic-mmff-development-20261011/bin/python",
+        "-B",
+        "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/run_quality.py",
+        "--output",
+        "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/mmff94-correctness-2026-10-11/optimizer-recovery/quality.jsonl"
+      ],
+      "exit_code": 0
+    }
+  ]
+}

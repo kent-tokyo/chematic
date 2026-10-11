@@ -2568,6 +2568,30 @@ def parse_sdf_with_coords(text: str) -> list[tuple[Mol, str, list[list[float]]]]
     """
     ...
 
+def convert_with_report_json(text: str, input_format: str, output_format: str, policy: str = "strict") -> str:
+    """Checked MOL2/CJSON conversion; refusal is a report with null output."""
+    ...
+
+def convert_with_report(text: str, input_format: str, output_format: str, /, *, policy: str = "strict") -> dict[str, object]:
+    """Return the shared checked MOL2/CJSON conversion report as a dictionary."""
+    ...
+
+def parse_cjson_record_json(text: str) -> str:
+    """Inspect a strict CJSON record using schematic.cjson-record.v1."""
+    ...
+
+def roundtrip_cjson_record(text: str) -> str:
+    """Validate the local CJSON profile and return the exact UTF-8 source."""
+    ...
+
+def parse_mol2_record_json(text: str) -> str:
+    """Return source metadata and bounded graph interpretation as MOL2 record JSON."""
+    ...
+
+def roundtrip_mol2_record(text: str) -> str:
+    """Validate one MOL2 record and preserve its exact source."""
+    ...
+
 def from_mol2(mol2_str: str) -> Mol:
     """Parse a Tripos MOL2 string and return a :class:`Mol`.
 

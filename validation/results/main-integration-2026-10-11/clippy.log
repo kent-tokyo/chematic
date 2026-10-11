@@ -1,0 +1,126 @@
+    Blocking waiting for file lock on build directory
+    Checking smallvec v1.16.2
+   Compiling bytemuck_derive v1.12.0
+    Checking bytemuck v1.25.2
+    Checking chematic-core v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-core)
+    Checking simd-adler32 v0.3.10
+    Checking arrayvec v0.7.8
+    Checking chematic-perception v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-perception)
+    Checking log v0.4.34
+    Checking crc32fast v1.5.1
+    Checking libm v0.2.16
+    Checking miniz_oxide v0.9.1
+   Compiling num-traits v0.2.19
+    Checking memchr v2.8.3
+    Checking flate2 v1.1.10
+    Checking float-cmp v0.9.0
+    Checking bitflags v2.13.1
+   Compiling target-lexicon v0.13.5
+    Checking strict-num v0.1.1
+    Checking miniz_oxide v0.8.9
+    Checking fdeflate v0.3.7
+    Checking arrayref v0.3.9
+   Compiling version_check v0.9.5
+   Compiling slotmap v1.1.1
+    Checking serde_json v1.0.151
+    Checking core_maths v0.1.1
+    Checking chematic-smarts v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-smarts)
+    Checking once_cell v1.21.4
+    Checking ttf-parser v0.25.1
+   Compiling pyo3-build-config v0.29.3
+    Checking chematic-smiles v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-smiles)
+    Checking font-types v0.11.3
+    Checking weezl v0.1.12
+    Checking tinyvec_macros v0.1.1
+    Checking color_quant v1.1.0
+    Checking tinyvec v1.13.2
+    Checking read-fonts v0.39.2
+    Checking chematic-rxn v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-rxn)
+    Checking tiny-skia-path v0.11.4
+    Checking memmap2 v0.9.11
+    Checking kurbo v0.11.3
+    Checking polycool v0.4.0
+    Checking equivalent v1.0.2
+    Checking byteorder-lite v0.1.0
+    Checking unicode-bidi-mirroring v0.4.0
+    Checking bitflags v1.3.2
+    Checking unicode-ccc v0.4.0
+    Checking unicode-script v0.5.8
+    Checking siphasher v1.0.3
+    Checking unicode-properties v0.1.4
+    Checking hashbrown v0.17.1
+    Checking indexmap v2.14.2
+    Checking rustybuzz v0.20.1
+    Checking svgtypes v0.15.3
+    Checking png v0.17.16
+    Checking kurbo v0.13.1
+    Checking fontdb v0.23.0
+    Checking png v0.18.1
+    Checking simplecss v0.2.2
+    Checking chematic-cip v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-cip)
+    Checking pxfm v0.1.30
+    Checking pico-args v0.5.0
+    Checking unicode-vo v0.1.0
+    Checking imagesize v0.13.0
+    Checking xmlwriter v0.1.0
+    Checking data-url v0.3.2
+    Checking quick-error v2.0.1
+    Checking unicode-bidi v0.3.18
+    Checking roxmltree v0.20.0
+    Checking zune-core v0.4.12
+    Checking base64 v0.22.1
+    Checking zune-core v0.5.3
+    Checking zune-jpeg v0.5.15
+    Checking usvg v0.45.1
+    Checking zune-jpeg v0.4.21
+    Checking image-webp v0.2.4
+    Checking moxcms v0.8.1
+    Checking chematic-fp v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-fp)
+    Checking write-fonts v0.48.1
+    Checking tiny-skia v0.11.4
+    Checking skrifa v0.42.1
+    Checking gif v0.14.2
+    Checking gif v0.13.3
+   Compiling pyo3-ffi v0.29.3
+    Checking chematic-iupac v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-iupac)
+    Checking rgb v0.8.53
+    Checking ryu v1.0.23
+    Checking pdf-writer v0.12.1
+    Checking resvg v0.45.1
+    Checking chematic-chem v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-chem)
+    Checking image v0.25.10
+    Checking subsetter v0.2.6
+    Checking tiny-skia-path v0.12.0
+    Checking tiny-skia v0.12.0
+    Checking svg2pdf v0.13.0
+    Checking chematic-ff v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-ff)
+   Compiling pyo3 v0.29.3
+   Compiling matrixmultiply v0.3.11
+    Checking unicode-ident v1.0.24
+    Checking wasm-bindgen-shared v0.2.121
+    Checking chematic-3d v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-3d)
+    Checking chematic-depict v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-depict)
+   Compiling wasm-bindgen v0.2.121
+   Compiling pyo3-macros-backend v0.29.3
+    Checking chematic-crystal v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-crystal)
+   Compiling chematic-inchi v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-inchi)
+    Checking pin-project-lite v0.2.17
+    Checking rawpointer v0.2.1
+    Checking slab v0.4.12
+    Checking futures-core v0.3.34
+    Checking futures-task v0.3.34
+    Checking futures-util v0.3.34
+    Checking chematic-mol v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-mol)
+   Compiling pyo3-macros v0.29.3
+   Compiling numpy v0.29.0
+    Checking num-integer v0.1.47
+    Checking num-complex v0.4.6
+    Checking clap_builder v4.6.7
+    Checking ndarray v0.17.2
+    Checking js-sys v0.3.98
+    Checking clap v4.6.7
+    Checking web-sys v0.3.98
+    Checking chematic-py v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-py)
+    Checking chematic-wasm v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-wasm)
+    Checking chematic-cli v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-cli)
+    Finished `dev` profile [unoptimized] target(s) in 2m 26s
