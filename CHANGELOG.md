@@ -18,6 +18,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Split the MCP tool registry schemas from tool execution and replaced the
   580-line registry function with one bounded schema function per tool. Tool
   order, schemas, dispatch, and protocol output are unchanged.
+- Moved reaction transformation and input-boundary tests out of the production
+  implementation file while retaining child-module access to private helpers.
 
 ## [1.1.0] - 2026-10-11
 

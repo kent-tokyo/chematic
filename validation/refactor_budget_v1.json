@@ -51,7 +51,7 @@
     "crates/chematic-py/src/mol_methods.rs": 6087,
     "crates/chematic-rxn/src/query.rs": 1969,
     "crates/chematic-rxn/src/rdkit_stereo.rs": 1626,
-    "crates/chematic-rxn/src/transform.rs": 8282,
+    "crates/chematic-rxn/src/transform.rs": 4953,
     "crates/chematic-smarts/src/match_vf2.rs": 1877,
     "crates/chematic-smarts/src/mcs.rs": 1645,
     "crates/chematic-smarts/src/parser.rs": 2259,
@@ -146,10 +146,6 @@
     "crates/chematic-3d/src/stereo_constraints.rs::repair_stereo#1": {
       "decisions": 16,
       "lines": 129
-    },
-    "crates/chematic-3d/src/torsion_boundary_contract_tests.rs::torsion_rule_families_preserve_valid_paths_and_periodic_energy#1": {
-      "decisions": 10,
-      "lines": 135
     },
     "crates/chematic-chem/src/brics.rs::is_brics_breakable#1": {
       "decisions": 59,

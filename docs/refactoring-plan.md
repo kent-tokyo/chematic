@@ -38,7 +38,10 @@ authoritative.
 R1 started by separating the MCP registry schemas from tool execution. The
 former 580-line `list_tools` function is now a short ordered registry assembled
 from one bounded schema function per tool. Runtime order and schema content are
-covered by the existing MCP schema and protocol tests.
+covered by the existing MCP schema and protocol tests. The 3,335 lines of
+reaction unit and input-boundary tests formerly embedded in `transform.rs` are
+also isolated in child test modules; private-helper access and all 293 reaction
+tests remain unchanged.
 
 ## Required checks per phase
 

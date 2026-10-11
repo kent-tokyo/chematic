@@ -113,6 +113,24 @@ mod tests {
                     )
                 )
 
+    def test_dedicated_test_modules_are_not_production_sources(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_dir = root / "crates" / "demo" / "src"
+            source_dir.mkdir(parents=True)
+            (source_dir / "lib.rs").write_text("fn production() {}\n", encoding="utf-8")
+            (source_dir / "boundary_tests.rs").write_text(
+                "fn test_helper() {}\n", encoding="utf-8"
+            )
+            nested = source_dir / "feature" / "tests.rs"
+            nested.parent.mkdir()
+            nested.write_text("fn test_helper() {}\n", encoding="utf-8")
+            sources = budget.rust_sources(root, set())
+        self.assertEqual(
+            [path.relative_to(root).as_posix() for path in sources],
+            ["crates/demo/src/lib.rs"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

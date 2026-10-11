@@ -267,7 +267,11 @@ def rust_sources(root: Path, excluded: set[str]) -> list[Path]:
         relative = path.relative_to(root).as_posix()
         if relative in excluded:
             continue
-        if "/tests/" in relative or relative.endswith("/tests.rs"):
+        if (
+            "/tests/" in relative
+            or relative.endswith("/tests.rs")
+            or relative.endswith("_tests.rs")
+        ):
             continue
         sources.append(path)
     return sources
