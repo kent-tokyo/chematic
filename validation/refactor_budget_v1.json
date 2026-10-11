@@ -425,10 +425,6 @@
       "decisions": 42,
       "lines": 180
     },
-    "crates/chematic-mol/src/orca.rs::parse_orca_output_with_limits#1": {
-      "decisions": 27,
-      "lines": 97
-    },
     "crates/chematic-mol/src/pdbqt.rs::parse_pdbqt_with_limits#1": {
       "decisions": 21,
       "lines": 133

@@ -1050,11 +1050,10 @@ pub fn parse_orca_output(input: &str) -> Result<OrcaOutput, OrcaOutputError> {
     parse_orca_output_with_limits(input, &OrcaOutputParseLimits::default())
 }
 
-/// Parse an ORCA output file with explicit resource limits.
-pub fn parse_orca_output_with_limits(
-    input: &str,
+fn validated_output_lines<'a>(
+    input: &'a str,
     limits: &OrcaOutputParseLimits,
-) -> Result<OrcaOutput, OrcaOutputError> {
+) -> Result<Vec<&'a str>, OrcaOutputError> {
     if input.len() > limits.max_input_bytes {
         return Err(OrcaOutputError::InputTooLarge {
             limit: limits.max_input_bytes,
@@ -1066,14 +1065,21 @@ pub fn parse_orca_output_with_limits(
             limit: limits.max_lines,
         });
     }
-    for line in &lines {
-        if line.len() > limits.max_line_bytes {
-            return Err(OrcaOutputError::LineTooLong {
-                actual: line.len(),
-                limit: limits.max_line_bytes,
-            });
-        }
+    if let Some(line) = lines.iter().find(|line| line.len() > limits.max_line_bytes) {
+        return Err(OrcaOutputError::LineTooLong {
+            actual: line.len(),
+            limit: limits.max_line_bytes,
+        });
     }
+    Ok(lines)
+}
+
+/// Parse an ORCA output file with explicit resource limits.
+pub fn parse_orca_output_with_limits(
+    input: &str,
+    limits: &OrcaOutputParseLimits,
+) -> Result<OrcaOutput, OrcaOutputError> {
+    let lines = validated_output_lines(input, limits)?;
 
     let mut charge = None;
     let mut multiplicity = None;
