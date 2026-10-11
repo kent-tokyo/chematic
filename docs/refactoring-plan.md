@@ -29,8 +29,8 @@ authoritative.
 | R1 | Declarative registries, generated data, and test-module separation | Complete |
 | R2 | Reaction template, matching, product, sanitization, provenance, compatibility | Complete |
 | R3 | File parsers: lexical decode, semantic validation, builders, diagnostics | Complete |
-| R4 | Python and WASM bindings by API domain | Active |
-| R5 | Descriptors and tautomer rules/search/scoring | Planned |
+| R4 | Python and WASM bindings by API domain | Complete |
+| R5 | Descriptors and tautomer rules/search/scoring | Active |
 | R6 | Canonicalization, ring perception, and aromaticity | Planned |
 | R7 | MMFF/UFF and 3D preparation, optimization, and quality policy | Planned |
 | R8 | Legacy/dead-code inventory, exact helper deduplication, dependency cleanup | Planned |
@@ -72,12 +72,17 @@ denied, the refactor-budget scanner, and formatting/diff checks pass. A KET
 contract regression found by the full gate was corrected so flat malformed
 documents continue to report the original missing `atoms` field.
 
-R4's WASM scope has no remaining exceptions. Large binding modules now isolate
-contract tests, LAMMPS and typed-array format APIs, common format conversion,
-and molecule workflow APIs without changing exported JavaScript names or JSON
-shapes. All 375 native WASM tests, clippy, the budget scanner, a release Node
-WASM build, and every Node integration test pass. Python binding decomposition
-remains active.
+R4 finishes with no Python or WASM binding exceptions. Large WASM modules now
+isolate contract tests, LAMMPS and typed-array APIs, common format conversion,
+and molecule workflows. The 6,087-line Python `Mol` implementation is split
+into eight API-domain modules; bulk descriptors, reports, reactions, LAMMPS,
+and pipeline conversion each have separate compute and serialization stages.
+Exported JavaScript/Python names and JSON shapes are unchanged. All 375 native
+WASM tests, the release Node build and Node integration tests pass. The Python
+wheel builds, 1,109 of 1,110 tests pass (the sole failure is the pre-existing
+caffeine HBA oracle mismatch), and a representative method/descriptor/bulk
+snapshot is byte-identical to the published 1.1.0 wheel. Clippy and the budget
+scanner pass.
 
 ## Required checks per phase
 
