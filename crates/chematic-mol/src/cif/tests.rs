@@ -1,4 +1,6 @@
 use super::*;
+use crate::cif_symmetry;
+use chematic_crystal::CrystalError;
 
 const NACL_P1_CIF: &str = "data_NaCl\n\
             _cell_length_a 5.6402\n_cell_length_b 5.6402\n_cell_length_c 5.6402\n\
@@ -281,7 +283,7 @@ fn missing_one_of_six_cell_tags_is_rejected_even_though_parse_cif_defaults_it() 
     // Sanity: parse_cif (the existing, unaffected API) does NOT
     // reject this file -- confirms the two functions genuinely
     // have different cell-completeness requirements.
-    assert!(super::super::parse_cif(cif).is_ok());
+    assert!(super::parse_cif(cif).is_ok());
 }
 
 #[test]

@@ -323,12 +323,85 @@ fn find_atom_site_loop(tokens: &[String]) -> Result<(Vec<String>, usize), CifErr
     Err(CifError::NoAtomSiteLoop)
 }
 
-pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
-    parse_cif_with_limits(input, &CifParseLimits::default())
+#[derive(Clone, Copy)]
+struct AtomSiteColumns {
+    width: usize,
+    element: Option<usize>,
+    label: Option<usize>,
+    x: usize,
+    y: usize,
+    z: usize,
+    #[cfg(feature = "crystal")]
+    occupancy: Option<usize>,
+    cartesian: bool,
 }
 
-/// Parse a CIF file with explicit resource limits.
-pub fn parse_cif_with_limits(input: &str, limits: &CifParseLimits) -> Result<CifResult, CifError> {
+impl AtomSiteColumns {
+    fn from_headers(headers: &[String]) -> Result<Self, CifError> {
+        let col = |name: &str| headers.iter().position(|header| header == name);
+        let cartesian = col("_atom_site_fract_x").is_none();
+        let coordinates = (
+            col("_atom_site_fract_x").or_else(|| col("_atom_site_cartn_x")),
+            col("_atom_site_fract_y").or_else(|| col("_atom_site_cartn_y")),
+            col("_atom_site_fract_z").or_else(|| col("_atom_site_cartn_z")),
+        );
+        let (Some(x), Some(y), Some(z)) = coordinates else {
+            return Err(CifError::MissingCoordinateColumns);
+        };
+        Ok(Self {
+            width: headers.len(),
+            element: col("_atom_site_type_symbol"),
+            label: col("_atom_site_label"),
+            x,
+            y,
+            z,
+            #[cfg(feature = "crystal")]
+            occupancy: col("_atom_site_occupancy"),
+            cartesian,
+        })
+    }
+
+    fn is_end(self, row: &[String]) -> bool {
+        row[0] == "loop_" || row[0].starts_with("data_")
+    }
+
+    fn element(self, row: &[String]) -> Result<Element, CifError> {
+        let raw = self
+            .element
+            .and_then(|column| row.get(column))
+            .or_else(|| self.label.and_then(|column| row.get(column)))
+            .map(String::as_str)
+            .unwrap_or("X");
+        resolve_element(raw)
+    }
+}
+
+fn parse_cif_number(token: &str) -> Result<f64, CifError> {
+    strip_esd(token)
+        .parse::<f64>()
+        .map_err(|_| CifError::InvalidCoordinate(token.to_owned()))
+}
+
+fn validate_fractional_cell(cell: &UnitCell, has_cell: bool) -> Result<(), CifError> {
+    if !has_cell {
+        return Err(CifError::MissingCellParameters);
+    }
+    if cell.gamma.to_radians().sin().abs() < 1e-10 {
+        return Err(CifError::InvalidCellParameters(format!(
+            "_cell_angle_gamma = {} makes sin(γ) ≈ 0, transformation undefined",
+            cell.gamma
+        )));
+    }
+    let volume = cell.volume();
+    if !volume.is_finite() || volume <= 0.0 {
+        return Err(CifError::InvalidCellParameters(format!(
+            "unit cell volume is non-positive ({volume:.6} Å³); check _cell_angle_* values"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_plain_cif_input(input: &str, limits: &CifParseLimits) -> Result<Vec<String>, CifError> {
     if input.len() > limits.max_input_bytes {
         return Err(CifError::ResourceLimit {
             resource: "input bytes",
@@ -336,22 +409,20 @@ pub fn parse_cif_with_limits(input: &str, limits: &CifParseLimits) -> Result<Cif
             limit: limits.max_input_bytes,
         });
     }
-    if let Some(line_bytes) = input.lines().map(str::len).max()
-        && line_bytes > limits.max_line_bytes
+    if let Some(actual) = input.lines().map(str::len).max()
+        && actual > limits.max_line_bytes
     {
         return Err(CifError::ResourceLimit {
             resource: "line bytes",
-            actual: line_bytes,
+            actual,
             limit: limits.max_line_bytes,
         });
     }
-    // Strip CIF comments (# to end of line), but not '#' inside quoted strings.
-    let clean: String = input
+    let clean = input
         .lines()
         .map(strip_cif_comment)
         .collect::<Vec<_>>()
         .join("\n");
-
     let tokens = tokenize_cif(&clean);
     if tokens.len() > limits.max_tokens {
         return Err(CifError::ResourceLimit {
@@ -360,107 +431,73 @@ pub fn parse_cif_with_limits(input: &str, limits: &CifParseLimits) -> Result<Cif
             limit: limits.max_tokens,
         });
     }
+    Ok(tokens)
+}
 
-    // --- Extract cell parameters ---
-    let (cell, has_cell, _cell_fields_seen) = scan_cell(&tokens);
+struct PlainCifAtoms {
+    mol: Molecule,
+    coords: Vec<(f64, f64, f64)>,
+}
 
-    // --- Find _atom_site loop ---
-    let (col_headers, data_start) = find_atom_site_loop(&tokens)?;
-    let ncols = col_headers.len();
-
-    let col = |name: &str| -> Option<usize> { col_headers.iter().position(|h| h.as_str() == name) };
-
-    let col_type = col("_atom_site_type_symbol");
-    let col_label = col("_atom_site_label");
-    // Prefer fractional; fall back to Cartesian.
-    let use_cartesian = col("_atom_site_fract_x").is_none();
-    let col_x = col("_atom_site_fract_x").or_else(|| col("_atom_site_cartn_x"));
-    let col_y = col("_atom_site_fract_y").or_else(|| col("_atom_site_cartn_y"));
-    let col_z = col("_atom_site_fract_z").or_else(|| col("_atom_site_cartn_z"));
-
-    let (col_x, col_y, col_z) = match (col_x, col_y, col_z) {
-        (Some(x), Some(y), Some(z)) => (x, y, z),
-        _ => return Err(CifError::MissingCoordinateColumns),
-    };
-
-    // Validate that fractional→Cartesian conversion is well-defined.
-    if !use_cartesian {
-        if !has_cell {
-            return Err(CifError::MissingCellParameters);
-        }
-        let sg = cell.gamma.to_radians().sin();
-        if sg.abs() < 1e-10 {
-            return Err(CifError::InvalidCellParameters(format!(
-                "_cell_angle_gamma = {} makes sin(γ) ≈ 0, transformation undefined",
-                cell.gamma
-            )));
-        }
-        // Also guard against a non-physical cell volume (≤ 0 or NaN).
-        let vol = cell.volume();
-        if !vol.is_finite() || vol <= 0.0 {
-            return Err(CifError::InvalidCellParameters(format!(
-                "unit cell volume is non-positive ({vol:.6} Å³); check _cell_angle_* values"
-            )));
-        }
-    }
-
+fn parse_plain_cif_rows(
+    tokens: &[String],
+    start: usize,
+    columns: AtomSiteColumns,
+    cell: &UnitCell,
+    limits: &CifParseLimits,
+) -> Result<PlainCifAtoms, CifError> {
     let mut builder = MoleculeBuilder::new();
-    let mut coords: Vec<(f64, f64, f64)> = Vec::new();
-    let data_tokens = &tokens[data_start..];
-
-    let mut row = 0;
-    while (row + 1) * ncols <= data_tokens.len() {
-        let base = row * ncols;
-        let tok = &data_tokens[base..base + ncols];
-
-        // Stop at next loop_ or data_ block.
-        if tok[0].as_str() == "loop_" || tok[0].starts_with("data_") {
+    let mut coords = Vec::new();
+    for row in tokens[start..].chunks(columns.width) {
+        if row.len() < columns.width || columns.is_end(row) {
             break;
         }
-
-        if row >= limits.max_atoms {
+        if coords.len() >= limits.max_atoms {
             return Err(CifError::ResourceLimit {
                 resource: "atom rows",
-                actual: row + 1,
+                actual: coords.len() + 1,
                 limit: limits.max_atoms,
             });
         }
-
-        // Resolve element.
-        let elem_raw: &str = col_type
-            .and_then(|c| tok.get(c))
-            .map(|s| s.as_str())
-            .or_else(|| col_label.and_then(|c| tok.get(c)).map(|s| s.as_str()))
-            .unwrap_or("X");
-        let elem = resolve_element(elem_raw)?;
-
-        let parse_coord = |s: &str| -> Result<f64, CifError> {
-            strip_esd(s)
-                .parse::<f64>()
-                .map_err(|_| CifError::InvalidCoordinate(s.to_string()))
-        };
-        let fx = parse_coord(&tok[col_x])?;
-        let fy = parse_coord(&tok[col_y])?;
-        let fz = parse_coord(&tok[col_z])?;
-
-        let (x, y, z) = if use_cartesian {
-            (fx, fy, fz)
+        let values = (
+            parse_cif_number(&row[columns.x])?,
+            parse_cif_number(&row[columns.y])?,
+            parse_cif_number(&row[columns.z])?,
+        );
+        let coord = if columns.cartesian {
+            values
         } else {
-            cell.frac_to_cart(fx, fy, fz)
+            cell.frac_to_cart(values.0, values.1, values.2)
         };
-
-        builder.add_atom(Atom::new(elem));
-        coords.push((x, y, z));
-        row += 1;
+        builder.add_atom(Atom::new(columns.element(row)?));
+        coords.push(coord);
     }
-
     if coords.is_empty() {
         return Err(CifError::NoAtomSiteLoop);
     }
-
-    Ok(CifResult {
+    Ok(PlainCifAtoms {
         mol: builder.build(),
         coords,
+    })
+}
+
+pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
+    parse_cif_with_limits(input, &CifParseLimits::default())
+}
+
+/// Parse a CIF file with explicit resource limits.
+pub fn parse_cif_with_limits(input: &str, limits: &CifParseLimits) -> Result<CifResult, CifError> {
+    let tokens = validate_plain_cif_input(input, limits)?;
+    let (cell, has_cell, _cell_fields_seen) = scan_cell(&tokens);
+    let (headers, data_start) = find_atom_site_loop(&tokens)?;
+    let columns = AtomSiteColumns::from_headers(&headers)?;
+    if !columns.cartesian {
+        validate_fractional_cell(&cell, has_cell)?;
+    }
+    let parsed = parse_plain_cif_rows(&tokens, data_start, columns, &cell, limits)?;
+    Ok(CifResult {
+        mol: parsed.mol,
+        coords: parsed.coords,
         cell: if has_cell { Some(cell) } else { None },
     })
 }
@@ -627,8 +664,8 @@ pub(crate) fn parse_esd(s: &str) -> Option<f64> {
 #[cfg(feature = "crystal")]
 mod crystal_adapter {
     use super::{
-        CellFieldsSeen, CifError, UnitCell, find_atom_site_loop, resolve_element, scan_cell,
-        strip_cif_comment, strip_esd, tokenize_cif,
+        AtomSiteColumns, CellFieldsSeen, CifError, UnitCell, find_atom_site_loop, parse_cif_number,
+        scan_cell, strip_cif_comment, strip_esd, tokenize_cif,
     };
     use crate::cif_symmetry::{self, CifSymmetryError, sites_within_tolerance};
     use chematic_core::Element;
@@ -957,6 +994,120 @@ mod crystal_adapter {
         occupancy: f64,
     }
 
+    struct GroupedAtomRows {
+        fractional: FractionalCoord,
+        label: Option<String>,
+        species: Vec<SiteSpecies>,
+    }
+
+    fn parse_periodic_rows(
+        tokens: &[String],
+        start: usize,
+        columns: AtomSiteColumns,
+        lattice: &Lattice,
+    ) -> Result<Vec<RawAtomRow>, CifPeriodicError> {
+        let mut rows = Vec::new();
+        for row in tokens[start..].chunks(columns.width) {
+            if row.len() < columns.width || columns.is_end(row) {
+                break;
+            }
+            let values = [
+                parse_cif_number(&row[columns.x])?,
+                parse_cif_number(&row[columns.y])?,
+                parse_cif_number(&row[columns.z])?,
+            ];
+            let fractional = if columns.cartesian {
+                lattice.cart_to_frac(CartesianCoord::new(values))
+            } else {
+                FractionalCoord::new(values)
+            };
+            let occupancy = columns
+                .occupancy
+                .and_then(|column| row.get(column))
+                .map(|token| parse_occupancy_token(token))
+                .transpose()?
+                .unwrap_or(1.0);
+            rows.push(RawAtomRow {
+                label: columns.label.and_then(|column| row.get(column)).cloned(),
+                element: columns.element(row)?,
+                fractional,
+                occupancy,
+            });
+        }
+        if rows.is_empty() {
+            return Err(CifPeriodicError::Cif(CifError::NoAtomSiteLoop));
+        }
+        Ok(rows)
+    }
+
+    fn group_periodic_rows(
+        rows: Vec<RawAtomRow>,
+        lattice: &Lattice,
+    ) -> Result<Vec<PeriodicSite>, CifPeriodicError> {
+        let mut grouped: Vec<GroupedAtomRows> = Vec::new();
+        for raw in rows {
+            let species = SiteSpecies {
+                element: raw.element,
+                occupancy: Occupancy::new(raw.occupancy)?,
+            };
+            if let Some(group) = grouped
+                .iter_mut()
+                .find(|group| sites_within_tolerance(lattice, group.fractional, raw.fractional))
+            {
+                group.species.push(species);
+            } else {
+                grouped.push(GroupedAtomRows {
+                    fractional: raw.fractional,
+                    label: raw.label,
+                    species: vec![species],
+                });
+            }
+        }
+        grouped
+            .into_iter()
+            .map(|group| PeriodicSite::new(group.species, group.fractional, group.label))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(Into::into)
+    }
+
+    fn finish_periodic_result(
+        tokens: &[String],
+        lattice: Lattice,
+        asymmetric_sites: Vec<PeriodicSite>,
+        space_group_name: Option<String>,
+        it_number: Option<i64>,
+        expand: bool,
+    ) -> Result<CifPeriodicResult, CifPeriodicError> {
+        if expand && let Some(operations) = cif_symmetry::resolve_symmetry_operations(tokens)? {
+            let expanded = cif_symmetry::expand_sites(&asymmetric_sites, &operations, &lattice)?;
+            let structure = PeriodicStructure::new(lattice, expanded)?;
+            let symmetry = CifSymmetryStatus::ExpandedExplicitOperations {
+                space_group_name,
+                operation_count: operations.len(),
+                asymmetric_site_count: asymmetric_sites.len(),
+                expanded_site_count: structure.site_count(),
+            };
+            return Ok(CifPeriodicResult {
+                structure,
+                symmetry,
+            });
+        }
+        let operation_count = if expand {
+            0
+        } else {
+            cif_symmetry::scan_operation_sources(tokens)
+                .first()
+                .map(Vec::len)
+                .unwrap_or(0)
+        };
+        let structure = PeriodicStructure::new(lattice, asymmetric_sites)?;
+        let symmetry = classify_p1_or_unexpanded(space_group_name, it_number, operation_count);
+        Ok(CifPeriodicResult {
+            structure,
+            symmetry,
+        })
+    }
+
     /// Parse a CIF file into a [`PeriodicStructure`], reusing this module's
     /// existing tokenizer/cell-scanner/atom-site-loop-finder.
     ///
@@ -1057,152 +1208,18 @@ mod crystal_adapter {
 
         let (space_group_name, it_number) = scan_symmetry_name_and_number(&tokens);
 
-        let (col_headers, data_start) = find_atom_site_loop(&tokens)?;
-        let ncols = col_headers.len();
-        let col =
-            |name: &str| -> Option<usize> { col_headers.iter().position(|h| h.as_str() == name) };
-        let col_type = col("_atom_site_type_symbol");
-        let col_label = col("_atom_site_label");
-        let use_cartesian = col("_atom_site_fract_x").is_none();
-        let col_x = col("_atom_site_fract_x").or_else(|| col("_atom_site_cartn_x"));
-        let col_y = col("_atom_site_fract_y").or_else(|| col("_atom_site_cartn_y"));
-        let col_z = col("_atom_site_fract_z").or_else(|| col("_atom_site_cartn_z"));
-        let col_occ = col("_atom_site_occupancy");
-        let (col_x, col_y, col_z) = match (col_x, col_y, col_z) {
-            (Some(x), Some(y), Some(z)) => (x, y, z),
-            _ => return Err(CifPeriodicError::Cif(CifError::MissingCoordinateColumns)),
-        };
-
-        let data_tokens = &tokens[data_start..];
-        let mut rows: Vec<RawAtomRow> = Vec::new();
-        let mut row_idx = 0;
-        while (row_idx + 1) * ncols <= data_tokens.len() {
-            let base = row_idx * ncols;
-            let tok = &data_tokens[base..base + ncols];
-            if tok[0].as_str() == "loop_" || tok[0].starts_with("data_") {
-                break;
-            }
-
-            let label = col_label.and_then(|c| tok.get(c)).map(|s| s.to_string());
-            let elem_raw: &str = col_type
-                .and_then(|c| tok.get(c))
-                .map(|s| s.as_str())
-                .or_else(|| col_label.and_then(|c| tok.get(c)).map(|s| s.as_str()))
-                .unwrap_or("X");
-            let element = resolve_element(elem_raw)?;
-
-            let parse_coord = |s: &str| -> Result<f64, CifError> {
-                strip_esd(s)
-                    .parse::<f64>()
-                    .map_err(|_| CifError::InvalidCoordinate(s.to_string()))
-            };
-            let v0 = parse_coord(&tok[col_x])?;
-            let v1 = parse_coord(&tok[col_y])?;
-            let v2 = parse_coord(&tok[col_z])?;
-
-            let fractional = if use_cartesian {
-                lattice.cart_to_frac(CartesianCoord::new([v0, v1, v2]))
-            } else {
-                FractionalCoord::new([v0, v1, v2])
-            };
-
-            let occupancy = col_occ
-                .and_then(|c| tok.get(c))
-                .map(|s| parse_occupancy_token(s))
-                .transpose()?
-                .unwrap_or(1.0);
-
-            rows.push(RawAtomRow {
-                label,
-                element,
-                fractional,
-                occupancy,
-            });
-            row_idx += 1;
-        }
-
-        if rows.is_empty() {
-            return Err(CifPeriodicError::Cif(CifError::NoAtomSiteLoop));
-        }
-
-        // Group rows sharing a fractional position (within tolerance) into
-        // one site with multiple species -- CIF's convention for
-        // positional/substitutional disorder. First-seen position sets
-        // site order and label; later rows at that position only add a
-        // species.
-        struct Grouped {
-            fractional: FractionalCoord,
-            label: Option<String>,
-            species: Vec<SiteSpecies>,
-        }
-        let mut grouped: Vec<Grouped> = Vec::new();
-        for raw in rows {
-            // ponytail: O(n) scan per row (O(n^2) total) via
-            // sites_within_tolerance's minimum_image call -- fine at the
-            // tens-to-low-hundreds row counts real CIFs have; see
-            // cif_symmetry::SITE_MERGE_TOLERANCE_ANGSTROM's docs for the
-            // unified tolerance this and symmetry-expansion dedup both use.
-            let existing = grouped
-                .iter_mut()
-                .find(|g| sites_within_tolerance(&lattice, g.fractional, raw.fractional));
-            let species = SiteSpecies {
-                element: raw.element,
-                occupancy: Occupancy::new(raw.occupancy)?,
-            };
-            match existing {
-                Some(g) => g.species.push(species),
-                None => grouped.push(Grouped {
-                    fractional: raw.fractional,
-                    label: raw.label,
-                    species: vec![species],
-                }),
-            }
-        }
-
-        let asymmetric_sites = grouped
-            .into_iter()
-            .map(|g| PeriodicSite::new(g.species, g.fractional, g.label))
-            .collect::<Result<Vec<_>, CrystalError>>()?;
-
-        if options.expand_explicit_symmetry {
-            if let Some(operations) = cif_symmetry::resolve_symmetry_operations(&tokens)? {
-                let expanded_sites =
-                    cif_symmetry::expand_sites(&asymmetric_sites, &operations, &lattice)?;
-                let structure = PeriodicStructure::new(lattice, expanded_sites)?;
-                let symmetry = CifSymmetryStatus::ExpandedExplicitOperations {
-                    space_group_name,
-                    operation_count: operations.len(),
-                    asymmetric_site_count: asymmetric_sites.len(),
-                    expanded_site_count: structure.site_count(),
-                };
-                return Ok(CifPeriodicResult {
-                    structure,
-                    symmetry,
-                });
-            }
-            // No parseable explicit operation list -- fall through to the
-            // plain name/number classification (operation_count = 0).
-            let structure = PeriodicStructure::new(lattice, asymmetric_sites)?;
-            let symmetry = classify_p1_or_unexpanded(space_group_name, it_number, 0);
-            return Ok(CifPeriodicResult {
-                structure,
-                symmetry,
-            });
-        }
-
-        // expand_explicit_symmetry = false: count (but never parse/validate)
-        // any explicit operation list, matching this adapter's pre-expansion
-        // behavior exactly.
-        let operation_count = cif_symmetry::scan_operation_sources(&tokens)
-            .first()
-            .map(Vec::len)
-            .unwrap_or(0);
-        let structure = PeriodicStructure::new(lattice, asymmetric_sites)?;
-        let symmetry = classify_p1_or_unexpanded(space_group_name, it_number, operation_count);
-        Ok(CifPeriodicResult {
-            structure,
-            symmetry,
-        })
+        let (headers, data_start) = find_atom_site_loop(&tokens)?;
+        let columns = AtomSiteColumns::from_headers(&headers)?;
+        let rows = parse_periodic_rows(&tokens, data_start, columns, &lattice)?;
+        let asymmetric_sites = group_periodic_rows(rows, &lattice)?;
+        finish_periodic_result(
+            &tokens,
+            lattice,
+            asymmetric_sites,
+            space_group_name,
+            it_number,
+            options.expand_explicit_symmetry,
+        )
     }
 
     /// Write a minimal CIF file (P1, no symmetry operators) from a
@@ -1277,10 +1294,6 @@ mod crystal_adapter {
         }
         out
     }
-
-    #[cfg(test)]
-    #[path = "tests.rs"]
-    mod tests;
 }
 
 #[cfg(feature = "crystal")]
@@ -1291,6 +1304,10 @@ pub use crystal_adapter::{
     parse_cif_periodic_structure, parse_cif_periodic_structure_with_options,
     write_cif_periodic_structure,
 };
+
+#[cfg(all(test, feature = "crystal"))]
+#[path = "cif/tests.rs"]
+mod crystal_tests;
 
 // ---------------------------------------------------------------------------
 // Tests

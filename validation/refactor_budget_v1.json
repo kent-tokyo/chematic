@@ -361,14 +361,6 @@
       "decisions": 37,
       "lines": 163
     },
-    "crates/chematic-mol/src/cif.rs::parse_cif_periodic_structure_with_options#1": {
-      "decisions": 29,
-      "lines": 167
-    },
-    "crates/chematic-mol/src/cif.rs::parse_cif_with_limits#1": {
-      "decisions": 26,
-      "lines": 136
-    },
     "crates/chematic-mol/src/cjson.rs::parse_cjson_with_limits#1": {
       "decisions": 32,
       "lines": 205
