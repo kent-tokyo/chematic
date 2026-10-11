@@ -2550,9 +2550,8 @@ export function conformer_ensemble_json(mol, n, rmsd_threshold) {
  *
  * This is the WASM counterpart of Python's `convert_format`. It supports
  * SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
- * Coordinates and format-specific metadata are intentionally not carried
- * across this topology-only bridge; use the format-specific coordinate APIs
- * when those fields must be preserved.
+ * MOL2-to-MOL2 validates and retains the exact source. Other conversions use
+ * the topology-only bridge and do not carry format-specific metadata.
  * @param {string} text
  * @param {string} input_format
  * @param {string} output_format
@@ -2580,6 +2579,41 @@ export function convert_common_format(text, input_format, output_format) {
         return getStringFromWasm0(ptr4, len4);
     } finally {
         wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+    }
+}
+
+/**
+ * Checked MOL2/CJSON conversion using the shared report schema.
+ * @param {string} text
+ * @param {string} input_format
+ * @param {string} output_format
+ * @param {string} policy
+ * @returns {string}
+ */
+export function convert_with_report_json(text, input_format, output_format, policy) {
+    let deferred6_0;
+    let deferred6_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(input_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(output_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(policy, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.convert_with_report_json(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
+        if (ret[3]) {
+            ptr5 = 0; len5 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
+    } finally {
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
     }
 }
 
@@ -5876,6 +5910,32 @@ export function pains_matches_json(mol) {
 }
 
 /**
+ * Inspect strictly validated CJSON with exact source and opaque field paths.
+ * @param {string} text
+ * @returns {string}
+ */
+export function parse_cjson_record_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.parse_cjson_record_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Parse CXSMARTS and return preserved metadata as JSON.
  * Returns error if atom count exceeds 10,000.
  * @param {string} s
@@ -5919,6 +5979,32 @@ export function parse_cxsmiles_json(s) {
         const ptr0 = passStringToWasm0(s, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.parse_cxsmiles_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Inspect partial charges, atom types and source retention for MOL2.
+ * @param {string} text
+ * @returns {string}
+ */
+export function parse_mol2_record_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.parse_mol2_record_json(ptr0, len0);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -6834,6 +6920,42 @@ export function retro_disconnect_json(mol, max_results, reaction_class) {
 }
 
 /**
+ * Label-stable R-group decomposition returned as RDKit-style table columns.
+ *
+ * `core_smarts` accepts the bounded mapped-core contract used by Rust and
+ * Python: terminal mapped wildcards such as `[*:2]`, or mapped core atoms.
+ * The returned JSON object contains `Core`, `R1`, `R2`, ... arrays parallel
+ * to the input rows. Unmatched rows and absent substituents are `null`.
+ * Output fragments retain their mapped attachment wildcard. The legacy
+ * [`super::rgroup_decompose_json`] function is unchanged.
+ * @param {string} smiles_json
+ * @param {string} core_smarts
+ * @returns {string}
+ */
+export function rgroup_decompose_columns_json(smiles_json, core_smarts) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(core_smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.rgroup_decompose_columns_json(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
  * Decompose a set of molecules against a core SMARTS, returning R-group SMILES.
  *
  * `smiles_json` — JSON array of SMILES strings.
@@ -6903,6 +7025,58 @@ export function ring_families_json(mol) {
         return getStringFromWasm0(ptr1, len1);
     } finally {
         wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Validate the local CJSON profile and retain the exact UTF-8 source.
+ * @param {string} text
+ * @returns {string}
+ */
+export function roundtrip_cjson_record(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.roundtrip_cjson_record(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Validate one MOL2 record and preserve its exact source, including metadata.
+ * @param {string} text
+ * @returns {string}
+ */
+export function roundtrip_mol2_record(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.roundtrip_mol2_record(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
