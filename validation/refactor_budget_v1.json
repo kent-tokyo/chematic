@@ -34,7 +34,6 @@
     "crates/chematic-ff/src/uff.rs": 1807,
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
     "crates/chematic-inchi/src/dedup.rs": 2079,
-    "crates/chematic-mol/src/mol2000.rs": 2928,
     "crates/chematic-perception/src/aromaticity.rs": 4172,
     "crates/chematic-perception/src/rdkit_canon.rs": 1636,
     "crates/chematic-perception/src/rdkit_parity.rs": 2633,
@@ -401,14 +400,6 @@
     "crates/chematic-mol/src/mmcif.rs::parse_mmcif_with_limits#1": {
       "decisions": 35,
       "lines": 199
-    },
-    "crates/chematic-mol/src/mol2000.rs::read_mol_internal#1": {
-      "decisions": 102,
-      "lines": 557
-    },
-    "crates/chematic-mol/src/mol2000.rs::write_v2000_reporting#1": {
-      "decisions": 17,
-      "lines": 149
     },
     "crates/chematic-mol/src/mol2_tripos.rs::parse_mol2_record_with_limits#1": {
       "decisions": 36,
