@@ -1550,81 +1550,13 @@ pub fn lammps_data_to_json(text: &str, atom_style: &str) -> Result<String, JsVal
 #[wasm_bindgen]
 pub fn write_lammps_data_json(json: &str) -> Result<String, JsValue> {
     let v = parse_json_value("LAMMPS data JSON", json)?;
-    let counts: Vec<(String, i64)> = jarr(&v, "counts")
-        .map_err(|e| JsValue::from_str(&e))?
-        .iter()
-        .map(|pair| {
-            let arr = pair
-                .as_array()
-                .ok_or_else(|| "each 'counts' entry must be a [label, count] pair".to_string())?;
-            let label = arr
-                .first()
-                .and_then(|x| x.as_str())
-                .ok_or_else(|| "counts[i][0] must be a string label".to_string())?
-                .to_string();
-            let count = arr
-                .get(1)
-                .and_then(|x| x.as_i64())
-                .ok_or_else(|| "counts[i][1] must be an integer".to_string())?;
-            Ok((label, count))
-        })
-        .collect::<Result<Vec<_>, String>>()
-        .map_err(|e: String| JsValue::from_str(&e))?;
-    let unparsed_sections: Vec<(String, String)> = match v.get("unparsed_sections") {
-        Some(serde_json::Value::Array(arr)) => arr
-            .iter()
-            .map(|pair| {
-                let a = pair.as_array().ok_or_else(|| {
-                    "each 'unparsed_sections' entry must be a [name, raw] pair".to_string()
-                })?;
-                let name = a
-                    .first()
-                    .and_then(|x| x.as_str())
-                    .ok_or_else(|| "unparsed_sections[i][0] must be a string".to_string())?
-                    .to_string();
-                let raw = a
-                    .get(1)
-                    .and_then(|x| x.as_str())
-                    .ok_or_else(|| "unparsed_sections[i][1] must be a string".to_string())?
-                    .to_string();
-                Ok((name, raw))
-            })
-            .collect::<Result<Vec<_>, String>>()
-            .map_err(|e: String| JsValue::from_str(&e))?,
-        _ => Vec::new(),
-    };
-    let masses = match v.get("masses") {
-        Some(serde_json::Value::Array(arr)) => arr
-            .iter()
-            .map(lammps_mass_from_json)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| JsValue::from_str(&e))?,
-        _ => Vec::new(),
-    };
-    let atoms = match v.get("atoms") {
-        Some(serde_json::Value::Array(arr)) => arr
-            .iter()
-            .map(lammps_atom_from_json)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| JsValue::from_str(&e))?,
-        _ => Vec::new(),
-    };
-    let velocities = match v.get("velocities") {
-        Some(serde_json::Value::Array(arr)) => arr
-            .iter()
-            .map(lammps_velocity_from_json)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| JsValue::from_str(&e))?,
-        _ => Vec::new(),
-    };
-    let bonds = match v.get("bonds") {
-        Some(serde_json::Value::Array(arr)) => arr
-            .iter()
-            .map(lammps_bond_from_json)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| JsValue::from_str(&e))?,
-        _ => Vec::new(),
-    };
+    let counts = lammps_counts_from_json(&v).map_err(|e| JsValue::from_str(&e))?;
+    let unparsed_sections =
+        lammps_unparsed_sections_from_json(&v).map_err(|e| JsValue::from_str(&e))?;
+    let masses = lammps_array_from_json(&v, "masses", lammps_mass_from_json)?;
+    let atoms = lammps_array_from_json(&v, "atoms", lammps_atom_from_json)?;
+    let velocities = lammps_array_from_json(&v, "velocities", lammps_velocity_from_json)?;
+    let bonds = lammps_array_from_json(&v, "bonds", lammps_bond_from_json)?;
     let simulation_box =
         lammps_box_from_json(jget(&v, "simulation_box").map_err(|e| JsValue::from_str(&e))?)
             .map_err(|e| JsValue::from_str(&e))?;
@@ -1642,6 +1574,66 @@ pub fn write_lammps_data_json(json: &str) -> Result<String, JsValue> {
         unparsed_sections,
     };
     Ok(chematic_mol::write_lammps_data(&data))
+}
+
+fn lammps_counts_from_json(v: &serde_json::Value) -> Result<Vec<(String, i64)>, String> {
+    jarr(v, "counts")?
+        .iter()
+        .map(|pair| {
+            let fields = pair
+                .as_array()
+                .ok_or_else(|| "each 'counts' entry must be a [label, count] pair".to_string())?;
+            let label = fields
+                .first()
+                .and_then(|value| value.as_str())
+                .ok_or_else(|| "counts[i][0] must be a string label".to_string())?;
+            let count = fields
+                .get(1)
+                .and_then(|value| value.as_i64())
+                .ok_or_else(|| "counts[i][1] must be an integer".to_string())?;
+            Ok((label.to_string(), count))
+        })
+        .collect()
+}
+
+fn lammps_unparsed_sections_from_json(
+    v: &serde_json::Value,
+) -> Result<Vec<(String, String)>, String> {
+    let Some(serde_json::Value::Array(entries)) = v.get("unparsed_sections") else {
+        return Ok(Vec::new());
+    };
+    entries
+        .iter()
+        .map(|entry| {
+            let fields = entry.as_array().ok_or_else(|| {
+                "each 'unparsed_sections' entry must be a [name, raw] pair".to_string()
+            })?;
+            let name = fields
+                .first()
+                .and_then(|value| value.as_str())
+                .ok_or_else(|| "unparsed_sections[i][0] must be a string".to_string())?;
+            let raw = fields
+                .get(1)
+                .and_then(|value| value.as_str())
+                .ok_or_else(|| "unparsed_sections[i][1] must be a string".to_string())?;
+            Ok((name.to_string(), raw.to_string()))
+        })
+        .collect()
+}
+
+fn lammps_array_from_json<T>(
+    v: &serde_json::Value,
+    key: &str,
+    parse: fn(&serde_json::Value) -> Result<T, String>,
+) -> Result<Vec<T>, JsValue> {
+    let Some(serde_json::Value::Array(entries)) = v.get(key) else {
+        return Ok(Vec::new());
+    };
+    entries
+        .iter()
+        .map(parse)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| JsValue::from_str(&error))
 }
 
 fn lammps_dump_frame_to_json(f: &chematic_mol::LammpsDumpFrame) -> serde_json::Value {

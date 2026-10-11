@@ -656,10 +656,6 @@
     "crates/chematic-smiles/src/rdkit/tautomer.rs::enumerate#1": {
       "decisions": 44,
       "lines": 175
-    },
-    "crates/chematic-wasm/src/format_io.rs::write_lammps_data_json#1": {
-      "decisions": 28,
-      "lines": 95
     }
   },
   "limits": {
