@@ -404,14 +404,6 @@
       "decisions": 26,
       "lines": 184
     },
-    "crates/chematic-py/src/bulk.rs::descriptors#1": {
-      "decisions": 64,
-      "lines": 220
-    },
-    "crates/chematic-py/src/bulk.rs::descriptors_array#1": {
-      "decisions": 61,
-      "lines": 405
-    },
     "crates/chematic-py/src/mol_methods.rs::descriptors#1": {
       "decisions": 127,
       "lines": 176
