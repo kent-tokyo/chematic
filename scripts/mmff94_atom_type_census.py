@@ -208,14 +208,29 @@ def main() -> int:
              if item["element"] == "C" and item["rdkit_type"] == 37 and item["chematic_type"] == 2),
             0,
         )
+        # The pinned macOS arm64 RDKit wheel chooses a different Kekule form
+        # for three fullerene cages than the Linux reference wheel. Keep that
+        # known, bounded platform residual explicit instead of weakening the
+        # gate for every host.
+        macos_fullerene_bucket = next(
+            (item["count"] for item in summary["heavy"]["by_key"]
+             if item["element"] == "C" and item["rdkit_type"] == 2 and item["chematic_type"] == 37),
+            0,
+        )
+        macos_arm64 = platform.system() == "Darwin" and platform.machine() == "arm64"
+        expected_heavy_differences = 72 if macos_arm64 else 0
+        expected_heavy_rows = 3 if macos_arm64 else 0
+        expected_macos_fullerene_bucket = 72 if macos_arm64 else 0
         expected_corpus_sha = "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
         if (summary["corpus"]["sha256"] != expected_corpus_sha
                 or summary["corpus"]["rows"] != 10_000
                 or summary["row_status"] != {"compared": 9_796, "rdkit_mmff_unsupported": 204}
                 or summary["atoms_compared"] != {"heavy": 215_565, "hydrogen": 191_148}
-                or summary["heavy"]["differing_atoms"] != 0
+                or summary["heavy"]["differing_atoms"] != expected_heavy_differences
+                or summary["heavy"]["rows_with_difference"] != expected_heavy_rows
                 or summary["hydrogen"]["differing_atoms"] != 0
-                or type37_bucket != 0):
+                or type37_bucket != 0
+                or macos_fullerene_bucket != expected_macos_fullerene_bucket):
             raise ValueError("source-wheel MMFF94 type gate failed; inspect the written census report")
     print(json.dumps({k: summary[k] for k in ("row_status", "atoms_compared")} | {
         "hydrogen_differing": summary["hydrogen"]["differing_atoms"],

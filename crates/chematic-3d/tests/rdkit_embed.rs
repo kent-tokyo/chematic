@@ -233,8 +233,17 @@ const CASES: &[(&str, &[[f64; 3]])] = &[
 /// bound is required on macOS arm64, where the accumulated libm difference in
 /// this fixture reaches about 1.3e-4 Å.
 #[test]
+#[allow(unexpected_cfgs)]
 fn etkdg_coordinates_match_rdkit_with_platform_tolerance() {
-    let exact = cfg!(all(target_os = "linux", target_arch = "x86_64"));
+    // LLVM coverage instrumentation perturbs the accumulated floating-point
+    // result by a few ULPs even on the pinned Linux x86-64 lane. Keep exact
+    // comparison for ordinary release/test builds and use the documented
+    // cross-platform tolerance for instrumented coverage builds.
+    let exact = cfg!(all(
+        target_os = "linux",
+        target_arch = "x86_64",
+        not(coverage)
+    ));
     for &(smi, expected) in CASES {
         let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse(smi).unwrap());
         let got = rdkit_embed_molecule(&mh, &RdkitEmbedOptions::default())
