@@ -26,6 +26,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Isolated reaction transformation errors, resource limits, accounting,
   sanitization diagnostics, and compatibility refusal types behind the same
   existing public paths. Reaction matching and product behavior are unchanged.
+- Separated SMIRKS normalization and reactant/product template compilation
+  from matching and product construction without changing parsed templates or
+  result ordering.
 
 ## [1.1.0] - 2026-10-11
 

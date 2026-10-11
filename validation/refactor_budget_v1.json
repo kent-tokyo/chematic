@@ -51,7 +51,7 @@
     "crates/chematic-py/src/mol_methods.rs": 6087,
     "crates/chematic-rxn/src/query.rs": 1969,
     "crates/chematic-rxn/src/rdkit_stereo.rs": 1626,
-    "crates/chematic-rxn/src/transform.rs": 4790,
+    "crates/chematic-rxn/src/transform.rs": 3960,
     "crates/chematic-smarts/src/match_vf2.rs": 1877,
     "crates/chematic-smarts/src/mcs.rs": 1645,
     "crates/chematic-smarts/src/parser.rs": 2259,

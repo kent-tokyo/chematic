@@ -48,7 +48,9 @@ the exclusion list from becoming an unchecked escape hatch.
 R2 begins with the stable diagnostic boundary: transformation errors, limits,
 accounting, sanitization diagnostics, compatibility refusals, and variant
 diagnostics now live in `transform/diagnostics.rs` while their existing
-`transform::*` public paths remain re-exported unchanged.
+`transform::*` public paths remain re-exported unchanged. SMIRKS normalization,
+reactant-query compilation, product-template specifications, and grouped
+component parsing are isolated in `transform/templates.rs`.
 
 ## Required checks per phase
 
