@@ -1814,3 +1814,96 @@ mod oop_boundary_contract_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod optimizer_recovery_contract_tests {
+    use super::*;
+
+    #[test]
+    fn recovery_step_backtracks_instead_of_overshooting_a_nearby_minimum() {
+        let coords = [[1e-5, 0.0, 0.0]];
+        let direction = [[-0.001, 0.0, 0.0]];
+        let energy = |c: &[[f64; 3]]| 50.0 * c[0][0] * c[0][0];
+        let before = energy(&coords);
+        assert!(energy(&[[-0.00999, 0.0, 0.0]]) > before);
+        let (after, value) =
+            armijo_backtracking(&coords, &direction, (before, -1e-6), 10.0, &energy, &|_| {
+                true
+            })
+            .expect("a smaller descending recovery step exists");
+        assert!(value < before);
+        assert!(after[0][0].abs() < coords[0][0].abs());
+    }
+
+    #[test]
+    fn line_search_rejects_nonfinite_energy_and_respects_geometry_boundaries() {
+        let coords = [[1.0, 0.0, 0.0]];
+        let direction = [[-1.0, 0.0, 0.0]];
+        assert!(
+            armijo_backtracking(
+                &coords,
+                &direction,
+                (1.0, -1.0),
+                1.0,
+                &|_| f64::NEG_INFINITY,
+                &|_| true
+            )
+            .is_none()
+        );
+        assert!(
+            armijo_backtracking(
+                &coords,
+                &direction,
+                (1.0, -1.0),
+                1.0,
+                &|c| c[0][0] * c[0][0],
+                &|_| false
+            )
+            .is_none()
+        );
+        assert_eq!(finite_max_gradient(&[[0.0, f64::NAN, 0.0]]), f64::INFINITY);
+    }
+
+    #[test]
+    fn last_allowed_step_reports_the_final_gradient_convergence() {
+        let mol = chematic_smiles::parse("CC").unwrap();
+        let model = Mmff94EnergyModel::new(&mol).unwrap();
+        let bond = model.bonds[0].params;
+        let offset = 1.1e-4 / (MDYNE_A_TO_KCAL_MOL * bond.kb);
+        let mut coords = vec![[0.0, 0.0, 0.0], [bond.r0 + offset, 0.0, 0.0]];
+        assert!(finite_max_gradient(&model.bounded_analytic_gradient(&coords)) > 1e-4);
+        let result = model
+            .minimize_lbfgs_bounded_analytic(&mut coords, 1)
+            .unwrap();
+        assert!(finite_max_gradient(&model.bounded_analytic_gradient(&coords)) < 1e-4);
+        assert!(result.converged);
+        assert_eq!(result.iterations, 1);
+        assert_eq!(
+            result.termination,
+            Mmff94TerminationReason::GradientConverged
+        );
+    }
+
+    #[test]
+    fn zero_iteration_budget_reports_stationarity_of_the_returned_geometry() {
+        let mol = chematic_smiles::parse("CC").unwrap();
+        let model = Mmff94EnergyModel::new(&mol).unwrap();
+        let r0 = model.bonds[0].params.r0;
+        let mut coords = vec![[0.0, 0.0, 0.0], [r0, 0.0, 0.0]];
+        let stationary = model
+            .minimize_lbfgs_bounded_analytic(&mut coords, 0)
+            .unwrap();
+        assert!(stationary.converged);
+        assert_eq!(stationary.iterations, 0);
+        assert_eq!(
+            stationary.termination,
+            Mmff94TerminationReason::GradientConverged
+        );
+        coords[1][0] += 0.1;
+        let nonstationary = model
+            .minimize_lbfgs_bounded_analytic(&mut coords, 0)
+            .unwrap();
+        assert!(!nonstationary.converged);
+        assert_eq!(nonstationary.iterations, 0);
+    }
+}

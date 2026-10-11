@@ -150,17 +150,18 @@ where
     let mut f0 = lbfgs_energy(model, coords, use_cutoff_nonbonded);
 
     let mut iters = 0usize;
-    let mut converged = false;
     let mut termination = Mmff94TerminationReason::IterationLimit;
 
     'iterations: for _ in 0..max_iter {
         iters += 1;
 
         // Convergence check
-        let max_g = max_abs_gradient(&g);
+        let max_g = finite_max_gradient(&g);
+        if !f0.is_finite() || !max_g.is_finite() {
+            termination = Mmff94TerminationReason::ConstraintRejectedFallback;
+            break;
+        }
         if max_g < CONVERGENCE {
-            converged = true;
-            termination = Mmff94TerminationReason::GradientConverged;
             break;
         }
 
@@ -171,7 +172,7 @@ where
         // consume a pipeline timeout without making progress). Fall back to
         // steepest descent, which is always a valid local descent direction
         // for a finite, non-zero gradient.
-        let (p, gp) = descent_direction(&g, &history);
+        let (p, gp) = descent_direction(&g, &mut history);
         let step = lbfgs_line_search(
             model,
             coords,
@@ -211,6 +212,13 @@ where
         f0 = f_new;
     }
 
+    // The final permitted step can reach the tolerance. Report the accepted
+    // state instead of requiring another loop iteration to observe it.
+    let converged = f0.is_finite() && finite_max_gradient(&g) < CONVERGENCE;
+    if converged {
+        termination = Mmff94TerminationReason::GradientConverged;
+    }
+
     Ok(MinimizeResult {
         energy: f0,
         rmsd: coordinate_rmsd(coords, &initial),
@@ -244,15 +252,17 @@ fn lbfgs_energy(model: &Mmff94EnergyModel, coords: &[[f64; 3]], cutoff: bool) ->
     }
 }
 
-fn max_abs_gradient(gradient: &[[f64; 3]]) -> f64 {
-    gradient
-        .iter()
-        .flat_map(|v| v.iter())
-        .map(|x| x.abs())
-        .fold(0.0_f64, f64::max)
+fn finite_max_gradient(gradient: &[[f64; 3]]) -> f64 {
+    gradient.iter().flatten().fold(0.0, |maximum, &value| {
+        if value.is_finite() {
+            maximum.max(value.abs())
+        } else {
+            f64::INFINITY
+        }
+    })
 }
 
-fn descent_direction(g: &[[f64; 3]], history: &LbfgsHistory) -> (CoordVec, f64) {
+fn descent_direction(g: &[[f64; 3]], history: &mut LbfgsHistory) -> (CoordVec, f64) {
     let mut direction = lbfgs_direction(g, history);
     let mut slope: f64 = g
         .iter()
@@ -260,6 +270,7 @@ fn descent_direction(g: &[[f64; 3]], history: &LbfgsHistory) -> (CoordVec, f64) 
         .map(|(gi, pi)| dot3(*gi, *pi))
         .sum();
     if !slope.is_finite() || slope >= 0.0 {
+        history.clear();
         direction = g.iter().map(|gi| [-gi[0], -gi[1], -gi[2]]).collect();
         slope = -g.iter().map(|gi| dot3(*gi, *gi)).sum::<f64>();
     }

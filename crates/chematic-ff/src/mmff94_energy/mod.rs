@@ -122,7 +122,7 @@ pub use oop_stbn::{
     MMFF94_OOP, MMFF94_STBN, mmff94_oop, mmff94_stbn, mmff94_stbn_oriented, mmff94_stbn_type_only,
     mmff94s_oop,
 };
-pub use torsion::{MMFF94_TORSION_ENERGY, mmff94_torsion_energy};
+pub use torsion::{MMFF94_TORSION_ENERGY, mmff94_torsion_energy, mmff94_torsion_energy_with_bond};
 pub use vdw::{MMFF94_VDW_ENERGY, mmff94_vdw_combined, mmff94_vdw_energy};
 
 #[cfg(test)]

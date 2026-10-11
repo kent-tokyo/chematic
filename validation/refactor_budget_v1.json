@@ -139,6 +139,10 @@
       "decisions": 26,
       "lines": 167
     },
+    "crates/chematic-ff/src/mmff94_energy/torsion.rs::torsion_empirical#1": {
+      "decisions": 51,
+      "lines": 99
+    },
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs::count_fingerprint_patterns#1": {
       "decisions": 375,
       "lines": 1485

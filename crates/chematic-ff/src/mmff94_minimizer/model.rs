@@ -69,9 +69,9 @@ pub struct MinimizeResult {
     pub energy: f64,
     /// RMSD of atom positions vs initial geometry (Å).
     pub rmsd: f64,
-    /// Whether the minimization converged before `max_iter`.
+    /// Whether the optimizer's gradient convergence check passed.
     pub converged: bool,
-    /// Number of gradient steps performed.
+    /// Number of optimizer loop iterations performed.
     pub iterations: usize,
     /// Why this run stopped; non-convergence is not always an iteration cap.
     pub termination: Mmff94TerminationReason,
@@ -84,9 +84,9 @@ pub enum Mmff94TerminationReason {
     GradientConverged,
     /// The configured iteration count was exhausted, including a zero budget.
     IterationLimit,
-    /// Backtracking found no accepted proposal and the caller's geometry
-    /// predicate rejected the final steepest-descent fallback proposal.
-    /// The last accepted coordinates were retained.
+    /// Backtracking and steepest-descent recovery could not produce a finite,
+    /// descending proposal accepted by the caller's geometry predicate.
+    /// Includes non-finite input states. The last accepted coordinates remain.
     ConstraintRejectedFallback,
 }
 
@@ -637,4 +637,3 @@ pub fn mmff94_energy_breakdown_with_options(
 ) -> Result<EnergyBreakdown, MinimizerError> {
     Ok(Mmff94EnergyModel::new_with_options(mol, options)?.energy_breakdown(coords))
 }
-

@@ -1,0 +1,36 @@
+{
+  "previous_candidate": "8c773ba72aa7b1d86d94476a026ccccaf70f37b4",
+  "merged_main": "c74391a2264e368239d62bed1431cda9e42b3109",
+  "rust": {
+    "passed": 959,
+    "failed": 0,
+    "ignored": 4
+  },
+  "python_diagnostic_passed": 47,
+  "python_extension": "previous candidate dev wheel; identical FF implementation; IO bindings not rebuilt locally",
+  "source_file_sha256": {
+    "crates/chematic-3d/Cargo.toml": "29fa6ff7d22272f05137c49ddf3e1294ed115a7b98b4b85cf9ef90a90edbbf98",
+    "crates/chematic-3d/src/minimize.rs": "5f81baebf9a3ed06ec14ecc9a31ec0be1d11d218d67641237fc5d129129bbf4a",
+    "crates/chematic-3d/tests/stereo_coordinate_roundtrip.rs": "ea6ddfbad96fb2c26ed6cff61adabe14044e11cb78af417490f2d13a48eac1b1",
+    "crates/chematic-ff/src/lib.rs": "c114862a4eed2897a9a32f497e1ac0c299443eb2c53b1056d292ec9f8f6ea846",
+    "crates/chematic-ff/src/mmff94_energy/mod.rs": "551854636c507cb386ca90a22ddcede1f2ab30a9166766ce79e34709b827f230",
+    "crates/chematic-ff/src/mmff94_energy/oop_stbn.rs": "c6d579b0d4b898c894e0223066bd09d574f1d9781ced1eb43d027c6888510473",
+    "crates/chematic-ff/src/mmff94_energy/torsion.rs": "ed82f608fc259b53aa95fb33da4beaac220718879205010f0dfb063fe2b9725d",
+    "crates/chematic-ff/src/mmff94_minimizer.rs": "61ad7a484c2a44539a56e0e1627dff37fd754c5c45cf1073c9ce98c0f1d71f24",
+    "crates/chematic-ff/src/mmff94_numeric_type_registry.rs": "8596201335dea4ca3bc657e9373d607010b160f4039ea348fc29c7e9d00c8f55",
+    "crates/chematic-ff/tests/mmff94_angle_stretch_bend.rs": "7c12581c19ebbd80cec25d799474bba5a9d23b435993b6ebb9032cb780234dec",
+    "crates/chematic-ff/tests/mmff94_cation_water.rs": "22d5134ab4d61beda0a07269a2904e1d65f80dee54f7696a7aebc562cde02c36",
+    "crates/chematic-ff/tests/mmff94_oop_parameters.rs": "99b3bcd3ed871553c8938f3ee07c8808e4ab5e0e72fb8541ee94638bb9daf9b2",
+    "crates/chematic-ff/tests/mmff94_optimizer_recovery.rs": "ff2fa94a3ee7dc38ee5a3a3f1ec7a92db072fdbefc0317ce9398647cf27479ba",
+    "crates/chematic-ff/tests/mmff94_oxygen_h_vdw.rs": "9be1cf24d7c0620047eb752302a190a25f49246a4e87d70f9e287c292c9de60f",
+    "scripts/gen_mmff94_numeric_type_registry.py": "c9704bf303a6a170aa0e31008ea5e161a5fd9d261980dfc06a39cb832a0d0837",
+    "scripts/mmff94_same_explicit_h_energy.py": "a42893a9889fbe845f400f6cc8f894d8d29ae5397a4a32dcbf6550d17fbc3123",
+    "scripts/tests/test_mmff94_same_explicit_h_energy.py": "8e02fef7988b54be94c0bc551ae4f01b17985088e85bac1d1acc758d0416aae7"
+  },
+  "exceptions_from_previous_source": [
+    "crates/chematic-3d/src/minimize.rs",
+    "scripts/mmff94_same_explicit_h_energy.py",
+    "scripts/tests/test_mmff94_same_explicit_h_energy.py"
+  ],
+  "rust_command": "CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0 cargo test -p chematic-ff -p chematic-3d -j 2 --lib --tests --no-fail-fast --quiet"
+}
