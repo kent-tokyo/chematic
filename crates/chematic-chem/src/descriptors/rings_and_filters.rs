@@ -21,7 +21,12 @@ pub fn num_heteroatoms(mol: &Molecule) -> usize {
 /// RDKit's `CalcNumRings`: the number of rings in RDKit's ring information,
 /// its symmetrized SSSR. It exceeds [`ring_count`] (the SSSR size, i.e. the
 /// cycle rank) for cages and bridged systems such as cubane or adamantane.
+#[inline(always)]
 pub fn rdkit_num_rings(mol: &Molecule) -> usize {
+    mol.derived_rdkit_num_rings(|| rdkit_num_rings_uncached(mol))
+}
+
+fn rdkit_num_rings_uncached(mol: &Molecule) -> usize {
     // The SMILES parser seeds an all-false RingBondFlags value when it has
     // already proved that the graph is a forest.  Reuse that proof instead
     // of allocating union-find state and rediscovering the same fact.  Every

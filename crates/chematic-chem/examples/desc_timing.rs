@@ -29,6 +29,26 @@ fn main() {
             );
         }};
     }
+    macro_rules! t_warm {
+        ($name:expr, $warm:expr, $f:expr) => {{
+            let mols: Vec<_> = smis
+                .iter()
+                .filter_map(|s| chematic_smiles::parse(s).ok())
+                .collect();
+            for m in &mols {
+                std::hint::black_box($warm(m));
+            }
+            let st = Instant::now();
+            for m in &mols {
+                std::hint::black_box($f(m));
+            }
+            println!(
+                "{:28} {:10.1} us/mol",
+                $name,
+                st.elapsed().as_secs_f64() * 1e6 / mols.len() as f64
+            );
+        }};
+    }
     t!("gate", |m| chematic_perception::rdkit_model_may_disagree(m));
     t!("h_suppressed", |m| {
         chematic_smiles::rdkit_hydrogen_suppressed(m).is_some()
@@ -53,6 +73,11 @@ fn main() {
     t!("qed", |m| c::qed(m));
     t!("sa_score", |m| c::sa_score(m));
     t!("labute_asa", |m| c::labute_asa(m));
+    t_warm!(
+        "labute_warm_view",
+        |m| chematic_perception::rdkit_parity_view_is_identity(m),
+        |m| c::labute_asa(m)
+    );
     t!("bertz_ct", |m| c::bertz_ct(m));
     t!("wiener", |m| c::wiener_index(m));
     t!("schultz", |m| c::schultz_mti(m));
@@ -80,6 +105,9 @@ fn main() {
     t!("peoe_vsa", |m| c::peoe_vsa(m));
     t!("estate_vsa", |m| c::estate_vsa(m));
     t!("num_rings", |m| c::rdkit_num_rings(m));
+    t_warm!("num_rings_warm", |m| c::rdkit_num_rings(m), |m| {
+        c::rdkit_num_rings(m)
+    });
     t!("rdkit_sssr_full", |m| {
         chematic_perception::rdkit_sssr_ring_order(m).map(|r| r.len())
     });
