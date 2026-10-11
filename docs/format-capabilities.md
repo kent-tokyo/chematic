@@ -215,7 +215,7 @@ back without the previous 1 ULP rounding error. This also applies to existing
 Rust/Python/WASM CJSON readers. Integral bond orders emit JSON integer
 numbers, while aromatic order 1.5 remains fractional; this avoids the observed
 Open Babel 3.2.1 CJSON reader converting floating integer orders into zero.
-[Paired development checks](../validation/interchange/README.md) record both
+[Paired development checks](https://github.com/kent-tokyo/chematic/blob/main/validation/interchange/README.md) record both
 engines' losses and targeted cross reads. No cross-engine superiority is established.
 
 ### Immutable ChemicalJSON records

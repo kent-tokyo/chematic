@@ -27,7 +27,7 @@ The first IO1 slice is implemented in the local source candidate:
   existing cross-binding and format-parity suites. Clippy passed for MOL/CLI.
 
 Evidence and artifact/source hashes are recorded in
-[`mol2-preservation-source-2026-10-11.json`](../validation/results/mol2-preservation-source-2026-10-11.json).
+[`mol2-preservation-source-2026-10-11.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/mol2-preservation-source-2026-10-11.json).
 This is development evidence for source retention and the bounded reader
 repairs. IO0 comparison, the rest of IO1, general checked conversion in IO2,
 released-package acceptance, and Open Babel superiority remain open. Exact
@@ -47,7 +47,7 @@ SMILES sources passed 316 tests (two unrelated doctests ignored). The fresh
 source wheel passed 191 tests, Node/WASM passed four suites, and all 17 shared
 CLI/Python/WASM report/error cases agreed. MOL/SMILES/CLI Clippy passed.
 Evidence is recorded in
-[`conversion-report-source-2026-10-11.json`](../validation/results/conversion-report-source-2026-10-11.json).
+[`conversion-report-source-2026-10-11.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/conversion-report-source-2026-10-11.json).
 
 The coordinate-preservation slice extends that adapter to MOL2 → CJSON.
 Source x/y/z values and projected formal charges are emitted, then reparsed
@@ -62,7 +62,7 @@ interpretation and the paired IO0 comparison remained open. MOL/CLI passed 823 t
 source wheel passed 201, Node/WASM passed four suites, 30 shared report/error
 cases agreed, and Clippy passed. The precision test covers 2,045 finite f64
 vectors from a fixed seed, each with signed-zero and opposite-sign components.
-See [`conversion-cjson-source-2026-10-11.json`](../validation/results/conversion-cjson-source-2026-10-11.json).
+See [`conversion-cjson-source-2026-10-11.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/conversion-cjson-source-2026-10-11.json).
 
 The CJSON-input slice adds immutable source records, inspection of opaque
 field paths, strict validation of known arrays and bond indices/orders, and
@@ -81,7 +81,7 @@ five Node/WASM suites and 53 shared report/error cases (36 identical reports,
 linting encountered `needless_range_loop` in concurrently modified FF code,
 which this interchange slice did not alter.
 See [the CJSON record contract](format-capabilities.md#immutable-chemicaljson-records)
-and [`cjson-input-source-2026-10-11.json`](../validation/results/cjson-input-source-2026-10-11.json)
+and [`cjson-input-source-2026-10-11.json`](https://github.com/kent-tokyo/chematic/blob/main/validation/results/cjson-input-source-2026-10-11.json)
 for source-candidate verification evidence.
 
 The first paired IO0 development runner now freezes eight exposed inputs,
@@ -96,7 +96,7 @@ Targeted cross reads reproduced Open Babel 3.2.1 reading floating integer bond
 orders as zero; the CJSON writer now emits integer orders as JSON integers.
 Open Babel self-read controls retain evidence of remaining name/partial-charge
 losses on its default CJSON → MOL2 path. See the
-[paired protocol, commands and records](../validation/interchange/README.md).
+[paired protocol, commands and records](https://github.com/kent-tokyo/chematic/blob/main/validation/interchange/README.md).
 This is exposed development evidence; independent acceptance and superiority
 remain open.
 
@@ -118,14 +118,14 @@ starting the comparison, since the online manual can describe another build.
 
 | Inspected surface | Existing foundation | Gap to address |
 |---|---|---|
-| [MOL2 reader/writer](../crates/chematic-mol/src/mol2_tripos.rs) | Graph and coordinate I/O with parse limits | Reader rounds partial charge into formal charge, maps `am` to aromatic, and substitutes single for unknown bond tokens. Writer emits zero charges, simplified atom types, and a `GASTEIGER` label without computing charges. Names/substructures are not retained by the return model. |
-| [CLI conversion](../crates/chematic-cli/src/main.rs) | Common-format bridge; special V3000 self-conversion retains metadata/coordinates and certain unsupported query conversions refuse | Other paths project into a molecule and reconstruct output with default metadata/empty coordinates. There is no common per-field conversion report. |
-| [Python conversion](../crates/chematic-py/python/chematic/__init__.py) | Common graph/coordinate bridge | Carries selected input coordinates; format metadata is not promised, and missing PDBQT charges become zeros. MOL2 input coordinates are not carried by this bridge. |
-| [WASM conversion](../crates/chematic-wasm/src/mol_io.rs) | Explicit topology-only bridge | Drops coordinates and format metadata. It does not share the CLI's V3000 self-conversion/query guard implementation. |
-| [V3000 fixtures](../crates/chematic-mol/tests/v3000_semantic_interop.rs) | SGROUP/COLLECTION ordering, references, and retained attributes | Opaque retention needs its own status; it does not establish editable or query chemistry. |
-| [CDXML document](../crates/chematic-mol/src/cdxml_document.rs), [semantic model](../crates/chematic-mol/src/semantic.rs), [reaction adapter](../crates/chematic-mol/src/rxn.rs) | Document retention, typed constructs, and explicit reaction conversion losses | Reuse these contracts in conversion instead of flattening every object to a molecule. |
-| [PDBQT](../crates/chematic-mol/src/pdbqt.rs) | Rigid-body I/O | Flexible ligand torsion trees need a typed representation and reader/writer tests. Open Babel documents torsion-tree and rigid output options in its [PDBQT manual](https://openbabel.org/docs/FileFormats/AutoDock_PDBQT_format.html). |
-| [Stereo gate](../scripts/stereo_format_roundtrip_gate.py), [binding fixtures](../crates/chematic-mol/tests/format_binding_parity.rs), [CLI timing](../scripts/bench_openbabel_cli.py) | Correspondence-aware stereo diagnostics, known-value fixtures, and separate CLI timings | Extend into a paired Open Babel preservation gate; timing alone is not semantic validation. |
+| [MOL2 reader/writer](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mol/src/mol2_tripos.rs) | Graph and coordinate I/O with parse limits | Reader rounds partial charge into formal charge, maps `am` to aromatic, and substitutes single for unknown bond tokens. Writer emits zero charges, simplified atom types, and a `GASTEIGER` label without computing charges. Names/substructures are not retained by the return model. |
+| [CLI conversion](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-cli/src/main.rs) | Common-format bridge; special V3000 self-conversion retains metadata/coordinates and certain unsupported query conversions refuse | Other paths project into a molecule and reconstruct output with default metadata/empty coordinates. There is no common per-field conversion report. |
+| [Python conversion](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-py/python/chematic/__init__.py) | Common graph/coordinate bridge | Carries selected input coordinates; format metadata is not promised, and missing PDBQT charges become zeros. MOL2 input coordinates are not carried by this bridge. |
+| [WASM conversion](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-wasm/src/mol_io.rs) | Explicit topology-only bridge | Drops coordinates and format metadata. It does not share the CLI's V3000 self-conversion/query guard implementation. |
+| [V3000 fixtures](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mol/tests/v3000_semantic_interop.rs) | SGROUP/COLLECTION ordering, references, and retained attributes | Opaque retention needs its own status; it does not establish editable or query chemistry. |
+| [CDXML document](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mol/src/cdxml_document.rs), [semantic model](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mol/src/semantic.rs), [reaction adapter](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mol/src/rxn.rs) | Document retention, typed constructs, and explicit reaction conversion losses | Reuse these contracts in conversion instead of flattening every object to a molecule. |
+| [PDBQT](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mol/src/pdbqt.rs) | Rigid-body I/O | Flexible ligand torsion trees need a typed representation and reader/writer tests. Open Babel documents torsion-tree and rigid output options in its [PDBQT manual](https://openbabel.org/docs/FileFormats/AutoDock_PDBQT_format.html). |
+| [Stereo gate](https://github.com/kent-tokyo/chematic/blob/main/scripts/stereo_format_roundtrip_gate.py), [binding fixtures](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mol/tests/format_binding_parity.rs), [CLI timing](https://github.com/kent-tokyo/chematic/blob/main/scripts/bench_openbabel_cli.py) | Correspondence-aware stereo diagnostics, known-value fixtures, and separate CLI timings | Extend into a paired Open Babel preservation gate; timing alone is not semantic validation. |
 
 ## Preservation contract
 
@@ -255,7 +255,7 @@ All six new projections preserve name, charge method and partial charges;
 atom names/types remain losses. The nine historical control outcomes and
 field checks are unchanged. Local gates pass 848 MOL/CLI tests, 230 isolated
 source-wheel Python tests, five Node/WASM suites, 79 shared report/error cases
-and 33 runner tests. See [the indexed evidence](../validation/results/cjson-mol2-development-summary-2026-10-11.json).
+and 33 runner tests. See [the indexed evidence](https://github.com/kent-tokyo/chematic/blob/main/validation/results/cjson-mol2-development-summary-2026-10-11.json).
 
 
 Main integration targets the existing v1.1.0 source and preserves its public
