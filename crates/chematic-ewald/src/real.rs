@@ -35,6 +35,56 @@ pub fn direct_coulomb(coords: &[[f64; 3]], charges: &[f64]) -> f64 {
     energy
 }
 
+fn valid_cell_list_input(coords: &[[f64; 3]], r_cut: f64) -> bool {
+    r_cut.is_finite()
+        && r_cut > 0.0
+        && coords
+            .iter()
+            .all(|coord| coord.iter().all(|value| value.is_finite()))
+}
+
+fn for_each_cutoff_pair(coords: &[[f64; 3]], r_cut: f64, mut visit: impl FnMut(usize, usize, f64)) {
+    let mut cells: HashMap<[i64; 3], Vec<usize>> = HashMap::new();
+    for (index, coord) in coords.iter().enumerate() {
+        let key = [
+            (coord[0] / r_cut).floor() as i64,
+            (coord[1] / r_cut).floor() as i64,
+            (coord[2] / r_cut).floor() as i64,
+        ];
+        cells.entry(key).or_default().push(index);
+    }
+
+    for (i, coord_i) in coords.iter().enumerate() {
+        let key = [
+            (coord_i[0] / r_cut).floor() as i64,
+            (coord_i[1] / r_cut).floor() as i64,
+            (coord_i[2] / r_cut).floor() as i64,
+        ];
+        for dx_cell in -1..=1 {
+            for dy_cell in -1..=1 {
+                for dz_cell in -1..=1 {
+                    let neighbor = [key[0] + dx_cell, key[1] + dy_cell, key[2] + dz_cell];
+                    let Some(indices) = cells.get(&neighbor) else {
+                        continue;
+                    };
+                    for &j in indices {
+                        if j <= i {
+                            continue;
+                        }
+                        let dx = coord_i[0] - coords[j][0];
+                        let dy = coord_i[1] - coords[j][1];
+                        let dz = coord_i[2] - coords[j][2];
+                        let r = (dx * dx + dy * dy + dz * dz).sqrt();
+                        if r > 1e-6 && r < r_cut {
+                            visit(i, j, r);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Direct Coulomb sum with real-space cutoff.
 ///
 /// Only includes pairwise interactions where r_ij < r_cut.
@@ -50,53 +100,11 @@ pub fn direct_coulomb_cutoff(coords: &[[f64; 3]], charges: &[f64], r_cut: f64) -
     // A positive finite cutoff permits a conservative uniform-cell traversal.
     // Keep the original all-pair path for invalid coordinates/cutoffs so NaN
     // propagation and unusual caller inputs are unchanged.
-    if r_cut.is_finite()
-        && r_cut > 0.0
-        && coords
-            .iter()
-            .all(|coord| coord.iter().all(|value| value.is_finite()))
-    {
-        let mut cells: HashMap<[i64; 3], Vec<usize>> = HashMap::new();
-        for (index, coord) in coords.iter().enumerate() {
-            let key = [
-                (coord[0] / r_cut).floor() as i64,
-                (coord[1] / r_cut).floor() as i64,
-                (coord[2] / r_cut).floor() as i64,
-            ];
-            cells.entry(key).or_default().push(index);
-        }
-
+    if valid_cell_list_input(coords, r_cut) {
         let mut energy = 0.0;
-        for (i, coord_i) in coords.iter().enumerate() {
-            let key = [
-                (coord_i[0] / r_cut).floor() as i64,
-                (coord_i[1] / r_cut).floor() as i64,
-                (coord_i[2] / r_cut).floor() as i64,
-            ];
-            for dx_cell in -1..=1 {
-                for dy_cell in -1..=1 {
-                    for dz_cell in -1..=1 {
-                        let neighbor = [key[0] + dx_cell, key[1] + dy_cell, key[2] + dz_cell];
-                        let Some(indices) = cells.get(&neighbor) else {
-                            continue;
-                        };
-                        for &j in indices {
-                            if j <= i {
-                                continue;
-                            }
-                            let dx = coord_i[0] - coords[j][0];
-                            let dy = coord_i[1] - coords[j][1];
-                            let dz = coord_i[2] - coords[j][2];
-                            let r = (dx * dx + dy * dy + dz * dz).sqrt();
-                            // Preserve the public function's strict cutoff.
-                            if r > 1e-6 && r < r_cut {
-                                energy += K_COULOMB * charges[i] * charges[j] / r;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        for_each_cutoff_pair(coords, r_cut, |i, j, r| {
+            energy += K_COULOMB * charges[i] * charges[j] / r;
+        });
         return energy;
     }
 
@@ -168,56 +176,15 @@ pub fn direct_coulomb_damped_cutoff(
     alpha: f64,
     r_cut: f64,
 ) -> f64 {
-    if !r_cut.is_finite() || r_cut <= 0.0 || coords.iter().any(|c| c.iter().any(|v| !v.is_finite()))
-    {
+    if !valid_cell_list_input(coords, r_cut) {
         return direct_coulomb_damped(coords, charges, alpha);
     }
 
-    let mut cells: HashMap<[i64; 3], Vec<usize>> = HashMap::new();
-    for (index, coord) in coords.iter().enumerate() {
-        let key = [
-            (coord[0] / r_cut).floor() as i64,
-            (coord[1] / r_cut).floor() as i64,
-            (coord[2] / r_cut).floor() as i64,
-        ];
-        cells.entry(key).or_default().push(index);
-    }
-
     let mut energy = 0.0;
-    for (i, coord_i) in coords.iter().enumerate() {
-        let key = [
-            (coord_i[0] / r_cut).floor() as i64,
-            (coord_i[1] / r_cut).floor() as i64,
-            (coord_i[2] / r_cut).floor() as i64,
-        ];
-        for dx_cell in -1..=1 {
-            for dy_cell in -1..=1 {
-                for dz_cell in -1..=1 {
-                    let neighbor = [key[0] + dx_cell, key[1] + dy_cell, key[2] + dz_cell];
-                    let Some(indices) = cells.get(&neighbor) else {
-                        continue;
-                    };
-                    for &j in indices {
-                        if j <= i {
-                            continue;
-                        }
-                        let dx = coord_i[0] - coords[j][0];
-                        let dy = coord_i[1] - coords[j][1];
-                        let dz = coord_i[2] - coords[j][2];
-                        let r = (dx * dx + dy * dy + dz * dz).sqrt();
-                        if r > 1e-6 && r < r_cut {
-                            let ar = alpha * r;
-                            energy += K_COULOMB
-                                * charges[i]
-                                * charges[j]
-                                * complementary_error_function(ar)
-                                / r;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    for_each_cutoff_pair(coords, r_cut, |i, j, r| {
+        let ar = alpha * r;
+        energy += K_COULOMB * charges[i] * charges[j] * complementary_error_function(ar) / r;
+    });
     energy
 }
 

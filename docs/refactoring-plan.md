@@ -33,7 +33,7 @@ authoritative.
 | R5 | Descriptors and tautomer rules/search/scoring | Complete |
 | R6 | Canonicalization, ring perception, and aromaticity | Complete |
 | R7 | MMFF/UFF and 3D preparation, optimization, and quality policy | Complete |
-| R8 | Legacy/dead-code inventory, exact helper deduplication, dependency cleanup | Active |
+| R8 | Legacy/dead-code inventory, exact helper deduplication, dependency cleanup | Complete |
 
 R1 started by separating the MCP registry schemas from tool execution. The
 former 580-line `list_tools` function is now a short ordered registry assembled
@@ -117,6 +117,19 @@ ordered declarative compatibility registries whose priority and first-match
 semantics are regression-tested and documented at their definitions. All 273
 force-field and 635 3D library tests pass, as do affected-crate clippy with
 warnings denied, formatting, and the refactor-budget gate.
+
+R8 audits every workspace manifest and records compatibility code that must not
+be mistaken for dead code. Five unused direct dependencies, one unreferenced
+generated SMARTS table, one private dead Ewald implementation, and its stale
+budget exclusion are removed. Direct and damped real-space Coulomb cutoffs now
+share the same private cell-list traversal without changing fallback or
+accumulation semantics. The complete inventory is in
+`docs/refactoring-inventory.md`. Workspace clippy passes with warnings denied;
+all workspace library tests except the host-linked Python extension pass, as do
+all-feature/all-target checks for the affected crates, formatting, the budget
+scanner, and its six unit tests. The Python extension's direct Rust test binary
+cannot link against Python in this host environment; its wheel and pytest gate
+was exercised in R4, with only the pre-existing caffeine HBA oracle mismatch.
 
 ## Required checks per phase
 

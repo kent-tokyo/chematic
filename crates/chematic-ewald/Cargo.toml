@@ -17,11 +17,3 @@ documentation = "https://docs.rs/chematic-ewald"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "1.1.0" }
-rustfft = "6.4"
-
-[dev-dependencies]
-# Path-only (no `version`): see chematic-smiles/Cargo.toml's dev-dependencies
-# comment -- a version-pinned dev-dependency must resolve against the
-# registry at `cargo publish` time, which a forward reference can't satisfy.
-chematic-3d = { path = "../chematic-3d" }

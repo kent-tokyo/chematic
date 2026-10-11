@@ -1,7 +1,6 @@
 {
   "excluded_paths": [
     "crates/chematic-3d/src/rdkit_embed/torsion_prefs.rs",
-    "crates/chematic-chem/src/compressed_patterns.rs",
     "crates/chematic-chem/src/rdkit_isotope_mass_table.rs",
     "crates/chematic-ff/src/mmff94_energy/angle/table.rs",
     "crates/chematic-ff/src/mmff94_energy/mmff94s.rs",

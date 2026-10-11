@@ -46,6 +46,3 @@ chematic-mol        = { path = "../chematic-mol",        version = "1.1.0" }
 chematic-inchi      = { path = "../chematic-inchi",      version = "1.1.0" }
 chematic-iupac      = { path = "../chematic-iupac",      version = "1.1.0" }
 chematic-ff         = { path = "../chematic-ff",         version = "1.1.0" }
-
-[dev-dependencies]
-wasm-bindgen-test = "0.3"
