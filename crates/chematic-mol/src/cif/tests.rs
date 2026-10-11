@@ -1,4 +1,3 @@
-
 use super::*;
 
 const NACL_P1_CIF: &str = "data_NaCl\n\

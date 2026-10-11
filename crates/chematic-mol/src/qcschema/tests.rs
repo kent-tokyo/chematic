@@ -1,4 +1,3 @@
-
 use super::*;
 
 fn minimal_molecule() -> &'static str {

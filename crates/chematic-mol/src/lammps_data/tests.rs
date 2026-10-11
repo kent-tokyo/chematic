@@ -1,4 +1,3 @@
-
 use super::*;
 
 fn atomic_fixture() -> &'static str {
