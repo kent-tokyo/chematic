@@ -8,7 +8,7 @@
 
 use std::f64::consts::PI;
 
-use crate::{BoxVectors, EwaldError, PmeConfig};
+use crate::{BoxVectors, EwaldError, PmeConfig, validate_pme_inputs};
 
 const K_COULOMB: f64 = 332.0637; // kcal·Å/(mol·e²)
 
@@ -35,12 +35,9 @@ pub fn reciprocal_space_energy(
     box_vecs: &BoxVectors,
     config: &PmeConfig,
 ) -> Result<f64, EwaldError> {
+    let grid_points = validate_pme_inputs(coords, charges, box_vecs, config)?;
     if coords.is_empty() {
         return Ok(0.0);
-    }
-
-    if box_vecs.volume().abs() < 1e-10 {
-        return Err(EwaldError::SingularBoxMatrix);
     }
 
     // Auto-compute alpha if not provided
@@ -52,7 +49,7 @@ pub fn reciprocal_space_energy(
 
     // Create charge mesh
     let mesh_size = [config.mesh[0], config.mesh[1], config.mesh[2]];
-    let mut charge_grid = vec![0.0; mesh_size[0] * mesh_size[1] * mesh_size[2]];
+    let mut charge_grid = vec![0.0; grid_points];
 
     // Interpolate charges onto mesh (B-spline order)
     interpolate_charges_to_mesh(

@@ -367,12 +367,25 @@ pub fn parse_extxyz_with_limits(text: &str, limits: &XyzParseLimits) -> Result<X
 /// stop-on-first-error behavior as [`XyzReader`].
 pub struct ExtxyzReader<'a> {
     remaining: &'a str,
+    limits: XyzParseLimits,
+    input_validated: bool,
+    frames_read: usize,
 }
 
 impl<'a> ExtxyzReader<'a> {
     /// Create a new `ExtxyzReader` over the given multi-frame extxyz string.
     pub fn new(input: &'a str) -> Self {
-        Self { remaining: input }
+        Self::with_limits(input, XyzParseLimits::default())
+    }
+
+    /// Create an in-memory Extended XYZ reader with explicit resource limits.
+    pub fn with_limits(input: &'a str, limits: XyzParseLimits) -> Self {
+        Self {
+            remaining: input,
+            limits,
+            input_validated: false,
+            frames_read: 0,
+        }
     }
 }
 
@@ -380,12 +393,42 @@ impl<'a> Iterator for ExtxyzReader<'a> {
     type Item = Result<XyzFrame, XyzError>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if !self.input_validated {
+            self.input_validated = true;
+            if let Err(error) = validate_xyz_input_limits(self.remaining, &self.limits) {
+                self.remaining = "";
+                return Some(Err(error));
+            }
+        }
         if self.remaining.trim().is_empty() {
             return None;
         }
         let leading_blank =
             self.remaining.len() - self.remaining.trim_start_matches(['\n', '\r']).len();
         self.remaining = &self.remaining[leading_blank..];
+
+        let count_line = next_line(self.remaining)
+            .map(|(line, _)| line)
+            .unwrap_or("");
+        if let Ok(declared) = count_line.trim().parse::<usize>()
+            && declared > self.limits.max_atoms_per_frame
+        {
+            self.remaining = "";
+            return Some(Err(XyzError::ResourceLimit {
+                resource: "atoms per frame",
+                actual: declared,
+                limit: self.limits.max_atoms_per_frame,
+            }));
+        }
+        self.frames_read = self.frames_read.saturating_add(1);
+        if self.frames_read > self.limits.max_frames {
+            self.remaining = "";
+            return Some(Err(XyzError::ResourceLimit {
+                resource: "frames",
+                actual: self.frames_read,
+                limit: self.limits.max_frames,
+            }));
+        }
 
         match parse_one_frame_ext(self.remaining) {
             Ok((frame, rest)) => {
@@ -403,7 +446,6 @@ impl<'a> Iterator for ExtxyzReader<'a> {
 /// Parse every frame in a multi-frame extxyz string. Stops and returns an
 /// error on the first parse failure.
 pub fn parse_extxyz_all(input: &str) -> Result<Vec<XyzFrame>, XyzError> {
-    validate_xyz_limits(input, &XyzParseLimits::default())?;
     ExtxyzReader::new(input).collect()
 }
 

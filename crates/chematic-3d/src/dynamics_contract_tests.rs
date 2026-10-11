@@ -80,4 +80,15 @@ fn empty_and_zero_step_simulations_have_no_frames() {
             .frames
             .is_empty()
     );
+
+    let config = MDConfig {
+        steps: 1,
+        save_every: 0,
+        ..Default::default()
+    };
+    assert!(
+        run_md(&mol, Coords3D::new_zeroed(1), &config)
+            .frames
+            .is_empty()
+    );
 }

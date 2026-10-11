@@ -36,7 +36,7 @@ pub struct MDConfig {
     pub temperature_k: f64,
     /// Thermostat control method.
     pub thermostat: Thermostat,
-    /// Save trajectory frame every N steps.
+    /// Save trajectory frame every N steps. Set to `0` to disable frame storage.
     pub save_every: usize,
     /// Include Coulomb interactions.
     pub coulomb: bool,
@@ -165,7 +165,7 @@ pub fn run_md(mol: &Molecule, coords: Coords3D, config: &MDConfig) -> MDTrajecto
         }
 
         // Save frame
-        if (step + 1) % config.save_every == 0 {
+        if config.save_every != 0 && (step + 1) % config.save_every == 0 {
             let (ke, temp) =
                 compute_kinetic_energy_and_temp(&velocities, &masses, config.temperature_k);
             trajectory.frames.push(MDFrame {

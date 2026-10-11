@@ -19,7 +19,12 @@ pub use real::{
 /// Error type for SPME calculations.
 #[derive(Debug, Clone, PartialEq)]
 pub enum EwaldError {
-    /// Box matrix is singular or near-singular (determinant < 1e-10).
+    /// The periodic box or PME configuration is invalid or exceeds the
+    /// implementation's bounded work limits.
+    ///
+    /// The original public API exposed only this variant. It remains the
+    /// single variant so rejecting newly validated inputs does not break
+    /// exhaustive matches in downstream Rust code.
     SingularBoxMatrix,
 }
 
@@ -29,7 +34,7 @@ impl fmt::Display for EwaldError {
             EwaldError::SingularBoxMatrix => {
                 write!(
                     f,
-                    "singular or near-singular box matrix (determinant < 1e-10)"
+                    "invalid PME input, configuration, or singular box matrix"
                 )
             }
         }
@@ -51,6 +56,76 @@ pub struct PmeConfig {
     pub mesh: [usize; 3],
     /// B-spline interpolation order (default: 4).
     pub spline_order: u8,
+}
+
+pub(crate) const MAX_PME_GRID_POINTS: usize = 16_777_216;
+pub(crate) const MAX_PME_RECIPROCAL_POINTS: usize = 2_000_000;
+pub(crate) const MAX_PME_SPLINE_ORDER: u8 = 16;
+
+pub(crate) fn validate_pme_inputs(
+    coords: &[[f64; 3]],
+    charges: &[f64],
+    box_vecs: &BoxVectors,
+    config: &PmeConfig,
+) -> Result<usize, EwaldError> {
+    if coords.len() != charges.len() {
+        return Err(EwaldError::SingularBoxMatrix);
+    }
+    if coords
+        .iter()
+        .flatten()
+        .chain(charges.iter())
+        .chain(box_vecs.0.iter().flatten())
+        .any(|value| !value.is_finite())
+    {
+        return Err(EwaldError::SingularBoxMatrix);
+    }
+    let volume = box_vecs.volume();
+    if !volume.is_finite() || volume < 1e-10 {
+        return Err(EwaldError::SingularBoxMatrix);
+    }
+    if !config.r_cut.is_finite() || config.r_cut <= 0.0 {
+        return Err(EwaldError::SingularBoxMatrix);
+    }
+    if !config.alpha.is_finite() || config.alpha < 0.0 {
+        return Err(EwaldError::SingularBoxMatrix);
+    }
+    if config.mesh.contains(&0) {
+        return Err(EwaldError::SingularBoxMatrix);
+    }
+    if config.spline_order == 0 || config.spline_order > MAX_PME_SPLINE_ORDER {
+        return Err(EwaldError::SingularBoxMatrix);
+    }
+    let grid_points = config
+        .mesh
+        .iter()
+        .try_fold(1usize, |product, &size| product.checked_mul(size))
+        .ok_or(EwaldError::SingularBoxMatrix)?;
+    if grid_points > MAX_PME_GRID_POINTS {
+        return Err(EwaldError::SingularBoxMatrix);
+    }
+    let reciprocal_points = config
+        .kmax
+        .iter()
+        .enumerate()
+        .try_fold(1usize, |product, (axis, &maximum)| {
+            let width = if axis == 2 {
+                maximum.checked_add(1)
+            } else {
+                maximum.checked_mul(2)?.checked_add(1)
+            }?;
+            product.checked_mul(width)
+        })
+        .ok_or(EwaldError::SingularBoxMatrix)?;
+    if reciprocal_points > MAX_PME_RECIPROCAL_POINTS
+        || config
+            .kmax
+            .iter()
+            .any(|&maximum| maximum > i32::MAX as usize)
+    {
+        return Err(EwaldError::SingularBoxMatrix);
+    }
+    Ok(grid_points)
 }
 
 impl Default for PmeConfig {
@@ -131,9 +206,7 @@ pub fn spme_energy(
     box_vecs: &BoxVectors,
     config: &PmeConfig,
 ) -> Result<EwaldResult, EwaldError> {
-    if box_vecs.volume().abs() < 1e-10 {
-        return Err(EwaldError::SingularBoxMatrix);
-    }
+    validate_pme_inputs(coords, charges, box_vecs, config)?;
 
     let alpha = if config.alpha > 0.0 {
         config.alpha
@@ -210,5 +283,128 @@ mod tests {
         let charges = [1.0];
         let result = spme_energy(&coords, &charges, &box_vecs, &PmeConfig::default());
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn spme_rejects_coordinate_charge_length_mismatch() {
+        let result = spme_energy(
+            &[[0.0, 0.0, 0.0]],
+            &[],
+            &BoxVectors::cubic(10.0),
+            &PmeConfig::default(),
+        );
+        assert_eq!(result, Err(EwaldError::SingularBoxMatrix));
+    }
+
+    #[test]
+    fn spme_rejects_zero_mesh_without_panicking() {
+        let config = PmeConfig {
+            mesh: [0, 16, 16],
+            ..PmeConfig::default()
+        };
+        let result = spme_energy(
+            &[[0.0, 0.0, 0.0]],
+            &[1.0],
+            &BoxVectors::cubic(10.0),
+            &config,
+        );
+        assert_eq!(result, Err(EwaldError::SingularBoxMatrix));
+    }
+
+    #[test]
+    fn spme_rejects_excessive_grid_before_allocation() {
+        let config = PmeConfig {
+            mesh: [usize::MAX, 2, 2],
+            ..PmeConfig::default()
+        };
+        let result = spme_energy(
+            &[[0.0, 0.0, 0.0]],
+            &[1.0],
+            &BoxVectors::cubic(10.0),
+            &config,
+        );
+        assert_eq!(result, Err(EwaldError::SingularBoxMatrix));
+    }
+
+    #[test]
+    fn spme_rejects_zero_spline_order_without_panicking() {
+        let config = PmeConfig {
+            spline_order: 0,
+            ..PmeConfig::default()
+        };
+        let result = spme_energy(
+            &[[0.0, 0.0, 0.0]],
+            &[1.0],
+            &BoxVectors::cubic(10.0),
+            &config,
+        );
+        assert_eq!(result, Err(EwaldError::SingularBoxMatrix));
+    }
+
+    #[test]
+    fn spme_rejects_non_finite_and_invalid_numeric_inputs() {
+        let box_vecs = BoxVectors::cubic(10.0);
+        for (coords, charges) in [
+            (vec![[f64::NAN, 0.0, 0.0]], vec![1.0]),
+            (vec![[0.0, 0.0, 0.0]], vec![f64::INFINITY]),
+        ] {
+            assert_eq!(
+                spme_energy(&coords, &charges, &box_vecs, &PmeConfig::default()),
+                Err(EwaldError::SingularBoxMatrix)
+            );
+        }
+
+        let invalid_box = BoxVectors([[f64::NAN, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]]);
+        assert_eq!(
+            spme_energy(&[], &[], &invalid_box, &PmeConfig::default()),
+            Err(EwaldError::SingularBoxMatrix)
+        );
+
+        for config in [
+            PmeConfig {
+                r_cut: 0.0,
+                ..PmeConfig::default()
+            },
+            PmeConfig {
+                r_cut: f64::NAN,
+                ..PmeConfig::default()
+            },
+            PmeConfig {
+                alpha: -1.0,
+                ..PmeConfig::default()
+            },
+            PmeConfig {
+                alpha: f64::INFINITY,
+                ..PmeConfig::default()
+            },
+            PmeConfig {
+                spline_order: MAX_PME_SPLINE_ORDER + 1,
+                ..PmeConfig::default()
+            },
+        ] {
+            assert_eq!(
+                spme_energy(&[], &[], &box_vecs, &config),
+                Err(EwaldError::SingularBoxMatrix)
+            );
+        }
+    }
+
+    #[test]
+    fn spme_rejects_excessive_reciprocal_work_before_iteration() {
+        for kmax in [
+            [usize::MAX, 1, 1],
+            [1, 1, usize::MAX],
+            [1_000, 1_000, 1_000],
+            [i32::MAX as usize + 1, 0, 0],
+        ] {
+            let config = PmeConfig {
+                kmax,
+                ..PmeConfig::default()
+            };
+            assert_eq!(
+                spme_energy(&[], &[], &BoxVectors::cubic(10.0), &config),
+                Err(EwaldError::SingularBoxMatrix)
+            );
+        }
     }
 }

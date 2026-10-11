@@ -336,7 +336,7 @@ impl Default for XyzParseLimits {
     }
 }
 
-fn validate_xyz_limits(text: &str, limits: &XyzParseLimits) -> Result<(), XyzError> {
+fn validate_xyz_input_limits(text: &str, limits: &XyzParseLimits) -> Result<(), XyzError> {
     if text.len() > limits.max_input_bytes {
         return Err(XyzError::ResourceLimit {
             resource: "input bytes",
@@ -353,6 +353,11 @@ fn validate_xyz_limits(text: &str, limits: &XyzParseLimits) -> Result<(), XyzErr
             });
         }
     }
+    Ok(())
+}
+
+fn validate_xyz_limits(text: &str, limits: &XyzParseLimits) -> Result<(), XyzError> {
+    validate_xyz_input_limits(text, limits)?;
     let mut lines = text.lines();
     let mut frames = 0usize;
     while let Some(count_line) = lines.next() {
@@ -502,12 +507,25 @@ fn parse_one_frame(text: &str) -> Result<(XyzFrame, &str), XyzError> {
 /// rather than risk mis-parsing garbage as a frame.
 pub struct XyzReader<'a> {
     remaining: &'a str,
+    limits: XyzParseLimits,
+    input_validated: bool,
+    frames_read: usize,
 }
 
 impl<'a> XyzReader<'a> {
     /// Create a new `XyzReader` over the given multi-frame XYZ string.
     pub fn new(input: &'a str) -> Self {
-        Self { remaining: input }
+        Self::with_limits(input, XyzParseLimits::default())
+    }
+
+    /// Create an in-memory XYZ reader with explicit resource limits.
+    pub fn with_limits(input: &'a str, limits: XyzParseLimits) -> Self {
+        Self {
+            remaining: input,
+            limits,
+            input_validated: false,
+            frames_read: 0,
+        }
     }
 }
 
@@ -515,6 +533,13 @@ impl<'a> Iterator for XyzReader<'a> {
     type Item = Result<XyzFrame, XyzError>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if !self.input_validated {
+            self.input_validated = true;
+            if let Err(error) = validate_xyz_input_limits(self.remaining, &self.limits) {
+                self.remaining = "";
+                return Some(Err(error));
+            }
+        }
         // A run of blank lines between frames is not part of the spec (each
         // frame is self-delimited by its own count line, no separator) but
         // is tolerated here -- some multi-frame XYZ writers leave a
@@ -525,6 +550,29 @@ impl<'a> Iterator for XyzReader<'a> {
         let leading_blank =
             self.remaining.len() - self.remaining.trim_start_matches(['\n', '\r']).len();
         self.remaining = &self.remaining[leading_blank..];
+
+        let count_line = next_line(self.remaining)
+            .map(|(line, _)| line)
+            .unwrap_or("");
+        if let Ok(declared) = count_line.trim().parse::<usize>()
+            && declared > self.limits.max_atoms_per_frame
+        {
+            self.remaining = "";
+            return Some(Err(XyzError::ResourceLimit {
+                resource: "atoms per frame",
+                actual: declared,
+                limit: self.limits.max_atoms_per_frame,
+            }));
+        }
+        self.frames_read = self.frames_read.saturating_add(1);
+        if self.frames_read > self.limits.max_frames {
+            self.remaining = "";
+            return Some(Err(XyzError::ResourceLimit {
+                resource: "frames",
+                actual: self.frames_read,
+                limit: self.limits.max_frames,
+            }));
+        }
 
         match parse_one_frame(self.remaining) {
             Ok((frame, rest)) => {
@@ -1069,8 +1117,7 @@ pub fn parse_xyz_all_with_limits(
     input: &str,
     limits: &XyzParseLimits,
 ) -> Result<Vec<XyzFrame>, XyzError> {
-    validate_xyz_limits(input, limits)?;
-    XyzReader::new(input).collect()
+    XyzReader::with_limits(input, *limits).collect()
 }
 
 /// Streaming writer for a (possibly multi-frame) XYZ file.

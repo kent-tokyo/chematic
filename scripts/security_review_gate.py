@@ -64,7 +64,7 @@ def main() -> int:
 
     formats_target = (root / "fuzz" / "fuzz_targets" / "formats.rs").read_text(encoding="utf-8")
     selector = re.search(r"match selector % (\d+)", formats_target)
-    check("parser-dispatch-fuzz", selector is not None and selector.group(1) == "22", "22 parser selectors")
+    check("parser-dispatch-fuzz", selector is not None and selector.group(1) == "26", "26 parser selectors")
 
     ok, output = run(root, [sys.executable, "scripts/check_workflow_pins.py"])
     check("immutable-workflow-pins", ok, output.splitlines()[-1] if output else "no output")
