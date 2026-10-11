@@ -345,14 +345,6 @@
       "decisions": 15,
       "lines": 130
     },
-    "crates/chematic-mol/src/cdxml.rs::flush#1": {
-      "decisions": 24,
-      "lines": 178
-    },
-    "crates/chematic-mol/src/cdxml.rs::parse_cdxml_all_with_options_and_limits#1": {
-      "decisions": 34,
-      "lines": 196
-    },
     "crates/chematic-mol/src/cdxml_document.rs::apply#1": {
       "decisions": 54,
       "lines": 195

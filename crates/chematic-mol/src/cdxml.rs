@@ -281,9 +281,162 @@ struct FragAccum {
     bond_display: Vec<Option<String>>,
 }
 
+struct ResolvedBonds {
+    positions: Vec<(usize, usize)>,
+    degree: Vec<usize>,
+}
+
+struct BuiltFragment {
+    molecule: Molecule,
+    indices: HashMap<usize, AtomIdx>,
+    coords: Vec<(f64, f64)>,
+}
+
 impl FragAccum {
     fn is_empty(&self) -> bool {
         self.atom_ids.is_empty() && self.bond_bs.is_empty()
+    }
+
+    fn resolve_bond_positions(&self) -> Result<ResolvedBonds, CdxmlError> {
+        let positions = self
+            .atom_ids
+            .iter()
+            .enumerate()
+            .map(|(index, id)| (id.as_str(), index))
+            .collect::<HashMap<_, _>>();
+        let mut bonds = Vec::with_capacity(self.bond_bs.len());
+        let mut degree = vec![0; self.atom_ids.len()];
+        for (begin, end) in self.bond_bs.iter().zip(&self.bond_es) {
+            let begin_pos = *positions
+                .get(begin.as_str())
+                .ok_or_else(|| CdxmlError::UnknownAtomRef(begin.clone()))?;
+            let end_pos = *positions
+                .get(end.as_str())
+                .ok_or_else(|| CdxmlError::UnknownAtomRef(end.clone()))?;
+            degree[begin_pos] += 1;
+            degree[end_pos] += 1;
+            bonds.push((begin_pos, end_pos));
+        }
+        Ok(ResolvedBonds {
+            positions: bonds,
+            degree,
+        })
+    }
+
+    fn build_molecule(
+        &self,
+        bond_positions: &[(usize, usize)],
+    ) -> Result<BuiltFragment, CdxmlError> {
+        let mut builder = MoleculeBuilder::new();
+        let mut indices = HashMap::new();
+        let mut coords = Vec::with_capacity(self.atom_ids.len());
+        for index in 0..self.atom_ids.len() {
+            let mut atom = Atom::new(self.atom_elems[index]);
+            atom.wildcard = self.atom_wildcards[index];
+            atom.charge = self.atom_charges[index];
+            atom.isotope = self.atom_isotopes[index];
+            atom.hydrogen_count = if atom.wildcard {
+                Some(0)
+            } else {
+                self.atom_h[index]
+            };
+            let atom_index = builder.add_atom(atom);
+            if let Some(label) = self.atom_rgroups[index] {
+                builder.set_r_group(atom_index, label);
+            }
+            indices.insert(index, atom_index);
+            coords.push((self.atom_xs[index], self.atom_ys[index]));
+        }
+        for (bond_index, &(begin, end)) in bond_positions.iter().enumerate() {
+            builder
+                .add_bond(indices[&begin], indices[&end], self.bond_ords[bond_index])
+                .map_err(|_| {
+                    CdxmlError::UnknownAtomRef(format!(
+                        "{} {}",
+                        self.bond_bs[bond_index], self.bond_es[bond_index]
+                    ))
+                })?;
+        }
+        Ok(BuiltFragment {
+            molecule: builder.build(),
+            indices,
+            coords,
+        })
+    }
+
+    fn has_nondirectional_wedge(&self) -> bool {
+        self.bond_display.iter().any(|display| {
+            matches!(
+                display.as_deref(),
+                Some("Bold") | Some("Hash") | Some("Dash")
+            )
+        })
+    }
+
+    fn normalize_nondirectional_wedges(
+        &self,
+        view: &mut Molecule,
+        indices: &HashMap<usize, AtomIdx>,
+        bond_positions: &[(usize, usize)],
+        degree: &[usize],
+        options: &CdxmlParseOptions,
+    ) {
+        for (bond_index, &(begin, end)) in bond_positions.iter().enumerate() {
+            if !matches!(
+                self.bond_display[bond_index].as_deref(),
+                Some("Bold") | Some("Hash") | Some("Dash")
+            ) {
+                continue;
+            }
+            let (begin_atom, end_atom) = (indices[&begin], indices[&end]);
+            let Some((index, _)) = view.bond_between(begin_atom, end_atom) else {
+                continue;
+            };
+            if !options.infer_nondirectional_stereo {
+                view.set_bond_order(index, BondOrder::Single);
+                continue;
+            }
+            let eligible = |value: usize| (3..=4).contains(&value);
+            let (begin_eligible, end_eligible) = (eligible(degree[begin]), eligible(degree[end]));
+            if begin_eligible && end_eligible {
+                view.set_bond_order(index, BondOrder::Single);
+            } else if end_eligible && !begin_eligible {
+                let flipped = match view.bond(index).order {
+                    BondOrder::Up => BondOrder::Down,
+                    BondOrder::Down => BondOrder::Up,
+                    other => other,
+                };
+                view.set_bond_order(index, flipped);
+            }
+        }
+    }
+
+    fn apply_stereo(
+        &self,
+        molecule: &mut Molecule,
+        indices: &HashMap<usize, AtomIdx>,
+        bond_positions: &[(usize, usize)],
+        degree: &[usize],
+        coords: &[(f64, f64)],
+        options: &CdxmlParseOptions,
+    ) {
+        if !self.has_nondirectional_wedge() {
+            apply_local_parity_from_wedges(molecule, coords);
+            return;
+        }
+        let mut view = molecule.clone();
+        self.normalize_nondirectional_wedges(&mut view, indices, bond_positions, degree, options);
+        apply_local_parity_from_wedges(&mut view, coords);
+        for index in 0..self.atom_ids.len() {
+            let atom = indices[&index];
+            let chirality = view.atom(atom).chirality;
+            if chirality != chematic_core::Chirality::None {
+                molecule.set_chirality(atom, chirality);
+                if let Some(order) = view.stereo_neighbor_order(atom) {
+                    molecule.set_stereo_neighbor_order(atom, order.to_vec());
+                }
+            }
+        }
     }
 
     fn flush(
@@ -294,174 +447,19 @@ impl FragAccum {
         if self.is_empty() {
             return Ok(());
         }
-
-        let mut id_to_pos: HashMap<&str, usize> = HashMap::new();
-        for (i, id) in self.atom_ids.iter().enumerate() {
-            id_to_pos.insert(id.as_str(), i);
-        }
-
-        // Resolve every bond's endpoints to atom positions up front, both to
-        // validate atom refs early and so degree (needed by the ambiguity
-        // check below) can be computed before any bond is added.
-        let mut bond_pos: Vec<(usize, usize)> = Vec::with_capacity(self.bond_bs.len());
-        let mut degree: Vec<usize> = vec![0; self.atom_ids.len()];
-        for k in 0..self.bond_bs.len() {
-            let pos_b = *id_to_pos
-                .get(self.bond_bs[k].as_str())
-                .ok_or_else(|| CdxmlError::UnknownAtomRef(self.bond_bs[k].clone()))?;
-            let pos_e = *id_to_pos
-                .get(self.bond_es[k].as_str())
-                .ok_or_else(|| CdxmlError::UnknownAtomRef(self.bond_es[k].clone()))?;
-            degree[pos_b] += 1;
-            degree[pos_e] += 1;
-            bond_pos.push((pos_b, pos_e));
-        }
-
-        let mut builder = MoleculeBuilder::new();
-        let mut idx_map: HashMap<usize, AtomIdx> = HashMap::new();
-        let mut coords: Vec<(f64, f64)> = Vec::new();
-
-        for i in 0..self.atom_ids.len() {
-            let mut a = Atom::new(self.atom_elems[i]);
-            a.wildcard = self.atom_wildcards[i];
-            a.charge = self.atom_charges[i];
-            a.isotope = self.atom_isotopes[i];
-            a.hydrogen_count = if a.wildcard { Some(0) } else { self.atom_h[i] };
-            let new_idx = builder.add_atom(a);
-            if let Some(label) = self.atom_rgroups[i] {
-                builder.set_r_group(new_idx, label);
-            }
-            idx_map.insert(i, new_idx);
-            coords.push((self.atom_xs[i], self.atom_ys[i]));
-        }
-
-        // The REAL molecule keeps every wedge bond's Display-derived
-        // BondOrder::Up/Down and its original B/E atom order exactly as
-        // parsed, for ANY Display value -- structural/round-trip fidelity
-        // is unconditional, independent of whether that bond ends up
-        // feeding chirality perception below.
-        for (k, &(pos_b, pos_e)) in bond_pos.iter().enumerate() {
-            let a1 = idx_map[&pos_b];
-            let a2 = idx_map[&pos_e];
-            builder.add_bond(a1, a2, self.bond_ords[k]).map_err(|_| {
-                CdxmlError::UnknownAtomRef(format!("{} {}", self.bond_bs[k], self.bond_es[k]))
-            })?;
-        }
-
-        let mut mol = builder.build();
-
-        // Non-directional wedge displays (`Bold`/`Hash`/`Dash` -- a plain
-        // thick or dashed line, no narrow/wide end) carry NO Begin/End
-        // convention at all in the CDXML spec, unlike `WedgeBegin`/
-        // `WedgeEnd`/`WedgedHashBegin`/`WedgedHashEnd`. Which atom a `<b>`
-        // element happens to list first as `B` is an arbitrary artifact of
-        // however the file was written -- it is not a "narrow end" signal,
-        // so `chematic_perception::wedge_z`'s `bond.atom1` == the tip/
-        // reference-atom convention (correct for a directional wedge, whose
-        // Begin atom genuinely IS the tip) must not be applied naively to
-        // these using the raw B/E order. Concretely: swapping which atom a
-        // CDXML author lists as B vs E for the identical drawing must NOT
-        // change the perceived configuration for `Bold`/`Hash`/`Dash`,
-        // while it correctly DOES for a real `WedgeBegin`/`WedgeEnd` pair
-        // (the Begin atom is genuinely a different physical reference).
-        //
-        // Resolved by perceiving parity on a throwaway VIEW of the
-        // molecule, not the real one -- so the real molecule's own bond
-        // orders/atom order are never touched by any of this -- with each
-        // non-directional bond's contribution to that view decided as:
-        //   - `options.infer_nondirectional_stereo` is `false` (the
-        //     default): downgraded to `Single` in the view unconditionally.
-        //     `Bold` in particular is sometimes drawn for visual emphasis,
-        //     not stereo intent, so this reader does not manufacture
-        //     stereo from it unless explicitly asked to.
-        //   - `true`, exactly one endpoint qualifies as a stereocenter
-        //     candidate (3-4 neighbours, matching
-        //     [`chematic_perception`]'s own gate): reordered in the view so
-        //     that endpoint is atom1 -- then `wedge_z`'s existing
-        //     atom1-is-the-reference convention becomes correct by
-        //     construction, independent of the original B/E order.
-        //   - `true`, both endpoints qualify: one non-directional bond
-        //     cannot mean "toward the viewer" from both ends of the same
-        //     bond at once -- downgraded to `Single` in the view so neither
-        //     gets a chirality it can't justify (a directional wedge in the
-        //     same situation is NOT ambiguous, since the Begin atom is
-        //     unambiguously the reference, and is never altered here).
-        //   - `true`, neither qualifies: no-op (the shared perception gate
-        //     already skips both regardless).
-        // Directional wedges are never altered in the view either way.
-        let any_nondirectional_wedge = self
-            .bond_display
-            .iter()
-            .any(|d| matches!(d.as_deref(), Some("Bold") | Some("Hash") | Some("Dash")));
-        if !any_nondirectional_wedge {
-            apply_local_parity_from_wedges(&mut mol, &coords);
-        } else {
-            let mut view = mol.clone();
-            for (k, &(pos_b, pos_e)) in bond_pos.iter().enumerate() {
-                let is_nondirectional_wedge = matches!(
-                    self.bond_display[k].as_deref(),
-                    Some("Bold") | Some("Hash") | Some("Dash")
-                );
-                if !is_nondirectional_wedge {
-                    continue;
-                }
-                let (a1, a2) = (idx_map[&pos_b], idx_map[&pos_e]);
-                let Some((bond_idx, _)) = view.bond_between(a1, a2) else {
-                    continue;
-                };
-                if !options.infer_nondirectional_stereo {
-                    view.set_bond_order(bond_idx, BondOrder::Single);
-                    continue;
-                }
-                let eligible = |d: usize| (3..=4).contains(&d);
-                let (b_elig, e_elig) = (eligible(degree[pos_b]), eligible(degree[pos_e]));
-                if b_elig && e_elig {
-                    view.set_bond_order(bond_idx, BondOrder::Single);
-                } else if e_elig && !b_elig {
-                    // The candidate (stereocenter) is E, not B. `wedge_z`
-                    // reads `bond.atom1` as the reference atom -- flip
-                    // Up<->Down (equivalent to "as seen from E instead of
-                    // B") rather than swapping atom1/atom2 in place: a
-                    // swap would require remove_bond+add_bond, which
-                    // perturbs `neighbors()` iteration order for BOTH
-                    // endpoints (adjacency is rebuilt from the bond list's
-                    // new order), silently changing which neighbor
-                    // `chematic_perception` picks as tetrahedral apex --
-                    // confirmed empirically: an earlier swap-based version
-                    // of this fix produced a real, non-obvious B/E-order
-                    // dependence via exactly this side channel. Flipping
-                    // just the order field has no such effect (checked in
-                    // `set_bond_order`'s own doc).
-                    let flipped = match view.bond(bond_idx).order {
-                        BondOrder::Up => BondOrder::Down,
-                        BondOrder::Down => BondOrder::Up,
-                        other => other,
-                    };
-                    view.set_bond_order(bond_idx, flipped);
-                }
-            }
-            apply_local_parity_from_wedges(&mut view, &coords);
-            for i in 0..self.atom_ids.len() {
-                let idx = idx_map[&i];
-                let chirality = view.atom(idx).chirality;
-                if chirality != chematic_core::Chirality::None {
-                    mol.set_chirality(idx, chirality);
-                    if let Some(order) = view.stereo_neighbor_order(idx) {
-                        mol.set_stereo_neighbor_order(idx, order.to_vec());
-                    }
-                }
-            }
-        }
-
-        // Tetrahedral parity (above) runs before E/Z direction (below) --
-        // same ordering rationale as mol2000.rs/mol3000.rs/mrv.rs: E/Z
-        // writes to a separate side channel (cip_code here) and never
-        // touches bond.order, so it can't disturb the wedge/hash data
-        // parity perception just consumed.
-        // Derive E/Z stereo from 2D atom positions (RDKit issue #9356: CDXML loses E/Z).
-        assign_ez_from_2d(&mut mol, &coords);
-        results.push((mol, coords));
-        *self = FragAccum::default();
+        let bonds = self.resolve_bond_positions()?;
+        let mut fragment = self.build_molecule(&bonds.positions)?;
+        self.apply_stereo(
+            &mut fragment.molecule,
+            &fragment.indices,
+            &bonds.positions,
+            &bonds.degree,
+            &fragment.coords,
+            options,
+        );
+        assign_ez_from_2d(&mut fragment.molecule, &fragment.coords);
+        results.push((fragment.molecule, fragment.coords));
+        *self = Self::default();
         Ok(())
     }
 }
@@ -478,13 +476,7 @@ pub fn parse_cdxml_all_with_options(
     parse_cdxml_all_with_options_and_limits(input, options, &CdxmlParseLimits::default())
 }
 
-/// Same as [`parse_cdxml_all_with_options`], with explicit resource limits.
-#[allow(clippy::type_complexity)]
-pub fn parse_cdxml_all_with_options_and_limits(
-    input: &str,
-    options: &CdxmlParseOptions,
-    limits: &CdxmlParseLimits,
-) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
+fn check_cdxml_input_limits(input: &str, limits: &CdxmlParseLimits) -> Result<(), CdxmlError> {
     if input.len() > limits.max_input_bytes {
         return Err(CdxmlError::ResourceLimit {
             resource: "input bytes",
@@ -492,11 +484,7 @@ pub fn parse_cdxml_all_with_options_and_limits(
             limit: limits.max_input_bytes,
         });
     }
-    let mut acc = FragAccum::default();
-    let mut results: Vec<(Molecule, Vec<(f64, f64)>)> = Vec::new();
-    let mut fragment_count = 0usize;
-
-    for (line_index, raw_line) in input.lines().enumerate() {
+    for (line_index, line) in input.lines().enumerate() {
         if line_index >= limits.max_lines {
             return Err(CdxmlError::ResourceLimit {
                 resource: "lines",
@@ -504,24 +492,175 @@ pub fn parse_cdxml_all_with_options_and_limits(
                 limit: limits.max_lines,
             });
         }
-        if raw_line.len() > limits.max_line_bytes {
+        if line.len() > limits.max_line_bytes {
             return Err(CdxmlError::ResourceLimit {
                 resource: "line bytes",
-                actual: raw_line.len(),
+                actual: line.len(),
                 limit: limits.max_line_bytes,
             });
         }
     }
+    Ok(())
+}
 
-    // Physical-line budgets apply before tokenization. Producers may place
-    // several tags on one line; reuse the document editor's quote-aware
-    // splitter so minified fragments cannot silently become empty graphs.
-    for raw_line in crate::cdxml_document::logical_cdxml_lines(input) {
-        let line = raw_line.trim();
+fn cdxml_atom_kind(
+    attrs: &HashMap<String, String>,
+) -> Result<(Element, bool, Option<RGroupLabel>), CdxmlError> {
+    let pseudo = if attrs.get("NodeType").map(String::as_str) == Some("GenericNickname") {
+        Some(attrs.get("GenericNickname").cloned().ok_or_else(|| {
+            CdxmlError::UnsupportedPseudoatomLabel("missing GenericNickname attribute".into())
+        })?)
+    } else {
+        None
+    };
+    match pseudo.as_deref() {
+        Some("*") => Ok((Element::C, true, None)),
+        Some("R") => Ok((Element::C, true, Some(RGroupLabel::unnumbered()))),
+        Some(label) if label.starts_with('R') => label[1..]
+            .parse::<u16>()
+            .ok()
+            .and_then(RGroupLabel::numbered)
+            .map(|label| (Element::C, true, Some(label)))
+            .ok_or_else(|| CdxmlError::UnsupportedPseudoatomLabel(label.into())),
+        Some(label) => Err(CdxmlError::UnsupportedPseudoatomLabel(label.into())),
+        None => {
+            let number = attrs
+                .get("Element")
+                .and_then(|value| value.trim().parse::<u32>().ok())
+                .unwrap_or(6);
+            if number > 255 {
+                return Err(CdxmlError::UnknownAtomicNumber(number));
+            }
+            Element::from_atomic_number(number as u8)
+                .map(|element| (element, false, None))
+                .ok_or(CdxmlError::UnknownAtomicNumber(number))
+        }
+    }
+}
+
+fn cdxml_coords(attrs: &HashMap<String, String>) -> Result<(f64, f64), CdxmlError> {
+    let Some(value) = attrs.get("p") else {
+        return Ok((0.0, 0.0));
+    };
+    let fields = value.split_whitespace().collect::<Vec<_>>();
+    if fields.len() < 2 {
+        return Err(CdxmlError::InvalidCoords(value.clone()));
+    }
+    Ok((
+        fields[0].parse().unwrap_or(0.0),
+        fields[1].parse().unwrap_or(0.0),
+    ))
+}
+
+fn push_cdxml_atom(
+    accumulator: &mut FragAccum,
+    line: &str,
+    limits: &CdxmlParseLimits,
+) -> Result<(), CdxmlError> {
+    let attrs = parse_xml_attrs(line);
+    check_attribute_limits(&attrs, limits)?;
+    let Some(id) = attrs.get("id").cloned() else {
+        return Ok(());
+    };
+    if accumulator.atom_ids.len() >= limits.max_atoms {
+        return Err(CdxmlError::ResourceLimit {
+            resource: "atoms",
+            actual: accumulator.atom_ids.len() + 1,
+            limit: limits.max_atoms,
+        });
+    }
+    let (element, wildcard, r_group) = cdxml_atom_kind(&attrs)?;
+    let (x, y) = cdxml_coords(&attrs)?;
+    accumulator.atom_ids.push(id);
+    accumulator.atom_elems.push(element);
+    accumulator.atom_charges.push(
+        attrs
+            .get("Charge")
+            .and_then(|value| value.trim().parse().ok())
+            .unwrap_or(0),
+    );
+    accumulator.atom_isotopes.push(
+        attrs
+            .get("Isotope")
+            .and_then(|value| value.trim().parse::<u16>().ok())
+            .filter(|&value| value > 0),
+    );
+    accumulator.atom_h.push(
+        attrs
+            .get("NumHydrogens")
+            .and_then(|value| value.trim().parse().ok()),
+    );
+    accumulator.atom_wildcards.push(wildcard);
+    accumulator.atom_rgroups.push(r_group);
+    accumulator.atom_xs.push(x);
+    accumulator.atom_ys.push(y);
+    Ok(())
+}
+
+fn cdxml_bond_order(attrs: &HashMap<String, String>) -> BondOrder {
+    let base = match attrs.get("Order").map(String::as_str) {
+        Some("2") => BondOrder::Double,
+        Some("3") => BondOrder::Triple,
+        Some("1.5") => BondOrder::Aromatic,
+        _ => BondOrder::Single,
+    };
+    if base != BondOrder::Single {
+        return base;
+    }
+    match attrs.get("Display").map(String::as_str) {
+        Some("WedgeBegin") | Some("WedgedHashBegin") | Some("Bold") => BondOrder::Up,
+        Some("Hash") | Some("Dash") | Some("WedgeEnd") | Some("WedgedHashEnd") => BondOrder::Down,
+        _ => BondOrder::Single,
+    }
+}
+
+fn push_cdxml_bond(
+    accumulator: &mut FragAccum,
+    line: &str,
+    limits: &CdxmlParseLimits,
+) -> Result<(), CdxmlError> {
+    let attrs = parse_xml_attrs(line);
+    check_attribute_limits(&attrs, limits)?;
+    if accumulator.bond_bs.len() >= limits.max_bonds {
+        return Err(CdxmlError::ResourceLimit {
+            resource: "bonds",
+            actual: accumulator.bond_bs.len() + 1,
+            limit: limits.max_bonds,
+        });
+    }
+    accumulator.bond_bs.push(
+        attrs
+            .get("B")
+            .cloned()
+            .ok_or(CdxmlError::MissingBondEndpoint)?,
+    );
+    accumulator.bond_es.push(
+        attrs
+            .get("E")
+            .cloned()
+            .ok_or(CdxmlError::MissingBondEndpoint)?,
+    );
+    accumulator.bond_ords.push(cdxml_bond_order(&attrs));
+    accumulator.bond_display.push(attrs.get("Display").cloned());
+    Ok(())
+}
+
+/// Same as [`parse_cdxml_all_with_options`], with explicit resource limits.
+#[allow(clippy::type_complexity)]
+pub fn parse_cdxml_all_with_options_and_limits(
+    input: &str,
+    options: &CdxmlParseOptions,
+    limits: &CdxmlParseLimits,
+) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
+    check_cdxml_input_limits(input, limits)?;
+    let mut accumulator = FragAccum::default();
+    let mut results = Vec::new();
+    let mut fragment_count = 0;
+    for raw in crate::cdxml_document::logical_cdxml_lines(input) {
+        let line = raw.trim();
         if line.is_empty() {
             continue;
         }
-
         if line.starts_with("<fragment") {
             if fragment_count >= limits.max_fragments {
                 return Err(CdxmlError::ResourceLimit {
@@ -531,149 +670,16 @@ pub fn parse_cdxml_all_with_options_and_limits(
                 });
             }
             fragment_count += 1;
-            acc = FragAccum::default();
-            continue;
-        }
-
-        if line.starts_with("</fragment>") {
-            acc.flush(&mut results, options)?;
-            continue;
-        }
-
-        if is_n_tag(line) {
-            let attrs = parse_xml_attrs(line);
-            check_attribute_limits(&attrs, limits)?;
-            let id = match attrs.get("id") {
-                Some(s) => s.clone(),
-                None => continue,
-            };
-            let pseudo_label =
-                if attrs.get("NodeType").map(String::as_str) == Some("GenericNickname") {
-                    Some(attrs.get("GenericNickname").cloned().ok_or_else(|| {
-                        CdxmlError::UnsupportedPseudoatomLabel(
-                            "missing GenericNickname attribute".to_string(),
-                        )
-                    })?)
-                } else {
-                    None
-                };
-            let (element, wildcard, r_group) = match pseudo_label.as_deref() {
-                Some("*") => (Element::C, true, None),
-                Some("R") => (Element::C, true, Some(RGroupLabel::unnumbered())),
-                Some(label) if label.starts_with('R') => {
-                    let number = label[1..]
-                        .parse::<u16>()
-                        .ok()
-                        .and_then(RGroupLabel::numbered)
-                        .ok_or_else(|| CdxmlError::UnsupportedPseudoatomLabel(label.to_string()))?;
-                    (Element::C, true, Some(number))
-                }
-                Some(label) => {
-                    return Err(CdxmlError::UnsupportedPseudoatomLabel(label.to_string()));
-                }
-                None => {
-                    let element_num: u32 = attrs
-                        .get("Element")
-                        .and_then(|s| s.trim().parse().ok())
-                        .unwrap_or(6);
-                    if element_num > 255 {
-                        return Err(CdxmlError::UnknownAtomicNumber(element_num));
-                    }
-                    let element = Element::from_atomic_number(element_num as u8)
-                        .ok_or(CdxmlError::UnknownAtomicNumber(element_num))?;
-                    (element, false, None)
-                }
-            };
-            let charge = attrs
-                .get("Charge")
-                .and_then(|s| s.trim().parse().ok())
-                .unwrap_or(0);
-            let isotope = attrs
-                .get("Isotope")
-                .and_then(|s| s.trim().parse::<u16>().ok())
-                .filter(|&v| v > 0);
-            let hcount = attrs
-                .get("NumHydrogens")
-                .and_then(|s| s.trim().parse().ok());
-            let (x, y) = if let Some(p) = attrs.get("p") {
-                let parts: Vec<&str> = p.split_whitespace().collect();
-                if parts.len() < 2 {
-                    return Err(CdxmlError::InvalidCoords(p.clone()));
-                }
-                (
-                    parts[0].parse().unwrap_or(0.0),
-                    parts[1].parse().unwrap_or(0.0),
-                )
-            } else {
-                (0.0, 0.0)
-            };
-            if acc.atom_ids.len() >= limits.max_atoms {
-                return Err(CdxmlError::ResourceLimit {
-                    resource: "atoms",
-                    actual: acc.atom_ids.len() + 1,
-                    limit: limits.max_atoms,
-                });
-            }
-            acc.atom_ids.push(id);
-            acc.atom_elems.push(element);
-            acc.atom_charges.push(charge);
-            acc.atom_isotopes.push(isotope);
-            acc.atom_h.push(hcount);
-            acc.atom_wildcards.push(wildcard);
-            acc.atom_rgroups.push(r_group);
-            acc.atom_xs.push(x);
-            acc.atom_ys.push(y);
-            continue;
-        }
-
-        if is_b_tag(line) {
-            let attrs = parse_xml_attrs(line);
-            check_attribute_limits(&attrs, limits)?;
-            if acc.bond_bs.len() >= limits.max_bonds {
-                return Err(CdxmlError::ResourceLimit {
-                    resource: "bonds",
-                    actual: acc.bond_bs.len() + 1,
-                    limit: limits.max_bonds,
-                });
-            }
-            let b = attrs
-                .get("B")
-                .cloned()
-                .ok_or(CdxmlError::MissingBondEndpoint)?;
-            let e = attrs
-                .get("E")
-                .cloned()
-                .ok_or(CdxmlError::MissingBondEndpoint)?;
-            let base: BondOrder = match attrs.get("Order").map(String::as_str) {
-                Some("2") => BondOrder::Double,
-                Some("3") => BondOrder::Triple,
-                // "1.5" is used by some CDXML writers (e.g. OpenBabel) for
-                // aromatic bonds.  Store as Aromatic so that aromaticity
-                // perception is not required to recover the correct bond type.
-                Some("1.5") => BondOrder::Aromatic,
-                _ => BondOrder::Single,
-            };
-            let order = if base == BondOrder::Single {
-                match attrs.get("Display").map(String::as_str) {
-                    Some("WedgeBegin") | Some("WedgedHashBegin") | Some("Bold") => BondOrder::Up,
-                    Some("Hash") | Some("Dash") | Some("WedgeEnd") | Some("WedgedHashEnd") => {
-                        BondOrder::Down
-                    }
-                    _ => BondOrder::Single,
-                }
-            } else {
-                base
-            };
-            acc.bond_bs.push(b);
-            acc.bond_es.push(e);
-            acc.bond_ords.push(order);
-            acc.bond_display.push(attrs.get("Display").cloned());
+            accumulator = FragAccum::default();
+        } else if line.starts_with("</fragment>") {
+            accumulator.flush(&mut results, options)?;
+        } else if is_n_tag(line) {
+            push_cdxml_atom(&mut accumulator, line, limits)?;
+        } else if is_b_tag(line) {
+            push_cdxml_bond(&mut accumulator, line, limits)?;
         }
     }
-
-    // Handle documents without explicit </fragment> closing tags.
-    acc.flush(&mut results, options)?;
-
+    accumulator.flush(&mut results, options)?;
     Ok(results)
 }
 
