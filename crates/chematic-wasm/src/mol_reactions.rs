@@ -12,6 +12,8 @@ use wasm_bindgen::prelude::*;
 
 mod molecule_workflows;
 pub use molecule_workflows::*;
+mod rgroup_columns;
+pub use rgroup_columns::*;
 
 fn bounded_json_output(output: String) -> Result<String, JsValue> {
     if output.len() > WASM_MAX_OUTPUT_BYTES {
@@ -585,25 +587,27 @@ pub fn run_reactants_checked(smirks: &str, reactants_smiles: &str, rdkit_compat:
         max_matches: WASM_MAX_BATCH_ITEMS,
     };
     let (report, rejection_diagnostics) = match &prepared {
-        Some(prepared) => match prepared.run_reactants_traced_with_diagnostics(&refs, &limits) {
-            Ok(report) => (report, Vec::new()),
-            Err(error) => {
-                let reason = match &error {
-                    chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
-                    chematic_rxn::TransformError::ReactantCountMismatch { .. } => {
-                        "reactant_count_mismatch"
-                    }
-                    chematic_rxn::TransformError::SmirksParse(_) => "smirks_parse",
-                };
-                return CheckedReactionResponse::refusal(
-                    profile,
-                    "typed_refusal",
-                    reason,
-                    error.to_string(),
-                )
-                .json();
+        Some(prepared) => {
+            match prepared.run_reactants_traced_with_rejection_diagnostics(&refs, &limits) {
+                Ok(detailed) => (detailed.report, detailed.rejection_diagnostics),
+                Err(error) => {
+                    let reason = match &error {
+                        chematic_rxn::TransformError::ResourceLimit { .. } => "resource_limit",
+                        chematic_rxn::TransformError::ReactantCountMismatch { .. } => {
+                            "reactant_count_mismatch"
+                        }
+                        chematic_rxn::TransformError::SmirksParse(_) => "smirks_parse",
+                    };
+                    return CheckedReactionResponse::refusal(
+                        profile,
+                        "typed_refusal",
+                        reason,
+                        error.to_string(),
+                    )
+                    .json();
+                }
             }
-        },
+        }
         None => match chematic_rxn::run_reactants_traced_rdkit_2026_03_6_detailed(
             smirks, &refs, &limits,
         ) {

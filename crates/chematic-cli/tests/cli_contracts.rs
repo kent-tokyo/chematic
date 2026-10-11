@@ -4,6 +4,10 @@ use std::io::Write;
 use std::process::{Command, Output, Stdio};
 
 fn invoke(args: &[&str], stdin: &str) -> Output {
+    invoke_bytes(args, stdin.as_bytes())
+}
+
+fn invoke_bytes(args: &[&str], stdin: &[u8]) -> Output {
     let mut child = Command::new(env!("CARGO_BIN_EXE_chematic"))
         .args(args)
         .stdin(Stdio::piped())
@@ -11,13 +15,36 @@ fn invoke(args: &[&str], stdin: &str) -> Output {
         .stderr(Stdio::piped())
         .spawn()
         .unwrap();
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(stdin.as_bytes())
-        .unwrap();
+    child.stdin.take().unwrap().write_all(stdin).unwrap();
     child.wait_with_output().unwrap()
+}
+
+#[test]
+fn cli_global_input_guards_reject_invalid_bytes_and_oversized_molecules() {
+    let excessive_limit = invoke(
+        &["batch-descriptors", "--max-input-bytes", "67108865"],
+        "CCO\n",
+    );
+    assert!(!excessive_limit.status.success());
+    assert!(String::from_utf8_lossy(&excessive_limit.stderr).contains("CLI maximum"));
+
+    let invalid_utf8 = invoke_bytes(&["batch-descriptors"], &[0xff, b'\n']);
+    assert!(!invalid_utf8.status.success());
+    assert!(String::from_utf8_lossy(&invalid_utf8.stderr).contains("not UTF-8"));
+
+    let too_many_atoms = "C".repeat(10_001);
+    let oversized_molecule = invoke(
+        &[
+            "convert",
+            "--input-format",
+            "smiles",
+            "--output-format",
+            "moljson",
+        ],
+        &too_many_atoms,
+    );
+    assert!(!oversized_molecule.status.success());
+    assert!(String::from_utf8_lossy(&oversized_molecule.stderr).contains("maximum atom count"));
 }
 fn json_output(args: &[&str], stdin: &str) -> Value {
     let out = invoke(args, stdin);
@@ -217,4 +244,91 @@ fn conversion_supports_files_and_errors_use_stderr() {
         assert!(!result.stderr.is_empty());
     }
     std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn every_cli_algorithm_and_resource_limit_has_an_executable_contract() {
+    for algorithm in ["ecfp4", "ecfp6", "maccs", "rdkit_rdk", "rdkit_torsion"] {
+        let fingerprint = json_output(&["fingerprint", "c1ccccc1O", "--algorithm", algorithm], "");
+        assert_eq!(fingerprint["algorithm"], algorithm);
+        assert!(fingerprint["popcount"].as_u64().unwrap() > 0);
+        let similarity = json_output(
+            &[
+                "similarity",
+                "c1ccccc1O",
+                "c1ccccc1O",
+                "--algorithm",
+                algorithm,
+            ],
+            "",
+        );
+        assert_eq!(similarity["similarity"], 1.0);
+    }
+
+    for (args, stdin) in [
+        (vec!["batch-descriptors", "--max-input-bytes", "2"], "CCO\n"),
+        (vec!["batch-descriptors", "--max-line-bytes", "2"], "CCO\n"),
+        (vec!["batch-descriptors", "--max-records", "1"], "C\nO\n"),
+        (
+            vec!["batch-fingerprints", "--algorithm", "unknown"],
+            "CCO\n",
+        ),
+        (
+            vec!["batch-similarity", "--algorithm", "unknown"],
+            "CCO\tCCO\n",
+        ),
+        (vec!["batch-similarity"], "missing-tab\n"),
+        (vec!["batch-substructure"], "missing-tab\n"),
+    ] {
+        let output = invoke(&args, stdin);
+        if args[0].starts_with("batch-") && !matches!(args[0], "batch-descriptors") {
+            // Per-record failures are retained in a successful manifest.
+            assert!(output.status.success(), "{args:?}");
+            let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_eq!(value["error_count"], 1, "{args:?}: {value}");
+            assert_eq!(value["all_succeeded"], false);
+        } else {
+            assert!(!output.status.success(), "{args:?}");
+        }
+    }
+}
+
+#[test]
+fn checked_conversion_and_mol2_round_trip_are_exposed_by_the_binary() {
+    let mol2 = invoke(
+        &[
+            "convert",
+            "--input-format",
+            "smiles",
+            "--output-format",
+            "mol2",
+        ],
+        "CCO",
+    );
+    assert!(mol2.status.success());
+    let round_trip = invoke(
+        &[
+            "convert",
+            "--input-format",
+            "mol2",
+            "--output-format",
+            "smiles",
+        ],
+        &String::from_utf8(mol2.stdout).unwrap(),
+    );
+    assert!(round_trip.status.success());
+
+    let checked = json_output(
+        &[
+            "convert-with-report",
+            "--input-format",
+            "mol2",
+            "--output-format",
+            "mol2",
+            "--policy",
+            "preserve_source",
+        ],
+        "@<TRIPOS>MOLECULE\nwater\n1 0 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n1 O 0 0 0 O.3 1 HOH 0\n",
+    );
+    assert_ne!(checked["status"], "refused");
 }

@@ -524,7 +524,14 @@ impl<'a> SphereGen<'a> {
 
     fn new(mol: &'a Molecule, center: AtomIdx, start: AtomIdx) -> Self {
         let mut queue = VecDeque::new();
-        queue.push_back((start, center, 1usize, vec![center, start]));
+        // `u32::MAX` is the virtual hydrogen/lone-pair sentinel. It has an
+        // atom key, but it is terminal and must never enter the molecular
+        // adjacency walk. A real explicit H is terminal for the same reason,
+        // so both representations compare identically after their first
+        // sphere.
+        if start.0 != u32::MAX {
+            queue.push_back((start, center, 1usize, vec![center, start]));
+        }
         Self {
             mol,
             center,
@@ -2733,34 +2740,8 @@ mod tests {
         assert_eq!(ec.unspecified, 1, "{ec:?}");
         assert_eq!(ec.total, 2, "{ec:?}");
     }
-
-    /// Regression for the square-planar-stereo PR's required CIP safety fix:
-    /// `tetrahedral_stereo_neighbors`/`assign_tetrahedral` gated on
-    /// `chirality == Chirality::None` (equality), not an exhaustive match --
-    /// adding `Chirality::SquarePlanar` did NOT force a compile error there, so
-    /// an `@SP1`-tagged 4-neighbor Pt center would have silently fallen through
-    /// into the tetrahedral R/S algorithm and produced a bogus CIP code. Must
-    /// return no code at all, not a wrong one.
-    #[test]
-    fn square_planar_center_never_gets_a_bogus_tetrahedral_cip_code() {
-        let mol = parse("N->[Pt@SP1](<-N)(Cl)Cl").unwrap();
-        let pt = (0..mol.atom_count())
-            .map(|i| chematic_core::AtomIdx(i as u32))
-            .find(|&i| mol.atom(i).element == chematic_core::Element::PT)
-            .expect("has a Pt atom");
-        assert!(
-            matches!(mol.atom(pt).chirality, Chirality::SquarePlanar(_)),
-            "fixture must actually carry a SquarePlanar tag"
-        );
-        assert_eq!(
-            tetrahedral_stereo_neighbors(&mol, pt),
-            None,
-            "a square-planar center must never resolve a tetrahedral CIP code"
-        );
-        assert_eq!(
-            assign_cip(&mol).get(pt),
-            None,
-            "assign_cip must not assign any code to a square-planar center"
-        );
-    }
 }
+
+#[cfg(test)]
+#[path = "cip_square_planar_tests.rs"]
+mod square_planar_tests;

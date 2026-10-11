@@ -1469,45 +1469,8 @@ fn ring_bonds(mol: &Molecule) -> Vec<bool> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn tokenizer_orders_ring_closures_last_by_number() {
-        let atoms = tokenize_template("C[C@@H]1CC[C@H](O)CC1").unwrap();
-        assert_eq!(atoms[1].order, vec![0, 2, 7]);
-        assert_eq!(atoms[1].tag, Some(false));
-        assert_eq!(atoms[4].order, vec![3, 5, 6]);
-        assert_eq!(atoms[4].tag, Some(false));
-    }
-
-    #[test]
-    fn tokenizer_h_only_in_simple_spelling() {
-        assert_eq!(
-            tokenize_template("[C@@H](N)(C)O").unwrap()[0].tag,
-            Some(false)
-        );
-        assert_eq!(
-            tokenize_template("[C@@;H1:2](N)(C)O").unwrap()[0].tag,
-            Some(true)
-        );
-        assert_eq!(
-            tokenize_template("N[C@@H:2](C)O").unwrap()[1].tag,
-            Some(true)
-        );
-        assert_eq!(
-            tokenize_template("[C@@H:2](N)(C)O").unwrap()[0].map,
-            Some(2)
-        );
-    }
-
-    #[test]
-    fn count_swaps_matches_rdkit() {
-        assert_eq!(count_swaps(&[0, 1, 2, 3], &[1, 0, 2, 3]), Some(1));
-        assert_eq!(count_swaps(&[0, 1, 2, 3], &[1, 2, 3, 0]), Some(3));
-        assert_eq!(count_swaps(&[0, 1, 2, 3], &[1, 2, 0, 3]), Some(2));
-    }
-}
+#[path = "rdkit_stereo_tests.rs"]
+mod tests;
 
 #[cfg(test)]
 mod fallback_boundary_contract_tests {

@@ -3,11 +3,285 @@ use super::*;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::etkdg_knowledge::FourierTorsionTerm;
     use crate::minimize::minimize_with_policy_gated;
     use chematic_smiles::parse;
 
     fn config_none() -> PipelineV2Config {
         PipelineV2Config::minimal(ForceFieldPolicy::None)
+    }
+
+    #[test]
+    fn pipeline_run_records_every_stage_and_enforces_budget() {
+        let config = config_none();
+        let mut run = PipelineRun::new(&config);
+        for (index, stage) in [
+            PipelineStage::ValidateConfig,
+            PipelineStage::TorsionKnowledge,
+            PipelineStage::MacrocycleBoundAdjustment,
+            PipelineStage::DistanceGeometry,
+            PipelineStage::TorsionEnergyEvaluation,
+            PipelineStage::TorsionOptimization,
+            PipelineStage::StereoVerifyBefore,
+            PipelineStage::StereoRepair,
+            PipelineStage::StereoVerifyAfterRepair,
+            PipelineStage::ForceFieldMinimization,
+            PipelineStage::FinalStereoVerify,
+            PipelineStage::FinalGeometryValidationStage,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            run.record_stage(stage, index as u64 + 1);
+        }
+        assert_eq!(run.timings.torsion_knowledge_ms, 2);
+        assert_eq!(run.timings.bound_adjustment_ms, 3);
+        assert_eq!(run.timings.distance_geometry_ms, 4);
+        assert_eq!(run.timings.torsion_energy_eval_ms, 5);
+        assert_eq!(run.timings.torsion_optimization_ms, 6);
+        assert_eq!(run.timings.stereo_verify_before_ms, 7);
+        assert_eq!(run.timings.stereo_repair_ms, 8);
+        assert_eq!(run.timings.stereo_verify_after_repair_ms, 9);
+        assert_eq!(run.timings.force_field_ms, 10);
+        assert_eq!(run.timings.final_stereo_verify_ms, 11);
+        assert_eq!(run.timings.final_validation_ms, 12);
+
+        let mut timed = config_none();
+        timed.total_timeout_ms = Some(0);
+        let mut run = PipelineRun::new(&timed);
+        let failure = run
+            .check_timeout(PipelineStage::ValidateConfig)
+            .expect_err("zero budget must fail closed");
+        assert_eq!(failure.stage, PipelineStage::ValidateConfig);
+        assert!(matches!(failure.cause, PipelineV2FailureCause::Timeout));
+    }
+
+    #[test]
+    fn retry_configuration_is_deterministic_and_budgeted() {
+        let mut config = config_none();
+        config.embed.random_seed = 17;
+        config.total_timeout_ms = Some(100);
+        let retry = retry_config(&config, 2, 40).expect("remaining budget");
+        assert_eq!(retry.total_timeout_ms, Some(60));
+        assert_ne!(retry.embed.random_seed, config.embed.random_seed);
+        assert!(retry_config(&config, 1, 101).is_none());
+
+        config.total_timeout_ms = None;
+        assert_eq!(
+            retry_config(&config, 1, u64::MAX).unwrap().total_timeout_ms,
+            None
+        );
+
+        let mut run = PipelineRun::new(&config);
+        let stereo_failure = run.fail(
+            PipelineV2FailureCause::FinalStereoViolation,
+            PipelineStage::FinalStereoVerify,
+        );
+        assert!(!retries_final_stereo_violation(&config, &stereo_failure));
+        config.stereo_policy = StereoPolicy::RepairAndVerify;
+        assert!(retries_final_stereo_violation(&config, &stereo_failure));
+    }
+
+    #[test]
+    fn typed_stage_failures_preserve_partial_evidence() {
+        let mol = parse("CCCC").unwrap();
+        let mut config = config_none();
+
+        let mut run = PipelineRun::new(&config);
+        let invalid_bound = DistanceBoundAdjustment {
+            atom1: AtomIdx(0),
+            atom2: AtomIdx(1),
+            lower: 3.0,
+            upper: 1.0,
+        };
+        let failure = run_distance_geometry(&mol, &config, &[invalid_bound], &mut run)
+            .expect_err("inverted bounds must fail closed");
+        assert!(matches!(
+            failure.cause,
+            PipelineV2FailureCause::BoundAdjustmentFailed
+        ));
+        assert_eq!(failure.stage, PipelineStage::MacrocycleBoundAdjustment);
+        assert!(failure.embed_stats.is_some());
+
+        config.embed.use_exp_torsions = true;
+        let knowledge = KnowledgeStage {
+            torsion: TorsionKnowledgeReport {
+                potentials: vec![TorsionPotential {
+                    atoms: [AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)],
+                    central_bond: (AtomIdx(1), AtomIdx(2)),
+                    source: TorsionKnowledgeSource::StandardExperimental,
+                    rule_id: "coverage:butane".into(),
+                    terms: vec![FourierTorsionTerm::from_rdkit(1, 1, 1.0)],
+                    ring_size: None,
+                }],
+                ..TorsionKnowledgeReport::default()
+            },
+            bounds: None,
+        };
+        let wrong_size = Coords3D::new_zeroed(1);
+
+        let mut energy_run = PipelineRun::new(&config);
+        let failure = evaluate_initial_torsions(&mol, &wrong_size, &knowledge, &mut energy_run)
+            .expect_err("coordinate mismatch must be typed");
+        assert!(matches!(
+            failure.cause,
+            PipelineV2FailureCause::TorsionKnowledge(
+                TorsionKnowledgeError::CoordsAtomCountMismatch
+            )
+        ));
+        assert_eq!(failure.stage, PipelineStage::TorsionEnergyEvaluation);
+
+        let mut optimize_run = PipelineRun::new(&config);
+        let failure =
+            optimize_pipeline_torsions(&mol, &config, &knowledge, wrong_size, &mut optimize_run)
+                .expect_err("optimizer must preserve the same typed mismatch");
+        assert!(matches!(
+            failure.cause,
+            PipelineV2FailureCause::TorsionKnowledge(
+                TorsionKnowledgeError::CoordsAtomCountMismatch
+            )
+        ));
+        assert_eq!(failure.stage, PipelineStage::TorsionOptimization);
+    }
+
+    #[test]
+    fn final_geometry_and_strict_stereo_fail_closed() {
+        let mol = parse("CC").unwrap();
+        let mut non_finite = Coords3D::new_zeroed(mol.atom_count());
+        non_finite.set(
+            AtomIdx(1),
+            crate::coords::Point3 {
+                x: f64::NAN,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        let final_stereo = FinalStereoStage {
+            coords: non_finite,
+            verification: StereoVerification::default(),
+            repair: None,
+        };
+        let mut run = PipelineRun::new(&config_none());
+        let failure = validate_final_geometry(
+            &mol,
+            &TorsionKnowledgeReport::default(),
+            None,
+            &final_stereo,
+            &mut run,
+        )
+        .expect_err("non-finite final coordinates must fail");
+        assert!(matches!(
+            failure.cause,
+            PipelineV2FailureCause::FinalGeometryInvalid
+        ));
+
+        let chiral = parse("C[C@H](F)Cl").unwrap();
+        let coords = Coords3D::new_zeroed(chiral.atom_count());
+        let force_field = minimize_with_policy_gated(
+            &chiral,
+            coords,
+            ForceFieldPolicy::None,
+            &MinimizeConfig::default(),
+            false,
+            false,
+        )
+        .unwrap();
+        let molecules = MoleculeContext {
+            original: &chiral,
+            working: &chiral,
+            expanded: false,
+            original_atom_count: chiral.atom_count(),
+        };
+        let mut strict = config_none();
+        strict.stereo_policy = StereoPolicy::VerifyOnly;
+        strict.fail_on_unevaluable_stereo = true;
+        let force_field = ForceFieldStage {
+            result: force_field,
+            minimizer: Mmff94Minimizer::Bfgs,
+            reconcile_stereo: false,
+        };
+        let mut run = PipelineRun::new(&strict);
+        let failure = match finalize_stereo(&molecules, &strict, &force_field, &mut run) {
+            Err(failure) => failure,
+            Ok(_) => panic!("degenerate declared stereo must be refused under strict policy"),
+        };
+        assert!(matches!(
+            failure.cause,
+            PipelineV2FailureCause::StereoUnevaluableUnderStrictPolicy
+        ));
+    }
+
+    #[test]
+    fn force_field_and_final_torsion_errors_remain_typed() {
+        let mol = parse("CCCC").unwrap();
+        let mut bad_coords = Coords3D::new_zeroed(mol.atom_count());
+        bad_coords.set(
+            AtomIdx(0),
+            crate::coords::Point3 {
+                x: f64::NAN,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        let stereo = StereoStage {
+            coords: bad_coords,
+            before: StereoVerification::default(),
+            repair: None,
+            after_repair: StereoVerification::default(),
+        };
+        let mut config = config_none();
+        config.force_field_policy = ForceFieldPolicy::Mmff94BondAngleStrict;
+        let mut run = PipelineRun::new(&config);
+        let failure = match run_force_field(
+            &MoleculeContext {
+                original: &mol,
+                working: &mol,
+                expanded: false,
+                original_atom_count: mol.atom_count(),
+            },
+            &config,
+            &stereo,
+            &mut run,
+        ) {
+            Err(failure) => failure,
+            Ok(_) => panic!("non-finite force-field input must fail"),
+        };
+        assert!(matches!(
+            failure.cause,
+            PipelineV2FailureCause::ForceField(_)
+        ));
+        assert_eq!(failure.stage, PipelineStage::ForceFieldMinimization);
+
+        let invalid_torsion = TorsionPotential {
+            atoms: [AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(99)],
+            central_bond: (AtomIdx(1), AtomIdx(2)),
+            source: TorsionKnowledgeSource::StandardExperimental,
+            rule_id: "coverage:invalid-topology".into(),
+            terms: vec![FourierTorsionTerm::from_rdkit(1, 1, 1.0)],
+            ring_size: None,
+        };
+        let final_stereo = FinalStereoStage {
+            coords: Coords3D::new_zeroed(mol.atom_count()),
+            verification: StereoVerification::default(),
+            repair: None,
+        };
+        let mut run = PipelineRun::new(&config_none());
+        let failure = validate_final_geometry(
+            &mol,
+            &TorsionKnowledgeReport {
+                potentials: vec![invalid_torsion],
+                ..TorsionKnowledgeReport::default()
+            },
+            None,
+            &final_stereo,
+            &mut run,
+        )
+        .expect_err("invalid torsion topology must fail final validation");
+        assert!(matches!(
+            failure.cause,
+            PipelineV2FailureCause::FinalGeometryInvalid
+        ));
+        assert_eq!(failure.stage, PipelineStage::FinalGeometryValidationStage);
     }
 
     // -----------------------------------------------------------------------

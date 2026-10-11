@@ -254,6 +254,12 @@ def test_run_smirks_checked_does_not_hide_filtered_product():
     assert report["accepted_matches"] >= 1
     assert report["valence_rejected_matches"] >= 1
     assert report["products"] == []
+    diagnostic = report["rejection_diagnostics"][0][0]
+    assert diagnostic["reason"] == "valence"
+    assert diagnostic["atoms"][0]["atom_map"] == 1
+    assert diagnostic["atoms"][0]["element"] == "N"
+    assert diagnostic["atoms"][0]["observed_valence"] == 4
+    assert diagnostic["atoms"][0]["max_allowed_valence"] == 3
 
 
 def test_run_smirks_checked_rdkit_profile_follows_rdkit_reaction_stereo():

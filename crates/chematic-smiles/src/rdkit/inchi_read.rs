@@ -76,16 +76,25 @@ fn assign_bond_dirs(mol: &mut Mol, z: &[(usize, usize)], e: &[(usize, usize)]) -
     while !pending.is_empty() || !queue.is_empty() {
         let Some((cur, dir)) = queue.pop_front() else {
             let first = *pending.iter().next().expect("pending");
-            queue.push_back((first, BondDir::EndUpRight));
+            let seed = if mol.bonds[first].dir == BondDir::None {
+                BondDir::EndUpRight
+            } else {
+                mol.bonds[first].dir
+            };
+            queue.push_back((first, seed));
             continue;
         };
         if mol.bonds[cur].dir != BondDir::None {
             if mol.bonds[cur].dir != dir {
                 return false;
             }
-            continue;
+        } else {
+            mol.bonds[cur].dir = dir;
         }
-        mol.bonds[cur].dir = dir;
+        // A direction supplied by the InChI adapter already satisfies this
+        // bond, but its relative constraints still need to propagate to the
+        // rest of the component. Leaving it in `pending` would seed the same
+        // bond forever once the propagation queue empties.
         pending.remove(&cur);
         for (rules, d) in [(z, dir), (e, dir.flipped())] {
             for &(a, b) in rules {
@@ -1164,6 +1173,13 @@ mod tests {
 
         let mut conflict = graph(&[(6, 0); 3], &[(0, 1, S), (1, 2, S)]);
         assert!(!assign_bond_dirs(&mut conflict, &[(0, 1)], &[(0, 1)]));
+
+        let mut preset = graph(&[(6, 0); 3], &[(0, 1, S), (1, 2, S)]);
+        preset.bonds[0].dir = BondDir::EndUpRight;
+        preset.bonds[1].dir = BondDir::EndDownRight;
+        assert!(assign_bond_dirs(&mut preset, &[], &[(0, 1)]));
+        preset.bonds[1].dir = BondDir::EndUpRight;
+        assert!(!assign_bond_dirs(&mut preset, &[], &[(0, 1)]));
     }
 
     #[test]
@@ -1218,88 +1234,242 @@ mod tests {
     }
 
     #[test]
-    fn inchi_output_preserves_isotopes_radicals_and_stereo() {
-        let alkene = [
-            InchiOutputAtom {
-                element: "C".into(),
-                bonds: vec![(1, 1, 0)],
-                num_iso_h: [3, 0, 0, 0],
-                ..Default::default()
-            },
-            InchiOutputAtom {
-                element: "C".into(),
-                bonds: vec![(0, 1, 0), (2, 2, 0)],
-                num_iso_h: [1, 0, 0, 0],
-                ..Default::default()
-            },
-            InchiOutputAtom {
-                element: "C".into(),
-                bonds: vec![(1, 2, 0), (3, 1, 0)],
-                num_iso_h: [1, 0, 0, 0],
-                ..Default::default()
-            },
-            InchiOutputAtom {
-                element: "C".into(),
-                bonds: vec![(2, 1, 0)],
-                num_iso_h: [3, 0, 0, 0],
-                ..Default::default()
-            },
-        ];
-        let stereo = [InchiOutputStereo0D {
-            neighbor: [0, 1, 2, 3],
-            central_atom: -1,
-            stereo_type: INCHI_STEREO_TYPE_DOUBLE_BOND,
-            parity: INCHI_PARITY_ODD,
-        }];
-        let mol = rdkit_molecule_from_inchi_output(&alkene, &stereo).unwrap();
-        let written = crate::canonical_smiles(&mol);
-        assert!(written.contains('/') || written.contains('\\'));
+    fn inchi_cleanup_exercises_each_charged_valence_family() {
+        // _Valence4NCleanUp1: the exact C1=NN=[N-]=N1 topology.
+        let mut n4_ring = graph(
+            &[(6, 0), (7, 0), (7, -1), (7, 0), (7, 0)],
+            &[(0, 1, S), (1, 2, D), (2, 3, D), (3, 4, S), (4, 0, D)],
+        );
+        assert!(v4n_1(&mut n4_ring, 2));
+        assert_eq!(n4_ring.bonds.iter().filter(|b| b.bt == D).count(), 2);
 
-        let isotopic = [InchiOutputAtom {
-            element: "C".into(),
-            isotopic_mass: (ISOTOPIC_SHIFT_FLAG + 1) as i16,
-            radical: 3,
-            num_iso_h: [1, 0, 1, 0],
-            ..Default::default()
-        }];
-        let mol = rdkit_molecule_from_inchi_output(&isotopic, &[]).unwrap();
-        assert_eq!(mol.atom_count(), 2);
-        assert!(mol.atoms().any(|(_, a)| a.isotope == Some(2)));
-    }
+        let mut n4_transfer = graph(&[(7, -1), (7, 0)], &[(0, 1, D)]);
+        assert!(v4n_2(&mut n4_transfer, 0));
+        assert_eq!(
+            (n4_transfer.atoms[0].charge, n4_transfer.atoms[1].charge),
+            (0, -1)
+        );
 
-    #[test]
-    fn inchi_output_rejects_bond_stereo_and_bad_tetrahedral_neighbors() {
-        let bad_bond_stereo = [
-            InchiOutputAtom {
-                element: "C".into(),
-                bonds: vec![(1, 1, 1)],
-                ..Default::default()
-            },
-            InchiOutputAtom {
-                element: "C".into(),
-                ..Default::default()
-            },
-        ];
-        assert!(rdkit_molecule_from_inchi_output(&bad_bond_stereo, &[]).is_err());
+        let mut n5_positive = graph(&[(7, 0), (7, 1)], &[(0, 1, D)]);
+        assert!(v5n_1(&mut n5_positive, 0));
+        assert_eq!(
+            (n5_positive.atoms[0].charge, n5_positive.atoms[1].charge),
+            (1, 0)
+        );
 
-        let tetra = [
-            InchiOutputAtom {
-                element: "C".into(),
-                bonds: vec![(1, 1, 0)],
-                ..Default::default()
-            },
-            InchiOutputAtom {
-                element: "F".into(),
-                bonds: vec![(0, 1, 0)],
-                ..Default::default()
-            },
+        let mut n5_neutral = graph(&[(7, 0), (7, 0)], &[(0, 1, D)]);
+        assert!(v5n_3(&mut n5_neutral, 0));
+        assert_eq!(
+            (n5_neutral.atoms[0].charge, n5_neutral.atoms[1].charge),
+            (1, -1)
+        );
+
+        let mut n5_silicon = graph(
+            &[(7, 0), (14, -1), (14, -1), (6, 0)],
+            &[(0, 1, D), (0, 2, D), (0, 3, S)],
+        );
+        assert!(v5n_4(&mut n5_silicon, 0));
+        assert!(n5_silicon.atoms[1..=2].iter().all(|a| a.charge == 0));
+
+        let mut n5_oxygen = graph(&[(7, 0), (8, 0)], &[(0, 1, D)]);
+        assert!(v5n_5(&mut n5_oxygen, 0, 8));
+        assert_eq!(n5_oxygen.atoms[0].charge, 1);
+        assert_eq!(n5_oxygen.atoms[1].charge, -1);
+
+        let mut n5_carbon = graph(&[(7, 0), (6, 0)], &[(0, 1, D)]);
+        assert!(v5n_b(&mut n5_carbon, 0));
+        assert_eq!(
+            (n5_carbon.atoms[0].charge, n5_carbon.atoms[1].charge),
+            (1, -1)
+        );
+
+        let mut n5_ring_rewrite = graph(
+            &[(6, 0), (6, 0), (7, 0), (6, 0), (6, 0), (7, 0), (6, 0)],
+            &[
+                (0, 1, S),
+                (1, 2, D),
+                (2, 3, D),
+                (3, 4, S),
+                (4, 5, S),
+                (5, 0, D),
+                (2, 6, S),
+            ],
+        );
+        assert!(v5n_6(&mut n5_ring_rewrite, 2));
+        assert_eq!(n5_ring_rewrite.atoms[2].charge, 1);
+
+        let mut n5_oxygen_transfer = graph(
+            &[
+                (6, 0),
+                (6, 0),
+                (7, 0),
+                (7, 0),
+                (6, 0),
+                (8, 0),
+                (6, 0),
+                (6, 0),
+                (8, 0),
+            ],
+            &[
+                (0, 1, S),
+                (1, 2, D),
+                (2, 3, D),
+                (3, 4, S),
+                (4, 5, S),
+                (5, 0, S),
+                (2, 6, S),
+                (1, 7, S),
+                (7, 8, D),
+            ],
+        );
+        assert!(v5n_7(&mut n5_oxygen_transfer, 2));
+        assert_eq!(n5_oxygen_transfer.atoms[8].charge, -1);
+
+        let mut n5_five_ring_nnn = graph(
+            &[
+                (6, 0),
+                (7, 0),
+                (6, 0),
+                (7, 0),
+                (7, 0),
+                (7, 0),
+                (6, 0),
+                (6, 0),
+                (6, 0),
+            ],
+            &[
+                (0, 1, S),
+                (1, 2, D),
+                (2, 3, S),
+                (3, 4, D),
+                (4, 0, S),
+                (5, 0, D),
+                (5, 6, S),
+                (5, 7, S),
+                (5, 8, S),
+            ],
+        );
+        assert!(v5n_8(&mut n5_five_ring_nnn, 5));
+        assert_eq!(n5_five_ring_nnn.atoms[5].charge, 1);
+        assert_eq!(n5_five_ring_nnn.atoms[1].charge, -1);
+
+        let mut n5_five_ring_nn = graph(
+            &[
+                (6, 0),
+                (7, 0),
+                (7, 0),
+                (6, 0),
+                (6, 0),
+                (7, 0),
+                (6, 0),
+                (6, 0),
+                (6, 0),
+            ],
+            &[
+                (0, 1, S),
+                (1, 2, D),
+                (2, 3, S),
+                (3, 4, D),
+                (4, 0, S),
+                (5, 0, D),
+                (5, 6, S),
+                (5, 7, S),
+                (5, 8, S),
+            ],
+        );
+        assert!(v5n_9(&mut n5_five_ring_nn, 5));
+        assert_eq!(n5_five_ring_nn.atoms[5].charge, 1);
+        assert_eq!(n5_five_ring_nn.atoms[2].charge, -1);
+
+        let mut n5_remote_azo = graph(
+            &[(7, 0), (6, 0), (6, 0), (6, 0), (6, 0), (7, 0), (7, 0)],
+            &[
+                (0, 1, D),
+                (0, 2, D),
+                (0, 3, S),
+                (1, 4, S),
+                (4, 5, D),
+                (5, 6, D),
+            ],
+        );
+        assert!(v5n_a(&mut n5_remote_azo, 0));
+        assert_eq!(n5_remote_azo.atoms[0].charge, 1);
+
+        // S(VII) families use the complete explicit valence, not just the
+        // bond being moved. Keep the spectators so the guards are realistic.
+        let mut sulfonium = graph(
+            &[(16, -1), (6, 0), (8, 0), (8, 0), (8, 0)],
+            &[(0, 1, S), (0, 2, D), (0, 3, D), (0, 4, D)],
+        );
+        assert!(v7s_1(&mut sulfonium, 0));
+        assert_eq!(sulfonium.atoms[0].charge, 0);
+
+        let mut sulfur_to_n = graph(
+            &[(16, -1), (7, 0), (8, 0), (8, 0), (6, 0)],
+            &[(0, 1, D), (0, 2, D), (0, 3, D), (0, 4, S)],
+        );
+        assert!(v7s_3(&mut sulfur_to_n, 0));
+        assert_eq!(
+            (sulfur_to_n.atoms[0].charge, sulfur_to_n.atoms[1].charge),
+            (0, -1)
+        );
+
+        let mut perchlorate = graph(
+            &[(17, -1), (8, 0), (8, 0), (8, 0), (8, 0)],
+            &[(0, 1, D), (0, 2, D), (0, 3, D), (0, 4, D)],
+        );
+        assert!(v8cl_1(&mut perchlorate, 0));
+        assert_eq!(perchlorate.atoms[0].charge, 3);
+
+        let mut chlorine_oxide = graph(
+            &[(17, 1), (8, -1), (8, 0), (6, 0)],
+            &[(0, 1, S), (0, 2, D), (0, 3, T)],
+        );
+        assert!(v5cl_1(&mut chlorine_oxide, 0));
+        assert_eq!(
+            (
+                chlorine_oxide.atoms[0].charge,
+                chlorine_oxide.atoms[1].charge
+            ),
+            (0, 0)
+        );
+
+        let mut chlorine_sulfide = graph(&[(17, 0), (16, 0)], &[(0, 1, T)]);
+        assert!(v3cl_1(&mut chlorine_sulfide, 0));
+        assert_eq!(chlorine_sulfide.bonds[0].bt, S);
+
+        let mut n5_triple = graph(&[(7, 0), (6, 0), (7, -1)], &[(0, 1, T), (1, 2, S)]);
+        assert!(v5n_2(&mut n5_triple, 0));
+        assert_eq!(n5_triple.bonds[0].bt, S);
+        assert_eq!(n5_triple.bonds[1].bt, D);
+
+        let mut sulfur_triple = graph(
+            &[(16, -1), (6, 0), (7, 0), (8, 0), (8, 0), (6, 0)],
+            &[(0, 1, D), (1, 2, T), (0, 3, D), (0, 4, D), (0, 5, S)],
+        );
+        assert!(v7s_2(&mut sulfur_triple, 0));
+        assert_eq!(sulfur_triple.atoms[0].charge, 0);
+
+        let mut sulfur_long = graph(
+            &[(16, -1), (7, 0), (8, 0), (8, 0), (6, 0)],
+            &[(0, 1, D), (0, 2, D), (0, 3, D), (0, 4, S)],
+        );
+        assert!(v8s_1(&mut sulfur_long, 0));
+        assert_eq!(sulfur_long.atoms[1].charge, -1);
+
+        // Every cleanup family is fail-closed on an unrelated ordinary atom.
+        let ordinary = graph(&[(6, 0)], &[]);
+        let cleanups: [fn(&mut Mol, usize) -> bool; 19] = [
+            v4n_1, v4n_2, v5n_1, v5n_2, v5n_3, v5n_4, v5n_6, v5n_7, v5n_8, v5n_9, v5n_a, v5n_b,
+            v7s_1, v7s_2, v7s_3, v8s_1, v8cl_1, v5cl_1, v3cl_1,
         ];
-        let stereo = [InchiOutputStereo0D {
-            neighbor: [0, 1, 2, 3],
-            central_atom: 0,
-            stereo_type: INCHI_STEREO_TYPE_TETRAHEDRAL,
-            parity: INCHI_PARITY_EVEN,
-        }];
-        assert!(rdkit_molecule_from_inchi_output(&tetra, &stereo).is_err());
+        for cleanup in cleanups {
+            let mut candidate = ordinary.clone();
+            assert!(!cleanup(&mut candidate, 0));
+        }
     }
 }
+
+#[cfg(test)]
+#[path = "inchi_read_output_tests.rs"]
+mod output_tests;

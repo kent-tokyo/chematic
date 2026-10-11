@@ -33,6 +33,10 @@ serde_json = "1"
 [lib]
 crate-type = ["rlib", "cdylib"]
 
+[[test]]
+name = "public_api_stress"
+required-features = ["native-inchi"]
+
 [[example]]
 name = "ez_stash_inchi_snapshot"
 required-features = ["native-inchi"]

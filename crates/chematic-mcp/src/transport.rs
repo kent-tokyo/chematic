@@ -370,4 +370,46 @@ mod tests {
         let r = conn.handle_line(&deep).unwrap();
         assert_eq!(r["error"]["code"], protocol::INVALID_REQUEST);
     }
+
+    #[test]
+    fn connection_reports_parse_shape_and_value_limit_errors() {
+        let mut conn = Connection::new();
+        let parse = conn.handle_line("{").unwrap();
+        assert_eq!(parse["error"]["code"], protocol::PARSE_ERROR);
+
+        let missing_method = conn
+            .handle_line(r#"{"jsonrpc":"2.0","id":1,"params":{}}"#)
+            .unwrap();
+        assert_eq!(missing_method["error"]["code"], protocol::INVALID_REQUEST);
+
+        let huge_array = json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "ping",
+            "params": {"items": vec![0; protocol::MAX_ARRAY_LEN + 1]},
+        });
+        let limited = conn.handle_line(&huge_array.to_string()).unwrap();
+        assert_eq!(limited["error"]["code"], protocol::INVALID_REQUEST);
+
+        let mut malformed_meta = json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "server/discover",
+            "params": {"_meta": {}},
+        });
+        malformed_meta["params"]["_meta"][protocol::META_PROTOCOL_VERSION] =
+            json!(protocol::SUPPORTED_MODERN_VERSIONS[0]);
+        let invalid = conn.handle_line(&malformed_meta.to_string()).unwrap();
+        assert_eq!(invalid["error"]["code"], protocol::INVALID_PARAMS);
+    }
+
+    #[test]
+    fn blank_lines_and_notifications_produce_no_response() {
+        let mut conn = Connection::new();
+        assert!(conn.handle_line("  \n").is_none());
+        assert!(
+            conn.handle_line(r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#)
+                .is_none()
+        );
+    }
 }

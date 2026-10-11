@@ -60,3 +60,21 @@ pub(crate) fn avalon_molecule_from_molecule(
     let block = rdkit_mol_block(mol)?;
     Ok(avalon_molecule_from_rdkit_view(&block))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn avalon_error_wraps_and_displays_rdkit_failure() {
+        let inner = RdkitSmilesError::Unsupported("query atom".into());
+        let error = RdkitAvalonError::from(inner.clone());
+        assert_eq!(error, RdkitAvalonError::Rdkit(inner));
+        assert_eq!(
+            error.to_string(),
+            "RDKit Avalon fingerprint: RDKit-compatible SMILES: unsupported input: query atom"
+        );
+        let source: &dyn std::error::Error = &error;
+        assert!(source.source().is_none());
+    }
+}

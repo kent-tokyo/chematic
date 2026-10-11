@@ -150,3 +150,14 @@ pub(crate) fn record_product_set() {
 #[cfg(not(feature = "perf-instrumentation"))]
 #[inline(always)]
 pub(crate) fn record_product_set() {}
+
+#[cfg(all(test, not(feature = "perf-instrumentation")))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn disabled_counters_stay_zero() {
+        reset();
+        assert_eq!(snapshot(), PerfCounters::default());
+    }
+}

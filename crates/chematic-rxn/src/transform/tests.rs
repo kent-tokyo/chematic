@@ -3184,3 +3184,31 @@ fn atom_tag_survives_apply_atom_map_does_not() {
             .any(|(i, a)| product.atom_tag(i).is_none() && a.element.atomic_number() == 8)
     );
 }
+
+#[test]
+fn native_detailed_report_exposes_typed_rejection_without_returning_product() {
+    let reactant = parse("C[C@H](O)c1ccccc1").unwrap();
+    let report = run_reactants_traced_with_rejection_diagnostics(
+        "[C:1]-[CH:2](-[OH:3])-[c:4]>>[C:1]-[C:2](=[O:3])-[c:4]",
+        &[&reactant],
+        &ReactionTransformLimits { max_matches: 100 },
+    )
+    .unwrap();
+
+    assert_eq!(report.report.diagnostics.accepted_matches, 1);
+    assert_eq!(report.report.diagnostics.applied_products, 0);
+    assert_eq!(report.report.diagnostics.valence_rejected_matches, 1);
+    assert!(report.report.products.is_empty());
+    assert_eq!(report.rejection_diagnostics.len(), 1);
+    let rejected = &report.rejection_diagnostics[0];
+    assert_eq!(rejected.len(), 1);
+    assert!(!rejected[0].accepted);
+    assert_eq!(rejected[0].reason, Some(ProductRejectionReason::Valence));
+    assert!(!rejected[0].atoms.is_empty());
+    assert!(
+        rejected[0]
+            .atoms
+            .iter()
+            .any(|atom| atom.template_map == Some(2))
+    );
+}

@@ -33,6 +33,18 @@ pub struct TracedReactionTransformReport {
     pub diagnostics: ReactionTransformDiagnostics,
 }
 
+/// Native-profile report with typed details for product sets rejected during
+/// sanitization.
+///
+/// Rejected products are never returned in [`Self::report`]. The diagnostics
+/// are ordered by rejected match, then by product position within that match.
+/// This additive type keeps the existing aggregate report's struct-literal
+/// shape stable for downstream Rust callers.
+pub struct NativeDetailedReactionTransformReport {
+    pub report: TracedReactionTransformReport,
+    pub rejection_diagnostics: Vec<Vec<ProductSanitizationDiagnostic>>,
+}
+
 /// RDKit-profile report including product sets rejected during sanitization.
 ///
 /// Kept separate from [`TracedReactionTransformReport`] so adding RDKit-only
@@ -91,6 +103,21 @@ pub fn run_reactants_with_diagnostics(
     limits: &ReactionTransformLimits,
 ) -> Result<ReactionTransformReport, TransformError> {
     PreparedReaction::shared(smirks)?.run_reactants_with_diagnostics(reactants, limits)
+}
+
+/// Apply a native-profile SMIRKS template and retain typed details for product
+/// sets rejected during sanitization.
+///
+/// Accepted products retain atom provenance. Rejected products are not exposed
+/// as successful reactions; only bounded, reliable rejection evidence is
+/// returned alongside the aggregate accounting.
+pub fn run_reactants_traced_with_rejection_diagnostics(
+    smirks: &str,
+    reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
+) -> Result<NativeDetailedReactionTransformReport, TransformError> {
+    PreparedReaction::shared(smirks)?
+        .run_reactants_traced_with_rejection_diagnostics(reactants, limits)
 }
 
 /// Like [`run_reactants`] but **does not carry through substituents**.

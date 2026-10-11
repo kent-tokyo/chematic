@@ -137,6 +137,39 @@ mod tests {
     use crate::reaction::parse_reaction;
 
     #[test]
+    fn average_mass_table_covers_supported_elements_and_fallback() {
+        let expected = [
+            (1, 1.008),
+            (2, 4.003),
+            (3, 6.941),
+            (4, 9.012),
+            (5, 10.811),
+            (6, 12.011),
+            (7, 14.007),
+            (8, 15.999),
+            (9, 18.998),
+            (11, 22.990),
+            (12, 24.305),
+            (13, 26.982),
+            (14, 28.086),
+            (15, 30.974),
+            (16, 32.065),
+            (17, 35.453),
+            (19, 39.098),
+            (20, 40.078),
+            (26, 55.845),
+            (29, 63.546),
+            (30, 65.38),
+            (35, 79.904),
+            (53, 126.904),
+            (118, 118.0),
+        ];
+        for (atomic_number, mass) in expected {
+            assert_eq!(avg_mass(atomic_number), mass);
+        }
+    }
+
+    #[test]
     fn test_atom_economy_100_percent() {
         // A → A: all atoms end up in the product.
         let rxn = parse_reaction("CC>>CC").unwrap();
