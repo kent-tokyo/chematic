@@ -51,7 +51,6 @@
     "crates/chematic-smiles/src/rdkit/mod.rs": 1565,
     "crates/chematic-smiles/src/rdkit/pdb_read.rs": 1710,
     "crates/chematic-smiles/src/rdkit/rxn_smarts.rs": 1680,
-    "crates/chematic-wasm/src/format_io.rs": 2388,
     "crates/chematic-wasm/src/mol_io.rs": 1592,
     "crates/chematic-wasm/src/mol_reactions.rs": 2107
   },
