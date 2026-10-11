@@ -441,6 +441,7 @@ impl PreparedReaction {
                 }
                 Ok(ProductSetOutcome::Rejected(mut set, set_diagnostics)) => {
                     valence_rejected_matches += 1;
+                    rejection_diagnostics.push(set_diagnostics.clone());
                     if profile == Profile::Rdkit {
                         set.iter_mut().for_each(restore_sources);
                         rejected_products.push(
@@ -448,7 +449,6 @@ impl PreparedReaction {
                                 .zip(set_diagnostics.iter().map(|item| item.accepted))
                                 .collect(),
                         );
-                        rejection_diagnostics.push(set_diagnostics);
                     }
                 }
                 Err(reason) => return Ok(Err(reason)),
@@ -513,6 +513,47 @@ impl PreparedReaction {
             });
         }
         self.run_reactants_traced_with_diagnostics_impl(reactants, true, limits)
+    }
+
+    /// Apply this native template while retaining typed atom-level evidence
+    /// for every product set rejected during sanitization.
+    pub fn run_reactants_traced_with_rejection_diagnostics(
+        &self,
+        reactants: &[&Molecule],
+        limits: &ReactionTransformLimits,
+    ) -> Result<NativeDetailedReactionTransformReport, TransformError> {
+        crate::perf_counters::record_run_reactants_call();
+        let variants: Vec<&PreparedReaction> = match &self.variants {
+            Some(variants) => variants.iter().collect(),
+            None => vec![self],
+        };
+        let mut products = Vec::new();
+        let mut rejection_diagnostics = Vec::new();
+        let mut diagnostics = ReactionTransformDiagnostics {
+            accepted_matches: 0,
+            applied_products: 0,
+            valence_rejected_matches: 0,
+            truncated_matches: false,
+        };
+        for variant in variants {
+            let report = variant
+                .run_traced_profile(reactants, true, limits, Profile::Native)?
+                .unwrap_or_else(|_| unreachable!("the native profile never declines"));
+            diagnostics.accepted_matches += report.report.diagnostics.accepted_matches;
+            diagnostics.applied_products += report.report.diagnostics.applied_products;
+            diagnostics.valence_rejected_matches +=
+                report.report.diagnostics.valence_rejected_matches;
+            diagnostics.truncated_matches |= report.report.diagnostics.truncated_matches;
+            products.extend(report.report.products);
+            rejection_diagnostics.extend(report.rejection_diagnostics);
+        }
+        Ok(NativeDetailedReactionTransformReport {
+            report: TracedReactionTransformReport {
+                products,
+                diagnostics,
+            },
+            rejection_diagnostics,
+        })
     }
 
     /// Apply this compiled template and return diagnostics separately for

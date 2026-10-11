@@ -10,8 +10,21 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added native reaction rejection diagnostics to the checked Rust, Python,
+  and WASM APIs. Rejected products remain excluded from successful results,
+  while callers receive stable typed reasons and bounded atom context (#828).
+- Added `rgroup_decompose_columns_json` to WASM/Node. It returns the same
+  label-stable, input-aligned `Core`/`R1`/`R2` columns as the Rust and Python
+  APIs, preserves `null` for unmatched or absent rows, and throws stable
+  errors for invalid labels, attachments, and match limits (#829).
+
 ### Changed
 
+- Expanded Rust coverage discovery to every integration-test target so newly
+  added format, force-field, and interoperability tests cannot be omitted from
+  the Codecov lane by an outdated hand-maintained list.
 - Added a CI refactoring-debt ratchet for handwritten Rust files and functions.
   Existing chemistry-sensitive exceptions may shrink but cannot grow, while
   new code must stay within the documented file, function, and decision limits.

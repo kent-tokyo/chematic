@@ -708,8 +708,10 @@ fn execute_checked_reaction(
         };
     }
     chematic_rxn::PreparedReaction::shared(smirks)
-        .and_then(|prepared| prepared.run_reactants_traced_with_diagnostics(reactants, &limits))
-        .map(|report| (report, Vec::new(), Vec::new()))
+        .and_then(|prepared| {
+            prepared.run_reactants_traced_with_rejection_diagnostics(reactants, &limits)
+        })
+        .map(|detailed| (detailed.report, Vec::new(), detailed.rejection_diagnostics))
         .map_err(transform_error_refusal)
 }
 

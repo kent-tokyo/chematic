@@ -43,6 +43,11 @@ npm install @kent-tokyo/chematic
   `MolHandle.atom_pseudo_labels_json()` and immutable edits through
   `mol_with_atom_pseudo_label`; labels are bounded to `*`, `R`, and
   `R1..R9999`
+- Label-stable R-group decomposition through
+  `rgroup_decompose_columns_json(smilesJson, coreSmarts)`. The returned JSON
+  contains input-aligned `Core`, `R1`, `R2`, ... columns and uses `null` for
+  unmatched molecules or substituents absent from a matched row. The legacy
+  `rgroup_decompose_json` row API is unchanged.
 - PDBx/mmCIF, PQR, QCSchema JSON, ORCA input/output, Gaussian Cube, OpenDX,
   and LAMMPS data/dump I/O (JSON-based bindings; see `format_io.rs`)
 - Topological descriptors: Wiener index, Hall-Kier κ, χ connectivity indices, Bertz CT
@@ -50,6 +55,8 @@ npm install @kent-tokyo/chematic
 - 2D SVG depiction with CPK colors and atom/bond highlighting
 - SVG grid layout for multiple molecules
 - Reaction SMILES/SMIRKS parsing and transform
+  (`run_reactants_checked` includes typed native and RDKit-profile rejection
+  diagnostics without returning rejected products as successes)
 - Add/remove explicit hydrogens
 - `embed_pipeline_v2_json`: torsion-knowledge-aware 3D embedding + stereo
   verification/repair + policy-gated force field, mirroring the Python

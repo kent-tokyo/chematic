@@ -442,4 +442,94 @@ mod legacy_score_boundary_contract_tests {
         assert!(preferred > 0);
         assert!(unspecified > 0);
     }
+
+    #[test]
+    fn torsion_preferences_cover_documented_chemical_families() {
+        // One compact representative for each family documented by
+        // `get_torsion_preference`. Walking every directed four-atom path
+        // makes the check independent of parser atom order and verifies both
+        // traversal directions where the rule promises them.
+        let representatives = [
+            "CCCC",
+            "Cc1ccccc1CC",
+            "CN(C)C=O",
+            "CC(=O)OC",
+            "c1ccccc1-c2ccccc2",
+            "CC=CN(C)C",
+            "CC=CCl",
+            "C=CC(=O)C",
+            "c1ccccc1C(=O)C",
+            "CSC(=O)C",
+            "CNS(=O)(=O)C",
+            "CS(=O)C",
+            "CSSC",
+            "CCOC",
+            "CCN(C)C",
+            "CCC#N",
+            "CCP(C)C",
+            "NC(=O)N",
+            "COc1ccccc1",
+            "c1ccccc1[N+](=O)[O-]",
+            "CC=NN",
+            "CC=NO",
+            "NC(=O)C(=O)C",
+            "c1ccccc1CC",
+            "C=CCC",
+            "c1ccncc1-c2ccccc2",
+            "Cn1ccnc1",
+            "n1ccccc1C(=O)C",
+            "n1ccccc1C=C",
+            "CSc1ccccc1",
+            "COCC",
+            "c1ccccc1N(C)C",
+            "c1ccoc1-c2ccccc2",
+            "c1ccsc1-c2ccccc2",
+            "Cc1ccoc1",
+            "Cc1ccsc1",
+            "O=C(c1ccoc1)C",
+            "O1CCNCC1",
+            "N1CCNCC1",
+            "c1ccccc1C=C",
+            "C=CSC",
+            "C=CN(C)C",
+            "CCC(=O)C",
+            "n1ccccc1SC",
+            "n1ccccc1OC",
+            "c1ccsc1-c2ccccn2",
+            "c1ccoc1-c2ccccn2",
+            "COP(=O)(O)O",
+            "OCCO",
+            "CC=CC=C",
+            "CC(=O)C(=O)C",
+            "c1ccccc1Cl",
+            "CP(=O)(OC)OC",
+            "CCN=NC",
+            "CCN=O",
+            "CC(=S)NC",
+            "CCS(=O)(=O)NC",
+            "CC#CC",
+            "COON=C",
+        ];
+        let mut preferred = 0usize;
+        for source in representatives {
+            let mol = chematic_smiles::parse(source).unwrap_or_else(|e| panic!("{source}: {e}"));
+            for (b, _) in mol.atoms() {
+                for (a, _) in mol.neighbors(b) {
+                    for (c, _) in mol.neighbors(b).filter(|(c, _)| *c != a) {
+                        for (d, _) in mol.neighbors(c).filter(|(d, _)| *d != b) {
+                            if let Some(p) = get_torsion_preference(&mol, a, b, c, d) {
+                                preferred += 1;
+                                assert!(p.angle_deg.is_finite(), "{source}");
+                                assert!(p.penalty_per_degree > 0.0, "{source}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        assert!(
+            preferred >= 80,
+            "only {preferred} paths received a preference"
+        );
+    }
 }

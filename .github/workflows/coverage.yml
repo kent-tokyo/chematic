@@ -49,10 +49,17 @@ jobs:
         id: measure
         run: |
           mkdir -p target/coverage
-          cargo llvm-cov --locked --workspace --lib --bins \
+          cargo llvm-cov --locked --workspace --lib --bins --tests \
             --features chematic-inchi/native-inchi \
             --test cli_contracts --test qcschema --test nucleic_acid_contract --test v3000_semantic_interop \
             --test rdkit_embed --test streamable_http \
+            --test conversion_report --test cjson_coordinate_precision \
+            --test cjson_mol2_conversion --test cjson_preservation \
+            --test mol2_preservation --test writer_atom_order \
+            --test stereo_coordinate_roundtrip \
+            --test mmff94_angle_stretch_bend --test mmff94_cation_water \
+            --test mmff94_oop_parameters --test mmff94_optimizer_recovery \
+            --test mmff94_oxygen_h_vdw \
             --test format_binding_parity --test conformer_3d_io --test schema_conformance \
             --test rdkit_g1_parity --test issue739_platform_stereo \
             --test rdkit_count_and_chiral_fps --test rdkit_morgan_stable_api_fixtures \

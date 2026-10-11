@@ -476,6 +476,17 @@ fn run_reactants_checked_counts_products_and_valence_refusal() {
     assert_eq!(diagnostic["atoms"][0]["element"], "N");
     assert_eq!(diagnostic["atoms"][0]["observed_valence"], 4);
     assert_eq!(diagnostic["atoms"][0]["max_allowed_valence"], 3);
+
+    let native: serde_json::Value =
+        serde_json::from_str(&run_reactants_checked("[N:1]>>[N:1](C)(C)C", "CN", false)).unwrap();
+    assert_eq!(native["status"], "typed_refusal");
+    assert_eq!(native["reason"], "product_valence");
+    assert_eq!(native["products"], serde_json::json!([]));
+    assert_eq!(native["rejection_diagnostics"][0][0]["reason"], "valence");
+    assert_eq!(
+        native["rejection_diagnostics"][0][0]["atoms"][0]["atom_map"],
+        1
+    );
 }
 
 #[test]
@@ -1646,6 +1657,52 @@ fn rgroup_invalid_smarts_returns_err() {
     // SMARTS parse should fail via underlying function (not JsValue path).
     let result = chematic_smarts::parse_smarts("~~~invalid~~~");
     assert!(result.is_err(), "invalid SMARTS should not parse");
+}
+
+#[test]
+fn rgroup_labeled_columns_keep_labels_and_row_alignment() {
+    let inputs = r#"["Cc1ccc(CC)cc1","CCc1ccc(N)cc1","CCO"]"#;
+    let columns: serde_json::Value = serde_json::from_str(
+        &rgroup_decompose_columns_json(inputs, "c1cc([*:2])ccc1[*:1]").unwrap(),
+    )
+    .unwrap();
+
+    for key in ["Core", "R1", "R2"] {
+        assert_eq!(columns[key].as_array().unwrap().len(), 3);
+        assert!(columns[key][2].is_null());
+    }
+    assert!(columns["Core"][0].as_str().unwrap().contains("*:1"));
+    assert!(columns["Core"][0].as_str().unwrap().contains("*:2"));
+    assert!(columns["R1"][0].as_str().unwrap().contains("*:1"));
+    assert!(columns["R2"][0].as_str().unwrap().contains("*:2"));
+
+    let reordered: serde_json::Value = serde_json::from_str(
+        &rgroup_decompose_columns_json(
+            r#"["c1(CC)ccc(C)cc1","c1(N)ccc(CC)cc1","CCO"]"#,
+            "c1cc([*:2])ccc1[*:1]",
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(columns, reordered);
+}
+
+#[test]
+fn rgroup_labeled_columns_return_stable_error_categories() {
+    let mol = chematic_smiles::parse("Cc1ccccc1").unwrap();
+    let duplicate =
+        chematic_chem::rgroup_decompose_labeled("[c:1]1cccc[c:1]1", &[&mol]).unwrap_err();
+    assert_eq!(
+        crate::mol_reactions::rgroup_error_code(&duplicate),
+        "rgroup_duplicate_label"
+    );
+
+    let nonterminal =
+        chematic_chem::rgroup_decompose_labeled("c1cc([*:2]C)ccc1", &[&mol]).unwrap_err();
+    assert_eq!(
+        crate::mol_reactions::rgroup_error_code(&nonterminal),
+        "rgroup_nonterminal_attachment"
+    );
 }
 
 // Sprint AA
