@@ -361,14 +361,6 @@
       "decisions": 37,
       "lines": 163
     },
-    "crates/chematic-mol/src/cml.rs::parse_cml_with_limits#1": {
-      "decisions": 33,
-      "lines": 188
-    },
-    "crates/chematic-mol/src/cml.rs::validate_strict_cml_structure#1": {
-      "decisions": 27,
-      "lines": 91
-    },
     "crates/chematic-mol/src/cube.rs::parse_cube_from_feed#1": {
       "decisions": 45,
       "lines": 175
