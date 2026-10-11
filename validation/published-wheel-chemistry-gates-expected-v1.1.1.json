@@ -2,7 +2,7 @@
   "schema": "published-wheel-chemistry-gates-expected/v1",
   "chematic_version": "1.1.1",
   "rdkit": "2026.03.6",
-  "source": "Public PyPI v1.1.1 artifact counts measured by the hosted Linux/macOS/Windows gate. descriptor_stress records the independently measured macOS arm64 CPython 3.13 result; the remaining fields are fixed to run 38183111719 and must reproduce across the rerun before they are described as cross-platform evidence.",
+  "source": "Public PyPI v1.1.1 artifact counts measured in run 38183111719 and reproduced across the Linux/macOS/Windows lanes in successful run 38184048499. descriptor_stress also reproduces the independently measured macOS arm64 CPython 3.13 result.",
   "gates": {
     "reaction_83": {
       "graph_origin_map_match": 80,
