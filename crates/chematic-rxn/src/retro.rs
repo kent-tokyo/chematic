@@ -551,6 +551,22 @@ mod tests {
     use super::*;
     use chematic_smiles::parse;
 
+    #[test]
+    fn reaction_class_names_are_stable() {
+        let cases = [
+            (RetroClass::AmideBond, "AmideBond"),
+            (RetroClass::Ester, "Ester"),
+            (RetroClass::Ether, "Ether"),
+            (RetroClass::CNBond, "CNBond"),
+            (RetroClass::CCBond, "CCBond"),
+            (RetroClass::CSBond, "CSBond"),
+            (RetroClass::Other, "Other"),
+        ];
+        for (class, expected) in cases {
+            assert_eq!(class.as_str(), expected);
+        }
+    }
+
     fn mol(s: &str) -> Molecule {
         parse(s).expect("parse failed")
     }

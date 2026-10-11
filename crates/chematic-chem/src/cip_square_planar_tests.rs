@@ -1,6 +1,17 @@
 use super::*;
 use chematic_smiles::parse;
 
+#[test]
+fn accurate_mode_error_preserves_comparison_diagnostics() {
+    let error = CipModeError::Accurate(chematic_cip::CipCompareError::InvalidDigraph(
+        "broken fixture".into(),
+    ));
+    assert_eq!(
+        error.to_string(),
+        "accurate CIP engine error: invalid digraph: broken fixture"
+    );
+}
+
 /// Regression for the square-planar-stereo PR's required CIP safety fix:
 /// `tetrahedral_stereo_neighbors`/`assign_tetrahedral` gated on
 /// `chirality == Chirality::None` (equality), not an exhaustive match --

@@ -223,6 +223,28 @@ mod tests {
         assert_eq!(helium, vec![(2.0, 1.0)]);
     }
 
+    #[test]
+    fn monoisotopic_fallback_covers_known_atomic_masses() {
+        let expected = [
+            (1, 1.00783),
+            (6, 12.0000),
+            (7, 14.0031),
+            (8, 15.9949),
+            (9, 18.9984),
+            (14, 27.9769),
+            (15, 30.9738),
+            (16, 31.9721),
+            (17, 34.9689),
+            (35, 78.9183),
+            (34, 79.9165),
+            (53, 126.9045),
+            (2, 2.0),
+        ];
+        for (atomic_number, mass) in expected {
+            assert_eq!(mono_mass_fallback(atomic_number), mass);
+        }
+    }
+
     /// Find the peak with the highest intensity.
     fn base_peak(dist: &[(f64, f64)]) -> (f64, f64) {
         dist.iter()
