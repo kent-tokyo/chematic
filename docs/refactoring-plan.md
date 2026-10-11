@@ -31,8 +31,8 @@ authoritative.
 | R3 | File parsers: lexical decode, semantic validation, builders, diagnostics | Complete |
 | R4 | Python and WASM bindings by API domain | Complete |
 | R5 | Descriptors and tautomer rules/search/scoring | Complete |
-| R6 | Canonicalization, ring perception, and aromaticity | Active |
-| R7 | MMFF/UFF and 3D preparation, optimization, and quality policy | Planned |
+| R6 | Canonicalization, ring perception, and aromaticity | Complete |
+| R7 | MMFF/UFF and 3D preparation, optimization, and quality policy | Active |
 | R8 | Legacy/dead-code inventory, exact helper deduplication, dependency cleanup | Planned |
 
 R1 started by separating the MCP registry schemas from tool execution. The
@@ -94,6 +94,17 @@ guard chain; MQN accumulation and tautomer matching/parent search use bounded
 helpers. All 938 `chematic-chem` library tests pass, including descriptor and
 tautomer parity regressions. Clippy with warnings denied, formatting, the
 budget scanner, and all six scanner unit tests pass.
+
+R6 finishes with no canonicalization, Kekule assignment, SSSR, aromaticity,
+or RDKit-parity file/function exceptions. Molecule storage and graph/cache
+operations, Kekule matching, aromaticity tracing and ring families, RDKit
+canonical ranking, parity typing, SSSR basis/candidate/symmetrized expansion,
+and canonical-SMILES E/Z planning, traversal, and stereo remapping now have
+bounded modules and helpers. Public paths and canonical output remain stable.
+The affected crates pass 774 library tests (with two documented ignored
+profiles), clippy with warnings denied, formatting, the budget scanner, and
+all six scanner unit tests. R6 removes seven file and seventeen function
+allowances from the debt baseline.
 
 ## Required checks per phase
 

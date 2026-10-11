@@ -19,8 +19,6 @@
     "crates/chematic-chem/src/cip.rs": 2766,
     "crates/chematic-chem/src/standardize.rs": 3513,
     "crates/chematic-cli/src/main.rs": 1799,
-    "crates/chematic-core/src/kekulization.rs": 1921,
-    "crates/chematic-core/src/molecule.rs": 2188,
     "crates/chematic-crystal/src/poscar.rs": 1644,
     "crates/chematic-depict/src/layout.rs": 3740,
     "crates/chematic-depict/src/svg.rs": 1549,
@@ -30,16 +28,11 @@
     "crates/chematic-ff/src/uff.rs": 1807,
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
     "crates/chematic-inchi/src/dedup.rs": 2079,
-    "crates/chematic-perception/src/aromaticity.rs": 4172,
-    "crates/chematic-perception/src/rdkit_canon.rs": 1636,
-    "crates/chematic-perception/src/rdkit_parity.rs": 2633,
-    "crates/chematic-perception/src/sssr.rs": 4011,
     "crates/chematic-rxn/src/query.rs": 1969,
     "crates/chematic-rxn/src/rdkit_stereo.rs": 1626,
     "crates/chematic-smarts/src/match_vf2.rs": 1877,
     "crates/chematic-smarts/src/mcs.rs": 1645,
     "crates/chematic-smarts/src/parser.rs": 2259,
-    "crates/chematic-smiles/src/canonical.rs": 6571,
     "crates/chematic-smiles/src/parser.rs": 1805,
     "crates/chematic-smiles/src/rdkit/depict.rs": 2303,
     "crates/chematic-smiles/src/rdkit/mod.rs": 1565,
@@ -170,10 +163,6 @@
     "crates/chematic-core/src/element.rs::from_symbol#1": {
       "decisions": 1,
       "lines": 123
-    },
-    "crates/chematic-core/src/kekulization.rs::kekulize_with#1": {
-      "decisions": 27,
-      "lines": 225
     },
     "crates/chematic-crystal/src/neighbor.rs::periodic_cell_list#1": {
       "decisions": 22,
@@ -319,65 +308,13 @@
       "decisions": 15,
       "lines": 130
     },
-    "crates/chematic-perception/src/aromaticity.rs::assign_aromaticity_ex_impl#1": {
-      "decisions": 14,
-      "lines": 168
-    },
-    "crates/chematic-perception/src/aromaticity.rs::build_conjugated_components#1": {
-      "decisions": 14,
-      "lines": 128
-    },
-    "crates/chematic-perception/src/aromaticity.rs::count_aromatic_rings#1": {
-      "decisions": 27,
-      "lines": 158
-    },
-    "crates/chematic-perception/src/aromaticity.rs::evaluate_atom_pi_contribution_inner#1": {
-      "decisions": 35,
-      "lines": 119
-    },
-    "crates/chematic-perception/src/aromaticity.rs::ring_pi_electrons#1": {
-      "decisions": 37,
-      "lines": 200
-    },
-    "crates/chematic-perception/src/aromaticity.rs::strip_envelope_rings#1": {
-      "decisions": 33,
-      "lines": 74
-    },
-    "crates/chematic-perception/src/rdkit_canon.rs::kekulize_worker#1": {
-      "decisions": 30,
-      "lines": 146
-    },
-    "crates/chematic-perception/src/rdkit_canon.rs::rdkit_canonical_kekule_in_rings#1": {
-      "decisions": 35,
-      "lines": 134
-    },
     "crates/chematic-perception/src/rdkit_model_hook.rs::rdkit_model_may_disagree_uncached#1": {
       "decisions": 40,
       "lines": 115
     },
-    "crates/chematic-perception/src/rdkit_parity.rs::apply_huckel_to_fused#1": {
-      "decisions": 27,
-      "lines": 108
-    },
-    "crates/chematic-perception/src/rdkit_parity.rs::verdict_with_typing#1": {
-      "decisions": 19,
-      "lines": 127
-    },
     "crates/chematic-perception/src/rdkit_sssr_order.rs::libstdcxx_sort#1": {
       "decisions": 30,
       "lines": 153
-    },
-    "crates/chematic-perception/src/sssr.rs::find_symmetrized_sssr_with_diagnostics_bounded#1": {
-      "decisions": 48,
-      "lines": 318
-    },
-    "crates/chematic-perception/src/sssr.rs::horton_candidates_fast#1": {
-      "decisions": 53,
-      "lines": 266
-    },
-    "crates/chematic-perception/src/sssr.rs::select_horton_basis#1": {
-      "decisions": 25,
-      "lines": 132
     },
     "crates/chematic-perception/src/stereo2d_ez_direction.rs::apply_ez_directions_from_2d_ex#1": {
       "decisions": 26,
@@ -422,18 +359,6 @@
     "crates/chematic-smarts/src/rdkit_ring_model.rs::build_rdkit_parity_ring_model#1": {
       "decisions": 47,
       "lines": 292
-    },
-    "crates/chematic-smiles/src/canonical.rs::corrected_chirality#1": {
-      "decisions": 16,
-      "lines": 141
-    },
-    "crates/chematic-smiles/src/canonical.rs::resolve_component_jointly#1": {
-      "decisions": 15,
-      "lines": 139
-    },
-    "crates/chematic-smiles/src/canonical.rs::write_chain#1": {
-      "decisions": 20,
-      "lines": 140
     },
     "crates/chematic-smiles/src/canonical_search.rs::exact_orbit_representatives#1": {
       "decisions": 17,
