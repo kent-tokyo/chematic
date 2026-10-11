@@ -7,6 +7,7 @@ Runnable Python scripts. Each script works standalone with `pip install chematic
 ```bash
 pip install chematic                          # required for all scripts
 pip install chematic scikit-learn pandas numpy  # for ML examples
+pip install "chematic[excel]"                # for the ElixCee XLSX example
 ```
 
 ## Scripts
@@ -51,6 +52,20 @@ Wrote 6 molecules → admet_report.csv
   paracetamol      MW= 151.2  LogP= 1.35  QED=0.595  BBB=True
   verapamil        MW= 454.6  LogP= 5.09  QED=0.420  BBB=True  ⚠
   erythromycin     MW= 663.9  LogP= 1.60  QED=0.187  BBB=False  ⚠
+```
+
+### `xlsx_batch_analysis.py` — Excel compound table → XLSX report with ElixCee
+
+Reads an `.xlsx`/`.xlsm` worksheet through ElixCee, finds the SMILES and optional
+name columns, computes Chematic descriptors, and writes a typed `.xlsx` report
+through ElixCee. Blank or invalid SMILES remain in the output with their source
+row and error. Excel handling stays optional and does not add a spreadsheet
+dependency to Chematic's core chemistry API.
+
+```bash
+pip install "chematic[excel]"
+python examples/xlsx_batch_analysis.py compounds.xlsx results.xlsx
+python examples/xlsx_batch_analysis.py compounds.xlsm results.xlsx --sheet Compounds
 ```
 
 ### `html_report.py` — self-contained HTML compound report

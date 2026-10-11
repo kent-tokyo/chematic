@@ -60,6 +60,24 @@ df.to_csv("descriptors.csv", index=False)
 print(f"Computed {len(df)} molecules, {df.columns.size} descriptors each")
 ```
 
+## Excel workbook → XLSX report
+
+When a compound table is maintained in Excel, use ElixCee for workbook I/O and
+Chematic for molecular parsing and descriptors. This keeps XLSX/XLSM concerns
+out of the chemistry core while avoiding an openpyxl-specific integration.
+
+```bash
+pip install "chematic[excel]"
+python examples/xlsx_batch_analysis.py compounds.xlsx results.xlsx
+```
+
+The example streams the first worksheet by default, auto-detects a `smiles`,
+`canonical_smiles`, or `structure` column, and writes typed values to XLSX.
+Invalid and blank SMILES are retained with their original worksheet row and an
+error. Use `--sheet`, `--smiles-column`, or `--name-column` when the workbook
+uses different names. Excel I/O is provided by
+[ElixCee](https://github.com/kent-tokyo/elixcee); it is an optional dependency.
+
 ## Parallel fingerprint matrix for clustering
 
 ```python
