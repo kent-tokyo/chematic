@@ -365,10 +365,6 @@
       "decisions": 45,
       "lines": 175
     },
-    "crates/chematic-mol/src/ket.rs::parse_ket_3d_with_limits#1": {
-      "decisions": 28,
-      "lines": 180
-    },
     "crates/chematic-mol/src/lammps_data.rs::parse_lammps_data_with_limits#1": {
       "decisions": 63,
       "lines": 376
