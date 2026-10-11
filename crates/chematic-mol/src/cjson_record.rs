@@ -259,7 +259,7 @@ fn validate_projection(value: &Value) -> Result<(), CjsonError> {
             }
         }
         let mut edges = HashSet::new();
-        for pair in indices.chunks_exact(2) {
+        for pair in indices.as_chunks::<2>().0 {
             let a = pair[0]
                 .as_u64()
                 .ok_or_else(|| invalid("bonds.connections.index"))?;
