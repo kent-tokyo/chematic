@@ -307,6 +307,188 @@ fn parse_usize_triplet(
     Ok(out)
 }
 
+struct OpenDxHeader {
+    shape: [usize; 3],
+    origin: [f64; 3],
+    axes: [[f64; 3]; 3],
+    point_count: usize,
+}
+
+fn opendx_non_comment<F>(feed: &mut LineFeed<OpenDxError, F>) -> Result<String, OpenDxError>
+where
+    F: FnMut() -> Result<Option<String>, OpenDxError>,
+{
+    loop {
+        let line = feed.line()?.ok_or(OpenDxError::UnexpectedEnd {
+            context: "object 1 (gridpositions) line",
+        })?;
+        if !line.trim_start().starts_with('#') {
+            return Ok(line);
+        }
+    }
+}
+
+fn opendx_vector<F>(
+    feed: &mut LineFeed<OpenDxError, F>,
+    keyword: &'static str,
+    context: &'static str,
+) -> Result<[f64; 3], OpenDxError>
+where
+    F: FnMut() -> Result<Option<String>, OpenDxError>,
+{
+    let line = feed.line()?.ok_or(OpenDxError::UnexpectedEnd { context })?;
+    let number = feed.line_no;
+    let tokens = expect_tokens(&line, number, context, &[keyword])?;
+    let mut vector = [0.0; 3];
+    for (index, value) in vector.iter_mut().enumerate() {
+        *value = parse_finite(
+            tokens
+                .get(index + 1)
+                .ok_or(OpenDxError::MalformedHeaderLine {
+                    line: number,
+                    context,
+                    detail: line.clone(),
+                })?,
+            number,
+            context,
+        )?;
+    }
+    Ok(vector)
+}
+
+fn opendx_array_items<F>(
+    feed: &mut LineFeed<OpenDxError, F>,
+    expected: usize,
+) -> Result<(), OpenDxError>
+where
+    F: FnMut() -> Result<Option<String>, OpenDxError>,
+{
+    let line = feed.line()?.ok_or(OpenDxError::UnexpectedEnd {
+        context: "object 3 (array) line",
+    })?;
+    let number = feed.line_no;
+    let tokens = line.split_whitespace().collect::<Vec<_>>();
+    let prefix = [
+        "object", "3", "class", "array", "type", "double", "rank", "0",
+    ];
+    if tokens.len() < prefix.len()
+        || tokens[..prefix.len()]
+            .iter()
+            .zip(prefix)
+            .any(|(actual, expected)| *actual != expected)
+    {
+        return Err(OpenDxError::UnsupportedArrayDeclaration {
+            line: number,
+            detail: line,
+        });
+    }
+    if tokens.get(prefix.len()) != Some(&"items")
+        || tokens.get(prefix.len() + 2) != Some(&"data")
+        || tokens.get(prefix.len() + 3) != Some(&"follows")
+    {
+        return Err(OpenDxError::MalformedHeaderLine {
+            line: number,
+            context: "object 3 (array) items/data follows",
+            detail: line,
+        });
+    }
+    let declared = tokens
+        .get(prefix.len() + 1)
+        .and_then(|token| token.parse().ok())
+        .ok_or(OpenDxError::MalformedHeaderLine {
+            line: number,
+            context: "object 3 (array) items count",
+            detail: line.clone(),
+        })?;
+    if declared != expected {
+        return Err(OpenDxError::ItemsCountMismatch { declared, expected });
+    }
+    Ok(())
+}
+
+fn opendx_header<F>(
+    feed: &mut LineFeed<OpenDxError, F>,
+    limits: &OpenDxParseLimits,
+) -> Result<OpenDxHeader, OpenDxError>
+where
+    F: FnMut() -> Result<Option<String>, OpenDxError>,
+{
+    let object1 = opendx_non_comment(feed)?;
+    let number = feed.line_no;
+    let tokens = expect_tokens(
+        &object1,
+        number,
+        "object 1 (gridpositions)",
+        &["object", "1", "class", "gridpositions", "counts"],
+    )?;
+    let shape = parse_usize_triplet(&tokens, 5, number, "object 1 (gridpositions)")?;
+    let point_count = shape[0]
+        .checked_mul(shape[1])
+        .and_then(|value| value.checked_mul(shape[2]))
+        .ok_or(GridError::ShapeOverflow { shape })?;
+    if point_count > limits.max_grid_points {
+        return Err(GridError::GridTooLarge {
+            points: point_count,
+            limit: limits.max_grid_points,
+        }
+        .into());
+    }
+    let origin = opendx_vector(feed, "origin", "origin")?;
+    let mut axes = [[0.0; 3]; 3];
+    for axis in &mut axes {
+        *axis = opendx_vector(feed, "delta", "delta")?;
+    }
+    let object2 = feed.line()?.ok_or(OpenDxError::UnexpectedEnd {
+        context: "object 2 (gridconnections) line",
+    })?;
+    let number = feed.line_no;
+    let tokens = expect_tokens(
+        &object2,
+        number,
+        "object 2 (gridconnections)",
+        &["object", "2", "class", "gridconnections", "counts"],
+    )?;
+    let connections = parse_usize_triplet(&tokens, 5, number, "object 2 (gridconnections)")?;
+    if connections != shape {
+        return Err(OpenDxError::GridConnectionsMismatch {
+            gridpositions: shape,
+            gridconnections: connections,
+        });
+    }
+    opendx_array_items(feed, point_count)?;
+    Ok(OpenDxHeader {
+        shape,
+        origin,
+        axes,
+        point_count,
+    })
+}
+
+fn opendx_values<F>(
+    feed: &mut LineFeed<OpenDxError, F>,
+    count: usize,
+) -> Result<Vec<f64>, OpenDxError>
+where
+    F: FnMut() -> Result<Option<String>, OpenDxError>,
+{
+    let mut values = Vec::with_capacity(count.min(1_000_000));
+    for index in 0..count {
+        let token = feed.token()?.ok_or(OpenDxError::ValueCountMismatch {
+            expected: count,
+            found: index,
+        })?;
+        values.push(parse_finite(&token, feed.line_no, "data value")?);
+    }
+    if let Some(token) = feed.token()?
+        && token.parse::<f64>().is_ok()
+    {
+        return Err(OpenDxError::TrailingData {
+            after_values: count,
+        });
+    }
+    Ok(values)
+}
+
 fn parse_opendx_from_feed<F>(
     next_line: F,
     limits: &OpenDxParseLimits,
@@ -315,173 +497,12 @@ where
     F: FnMut() -> Result<Option<String>, OpenDxError>,
 {
     let mut feed = LineFeed::new(next_line);
-
-    // Skip any number of leading '#' comment lines (real-world APBS output
-    // convention; see module docs -- medium confidence, not in the primary
-    // grammar source itself).
-    let object1_line = loop {
-        let line = feed.line()?.ok_or(OpenDxError::UnexpectedEnd {
-            context: "object 1 (gridpositions) line",
-        })?;
-        if line.trim_start().starts_with('#') {
-            continue;
-        }
-        break line;
-    };
-    let line_no = feed.line_no;
-    let toks = expect_tokens(
-        &object1_line,
-        line_no,
-        "object 1 (gridpositions)",
-        &["object", "1", "class", "gridpositions", "counts"],
-    )?;
-    let gridpositions = parse_usize_triplet(&toks, 5, line_no, "object 1 (gridpositions)")?;
-
-    let expected_points = gridpositions[0]
-        .checked_mul(gridpositions[1])
-        .and_then(|v| v.checked_mul(gridpositions[2]))
-        .ok_or(GridError::ShapeOverflow {
-            shape: gridpositions,
-        })?;
-    if expected_points > limits.max_grid_points {
-        return Err(GridError::GridTooLarge {
-            points: expected_points,
-            limit: limits.max_grid_points,
-        }
-        .into());
-    }
-
-    // origin
-    let origin_line = feed.line()?.ok_or(OpenDxError::UnexpectedEnd {
-        context: "origin line",
-    })?;
-    let line_no = feed.line_no;
-    let toks = expect_tokens(&origin_line, line_no, "origin", &["origin"])?;
-    let mut origin = [0.0f64; 3];
-    for (c, slot) in origin.iter_mut().enumerate() {
-        *slot = parse_finite(
-            toks.get(1 + c).ok_or(OpenDxError::MalformedHeaderLine {
-                line: line_no,
-                context: "origin",
-                detail: origin_line.clone(),
-            })?,
-            line_no,
-            "origin",
-        )?;
-    }
-
-    // 3 delta lines -- general 3-vectors, not required to be axis-aligned.
-    let mut axes = [[0.0f64; 3]; 3];
-    for row in axes.iter_mut() {
-        let delta_line = feed.line()?.ok_or(OpenDxError::UnexpectedEnd {
-            context: "delta line",
-        })?;
-        let line_no = feed.line_no;
-        let toks = expect_tokens(&delta_line, line_no, "delta", &["delta"])?;
-        for (c, slot) in row.iter_mut().enumerate() {
-            *slot = parse_finite(
-                toks.get(1 + c).ok_or(OpenDxError::MalformedHeaderLine {
-                    line: line_no,
-                    context: "delta",
-                    detail: delta_line.clone(),
-                })?,
-                line_no,
-                "delta",
-            )?;
-        }
-    }
-
-    // object 2: gridconnections, must match object 1's counts.
-    let object2_line = feed.line()?.ok_or(OpenDxError::UnexpectedEnd {
-        context: "object 2 (gridconnections) line",
-    })?;
-    let line_no = feed.line_no;
-    let toks = expect_tokens(
-        &object2_line,
-        line_no,
-        "object 2 (gridconnections)",
-        &["object", "2", "class", "gridconnections", "counts"],
-    )?;
-    let gridconnections = parse_usize_triplet(&toks, 5, line_no, "object 2 (gridconnections)")?;
-    if gridconnections != gridpositions {
-        return Err(OpenDxError::GridConnectionsMismatch {
-            gridpositions,
-            gridconnections,
-        });
-    }
-
-    // object 3: array type double rank 0 items N data follows
-    let object3_line = feed.line()?.ok_or(OpenDxError::UnexpectedEnd {
-        context: "object 3 (array) line",
-    })?;
-    let line_no = feed.line_no;
-    let toks: Vec<&str> = object3_line.split_whitespace().collect();
-    let expected_prefix = [
-        "object", "3", "class", "array", "type", "double", "rank", "0",
-    ];
-    if toks.len() < expected_prefix.len()
-        || toks[..expected_prefix.len()]
-            .iter()
-            .zip(expected_prefix.iter())
-            .any(|(a, b)| a != b)
-    {
-        return Err(OpenDxError::UnsupportedArrayDeclaration {
-            line: line_no,
-            detail: object3_line,
-        });
-    }
-    if toks.get(expected_prefix.len()) != Some(&"items")
-        || toks.get(expected_prefix.len() + 2) != Some(&"data")
-        || toks.get(expected_prefix.len() + 3) != Some(&"follows")
-    {
-        return Err(OpenDxError::MalformedHeaderLine {
-            line: line_no,
-            context: "object 3 (array) items/data follows",
-            detail: object3_line,
-        });
-    }
-    let declared_items: usize = toks
-        .get(expected_prefix.len() + 1)
-        .and_then(|t| t.parse().ok())
-        .ok_or(OpenDxError::MalformedHeaderLine {
-            line: line_no,
-            context: "object 3 (array) items count",
-            detail: object3_line.clone(),
-        })?;
-    if declared_items != expected_points {
-        return Err(OpenDxError::ItemsCountMismatch {
-            declared: declared_items,
-            expected: expected_points,
-        });
-    }
-
-    // Data block: exactly `expected_points` whitespace-delimited numeric
-    // tokens, tolerant of any line-wrapping.
-    let mut values = Vec::with_capacity(expected_points.min(1_000_000));
-    for i in 0..expected_points {
-        let tok = feed.token()?.ok_or(OpenDxError::ValueCountMismatch {
-            expected: expected_points,
-            found: i,
-        })?;
-        let line_no = feed.line_no;
-        let v = parse_finite(&tok, line_no, "data value")?;
-        values.push(v);
-    }
-    // Anything left that still parses as a number is too much data; a
-    // non-numeric leftover token is the start of the (unsupported, see
-    // module docs) footer and is not an error.
-    if let Some(tok) = feed.token()?
-        && tok.parse::<f64>().is_ok()
-    {
-        return Err(OpenDxError::TrailingData {
-            after_values: expected_points,
-        });
-    }
-
+    let header = opendx_header(&mut feed, limits)?;
+    let values = opendx_values(&mut feed, header.point_count)?;
     Ok(VolumetricGrid {
-        origin,
-        axes,
-        shape: gridpositions,
+        origin: header.origin,
+        axes: header.axes,
+        shape: header.shape,
         values,
         atoms: Vec::new(),
         units: GridUnits::Angstrom,

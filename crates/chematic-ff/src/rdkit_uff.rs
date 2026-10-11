@@ -27,6 +27,8 @@ use crate::rdkit_uff_params::{
     RDKIT_DEFAULT_VALENCE, RDKIT_SYMBOL, RDKIT_VALENCE_LIST, UFF_NEEDS_HYBRID, UFF_PARAMS,
 };
 
+mod builder;
+
 /// `UFF::Params::G`, the bond force constant prefactor.
 const G: f64 = 332.06;
 /// `UFF::Params::lambda`, the bond-order correction scale.
@@ -752,6 +754,214 @@ pub struct RdkitUffField {
     inversions: Vec<InversionTerm>,
 }
 
+type UffAdjacency = Vec<Vec<(usize, usize)>>;
+
+fn uff_adjacency(mol: &Molecule, order: &[BondIdx]) -> UffAdjacency {
+    let mut adjacency = vec![Vec::new(); mol.atom_count()];
+    for &bond_index in order {
+        let bond = mol.bond(bond_index);
+        let (first, second) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
+        adjacency[first].push((second, bond_index.0 as usize));
+        adjacency[second].push((first, bond_index.0 as usize));
+    }
+    adjacency
+}
+
+fn add_uff_bonds(
+    field: &mut RdkitUffField,
+    input: &Molecule,
+    mol: &Molecule,
+    order: &[BondIdx],
+    params: &[Option<AtomicParams>],
+) {
+    for &bond_index in order {
+        let bond = mol.bond(bond_index);
+        let (i, j) = if input.is_smiles_ring_closure(bond_index) {
+            (bond.atom2.0 as usize, bond.atom1.0 as usize)
+        } else {
+            (bond.atom1.0 as usize, bond.atom2.0 as usize)
+        };
+        if let (Some(first), Some(second)) = (&params[i], &params[j]) {
+            let r0 = calc_bond_rest_length(bond_as_double(bond.order), first, second);
+            field
+                .bonds
+                .push((i, j, r0, calc_bond_force_constant(r0, first, second)));
+        }
+    }
+}
+
+fn uff_ring_sizes(mol: &Molecule) -> Vec<Vec<usize>> {
+    let mut sizes = vec![Vec::new(); mol.atom_count()];
+    for ring in chematic_perception::find_symmetrized_sssr(mol).rings() {
+        for atom in ring {
+            sizes[atom.0 as usize].push(ring.len());
+        }
+    }
+    sizes
+}
+
+#[allow(clippy::too_many_arguments)]
+fn add_uff_angles(
+    field: &mut RdkitUffField,
+    mol: &Molecule,
+    adjacency: &UffAdjacency,
+    hybridization: &[Option<u8>],
+    params: &[Option<AtomicParams>],
+    rdkit_bond_idx: &[usize],
+    coords: &[[f64; 3]],
+) {
+    let ring_sizes = uff_ring_sizes(mol);
+    let in_ring = |atom: usize, size: usize| ring_sizes[atom].contains(&size);
+    let bond_order = |bond: usize| bond_as_double(mol.bond(BondIdx(bond as u32)).order);
+    for center in 0..adjacency.len() {
+        let Some(center_params) = &params[center] else {
+            continue;
+        };
+        if adjacency[center].len() == 1
+            || hybridization[center] == Some(4) && adjacency[center].len() == 5
+        {
+            continue;
+        }
+        for (position, &(first, first_bond)) in adjacency[center].iter().enumerate() {
+            let Some(first_params) = &params[first] else {
+                continue;
+            };
+            for &(second, second_bond) in &adjacency[center][position + 1..] {
+                let Some(second_params) = &params[second] else {
+                    continue;
+                };
+                let order = uff_angle_order(center, first, second, hybridization, &in_ring);
+                field.angles.push(AngleTerm::new(
+                    first,
+                    center,
+                    second,
+                    bond_order(first_bond),
+                    bond_order(second_bond),
+                    first_params,
+                    center_params,
+                    second_params,
+                    order,
+                ));
+            }
+        }
+    }
+    for center in 0..adjacency.len() {
+        if hybridization[center] == Some(4) && adjacency[center].len() == 5 {
+            field.add_trigonal_bipyramid_angles(
+                center,
+                adjacency,
+                rdkit_bond_idx,
+                coords,
+                params,
+                &bond_order,
+            );
+        }
+    }
+}
+
+fn uff_angle_order(
+    center: usize,
+    first: usize,
+    second: usize,
+    hybridization: &[Option<u8>],
+    in_ring: &dyn Fn(usize, usize) -> bool,
+) -> u32 {
+    match hybridization[center] {
+        Some(1) => 1,
+        Some(2) if in_ring(center, 3) => match (in_ring(first, 3), in_ring(second, 3)) {
+            (true, true) => 35,
+            (true, false) | (false, true) => 30,
+            _ => 3,
+        },
+        Some(2) if in_ring(center, 4) => match (in_ring(first, 4), in_ring(second, 4)) {
+            (true, true) => 45,
+            (true, false) | (false, true) => 40,
+            _ => 3,
+        },
+        Some(2) => 3,
+        Some(5) => 4,
+        _ => 0,
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn add_uff_nonbonded(
+    field: &mut RdkitUffField,
+    adjacency: &UffAdjacency,
+    params: &[Option<AtomicParams>],
+    coords: &[[f64; 3]],
+    threshold: f64,
+    ignore_interfrag: bool,
+) {
+    let n = adjacency.len();
+    let topology = topological_distances(n, adjacency);
+    let component = fragments(n, adjacency);
+    for i in 0..n {
+        let Some(first) = &params[i] else { continue };
+        for j in (i + 1)..n {
+            let Some(second) = &params[j] else { continue };
+            if ignore_interfrag && component[i] != component[j] {
+                continue;
+            }
+            if matches!(topology[i * n + j], 1 | 2) {
+                continue;
+            }
+            let distance = P3 {
+                x: coords[i][0] - coords[j][0],
+                y: coords[i][1] - coords[j][1],
+                z: coords[i][2] - coords[j][2],
+            }
+            .length();
+            let x_ij = (first.x1 * second.x1).sqrt();
+            if distance < threshold * x_ij {
+                field
+                    .vdw
+                    .push((i, j, x_ij, (first.d1 * second.d1).sqrt(), 10.0 * x_ij));
+            }
+        }
+    }
+}
+
+fn add_uff_inversions(
+    field: &mut RdkitUffField,
+    adjacency: &UffAdjacency,
+    atomic_numbers: &[usize],
+    hybridization: &[Option<u8>],
+) {
+    for center in 0..adjacency.len() {
+        let atomic_number = atomic_numbers[center];
+        if !matches!(atomic_number, 6 | 7 | 8 | 15 | 33 | 51 | 83)
+            || adjacency[center].len() != 3
+            || matches!(atomic_number, 6..=8) && hybridization[center] != Some(2)
+        {
+            continue;
+        }
+        let neighbors = [
+            adjacency[center][0].0,
+            adjacency[center][1].0,
+            adjacency[center][2].0,
+        ];
+        let bound_to_sp2_o = atomic_number == 6
+            && neighbors
+                .iter()
+                .any(|&atom| atomic_numbers[atom] == 8 && hybridization[atom] == Some(2));
+        let idx = [neighbors[0], center, neighbors[1], neighbors[2]];
+        let (force_constant, c0, c1, c2) = inversion_coefficients(atomic_number, bound_to_sp2_o);
+        for permutation in [[0, 1, 2, 3], [0, 1, 3, 2], [2, 1, 3, 0]] {
+            field.inversions.push(InversionTerm {
+                i: idx[permutation[0]],
+                j: idx[permutation[1]],
+                k: idx[permutation[2]],
+                l: idx[permutation[3]],
+                force_constant,
+                c0,
+                c1,
+                c2,
+            });
+        }
+    }
+}
+
 impl RdkitUffField {
     /// `UFFGetMoleculeForceField(mol, vdwThresh, confId,
     /// ignoreInterfragInteractions)` with the conformer `coords` (all atoms
@@ -775,19 +985,11 @@ impl RdkitUffField {
         let z: Vec<usize> = (0..n).map(|i| atomic_number(mol, i)).collect();
 
         let order = rdkit_bond_order_with_added_hs(input);
-        // RDKit bond index of each chematic bond.
         let mut rdkit_bond_idx = vec![0usize; mol.bond_count()];
         for (pos, b) in order.iter().enumerate() {
             rdkit_bond_idx[b.0 as usize] = pos;
         }
-        let mut adj: Vec<Vec<(usize, usize)>> = vec![Vec::new(); n];
-        for &b in &order {
-            let bond = mol.bond(b);
-            let (a1, a2) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
-            adj[a1].push((a2, b.0 as usize));
-            adj[a2].push((a1, b.0 as usize));
-        }
-        let bo = |b: usize| bond_as_double(mol.bond(BondIdx(b as u32)).order);
+        let adj = uff_adjacency(mol, &order);
         let mut field = RdkitUffField {
             n,
             bonds: Vec::new(),
@@ -796,199 +998,30 @@ impl RdkitUffField {
             torsions: Vec::new(),
             inversions: Vec::new(),
         };
+        add_uff_bonds(&mut field, input, mol, &order, &params);
 
-        // addBonds: RDKit's begin atom first (the force constant is not
-        // symmetric in floating point). A SMILES ring-closure bond begins at
-        // its closing atom in RDKit.
-        for &b in &order {
-            let bond = mol.bond(b);
-            let (i, j) = if input.is_smiles_ring_closure(b) {
-                (bond.atom2.0 as usize, bond.atom1.0 as usize)
-            } else {
-                (bond.atom1.0 as usize, bond.atom2.0 as usize)
-            };
-            if let (Some(pi), Some(pj)) = (&params[i], &params[j]) {
-                let r0 = calc_bond_rest_length(bond_as_double(bond.order), pi, pj);
-                let kb = calc_bond_force_constant(r0, pi, pj);
-                field.bonds.push((i, j, r0, kb));
-            }
-        }
+        add_uff_angles(
+            &mut field,
+            mol,
+            &adj,
+            &hyb,
+            &params,
+            &rdkit_bond_idx,
+            coords,
+        );
 
-        // addAngles
-        let rings = chematic_perception::find_symmetrized_sssr(mol);
-        let mut ring_sizes: Vec<Vec<usize>> = vec![Vec::new(); n];
-        for ring in rings.rings() {
-            for a in ring {
-                ring_sizes[a.0 as usize].push(ring.len());
-            }
-        }
-        let in_ring = |a: usize, size: usize| ring_sizes[a].contains(&size);
-        for j in 0..n {
-            let Some(pj) = &params[j] else {
-                continue;
-            };
-            if adj[j].len() == 1 {
-                continue;
-            }
-            for (a, &(i, bi)) in adj[j].iter().enumerate() {
-                let Some(pi) = &params[i] else {
-                    continue;
-                };
-                for &(k, bk) in &adj[j][a + 1..] {
-                    let Some(pk) = &params[k] else {
-                        continue;
-                    };
-                    if hyb[j] == Some(4) && adj[j].len() == 5 {
-                        continue;
-                    }
-                    let order = match hyb[j] {
-                        Some(1) => 1,
-                        Some(2) => {
-                            let mut o = 3;
-                            if in_ring(j, 3) {
-                                if in_ring(i, 3) != in_ring(k, 3) {
-                                    o = 30;
-                                } else if in_ring(i, 3) && in_ring(k, 3) {
-                                    o = 35;
-                                }
-                            } else if in_ring(j, 4) {
-                                if in_ring(i, 4) != in_ring(k, 4) {
-                                    o = 40;
-                                } else if in_ring(i, 4) && in_ring(k, 4) {
-                                    o = 45;
-                                }
-                            }
-                            o
-                        }
-                        Some(5) => 4,
-                        _ => 0,
-                    };
-                    field
-                        .angles
-                        .push(AngleTerm::new(i, j, k, bo(bi), bo(bk), pi, pj, pk, order));
-                }
-            }
-        }
-        // addAngleSpecialCases: trigonal-bipyramidal centres.
-        for a in 0..n {
-            if hyb[a] == Some(4) && adj[a].len() == 5 {
-                field.add_trigonal_bipyramid_angles(a, &adj, &rdkit_bond_idx, coords, &params, &bo);
-            }
-        }
+        add_uff_nonbonded(
+            &mut field,
+            &adj,
+            &params,
+            coords,
+            vdw_thresh,
+            ignore_interfrag,
+        );
 
-        // addNonbonded
-        let topo = topological_distances(n, &adj);
-        let frag = fragments(n, &adj);
-        for i in 0..n {
-            let Some(pi) = &params[i] else {
-                continue;
-            };
-            for j in (i + 1)..n {
-                let Some(pj) = &params[j] else {
-                    continue;
-                };
-                if ignore_interfrag && frag[i] != frag[j] {
-                    continue;
-                }
-                let rel = topo[i * n + j];
-                if rel == 1 || rel == 2 {
-                    continue;
-                }
-                let (ci, cj) = (coords[i], coords[j]);
-                let dist = P3 {
-                    x: ci[0] - cj[0],
-                    y: ci[1] - cj[1],
-                    z: ci[2] - cj[2],
-                }
-                .length();
-                let x_ij = (pi.x1 * pj.x1).sqrt();
-                if dist < vdw_thresh * x_ij {
-                    let well = (pi.d1 * pj.d1).sqrt();
-                    field.vdw.push((i, j, x_ij, well, 10.0 * x_ij));
-                }
-            }
-        }
+        builder::add_torsions(&mut field, mol, &adj, &params, &z, &hyb);
 
-        // addTorsions: `[!$(*#*)&!D1]~[!$(*#*)&!D1]` matches in RDKit order.
-        let has_triple = |a: usize| {
-            adj[a]
-                .iter()
-                .any(|&(_, b)| mol.bond(BondIdx(b as u32)).order == BondOrder::Triple)
-        };
-        let torsion_end = |a: usize| adj[a].len() > 1 && !has_triple(a);
-        let sp2_or_sp3 = |a: usize| matches!(hyb[a], Some(2) | Some(3));
-        let mut seen = std::collections::HashSet::new();
-        for j in 0..n {
-            if !torsion_end(j) {
-                continue;
-            }
-            for &(k, bond) in &adj[j] {
-                if !torsion_end(k) || !seen.insert((j.min(k), j.max(k))) {
-                    continue;
-                }
-                let (Some(pj), Some(pk)) = (&params[j], &params[k]) else {
-                    continue;
-                };
-                if !(sp2_or_sp3(j) && sp2_or_sp3(k)) {
-                    continue;
-                }
-                let start = field.torsions.len();
-                let bo23 = bo(bond);
-                for &(i, b1) in &adj[j] {
-                    if b1 == bond {
-                        continue;
-                    }
-                    for &(l, b2) in &adj[k] {
-                        if b2 == bond || b2 == b1 || l == i {
-                            continue;
-                        }
-                        let end_sp2 = hyb[i] == Some(2) || hyb[l] == Some(2);
-                        let (fc, ord, cos_term) =
-                            torsion_params(bo23, z[j], z[k], hyb[j], hyb[k], pj, pk, end_sp2);
-                        field.torsions.push(TorsionTerm {
-                            i,
-                            j,
-                            k,
-                            l,
-                            force_constant: fc,
-                            order: ord,
-                            cos_term,
-                        });
-                    }
-                }
-                let count = (field.torsions.len() - start) as f64;
-                for t in &mut field.torsions[start..] {
-                    t.force_constant /= count;
-                }
-            }
-        }
-
-        // addInversions
-        for j in 0..n {
-            let at2 = z[j];
-            if !matches!(at2, 6 | 7 | 8 | 15 | 33 | 51 | 83) || adj[j].len() != 3 {
-                continue;
-            }
-            if matches!(at2, 6..=8) && hyb[j] != Some(2) {
-                continue;
-            }
-            let nb = [adj[j][0].0, adj[j][1].0, adj[j][2].0];
-            let bound_to_sp2_o = at2 == 6 && nb.iter().any(|&a| z[a] == 8 && hyb[a] == Some(2));
-            let idx = [nb[0], j, nb[1], nb[2]];
-            let (k_inv, c0, c1, c2) = inversion_coefficients(at2, bound_to_sp2_o);
-            for perm in [[0, 1, 2, 3], [0, 1, 3, 2], [2, 1, 3, 0]] {
-                field.inversions.push(InversionTerm {
-                    i: idx[perm[0]],
-                    j: idx[perm[1]],
-                    k: idx[perm[2]],
-                    l: idx[perm[3]],
-                    force_constant: 1.0 * k_inv,
-                    c0,
-                    c1,
-                    c2,
-                });
-            }
-        }
+        add_uff_inversions(&mut field, &adj, &z, &hyb);
         field
     }
 

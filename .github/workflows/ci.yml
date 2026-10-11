@@ -31,7 +31,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-test-
       - name: Unit tests
-        run: cargo test --workspace --lib --quiet
+        # The Python extension uses PyO3's non-linking extension-module mode.
+        # Its Rust unit tests run in the Python job with that feature disabled.
+        run: cargo test --workspace --exclude chematic-py --lib --quiet
+      - name: Refactor debt ratchet
+        run: |
+          python3 scripts/check_refactor_budget.py
+          python3 -m unittest scripts/tests/test_check_refactor_budget.py
       - name: Shared cross-binding manifest
         run: python3 scripts/check_cross_binding_manifest.py
       - name: A0 development packet
@@ -270,6 +276,8 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install maturin 'pytest<9' 'pytest-asyncio>=0.23,<1' numpy --quiet
           .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
+      - name: Rust unit tests (chematic-py)
+        run: cargo test -p chematic-py --lib --no-default-features --quiet
       - name: Run pytest (chematic-py)
         run: .venv/bin/python -m pytest crates/chematic-py/tests/ -q
       - name: RDKit 2026 HBA parity from installed source wheel

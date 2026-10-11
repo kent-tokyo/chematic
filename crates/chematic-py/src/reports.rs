@@ -49,65 +49,93 @@ fn mol_report_to_dict<'py>(
         Some(s) => d.set_item("murcko_scaffold", s)?,
         None => d.set_item("murcko_scaffold", py.None())?,
     }
-    let desc = PyDict::new(py);
-    desc.set_item("mw", report.descriptors.molecular_weight)?;
-    desc.set_item("exact_mass", report.descriptors.exact_mass)?;
-    desc.set_item("tpsa", report.descriptors.tpsa)?;
-    desc.set_item("logp", report.descriptors.logp)?;
-    desc.set_item("molar_refractivity", report.descriptors.molar_refractivity)?;
-    desc.set_item("hbd", report.descriptors.hbd)?;
-    desc.set_item("hba", report.descriptors.hba)?;
-    desc.set_item("rotatable_bonds", report.descriptors.rotatable_bonds)?;
-    desc.set_item("heavy_atoms", report.descriptors.heavy_atom_count)?;
-    desc.set_item("ring_count", report.descriptors.ring_count)?;
-    desc.set_item("num_heteroatoms", report.descriptors.num_heteroatoms)?;
-    desc.set_item("num_stereocenters", report.descriptors.num_stereocenters)?;
-    desc.set_item("fsp3", report.descriptors.fsp3)?;
-    desc.set_item("qed", report.descriptors.qed)?;
-    desc.set_item("sa_score", report.descriptors.sa_score)?;
-    desc.set_item("formal_charge", report.descriptors.formal_charge_sum)?;
-    desc.set_item("labute_asa", report.descriptors.labute_asa)?;
-    desc.set_item("bertz_ct", report.descriptors.bertz_ct)?;
-    desc.set_item("wiener_index", report.descriptors.wiener_index)?;
-    d.set_item("descriptors", desc)?;
-    let filters = PyDict::new(py);
-    filters.set_item("lipinski_passes", report.filters.lipinski_passes)?;
-    filters.set_item("veber_passes", report.filters.veber_passes)?;
-    filters.set_item("egan_passes", report.filters.egan_passes)?;
-    filters.set_item("ghose_passes", report.filters.ghose_passes)?;
-    filters.set_item("reos_passes", report.filters.reos_passes)?;
-    filters.set_item("pains_passes", report.filters.pains_passes)?;
-    let alerts: Vec<&str> = report
-        .filters
-        .pains_alerts
-        .iter()
-        .map(|s| s.as_str())
-        .collect();
-    filters.set_item("pains_alerts", alerts)?;
-    d.set_item("filters", filters)?;
-    let fgs: Vec<Bound<'py, PyDict>> = report
-        .functional_groups
-        .iter()
-        .map(|fg| {
-            let fd = PyDict::new(py);
-            fd.set_item("name", &fg.name)?;
-            fd.set_item("atom_indices", &fg.atom_indices)?;
-            Ok(fd)
-        })
-        .collect::<PyResult<Vec<_>>>()?;
-    d.set_item("functional_groups", fgs)?;
-    let ngs: Vec<Bound<'py, PyDict>> = report
-        .named_groups
-        .iter()
-        .map(|ng| {
-            let nd = PyDict::new(py);
-            nd.set_item("name", &ng.name)?;
-            nd.set_item("atom_indices", &ng.atom_indices)?;
-            Ok(nd)
-        })
-        .collect::<PyResult<Vec<_>>>()?;
-    d.set_item("named_groups", ngs)?;
+    d.set_item(
+        "descriptors",
+        report_descriptors_to_dict(py, &report.descriptors)?,
+    )?;
+    d.set_item("filters", report_filters_to_dict(py, &report.filters)?)?;
+    d.set_item(
+        "functional_groups",
+        functional_groups_to_dicts(py, &report.functional_groups)?,
+    )?;
+    d.set_item(
+        "named_groups",
+        named_groups_to_dicts(py, &report.named_groups)?,
+    )?;
     Ok(d)
+}
+
+fn report_descriptors_to_dict<'py>(
+    py: Python<'py>,
+    descriptors: &chematic_chem::DescriptorSummary,
+) -> PyResult<Bound<'py, PyDict>> {
+    let desc = PyDict::new(py);
+    desc.set_item("mw", descriptors.molecular_weight)?;
+    desc.set_item("exact_mass", descriptors.exact_mass)?;
+    desc.set_item("tpsa", descriptors.tpsa)?;
+    desc.set_item("logp", descriptors.logp)?;
+    desc.set_item("molar_refractivity", descriptors.molar_refractivity)?;
+    desc.set_item("hbd", descriptors.hbd)?;
+    desc.set_item("hba", descriptors.hba)?;
+    desc.set_item("rotatable_bonds", descriptors.rotatable_bonds)?;
+    desc.set_item("heavy_atoms", descriptors.heavy_atom_count)?;
+    desc.set_item("ring_count", descriptors.ring_count)?;
+    desc.set_item("num_heteroatoms", descriptors.num_heteroatoms)?;
+    desc.set_item("num_stereocenters", descriptors.num_stereocenters)?;
+    desc.set_item("fsp3", descriptors.fsp3)?;
+    desc.set_item("qed", descriptors.qed)?;
+    desc.set_item("sa_score", descriptors.sa_score)?;
+    desc.set_item("formal_charge", descriptors.formal_charge_sum)?;
+    desc.set_item("labute_asa", descriptors.labute_asa)?;
+    desc.set_item("bertz_ct", descriptors.bertz_ct)?;
+    desc.set_item("wiener_index", descriptors.wiener_index)?;
+    Ok(desc)
+}
+
+fn report_filters_to_dict<'py>(
+    py: Python<'py>,
+    report: &chematic_chem::FilterSummary,
+) -> PyResult<Bound<'py, PyDict>> {
+    let filters = PyDict::new(py);
+    filters.set_item("lipinski_passes", report.lipinski_passes)?;
+    filters.set_item("veber_passes", report.veber_passes)?;
+    filters.set_item("egan_passes", report.egan_passes)?;
+    filters.set_item("ghose_passes", report.ghose_passes)?;
+    filters.set_item("reos_passes", report.reos_passes)?;
+    filters.set_item("pains_passes", report.pains_passes)?;
+    let alerts: Vec<&str> = report.pains_alerts.iter().map(|s| s.as_str()).collect();
+    filters.set_item("pains_alerts", alerts)?;
+    Ok(filters)
+}
+
+fn functional_groups_to_dicts<'py>(
+    py: Python<'py>,
+    groups: &[chematic_chem::FunctionalGroupSummary],
+) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    groups
+        .iter()
+        .map(|group| {
+            let result = PyDict::new(py);
+            result.set_item("name", &group.name)?;
+            result.set_item("atom_indices", &group.atom_indices)?;
+            Ok(result)
+        })
+        .collect()
+}
+
+fn named_groups_to_dicts<'py>(
+    py: Python<'py>,
+    groups: &[chematic_chem::NamedGroupSummary],
+) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    groups
+        .iter()
+        .map(|group| {
+            let result = PyDict::new(py);
+            result.set_item("name", &group.name)?;
+            result.set_item("atom_indices", &group.atom_indices)?;
+            Ok(result)
+        })
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -404,145 +432,165 @@ h1{{font-size:1.4rem;color:#333;margin-bottom:4px}}
 #[pyfunction]
 #[pyo3(signature = (mol1, mol2, names=None, title=None))]
 fn compare(mol1: &Mol, mol2: &Mol, names: Option<(String, String)>, title: Option<&str>) -> Report {
-    use chematic_chem::{
-        brenk_passes, hbd_count, logp_and_mr, molecular_weight, pains_passes, qed_with_bundle,
-        ring_bundle, tpsa,
-    };
-
-    let m1 = mol1.inner.as_ref();
-    let m2 = mol2.inner.as_ref();
-
     let (name1, name2) = names.unwrap_or_else(|| ("Molecule A".into(), "Molecule B".into()));
-
     let heading = title
-        .map(|t| t.to_string())
+        .map(str::to_owned)
         .unwrap_or_else(|| format!("{name1} vs {name2}"));
+    let metrics = ComparisonMetrics::new(mol1.inner.as_ref(), mol2.inner.as_ref());
+    let summary = metrics.summary(mol1.inner.as_ref(), mol2.inner.as_ref());
+    let table = comparison_table(&metrics, &name1, &name2);
+    Report {
+        html: comparison_document(&heading, metrics.common, &summary, &table),
+    }
+}
 
-    let svg1 =
-        chematic_mol::stereo_depiction::with_stereo_depiction(m1, chematic_depict::render_svg);
-    let svg2 =
-        chematic_mol::stereo_depiction::with_stereo_depiction(m2, chematic_depict::render_svg);
+struct ComparisonMetrics {
+    svg1: String,
+    svg2: String,
+    mw1: f64,
+    mw2: f64,
+    logp1: f64,
+    logp2: f64,
+    tpsa1: f64,
+    tpsa2: f64,
+    hbd1: usize,
+    hbd2: usize,
+    hba1: usize,
+    hba2: usize,
+    qed1: f64,
+    qed2: f64,
+    lip1: bool,
+    lip2: bool,
+    pains1: bool,
+    pains2: bool,
+    brenk1: bool,
+    brenk2: bool,
+    common: usize,
+}
 
-    let mw1 = molecular_weight(m1);
-    let mw2 = molecular_weight(m2);
-    let (logp1, _) = logp_and_mr(m1);
-    let (logp2, _) = logp_and_mr(m2);
-    let tpsa1 = tpsa(m1);
-    let tpsa2 = tpsa(m2);
-    let hbd1 = hbd_count(m1);
-    let hbd2 = hbd_count(m2);
-    let rb1 = ring_bundle(m1);
-    let rb2 = ring_bundle(m2);
-    let qed1 = qed_with_bundle(m1, &rb1);
-    let qed2 = qed_with_bundle(m2, &rb2);
-    let lip1 = mw1 <= 500.0 && hbd1 <= 5 && rb1.hba_count <= 10 && logp1 <= 5.0;
-    let lip2 = mw2 <= 500.0 && hbd2 <= 5 && rb2.hba_count <= 10 && logp2 <= 5.0;
-    let pains1 = pains_passes(m1);
-    let pains2 = pains_passes(m2);
-    let brenk1 = brenk_passes(m1);
-    let brenk2 = brenk_passes(m2);
-
-    // MCS common atoms (reuse diff logic)
-    let config = chematic_smarts::McsConfig::default();
-    let qmol = chematic_smarts::find_mcs_with_config(&[m1, m2], &config);
-    let common = qmol.atoms.len();
-
-    // Delta summary (same logic as Mol::diff)
-    let elem_parts: Vec<String> = {
-        use std::collections::BTreeMap;
-        let mut c1: BTreeMap<&'static str, i32> = BTreeMap::new();
-        let mut c2: BTreeMap<&'static str, i32> = BTreeMap::new();
-        for i in 0..m1.atom_count() {
-            *c1.entry(m1.atom(chematic_core::AtomIdx(i as u32)).element.symbol())
-                .or_insert(0) += 1;
+impl ComparisonMetrics {
+    fn new(m1: &chematic_core::Molecule, m2: &chematic_core::Molecule) -> Self {
+        use chematic_chem::{
+            brenk_passes, hbd_count, logp_and_mr, molecular_weight, pains_passes, qed_with_bundle,
+            ring_bundle, tpsa,
+        };
+        let rb1 = ring_bundle(m1);
+        let rb2 = ring_bundle(m2);
+        let mw1 = molecular_weight(m1);
+        let mw2 = molecular_weight(m2);
+        let (logp1, _) = logp_and_mr(m1);
+        let (logp2, _) = logp_and_mr(m2);
+        let hbd1 = hbd_count(m1);
+        let hbd2 = hbd_count(m2);
+        let config = chematic_smarts::McsConfig::default();
+        Self {
+            svg1: chematic_mol::stereo_depiction::with_stereo_depiction(
+                m1,
+                chematic_depict::render_svg,
+            ),
+            svg2: chematic_mol::stereo_depiction::with_stereo_depiction(
+                m2,
+                chematic_depict::render_svg,
+            ),
+            mw1,
+            mw2,
+            logp1,
+            logp2,
+            tpsa1: tpsa(m1),
+            tpsa2: tpsa(m2),
+            hbd1,
+            hbd2,
+            hba1: rb1.hba_count,
+            hba2: rb2.hba_count,
+            qed1: qed_with_bundle(m1, &rb1),
+            qed2: qed_with_bundle(m2, &rb2),
+            lip1: mw1 <= 500.0 && hbd1 <= 5 && rb1.hba_count <= 10 && logp1 <= 5.0,
+            lip2: mw2 <= 500.0 && hbd2 <= 5 && rb2.hba_count <= 10 && logp2 <= 5.0,
+            pains1: pains_passes(m1),
+            pains2: pains_passes(m2),
+            brenk1: brenk_passes(m1),
+            brenk2: brenk_passes(m2),
+            common: chematic_smarts::find_mcs_with_config(&[m1, m2], &config)
+                .atoms
+                .len(),
         }
-        for i in 0..m2.atom_count() {
-            *c2.entry(m2.atom(chematic_core::AtomIdx(i as u32)).element.symbol())
-                .or_insert(0) += 1;
-        }
-        let all: std::collections::BTreeSet<_> = c1.keys().chain(c2.keys()).copied().collect();
-        all.iter()
-            .filter_map(|e| {
-                let d = c2.get(e).copied().unwrap_or(0) - c1.get(e).copied().unwrap_or(0);
-                if d != 0 {
-                    Some(if d > 0 {
-                        format!("+{d}{e}")
-                    } else {
-                        format!("{d}{e}")
-                    })
+    }
+
+    fn summary(&self, m1: &chematic_core::Molecule, m2: &chematic_core::Molecule) -> String {
+        format!(
+            "{}. \u{0394}LogP {:+.2}, \u{0394}TPSA {:+.1} \u{00c5}\u{00b2}, \u{0394}MW {:+.1} Da.",
+            elemental_delta(m1, m2),
+            self.logp2 - self.logp1,
+            self.tpsa2 - self.tpsa1,
+            self.mw2 - self.mw1,
+        )
+    }
+}
+
+fn elemental_delta(m1: &chematic_core::Molecule, m2: &chematic_core::Molecule) -> String {
+    use std::collections::BTreeMap;
+    let mut c1: BTreeMap<&'static str, i32> = BTreeMap::new();
+    let mut c2: BTreeMap<&'static str, i32> = BTreeMap::new();
+    for i in 0..m1.atom_count() {
+        *c1.entry(m1.atom(chematic_core::AtomIdx(i as u32)).element.symbol())
+            .or_insert(0) += 1;
+    }
+    for i in 0..m2.atom_count() {
+        *c2.entry(m2.atom(chematic_core::AtomIdx(i as u32)).element.symbol())
+            .or_insert(0) += 1;
+    }
+    let all: std::collections::BTreeSet<_> = c1.keys().chain(c2.keys()).copied().collect();
+    let parts: Vec<_> = all
+        .iter()
+        .filter_map(|e| {
+            let d = c2.get(e).copied().unwrap_or(0) - c1.get(e).copied().unwrap_or(0);
+            if d != 0 {
+                Some(if d > 0 {
+                    format!("+{d}{e}")
                 } else {
-                    None
-                }
-            })
-            .collect()
-    };
-    let elem_str = if elem_parts.is_empty() {
+                    format!("{d}{e}")
+                })
+            } else {
+                None
+            }
+        })
+        .collect();
+    if parts.is_empty() {
         "Same elemental composition".into()
     } else {
-        elem_parts.join(", ")
-    };
-    let summary = format!(
-        "{}. \u{0394}LogP {:+.2}, \u{0394}TPSA {:+.1} \u{00c5}\u{00b2}, \u{0394}MW {:+.1} Da.",
-        elem_str,
-        logp2 - logp1,
-        tpsa2 - tpsa1,
-        mw2 - mw1,
-    );
+        parts.join(", ")
+    }
+}
 
-    fn delta_class(d: f64) -> &'static str {
-        if d > 0.0 {
-            "pos"
-        } else if d < 0.0 {
-            "neg"
-        } else {
-            ""
-        }
+fn delta_class(delta: f64) -> &'static str {
+    if delta > 0.0 {
+        "pos"
+    } else if delta < 0.0 {
+        "neg"
+    } else {
+        ""
     }
-    fn flag(v: bool, ok: &str, fail: &str) -> String {
-        if v {
-            format!(r#"<span class="pass">{ok}</span>"#)
-        } else {
-            format!(r#"<span class="fail">{fail}</span>"#)
-        }
-    }
-    fn warn_flag(v: bool) -> String {
-        if v {
-            r#"<span class="pass">✓</span>"#.into()
-        } else {
-            r#"<span class="warn">⚠</span>"#.into()
-        }
-    }
+}
 
-    let ver = env!("CARGO_PKG_VERSION");
-    let html = format!(
-        r#"<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>{heading}</title>
-<style>
-body{{font-family:system-ui,sans-serif;background:#f8f9fa;padding:24px;margin:0}}
-h1{{font-size:1.4rem;color:#333;margin-bottom:4px}}
-.meta{{font-size:.85rem;color:#666;margin-bottom:6px}}
-.summary{{font-size:.85rem;color:#444;background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:8px 12px;margin-bottom:20px;display:inline-block}}
-table{{border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}}
-th,td{{padding:10px 16px;text-align:left;border-bottom:1px solid #f0f0f0;font-size:.88rem}}
-th{{background:#f8f9fa;font-weight:600;color:#555}}
-td.num{{text-align:right;font-variant-numeric:tabular-nums}}
-td.delta{{text-align:right;font-size:.8rem;font-weight:600}}
-.pos{{color:#0a6640}}
-.neg{{color:#8b1c1c}}
-.pass{{color:#0a6640;font-weight:600}}
-.fail{{color:#8b1c1c;font-weight:600}}
-.warn{{color:#7d5a00;font-weight:600}}
-.svg-cell svg{{width:180px;height:140px}}
-</style>
-</head>
-<body>
-<h1>{heading}</h1>
-<p class="meta">Common scaffold: {common} atoms &middot; generated by chematic v{ver}</p>
-<p class="summary">{summary}</p>
-<table>
+fn flag(value: bool, ok: &str, fail: &str) -> String {
+    if value {
+        format!(r#"<span class="pass">{ok}</span>"#)
+    } else {
+        format!(r#"<span class="fail">{fail}</span>"#)
+    }
+}
+
+fn warn_flag(value: bool) -> String {
+    if value {
+        r#"<span class="pass">✓</span>"#.into()
+    } else {
+        r#"<span class="warn">⚠</span>"#.into()
+    }
+}
+
+fn comparison_table(m: &ComparisonMetrics, name1: &str, name2: &str) -> String {
+    format!(
+        r#"<table>
 <tr><th>Property</th><th>{name1}</th><th>{name2}</th><th>Delta</th></tr>
 <tr><td>Structure</td>
     <td class="svg-cell">{svg1}</td>
@@ -572,32 +620,57 @@ td.delta{{text-align:right;font-size:.8rem;font-weight:600}}
     <td>{pains1_s}</td><td>{pains2_s}</td><td></td></tr>
 <tr><td>Brenk</td>
     <td>{brenk1_s}</td><td>{brenk2_s}</td><td></td></tr>
-</table>
-</body>
-</html>"#,
-        dc_mw = delta_class(mw2 - mw1),
-        dmw = mw2 - mw1,
-        dc_lp = delta_class(logp2 - logp1),
-        dlp = logp2 - logp1,
-        dc_tp = delta_class(tpsa2 - tpsa1),
-        dtp = tpsa2 - tpsa1,
-        dc_hbd = delta_class((hbd2 as f64) - (hbd1 as f64)),
-        dhbd = hbd2 as i32 - hbd1 as i32,
-        dc_hba = delta_class((rb2.hba_count as f64) - (rb1.hba_count as f64)),
-        dhba = rb2.hba_count as i32 - rb1.hba_count as i32,
-        hba1 = rb1.hba_count,
-        hba2 = rb2.hba_count,
-        dc_qed = delta_class(qed2 - qed1),
-        dqed = qed2 - qed1,
-        lip1_s = flag(lip1, "✓ Lipinski", "✗ Lipinski"),
-        lip2_s = flag(lip2, "✓ Lipinski", "✗ Lipinski"),
-        pains1_s = flag(pains1, "✓ PAINS", "✗ PAINS"),
-        pains2_s = flag(pains2, "✓ PAINS", "✗ PAINS"),
-        brenk1_s = warn_flag(brenk1),
-        brenk2_s = warn_flag(brenk2),
-    );
+</table>"#,
+        svg1 = m.svg1,
+        svg2 = m.svg2,
+        mw1 = m.mw1,
+        mw2 = m.mw2,
+        dc_mw = delta_class(m.mw2 - m.mw1),
+        dmw = m.mw2 - m.mw1,
+        logp1 = m.logp1,
+        logp2 = m.logp2,
+        dc_lp = delta_class(m.logp2 - m.logp1),
+        dlp = m.logp2 - m.logp1,
+        tpsa1 = m.tpsa1,
+        tpsa2 = m.tpsa2,
+        dc_tp = delta_class(m.tpsa2 - m.tpsa1),
+        dtp = m.tpsa2 - m.tpsa1,
+        hbd1 = m.hbd1,
+        hbd2 = m.hbd2,
+        dc_hbd = delta_class(m.hbd2 as f64 - m.hbd1 as f64),
+        dhbd = m.hbd2 as i32 - m.hbd1 as i32,
+        hba1 = m.hba1,
+        hba2 = m.hba2,
+        dc_hba = delta_class(m.hba2 as f64 - m.hba1 as f64),
+        dhba = m.hba2 as i32 - m.hba1 as i32,
+        qed1 = m.qed1,
+        qed2 = m.qed2,
+        dc_qed = delta_class(m.qed2 - m.qed1),
+        dqed = m.qed2 - m.qed1,
+        lip1_s = flag(m.lip1, "✓ Lipinski", "✗ Lipinski"),
+        lip2_s = flag(m.lip2, "✓ Lipinski", "✗ Lipinski"),
+        pains1_s = flag(m.pains1, "✓ PAINS", "✗ PAINS"),
+        pains2_s = flag(m.pains2, "✓ PAINS", "✗ PAINS"),
+        brenk1_s = warn_flag(m.brenk1),
+        brenk2_s = warn_flag(m.brenk2),
+    )
+}
 
-    Report { html }
+fn comparison_document(heading: &str, common: usize, summary: &str, table: &str) -> String {
+    let version = env!("CARGO_PKG_VERSION");
+    format!(
+        r#"<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>{heading}</title>
+<style>
+body{{font-family:system-ui,sans-serif;background:#f8f9fa;padding:24px;margin:0}}h1{{font-size:1.4rem;color:#333;margin-bottom:4px}}
+.meta{{font-size:.85rem;color:#666;margin-bottom:6px}}.summary{{font-size:.85rem;color:#444;background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:8px 12px;margin-bottom:20px;display:inline-block}}
+table{{border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}}th,td{{padding:10px 16px;text-align:left;border-bottom:1px solid #f0f0f0;font-size:.88rem}}
+th{{background:#f8f9fa;font-weight:600;color:#555}}td.num{{text-align:right;font-variant-numeric:tabular-nums}}td.delta{{text-align:right;font-size:.8rem;font-weight:600}}
+.pos{{color:#0a6640}}.neg{{color:#8b1c1c}}.pass{{color:#0a6640;font-weight:600}}.fail{{color:#8b1c1c;font-weight:600}}.warn{{color:#7d5a00;font-weight:600}}.svg-cell svg{{width:180px;height:140px}}
+</style></head><body><h1>{heading}</h1>
+<p class="meta">Common scaffold: {common} atoms &middot; generated by chematic v{version}</p>
+<p class="summary">{summary}</p>{table}</body></html>"#
+    )
 }
 
 // ---------------------------------------------------------------------------

@@ -59,7 +59,9 @@
 use crate::fmath::DetMath;
 use chematic_core::{AtomIdx, Molecule};
 
-use super::classify::{MACROCYCLE_MIN, RingMembershipIndex, classify_bond};
+use super::classify::{
+    BondClassification, MACROCYCLE_MIN, RingMembership, RingMembershipIndex, classify_bond,
+};
 use super::types::{TorsionKnowledgeConfig, TorsionKnowledgeError, TorsionKnowledgeSource};
 use crate::dg_fft::{ideal_bond_angle, ideal_bond_length};
 
@@ -101,6 +103,113 @@ pub fn dist14_trans(d1: f64, d2: f64, d3: f64, ang12: f64, ang23: f64) -> f64 {
     (dx * dx + dy * dy).sqrt()
 }
 
+fn macrocycle_ring_size(classification: &BondClassification) -> Option<usize> {
+    match classification.ring {
+        RingMembership::NotInRing | RingMembership::SmallRing(_) => None,
+        RingMembership::Macrocycle(size) => Some(size),
+        RingMembership::FusedOrBridged { chosen_size } => Some(chosen_size),
+    }
+    .filter(|&size| size >= MACROCYCLE_MIN)
+}
+
+fn is_genuine_14(mol: &Molecule, atoms: [AtomIdx; 4]) -> bool {
+    mol.bond_between(atoms[0], atoms[3]).is_none()
+        && mol.bond_between(atoms[0], atoms[2]).is_none()
+        && mol.bond_between(atoms[1], atoms[3]).is_none()
+}
+
+fn macrocycle_pair_adjustment(
+    mol: &Molecule,
+    ring_index: &RingMembershipIndex,
+    classification: &BondClassification,
+    ring_size: usize,
+    atoms: [AtomIdx; 4],
+) -> PairBoundAdjustment {
+    let [atom1, atom2, atom3, atom4] = atoms;
+    let geometry = [
+        ideal_bond_length(mol, atom1, atom2),
+        ideal_bond_length(mol, atom2, atom3),
+        ideal_bond_length(mol, atom3, atom4),
+        ideal_bond_angle(mol, atom2),
+        ideal_bond_angle(mol, atom3),
+    ];
+    let [bl1, bl2, bl3, ba12, ba23] = geometry;
+    let cis = dist14_cis(bl1, bl2, bl3, ba12, ba23);
+    let trans = dist14_trans(bl1, bl2, bl3, ba12, ba23);
+    let old_lower = trans - PIN_TOLERANCE_ANGSTROM;
+    let old_upper = trans + PIN_TOLERANCE_ANGSTROM;
+    let lower = cis.min(trans);
+    let upper = cis.max(trans);
+    let relaxed_reason = |detail: &str| {
+        format!(
+            "{detail}: bounds relaxed to the full cis-or-trans band [{lower:.3}, {upper:.3}] Å instead of the naive single-trans-configuration pin"
+        )
+    };
+    let central_ring_ids: Vec<usize> = ring_index
+        .ring_ids_for(atom2, atom3)
+        .iter()
+        .copied()
+        .filter(|&id| ring_index.rings()[id].len() >= MACROCYCLE_MIN)
+        .collect();
+    let (new_lower, new_upper, rule_id, reason) = match (
+        classification.amide_like,
+        central_ring_ids.as_slice(),
+    ) {
+        (true, [central_ring_id]) => {
+            let continues = |x, y| ring_index.ring_ids_for(x, y).contains(central_ring_id);
+            let first_continues = continues(atom2, atom1);
+            let fourth_continues = continues(atom3, atom4);
+            let same_role = first_continues == fourth_continues;
+            let (distance, name) = if same_role {
+                (trans, "trans")
+            } else {
+                (cis, "cis")
+            };
+            (
+                distance - PIN_TOLERANCE_ANGSTROM,
+                distance + PIN_TOLERANCE_ANGSTROM,
+                "macrocycle_14:amide_ester_pinned",
+                format!(
+                    "amide/ester-like central bond in a {ring_size}-membered ring: 1-4 pair pinned to the single {name} configuration ({distance:.3} Å +/- {PIN_TOLERANCE_ANGSTROM}) -- {} ring-continuation ({first_continues}/{fourth_continues}), not relaxed to a band",
+                    if same_role {
+                        "both atoms share the same"
+                    } else {
+                        "atoms differ in"
+                    },
+                ),
+            )
+        }
+        (true, ids) => (
+            lower,
+            upper,
+            "macrocycle_14:relaxed_band",
+            relaxed_reason(&format!(
+                "amide/ester-like central bond belongs to {} distinct eligible macrocycles ({ring_size}-membered chosen as smallest) -- role (ring-continuation vs exocyclic) is ambiguous, abstained from pinning",
+                ids.len()
+            )),
+        ),
+        (false, _) => (
+            lower,
+            upper,
+            "macrocycle_14:relaxed_band",
+            relaxed_reason(&format!(
+                "generic 1-4 pair in a {ring_size}-membered macrocycle"
+            )),
+        ),
+    };
+    PairBoundAdjustment {
+        atom_pair: (atom1, atom4),
+        old_lower,
+        new_lower,
+        old_upper,
+        new_upper,
+        rule_id: rule_id.to_string(),
+        source: TorsionKnowledgeSource::MacrocycleAdaptation,
+        ring_size,
+        reason,
+    }
+}
+
 /// Propose macrocycle-aware 1-4 bound relaxations for every eligible 1-4
 /// atom pair (atom1-atom4, connected through a central B-C bond that sits
 /// in a ring of size >= [`MACROCYCLE_MIN`]) in `mol`.
@@ -134,16 +243,10 @@ pub fn macrocycle_14_bound_adjustments(
             continue; // no 1-4 pair possible through this bond
         }
 
-        let bc = classify_bond(mol, &ring_index, atom2, atom3);
-        let ring_size = match &bc.ring {
-            super::classify::RingMembership::NotInRing => continue,
-            super::classify::RingMembership::SmallRing(_) => continue,
-            super::classify::RingMembership::Macrocycle(n) => *n,
-            super::classify::RingMembership::FusedOrBridged { chosen_size } => *chosen_size,
-        };
-        if ring_size < MACROCYCLE_MIN {
+        let classification = classify_bond(mol, &ring_index, atom2, atom3);
+        let Some(ring_size) = macrocycle_ring_size(&classification) else {
             continue;
-        }
+        };
 
         for (atom1, _) in mol.neighbors(atom2) {
             if atom1 == atom3 {
@@ -158,144 +261,18 @@ pub fn macrocycle_14_bound_adjustments(
                 // circuit, not a real 1-4), or if the "diagonal" bonds
                 // atom1-atom3 / atom2-atom4 exist (fused-ring false-1-4,
                 // per RDKit's own cited bug).
-                if mol.bond_between(atom1, atom4).is_some()
-                    || mol.bond_between(atom1, atom3).is_some()
-                    || mol.bond_between(atom2, atom4).is_some()
-                {
+                let atoms = [atom1, atom2, atom3, atom4];
+                if !is_genuine_14(mol, atoms) {
                     continue;
                 }
 
-                let bl1 = ideal_bond_length(mol, atom1, atom2);
-                let bl2 = ideal_bond_length(mol, atom2, atom3);
-                let bl3 = ideal_bond_length(mol, atom3, atom4);
-                let ba12 = ideal_bond_angle(mol, atom2);
-                let ba23 = ideal_bond_angle(mol, atom3);
-
-                let d_cis = dist14_cis(bl1, bl2, bl3, ba12, ba23);
-                let d_trans = dist14_trans(bl1, bl2, bl3, ba12, ba23);
-
-                let old_lower = d_trans - PIN_TOLERANCE_ANGSTROM;
-                let old_upper = d_trans + PIN_TOLERANCE_ANGSTROM;
-                let lo = d_cis.min(d_trans);
-                let hi = d_cis.max(d_trans);
-                let relaxed_reason = |detail: &str| {
-                    format!(
-                        "{detail}: bounds relaxed to the full cis-or-trans band [{lo:.3}, {hi:.3}] Å instead of the naive single-trans-configuration pin"
-                    )
-                };
-
-                // For a tertiary amide/ester central bond, atom1 and atom4
-                // each have (up to) two candidates: one continues the
-                // macrocycle ring, the other is an exocyclic substituent
-                // (e.g. an N-methyl, or the carbonyl =O itself, which is
-                // exocyclic relative to the ring). Verified against a live
-                // RDKit oracle (embedded conformers across 20 seeds, plus
-                // RDKit's own `_checkMacrocycleAllInSameRingAmideEster14` /
-                // `BoundsMatrixBuilder.cpp`): the two ring-continuation
-                // atoms are TRANS to each other (the dominant trans-amide
-                // macrolactam conformation, which keeps the macrocycle
-                // extended), and by the same planar-amide geometry, the two
-                // EXOCYCLIC atoms are also TRANS to each other -- only a
-                // ring-continuation/exocyclic CROSS pair is CIS. A single
-                // "same role -> trans, different role -> cis" rule, not
-                // four independently memorized cases: pinning all four
-                // combinations to cis (the original, unconditional
-                // behavior) was a geometrically unsatisfiable constraint
-                // set for any tertiary amide/ester. Applies just as much to
-                // a SECONDARY (N-H) amide's 2 real combinations (one N-side
-                // candidate x two C-side candidates) -- both a cis and a
-                // trans value are still needed there, so "blanket cis is
-                // harmless for secondary amides" (an earlier, incorrect
-                // claim about this same code) does not hold either.
-                //
-                // "Continues the ring" must mean the SAME macrocycle as the
-                // central bond, not merely "is in some ring of any kind" --
-                // ring SIZE alone can't tell an N-cyclohexyl substituent's
-                // own 6-ring apart from a coincidentally same-sized
-                // macrocycle segment. Resolved via ring IDENTITY
-                // (`ring_ids_for`, index into the real ring list) instead of
-                // `ring_sizes_for`: a side bond only "continues the ring" if
-                // its own ring-ID set intersects the central bond's
-                // eligible-macrocycle ring-ID set.
-                let central_ring_ids: Vec<usize> = ring_index
-                    .ring_ids_for(atom2, atom3)
-                    .iter()
-                    .copied()
-                    .filter(|&id| ring_index.rings()[id].len() >= MACROCYCLE_MIN)
-                    .collect();
-
-                let (new_lower, new_upper, rule_id, reason) = match (
-                    bc.amide_like,
-                    central_ring_ids.as_slice(),
-                ) {
-                    (true, [central_ring_id]) => {
-                        let continues_central_macrocycle = |x: AtomIdx, y: AtomIdx| {
-                            ring_index.ring_ids_for(x, y).contains(central_ring_id)
-                        };
-                        let atom1_continues_ring = continues_central_macrocycle(atom2, atom1);
-                        let atom4_continues_ring = continues_central_macrocycle(atom3, atom4);
-                        let same_role = atom1_continues_ring == atom4_continues_ring;
-                        let (d, config_name) = if same_role {
-                            (d_trans, "trans")
-                        } else {
-                            (d_cis, "cis")
-                        };
-                        (
-                            d - PIN_TOLERANCE_ANGSTROM,
-                            d + PIN_TOLERANCE_ANGSTROM,
-                            "macrocycle_14:amide_ester_pinned",
-                            format!(
-                                "amide/ester-like central bond in a {ring_size}-membered ring: 1-4 pair pinned to the single {config_name} configuration ({d:.3} Å +/- {PIN_TOLERANCE_ANGSTROM}) -- {} ring-continuation ({}/{}), not relaxed to a band",
-                                if same_role {
-                                    "both atoms share the same"
-                                } else {
-                                    "atoms differ in"
-                                },
-                                atom1_continues_ring,
-                                atom4_continues_ring,
-                            ),
-                        )
-                    }
-                    (true, ids) => {
-                        // Fail closed: the central bond sits in more than
-                        // one eligible macrocycle (a fused/bridged system),
-                        // so which ring's path the cis/trans split should
-                        // follow is not well-defined from ring membership
-                        // alone. Abstain from the pin rather than guess.
-                        (
-                            lo,
-                            hi,
-                            "macrocycle_14:relaxed_band",
-                            relaxed_reason(&format!(
-                                "amide/ester-like central bond belongs to {} distinct eligible \
-                                 macrocycles ({ring_size}-membered chosen as smallest) -- role \
-                                 (ring-continuation vs exocyclic) is ambiguous, abstained from \
-                                 pinning",
-                                ids.len()
-                            )),
-                        )
-                    }
-                    (false, _) => (
-                        lo,
-                        hi,
-                        "macrocycle_14:relaxed_band",
-                        relaxed_reason(&format!(
-                            "generic 1-4 pair in a {ring_size}-membered macrocycle"
-                        )),
-                    ),
-                };
-
-                out.push(PairBoundAdjustment {
-                    atom_pair: (atom1, atom4),
-                    old_lower,
-                    new_lower,
-                    old_upper,
-                    new_upper,
-                    rule_id: rule_id.to_string(),
-                    source: TorsionKnowledgeSource::MacrocycleAdaptation,
+                out.push(macrocycle_pair_adjustment(
+                    mol,
+                    &ring_index,
+                    &classification,
                     ring_size,
-                    reason,
-                });
+                    atoms,
+                ));
             }
         }
     }

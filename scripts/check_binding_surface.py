@@ -24,10 +24,24 @@ DECL_RE = re.compile(
     re.MULTILINE,
 )
 PY_DECL_RE = re.compile(
-    r"#\[pyfunction(?:\([^\]]*\))?\](?:\s*#\[[^\]]+\])*\s*fn\s+(\w+)",
+    r"#\[pyfunction(?:\([^\]]*\))?\](?:\s*#\[[^\]]+\])*\s*"
+    r"(?:pub(?:\([^)]*\))?\s+)?fn\s+(\w+)",
     re.MULTILINE,
 )
 PY_REGISTER_RE = re.compile(r"wrap_pyfunction!\((\w+)", re.MULTILINE)
+PY_REGISTER_LIST_RE = re.compile(
+    r"register_pyfunctions!\(\s*\w+\s*,(?P<body>.*?)\)",
+    re.DOTALL,
+)
+IDENT_RE = re.compile(r"\b([A-Za-z_]\w*)\b")
+
+
+def python_registered_names(text: str) -> list[str]:
+    """Collect registrations made directly or through register_pyfunctions!."""
+    names = set(PY_REGISTER_RE.findall(text))
+    for registration in PY_REGISTER_LIST_RE.finditer(text):
+        names.update(IDENT_RE.findall(registration.group("body")))
+    return sorted(names)
 
 
 def source_text(root: Path) -> str:
@@ -37,7 +51,7 @@ def source_text(root: Path) -> str:
 def main() -> int:
     wasm_names = sorted(set(DECL_RE.findall(source_text(WASM))) - {"start"})
     python_declared = sorted(set(PY_DECL_RE.findall(source_text(PY))))
-    python_registered = sorted(set(PY_REGISTER_RE.findall(source_text(PY))))
+    python_registered = python_registered_names(source_text(PY))
     missing_registration = sorted(set(python_declared) - set(python_registered))
     surface_payload = json.dumps(
         {

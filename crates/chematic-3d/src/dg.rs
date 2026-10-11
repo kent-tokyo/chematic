@@ -333,6 +333,184 @@ fn order_rings_by_fusion_adjacency<'a>(
     result
 }
 
+const CHAIR_R: f64 = 1.452;
+const CHAIR_H: f64 = 0.256;
+const ENVELOPE_H: f64 = 0.400;
+
+#[derive(Clone, Copy)]
+enum RingConformation {
+    Flat,
+    Chair,
+    Envelope,
+    Crown(f64),
+}
+
+fn ring_polygon_radius(mol: &Molecule, ring: &[AtomIdx]) -> f64 {
+    let bond_len = ideal_bond_len(mol, ring[0], ring[1 % ring.len()]);
+    bond_len / (2.0 * (PI / ring.len() as f64).dsin())
+}
+
+fn ring_centroid_xy(ring: &[AtomIdx], coords: &Coords3D) -> (f64, f64) {
+    let (sx, sy) = ring.iter().fold((0.0, 0.0), |(sx, sy), &atom| {
+        let point = coords.get(atom);
+        (sx + point.x, sy + point.y)
+    });
+    let count = ring.len() as f64;
+    (sx / count, sy / count)
+}
+
+fn direct_bond_ring_center(
+    mol: &Molecule,
+    ring: &[AtomIdx],
+    relevant_rings: &[&Vec<AtomIdx>],
+    radius: f64,
+    coords: &Coords3D,
+    placed: &[bool],
+) -> Option<(f64, f64)> {
+    let (ring_atom, anchor_atom) = ring.iter().find_map(|&ring_atom| {
+        mol.neighbors(ring_atom)
+            .map(|(neighbor, _)| neighbor)
+            .find(|neighbor| placed[neighbor.0 as usize])
+            .map(|anchor_atom| (ring_atom, anchor_atom))
+    })?;
+    let anchor_pos = coords.get(anchor_atom);
+    let centroid = relevant_rings
+        .iter()
+        .find(|other_ring| other_ring.contains(&anchor_atom))
+        .map(|other_ring| ring_centroid_xy(other_ring, coords))
+        .unwrap_or((anchor_pos.x, anchor_pos.y));
+    let dx = anchor_pos.x - centroid.0;
+    let dy = anchor_pos.y - centroid.1;
+    let distance = (dx * dx + dy * dy).sqrt();
+    let (ux, uy) = if distance > 1e-6 {
+        (dx / distance, dy / distance)
+    } else {
+        (1.0, 0.0)
+    };
+    let bond_len = ideal_bond_len(mol, ring_atom, anchor_atom);
+    let ring_atom_x = anchor_pos.x + ux * bond_len;
+    let ring_atom_y = anchor_pos.y + uy * bond_len;
+    let position = ring.iter().position(|&atom| atom == ring_atom).unwrap();
+    let angle = 2.0 * PI * position as f64 / ring.len() as f64;
+    Some((
+        ring_atom_x - radius * angle.dcos(),
+        ring_atom_y - radius * angle.dsin(),
+    ))
+}
+
+fn fresh_ring_center(
+    component: &[AtomIdx],
+    radius: f64,
+    x_offset: f64,
+    any_placed_yet: bool,
+    coords: &Coords3D,
+    placed: &[bool],
+) -> (f64, f64) {
+    let anchor_x = if any_placed_yet {
+        component
+            .iter()
+            .filter(|atom| placed[atom.0 as usize])
+            .map(|&atom| coords.get(atom).x)
+            .fold(f64::NEG_INFINITY, f64::max)
+            + 5.0
+    } else {
+        x_offset
+    };
+    (anchor_x + radius, 0.0)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn ring_center(
+    mol: &Molecule,
+    component: &[AtomIdx],
+    ring: &[AtomIdx],
+    relevant_rings: &[&Vec<AtomIdx>],
+    radius: f64,
+    x_offset: f64,
+    any_placed_yet: bool,
+    coords: &Coords3D,
+    placed: &[bool],
+) -> (f64, f64) {
+    let shared_atoms: Vec<AtomIdx> = ring
+        .iter()
+        .copied()
+        .filter(|atom| placed[atom.0 as usize])
+        .collect();
+    match shared_atoms.as_slice() {
+        [] => direct_bond_ring_center(mol, ring, relevant_rings, radius, coords, placed)
+            .unwrap_or_else(|| {
+                fresh_ring_center(component, radius, x_offset, any_placed_yet, coords, placed)
+            }),
+        [atom] => {
+            let point = coords.get(*atom);
+            (point.x + radius, point.y)
+        }
+        atoms => {
+            let first = coords.get(atoms[0]);
+            let second = coords.get(atoms[1]);
+            (
+                (first.x + second.x) / 2.0,
+                (first.y + second.y) / 2.0 + radius,
+            )
+        }
+    }
+}
+
+fn ring_conformation(mol: &Molecule, ring: &[AtomIdx], placed: &[bool]) -> RingConformation {
+    let is_aromatic = ring.iter().all(|&atom| mol.atom(atom).aromatic);
+    let is_fused = ring.iter().any(|atom| placed[atom.0 as usize]);
+    if is_aromatic || is_fused {
+        return RingConformation::Flat;
+    }
+    match ring.len() {
+        6 => RingConformation::Chair,
+        5 => RingConformation::Envelope,
+        size if size >= 8 => RingConformation::Crown(0.3 + 0.04 * (size as f64 - 8.0).min(10.0)),
+        _ => RingConformation::Flat,
+    }
+}
+
+fn ring_atom_height(conformation: RingConformation, position: usize, ring_size: usize) -> f64 {
+    match conformation {
+        RingConformation::Chair if position.is_multiple_of(2) => CHAIR_H,
+        RingConformation::Chair => -CHAIR_H,
+        RingConformation::Envelope if position == ring_size - 1 => ENVELOPE_H,
+        RingConformation::Crown(height) if position.is_multiple_of(2) => height,
+        RingConformation::Crown(height) => -height,
+        RingConformation::Flat | RingConformation::Envelope => 0.0,
+    }
+}
+
+fn place_ring_atoms(
+    ring: &[AtomIdx],
+    center: (f64, f64),
+    radius: f64,
+    conformation: RingConformation,
+    coords: &mut Coords3D,
+    placed: &mut [bool],
+) {
+    let effective_radius = if matches!(conformation, RingConformation::Chair) {
+        CHAIR_R
+    } else {
+        radius
+    };
+    for (position, &atom) in ring.iter().enumerate() {
+        if placed[atom.0 as usize] {
+            continue;
+        }
+        let angle = 2.0 * PI * position as f64 / ring.len() as f64;
+        coords.set(
+            atom,
+            Point3::new(
+                center.0 + effective_radius * angle.dcos(),
+                center.1 + effective_radius * angle.dsin(),
+                ring_atom_height(conformation, position, ring.len()),
+            ),
+        );
+        placed[atom.0 as usize] = true;
+    }
+}
+
 /// Place ring atoms from SSSR onto regular polygon templates.
 ///
 /// Each ring that contains atoms from `component` is laid out in the XY
@@ -369,222 +547,20 @@ fn place_rings(
     let mut any_placed_yet = false;
 
     for ring in ordered_rings {
-        let ring_size = ring.len();
-        // Always assigned in every branch below before being read.
-        let ring_cx: f64;
-        let ring_cy: f64;
-
-        // Use bond length between consecutive ring atoms for the polygon side.
-        let bond_len = {
-            let a0 = ring[0];
-            let a1 = ring[1 % ring_size];
-            ideal_bond_len(mol, a0, a1)
-        };
-
-        // Circumradius of a regular polygon: r = bond_len / (2 * sin(PI / n)).
-        let r = bond_len / (2.0 * (PI / ring_size as f64).dsin());
-
-        // Placement strategy is decided from LIVE `placed` state here, not
-        // from `order_rings_by_fusion_adjacency`'s visiting order: that
-        // function only orders rings so that *some* already-placed
-        // neighbour (by either adjacency kind) exists by the time a ring
-        // is reached -- it does not, and should not, commit to which kind
-        // applies, since that can only be known once earlier rings in the
-        // same BFS traversal have actually been placed.
-        let shared_atoms: Vec<AtomIdx> = ring
-            .iter()
-            .copied()
-            .filter(|a| placed[a.0 as usize])
-            .collect();
-
-        if shared_atoms.is_empty() {
-            // No shared ring atom -- may still have a real bond straight to
-            // an already-placed atom -- biphenyl's two phenyl rings share
-            // zero atoms but ARE directly bonded to each other. Anchoring
-            // blindly at a fixed offset ignored that bond entirely and
-            // left it stretched to whatever the offset was (measured:
-            // exactly 5.0 Å for biphenyl, vs. an ideal ~1.4 Å aromatic C-C
-            // single bond) -- both ring endpoints were already marked
-            // `placed`, so `dfs_place`'s chain walk (which only visits
-            // *unplaced* neighbours) never got a chance to correct it.
-            // Look for such a bond first and, if found, anchor via its
-            // real ideal length instead.
-            let direct_bond = ring.iter().find_map(|&ring_atom| {
-                mol.neighbors(ring_atom)
-                    .map(|(nb, _)| nb)
-                    .find(|nb| placed[nb.0 as usize])
-                    .map(|anchor_atom| (ring_atom, anchor_atom))
-            });
-
-            if let Some((ring_atom, anchor_atom)) = direct_bond {
-                let anchor_pos = coords.get(anchor_atom);
-                // Extend away from the centroid of `anchor_atom`'s OWN
-                // already-placed ring specifically, not blindly along +X
-                // and not the whole component's centroid either: +X only
-                // happens to work when the connecting atom sits on the
-                // "outer" side of its own ring (biphenyl's own para-like
-                // case), and a whole-component centroid still misleads a
-                // 3+-ring chain (terphenyl) once an earlier ring has
-                // already skewed the average away from the specific ring
-                // being extended from. `place_rings` runs before any
-                // `dfs_place` chain walk, so every already-placed atom here
-                // is necessarily a ring atom -- `anchor_atom` always
-                // belongs to exactly one prior entry in `relevant_rings`.
-                // Measured without this: 3-phenylpyridine collapsed to
-                // 0.14 Å min pairwise distance (whole-component-centroid
-                // version), terphenyl's third ring still did too even with
-                // it (component-wide average, not this ring's own centroid).
-                let centroid_xy = relevant_rings
-                    .iter()
-                    .find(|other_ring| other_ring.contains(&anchor_atom))
-                    .map(|other_ring| {
-                        let (sx, sy, n) =
-                            other_ring
-                                .iter()
-                                .fold((0.0, 0.0, 0.0_f64), |(sx, sy, n), &a| {
-                                    let p = coords.get(a);
-                                    (sx + p.x, sy + p.y, n + 1.0)
-                                });
-                        (sx / n, sy / n)
-                    })
-                    .unwrap_or((anchor_pos.x, anchor_pos.y));
-                let dx = anchor_pos.x - centroid_xy.0;
-                let dy = anchor_pos.y - centroid_xy.1;
-                let dist = (dx * dx + dy * dy).sqrt();
-                let (ux, uy) = if dist > 1e-6 {
-                    (dx / dist, dy / dist)
-                } else {
-                    (1.0, 0.0)
-                };
-                let bond_len_to_ring = ideal_bond_len(mol, ring_atom, anchor_atom);
-                let ring_atom_x = anchor_pos.x + ux * bond_len_to_ring;
-                let ring_atom_y = anchor_pos.y + uy * bond_len_to_ring;
-                let k = ring.iter().position(|&a| a == ring_atom).unwrap();
-                let angle = 2.0 * PI * k as f64 / ring_size as f64;
-                ring_cx = ring_atom_x - r * angle.dcos();
-                ring_cy = ring_atom_y - r * angle.dsin();
-            } else {
-                // No direct bond to any already-placed atom -- this ring is
-                // reachable, if at all within this component, only through
-                // atoms `place_rings` hasn't placed yet (chain-bridged ring
-                // islands, e.g. two phenyls linked by a -CH2CH2- bridge;
-                // `place_rings` places every ring before any chain atom is
-                // walked, so that bridge's own length can't be known here).
-                // Known limitation, not fixed by this anchor: the fixed
-                // +5 Å offset below only guarantees no collision, not a
-                // correct bond length at the eventual chain-to-ring
-                // junction.
-                let anchor_x = if any_placed_yet {
-                    component
-                        .iter()
-                        .filter(|a| placed[a.0 as usize])
-                        .map(|&a| coords.get(a).x)
-                        .fold(f64::NEG_INFINITY, f64::max)
-                        + 5.0
-                } else {
-                    x_offset
-                };
-                ring_cx = anchor_x + r;
-                ring_cy = 0.0;
-            }
-        } else {
-            // Fuse to a previously-placed ring atom (shares >=1 atom with
-            // something already placed). If two atoms of this ring are
-            // already placed, shift the centre to be consistent.
-            if shared_atoms.len() >= 2 {
-                // Use the midpoint of the two most recently placed ring atoms.
-                let p0 = coords.get(shared_atoms[0]);
-                let p1 = coords.get(shared_atoms[1]);
-                ring_cx = (p0.x + p1.x) / 2.0;
-                ring_cy = (p0.y + p1.y) / 2.0 + r;
-            } else {
-                // shared_atoms.len() == 1, guaranteed nonempty by the
-                // `else` branch of `if shared_atoms.is_empty()` above.
-                let p0 = coords.get(shared_atoms[0]);
-                ring_cx = p0.x + r;
-                ring_cy = p0.y;
-            }
-        }
-
-        // Choose a ring conformation based on size and chemical environment.
-        //
-        // Rules applied only to non-fused, non-aromatic rings:
-        //   6-membered  → chair (r = 1.452 Å, z = ±0.256 Å, derived from
-        //                  109.5° bond angle and 1.54 Å C-C bond length)
-        //   5-membered  → envelope (regular pentagon, one atom ±0.40 Å above
-        //                  the plane of the other four)
-        //   ≥ 8-membered → crown (alternating ±h, h scaling with ring size)
-        //   everything else (aromatic, fused, 3/4/7-membered) → flat polygon
-        let is_aromatic = ring.iter().all(|&a| mol.atom(a).aromatic);
-        let is_fused = ring.iter().any(|a| placed[a.0 as usize]);
-
-        // Chair uses a geometry-derived xy radius (not the regular-polygon r).
-        // chair_r and chair_h are exact solutions for l=1.54 Å, θ=109.5°.
-        const CHAIR_R: f64 = 1.452;
-        const CHAIR_H: f64 = 0.256;
-        const ENVELOPE_H: f64 = 0.400;
-
-        enum Conf {
-            Flat,
-            Chair,
-            Envelope,
-            Crown(f64),
-        }
-        let conf = if is_aromatic || is_fused {
-            Conf::Flat
-        } else {
-            match ring_size {
-                6 => Conf::Chair,
-                5 => Conf::Envelope,
-                n if n >= 8 => Conf::Crown(0.3 + 0.04 * (n as f64 - 8.0).min(10.0)),
-                _ => Conf::Flat,
-            }
-        };
-
-        // Chair uses a different circumradius than the regular-polygon formula.
-        let effective_r = if matches!(conf, Conf::Chair) {
-            CHAIR_R
-        } else {
-            r
-        };
-
-        for (k, &atom_idx) in ring.iter().enumerate() {
-            if placed[atom_idx.0 as usize] {
-                continue; // shared atom already placed by a previous ring
-            }
-            let angle = 2.0 * PI * k as f64 / ring_size as f64;
-            let x = ring_cx + effective_r * angle.dcos();
-            let y = ring_cy + effective_r * angle.dsin();
-            let z = match conf {
-                // Chair: alternating ±h (CHAIR_H ≈ 0.256 Å).
-                Conf::Chair => {
-                    if k % 2 == 0 {
-                        CHAIR_H
-                    } else {
-                        -CHAIR_H
-                    }
-                }
-                // Envelope: last atom lifted above the mean plane of the other 4.
-                Conf::Envelope => {
-                    if k == ring_size - 1 {
-                        ENVELOPE_H
-                    } else {
-                        0.0
-                    }
-                }
-                // Crown: alternating ±h, height scales with ring size.
-                Conf::Crown(h) => {
-                    if k % 2 == 0 {
-                        h
-                    } else {
-                        -h
-                    }
-                }
-                Conf::Flat => 0.0,
-            };
-            coords.set(atom_idx, Point3::new(x, y, z));
-            placed[atom_idx.0 as usize] = true;
-        }
+        let radius = ring_polygon_radius(mol, ring);
+        let center = ring_center(
+            mol,
+            component,
+            ring,
+            &relevant_rings,
+            radius,
+            x_offset,
+            any_placed_yet,
+            coords,
+            placed,
+        );
+        let conformation = ring_conformation(mol, ring, placed);
+        place_ring_atoms(ring, center, radius, conformation, coords, placed);
         any_placed_yet = true;
     }
 }

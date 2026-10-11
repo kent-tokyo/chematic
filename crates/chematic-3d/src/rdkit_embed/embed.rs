@@ -286,6 +286,89 @@ fn final_chiral_checks(pos: &[f64], dim: usize, args: &EmbedArgs) -> bool {
         .all(|c| center_in_volume(c, pos, dim, 0.1))
 }
 
+fn validate_tetrahedral_centers(
+    pos: &[f64],
+    dim: usize,
+    centers: &[ChiralSet],
+) -> Result<bool, EmbedError> {
+    for center in centers {
+        if !volume_test(center, pos, dim)?
+            || !center_in_volume(center, pos, dim, TETRAHEDRAL_CENTERINVOLUME_TOL)
+        {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+fn apply_etk_stage<F>(
+    pos: &mut [f64],
+    dim: usize,
+    atom_count: usize,
+    etk: &F,
+) -> Result<bool, EmbedError>
+where
+    F: Fn(&mut [[f64; 3]]) -> Result<bool, EmbedError> + ?Sized,
+{
+    let mut coords: Vec<[f64; 3]> = (0..atom_count).map(|i| p3(pos, dim, i)).collect();
+    let accepted = etk(&mut coords)?;
+    for (i, point) in coords.iter().enumerate() {
+        pos[i * dim..i * dim + 3].copy_from_slice(point);
+    }
+    Ok(accepted)
+}
+
+fn embed_attempt(
+    n: usize,
+    dim: usize,
+    dist: &mut SymmMatrix,
+    pos: &mut [f64],
+    rng: &mut MinstdRand,
+    args: &EmbedArgs,
+    params: &EmbedParams,
+) -> Result<bool, EmbedError> {
+    pick_random_dist_mat(args.mmat, dist, rng);
+    let mut accepted = compute_initial_coords(
+        dist,
+        pos,
+        dim,
+        rng,
+        params.rand_neg_eig,
+        params.num_zero_fail,
+    )
+    .map_err(|_| EmbedError::ZeroLengthVector)?;
+    if !accepted {
+        return Ok(false);
+    }
+    accepted = first_minimization(pos, dim, args, params)?;
+    if accepted {
+        accepted = validate_tetrahedral_centers(pos, dim, args.tetrahedral_centers)?;
+    }
+    if accepted && params.enforce_chirality && !args.chiral_centers.is_empty() {
+        accepted = check_chiral_centers(pos, dim, args);
+    }
+    if accepted && !args.chiral_centers.is_empty() {
+        accepted = minimize_fourth_dimension(pos, dim, args, params)?;
+    }
+    if accepted && let Some(etk) = args.exp_torsions {
+        accepted = apply_etk_stage(pos, dim, n, etk)?;
+    }
+    if accepted {
+        accepted = double_bond_geometry_checks(pos, dim, args)?;
+    }
+    if accepted && params.enforce_chirality {
+        accepted = final_stereo_checks(pos, dim, args);
+    }
+    Ok(accepted)
+}
+
+fn final_stereo_checks(pos: &[f64], dim: usize, args: &EmbedArgs) -> bool {
+    if !args.chiral_centers.is_empty() && !final_chiral_checks(pos, dim, args) {
+        return false;
+    }
+    args.stereo_double_bonds.is_empty() || double_bond_stereo_checks(pos, dim, args)
+}
+
 /// `EmbeddingOps::embedPoints`: positions (`n * dim`) on success.
 pub fn embed_points(
     n: usize,
@@ -306,54 +389,7 @@ pub fn embed_points(
     let mut iter = 0;
     while !got && iter < max_iterations {
         iter += 1;
-        pick_random_dist_mat(args.mmat, &mut dist, &mut rng);
-        got = compute_initial_coords(
-            &dist,
-            &mut pos,
-            dim,
-            &mut rng,
-            params.rand_neg_eig,
-            params.num_zero_fail,
-        )
-        .map_err(|_| EmbedError::ZeroLengthVector)?;
-        if !got {
-            continue;
-        }
-        got = first_minimization(&mut pos, dim, args, params)?;
-        if got {
-            for t in args.tetrahedral_centers {
-                if !volume_test(t, &pos, dim)?
-                    || !center_in_volume(t, &pos, dim, TETRAHEDRAL_CENTERINVOLUME_TOL)
-                {
-                    got = false;
-                    break;
-                }
-            }
-        }
-        if got && params.enforce_chirality && !args.chiral_centers.is_empty() {
-            got = check_chiral_centers(&pos, dim, args);
-        }
-        if got && !args.chiral_centers.is_empty() {
-            got = minimize_fourth_dimension(&mut pos, dim, args, params)?;
-        }
-        if got && let Some(etk) = args.exp_torsions {
-            let mut p3s: Vec<[f64; 3]> = (0..n).map(|i| p3(&pos, dim, i)).collect();
-            got = etk(&mut p3s)?;
-            for (i, p) in p3s.iter().enumerate() {
-                pos[i * dim..i * dim + 3].copy_from_slice(p);
-            }
-        }
-        if got {
-            got = double_bond_geometry_checks(&pos, dim, args)?;
-        }
-        if params.enforce_chirality && got {
-            if !args.chiral_centers.is_empty() {
-                got = final_chiral_checks(&pos, dim, args);
-            }
-            if got && !args.stereo_double_bonds.is_empty() {
-                got = double_bond_stereo_checks(&pos, dim, args);
-            }
-        }
+        got = embed_attempt(n, dim, &mut dist, &mut pos, &mut rng, args, params)?;
     }
     if !got {
         return Ok(None);

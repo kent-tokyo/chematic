@@ -452,13 +452,18 @@ fn strip_item_prefix<'a>(line: &'a str, expected: &str) -> Result<&'a str, Lammp
     }
 }
 
-/// Read one frame from `feed`, or `Ok(None)` on a clean EOF *between*
-/// frames (i.e. before any of this frame's lines have been read).
-fn read_frame_from_feed<F>(
+fn required_line<F>(
     feed: &mut LineFeed<LammpsDumpError, F>,
-    limits: &LammpsDumpParseLimits,
-    frame_index: usize,
-) -> Result<Option<LammpsDumpFrame>, LammpsDumpError>
+    context: &'static str,
+) -> Result<String, LammpsDumpError>
+where
+    F: FnMut() -> Result<Option<String>, LammpsDumpError>,
+{
+    feed.line()?
+        .ok_or(LammpsDumpError::TruncatedInput { context })
+}
+
+fn read_timestep<F>(feed: &mut LineFeed<LammpsDumpError, F>) -> Result<Option<i64>, LammpsDumpError>
 where
     F: FnMut() -> Result<Option<String>, LammpsDumpError>,
 {
@@ -466,124 +471,141 @@ where
         return Ok(None);
     };
     expect_item_exact(&line, "TIMESTEP")?;
-
-    let ts_line = feed.line()?.ok_or(LammpsDumpError::TruncatedInput {
-        context: "TIMESTEP value",
-    })?;
-    let timestep: i64 = ts_line
+    let value = required_line(feed, "TIMESTEP value")?;
+    value
         .trim()
         .parse()
+        .map(Some)
         .map_err(|_| LammpsDumpError::MalformedHeader {
             line: feed.line_no,
-            detail: ts_line.clone(),
-        })?;
+            detail: value,
+        })
+}
 
-    let noa_item = feed.line()?.ok_or(LammpsDumpError::TruncatedInput {
-        context: "ITEM: NUMBER OF ATOMS",
-    })?;
-    expect_item_exact(&noa_item, "NUMBER OF ATOMS")?;
-    let count_line = feed.line()?.ok_or(LammpsDumpError::TruncatedInput {
-        context: "NUMBER OF ATOMS value",
-    })?;
-    let num_atoms: usize =
-        count_line
-            .trim()
-            .parse()
-            .map_err(|_| LammpsDumpError::MalformedHeader {
-                line: feed.line_no,
-                detail: count_line.clone(),
-            })?;
-    if num_atoms > limits.max_atoms_per_frame {
+fn read_atom_count<F>(
+    feed: &mut LineFeed<LammpsDumpError, F>,
+    limits: &LammpsDumpParseLimits,
+) -> Result<usize, LammpsDumpError>
+where
+    F: FnMut() -> Result<Option<String>, LammpsDumpError>,
+{
+    expect_item_exact(
+        &required_line(feed, "ITEM: NUMBER OF ATOMS")?,
+        "NUMBER OF ATOMS",
+    )?;
+    let value = required_line(feed, "NUMBER OF ATOMS value")?;
+    let count = value
+        .trim()
+        .parse::<usize>()
+        .map_err(|_| LammpsDumpError::MalformedHeader {
+            line: feed.line_no,
+            detail: value,
+        })?;
+    if count > limits.max_atoms_per_frame {
         return Err(LammpsDumpError::ResourceLimit {
             resource: "atoms per frame",
-            actual: num_atoms,
+            actual: count,
             limit: limits.max_atoms_per_frame,
         });
     }
+    Ok(count)
+}
 
-    let bb_line = feed.line()?.ok_or(LammpsDumpError::TruncatedInput {
-        context: "ITEM: BOX BOUNDS",
-    })?;
-    let bb_rest = strip_item_prefix(&bb_line, "BOX BOUNDS")?;
-    let bb_toks: Vec<&str> = bb_rest.split_whitespace().collect();
-    let (triclinic, boundary_flags) =
-        if bb_toks.len() == 6 && bb_toks[0] == "xy" && bb_toks[1] == "xz" && bb_toks[2] == "yz" {
-            (
-                true,
-                [
-                    bb_toks[3].to_string(),
-                    bb_toks[4].to_string(),
-                    bb_toks[5].to_string(),
-                ],
-            )
-        } else if bb_toks.len() == 3 {
-            (
-                false,
-                [
-                    bb_toks[0].to_string(),
-                    bb_toks[1].to_string(),
-                    bb_toks[2].to_string(),
-                ],
-            )
-        } else {
-            return Err(LammpsDumpError::MalformedHeader {
-                line: feed.line_no,
-                detail: bb_line.clone(),
-            });
-        };
-
-    let mut raw_rows: Vec<Vec<f64>> = Vec::with_capacity(3);
-    for _ in 0..3 {
-        let l = feed.line()?.ok_or(LammpsDumpError::TruncatedInput {
-            context: "BOX BOUNDS data row",
-        })?;
-        let line_no = feed.line_no;
-        let toks: Vec<&str> = l.split_whitespace().collect();
-        let expected_cols = if triclinic { 3 } else { 2 };
-        if toks.len() != expected_cols {
-            return Err(LammpsDumpError::InvalidBox {
-                reason: format!(
-                    "BOX BOUNDS row at line {line_no} has {} column(s), but the header's \
-                     'xy xz yz' flag {} present, which requires {expected_cols} -- \
-                     inconsistent, possibly hand-edited file",
-                    toks.len(),
-                    if triclinic { "is" } else { "is not" }
-                ),
-            });
-        }
-        let mut vals = Vec::with_capacity(expected_cols);
-        for t in &toks {
-            let v: f64 = t.parse().map_err(|_| LammpsDumpError::MalformedHeader {
-                line: line_no,
-                detail: l.clone(),
-            })?;
-            if !v.is_finite() {
-                return Err(LammpsDumpError::InvalidBox {
-                    reason: format!("non-finite BOX BOUNDS value '{t}' at line {line_no}"),
-                });
-            }
-            vals.push(v);
-        }
-        raw_rows.push(vals);
+fn parse_box_header(line: &str, line_no: usize) -> Result<(bool, [String; 3]), LammpsDumpError> {
+    let fields = strip_item_prefix(line, "BOX BOUNDS")?
+        .split_whitespace()
+        .collect::<Vec<_>>();
+    if fields.len() == 6 && fields[..3] == ["xy", "xz", "yz"] {
+        return Ok((true, [fields[3].into(), fields[4].into(), fields[5].into()]));
     }
+    if fields.len() == 3 {
+        return Ok((
+            false,
+            [fields[0].into(), fields[1].into(), fields[2].into()],
+        ));
+    }
+    Err(LammpsDumpError::MalformedHeader {
+        line: line_no,
+        detail: line.into(),
+    })
+}
 
-    let tilt = triclinic.then(|| [raw_rows[0][2], raw_rows[1][2], raw_rows[2][2]]);
-    let bound_lo = [raw_rows[0][0], raw_rows[1][0], raw_rows[2][0]];
-    let bound_hi = [raw_rows[0][1], raw_rows[1][1], raw_rows[2][1]];
-    let box_bounds = box_bounds_to_true(bound_lo, bound_hi, tilt);
-    box_bounds
+fn parse_box_row(line: &str, line_no: usize, triclinic: bool) -> Result<Vec<f64>, LammpsDumpError> {
+    let fields = line.split_whitespace().collect::<Vec<_>>();
+    let expected = if triclinic { 3 } else { 2 };
+    if fields.len() != expected {
+        return Err(LammpsDumpError::InvalidBox {
+            reason: format!(
+                "BOX BOUNDS row at line {line_no} has {} column(s), but the header's \
+                 'xy xz yz' flag {} present, which requires {expected} -- \
+                 inconsistent, possibly hand-edited file",
+                fields.len(),
+                if triclinic { "is" } else { "is not" }
+            ),
+        });
+    }
+    fields
+        .into_iter()
+        .map(|field| {
+            let value = field
+                .parse::<f64>()
+                .map_err(|_| LammpsDumpError::MalformedHeader {
+                    line: line_no,
+                    detail: line.into(),
+                })?;
+            if value.is_finite() {
+                Ok(value)
+            } else {
+                Err(LammpsDumpError::InvalidBox {
+                    reason: format!("non-finite BOX BOUNDS value '{field}' at line {line_no}"),
+                })
+            }
+        })
+        .collect()
+}
+
+fn read_box<F>(
+    feed: &mut LineFeed<LammpsDumpError, F>,
+) -> Result<(LammpsBox, [String; 3]), LammpsDumpError>
+where
+    F: FnMut() -> Result<Option<String>, LammpsDumpError>,
+{
+    let header = required_line(feed, "ITEM: BOX BOUNDS")?;
+    let (triclinic, boundary_flags) = parse_box_header(&header, feed.line_no)?;
+    let mut rows = Vec::with_capacity(3);
+    for _ in 0..3 {
+        let line = required_line(feed, "BOX BOUNDS data row")?;
+        rows.push(parse_box_row(&line, feed.line_no, triclinic)?);
+    }
+    let tilt = triclinic.then(|| [rows[0][2], rows[1][2], rows[2][2]]);
+    let bounds = box_bounds_to_true(
+        [rows[0][0], rows[1][0], rows[2][0]],
+        [rows[0][1], rows[1][1], rows[2][1]],
+        tilt,
+    );
+    bounds
         .validate()
         .map_err(|reason| LammpsDumpError::InvalidBox { reason })?;
+    Ok((bounds, boundary_flags))
+}
 
-    let atoms_line = feed.line()?.ok_or(LammpsDumpError::TruncatedInput {
-        context: "ITEM: ATOMS",
-    })?;
-    let cols_rest = strip_item_prefix(&atoms_line, "ATOMS")?;
-    let column_names: Vec<String> = cols_rest.split_whitespace().map(str::to_string).collect();
-    if column_names.len() > limits.max_columns {
+fn read_columns<F>(
+    feed: &mut LineFeed<LammpsDumpError, F>,
+    limits: &LammpsDumpParseLimits,
+    frame_index: usize,
+) -> Result<Vec<String>, LammpsDumpError>
+where
+    F: FnMut() -> Result<Option<String>, LammpsDumpError>,
+{
+    let line = required_line(feed, "ITEM: ATOMS")?;
+    let columns = strip_item_prefix(&line, "ATOMS")?
+        .split_whitespace()
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    if columns.len() > limits.max_columns {
         return Err(LammpsDumpError::ResourceLimit {
             resource: "columns per frame",
-            actual: column_names.len(),
+            actual: columns.len(),
             limit: limits.max_columns,
         });
     }
@@ -594,46 +616,85 @@ where
             limit: limits.max_frames,
         });
     }
+    Ok(columns)
+}
 
-    let mut rows: Vec<Vec<f64>> = Vec::with_capacity(num_atoms);
-    for row_idx in 0..num_atoms {
-        let Some(row_line) = feed.line()? else {
-            return Err(LammpsDumpError::TruncatedInput {
-                context: "ATOMS data row",
-            });
-        };
-        let line_no = feed.line_no;
-        if row_line.starts_with("ITEM:") {
-            return Err(LammpsDumpError::AtomCountMismatch {
-                declared: num_atoms,
-                actual: row_idx,
-            });
-        }
-        let toks: Vec<&str> = row_line.split_whitespace().collect();
-        if toks.len() != column_names.len() {
-            return Err(LammpsDumpError::ColumnCountMismatch {
-                declared: column_names.len(),
-                actual: toks.len(),
-                line: line_no,
-            });
-        }
-        let mut vals = Vec::with_capacity(toks.len());
-        for (col_idx, t) in toks.iter().enumerate() {
-            let v: f64 = t.parse().map_err(|_| LammpsDumpError::InvalidNumber {
-                column: column_names[col_idx].clone(),
-                row: row_idx,
-                raw: t.to_string(),
-            })?;
-            if !v.is_finite() {
-                return Err(LammpsDumpError::NonFiniteValue {
-                    column: column_names[col_idx].clone(),
-                    row: row_idx,
-                });
-            }
-            vals.push(v);
-        }
-        rows.push(vals);
+fn parse_atom_row(
+    line: &str,
+    line_no: usize,
+    row_index: usize,
+    columns: &[String],
+) -> Result<Vec<f64>, LammpsDumpError> {
+    let fields = line.split_whitespace().collect::<Vec<_>>();
+    if fields.len() != columns.len() {
+        return Err(LammpsDumpError::ColumnCountMismatch {
+            declared: columns.len(),
+            actual: fields.len(),
+            line: line_no,
+        });
     }
+    fields
+        .into_iter()
+        .enumerate()
+        .map(|(column_index, field)| {
+            let value = field
+                .parse::<f64>()
+                .map_err(|_| LammpsDumpError::InvalidNumber {
+                    column: columns[column_index].clone(),
+                    row: row_index,
+                    raw: field.into(),
+                })?;
+            if value.is_finite() {
+                Ok(value)
+            } else {
+                Err(LammpsDumpError::NonFiniteValue {
+                    column: columns[column_index].clone(),
+                    row: row_index,
+                })
+            }
+        })
+        .collect()
+}
+
+fn read_atom_rows<F>(
+    feed: &mut LineFeed<LammpsDumpError, F>,
+    count: usize,
+    columns: &[String],
+) -> Result<Vec<Vec<f64>>, LammpsDumpError>
+where
+    F: FnMut() -> Result<Option<String>, LammpsDumpError>,
+{
+    let mut rows = Vec::with_capacity(count);
+    for row_index in 0..count {
+        let line = required_line(feed, "ATOMS data row")?;
+        if line.starts_with("ITEM:") {
+            return Err(LammpsDumpError::AtomCountMismatch {
+                declared: count,
+                actual: row_index,
+            });
+        }
+        rows.push(parse_atom_row(&line, feed.line_no, row_index, columns)?);
+    }
+    Ok(rows)
+}
+
+/// Read one frame from `feed`, or `Ok(None)` on a clean EOF *between*
+/// frames (i.e. before any of this frame's lines have been read).
+fn read_frame_from_feed<F>(
+    feed: &mut LineFeed<LammpsDumpError, F>,
+    limits: &LammpsDumpParseLimits,
+    frame_index: usize,
+) -> Result<Option<LammpsDumpFrame>, LammpsDumpError>
+where
+    F: FnMut() -> Result<Option<String>, LammpsDumpError>,
+{
+    let Some(timestep) = read_timestep(feed)? else {
+        return Ok(None);
+    };
+    let num_atoms = read_atom_count(feed, limits)?;
+    let (box_bounds, boundary_flags) = read_box(feed)?;
+    let column_names = read_columns(feed, limits, frame_index)?;
+    let rows = read_atom_rows(feed, num_atoms, &column_names)?;
 
     Ok(Some(LammpsDumpFrame {
         timestep,

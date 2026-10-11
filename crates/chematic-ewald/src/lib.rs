@@ -158,28 +158,6 @@ pub fn spme_energy(
     })
 }
 
-/// Helper: Direct Coulomb with cutoff using flat coordinate array.
-#[allow(dead_code)]
-fn direct_coulomb_cutoff_coords(coords: &[[f64; 3]], charges: &[f64], r_cut: f64) -> f64 {
-    let mut energy = 0.0;
-    let n = coords.len();
-
-    for i in 0..n {
-        for j in (i + 1)..n {
-            let dx = coords[i][0] - coords[j][0];
-            let dy = coords[i][1] - coords[j][1];
-            let dz = coords[i][2] - coords[j][2];
-            let r = (dx * dx + dy * dy + dz * dz).sqrt();
-
-            if r > 1e-6 && r < r_cut {
-                energy += K_COULOMB * charges[i] * charges[j] / r;
-            }
-        }
-    }
-
-    energy
-}
-
 fn compute_self_energy(charges: &[f64], alpha: f64) -> f64 {
     let alpha = if alpha > 0.0 { alpha } else { 3.5 / 8.0 };
     let sqrt_pi = std::f64::consts::PI.sqrt();

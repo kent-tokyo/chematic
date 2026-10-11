@@ -168,6 +168,80 @@ fn opaque_atom_properties(tokens: &[&str]) -> String {
     opaque.join(" ")
 }
 
+fn parse_v3000_coords(tokens: &[&str], line: usize) -> Result<(f64, f64, f64), MolParseError> {
+    let parse = |index: usize, axis: &str| {
+        tokens[index]
+            .parse::<f64>()
+            .map_err(|_| MolParseError::InvalidAtomLine {
+                line,
+                detail: format!("cannot parse {axis} coordinate from '{}'", tokens[index]),
+            })
+            .and_then(|value| {
+                value
+                    .is_finite()
+                    .then_some(value)
+                    .ok_or_else(|| MolParseError::InvalidAtomLine {
+                        line,
+                        detail: format!(
+                            "{axis} coordinate is not finite (NaN/Infinite): '{}'",
+                            tokens[index]
+                        ),
+                    })
+            })
+    };
+    Ok((parse(2, "x")?, parse(3, "y")?, parse(4, "z")?))
+}
+
+fn v3000_atom_identity(
+    symbol: &str,
+    rgroup_number: Option<u16>,
+    line: usize,
+) -> Result<(Atom, Option<RGroupLabel>), MolParseError> {
+    if symbol == "*" {
+        return Ok((Atom::wildcard(), None));
+    }
+    if symbol == "R" {
+        return Ok((Atom::wildcard(), Some(RGroupLabel::unnumbered())));
+    }
+    if symbol == "R#" {
+        return Ok((
+            Atom::wildcard(),
+            Some(
+                rgroup_number.map_or_else(RGroupLabel::unnumbered, |number| {
+                    RGroupLabel::numbered(number).expect("validated non-zero number")
+                }),
+            ),
+        ));
+    }
+    if let Some(number) = symbol.strip_prefix('R')
+        && !number.is_empty()
+        && number.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        let label = number
+            .parse::<u16>()
+            .ok()
+            .and_then(RGroupLabel::numbered)
+            .ok_or_else(|| MolParseError::UnknownElement {
+                symbol: symbol.to_string(),
+                line,
+            })?;
+        return Ok((Atom::wildcard(), Some(label)));
+    }
+    if let Some(number) = rgroup_number {
+        return Ok((
+            Atom::wildcard(),
+            Some(RGroupLabel::numbered(number).expect("validated non-zero number")),
+        ));
+    }
+    let element_symbol = if symbol == "D" { "H" } else { symbol };
+    let element =
+        Element::from_symbol(element_symbol).ok_or_else(|| MolParseError::UnknownElement {
+            symbol: symbol.to_string(),
+            line,
+        })?;
+    Ok((Atom::new(element), None))
+}
+
 /// Parse one V3000 atom record and append it to the parser's parallel state.
 fn parse_v3000_atom_line(
     tokens: &[&str],
@@ -201,46 +275,8 @@ fn parse_v3000_atom_line(
     let kv_tokens = tokens.get(6..).unwrap_or(&[]);
     let rgroup_number = parse_rgroup_number(kv_tokens)
         .map_err(|detail| MolParseError::InvalidAtomLine { line, detail })?;
-    // V3000 writers, including Indigo, may spell deuterium as `D` rather
-    // than hydrogen with `MASS=2`. Internally retain the standard element
-    // representation plus its isotope so the record is usable everywhere.
     let deuterium = sym == "D";
-    let element_symbol = if deuterium { "H" } else { sym };
-
-    // Coordinates are part of the serialized graph: malformed or non-finite
-    // values must not silently turn into a different structure.
-    let x: f64 = tokens[2]
-        .parse()
-        .map_err(|_| MolParseError::InvalidAtomLine {
-            line,
-            detail: format!("cannot parse x coordinate from '{}'", tokens[2]),
-        })?;
-    let y: f64 = tokens[3]
-        .parse()
-        .map_err(|_| MolParseError::InvalidAtomLine {
-            line,
-            detail: format!("cannot parse y coordinate from '{}'", tokens[3]),
-        })?;
-    if !x.is_finite() || !y.is_finite() {
-        return Err(MolParseError::InvalidAtomLine {
-            line,
-            detail: "x/y coordinate is not finite (NaN/Infinite)".to_string(),
-        });
-    }
-
-    // Unlike x/y, z is retained as 3D input and therefore must be a finite number.
-    let z: f64 = tokens[4]
-        .parse()
-        .map_err(|_| MolParseError::InvalidAtomLine {
-            line,
-            detail: format!("cannot parse z coordinate from '{}'", tokens[4]),
-        })?;
-    if !z.is_finite() {
-        return Err(MolParseError::InvalidAtomLine {
-            line,
-            detail: format!("z coordinate is not finite (NaN/Infinite): '{}'", tokens[4]),
-        });
-    }
+    let (x, y, z) = parse_v3000_coords(tokens, line)?;
 
     let aamap_raw = tokens[5].parse::<u16>().unwrap_or(0);
     let atom_map = (aamap_raw != 0).then_some(aamap_raw);
@@ -255,44 +291,7 @@ fn parse_v3000_atom_line(
         if n < 0 { None } else { Some(n as u8) }
     });
 
-    let (mut atom, r_group) = if sym == "*" {
-        (Atom::wildcard(), None)
-    } else if sym == "R" {
-        (Atom::wildcard(), Some(RGroupLabel::unnumbered()))
-    } else if sym == "R#" {
-        match rgroup_number {
-            Some(number) => (
-                Atom::wildcard(),
-                Some(RGroupLabel::numbered(number).expect("validated non-zero number")),
-            ),
-            None => (Atom::wildcard(), Some(RGroupLabel::unnumbered())),
-        }
-    } else if let Some(number) = sym.strip_prefix('R')
-        && !number.is_empty()
-        && number.bytes().all(|byte| byte.is_ascii_digit())
-    {
-        let label = number
-            .parse::<u16>()
-            .ok()
-            .and_then(RGroupLabel::numbered)
-            .ok_or_else(|| MolParseError::UnknownElement {
-                symbol: sym.to_string(),
-                line,
-            })?;
-        (Atom::wildcard(), Some(label))
-    } else if let Some(number) = rgroup_number {
-        (
-            Atom::wildcard(),
-            Some(RGroupLabel::numbered(number).expect("validated non-zero number")),
-        )
-    } else {
-        let element =
-            Element::from_symbol(element_symbol).ok_or_else(|| MolParseError::UnknownElement {
-                symbol: sym.to_string(),
-                line,
-            })?;
-        (Atom::new(element), None)
-    };
+    let (mut atom, r_group) = v3000_atom_identity(sym, rgroup_number, line)?;
     atom.charge = charge;
     atom.isotope = isotope;
     atom.hydrogen_count = hydrogen_count;
@@ -464,6 +463,366 @@ fn normalize_v3000_endpoints(properties: &str, atom_idx_map: &[(u32, AtomIdx)]) 
     )
 }
 
+#[derive(Clone, Copy)]
+enum V3000State {
+    BeforeCtab,
+    InCtab,
+    InAtomBlock,
+    AfterAtomBlock,
+    InBondBlock,
+    AfterBondBlock,
+    InCollection,
+    InSgroup,
+    Done,
+}
+
+struct V3000Parser {
+    state: V3000State,
+    builder: MoleculeBuilder,
+    atom_idx_map: Vec<(u32, AtomIdx)>,
+    coords: Vec<(f64, f64)>,
+    raw_z: Vec<f64>,
+    expected_atoms: usize,
+    expected_bonds: usize,
+    parsed_bonds: usize,
+    expected_sgroups: Option<usize>,
+    stereo_groups: Vec<StereoGroup>,
+    sgroups: Vec<String>,
+    typed_sgroup_ids: std::collections::HashSet<u32>,
+    bond_properties: Vec<(u32, String)>,
+    atom_properties: Vec<(u32, String)>,
+    unspecified_ez: std::collections::HashSet<BondIdx>,
+}
+
+impl V3000Parser {
+    fn new() -> Self {
+        Self {
+            state: V3000State::BeforeCtab,
+            builder: MoleculeBuilder::new(),
+            atom_idx_map: Vec::new(),
+            coords: Vec::new(),
+            raw_z: Vec::new(),
+            expected_atoms: 0,
+            expected_bonds: 0,
+            parsed_bonds: 0,
+            expected_sgroups: None,
+            stereo_groups: Vec::new(),
+            sgroups: Vec::new(),
+            typed_sgroup_ids: std::collections::HashSet::new(),
+            bond_properties: Vec::new(),
+            atom_properties: Vec::new(),
+            unspecified_ez: std::collections::HashSet::new(),
+        }
+    }
+
+    fn consume(&mut self, line: &LogicalLine) -> Result<(), MolParseError> {
+        let tokens = line.payload.split_whitespace().collect::<Vec<_>>();
+        if tokens.is_empty() {
+            return Ok(());
+        }
+        match self.state {
+            V3000State::BeforeCtab => self.before_ctab(&tokens),
+            V3000State::InCtab => self.in_ctab(&tokens, line.line_num),
+            V3000State::InAtomBlock => self.in_atom_block(&tokens, line.line_num),
+            V3000State::AfterAtomBlock => self.after_atom_block(&tokens, line.line_num),
+            V3000State::InBondBlock => self.in_bond_block(&tokens, line.line_num),
+            V3000State::AfterBondBlock => self.after_bond_block(&tokens),
+            V3000State::InCollection => self.in_collection(&tokens, line),
+            V3000State::InSgroup => self.in_sgroup(&tokens, line),
+            V3000State::Done => Ok(()),
+        }
+    }
+
+    fn before_ctab(&mut self, tokens: &[&str]) -> Result<(), MolParseError> {
+        if is_marker(tokens, "BEGIN", "CTAB") {
+            self.state = V3000State::InCtab;
+        }
+        Ok(())
+    }
+
+    fn in_ctab(&mut self, tokens: &[&str], line: usize) -> Result<(), MolParseError> {
+        if tokens[0] == "COUNTS" {
+            if tokens.len() < 4 {
+                return Err(v3k_err(line, "COUNTS line has fewer than 3 values"));
+            }
+            self.expected_atoms = parse_v3000_count(tokens[1], line, "atom")?;
+            self.expected_bonds = parse_v3000_count(tokens[2], line, "bond")?;
+            self.expected_sgroups = Some(parse_v3000_count(tokens[3], line, "SGROUP")?);
+        } else if is_marker(tokens, "BEGIN", "ATOM") {
+            self.state = V3000State::InAtomBlock;
+        } else if is_marker(tokens, "END", "CTAB") {
+            self.state = V3000State::Done;
+        }
+        Ok(())
+    }
+
+    fn in_atom_block(&mut self, tokens: &[&str], line: usize) -> Result<(), MolParseError> {
+        if is_marker(tokens, "END", "ATOM") {
+            if self.builder.atom_count() != self.expected_atoms {
+                return Err(v3k_err(
+                    line,
+                    format!(
+                        "expected {} atoms, found {}",
+                        self.expected_atoms,
+                        self.builder.atom_count()
+                    ),
+                ));
+            }
+            self.state = V3000State::AfterAtomBlock;
+            return Ok(());
+        }
+        parse_v3000_atom_line(
+            tokens,
+            line,
+            &mut self.builder,
+            &mut self.atom_idx_map,
+            &mut self.coords,
+            &mut self.raw_z,
+            &mut self.atom_properties,
+        )
+    }
+
+    fn after_atom_block(&mut self, tokens: &[&str], line: usize) -> Result<(), MolParseError> {
+        if is_marker(tokens, "BEGIN", "BOND") {
+            self.state = V3000State::InBondBlock;
+        } else if is_marker(tokens, "END", "CTAB") {
+            if self.expected_bonds != 0 {
+                return Err(v3k_err(
+                    line,
+                    format!(
+                        "COUNTS declares {} bonds but the BOND block is absent",
+                        self.expected_bonds
+                    ),
+                ));
+            }
+            self.state = V3000State::Done;
+        } else {
+            return Err(v3k_err(
+                line,
+                "expected BEGIN BOND or END CTAB after END ATOM",
+            ));
+        }
+        Ok(())
+    }
+
+    fn in_bond_block(&mut self, tokens: &[&str], line: usize) -> Result<(), MolParseError> {
+        if is_marker(tokens, "END", "BOND") {
+            if self.parsed_bonds != self.expected_bonds {
+                return Err(v3k_err(
+                    line,
+                    format!(
+                        "COUNTS declares {} bonds but found {}",
+                        self.expected_bonds, self.parsed_bonds
+                    ),
+                ));
+            }
+            self.state = V3000State::AfterBondBlock;
+            return Ok(());
+        }
+        parse_v3000_bond_line(
+            tokens,
+            line,
+            &mut self.builder,
+            &self.atom_idx_map,
+            &mut self.unspecified_ez,
+            &mut self.bond_properties,
+        )?;
+        self.parsed_bonds += 1;
+        Ok(())
+    }
+
+    fn after_bond_block(&mut self, tokens: &[&str]) -> Result<(), MolParseError> {
+        if is_marker(tokens, "BEGIN", "COLLECTION") {
+            self.state = V3000State::InCollection;
+        } else if is_marker(tokens, "BEGIN", "SGROUP") {
+            self.state = V3000State::InSgroup;
+        } else if is_marker(tokens, "END", "CTAB") {
+            self.state = V3000State::Done;
+        }
+        Ok(())
+    }
+
+    fn in_collection(&mut self, tokens: &[&str], line: &LogicalLine) -> Result<(), MolParseError> {
+        if is_marker(tokens, "END", "COLLECTION") {
+            self.state = V3000State::AfterBondBlock;
+        } else if let Some(group) = parse_stereo_group_line(&line.payload, &self.atom_idx_map)
+            .map_err(|detail| v3k_err(line.line_num, detail))?
+        {
+            self.stereo_groups.push(group);
+        }
+        Ok(())
+    }
+
+    fn in_sgroup(&mut self, tokens: &[&str], line: &LogicalLine) -> Result<(), MolParseError> {
+        if is_marker(tokens, "END", "SGROUP") {
+            self.state = V3000State::AfterBondBlock;
+        } else {
+            validate_known_sgroup_references(
+                &line.payload,
+                &self.atom_idx_map,
+                &mut self.typed_sgroup_ids,
+            )
+            .map_err(|detail| v3k_err(line.line_num, detail))?;
+            self.sgroups.push(line.payload.clone());
+        }
+        Ok(())
+    }
+}
+
+fn parse_v3000_count(raw: &str, line: usize, kind: &str) -> Result<usize, MolParseError> {
+    raw.parse::<usize>()
+        .map_err(|_| v3k_err(line, format!("cannot parse {kind} count from '{raw}'")))
+}
+
+fn validate_v3000_physical_lines(input: &str) -> Result<Vec<(usize, &str)>, MolParseError> {
+    let lines = input
+        .lines()
+        .enumerate()
+        .map(|(index, line)| (index + 1, line))
+        .collect::<Vec<_>>();
+    if lines.len() < 4 {
+        return Err(MolParseError::UnexpectedEnd);
+    }
+    let terminal = lines
+        .iter()
+        .rev()
+        .find(|(_, line)| !line.trim().is_empty())
+        .ok_or(MolParseError::UnexpectedEnd)?;
+    if terminal.1 != "M  END" {
+        return Err(v3k_err(
+            terminal.0,
+            "V3000 MOL block must terminate with an exact 'M  END' line",
+        ));
+    }
+    for &(line_number, line) in lines.iter().skip(4) {
+        if line.trim().is_empty()
+            || line.starts_with(V30_PREFIX)
+            || (line == "M  END" && line_number == terminal.0)
+        {
+            continue;
+        }
+        return Err(v3k_err(
+            line_number,
+            "expected an 'M  V30 ' record or the terminal 'M  END' line",
+        ));
+    }
+    Ok(lines)
+}
+
+fn v3000_metadata<'a>(
+    lines: &'a [(usize, &'a str)],
+) -> Result<(MolMetadata, &'a str), MolParseError> {
+    let (counts_line, counts) = lines[3];
+    if !counts.contains("V3000") {
+        return Err(MolParseError::InvalidCountLine {
+            line: counts_line,
+            detail: "missing V3000 version tag".to_string(),
+        });
+    }
+    Ok((
+        MolMetadata {
+            name: lines[0].1.to_string(),
+            comment: lines[2].1.to_string(),
+            v3000_sgroups: Vec::new(),
+            v3000_bond_properties: Vec::new(),
+            v3000_atom_properties: Vec::new(),
+        },
+        lines[1].1,
+    ))
+}
+
+fn validate_v3000_terminal(parser: &V3000Parser) -> Result<(), MolParseError> {
+    match parser.state {
+        V3000State::Done | V3000State::AfterBondBlock => {}
+        V3000State::InAtomBlock => return Err(v3k_err(0, "missing M  V30 END ATOM")),
+        V3000State::InBondBlock => return Err(v3k_err(0, "missing M  V30 END BOND")),
+        _ => return Err(MolParseError::UnexpectedEnd),
+    }
+    if let Some(expected) = parser.expected_sgroups
+        && parser.sgroups.len() != expected
+    {
+        return Err(v3k_err(
+            0,
+            format!(
+                "COUNTS declares {expected} SGROUP records but found {}",
+                parser.sgroups.len()
+            ),
+        ));
+    }
+    Ok(())
+}
+
+fn v3000_geometry(
+    mol: &mut Molecule,
+    coords: &[(f64, f64)],
+    raw_z: &[f64],
+    dimension: CoordinateDimension,
+) -> (
+    Option<Coords3D>,
+    GeometryRank,
+    Vec<Stereo3DDiagnostic>,
+    Vec<crate::mol2000::SquarePlanarPerceptionDiagnostic>,
+) {
+    let points = coords
+        .iter()
+        .zip(raw_z)
+        .map(|(&(x, y), &z)| Point3::new(x, y, z))
+        .collect::<Vec<_>>();
+    let rank = crate::mol2000::classify_geometry_rank(&points);
+    let conformer = matches!(rank, GeometryRank::Coplanar | GeometryRank::ThreeD)
+        .then_some(Coords3D { points });
+    let mut diagnostics = match (dimension, rank) {
+        (CoordinateDimension::TwoD, GeometryRank::Coplanar | GeometryRank::ThreeD) => {
+            vec![Stereo3DDiagnostic::DeclaredTwoDButNonzeroZ { observed: rank }]
+        }
+        (CoordinateDimension::ThreeD, GeometryRank::FlatZero | GeometryRank::Coplanar) => {
+            vec![Stereo3DDiagnostic::DeclaredThreeDButFlat { observed: rank }]
+        }
+        _ => Vec::new(),
+    };
+    let square_planar = conformer.as_ref().map_or_else(Vec::new, |coords| {
+        let perceived = crate::mol2000::perceive_square_planar_from_3d(mol, coords);
+        diagnostics.extend(crate::mol2000::wedge_vs_3d_conflicts(mol, coords));
+        perceived
+    });
+    (conformer, rank, diagnostics, square_planar)
+}
+
+fn finish_v3000_report(
+    parser: V3000Parser,
+    mut metadata: MolMetadata,
+    line2: &str,
+) -> Result<MolReadReport, MolParseError> {
+    validate_v3000_terminal(&parser)?;
+    let mut mol = parser.builder.build();
+    crate::mol2000::flag_aromatic_bond_atoms(&mut mol);
+    metadata.v3000_sgroups = parser.sgroups;
+    metadata.v3000_bond_properties = parser.bond_properties;
+    metadata.v3000_atom_properties = parser.atom_properties;
+    if !parser.stereo_groups.is_empty() {
+        mol.set_stereo_groups(parser.stereo_groups);
+    }
+    let stereo_diagnostics =
+        apply_ctab_local_parity_from_wedges_with_diagnostics(&mut mol, &parser.coords);
+    let ez_diagnostics =
+        apply_ez_directions_from_2d_ex(&mut mol, &parser.coords, &parser.unspecified_ez);
+    let dimension = crate::mol2000::parse_dimension_code(line2);
+    let (conformer, geometry_rank, stereo3d_diagnostics, square_planar_diagnostics) =
+        v3000_geometry(&mut mol, &parser.coords, &parser.raw_z, dimension);
+    Ok(MolReadReport {
+        mol,
+        metadata,
+        coords: parser.coords,
+        stereo_diagnostics,
+        ez_diagnostics,
+        conformer,
+        coordinate_dimension: dimension,
+        geometry_rank,
+        stereo3d_diagnostics,
+        square_planar_diagnostics,
+    })
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -485,387 +844,14 @@ fn normalize_v3000_endpoints(properties: &str, atom_idx_map: &[(u32, AtomIdx)]) 
 /// decoded; atom-line `CFG` (parity) is out of scope, matching RDKit's own
 /// primary `MolFromMolBlock` path (bond-CFG/wedge-based).
 pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseError> {
-    // Collect all physical lines with 1-based numbering.
-    let all_lines: Vec<(usize, &str)> =
-        input.lines().enumerate().map(|(i, l)| (i + 1, l)).collect();
-
-    if all_lines.len() < 4 {
-        return Err(MolParseError::UnexpectedEnd);
+    let lines = validate_v3000_physical_lines(input)?;
+    let (metadata, line2) = v3000_metadata(&lines)?;
+    let logical_lines = collect_v30_lines(&lines);
+    let mut parser = V3000Parser::new();
+    for line in &logical_lines {
+        parser.consume(line)?;
     }
-    let terminal = all_lines
-        .iter()
-        .rev()
-        .find(|(_, line)| !line.trim().is_empty())
-        .ok_or(MolParseError::UnexpectedEnd)?;
-    if terminal.1 != "M  END" {
-        return Err(v3k_err(
-            terminal.0,
-            "V3000 MOL block must terminate with an exact 'M  END' line",
-        ));
-    }
-    for &(line_num, line) in all_lines.iter().skip(4) {
-        if line.trim().is_empty() || line.starts_with(V30_PREFIX) {
-            continue;
-        }
-        if line == "M  END" && line_num == terminal.0 {
-            continue;
-        }
-        return Err(v3k_err(
-            line_num,
-            "expected an 'M  V30 ' record or the terminal 'M  END' line",
-        ));
-    }
-
-    // -- Header lines 1–3 ----------------------------------------------------
-
-    let name = all_lines[0].1.to_string();
-    // Line 2 (program/date) is mostly discarded, except for the
-    // dimensional-code field (columns 20..22, "2D"/"3D") -- same column as
-    // V2000's header (see `crate::mol2000::parse_dimension_code`); V3000
-    // keeps the identical 3-line header before its own counts line.
-    let line2_raw = all_lines[1].1;
-    let comment = all_lines[2].1.to_string();
-
-    let mut metadata = MolMetadata {
-        name,
-        comment,
-        v3000_sgroups: Vec::new(),
-        v3000_bond_properties: Vec::new(),
-        v3000_atom_properties: Vec::new(),
-    };
-
-    // -- Counts line (line 4) — verify V3000 tag ----------------------------
-
-    let (counts_lineno, counts_line) = all_lines[3];
-    if !counts_line.contains("V3000") {
-        return Err(MolParseError::InvalidCountLine {
-            line: counts_lineno,
-            detail: "missing V3000 version tag".to_string(),
-        });
-    }
-
-    // -- Pre-process V30 logical lines --------------------------------------
-
-    let v30_lines = collect_v30_lines(&all_lines);
-
-    // -- State machine over logical V30 lines --------------------------------
-
-    // Expected sequence:
-    //   BEGIN CTAB
-    //   COUNTS <na> <nb> ...
-    //   BEGIN ATOM
-    //     <atom lines>
-    //   END ATOM
-    //   BEGIN BOND          (optional — may be absent if nb == 0)
-    //     <bond lines>
-    //   END BOND
-    //   END CTAB
-
-    let mut builder = MoleculeBuilder::new();
-
-    // Map from 1-based V3000 atom index to the 0-based builder index.
-    // V3000 atom indices are not required to be contiguous (though they
-    // usually are), so we track them explicitly.
-    let mut atom_idx_map: Vec<(u32, AtomIdx)> = Vec::new(); // (v3k_idx, builder_idx)
-
-    // Collect (x, y) coordinates in the order atoms are added to builder.
-    let mut coords: Vec<(f64, f64)> = Vec::new();
-    // Real z coordinates, parallel to `coords` -- previously discarded
-    // entirely (root cause of the 3D-coordinate-loss bug this PR fixes).
-    let mut raw_z: Vec<f64> = Vec::new();
-
-    enum State {
-        BeforeCtab,
-        InCtab,
-        InAtomBlock,
-        AfterAtomBlock,
-        InBondBlock,
-        AfterBondBlock,
-        InCollection,
-        InSgroup,
-        Done,
-    }
-
-    let mut state = State::BeforeCtab;
-    let mut expected_atoms: usize = 0;
-    let mut expected_bonds: usize = 0;
-    let mut parsed_bonds: usize = 0;
-    let mut expected_sgroups: Option<usize> = None;
-    let mut stereo_groups: Vec<StereoGroup> = Vec::new();
-    let mut sgroups: Vec<String> = Vec::new();
-    // Known SGROUP kinds have a typed atom-reference view. Keep their IDs
-    // unique while parsing so an otherwise lossless round trip cannot retain
-    // two incompatible definitions for the same group. Unknown kinds remain
-    // opaque because this crate does not claim their semantics.
-    let mut typed_sgroup_ids: std::collections::HashSet<u32> = std::collections::HashSet::new();
-    let mut bond_properties: Vec<(u32, String)> = Vec::new();
-    let mut atom_properties: Vec<(u32, String)> = Vec::new();
-    // Double bonds whose `CFG=2` marks explicitly unspecified E/Z (the same
-    // token V3000 also uses for a single bond's "either" wedge) -- confirmed
-    // against a live RDKit 2026.03.3 oracle (B0 diagnosis): RDKit's own
-    // V3000 writer emits `CFG=2` on a double-bond line for `STEREOANY`.
-    // Threaded into `apply_ez_directions_from_2d_ex` below, same as V2000's
-    // stereo-code-3 handling in `mol2000.rs`.
-    let mut explicitly_unspecified_ez: std::collections::HashSet<BondIdx> =
-        std::collections::HashSet::new();
-
-    for LogicalLine { line_num, payload } in &v30_lines {
-        let lnum = *line_num;
-        let tokens: Vec<&str> = payload.split_whitespace().collect();
-        if tokens.is_empty() {
-            continue;
-        }
-
-        match state {
-            State::BeforeCtab => {
-                if is_marker(&tokens, "BEGIN", "CTAB") {
-                    state = State::InCtab;
-                }
-            }
-
-            State::InCtab => {
-                if tokens[0] == "COUNTS" {
-                    if tokens.len() < 4 {
-                        return Err(v3k_err(lnum, "COUNTS line has fewer than 3 values"));
-                    }
-                    expected_atoms = tokens[1].parse::<usize>().map_err(|_| {
-                        v3k_err(
-                            lnum,
-                            format!("cannot parse atom count from '{}'", tokens[1]),
-                        )
-                    })?;
-                    expected_bonds = tokens[2].parse::<usize>().map_err(|_| {
-                        v3k_err(
-                            lnum,
-                            format!("cannot parse bond count from '{}'", tokens[2]),
-                        )
-                    })?;
-                    expected_sgroups = Some(tokens[3].parse::<usize>().map_err(|_| {
-                        v3k_err(
-                            lnum,
-                            format!("cannot parse SGROUP count from '{}'", tokens[3]),
-                        )
-                    })?);
-                } else if is_marker(&tokens, "BEGIN", "ATOM") {
-                    state = State::InAtomBlock;
-                } else if is_marker(&tokens, "END", "CTAB") {
-                    state = State::Done;
-                }
-            }
-
-            State::InAtomBlock => {
-                if is_marker(&tokens, "END", "ATOM") {
-                    state = State::AfterAtomBlock;
-                    if builder.atom_count() != expected_atoms {
-                        return Err(v3k_err(
-                            lnum,
-                            format!(
-                                "expected {} atoms, found {}",
-                                expected_atoms,
-                                builder.atom_count()
-                            ),
-                        ));
-                    }
-                    continue;
-                }
-
-                parse_v3000_atom_line(
-                    &tokens,
-                    lnum,
-                    &mut builder,
-                    &mut atom_idx_map,
-                    &mut coords,
-                    &mut raw_z,
-                    &mut atom_properties,
-                )?;
-            }
-
-            State::AfterAtomBlock => {
-                if is_marker(&tokens, "BEGIN", "BOND") {
-                    state = State::InBondBlock;
-                } else if is_marker(&tokens, "END", "CTAB") {
-                    if expected_bonds != 0 {
-                        return Err(v3k_err(
-                            lnum,
-                            format!(
-                                "COUNTS declares {expected_bonds} bonds but the BOND block is absent"
-                            ),
-                        ));
-                    }
-                    state = State::Done;
-                } else {
-                    return Err(v3k_err(
-                        lnum,
-                        "expected BEGIN BOND or END CTAB after END ATOM",
-                    ));
-                }
-            }
-
-            State::InBondBlock => {
-                if is_marker(&tokens, "END", "BOND") {
-                    if parsed_bonds != expected_bonds {
-                        return Err(v3k_err(
-                            lnum,
-                            format!(
-                                "COUNTS declares {expected_bonds} bonds but found {}",
-                                parsed_bonds
-                            ),
-                        ));
-                    }
-                    state = State::AfterBondBlock;
-                    continue;
-                }
-
-                parse_v3000_bond_line(
-                    &tokens,
-                    lnum,
-                    &mut builder,
-                    &atom_idx_map,
-                    &mut explicitly_unspecified_ez,
-                    &mut bond_properties,
-                )?;
-                parsed_bonds += 1;
-            }
-
-            State::AfterBondBlock => {
-                if is_marker(&tokens, "BEGIN", "COLLECTION") {
-                    state = State::InCollection;
-                } else if is_marker(&tokens, "BEGIN", "SGROUP") {
-                    state = State::InSgroup;
-                } else if is_marker(&tokens, "END", "CTAB") {
-                    state = State::Done;
-                }
-            }
-
-            State::InCollection => {
-                if is_marker(&tokens, "END", "COLLECTION") {
-                    state = State::AfterBondBlock;
-                } else {
-                    match parse_stereo_group_line(payload, &atom_idx_map) {
-                        Ok(Some(group)) => stereo_groups.push(group),
-                        Ok(None) => {}
-                        Err(detail) => return Err(v3k_err(lnum, detail)),
-                    }
-                }
-            }
-
-            State::InSgroup => {
-                if is_marker(&tokens, "END", "SGROUP") {
-                    state = State::AfterBondBlock;
-                } else {
-                    validate_known_sgroup_references(payload, &atom_idx_map, &mut typed_sgroup_ids)
-                        .map_err(|detail| v3k_err(lnum, detail))?;
-                    // Preserve the logical payload without pretending to
-                    // understand polymer/query semantics. The writer restores
-                    // the standard V30 prefix and emits this block before
-                    // COLLECTION, matching the interoperability ordering used
-                    // by current reference writers.
-                    sgroups.push(payload.to_string());
-                }
-            }
-
-            State::Done => {}
-        }
-    }
-
-    // Validate that we reached a terminal state with the expected atom block.
-    match state {
-        State::Done | State::AfterBondBlock => {}
-        State::InAtomBlock => {
-            return Err(MolParseError::V3000ParseError {
-                line: 0,
-                msg: "missing M  V30 END ATOM".to_string(),
-            });
-        }
-        State::InBondBlock => {
-            return Err(MolParseError::V3000ParseError {
-                line: 0,
-                msg: "missing M  V30 END BOND".to_string(),
-            });
-        }
-        _ => {
-            return Err(MolParseError::UnexpectedEnd);
-        }
-    }
-
-    if let Some(expected_sgroups) = expected_sgroups
-        && sgroups.len() != expected_sgroups
-    {
-        return Err(MolParseError::V3000ParseError {
-            line: 0,
-            msg: format!(
-                "COUNTS declares {expected_sgroups} SGROUP records but found {}",
-                sgroups.len()
-            ),
-        });
-    }
-
-    let mut mol = builder.build();
-    crate::mol2000::flag_aromatic_bond_atoms(&mut mol);
-    metadata.v3000_sgroups = sgroups;
-    metadata.v3000_bond_properties = bond_properties;
-    metadata.v3000_atom_properties = atom_properties;
-    if !stereo_groups.is_empty() {
-        mol.set_stereo_groups(stereo_groups);
-    }
-    // Tetrahedral parity first, then E/Z direction (side channel only) --
-    // same ordering rationale as `mol2000.rs`.
-    let stereo_diagnostics =
-        apply_ctab_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
-    let ez_diagnostics =
-        apply_ez_directions_from_2d_ex(&mut mol, &coords, &explicitly_unspecified_ez);
-
-    // Same 3D bookkeeping as `mol2000.rs::read_mol_with_diagnostics` -- see
-    // that function's comments for the full rationale (kept in one place,
-    // reused via `pub(crate)` helpers, not re-derived here).
-    let coordinate_dimension = crate::mol2000::parse_dimension_code(line2_raw);
-    let points: Vec<Point3> = coords
-        .iter()
-        .zip(raw_z.iter())
-        .map(|(&(x, y), &z)| Point3::new(x, y, z))
-        .collect();
-    let geometry_rank = crate::mol2000::classify_geometry_rank(&points);
-    let conformer = match geometry_rank {
-        GeometryRank::Coplanar | GeometryRank::ThreeD => Some(Coords3D { points }),
-        GeometryRank::FlatZero | GeometryRank::Indeterminate => None,
-    };
-
-    let mut stereo3d_diagnostics = Vec::new();
-    match (coordinate_dimension, geometry_rank) {
-        (CoordinateDimension::TwoD, GeometryRank::Coplanar | GeometryRank::ThreeD) => {
-            stereo3d_diagnostics.push(Stereo3DDiagnostic::DeclaredTwoDButNonzeroZ {
-                observed: geometry_rank,
-            });
-        }
-        (CoordinateDimension::ThreeD, GeometryRank::FlatZero | GeometryRank::Coplanar) => {
-            stereo3d_diagnostics.push(Stereo3DDiagnostic::DeclaredThreeDButFlat {
-                observed: geometry_rank,
-            });
-        }
-        _ => {}
-    }
-    // Same ordering rationale as `mol2000.rs::read_mol_with_diagnostics`:
-    // square-planar reperception first (may set `Chirality::SquarePlanar`),
-    // then `wedge_vs_3d_conflicts` (whose `is_tetrahedral()` gate must see
-    // the final chirality).
-    let mut square_planar_diagnostics = Vec::new();
-    if let Some(ref conf) = conformer {
-        square_planar_diagnostics = crate::mol2000::perceive_square_planar_from_3d(&mut mol, conf);
-        stereo3d_diagnostics.extend(crate::mol2000::wedge_vs_3d_conflicts(&mol, conf));
-    }
-
-    Ok(MolReadReport {
-        mol,
-        metadata,
-        coords,
-        stereo_diagnostics,
-        ez_diagnostics,
-        conformer,
-        coordinate_dimension,
-        geometry_rank,
-        stereo3d_diagnostics,
-        square_planar_diagnostics,
-    })
+    finish_v3000_report(parser, metadata, line2)
 }
 
 /// Parse a MOL V3000 string into a `(Molecule, MolMetadata, Vec<(f64, f64)>)` triple.
@@ -1141,1111 +1127,8 @@ fn parse_stereo_group_line(
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use chematic_core::{AtomIdx, BondOrder, Element};
-
-    // -----------------------------------------------------------------------
-    // Test fixtures
-    // -----------------------------------------------------------------------
-
-    const METHANE_V3K: &str = "\
-methane
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 1 0 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 0.0 0.0 0.0 0
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-
-    const ETHANOL_V3K: &str = "\
-ethanol
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 3 2 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 0.0 0.0 0.0 0
-M  V30 2 C 1.5 0.0 0.0 0
-M  V30 3 O 3.0 0.0 0.0 0
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 1 1 1 2
-M  V30 2 1 2 3
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-
-    // -----------------------------------------------------------------------
-    // Test 1: methane — 1 atom, 0 bonds
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_methane_counts() {
-        let (mol, _) = parse_mol_v3000(METHANE_V3K).expect("parse methane");
-        assert_eq!(mol.atom_count(), 1);
-        assert_eq!(mol.bond_count(), 0);
-    }
-
-    #[test]
-    fn rejects_malformed_coordinates_and_records_after_terminator() {
-        assert!(parse_mol_v3000(&METHANE_V3K.replace("0.0 0.0 0.0 0", "nope 0.0 0.0 0")).is_err());
-        assert!(parse_mol_v3000(&(METHANE_V3K.to_owned() + "M  V30 BEGIN CTAB\n")).is_err());
-        assert!(
-            parse_mol_v3000(&METHANE_V3K.replace("M  V30 END ATOM", "M V30 END ATOM")).is_err()
-        );
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 2: ethanol — 3 atoms, 2 bonds
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_ethanol_counts() {
-        let (mol, _) = parse_mol_v3000(ETHANOL_V3K).expect("parse ethanol");
-        assert_eq!(mol.atom_count(), 3);
-        assert_eq!(mol.bond_count(), 2);
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 3: ethanol — bond between atoms 0 and 1 is Single
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_ethanol_bond_0_1_single() {
-        let (mol, _) = parse_mol_v3000(ETHANOL_V3K).expect("parse ethanol");
-        let (_, bond) = mol
-            .bond_between(AtomIdx(0), AtomIdx(1))
-            .expect("bond 0-1 exists");
-        assert_eq!(bond.order, BondOrder::Single);
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 4: ethanol — bond between atoms 1 and 2 is Single
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_ethanol_bond_1_2_single() {
-        let (mol, _) = parse_mol_v3000(ETHANOL_V3K).expect("parse ethanol");
-        let (_, bond) = mol
-            .bond_between(AtomIdx(1), AtomIdx(2))
-            .expect("bond 1-2 exists");
-        assert_eq!(bond.order, BondOrder::Single);
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 5: CHG=1 → atom.charge == 1
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_positive_charge() {
-        let mol_str = "\
-charged_pos
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 1 0 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 N 0.0 0.0 0.0 0 CHG=1
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-        let (mol, _) = parse_mol_v3000(mol_str).expect("parse charged_pos");
-        assert_eq!(mol.atom(AtomIdx(0)).charge, 1);
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 6: CHG=-1 → atom.charge == -1
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_negative_charge() {
-        let mol_str = "\
-charged_neg
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 1 0 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 O 0.0 0.0 0.0 0 CHG=-1
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-        let (mol, _) = parse_mol_v3000(mol_str).expect("parse charged_neg");
-        assert_eq!(mol.atom(AtomIdx(0)).charge, -1);
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 7: MASS=13 → atom.isotope == Some(13)
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_isotope() {
-        let mol_str = "\
-isotope
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 1 0 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 0.0 0.0 0.0 0 MASS=13
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-        let (mol, _) = parse_mol_v3000(mol_str).expect("parse isotope");
-        assert_eq!(mol.atom(AtomIdx(0)).isotope, Some(13));
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 8: bond type=4 → BondOrder::Aromatic
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_aromatic_bond() {
-        let mol_str = "\
-aromatic
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 2 1 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 0.0 0.0 0.0 0
-M  V30 2 C 1.5 0.0 0.0 0
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 1 4 1 2
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-        let (mol, _) = parse_mol_v3000(mol_str).expect("parse aromatic");
-        let (_, bond) = mol
-            .bond_between(AtomIdx(0), AtomIdx(1))
-            .expect("bond exists");
-        assert_eq!(bond.order, BondOrder::Aromatic);
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 9: bond type=2 → BondOrder::Double
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_double_bond() {
-        let mol_str = "\
-double_bond
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 2 1 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 0.0 0.0 0.0 0
-M  V30 2 O 1.2 0.0 0.0 0
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 1 2 1 2
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-        let (mol, _) = parse_mol_v3000(mol_str).expect("parse double_bond");
-        let (_, bond) = mol
-            .bond_between(AtomIdx(0), AtomIdx(1))
-            .expect("bond exists");
-        assert_eq!(bond.order, BondOrder::Double);
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 10: metadata — name and comment parsed correctly
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_metadata() {
-        let mol_str = "\
-my_molecule
-  some_prog
-my comment line
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 1 0 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 0.0 0.0 0.0 0
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-        let (_, meta) = parse_mol_v3000(mol_str).expect("parse metadata");
-        assert_eq!(meta.name, "my_molecule");
-        assert_eq!(meta.comment, "my comment line");
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 11: line continuation (atom line split with trailing `-`)
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_line_continuation() {
-        // The atom line for atom 1 is split after the z-coordinate.
-        // The HCOUNT keyword appears on the continuation line.
-        let mol_str = "\
-continuation
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 1 0 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 0.0 0.0 0.0 0 MASS=12 -
-M  V30 HCOUNT=3
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-        let (mol, _) = parse_mol_v3000(mol_str).expect("parse continuation");
-        // atom 0 should have isotope 12 and hydrogen_count 3 (set via continuation)
-        assert_eq!(mol.atom(AtomIdx(0)).element, Element::C);
-        assert_eq!(mol.atom(AtomIdx(0)).isotope, Some(12));
-        assert_eq!(mol.atom(AtomIdx(0)).hydrogen_count, Some(3));
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 12: missing END ATOM → returns Err
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_missing_end_atom_is_error() {
-        let mol_str = "\
-bad
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 1 0 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 0.0 0.0 0.0 0
-M  END
-";
-        let result = parse_mol_v3000(mol_str);
-        assert!(
-            matches!(result, Err(MolParseError::V3000ParseError { .. })),
-            "expected V3000ParseError but got a different result"
-        );
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 13: elements parsed correctly for ethanol (C, C, O)
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_ethanol_elements() {
-        let (mol, _) = parse_mol_v3000(ETHANOL_V3K).expect("parse ethanol");
-        let atoms: Vec<_> = mol.atoms().collect();
-        assert_eq!(atoms[0].1.element, Element::C);
-        assert_eq!(atoms[1].1.element, Element::C);
-        assert_eq!(atoms[2].1.element, Element::O);
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 14: triple bond (type=3 → BondOrder::Triple)
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_triple_bond() {
-        let mol_str = "\
-triple_bond
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 2 1 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 0.0 0.0 0.0 0
-M  V30 2 N 1.2 0.0 0.0 0
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 1 3 1 2
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-        let (mol, _) = parse_mol_v3000(mol_str).expect("parse triple_bond");
-        let (_, bond) = mol
-            .bond_between(AtomIdx(0), AtomIdx(1))
-            .expect("bond exists");
-        assert_eq!(bond.order, BondOrder::Triple);
-    }
-
-    #[test]
-    fn test_query_bond_types_preserved() {
-        let mol_str = "\
-query_bonds
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 4 2 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 0.0 0.0 0.0 0
-M  V30 2 C 1.0 0.0 0.0 0
-M  V30 3 C 2.0 0.0 0.0 0
-M  V30 4 C 3.0 0.0 0.0 0
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 1 5 1 2
-M  V30 2 8 3 4
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-        let (mol, meta) = parse_mol_v3000(mol_str).expect("parse query bonds");
-        let bonds: Vec<_> = mol.bonds().collect();
-        assert_eq!(bonds[0].1.order, BondOrder::QuerySingleOrDouble);
-        assert_eq!(bonds[1].1.order, BondOrder::QueryAny);
-
-        let written = write_mol_v3000(&mol, &meta, &[]);
-        assert!(written.contains("M  V30 1 5 1 2"), "{written}");
-        assert!(written.contains("M  V30 2 8 3 4"), "{written}");
-    }
-
-    // -----------------------------------------------------------------------
-    // Test: MDL bond type 9 (dative/coordinate) round-trips, not silently
-    // corrupted to Single -- regression test for the platinum coordination-
-    // chemistry benchmark (validation/platinum/FEASIBILITY.md). The molblock
-    // below is not hand-crafted: it is exactly what RDKit 2026.03.3 writes
-    // for `Chem.MolFromSmiles` + `AddBond(n, pt, Chem.BondType.DATIVE)` +
-    // `Chem.MolToMolBlock(mol, forceV3000=True)` -- RDKit auto-upgrades to
-    // V3000 for any dative bond (it cannot express one in V2000 either).
-    // Before this fix, bond type 9 fell through the reader's `_ =>
-    // BondOrder::Single` catch-all with no error, no warning: a
-    // structurally valid file silently produced a different molecule.
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_dative_bond_type_9_round_trips() {
-        // NOT built with a `"\` line-continuation: the real molblock's second
-        // header line is blank-then-indented (RDKit writes no molecule name),
-        // and a leading `\`-continuation would silently swallow that blank
-        // line along with its indentation (rustc even warns "multiple lines
-        // skipped by escaped newline" if written that way) -- explicit `\n`
-        // keeps this byte-for-byte identical to RDKit's own output.
-        let mol_str = "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 3 2 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 N 0.000000 0.000000 0.000000 0\nM  V30 2 Pt 1.299038 0.750000 0.000000 0 VAL=2\nM  V30 3 Cl 2.598076 1.500000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 9 1 2\nM  V30 2 1 2 3\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n";
-        let (mol, meta) = parse_mol_v3000(mol_str).expect("parse RDKit dative molblock");
-        let bonds: Vec<_> = mol.bonds().collect();
-        assert_eq!(
-            bonds[0].1.order,
-            BondOrder::Dative,
-            "bond type 9 must read as Dative, not silently fall through to Single"
-        );
-        // atom1/atom2 preserve the file's donor/acceptor order (N -> Pt).
-        assert_eq!(mol.atom(bonds[0].1.atom1).element, Element::N);
-        assert_eq!(mol.atom(bonds[0].1.atom2).element, Element::PT);
-        assert_eq!(bonds[1].1.order, BondOrder::Single);
-
-        let written = write_mol_v3000(&mol, &meta, &[]);
-        assert!(
-            written.contains("M  V30 1 9 1 2"),
-            "Dative must write back out as bond type 9: {written}"
-        );
-
-        // Full round trip: re-parsing the freshly-written molblock still
-        // gives a Dative bond with the same donor/acceptor order.
-        let (rt_mol, _) = parse_mol_v3000(&written).expect("re-parse written molblock");
-        let rt_bonds: Vec<_> = rt_mol.bonds().collect();
-        assert_eq!(rt_bonds[0].1.order, BondOrder::Dative);
-        assert_eq!(rt_mol.atom(rt_bonds[0].1.atom1).element, Element::N);
-        assert_eq!(rt_mol.atom(rt_bonds[0].1.atom2).element, Element::PT);
-    }
-
-    #[test]
-    fn shared_mol_v3000_roundtrip_contract_matches() {
-        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../validation/cross_binding_contract.json"
-        )))
-        .expect("contract JSON");
-        let contract = &document["mol_v3000_contract"];
-        let (mol, meta) = parse_mol_v3000(contract["input"].as_str().unwrap()).unwrap();
-        let serialized = write_mol_v3000(&mol, &meta, &[]);
-        let (roundtripped, _) = parse_mol_v3000(&serialized).unwrap();
-        assert_eq!(
-            roundtripped.atom_count(),
-            contract["expected"]["atom_count"]
-        );
-        assert_eq!(roundtripped.bond_count(), 1);
-    }
-
-    // -----------------------------------------------------------------------
-    // Test 15: atom-map number stored when nonzero
-    // -----------------------------------------------------------------------
-    #[test]
-    fn test_atom_map() {
-        let mol_str = "\
-atommapped
-  test
-
-  0  0  0  0  0  0  0  0  0  0999 V3000
-M  V30 BEGIN CTAB
-M  V30 COUNTS 1 0 0 0 0
-M  V30 BEGIN ATOM
-M  V30 1 C 0.0 0.0 0.0 3
-M  V30 END ATOM
-M  V30 BEGIN BOND
-M  V30 END BOND
-M  V30 END CTAB
-M  END
-";
-        let (mol, _) = parse_mol_v3000(mol_str).expect("parse atommapped");
-        assert_eq!(mol.atom(AtomIdx(0)).atom_map, Some(3));
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Writer
-// ---------------------------------------------------------------------------
-
-/// Serialise `mol` to a MOL V3000 (Extended Ctab) string.
-///
-/// `coords[i]` is the `(x, y)` position for atom `i`.  Atoms beyond
-/// `coords.len()` receive `(0.0, 0.0, 0.0)`.
-///
-/// **Does not preserve `Chirality::SquarePlanar` stereo.** This is a
-/// 2D-only writer with no z channel; MOL/CTfile has no other field for a
-/// non-tetrahedral stereo tag either (see
-/// `docs/rfcs/square_planar_mol_io_rfc.md`). A square-planar-tagged atom is
-/// written with no indication anything was dropped. If `mol` may carry
-/// `Chirality::SquarePlanar`, use
-/// [`write_mol_v3000_with_conformer_checked`] instead, which fails closed
-/// with a typed error rather than silently discarding the tag.
-fn v3000_atom_symbol(mol: &Molecule, idx: AtomIdx, atom: &Atom) -> &'static str {
-    if !atom.wildcard {
-        return atom.element.symbol();
-    }
-    match mol.r_group_label(idx).and_then(|label| label.number()) {
-        Some(_) => "R#",
-        None if mol.r_group_label(idx).is_some() => "R",
-        None => "*",
-    }
-}
-
-fn append_v3000_rgroup_property(line: &mut String, mol: &Molecule, idx: AtomIdx) {
-    if let Some(number) = mol.r_group_label(idx).and_then(|label| label.number()) {
-        line.push_str(&format!(" RGROUPS=(1 {number})"));
-    }
-}
-
-pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f64)]) -> String {
-    write_mol_v3000_with_stereo_report(mol, metadata, coords).0
-}
-
-/// [`write_mol_v3000`] that also reports the stereo the block does not carry
-/// (see [`crate::MolStereoLoss`]). An empty `coords` lays the molecule out.
-pub fn write_mol_v3000_with_stereo_report(
-    mol: &Molecule,
-    metadata: &MolMetadata,
-    coords: &[(f64, f64)],
-) -> (String, crate::MolStereoLoss) {
-    let natoms = mol.atom_count();
-    let nbonds = mol.bond_count();
-
-    let mut out = String::new();
-
-    // Header (same 3-line format as V2000)
-    out.push_str(&metadata.name);
-    out.push('\n');
-    out.push_str("  chematic\n");
-    out.push_str(&metadata.comment);
-    out.push('\n');
-
-    // Counts line with V3000 tag (no atom/bond counts — they go in M  V30 COUNTS)
-    out.push_str("  0  0  0  0  0  0  0  0  0  0999 V3000\n");
-
-    out.push_str("M  V30 BEGIN CTAB\n");
-    out.push_str(&format!(
-        "M  V30 COUNTS {natoms} {nbonds} {} 0 0\n",
-        metadata.v3000_sgroups.len()
-    ));
-
-    // A molecule with stereo is written on coordinates that express it
-    // (see `stereo_depiction`).
-    let depiction = crate::stereo_depiction::needs_stereo_depiction(mol)
-        .then(|| crate::stereo_depiction::stereo_depiction(mol, coords));
-    let coords: &[(f64, f64)] = depiction.as_ref().map_or(coords, |d| &d.coords);
-
-    // Atom block
-    out.push_str("M  V30 BEGIN ATOM\n");
-    for (idx, atom) in mol.atoms() {
-        let (x, y) = coords.get(idx.0 as usize).copied().unwrap_or((0.0, 0.0));
-        let sym = v3000_atom_symbol(mol, idx, atom);
-        let atom_map = atom.atom_map.unwrap_or(0);
-        let i = idx.0 + 1; // 1-based
-
-        let mut line = format!("M  V30 {i} {sym} ");
-        crate::mol2000::push_fixed4(&mut line, x, 0);
-        line.push(' ');
-        crate::mol2000::push_fixed4(&mut line, y, 0);
-        line.push_str(&format!(" 0.0000 {atom_map}"));
-        if atom.charge != 0 {
-            line.push_str(&format!(" CHG={}", atom.charge));
-        }
-        if let Some(iso) = atom.isotope {
-            line.push_str(&format!(" MASS={iso}"));
-        }
-        if let Some(h) = atom.hydrogen_count {
-            line.push_str(&format!(" HCOUNT={h}"));
-        }
-        append_v3000_rgroup_property(&mut line, mol, idx);
-        if let Some((_, properties)) = metadata
-            .v3000_atom_properties
-            .iter()
-            .find(|(atom_id, _)| *atom_id == i)
-        {
-            line.push(' ');
-            line.push_str(properties);
-        }
-        out.push_str(&line);
-        out.push('\n');
-    }
-    out.push_str("M  V30 END ATOM\n");
-
-    // Bond block
-    out.push_str("M  V30 BEGIN BOND\n");
-    let kekule = crate::mol2000::kekule_orders_for_writing(mol);
-    for (bidx, bond) in mol.bonds() {
-        let a1 = bond.atom1.0 + 1;
-        let a2 = bond.atom2.0 + 1;
-        let written = kekule
-            .as_ref()
-            .and_then(|k| k.get(&bidx).copied())
-            .unwrap_or(bond.order);
-        let order = match written {
-            BondOrder::Zero => 0,
-            BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
-            BondOrder::Double => 2,
-            BondOrder::Triple => 3,
-            BondOrder::Aromatic => 4,
-            BondOrder::QuerySingleOrDouble => 5,
-            BondOrder::QuerySingleOrAromatic => 6,
-            BondOrder::QueryDoubleOrAromatic => 7,
-            BondOrder::QueryAny => 8,
-            // Matches RDKit's own V3000 convention for `Bond::BondType::DATIVE`
-            // (see the reader's matching case above); `atom1`/`atom2` are
-            // already in donor/acceptor order. V2000's writer (mol2000.rs)
-            // still collapses `Dative` to a plain single bond, since RDKit
-            // itself cannot express a dative bond in V2000 either -- full
-            // dative round-tripping through chematic's own MOL writer
-            // requires V3000, same as RDKit.
-            BondOrder::Dative => 9,
-            BondOrder::Quadruple => 4,
-        };
-        let i = bidx.0 + 1;
-        // V3000 bond CFG: 1=Up, 3=Down (NOT V2000's stereo-field codes 1/6 --
-        // `CFG=6` is not a valid V3000 value).
-        let (a1, a2, stereo) = match &depiction {
-            Some(d) => match d.wedges.get(&bidx) {
-                Some(w) => {
-                    let (start, end) = if w.start == bond.atom1 {
-                        (a1, a2)
-                    } else {
-                        (a2, a1)
-                    };
-                    (
-                        start,
-                        end,
-                        if w.order == BondOrder::Up {
-                            " CFG=1"
-                        } else {
-                            " CFG=3"
-                        },
-                    )
-                }
-                None if d.unexpressed_double_bonds.contains(&bidx)
-                    || d.unspecified_double_bonds.contains(&bidx) =>
-                {
-                    (a1, a2, " CFG=2")
-                }
-                None => (a1, a2, ""),
-            },
-            None => (
-                a1,
-                a2,
-                match bond.order {
-                    BondOrder::Up => " CFG=1",
-                    BondOrder::Down => " CFG=3",
-                    _ => "",
-                },
-            ),
-        };
-        let opaque = metadata
-            .v3000_bond_properties
-            .iter()
-            .find(|(bond_id, _)| *bond_id == i)
-            .map(|(_, properties)| properties.as_str())
-            .unwrap_or("");
-        let properties = if opaque.is_empty() {
-            String::new()
-        } else {
-            format!(" {opaque}")
-        };
-        out.push_str(&format!(
-            "M  V30 {i} {order} {a1} {a2}{stereo}{properties}\n"
-        ));
-    }
-    out.push_str("M  V30 END BOND\n");
-
-    if !metadata.v3000_sgroups.is_empty() {
-        out.push_str("M  V30 BEGIN SGROUP\n");
-        for line in &metadata.v3000_sgroups {
-            out.push_str("M  V30 ");
-            out.push_str(line);
-            out.push('\n');
-        }
-        out.push_str("M  V30 END SGROUP\n");
-    }
-
-    // Optional COLLECTION block for enhanced stereo groups.
-    let groups = mol.stereo_groups();
-    if !groups.is_empty() {
-        out.push_str("M  V30 BEGIN COLLECTION\n");
-        for group in groups {
-            let key = match &group.kind {
-                StereoGroupKind::Absolute => "MDLV30/STEABS".to_string(),
-                StereoGroupKind::Or(n) => format!("MDLV30/STEREL{n}"),
-                StereoGroupKind::And(n) => format!("MDLV30/STERAC{n}"),
-            };
-            let n = group.atom_indices.len();
-            let idxs: Vec<String> = group
-                .atom_indices
-                .iter()
-                .map(|ai| (ai.0 + 1).to_string()) // 0-based → 1-based
-                .collect();
-            out.push_str(&format!("M  V30 {key} ATOMS=({n} {})\n", idxs.join(" ")));
-        }
-        out.push_str("M  V30 END COLLECTION\n");
-    }
-
-    out.push_str("M  V30 END CTAB\n");
-    out.push_str("M  END\n");
-
-    let loss = crate::MolStereoLoss::from_depiction(
-        mol,
-        depiction.as_ref(),
-        crate::mol2000::MolFormat::V3000,
-    );
-    (out, loss)
-}
-
-/// Serialize `mol` to MOL V3000 (Extended Ctab) format using `conformer`'s
-/// real 3D coordinates, stamping the header's line-2 dimensional code as
-/// `3D` -- the V3000 counterpart of
-/// [`crate::mol2000::write_mol_with_conformer`]. As with that function, no
-/// wedge/hash `CFG` is ever emitted on a bond line here: a real 3D geometry
-/// makes a 2D wedge symbol redundant at best, and round-tripping this output
-/// back through [`read_mol_v3000_with_diagnostics`] must not manufacture a
-/// fresh [`crate::mol2000::Stereo3DDiagnostic::WedgeVs3DParityConflict`] on
-/// its own output. Enhanced stereo groups (`COLLECTION`/`STEABS`/`STEREL`/
-/// `STERAC`) are unaffected -- they label which atoms form a stereo group,
-/// not a direction, and remain meaningful for a 3D record.
-///
-/// **Does not validate `Chirality::SquarePlanar` stereo against
-/// `conformer`** -- it writes whatever coordinates it is given, trusting the
-/// caller. If `conformer`'s geometry doesn't actually match a declared
-/// square-planar tag, this will silently write a self-inconsistent file.
-/// Use [`write_mol_v3000_with_conformer_checked`] instead to fail closed on
-/// that mismatch (or on a missing/flat conformer) rather than trusting it.
-pub fn write_mol_v3000_with_conformer(
-    mol: &Molecule,
-    metadata: &MolMetadata,
-    conformer: &Coords3D,
-) -> String {
-    let natoms = mol.atom_count();
-    let nbonds = mol.bond_count();
-
-    let mut out = String::new();
-
-    out.push_str(&metadata.name);
-    out.push('\n');
-    // Same column convention as `mol2000::write_mol_with_conformer`.
-    out.push_str("  chematic          3D\n");
-    out.push_str(&metadata.comment);
-    out.push('\n');
-
-    out.push_str("  0  0  0  0  0  0  0  0  0  0999 V3000\n");
-
-    out.push_str("M  V30 BEGIN CTAB\n");
-    out.push_str(&format!(
-        "M  V30 COUNTS {natoms} {nbonds} {} 0 0\n",
-        metadata.v3000_sgroups.len()
-    ));
-
-    out.push_str("M  V30 BEGIN ATOM\n");
-    for (idx, atom) in mol.atoms() {
-        let p = conformer
-            .points
-            .get(idx.0 as usize)
-            .copied()
-            .unwrap_or(Point3::zero());
-        let sym = v3000_atom_symbol(mol, idx, atom);
-        let atom_map = atom.atom_map.unwrap_or(0);
-        let i = idx.0 + 1;
-
-        let mut line = format!(
-            "M  V30 {i} {sym} {:.4} {:.4} {:.4} {atom_map}",
-            p.x, p.y, p.z
-        );
-        if atom.charge != 0 {
-            line.push_str(&format!(" CHG={}", atom.charge));
-        }
-        if let Some(iso) = atom.isotope {
-            line.push_str(&format!(" MASS={iso}"));
-        }
-        if let Some(h) = atom.hydrogen_count {
-            line.push_str(&format!(" HCOUNT={h}"));
-        }
-        append_v3000_rgroup_property(&mut line, mol, idx);
-        if let Some((_, properties)) = metadata
-            .v3000_atom_properties
-            .iter()
-            .find(|(atom_id, _)| *atom_id == i)
-        {
-            line.push(' ');
-            line.push_str(properties);
-        }
-        out.push_str(&line);
-        out.push('\n');
-    }
-    out.push_str("M  V30 END ATOM\n");
-
-    out.push_str("M  V30 BEGIN BOND\n");
-    let kekule = crate::mol2000::kekule_orders_for_writing(mol);
-    for (bidx, bond) in mol.bonds() {
-        let a1 = bond.atom1.0 + 1;
-        let a2 = bond.atom2.0 + 1;
-        let written = kekule
-            .as_ref()
-            .and_then(|k| k.get(&bidx).copied())
-            .unwrap_or(bond.order);
-        let order = match written {
-            BondOrder::Zero => 0,
-            BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
-            BondOrder::Double => 2,
-            BondOrder::Triple => 3,
-            BondOrder::Aromatic => 4,
-            BondOrder::QuerySingleOrDouble => 5,
-            BondOrder::QuerySingleOrAromatic => 6,
-            BondOrder::QueryDoubleOrAromatic => 7,
-            BondOrder::QueryAny => 8,
-            // Matches RDKit's own V3000 convention for `Bond::BondType::DATIVE`
-            // (see the reader's matching case above); `atom1`/`atom2` are
-            // already in donor/acceptor order. V2000's writer (mol2000.rs)
-            // still collapses `Dative` to a plain single bond, since RDKit
-            // itself cannot express a dative bond in V2000 either -- full
-            // dative round-tripping through chematic's own MOL writer
-            // requires V3000, same as RDKit.
-            BondOrder::Dative => 9,
-            BondOrder::Quadruple => 4,
-        };
-        let i = bidx.0 + 1;
-        // No wedge/hash CFG here -- see doc comment above.
-        let opaque = metadata
-            .v3000_bond_properties
-            .iter()
-            .find(|(bond_id, _)| *bond_id == i)
-            .map(|(_, properties)| properties.as_str())
-            .unwrap_or("");
-        let properties = if opaque.is_empty() {
-            String::new()
-        } else {
-            format!(" {opaque}")
-        };
-        out.push_str(&format!("M  V30 {i} {order} {a1} {a2}{properties}\n"));
-    }
-    out.push_str("M  V30 END BOND\n");
-
-    if !metadata.v3000_sgroups.is_empty() {
-        out.push_str("M  V30 BEGIN SGROUP\n");
-        for line in &metadata.v3000_sgroups {
-            out.push_str("M  V30 ");
-            out.push_str(line);
-            out.push('\n');
-        }
-        out.push_str("M  V30 END SGROUP\n");
-    }
-
-    let groups = mol.stereo_groups();
-    if !groups.is_empty() {
-        out.push_str("M  V30 BEGIN COLLECTION\n");
-        for group in groups {
-            let key = match &group.kind {
-                StereoGroupKind::Absolute => "MDLV30/STEABS".to_string(),
-                StereoGroupKind::Or(n) => format!("MDLV30/STEREL{n}"),
-                StereoGroupKind::And(n) => format!("MDLV30/STERAC{n}"),
-            };
-            let n = group.atom_indices.len();
-            let idxs: Vec<String> = group
-                .atom_indices
-                .iter()
-                .map(|ai| (ai.0 + 1).to_string())
-                .collect();
-            out.push_str(&format!("M  V30 {key} ATOMS=({n} {})\n", idxs.join(" ")));
-        }
-        out.push_str("M  V30 END COLLECTION\n");
-    }
-
-    out.push_str("M  V30 END CTAB\n");
-    out.push_str("M  END\n");
-
-    out
-}
-
-/// [`write_mol_v3000_with_conformer`], but fails closed with a typed
-/// [`crate::mol2000::MolStereoWriteError`] instead of silently writing
-/// coordinates that don't actually match a molecule's declared
-/// square-planar stereo (or don't exist at all) -- the V3000 counterpart of
-/// [`crate::mol2000::write_mol_with_conformer_checked`]. See
-/// [`crate::mol2000::validate_square_planar_for_write`].
-pub fn write_mol_v3000_with_conformer_checked(
-    mol: &Molecule,
-    metadata: &MolMetadata,
-    conformer: &Coords3D,
-) -> Result<String, crate::mol2000::MolStereoWriteError> {
-    crate::mol2000::validate_square_planar_for_write(
-        mol,
-        Some(conformer),
-        crate::mol2000::MolFormat::V3000,
-    )?;
-    Ok(write_mol_v3000_with_conformer(mol, metadata, conformer))
-}
-
-#[cfg(test)]
-mod write_tests {
-    use super::*;
-    use crate::mol3000::parse_mol_v3000;
-    use chematic_core::Element;
-    use chematic_core::{Atom, MoleculeBuilder};
-
-    fn ethanol() -> Molecule {
-        use chematic_core::BondOrder;
-        let mut b = MoleculeBuilder::new();
-        let c1 = b.add_atom(Atom::new(Element::from_symbol("C").unwrap()));
-        let c2 = b.add_atom(Atom::new(Element::from_symbol("C").unwrap()));
-        let o = b.add_atom(Atom::new(Element::from_symbol("O").unwrap()));
-        b.add_bond(c1, c2, BondOrder::Single).unwrap();
-        b.add_bond(c2, o, BondOrder::Single).unwrap();
-        b.build()
-    }
-
-    #[test]
-    fn write_v3000_roundtrip_ethanol() {
-        let mol = ethanol();
-        let meta = MolMetadata {
-            name: "ethanol".into(),
-            comment: String::new(),
-            ..Default::default()
-        };
-        let v3k = write_mol_v3000(&mol, &meta, &[]);
-        let (mol2, meta2) = parse_mol_v3000(&v3k).expect("round-trip parse");
-        assert_eq!(mol.atom_count(), mol2.atom_count());
-        assert_eq!(mol.bond_count(), mol2.bond_count());
-        assert_eq!(meta2.name, "ethanol");
-    }
-
-    #[test]
-    fn write_v3000_contains_v3000_tag() {
-        let mol = ethanol();
-        let meta = MolMetadata::default();
-        let v3k = write_mol_v3000(&mol, &meta, &[]);
-        assert!(v3k.contains("V3000"), "output should contain V3000 tag");
-        assert!(
-            v3k.contains("M  V30 BEGIN CTAB"),
-            "should contain CTAB block"
-        );
-    }
-
-    #[test]
-    fn write_v3000_stereo_group_roundtrip() {
-        use chematic_core::{AtomIdx, BondOrder, StereoGroup, StereoGroupKind};
-
-        let mut b = MoleculeBuilder::new();
-        let c1 = b.add_atom(Atom::new(Element::from_symbol("C").unwrap()));
-        let c2 = b.add_atom(Atom::new(Element::from_symbol("C").unwrap()));
-        let c3 = b.add_atom(Atom::new(Element::from_symbol("N").unwrap()));
-        b.add_bond(c1, c2, BondOrder::Single).unwrap();
-        b.add_bond(c2, c3, BondOrder::Single).unwrap();
-        let mut mol = b.build();
-
-        // Absolute group on atom 0; OR group on atoms 1 and 2; AND group on
-        // atoms 0 and 2.
-        mol.set_stereo_groups(vec![
-            StereoGroup::new(StereoGroupKind::Absolute, vec![c1]),
-            StereoGroup::new(StereoGroupKind::Or(1), vec![c2, c3]),
-            StereoGroup::new(StereoGroupKind::And(2), vec![c1, c3]),
-        ]);
-
-        let meta = MolMetadata {
-            name: "stereo_test".into(),
-            comment: String::new(),
-            ..Default::default()
-        };
-        let v3k = write_mol_v3000(&mol, &meta, &[]);
-
-        // Verify COLLECTION block is present.
-        assert!(
-            v3k.contains("BEGIN COLLECTION"),
-            "should have COLLECTION block"
-        );
-        assert!(v3k.contains("MDLV30/STEABS"), "should have STEABS entry");
-        assert!(v3k.contains("MDLV30/STEREL1"), "should have STEREL1 entry");
-        assert!(v3k.contains("MDLV30/STERAC2"), "should have STERAC2 entry");
-
-        // Round-trip: parse back and verify stereo groups are preserved.
-        let (mol2, _) = parse_mol_v3000(&v3k).expect("round-trip parse");
-        assert_eq!(
-            mol2.stereo_groups().len(),
-            3,
-            "should have 3 stereo groups after round-trip"
-        );
-
-        let abs_group = mol2
-            .stereo_groups()
-            .iter()
-            .find(|g| g.kind == StereoGroupKind::Absolute)
-            .expect("Absolute group should exist");
-        assert_eq!(abs_group.atom_indices, vec![AtomIdx(0)]);
-
-        let or_group = mol2
-            .stereo_groups()
-            .iter()
-            .find(|g| g.kind == StereoGroupKind::Or(1))
-            .expect("Or(1) group should exist");
-        assert_eq!(or_group.atom_indices, vec![AtomIdx(1), AtomIdx(2)]);
-
-        let and_group = mol2
-            .stereo_groups()
-            .iter()
-            .find(|g| g.kind == StereoGroupKind::And(2))
-            .expect("And(2) group should exist");
-        assert_eq!(and_group.atom_indices, vec![AtomIdx(0), AtomIdx(2)]);
-    }
-
-    #[test]
-    fn test_stereo_group_duplicate_atoms_deduplicated() {
-        // RDKit PR #9258: duplicate atom indices in a StereoGroup must be silently
-        // removed. In RDKit this caused heap-use-after-free; in chematic the
-        // duplicate indices produce incorrect stereo group membership.
-        //
-        // Craft a minimal V3000 MOL block with STEABS ATOMS=(3 1 1 2)
-        // — atom 1 appears twice, which should be collapsed to [AtomIdx(0)].
-        let v3k = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\n\
-M  V30 COUNTS 3 2 0 0 0\nM  V30 BEGIN ATOM\n\
-M  V30 1 C 0 0 0 0 CFG=2\n\
-M  V30 2 C 1 0 0 0 CFG=2\n\
-M  V30 3 C 2 0 0 0\n\
-M  V30 END ATOM\nM  V30 BEGIN BOND\n\
-M  V30 1 1 1 2\n\
-M  V30 2 1 2 3\n\
-M  V30 END BOND\nM  V30 BEGIN COLLECTION\n\
-M  V30 MDLV30/STEABS ATOMS=(3 1 1 2)\n\
-M  V30 END COLLECTION\nM  V30 END CTAB\nM  END\n";
-
-        let (mol, _) = parse_mol_v3000(v3k).expect("should parse despite duplicate atom");
-        assert_eq!(mol.stereo_groups().len(), 1);
-        let group = &mol.stereo_groups()[0];
-        assert_eq!(
-            group.kind,
-            StereoGroupKind::Absolute,
-            "group kind must be Absolute"
-        );
-        // Atom 1 should appear only ONCE (deduplicated), plus atom 2.
-        assert_eq!(
-            group.atom_indices.len(),
-            2,
-            "duplicate atom index must be removed: got {:?}",
-            group.atom_indices
-        );
-        assert!(
-            group.atom_indices.contains(&AtomIdx(0)),
-            "atom 0 must be in group"
-        );
-        assert!(
-            group.atom_indices.contains(&AtomIdx(1)),
-            "atom 1 must be in group"
-        );
-    }
-
-    #[test]
-    fn v3000_sgroup_is_preserved_as_opaque_metadata() {
-        // SGroup/polymer semantics are not represented in Molecule yet. Preserve
-        // their logical lines opaquely so a core parse/write round trip does not
-        // discard them or claim a typed interpretation that does not exist.
-        let v3k = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
-M  V30 BEGIN CTAB\n\
-M  V30 COUNTS 2 1 1 0 0\n\
-M  V30 BEGIN ATOM\n\
-M  V30 1 C 0 0 0 0\n\
-M  V30 2 C 1 0 0 0\n\
-M  V30 END ATOM\n\
-M  V30 BEGIN BOND\n\
-M  V30 1 1 1 2\n\
-M  V30 END BOND\n\
-M  V30 BEGIN SGROUP\n\
-M  V30 1 SUP 0 ATOMS=(2 1 2)\n\
-M  V30 END SGROUP\n\
-M  V30 END CTAB\nM  END\n";
-
-        let (mol, metadata) = parse_mol_v3000(v3k).expect("opaque SGroup should parse");
-        assert_eq!(metadata.v3000_sgroups, vec!["1 SUP 0 ATOMS=(2 1 2)"]);
-        let rewritten = write_mol_v3000(&mol, &metadata, &[]);
-        assert!(rewritten.contains("M  V30 BEGIN SGROUP"));
-        assert!(rewritten.contains("M  V30 1 SUP 0 ATOMS=(2 1 2)"));
-        assert!(rewritten.find("BEGIN SGROUP").unwrap() < rewritten.find("END CTAB").unwrap());
-
-        let with_collection = v3k.replace(
-            "M  V30 END CTAB",
-            "M  V30 BEGIN COLLECTION\nM  V30 MDLV30/STEABS ATOMS=(1 1)\nM  V30 END COLLECTION\nM  V30 END CTAB",
-        );
-        let (_, collection_metadata) =
-            parse_mol_v3000(&with_collection).expect("SGROUP and COLLECTION should compose");
-        assert_eq!(collection_metadata.v3000_sgroups.len(), 1);
-    }
-
-    #[test]
-    fn v3000_sgroup_has_strict_typed_view_without_losing_source_line() {
-        let typed =
-            parse_v3000_sgroup_line("1 COP 0 ATOMS=(2 1 2) LABEL=polymer BRKXYZ=(4 1 2 3 4)")
-                .expect("valid SGROUP should have a typed view");
-        assert_eq!(typed.id, 1);
-        assert_eq!(typed.kind, V3000SGroupKind::Cop);
-        assert_eq!(typed.parent_id, None);
-        assert_eq!(typed.atom_ids, vec![1, 2]);
-        assert_eq!(
-            typed.attributes,
-            vec![
-                ("LABEL".into(), "polymer".into()),
-                ("BRKXYZ".into(), "(4 1 2 3 4)".into())
-            ]
-        );
-    }
-
-    #[test]
-    fn v3000_sgroup_typed_view_rejects_count_and_id_errors() {
-        for line in [
-            "0 SUP 0 ATOMS=(1 1)",
-            "1 SUP 0 ATOMS=(2 1)",
-            "1 SUP 0 ATOMS=(1 0)",
-            "1 SUP 0 LABEL=missing_atoms",
-        ] {
-            assert!(parse_v3000_sgroup_line(line).is_err(), "must reject {line}");
-        }
-    }
-}
+#[path = "mol3000/tests.rs"]
+mod tests;
+
+mod writer;
+pub use writer::*;

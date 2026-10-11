@@ -25,6 +25,7 @@ fn bitvec2048_to_bits(fp: &chematic_fp::bitvec::BitVec2048) -> Vec<u8> {
 /// Internal row representation used while computing `bulk.descriptors_array`.
 /// Keeping this at module scope lets the expensive row computation and the
 /// NumPy materialization live in separate, testable units.
+#[derive(Default)]
 struct DescriptorRow {
     // floats (int fields cast to f64 for uniform storage)
     mw: f64,
@@ -89,6 +90,697 @@ struct DescriptorRow {
     // optional floats
     pka_acid: Option<f64>,
     pka_base: Option<f64>,
+}
+
+const VALID_DESCRIPTOR_COLUMNS: &[&str] = &[
+    "mw",
+    "exact_mass",
+    "tpsa",
+    "logp",
+    "molar_refractivity",
+    "hbd",
+    "hba",
+    "rotatable_bonds",
+    "heavy_atoms",
+    "ring_count",
+    "aromatic_ring_count",
+    "num_heteroatoms",
+    "num_stereocenters",
+    "num_spiro_atoms",
+    "num_bridgehead_atoms",
+    "fsp3",
+    "qed",
+    "sa_score",
+    "formal_charge",
+    "labute_asa",
+    "bertz_ct",
+    "wiener_index",
+    "kappa1",
+    "kappa2",
+    "kappa3",
+    "chi0",
+    "chi1",
+    "chi2",
+    "chi3",
+    "chi4",
+    "chi0v",
+    "chi1v",
+    "chi2v",
+    "chi3v",
+    "chi4v",
+    "num_aromatic_heterocycles",
+    "num_aliphatic_heterocycles",
+    "num_saturated_rings",
+    "num_aliphatic_rings",
+    "num_unspecified_stereocenters",
+    "sum_estate",
+    "max_estate",
+    "min_estate",
+    "lipinski_passes",
+    "veber_passes",
+    "egan_passes",
+    "ghose_passes",
+    "reos_passes",
+    "pains_passes",
+    "bbb_passes",
+    "bbb_score",
+    "caco2",
+    "herg_risk",
+    "cyp3a4_risk",
+    "pka_acid",
+    "pka_base",
+    "schultz_mti",
+    "gutman_mti",
+    "vabc",
+    "gravitational_index",
+];
+
+struct DescriptorColumnPlan<'a> {
+    columns: &'a [String],
+    need_qed: bool,
+    need_sa: bool,
+    need_pka: bool,
+    need_logp: bool,
+    need_mr: bool,
+    need_tpsa: bool,
+    need_hbd: bool,
+    need_ring_bundle: bool,
+    need_kappa: bool,
+    need_chi: bool,
+    need_estate: bool,
+    need_mw: bool,
+    need_hac: bool,
+    need_fc: bool,
+}
+
+impl<'a> DescriptorColumnPlan<'a> {
+    fn new(columns: &'a [String]) -> PyResult<Self> {
+        for column in columns {
+            if !VALID_DESCRIPTOR_COLUMNS.contains(&column.as_str()) {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "unknown column: {column:?}"
+                )));
+            }
+        }
+        let wants_any = |names: &[&str]| names.iter().any(|name| wants(columns, name));
+        Ok(Self {
+            columns,
+            need_qed: wants(columns, "qed"),
+            need_sa: wants(columns, "sa_score"),
+            need_pka: wants_any(&["pka_acid", "pka_base"]),
+            need_logp: wants_any(&[
+                "logp",
+                "molar_refractivity",
+                "qed",
+                "bbb_score",
+                "caco2",
+                "herg_risk",
+                "cyp3a4_risk",
+                "lipinski_passes",
+                "egan_passes",
+                "ghose_passes",
+                "reos_passes",
+            ]),
+            need_mr: wants_any(&["molar_refractivity", "ghose_passes"]),
+            need_tpsa: wants_any(&[
+                "tpsa",
+                "qed",
+                "bbb_score",
+                "bbb_passes",
+                "caco2",
+                "veber_passes",
+                "egan_passes",
+            ]),
+            need_hbd: wants_any(&["hbd", "qed", "bbb_passes", "lipinski_passes", "reos_passes"]),
+            need_ring_bundle: wants_any(&[
+                "hba",
+                "rotatable_bonds",
+                "ring_count",
+                "aromatic_ring_count",
+                "num_spiro_atoms",
+                "num_bridgehead_atoms",
+                "num_aromatic_heterocycles",
+                "num_aliphatic_heterocycles",
+                "num_saturated_rings",
+                "num_aliphatic_rings",
+                "qed",
+                "sa_score",
+                "cyp3a4_risk",
+                "lipinski_passes",
+                "reos_passes",
+            ]),
+            need_kappa: wants_any(&["kappa1", "kappa2", "kappa3"]),
+            need_chi: wants_any(&[
+                "chi0", "chi1", "chi2", "chi3", "chi4", "chi0v", "chi1v", "chi2v", "chi3v", "chi4v",
+            ]),
+            need_estate: wants_any(&["sum_estate", "max_estate", "min_estate"]),
+            need_mw: wants_any(&[
+                "mw",
+                "bbb_passes",
+                "bbb_score",
+                "herg_risk",
+                "cyp3a4_risk",
+                "lipinski_passes",
+                "ghose_passes",
+                "reos_passes",
+            ]),
+            need_hac: wants_any(&["heavy_atoms", "ghose_passes", "reos_passes"]),
+            need_fc: wants_any(&["formal_charge", "reos_passes"]),
+        })
+    }
+
+    fn wants(&self, name: &str) -> bool {
+        wants(self.columns, name)
+    }
+}
+
+fn wants(columns: &[String], name: &str) -> bool {
+    columns.iter().any(|column| column == name)
+}
+
+struct SelectedDescriptorContext<'a, 'p> {
+    molecule: &'a chematic_core::Molecule,
+    plan: &'p DescriptorColumnPlan<'p>,
+    rings: Option<chematic_chem::RingBundle>,
+    topology: Option<chematic_chem::TopologyBundle>,
+    pka: (Option<f64>, Option<f64>),
+    logp_mr: (f64, f64),
+    kappa: (f64, f64, f64),
+    chi: (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64),
+    estate: (f64, f64, f64),
+    mw: f64,
+    tpsa: f64,
+    hbd: usize,
+    hba: usize,
+    rotatable_bonds: usize,
+    heavy_atoms: usize,
+    formal_charge: i32,
+}
+
+impl<'a, 'p> SelectedDescriptorContext<'a, 'p> {
+    fn new(molecule: &'a chematic_core::Molecule, plan: &'p DescriptorColumnPlan<'p>) -> Self {
+        let rings = plan
+            .need_ring_bundle
+            .then(|| chematic_chem::ring_bundle(molecule));
+        let topology_requests = [plan.need_kappa, plan.need_chi, plan.wants("wiener_index")]
+            .into_iter()
+            .filter(|requested| *requested)
+            .count();
+        let topology = (topology_requests >= 2).then(|| chematic_chem::topology_bundle(molecule));
+        let pka = if plan.need_pka || plan.wants("herg_risk") {
+            chematic_chem::pka_both(molecule)
+        } else {
+            (None, None)
+        };
+        let logp_mr = if plan.need_logp || plan.need_mr {
+            chematic_chem::logp_and_mr(molecule)
+        } else {
+            (0.0, 0.0)
+        };
+        let kappa = if plan.need_kappa {
+            topology
+                .as_ref()
+                .map(|value| value.kappa)
+                .unwrap_or_else(|| chematic_chem::kappa_all(molecule))
+        } else {
+            (0.0, 0.0, 0.0)
+        };
+        let chi = if plan.need_chi {
+            topology
+                .as_ref()
+                .map(|value| value.chi)
+                .unwrap_or_else(|| chematic_chem::chi_all(molecule))
+        } else {
+            (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        };
+        let estate = if plan.need_estate {
+            chematic_chem::estate_all(molecule)
+        } else {
+            (0.0, 0.0, 0.0)
+        };
+        let mw = if plan.need_mw {
+            chematic_chem::molecular_weight(molecule)
+        } else {
+            0.0
+        };
+        let tpsa = if plan.need_tpsa {
+            chematic_chem::tpsa(molecule)
+        } else {
+            0.0
+        };
+        let hbd = if plan.need_hbd {
+            chematic_chem::hbd_count(molecule)
+        } else {
+            0
+        };
+        let hba = rings.as_ref().map_or(0, |value| value.hba_count);
+        let rotatable_bonds = rings.as_ref().map_or(0, |value| value.rotatable_bond_count);
+        let heavy_atoms = if plan.need_hac {
+            chematic_chem::heavy_atom_count(molecule)
+        } else {
+            0
+        };
+        let formal_charge = if plan.need_fc {
+            chematic_chem::formal_charge_sum(molecule)
+        } else {
+            0
+        };
+        Self {
+            molecule,
+            plan,
+            rings,
+            topology,
+            pka,
+            logp_mr,
+            kappa,
+            chi,
+            estate,
+            mw,
+            tpsa,
+            hbd,
+            hba,
+            rotatable_bonds,
+            heavy_atoms,
+            formal_charge,
+        }
+    }
+
+    fn into_row(self) -> DescriptorRow {
+        let mut row = DescriptorRow::default();
+        self.fill_basic(&mut row);
+        self.fill_topology(&mut row);
+        self.fill_admet(&mut row);
+        self.fill_filters(&mut row);
+        row
+    }
+
+    fn fill_basic(&self, row: &mut DescriptorRow) {
+        row.mw = self.mw;
+        row.exact_mass = if self.plan.wants("exact_mass") {
+            chematic_chem::exact_mass(self.molecule)
+        } else {
+            0.0
+        };
+        row.tpsa = self.tpsa;
+        row.logp = self.logp_mr.0;
+        row.mr = self.logp_mr.1;
+        row.hbd = self.hbd as f64;
+        row.hba = self.hba as f64;
+        row.rb = self.rotatable_bonds as f64;
+        row.hac = self.heavy_atoms as f64;
+        row.fsp3 = if self.plan.wants("fsp3") {
+            chematic_chem::fsp3(self.molecule)
+        } else {
+            0.0
+        };
+        row.qed = if self.plan.need_qed {
+            chematic_chem::qed_with_bundle(
+                self.molecule,
+                self.rings.as_ref().expect("QED requires ring bundle"),
+            )
+        } else {
+            0.0
+        };
+        row.sa = if self.plan.need_sa {
+            chematic_chem::sa_score_with_bundle(
+                self.molecule,
+                self.rings.as_ref().expect("SA requires ring bundle"),
+            )
+        } else {
+            0.0
+        };
+        row.fc = self.formal_charge as f64;
+        row.asa = if self.plan.wants("labute_asa") {
+            chematic_chem::labute_asa(self.molecule)
+        } else {
+            0.0
+        };
+        row.bertz = if self.plan.wants("bertz_ct") {
+            chematic_chem::bertz_ct(self.molecule)
+        } else {
+            0.0
+        };
+        row.pka_acid = self.pka.0;
+        row.pka_base = self.pka.1;
+    }
+
+    fn fill_topology(&self, row: &mut DescriptorRow) {
+        let rings = self.rings.as_ref();
+        row.rc = rings.map_or(0, |value| value.ring_count) as f64;
+        row.arc = rings.map_or(0, |value| value.aromatic_ring_count) as f64;
+        row.nh = if self.plan.wants("num_heteroatoms") {
+            chematic_chem::num_heteroatoms(self.molecule)
+        } else {
+            0
+        } as f64;
+        row.nsc = if self.plan.wants("num_stereocenters") {
+            chematic_chem::num_stereocenters(self.molecule)
+        } else {
+            0
+        } as f64;
+        row.nsp = rings.map_or(0, |value| value.num_spiro_atoms) as f64;
+        row.nbh = rings.map_or(0, |value| value.num_bridgehead_atoms) as f64;
+        (row.k1, row.k2, row.k3) = self.kappa;
+        (
+            row.c0, row.c1, row.c2, row.c3, row.c4, row.c0v, row.c1v, row.c2v, row.c3v, row.c4v,
+        ) = self.chi;
+        row.wi = if self.plan.wants("wiener_index") {
+            self.topology
+                .as_ref()
+                .map(|value| value.wiener)
+                .unwrap_or_else(|| chematic_chem::wiener_index(self.molecule))
+        } else {
+            0.0
+        };
+        row.n_ah = rings.map_or(0, |value| value.num_aromatic_heterocycles) as f64;
+        row.n_alh = rings.map_or(0, |value| value.num_aliphatic_heterocycles) as f64;
+        row.n_sr = rings.map_or(0, |value| value.num_saturated_rings) as f64;
+        row.n_ar = rings.map_or(0, |value| value.num_aliphatic_rings) as f64;
+        row.n_usc = if self.plan.wants("num_unspecified_stereocenters") {
+            chematic_chem::num_unspecified_stereocenters(self.molecule)
+        } else {
+            0
+        } as f64;
+        (row.sum_e, row.max_e, row.min_e) = self.estate;
+    }
+
+    fn fill_admet(&self, row: &mut DescriptorRow) {
+        row.bbb = if self.plan.wants("bbb_score") {
+            chematic_chem::bbb_score_from_parts(self.tpsa, self.logp_mr.0)
+        } else {
+            0.0
+        };
+        row.caco = if self.plan.wants("caco2") {
+            chematic_chem::caco2_precomputed(self.tpsa, self.logp_mr.0)
+        } else {
+            0.0
+        };
+        row.herg = if self.plan.wants("herg_risk") {
+            chematic_chem::herg_risk_precomputed(self.molecule, self.logp_mr.0, self.mw)
+        } else {
+            0.0
+        };
+        row.cyp = if self.plan.wants("cyp3a4_risk") {
+            {
+                chematic_chem::cyp3a4_precomputed(
+                    self.mw,
+                    self.logp_mr.0,
+                    chematic_chem::num_aromatic_heterocycles(self.molecule),
+                    self.hba,
+                )
+            }
+        } else {
+            0.0
+        };
+        row.schultz = if self.plan.wants("schultz_mti") {
+            chematic_chem::schultz_mti(self.molecule) as f64
+        } else {
+            0.0
+        };
+        row.gutman = if self.plan.wants("gutman_mti") {
+            chematic_chem::gutman_mti(self.molecule) as f64
+        } else {
+            0.0
+        };
+        row.vabc = if self.plan.wants("vabc") {
+            chematic_chem::vabc(self.molecule)
+        } else {
+            0.0
+        };
+        row.grav = if self.plan.wants("gravitational_index") {
+            chematic_chem::gravitational_index(self.molecule)
+        } else {
+            0.0
+        };
+    }
+
+    fn fill_filters(&self, row: &mut DescriptorRow) {
+        row.lip = self.plan.wants("lipinski_passes")
+            && self.mw <= 500.0
+            && self.hbd <= 5
+            && self.hba <= 10
+            && self.logp_mr.0 <= 5.0;
+        row.veb =
+            self.plan.wants("veber_passes") && self.tpsa <= 140.0 && self.rotatable_bonds <= 10;
+        row.egan = self.plan.wants("egan_passes") && self.tpsa <= 131.6 && self.logp_mr.0 <= 5.88;
+        row.ghose = self.plan.wants("ghose_passes")
+            && (160.0..=480.0).contains(&self.mw)
+            && (-0.4..=5.6).contains(&self.logp_mr.0)
+            && (20.0..=70.0).contains(&(self.heavy_atoms as f64))
+            && (40.0..=130.0).contains(&self.logp_mr.1);
+        row.reos = self.plan.wants("reos_passes")
+            && (200.0..=500.0).contains(&self.mw)
+            && (-5.0..=5.0).contains(&self.logp_mr.0)
+            && (0..=5).contains(&self.hbd)
+            && (0..=10).contains(&self.hba)
+            && (-2..=2).contains(&self.formal_charge)
+            && (0..=8).contains(&self.rotatable_bonds)
+            && (15..=50).contains(&self.heavy_atoms);
+        row.pains = self.plan.wants("pains_passes") && chematic_chem::pains_passes(self.molecule);
+        row.bbp =
+            self.plan.wants("bbb_passes") && self.tpsa < 90.0 && self.mw < 400.0 && self.hbd <= 3;
+    }
+}
+
+struct DescriptorRecord {
+    row: DescriptorRow,
+    hbd: usize,
+    hba: usize,
+    rotatable_bonds: usize,
+    heavy_atoms: usize,
+    ring_count: usize,
+    aromatic_ring_count: usize,
+    num_heteroatoms: usize,
+    num_stereocenters: usize,
+    num_spiro_atoms: usize,
+    num_bridgehead_atoms: usize,
+    num_aromatic_heterocycles: usize,
+    num_aliphatic_heterocycles: usize,
+    num_saturated_rings: usize,
+    num_aliphatic_rings: usize,
+    num_unspecified_stereocenters: usize,
+    formal_charge: i32,
+    schultz_mti: u64,
+    gutman_mti: u64,
+}
+
+fn compute_descriptor_record(molecule: &chematic_core::Molecule) -> DescriptorRecord {
+    let rings = chematic_chem::ring_bundle(molecule);
+    let topology = chematic_chem::topology_bundle(molecule);
+    let (pka_acid, pka_base) = chematic_chem::pka_both(molecule);
+    let (logp, mr) = chematic_chem::logp_and_mr(molecule);
+    let (k1, k2, k3) = topology.kappa;
+    let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = topology.chi;
+    let (sum_e, max_e, min_e) = chematic_chem::estate_all(molecule);
+    let hbd = chematic_chem::hbd_count(molecule);
+    let heavy_atoms = chematic_chem::heavy_atom_count(molecule);
+    let formal_charge = chematic_chem::formal_charge_sum(molecule);
+    DescriptorRecord {
+        row: DescriptorRow {
+            mw: chematic_chem::molecular_weight(molecule),
+            exact_mass: chematic_chem::exact_mass(molecule),
+            tpsa: chematic_chem::tpsa(molecule),
+            logp,
+            mr,
+            hbd: hbd as f64,
+            hba: rings.hba_count as f64,
+            rb: rings.rotatable_bond_count as f64,
+            hac: heavy_atoms as f64,
+            rc: rings.ring_count as f64,
+            arc: rings.aromatic_ring_count as f64,
+            nh: chematic_chem::num_heteroatoms(molecule) as f64,
+            nsc: chematic_chem::num_stereocenters(molecule) as f64,
+            nsp: rings.num_spiro_atoms as f64,
+            nbh: rings.num_bridgehead_atoms as f64,
+            fsp3: chematic_chem::fsp3(molecule),
+            qed: chematic_chem::qed(molecule),
+            sa: chematic_chem::sa_score(molecule),
+            fc: formal_charge as f64,
+            asa: chematic_chem::labute_asa(molecule),
+            bertz: chematic_chem::bertz_ct(molecule),
+            wi: chematic_chem::wiener_index(molecule),
+            k1,
+            k2,
+            k3,
+            c0,
+            c1,
+            c2,
+            c3,
+            c4,
+            c0v,
+            c1v,
+            c2v,
+            c3v,
+            c4v,
+            n_ah: rings.num_aromatic_heterocycles as f64,
+            n_alh: rings.num_aliphatic_heterocycles as f64,
+            n_sr: rings.num_saturated_rings as f64,
+            n_ar: rings.num_aliphatic_rings as f64,
+            n_usc: chematic_chem::num_unspecified_stereocenters(molecule) as f64,
+            sum_e,
+            max_e,
+            min_e,
+            bbb: chematic_chem::bbb_score(molecule),
+            caco: chematic_chem::caco2_permeability(molecule),
+            herg: chematic_chem::herg_risk_score(molecule),
+            cyp: chematic_chem::cyp3a4_inhibition_risk(molecule),
+            schultz: chematic_chem::schultz_mti(molecule) as f64,
+            gutman: chematic_chem::gutman_mti(molecule) as f64,
+            vabc: chematic_chem::vabc(molecule),
+            grav: chematic_chem::gravitational_index(molecule),
+            lip: chematic_chem::lipinski_passes(molecule),
+            veb: chematic_chem::veber_passes(molecule),
+            egan: chematic_chem::egan_passes(molecule),
+            ghose: chematic_chem::ghose_passes(molecule),
+            reos: chematic_chem::reos_passes(molecule),
+            pains: chematic_chem::pains_passes(molecule),
+            bbp: chematic_chem::bbb_passes(molecule),
+            pka_acid,
+            pka_base,
+        },
+        hbd,
+        hba: rings.hba_count,
+        rotatable_bonds: rings.rotatable_bond_count,
+        heavy_atoms,
+        ring_count: rings.ring_count,
+        aromatic_ring_count: rings.aromatic_ring_count,
+        num_heteroatoms: chematic_chem::num_heteroatoms(molecule),
+        num_stereocenters: chematic_chem::num_stereocenters(molecule),
+        num_spiro_atoms: rings.num_spiro_atoms,
+        num_bridgehead_atoms: rings.num_bridgehead_atoms,
+        num_aromatic_heterocycles: rings.num_aromatic_heterocycles,
+        num_aliphatic_heterocycles: rings.num_aliphatic_heterocycles,
+        num_saturated_rings: rings.num_saturated_rings,
+        num_aliphatic_rings: rings.num_aliphatic_rings,
+        num_unspecified_stereocenters: chematic_chem::num_unspecified_stereocenters(molecule),
+        formal_charge,
+        schultz_mti: chematic_chem::schultz_mti(molecule),
+        gutman_mti: chematic_chem::gutman_mti(molecule),
+    }
+}
+
+fn descriptor_record_to_pydict<'py>(
+    py: Python<'py>,
+    record: DescriptorRecord,
+) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    set_descriptor_scalar_fields(&d, &record)?;
+    set_descriptor_topology_fields(&d, &record)?;
+    set_descriptor_screening_fields(py, &d, &record)?;
+    Ok(d)
+}
+
+fn set_descriptor_scalar_fields(d: &Bound<'_, PyDict>, record: &DescriptorRecord) -> PyResult<()> {
+    let r = &record.row;
+    for (name, value) in [
+        ("mw", r.mw),
+        ("exact_mass", r.exact_mass),
+        ("tpsa", r.tpsa),
+        ("logp", r.logp),
+        ("molar_refractivity", r.mr),
+        ("fsp3", r.fsp3),
+        ("qed", r.qed),
+        ("sa_score", r.sa),
+        ("labute_asa", r.asa),
+        ("bertz_ct", r.bertz),
+        ("wiener_index", r.wi),
+    ] {
+        d.set_item(name, value)?;
+    }
+    d.set_item("hbd", record.hbd)?;
+    d.set_item("hba", record.hba)?;
+    d.set_item("rotatable_bonds", record.rotatable_bonds)?;
+    d.set_item("heavy_atoms", record.heavy_atoms)?;
+    d.set_item("formal_charge", record.formal_charge)?;
+    Ok(())
+}
+
+fn set_descriptor_topology_fields(
+    d: &Bound<'_, PyDict>,
+    record: &DescriptorRecord,
+) -> PyResult<()> {
+    let r = &record.row;
+    d.set_item("ring_count", record.ring_count)?;
+    d.set_item("aromatic_ring_count", record.aromatic_ring_count)?;
+    d.set_item("num_heteroatoms", record.num_heteroatoms)?;
+    d.set_item("num_stereocenters", record.num_stereocenters)?;
+    d.set_item("num_spiro_atoms", record.num_spiro_atoms)?;
+    d.set_item("num_bridgehead_atoms", record.num_bridgehead_atoms)?;
+    d.set_item(
+        "num_aromatic_heterocycles",
+        record.num_aromatic_heterocycles,
+    )?;
+    d.set_item(
+        "num_aliphatic_heterocycles",
+        record.num_aliphatic_heterocycles,
+    )?;
+    d.set_item("num_saturated_rings", record.num_saturated_rings)?;
+    d.set_item("num_aliphatic_rings", record.num_aliphatic_rings)?;
+    d.set_item(
+        "num_unspecified_stereocenters",
+        record.num_unspecified_stereocenters,
+    )?;
+    for (name, value) in [
+        ("kappa1", r.k1),
+        ("kappa2", r.k2),
+        ("kappa3", r.k3),
+        ("chi0", r.c0),
+        ("chi1", r.c1),
+        ("chi2", r.c2),
+        ("chi3", r.c3),
+        ("chi4", r.c4),
+        ("chi0v", r.c0v),
+        ("chi1v", r.c1v),
+        ("chi2v", r.c2v),
+        ("chi3v", r.c3v),
+        ("chi4v", r.c4v),
+        ("sum_estate", r.sum_e),
+        ("max_estate", r.max_e),
+        ("min_estate", r.min_e),
+    ] {
+        d.set_item(name, value)?;
+    }
+    Ok(())
+}
+
+fn set_descriptor_screening_fields(
+    py: Python<'_>,
+    d: &Bound<'_, PyDict>,
+    record: &DescriptorRecord,
+) -> PyResult<()> {
+    let r = &record.row;
+    for (name, value) in [
+        ("lipinski_passes", r.lip),
+        ("veber_passes", r.veb),
+        ("egan_passes", r.egan),
+        ("ghose_passes", r.ghose),
+        ("reos_passes", r.reos),
+        ("pains_passes", r.pains),
+        ("bbb_passes", r.bbp),
+    ] {
+        d.set_item(name, value)?;
+    }
+    for (name, value) in [
+        ("bbb_score", r.bbb),
+        ("caco2", r.caco),
+        ("herg_risk", r.herg),
+        ("cyp3a4_risk", r.cyp),
+        ("vabc", r.vabc),
+        ("gravitational_index", r.grav),
+    ] {
+        d.set_item(name, value)?;
+    }
+    match r.pka_acid {
+        Some(value) => d.set_item("pka_acid", value)?,
+        None => d.set_item("pka_acid", py.None())?,
+    }
+    match r.pka_base {
+        Some(value) => d.set_item("pka_base", value)?,
+        None => d.set_item("pka_base", py.None())?,
+    }
+    d.set_item("schultz_mti", record.schultz_mti)?;
+    d.set_item("gutman_mti", record.gutman_mti)?;
+    Ok(())
 }
 
 fn materialize_descriptor_columns<'py>(
@@ -292,223 +984,14 @@ pub fn maccs<'py>(py: Python<'py>, smiles: Vec<String>) -> Bound<'py, PyArray2<u
 ///     df = pd.DataFrame(chematic.bulk.descriptors(smiles_list))
 #[pyfunction]
 pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bound<'py, PyDict>>> {
-    // Phase 1: parallel computation (no GIL)
-    struct Desc {
-        mw: f64,
-        exact_mass: f64,
-        tpsa: f64,
-        logp: f64,
-        mr: f64,
-        hbd: usize,
-        hba: usize,
-        rb: usize,
-        hac: usize,
-        rc: usize,
-        arc: usize,
-        nh: usize,
-        nsc: usize,
-        nsp: usize,
-        nbh: usize,
-        fsp3: f64,
-        qed: f64,
-        sa: f64,
-        fc: i32,
-        asa: f64,
-        bertz: f64,
-        wi: f64,
-        k1: f64,
-        k2: f64,
-        k3: f64,
-        c0: f64,
-        c1: f64,
-        c2: f64,
-        c3: f64,
-        c4: f64,
-        c0v: f64,
-        c1v: f64,
-        c2v: f64,
-        c3v: f64,
-        c4v: f64,
-        n_ah: usize,
-        n_alh: usize,
-        n_sr: usize,
-        n_ar: usize,
-        n_usc: usize,
-        sum_e: f64,
-        max_e: f64,
-        min_e: f64,
-        lip: bool,
-        veb: bool,
-        egan: bool,
-        ghose: bool,
-        reos: bool,
-        pains: bool,
-        bbb: f64,
-        bbp: bool,
-        caco: f64,
-        herg: f64,
-        cyp: f64,
-        pka_acid: Option<f64>,
-        pka_base: Option<f64>,
-        schultz: u64,
-        gutman: u64,
-        vabc: f64,
-        grav: f64,
-    }
-
-    let descs: Vec<Desc> = smiles
+    let records = smiles
         .par_iter()
-        .filter_map(|s| chematic_smiles::parse(s).ok())
-        .map(|mol| {
-            let m = &mol;
-            // Pre-compute shared data: ring_bundle (1 SSSR), logp+MR (1 Crippen pass),
-            // topology (1 heavy-atom extraction for Wiener/Kappa/Chi), estate (1 BFS
-            // pass), and pKa (1 scan).
-            let rb_data = chematic_chem::ring_bundle(m);
-            let topology = chematic_chem::topology_bundle(m);
-            let (pka_a, pka_b) = chematic_chem::pka_both(m);
-            let (logp_val, mr_val) = chematic_chem::logp_and_mr(m);
-            let (k1, k2, k3) = topology.kappa;
-            let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = topology.chi;
-            let (sum_e, max_e, min_e) = chematic_chem::estate_all(m);
-            Desc {
-                mw: chematic_chem::molecular_weight(m),
-                exact_mass: chematic_chem::exact_mass(m),
-                tpsa: chematic_chem::tpsa(m),
-                logp: logp_val,
-                mr: mr_val,
-                hbd: chematic_chem::hbd_count(m),
-                hba: rb_data.hba_count,
-                rb: rb_data.rotatable_bond_count,
-                hac: chematic_chem::heavy_atom_count(m),
-                rc: rb_data.ring_count,
-                arc: rb_data.aromatic_ring_count,
-                nh: chematic_chem::num_heteroatoms(m),
-                nsc: chematic_chem::num_stereocenters(m),
-                nsp: rb_data.num_spiro_atoms,
-                nbh: rb_data.num_bridgehead_atoms,
-                fsp3: chematic_chem::fsp3(m),
-                qed: chematic_chem::qed(m),
-                sa: chematic_chem::sa_score(m),
-                fc: chematic_chem::formal_charge_sum(m),
-                asa: chematic_chem::labute_asa(m),
-                bertz: chematic_chem::bertz_ct(m),
-                wi: chematic_chem::wiener_index(m),
-                k1,
-                k2,
-                k3,
-                c0,
-                c1,
-                c2,
-                c3,
-                c4,
-                c0v,
-                c1v,
-                c2v,
-                c3v,
-                c4v,
-                n_ah: rb_data.num_aromatic_heterocycles,
-                n_alh: rb_data.num_aliphatic_heterocycles,
-                n_sr: rb_data.num_saturated_rings,
-                n_ar: rb_data.num_aliphatic_rings,
-                n_usc: chematic_chem::num_unspecified_stereocenters(m),
-                sum_e,
-                max_e,
-                min_e,
-                lip: chematic_chem::lipinski_passes(m),
-                veb: chematic_chem::veber_passes(m),
-                egan: chematic_chem::egan_passes(m),
-                ghose: chematic_chem::ghose_passes(m),
-                reos: chematic_chem::reos_passes(m),
-                pains: chematic_chem::pains_passes(m),
-                bbb: chematic_chem::bbb_score(m),
-                bbp: chematic_chem::bbb_passes(m),
-                caco: chematic_chem::caco2_permeability(m),
-                herg: chematic_chem::herg_risk_score(m),
-                cyp: chematic_chem::cyp3a4_inhibition_risk(m),
-                pka_acid: pka_a,
-                pka_base: pka_b,
-                schultz: chematic_chem::schultz_mti(m),
-                gutman: chematic_chem::gutman_mti(m),
-                vabc: chematic_chem::vabc(m),
-                grav: chematic_chem::gravitational_index(m),
-            }
-        })
-        .collect();
-
-    // Phase 2: convert to Python dicts (sequential, GIL held)
-    descs
+        .filter_map(|smiles| chematic_smiles::parse(smiles).ok())
+        .map(|molecule| compute_descriptor_record(&molecule))
+        .collect::<Vec<_>>();
+    records
         .into_iter()
-        .map(|d| {
-            let dict = PyDict::new(py);
-            dict.set_item("mw", d.mw)?;
-            dict.set_item("exact_mass", d.exact_mass)?;
-            dict.set_item("tpsa", d.tpsa)?;
-            dict.set_item("logp", d.logp)?;
-            dict.set_item("molar_refractivity", d.mr)?;
-            dict.set_item("hbd", d.hbd)?;
-            dict.set_item("hba", d.hba)?;
-            dict.set_item("rotatable_bonds", d.rb)?;
-            dict.set_item("heavy_atoms", d.hac)?;
-            dict.set_item("ring_count", d.rc)?;
-            dict.set_item("aromatic_ring_count", d.arc)?;
-            dict.set_item("num_heteroatoms", d.nh)?;
-            dict.set_item("num_stereocenters", d.nsc)?;
-            dict.set_item("num_spiro_atoms", d.nsp)?;
-            dict.set_item("num_bridgehead_atoms", d.nbh)?;
-            dict.set_item("fsp3", d.fsp3)?;
-            dict.set_item("qed", d.qed)?;
-            dict.set_item("sa_score", d.sa)?;
-            dict.set_item("formal_charge", d.fc)?;
-            dict.set_item("labute_asa", d.asa)?;
-            dict.set_item("bertz_ct", d.bertz)?;
-            dict.set_item("wiener_index", d.wi)?;
-            dict.set_item("kappa1", d.k1)?;
-            dict.set_item("kappa2", d.k2)?;
-            dict.set_item("kappa3", d.k3)?;
-            dict.set_item("chi0", d.c0)?;
-            dict.set_item("chi1", d.c1)?;
-            dict.set_item("chi2", d.c2)?;
-            dict.set_item("chi3", d.c3)?;
-            dict.set_item("chi4", d.c4)?;
-            dict.set_item("chi0v", d.c0v)?;
-            dict.set_item("chi1v", d.c1v)?;
-            dict.set_item("chi2v", d.c2v)?;
-            dict.set_item("chi3v", d.c3v)?;
-            dict.set_item("chi4v", d.c4v)?;
-            dict.set_item("num_aromatic_heterocycles", d.n_ah)?;
-            dict.set_item("num_aliphatic_heterocycles", d.n_alh)?;
-            dict.set_item("num_saturated_rings", d.n_sr)?;
-            dict.set_item("num_aliphatic_rings", d.n_ar)?;
-            dict.set_item("num_unspecified_stereocenters", d.n_usc)?;
-            dict.set_item("sum_estate", d.sum_e)?;
-            dict.set_item("max_estate", d.max_e)?;
-            dict.set_item("min_estate", d.min_e)?;
-            dict.set_item("lipinski_passes", d.lip)?;
-            dict.set_item("veber_passes", d.veb)?;
-            dict.set_item("egan_passes", d.egan)?;
-            dict.set_item("ghose_passes", d.ghose)?;
-            dict.set_item("reos_passes", d.reos)?;
-            dict.set_item("pains_passes", d.pains)?;
-            dict.set_item("bbb_score", d.bbb)?;
-            dict.set_item("bbb_passes", d.bbp)?;
-            dict.set_item("caco2", d.caco)?;
-            dict.set_item("herg_risk", d.herg)?;
-            dict.set_item("cyp3a4_risk", d.cyp)?;
-            match d.pka_acid {
-                Some(v) => dict.set_item("pka_acid", v)?,
-                None => dict.set_item("pka_acid", py.None())?,
-            }
-            match d.pka_base {
-                Some(v) => dict.set_item("pka_base", v)?,
-                None => dict.set_item("pka_base", py.None())?,
-            }
-            dict.set_item("schultz_mti", d.schultz)?;
-            dict.set_item("gutman_mti", d.gutman)?;
-            dict.set_item("vabc", d.vabc)?;
-            dict.set_item("gravitational_index", d.grav)?;
-            Ok(dict)
-        })
+        .map(|record| descriptor_record_to_pydict(py, record))
         .collect()
 }
 
@@ -533,404 +1016,12 @@ pub fn descriptors_array<'py>(
     smiles: Vec<String>,
     columns: Vec<String>,
 ) -> PyResult<Bound<'py, pyo3::types::PyDict>> {
-    use rayon::iter::ParallelIterator;
-
-    const VALID: &[&str] = &[
-        "mw",
-        "exact_mass",
-        "tpsa",
-        "logp",
-        "molar_refractivity",
-        "hbd",
-        "hba",
-        "rotatable_bonds",
-        "heavy_atoms",
-        "ring_count",
-        "aromatic_ring_count",
-        "num_heteroatoms",
-        "num_stereocenters",
-        "num_spiro_atoms",
-        "num_bridgehead_atoms",
-        "fsp3",
-        "qed",
-        "sa_score",
-        "formal_charge",
-        "labute_asa",
-        "bertz_ct",
-        "wiener_index",
-        "kappa1",
-        "kappa2",
-        "kappa3",
-        "chi0",
-        "chi1",
-        "chi2",
-        "chi3",
-        "chi4",
-        "chi0v",
-        "chi1v",
-        "chi2v",
-        "chi3v",
-        "chi4v",
-        "num_aromatic_heterocycles",
-        "num_aliphatic_heterocycles",
-        "num_saturated_rings",
-        "num_aliphatic_rings",
-        "num_unspecified_stereocenters",
-        "sum_estate",
-        "max_estate",
-        "min_estate",
-        "lipinski_passes",
-        "veber_passes",
-        "egan_passes",
-        "ghose_passes",
-        "reos_passes",
-        "pains_passes",
-        "bbb_passes",
-        "bbb_score",
-        "caco2",
-        "herg_risk",
-        "cyp3a4_risk",
-        "pka_acid",
-        "pka_base",
-        "schultz_mti",
-        "gutman_mti",
-        "vabc",
-        "gravitational_index",
-    ];
-    for col in &columns {
-        if !VALID.contains(&col.as_str()) {
-            return Err(pyo3::exceptions::PyValueError::new_err(format!(
-                "unknown column: {col:?}"
-            )));
-        }
-    }
-
-    // Compile the requested columns into dependency flags once.  The previous
-    // implementation calculated every descriptor for every molecule and only
-    // selected columns while materializing the NumPy arrays.  That made a
-    // request such as ["mw", "tpsa"] pay for pKa, SMARTS alerts, QED, SA,
-    // topology matrices, and all ADMET descriptors as well.
-    let want = |name: &str| columns.iter().any(|column| column == name);
-    let want_any = |names: &[&str]| names.iter().any(|name| want(name));
-    let need_qed = want("qed");
-    let need_sa = want("sa_score");
-    let need_pka = want_any(&["pka_acid", "pka_base"]);
-    let need_logp = want_any(&[
-        "logp",
-        "molar_refractivity",
-        "qed",
-        "bbb_score",
-        "caco2",
-        "herg_risk",
-        "cyp3a4_risk",
-        "lipinski_passes",
-        "egan_passes",
-        "ghose_passes",
-        "reos_passes",
-    ]);
-    let need_mr = want_any(&["molar_refractivity", "ghose_passes"]);
-    let need_tpsa = want_any(&[
-        "tpsa",
-        "qed",
-        "bbb_score",
-        "bbb_passes",
-        "caco2",
-        "veber_passes",
-        "egan_passes",
-    ]);
-    let need_hbd = want_any(&["hbd", "qed", "bbb_passes", "lipinski_passes", "reos_passes"]);
-    let need_ring_bundle = want_any(&[
-        "hba",
-        "rotatable_bonds",
-        "ring_count",
-        "aromatic_ring_count",
-        "num_spiro_atoms",
-        "num_bridgehead_atoms",
-        "num_aromatic_heterocycles",
-        "num_aliphatic_heterocycles",
-        "num_saturated_rings",
-        "num_aliphatic_rings",
-        "qed",
-        "sa_score",
-        "cyp3a4_risk",
-        "lipinski_passes",
-        "reos_passes",
-    ]);
-    let need_kappa = want_any(&["kappa1", "kappa2", "kappa3"]);
-    let need_chi = want_any(&[
-        "chi0", "chi1", "chi2", "chi3", "chi4", "chi0v", "chi1v", "chi2v", "chi3v", "chi4v",
-    ]);
-    let need_estate = want_any(&["sum_estate", "max_estate", "min_estate"]);
-    let need_mw = want_any(&[
-        "mw",
-        "bbb_passes",
-        "bbb_score",
-        "herg_risk",
-        "cyp3a4_risk",
-        "lipinski_passes",
-        "ghose_passes",
-        "reos_passes",
-    ]);
-    let need_hac = want_any(&["heavy_atoms", "ghose_passes", "reos_passes"]);
-    let need_fc = want_any(&["formal_charge", "reos_passes"]);
-    let need_aromatic_heterocycles = want("cyp3a4_risk");
-
-    let rows: Vec<DescriptorRow> = smiles
+    let plan = DescriptorColumnPlan::new(&columns)?;
+    let rows = smiles
         .par_iter()
-        .filter_map(|s| chematic_smiles::parse(s).ok())
-        .map(|mol| {
-            let m = &mol;
-            let rb_data = need_ring_bundle.then(|| chematic_chem::ring_bundle(m));
-            let rb = rb_data.as_ref();
-            let (pka_a, pka_b) = if need_pka || want("herg_risk") {
-                chematic_chem::pka_both(m)
-            } else {
-                (None, None)
-            };
-            let (logp_val, mr_val) = if need_logp || need_mr {
-                chematic_chem::logp_and_mr(m)
-            } else {
-                (0.0, 0.0)
-            };
-            let topology_requests = [need_kappa, need_chi, want("wiener_index")]
-                .into_iter()
-                .filter(|requested| *requested)
-                .count();
-            let topology = (topology_requests >= 2).then(|| chematic_chem::topology_bundle(m));
-            let (k1, k2, k3) = if need_kappa {
-                topology
-                    .as_ref()
-                    .map(|bundle| bundle.kappa)
-                    .unwrap_or_else(|| chematic_chem::kappa_all(m))
-            } else {
-                (0.0, 0.0, 0.0)
-            };
-            let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = if need_chi {
-                topology
-                    .as_ref()
-                    .map(|bundle| bundle.chi)
-                    .unwrap_or_else(|| chematic_chem::chi_all(m))
-            } else {
-                (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-            };
-            let (sum_e, max_e, min_e) = if need_estate {
-                chematic_chem::estate_all(m)
-            } else {
-                (0.0, 0.0, 0.0)
-            };
-            let mw = if need_mw {
-                chematic_chem::molecular_weight(m)
-            } else {
-                0.0
-            };
-            let tpsa = if need_tpsa {
-                chematic_chem::tpsa(m)
-            } else {
-                0.0
-            };
-            let hbd = if need_hbd {
-                chematic_chem::hbd_count(m)
-            } else {
-                0
-            };
-            let hba = rb.map_or(0, |data| data.hba_count);
-            let rb_count = rb.map_or(0, |data| data.rotatable_bond_count);
-            let hac = if need_hac {
-                chematic_chem::heavy_atom_count(m)
-            } else {
-                0
-            };
-            let fc = if need_fc {
-                chematic_chem::formal_charge_sum(m)
-            } else {
-                0
-            };
-            DescriptorRow {
-                mw,
-                exact_mass: if want("exact_mass") {
-                    chematic_chem::exact_mass(m)
-                } else {
-                    0.0
-                },
-                tpsa,
-                logp: logp_val,
-                mr: mr_val,
-                hbd: hbd as f64,
-                hba: hba as f64,
-                rb: rb_count as f64,
-                hac: hac as f64,
-                rc: rb.map_or(0, |data| data.ring_count) as f64,
-                arc: rb.map_or(0, |data| data.aromatic_ring_count) as f64,
-                nh: if want("num_heteroatoms") {
-                    chematic_chem::num_heteroatoms(m)
-                } else {
-                    0
-                } as f64,
-                nsc: if want("num_stereocenters") {
-                    chematic_chem::num_stereocenters(m)
-                } else {
-                    0
-                } as f64,
-                nsp: rb.map_or(0, |data| data.num_spiro_atoms) as f64,
-                nbh: rb.map_or(0, |data| data.num_bridgehead_atoms) as f64,
-                fsp3: if want("fsp3") {
-                    chematic_chem::fsp3(m)
-                } else {
-                    0.0
-                },
-                qed: if need_qed {
-                    chematic_chem::qed_with_bundle(m, rb.expect("QED requires ring bundle"))
-                } else {
-                    0.0
-                },
-                sa: if need_sa {
-                    chematic_chem::sa_score_with_bundle(m, rb.expect("SA requires ring bundle"))
-                } else {
-                    0.0
-                },
-                fc: fc as f64,
-                asa: if want("labute_asa") {
-                    chematic_chem::labute_asa(m)
-                } else {
-                    0.0
-                },
-                bertz: if want("bertz_ct") {
-                    chematic_chem::bertz_ct(m)
-                } else {
-                    0.0
-                },
-                wi: if want("wiener_index") {
-                    topology
-                        .as_ref()
-                        .map(|bundle| bundle.wiener)
-                        .unwrap_or_else(|| chematic_chem::wiener_index(m))
-                } else {
-                    0.0
-                },
-                k1,
-                k2,
-                k3,
-                c0,
-                c1,
-                c2,
-                c3,
-                c4,
-                c0v,
-                c1v,
-                c2v,
-                c3v,
-                c4v,
-                n_ah: rb.map_or(0, |data| data.num_aromatic_heterocycles) as f64,
-                n_alh: rb.map_or(0, |data| data.num_aliphatic_heterocycles) as f64,
-                n_sr: rb.map_or(0, |data| data.num_saturated_rings) as f64,
-                n_ar: rb.map_or(0, |data| data.num_aliphatic_rings) as f64,
-                n_usc: if want("num_unspecified_stereocenters") {
-                    chematic_chem::num_unspecified_stereocenters(m)
-                } else {
-                    0
-                } as f64,
-                sum_e,
-                max_e,
-                min_e,
-                bbb: if want("bbb_score") {
-                    chematic_chem::bbb_score_from_parts(tpsa, logp_val)
-                } else {
-                    0.0
-                },
-                caco: if want("caco2") {
-                    chematic_chem::caco2_precomputed(tpsa, logp_val)
-                } else {
-                    0.0
-                },
-                herg: if want("herg_risk") {
-                    chematic_chem::herg_risk_precomputed(m, logp_val, mw)
-                } else {
-                    0.0
-                },
-                cyp: if want("cyp3a4_risk") {
-                    chematic_chem::cyp3a4_precomputed(
-                        mw,
-                        logp_val,
-                        if need_aromatic_heterocycles {
-                            chematic_chem::num_aromatic_heterocycles(m)
-                        } else {
-                            0
-                        },
-                        hba,
-                    )
-                } else {
-                    0.0
-                },
-                schultz: if want("schultz_mti") {
-                    chematic_chem::schultz_mti(m) as f64
-                } else {
-                    0.0
-                },
-                gutman: if want("gutman_mti") {
-                    chematic_chem::gutman_mti(m) as f64
-                } else {
-                    0.0
-                },
-                vabc: if want("vabc") {
-                    chematic_chem::vabc(m)
-                } else {
-                    0.0
-                },
-                grav: if want("gravitational_index") {
-                    chematic_chem::gravitational_index(m)
-                } else {
-                    0.0
-                },
-                lip: if want("lipinski_passes") {
-                    mw <= 500.0 && hbd <= 5 && hba <= 10 && logp_val <= 5.0
-                } else {
-                    false
-                },
-                veb: if want("veber_passes") {
-                    tpsa <= 140.0 && rb_count <= 10
-                } else {
-                    false
-                },
-                egan: if want("egan_passes") {
-                    tpsa <= 131.6 && logp_val <= 5.88
-                } else {
-                    false
-                },
-                ghose: if want("ghose_passes") {
-                    (160.0..=480.0).contains(&mw)
-                        && (-0.4..=5.6).contains(&logp_val)
-                        && (20.0..=70.0).contains(&(hac as f64))
-                        && (40.0..=130.0).contains(&mr_val)
-                } else {
-                    false
-                },
-                reos: if want("reos_passes") {
-                    (200.0..=500.0).contains(&mw)
-                        && (-5.0..=5.0).contains(&logp_val)
-                        && (0..=5).contains(&hbd)
-                        && (0..=10).contains(&hba)
-                        && (-2..=2).contains(&fc)
-                        && (0..=8).contains(&rb_count)
-                        && (15..=50).contains(&hac)
-                } else {
-                    false
-                },
-                pains: if want("pains_passes") {
-                    chematic_chem::pains_passes(m)
-                } else {
-                    false
-                },
-                bbp: if want("bbb_passes") {
-                    tpsa < 90.0 && mw < 400.0 && hbd <= 3
-                } else {
-                    false
-                },
-                pka_acid: pka_a,
-                pka_base: pka_b,
-            }
-        })
-        .collect();
-
+        .filter_map(|smiles| chematic_smiles::parse(smiles).ok())
+        .map(|molecule| SelectedDescriptorContext::new(&molecule, &plan).into_row())
+        .collect::<Vec<_>>();
     materialize_descriptor_columns(py, &rows, &columns)
 }
 
@@ -1298,19 +1389,21 @@ pub fn standardize(mols: Vec<Mol>) -> Vec<Mol> {
 // ---------------------------------------------------------------------------
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(parse, m)?)?;
-    m.add_function(wrap_pyfunction!(ecfp4, m)?)?;
-    m.add_function(wrap_pyfunction!(maccs, m)?)?;
-    m.add_function(wrap_pyfunction!(map4, m)?)?;
-    m.add_function(wrap_pyfunction!(hdf, m)?)?;
-    m.add_function(wrap_pyfunction!(descriptors, m)?)?;
-    m.add_function(wrap_pyfunction!(descriptors_array, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_search, m)?)?;
-    m.add_function(wrap_pyfunction!(substructure_search, m)?)?;
-    m.add_function(wrap_pyfunction!(substructure_match, m)?)?;
-    m.add_function(wrap_pyfunction!(generate_3d, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_matrix, m)?)?;
-    m.add_function(wrap_pyfunction!(standardize, m)?)?;
-    Ok(())
+    register_pyfunctions!(
+        m,
+        parse,
+        ecfp4,
+        maccs,
+        map4,
+        hdf,
+        descriptors,
+        descriptors_array,
+        tanimoto,
+        tanimoto_search,
+        substructure_search,
+        substructure_match,
+        generate_3d,
+        tanimoto_matrix,
+        standardize,
+    )
 }

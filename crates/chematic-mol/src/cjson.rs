@@ -140,6 +140,216 @@ pub fn parse_cjson(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Cjso
     parse_cjson_with_limits(input, &CjsonParseLimits::default())
 }
 
+fn cjson_numbers(
+    atoms: &serde_json::Value,
+    limits: &CjsonParseLimits,
+) -> Result<Vec<u64>, CjsonError> {
+    let values = atoms
+        .get("elements")
+        .and_then(|value| value.get("number"))
+        .and_then(serde_json::Value::as_array)
+        .ok_or(CjsonError::MissingField("atoms.elements.number"))?;
+    if values.len() > limits.max_atoms {
+        return Err(CjsonError::ResourceLimit {
+            resource: "atom records",
+            actual: values.len(),
+            limit: limits.max_atoms,
+        });
+    }
+    values
+        .iter()
+        .map(|value| {
+            value.as_u64().ok_or(CjsonError::InvalidValue {
+                field: "atoms.elements.number",
+            })
+        })
+        .collect()
+}
+
+fn cjson_charges(atoms: &serde_json::Value, count: usize) -> Result<Vec<i8>, CjsonError> {
+    let Some(values) = atoms
+        .get("formalCharges")
+        .and_then(serde_json::Value::as_array)
+    else {
+        return Ok(vec![0; count]);
+    };
+    values
+        .iter()
+        .map(|value| {
+            value
+                .as_i64()
+                .and_then(|charge| i8::try_from(charge).ok())
+                .ok_or(CjsonError::InvalidValue {
+                    field: "atoms.formalCharges",
+                })
+        })
+        .collect()
+}
+
+fn cjson_isotopes(atoms: &serde_json::Value, count: usize) -> Result<Vec<Option<u16>>, CjsonError> {
+    let Some(values) = atoms.get("isotopes").and_then(serde_json::Value::as_array) else {
+        return Ok(vec![None; count]);
+    };
+    values
+        .iter()
+        .map(|value| {
+            let isotope = value.as_u64().ok_or(CjsonError::InvalidValue {
+                field: "atoms.isotopes",
+            })?;
+            if isotope == 0 {
+                Ok(None)
+            } else {
+                u16::try_from(isotope)
+                    .map(Some)
+                    .map_err(|_| CjsonError::InvalidValue {
+                        field: "atoms.isotopes",
+                    })
+            }
+        })
+        .collect()
+}
+
+fn cjson_coords(
+    atoms: &serde_json::Value,
+    count: usize,
+) -> Result<Vec<(f64, f64, f64)>, CjsonError> {
+    let Some(values) = atoms
+        .get("coords")
+        .and_then(|value| value.get("3d"))
+        .and_then(serde_json::Value::as_array)
+    else {
+        return Ok(Vec::new());
+    };
+    let flat = values
+        .iter()
+        .map(|value| {
+            value.as_f64().ok_or(CjsonError::InvalidValue {
+                field: "atoms.coords.3d",
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if flat.len() % 3 != 0 || flat.len() / 3 != count {
+        return Err(CjsonError::InvalidCoordCount {
+            expected: count,
+            got: flat.len(),
+        });
+    }
+    Ok(flat
+        .as_chunks::<3>()
+        .0
+        .iter()
+        .map(|coord| (coord[0], coord[1], coord[2]))
+        .collect())
+}
+
+struct CjsonAtoms {
+    builder: MoleculeBuilder,
+    count: usize,
+    coords: Vec<(f64, f64, f64)>,
+}
+
+fn cjson_atoms(
+    atoms: &serde_json::Value,
+    limits: &CjsonParseLimits,
+) -> Result<CjsonAtoms, CjsonError> {
+    let numbers = cjson_numbers(atoms, limits)?;
+    let charges = cjson_charges(atoms, numbers.len())?;
+    let isotopes = cjson_isotopes(atoms, numbers.len())?;
+    let coords = cjson_coords(atoms, numbers.len())?;
+    let mut builder = MoleculeBuilder::new();
+    for (index, number) in numbers.iter().copied().enumerate() {
+        let element = u8::try_from(number)
+            .ok()
+            .and_then(Element::from_atomic_number)
+            .ok_or(CjsonError::UnknownAtomicNumber(number))?;
+        let mut atom = Atom::new(element);
+        atom.charge = charges.get(index).copied().unwrap_or(0);
+        atom.isotope = isotopes.get(index).copied().flatten();
+        builder.add_atom(atom);
+    }
+    Ok(CjsonAtoms {
+        builder,
+        count: numbers.len(),
+        coords,
+    })
+}
+
+fn cjson_bond_index(raw: u64, pair: usize, count: usize) -> Result<usize, CjsonError> {
+    let index = usize::try_from(raw).map_err(|_| CjsonError::InvalidBondIndex {
+        pair,
+        atom_idx: raw,
+        n_atoms: count,
+    })?;
+    if index >= count {
+        return Err(CjsonError::InvalidBondIndex {
+            pair,
+            atom_idx: raw,
+            n_atoms: count,
+        });
+    }
+    Ok(index)
+}
+
+fn add_cjson_bonds(
+    root: &serde_json::Value,
+    limits: &CjsonParseLimits,
+    count: usize,
+    builder: &mut MoleculeBuilder,
+) -> Result<(), CjsonError> {
+    let Some(bonds) = root.get("bonds") else {
+        return Ok(());
+    };
+    let values = bonds
+        .get("connections")
+        .and_then(|value| value.get("index"))
+        .and_then(serde_json::Value::as_array)
+        .ok_or(CjsonError::MissingField("bonds.connections.index"))?;
+    if values.len() / 2 > limits.max_bonds {
+        return Err(CjsonError::ResourceLimit {
+            resource: "bond records",
+            actual: values.len() / 2,
+            limit: limits.max_bonds,
+        });
+    }
+    let indices = values
+        .iter()
+        .map(|value| {
+            value.as_u64().ok_or(CjsonError::InvalidValue {
+                field: "bonds.connections.index",
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if !indices.len().is_multiple_of(2) {
+        return Err(CjsonError::OddBondIndexList);
+    }
+    let orders = bonds
+        .get("order")
+        .and_then(serde_json::Value::as_array)
+        .map(|values| {
+            values
+                .iter()
+                .map(|value| {
+                    value.as_f64().ok_or(CjsonError::InvalidValue {
+                        field: "bonds.order",
+                    })
+                })
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?
+        .unwrap_or_else(|| vec![1.0; indices.len() / 2]);
+    for (pair, endpoints) in indices.as_chunks::<2>().0.iter().enumerate() {
+        let source = cjson_bond_index(endpoints[0], pair, count)?;
+        let target = cjson_bond_index(endpoints[1], pair, count)?;
+        let order = float_to_bond_order(*orders.get(pair).unwrap_or(&1.0));
+        let _ = builder.add_bond(
+            chematic_core::AtomIdx(source as u32),
+            chematic_core::AtomIdx(target as u32),
+            order,
+        );
+    }
+    Ok(())
+}
+
 /// Parse ChemicalJSON with explicit resource limits.
 #[allow(clippy::type_complexity)]
 pub fn parse_cjson_with_limits(
@@ -167,195 +377,11 @@ pub(crate) fn parse_cjson_value(
     v: &serde_json::Value,
     limits: &CjsonParseLimits,
 ) -> Result<(Molecule, Vec<(f64, f64, f64)>), CjsonError> {
-    let atoms_obj = v.get("atoms").ok_or(CjsonError::MissingField("atoms"))?;
+    let atoms = v.get("atoms").ok_or(CjsonError::MissingField("atoms"))?;
+    let mut parsed = cjson_atoms(atoms, limits)?;
+    add_cjson_bonds(v, limits, parsed.count, &mut parsed.builder)?;
 
-    // ── Atomic numbers ───────────────────────────────────────────────────────
-    let numbers_value = atoms_obj
-        .get("elements")
-        .and_then(|e| e.get("number"))
-        .and_then(|n| n.as_array())
-        .ok_or(CjsonError::MissingField("atoms.elements.number"))?;
-    if numbers_value.len() > limits.max_atoms {
-        return Err(CjsonError::ResourceLimit {
-            resource: "atom records",
-            actual: numbers_value.len(),
-            limit: limits.max_atoms,
-        });
-    }
-    let numbers: Vec<u64> = numbers_value
-        .iter()
-        .map(|v| {
-            v.as_u64().ok_or(CjsonError::InvalidValue {
-                field: "atoms.elements.number",
-            })
-        })
-        .collect::<Result<_, _>>()?;
-    let n_atoms = numbers.len();
-
-    // ── Optional: formal charges ─────────────────────────────────────────────
-    let formal_charges: Vec<i8> =
-        if let Some(arr) = atoms_obj.get("formalCharges").and_then(|fc| fc.as_array()) {
-            arr.iter()
-                .map(|v| {
-                    let value = v.as_i64().ok_or(CjsonError::InvalidValue {
-                        field: "atoms.formalCharges",
-                    })?;
-                    i8::try_from(value).map_err(|_| CjsonError::InvalidValue {
-                        field: "atoms.formalCharges",
-                    })
-                })
-                .collect::<Result<Vec<_>, _>>()?
-        } else {
-            vec![0i8; n_atoms]
-        };
-
-    // ── Optional: isotopes (0 = natural abundance) ───────────────────────────
-    let isotopes: Vec<Option<u16>> =
-        if let Some(arr) = atoms_obj.get("isotopes").and_then(|iso| iso.as_array()) {
-            arr.iter()
-                .map(|v| {
-                    let n = v.as_u64().ok_or(CjsonError::InvalidValue {
-                        field: "atoms.isotopes",
-                    })?;
-                    if n == 0 {
-                        Ok(None)
-                    } else {
-                        u16::try_from(n)
-                            .map(Some)
-                            .map_err(|_| CjsonError::InvalidValue {
-                                field: "atoms.isotopes",
-                            })
-                    }
-                })
-                .collect::<Result<Vec<_>, _>>()?
-        } else {
-            vec![None; n_atoms]
-        };
-
-    // ── 3D coordinates (optional) ────────────────────────────────────────────
-    let coords: Vec<(f64, f64, f64)> = {
-        let flat: Option<Result<Vec<f64>, CjsonError>> = atoms_obj
-            .get("coords")
-            .and_then(|c| c.get("3d"))
-            .and_then(|c| c.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .map(|v| {
-                        v.as_f64().ok_or(CjsonError::InvalidValue {
-                            field: "atoms.coords.3d",
-                        })
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-            });
-
-        match flat.transpose()? {
-            None => Vec::new(),
-            Some(flat) => {
-                if flat.len() % 3 != 0 || flat.len() / 3 != n_atoms {
-                    return Err(CjsonError::InvalidCoordCount {
-                        expected: n_atoms,
-                        got: flat.len(),
-                    });
-                }
-                flat.as_chunks::<3>()
-                    .0
-                    .iter()
-                    .map(|c| (c[0], c[1], c[2]))
-                    .collect()
-            }
-        }
-    };
-
-    // ── Build atoms ──────────────────────────────────────────────────────────
-    let mut builder = MoleculeBuilder::new();
-    for (i, &an) in numbers.iter().enumerate() {
-        let element = u8::try_from(an)
-            .ok()
-            .and_then(Element::from_atomic_number)
-            .ok_or(CjsonError::UnknownAtomicNumber(an))?;
-        let mut atom = Atom::new(element);
-        atom.charge = *formal_charges.get(i).unwrap_or(&0);
-        atom.isotope = isotopes.get(i).copied().flatten();
-        builder.add_atom(atom);
-    }
-
-    // ── Bonds ────────────────────────────────────────────────────────────────
-    if let Some(bonds_obj) = v.get("bonds") {
-        let index_value = bonds_obj
-            .get("connections")
-            .and_then(|c| c.get("index"))
-            .and_then(|i| i.as_array())
-            .ok_or(CjsonError::MissingField("bonds.connections.index"))?;
-        if index_value.len() / 2 > limits.max_bonds {
-            return Err(CjsonError::ResourceLimit {
-                resource: "bond records",
-                actual: index_value.len() / 2,
-                limit: limits.max_bonds,
-            });
-        }
-        let index: Vec<u64> = index_value
-            .iter()
-            .map(|v| {
-                v.as_u64().ok_or(CjsonError::InvalidValue {
-                    field: "bonds.connections.index",
-                })
-            })
-            .collect::<Result<_, _>>()?;
-
-        if !index.len().is_multiple_of(2) {
-            return Err(CjsonError::OddBondIndexList);
-        }
-
-        let orders: Vec<f64> = if let Some(arr) = bonds_obj.get("order").and_then(|o| o.as_array())
-        {
-            arr.iter()
-                .map(|v| {
-                    v.as_f64().ok_or(CjsonError::InvalidValue {
-                        field: "bonds.order",
-                    })
-                })
-                .collect::<Result<Vec<_>, _>>()?
-        } else {
-            vec![1.0; index.len() / 2]
-        };
-
-        for (pair_idx, chunk) in index.as_chunks::<2>().0.iter().enumerate() {
-            let a = chunk[0];
-            let b = chunk[1];
-            let a_idx = usize::try_from(a).map_err(|_| CjsonError::InvalidBondIndex {
-                pair: pair_idx,
-                atom_idx: a,
-                n_atoms,
-            })?;
-            let b_idx = usize::try_from(b).map_err(|_| CjsonError::InvalidBondIndex {
-                pair: pair_idx,
-                atom_idx: b,
-                n_atoms,
-            })?;
-            if a_idx >= n_atoms {
-                return Err(CjsonError::InvalidBondIndex {
-                    pair: pair_idx,
-                    atom_idx: a,
-                    n_atoms,
-                });
-            }
-            if b_idx >= n_atoms {
-                return Err(CjsonError::InvalidBondIndex {
-                    pair: pair_idx,
-                    atom_idx: b,
-                    n_atoms,
-                });
-            }
-            let order = float_to_bond_order(*orders.get(pair_idx).unwrap_or(&1.0));
-            let _ = builder.add_bond(
-                chematic_core::AtomIdx(a_idx as u32),
-                chematic_core::AtomIdx(b_idx as u32),
-                order,
-            );
-        }
-    }
-
-    Ok((builder.build(), coords))
+    Ok((parsed.builder.build(), parsed.coords))
 }
 
 pub(crate) fn check_json_limits(

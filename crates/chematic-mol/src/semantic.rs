@@ -3,11 +3,13 @@
 //! This module is intentionally conservative: ambiguous references and unsafe
 //! expansions are rejected instead of being guessed into a molecular graph.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::{Map, Value};
 
 use chematic_core::{AtomIdx, Molecule};
+
+mod expansion;
 
 /// Stable identifier used by source-level semantic objects.
 pub type SemanticId = String;
@@ -197,6 +199,114 @@ pub enum SemanticCommand {
     },
 }
 
+fn parse_end_group_definitions(value: &Value) -> Result<Vec<PolymerEndGroup>, SemanticError> {
+    value
+        .get("end_group_definitions")
+        .map(|definitions| {
+            definitions
+                .as_array()
+                .ok_or_else(|| {
+                    SemanticError::InvalidJson("end_group_definitions must be an array".into())
+                })?
+                .iter()
+                .map(|definition| {
+                    Ok(PolymerEndGroup {
+                        id: json_string(definition, "id")?,
+                        smiles: json_string(definition, "smiles")?,
+                    })
+                })
+                .collect()
+        })
+        .transpose()
+        .map(Option::unwrap_or_default)
+}
+
+fn parse_optional_repeat_count(value: &Value) -> Result<Option<u32>, SemanticError> {
+    match value.get("repeat_count") {
+        None | Some(Value::Null) => Ok(None),
+        Some(count) => count
+            .as_u64()
+            .and_then(|count| u32::try_from(count).ok())
+            .map(Some)
+            .ok_or_else(|| {
+                SemanticError::InvalidJson("repeat_count must be an integer or null".into())
+            }),
+    }
+}
+
+fn parse_optional_endpoints(value: &Value) -> Result<Option<[u32; 2]>, SemanticError> {
+    let Some(endpoints) = value.get("repeat_endpoint_atoms") else {
+        return Ok(None);
+    };
+    if endpoints.is_null() {
+        return Ok(None);
+    }
+    let endpoints = endpoints.as_array().ok_or_else(|| {
+        SemanticError::InvalidJson("repeat_endpoint_atoms must be an array or null".into())
+    })?;
+    if endpoints.len() != 2 {
+        return Err(SemanticError::InvalidJson(
+            "repeat_endpoint_atoms must contain two indices".into(),
+        ));
+    }
+    let endpoint = |value: &Value| {
+        value
+            .as_u64()
+            .and_then(|index| u32::try_from(index).ok())
+            .ok_or_else(|| {
+                SemanticError::InvalidJson("endpoint indices must be u32 integers".into())
+            })
+    };
+    Ok(Some([endpoint(&endpoints[0])?, endpoint(&endpoints[1])?]))
+}
+
+fn parse_polymer_unit(value: &Value) -> Result<PolymerRepeatUnit, SemanticError> {
+    Ok(PolymerRepeatUnit {
+        id: json_string(value, "id")?,
+        attachment_atoms: json_string_array(value, "attachment_atoms")?
+            .into_iter()
+            .map(|atom_id| AtomRef { atom_id })
+            .collect(),
+        end_groups: json_string_array(value, "end_groups")?,
+        end_group_definitions: parse_end_group_definitions(value)?,
+        repeat_count: parse_optional_repeat_count(value)?,
+        repeat_smiles: value
+            .get("repeat_smiles")
+            .and_then(Value::as_str)
+            .map(str::to_owned),
+        repeat_endpoint_atoms: parse_optional_endpoints(value)?,
+    })
+}
+
+fn parse_array<T>(
+    value: &Value,
+    key: &str,
+    parse: impl FnMut(&Value) -> Result<T, SemanticError>,
+) -> Result<Vec<T>, SemanticError> {
+    value
+        .get(key)
+        .and_then(Value::as_array)
+        .ok_or_else(|| SemanticError::InvalidJson(format!("{key} must be an array")))?
+        .iter()
+        .map(parse)
+        .collect()
+}
+
+fn parse_optional_s_groups(value: &Value) -> Result<Vec<SemanticSGroup>, SemanticError> {
+    value
+        .get("s_groups")
+        .map(|groups| {
+            groups
+                .as_array()
+                .ok_or_else(|| SemanticError::InvalidJson("s_groups must be an array".into()))?
+                .iter()
+                .map(parse_s_group)
+                .collect()
+        })
+        .transpose()
+        .map(Option::unwrap_or_default)
+}
+
 impl SemanticModel {
     /// Decode the stable `chematic.semantic.v1` JSON representation.
     pub fn from_json(value: &Value) -> Result<Self, SemanticError> {
@@ -205,147 +315,25 @@ impl SemanticModel {
                 "schema must be chematic.semantic.v1".into(),
             ));
         }
-        let strings = |key: &str| -> Result<Vec<String>, SemanticError> {
-            value
-                .get(key)
-                .and_then(Value::as_array)
-                .ok_or_else(|| SemanticError::InvalidJson(format!("{key} must be an array")))?
-                .iter()
-                .map(|item| {
-                    item.as_str().map(str::to_owned).ok_or_else(|| {
-                        SemanticError::InvalidJson(format!("{key} entries must be strings"))
-                    })
-                })
-                .collect()
-        };
-        let atom_ids = strings("atom_ids")?;
-        let bond_ids = strings("bond_ids")?;
-        let r_groups = value
-            .get("r_groups")
-            .and_then(Value::as_array)
-            .ok_or_else(|| SemanticError::InvalidJson("r_groups must be an array".into()))?
-            .iter()
-            .map(parse_r_group)
-            .collect::<Result<Vec<_>, SemanticError>>()?;
-        let polymer_units = value
-            .get("polymer_units")
-            .and_then(Value::as_array)
-            .ok_or_else(|| SemanticError::InvalidJson("polymer_units must be an array".into()))?
-            .iter()
-            .map(|unit| {
-                let id = json_string(unit, "id")?;
-                let attachment_atoms = json_string_array(unit, "attachment_atoms")?
-                    .into_iter()
-                    .map(|atom_id| AtomRef { atom_id })
-                    .collect();
-                let end_groups = json_string_array(unit, "end_groups")?;
-                let end_group_definitions = unit
-                    .get("end_group_definitions")
-                    .map(|value| {
-                        value
-                            .as_array()
-                            .ok_or_else(|| {
-                                SemanticError::InvalidJson(
-                                    "end_group_definitions must be an array".into(),
-                                )
-                            })?
-                            .iter()
-                            .map(|definition| {
-                                Ok(PolymerEndGroup {
-                                    id: json_string(definition, "id")?,
-                                    smiles: json_string(definition, "smiles")?,
-                                })
-                            })
-                            .collect::<Result<Vec<_>, SemanticError>>()
-                    })
-                    .transpose()?
-                    .unwrap_or_default();
-                let repeat_count = match unit.get("repeat_count") {
-                    None | Some(Value::Null) => None,
-                    Some(value) => Some(
-                        value
-                            .as_u64()
-                            .and_then(|count| u32::try_from(count).ok())
-                            .ok_or_else(|| {
-                                SemanticError::InvalidJson(
-                                    "repeat_count must be an integer or null".into(),
-                                )
-                            })?,
-                    ),
-                };
-                let repeat_smiles = unit
-                    .get("repeat_smiles")
-                    .and_then(Value::as_str)
-                    .map(str::to_owned);
-                let repeat_endpoint_atoms = match unit.get("repeat_endpoint_atoms") {
-                    None | Some(Value::Null) => None,
-                    Some(value) => Some({
-                        let values = value.as_array().ok_or_else(|| {
-                            SemanticError::InvalidJson(
-                                "repeat_endpoint_atoms must be an array or null".into(),
-                            )
-                        })?;
-                        if values.len() != 2 {
-                            return Err(SemanticError::InvalidJson(
-                                "repeat_endpoint_atoms must contain two indices".into(),
-                            ));
-                        }
-                        let endpoint = |value: &Value| {
-                            value
-                                .as_u64()
-                                .and_then(|index| u32::try_from(index).ok())
-                                .ok_or_else(|| {
-                                    SemanticError::InvalidJson(
-                                        "endpoint indices must be u32 integers".into(),
-                                    )
-                                })
-                        };
-                        Ok([endpoint(&values[0])?, endpoint(&values[1])?])
-                    }?),
-                };
-                Ok(PolymerRepeatUnit {
-                    id,
-                    attachment_atoms,
-                    end_groups,
-                    end_group_definitions,
-                    repeat_count,
-                    repeat_smiles,
-                    repeat_endpoint_atoms,
-                })
-            })
-            .collect::<Result<Vec<_>, SemanticError>>()?;
-        let s_groups = value
-            .get("s_groups")
-            .map(|groups| {
-                groups
-                    .as_array()
-                    .ok_or_else(|| SemanticError::InvalidJson("s_groups must be an array".into()))?
-                    .iter()
-                    .map(parse_s_group)
-                    .collect::<Result<Vec<_>, SemanticError>>()
-            })
-            .transpose()?
-            .unwrap_or_default();
         if value.get("biomolecules").is_some() {
             return Err(SemanticError::Unsupported {
                 construct: "biomolecule".into(),
                 reason: "typed biomolecule semantics are not implemented".into(),
             });
         }
-        let extensions = value
-            .get("extensions")
-            .and_then(Value::as_object)
-            .cloned()
-            .unwrap_or_default()
-            .into_iter()
-            .collect();
         let model = Self {
-            atom_ids,
-            bond_ids,
-            r_groups,
-            polymer_units,
-            s_groups,
-            extensions,
+            atom_ids: json_string_array(value, "atom_ids")?,
+            bond_ids: json_string_array(value, "bond_ids")?,
+            r_groups: parse_array(value, "r_groups", parse_r_group)?,
+            polymer_units: parse_array(value, "polymer_units", parse_polymer_unit)?,
+            s_groups: parse_optional_s_groups(value)?,
+            extensions: value
+                .get("extensions")
+                .and_then(Value::as_object)
+                .cloned()
+                .unwrap_or_default()
+                .into_iter()
+                .collect(),
         };
         model.validate()?;
         Ok(model)
@@ -518,365 +506,171 @@ impl SemanticModel {
         base: &Molecule,
         limits: &SemanticExpansionLimits,
     ) -> Result<ExpandedSemantic, SemanticError> {
-        if limits.max_atoms == 0 || limits.max_repeat_count == 0 {
-            return Err(SemanticError::InvalidExpansion {
-                id: "model".into(),
-                reason: "expansion limits must be greater than zero".into(),
-            });
-        }
-        self.validate()?;
-        if self.atom_ids.len() != base.atom_count() {
-            return Err(SemanticError::InvalidExpansion {
-                id: "model".into(),
-                reason: "atom_ids must match base molecule atom count".into(),
-            });
-        }
-        if base.atom_count() > limits.max_atoms {
-            return Err(SemanticError::ExpansionLimit {
-                id: "model".into(),
-                resource: "atoms",
-                requested: base.atom_count(),
-                limit: limits.max_atoms,
-            });
-        }
-        let mut molecule = base.clone();
-        let mut mapping: BTreeMap<SemanticId, Vec<AtomIdx>> = self
-            .atom_ids
-            .iter()
-            .cloned()
-            .zip((0..base.atom_count()).map(|i| vec![AtomIdx(i as u32)]))
-            .collect();
-        let mut all_r_groups = Vec::new();
-        collect_r_groups(&self.r_groups, &mut all_r_groups);
-        for group in all_r_groups {
-            let Some(selected) = group.selected_alternative else {
-                return Err(SemanticError::Unsupported {
-                    construct: group.id.clone(),
-                    reason: "no explicit alternative selected".into(),
-                });
-            };
-            let pattern = &group.alternatives[selected];
-            let fragment =
-                chematic_smiles::parse(pattern).map_err(|e| SemanticError::InvalidExpansion {
-                    id: group.id.clone(),
-                    reason: e.to_string(),
-                })?;
-            let wildcards = fragment
-                .atoms()
-                .filter_map(|(idx, atom)| atom.wildcard.then_some(idx))
-                .collect::<Vec<_>>();
-            if fragment.atom_count() < 2 || wildcards.len() != group.attachment_atoms.len() {
-                return Err(SemanticError::InvalidExpansion {
-                    id: group.id.clone(),
-                    reason: format!(
-                        "alternative has {} wildcard attachment markers for {} source attachments",
-                        wildcards.len(),
-                        group.attachment_atoms.len()
-                    ),
-                });
-            }
-            ensure_atom_budget(
-                &molecule,
-                fragment.atom_count() - wildcards.len(),
-                limits,
-                &group.id,
-            )?;
-            let base_atoms = group
-                .attachment_atoms
-                .iter()
-                .map(|reference| {
-                    self.atom_ids
-                        .iter()
-                        .position(|id| id == &reference.atom_id)
-                        .map(|index| AtomIdx(index as u32))
-                        .ok_or_else(|| SemanticError::MissingAtom(reference.atom_id.clone()))
-                })
-                .collect::<Result<Vec<_>, _>>()?;
-            for wildcard in &wildcards {
-                let neighbors = fragment.neighbors(*wildcard).collect::<Vec<_>>();
-                if neighbors.len() != 1 {
-                    return Err(SemanticError::AmbiguousAttachment(group.id.clone()));
-                }
-            }
-            let mut remap = BTreeMap::new();
-            // Wildcard atoms are linkage markers, never copied into the result.
-            for (idx, atom) in fragment.atoms() {
-                if !atom.wildcard {
-                    remap.insert(idx, molecule.add_atom(atom.clone()));
-                }
-            }
-            for (_, bond) in fragment.bonds() {
-                if !remap.contains_key(&bond.atom1) || !remap.contains_key(&bond.atom2) {
-                    continue;
-                }
-                molecule
-                    .add_bond(remap[&bond.atom1], remap[&bond.atom2], bond.order)
-                    .map_err(|e| SemanticError::InvalidExpansion {
-                        id: group.id.clone(),
-                        reason: e.to_string(),
-                    })?;
-            }
-            for (wildcard, base_atom) in wildcards.iter().zip(base_atoms) {
-                let attach = remap[&fragment.neighbors(*wildcard).next().unwrap().0];
-                molecule
-                    .add_bond(base_atom, attach, chematic_core::BondOrder::Single)
-                    .map_err(|e| SemanticError::InvalidExpansion {
-                        id: group.id.clone(),
-                        reason: e.to_string(),
-                    })?;
-            }
-            mapping.insert(group.id.clone(), remap.values().copied().collect());
-        }
-        for unit in &self.polymer_units {
-            let pattern =
-                unit.repeat_smiles
-                    .as_deref()
-                    .ok_or_else(|| SemanticError::Unsupported {
-                        construct: unit.id.clone(),
-                        reason: "repeat_smiles is not provided".into(),
-                    })?;
-            let placeholder_endpoints = pattern.trim().starts_with("[*]")
-                && pattern.trim().ends_with("[*]")
-                && pattern.matches("[*]").count() == 2;
-            if !placeholder_endpoints && unit.repeat_endpoint_atoms.is_none() {
-                return Err(SemanticError::InvalidExpansion {
-                    id: unit.id.clone(),
-                    reason: "repeat requires two [*] markers or explicit endpoint atoms".into(),
-                });
-            }
-            let repeats = unit
-                .repeat_count
-                .ok_or_else(|| SemanticError::Unsupported {
-                    construct: unit.id.clone(),
-                    reason: "repeat count must be explicit".into(),
-                })?;
-            if repeats > limits.max_repeat_count {
-                return Err(SemanticError::ExpansionLimit {
-                    id: unit.id.clone(),
-                    resource: "repeats",
-                    requested: repeats as usize,
-                    limit: limits.max_repeat_count as usize,
-                });
-            }
-            let left = AtomIdx(
-                self.atom_ids
-                    .iter()
-                    .position(|id| id == &unit.attachment_atoms[0].atom_id)
-                    .ok_or_else(|| {
-                        SemanticError::MissingAtom(unit.attachment_atoms[0].atom_id.clone())
-                    })? as u32,
-            );
-            let right = AtomIdx(
-                self.atom_ids
-                    .iter()
-                    .position(|id| id == &unit.attachment_atoms[1].atom_id)
-                    .ok_or_else(|| {
-                        SemanticError::MissingAtom(unit.attachment_atoms[1].atom_id.clone())
-                    })? as u32,
-            );
-            let mut unit_atoms = Vec::new();
-            let mut previous_right: Option<AtomIdx> = None;
-            for repeat_index in 0..repeats {
-                let fragment = chematic_smiles::parse(pattern).map_err(|e| {
-                    SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: e.to_string(),
-                    }
-                })?;
-                let (endpoint_left, endpoint_right, excluded) = if placeholder_endpoints {
-                    let last = AtomIdx(fragment.atom_count().saturating_sub(1) as u32);
-                    let ln = fragment.neighbors(AtomIdx(0)).collect::<Vec<_>>();
-                    let rn = fragment.neighbors(last).collect::<Vec<_>>();
-                    if fragment.atom_count() < 4 || ln.len() != 1 || rn.len() != 1 {
-                        return Err(SemanticError::Unsupported {
-                            construct: unit.id.clone(),
-                            reason: "repeat requires exactly one neighbor at each linkage".into(),
-                        });
-                    }
-                    (ln[0].0, rn[0].0, Some((AtomIdx(0), last)))
-                } else {
-                    let [left, right] = unit.repeat_endpoint_atoms.ok_or_else(|| {
-                        SemanticError::InvalidExpansion {
-                            id: unit.id.clone(),
-                            reason: "repeat endpoints are missing".into(),
-                        }
-                    })?;
-                    if left == right
-                        || left as usize >= fragment.atom_count()
-                        || right as usize >= fragment.atom_count()
-                    {
-                        return Err(SemanticError::InvalidExpansion {
-                            id: unit.id.clone(),
-                            reason: "repeat endpoint atom index is invalid".into(),
-                        });
-                    }
-                    (AtomIdx(left), AtomIdx(right), None)
-                };
-                let excluded_atoms = if excluded.is_some() { 2 } else { 0 };
-                ensure_atom_budget(
-                    &molecule,
-                    fragment.atom_count() - excluded_atoms,
-                    limits,
-                    &unit.id,
-                )?;
-                let mut remap = BTreeMap::new();
-                for (idx, atom) in fragment.atoms() {
-                    if excluded.is_none_or(|(a, b)| idx != a && idx != b) {
-                        let added = molecule.add_atom(atom.clone());
-                        unit_atoms.push(added);
-                        remap.insert(idx, added);
-                    }
-                }
-                for (_, bond) in fragment.bonds() {
-                    if remap.contains_key(&bond.atom1) && remap.contains_key(&bond.atom2) {
-                        molecule
-                            .add_bond(remap[&bond.atom1], remap[&bond.atom2], bond.order)
-                            .map_err(|e| SemanticError::InvalidExpansion {
-                                id: unit.id.clone(),
-                                reason: e.to_string(),
-                            })?;
-                    }
-                }
-                let chain_left = previous_right.unwrap_or(left);
-                molecule
-                    .add_bond(
-                        chain_left,
-                        remap[&endpoint_left],
-                        chematic_core::BondOrder::Single,
-                    )
-                    .map_err(|e| SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: e.to_string(),
-                    })?;
-                let current_right = remap[&endpoint_right];
-                if repeat_index + 1 == repeats {
-                    molecule
-                        .add_bond(right, current_right, chematic_core::BondOrder::Single)
-                        .map_err(|e| SemanticError::InvalidExpansion {
-                            id: unit.id.clone(),
-                            reason: e.to_string(),
-                        })?;
-                } else {
-                    previous_right = Some(current_right);
-                }
-            }
-            let end_group_specs: Vec<(String, String)> = if unit.end_group_definitions.is_empty() {
-                unit.end_groups
-                    .iter()
-                    .cloned()
-                    .enumerate()
-                    .map(|(side, smiles)| {
-                        (
-                            format!(
-                                "{}.end_group_{}",
-                                unit.id,
-                                if side == 0 { "left" } else { "right" }
-                            ),
-                            smiles,
-                        )
-                    })
-                    .collect()
-            } else {
-                unit.end_group_definitions
-                    .iter()
-                    .map(|definition| (definition.id.clone(), definition.smiles.clone()))
-                    .collect()
-            };
-            for (side, (mapping_id, end_group)) in end_group_specs.iter().enumerate() {
-                let fragment = chematic_smiles::parse(end_group).map_err(|e| {
-                    SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: format!("invalid end-group {side}: {e}"),
-                    }
-                })?;
-                let wildcards = fragment
-                    .atoms()
-                    .filter_map(|(idx, atom)| atom.wildcard.then_some(idx))
-                    .collect::<Vec<_>>();
-                if fragment.atom_count() < 2 || wildcards.len() != 1 {
-                    return Err(SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: format!("end-group {side} requires exactly one [*] marker"),
-                    });
-                }
-                ensure_atom_budget(&molecule, fragment.atom_count() - 1, limits, &unit.id)?;
-                let wildcard = wildcards[0];
-                let neighbors = fragment.neighbors(wildcard).collect::<Vec<_>>();
-                if neighbors.len() != 1 {
-                    return Err(SemanticError::AmbiguousAttachment(unit.id.clone()));
-                }
-                let mut remap = BTreeMap::new();
-                for (idx, atom) in fragment.atoms() {
-                    if !atom.wildcard {
-                        let added = molecule.add_atom(atom.clone());
-                        unit_atoms.push(added);
-                        remap.insert(idx, added);
-                    }
-                }
-                for (_, bond) in fragment.bonds() {
-                    if remap.contains_key(&bond.atom1) && remap.contains_key(&bond.atom2) {
-                        molecule
-                            .add_bond(remap[&bond.atom1], remap[&bond.atom2], bond.order)
-                            .map_err(|e| SemanticError::InvalidExpansion {
-                                id: unit.id.clone(),
-                                reason: e.to_string(),
-                            })?;
-                    }
-                }
-                let endpoint = if side == 0 { left } else { right };
-                molecule
-                    .add_bond(
-                        endpoint,
-                        remap[&neighbors[0].0],
-                        chematic_core::BondOrder::Single,
-                    )
-                    .map_err(|e| SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: e.to_string(),
-                    })?;
-                mapping.insert(mapping_id.clone(), remap.values().copied().collect());
-            }
-            mapping.insert(unit.id.clone(), unit_atoms);
-        }
-        for group in &self.s_groups {
-            let members = group
-                .member_atoms
-                .iter()
-                .map(|atom| {
-                    self.atom_ids
-                        .iter()
-                        .position(|id| id == &atom.atom_id)
-                        .map(|index| AtomIdx(index as u32))
-                        .ok_or_else(|| SemanticError::MissingAtom(atom.atom_id.clone()))
-                })
-                .collect::<Result<Vec<_>, _>>()?;
-            mapping.insert(group.id.clone(), members);
-            if let Some(linkage) = &group.linkage {
-                let endpoints = [&linkage.left_atom, &linkage.right_atom]
-                    .into_iter()
-                    .map(|atom| {
-                        self.atom_ids
-                            .iter()
-                            .position(|id| id == &atom.atom_id)
-                            .map(|index| AtomIdx(index as u32))
-                            .ok_or_else(|| SemanticError::MissingAtom(atom.atom_id.clone()))
-                    })
-                    .collect::<Result<Vec<_>, _>>()?;
-                mapping.insert(linkage.id.clone(), endpoints);
-            }
-        }
-        Ok(ExpandedSemantic {
-            molecule,
-            source_to_expanded: mapping,
-            base_molecule: base.clone(),
-        })
+        expansion::expand(self, base, limits)
     }
+}
+
+fn validate_end_groups(
+    unit: &PolymerRepeatUnit,
+    ids: &mut BTreeSet<SemanticId>,
+) -> Result<(), SemanticError> {
+    if !unit.end_groups.is_empty() && unit.end_groups.len() != 2 {
+        return Err(SemanticError::InvalidExpansion {
+            id: unit.id.clone(),
+            reason: "end_groups must contain exactly [left, right] when provided".into(),
+        });
+    }
+    if !unit.end_group_definitions.is_empty() {
+        if !unit.end_groups.is_empty() || unit.end_group_definitions.len() != 2 {
+            return Err(SemanticError::InvalidExpansion {
+                id: unit.id.clone(),
+                reason:
+                    "use exactly two typed end_group_definitions or legacy end_groups, not both"
+                        .into(),
+            });
+        }
+        let mut local_ids = BTreeSet::new();
+        for definition in &unit.end_group_definitions {
+            if definition.id.trim().is_empty() || !local_ids.insert(&definition.id) {
+                return Err(SemanticError::DuplicateId(definition.id.clone()));
+            }
+            if !ids.insert(definition.id.clone()) {
+                return Err(SemanticError::DuplicateId(definition.id.clone()));
+            }
+            if definition.smiles.trim().is_empty() {
+                return Err(SemanticError::InvalidExpansion {
+                    id: definition.id.clone(),
+                    reason: "end-group SMILES must not be empty".into(),
+                });
+            }
+        }
+    }
+    if unit.end_groups.iter().any(|group| group.trim().is_empty()) {
+        return Err(SemanticError::InvalidExpansion {
+            id: unit.id.clone(),
+            reason: "end-group SMILES must not be empty".into(),
+        });
+    }
+    Ok(())
+}
+
+fn validate_repeat_pattern(unit: &PolymerRepeatUnit) -> Result<(), SemanticError> {
+    if let Some(pattern) = unit.repeat_smiles.as_deref() {
+        let pattern = pattern.trim();
+        let has_placeholders = pattern.starts_with("[*]")
+            && pattern.ends_with("[*]")
+            && pattern.matches("[*]").count() == 2;
+        if !has_placeholders && unit.repeat_endpoint_atoms.is_none() {
+            return Err(SemanticError::InvalidExpansion {
+                id: unit.id.clone(),
+                reason: "repeat requires two [*] markers or explicit endpoint atoms".into(),
+            });
+        }
+        if has_placeholders && pattern.matches("[*]").count() != 2 {
+            return Err(SemanticError::InvalidExpansion {
+                id: unit.id.clone(),
+                reason: "repeat_smiles must contain exactly two [*] markers".into(),
+            });
+        }
+    }
+    if let Some([left, right]) = unit.repeat_endpoint_atoms
+        && left == right
+    {
+        return Err(SemanticError::InvalidExpansion {
+            id: unit.id.clone(),
+            reason: "repeat endpoint atoms must be distinct".into(),
+        });
+    }
+    Ok(())
+}
+
+fn validate_polymer_unit(
+    unit: &PolymerRepeatUnit,
+    atom_ids: &[SemanticId],
+    ids: &mut BTreeSet<SemanticId>,
+) -> Result<(), SemanticError> {
+    if !ids.insert(unit.id.clone()) {
+        return Err(SemanticError::DuplicateId(unit.id.clone()));
+    }
+    if unit.attachment_atoms.len() != 2 {
+        return Err(SemanticError::AmbiguousAttachment(unit.id.clone()));
+    }
+    if unit.repeat_count == Some(0) {
+        return Err(SemanticError::InvalidExpansion {
+            id: unit.id.clone(),
+            reason: "repeat count must be greater than zero".into(),
+        });
+    }
+    validate_end_groups(unit, ids)?;
+    validate_repeat_pattern(unit)?;
+    for atom in &unit.attachment_atoms {
+        if !atom_ids.contains(&atom.atom_id) {
+            return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
+        }
+    }
+    Ok(())
+}
+
+fn validate_s_group(
+    group: &SemanticSGroup,
+    model: &SemanticModel,
+    ids: &mut BTreeSet<SemanticId>,
+) -> Result<(), SemanticError> {
+    if !ids.insert(group.id.clone()) {
+        return Err(SemanticError::DuplicateId(group.id.clone()));
+    }
+    if group.kind.trim().is_empty() {
+        return Err(SemanticError::Unsupported {
+            construct: "S-group".into(),
+            reason: format!("S-group {} has an empty kind", group.id),
+        });
+    }
+    if group.member_atoms.is_empty() {
+        return Err(SemanticError::InvalidExpansion {
+            id: group.id.clone(),
+            reason: "S-group must contain at least one member atom".into(),
+        });
+    }
+    for atom in &group.member_atoms {
+        if !model.atom_ids.contains(&atom.atom_id) {
+            return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
+        }
+    }
+    if let Some(unit_id) = &group.repeat_unit_id
+        && !model.polymer_units.iter().any(|unit| &unit.id == unit_id)
+    {
+        return Err(SemanticError::InvalidExpansion {
+            id: group.id.clone(),
+            reason: format!("unknown repeat unit reference: {unit_id}"),
+        });
+    }
+    let Some(linkage) = &group.linkage else {
+        return Ok(());
+    };
+    if linkage.id.trim().is_empty() || !ids.insert(linkage.id.clone()) {
+        return Err(SemanticError::DuplicateId(linkage.id.clone()));
+    }
+    for atom in [&linkage.left_atom, &linkage.right_atom] {
+        if !model.atom_ids.contains(&atom.atom_id) {
+            return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
+        }
+    }
+    if linkage.left_atom.atom_id == linkage.right_atom.atom_id {
+        return Err(SemanticError::AmbiguousAttachment(linkage.id.clone()));
+    }
+    if !matches!(linkage.bond_order, 1..=4) {
+        return Err(SemanticError::Unsupported {
+            construct: "polymer linkage".into(),
+            reason: format!("unsupported bond order: {}", linkage.bond_order),
+        });
+    }
+    Ok(())
 }
 
 impl SemanticModel {
     /// Validate IDs, references, attachment arity, and SMARTS-like alternatives.
     pub fn validate(&self) -> Result<(), SemanticError> {
-        let mut ids = std::collections::BTreeSet::new();
+        let mut ids = BTreeSet::new();
         for id in self.atom_ids.iter().chain(self.bond_ids.iter()) {
             if !ids.insert(id.clone()) {
                 return Err(SemanticError::DuplicateId(id.clone()));
@@ -886,135 +680,10 @@ impl SemanticModel {
             validate_r_group(group, &self.atom_ids, &mut ids)?;
         }
         for unit in &self.polymer_units {
-            if !ids.insert(unit.id.clone()) {
-                return Err(SemanticError::DuplicateId(unit.id.clone()));
-            }
-            if unit.attachment_atoms.len() != 2 {
-                return Err(SemanticError::AmbiguousAttachment(unit.id.clone()));
-            }
-            if unit.repeat_count == Some(0) {
-                return Err(SemanticError::InvalidExpansion {
-                    id: unit.id.clone(),
-                    reason: "repeat count must be greater than zero".into(),
-                });
-            }
-            if !unit.end_groups.is_empty() && unit.end_groups.len() != 2 {
-                return Err(SemanticError::InvalidExpansion {
-                    id: unit.id.clone(),
-                    reason: "end_groups must contain exactly [left, right] when provided".into(),
-                });
-            }
-            if !unit.end_group_definitions.is_empty() {
-                if !unit.end_groups.is_empty() || unit.end_group_definitions.len() != 2 {
-                    return Err(SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: "use exactly two typed end_group_definitions or legacy end_groups, not both".into(),
-                    });
-                }
-                let mut end_group_ids = std::collections::BTreeSet::new();
-                for definition in &unit.end_group_definitions {
-                    if definition.id.trim().is_empty() || !end_group_ids.insert(&definition.id) {
-                        return Err(SemanticError::DuplicateId(definition.id.clone()));
-                    }
-                    if !ids.insert(definition.id.clone()) {
-                        return Err(SemanticError::DuplicateId(definition.id.clone()));
-                    }
-                    if definition.smiles.trim().is_empty() {
-                        return Err(SemanticError::InvalidExpansion {
-                            id: definition.id.clone(),
-                            reason: "end-group SMILES must not be empty".into(),
-                        });
-                    }
-                }
-            }
-            for end_group in &unit.end_groups {
-                if end_group.trim().is_empty() {
-                    return Err(SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: "end-group SMILES must not be empty".into(),
-                    });
-                }
-            }
-            if let Some(pattern) = unit.repeat_smiles.as_deref() {
-                let pattern = pattern.trim();
-                let has_placeholders = pattern.starts_with("[*]")
-                    && pattern.ends_with("[*]")
-                    && pattern.matches("[*]").count() == 2;
-                if !has_placeholders && unit.repeat_endpoint_atoms.is_none() {
-                    return Err(SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: "repeat requires two [*] markers or explicit endpoint atoms".into(),
-                    });
-                }
-                if has_placeholders && pattern.matches("[*]").count() != 2 {
-                    return Err(SemanticError::InvalidExpansion {
-                        id: unit.id.clone(),
-                        reason: "repeat_smiles must contain exactly two [*] markers".into(),
-                    });
-                }
-            }
-            if let Some([left, right]) = unit.repeat_endpoint_atoms
-                && left == right
-            {
-                return Err(SemanticError::InvalidExpansion {
-                    id: unit.id.clone(),
-                    reason: "repeat endpoint atoms must be distinct".into(),
-                });
-            }
-            for a in &unit.attachment_atoms {
-                if !self.atom_ids.contains(&a.atom_id) {
-                    return Err(SemanticError::MissingAtom(a.atom_id.clone()));
-                }
-            }
+            validate_polymer_unit(unit, &self.atom_ids, &mut ids)?;
         }
         for group in &self.s_groups {
-            if !ids.insert(group.id.clone()) {
-                return Err(SemanticError::DuplicateId(group.id.clone()));
-            }
-            if group.kind.trim().is_empty() {
-                return Err(SemanticError::Unsupported {
-                    construct: "S-group".into(),
-                    reason: format!("S-group {} has an empty kind", group.id),
-                });
-            }
-            if group.member_atoms.is_empty() {
-                return Err(SemanticError::InvalidExpansion {
-                    id: group.id.clone(),
-                    reason: "S-group must contain at least one member atom".into(),
-                });
-            }
-            for atom in &group.member_atoms {
-                if !self.atom_ids.contains(&atom.atom_id) {
-                    return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
-                }
-            }
-            if let Some(unit_id) = &group.repeat_unit_id
-                && !self.polymer_units.iter().any(|unit| &unit.id == unit_id)
-            {
-                return Err(SemanticError::InvalidExpansion {
-                    id: group.id.clone(),
-                    reason: format!("unknown repeat unit reference: {unit_id}"),
-                });
-            }
-            if let Some(linkage) = &group.linkage {
-                if linkage.id.trim().is_empty() || !ids.insert(linkage.id.clone()) {
-                    return Err(SemanticError::DuplicateId(linkage.id.clone()));
-                }
-                for atom in [&linkage.left_atom, &linkage.right_atom] {
-                    if !self.atom_ids.contains(&atom.atom_id) {
-                        return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
-                    }
-                }
-                if linkage.left_atom.atom_id == linkage.right_atom.atom_id {
-                    return Err(SemanticError::AmbiguousAttachment(linkage.id.clone()));
-                }
-                if !matches!(linkage.bond_order, 1..=4) {
-                    return Err(SemanticError::Unsupported {
-                        construct: "polymer linkage".into(),
-                        reason: format!("unsupported bond order: {}", linkage.bond_order),
-                    });
-                }
-            }
+            validate_s_group(group, self, &mut ids)?;
         }
         Ok(())
     }
@@ -1297,654 +966,8 @@ fn parse_r_group(group: &Value) -> Result<RGroupDefinition, SemanticError> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn validates_r_group_references_and_serializes_schema() {
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            r_groups: vec![RGroupDefinition {
-                id: "r1".into(),
-                attachment_atoms: vec![AtomRef {
-                    atom_id: "a1".into(),
-                }],
-                alternatives: vec!["[*]C".into()],
-                selected_alternative: Some(0),
-                nested_groups: vec![],
-            }],
-            ..Default::default()
-        };
-        model.validate().unwrap();
-        assert_eq!(model.to_json()["schema"], "chematic.semantic.v1");
-    }
-
-    #[test]
-    fn typed_s_group_linkage_round_trips_and_validates_references() {
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            s_groups: vec![SemanticSGroup {
-                id: "sg1".into(),
-                kind: "SRU".into(),
-                member_atoms: vec![AtomRef {
-                    atom_id: "a1".into(),
-                }],
-                repeat_unit_id: None,
-                linkage: Some(PolymerLinkage {
-                    id: "link1".into(),
-                    left_atom: AtomRef {
-                        atom_id: "a1".into(),
-                    },
-                    right_atom: AtomRef {
-                        atom_id: "a2".into(),
-                    },
-                    bond_order: 1,
-                }),
-            }],
-            ..Default::default()
-        };
-        model.validate().unwrap();
-        let decoded = SemanticModel::from_json(&model.to_json()).unwrap();
-        assert_eq!(decoded, model);
-
-        let invalid = SemanticModel {
-            s_groups: vec![SemanticSGroup {
-                id: "sg1".into(),
-                kind: "SRU".into(),
-                member_atoms: vec![AtomRef {
-                    atom_id: "missing".into(),
-                }],
-                repeat_unit_id: None,
-                linkage: None,
-            }],
-            ..model.clone()
-        };
-        assert!(matches!(
-            invalid.validate(),
-            Err(SemanticError::MissingAtom(id)) if id == "missing"
-        ));
-
-        let renamed = model
-            .apply_json_command(&serde_json::json!({
-                "s_group_id": "sg1",
-                "kind": "CROSSLINK"
-            }))
-            .unwrap();
-        assert_eq!(renamed.s_groups[0].kind, "CROSSLINK");
-    }
-
-    #[test]
-    fn rejects_unimplemented_biomolecule_json_explicitly() {
-        let input = serde_json::json!({
-            "schema": "chematic.semantic.v1",
-            "atom_ids": [],
-            "bond_ids": [],
-            "r_groups": [],
-            "polymer_units": [],
-            "biomolecules": [],
-            "extensions": {}
-        });
-        assert!(matches!(
-            SemanticModel::from_json(&input),
-            Err(SemanticError::Unsupported { construct, .. }) if construct == "biomolecule"
-        ));
-    }
-
-    #[test]
-    fn nested_markush_round_trips_selects_and_expands_deterministically() {
-        let base = chematic_smiles::parse("CC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            r_groups: vec![RGroupDefinition {
-                id: "r1".into(),
-                attachment_atoms: vec![AtomRef {
-                    atom_id: "a1".into(),
-                }],
-                alternatives: vec!["[*]O".into()],
-                selected_alternative: Some(0),
-                nested_groups: vec![RGroupDefinition {
-                    id: "r1a".into(),
-                    attachment_atoms: vec![AtomRef {
-                        atom_id: "a2".into(),
-                    }],
-                    alternatives: vec!["[*]N".into()],
-                    selected_alternative: Some(0),
-                    nested_groups: vec![],
-                }],
-            }],
-            ..Default::default()
-        };
-        let roundtrip = SemanticModel::from_json(&model.to_json()).unwrap();
-        let expanded = roundtrip.expand(&base).unwrap();
-        assert_eq!(expanded.molecule.atom_count(), 4);
-        assert_eq!(expanded.source_to_expanded["r1"].len(), 1);
-        assert_eq!(expanded.source_to_expanded["r1a"].len(), 1);
-        let contracted = expanded.contract();
-        assert_eq!(contracted.atom_count(), base.atom_count());
-        assert_eq!(contracted.bond_count(), base.bond_count());
-        assert_eq!(
-            chematic_smiles::canonical_smiles(&contracted),
-            chematic_smiles::canonical_smiles(&base)
-        );
-    }
-
-    #[test]
-    fn rejects_dangling_and_ambiguous_constructs() {
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into()],
-            polymer_units: vec![PolymerRepeatUnit {
-                id: "p1".into(),
-                attachment_atoms: vec![AtomRef {
-                    atom_id: "missing".into(),
-                }],
-                end_groups: vec![],
-                end_group_definitions: vec![],
-                repeat_count: None,
-                repeat_smiles: None,
-                repeat_endpoint_atoms: None,
-            }],
-            ..Default::default()
-        };
-        assert!(matches!(
-            model.validate(),
-            Err(SemanticError::AmbiguousAttachment(_))
-        ));
-    }
-
-    #[test]
-    fn command_selects_explicit_r_group_and_expands_with_mapping() {
-        let base = chematic_smiles::parse("CC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            r_groups: vec![RGroupDefinition {
-                id: "r1".into(),
-                attachment_atoms: vec![AtomRef {
-                    atom_id: "a2".into(),
-                }],
-                alternatives: vec!["[*]O".into()],
-                selected_alternative: None,
-                nested_groups: vec![],
-            }],
-            ..Default::default()
-        };
-        let selected = model
-            .apply(&SemanticCommand::SelectRGroupAlternative {
-                group_id: "r1".into(),
-                alternative: 0,
-            })
-            .unwrap();
-        let expanded = selected.expand(&base).unwrap();
-        assert_eq!(expanded.molecule.atom_count(), 3);
-        assert_eq!(expanded.source_to_expanded["r1"].len(), 1);
-    }
-
-    #[test]
-    fn command_replaces_allowed_r_group_set_and_clears_selection() {
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into()],
-            r_groups: vec![RGroupDefinition {
-                id: "r1".into(),
-                attachment_atoms: vec![AtomRef {
-                    atom_id: "a1".into(),
-                }],
-                alternatives: vec!["[*]O".into()],
-                selected_alternative: Some(0),
-                nested_groups: vec![],
-            }],
-            ..Default::default()
-        };
-        let changed = model
-            .apply_json_command(&serde_json::json!({
-                "replace_group_id": "r1",
-                "alternatives": ["[*]N", "[*]Cl"]
-            }))
-            .unwrap();
-        assert_eq!(changed.r_groups[0].alternatives, ["[*]N", "[*]Cl"]);
-        assert_eq!(changed.r_groups[0].selected_alternative, None);
-        assert!(matches!(
-            model.apply_json_command(&serde_json::json!({
-                "replace_group_id": "r1",
-                "alternatives": []
-            })),
-            Err(SemanticError::InvalidAlternative { .. })
-        ));
-    }
-
-    #[test]
-    fn command_clears_r_group_selection_for_lossless_contraction() {
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into()],
-            r_groups: vec![RGroupDefinition {
-                id: "r1".into(),
-                attachment_atoms: vec![AtomRef {
-                    atom_id: "a1".into(),
-                }],
-                alternatives: vec!["[*]O".into()],
-                selected_alternative: Some(0),
-                nested_groups: vec![],
-            }],
-            ..Default::default()
-        };
-        let contracted = model
-            .apply_json_command(&serde_json::json!({"clear_group_id": "r1"}))
-            .unwrap();
-        assert_eq!(contracted.r_groups[0].selected_alternative, None);
-        assert!(matches!(
-            contracted.expand(&chematic_smiles::parse("C").unwrap()),
-            Err(SemanticError::Unsupported { .. })
-        ));
-    }
-
-    #[test]
-    fn command_selects_polymer_repeat_count_from_unselected_json_state() {
-        let base = chematic_smiles::parse("CC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            polymer_units: vec![PolymerRepeatUnit {
-                id: "p1".into(),
-                attachment_atoms: vec![
-                    AtomRef {
-                        atom_id: "a1".into(),
-                    },
-                    AtomRef {
-                        atom_id: "a2".into(),
-                    },
-                ],
-                end_groups: vec![],
-                end_group_definitions: vec![],
-                repeat_count: None,
-                repeat_smiles: Some("[*]CC[*]".into()),
-                repeat_endpoint_atoms: None,
-            }],
-            ..Default::default()
-        };
-        let model = SemanticModel::from_json(&model.to_json()).unwrap();
-        model.validate().unwrap();
-        assert!(matches!(
-            model.expand(&base),
-            Err(SemanticError::Unsupported { .. })
-        ));
-
-        let selected = model
-            .apply_json_command(&serde_json::json!({
-                "unit_id": "p1",
-                "repeat_count": 3
-            }))
-            .unwrap();
-        assert_eq!(selected.polymer_units[0].repeat_count, Some(3));
-        let expanded = selected.expand(&base).unwrap();
-        assert_eq!(expanded.molecule.atom_count(), 8);
-        assert_eq!(expanded.source_to_expanded["p1"].len(), 6);
-    }
-
-    #[test]
-    fn command_clears_polymer_repeat_count_for_lossless_contraction() {
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            polymer_units: vec![PolymerRepeatUnit {
-                id: "p1".into(),
-                attachment_atoms: vec![
-                    AtomRef {
-                        atom_id: "a1".into(),
-                    },
-                    AtomRef {
-                        atom_id: "a2".into(),
-                    },
-                ],
-                end_groups: vec![],
-                end_group_definitions: vec![],
-                repeat_count: Some(2),
-                repeat_smiles: Some("[*]CC[*]".into()),
-                repeat_endpoint_atoms: None,
-            }],
-            ..Default::default()
-        };
-        let contracted = model
-            .apply_json_command(&serde_json::json!({"clear_unit_id": "p1"}))
-            .unwrap();
-        assert_eq!(contracted.polymer_units[0].repeat_count, None);
-        assert!(matches!(
-            contracted.expand(&chematic_smiles::parse("CC").unwrap()),
-            Err(SemanticError::Unsupported { .. })
-        ));
-    }
-
-    #[test]
-    fn rejects_json_repeat_count_that_exceeds_u32() {
-        let value = serde_json::json!({
-            "schema": "chematic.semantic.v1",
-            "atom_ids": ["a1", "a2"],
-            "bond_ids": [],
-            "r_groups": [],
-            "polymer_units": [{
-                "id": "p1",
-                "attachment_atoms": ["a1", "a2"],
-                "end_groups": [],
-                "repeat_count": 4294967296u64,
-                "repeat_smiles": "[*]CC[*]"
-            }]
-        });
-        assert!(matches!(
-            SemanticModel::from_json(&value),
-            Err(SemanticError::InvalidJson(message))
-                if message.contains("repeat_count")
-        ));
-    }
-
-    #[test]
-    fn rejects_json_repeat_endpoint_that_exceeds_u32() {
-        let value = serde_json::json!({
-            "schema": "chematic.semantic.v1",
-            "atom_ids": ["a1", "a2"],
-            "bond_ids": [],
-            "r_groups": [],
-            "polymer_units": [{
-                "id": "p1",
-                "attachment_atoms": ["a1", "a2"],
-                "end_groups": [],
-                "repeat_smiles": "CC",
-                "repeat_endpoint_atoms": [4294967296u64, 1]
-            }]
-        });
-        assert!(matches!(
-            SemanticModel::from_json(&value),
-            Err(SemanticError::InvalidJson(message))
-                if message.contains("endpoint indices")
-        ));
-    }
-
-    #[test]
-    fn expands_explicit_two_ended_polymer_repeat() {
-        let base = chematic_smiles::parse("CC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            polymer_units: vec![PolymerRepeatUnit {
-                id: "p1".into(),
-                attachment_atoms: vec![
-                    AtomRef {
-                        atom_id: "a1".into(),
-                    },
-                    AtomRef {
-                        atom_id: "a2".into(),
-                    },
-                ],
-                end_groups: vec![],
-                end_group_definitions: vec![],
-                repeat_count: Some(2),
-                repeat_smiles: Some("[*]CC[*]".into()),
-                repeat_endpoint_atoms: None,
-            }],
-            ..Default::default()
-        };
-        let expanded = model.expand(&base).unwrap();
-        assert_eq!(expanded.molecule.atom_count(), 6);
-        assert_eq!(expanded.source_to_expanded["p1"].len(), 4);
-    }
-
-    #[test]
-    fn expands_explicit_polymer_endpoints_without_placeholders() {
-        let base = chematic_smiles::parse("CC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            polymer_units: vec![PolymerRepeatUnit {
-                id: "p1".into(),
-                attachment_atoms: vec![
-                    AtomRef {
-                        atom_id: "a1".into(),
-                    },
-                    AtomRef {
-                        atom_id: "a2".into(),
-                    },
-                ],
-                end_groups: vec![],
-                end_group_definitions: vec![],
-                repeat_count: Some(2),
-                repeat_smiles: Some("CCO".into()),
-                repeat_endpoint_atoms: Some([0, 2]),
-            }],
-            ..Default::default()
-        };
-        let expanded = model.expand(&base).unwrap();
-        assert_eq!(expanded.molecule.atom_count(), 8);
-        assert_eq!(expanded.source_to_expanded["p1"].len(), 6);
-    }
-
-    #[test]
-    fn json_contract_round_trips_and_expands_selected_markush() {
-        let base = chematic_smiles::parse("CC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            r_groups: vec![RGroupDefinition {
-                id: "r1".into(),
-                attachment_atoms: vec![AtomRef {
-                    atom_id: "a2".into(),
-                }],
-                alternatives: vec!["[*]O".into()],
-                selected_alternative: Some(0),
-                nested_groups: vec![],
-            }],
-            ..Default::default()
-        };
-        let decoded = SemanticModel::from_json(&model.to_json()).unwrap();
-        let expanded = decoded.expand(&base).unwrap();
-        assert_eq!(expanded.molecule.atom_count(), 3);
-        assert_eq!(expanded.to_json()["source_to_expanded"]["r1"][0], 2);
-        assert_eq!(expanded.to_json()["contracted_smiles"], "CC");
-    }
-
-    #[test]
-    fn expands_markush_with_multiple_attachment_points_in_marker_order() {
-        let base = chematic_smiles::parse("CCCC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into(), "a3".into(), "a4".into()],
-            r_groups: vec![RGroupDefinition {
-                id: "r1".into(),
-                attachment_atoms: vec![
-                    AtomRef {
-                        atom_id: "a1".into(),
-                    },
-                    AtomRef {
-                        atom_id: "a4".into(),
-                    },
-                ],
-                alternatives: vec!["[*]O[*]".into()],
-                selected_alternative: Some(0),
-                nested_groups: vec![],
-            }],
-            ..Default::default()
-        };
-        let expanded = model.expand(&base).unwrap();
-        assert_eq!(expanded.molecule.atom_count(), 5);
-        assert_eq!(expanded.source_to_expanded["r1"].len(), 1);
-    }
-
-    #[test]
-    fn expands_polymer_end_groups_with_stable_mapping() {
-        let base = chematic_smiles::parse("CC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            polymer_units: vec![PolymerRepeatUnit {
-                id: "p1".into(),
-                attachment_atoms: vec![
-                    AtomRef {
-                        atom_id: "a1".into(),
-                    },
-                    AtomRef {
-                        atom_id: "a2".into(),
-                    },
-                ],
-                end_groups: vec!["[*]O".into(), "[*]N".into()],
-                end_group_definitions: vec![],
-                repeat_count: Some(1),
-                repeat_smiles: Some("[*]CC[*]".into()),
-                repeat_endpoint_atoms: None,
-            }],
-            ..Default::default()
-        };
-        let expanded = model.expand(&base).unwrap();
-        assert_eq!(expanded.molecule.atom_count(), 6);
-        assert_eq!(expanded.source_to_expanded["p1"].len(), 4);
-        assert_eq!(expanded.source_to_expanded["p1.end_group_left"].len(), 1);
-        assert_eq!(expanded.source_to_expanded["p1.end_group_right"].len(), 1);
-    }
-
-    #[test]
-    fn expands_typed_polymer_end_groups_with_named_provenance() {
-        let base = chematic_smiles::parse("CC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            polymer_units: vec![PolymerRepeatUnit {
-                id: "p1".into(),
-                attachment_atoms: vec![
-                    AtomRef {
-                        atom_id: "a1".into(),
-                    },
-                    AtomRef {
-                        atom_id: "a2".into(),
-                    },
-                ],
-                end_groups: vec![],
-                end_group_definitions: vec![
-                    PolymerEndGroup {
-                        id: "cap-left".into(),
-                        smiles: "[*]O".into(),
-                    },
-                    PolymerEndGroup {
-                        id: "cap-right".into(),
-                        smiles: "[*]N".into(),
-                    },
-                ],
-                repeat_count: Some(1),
-                repeat_smiles: Some("[*]CC[*]".into()),
-                repeat_endpoint_atoms: None,
-            }],
-            ..Default::default()
-        };
-        let decoded = SemanticModel::from_json(&model.to_json()).unwrap();
-        let expanded = decoded.expand(&base).unwrap();
-        assert_eq!(expanded.source_to_expanded["cap-left"].len(), 1);
-        assert_eq!(expanded.source_to_expanded["cap-right"].len(), 1);
-    }
-
-    #[test]
-    fn rejects_zero_repeat_count() {
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            polymer_units: vec![PolymerRepeatUnit {
-                id: "p1".into(),
-                attachment_atoms: vec![
-                    AtomRef {
-                        atom_id: "a1".into(),
-                    },
-                    AtomRef {
-                        atom_id: "a2".into(),
-                    },
-                ],
-                end_groups: vec![],
-                end_group_definitions: vec![],
-                repeat_count: Some(0),
-                repeat_smiles: Some("[*]CC[*]".into()),
-                repeat_endpoint_atoms: None,
-            }],
-            ..Default::default()
-        };
-        assert!(matches!(
-            model.validate(),
-            Err(SemanticError::InvalidExpansion { .. })
-        ));
-    }
-
-    #[test]
-    fn rejects_repeat_expansion_over_explicit_budget_before_allocating() {
-        let base = chematic_smiles::parse("CC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            polymer_units: vec![PolymerRepeatUnit {
-                id: "p1".into(),
-                attachment_atoms: vec![
-                    AtomRef {
-                        atom_id: "a1".into(),
-                    },
-                    AtomRef {
-                        atom_id: "a2".into(),
-                    },
-                ],
-                end_groups: vec![],
-                end_group_definitions: vec![],
-                repeat_count: Some(11),
-                repeat_smiles: Some("[*]CC[*]".into()),
-                repeat_endpoint_atoms: None,
-            }],
-            ..Default::default()
-        };
-        let limits = SemanticExpansionLimits {
-            max_atoms: 100,
-            max_repeat_count: 10,
-        };
-        assert!(matches!(
-            model.expand_with_limits(&base, &limits),
-            Err(SemanticError::ExpansionLimit {
-                resource: "repeats",
-                requested: 11,
-                limit: 10,
-                ..
-            })
-        ));
-    }
-
-    #[test]
-    fn rejects_atom_expansion_over_budget_before_mutation() {
-        let base = chematic_smiles::parse("CC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into()],
-            r_groups: vec![RGroupDefinition {
-                id: "r1".into(),
-                attachment_atoms: vec![AtomRef {
-                    atom_id: "a2".into(),
-                }],
-                alternatives: vec!["[*]CCCC".into()],
-                selected_alternative: Some(0),
-                nested_groups: vec![],
-            }],
-            ..Default::default()
-        };
-        let limits = SemanticExpansionLimits {
-            max_atoms: 4,
-            max_repeat_count: 10,
-        };
-        assert!(matches!(
-            model.expand_with_limits(&base, &limits),
-            Err(SemanticError::ExpansionLimit {
-                resource: "atoms",
-                requested: 6,
-                limit: 4,
-                ..
-            })
-        ));
-    }
-
-    #[test]
-    fn rejects_base_molecule_over_budget_without_semantic_additions() {
-        let base = chematic_smiles::parse("CCCC").unwrap();
-        let model = SemanticModel {
-            atom_ids: vec!["a1".into(), "a2".into(), "a3".into(), "a4".into()],
-            ..Default::default()
-        };
-        let limits = SemanticExpansionLimits {
-            max_atoms: 3,
-            max_repeat_count: 10,
-        };
-        assert!(matches!(
-            model.expand_with_limits(&base, &limits),
-            Err(SemanticError::ExpansionLimit {
-                resource: "atoms",
-                requested: 4,
-                limit: 3,
-                ..
-            })
-        ));
-    }
-}
+#[path = "semantic/tests.rs"]
+mod tests;
 
 #[cfg(test)]
 mod expansion_boundary_contract_tests {

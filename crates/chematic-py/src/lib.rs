@@ -20,6 +20,17 @@ type RdkitMorganDetail = (
 /// `(rmsd, 4x4 transform rows, [(probe atom, reference atom)])`.
 type RdkitBestAlignment = (f64, [[f64; 4]; 4], Vec<(usize, usize)>);
 
+/// Register a list of module-level Python functions without repeating the
+/// same error-propagation plumbing in every binding domain.
+macro_rules! register_pyfunctions {
+    ($module:expr, $($function:ident),+ $(,)?) => {{
+        $(
+            $module.add_function(pyo3::wrap_pyfunction!($function, $module)?)?;
+        )+
+        pyo3::PyResult::Ok(())
+    }};
+}
+
 mod crystal;
 mod ensemble_v2;
 mod errors;

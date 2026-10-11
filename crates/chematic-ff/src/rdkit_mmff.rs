@@ -158,6 +158,220 @@ pub const RDKIT_MMFF_TERMS: [&str; 7] = [
     "ele",
 ];
 
+type BondAdjacency = Vec<Vec<(usize, usize)>>;
+
+fn rdkit_adjacency(mol: &Molecule) -> (Vec<chematic_core::BondIdx>, BondAdjacency) {
+    let order = rdkit_bond_order_with_added_hs(mol);
+    let mut adjacency = vec![Vec::new(); mol.atom_count()];
+    for &bond_index in &order {
+        let bond = mol.bond(bond_index);
+        let (first, second) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
+        adjacency[first].push((second, bond_index.0 as usize));
+        adjacency[second].push((first, bond_index.0 as usize));
+    }
+    (order, adjacency)
+}
+
+fn mmff_bond_terms(
+    mol: &Molecule,
+    order: &[chematic_core::BondIdx],
+    parts: &PreparedParts,
+) -> Vec<(usize, usize, f64, f64)> {
+    let parameters: FxHashMap<(usize, usize), (f64, f64)> = parts
+        .bonds
+        .iter()
+        .map(|&(i, j, r0, kb)| ((i.min(j), i.max(j)), (r0, kb)))
+        .collect();
+    order
+        .iter()
+        .filter_map(|&bond_index| {
+            let bond = mol.bond(bond_index);
+            let (i, j) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
+            parameters
+                .get(&(i.min(j), i.max(j)))
+                .map(|&(r0, kb)| (i, j, r0, kb))
+        })
+        .collect()
+}
+
+fn mmff_oop_terms(
+    adjacency: &BondAdjacency,
+    parts: &PreparedParts,
+    types: &[u8],
+    mmffs: bool,
+) -> Vec<(usize, usize, usize, usize, f64)> {
+    let parameters: FxHashMap<usize, f64> = parts.oops.iter().copied().collect();
+    let mut terms = Vec::new();
+    for center in 0..adjacency.len() {
+        if adjacency[center].len() != 3 {
+            continue;
+        }
+        let Some(&base_koop) = parameters.get(&center) else {
+            continue;
+        };
+        let koop = if mmffs {
+            let Some(value) = crate::mmff94_energy::mmff94s_oop(
+                types[center],
+                types[adjacency[center][0].0],
+                types[adjacency[center][1].0],
+                types[adjacency[center][2].0],
+            ) else {
+                continue;
+            };
+            value
+        } else {
+            base_koop
+        };
+        let idx = [
+            adjacency[center][0].0,
+            center,
+            adjacency[center][1].0,
+            adjacency[center][2].0,
+        ];
+        for permutation in [[0, 1, 2, 3], [0, 1, 3, 2], [2, 1, 3, 0]] {
+            terms.push((
+                idx[permutation[0]],
+                idx[permutation[1]],
+                idx[permutation[2]],
+                idx[permutation[3]],
+                koop,
+            ));
+        }
+    }
+    terms
+}
+
+fn mmff_torsion_terms(
+    mol: &Molecule,
+    view: &Molecule,
+    adjacency: &BondAdjacency,
+    parts: &PreparedParts,
+    types: &[u8],
+    mmffs: bool,
+) -> Vec<(usize, usize, usize, usize, f64, f64, f64)> {
+    let parameters: FxHashMap<(usize, usize, usize, usize), (f64, f64, f64)> = parts
+        .torsions
+        .iter()
+        .flat_map(|&(i, j, k, l, v1, v2, v3)| {
+            [((i, j, k, l), (v1, v2, v3)), ((l, k, j, i), (v1, v2, v3))]
+        })
+        .collect();
+    let torsion_end = |atom: usize| {
+        adjacency[atom].len() > 1
+            && !adjacency[atom].iter().any(|&(_, bond)| {
+                mol.bond(chematic_core::BondIdx(bond as u32)).order == BondOrder::Triple
+            })
+    };
+    let sp2_or_sp3 = |atom: usize| {
+        matches!(
+            chematic_smarts::rdkit_hybridization(view, AtomIdx(atom as u32)),
+            Some(2) | Some(3)
+        )
+    };
+    let mut terms = Vec::new();
+    let mut seen = FxHashSet::default();
+    for j in 0..adjacency.len() {
+        if !torsion_end(j) {
+            continue;
+        }
+        for &(k, central_bond) in &adjacency[j] {
+            if !torsion_end(k)
+                || !seen.insert((j.min(k), j.max(k)))
+                || !(sp2_or_sp3(j) && sp2_or_sp3(k))
+            {
+                continue;
+            }
+            add_mmff_torsions_for_bond(
+                &mut terms,
+                view,
+                adjacency,
+                &parameters,
+                types,
+                mmffs,
+                j,
+                k,
+                central_bond,
+            );
+        }
+    }
+    terms
+}
+
+#[allow(clippy::too_many_arguments)]
+fn add_mmff_torsions_for_bond(
+    terms: &mut Vec<(usize, usize, usize, usize, f64, f64, f64)>,
+    view: &Molecule,
+    adjacency: &BondAdjacency,
+    parameters: &FxHashMap<(usize, usize, usize, usize), (f64, f64, f64)>,
+    types: &[u8],
+    mmffs: bool,
+    j: usize,
+    k: usize,
+    central_bond: usize,
+) {
+    for &(i, first_bond) in &adjacency[j] {
+        if first_bond == central_bond {
+            continue;
+        }
+        for &(l, second_bond) in &adjacency[k] {
+            if second_bond == central_bond || second_bond == first_bond || l == i {
+                continue;
+            }
+            if mmffs {
+                if let Some(parameter) = crate::mmff94_minimizer::mmff_torsion_term_params_variant(
+                    view, i, j, k, l, types, true,
+                ) {
+                    terms.push((i, j, k, l, parameter.v1, parameter.v2, parameter.v3));
+                }
+            } else if let Some(&(v1, v2, v3)) = parameters.get(&(i, j, k, l)) {
+                terms.push((i, j, k, l, v1, v2, v3));
+            }
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn mmff_nonbonded_terms(
+    coords: &[[f64; 3]],
+    adjacency: &BondAdjacency,
+    types: &[u8],
+    charges: &[f64],
+    threshold: f64,
+    ignore_interfrag: bool,
+    terms: [bool; 7],
+) -> Vec<NonbondedTerm> {
+    let n = adjacency.len();
+    let topology = topological_distances(n, adjacency);
+    let fragments = fragments(n, adjacency);
+    let mut output = Vec::new();
+    for i in 0..n {
+        for j in (i + 1)..n {
+            if ignore_interfrag && fragments[i] != fragments[j] {
+                continue;
+            }
+            let relation = topology[i * n + j];
+            if matches!(relation, 1 | 2) {
+                continue;
+            }
+            let delta = P3 {
+                x: coords[i][0] - coords[j][0],
+                y: coords[i][1] - coords[j][1],
+                z: coords[i][2] - coords[j][2],
+            };
+            if delta.length() > threshold {
+                continue;
+            }
+            let vdw = terms[5].then(|| vdw_params(types[i], types[j])).flatten();
+            let ele = (terms[6] && !is_double_zero(charges[i]) && !is_double_zero(charges[j]))
+                .then_some((charges[i] * charges[j], relation == 3));
+            if vdw.is_some() || ele.is_some() {
+                output.push(NonbondedTerm { i, j, vdw, ele });
+            }
+        }
+    }
+    output
+}
+
 impl RdkitMmffField {
     /// `MMFFGetMoleculeForceField(mol, MMFFGetMoleculeProperties(mol),
     /// nonBondedThresh, confId, ignoreInterfragInteractions)` with the
@@ -192,16 +406,7 @@ impl RdkitMmffField {
         let mmffs = variant == MmffVariant::Mmff94s;
         let n = mol.atom_count();
         let (parts, types, view) = rdkit_prepared_parts(mol)?;
-
-        // Neighbour lists in RDKit's adjacency order (bond creation order).
-        let order = rdkit_bond_order_with_added_hs(mol);
-        let mut adj: Vec<Vec<(usize, usize)>> = vec![Vec::new(); n];
-        for &b in &order {
-            let bond = mol.bond(b);
-            let (a1, a2) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
-            adj[a1].push((a2, b.0 as usize));
-            adj[a2].push((a1, b.0 as usize));
-        }
+        let (order, adj) = rdkit_adjacency(mol);
         let nbrs: Vec<Vec<usize>> = adj
             .iter()
             .map(|v| v.iter().map(|&(a, _)| a).collect())
@@ -209,164 +414,25 @@ impl RdkitMmffField {
         let charges =
             mmff94_charges_rdkit_order(mol, &nbrs).map_err(MinimizerError::ChargeCalculation)?;
 
-        let mut field = RdkitMmffField {
-            n,
-            bonds: Vec::new(),
-            angles: Vec::new(),
-            stretch_bends: Vec::new(),
-            oops: Vec::new(),
-            torsions: Vec::new(),
-            nonbonded: Vec::new(),
-            terms,
-        };
-
-        // Bond stretch: bonds in RDKit order.
-        let bond_params: FxHashMap<(usize, usize), (f64, f64)> = parts
-            .bonds
-            .iter()
-            .map(|&(i, j, r0, kb)| ((i.min(j), i.max(j)), (r0, kb)))
-            .collect();
-        for &b in &order {
-            let bond = mol.bond(b);
-            let (i, j) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
-            if let Some(&(r0, kb)) = bond_params.get(&(i.min(j), i.max(j))) {
-                field.bonds.push((i, j, r0, kb));
-            }
-        }
-
-        // Angle bend and stretch-bend: centre j, neighbour pairs in order,
-        // parameters evaluated in RDKit's (i, j, k) orientation.
         let (angles, stretch_bends) = crate::mmff94_minimizer::rdkit_angle_parts(mol, &nbrs)?;
-        field.angles = angles;
-        field.stretch_bends = stretch_bends;
-
-        // Out-of-plane: trivalent centres, three terms each.
-        let oop_params: FxHashMap<usize, f64> = parts.oops.iter().copied().collect();
-        for j in 0..n {
-            if adj[j].len() != 3 {
-                continue;
-            }
-            let Some(&koop) = oop_params.get(&j) else {
-                continue;
-            };
-            let koop = if mmffs {
-                let Some(k) = crate::mmff94_energy::mmff94s_oop(
-                    types[j],
-                    types[adj[j][0].0],
-                    types[adj[j][1].0],
-                    types[adj[j][2].0],
-                ) else {
-                    continue;
-                };
-                k
-            } else {
-                koop
-            };
-            let idx = [adj[j][0].0, j, adj[j][1].0, adj[j][2].0];
-            for perm in [[0, 1, 2, 3], [0, 1, 3, 2], [2, 1, 3, 0]] {
-                field
-                    .oops
-                    .push((idx[perm[0]], idx[perm[1]], idx[perm[2]], idx[perm[3]], koop));
-            }
-        }
-
-        // Torsions: matches of `[!$(*#*)&!D1]~[!$(*#*)&!D1]` in RDKit's
-        // match order, central atoms SP2/SP3.
-        let tor_params: FxHashMap<(usize, usize, usize, usize), (f64, f64, f64)> = parts
-            .torsions
-            .iter()
-            .flat_map(|&(i, j, k, l, v1, v2, v3)| {
-                [((i, j, k, l), (v1, v2, v3)), ((l, k, j, i), (v1, v2, v3))]
-            })
-            .collect();
-        let has_triple = |a: usize| {
-            adj[a].iter().any(|&(_, b)| {
-                mol.bond(chematic_core::BondIdx(b as u32)).order == BondOrder::Triple
-            })
-        };
-        let torsion_end = |a: usize| adj[a].len() > 1 && !has_triple(a);
-        let sp2_or_sp3 = |a: usize| {
-            matches!(
-                chematic_smarts::rdkit_hybridization(&view, AtomIdx(a as u32)),
-                Some(2) | Some(3)
-            )
-        };
-        let mut seen = FxHashSet::default();
-        for j in 0..n {
-            if !torsion_end(j) {
-                continue;
-            }
-            for &(k, bond) in &adj[j] {
-                if !torsion_end(k) || !seen.insert((j.min(k), j.max(k))) {
-                    continue;
-                }
-                if !(sp2_or_sp3(j) && sp2_or_sp3(k)) {
-                    continue;
-                }
-                for &(i, b1) in &adj[j] {
-                    if b1 == bond {
-                        continue;
-                    }
-                    for &(l, b2) in &adj[k] {
-                        if b2 == bond || b2 == b1 || l == i {
-                            continue;
-                        }
-                        if mmffs {
-                            if let Some(p) =
-                                crate::mmff94_minimizer::mmff_torsion_term_params_variant(
-                                    &view, i, j, k, l, &types, true,
-                                )
-                            {
-                                field.torsions.push((i, j, k, l, p.v1, p.v2, p.v3));
-                            }
-                        } else if let Some(&(v1, v2, v3)) = tor_params.get(&(i, j, k, l)) {
-                            field.torsions.push((i, j, k, l, v1, v2, v3));
-                        }
-                    }
-                }
-            }
-        }
-
-        // Non-bonded pairs: topological distance >= 3, same fragment.
-        let topo = topological_distances(n, &adj);
-        let frag = fragments(n, &adj);
-        for i in 0..n {
-            for j in (i + 1)..n {
-                if ignore_interfrag && frag[i] != frag[j] {
-                    continue;
-                }
-                let rel = topo[i * n + j];
-                if rel == 1 || rel == 2 {
-                    continue;
-                }
-                let is1_4 = rel == 3;
-                let (pi, pj) = (coords[i], coords[j]);
-                let d = P3 {
-                    x: pi[0] - pj[0],
-                    y: pi[1] - pj[1],
-                    z: pi[2] - pj[2],
-                }
-                .length();
-                if d > non_bonded_thresh {
-                    continue;
-                }
-                let vdw = if terms[5] {
-                    vdw_params(types[i], types[j])
-                } else {
-                    None
-                };
-                let ele = if terms[6] && !is_double_zero(charges[i]) && !is_double_zero(charges[j])
-                {
-                    Some((charges[i] * charges[j] / 1.0, is1_4))
-                } else {
-                    None
-                };
-                if vdw.is_some() || ele.is_some() {
-                    field.nonbonded.push(NonbondedTerm { i, j, vdw, ele });
-                }
-            }
-        }
-        Ok(field)
+        Ok(RdkitMmffField {
+            n,
+            bonds: mmff_bond_terms(mol, &order, &parts),
+            angles,
+            stretch_bends,
+            oops: mmff_oop_terms(&adj, &parts, &types, mmffs),
+            torsions: mmff_torsion_terms(mol, &view, &adj, &parts, &types, mmffs),
+            nonbonded: mmff_nonbonded_terms(
+                coords,
+                &adj,
+                &types,
+                &charges,
+                non_bonded_thresh,
+                ignore_interfrag,
+                terms,
+            ),
+            terms,
+        })
     }
 
     /// Number of atoms.

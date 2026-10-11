@@ -579,103 +579,119 @@ fn relieve_after_reflection(mol: &Molecule, coords: &mut [(f64, f64)]) {
     }
 }
 
-/// The E/Z reflection, terminal-neighbour placement and wedge choice on
-/// `layout`; `given` coordinates are kept as they are.
-fn depict_on(mol: &Molecule, layout: Vec<(f64, f64)>, given: bool) -> StereoDepiction {
-    let mut out = StereoDepiction {
-        coords: layout,
-        ..Default::default()
-    };
-
-    // E/Z: reflect one side of each double bond whose geometry disagrees.
-    // A reflection across bond B's axis mirrors every double bond on the
-    // moved side as a whole (an atom bonded to B lies on the mirror line),
-    // so it never changes a bond already set.
+fn depict_double_bonds(
+    mol: &Molecule,
+    out: &mut StereoDepiction,
+    given: bool,
+) -> (HashMap<BondIdx, chematic_core::atom::CipCode>, Vec<BondIdx>) {
     let target = ez_labels(mol);
-    if !target.is_empty() {
-        let mut bonds: Vec<BondIdx> = target.keys().copied().collect();
-        bonds.sort_by_key(|b| b.0);
-        for &bond in &bonds {
-            if given || ez_drawn_as_declared(mol, &out.coords, bond) != Some(false) {
-                continue;
-            }
-            let e = mol.bond(bond);
-            let sides = (side(mol, e.atom1, e.atom2), side(mol, e.atom2, e.atom1));
-            if let (Some(a), Some(b)) = sides {
-                let (p, q) = (
-                    out.coords[e.atom1.0 as usize],
-                    out.coords[e.atom2.0 as usize],
-                );
-                // Either side gives the declared geometry; reflect the one
-                // that lands on fewer atoms (two aryl rings of a
-                // tetrasubstituted alkene end up side by side otherwise),
-                // the smaller one on a tie.
-                let mut with_a = out.coords.clone();
-                reflect(&mut with_a, &a, p, q);
-                let mut with_b = out.coords.clone();
-                reflect(&mut with_b, &b, p, q);
-                let (ca, cb) = (
-                    moved_clashes(mol, &with_a, &a),
-                    moved_clashes(mol, &with_b, &b),
-                );
-                out.coords = if ca < cb || (ca == cb && a.len() <= b.len()) {
-                    with_a
-                } else {
-                    with_b
-                };
-            }
+    let mut bonds: Vec<BondIdx> = target.keys().copied().collect();
+    bonds.sort_by_key(|bond| bond.0);
+    for &bond in &bonds {
+        if given || ez_drawn_as_declared(mol, &out.coords, bond) != Some(false) {
+            continue;
         }
-        if !given {
-            flip_ring_double_bonds(mol, &mut out.coords, &bonds);
-            // A reflected side can land on the rest of the drawing; clear
-            // such clashes again (moves that keep every E/Z geometry).
-            relieve_after_reflection(mol, &mut out.coords);
+        let edge = mol.bond(bond);
+        if let (Some(a), Some(b)) = (
+            side(mol, edge.atom1, edge.atom2),
+            side(mol, edge.atom2, edge.atom1),
+        ) {
+            let (p, q) = (
+                out.coords[edge.atom1.0 as usize],
+                out.coords[edge.atom2.0 as usize],
+            );
+            let mut with_a = out.coords.clone();
+            reflect(&mut with_a, &a, p, q);
+            let mut with_b = out.coords.clone();
+            reflect(&mut with_b, &b, p, q);
+            let (ca, cb) = (
+                moved_clashes(mol, &with_a, &a),
+                moved_clashes(mol, &with_b, &b),
+            );
+            out.coords = if ca < cb || (ca == cb && a.len() <= b.len()) {
+                with_a
+            } else {
+                with_b
+            };
         }
-        out.unexpressed_double_bonds = bonds
-            .into_iter()
-            .filter(|&b| ez_drawn_as_declared(mol, &out.coords, b) != Some(true))
-            .collect();
     }
-
+    if !given && !bonds.is_empty() {
+        flip_ring_double_bonds(mol, &mut out.coords, &bonds);
+        relieve_after_reflection(mol, &mut out.coords);
+    }
+    out.unexpressed_double_bonds = bonds
+        .iter()
+        .copied()
+        .filter(|&bond| ez_drawn_as_declared(mol, &out.coords, bond) != Some(true))
+        .collect();
     out.unspecified_double_bonds = unspecified_double_bonds(mol, &target);
-
-    // Tetrahedral centres: one wedge or hash each, checked by re-reading.
-    let centres: Vec<AtomIdx> = mol
-        .atoms()
+    (target, bonds)
+}
+fn tetrahedral_centres(mol: &Molecule) -> Vec<AtomIdx> {
+    mol.atoms()
         .filter(|(i, a)| a.chirality.is_tetrahedral() && mol.stereo_neighbor_order(*i).is_some())
         .map(|(i, _)| i)
-        .collect();
+        .collect()
+}
+
+fn place_initial_wedges(
+    mol: &Molecule,
+    out: &mut StereoDepiction,
+    centres: &[AtomIdx],
+    ez_bonds: &[BondIdx],
+    given: bool,
+) {
     if !given {
-        place_terminal_neighbours(mol, &mut out.coords, &centres);
+        place_terminal_neighbours(mol, &mut out.coords, centres);
     }
-    let mut ez_bonds: Vec<BondIdx> = target.keys().copied().collect();
-    ez_bonds.sort_by_key(|b| b.0);
-    (out.wedges, out.unexpressed_centres) = place_wedges(mol, &out.coords, &centres, &ez_bonds);
+    (out.wedges, out.unexpressed_centres) = place_wedges(mol, &out.coords, centres, ez_bonds);
+}
 
-    // The layout can put bridge atoms on top of others, where no wedge
-    // gives a parity. Pull coincident atoms apart and try again.
-    if !given && !out.unexpressed_centres.is_empty() {
-        let mut nudged = out.coords.clone();
-        if separate_coincident_atoms(mol, &mut nudged) {
-            let (wedges, unexpressed) = place_wedges(mol, &nudged, &centres, &ez_bonds);
-            let ez_still_ok = target
-                .keys()
-                .filter(|b| !out.unexpressed_double_bonds.contains(b))
-                .all(|&b| ez_drawn_as_declared(mol, &nudged, b) == Some(true));
-            if unexpressed.len() < out.unexpressed_centres.len() && ez_still_ok {
-                out.coords = nudged;
-                out.wedges = wedges;
-                out.unexpressed_centres = unexpressed;
-            }
-        }
+fn expressed_ez_still_valid(
+    mol: &Molecule,
+    coords: &[(f64, f64)],
+    target: &HashMap<BondIdx, chematic_core::atom::CipCode>,
+    unexpressed: &[BondIdx],
+) -> bool {
+    target
+        .keys()
+        .filter(|bond| !unexpressed.contains(bond))
+        .all(|&bond| ez_drawn_as_declared(mol, coords, bond) == Some(true))
+}
+
+fn retry_coincident_centres(
+    mol: &Molecule,
+    out: &mut StereoDepiction,
+    centres: &[AtomIdx],
+    ez_bonds: &[BondIdx],
+    target: &HashMap<BondIdx, chematic_core::atom::CipCode>,
+) {
+    if out.unexpressed_centres.is_empty() {
+        return;
     }
+    let mut nudged = out.coords.clone();
+    if !separate_coincident_atoms(mol, &mut nudged) {
+        return;
+    }
+    let (wedges, unexpressed) = place_wedges(mol, &nudged, centres, ez_bonds);
+    if unexpressed.len() < out.unexpressed_centres.len()
+        && expressed_ez_still_valid(mol, &nudged, target, &out.unexpressed_double_bonds)
+    {
+        out.coords = nudged;
+        out.wedges = wedges;
+        out.unexpressed_centres = unexpressed;
+    }
+}
 
-    // A bridge drawn as a regular polygon can leave two bonds of a centre
-    // in nearly one direction. Move a two-bond neighbour (a bridge atom)
-    // into the widest gap between the centre's other bonds, stretching its
-    // far bond, when that lets more centres be drawn.
+fn improve_bridge_centres(
+    mol: &Molecule,
+    out: &mut StereoDepiction,
+    centres: &[AtomIdx],
+    ez_bonds: &[BondIdx],
+    target: &HashMap<BondIdx, chematic_core::atom::CipCode>,
+) {
     let mut attempts = 0;
-    while !given && !out.unexpressed_centres.is_empty() && attempts < 8 {
+    while !out.unexpressed_centres.is_empty() && attempts < 8 {
         let mut improved = false;
         for &centre in &out.unexpressed_centres.clone() {
             let movable: Vec<AtomIdx> = mol
@@ -698,14 +714,12 @@ fn depict_on(mol: &Molecule, layout: Vec<(f64, f64)>, given: bool) -> StereoDepi
                     );
                     i == nb.0 as usize || dx * dx + dy * dy > 0.25
                 });
-                let ez_still_ok = target
-                    .keys()
-                    .filter(|b| !out.unexpressed_double_bonds.contains(b))
-                    .all(|&b| ez_drawn_as_declared(mol, &moved, b) == Some(true));
+                let ez_still_ok =
+                    expressed_ez_still_valid(mol, &moved, target, &out.unexpressed_double_bonds);
                 if !clear || !ez_still_ok {
                     continue;
                 }
-                let (wedges, unexpressed) = place_wedges(mol, &moved, &centres, &ez_bonds);
+                let (wedges, unexpressed) = place_wedges(mol, &moved, centres, ez_bonds);
                 if unexpressed.len() < out.unexpressed_centres.len() {
                     out.coords = moved;
                     out.wedges = wedges;
@@ -722,11 +736,23 @@ fn depict_on(mol: &Molecule, layout: Vec<(f64, f64)>, given: bool) -> StereoDepi
             break;
         }
     }
+}
+
+fn depict_on(mol: &Molecule, layout: Vec<(f64, f64)>, given: bool) -> StereoDepiction {
+    let mut out = StereoDepiction {
+        coords: layout,
+        ..Default::default()
+    };
+    let (target, ez_bonds) = depict_double_bonds(mol, &mut out, given);
+    let centres = tetrahedral_centres(mol);
+    place_initial_wedges(mol, &mut out, &centres, &ez_bonds, given);
+    if !given {
+        retry_coincident_centres(mol, &mut out, &centres, &ez_bonds, &target);
+        improve_bridge_centres(mol, &mut out, &centres, &ez_bonds, &target);
+    }
     out
 }
 
-/// The direction (radians) through the middle of the widest gap between
-/// `centre`'s bonds other than the one to `skip`.
 fn widest_gap_direction(
     mol: &Molecule,
     coords: &[(f64, f64)],
@@ -736,8 +762,6 @@ fn widest_gap_direction(
     gap_directions(mol, coords, centre, skip).into_iter().next()
 }
 
-/// The middles of the gaps between `centre`'s bonds other than the one to
-/// `skip`, widest gap first.
 fn gap_directions(
     mol: &Molecule,
     coords: &[(f64, f64)],

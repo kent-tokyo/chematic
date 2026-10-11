@@ -301,6 +301,318 @@ impl std::fmt::Display for NucleicAcidError {
 
 impl std::error::Error for NucleicAcidError {}
 
+struct NucleicAcidIndex {
+    global_ids: BTreeSet<String>,
+    atom_ids: BTreeSet<String>,
+    residue_locations: BTreeMap<String, (usize, usize)>,
+    atom_owner: BTreeMap<String, String>,
+}
+
+fn validate_document_shape(
+    document: &NucleicAcidDocument,
+    limits: &NucleicAcidLimits,
+) -> Result<(), NucleicAcidError> {
+    if document.schema != NUCLEIC_ACID_SCHEMA {
+        return Err(NucleicAcidError::InvalidSchema {
+            found: Some(document.schema.clone()),
+        });
+    }
+    check_limit(
+        "/strands",
+        "strands",
+        document.strands.len(),
+        limits.max_strands,
+    )?;
+    check_limit(
+        "/atom_ids",
+        "atom_ids",
+        document.atom_ids.len(),
+        limits.max_atom_ids,
+    )?;
+    check_limit(
+        "/linkages",
+        "linkages",
+        document.linkages.len(),
+        limits.max_linkages,
+    )?;
+    if document.strands.is_empty() {
+        return Err(NucleicAcidError::InvalidResidueIdentity {
+            path: "/strands".into(),
+            reason: "at least one strand is required".into(),
+        });
+    }
+    let residues = document
+        .strands
+        .iter()
+        .map(|strand| strand.residues.len())
+        .sum();
+    check_limit("/strands", "residues", residues, limits.max_residues)
+}
+
+fn validate_atom_ids(
+    document: &NucleicAcidDocument,
+    limits: &NucleicAcidLimits,
+) -> Result<BTreeSet<String>, NucleicAcidError> {
+    let mut atom_ids = BTreeSet::new();
+    for (index, id) in document.atom_ids.iter().enumerate() {
+        validate_id(id, &format!("/atom_ids/{index}"), limits)?;
+        if !atom_ids.insert(id.clone()) {
+            return Err(NucleicAcidError::DuplicateId {
+                path: format!("/atom_ids/{index}"),
+                id: id.clone(),
+            });
+        }
+    }
+    Ok(atom_ids)
+}
+
+fn validate_residue(
+    strand: &NucleicAcidStrand,
+    strand_index: usize,
+    residue_index: usize,
+    index: &mut NucleicAcidIndex,
+    limits: &NucleicAcidLimits,
+) -> Result<(), NucleicAcidError> {
+    let residue = &strand.residues[residue_index];
+    let path = format!("/strands/{strand_index}/residues/{residue_index}");
+    validate_id(&residue.id, &format!("{path}/id"), limits)?;
+    if !index.global_ids.insert(residue.id.clone()) {
+        return Err(NucleicAcidError::DuplicateId {
+            path: format!("{path}/id"),
+            id: residue.id.clone(),
+        });
+    }
+    index
+        .residue_locations
+        .insert(residue.id.clone(), (strand_index, residue_index));
+    check_limit(
+        &format!("{path}/atom_refs"),
+        "atom_refs_per_residue",
+        residue.atom_refs.len(),
+        limits.max_atom_refs_per_residue,
+    )?;
+    if residue.atom_refs.is_empty() {
+        return Err(NucleicAcidError::AmbiguousAtomMapping {
+            path: format!("{path}/atom_refs"),
+            atom_id: String::new(),
+            reason: "a residue must reference at least one atom".into(),
+        });
+    }
+    validate_residue_identity(strand.kind, residue, &path)?;
+    for (atom_index, atom_id) in residue.atom_refs.iter().enumerate() {
+        let atom_path = format!("{path}/atom_refs/{atom_index}");
+        if !index.atom_ids.contains(atom_id) {
+            return Err(NucleicAcidError::MissingReference {
+                path: atom_path,
+                id: atom_id.clone(),
+            });
+        }
+        if let Some(owner) = index.atom_owner.insert(atom_id.clone(), residue.id.clone()) {
+            return Err(NucleicAcidError::AmbiguousAtomMapping {
+                path: atom_path,
+                atom_id: atom_id.clone(),
+                reason: format!("referenced by both {owner} and {}", residue.id),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn build_nucleic_acid_index(
+    document: &NucleicAcidDocument,
+    limits: &NucleicAcidLimits,
+) -> Result<NucleicAcidIndex, NucleicAcidError> {
+    let mut index = NucleicAcidIndex {
+        global_ids: BTreeSet::new(),
+        atom_ids: validate_atom_ids(document, limits)?,
+        residue_locations: BTreeMap::new(),
+        atom_owner: BTreeMap::new(),
+    };
+    for (strand_index, strand) in document.strands.iter().enumerate() {
+        let strand_path = format!("/strands/{strand_index}");
+        validate_id(&strand.id, &format!("{strand_path}/id"), limits)?;
+        if !index.global_ids.insert(strand.id.clone()) {
+            return Err(NucleicAcidError::DuplicateId {
+                path: format!("{strand_path}/id"),
+                id: strand.id.clone(),
+            });
+        }
+        if strand.residues.is_empty() {
+            return Err(NucleicAcidError::InvalidResidueIdentity {
+                path: format!("{strand_path}/residues"),
+                reason: "a strand must contain at least one residue".into(),
+            });
+        }
+        for residue_index in 0..strand.residues.len() {
+            validate_residue(strand, strand_index, residue_index, &mut index, limits)?;
+        }
+    }
+    for atom_id in &document.atom_ids {
+        if !index.atom_owner.contains_key(atom_id) {
+            return Err(NucleicAcidError::AmbiguousAtomMapping {
+                path: "/atom_ids".into(),
+                atom_id: atom_id.clone(),
+                reason: "atom is not assigned to any residue".into(),
+            });
+        }
+    }
+    Ok(index)
+}
+
+fn validate_linkage<'a>(
+    linkage: &'a NucleicAcidLinkage,
+    linkage_index: usize,
+    index: &mut NucleicAcidIndex,
+    limits: &NucleicAcidLimits,
+) -> Result<(String, (usize, &'a NucleicAcidLinkage)), NucleicAcidError> {
+    let path = format!("/linkages/{linkage_index}");
+    validate_id(&linkage.id, &format!("{path}/id"), limits)?;
+    if !index.global_ids.insert(linkage.id.clone()) {
+        return Err(NucleicAcidError::DuplicateId {
+            path: format!("{path}/id"),
+            id: linkage.id.clone(),
+        });
+    }
+    if linkage.kind != "phosphodiester" {
+        return Err(NucleicAcidError::UnsupportedLinkageTopology {
+            path: format!("{path}/kind"),
+            reason: format!("unsupported linkage kind {}", linkage.kind),
+        });
+    }
+    for (field, residue_id) in [
+        ("three_prime_residue_id", &linkage.three_prime_residue_id),
+        ("five_prime_residue_id", &linkage.five_prime_residue_id),
+    ] {
+        if !index.residue_locations.contains_key(residue_id) {
+            return Err(NucleicAcidError::MissingReference {
+                path: format!("{path}/{field}"),
+                id: residue_id.clone(),
+            });
+        }
+    }
+    for (field, atom_id, residue_id) in [
+        (
+            "three_prime_atom_ref",
+            &linkage.three_prime_atom_ref,
+            &linkage.three_prime_residue_id,
+        ),
+        (
+            "five_prime_atom_ref",
+            &linkage.five_prime_atom_ref,
+            &linkage.five_prime_residue_id,
+        ),
+    ] {
+        if index.atom_owner.get(atom_id) != Some(residue_id) {
+            return Err(NucleicAcidError::AmbiguousAtomMapping {
+                path: format!("{path}/{field}"),
+                atom_id: atom_id.clone(),
+                reason: format!("atom is not owned by residue {residue_id}"),
+            });
+        }
+    }
+    Ok((linkage.id.clone(), (linkage_index, linkage)))
+}
+
+fn index_linkages<'a>(
+    document: &'a NucleicAcidDocument,
+    index: &mut NucleicAcidIndex,
+    limits: &NucleicAcidLimits,
+) -> Result<BTreeMap<String, (usize, &'a NucleicAcidLinkage)>, NucleicAcidError> {
+    document
+        .linkages
+        .iter()
+        .enumerate()
+        .map(|(linkage_index, linkage)| validate_linkage(linkage, linkage_index, index, limits))
+        .collect()
+}
+
+fn validate_strand_topology(
+    strand: &NucleicAcidStrand,
+    strand_index: usize,
+    linkages: &BTreeMap<String, (usize, &NucleicAcidLinkage)>,
+    used: &mut BTreeSet<String>,
+) -> Result<(), NucleicAcidError> {
+    for (residue_index, residue) in strand.residues.iter().enumerate() {
+        let path = format!("/strands/{strand_index}/residues/{residue_index}");
+        if residue_index == 0 && residue.five_prime_linkage.is_some() {
+            return Err(NucleicAcidError::UnsupportedLinkageTopology {
+                path: format!("{path}/five_prime_linkage"),
+                reason: "the first residue must have a free 5' terminus".into(),
+            });
+        }
+        if residue_index + 1 == strand.residues.len() && residue.three_prime_linkage.is_some() {
+            return Err(NucleicAcidError::UnsupportedLinkageTopology {
+                path: format!("{path}/three_prime_linkage"),
+                reason: "the last residue must have a free 3' terminus".into(),
+            });
+        }
+        let Some(next) = strand.residues.get(residue_index + 1) else {
+            continue;
+        };
+        let Some(linkage_id) = residue.three_prime_linkage.as_ref() else {
+            return Err(NucleicAcidError::UnsupportedLinkageTopology {
+                path: format!("{path}/three_prime_linkage"),
+                reason: "adjacent residues require an explicit linkage".into(),
+            });
+        };
+        if next.five_prime_linkage.as_ref() != Some(linkage_id) {
+            return Err(NucleicAcidError::UnsupportedLinkageTopology {
+                path: format!(
+                    "/strands/{strand_index}/residues/{}/five_prime_linkage",
+                    residue_index + 1
+                ),
+                reason: "adjacent residues must reference the same linkage".into(),
+            });
+        }
+        let Some((_, linkage)) = linkages.get(linkage_id) else {
+            return Err(NucleicAcidError::MissingReference {
+                path: format!("{path}/three_prime_linkage"),
+                id: linkage_id.clone(),
+            });
+        };
+        if linkage.three_prime_residue_id != residue.id || linkage.five_prime_residue_id != next.id
+        {
+            return Err(NucleicAcidError::UnsupportedLinkageTopology {
+                path: format!("/linkages/{linkage_id}"),
+                reason: "linkage endpoints do not match adjacent strand order".into(),
+            });
+        }
+        used.insert(linkage_id.clone());
+    }
+    Ok(())
+}
+
+fn validate_linear_topology(
+    document: &NucleicAcidDocument,
+    linkages: &BTreeMap<String, (usize, &NucleicAcidLinkage)>,
+) -> Result<(), NucleicAcidError> {
+    let expected = document
+        .strands
+        .iter()
+        .map(|strand| strand.residues.len().saturating_sub(1))
+        .sum::<usize>();
+    if document.linkages.len() != expected {
+        return Err(NucleicAcidError::UnsupportedLinkageTopology {
+            path: "/linkages".into(),
+            reason: format!(
+                "linear strands require {expected} linkages, found {}",
+                document.linkages.len()
+            ),
+        });
+    }
+    let mut used = BTreeSet::new();
+    for (strand_index, strand) in document.strands.iter().enumerate() {
+        validate_strand_topology(strand, strand_index, linkages, &mut used)?;
+    }
+    if used.len() != document.linkages.len() {
+        return Err(NucleicAcidError::UnsupportedLinkageTopology {
+            path: "/linkages".into(),
+            reason: "cross-strand, cyclic, branched, or unreferenced linkage".into(),
+        });
+    }
+    Ok(())
+}
+
 impl NucleicAcidDocument {
     pub fn from_json(value: &Value) -> Result<Self, NucleicAcidError> {
         Self::from_json_with_limits(value, &NucleicAcidLimits::default())
@@ -344,250 +656,10 @@ impl NucleicAcidDocument {
     }
 
     pub fn validate_with_limits(&self, limits: &NucleicAcidLimits) -> Result<(), NucleicAcidError> {
-        if self.schema != NUCLEIC_ACID_SCHEMA {
-            return Err(NucleicAcidError::InvalidSchema {
-                found: Some(self.schema.clone()),
-            });
-        }
-        check_limit(
-            "/strands",
-            "strands",
-            self.strands.len(),
-            limits.max_strands,
-        )?;
-        check_limit(
-            "/atom_ids",
-            "atom_ids",
-            self.atom_ids.len(),
-            limits.max_atom_ids,
-        )?;
-        check_limit(
-            "/linkages",
-            "linkages",
-            self.linkages.len(),
-            limits.max_linkages,
-        )?;
-        if self.strands.is_empty() {
-            return Err(NucleicAcidError::InvalidResidueIdentity {
-                path: "/strands".into(),
-                reason: "at least one strand is required".into(),
-            });
-        }
-
-        let total_residues = self
-            .strands
-            .iter()
-            .map(|strand| strand.residues.len())
-            .sum();
-        check_limit("/strands", "residues", total_residues, limits.max_residues)?;
-
-        let mut global_ids = BTreeSet::new();
-        let mut atom_ids = BTreeSet::new();
-        for (index, id) in self.atom_ids.iter().enumerate() {
-            validate_id(id, &format!("/atom_ids/{index}"), limits)?;
-            if !atom_ids.insert(id.clone()) {
-                return Err(NucleicAcidError::DuplicateId {
-                    path: format!("/atom_ids/{index}"),
-                    id: id.clone(),
-                });
-            }
-        }
-
-        let mut residue_locations = BTreeMap::<String, (usize, usize)>::new();
-        let mut atom_owner = BTreeMap::<String, String>::new();
-        for (strand_index, strand) in self.strands.iter().enumerate() {
-            let strand_path = format!("/strands/{strand_index}");
-            validate_id(&strand.id, &format!("{strand_path}/id"), limits)?;
-            if !global_ids.insert(strand.id.clone()) {
-                return Err(NucleicAcidError::DuplicateId {
-                    path: format!("{strand_path}/id"),
-                    id: strand.id.clone(),
-                });
-            }
-            if strand.residues.is_empty() {
-                return Err(NucleicAcidError::InvalidResidueIdentity {
-                    path: format!("{strand_path}/residues"),
-                    reason: "a strand must contain at least one residue".into(),
-                });
-            }
-            for (residue_index, residue) in strand.residues.iter().enumerate() {
-                let residue_path = format!("{strand_path}/residues/{residue_index}");
-                validate_id(&residue.id, &format!("{residue_path}/id"), limits)?;
-                if !global_ids.insert(residue.id.clone()) {
-                    return Err(NucleicAcidError::DuplicateId {
-                        path: format!("{residue_path}/id"),
-                        id: residue.id.clone(),
-                    });
-                }
-                residue_locations.insert(residue.id.clone(), (strand_index, residue_index));
-                check_limit(
-                    &format!("{residue_path}/atom_refs"),
-                    "atom_refs_per_residue",
-                    residue.atom_refs.len(),
-                    limits.max_atom_refs_per_residue,
-                )?;
-                if residue.atom_refs.is_empty() {
-                    return Err(NucleicAcidError::AmbiguousAtomMapping {
-                        path: format!("{residue_path}/atom_refs"),
-                        atom_id: String::new(),
-                        reason: "a residue must reference at least one atom".into(),
-                    });
-                }
-                validate_residue_identity(strand.kind, residue, &residue_path)?;
-                for (atom_index, atom_id) in residue.atom_refs.iter().enumerate() {
-                    let path = format!("{residue_path}/atom_refs/{atom_index}");
-                    if !atom_ids.contains(atom_id) {
-                        return Err(NucleicAcidError::MissingReference {
-                            path,
-                            id: atom_id.clone(),
-                        });
-                    }
-                    if let Some(owner) = atom_owner.insert(atom_id.clone(), residue.id.clone()) {
-                        return Err(NucleicAcidError::AmbiguousAtomMapping {
-                            path,
-                            atom_id: atom_id.clone(),
-                            reason: format!("referenced by both {owner} and {}", residue.id),
-                        });
-                    }
-                }
-            }
-        }
-
-        for atom_id in &self.atom_ids {
-            if !atom_owner.contains_key(atom_id) {
-                return Err(NucleicAcidError::AmbiguousAtomMapping {
-                    path: "/atom_ids".into(),
-                    atom_id: atom_id.clone(),
-                    reason: "atom is not assigned to any residue".into(),
-                });
-            }
-        }
-
-        let mut linkage_by_id = BTreeMap::new();
-        for (index, linkage) in self.linkages.iter().enumerate() {
-            let path = format!("/linkages/{index}");
-            validate_id(&linkage.id, &format!("{path}/id"), limits)?;
-            if !global_ids.insert(linkage.id.clone()) {
-                return Err(NucleicAcidError::DuplicateId {
-                    path: format!("{path}/id"),
-                    id: linkage.id.clone(),
-                });
-            }
-            if linkage.kind != "phosphodiester" {
-                return Err(NucleicAcidError::UnsupportedLinkageTopology {
-                    path: format!("{path}/kind"),
-                    reason: format!("unsupported linkage kind {}", linkage.kind),
-                });
-            }
-            for (field, residue_id) in [
-                ("three_prime_residue_id", &linkage.three_prime_residue_id),
-                ("five_prime_residue_id", &linkage.five_prime_residue_id),
-            ] {
-                if !residue_locations.contains_key(residue_id) {
-                    return Err(NucleicAcidError::MissingReference {
-                        path: format!("{path}/{field}"),
-                        id: residue_id.clone(),
-                    });
-                }
-            }
-            for (field, atom_id, residue_id) in [
-                (
-                    "three_prime_atom_ref",
-                    &linkage.three_prime_atom_ref,
-                    &linkage.three_prime_residue_id,
-                ),
-                (
-                    "five_prime_atom_ref",
-                    &linkage.five_prime_atom_ref,
-                    &linkage.five_prime_residue_id,
-                ),
-            ] {
-                if atom_owner.get(atom_id) != Some(residue_id) {
-                    return Err(NucleicAcidError::AmbiguousAtomMapping {
-                        path: format!("{path}/{field}"),
-                        atom_id: atom_id.clone(),
-                        reason: format!("atom is not owned by residue {residue_id}"),
-                    });
-                }
-            }
-            linkage_by_id.insert(linkage.id.clone(), (index, linkage));
-        }
-
-        let expected_linkages: usize = self
-            .strands
-            .iter()
-            .map(|strand| strand.residues.len().saturating_sub(1))
-            .sum();
-        if self.linkages.len() != expected_linkages {
-            return Err(NucleicAcidError::UnsupportedLinkageTopology {
-                path: "/linkages".into(),
-                reason: format!(
-                    "linear strands require {expected_linkages} linkages, found {}",
-                    self.linkages.len()
-                ),
-            });
-        }
-
-        let mut used_linkages = BTreeSet::new();
-        for (strand_index, strand) in self.strands.iter().enumerate() {
-            for (residue_index, residue) in strand.residues.iter().enumerate() {
-                let path = format!("/strands/{strand_index}/residues/{residue_index}");
-                if residue_index == 0 && residue.five_prime_linkage.is_some() {
-                    return Err(NucleicAcidError::UnsupportedLinkageTopology {
-                        path: format!("{path}/five_prime_linkage"),
-                        reason: "the first residue must have a free 5' terminus".into(),
-                    });
-                }
-                if residue_index + 1 == strand.residues.len()
-                    && residue.three_prime_linkage.is_some()
-                {
-                    return Err(NucleicAcidError::UnsupportedLinkageTopology {
-                        path: format!("{path}/three_prime_linkage"),
-                        reason: "the last residue must have a free 3' terminus".into(),
-                    });
-                }
-                if residue_index + 1 < strand.residues.len() {
-                    let next = &strand.residues[residue_index + 1];
-                    let Some(linkage_id) = residue.three_prime_linkage.as_ref() else {
-                        return Err(NucleicAcidError::UnsupportedLinkageTopology {
-                            path: format!("{path}/three_prime_linkage"),
-                            reason: "adjacent residues require an explicit linkage".into(),
-                        });
-                    };
-                    if next.five_prime_linkage.as_ref() != Some(linkage_id) {
-                        return Err(NucleicAcidError::UnsupportedLinkageTopology {
-                            path: format!(
-                                "/strands/{strand_index}/residues/{}/five_prime_linkage",
-                                residue_index + 1
-                            ),
-                            reason: "adjacent residues must reference the same linkage".into(),
-                        });
-                    }
-                    let Some((_, linkage)) = linkage_by_id.get(linkage_id) else {
-                        return Err(NucleicAcidError::MissingReference {
-                            path: format!("{path}/three_prime_linkage"),
-                            id: linkage_id.clone(),
-                        });
-                    };
-                    if linkage.three_prime_residue_id != residue.id
-                        || linkage.five_prime_residue_id != next.id
-                    {
-                        return Err(NucleicAcidError::UnsupportedLinkageTopology {
-                            path: format!("/linkages/{linkage_id}"),
-                            reason: "linkage endpoints do not match adjacent strand order".into(),
-                        });
-                    }
-                    used_linkages.insert(linkage_id.clone());
-                }
-            }
-        }
-        if used_linkages.len() != self.linkages.len() {
-            return Err(NucleicAcidError::UnsupportedLinkageTopology {
-                path: "/linkages".into(),
-                reason: "cross-strand, cyclic, branched, or unreferenced linkage".into(),
-            });
-        }
-
+        validate_document_shape(self, limits)?;
+        let mut index = build_nucleic_acid_index(self, limits)?;
+        let linkages = index_linkages(self, &mut index, limits)?;
+        validate_linear_topology(self, &linkages)?;
         validate_annotations(self, limits)
     }
 

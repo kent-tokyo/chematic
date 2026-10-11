@@ -730,6 +730,74 @@ pub fn parse_qcschema_molecule_with_limits(
     parse_qc_molecule_value(&root)
 }
 
+struct QcAtomFields {
+    symbols: Vec<String>,
+    geometry: Vec<f64>,
+    masses: Option<Vec<f64>>,
+    real: Option<Vec<bool>>,
+    atomic_numbers: Option<Vec<i64>>,
+    mass_numbers: Option<Vec<i64>>,
+    atom_labels: Option<Vec<String>>,
+}
+
+fn parse_qc_atom_fields(o: &Map<String, Value>) -> Result<QcAtomFields, QcSchemaError> {
+    let symbols = req_array(o, "symbols", item_string)?;
+    let geometry = req_array(o, "geometry", get_f64_checked)?;
+    if geometry.len() != symbols.len() * 3 {
+        return Err(QcSchemaError::LengthMismatch {
+            detail: format!(
+                "geometry has {} values, expected {} (3 * {} atoms)",
+                geometry.len(),
+                symbols.len() * 3,
+                symbols.len()
+            ),
+        });
+    }
+    let fields = QcAtomFields {
+        symbols,
+        geometry,
+        masses: get_array_opt(o, "masses", get_f64_checked)?,
+        real: get_array_opt(o, "real", item_bool)?,
+        atomic_numbers: get_array_opt(o, "atomic_numbers", item_i64)?,
+        mass_numbers: get_array_opt(o, "mass_numbers", item_i64)?,
+        atom_labels: get_array_opt(o, "atom_labels", item_string)?,
+    };
+    validate_qc_atom_field_lengths(&fields)?;
+    Ok(fields)
+}
+
+fn validate_qc_atom_field_lengths(fields: &QcAtomFields) -> Result<(), QcSchemaError> {
+    for (field, length) in [
+        ("masses", fields.masses.as_ref().map(Vec::len)),
+        ("real", fields.real.as_ref().map(Vec::len)),
+        (
+            "atomic_numbers",
+            fields.atomic_numbers.as_ref().map(Vec::len),
+        ),
+        ("mass_numbers", fields.mass_numbers.as_ref().map(Vec::len)),
+        ("atom_labels", fields.atom_labels.as_ref().map(Vec::len)),
+    ] {
+        if let Some(length) = length
+            && length != fields.symbols.len()
+        {
+            return Err(QcSchemaError::LengthMismatch {
+                detail: format!(
+                    "{field} has {length} entries, expected {} (one per atom)",
+                    fields.symbols.len()
+                ),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn parse_optional_provenance(o: &Map<String, Value>) -> Result<Option<Provenance>, QcSchemaError> {
+    match o.get("provenance") {
+        None | Some(Value::Null) => Ok(None),
+        Some(value) => parse_provenance(value).map(Some),
+    }
+}
+
 fn parse_qc_molecule_value(v: &Value) -> Result<QcMolecule, QcSchemaError> {
     let o = obj(v, "molecule")?;
 
@@ -743,60 +811,21 @@ fn parse_qc_molecule_value(v: &Value) -> Result<QcMolecule, QcSchemaError> {
     }
     let schema_version = get_i64_field(o, "schema_version")?.unwrap_or(1);
 
-    let symbols = req_array(o, "symbols", item_string)?;
-    let geometry = req_array(o, "geometry", get_f64_checked)?;
-    if geometry.len() != symbols.len() * 3 {
-        return Err(QcSchemaError::LengthMismatch {
-            detail: format!(
-                "geometry has {} values, expected {} (3 * {} atoms)",
-                geometry.len(),
-                symbols.len() * 3,
-                symbols.len()
-            ),
-        });
-    }
+    let atoms = parse_qc_atom_fields(o)?;
 
     let molecular_charge = get_f64_field(o, "molecular_charge")?.unwrap_or(0.0);
     let molecular_multiplicity = get_i64_field(o, "molecular_multiplicity")?.unwrap_or(1);
     let fix_com = get_bool_field(o, "fix_com")?.unwrap_or(false);
     let fix_orientation = get_bool_field(o, "fix_orientation")?.unwrap_or(false);
 
-    let masses = get_array_opt(o, "masses", get_f64_checked)?;
-    let real = get_array_opt(o, "real", item_bool)?;
-    let atomic_numbers = get_array_opt(o, "atomic_numbers", item_i64)?;
-    let mass_numbers = get_array_opt(o, "mass_numbers", item_i64)?;
-    let atom_labels = get_array_opt(o, "atom_labels", item_string)?;
-
-    for (field, len) in [
-        ("masses", masses.as_ref().map(Vec::len)),
-        ("real", real.as_ref().map(Vec::len)),
-        ("atomic_numbers", atomic_numbers.as_ref().map(Vec::len)),
-        ("mass_numbers", mass_numbers.as_ref().map(Vec::len)),
-        ("atom_labels", atom_labels.as_ref().map(Vec::len)),
-    ] {
-        if let Some(l) = len
-            && l != symbols.len()
-        {
-            return Err(QcSchemaError::LengthMismatch {
-                detail: format!(
-                    "{field} has {l} entries, expected {} (one per atom)",
-                    symbols.len()
-                ),
-            });
-        }
-    }
-
     let name = get_str(o, "name")?;
     let comment = get_str(o, "comment")?;
-    let connectivity = get_connectivity_opt(o, "connectivity", symbols.len())?;
-    let fragments = get_fragments_opt(o, "fragments", symbols.len())?;
+    let connectivity = get_connectivity_opt(o, "connectivity", atoms.symbols.len())?;
+    let fragments = get_fragments_opt(o, "fragments", atoms.symbols.len())?;
     let fragment_charges = get_array_opt(o, "fragment_charges", get_f64_checked)?;
     let fragment_multiplicities = get_array_opt(o, "fragment_multiplicities", item_i64)?;
     let fix_symmetry = get_str(o, "fix_symmetry")?;
-    let provenance = match o.get("provenance") {
-        None | Some(Value::Null) => None,
-        Some(pv) => Some(parse_provenance(pv)?),
-    };
+    let provenance = parse_optional_provenance(o)?;
     let id = get_str(o, "id")?;
     let extras = get_object_opt(o, "extras")?.unwrap_or_default();
     let unknown_fields = collect_unknown(o, MOLECULE_KEYS);
@@ -804,17 +833,17 @@ fn parse_qc_molecule_value(v: &Value) -> Result<QcMolecule, QcSchemaError> {
     Ok(QcMolecule {
         schema_name,
         schema_version,
-        symbols,
-        geometry,
+        symbols: atoms.symbols,
+        geometry: atoms.geometry,
         molecular_charge,
         molecular_multiplicity,
         fix_com,
         fix_orientation,
-        masses,
-        real,
-        atomic_numbers,
-        mass_numbers,
-        atom_labels,
+        masses: atoms.masses,
+        real: atoms.real,
+        atomic_numbers: atoms.atomic_numbers,
+        mass_numbers: atoms.mass_numbers,
+        atom_labels: atoms.atom_labels,
         name,
         comment,
         connectivity,
@@ -1249,14 +1278,19 @@ pub fn parse_atomic_result(input: &str) -> Result<AtomicResult, QcSchemaError> {
     parse_atomic_result_with_limits(input, &QcSchemaParseLimits::default())
 }
 
-/// Parse a QCSchema `AtomicResult` JSON document with explicit resource limits.
-pub fn parse_atomic_result_with_limits(
-    input: &str,
-    limits: &QcSchemaParseLimits,
-) -> Result<AtomicResult, QcSchemaError> {
-    let root = parse_json_with_limits(input, limits)?;
-    let o = obj(&root, "AtomicResult")?;
+struct AtomicResultCommon {
+    schema_name: String,
+    schema_version: i64,
+    id: Option<String>,
+    molecule: QcMolecule,
+    driver: Driver,
+    model: QcModel,
+    keywords: JsonObject,
+    protocols: JsonObject,
+    extras: JsonObject,
+}
 
+fn parse_atomic_result_common(o: &Map<String, Value>) -> Result<AtomicResultCommon, QcSchemaError> {
     let schema_name = get_str(o, "schema_name")?.unwrap_or_else(|| "qcschema_output".to_string());
     if !QCSCHEMA_OUTPUT_NAMES.contains(&schema_name.as_str()) {
         return Err(QcSchemaError::InvalidSchemaName {
@@ -1265,64 +1299,107 @@ pub fn parse_atomic_result_with_limits(
             found: schema_name,
         });
     }
-    let schema_version = get_i64_field(o, "schema_version")?.unwrap_or(1);
-    let id = get_str(o, "id")?;
-    let molecule = parse_qc_molecule_value(req(o, "molecule")?)?;
-    let driver = Driver::parse(&req_str(o, "driver")?)?;
-    let model = parse_model(req(o, "model")?)?;
-    let keywords = get_object_opt(o, "keywords")?.unwrap_or_default();
-    let protocols = get_object_opt(o, "protocols")?.unwrap_or_default();
-    let extras = get_object_opt(o, "extras")?.unwrap_or_default();
-    let provenance = parse_provenance(req(o, "provenance")?)?;
-    let properties = get_object_opt(o, "properties")?.unwrap_or_default();
-    let return_result = match o.get("return_result") {
-        None | Some(Value::Null) => None,
-        Some(rv) => Some(parse_return_result(rv)?),
-    };
-    let success = req_bool(o, "success")?;
-    let error = match o.get("error") {
-        None | Some(Value::Null) => None,
-        Some(ev) => Some(parse_compute_error(ev)?),
-    };
-    let stdout = get_str(o, "stdout")?;
-    let stderr = get_str(o, "stderr")?;
-    let native_files = get_object_opt(o, "native_files")?.unwrap_or_default();
-    let wavefunction = o.get("wavefunction").filter(|v| !v.is_null()).cloned();
+    Ok(AtomicResultCommon {
+        schema_name,
+        schema_version: get_i64_field(o, "schema_version")?.unwrap_or(1),
+        id: get_str(o, "id")?,
+        molecule: parse_qc_molecule_value(req(o, "molecule")?)?,
+        driver: Driver::parse(&req_str(o, "driver")?)?,
+        model: parse_model(req(o, "model")?)?,
+        keywords: get_object_opt(o, "keywords")?.unwrap_or_default(),
+        protocols: get_object_opt(o, "protocols")?.unwrap_or_default(),
+        extras: get_object_opt(o, "extras")?.unwrap_or_default(),
+    })
+}
 
-    if success && return_result.is_none() {
+struct AtomicResultPayload {
+    provenance: Provenance,
+    properties: JsonObject,
+    return_result: Option<ReturnResult>,
+    success: bool,
+    error: Option<ComputeError>,
+    stdout: Option<String>,
+    stderr: Option<String>,
+    native_files: JsonObject,
+    wavefunction: Option<Value>,
+}
+
+fn parse_atomic_result_payload(
+    o: &Map<String, Value>,
+) -> Result<AtomicResultPayload, QcSchemaError> {
+    let return_result = o
+        .get("return_result")
+        .filter(|value| !value.is_null())
+        .map(parse_return_result)
+        .transpose()?;
+    let error = o
+        .get("error")
+        .filter(|value| !value.is_null())
+        .map(parse_compute_error)
+        .transpose()?;
+    let payload = AtomicResultPayload {
+        provenance: parse_provenance(req(o, "provenance")?)?,
+        properties: get_object_opt(o, "properties")?.unwrap_or_default(),
+        return_result,
+        success: req_bool(o, "success")?,
+        error,
+        stdout: get_str(o, "stdout")?,
+        stderr: get_str(o, "stderr")?,
+        native_files: get_object_opt(o, "native_files")?.unwrap_or_default(),
+        wavefunction: o.get("wavefunction").filter(|v| !v.is_null()).cloned(),
+    };
+    validate_atomic_result_payload(&payload)?;
+    Ok(payload)
+}
+
+fn validate_atomic_result_payload(payload: &AtomicResultPayload) -> Result<(), QcSchemaError> {
+    if payload.success && payload.return_result.is_none() {
         return Err(QcSchemaError::Inconsistent {
             detail: "success = true but return_result is missing".to_string(),
         });
     }
-    if !success && error.is_none() {
+    if !payload.success && payload.error.is_none() {
         return Err(QcSchemaError::Inconsistent {
             detail: "success = false but error is missing".to_string(),
         });
     }
+    Ok(())
+}
+
+/// Parse a QCSchema `AtomicResult` JSON document with explicit resource limits.
+pub fn parse_atomic_result_with_limits(
+    input: &str,
+    limits: &QcSchemaParseLimits,
+) -> Result<AtomicResult, QcSchemaError> {
+    let root = parse_json_with_limits(input, limits)?;
+    let o = obj(&root, "AtomicResult")?;
+
+    let common = parse_atomic_result_common(o)?;
+    let payload = parse_atomic_result_payload(o)?;
 
     let mut known: Vec<&str> = ATOMIC_INPUT_KEYS.to_vec();
     known.extend_from_slice(ATOMIC_RESULT_EXTRA_KEYS);
     let unknown_fields = collect_unknown(o, &known);
 
     Ok(AtomicResult {
-        schema_name,
-        schema_version,
-        id,
-        molecule,
-        driver,
-        model,
-        keywords,
-        protocols,
-        extras,
-        provenance,
-        properties,
-        return_result,
-        success,
-        error,
-        stdout,
-        stderr,
-        native_files,
-        wavefunction,
+        schema_name: common.schema_name,
+        schema_version: common.schema_version,
+        id: common.id,
+        molecule: common.molecule,
+        driver: common.driver,
+        model: common.model,
+        keywords: common.keywords,
+        protocols: common.protocols,
+        extras: common.extras,
+        provenance: payload.provenance,
+        properties: payload.properties,
+        return_result: payload.return_result,
+        success: payload.success,
+        error: payload.error,
+        stdout: payload.stdout,
+        stderr: payload.stderr,
+        native_files: payload.native_files,
+        wavefunction: payload.wavefunction,
         unknown_fields,
     })
 }
@@ -1371,306 +1448,8 @@ pub fn write_atomic_result(r: &AtomicResult) -> String {
     serde_json::to_string_pretty(&Value::Object(o)).unwrap_or_default()
 }
 
-// ─── Conversion to/from chematic_core::Molecule ─────────────────────────────
-
-/// CODATA 2018 Bohr radius in Angstrom (1 a0 = 0.529177210903 Å), matching
-/// the constant set `qcelemental` uses as of this writing. QCSchema
-/// `geometry` is always in Bohr; `chematic_core::Coords3D` is always in
-/// Angstrom (see `chematic_core::coords3d` module docs) -- this constant is
-/// the single conversion point between the two.
-pub const BOHR_TO_ANGSTROM: f64 = 0.529177210903;
-
-/// Errors converting between [`QcMolecule`] and `chematic_core`'s own
-/// molecule/coordinate types.
-#[derive(Debug, Clone, PartialEq)]
-pub enum QcConvertError {
-    UnknownElement(String),
-    InvalidBondIndex {
-        index: usize,
-        atom_count: usize,
-    },
-    /// `coords.atom_count() != mol.atom_count()` on the chematic -> QCSchema
-    /// direction.
-    AtomCountMismatch {
-        molecule: usize,
-        coords: usize,
-    },
-}
-
-impl std::fmt::Display for QcConvertError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::UnknownElement(s) => {
-                write!(f, "QCSchema conversion: unknown element symbol '{s}'")
-            }
-            Self::InvalidBondIndex { index, atom_count } => write!(
-                f,
-                "QCSchema conversion: connectivity references atom index {index} but there are only {atom_count} atoms"
-            ),
-            Self::AtomCountMismatch { molecule, coords } => write!(
-                f,
-                "QCSchema conversion: molecule has {molecule} atoms but coords has {coords}"
-            ),
-        }
-    }
-}
-
-impl std::error::Error for QcConvertError {}
-
-/// Bundle returned by [`qc_molecule_to_chematic`]: `chematic_core::Molecule`
-/// has no molecule-level charge/multiplicity field and no built-in
-/// coordinate storage of its own (coordinates live in the separate
-/// [`Coords3D`] type, same convention as this crate's XYZ reader), so both
-/// are threaded through here rather than silently dropped.
-// `chematic_core::Molecule` implements neither `Debug` nor `PartialEq`, so
-// this bundle can't derive them either.
-#[derive(Clone)]
-pub struct ChematicMoleculeView {
-    pub molecule: Molecule,
-    /// Angstrom (converted from the source's Bohr geometry).
-    pub coords: Coords3D,
-    pub molecular_charge: f64,
-    pub molecular_multiplicity: i64,
-}
-
-fn qc_bond_order_to_chematic(v: f64) -> BondOrder {
-    if (v - 1.5).abs() < 1e-6 {
-        return BondOrder::Aromatic;
-    }
-    match v.round() as i64 {
-        0 => BondOrder::Zero,
-        2 => BondOrder::Double,
-        3 => BondOrder::Triple,
-        4 => BondOrder::Quadruple,
-        _ => BondOrder::Single,
-    }
-}
-
-fn chematic_bond_order_to_qc(o: BondOrder) -> f64 {
-    match o {
-        BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1.0,
-        BondOrder::Double => 2.0,
-        BondOrder::Triple => 3.0,
-        BondOrder::Quadruple => 4.0,
-        BondOrder::Aromatic => 1.5,
-        BondOrder::Zero => 0.0,
-        BondOrder::QueryAny
-        | BondOrder::QuerySingleOrDouble
-        | BondOrder::QuerySingleOrAromatic
-        | BondOrder::QueryDoubleOrAromatic => 1.0,
-    }
-}
-
-/// Convert a QCSchema [`QcMolecule`] into chematic's own graph + coordinate
-/// representation.
-///
-/// **Gained:** nothing beyond what QCSchema already carries.
-/// **Lost:** `fix_com`/`fix_orientation`/`fragments`/`fragment_charges`/
-/// `fragment_multiplicities`/`real` (ghost-atom flag)/`masses` (explicit
-/// isotope masses)/`atom_labels`/`name`/`comment`/`fix_symmetry`/
-/// `provenance` -- `chematic_core::Molecule` and [`Coords3D`] have no
-/// equivalent slots for any of these; call sites that need them should keep
-/// the original [`QcMolecule`] around. `connectivity` bond orders (plain
-/// floats, e.g. `1.0`, `2.0`, `1.5`) are mapped onto the nearest
-/// [`BondOrder`]; QCSchema has no stereo/aromaticity-flag concept distinct
-/// from that numeric order. `mass_numbers` (when present and not `-1`) is
-/// mapped onto `Atom::isotope`.
-pub fn qc_molecule_to_chematic(qc: &QcMolecule) -> Result<ChematicMoleculeView, QcConvertError> {
-    let mut builder = MoleculeBuilder::new();
-    let mut coords = Coords3D::new_zeroed(qc.symbols.len());
-
-    for (i, sym) in qc.symbols.iter().enumerate() {
-        let element =
-            Element::from_symbol(sym).ok_or_else(|| QcConvertError::UnknownElement(sym.clone()))?;
-        let mut atom = Atom::new(element);
-        if let Some(mn) = qc.mass_numbers.as_ref().and_then(|v| v.get(i))
-            && *mn >= 0
-        {
-            atom.isotope = Some(*mn as u16);
-        }
-        let idx = builder.add_atom(atom);
-        let p = Point3::new(
-            qc.geometry[i * 3] * BOHR_TO_ANGSTROM,
-            qc.geometry[i * 3 + 1] * BOHR_TO_ANGSTROM,
-            qc.geometry[i * 3 + 2] * BOHR_TO_ANGSTROM,
-        );
-        coords.set(idx, p);
-    }
-
-    if let Some(conn) = &qc.connectivity {
-        for (a, b, order) in conn {
-            if *a >= qc.symbols.len() || *b >= qc.symbols.len() {
-                return Err(QcConvertError::InvalidBondIndex {
-                    index: (*a).max(*b),
-                    atom_count: qc.symbols.len(),
-                });
-            }
-            let bo = qc_bond_order_to_chematic(*order);
-            // Length/duplicate/self-bond invariants were already enforced by
-            // `parse_qc_molecule_value`; `add_bond` cannot fail here.
-            let _ = builder.add_bond(AtomIdx(*a as u32), AtomIdx(*b as u32), bo);
-        }
-    }
-
-    Ok(ChematicMoleculeView {
-        molecule: builder.build(),
-        coords,
-        molecular_charge: qc.molecular_charge,
-        molecular_multiplicity: qc.molecular_multiplicity,
-    })
-}
-
-/// Convert a chematic `Molecule` + its `Coords3D` (Angstrom) + molecule-level
-/// charge/multiplicity into a QCSchema [`QcMolecule`] (Bohr).
-///
-/// **Gained:** nothing. **Lost:** per-atom formal charge, isotope-vs-mass-
-/// number distinction (only the isotope's mass number survives, as
-/// `mass_numbers`; `masses` -- fractional atomic weight -- is left `None`,
-/// letting a QCSchema consumer fall back to canonical weights), aromaticity,
-/// stereochemistry (`Chirality`/CIP code), and wildcard/atom-map annotations
-/// -- QCSchema's `Molecule` is a geometry+connectivity schema, not a full
-/// cheminformatics model, and has no field for any of these.
-pub fn chematic_to_qc_molecule(
-    mol: &Molecule,
-    coords: &Coords3D,
-    molecular_charge: f64,
-    molecular_multiplicity: i64,
-) -> Result<QcMolecule, QcConvertError> {
-    if coords.atom_count() != mol.atom_count() {
-        return Err(QcConvertError::AtomCountMismatch {
-            molecule: mol.atom_count(),
-            coords: coords.atom_count(),
-        });
-    }
-
-    let mut symbols = Vec::with_capacity(mol.atom_count());
-    let mut geometry = Vec::with_capacity(mol.atom_count() * 3);
-    let mut mass_numbers = Vec::with_capacity(mol.atom_count());
-    let mut any_isotope = false;
-
-    for (idx, atom) in mol.atoms() {
-        symbols.push(atom.element.symbol().to_string());
-        let p = coords.get(idx);
-        geometry.push(p.x / BOHR_TO_ANGSTROM);
-        geometry.push(p.y / BOHR_TO_ANGSTROM);
-        geometry.push(p.z / BOHR_TO_ANGSTROM);
-        match atom.isotope {
-            Some(iso) => {
-                mass_numbers.push(iso as i64);
-                any_isotope = true;
-            }
-            None => mass_numbers.push(-1),
-        }
-    }
-
-    let connectivity = if mol.bond_count() > 0 {
-        Some(
-            mol.bonds()
-                .map(|(_, b)| {
-                    (
-                        b.atom1.0 as usize,
-                        b.atom2.0 as usize,
-                        chematic_bond_order_to_qc(b.order),
-                    )
-                })
-                .collect(),
-        )
-    } else {
-        None
-    };
-
-    Ok(QcMolecule {
-        schema_name: "qcschema_molecule".to_string(),
-        schema_version: 1,
-        symbols,
-        geometry,
-        molecular_charge,
-        molecular_multiplicity,
-        fix_com: false,
-        fix_orientation: false,
-        masses: None,
-        real: None,
-        atomic_numbers: None,
-        mass_numbers: if any_isotope {
-            Some(mass_numbers)
-        } else {
-            None
-        },
-        atom_labels: None,
-        name: None,
-        comment: None,
-        connectivity,
-        fragments: None,
-        fragment_charges: None,
-        fragment_multiplicities: None,
-        fix_symmetry: None,
-        provenance: None,
-        id: None,
-        extras: JsonObject::new(),
-        unknown_fields: JsonObject::new(),
-    })
-}
-
+mod conversion;
+pub use conversion::*;
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn minimal_molecule() -> &'static str {
-        r#"{"symbols":["H"],"geometry":[0.0,0.0,0.0]}"#
-    }
-
-    #[test]
-    fn bounded_molecule_parser_rejects_oversized_input() {
-        let limits = QcSchemaParseLimits {
-            max_input_bytes: 8,
-            ..Default::default()
-        };
-        let err = parse_qcschema_molecule_with_limits(minimal_molecule(), &limits).unwrap_err();
-        assert!(matches!(
-            err,
-            QcSchemaError::ResourceLimit {
-                resource: "input bytes",
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn bounded_molecule_parser_rejects_oversized_arrays() {
-        let limits = QcSchemaParseLimits {
-            max_array_items: 2,
-            ..Default::default()
-        };
-        let err = parse_qcschema_molecule_with_limits(minimal_molecule(), &limits).unwrap_err();
-        assert!(matches!(
-            err,
-            QcSchemaError::ResourceLimit {
-                resource: "array items",
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn bounded_atomic_parsers_apply_json_limits_before_schema_validation() {
-        let limits = QcSchemaParseLimits {
-            max_string_bytes: 8,
-            ..Default::default()
-        };
-        let input = r#"{"x":"longvalue","symbols":["H"],"geometry":[0.0,0.0,0.0]}"#;
-        assert!(matches!(
-            parse_atomic_input_with_limits(input, &limits),
-            Err(QcSchemaError::ResourceLimit {
-                resource: "string bytes",
-                ..
-            })
-        ));
-        assert!(matches!(
-            parse_atomic_result_with_limits(input, &limits),
-            Err(QcSchemaError::ResourceLimit {
-                resource: "string bytes",
-                ..
-            })
-        ));
-    }
-}
+#[path = "qcschema/tests.rs"]
+mod tests;

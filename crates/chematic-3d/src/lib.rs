@@ -28,7 +28,7 @@ pub(crate) mod fmath;
 #[cfg(test)]
 mod geometry_boundary_contract_tests;
 #[cfg(test)]
-mod issue256_255_phase2_evaluation;
+mod issue256_255_phase2_evaluation_tests;
 pub mod md;
 pub mod minimize;
 pub mod mol_transforms;

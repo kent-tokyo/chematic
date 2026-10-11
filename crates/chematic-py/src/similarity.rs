@@ -459,24 +459,26 @@ fn o3a_align(
 // ---------------------------------------------------------------------------
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(tanimoto, m)?)?;
-    m.add_function(wrap_pyfunction!(shape_screen, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_map4, m)?)?;
-    m.add_function(wrap_pyfunction!(butina_cluster, m)?)?;
-    m.add_function(wrap_pyfunction!(maxmin_picks, m)?)?;
-    m.add_function(wrap_pyfunction!(cosine_erg_vec, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_erg_vec, m)?)?;
-    m.add_function(wrap_pyfunction!(top_k_similar_fp, m)?)?;
-    m.add_function(wrap_pyfunction!(top_k_similar, m)?)?;
-    m.add_function(wrap_pyfunction!(dice_similarity, m)?)?;
-    m.add_function(wrap_pyfunction!(tversky_similarity, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_mhfp, m)?)?;
-    m.add_function(wrap_pyfunction!(align_coords, m)?)?;
-    m.add_function(wrap_pyfunction!(rmsd, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_erg, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_matrix, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_slice, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_pharmacophore_3d, m)?)?;
-    m.add_function(wrap_pyfunction!(o3a_align, m)?)?;
-    Ok(())
+    register_pyfunctions!(
+        m,
+        tanimoto,
+        shape_screen,
+        tanimoto_map4,
+        butina_cluster,
+        maxmin_picks,
+        cosine_erg_vec,
+        tanimoto_erg_vec,
+        top_k_similar_fp,
+        top_k_similar,
+        dice_similarity,
+        tversky_similarity,
+        tanimoto_mhfp,
+        align_coords,
+        rmsd,
+        tanimoto_erg,
+        tanimoto_matrix,
+        tanimoto_slice,
+        tanimoto_pharmacophore_3d,
+        o3a_align,
+    )
 }

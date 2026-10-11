@@ -670,21 +670,26 @@ fn classify_header_line(raw: &str, line_no: usize) -> Result<Option<HeaderLine>,
 // Parser
 // ---------------------------------------------------------------------------
 
-/// Parse a LAMMPS data file. `atom_style` must be supplied by the caller
-/// (see module docs -- it cannot be recovered from the file alone).
-pub fn parse_lammps_data(
-    text: &str,
-    atom_style: LammpsAtomStyle,
-) -> Result<LammpsData, LammpsDataError> {
-    parse_lammps_data_with_limits(text, atom_style, &LammpsDataParseLimits::default())
+struct ParsedLammpsHeader {
+    counts: Vec<(String, i64)>,
+    simulation_box: LammpsBox,
 }
 
-/// Parse a LAMMPS data file with explicit resource limits.
-pub fn parse_lammps_data_with_limits(
+#[derive(Default)]
+struct ParsedLammpsSections {
+    masses: Vec<LammpsMass>,
+    atoms: Vec<LammpsAtom>,
+    atom_lines: Vec<usize>,
+    velocities: Vec<LammpsVelocity>,
+    bonds: Vec<LammpsBond>,
+    unparsed: Vec<(String, String)>,
+}
+
+fn validate_lammps_input(
     text: &str,
-    atom_style: LammpsAtomStyle,
+    atom_style: &LammpsAtomStyle,
     limits: &LammpsDataParseLimits,
-) -> Result<LammpsData, LammpsDataError> {
+) -> Result<(), LammpsDataError> {
     if text.len() > limits.max_input_bytes {
         return Err(LammpsDataError::ResourceLimit {
             resource: "input bytes",
@@ -701,34 +706,31 @@ pub fn parse_lammps_data_with_limits(
             limit: limits.max_line_bytes,
         });
     }
-    if let LammpsAtomStyle::Other(style) = &atom_style {
+    if let LammpsAtomStyle::Other(style) = atom_style {
         return Err(LammpsDataError::UnsupportedAtomStyle {
             style: style.clone(),
         });
     }
+    Ok(())
+}
 
-    let mut cur = LineCursor::new(text);
-    // Line 1: unconditionally ignored comment line.
-    cur.next();
-
-    let mut counts: Vec<(String, i64)> = Vec::new();
-    let mut lo = [0.0f64; 3];
-    let mut hi = [0.0f64; 3];
+fn read_lammps_header(
+    cursor: &mut LineCursor<'_>,
+    limits: &LammpsDataParseLimits,
+) -> Result<ParsedLammpsHeader, LammpsDataError> {
+    cursor.next();
+    let mut counts = Vec::new();
+    let mut lo = [0.0; 3];
+    let mut hi = [0.0; 3];
     let mut have_axis = [false; 3];
-    let mut tilt: Option<[f64; 3]> = None;
-
-    // Header block: classify lines until we hit the first section-name
-    // line (classify_header_line returns Ok(None) for both blanks and
-    // that boundary; blanks are skipped, the boundary line is left
-    // un-consumed for the section loop below).
+    let mut tilt = None;
     loop {
-        let Some(raw) = cur.peek() else {
+        let Some(raw) = cursor.peek() else {
             return Err(LammpsDataError::TruncatedInput {
                 context: "header block (no sections found)",
             });
         };
-        let line_no = cur.line_no();
-        match classify_header_line(raw, line_no)? {
+        match classify_header_line(raw, cursor.line_no())? {
             Some(HeaderLine::Count { label, value }) => {
                 if counts.len() >= limits.max_header_counts {
                     return Err(LammpsDataError::ResourceLimit {
@@ -738,64 +740,276 @@ pub fn parse_lammps_data_with_limits(
                     });
                 }
                 counts.push((label, value));
-                cur.next();
+                cursor.next();
             }
             Some(HeaderLine::BoxPair { axis, lo: l, hi: h }) => {
                 lo[axis] = l;
                 hi[axis] = h;
                 have_axis[axis] = true;
-                cur.next();
+                cursor.next();
             }
             Some(HeaderLine::Tilt { xy, xz, yz }) => {
                 tilt = Some([xy, xz, yz]);
-                cur.next();
+                cursor.next();
             }
-            None => {
-                if strip_comment(raw).split_whitespace().next().is_none() {
-                    // Blank line -- skip and keep scanning the header.
-                    cur.next();
-                    continue;
-                }
-                // First section-name line -- stop, leave it for the
-                // section loop.
-                break;
+            None if strip_comment(raw).split_whitespace().next().is_none() => {
+                cursor.next();
             }
+            None => break,
         }
     }
-
-    if !have_axis.iter().all(|&a| a) {
+    if !have_axis.iter().all(|axis| *axis) {
         return Err(LammpsDataError::InvalidBox {
-            reason: "missing one or more of xlo/xhi, ylo/yhi, zlo/zhi bound lines".to_string(),
+            reason: "missing one or more of xlo/xhi, ylo/yhi, zlo/zhi bound lines".into(),
         });
     }
     let simulation_box = LammpsBox { lo, hi, tilt };
     simulation_box
         .validate()
         .map_err(|reason| LammpsDataError::InvalidBox { reason })?;
+    Ok(ParsedLammpsHeader {
+        counts,
+        simulation_box,
+    })
+}
 
-    let mut masses: Vec<LammpsMass> = Vec::new();
-    let mut atoms: Vec<LammpsAtom> = Vec::new();
-    // Source line number for each `atoms[i]`, index-parallel -- used only
-    // for the `DuplicateAtomId` diagnostic below (not retained on
-    // `LammpsData` itself, which has no line-number fields).
-    let mut atom_lines: Vec<usize> = Vec::new();
-    let mut velocities: Vec<LammpsVelocity> = Vec::new();
-    let mut bonds: Vec<LammpsBond> = Vec::new();
-    let mut unparsed_sections: Vec<(String, String)> = Vec::new();
+fn section_row_limit(name: &str, limits: &LammpsDataParseLimits) -> usize {
+    match name {
+        "Masses" => limits.max_masses,
+        "Atoms" => limits.max_atoms,
+        "Velocities" => limits.max_velocities,
+        "Bonds" => limits.max_bonds,
+        _ => usize::MAX,
+    }
+}
+
+fn is_typed_lammps_section(name: &str) -> bool {
+    matches!(name, "Masses" | "Atoms" | "Velocities" | "Bonds")
+}
+
+fn read_section_rows<'a>(
+    cursor: &mut LineCursor<'a>,
+    name: &str,
+    limits: &LammpsDataParseLimits,
+) -> Result<Vec<(usize, &'a str)>, LammpsDataError> {
+    let mut rows = Vec::new();
+    let row_limit = section_row_limit(name, limits);
+    let mut opaque_bytes = 0usize;
+    while let Some(raw) = cursor.peek() {
+        let Some(first) = strip_comment(raw).split_whitespace().next() else {
+            cursor.next();
+            continue;
+        };
+        if !looks_numeric(first) {
+            break;
+        }
+        if rows.len() >= row_limit {
+            return Err(LammpsDataError::ResourceLimit {
+                resource: "section rows",
+                actual: rows.len() + 1,
+                limit: row_limit,
+            });
+        }
+        opaque_bytes = opaque_bytes.saturating_add(raw.len());
+        if !is_typed_lammps_section(name) && opaque_bytes > limits.max_opaque_section_bytes {
+            return Err(LammpsDataError::ResourceLimit {
+                resource: "opaque section bytes",
+                actual: opaque_bytes,
+                limit: limits.max_opaque_section_bytes,
+            });
+        }
+        rows.push((cursor.line_no(), raw));
+        cursor.next();
+    }
+    Ok(rows)
+}
+
+fn malformed_row(section: &str, line: usize, raw: &str) -> LammpsDataError {
+    LammpsDataError::MalformedRow {
+        section: section.into(),
+        line,
+        detail: raw.into(),
+    }
+}
+
+fn parse_mass_rows(
+    name: &str,
+    rows: Vec<(usize, &str)>,
+) -> Result<Vec<LammpsMass>, LammpsDataError> {
+    rows.into_iter()
+        .map(|(line, raw)| {
+            let fields = strip_comment(raw).split_whitespace().collect::<Vec<_>>();
+            if fields.len() != 2 {
+                return Err(malformed_row(name, line, raw));
+            }
+            Ok(LammpsMass {
+                atom_type: parse_int(fields[0], name, line, raw)?,
+                mass: parse_finite(fields[1], name, line, raw)?,
+            })
+        })
+        .collect()
+}
+
+fn parse_image_flags(
+    fields: &[&str],
+    base: usize,
+    section: &str,
+    line: usize,
+    raw: &str,
+) -> Result<([i32; 3], usize), LammpsDataError> {
+    let mut image = [0; 3];
+    for (offset, value) in image.iter_mut().enumerate() {
+        *value = fields[base + offset]
+            .parse()
+            .map_err(|_| malformed_row(section, line, raw))?;
+    }
+    Ok((image, base))
+}
+
+fn parse_atom_row(
+    style: &LammpsAtomStyle,
+    section: &str,
+    line: usize,
+    raw: &str,
+) -> Result<LammpsAtom, LammpsDataError> {
+    let fields = strip_comment(raw).split_whitespace().collect::<Vec<_>>();
+    let base = style
+        .base_field_count()
+        .expect("unsupported atom styles are rejected before parsing");
+    let image = if fields.len() == base {
+        None
+    } else if fields.len() == base + 3 {
+        Some(parse_image_flags(&fields, base, section, line, raw)?.0)
+    } else {
+        return Err(malformed_row(section, line, raw));
+    };
+    let fields = &fields[..base];
+    let id = parse_int(fields[0], section, line, raw)?;
+    let (molecule_id, type_index) = match style {
+        LammpsAtomStyle::Molecular | LammpsAtomStyle::Full => {
+            (Some(parse_int(fields[1], section, line, raw)?), 2)
+        }
+        _ => (None, 1),
+    };
+    let atom_type = parse_int(fields[type_index], section, line, raw)?;
+    let mut coordinate_index = type_index + 1;
+    let charge = match style {
+        LammpsAtomStyle::Charge | LammpsAtomStyle::Full => {
+            let charge = parse_finite(fields[coordinate_index], section, line, raw)?;
+            coordinate_index += 1;
+            Some(charge)
+        }
+        _ => None,
+    };
+    Ok(LammpsAtom {
+        id,
+        molecule_id,
+        atom_type,
+        charge,
+        x: parse_finite(fields[coordinate_index], section, line, raw)?,
+        y: parse_finite(fields[coordinate_index + 1], section, line, raw)?,
+        z: parse_finite(fields[coordinate_index + 2], section, line, raw)?,
+        image,
+    })
+}
+
+fn parse_atom_rows(
+    style: &LammpsAtomStyle,
+    name: &str,
+    rows: Vec<(usize, &str)>,
+) -> Result<(Vec<LammpsAtom>, Vec<usize>), LammpsDataError> {
+    let mut atoms = Vec::with_capacity(rows.len());
+    let mut lines = Vec::with_capacity(rows.len());
+    for (line, raw) in rows {
+        atoms.push(parse_atom_row(style, name, line, raw)?);
+        lines.push(line);
+    }
+    Ok((atoms, lines))
+}
+
+fn parse_velocity_rows(
+    name: &str,
+    rows: Vec<(usize, &str)>,
+) -> Result<Vec<LammpsVelocity>, LammpsDataError> {
+    rows.into_iter()
+        .map(|(line, raw)| {
+            let fields = strip_comment(raw).split_whitespace().collect::<Vec<_>>();
+            if fields.len() != 4 {
+                return Err(malformed_row(name, line, raw));
+            }
+            Ok(LammpsVelocity {
+                atom_id: parse_int(fields[0], name, line, raw)?,
+                vx: parse_finite(fields[1], name, line, raw)?,
+                vy: parse_finite(fields[2], name, line, raw)?,
+                vz: parse_finite(fields[3], name, line, raw)?,
+            })
+        })
+        .collect()
+}
+
+fn parse_bond_rows(
+    name: &str,
+    rows: Vec<(usize, &str)>,
+) -> Result<Vec<LammpsBond>, LammpsDataError> {
+    rows.into_iter()
+        .map(|(line, raw)| {
+            let fields = strip_comment(raw).split_whitespace().collect::<Vec<_>>();
+            if fields.len() != 4 {
+                return Err(malformed_row(name, line, raw));
+            }
+            Ok(LammpsBond {
+                id: parse_int(fields[0], name, line, raw)?,
+                bond_type: parse_int(fields[1], name, line, raw)?,
+                atom1: parse_int(fields[2], name, line, raw)?,
+                atom2: parse_int(fields[3], name, line, raw)?,
+            })
+        })
+        .collect()
+}
+
+fn parse_lammps_section(
+    parsed: &mut ParsedLammpsSections,
+    style: &LammpsAtomStyle,
+    name: String,
+    rows: Vec<(usize, &str)>,
+) -> Result<(), LammpsDataError> {
+    match name.as_str() {
+        "Masses" => parsed.masses.extend(parse_mass_rows(&name, rows)?),
+        "Atoms" => {
+            let (atoms, lines) = parse_atom_rows(style, &name, rows)?;
+            parsed.atoms.extend(atoms);
+            parsed.atom_lines.extend(lines);
+        }
+        "Velocities" => parsed.velocities.extend(parse_velocity_rows(&name, rows)?),
+        "Bonds" => parsed.bonds.extend(parse_bond_rows(&name, rows)?),
+        _ => parsed.unparsed.push((
+            name,
+            rows.iter()
+                .map(|(_, row)| *row)
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )),
+    }
+    Ok(())
+}
+
+fn read_lammps_sections(
+    cursor: &mut LineCursor<'_>,
+    style: &LammpsAtomStyle,
+    limits: &LammpsDataParseLimits,
+) -> Result<ParsedLammpsSections, LammpsDataError> {
+    let mut parsed = ParsedLammpsSections::default();
     let mut section_count = 0;
-
-    // Body: sequence of sections.
-    while let Some(raw) = cur.peek() {
+    while let Some(raw) = cursor.peek() {
         let name = strip_comment(raw)
             .split_whitespace()
             .collect::<Vec<_>>()
             .join(" ");
         if name.is_empty() {
-            // Blank line between sections.
-            cur.next();
+            cursor.next();
             continue;
         }
-        cur.next(); // consume the section-name line
+        cursor.next();
         section_count += 1;
         if section_count > limits.max_sections {
             return Err(LammpsDataError::ResourceLimit {
@@ -804,256 +1018,98 @@ pub fn parse_lammps_data_with_limits(
                 limit: limits.max_sections,
             });
         }
-
         if name.ends_with("Type Labels") {
             return Err(LammpsDataError::TypeLabelsUnsupported { section: name });
         }
-
-        // Mandatory "next line is always skipped" per read_data.html.
-        if cur.next().is_none() {
+        if cursor.next().is_none() {
             return Err(LammpsDataError::TruncatedInput {
                 context: "line after section header",
             });
         }
-
-        // Collect this section's data rows: everything up to (but not
-        // including) the next line whose first token isn't numeric, or
-        // EOF. Blank lines within a section are skipped, not counted as
-        // rows or as section boundaries.
-        let mut rows: Vec<(usize, &str)> = Vec::new();
-        let row_limit = match name.as_str() {
-            "Masses" => limits.max_masses,
-            "Atoms" => limits.max_atoms,
-            "Velocities" => limits.max_velocities,
-            "Bonds" => limits.max_bonds,
-            _ => usize::MAX,
-        };
-        let mut opaque_bytes = 0usize;
-        while let Some(row_raw) = cur.peek() {
-            let stripped = strip_comment(row_raw);
-            let Some(first_tok) = stripped.split_whitespace().next() else {
-                cur.next(); // blank line inside a section
-                continue;
-            };
-            if !looks_numeric(first_tok) {
-                break; // next section header
-            }
-            if rows.len() >= row_limit {
-                return Err(LammpsDataError::ResourceLimit {
-                    resource: "section rows",
-                    actual: rows.len() + 1,
-                    limit: row_limit,
-                });
-            }
-            opaque_bytes = opaque_bytes.saturating_add(row_raw.len());
-            if name != "Masses"
-                && name != "Atoms"
-                && name != "Velocities"
-                && name != "Bonds"
-                && opaque_bytes > limits.max_opaque_section_bytes
-            {
-                return Err(LammpsDataError::ResourceLimit {
-                    resource: "opaque section bytes",
-                    actual: opaque_bytes,
-                    limit: limits.max_opaque_section_bytes,
-                });
-            }
-            rows.push((cur.line_no(), row_raw));
-            cur.next();
-        }
-
-        match name.as_str() {
-            "Masses" => {
-                for (line_no, row_raw) in rows {
-                    let content = strip_comment(row_raw);
-                    let toks: Vec<&str> = content.split_whitespace().collect();
-                    if toks.len() != 2 {
-                        return Err(LammpsDataError::MalformedRow {
-                            section: name.clone(),
-                            line: line_no,
-                            detail: row_raw.to_string(),
-                        });
-                    }
-                    let atom_type = parse_int(toks[0], &name, line_no, row_raw)?;
-                    let mass = parse_finite(toks[1], &name, line_no, row_raw)?;
-                    masses.push(LammpsMass { atom_type, mass });
-                }
-            }
-            "Atoms" => {
-                let base = atom_style.base_field_count().expect(
-                    "atom_style is one of the 4 supported styles here -- Other was rejected above",
-                );
-                for (line_no, row_raw) in rows {
-                    let content = strip_comment(row_raw);
-                    let toks: Vec<&str> = content.split_whitespace().collect();
-                    let (fields, image) = if toks.len() == base {
-                        (&toks[..], None)
-                    } else if toks.len() == base + 3 {
-                        let mut img = [0i32; 3];
-                        for (k, slot) in img.iter_mut().enumerate() {
-                            *slot = toks[base + k].parse().map_err(|_| {
-                                LammpsDataError::MalformedRow {
-                                    section: name.clone(),
-                                    line: line_no,
-                                    detail: row_raw.to_string(),
-                                }
-                            })?;
-                        }
-                        (&toks[..base], Some(img))
-                    } else {
-                        return Err(LammpsDataError::MalformedRow {
-                            section: name.clone(),
-                            line: line_no,
-                            detail: row_raw.to_string(),
-                        });
-                    };
-
-                    let id = parse_int(fields[0], &name, line_no, row_raw)?;
-                    let (molecule_id, type_idx) = match atom_style {
-                        LammpsAtomStyle::Molecular | LammpsAtomStyle::Full => {
-                            (Some(parse_int(fields[1], &name, line_no, row_raw)?), 2)
-                        }
-                        _ => (None, 1),
-                    };
-                    let atom_type = parse_int(fields[type_idx], &name, line_no, row_raw)?;
-                    let mut next = type_idx + 1;
-                    let charge = match atom_style {
-                        LammpsAtomStyle::Charge | LammpsAtomStyle::Full => {
-                            let q = parse_finite(fields[next], &name, line_no, row_raw)?;
-                            next += 1;
-                            Some(q)
-                        }
-                        _ => None,
-                    };
-                    let x = parse_finite(fields[next], &name, line_no, row_raw)?;
-                    let y = parse_finite(fields[next + 1], &name, line_no, row_raw)?;
-                    let z = parse_finite(fields[next + 2], &name, line_no, row_raw)?;
-
-                    atoms.push(LammpsAtom {
-                        id,
-                        molecule_id,
-                        atom_type,
-                        charge,
-                        x,
-                        y,
-                        z,
-                        image,
-                    });
-                    atom_lines.push(line_no);
-                }
-            }
-            "Velocities" => {
-                for (line_no, row_raw) in rows {
-                    let content = strip_comment(row_raw);
-                    let toks: Vec<&str> = content.split_whitespace().collect();
-                    if toks.len() != 4 {
-                        return Err(LammpsDataError::MalformedRow {
-                            section: name.clone(),
-                            line: line_no,
-                            detail: row_raw.to_string(),
-                        });
-                    }
-                    velocities.push(LammpsVelocity {
-                        atom_id: parse_int(toks[0], &name, line_no, row_raw)?,
-                        vx: parse_finite(toks[1], &name, line_no, row_raw)?,
-                        vy: parse_finite(toks[2], &name, line_no, row_raw)?,
-                        vz: parse_finite(toks[3], &name, line_no, row_raw)?,
-                    });
-                }
-            }
-            "Bonds" => {
-                for (line_no, row_raw) in rows {
-                    let content = strip_comment(row_raw);
-                    let toks: Vec<&str> = content.split_whitespace().collect();
-                    if toks.len() != 4 {
-                        return Err(LammpsDataError::MalformedRow {
-                            section: name.clone(),
-                            line: line_no,
-                            detail: row_raw.to_string(),
-                        });
-                    }
-                    bonds.push(LammpsBond {
-                        id: parse_int(toks[0], &name, line_no, row_raw)?,
-                        bond_type: parse_int(toks[1], &name, line_no, row_raw)?,
-                        atom1: parse_int(toks[2], &name, line_no, row_raw)?,
-                        atom2: parse_int(toks[3], &name, line_no, row_raw)?,
-                    });
-                }
-            }
-            _ => {
-                let raw_text = rows.iter().map(|(_, r)| *r).collect::<Vec<_>>().join("\n");
-                unparsed_sections.push((name.clone(), raw_text));
-            }
-        }
+        let rows = read_section_rows(cursor, &name, limits)?;
+        parse_lammps_section(&mut parsed, style, name, rows)?;
     }
+    Ok(parsed)
+}
 
-    // Cross-checks.
-    if let Some(declared) = counts.iter().find(|(k, _)| k == "atoms").map(|(_, v)| *v) {
-        if declared != atoms.len() as i64 {
-            return Err(LammpsDataError::AtomCountMismatch {
-                declared,
-                actual: atoms.len(),
-            });
-        }
-    } else {
+fn validate_lammps_references(
+    counts: &[(String, i64)],
+    parsed: &ParsedLammpsSections,
+) -> Result<(), LammpsDataError> {
+    let Some(declared) = counts
+        .iter()
+        .find(|(key, _)| key == "atoms")
+        .map(|(_, n)| *n)
+    else {
         return Err(LammpsDataError::MalformedHeader {
             line: 0,
-            detail: "missing required 'N atoms' header count line".to_string(),
+            detail: "missing required 'N atoms' header count line".into(),
+        });
+    };
+    if declared != parsed.atoms.len() as i64 {
+        return Err(LammpsDataError::AtomCountMismatch {
+            declared,
+            actual: parsed.atoms.len(),
         });
     }
-
-    // Duplicate atom-ID check: O(n log n) via a sorted (id, source line)
-    // copy -- no hash container anywhere in this module (project
-    // determinism rule). Uses `atom_lines` (the real source line each
-    // `atoms[i]` was parsed from), not the atom's position in `atoms`, so
-    // the reported line numbers are genuinely useful for locating the
-    // offending rows in the original file.
-    let mut by_id: Vec<(i64, usize)> = atoms
+    let mut by_id = parsed
+        .atoms
         .iter()
-        .zip(&atom_lines)
-        .map(|(a, &line)| (a.id, line))
-        .collect();
+        .zip(&parsed.atom_lines)
+        .map(|(atom, &line)| (atom.id, line))
+        .collect::<Vec<_>>();
     by_id.sort_unstable_by_key(|(id, _)| *id);
-    for w in by_id.windows(2) {
-        if w[0].0 == w[1].0 {
-            // `sort_unstable_by_key` doesn't preserve original relative
-            // order for equal ids, so recover chronological order via
-            // min/max rather than assuming `w[0]` was read first.
-            let (first_line, line) = (w[0].1.min(w[1].1), w[0].1.max(w[1].1));
-            return Err(LammpsDataError::DuplicateAtomId {
-                id: w[0].0,
-                first_line,
-                line,
-            });
+    if let Some(pair) = by_id.windows(2).find(|pair| pair[0].0 == pair[1].0) {
+        return Err(LammpsDataError::DuplicateAtomId {
+            id: pair[0].0,
+            first_line: pair[0].1.min(pair[1].1),
+            line: pair[0].1.max(pair[1].1),
+        });
+    }
+    let mut ids = parsed.atoms.iter().map(|atom| atom.id).collect::<Vec<_>>();
+    ids.sort_unstable();
+    for bond in &parsed.bonds {
+        for atom_id in [bond.atom1, bond.atom2] {
+            if ids.binary_search(&atom_id).is_err() {
+                return Err(LammpsDataError::BondReferencesUnknownAtom {
+                    bond_id: bond.id,
+                    atom_id,
+                });
+            }
         }
     }
+    Ok(())
+}
 
-    let mut sorted_ids: Vec<i64> = atoms.iter().map(|a| a.id).collect();
-    sorted_ids.sort_unstable();
-    for bond in &bonds {
-        if sorted_ids.binary_search(&bond.atom1).is_err() {
-            return Err(LammpsDataError::BondReferencesUnknownAtom {
-                bond_id: bond.id,
-                atom_id: bond.atom1,
-            });
-        }
-        if sorted_ids.binary_search(&bond.atom2).is_err() {
-            return Err(LammpsDataError::BondReferencesUnknownAtom {
-                bond_id: bond.id,
-                atom_id: bond.atom2,
-            });
-        }
-    }
+/// Parse a LAMMPS data file. `atom_style` must be supplied by the caller
+/// (see module docs -- it cannot be recovered from the file alone).
+pub fn parse_lammps_data(
+    text: &str,
+    atom_style: LammpsAtomStyle,
+) -> Result<LammpsData, LammpsDataError> {
+    parse_lammps_data_with_limits(text, atom_style, &LammpsDataParseLimits::default())
+}
 
+/// Parse a LAMMPS data file with explicit resource limits.
+pub fn parse_lammps_data_with_limits(
+    text: &str,
+    atom_style: LammpsAtomStyle,
+    limits: &LammpsDataParseLimits,
+) -> Result<LammpsData, LammpsDataError> {
+    validate_lammps_input(text, &atom_style, limits)?;
+    let mut cur = LineCursor::new(text);
+    let header = read_lammps_header(&mut cur, limits)?;
+    let parsed = read_lammps_sections(&mut cur, &atom_style, limits)?;
+    validate_lammps_references(&header.counts, &parsed)?;
     Ok(LammpsData {
-        counts,
+        counts: header.counts,
         atom_style,
-        simulation_box,
-        masses,
-        atoms,
-        velocities,
-        bonds,
-        unparsed_sections,
+        simulation_box: header.simulation_box,
+        masses: parsed.masses,
+        atoms: parsed.atoms,
+        velocities: parsed.velocities,
+        bonds: parsed.bonds,
+        unparsed_sections: parsed.unparsed,
     })
 }
 
@@ -1153,509 +1209,5 @@ pub fn write_lammps_data(data: &LammpsData) -> String {
 // ===========================================================================
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn atomic_fixture() -> &'static str {
-        "comment line, ignored\n\
-\n\
-3 atoms\n\
-1 atom types\n\
-2 bonds\n\
-1 bond types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Masses\n\
-\n\
-1 12.011\n\
-\n\
-Atoms # atomic\n\
-\n\
-1 1 0.0 0.0 0.0\n\
-2 1 1.5 0.0 0.0\n\
-3 1 3.0 0.0 0.0\n\
-\n\
-Bonds\n\
-\n\
-1 1 1 2\n\
-2 1 2 3\n\
-"
-    }
-
-    #[test]
-    fn parses_atomic_fixture() {
-        let d = parse_lammps_data(atomic_fixture(), LammpsAtomStyle::Atomic).unwrap();
-        assert_eq!(d.atoms.len(), 3);
-        assert_eq!(d.bonds.len(), 2);
-        assert_eq!(d.masses.len(), 1);
-        assert_eq!(d.atoms[0].molecule_id, None);
-        assert_eq!(d.atoms[0].charge, None);
-        assert_eq!(d.count("atoms"), Some(3));
-        assert_eq!(d.count("bond types"), Some(1));
-    }
-
-    #[test]
-    fn round_trip_atomic_style() {
-        let d = parse_lammps_data(atomic_fixture(), LammpsAtomStyle::Atomic).unwrap();
-        let written = write_lammps_data(&d);
-        let d2 = parse_lammps_data(&written, LammpsAtomStyle::Atomic).unwrap();
-        assert_eq!(d, d2);
-    }
-
-    fn charge_fixture() -> String {
-        "comment\n\
-\n\
-2 atoms\n\
-1 atom types\n\
-\n\
--5.0 5.0 xlo xhi\n\
--5.0 5.0 ylo yhi\n\
--5.0 5.0 zlo zhi\n\
-\n\
-Atoms # charge\n\
-\n\
-1 1 -0.5 0.0 0.0 0.0\n\
-2 1 0.5 1.0 0.0 0.0\n\
-"
-        .to_string()
-    }
-
-    #[test]
-    fn round_trip_charge_style() {
-        let d = parse_lammps_data(&charge_fixture(), LammpsAtomStyle::Charge).unwrap();
-        assert_eq!(d.atoms[0].charge, Some(-0.5));
-        assert_eq!(d.atoms[0].molecule_id, None);
-        let written = write_lammps_data(&d);
-        let d2 = parse_lammps_data(&written, LammpsAtomStyle::Charge).unwrap();
-        assert_eq!(d, d2);
-    }
-
-    fn molecular_fixture() -> String {
-        "comment\n\
-\n\
-2 atoms\n\
-1 atom types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Atoms # molecular\n\
-\n\
-1 1 1 0.0 0.0 0.0\n\
-2 1 1 1.0 0.0 0.0\n\
-"
-        .to_string()
-    }
-
-    #[test]
-    fn round_trip_molecular_style() {
-        let d = parse_lammps_data(&molecular_fixture(), LammpsAtomStyle::Molecular).unwrap();
-        assert_eq!(d.atoms[0].molecule_id, Some(1));
-        assert_eq!(d.atoms[0].charge, None);
-        let written = write_lammps_data(&d);
-        let d2 = parse_lammps_data(&written, LammpsAtomStyle::Molecular).unwrap();
-        assert_eq!(d, d2);
-    }
-
-    fn full_fixture_with_images() -> String {
-        "comment\n\
-\n\
-2 atoms\n\
-1 atom types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Atoms # full\n\
-\n\
-1 1 1 -0.834 0.0 0.0 0.0 1 0 0\n\
-2 1 1 0.417 1.0 0.0 0.0 0 -1 2\n\
-"
-        .to_string()
-    }
-
-    #[test]
-    fn round_trip_full_style_with_image_flags() {
-        let d = parse_lammps_data(&full_fixture_with_images(), LammpsAtomStyle::Full).unwrap();
-        assert_eq!(d.atoms[0].molecule_id, Some(1));
-        assert_eq!(d.atoms[0].charge, Some(-0.834));
-        assert_eq!(d.atoms[0].image, Some([1, 0, 0]));
-        assert_eq!(d.atoms[1].image, Some([0, -1, 2]));
-        let written = write_lammps_data(&d);
-        let d2 = parse_lammps_data(&written, LammpsAtomStyle::Full).unwrap();
-        assert_eq!(d, d2);
-    }
-
-    #[test]
-    fn round_trip_triclinic_box() {
-        let text = "comment\n\
-\n\
-1 atoms\n\
-1 atom types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-1.0 2.0 0.5 xy xz yz\n\
-\n\
-Atoms # atomic\n\
-\n\
-1 1 5.0 5.0 5.0\n\
-";
-        let d = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap();
-        assert_eq!(d.simulation_box.tilt, Some([1.0, 2.0, 0.5]));
-        let written = write_lammps_data(&d);
-        let d2 = parse_lammps_data(&written, LammpsAtomStyle::Atomic).unwrap();
-        assert_eq!(d, d2);
-    }
-
-    #[test]
-    fn opaque_sections_round_trip_as_exact_fixed_point() {
-        let text = "comment\n\
-\n\
-2 atoms\n\
-1 atom types\n\
-1 angle types\n\
-1 dihedral types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Atoms # atomic\n\
-\n\
-1 1 0.0 0.0 0.0\n\
-2 1 1.0 0.0 0.0\n\
-\n\
-Angles\n\
-\n\
-1 1 1 2 1 # a comment on an opaque row\n\
-\n\
-Angle Coeffs\n\
-\n\
-1 100.0 109.5\n\
-";
-        let d1 = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap();
-        assert_eq!(
-            d1.unparsed_sections,
-            vec![
-                (
-                    "Angles".to_string(),
-                    "1 1 1 2 1 # a comment on an opaque row".to_string()
-                ),
-                ("Angle Coeffs".to_string(), "1 100.0 109.5".to_string()),
-            ]
-        );
-        let written = write_lammps_data(&d1);
-        let d2 = parse_lammps_data(&written, LammpsAtomStyle::Atomic).unwrap();
-        assert_eq!(d2.unparsed_sections, d1.unparsed_sections);
-        // Fixed point: parsing the rewritten file again changes nothing further.
-        let written2 = write_lammps_data(&d2);
-        let d3 = parse_lammps_data(&written2, LammpsAtomStyle::Atomic).unwrap();
-        assert_eq!(d3, d2);
-    }
-
-    #[test]
-    fn zero_row_opaque_section_is_a_fixed_point() {
-        let text = "comment\n\
-\n\
-1 atoms\n\
-1 atom types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Atoms # atomic\n\
-\n\
-1 1 0.0 0.0 0.0\n\
-\n\
-Pair Coeffs\n\
-\n\
-";
-        let d1 = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap();
-        assert_eq!(
-            d1.unparsed_sections,
-            vec![("Pair Coeffs".to_string(), String::new())]
-        );
-        let written = write_lammps_data(&d1);
-        let d2 = parse_lammps_data(&written, LammpsAtomStyle::Atomic).unwrap();
-        assert_eq!(d2.unparsed_sections, d1.unparsed_sections);
-    }
-
-    #[test]
-    fn atom_count_mismatch_is_typed_error() {
-        let text = "comment\n\
-\n\
-5 atoms\n\
-1 atom types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Atoms # atomic\n\
-\n\
-1 1 0.0 0.0 0.0\n\
-2 1 1.0 0.0 0.0\n\
-";
-        let err = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap_err();
-        assert_eq!(
-            err,
-            LammpsDataError::AtomCountMismatch {
-                declared: 5,
-                actual: 2
-            }
-        );
-    }
-
-    #[test]
-    fn malformed_header_is_typed_error() {
-        // "not" doesn't parse as numeric, so this reads as "no header
-        // lines at all, first section is named 'not a valid header line
-        // at all @@@'" -- no box bounds were ever declared, so this
-        // surfaces as InvalidBox (missing bound lines), not
-        // TruncatedInput.
-        let text = "comment\nnot a valid header line at all @@@\n";
-        let err = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap_err();
-        assert!(matches!(err, LammpsDataError::InvalidBox { .. }));
-
-        // A genuinely malformed header line: a leading number that
-        // matches none of the known header shapes (not a `<count>
-        // <label>` count line, not a 2-float box-bound pair, not a
-        // 3-float tilt line).
-        let text2 = "comment\n5 3 3 3 3 3 3\n";
-        let err2 = parse_lammps_data(text2, LammpsAtomStyle::Atomic).unwrap_err();
-        assert!(matches!(err2, LammpsDataError::MalformedHeader { .. }));
-    }
-
-    #[test]
-    fn non_finite_value_is_typed_error() {
-        let text = "comment\n\
-\n\
-1 atoms\n\
-1 atom types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Atoms # atomic\n\
-\n\
-1 1 NaN 0.0 0.0\n\
-";
-        let err = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap_err();
-        assert!(matches!(
-            err,
-            LammpsDataError::NonFiniteValue { section, .. } if section == "Atoms"
-        ));
-    }
-
-    #[test]
-    fn unsupported_atom_style_is_typed_error() {
-        let err = parse_lammps_data(
-            atomic_fixture(),
-            LammpsAtomStyle::Other("sphere".to_string()),
-        )
-        .unwrap_err();
-        assert_eq!(
-            err,
-            LammpsDataError::UnsupportedAtomStyle {
-                style: "sphere".to_string()
-            }
-        );
-    }
-
-    #[test]
-    fn duplicate_atom_id_is_typed_error() {
-        let text = "comment\n\
-\n\
-2 atoms\n\
-1 atom types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Atoms # atomic\n\
-\n\
-1 1 0.0 0.0 0.0\n\
-1 1 1.0 0.0 0.0\n\
-";
-        let err = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap_err();
-        // Pin the actual source line numbers (line 12: first `1 1 0.0 0.0
-        // 0.0` row; line 13: the duplicate `1 1 1.0 0.0 0.0` row) so a
-        // regression back to reporting the atom's position instead of its
-        // real source line is caught.
-        assert_eq!(
-            err,
-            LammpsDataError::DuplicateAtomId {
-                id: 1,
-                first_line: 12,
-                line: 13,
-            }
-        );
-    }
-
-    #[test]
-    fn bond_referencing_unknown_atom_is_typed_error() {
-        let text = "comment\n\
-\n\
-2 atoms\n\
-1 atom types\n\
-1 bond types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Atoms # atomic\n\
-\n\
-1 1 0.0 0.0 0.0\n\
-2 1 1.0 0.0 0.0\n\
-\n\
-Bonds\n\
-\n\
-1 1 1 99\n\
-";
-        let err = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap_err();
-        assert_eq!(
-            err,
-            LammpsDataError::BondReferencesUnknownAtom {
-                bond_id: 1,
-                atom_id: 99
-            }
-        );
-    }
-
-    #[test]
-    fn type_labels_framework_is_rejected_not_misparsed() {
-        let text = "comment\n\
-\n\
-1 atoms\n\
-1 atom types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Atom Type Labels\n\
-\n\
-1 C\n\
-\n\
-Atoms # atomic\n\
-\n\
-1 1 0.0 0.0 0.0\n\
-";
-        let err = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap_err();
-        assert_eq!(
-            err,
-            LammpsDataError::TypeLabelsUnsupported {
-                section: "Atom Type Labels".to_string()
-            }
-        );
-    }
-
-    #[test]
-    fn trailing_comments_are_stripped_on_typed_rows() {
-        let text = "comment\n\
-\n\
-1 atoms\n\
-1 atom types\n\
-\n\
-0.0 10.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Masses\n\
-\n\
-1 12.011 # carbon\n\
-\n\
-Atoms # atomic\n\
-\n\
-1 1 0.0 0.0 0.0 # salt ion\n\
-";
-        let d = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap();
-        assert_eq!(d.masses[0].mass, 12.011);
-        assert_eq!(d.atoms[0].x, 0.0);
-    }
-
-    #[test]
-    fn invalid_box_is_typed_error() {
-        let text = "comment\n\
-\n\
-1 atoms\n\
-1 atom types\n\
-\n\
-10.0 0.0 xlo xhi\n\
-0.0 10.0 ylo yhi\n\
-0.0 10.0 zlo zhi\n\
-\n\
-Atoms # atomic\n\
-\n\
-1 1 0.0 0.0 0.0\n\
-";
-        let err = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap_err();
-        assert!(matches!(err, LammpsDataError::InvalidBox { .. }));
-    }
-
-    #[test]
-    fn bounded_parser_rejects_input_and_line_limits() {
-        let text = atomic_fixture();
-        assert!(matches!(
-            parse_lammps_data_with_limits(
-                text,
-                LammpsAtomStyle::Atomic,
-                &LammpsDataParseLimits {
-                    max_input_bytes: 8,
-                    ..Default::default()
-                }
-            ),
-            Err(LammpsDataError::ResourceLimit {
-                resource: "input bytes",
-                ..
-            })
-        ));
-
-        let long_line = format!("{}\n{}", "x".repeat(32), text);
-        assert!(matches!(
-            parse_lammps_data_with_limits(
-                &long_line,
-                LammpsAtomStyle::Atomic,
-                &LammpsDataParseLimits {
-                    max_line_bytes: 16,
-                    ..Default::default()
-                }
-            ),
-            Err(LammpsDataError::ResourceLimit {
-                resource: "line bytes",
-                ..
-            })
-        ));
-    }
-
-    #[test]
-    fn bounded_parser_rejects_typed_section_rows() {
-        let err = parse_lammps_data_with_limits(
-            atomic_fixture(),
-            LammpsAtomStyle::Atomic,
-            &LammpsDataParseLimits {
-                max_atoms: 0,
-                ..Default::default()
-            },
-        )
-        .unwrap_err();
-        assert!(matches!(
-            err,
-            LammpsDataError::ResourceLimit {
-                resource: "section rows",
-                ..
-            }
-        ));
-    }
-}
+#[path = "lammps_data/tests.rs"]
+mod tests;

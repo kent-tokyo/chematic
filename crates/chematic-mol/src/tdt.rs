@@ -79,7 +79,6 @@
 
 use std::io::{BufRead, Write};
 
-use chematic_core::Molecule;
 use chematic_smiles::SmilesError;
 
 use crate::record::MoleculeRecord;
@@ -554,6 +553,158 @@ fn parse_coordinate_list(raw: &str) -> Result<Vec<f64>, String> {
         .collect()
 }
 
+struct TdtFields {
+    smiles: Option<String>,
+    properties: Vec<(String, String)>,
+    name: String,
+    raw_2d: Option<String>,
+    raw_3d: Option<String>,
+}
+
+struct TaggedRecord {
+    line: usize,
+    index: usize,
+    tags: Vec<RawTag>,
+}
+
+fn split_tdt_tags(tags: Vec<RawTag>, name_tag: Option<&str>) -> TdtFields {
+    let mut fields = TdtFields {
+        smiles: None,
+        properties: Vec::new(),
+        name: String::new(),
+        raw_2d: None,
+        raw_3d: None,
+    };
+    for tag in tags {
+        match tag {
+            RawTag::Generic { name, value } if name == "$SMI" => fields.smiles = Some(value),
+            RawTag::Generic { name, value } => {
+                if name_tag == Some(name.as_str()) {
+                    fields.name = value.clone();
+                }
+                set_property(&mut fields.properties, name, value);
+            }
+            RawTag::Coordinates { name, raw } if name == "2D" => fields.raw_2d = Some(raw),
+            RawTag::Coordinates { raw, .. } => fields.raw_3d = Some(raw),
+        }
+    }
+    fields
+}
+
+fn decode_tdt_coordinates<const N: usize>(
+    raw: Option<String>,
+    enabled: bool,
+    tag_name: &'static str,
+    atom_count: usize,
+    line: usize,
+    record_index: usize,
+    properties: &mut Vec<(String, String)>,
+) -> Result<Option<Vec<[f64; N]>>, TdtError> {
+    let Some(raw) = raw else {
+        return Ok(None);
+    };
+    if !enabled {
+        set_property(properties, tag_name.to_owned(), raw);
+        return Ok(None);
+    }
+    let numbers =
+        parse_coordinate_list(&raw).map_err(|detail| TdtError::MalformedCoordinateList {
+            line,
+            record_index,
+            tag_name: tag_name.to_owned(),
+            detail,
+        })?;
+    let expected = N * atom_count;
+    if numbers.len() != expected {
+        return Err(TdtError::MalformedCoordinateList {
+            line,
+            record_index,
+            tag_name: tag_name.to_owned(),
+            detail: format!(
+                "expected {expected} numbers ({N} * {atom_count} atoms), found {}",
+                numbers.len()
+            ),
+        });
+    }
+    Ok(Some(numbers.as_chunks::<N>().0.to_vec()))
+}
+
+fn build_tdt_record(
+    record_line: usize,
+    record_index: usize,
+    tags: Vec<RawTag>,
+    options: &TdtReaderOptions,
+) -> Result<MoleculeRecord, TdtError> {
+    let mut fields = split_tdt_tags(tags, options.name_tag.as_deref());
+    let smiles = fields.smiles.ok_or(TdtError::MissingSmilesTag {
+        line: record_line,
+        record_index,
+    })?;
+    let mol = chematic_smiles::parse(&smiles).map_err(|detail| TdtError::InvalidSmiles {
+        line: record_line,
+        record_index,
+        detail,
+    })?;
+    let coordinates_2d = decode_tdt_coordinates::<2>(
+        fields.raw_2d,
+        options.read_2d,
+        "2D",
+        mol.atom_count(),
+        record_line,
+        record_index,
+        &mut fields.properties,
+    )?;
+    let coordinates_3d = decode_tdt_coordinates::<3>(
+        fields.raw_3d,
+        options.read_3d,
+        "3D",
+        mol.atom_count(),
+        record_line,
+        record_index,
+        &mut fields.properties,
+    )?;
+    Ok(MoleculeRecord {
+        mol,
+        name: fields.name,
+        properties: fields.properties,
+        coordinates_2d,
+        coordinates_3d,
+    })
+}
+
+impl<R: BufRead> TdtRecordReader<R> {
+    fn next_tagged_record(&mut self) -> Option<Result<TaggedRecord, TdtError>> {
+        let read = self.read_record_tags();
+        let record_index = self.record_index;
+        match read {
+            Ok(None) => None,
+            Ok(Some((line, tags))) => {
+                self.record_index += 1;
+                Some(Ok(TaggedRecord {
+                    line,
+                    index: record_index,
+                    tags,
+                }))
+            }
+            Err(error) => {
+                self.record_index += 1;
+                if self.options.strict_parsing {
+                    self.stopped = true;
+                }
+                let error = match error {
+                    TdtError::UnterminatedTag { line, tag_name, .. } => TdtError::UnterminatedTag {
+                        line,
+                        record_index,
+                        tag_name,
+                    },
+                    other => other,
+                };
+                Some(Err(error))
+            }
+        }
+    }
+}
+
 impl<R: BufRead> Iterator for TdtRecordReader<R> {
     type Item = Result<MoleculeRecord, TdtError>;
 
@@ -568,173 +719,15 @@ impl<R: BufRead> Iterator for TdtRecordReader<R> {
             }));
         }
 
-        let (record_line, tags) = match self.read_record_tags() {
-            Ok(None) => return None,
-            Ok(Some(t)) => t,
-            Err(e) => {
-                let record_index = self.record_index;
-                self.record_index += 1;
-                if self.options.strict_parsing {
-                    self.stopped = true;
-                }
-                return Some(Err(match e {
-                    TdtError::UnterminatedTag { line, tag_name, .. } => TdtError::UnterminatedTag {
-                        line,
-                        record_index,
-                        tag_name,
-                    },
-                    other => other,
-                }));
-            }
+        let tagged = match self.next_tagged_record()? {
+            Ok(record) => record,
+            Err(error) => return Some(Err(error)),
         };
-
-        let record_index = self.record_index;
-        self.record_index += 1;
-
-        let mut smi: Option<String> = None;
-        let mut properties: Vec<(String, String)> = Vec::new();
-        let mut name = String::new();
-        let mut coordinates_2d: Option<Vec<[f64; 2]>> = None;
-        let mut coordinates_3d: Option<Vec<[f64; 3]>> = None;
-        let mut raw_2d: Option<String> = None;
-        let mut raw_3d: Option<String> = None;
-
-        for tag in tags {
-            match tag {
-                RawTag::Generic {
-                    name: tag_name,
-                    value,
-                } if tag_name == "$SMI" => {
-                    smi = Some(value);
-                }
-                RawTag::Generic {
-                    name: tag_name,
-                    value,
-                } => {
-                    if self.options.name_tag.as_deref() == Some(tag_name.as_str()) {
-                        name = value.clone();
-                    }
-                    set_property(&mut properties, tag_name, value);
-                }
-                RawTag::Coordinates {
-                    name: tag_name,
-                    raw,
-                } => {
-                    if tag_name == "2D" {
-                        raw_2d = Some(raw);
-                    } else {
-                        raw_3d = Some(raw);
-                    }
-                }
-            }
+        let record = build_tdt_record(tagged.line, tagged.index, tagged.tags, &self.options);
+        if matches!(record, Err(TdtError::InvalidSmiles { .. })) && self.options.strict_parsing {
+            self.stopped = true;
         }
-
-        let Some(smi) = smi else {
-            return Some(Err(TdtError::MissingSmilesTag {
-                line: record_line,
-                record_index,
-            }));
-        };
-
-        let mol: Molecule = match chematic_smiles::parse(&smi) {
-            Ok(m) => m,
-            Err(detail) => {
-                let err = TdtError::InvalidSmiles {
-                    line: record_line,
-                    record_index,
-                    detail,
-                };
-                if self.options.strict_parsing {
-                    self.stopped = true;
-                }
-                return Some(Err(err));
-            }
-        };
-
-        if let Some(raw) = raw_2d {
-            if self.options.read_2d {
-                match parse_coordinate_list(&raw) {
-                    Ok(nums) if nums.len() == 2 * mol.atom_count() => {
-                        coordinates_2d = Some(
-                            nums.as_chunks::<2>()
-                                .0
-                                .iter()
-                                .map(|c| [c[0], c[1]])
-                                .collect(),
-                        );
-                    }
-                    Ok(nums) => {
-                        return Some(Err(TdtError::MalformedCoordinateList {
-                            line: record_line,
-                            record_index,
-                            tag_name: "2D".to_string(),
-                            detail: format!(
-                                "expected {} numbers (2 * {} atoms), found {}",
-                                2 * mol.atom_count(),
-                                mol.atom_count(),
-                                nums.len()
-                            ),
-                        }));
-                    }
-                    Err(detail) => {
-                        return Some(Err(TdtError::MalformedCoordinateList {
-                            line: record_line,
-                            record_index,
-                            tag_name: "2D".to_string(),
-                            detail,
-                        }));
-                    }
-                }
-            } else {
-                set_property(&mut properties, "2D".to_string(), raw);
-            }
-        }
-        if let Some(raw) = raw_3d {
-            if self.options.read_3d {
-                match parse_coordinate_list(&raw) {
-                    Ok(nums) if nums.len() == 3 * mol.atom_count() => {
-                        coordinates_3d = Some(
-                            nums.as_chunks::<3>()
-                                .0
-                                .iter()
-                                .map(|c| [c[0], c[1], c[2]])
-                                .collect(),
-                        );
-                    }
-                    Ok(nums) => {
-                        return Some(Err(TdtError::MalformedCoordinateList {
-                            line: record_line,
-                            record_index,
-                            tag_name: "3D".to_string(),
-                            detail: format!(
-                                "expected {} numbers (3 * {} atoms), found {}",
-                                3 * mol.atom_count(),
-                                mol.atom_count(),
-                                nums.len()
-                            ),
-                        }));
-                    }
-                    Err(detail) => {
-                        return Some(Err(TdtError::MalformedCoordinateList {
-                            line: record_line,
-                            record_index,
-                            tag_name: "3D".to_string(),
-                            detail,
-                        }));
-                    }
-                }
-            } else {
-                set_property(&mut properties, "3D".to_string(), raw);
-            }
-        }
-
-        Some(Ok(MoleculeRecord {
-            mol,
-            name,
-            properties,
-            coordinates_2d,
-            coordinates_3d,
-        }))
+        Some(record)
     }
 }
 

@@ -417,21 +417,23 @@ fn rdkit_smarts_to_smarts(smarts: &str) -> PyResult<String> {
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyMoleculeBatch>()?;
     m.add_class::<PySmartsQuery>()?;
-    m.add_function(wrap_pyfunction!(compile_smarts, m)?)?;
-    m.add_function(wrap_pyfunction!(rdkit_reaction_to_smarts, m)?)?;
-    m.add_function(wrap_pyfunction!(rdkit_smarts_to_smarts, m)?)?;
-    m.add_function(wrap_pyfunction!(rdkit_detect_chemistry_problems, m)?)?;
-    m.add_function(wrap_pyfunction!(smarts_match, m)?)?;
-    m.add_function(wrap_pyfunction!(smarts_find, m)?)?;
-    m.add_function(wrap_pyfunction!(similarity_map_svg, m)?)?;
-    m.add_function(wrap_pyfunction!(abbreviations, m)?)?;
-    m.add_function(wrap_pyfunction!(expand_abbreviation, m)?)?;
-    m.add_function(wrap_pyfunction!(center_on_origin, m)?)?;
-    m.add_function(wrap_pyfunction!(transform_conformer, m)?)?;
-    m.add_function(wrap_pyfunction!(named_pattern, m)?)?;
-    m.add_function(wrap_pyfunction!(atom_color, m)?)?;
-    m.add_function(wrap_pyfunction!(atom_color_rgb, m)?)?;
-    m.add_function(wrap_pyfunction!(depict_grid, m)?)?;
-    m.add_function(wrap_pyfunction!(element_atomic_number, m)?)?;
-    Ok(())
+    register_pyfunctions!(
+        m,
+        compile_smarts,
+        rdkit_reaction_to_smarts,
+        rdkit_smarts_to_smarts,
+        rdkit_detect_chemistry_problems,
+        smarts_match,
+        smarts_find,
+        similarity_map_svg,
+        abbreviations,
+        expand_abbreviation,
+        center_on_origin,
+        transform_conformer,
+        named_pattern,
+        atom_color,
+        atom_color_rgb,
+        depict_grid,
+        element_atomic_number,
+    )
 }

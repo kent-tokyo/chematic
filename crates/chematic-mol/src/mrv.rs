@@ -623,6 +623,130 @@ pub fn parse_mrv(input: &str) -> Result<MoleculeRecord, MrvError> {
     parse_mrv_with_limits(input, &MrvParseLimits::default())
 }
 
+fn mrv_atom_positions(atoms: &[MrvAtom]) -> HashMap<String, usize> {
+    atoms
+        .iter()
+        .enumerate()
+        .filter(|(_, atom)| !atom.id.is_empty())
+        .map(|(index, atom)| (atom.id.clone(), index))
+        .collect()
+}
+
+fn mrv_aromatic_atoms(
+    atoms: &[MrvAtom],
+    bonds: &[MrvBond],
+    positions: &HashMap<String, usize>,
+) -> Vec<bool> {
+    let mut aromatic = vec![false; atoms.len()];
+    for bond in bonds.iter().filter(|bond| bond.is_aromatic) {
+        if let Some(&index) = positions.get(&bond.a1) {
+            aromatic[index] = true;
+        }
+        if let Some(&index) = positions.get(&bond.a2) {
+            aromatic[index] = true;
+        }
+    }
+    aromatic
+}
+
+struct MrvBuiltAtoms {
+    builder: MoleculeBuilder,
+    indices: Vec<AtomIdx>,
+    coords_2d: Vec<[f64; 2]>,
+    coords_3d: Vec<[f64; 3]>,
+    has_2d: bool,
+    has_3d: bool,
+}
+
+fn build_mrv_atoms(atoms: &[MrvAtom], aromatic: &[bool]) -> MrvBuiltAtoms {
+    let has_2d = atoms
+        .iter()
+        .any(|atom| atom.x2.is_some() || atom.y2.is_some());
+    let has_3d = atoms
+        .iter()
+        .any(|atom| atom.x3.is_some() || atom.y3.is_some() || atom.z3.is_some());
+    let mut built = MrvBuiltAtoms {
+        builder: MoleculeBuilder::new(),
+        indices: Vec::with_capacity(atoms.len()),
+        coords_2d: Vec::new(),
+        coords_3d: Vec::new(),
+        has_2d,
+        has_3d,
+    };
+    for (index, source) in atoms.iter().enumerate() {
+        let mut atom = Atom::new(source.element);
+        atom.charge = source.charge;
+        atom.isotope = source.isotope;
+        atom.atom_map = source.atom_map;
+        atom.aromatic = aromatic[index];
+        let _ = source.radical_electrons;
+        built.indices.push(built.builder.add_atom(atom));
+        if has_2d {
+            built
+                .coords_2d
+                .push([source.x2.unwrap_or(0.0), source.y2.unwrap_or(0.0)]);
+        }
+        if has_3d {
+            built.coords_3d.push([
+                source.x3.unwrap_or(0.0),
+                source.y3.unwrap_or(0.0),
+                source.z3.unwrap_or(0.0),
+            ]);
+        }
+    }
+    built
+}
+
+fn add_mrv_bonds(
+    built: &mut MrvBuiltAtoms,
+    bonds: &[MrvBond],
+    positions: &HashMap<String, usize>,
+) -> Result<(), MrvError> {
+    for bond in bonds {
+        let endpoint = |id: &str| {
+            positions
+                .get(id)
+                .copied()
+                .ok_or_else(|| MrvError::UnknownAtomRef { id: id.to_string() })
+        };
+        let atom1 = built.indices[endpoint(&bond.a1)?];
+        let atom2 = built.indices[endpoint(&bond.a2)?];
+        let order = match (bond.order, bond.stereo) {
+            (BondOrder::Single, Some("wedge")) => BondOrder::Up,
+            (BondOrder::Single, Some("dash")) => BondOrder::Down,
+            _ => bond.order,
+        };
+        built
+            .builder
+            .add_bond(atom1, atom2, order)
+            .map_err(|_| MrvError::InvalidAtomRefs2 {
+                detail: format!("{} {}", bond.a1, bond.a2),
+            })?;
+    }
+    Ok(())
+}
+
+fn finish_mrv_record(mut built: MrvBuiltAtoms) -> MoleculeRecord {
+    let mut molecule = built.builder.build();
+    if built.has_2d {
+        let coords = built
+            .coords_2d
+            .iter()
+            .map(|&[x, y]| (x, y))
+            .collect::<Vec<_>>();
+        apply_local_parity_from_wedges(&mut molecule, &coords);
+        apply_ez_directions_from_2d(&mut molecule, &coords);
+    }
+    let mut record = MoleculeRecord::new(molecule);
+    if built.has_2d {
+        record.coordinates_2d = Some(std::mem::take(&mut built.coords_2d));
+    }
+    if built.has_3d {
+        record.coordinates_3d = Some(std::mem::take(&mut built.coords_3d));
+    }
+    record
+}
+
 /// Like [`parse_mrv`], with explicit security/robustness limits.
 pub fn parse_mrv_with_limits(
     input: &str,
@@ -650,109 +774,11 @@ pub fn parse_mrv_with_limits(
         None => Vec::new(),
     };
 
-    let mut id_to_pos: HashMap<String, usize> = HashMap::new();
-    for (i, a) in mrv_atoms.iter().enumerate() {
-        if !a.id.is_empty() {
-            id_to_pos.insert(a.id.clone(), i);
-        }
-    }
-
-    let has_2d = mrv_atoms.iter().any(|a| a.x2.is_some() || a.y2.is_some());
-    let has_3d = mrv_atoms
-        .iter()
-        .any(|a| a.x3.is_some() || a.y3.is_some() || a.z3.is_some());
-
-    // Atom aromaticity is derived from aromatic bonds (order="A"), same as
-    // cml.rs -- must be known before construction since MoleculeBuilder has
-    // no post-hoc atom mutator for it.
-    let mut is_aromatic_atom = vec![false; mrv_atoms.len()];
-    for b in &mrv_bonds {
-        if b.is_aromatic {
-            if let Some(&pos) = id_to_pos.get(&b.a1) {
-                is_aromatic_atom[pos] = true;
-            }
-            if let Some(&pos) = id_to_pos.get(&b.a2) {
-                is_aromatic_atom[pos] = true;
-            }
-        }
-    }
-
-    let mut builder = MoleculeBuilder::new();
-    let mut idx_by_pos: Vec<AtomIdx> = Vec::new();
-    let mut coords_2d = Vec::new();
-    let mut coords_3d = Vec::new();
-
-    for (i, a) in mrv_atoms.iter().enumerate() {
-        let mut atom = Atom::new(a.element);
-        atom.charge = a.charge;
-        atom.isotope = a.isotope;
-        atom.atom_map = a.atom_map;
-        atom.aromatic = is_aromatic_atom[i];
-        // Radical electron count has no chematic_core::Atom slot -- treated
-        // as neutral, same convention as mol2000.rs's doublet-radical case.
-        let _ = a.radical_electrons;
-        let idx = builder.add_atom(atom);
-        idx_by_pos.push(idx);
-        if has_2d {
-            coords_2d.push([a.x2.unwrap_or(0.0), a.y2.unwrap_or(0.0)]);
-        }
-        if has_3d {
-            coords_3d.push([
-                a.x3.unwrap_or(0.0),
-                a.y3.unwrap_or(0.0),
-                a.z3.unwrap_or(0.0),
-            ]);
-        }
-    }
-
-    for b in &mrv_bonds {
-        let pos1 = *id_to_pos
-            .get(&b.a1)
-            .ok_or_else(|| MrvError::UnknownAtomRef { id: b.a1.clone() })?;
-        let pos2 = *id_to_pos
-            .get(&b.a2)
-            .ok_or_else(|| MrvError::UnknownAtomRef { id: b.a2.clone() })?;
-        let a1 = idx_by_pos[pos1];
-        let a2 = idx_by_pos[pos2];
-        // Wedge/dash stereo is represented via BondOrder::Up/Down, same
-        // convention as mol2000.rs's MDL stereo-flag mapping.
-        let order = match (b.order, b.stereo) {
-            (BondOrder::Single, Some("wedge")) => BondOrder::Up,
-            (BondOrder::Single, Some("dash")) => BondOrder::Down,
-            _ => b.order,
-        };
-        builder
-            .add_bond(a1, a2, order)
-            .map_err(|_| MrvError::InvalidAtomRefs2 {
-                detail: format!("{} {}", b.a1, b.a2),
-            })?;
-    }
-
-    let mut mol = builder.build();
-    if has_2d {
-        // Tetrahedral parity first (raw wedge/hash still fully intact on
-        // `bond.order`), THEN E/Z direction -- same ordering rationale as
-        // mol2000.rs (the E/Z stage only ever writes to the separate
-        // `bond_direction` side channel, never to `bond.order`, so running
-        // it after can never disturb the wedge/hash the tetrahedral stage
-        // just read). MRV's `bondStereo` cis/trans dictRef values ("C"/"T")
-        // are parsed but explicitly discarded (`parse_bond_stereo` above,
-        // matching RDKit), so there is no MRV-specific "explicitly
-        // unspecified E/Z" set to thread through here, unlike MDL V2000's
-        // stereo code 3 -- every candidate double bond is judged on 2D
-        // geometry alone.
-        let coord_pairs: Vec<(f64, f64)> = coords_2d.iter().map(|&[x, y]| (x, y)).collect();
-        apply_local_parity_from_wedges(&mut mol, &coord_pairs);
-        apply_ez_directions_from_2d(&mut mol, &coord_pairs);
-    }
-    let mut record = MoleculeRecord::new(mol);
-    if has_2d {
-        record.coordinates_2d = Some(coords_2d);
-    }
-    if has_3d {
-        record.coordinates_3d = Some(coords_3d);
-    }
-    Ok(record)
+    let positions = mrv_atom_positions(&mrv_atoms);
+    let aromatic = mrv_aromatic_atoms(&mrv_atoms, &mrv_bonds, &positions);
+    let mut built = build_mrv_atoms(&mrv_atoms, &aromatic);
+    add_mrv_bonds(&mut built, &mrv_bonds, &positions)?;
+    Ok(finish_mrv_record(built))
 }
 
 // ---------------------------------------------------------------------------

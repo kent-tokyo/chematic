@@ -27,8 +27,8 @@
 //! `tools::list_tools()` is the actual runtime source of truth.
 
 #![forbid(unsafe_code)]
-// `tools::list_tools()` is one large `serde_json::json!` literal (20 tools'
-// worth of input/output JSON Schema documents) — the macro's expansion
+// The static registry behind `tools::list_tools()` contains 20 tools' worth of
+// input/output JSON Schema documents. The `json!` macro's expansion
 // depth exceeds rustc's default recursion limit well before it exceeds any
 // runtime resource; this is the standard fix for a large static `json!`
 // literal, not evidence of unbounded/runaway recursion in actual logic.

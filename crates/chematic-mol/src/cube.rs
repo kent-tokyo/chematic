@@ -302,6 +302,218 @@ fn parse_finite(raw: &str, line: usize, context: &'static str) -> Result<f64, Cu
     Ok(v)
 }
 
+struct CubeHeader {
+    origin: [f64; 3],
+    axes: [[f64; 3]; 3],
+    shape: [usize; 3],
+    units: GridUnits,
+    atom_count: usize,
+    point_count: usize,
+}
+
+struct CubeAxes {
+    shape: [usize; 3],
+    vectors: [[f64; 3]; 3],
+    units: GridUnits,
+}
+
+fn cube_count_line<E, F>(feed: &mut LineFeed<E, F>) -> Result<(usize, [f64; 3]), CubeError>
+where
+    F: FnMut() -> Result<Option<String>, E>,
+    CubeError: From<E>,
+{
+    feed.line()?.ok_or(CubeError::UnexpectedEnd {
+        context: "comment line 1",
+    })?;
+    feed.line()?.ok_or(CubeError::UnexpectedEnd {
+        context: "comment line 2",
+    })?;
+    let line = feed.line()?.ok_or(CubeError::UnexpectedEnd {
+        context: "atom count / origin line",
+    })?;
+    let number = feed.line_no;
+    let tokens = line.split_whitespace().collect::<Vec<_>>();
+    if !matches!(tokens.len(), 4 | 5) {
+        return Err(CubeError::InvalidCountLine {
+            line: number,
+            detail: line,
+        });
+    }
+    let atom_count = tokens[0]
+        .parse::<i64>()
+        .map_err(|_| CubeError::InvalidCountLine {
+            line: number,
+            detail: line.clone(),
+        })?;
+    let nval = tokens
+        .get(4)
+        .map(|value| value.parse::<i64>())
+        .transpose()
+        .map_err(|_| CubeError::InvalidCountLine {
+            line: number,
+            detail: line.clone(),
+        })?;
+    if atom_count < 0 || matches!(nval, Some(value) if value != 1) {
+        return Err(CubeError::MultiDatasetUnsupported {
+            natoms_field: atom_count,
+            nval,
+        });
+    }
+    let mut origin = [0.0; 3];
+    for (index, value) in origin.iter_mut().enumerate() {
+        *value = parse_finite(tokens[index + 1], number, "origin")?;
+    }
+    Ok((usize::try_from(atom_count).unwrap_or(usize::MAX), origin))
+}
+
+fn cube_axes<E, F>(feed: &mut LineFeed<E, F>) -> Result<CubeAxes, CubeError>
+where
+    F: FnMut() -> Result<Option<String>, E>,
+    CubeError: From<E>,
+{
+    let mut shape = [0; 3];
+    let mut axes = [[0.0; 3]; 3];
+    let mut units = GridUnits::Bohr;
+    for axis in 0..3 {
+        let line = feed.line()?.ok_or(CubeError::UnexpectedEnd {
+            context: "axis line",
+        })?;
+        let number = feed.line_no;
+        let tokens = line.split_whitespace().collect::<Vec<_>>();
+        if tokens.len() != 4 {
+            return Err(CubeError::InvalidAxisLine {
+                line: number,
+                axis,
+                detail: line,
+            });
+        }
+        let count = tokens[0]
+            .parse::<i64>()
+            .map_err(|_| CubeError::InvalidAxisLine {
+                line: number,
+                axis,
+                detail: line.clone(),
+            })?;
+        if count == 0 || (axis > 0 && count < 0) {
+            return Err(CubeError::NonPositiveAxisCount { axis, value: count });
+        }
+        if axis == 0 && count < 0 {
+            units = GridUnits::Angstrom;
+        }
+        shape[axis] = usize::try_from(count.unsigned_abs()).unwrap_or(usize::MAX);
+        for (component, value) in axes[axis].iter_mut().enumerate() {
+            *value = parse_finite(tokens[component + 1], number, "axis vector")?;
+        }
+    }
+    Ok(CubeAxes {
+        shape,
+        vectors: axes,
+        units,
+    })
+}
+
+fn cube_header<E, F>(
+    feed: &mut LineFeed<E, F>,
+    limits: &CubeParseLimits,
+) -> Result<CubeHeader, CubeError>
+where
+    F: FnMut() -> Result<Option<String>, E>,
+    CubeError: From<E>,
+{
+    let (atom_count, origin) = cube_count_line(feed)?;
+    if atom_count > limits.max_atoms {
+        return Err(CubeError::TooManyAtoms {
+            limit: limits.max_atoms,
+        });
+    }
+    let parsed_axes = cube_axes(feed)?;
+    let shape = parsed_axes.shape;
+    let point_count = shape[0]
+        .checked_mul(shape[1])
+        .and_then(|value| value.checked_mul(shape[2]))
+        .ok_or(GridError::ShapeOverflow { shape })?;
+    if point_count > limits.max_grid_points {
+        return Err(GridError::GridTooLarge {
+            points: point_count,
+            limit: limits.max_grid_points,
+        }
+        .into());
+    }
+    Ok(CubeHeader {
+        origin,
+        axes: parsed_axes.vectors,
+        shape,
+        units: parsed_axes.units,
+        atom_count,
+        point_count,
+    })
+}
+
+fn cube_atoms<E, F>(feed: &mut LineFeed<E, F>, count: usize) -> Result<Vec<GridAtom>, CubeError>
+where
+    F: FnMut() -> Result<Option<String>, E>,
+    CubeError: From<E>,
+{
+    let mut atoms = Vec::with_capacity(count.min(1_000_000));
+    for _ in 0..count {
+        let line = feed.line()?.ok_or(CubeError::UnexpectedEnd {
+            context: "atom line",
+        })?;
+        let number = feed.line_no;
+        let tokens = line.split_whitespace().collect::<Vec<_>>();
+        if tokens.len() != 5 {
+            return Err(CubeError::InvalidAtomLine {
+                line: number,
+                detail: line,
+            });
+        }
+        let atomic_number = tokens[0]
+            .parse::<i64>()
+            .map_err(|_| CubeError::InvalidAtomLine {
+                line: number,
+                detail: line.clone(),
+            })?;
+        let element = u8::try_from(atomic_number)
+            .ok()
+            .and_then(Element::from_atomic_number)
+            .ok_or(CubeError::UnknownAtomicNumber {
+                line: number,
+                value: atomic_number,
+            })?;
+        let mut position = [0.0; 3];
+        for (index, value) in position.iter_mut().enumerate() {
+            *value = parse_finite(tokens[index + 2], number, "atom position")?;
+        }
+        atoms.push(GridAtom {
+            element,
+            charge: parse_finite(tokens[1], number, "atom charge")?,
+            position,
+        });
+    }
+    Ok(atoms)
+}
+
+fn cube_values<E, F>(feed: &mut LineFeed<E, F>, count: usize) -> Result<Vec<f64>, CubeError>
+where
+    F: FnMut() -> Result<Option<String>, E>,
+    CubeError: From<E>,
+{
+    let mut values = Vec::with_capacity(count.min(1_000_000));
+    for index in 0..count {
+        let token = feed.token()?.ok_or(CubeError::ValueCountMismatch {
+            expected: count,
+            found: index,
+        })?;
+        values.push(parse_finite(&token, feed.line_no, "voxel value")?);
+    }
+    if feed.token()?.is_some() {
+        return Err(CubeError::TrailingData {
+            after_values: count,
+        });
+    }
+    Ok(values)
+}
+
 fn parse_cube_from_feed<F>(
     next_line: F,
     limits: &CubeParseLimits,
@@ -310,171 +522,16 @@ where
     F: FnMut() -> Result<Option<String>, CubeError>,
 {
     let mut feed = LineFeed::new(next_line);
-
-    // Lines 1-2: comment/title lines, contents unconstrained and not preserved.
-    feed.line()?.ok_or(CubeError::UnexpectedEnd {
-        context: "comment line 1",
-    })?;
-    feed.line()?.ok_or(CubeError::UnexpectedEnd {
-        context: "comment line 2",
-    })?;
-
-    // Line 3: NAtoms X0 Y0 Z0 [NVal]
-    let count_line = feed.line()?.ok_or(CubeError::UnexpectedEnd {
-        context: "atom count / origin line",
-    })?;
-    let count_line_no = feed.line_no;
-    let toks: Vec<&str> = count_line.split_whitespace().collect();
-    if toks.len() != 4 && toks.len() != 5 {
-        return Err(CubeError::InvalidCountLine {
-            line: count_line_no,
-            detail: count_line,
-        });
-    }
-    let natoms: i64 = toks[0].parse().map_err(|_| CubeError::InvalidCountLine {
-        line: count_line_no,
-        detail: count_line.clone(),
-    })?;
-    let mut origin = [0.0f64; 3];
-    for (c, slot) in origin.iter_mut().enumerate() {
-        *slot = parse_finite(toks[1 + c], count_line_no, "origin")?;
-    }
-    let nval: Option<i64> = if toks.len() == 5 {
-        Some(toks[4].parse().map_err(|_| CubeError::InvalidCountLine {
-            line: count_line_no,
-            detail: count_line.clone(),
-        })?)
-    } else {
-        None
-    };
-    if natoms < 0 || matches!(nval, Some(n) if n != 1) {
-        return Err(CubeError::MultiDatasetUnsupported {
-            natoms_field: natoms,
-            nval,
-        });
-    }
-    let natoms_usize = usize::try_from(natoms).unwrap_or(usize::MAX);
-    if natoms_usize > limits.max_atoms {
-        return Err(CubeError::TooManyAtoms {
-            limit: limits.max_atoms,
-        });
-    }
-
-    // Lines 4-6: axis lines.
-    let mut shape = [0usize; 3];
-    let mut axes = [[0.0f64; 3]; 3];
-    let mut units = GridUnits::Bohr;
-    for (axis, shape_slot) in shape.iter_mut().enumerate() {
-        let line = feed.line()?.ok_or(CubeError::UnexpectedEnd {
-            context: "axis line",
-        })?;
-        let line_no = feed.line_no;
-        let toks: Vec<&str> = line.split_whitespace().collect();
-        if toks.len() != 4 {
-            return Err(CubeError::InvalidAxisLine {
-                line: line_no,
-                axis,
-                detail: line,
-            });
-        }
-        let n: i64 = toks[0].parse().map_err(|_| CubeError::InvalidAxisLine {
-            line: line_no,
-            axis,
-            detail: line.clone(),
-        })?;
-        if axis == 0 {
-            if n == 0 {
-                return Err(CubeError::NonPositiveAxisCount { axis, value: n });
-            }
-            units = if n < 0 {
-                GridUnits::Angstrom
-            } else {
-                GridUnits::Bohr
-            };
-        } else if n <= 0 {
-            return Err(CubeError::NonPositiveAxisCount { axis, value: n });
-        }
-        *shape_slot = usize::try_from(n.unsigned_abs()).unwrap_or(usize::MAX);
-        for (c, slot) in axes[axis].iter_mut().enumerate() {
-            *slot = parse_finite(toks[1 + c], line_no, "axis vector")?;
-        }
-    }
-
-    let expected_points = shape[0]
-        .checked_mul(shape[1])
-        .and_then(|v| v.checked_mul(shape[2]))
-        .ok_or(GridError::ShapeOverflow { shape })?;
-    if expected_points > limits.max_grid_points {
-        return Err(GridError::GridTooLarge {
-            points: expected_points,
-            limit: limits.max_grid_points,
-        }
-        .into());
-    }
-
-    // `|NAtoms|` atom lines.
-    let mut atoms = Vec::with_capacity(natoms_usize.min(1_000_000));
-    for _ in 0..natoms_usize {
-        let line = feed.line()?.ok_or(CubeError::UnexpectedEnd {
-            context: "atom line",
-        })?;
-        let line_no = feed.line_no;
-        let toks: Vec<&str> = line.split_whitespace().collect();
-        if toks.len() != 5 {
-            return Err(CubeError::InvalidAtomLine {
-                line: line_no,
-                detail: line,
-            });
-        }
-        let atomic_number: i64 = toks[0].parse().map_err(|_| CubeError::InvalidAtomLine {
-            line: line_no,
-            detail: line.clone(),
-        })?;
-        let element = u8::try_from(atomic_number)
-            .ok()
-            .and_then(Element::from_atomic_number)
-            .ok_or(CubeError::UnknownAtomicNumber {
-                line: line_no,
-                value: atomic_number,
-            })?;
-        let charge = parse_finite(toks[1], line_no, "atom charge")?;
-        let mut position = [0.0f64; 3];
-        for (c, slot) in position.iter_mut().enumerate() {
-            *slot = parse_finite(toks[2 + c], line_no, "atom position")?;
-        }
-        atoms.push(GridAtom {
-            element,
-            charge,
-            position,
-        });
-    }
-
-    // Voxel data block: exactly `expected_points` whitespace-delimited
-    // tokens, tolerant of any line-wrapping (never assumes a fixed count
-    // per line).
-    let mut values = Vec::with_capacity(expected_points.min(1_000_000));
-    for i in 0..expected_points {
-        let tok = feed.token()?.ok_or(CubeError::ValueCountMismatch {
-            expected: expected_points,
-            found: i,
-        })?;
-        let line_no = feed.line_no;
-        let v = parse_finite(&tok, line_no, "voxel value")?;
-        values.push(v);
-    }
-    if feed.token()?.is_some() {
-        return Err(CubeError::TrailingData {
-            after_values: expected_points,
-        });
-    }
-
+    let header = cube_header(&mut feed, limits)?;
+    let atoms = cube_atoms(&mut feed, header.atom_count)?;
+    let values = cube_values(&mut feed, header.point_count)?;
     Ok(VolumetricGrid {
-        origin,
-        axes,
-        shape,
+        origin: header.origin,
+        axes: header.axes,
+        shape: header.shape,
         values,
         atoms,
-        units,
+        units: header.units,
     })
 }
 

@@ -272,6 +272,11 @@ Every completed item must include:
 4. committed evidence with versions, hashes, and denominators;
 5. synchronized README, CHANGELOG, validation, and release metadata.
 
+The behavior-preserving R0-R8 maintenance track is recorded separately in the
+[refactoring plan](docs/refactoring-plan.md). It uses a CI debt ratchet so
+existing chemistry-sensitive hotspots can only shrink while their compatibility
+and performance gates remain authoritative.
+
 ## References
 
 - [Open-work ledger](docs/roadmap-open-work.md)
@@ -280,6 +285,7 @@ Every completed item must include:
 - [Benchmark methodology](docs/benchmark.md)
 - [Accuracy plan](docs/rdkit-accuracy-plan.md)
 - [Trust Release rules](docs/trust-release-plan.md)
+- [Refactoring plan](docs/refactoring-plan.md)
 - [Release history](CHANGELOG.md)
 
 ### Open Babel interchange and semantic preservation (October 11 addition)

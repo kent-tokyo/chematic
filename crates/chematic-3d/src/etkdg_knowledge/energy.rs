@@ -333,16 +333,7 @@ pub fn optimize_torsions(
     }
 
     let mut working = coords.clone();
-
-    // Partition potentials: only those whose central bond is a genuine
-    // bridge (acyclic, single, non-ring) are ever mechanically rotated.
-    let rotatable: Vec<&TorsionPotential> = potentials
-        .iter()
-        .filter(|p| {
-            let (b, c) = p.central_bond;
-            mol.bond_between(b, c).is_some() && is_bridge_bond(mol, b, c)
-        })
-        .collect();
+    let rotatable = rotatable_potentials(mol, potentials);
 
     let rings =
         chematic_perception::augmented_ring_set(mol, chematic_perception::find_sssr(mol).rings());
@@ -364,61 +355,10 @@ pub fn optimize_torsions(
         .map(|p| (p.central_bond, config.step_deg))
         .collect();
 
-    for _iter in 0..config.max_iterations.max(1) {
+    for _ in 0..config.max_iterations.max(1) {
         iterations_used += 1;
-        let mut max_grad = 0.0_f64;
-
-        for pot in &rotatable {
-            let (b, c) = pot.central_bond;
-            let phi = dihedral_deg(&working, pot.atoms);
-            let grad = pot.d_energy_d_phi_deg(phi);
-            if !grad.is_finite() {
-                return Err(TorsionKnowledgeError::NonFiniteEnergy);
-            }
-            if grad.abs() > max_grad {
-                max_grad = grad.abs();
-            }
-            if grad.abs() < config.convergence_grad_deg {
-                continue;
-            }
-
-            let e_before = pot.energy(phi);
-            // Try both rotation directions at each step size, rather than
-            // committing to `-grad.signum()` alone: `rotate_fragment`'s
-            // rotation-angle sign and `dihedral_deg`'s phi-sign convention
-            // are two independently-derived formulas, and this module does
-            // not assume (without checking) that a positive rotation angle
-            // maps to a positive phi change -- trying both sides makes the
-            // descent correct regardless of that relationship, at the cost
-            // of at most 2x the trials.
-            let step_slot = steps.entry(pot.central_bond).or_insert(config.step_deg);
-            let mut step = *step_slot;
-            let mut accepted = false;
-            for _ls in 0..config.max_line_search_steps.max(1) {
-                let mut best: Option<(Coords3D, f64)> = None;
-                for &sign in &[1.0_f64, -1.0] {
-                    let mut trial = working.clone();
-                    rotate_fragment(mol, &mut trial, b, c, sign * step);
-                    let phi_trial = dihedral_deg(&trial, pot.atoms);
-                    let e_trial = pot.energy(phi_trial);
-                    if !e_trial.is_finite() {
-                        return Err(TorsionKnowledgeError::NonFiniteEnergy);
-                    }
-                    if best.as_ref().is_none_or(|(_, e_best)| e_trial < *e_best) {
-                        best = Some((trial, e_trial));
-                    }
-                }
-                let (trial, e_trial) = best.expect("both directions were tried");
-                if e_trial < e_before {
-                    working = trial;
-                    accepted = true;
-                    break;
-                }
-                step *= 0.5;
-            }
-            let _ = accepted; // no action needed either way; loop continues to next bond
-            *step_slot = step;
-        }
+        let max_grad =
+            optimize_torsion_iteration(mol, &mut working, &rotatable, config, &mut steps)?;
 
         if max_grad < config.convergence_grad_deg {
             converged = true;
@@ -426,12 +366,7 @@ pub fn optimize_torsions(
         }
     }
 
-    let bond_delta = max_bond_length_delta(mol, coords, &working);
-    let ring_delta = max_ring_closure_delta(rings.as_slice(), coords, &working);
-    const GEOMETRY_INTEGRITY_TOLERANCE: f64 = 1e-6;
-    if bond_delta > GEOMETRY_INTEGRITY_TOLERANCE || ring_delta > GEOMETRY_INTEGRITY_TOLERANCE {
-        return Err(TorsionKnowledgeError::RingIntegrityViolated);
-    }
+    let (bond_delta, ring_delta) = validate_torsion_geometry(mol, &rings, coords, &working)?;
 
     if !converged {
         return Err(TorsionKnowledgeError::NonConvergence);
@@ -450,6 +385,106 @@ pub fn optimize_torsions(
     };
 
     Ok((working, report))
+}
+
+fn rotatable_potentials<'a>(
+    mol: &Molecule,
+    potentials: &'a [TorsionPotential],
+) -> Vec<&'a TorsionPotential> {
+    potentials
+        .iter()
+        .filter(|potential| {
+            let (b, c) = potential.central_bond;
+            mol.bond_between(b, c).is_some() && is_bridge_bond(mol, b, c)
+        })
+        .collect()
+}
+
+fn optimize_torsion_iteration(
+    mol: &Molecule,
+    working: &mut Coords3D,
+    potentials: &[&TorsionPotential],
+    config: &TorsionOptimizationConfig,
+    steps: &mut HashMap<(AtomIdx, AtomIdx), f64>,
+) -> Result<f64, TorsionKnowledgeError> {
+    let mut max_grad = 0.0_f64;
+    for potential in potentials {
+        let phi = dihedral_deg(working, potential.atoms);
+        let gradient = potential.d_energy_d_phi_deg(phi);
+        if !gradient.is_finite() {
+            return Err(TorsionKnowledgeError::NonFiniteEnergy);
+        }
+        max_grad = max_grad.max(gradient.abs());
+        if gradient.abs() < config.convergence_grad_deg {
+            continue;
+        }
+        let step = steps
+            .entry(potential.central_bond)
+            .or_insert(config.step_deg);
+        *step = line_search_torsion(mol, working, potential, phi, *step, config)?;
+    }
+    Ok(max_grad)
+}
+
+fn line_search_torsion(
+    mol: &Molecule,
+    working: &mut Coords3D,
+    potential: &TorsionPotential,
+    phi: f64,
+    mut step: f64,
+    config: &TorsionOptimizationConfig,
+) -> Result<f64, TorsionKnowledgeError> {
+    let energy_before = potential.energy(phi);
+    for _ in 0..config.max_line_search_steps.max(1) {
+        let (trial, energy) = best_torsion_trial(mol, working, potential, step)?;
+        if energy < energy_before {
+            *working = trial;
+            return Ok(step);
+        }
+        step *= 0.5;
+    }
+    Ok(step)
+}
+
+fn best_torsion_trial(
+    mol: &Molecule,
+    working: &Coords3D,
+    potential: &TorsionPotential,
+    step: f64,
+) -> Result<(Coords3D, f64), TorsionKnowledgeError> {
+    let (b, c) = potential.central_bond;
+    let mut best: Option<(Coords3D, f64)> = None;
+    for sign in [1.0_f64, -1.0] {
+        let mut trial = working.clone();
+        rotate_fragment(mol, &mut trial, b, c, sign * step);
+        let energy = potential.energy(dihedral_deg(&trial, potential.atoms));
+        if !energy.is_finite() {
+            return Err(TorsionKnowledgeError::NonFiniteEnergy);
+        }
+        if best
+            .as_ref()
+            .is_none_or(|(_, best_energy)| energy < *best_energy)
+        {
+            best = Some((trial, energy));
+        }
+    }
+    Ok(best.expect("both torsion directions were evaluated"))
+}
+
+fn validate_torsion_geometry(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    before: &Coords3D,
+    after: &Coords3D,
+) -> Result<(f64, f64), TorsionKnowledgeError> {
+    let bond_delta = max_bond_length_delta(mol, before, after);
+    let ring_delta = max_ring_closure_delta(rings, before, after);
+    const GEOMETRY_INTEGRITY_TOLERANCE: f64 = 1e-6;
+    if bond_delta > GEOMETRY_INTEGRITY_TOLERANCE || ring_delta > GEOMETRY_INTEGRITY_TOLERANCE {
+        Err(TorsionKnowledgeError::RingIntegrityViolated)
+    } else {
+        Ok((bond_delta, ring_delta))
+    }
 }
 
 #[cfg(test)]

@@ -8,8 +8,8 @@ use chematic_smarts::{
     find_matches_with_config,
 };
 
+use crate::align::align_coords;
 use crate::coords::Coords3D;
-use crate::shape_descriptors::jacobi3;
 
 // ---------------------------------------------------------------------------
 // Error type
@@ -416,125 +416,19 @@ fn kabsch_rmsd(coords_a: &Coords3D, coords_b: &Coords3D, n: usize) -> f64 {
     if n == 0 {
         return 0.0;
     }
-
-    let nf = n as f64;
-
-    // Centroids.
-    let mut ca = [0.0f64; 3];
-    let mut cb = [0.0f64; 3];
-    for i in 0..n {
-        let idx = AtomIdx(i as u32);
-        let pa = coords_a.get(idx);
-        let pb = coords_b.get(idx);
-        ca[0] += pa.x;
-        ca[1] += pa.y;
-        ca[2] += pa.z;
-        cb[0] += pb.x;
-        cb[1] += pb.y;
-        cb[2] += pb.z;
-    }
-    for k in 0..3 {
-        ca[k] /= nf;
-        cb[k] /= nf;
-    }
-
-    // Centered coordinates.
-    let mut p = vec![[0.0f64; 3]; n];
-    let mut q = vec![[0.0f64; 3]; n];
-    for i in 0..n {
-        let idx = AtomIdx(i as u32);
-        let pa = coords_a.get(idx);
-        let pb = coords_b.get(idx);
-        p[i] = [pa.x - ca[0], pa.y - ca[1], pa.z - ca[2]];
-        q[i] = [pb.x - cb[0], pb.y - cb[1], pb.z - cb[2]];
-    }
-
-    // H = P^T * Q  (3×3 covariance matrix).
-    let mut h = [[0.0f64; 3]; 3];
-    for i in 0..n {
-        for r in 0..3 {
-            for c in 0..3 {
-                h[r][c] += p[i][r] * q[i][c];
-            }
-        }
-    }
-
-    // H^T * H (symmetric).
-    let mut hth = [[0.0f64; 3]; 3];
-    for r in 0..3 {
-        for c in 0..3 {
-            for k in 0..3 {
-                hth[r][c] += h[k][r] * h[k][c];
-            }
-        }
-    }
-
-    // Eigendecompose H^T * H → V columns are right singular vectors.
-    // evecs[i][j] = component i of eigenvector j (sorted ascending by eigenvalue).
-    let (evals, v) = jacobi3(hth);
-
-    // U = H * V * diag(1/σ).  σ_j = sqrt(evals[j]).
-    let mut hv = [[0.0f64; 3]; 3];
-    for r in 0..3 {
-        for c in 0..3 {
-            for k in 0..3 {
-                hv[r][c] += h[r][k] * v[k][c];
-            }
-        }
-    }
-    let mut u = [[0.0f64; 3]; 3];
-    for j in 0..3 {
-        let sigma = evals[j].max(0.0).sqrt();
-        for r in 0..3 {
-            u[r][j] = if sigma > 1e-10 { hv[r][j] / sigma } else { 0.0 };
-        }
-    }
-
-    // R = U * V^T.  R[r][c] = Σ_k U[r][k] * V[c][k].
-    let mut r_mat = [[0.0f64; 3]; 3];
-    for r in 0..3 {
-        for c in 0..3 {
-            for k in 0..3 {
-                r_mat[r][c] += u[r][k] * v[c][k];
-            }
-        }
-    }
-
-    // Reflection correction: if det(R) < 0, flip V column with smallest σ (col 0).
-    let det = det3(r_mat);
-    let mut v_final = v;
-    if det < 0.0 {
-        for r in 0..3 {
-            v_final[r][0] *= -1.0;
-        }
-        // Recompute R = U * V_final^T.
-        r_mat = [[0.0f64; 3]; 3];
-        for r in 0..3 {
-            for c in 0..3 {
-                for k in 0..3 {
-                    r_mat[r][c] += u[r][k] * v_final[c][k];
-                }
-            }
-        }
-    }
-
-    // Apply R to q, compute RMSD.
-    let mut sum_sq = 0.0f64;
-    for i in 0..n {
-        for row in 0..3 {
-            let rotated =
-                r_mat[row][0] * q[i][0] + r_mat[row][1] * q[i][1] + r_mat[row][2] * q[i][2];
-            let diff = p[i][row] - rotated;
-            sum_sq += diff * diff;
-        }
-    }
-    (sum_sq / nf).sqrt()
-}
-
-fn det3(m: [[f64; 3]; 3]) -> f64 {
-    m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
-        - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
-        + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
+    let a = (0..n)
+        .map(|i| {
+            let point = coords_a.get(AtomIdx(i as u32));
+            [point.x, point.y, point.z]
+        })
+        .collect::<Vec<_>>();
+    let b = (0..n)
+        .map(|i| {
+            let point = coords_b.get(AtomIdx(i as u32));
+            [point.x, point.y, point.z]
+        })
+        .collect::<Vec<_>>();
+    align_coords(&a, &b).rmsd
 }
 
 // ---------------------------------------------------------------------------

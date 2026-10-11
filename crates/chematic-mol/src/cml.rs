@@ -26,7 +26,7 @@
 
 use std::collections::HashMap;
 
-use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
+use chematic_core::{Atom, BondOrder, Element, Molecule, MoleculeBuilder};
 
 /// Resource limits for the lightweight CML parser.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -233,6 +233,182 @@ struct CmlAtomData {
     aromatic: bool,
 }
 
+struct CmlBondData {
+    a1: usize,
+    a2: usize,
+    order: BondOrder,
+    aromatic: bool,
+}
+
+fn cml_lines<'a>(input: &'a str, limits: &CmlParseLimits) -> Result<Vec<&'a str>, CmlError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(CmlError::ResourceLimit {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    let lines = input.lines().collect::<Vec<_>>();
+    let constraints = [
+        ("lines", lines.len(), limits.max_lines),
+        (
+            "line bytes",
+            lines.iter().map(|line| line.len()).max().unwrap_or(0),
+            limits.max_line_bytes,
+        ),
+        (
+            "XML elements",
+            lines
+                .iter()
+                .filter(|line| line.contains('<') && line.contains('>'))
+                .count(),
+            limits.max_xml_elements,
+        ),
+    ];
+    if let Some((resource, actual, limit)) = constraints
+        .into_iter()
+        .find(|(_, actual, limit)| actual > limit)
+    {
+        return Err(CmlError::ResourceLimit {
+            resource,
+            actual,
+            limit,
+        });
+    }
+    Ok(lines)
+}
+
+fn parse_cml_atom(attrs: &HashMap<String, String>) -> Result<CmlAtomData, CmlError> {
+    let symbol = attrs.get("elementType").map(String::as_str).unwrap_or("C");
+    let element =
+        Element::from_symbol(symbol).ok_or_else(|| CmlError::UnknownElement(symbol.to_owned()))?;
+    let x2 = attrs
+        .get("x2")
+        .and_then(|value| value.trim().parse::<f64>().ok())
+        .unwrap_or(0.0);
+    let y2 = attrs
+        .get("y2")
+        .and_then(|value| value.trim().parse::<f64>().ok())
+        .unwrap_or(0.0);
+    if !x2.is_finite() {
+        return Err(CmlError::NonFiniteCoordinate(x2.to_string()));
+    }
+    if !y2.is_finite() {
+        return Err(CmlError::NonFiniteCoordinate(y2.to_string()));
+    }
+    Ok(CmlAtomData {
+        element,
+        charge: attrs
+            .get("formalCharge")
+            .and_then(|value| value.trim().parse().ok())
+            .unwrap_or(0),
+        isotope: attrs
+            .get("isotope")
+            .or_else(|| attrs.get("isotopeNumber"))
+            .and_then(|value| value.trim().parse().ok())
+            .filter(|&value| value > 0),
+        hydrogen_count: attrs
+            .get("hydrogenCount")
+            .and_then(|value| value.trim().parse().ok()),
+        x2,
+        y2,
+        aromatic: false,
+    })
+}
+
+fn parse_cml_bond(
+    attrs: &HashMap<String, String>,
+    positions: &HashMap<String, usize>,
+) -> Result<CmlBondData, CmlError> {
+    let refs = attrs
+        .get("atomRefs2")
+        .ok_or_else(|| CmlError::InvalidAtomRefs2("missing atomRefs2".to_owned()))?;
+    let atoms = refs.split_whitespace().collect::<Vec<_>>();
+    if atoms.len() < 2 {
+        return Err(CmlError::InvalidAtomRefs2(refs.clone()));
+    }
+    let position = |id: &str| {
+        positions
+            .get(id)
+            .copied()
+            .ok_or_else(|| CmlError::UnknownAtomRef(id.to_owned()))
+    };
+    let order_text = attrs.get("order").map(String::as_str).unwrap_or("1");
+    Ok(CmlBondData {
+        a1: position(atoms[0])?,
+        a2: position(atoms[1])?,
+        order: parse_bond_order(order_text)?,
+        aromatic: matches!(order_text.trim(), "A" | "aromatic"),
+    })
+}
+
+fn collect_cml_data(
+    lines: Vec<&str>,
+    limits: &CmlParseLimits,
+) -> Result<(Vec<CmlAtomData>, Vec<CmlBondData>), CmlError> {
+    let mut atoms = Vec::new();
+    let mut bonds = Vec::new();
+    let mut positions = HashMap::new();
+    for line in lines
+        .into_iter()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+    {
+        if is_element_tag(line, "atom") {
+            if atoms.len() >= limits.max_atoms {
+                return Err(CmlError::ResourceLimit {
+                    resource: "atom elements",
+                    actual: atoms.len() + 1,
+                    limit: limits.max_atoms,
+                });
+            }
+            let attrs = parse_xml_attrs(line);
+            if let Some(id) = attrs.get("id").filter(|id| !id.is_empty()) {
+                positions.insert(id.clone(), atoms.len());
+            }
+            atoms.push(parse_cml_atom(&attrs)?);
+        } else if is_element_tag(line, "bond") {
+            if bonds.len() >= limits.max_bonds {
+                return Err(CmlError::ResourceLimit {
+                    resource: "bond elements",
+                    actual: bonds.len() + 1,
+                    limit: limits.max_bonds,
+                });
+            }
+            bonds.push(parse_cml_bond(&parse_xml_attrs(line), &positions)?);
+        }
+    }
+    Ok((atoms, bonds))
+}
+
+fn build_cml(
+    mut atoms: Vec<CmlAtomData>,
+    bonds: Vec<CmlBondData>,
+) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
+    for bond in bonds.iter().filter(|bond| bond.aromatic) {
+        atoms[bond.a1].aromatic = true;
+        atoms[bond.a2].aromatic = true;
+    }
+    let mut builder = MoleculeBuilder::new();
+    let mut indices = Vec::with_capacity(atoms.len());
+    let mut coords = Vec::with_capacity(atoms.len());
+    for source in atoms {
+        let mut atom = Atom::new(source.element);
+        atom.charge = source.charge;
+        atom.isotope = source.isotope;
+        atom.hydrogen_count = source.hydrogen_count;
+        atom.aromatic = source.aromatic;
+        indices.push(builder.add_atom(atom));
+        coords.push((source.x2, source.y2));
+    }
+    for bond in bonds {
+        builder
+            .add_bond(indices[bond.a1], indices[bond.a2], bond.order)
+            .map_err(|_| CmlError::InvalidAtomRefs2(format!("{} {}", bond.a1, bond.a2)))?;
+    }
+    Ok((builder.build(), coords))
+}
+
 /// Parse a CML document into a `(Molecule, 2D-coords)` pair.
 ///
 /// The second element of the tuple contains one `(x, y)` entry per atom in
@@ -374,189 +550,9 @@ pub fn parse_cml_with_limits(
     input: &str,
     limits: &CmlParseLimits,
 ) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
-    if input.len() > limits.max_input_bytes {
-        return Err(CmlError::ResourceLimit {
-            resource: "input bytes",
-            actual: input.len(),
-            limit: limits.max_input_bytes,
-        });
-    }
-    let lines = input.lines().collect::<Vec<_>>();
-    if lines.len() > limits.max_lines {
-        return Err(CmlError::ResourceLimit {
-            resource: "lines",
-            actual: lines.len(),
-            limit: limits.max_lines,
-        });
-    }
-    if let Some(line_bytes) = lines.iter().map(|line| line.len()).max()
-        && line_bytes > limits.max_line_bytes
-    {
-        return Err(CmlError::ResourceLimit {
-            resource: "line bytes",
-            actual: line_bytes,
-            limit: limits.max_line_bytes,
-        });
-    }
-    let element_count = lines
-        .iter()
-        .filter(|line| line.contains('<') && line.contains('>'))
-        .count();
-    if element_count > limits.max_xml_elements {
-        return Err(CmlError::ResourceLimit {
-            resource: "XML elements",
-            actual: element_count,
-            limit: limits.max_xml_elements,
-        });
-    }
-    // --- Pass 1: collect atoms and bonds from the CML -----------------------
-
-    let mut atom_data: Vec<CmlAtomData> = Vec::new();
-    let mut atom_id_to_pos: HashMap<String, usize> = HashMap::new();
-
-    struct BondData {
-        a1: usize,
-        a2: usize,
-        order: BondOrder,
-        aromatic: bool,
-    }
-    let mut bond_data: Vec<BondData> = Vec::new();
-
-    for raw_line in lines {
-        let line = raw_line.trim();
-        if line.is_empty() {
-            continue;
-        }
-
-        if is_element_tag(line, "atom") {
-            if atom_data.len() >= limits.max_atoms {
-                return Err(CmlError::ResourceLimit {
-                    resource: "atom elements",
-                    actual: atom_data.len() + 1,
-                    limit: limits.max_atoms,
-                });
-            }
-            let attrs = parse_xml_attrs(line);
-            let id = attrs.get("id").cloned().unwrap_or_default();
-
-            let element_sym = attrs.get("elementType").map(String::as_str).unwrap_or("C");
-            let element = Element::from_symbol(element_sym)
-                .ok_or_else(|| CmlError::UnknownElement(element_sym.to_string()))?;
-
-            let charge = attrs
-                .get("formalCharge")
-                .and_then(|s| s.trim().parse::<i8>().ok())
-                .unwrap_or(0);
-            let isotope = attrs
-                .get("isotope")
-                .or_else(|| attrs.get("isotopeNumber"))
-                .and_then(|s| s.trim().parse::<u16>().ok())
-                .filter(|&v| v > 0);
-            let hydrogen_count = attrs
-                .get("hydrogenCount")
-                .and_then(|s| s.trim().parse::<u8>().ok());
-            let x2 = attrs
-                .get("x2")
-                .and_then(|s| s.trim().parse::<f64>().ok())
-                .unwrap_or(0.0);
-            let y2 = attrs
-                .get("y2")
-                .and_then(|s| s.trim().parse::<f64>().ok())
-                .unwrap_or(0.0);
-            if !x2.is_finite() {
-                return Err(CmlError::NonFiniteCoordinate(x2.to_string()));
-            }
-            if !y2.is_finite() {
-                return Err(CmlError::NonFiniteCoordinate(y2.to_string()));
-            }
-
-            let pos = atom_data.len();
-            if !id.is_empty() {
-                atom_id_to_pos.insert(id.clone(), pos);
-            }
-            atom_data.push(CmlAtomData {
-                element,
-                charge,
-                isotope,
-                hydrogen_count,
-                x2,
-                y2,
-                aromatic: false,
-            });
-            continue;
-        }
-
-        if is_element_tag(line, "bond") {
-            if bond_data.len() >= limits.max_bonds {
-                return Err(CmlError::ResourceLimit {
-                    resource: "bond elements",
-                    actual: bond_data.len() + 1,
-                    limit: limits.max_bonds,
-                });
-            }
-            let attrs = parse_xml_attrs(line);
-            let refs = attrs
-                .get("atomRefs2")
-                .ok_or_else(|| CmlError::InvalidAtomRefs2("missing atomRefs2".to_string()))?;
-            let parts: Vec<&str> = refs.split_whitespace().collect();
-            if parts.len() < 2 {
-                return Err(CmlError::InvalidAtomRefs2(refs.clone()));
-            }
-            let a1 = *atom_id_to_pos
-                .get(parts[0])
-                .ok_or_else(|| CmlError::UnknownAtomRef(parts[0].to_string()))?;
-            let a2 = *atom_id_to_pos
-                .get(parts[1])
-                .ok_or_else(|| CmlError::UnknownAtomRef(parts[1].to_string()))?;
-            let order_s = attrs.get("order").map(String::as_str).unwrap_or("1");
-            let is_aromatic = matches!(order_s.trim(), "A" | "aromatic");
-            let order = parse_bond_order(order_s)?;
-            bond_data.push(BondData {
-                a1,
-                a2,
-                order,
-                aromatic: is_aromatic,
-            });
-        }
-    }
-
-    // --- Pass 2: mark aromatic atoms, then build Molecule -------------------
-
-    for bd in &bond_data {
-        if bd.aromatic {
-            if let Some(a) = atom_data.get_mut(bd.a1) {
-                a.aromatic = true;
-            }
-            if let Some(a) = atom_data.get_mut(bd.a2) {
-                a.aromatic = true;
-            }
-        }
-    }
-
-    let mut builder = MoleculeBuilder::new();
-    let mut idx_by_pos: Vec<AtomIdx> = Vec::new();
-    let mut coords: Vec<(f64, f64)> = Vec::new();
-
-    for ad in &atom_data {
-        let mut atom = Atom::new(ad.element);
-        atom.charge = ad.charge;
-        atom.isotope = ad.isotope;
-        atom.hydrogen_count = ad.hydrogen_count;
-        atom.aromatic = ad.aromatic;
-        let idx = builder.add_atom(atom);
-        idx_by_pos.push(idx);
-        coords.push((ad.x2, ad.y2));
-    }
-
-    for bd in &bond_data {
-        let a1 = idx_by_pos[bd.a1];
-        let a2 = idx_by_pos[bd.a2];
-        builder
-            .add_bond(a1, a2, bd.order)
-            .map_err(|_| CmlError::InvalidAtomRefs2(format!("{} {}", bd.a1, bd.a2)))?;
-    }
-
-    Ok((builder.build(), coords))
+    let lines = cml_lines(input, limits)?;
+    let (atoms, bonds) = collect_cml_data(lines, limits)?;
+    build_cml(atoms, bonds)
 }
 
 fn validate_strict_cml_structure(input: &str) -> Result<(), CmlError> {
@@ -567,29 +563,7 @@ fn validate_strict_cml_structure(input: &str) -> Result<(), CmlError> {
     let mut cursor = 0usize;
     while let Some(relative_start) = input[cursor..].find('<') {
         let start = cursor + relative_start;
-        if input[start..].starts_with("<!--") {
-            let end = input[start + 4..]
-                .find("-->")
-                .map(|offset| start + 4 + offset + 3)
-                .ok_or_else(|| CmlError::MalformedXml("unterminated comment".to_string()))?;
-            cursor = end;
-            continue;
-        }
-        if input[start..].starts_with("<![CDATA[") {
-            let end = input[start + 9..]
-                .find("]]>")
-                .map(|offset| start + 9 + offset + 3)
-                .ok_or_else(|| CmlError::MalformedXml("unterminated CDATA section".to_string()))?;
-            cursor = end;
-            continue;
-        }
-        if input[start..].starts_with("<?") {
-            let end = input[start + 2..]
-                .find("?>")
-                .map(|offset| start + 2 + offset + 2)
-                .ok_or_else(|| {
-                    CmlError::MalformedXml("unterminated processing instruction".to_string())
-                })?;
+        if let Some(end) = strict_cml_special_end(input, start)? {
             cursor = end;
             continue;
         }
@@ -649,6 +623,23 @@ fn validate_strict_cml_structure(input: &str) -> Result<(), CmlError> {
         return Err(CmlError::EmptyMolecule);
     }
     Ok(())
+}
+
+fn strict_cml_special_end(input: &str, start: usize) -> Result<Option<usize>, CmlError> {
+    let suffix = &input[start..];
+    let (prefix, terminator, description) = if suffix.starts_with("<!--") {
+        (4, "-->", "comment")
+    } else if suffix.starts_with("<![CDATA[") {
+        (9, "]]>", "CDATA section")
+    } else if suffix.starts_with("<?") {
+        (2, "?>", "processing instruction")
+    } else {
+        return Ok(None);
+    };
+    input[start + prefix..]
+        .find(terminator)
+        .map(|offset| Some(start + prefix + offset + terminator.len()))
+        .ok_or_else(|| CmlError::MalformedXml(format!("unterminated {description}")))
 }
 
 /// Find the end of one XML-ish tag without treating a `>` inside a quoted
