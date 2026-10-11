@@ -51,7 +51,6 @@
     "crates/chematic-py/src/mol_methods.rs": 6087,
     "crates/chematic-rxn/src/query.rs": 1969,
     "crates/chematic-rxn/src/rdkit_stereo.rs": 1626,
-    "crates/chematic-rxn/src/transform.rs": 3960,
     "crates/chematic-smarts/src/match_vf2.rs": 1877,
     "crates/chematic-smarts/src/mcs.rs": 1645,
     "crates/chematic-smarts/src/parser.rs": 2259,
@@ -659,19 +658,19 @@
       "decisions": 19,
       "lines": 141
     },
-    "crates/chematic-rxn/src/transform.rs::build_product#1": {
+    "crates/chematic-rxn/src/transform/product.rs::build_product#1": {
       "decisions": 48,
       "lines": 341
     },
-    "crates/chematic-rxn/src/transform.rs::find_matches_profile#1": {
+    "crates/chematic-rxn/src/transform/matching.rs::find_matches_profile#1": {
       "decisions": 20,
       "lines": 147
     },
-    "crates/chematic-rxn/src/transform.rs::product_sanitization_diagnostic#1": {
+    "crates/chematic-rxn/src/transform/sanitization.rs::product_sanitization_diagnostic#1": {
       "decisions": 28,
       "lines": 151
     },
-    "crates/chematic-rxn/src/transform.rs::rdkit_carried_ez#1": {
+    "crates/chematic-rxn/src/transform/sanitization.rs::rdkit_carried_ez#1": {
       "decisions": 30,
       "lines": 163
     },

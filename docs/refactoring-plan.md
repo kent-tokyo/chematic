@@ -50,7 +50,10 @@ accounting, sanitization diagnostics, compatibility refusals, and variant
 diagnostics now live in `transform/diagnostics.rs` while their existing
 `transform::*` public paths remain re-exported unchanged. SMIRKS normalization,
 reactant-query compilation, product-template specifications, and grouped
-component parsing are isolated in `transform/templates.rs`.
+component parsing are isolated in `transform/templates.rs`. Matching,
+sanitization, stereo transfer, product construction, and prepared-reaction
+orchestration now have separate modules; `transform.rs` is reduced from 8,282
+lines before R1 to 528 lines of public API and shared state.
 
 ## Required checks per phase
 

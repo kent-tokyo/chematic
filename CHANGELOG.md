@@ -29,6 +29,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Separated SMIRKS normalization and reactant/product template compilation
   from matching and product construction without changing parsed templates or
   result ordering.
+- Split the reaction engine into prepared-template orchestration, matching,
+  sanitization, stereo transfer, and product-construction modules. Public Rust
+  paths and reaction products remain unchanged.
 
 ## [1.1.0] - 2026-10-11
 
