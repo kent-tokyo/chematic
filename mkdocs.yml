@@ -83,6 +83,7 @@ nav:
     - Error Handling & Limits: error-and-limits.md
   - Reliability:
     - Validation vs RDKit: validation.md
+    - Compatibility Scope: compatibility-scope.md
     - Detailed RDKit Comparison: rdkit-comparison.md
     - RDKit Accuracy Plan: rdkit-accuracy-plan.md
     - Canonical E/Z Plan: canonical-ez-plan.md
@@ -91,4 +92,8 @@ nav:
   - RDKit Feature Support Matrix: rdkit-migration.md
   - API Reference:
     - chematic: api/chematic.md
+  - Project:
+    - Roadmap: https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md
+    - Open Work: roadmap-open-work.md
+    - Refactoring Guardrails: refactoring-plan.md
   - Changelog: changelog.md

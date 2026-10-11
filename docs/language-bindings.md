@@ -14,8 +14,9 @@ in both engines.
 |---|---|---|---|
 | SMILES atom output order | `write_with_atom_order`, `canonical_smiles_with_atom_order` | `Mol.smiles_with_atom_order()` | Not exposed |
 | Connected-component source atom indices | `Molecule::fragments_with_source_atoms()` | `Mol.connected_components_with_atom_indices()` | Not exposed |
-| Reaction product atom provenance and template maps | `PreparedReaction::apply_match_traced`, `run_reactants_traced_with_diagnostics` | `run_smirks_checked()` returns `product_atom_sources` and `product_template_maps` | `run_reactants_checked()` returns the same JSON arrays |
-| Opt-in product rejection diagnostics | RDKit detailed report returns typed reasons and bounded atom context | `run_smirks_checked(..., rdkit_compat=True)` returns `rejection_diagnostics` | `run_reactants_checked(..., true)` returns the same JSON field |
+| Reaction product atom provenance and template maps | `PreparedReaction::apply_match_traced`, `run_reactants_traced_with_rejection_diagnostics` | `run_smirks_checked()` returns `product_atom_sources` and `product_template_maps` | `run_reactants_checked()` returns the same JSON arrays |
+| Opt-in product rejection diagnostics | `run_reactants_traced_rdkit_2026_03_6_detailed` returns typed reasons and bounded atom context | `run_smirks_checked(..., rdkit_compat=True)` returns `rejection_diagnostics` | `run_reactants_checked(..., true)` returns the same JSON field |
+| Label-stable R-group columns | `rgroup_decompose_labeled()` returns aligned optional rows | `rgroup_decompose_columns()` | `rgroup_decompose_columns_json()` |
 
 `order[k]` is the input atom index for the `k`-th atom written in a SMILES
 string; it is also that atom's index after parsing the returned string.
@@ -26,6 +27,10 @@ may be `None` even when an atom has a reactant origin. These are additive APIs:
 ordinary SMILES writing, connected components, and reaction application retain
 their existing return values. The [published rerun](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-08-754-734-followups-batch24.md)
 records the current bounded reaction result; it is not general SMIRKS parity.
+
+R-group column output is input-aligned and uses `null`/`None` for unmatched
+or absent rows. It covers the documented mapped terminal-wildcard subset; it
+does not imply RDKit's multi-core alignment, enumeration, or GA scoring.
 
 See also: [`format-capabilities.md`](format-capabilities.md) for the
 per-format read/write/streaming/limits matrix this page's examples are

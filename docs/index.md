@@ -82,9 +82,12 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 v1.1.0 adds label-stable R-group decomposition, broader cross-binding RDKit
 interoperability, and fixes across ring perception, reactions, and molecular
-file interchange. The latest broad published-package performance packet remains
-v1.0.42 until v1.1.0 artifacts are measured. The 83-row reaction gate remains
-80 exact graph/origin/map rows and three inputs invalid in both engines.
+file interchange. Current `main` also exposes R-group columns to WASM/Node and
+typed reaction rejection diagnostics across Rust, Python, and WASM; these are
+unreleased source capabilities. The latest broad published-package performance
+packet remains v1.0.42 until v1.1.x artifacts are measured. The 83-row reaction
+gate remains 80 exact graph/origin/map rows and three inputs invalid in both
+engines.
 
 Each result applies only to its named artifact, corpus, options, and failure
 policy. Release availability is not accuracy evidence, source results are not
@@ -108,6 +111,10 @@ editing, and the RDKit-style API are experimental or intentionally bounded.
 
 RDKit remains the better choice for maximum ecosystem coverage, broader 3D
 workflows, or APIs that chematic marks unsupported.
+
+Rust line coverage is measured separately from chemistry validation. The
+processed Linux Codecov lane is currently 96.93%; it shows which code executed,
+not whether every chemical result is correct.
 
 ## Reference
 

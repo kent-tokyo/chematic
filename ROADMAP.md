@@ -1,364 +1,154 @@
 # chematic roadmap
 
-> Updated 2026-10-11. Release line: **v1.1.0**. Source, published-package, and
-> public-channel evidence are tracked separately.
+> Updated 2026-10-11 for the **v1.1.0** release line. Source, published
+> packages, and historical measurements are kept separate.
 
 CheMatic is a safe, typed, local-first chemistry kernel for Rust, Python,
-Node, WebAssembly, and agent workflows. The roadmap favors explicit support
-boundaries and reproducible evidence over feature-count parity.
+Node, WebAssembly, and agent workflows. The roadmap favors reliable contracts
+and reproducible evidence over feature-count parity.
 
 ## Current position
 
-- **Core:** selected SMILES/SMARTS, descriptor, fingerprint, search, and
-  MOL/SDF paths are stable and share one Rust implementation across bindings.
-- **Compatibility:** the source comparison covers 161 operations on ChEMBL 5k
-  and RDKit.js 10k. It is not a claim of universal or published-package
-  parity. Current work is rebaselined to RDKit 2026.09.1 and COSMolKit
-  0.5.0rc22; older comparator results remain historical.
-- **Performance:** the current macOS arm64 candidate wins every measured
-  parse-inclusive pipeline, but does not yet win every prepared operation.
-  RDKit-compatible TPSA is statistically tied with RDKit in the pinned
-  21-block run; ring count, Labute ASA, chiral Morgan, and amide/amine reaction
-  still lose to at least one comparator. Public-artifact replication remains
-  open.
-- **CDK/Indigo:** a source-only smoke gate now pins CDK 2.13 and Indigo
-  1.46.0. CheMatic is exact on all 15 measured operations of the 24-row common
-  matrix. Every rankable speed median and paired 95% interval favours
-  CheMatic; one high-repetition `[#8]` lane wins 20/21 blocks, so the strict
-  every-block exit remains open. This is not broad or package evidence.
-- **Reactions:** the published 83-row gate is 80 exact graph/origin/map rows
-  and three inputs invalid in both engines. Broader SMIRKS behavior remains
-  intentionally bounded.
-- **3D:** A6 now passes its 265-row geometry, stereo, and clash gate on Linux,
-  macOS, and Windows CI. Force-field and conformer quality remain experimental;
-  quality evidence takes precedence over speed claims.
-- **Release channels:** v1.1.0 is verified through the recorded GitHub, PyPI,
-  crates.io, npm, docs.rs, and Pages channels. Availability alone is not
-  chemistry validation; the broad published-package performance packet remains
-  pinned to v1.0.42 until v1.1.0 is measured under the same protocol.
+- Stable selected paths cover SMILES/SMARTS, descriptors, fingerprints,
+  search, and common MOL/SDF workflows across one Rust core.
+- Issues #734 and #754 are closed. Their reaction, SMARTS, autoconf, and fuzz
+  corpora remain regression gates; closure is not a universal SMIRKS-parity
+  claim.
+- v1.1.0 adds bounded label-stable R-group decomposition. Rust, Python, and
+  WASM/Node expose input-aligned `Core`/`R1`/`R2` columns for the documented
+  terminal-wildcard subset.
+- Current source also exposes typed reaction rejection diagnostics across the
+  checked Rust, Python, and WASM APIs.
+- The broadest published-package RDKit performance packet is still v1.0.42.
+  Source results and older package results are not relabeled as v1.1.0
+  evidence.
+- Rust line coverage on the processed Linux Codecov lane is 96.93%. Coverage
+  demonstrates executed code, not chemical correctness or compatibility.
+- 3D, MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer
+  expansion, and rich CDXML editing remain experimental or bounded.
 
-See [validation](docs/validation.md) for denominators and
-[benchmark records](benchmarks/README.md) for exact versions, hashes, and
-commands.
+Exact denominators belong in [validation](docs/validation.md) and dated
+[benchmark records](benchmarks/README.md). Unresolved work is tracked in the
+[open-work ledger](docs/roadmap-open-work.md).
 
-## Priority order
+## Priorities
 
-### 0. P1 — Close high-value RDKit workflow gaps without feature-count chasing
+### P0 — Publish v1.1.x evidence from exact artifacts
 
-- The first gap is label-stable R-group decomposition for SAR tables. The
-  source candidate accepts mapped terminal wildcards and mapped core atoms,
-  preserves labels in both core and substituent output, returns row and column
-  Python forms, and refuses ambiguous mappings. Before calling this complete,
-  add a stratified labelled-core corpus and repeat it across Rust/Python/WASM.
-- Keep the boundary explicit: RDKit's multi-core MCS alignment, tautomer/core
-  enumeration, non-terminal R-groups, multiple R-groups per site, and GA
-  scoring are not implemented by the bounded API. Add them only behind typed
-  options and independent agreement fixtures.
-- Evaluate the next breadth candidates in this order: configurable filter
-  catalogs, BRICS assembly, then synthon-space search. ETKDGv4 and
-  shape-based synthon search remain beta/new RDKit 2026.09 surfaces and should
-  not displace correctness and publication gates for stable APIs.
+1. Rebuild the chemistry, reaction, SMARTS, fingerprint, format, and A6 gates
+   from exact PyPI, npm, and crates.io artifacts.
+2. Record artifact hashes, comparator builds, corpus hashes, options, platform,
+   and failure accounting.
+3. Keep Linux, macOS, Windows, browser, and native lanes separate. A source
+   pass is not a package pass.
 
-**Exit:** the declared R-group subset is atom-order invariant, preserves every
-input row in column output, and either matches the pinned RDKit fixture or
-returns a documented typed refusal.
+**Exit:** every public claim points to a reproducible artifact record; old
+measurements remain explicitly historical.
 
-### 1. P0/A1 — Verify v1.1.0 correctness and API contracts
+### P0 — Preserve correctness while closing prepared-operation deficits
 
-- The source candidate fixes the four false RDKit-compatible ring counts caused
-  by treating every single SMILES closure as a graph cycle. Keep coordination,
-  disconnected-component closure, and mutation/cache regressions in Rust,
-  Python, and WASM.
-- Classify the v1.0.42 explicit-hydrogen reaction residuals by deletion,
-  bond-breaking, radical, and re-sanitization causes. The first confirmed
-  radical-producing defect is fixed in source; rerun the complete pinned
-  corpus before changing the published baseline.
-- Preserve the Rust reaction report's existing struct-literal shape. Add
-  diagnostics through separate opt-in report types rather than public fields
-  on an existing struct.
-- Prefer checked descriptor and legacy-MMFF APIs where an unsupported result
-  could otherwise be mistaken for `0.0`; keep legacy calls only for source
-  compatibility.
+1. Require exact or toleranced output agreement before timing an operation.
+2. Measure parse-inclusive, first-use, prepared/hot, memory, and startup lanes
+   separately.
+3. Prioritize remaining equivalent-work deficits in ring perception,
+   Labute ASA/TPSA, chiral Morgan, and reaction application.
+4. Reject benchmark rows with comparator errors, skipped work, or asymmetric
+   APIs instead of reporting a speed ratio.
 
-**Exit:** the four ring regressions pass in every exposed binding, no confirmed
-explicit-H implementation defect remains in the pinned corpus, old Rust report
-struct literals compile, and unsupported calculations have a checked path.
+**Exit:** each declared win uses at least 21 alternating blocks, wins every
+block, and has a paired 95% lower bound above 1.0 on two recorded hosts.
 
-### 2. P0 — Refresh public-artifact evidence
+### P0/A4 — Expand semantic file interchange
 
-- The v1.0.42 macOS arm64 CPython 3.13 wheel is now hash-pinned and measured
-  for the chemistry packet and 265-row A6 coordinates. Its explicit-H reaction
-  counts are retained as historical v1.0.42 behavior, not silently replaced by
-  the source candidate.
-- The selected v1.0.42/RDKit 2026.09.1 performance packet is now rerun from
-  exact PyPI and npm artifacts on hosted Linux x64 and macOS arm64. Python
-  parse-inclusive TPSA, Labute ASA and chiral Morgan win on both hosts; the six
-  published ring-count residuals suppress that speed lane, and mixed prepared
-  results remain host-scoped. npm exposes no equivalent-work speed win.
-- Run the same expected-value packet on the published Linux, macOS, and Windows
-  artifacts. Keep platform output, comparator execution, and source-candidate
-  results separate.
-- Continue the broader chemistry/A6 packet on Windows and the applicable
-  crates.io surfaces rather than carrying source results forward.
+1. Extend the bounded Open Babel comparison beyond the initial V3000, MOL2,
+   CML, and CDXML fixtures to stratified corpora.
+2. Compare graph, charge, isotope, bond order, stereo, coordinates, properties,
+   and format-specific metadata before measuring speed.
+3. Preserve batch accounting:
+   `input = success + refusal + unsupported + invalid + internal_error`.
+4. Keep cold start, parse, write, round trip, peak RSS, and large-file
+   throughput as separate results.
 
-**Exit:** every published claim names its artifact hash, comparator, corpus,
-operation, options, and failure policy.
+**Exit:** every supported cell either round-trips under the declared observer
+or reports a typed loss/refusal. See the detailed
+[Open Babel plan](docs/openbabel-interchange-plan.md).
 
-### 3. P0/A3 — Complete the equivalent-work performance gate
+### P1 — Maintain reaction, SMARTS, and R-group contracts
 
-The target is a bounded, reproducible win over the pinned distributed
-artifacts, not a universal claim over every chemistry operation or workload.
+1. Keep the 83-row reaction gate, 310,000-cell SMARTS gate, autoconf probes,
+   BioTransformer-derived cases, and property-fuzz minimizers in CI.
+2. Preserve product graph, atom origin, template-map, explicit-H, stereo, and
+   rejection-diagnostic contracts independently.
+3. Expand R-group coverage only with atom-order-invariant fixtures and typed
+   refusals. Multi-core/MCS alignment, tautomer/core enumeration,
+   non-terminal R-groups, and GA scoring stay out of the bounded API until
+   independently specified.
 
-- Freeze the primary comparator set at RDKit 2026.09.1 and COSMolKit
-  0.5.0rc22 until the acceptance packet closes. A comparator upgrade starts a
-  new packet; it does not rewrite historical results.
-- Accuracy comes first: on every declared supported row, chematic must equal
-  the pinned oracle or return the documented typed refusal. A faster wrong
-  result, comparator exception, or skipped row is not a win.
-- Maintain two performance contracts: parse-inclusive pipelines and prepared
-  operation-only calls. Parsing cannot absorb expensive perception solely to
-  make the prepared lane look faster.
+**Exit:** supported rows are deterministic across Rust, Python, and WASM;
+unsupported chemistry never becomes a guessed successful result.
 
-- Preserve the existing RDKit agreement denominators before accepting a speed
-  change; a typed refusal or changed result is not a performance win.
-- Keep parsing, first use, prepared/hot calls, 3D preparation, and memory as
-  separate lanes. Do not move costly perception into parsing only to improve a
-  downstream benchmark.
-- Close the remaining prepared-operation deficits in this order: ring count,
-  Labute ASA, chiral Morgan, and amide/amine reaction against COSMolKit. Keep
-  TPSA above the RDKit lower-confidence-bound gate while closing its COSMolKit
-  deficit.
-- The current follow-up caches the shared RDKit-model safety predicate,
-  removes a redundant cleanup scan, and avoids Labute bond-order allocation.
-  On the pinned 1,000-row/21-block run, all six parse-inclusive pipelines win
-  every block. Prepared TPSA is statistically tied with RDKit, and the
-  amide/amine reaction wins against RDKit; neither yet beats COSMolKit.
-- Fix the benchmark before trusting it: API drift or any per-row comparator
-  error invalidates that operation's speed ratio and confidence interval.
-- Rerun from exact PyPI/npm/crates.io artifacts and on a second host.
+### P1/A2/A6 — Maintain stereo, identity, and 3D quality
 
-#### CDK 2.13 and Indigo 1.46.0 lane
+1. Retain permutation, spelling, round-trip, CIP-abstention, MOL stereo, and
+   canonical stable-key gates.
+2. Keep force-field typing, per-term energy, gradient, convergence, stereo,
+   clash, and conformer quality as separate measurements.
+3. Add new 3D breadth only after failure reasons and quality evidence are
+   available on the existing supported domain.
 
-- Keep the checked-in common-schema adapters independent and public-API-only;
-  do not copy LGPL CDK or Apache Indigo implementation code.
-- Promote the 24-row smoke corpus to a frozen broad corpus plus adversarial
-  metal, isotope, stereo, aromatic, disconnected, and hypervalent strata.
-- Separate semantic-common operations from comparator-specific definitions.
-  In particular, report the RDKit-model/SSSR ring-count difference without
-  treating cubane's basis choice as an accuracy failure.
-- Expand exact-output speed gates from parse, formula, canonical stability,
-  and six SMARTS queries to MOL/SDF round trip, descriptors, fingerprints,
-  reactions, and batch file I/O only where all engines perform equivalent
-  work.
-- Add cold start and peak RSS, repeat on a second host, then rerun from exact
-  published CheMatic artifacts before making a public claim.
+**Exit:** no known wrong-confident result remains in the declared domain;
+unresolved cases are observable and typed.
 
-**Exit:** CheMatic has no wrong-confident row on the frozen common matrix and
-is at least as accurate as both comparators. Every declared speed win passes
-21 rotating blocks, wins every block, and has a paired 95% lower bound above
-1.0 in both pipeline and prepared lanes; package, host, and memory evidence
-are recorded separately.
+### P2 — Product and ecosystem work
 
-**Exit:** on the frozen common-operation matrix, chematic is at least as
-accurate as each comparator row by row, with no wrong-confident result. For
-every equivalent-output performance lane, 21 or more alternating blocks, all
-blocks faster, and the paired 95% speedup lower bound above 1.0 against both
-RDKit and COSMolKit. Published-package claims require exact artifact hashes,
-a second host, and separate peak-memory results.
-
-### 4. P0/A4 — Beat Open Babel on bounded production file I/O
-
-- Use the versioned contract in
-  [`validation/openbabel_file_io_contract_v1.json`](validation/openbabel_file_io_contract_v1.json)
-  for SDF, MOL V2000/V3000, MOL2, CML, CDXML, PDB, and mmCIF. Do not use raw
-  format count as the success metric.
-- First close semantic round trips in both directions: graph, charge, isotope,
-  bond order, stereo, coordinates, record properties, and format-specific
-  metadata. Any loss must be reported or refused; silent loss is a defect.
-- Current source progress: V3000, MOL2, CML, and CDXML have a common-observer
-  single-fixture semantic gate. The new loss-aware MOL2 record API preserves
-  partial charges, atom types, residue fields, status bits, formal charges,
-  and opaque sections. Expand this from one fixture to stratified corpora before
-  making a broad accuracy claim.
-- Preserve `input = success + typed refusal + unsupported + invalid + internal
-  error` for batch work. Require zero internal errors, panics, and crashes on
-  malformed and resource-limit corpora.
-- Compare cold start, parse, write, round trip, and peak RSS as separate lanes.
-  Require equivalent outputs, at least 21 alternating blocks, every block
-  faster, and a paired 95% speedup lower bound above 1.0 before declaring a
-  format win.
-- Current source progress: the fresh-process CLI round-trip lane passes the
-  strict 21-block rule for all four semantic-gated fixtures. The same-process
-  hot-loop gate also passes all 12 parse, write, and round-trip lanes for
-  V3000, MOL2, CML, and CDXML. Large-file throughput, peak RSS, broad semantic
-  corpora, PDB/mmCIF, and published artifacts remain open.
-- Publish source and package evidence separately. A win on the Tier-A profile
-  is not a claim to match Open Babel's total format breadth.
-
-**Exit:** every Tier-A format has bidirectional semantic evidence, zero silent
-loss, complete typed accounting, bounded malformed-input behavior, and a
-reproducible equivalent-work comparison against pinned Open Babel 3.2.1.
-
-See [the comparison contract](docs/openbabel-file-io.md).
-
-### 5. P1/A4 — Maintain the closed SMARTS/SMIRKS contract
-
-Issues [#734](https://github.com/kent-tokyo/chematic/issues/734) and
-[#754](https://github.com/kent-tokyo/chematic/issues/754) are closed. Their
-corpora remain active regression gates rather than release-completion claims.
-
-- Keep the 83-row reaction gate and the original 57 fixtures unchanged.
-- Classify every fuzz difference as exact, typed refusal, unsupported dialect,
-  invalid in both engines, or implementation defect.
-- Submit the minimized upstream probes and rerun the published macOS/Windows
-  package lanes.
-- Do not count refusals or jointly invalid inputs as matches.
-
-**Maintenance rule:** no wrong-confident supported result in the pinned
-corpora, all rows accounted for, and package evidence recorded separately from
-source evidence.
-
-### 6. P2/A6 — Maintain stereo, identity, and 3D quality
-
-- Preserve atom-order, spelling, and round-trip invariance gates for CIP/E/Z.
-- Keep lossy MOL output observable through report/strict APIs.
-- Measure MMFF/UFF typing, energy, convergence, stereo, clash, and conformer
-  quality independently.
-- Keep canonical SMILES distinct from the fail-closed stable identity key.
-
-**Exit:** no silent information loss and no wrong-confident stereo result in
-the declared domain.
-
-### 7. External — Rebaseline new RDKit distributions
-
-Pin the exact distributed Python, npm/WASM, and native artifacts before a
-rebaseline. Preserve old results as historical records; do not substitute a
-source build for an unavailable package.
+- Keep browser workflows local-first, bounded, cancellable, and explicit
+  about memory/time limits.
+- Maintain Python, Rust, Node/WASM, CLI, and MCP contracts from the shared
+  core without promising identical API shapes where the host language differs.
+- Add requested workflow features only when their support boundary, fixtures,
+  and maintenance owner are clear.
 
 ## Product phases
 
-| Phase | Area | Status |
+| Phase | Scope | State |
 |---|---|---|
-| P0 | Core chemistry and reproducible comparison | Active: prepared-operation and artifact performance gates |
-| P1 | Parsing, files, reactions, SMARTS | Active: #734, #754 |
-| P2 | Stereo, identity, canonicalization | Active maintenance |
-| P3 | Browser, Node, Python, agents | RDKit WASM parity implemented; maintain cross-binding gates |
-| P4 | Medicinal chemistry workflows | Bounded implementation |
-| P5 | 3D, force fields, materials | Experimental; quality-gated |
-| P6 | Release operations and ecosystem trust | Automated with recurring review |
-
-Phase numbers identify areas, not a strict delivery sequence. Security or
-silent-corruption regressions always take priority.
+| P0 | Release integrity, typed failures, evidence provenance | Active |
+| P1 | Parsing, reactions, SMARTS, descriptors, interchange | Maintenance |
+| P2 | Fingerprints, search, stereo, identity | Active |
+| P3 | 2D/3D, force fields, conformer quality | Experimental |
+| P4 | Python, WASM/Node, CLI, MCP, browser products | Active |
+| P5 | Operational hardening and cross-platform publication | Active |
+| P6 | Advanced chemistry breadth | Selective |
 
 ## Accuracy packages
 
-| Package | State |
-|---|---|
-| A0 Evaluation contract | Complete |
-| A1 Perception and descriptors | Open |
-| A2 Stereo and identity | Active |
-| A3 Fingerprints and retrieval | Active: output-preserving performance |
-| A4 Workflows and interchange | Active |
-| A5 Independent adjudication | External |
-| A6 3D and force fields | Active |
+| Package | Focus | State |
+|---|---|---|
+| A0 | Evaluation contract and provenance | Complete |
+| A1 | Perception and descriptors | Active |
+| A2 | Stereo and identity | Active |
+| A3 | Fingerprints and retrieval | Maintenance |
+| A4 | Reactions and interchange workflows | Active |
+| A5 | Independent adjudication | External |
+| A6 | 3D and force fields | Experimental |
 
 ## Completion rules
 
-Every completed item must include:
+- Record versions, hashes, corpus, options, host, and failure policy.
+- Count success, failure, refusal, unsupported, and skipped inputs separately.
+- A typed refusal is safer than a wrong answer, but it is not a match.
+- A local/source pass is not a published-package result.
+- Performance requires equivalent work and equivalent acceptable output.
+- Coverage, availability, and feature presence are not chemistry validation.
+- Sealed data is evaluated once; inspected rows cannot become sealed again.
 
-1. a declared support domain and typed failure policy;
-2. regression tests for the corrected behavior;
-3. affected binding and package checks;
-4. committed evidence with versions, hashes, and denominators;
-5. synchronized README, CHANGELOG, validation, and release metadata.
-
-The behavior-preserving R0-R8 maintenance track is recorded separately in the
-[refactoring plan](docs/refactoring-plan.md). It uses a CI debt ratchet so
-existing chemistry-sensitive hotspots can only shrink while their compatibility
-and performance gates remain authoritative.
-
-## References
+## Detailed references
 
 - [Open-work ledger](docs/roadmap-open-work.md)
-- [Compatibility scope](docs/compatibility-scope.md)
 - [Validation report](docs/validation.md)
-- [Benchmark methodology](docs/benchmark.md)
-- [Accuracy plan](docs/rdkit-accuracy-plan.md)
-- [Trust Release rules](docs/trust-release-plan.md)
+- [Benchmark method](docs/benchmark.md)
+- [Compatibility scope](docs/compatibility-scope.md)
+- [Format capability matrix](docs/format-capabilities.md)
+- [Open Babel interchange plan](docs/openbabel-interchange-plan.md)
 - [Refactoring plan](docs/refactoring-plan.md)
-- [Release history](CHANGELOG.md)
-
-### Open Babel interchange and semantic preservation (October 11 addition)
-
-The goal is to exceed Open Babel in useful format read/write coverage and
-verified semantic preservation. The
-[interchange execution plan](docs/openbabel-interchange-plan.md) records the
-inspected v1.0.20 local-source boundary, installed Open Babel 3.2.1, proposed
-conversion-report contract, and IO0–IO5 acceptance. No comparative gate is
-complete from this source audit.
-
-Prioritize a pinned paired harness and MOL2 charge/bond repairs, then shared
-checked conversion across CLI/Python/Node/WASM. Establish preservation for
-SMILES/CXSMILES, MOL V2000/V3000, SDF, MOL2, CML, and CDXML before expanding
-docking, reaction/document, and scientific-format workflows. Report opaque
-retention, inference, loss, refusal, and successful preservation separately.
-Useful coverage must grow alongside correctness; refusals and format aliases
-cannot count as successful interoperability.
-
-This is an A2/A4 execution addition. It does not close their broader acceptance
-or transfer evidence from later releases to this checkout.
-
-The October 11 source candidate implements separate MOL2 partial/formal
-charges, correct `am` projection, refusal of unknown bond tokens, honest
-`NO_CHARGES` graph output, and immutable source-retaining records. The shared
-checked-conversion API covers MOL2 → MOL2/SMILES/ChemicalJSON and
-ChemicalJSON → ChemicalJSON/SMILES across Rust, CLI, Python and WASM. It
-reports losses and uncertainty, refuses under strict policy, and checks
-candidate atom/bond correspondence after re-reading output.
-
-ChemicalJSON output retains source x/y/z values and projected formal charges.
-Coordinate f64 bits are compared through mapped atoms. A reproduced 1 ULP
-CJSON reader error is repaired with precise JSON float parsing. CJSON input
-now has an immutable record with exact source retention, opaque field paths,
-strict known-field validation and recursive duplicate-key rejection. Checked
-CJSON → SMILES also verifies mapped isotopes and formal charges, while
-reporting coordinate/metadata losses, defaulted fields and inferred hydrogens.
-Atom aromaticity, coordinate stereo and opaque fields are not interpreted.
-
-The CJSON-input milestone passed: MOL/CLI 835, source-wheel Python 211, five Node/WASM
-suites, 53 shared report/error cases, and 2,045 finite coordinate vectors
-through both CJSON readers. MOL/CLI Clippy passes with `--no-deps`; the
-unrestricted run encountered a warning in concurrent FF work. See the
-[CJSON-input verification record](validation/results/cjson-input-source-2026-10-11.json).
-Earlier milestones retain their own records for
-[MOL2 source retention](validation/results/mol2-preservation-source-2026-10-11.json),
-[initial checked conversion](validation/results/conversion-report-source-2026-10-11.json)
-and [CJSON output/precision](validation/results/conversion-cjson-source-2026-10-11.json).
-
-A paired development runner now records eight inputs × two routes × two
-engines, with fixed expectations, artifact hashes, resource limits and complete
-terminal accounting. The first measurements drove retention of complete
-partial-charge datasets, declared method labels and molecule names in checked
-MOL2 → CJSON. Cross reads drove integer JSON spelling of integral CJSON bond
-orders for Open Babel 3.2.1 compatibility. Remaining losses are retained in the
-[self-read and cross-read records](validation/interchange/README.md).
-This is exposed development evidence, not an independent superiority gate.
-Checked CJSON → MOL2 now reads typed root partial-charge datasets and
-`properties.name`, preserves finite coordinate/charge bits and checks reparsed
-name/method labels. Multiple datasets, absent geometry and unrepresentable
-header text refuse without guessing. Generated atom metadata, unsupported
-formal charges/isotopes, opaque fields and stereo remain declared losses or
-uncertainty.
-
-Latest local gates passed: MOL/CLI 848, source-wheel Python 230, five
-Node/WASM suites, 79 shared report/error cases and 33 runner tests. The expanded
-cross-read run retains 15 terminal outcomes. All six CheMatic MOL2 projections
-(from both engines' CJSON) preserve partial charges, method and molecule name
-on the three exposed common inputs; the six Open Babel default readbacks lose
-those fields. Atom names/types remain losses, and all original nine control
-outcomes/field checks are unchanged. See the
-[reverse-adapter evidence](validation/results/cjson-mol2-development-summary-2026-10-11.json).
-
-Other checked format pairs, broader source charge/stereo interpretation,
-independent comparative acceptance, and publication remain open. These local
-regressions do not establish superiority over Open Babel.
+- [Historical roadmap snapshots](docs/archive/)

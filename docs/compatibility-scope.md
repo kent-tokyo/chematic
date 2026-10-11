@@ -69,6 +69,14 @@ written as `*`, so use MOL/SDF/CDXML or the Rust/WASM label API when identity
 must survive editing. This atom-level contract does not implement Markush
 alternative selection or polymer semantics.
 
+The bounded R-group decomposition API accepts labelled terminal wildcard sites
+and mapped core atoms, normalizes input atom order, preserves labels, and
+returns input-aligned `Core`/`R1`/`R2` columns in Rust, Python, and WASM/Node.
+Duplicate labels, non-terminal placeholders, ambiguous multiple attachments,
+and match-limit exhaustion fail explicitly. Multi-core/MCS alignment,
+tautomer/core enumeration, multiple substituents per site, and RDKit's GA
+scoring are not part of this contract.
+
 ## CDXML
 
 Supported: bounded molecular parsing with coordinates; loss-preserving,
