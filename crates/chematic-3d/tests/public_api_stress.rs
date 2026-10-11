@@ -72,7 +72,12 @@ fn public_3d_surface_is_panic_free_on_diverse_stress_structures() {
             let explicit_h = chematic_chem::add_hydrogens(&mol);
             for set_15 in [false, true] {
                 for smooth in [false, true] {
-                    let _ = rdkit_bounds_matrix(&explicit_h, set_15, smooth, exercised % 2 == 0);
+                    let _ = rdkit_bounds_matrix(
+                        &explicit_h,
+                        set_15,
+                        smooth,
+                        exercised.is_multiple_of(2),
+                    );
                 }
             }
             if exercised <= 64 {
@@ -98,7 +103,7 @@ fn public_3d_surface_is_panic_free_on_diverse_stress_structures() {
             };
             let mut config = PipelineV2Config::minimal(policy);
             config.total_timeout_ms = Some(2_000);
-            config.include_legacy_torsion_heuristic = exercised % 2 == 0;
+            config.include_legacy_torsion_heuristic = exercised.is_multiple_of(2);
             config.gate_mmff94_torsion_oop = exercised % 3 == 1;
             config.gate_mmff94_stretch_bend = exercised % 4 == 1;
             let _ = chematic_3d::embed_pipeline_v2(&mol, &config);
