@@ -17,6 +17,7 @@
 
 use std::any::Any;
 use std::panic::{RefUnwindSafe, UnwindSafe};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, OnceLock};
 
 /// Well-known derived-data slots. Each slot stores exactly one Rust type,
@@ -82,12 +83,17 @@ type Slot = OnceLock<Arc<Erased>>;
 
 pub(crate) struct DerivedCache {
     slots: [Slot; SLOT_COUNT],
+    /// Kept outside the type-erased slots because this descriptor is a very
+    /// hot scalar property.  Avoiding `Arc<dyn Any>` and a downcast makes a
+    /// prepared ring-count lookup comparable to RDKit's native cache read.
+    rdkit_num_rings: AtomicUsize,
 }
 
 impl Default for DerivedCache {
     fn default() -> Self {
         Self {
             slots: [const { OnceLock::new() }; SLOT_COUNT],
+            rdkit_num_rings: AtomicUsize::new(usize::MAX),
         }
     }
 }
@@ -100,6 +106,23 @@ impl Clone for DerivedCache {
 }
 
 impl DerivedCache {
+    #[inline(always)]
+    pub(crate) fn rdkit_num_rings(&self, compute: impl FnOnce() -> usize) -> usize {
+        let count = self.rdkit_num_rings.load(Ordering::Relaxed);
+        if count != usize::MAX {
+            count
+        } else {
+            // Concurrent readers may compute the same deterministic scalar
+            // more than once.  Publishing with relaxed ordering is enough:
+            // the value carries no pointer/data dependency and mutation
+            // replaces the complete `DerivedCache` under `&mut self`.
+            let count = compute();
+            debug_assert_ne!(count, usize::MAX);
+            self.rdkit_num_rings.store(count, Ordering::Relaxed);
+            count
+        }
+    }
+
     pub(crate) fn get_or_compute<T, F>(&self, slot: DerivedSlot, compute: F) -> Arc<T>
     where
         T: Any + Send + Sync + RefUnwindSafe + UnwindSafe,

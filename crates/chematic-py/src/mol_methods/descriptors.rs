@@ -128,6 +128,7 @@ impl Mol {
     /// them (its symmetrized SSSR); larger than :attr:`ring_count` for cages
     /// and bridged systems.
     #[getter]
+    #[inline(always)]
     fn num_rings(&self) -> usize {
         chematic_chem::rdkit_num_rings(&self.inner)
     }

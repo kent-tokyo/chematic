@@ -1,4 +1,15 @@
 impl Molecule {
+    /// Return the memoized RDKit-compatible ring count.
+    ///
+    /// This scalar has a dedicated cache instead of a type-erased derived
+    /// slot because it is commonly read immediately after parsing and its
+    /// lookup cost is measurable through language bindings.
+    #[doc(hidden)]
+    #[inline(always)]
+    pub fn derived_rdkit_num_rings(&self, compute: impl FnOnce() -> usize) -> usize {
+        self.derived.rdkit_num_rings(compute)
+    }
+
     /// Return the memoized value for `slot`, computing it with `compute` on
     /// first use. Intended for perception crates in this workspace; the slot
     /// set and its types are not a stable public API.
@@ -248,4 +259,3 @@ impl Molecule {
         result
     }
 }
-

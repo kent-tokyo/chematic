@@ -15,6 +15,8 @@ def validate(
     expected_chematic: str = "1.0.42",
     expected_rdkit: tuple[str, ...] = ("2026.9.1", "2026.09.1"),
     expected_revision: str | None = None,
+    expected_blocks: int = 21,
+    minimum_artifacts: int = 2,
 ) -> list[str]:
     errors: list[str] = []
     if report.get("schema") != expected_schema:
@@ -37,15 +39,17 @@ def validate(
     if len(corpus.get("sha256", "")) != 64:
         errors.append("missing corpus SHA-256")
     artifacts = report.get("artifacts", [])
-    if len(artifacts) < 2:
-        errors.append("published artifact records are missing")
+    if len(artifacts) < minimum_artifacts:
+        errors.append(
+            f"expected at least {minimum_artifacts} artifact records, got {len(artifacts)}"
+        )
     for artifact in artifacts:
         if len(artifact.get("sha256", "")) != 64 or artifact.get("bytes", 0) <= 0:
             errors.append(f"invalid artifact record: {artifact.get('file')}")
     method = report.get("method", {})
     blocks = method.get("blocks")
-    if blocks != 21:
-        errors.append("expected 21 alternating blocks")
+    if blocks != expected_blocks:
+        errors.append(f"expected {expected_blocks} alternating blocks")
     accuracy = report.get("accuracy", {})
     speed = report.get("speedup_rdkit_over_chematic", {})
     required_ops = {"labute_asa", "morgan2_chiral"}
@@ -66,13 +70,13 @@ def validate(
         if lane.get("eligible"):
             for name in ("prepared", "pipeline"):
                 interval = lane.get(name)
-                if not interval or interval.get("blocks") != 21:
+                if not interval or interval.get("blocks") != expected_blocks:
                     errors.append(f"missing {op} {name} interval")
         elif lane.get("prepared") is not None or lane.get("pipeline") is not None:
             errors.append(f"non-equivalent {op} reports a speed interval")
     samples = report.get("raw_samples_seconds", {})
     for engine in ("chematic", "rdkit"):
-        if len(samples.get(engine, [])) != 21:
+        if len(samples.get(engine, [])) != expected_blocks:
             errors.append(f"missing raw {engine} samples")
     return errors
 
@@ -84,6 +88,8 @@ def main() -> int:
     parser.add_argument("--expected-chematic", default="1.0.42")
     parser.add_argument("--expected-rdkit", action="append", default=None)
     parser.add_argument("--expected-revision", default=None)
+    parser.add_argument("--expected-blocks", type=int, default=21)
+    parser.add_argument("--minimum-artifacts", type=int, default=2)
     args = parser.parse_args()
     report = json.loads(args.record.read_text())
     errors = validate(
@@ -92,6 +98,8 @@ def main() -> int:
         expected_chematic=args.expected_chematic,
         expected_rdkit=tuple(args.expected_rdkit or ("2026.9.1", "2026.09.1")),
         expected_revision=args.expected_revision,
+        expected_blocks=args.expected_blocks,
+        minimum_artifacts=args.minimum_artifacts,
     )
     if errors:
         for error in errors:
