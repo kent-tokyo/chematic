@@ -2,7 +2,7 @@
   "schema": "published-wheel-chemistry-gates-expected/v1",
   "chematic_version": "1.1.1",
   "rdkit": "2026.03.6",
-  "source": "v1.1.1 published-artifact revalidation target. Existing chemistry counts and A6 coordinates are unchanged from the verified v1.0.42 baseline; descriptor_stress records the independently measured public PyPI v1.1.1 macOS arm64 CPython 3.13 wheel results. The multi-platform workflow must pass before these counts are described as cross-platform evidence.",
+  "source": "Public PyPI v1.1.1 artifact counts measured by the hosted Linux/macOS/Windows gate. descriptor_stress records the independently measured macOS arm64 CPython 3.13 result; the remaining fields are fixed to run 38183111719 and must reproduce across the rerun before they are described as cross-platform evidence.",
   "gates": {
     "reaction_83": {
       "graph_origin_map_match": 80,
@@ -29,7 +29,8 @@
         "compared_rows": 9796,
         "heavy": 215565,
         "hydrogen": 191148,
-        "rdkit_unsupported": 204
+        "rdkit_unsupported": 204,
+        "heavy_differing": 72
       },
       "mol_writer": {
         "stereo_rows": 1687,
@@ -71,10 +72,10 @@
     },
     "biotransformer_corpus": {
       "explicit_h:both_none": 382090,
-      "explicit_h:both_none_refused": 680,
-      "explicit_h:differ": 153,
-      "explicit_h:exact": 6486,
-      "explicit_h:rdkit_raw_unsanitizable": 165,
+      "explicit_h:both_none_refused": 673,
+      "explicit_h:differ": 35,
+      "explicit_h:exact": 6604,
+      "explicit_h:rdkit_raw_unsanitizable": 172,
       "explicit_h:rdkit_resanitize_fails_same_products": 14,
       "explicit_h:rdkit_truncated_subset": 12,
       "implicit:both_none": 388406,

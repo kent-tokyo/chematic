@@ -189,6 +189,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
         with:
           python-version: "3.12"
+      - name: Preserve pinned rule bytes on every platform
+        run: git config --global core.autocrlf false
       - name: Install the published wheel, the pinned RDKit and the pinned tool
         run: |
           if [ "${{ matrix.artifact }}" = "sdist" ]; then
