@@ -47,6 +47,9 @@ impl<'a> Iterator for SdfReader<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
+            if self.remaining.is_empty() {
+                return None;
+            }
             if self.input_bytes > self.limits.max_input_bytes {
                 self.remaining = "";
                 return Some(Err(MolParseError::ResourceLimit {
@@ -60,10 +63,6 @@ impl<'a> Iterator for SdfReader<'a> {
             // skip it. A genuinely empty gap between/after `$$$$` delimiters is
             // handled below without recursion so adversarial empty-record runs
             // cannot exhaust the stack.
-            if self.remaining.is_empty() {
-                return None;
-            }
-
             // Scan line by line so that a `$$$$` substring inside a data value
             // does not trigger a false match.  When the delimiter is found, the
             // mol block runs up to (but excluding) it, and the rest continues

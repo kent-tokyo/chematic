@@ -111,6 +111,23 @@ fn in_memory_xyz_reader_enforces_frame_limit_after_valid_prefix() {
 }
 
 #[test]
+fn in_memory_xyz_reader_enforces_input_limits() {
+    let limits = XyzParseLimits {
+        max_input_bytes: 3,
+        ..XyzParseLimits::default()
+    };
+    let mut reader = XyzReader::with_limits(WATER_XYZ, limits);
+    assert!(matches!(
+        reader.next(),
+        Some(Err(XyzError::ResourceLimit {
+            resource: "input bytes",
+            ..
+        }))
+    ));
+    assert!(reader.next().is_none());
+}
+
+#[test]
 fn file_reader_matches_in_memory_reader() {
     use std::io::BufReader;
 
@@ -390,6 +407,40 @@ fn in_memory_extxyz_reader_rejects_oversized_declared_frame() {
         Some(Err(XyzError::ResourceLimit {
             resource: "atoms per frame",
             ..
+        }))
+    ));
+    assert!(reader.next().is_none());
+}
+
+#[test]
+fn in_memory_extxyz_reader_enforces_input_and_frame_limits() {
+    let input_limits = XyzParseLimits {
+        max_input_bytes: 3,
+        ..XyzParseLimits::default()
+    };
+    let mut reader = ExtxyzReader::with_limits(EXTXYZ_WATER, input_limits);
+    assert!(matches!(
+        reader.next(),
+        Some(Err(XyzError::ResourceLimit {
+            resource: "input bytes",
+            ..
+        }))
+    ));
+    assert!(reader.next().is_none());
+
+    let input = "1\none\nC 0 0 0\n1\ntwo\nO 0 0 0\n";
+    let frame_limits = XyzParseLimits {
+        max_frames: 1,
+        ..XyzParseLimits::default()
+    };
+    let mut reader = ExtxyzReader::with_limits(input, frame_limits);
+    assert!(reader.next().unwrap().is_ok());
+    assert!(matches!(
+        reader.next(),
+        Some(Err(XyzError::ResourceLimit {
+            resource: "frames",
+            actual: 2,
+            limit: 1,
         }))
     ));
     assert!(reader.next().is_none());

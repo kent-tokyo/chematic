@@ -340,4 +340,71 @@ mod tests {
         );
         assert_eq!(result, Err(EwaldError::SingularBoxMatrix));
     }
+
+    #[test]
+    fn spme_rejects_non_finite_and_invalid_numeric_inputs() {
+        let box_vecs = BoxVectors::cubic(10.0);
+        for (coords, charges) in [
+            (vec![[f64::NAN, 0.0, 0.0]], vec![1.0]),
+            (vec![[0.0, 0.0, 0.0]], vec![f64::INFINITY]),
+        ] {
+            assert_eq!(
+                spme_energy(&coords, &charges, &box_vecs, &PmeConfig::default()),
+                Err(EwaldError::SingularBoxMatrix)
+            );
+        }
+
+        let invalid_box = BoxVectors([[f64::NAN, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]]);
+        assert_eq!(
+            spme_energy(&[], &[], &invalid_box, &PmeConfig::default()),
+            Err(EwaldError::SingularBoxMatrix)
+        );
+
+        for config in [
+            PmeConfig {
+                r_cut: 0.0,
+                ..PmeConfig::default()
+            },
+            PmeConfig {
+                r_cut: f64::NAN,
+                ..PmeConfig::default()
+            },
+            PmeConfig {
+                alpha: -1.0,
+                ..PmeConfig::default()
+            },
+            PmeConfig {
+                alpha: f64::INFINITY,
+                ..PmeConfig::default()
+            },
+            PmeConfig {
+                spline_order: MAX_PME_SPLINE_ORDER + 1,
+                ..PmeConfig::default()
+            },
+        ] {
+            assert_eq!(
+                spme_energy(&[], &[], &box_vecs, &config),
+                Err(EwaldError::SingularBoxMatrix)
+            );
+        }
+    }
+
+    #[test]
+    fn spme_rejects_excessive_reciprocal_work_before_iteration() {
+        for kmax in [
+            [usize::MAX, 1, 1],
+            [1, 1, usize::MAX],
+            [1_000, 1_000, 1_000],
+            [i32::MAX as usize + 1, 0, 0],
+        ] {
+            let config = PmeConfig {
+                kmax,
+                ..PmeConfig::default()
+            };
+            assert_eq!(
+                spme_energy(&[], &[], &BoxVectors::cubic(10.0), &config),
+                Err(EwaldError::SingularBoxMatrix)
+            );
+        }
+    }
 }
