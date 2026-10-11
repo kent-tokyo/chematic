@@ -40,6 +40,18 @@ properties. It therefore improves parse-only and one-property pipelines. It
 does not improve the already-precomputed Morgan operation, and this record
 does not claim otherwise.
 
+## Published v1.1.1 artifact gate
+
+Hosted run
+[`38184048499`](https://github.com/kent-tokyo/chematic/actions/runs/38184048499)
+reproduced the pinned public-wheel chemistry counts on Windows amd64, macOS
+arm64 and macOS x86-64. The Linux x86-64 sdist and the Linux, macOS and Windows
+xsmarts-autoconf lanes also passed. The gate covers the 83 reaction fixtures,
+310,000 SMARTS cells, CIP, hybridization, MMFF94 typing, MOL stereo round-trip,
+the 4,072 unusual-SMILES descriptor rows, the pinned BioTransformer corpus and
+the 265-row A6 scorecard. These are v1.1.1 artifact results; the HBD/QED and
+lazy-parse fixes above remain source-only until a later release.
+
 ## Raw records
 
 - [`parse`](2026-10-12-v111-public-vs-lazy-fix-parse-paired20.json)
