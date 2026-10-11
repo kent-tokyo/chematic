@@ -9,6 +9,7 @@ HISTORICAL_VERSION=1.0.10
 STREAMING_EVIDENCE_VERSION=1.0.13
 echo "=== fmt ===" && cargo fmt --all -- --check
 echo "=== unsafe surface ===" && python3 scripts/check_unsafe_surface.py
+echo "=== refactor debt ratchet ===" && python3 scripts/check_refactor_budget.py
 echo "=== shared cross-binding manifest ===" && python3 scripts/check_cross_binding_manifest.py
 echo "=== strict PDB binding contract ===" && python3 scripts/check_pdb_strict_binding_contract.py
 echo "=== static binding surface ===" && python3 scripts/check_binding_surface.py >/dev/null

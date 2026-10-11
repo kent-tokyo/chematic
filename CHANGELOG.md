@@ -10,6 +10,15 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Added a CI refactoring-debt ratchet for handwritten Rust files and functions.
+  Existing chemistry-sensitive exceptions may shrink but cannot grow, while
+  new code must stay within the documented file, function, and decision limits.
+- Split the MCP tool registry schemas from tool execution and replaced the
+  580-line registry function with one bounded schema function per tool. Tool
+  order, schemas, dispatch, and protocol output are unchanged.
+
 ## [1.1.0] - 2026-10-11
 
 ### Added
