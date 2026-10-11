@@ -25,6 +25,7 @@ chematic-chem       = { path = "../chematic-chem",       version = "1.1.0" }
 chematic-fp         = { path = "../chematic-fp",         version = "1.1.0" }
 chematic-smarts     = { path = "../chematic-smarts",     version = "1.1.0" }
 chematic-smiles     = { path = "../chematic-smiles",     version = "1.1.0" }
+# Keep coordinate JSON decoding bit-exact, including stereo boundary geometries.
 serde_json          = { version = "1.0", features = ["float_roundtrip"] }
 
 # std::time::Instant panics on wasm32-unknown-unknown (issue #219); web-time

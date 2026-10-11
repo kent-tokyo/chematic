@@ -1,0 +1,27 @@
+{
+  "command": [
+    "/private/tmp/chematic-mmff-development-20261011/bin/python",
+    "-B",
+    "scripts/mmff94_same_explicit_h_energy.py",
+    "--output",
+    "/Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/validation/results/mmff94-main-integration-2026-10-11/energy.jsonl",
+    "--summary",
+    "/Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/validation/results/mmff94-main-integration-2026-10-11/energy-summary.json",
+    "--expected-schematic",
+    "1.1.0",
+    "--expected-rdkit",
+    "2026.03.6",
+    "--schematic-artifact",
+    "/Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/target/integration-python/chematic/chematic.cpython-313-darwin.so",
+    "--rdkit-artifact",
+    "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.venv-v1gate/lib/python3.13/site-packages/rdkit/rdBase.so",
+    "--schematic-build-command",
+    "CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 maturin build --profile dev --offline -j 2 -m crates/chematic-py/Cargo.toml -i /private/tmp/chematic-mmff-development-20261011/bin/python --out target/integration-wheels -- -C strip=none -C debuginfo=0"
+  ],
+  "exit_code": 2,
+  "artifact_hashes": {
+    "/Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/target/integration-python/chematic/chematic.cpython-313-darwin.so": "2f61cfac9bc781efe9febc94b908052f00f33f9d59ba8c3ba4c62407d93c1b30",
+    "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.venv-v1gate/lib/python3.13/site-packages/rdkit/rdBase.so": "dcc50095c6d95b29aae272f925514caf7134922a0b5ffa2864131926e0bd7c9d"
+  },
+  "expected_nonzero_reason": "uncommitted transplant candidate"
+}

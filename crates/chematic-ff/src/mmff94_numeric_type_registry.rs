@@ -39,9 +39,7 @@ pub struct Mmff94NumericTypeInfo {
     /// Single bond adjacent to a multiple bond (MMFFPROP `sbmb`).
     pub single_bond_multiple_bond: bool,
     /// MMFF94 atom-type equivalence levels 2-5 (`MMFFDEF.PAR`), used
-    /// for the equivalence-class parameter fallback (not yet wired
-    /// into any chematic resolver -- see the Phase 1B-0 PR body's
-    /// bond-fallback classification for why).
+    /// by the angle parameter resolver's equivalence-class fallback.
     pub equivalence_levels: [u8; 4],
     /// Human-readable Halgren description, e.g. "AROMATIC C".
     pub description: &'static str,

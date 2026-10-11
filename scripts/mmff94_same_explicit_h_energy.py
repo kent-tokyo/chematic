@@ -42,15 +42,6 @@ TERMINAL_STATUSES = {
     "rdkit_force_field_failure",
     "schematic_unsupported",
 }
-RDKIT_TERM_SETTERS = {
-    "bond": "Bond",
-    "angle": "Angle",
-    "stretch_bend": "StretchBend",
-    "torsion": "Torsion",
-    "oop": "Oop",
-    "vdw": "VdW",
-    "electrostatic": "Ele",
-}
 
 
 def sha256_bytes(payload: bytes) -> str:
@@ -134,6 +125,14 @@ def rdkit_term_energies(rdkit_mol: Chem.Mol) -> dict[str, float] | None:
     return energies
 
 
+def rdkit_term_energy_breakdown(mol: Chem.Mol) -> dict[str, float]:
+    """Compatibility spelling used by the fixed-coordinate development regressions."""
+    terms = rdkit_term_energies(mol)
+    if terms is None:
+        raise ValueError("RDKit MMFF94 properties or force field unavailable")
+    return terms
+
+
 def gradient_diagnostic(mol: object, coords: list[list[float]], delta: float) -> dict:
     analytic = mol.mmff94_bounded_analytic_gradient(coords)
     absolute_errors: list[float] = []
@@ -165,27 +164,6 @@ def gradient_diagnostic(mol: object, coords: list[list[float]], delta: float) ->
     }
 
 
-def rdkit_term_energy_breakdown(mol: Chem.Mol) -> dict[str, float]:
-    """Evaluate isolated MMFF94 terms at conformer 0 without minimizing.
-
-    Own the properties object so toggling terms cannot alter the caller's
-    force field. Keep all nonbonded settings identical to the total-energy
-    comparison above (including the default interfragment exclusion).
-    """
-    properties = AllChem.MMFFGetMoleculeProperties(mol, mmffVariant="MMFF94")
-    if properties is None:
-        raise ValueError("RDKit MMFF94 properties unavailable")
-    result = {}
-    for term in RDKIT_TERM_SETTERS:
-        for name, setter in RDKIT_TERM_SETTERS.items():
-            getattr(properties, f"SetMMFF{setter}Term")(name == term)
-        force_field = AllChem.MMFFGetMoleculeForceField(mol, properties, confId=0)
-        if force_field is None:
-            raise ValueError(f"RDKit MMFF94 force field unavailable for {term}")
-        result[term] = float(force_field.CalcEnergy())
-    return result
-
-
 def evaluate(
     row: dict,
     input_index: int,
@@ -194,6 +172,7 @@ def evaluate(
     gradient_delta: float,
     include_rdkit_terms: bool = False,
 ) -> dict:
+    # Retain the legacy argument; isolated term output is now always included.
     smiles = row["smiles"]
     if row.get("primary_category") == "force_field_unsupported":
         return terminal(row, input_index, "declared_unsupported")
@@ -223,17 +202,16 @@ def evaluate(
             rdkit_atom_symbols=rdkit_symbols,
             schematic_atom_symbols=schematic_symbols,
         )
-    # Element sequences cannot prove coordinate correspondence: two carbons
-    # can be exchanged while leaving that sequence unchanged. Check the
-    # indexed bond graph, including bond orders, before embedding/MMFF mutates
-    # RDKit's aromatic representation.
+    # Element sequences alone cannot establish coordinate correspondence.
+    # Check indexed bonds before MMFF changes RDKit's aromatic representation.
     rdkit_bonds = sorted(
         (min(b.GetBeginAtomIdx(), b.GetEndAtomIdx()),
          max(b.GetBeginAtomIdx(), b.GetEndAtomIdx()), str(b.GetBondType()))
         for b in rdkit_mol.GetBonds()
     )
     schematic_bonds = sorted(
-        (min(a, b), max(a, b), order) for a, b, order, _ in schematic_mol.bond_table
+        (min(a, b), max(a, b), order)
+        for a, b, order, _ in schematic_mol.bond_table
     )
     if rdkit_bonds != schematic_bonds:
         return terminal(
@@ -288,15 +266,6 @@ def evaluate(
         if input_index in gradient_indices
         else None
     )
-    term_details = {}
-    if include_rdkit_terms:
-        rdkit_terms = rdkit_term_energy_breakdown(rdkit_mol)
-        term_details = {
-            "rdkit_energy_breakdown_kcal_mol": {**rdkit_terms, "total": rdkit_energy},
-            "term_delta_kcal_mol": {
-                term: breakdown[term] - rdkit_terms[term] for term in RDKIT_TERM_SETTERS
-            },
-        }
     return terminal(
         row,
         input_index,
@@ -312,7 +281,6 @@ def evaluate(
         delta_kcal_mol=delta,
         abs_delta_kcal_mol=abs(delta),
         **({"gradient_diagnostic": gradient} if gradient is not None else {}),
-        **term_details,
     )
 
 
@@ -433,11 +401,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--expected-schematic")
     parser.add_argument("--gradient-input-index", type=int, action="append", default=[])
     parser.add_argument("--gradient-delta", type=float, default=1e-5)
-    parser.add_argument(
-        "--rdkit-term-breakdown",
-        action="store_true",
-        help="isolate RDKit's seven energy terms on each shared coordinate set",
-    )
+    parser.add_argument("--rdkit-term-breakdown", action="store_true",
+                        help="compatibility flag; per-term energies are always evaluated")
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be positive")
@@ -483,7 +448,6 @@ def main() -> int:
                 args.seed + index,
                 gradient_indices,
                 args.gradient_delta,
-                args.rdkit_term_breakdown,
             )
             results.append(result)
             handle.write(json.dumps(result, sort_keys=True) + "\n")
@@ -526,9 +490,7 @@ def main() -> int:
                     "minimization_convergence",
                     "stereo_preservation",
                     "runtime_speed",
-                ]
-                + ([] if args.rdkit_term_breakdown else ["RDKit_per_term_energy_parity"]),
-                "rdkit_term_breakdown": args.rdkit_term_breakdown,
+                ],
                 "seed": args.seed,
                 "gradient_input_indices": sorted(gradient_indices),
                 "gradient_central_difference_delta_angstrom": args.gradient_delta,
@@ -566,13 +528,7 @@ def main() -> int:
             "measurements": measurements,
             "gate": gate,
             "gate_passed": all(gate.values()),
-            "caveat": (
-                "RDKit generated the shared explicit-H coordinates. This measures "
-                "total force-field energy agreement"
-                + (" and per-term agreement" if args.rdkit_term_breakdown else "")
-                + "; it does not measure conformer quality, minimization convergence, "
-                "stereo preservation, or speed."
-            ),
+            "caveat": "RDKit generated the shared explicit-H coordinates. This measures total and per-term force-field energy agreement, not conformer quality, minimization convergence, stereo preservation, or speed.",
         }
         args.summary.parent.mkdir(parents=True, exist_ok=True)
         args.summary.write_text(

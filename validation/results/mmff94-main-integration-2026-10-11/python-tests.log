@@ -1,0 +1,14 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-8.4.2, pluggy-1.6.0
+rootdir: /Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/crates/chematic-py
+configfile: pytest.ini
+plugins: asyncio-0.26.0, cov-4.1.0, mock-3.12.0, anyio-4.13.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 95 items
+
+crates/chematic-py ..............................................        [ 48%]
+crates/chematic-py/tests/test_pipeline_v2.py ..........................  [ 75%]
+crates/chematic-py/tests/test_conformer_ensemble.py .............        [ 89%]
+crates/chematic-py/tests/test_conformer_ensemble_v2.py ..........        [100%]
+
+======================== 95 passed in 197.43s (0:03:17) ========================

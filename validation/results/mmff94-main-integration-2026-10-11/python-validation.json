@@ -1,0 +1,88 @@
+{
+  "candidate_kind": "transplant_on_main_v1.1.0",
+  "base_revision": "8f5a49a32dfbbce39109e5feaaa04ea4d7e1a3f5",
+  "transplanted_original_commit": "0bae2e0bdec5ef299d1c4dd6e16e1c06cb164c61",
+  "build_profile": "dev, unoptimized, debug=0, incremental=0; no runtime comparison",
+  "imports": {
+    "schematic_version": "1.1.0",
+    "schematic_module": "/Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/target/integration-python/chematic/__init__.py",
+    "rdkit_version": "2026.03.6",
+    "rdkit_binary": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.venv-v1gate/lib/python3.13/site-packages/rdkit/rdBase.so"
+  },
+  "wheel": {
+    "path": "/Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/target/integration-wheels/chematic-1.1.0-cp313-cp313-macosx_11_0_arm64.whl",
+    "bytes": 15926139,
+    "sha256": "cd608c65f184f31c06c0f1929dee4ca19b26a481946ba902360992decced4438"
+  },
+  "scorer": {
+    "path": "/Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/target/debug/examples/pipeline_v2_vs_rdkit_common_scorer",
+    "bytes": 5597856,
+    "sha256": "c245e7a076af478d86dcb4c78bedee37f3eced27f72ebf2f46f20b7e0d875ae0"
+  },
+  "rdkit": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.venv-v1gate/lib/python3.13/site-packages/rdkit/rdBase.so",
+    "bytes": 2141824,
+    "sha256": "dcc50095c6d95b29aae272f925514caf7134922a0b5ffa2864131926e0bd7c9d"
+  },
+  "commands": [
+    {
+      "command": [
+        "/private/tmp/chematic-mmff-development-20261011/bin/python",
+        "-B",
+        "-c",
+        "import importlib.metadata, json, pathlib, chematic\nfrom rdkit import rdBase\nassert importlib.metadata.version(\"chematic\") == \"1.1.0\"\nassert pathlib.Path(chematic.__file__).is_relative_to(pathlib.Path(\"target/integration-python\").resolve())\nassert rdBase.rdkitVersion == \"2026.03.6\"\nprint(json.dumps({\"schematic_version\":importlib.metadata.version(\"chematic\"),\"schematic_module\":chematic.__file__,\"rdkit_version\":rdBase.rdkitVersion,\"rdkit_binary\":rdBase.__file__}))\n"
+      ],
+      "exit_code": 0,
+      "log": "imports.json"
+    },
+    {
+      "command": [
+        "/private/tmp/chematic-mmff-development-20261011/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "scripts/tests/test_mmff94_same_explicit_h_energy.py",
+        "crates/chematic-py/tests/test_pipeline_v2.py",
+        "crates/chematic-py/tests/test_conformer_ensemble.py",
+        "crates/chematic-py/tests/test_conformer_ensemble_v2.py",
+        "-p",
+        "no:cacheprovider",
+        "-q"
+      ],
+      "exit_code": 0,
+      "log": "python-tests.log"
+    },
+    {
+      "command": [
+        "/private/tmp/chematic-mmff-development-20261011/bin/python",
+        "-B",
+        "validation/results/mmff94-correctness-2026-10-11/run_quality.py",
+        "--output",
+        "/Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/validation/results/mmff94-main-integration-2026-10-11/quality.jsonl"
+      ],
+      "exit_code": 0,
+      "log": "quality-run.log"
+    },
+    {
+      "command": [
+        "/Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/target/debug/examples/pipeline_v2_vs_rdkit_common_scorer",
+        "--chematic-rows",
+        "/Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/validation/results/mmff94-main-integration-2026-10-11/quality.jsonl",
+        "--rdkit-rows",
+        "validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl",
+        "--output",
+        "/Users/k_tanabe/.codex/worktrees/mmff94-main-integration/chematic/validation/results/mmff94-main-integration-2026-10-11/quality-scored.jsonl"
+      ],
+      "exit_code": 0,
+      "log": "scorer.log"
+    }
+  ],
+  "quality": {
+    "inputs": 265,
+    "success": 265,
+    "independently_sound": 265,
+    "stereo_violated": 0,
+    "stereo_unevaluable": 0,
+    "reported_converged": 135
+  }
+}

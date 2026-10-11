@@ -23,6 +23,8 @@ fn oop_eligible_centers_include_all_parameterized_types() {
     let mut expected: Vec<_> = MMFF94_OOP.iter().map(|row| row.1).collect();
     expected.sort_unstable();
     expected.dedup();
+    // Current main also retains eligible centers without a table row.
+    // Coverage must include every parameterized center, without dropping those.
     for center in expected {
         assert!(
             OOP_SP2_TYPES.binary_search(&center).is_ok(),

@@ -1,6 +1,8 @@
 //! MMFF94 torsion parameters (Halgren 1996 Table VI).
 
 use super::TorsionEnergyParams;
+use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
+use chematic_core::BondOrder;
 
 /// 926 torsion entries (Halgren 1996 Table VI). Sorted by (tors_type, type_i, type_j, type_k, type_l).
 /// type_i=0 or type_l=0 → wildcard (matches any atom type).
@@ -979,4 +981,186 @@ pub fn mmff94_torsion_energy(
                 None
             }
         })
+}
+
+/// Resolve a torsion from the parameter table, then Halgren's empirical
+/// rules (a-h), using the actual central bond in the MMFF aromatic view.
+///
+/// Unlike the table-only [`mmff94_torsion_energy`], this can resolve central
+/// type pairs absent from the table, such as iminium N (54)-aromatic C (37).
+/// Linear centers remain `None` for the coverage report's explicit
+/// `NoTermByDesign` accounting. Other empirical zero barriers are resolved
+/// parameters: they require no energy contribution, not a replacement force field.
+pub fn mmff94_torsion_energy_with_bond(
+    tors_type: u8,
+    types: [u8; 4],
+    central_bond: BondOrder,
+) -> Option<TorsionEnergyParams> {
+    let [ti, tj, tk, tl] = types;
+    mmff94_torsion_energy(tors_type, ti, tj, tk, tl)
+        .or_else(|| torsion_empirical(tj, tk, central_bond))
+}
+
+/// Halgren MMFF.IV empirical cascade; reference implementation:
+/// RDKit Release_2026_03_6, AtomTyper.cpp,
+/// MMFFMolProperties::getMMFFTorsionEmpiricalRuleParams.
+fn torsion_empirical(tj: u8, tk: u8, order: BondOrder) -> Option<TorsionEnergyParams> {
+    let (j, k) = (mmff94_numeric_type_info(tj)?, mmff94_numeric_type_info(tk)?);
+    if j.linear || k.linear {
+        return None;
+    }
+    // Empirical constants are defined for these six elements. Unknown types,
+    // terminal atoms, and unsupported bond kinds must not manufacture a hit.
+    let constants = |z| match z {
+        6 => Some((2.0_f64, 2.12_f64, 0.0_f64)),
+        7 => Some((2.0, 1.5, 0.0)),
+        8 => Some((2.0, 0.2, 2.0)),
+        14 => Some((1.25, 1.22, 0.0)),
+        15 => Some((1.25, 2.40, 0.0)),
+        16 => Some((1.25, 0.49, 8.0)),
+        _ => None,
+    };
+    let (uj, vj, wj) = constants(j.atomic_number)?;
+    let (uk, vk, wk) = constants(k.atomic_number)?;
+    if j.coordination < 2
+        || k.coordination < 2
+        || !matches!(
+            order,
+            BondOrder::Single
+                | BondOrder::Up
+                | BondOrder::Down
+                | BondOrder::Double
+                | BondOrder::Aromatic
+        )
+    {
+        return None;
+    }
+    let n = f64::from(j.coordination - 1) * f64::from(k.coordination - 1);
+    let uv = (uj * uk).sqrt();
+    let vv = (vj * vk).sqrt() / n;
+    let (v2, v3) = if j.aromatic && k.aromatic && order == BondOrder::Aromatic {
+        // (b): aromatic central bond; mixed valence reduces beta.
+        let beta = if matches!((j.valence, k.valence), (3, 4) | (4, 3)) {
+            3.0
+        } else {
+            6.0
+        };
+        let pi = if !j.has_pi_lone_pair && !k.has_pi_lone_pair {
+            0.5
+        } else {
+            0.3
+        };
+        (beta * pi * uv, 0.0)
+    } else if order == BondOrder::Double {
+        // (c): double central bond.
+        let pi = if j.multiple_bond_count == 2 && k.multiple_bond_count == 2 {
+            1.0
+        } else {
+            0.4
+        };
+        (6.0 * pi * uv, 0.0)
+    } else if j.coordination == 4 && k.coordination == 4 {
+        // (d): two tetrahedral centers.
+        (0.0, vv)
+    } else if j.coordination == 4 || k.coordination == 4 {
+        // (e-f): one tetrahedral center; conjugation can suppress the barrier.
+        let other = if j.coordination == 4 { k } else { j };
+        let suppressed = (other.coordination == 3
+            && (matches!(other.valence, 4 | 34) || other.multiple_bond_count != 0))
+            || (other.coordination == 2 && (other.valence == 3 || other.multiple_bond_count != 0));
+        (0.0, if suppressed { 0.0 } else { vv })
+    } else if (matches!(order, BondOrder::Single | BondOrder::Up | BondOrder::Down)
+        && j.multiple_bond_count != 0
+        && k.multiple_bond_count != 0)
+        || (j.multiple_bond_count != 0 && k.has_pi_lone_pair)
+        || (j.has_pi_lone_pair && k.multiple_bond_count != 0)
+    {
+        // (g): conjugated central bond. Preserve the ordering of cases 1-5.
+        let pi = if j.has_pi_lone_pair && k.has_pi_lone_pair {
+            0.0
+        } else if j.has_pi_lone_pair || k.has_pi_lone_pair {
+            let donor = if j.has_pi_lone_pair { j } else { k };
+            if donor.multiple_bond_count == 1 {
+                0.5
+            } else if (11..=18).contains(&j.atomic_number) && (11..=18).contains(&k.atomic_number) {
+                0.3
+            } else {
+                0.15
+            }
+        } else if (j.multiple_bond_count == 1 || k.multiple_bond_count == 1)
+            && (j.atomic_number != 6 || k.atomic_number != 6)
+        {
+            0.4
+        } else {
+            0.15
+        };
+        (6.0 * pi * uv, 0.0)
+    } else if matches!(j.atomic_number, 8 | 16) && matches!(k.atomic_number, 8 | 16) {
+        // (h): O/S pairs have a negative twofold barrier.
+        (-(wj * wk).sqrt(), 0.0)
+    } else {
+        (0.0, vv)
+    };
+    Some(TorsionEnergyParams { v1: 0.0, v2, v3 })
+}
+
+#[cfg(test)]
+mod empirical_tests {
+    use super::*;
+
+    #[test]
+    fn ordered_empirical_rules_and_reversal() {
+        // Expected constants from the reference cascade, independent of
+        // whether a particular quartet also has a tabulated parameter.
+        let cases = [
+            (37, 37, BondOrder::Aromatic, 6.0, 0.0),    // b
+            (2, 2, BondOrder::Double, 12.0, 0.0),       // c
+            (1, 1, BondOrder::Single, 0.0, 2.12 / 9.0), // d
+            (1, 3, BondOrder::Single, 0.0, 0.0),        // e-f
+            (1, 6, BondOrder::Single, 0.0, (2.12_f64 * 0.2).sqrt() / 3.0),
+            (54, 37, BondOrder::Single, 1.8, 0.0), // g(5), iminium
+            (6, 2, BondOrder::Single, 1.8, 0.0),   // g(2-3), lone pair
+            (10, 2, BondOrder::Single, 6.0, 0.0),  // g(2-3), mltb=1 donor
+            (10, 10, BondOrder::Single, 0.0, 0.0), // g(1), two lone pairs
+            (26, 75, BondOrder::Single, 2.25, 0.0), // g(2-3), third-row atoms
+            (54, 69, BondOrder::Single, 4.8, 0.0), // g(4), heteroatom mltb=1
+            (39, 37, BondOrder::Aromatic, 1.8, 0.0), // b, mixed valence
+            (6, 54, BondOrder::Double, 4.8, 0.0),  // c, one mltb!=2
+            (6, 6, BondOrder::Single, -2.0, 0.0),  // h, peroxide
+            (15, 15, BondOrder::Single, -8.0, 0.0), // h, disulfide
+            (6, 15, BondOrder::Single, -4.0, 0.0), // h, mixed O/S
+            (26, 26, BondOrder::Single, 0.0, 0.6), // h, other elements
+        ];
+        for (j, k, bond, v2, v3) in cases {
+            for (a, b) in [(j, k), (k, j)] {
+                let p = torsion_empirical(a, b, bond).unwrap();
+                assert_eq!(p.v1, 0.0);
+                assert!((p.v2 - v2).abs() < 1e-12, "{a}-{b}: {p:?}");
+                assert!((p.v3 - v3).abs() < 1e-12, "{a}-{b}: {p:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn empirical_does_not_hide_unknown_terminal_or_linear_centers() {
+        for (j, k, bond) in [
+            (250, 1, BondOrder::Single),
+            (5, 1, BondOrder::Single),
+            (4, 1, BondOrder::Single),
+            (1, 53, BondOrder::Single),
+            (1, 1, BondOrder::Dative),
+        ] {
+            assert!(torsion_empirical(j, k, bond).is_none());
+        }
+    }
+
+    #[test]
+    fn table_parameters_take_priority_over_empirical_rules() {
+        let p = mmff94_torsion_energy_with_bond(0, [1; 4], BondOrder::Single).unwrap();
+        assert_eq!((p.v1, p.v2, p.v3), (0.103, 0.681, 0.332));
+        let p = mmff94_torsion_energy_with_bond(1, [3, 54, 37, 37], BondOrder::Single).unwrap();
+        assert_eq!(p.v1, 0.0);
+        assert!((p.v2 - 1.8).abs() < 1e-12);
+        assert_eq!(p.v3, 0.0);
+    }
 }
