@@ -475,94 +475,216 @@ pub fn parse_mmcif(input: &str) -> Result<MmcifResult, MmcifError> {
     parse_mmcif_with_limits(input, &MmcifParseLimits::default())
 }
 
-/// Parse an mmCIF file, enforcing `limits`. See module docs for scope.
-pub fn parse_mmcif_with_limits(
-    input: &str,
-    limits: &MmcifParseLimits,
-) -> Result<MmcifResult, MmcifError> {
+struct MmcifColumns {
+    width: usize,
+    group_pdb: Option<usize>,
+    id: Option<usize>,
+    type_symbol: usize,
+    label_atom_id: Option<usize>,
+    auth_atom_id: Option<usize>,
+    alt_id: Option<usize>,
+    label_comp_id: Option<usize>,
+    auth_comp_id: Option<usize>,
+    label_asym_id: Option<usize>,
+    auth_asym_id: Option<usize>,
+    entity_id: Option<usize>,
+    label_seq_id: Option<usize>,
+    auth_seq_id: Option<usize>,
+    ins_code: Option<usize>,
+    x: usize,
+    y: usize,
+    z: usize,
+    occupancy: Option<usize>,
+    b_iso: Option<usize>,
+    charge: Option<usize>,
+    model: Option<usize>,
+}
+
+impl MmcifColumns {
+    fn from_headers(headers: &[String]) -> Result<Self, MmcifError> {
+        let col = |name: &str| headers.iter().position(|header| header == name);
+        let coordinates = (col("cartn_x"), col("cartn_y"), col("cartn_z"));
+        let (Some(x), Some(y), Some(z)) = coordinates else {
+            return Err(MmcifError::MissingCoordinateColumns);
+        };
+        Ok(Self {
+            width: headers.len(),
+            group_pdb: col("group_pdb"),
+            id: col("id"),
+            type_symbol: col("type_symbol").ok_or(MmcifError::MissingTypeSymbolColumn)?,
+            label_atom_id: col("label_atom_id"),
+            auth_atom_id: col("auth_atom_id"),
+            alt_id: col("label_alt_id"),
+            label_comp_id: col("label_comp_id"),
+            auth_comp_id: col("auth_comp_id"),
+            label_asym_id: col("label_asym_id"),
+            auth_asym_id: col("auth_asym_id"),
+            entity_id: col("label_entity_id"),
+            label_seq_id: col("label_seq_id"),
+            auth_seq_id: col("auth_seq_id"),
+            ins_code: col("pdbx_pdb_ins_code"),
+            x,
+            y,
+            z,
+            occupancy: col("occupancy"),
+            b_iso: col("b_iso_or_equiv"),
+            charge: col("pdbx_formal_charge"),
+            model: col("pdbx_pdb_model_num"),
+        })
+    }
+
+    fn indices(&self) -> Vec<usize> {
+        [
+            self.group_pdb,
+            self.id,
+            Some(self.type_symbol),
+            self.label_atom_id,
+            self.auth_atom_id,
+            self.alt_id,
+            self.label_comp_id,
+            self.auth_comp_id,
+            self.label_asym_id,
+            self.auth_asym_id,
+            self.entity_id,
+            self.label_seq_id,
+            self.auth_seq_id,
+            self.ins_code,
+            Some(self.x),
+            Some(self.y),
+            Some(self.z),
+            self.occupancy,
+            self.b_iso,
+            self.charge,
+            self.model,
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    }
+
+    fn get<'a>(&self, row: &'a [String], column: Option<usize>) -> Option<&'a str> {
+        column.map(|index| row[index].as_str())
+    }
+}
+
+fn mmcif_tokens(input: &str, limits: &MmcifParseLimits) -> Result<Vec<String>, MmcifError> {
     if input.len() > limits.max_input_bytes {
         return Err(MmcifError::InputTooLarge {
             limit: limits.max_input_bytes,
         });
     }
-    for (lineno, line) in input.lines().enumerate() {
+    for (index, line) in input.lines().enumerate() {
         if line.len() > limits.max_line_len {
             return Err(MmcifError::LineTooLong {
-                line: lineno + 1,
+                line: index + 1,
                 limit: limits.max_line_len,
             });
         }
     }
-
-    let clean: String = input
+    let clean = input
         .lines()
         .map(strip_cif_comment)
         .collect::<Vec<_>>()
         .join("\n");
-    let tokens = tokenize_cif(&clean);
+    Ok(tokenize_cif(&clean))
+}
 
+fn optional_mmcif_int(
+    value: Option<&str>,
+    column: &'static str,
+) -> Result<Option<i64>, MmcifError> {
+    value
+        .filter(|value| !is_cif_placeholder(value))
+        .map(|value| parse_int(value, column))
+        .transpose()
+}
+
+fn optional_mmcif_float(
+    value: Option<&str>,
+    column: &'static str,
+    fallback: f64,
+) -> Result<f64, MmcifError> {
+    value
+        .filter(|value| !is_cif_placeholder(value))
+        .map(|value| parse_finite(value, column))
+        .transpose()
+        .map(|value| value.unwrap_or(fallback))
+}
+
+fn parse_mmcif_atom(
+    row: &[String],
+    row_index: usize,
+    columns: &MmcifColumns,
+) -> Result<MmcifAtomRecord, MmcifError> {
+    let get = |column| columns.get(row, column);
+    let label_seq_id = optional_mmcif_int(get(columns.label_seq_id), "label_seq_id")?;
+    let auth_seq_id = optional_mmcif_int(get(columns.auth_seq_id), "auth_seq_id")?;
+    Ok(MmcifAtomRecord {
+        group_pdb: get(columns.group_pdb).unwrap_or("ATOM").to_owned(),
+        serial: get(columns.id)
+            .map(|value| parse_int(value, "id"))
+            .transpose()?
+            .unwrap_or(row_index as i64 + 1),
+        element: resolve_atom_site_element(&row[columns.type_symbol])?,
+        atom_name: pick(get(columns.auth_atom_id), get(columns.label_atom_id)),
+        alt_loc: get(columns.alt_id).and_then(opt_char),
+        res_name: pick(get(columns.auth_comp_id), get(columns.label_comp_id)),
+        chain_id: pick(get(columns.auth_asym_id), get(columns.label_asym_id)),
+        res_seq: auth_seq_id.or(label_seq_id).unwrap_or(0),
+        label_seq_id,
+        icode: get(columns.ins_code).and_then(opt_char),
+        x: parse_finite(&row[columns.x], "Cartn_x")?,
+        y: parse_finite(&row[columns.y], "Cartn_y")?,
+        z: parse_finite(&row[columns.z], "Cartn_z")?,
+        occupancy: optional_mmcif_float(get(columns.occupancy), "occupancy", 1.0)?,
+        b_iso: optional_mmcif_float(get(columns.b_iso), "B_iso_or_equiv", 0.0)?,
+        formal_charge: optional_mmcif_int(get(columns.charge), "pdbx_formal_charge")?
+            .map(|value| value as i32),
+        entity_id: get(columns.entity_id).and_then(opt_str),
+        model_num: optional_mmcif_int(get(columns.model), "pdbx_PDB_model_num")?.unwrap_or(1)
+            as i32,
+    })
+}
+
+fn parse_mmcif_rows(
+    tokens: &[String],
+    start: usize,
+    columns: &MmcifColumns,
+    limits: &MmcifParseLimits,
+) -> Result<Vec<MmcifAtomRecord>, MmcifError> {
+    let mut atoms = Vec::new();
+    for row in tokens[start..].chunks(columns.width) {
+        if row.len() < columns.width
+            || row[0] == "loop_"
+            || row[0].starts_with("data_")
+            || row[0].starts_with('_')
+        {
+            break;
+        }
+        if atoms.len() >= limits.max_atoms {
+            return Err(MmcifError::TooManyAtoms {
+                limit: limits.max_atoms,
+            });
+        }
+        atoms.push(parse_mmcif_atom(row, atoms.len(), columns)?);
+    }
+    if atoms.is_empty() {
+        return Err(MmcifError::NoAtomSiteLoop);
+    }
+    Ok(atoms)
+}
+
+/// Parse an mmCIF file, enforcing `limits`. See module docs for scope.
+pub fn parse_mmcif_with_limits(
+    input: &str,
+    limits: &MmcifParseLimits,
+) -> Result<MmcifResult, MmcifError> {
+    let tokens = mmcif_tokens(input, limits)?;
     let (cell, space_group) = scan_cell_and_symmetry(&tokens);
-
     let (headers, data_start) =
         find_loop_by_category(&tokens, "atom_site").ok_or(MmcifError::NoAtomSiteLoop)?;
-    let ncols = headers.len();
-    let col = |name: &str| -> Option<usize> { headers.iter().position(|h| h == name) };
-
-    let col_group_pdb = col("group_pdb");
-    let col_id = col("id");
-    let col_type_symbol = col("type_symbol").ok_or(MmcifError::MissingTypeSymbolColumn)?;
-    let col_label_atom_id = col("label_atom_id");
-    let col_auth_atom_id = col("auth_atom_id");
-    let col_alt_id = col("label_alt_id");
-    let col_label_comp_id = col("label_comp_id");
-    let col_auth_comp_id = col("auth_comp_id");
-    let col_label_asym_id = col("label_asym_id");
-    let col_auth_asym_id = col("auth_asym_id");
-    let col_entity_id = col("label_entity_id");
-    let col_label_seq_id = col("label_seq_id");
-    let col_auth_seq_id = col("auth_seq_id");
-    let col_ins_code = col("pdbx_pdb_ins_code");
-    let col_x = col("cartn_x");
-    let col_y = col("cartn_y");
-    let col_z = col("cartn_z");
-    let col_occ = col("occupancy");
-    let col_biso = col("b_iso_or_equiv");
-    let col_charge = col("pdbx_formal_charge");
-    let col_model = col("pdbx_pdb_model_num");
-
-    let (col_x, col_y, col_z) = match (col_x, col_y, col_z) {
-        (Some(x), Some(y), Some(z)) => (x, y, z),
-        _ => return Err(MmcifError::MissingCoordinateColumns),
-    };
-
-    // Known columns (by loop-header position) -- everything else is
-    // reported via `unhandled_columns` rather than silently ignored.
-    let known: Vec<usize> = [
-        col_group_pdb,
-        col_id,
-        Some(col_type_symbol),
-        col_label_atom_id,
-        col_auth_atom_id,
-        col_alt_id,
-        col_label_comp_id,
-        col_auth_comp_id,
-        col_label_asym_id,
-        col_auth_asym_id,
-        col_entity_id,
-        col_label_seq_id,
-        col_auth_seq_id,
-        col_ins_code,
-        Some(col_x),
-        Some(col_y),
-        Some(col_z),
-        col_occ,
-        col_biso,
-        col_charge,
-        col_model,
-    ]
-    .into_iter()
-    .flatten()
-    .collect();
+    let columns = MmcifColumns::from_headers(&headers)?;
+    let known = columns.indices();
     let unhandled_columns: Vec<String> = headers
         .iter()
         .enumerate()
@@ -570,104 +692,7 @@ pub fn parse_mmcif_with_limits(
         .map(|(_, h)| format!("_atom_site.{h}"))
         .collect();
 
-    let data_tokens = &tokens[data_start..];
-    let mut atoms: Vec<MmcifAtomRecord> = Vec::new();
-    let mut row = 0usize;
-    while (row + 1) * ncols <= data_tokens.len() {
-        let base = row * ncols;
-        let tok = &data_tokens[base..base + ncols];
-
-        // Stop at the next loop_/data_ block, or a bare singleton tag
-        // (`_category.field value`) -- stricter than crate::cif's small-
-        // molecule loop scanner, since real mmCIF files commonly place a
-        // bare tag directly after the last loop with no separating
-        // `loop_`/`data_` token.
-        if tok[0] == "loop_" || tok[0].starts_with("data_") || tok[0].starts_with('_') {
-            break;
-        }
-        if row >= limits.max_atoms {
-            return Err(MmcifError::TooManyAtoms {
-                limit: limits.max_atoms,
-            });
-        }
-
-        let get = |c: usize| -> &str { tok[c].as_str() };
-
-        let group_pdb = col_group_pdb
-            .map(|c| get(c).to_string())
-            .unwrap_or_else(|| "ATOM".to_string());
-        let serial = match col_id {
-            Some(c) => parse_int(get(c), "id")?,
-            None => row as i64 + 1,
-        };
-        let element = resolve_atom_site_element(get(col_type_symbol))?;
-
-        let atom_name = pick(col_auth_atom_id.map(get), col_label_atom_id.map(get));
-        let alt_loc = col_alt_id.map(get).and_then(opt_char);
-        let res_name = pick(col_auth_comp_id.map(get), col_label_comp_id.map(get));
-        let chain_id = pick(col_auth_asym_id.map(get), col_label_asym_id.map(get));
-        let entity_id = col_entity_id.map(get).and_then(opt_str);
-
-        let label_seq_id = col_label_seq_id
-            .map(get)
-            .filter(|v| !is_cif_placeholder(v))
-            .map(|v| parse_int(v, "label_seq_id"))
-            .transpose()?;
-        let res_seq = match col_auth_seq_id.map(get) {
-            Some(v) if !is_cif_placeholder(v) => parse_int(v, "auth_seq_id")?,
-            _ => label_seq_id.unwrap_or(0),
-        };
-
-        let icode = col_ins_code.map(get).and_then(opt_char);
-
-        let x = parse_finite(get(col_x), "Cartn_x")?;
-        let y = parse_finite(get(col_y), "Cartn_y")?;
-        let z = parse_finite(get(col_z), "Cartn_z")?;
-
-        let occupancy = match col_occ.map(get) {
-            Some(v) if !is_cif_placeholder(v) => parse_finite(v, "occupancy")?,
-            _ => 1.0,
-        };
-        let b_iso = match col_biso.map(get) {
-            Some(v) if !is_cif_placeholder(v) => parse_finite(v, "B_iso_or_equiv")?,
-            _ => 0.0,
-        };
-        let formal_charge = match col_charge.map(get) {
-            Some(v) if !is_cif_placeholder(v) => Some(parse_int(v, "pdbx_formal_charge")? as i32),
-            _ => None,
-        };
-        let model_num = match col_model.map(get) {
-            Some(v) if !is_cif_placeholder(v) => parse_int(v, "pdbx_PDB_model_num")? as i32,
-            _ => 1,
-        };
-
-        atoms.push(MmcifAtomRecord {
-            group_pdb,
-            serial,
-            element,
-            atom_name,
-            alt_loc,
-            res_name,
-            chain_id,
-            res_seq,
-            label_seq_id,
-            icode,
-            x,
-            y,
-            z,
-            occupancy,
-            b_iso,
-            formal_charge,
-            entity_id,
-            model_num,
-        });
-        row += 1;
-    }
-
-    if atoms.is_empty() {
-        return Err(MmcifError::NoAtomSiteLoop);
-    }
-
+    let atoms = parse_mmcif_rows(&tokens, data_start, &columns, limits)?;
     Ok(MmcifResult {
         atoms,
         cell,

@@ -373,10 +373,6 @@
       "decisions": 43,
       "lines": 190
     },
-    "crates/chematic-mol/src/mmcif.rs::parse_mmcif_with_limits#1": {
-      "decisions": 35,
-      "lines": 199
-    },
     "crates/chematic-mol/src/mol2_tripos.rs::parse_mol2_record_with_limits#1": {
       "decisions": 36,
       "lines": 278
