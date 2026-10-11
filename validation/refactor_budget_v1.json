@@ -420,10 +420,6 @@
       "decisions": 16,
       "lines": 124
     },
-    "crates/chematic-py/src/reports.rs::compare#1": {
-      "decisions": 17,
-      "lines": 196
-    },
     "crates/chematic-rxn/src/document.rs::validate#1": {
       "decisions": 26,
       "lines": 101
