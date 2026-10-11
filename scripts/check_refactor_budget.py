@@ -45,6 +45,7 @@ TEST_MODULE_RE = re.compile(
     r"(?:#\s*\[[^\]]*\]\s*)*mod\s+tests\s*\{"
 )
 DECISION_RE = re.compile(r"\b(?:if|match|for|while|loop)\b|&&|\|\||\?")
+GENERATED_MARKER_RE = re.compile(r"\b(?:auto[- ]?)?generated\b", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -277,6 +278,40 @@ def rust_sources(root: Path, excluded: set[str]) -> list[Path]:
     return sources
 
 
+def validate_excluded_paths(root: Path, configured: object) -> list[str]:
+    """Require every budget exclusion to remain an explicit generated source."""
+
+    if not isinstance(configured, list):
+        return ["excluded_paths must be a list"]
+
+    errors: list[str] = []
+    paths = [path for path in configured if isinstance(path, str)]
+    if len(paths) != len(configured):
+        errors.append("excluded_paths entries must be strings")
+    duplicates = sorted(path for path, count in Counter(paths).items() if count > 1)
+    errors.extend(f"duplicate excluded path: {path}" for path in duplicates)
+
+    for relative in paths:
+        candidate = Path(relative)
+        if (
+            candidate.is_absolute()
+            or ".." in candidate.parts
+            or not relative.startswith("crates/")
+            or "/src/" not in relative
+            or candidate.suffix != ".rs"
+        ):
+            errors.append(f"excluded path is outside crate production Rust: {relative}")
+            continue
+        path = root / candidate
+        if not path.is_file():
+            errors.append(f"excluded generated file does not exist: {relative}")
+            continue
+        header = "\n".join(path.read_text(encoding="utf-8").splitlines()[:20])
+        if not GENERATED_MARKER_RE.search(header):
+            errors.append(f"excluded file lacks a generated header: {relative}")
+    return errors
+
+
 def collect(root: Path, config: dict[str, object]) -> tuple[dict[str, int], dict[str, dict[str, int]]]:
     excluded = set(config.get("excluded_paths", []))
     file_lines: dict[str, int] = {}
@@ -326,7 +361,7 @@ def check(config: dict[str, object]) -> list[str]:
     max_decisions = int(limits["max_function_decisions"])
     file_allowances = config.get("file_allowances", {})
     function_allowances = config.get("function_allowances", {})
-    errors: list[str] = []
+    errors = validate_excluded_paths(ROOT, config.get("excluded_paths", []))
 
     for path, lines in files.items():
         allowed = file_allowances.get(path)
@@ -397,6 +432,11 @@ def main() -> int:
         return 2
 
     if args.print_baseline:
+        errors = validate_excluded_paths(ROOT, config.get("excluded_paths", []))
+        if errors:
+            print("Refactor budget failures:", file=sys.stderr)
+            print("\n".join(f"- {error}" for error in errors), file=sys.stderr)
+            return 1
         print(json.dumps(generated_baseline(config), indent=2, sort_keys=True))
         return 0
 

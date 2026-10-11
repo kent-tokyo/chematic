@@ -26,8 +26,8 @@ authoritative.
 | Phase | Scope | State |
 |---|---|---|
 | R0 | Refactor budget, CI ratchet, regression baselines | Complete |
-| R1 | Declarative registries, generated data, and test-module separation | Active |
-| R2 | Reaction template, matching, product, sanitization, provenance, compatibility | Planned |
+| R1 | Declarative registries, generated data, and test-module separation | Complete |
+| R2 | Reaction template, matching, product, sanitization, provenance, compatibility | Active |
 | R3 | File parsers: lexical decode, semantic validation, builders, diagnostics | Planned |
 | R4 | Python and WASM bindings by API domain | Planned |
 | R5 | Descriptors and tautomer rules/search/scoring | Planned |
@@ -41,7 +41,9 @@ from one bounded schema function per tool. Runtime order and schema content are
 covered by the existing MCP schema and protocol tests. The 3,335 lines of
 reaction unit and input-boundary tests formerly embedded in `transform.rs` are
 also isolated in child test modules; private-helper access and all 293 reaction
-tests remain unchanged.
+tests remain unchanged. Generated-table exclusions are now accepted only for
+existing crate source files whose headers identify them as generated, preventing
+the exclusion list from becoming an unchecked escape hatch.
 
 ## Required checks per phase
 

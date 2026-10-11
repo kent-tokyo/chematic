@@ -131,6 +131,26 @@ mod tests {
             ["crates/demo/src/lib.rs"],
         )
 
+    def test_exclusions_must_be_generated_crate_sources(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            generated = root / "crates" / "demo" / "src" / "table.rs"
+            generated.parent.mkdir(parents=True)
+            generated.write_text("// Generated from the reference table.\n", encoding="utf-8")
+            self.assertEqual(
+                budget.validate_excluded_paths(root, ["crates/demo/src/table.rs"]),
+                [],
+            )
+
+            generated.write_text("// Maintained by hand.\n", encoding="utf-8")
+            errors = budget.validate_excluded_paths(
+                root,
+                ["crates/demo/src/table.rs", "crates/demo/src/table.rs", "missing.rs"],
+            )
+        self.assertTrue(any("duplicate excluded path" in error for error in errors))
+        self.assertTrue(any("lacks a generated header" in error for error in errors))
+        self.assertTrue(any("outside crate production Rust" in error for error in errors))
+
 
 if __name__ == "__main__":
     unittest.main()
