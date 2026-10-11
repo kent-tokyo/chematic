@@ -17,11 +17,7 @@
     "crates/chematic-3d/src/stereo_constraints.rs": 2205,
     "crates/chematic-chem/src/alerts.rs": 2579,
     "crates/chematic-chem/src/cip.rs": 2766,
-    "crates/chematic-chem/src/descriptors.rs": 6329,
-    "crates/chematic-chem/src/sa_score.rs": 1648,
     "crates/chematic-chem/src/standardize.rs": 3513,
-    "crates/chematic-chem/src/tautomer.rs": 4990,
-    "crates/chematic-chem/src/topo_descriptors.rs": 1974,
     "crates/chematic-cli/src/main.rs": 1799,
     "crates/chematic-core/src/kekulization.rs": 1921,
     "crates/chematic-core/src/molecule.rs": 2188,
@@ -139,14 +135,6 @@
       "decisions": 32,
       "lines": 127
     },
-    "crates/chematic-chem/src/descriptors.rs::mqn_impl#1": {
-      "decisions": 33,
-      "lines": 165
-    },
-    "crates/chematic-chem/src/descriptors.rs::tpsa_nitrogen#1": {
-      "decisions": 93,
-      "lines": 43
-    },
     "crates/chematic-chem/src/hydrogen.rs::remove_hydrogens#1": {
       "decisions": 29,
       "lines": 188
@@ -166,14 +154,6 @@
     "crates/chematic-chem/src/stereo.rs::enumerate_stereoisomers#1": {
       "decisions": 16,
       "lines": 123
-    },
-    "crates/chematic-chem/src/tautomer.rs::find_matches#1": {
-      "decisions": 29,
-      "lines": 110
-    },
-    "crates/chematic-chem/src/tautomer.rs::tautomer_parent#1": {
-      "decisions": 29,
-      "lines": 198
     },
     "crates/chematic-cip/src/assign.rs::assign_one_with_rule5#1": {
       "decisions": 24,

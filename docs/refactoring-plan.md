@@ -30,8 +30,8 @@ authoritative.
 | R2 | Reaction template, matching, product, sanitization, provenance, compatibility | Complete |
 | R3 | File parsers: lexical decode, semantic validation, builders, diagnostics | Complete |
 | R4 | Python and WASM bindings by API domain | Complete |
-| R5 | Descriptors and tautomer rules/search/scoring | Active |
-| R6 | Canonicalization, ring perception, and aromaticity | Planned |
+| R5 | Descriptors and tautomer rules/search/scoring | Complete |
+| R6 | Canonicalization, ring perception, and aromaticity | Active |
 | R7 | MMFF/UFF and 3D preparation, optimization, and quality policy | Planned |
 | R8 | Legacy/dead-code inventory, exact helper deduplication, dependency cleanup | Planned |
 
@@ -83,6 +83,17 @@ wheel builds, 1,109 of 1,110 tests pass (the sole failure is the pre-existing
 caffeine HBA oracle mismatch), and a representative method/descriptor/bulk
 snapshot is byte-identical to the published 1.1.0 wheel. Clippy and the budget
 scanner pass.
+
+R5 finishes with no descriptor, topology-descriptor, SA-score, or tautomer
+file/function exceptions. Descriptor code is separated into mass/basic, TPSA,
+Crippen, ring/filter, MQN, topology/shape, composition, and information/BCUT
+domains. Tautomer rules, aromatic transforms, graph transforms, search, and
+audited parent selection are isolated, while the existing public module paths
+remain unchanged. The TPSA nitrogen table is data-shaped instead of a large
+guard chain; MQN accumulation and tautomer matching/parent search use bounded
+helpers. All 938 `chematic-chem` library tests pass, including descriptor and
+tautomer parity regressions. Clippy with warnings denied, formatting, the
+budget scanner, and all six scanner unit tests pass.
 
 ## Required checks per phase
 
