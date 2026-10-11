@@ -22,7 +22,9 @@ pub mod cif;
 #[cfg(feature = "crystal")]
 mod cif_symmetry;
 pub mod cjson;
+pub mod cjson_record;
 pub mod cml;
+pub mod conversion;
 pub mod cube;
 pub mod error;
 pub mod gaussian;
@@ -31,6 +33,7 @@ pub mod lammps_data;
 pub mod lammps_dump;
 pub mod mmcif;
 pub mod mol2000;
+pub mod mol2_source;
 pub mod mol2_tripos;
 pub mod mol3000;
 pub mod moljson;
@@ -52,6 +55,11 @@ pub mod volumetric;
 pub mod xyz;
 
 // Convenient re-exports at crate root.
+pub use conversion::{
+    ConversionAtomMapping, ConversionBondMapping, ConversionError, ConversionLimits,
+    ConversionObservation, ConversionPolicy, ConversionReport, PreservationStatus,
+    convert_with_report, convert_with_report_json, convert_with_report_with_limits,
+};
 pub use error::MolParseError;
 // Re-export MolParseError under the alias MolError as specified by the public API.
 pub use cdxml::{
@@ -74,6 +82,9 @@ pub use cif::{
     write_cif_periodic_structure,
 };
 pub use cjson::{CjsonError, CjsonParseLimits, parse_cjson, parse_cjson_with_limits, write_cjson};
+pub use cjson_record::{
+    CjsonRecord, parse_cjson_record, parse_cjson_record_with_limits, write_cjson_record,
+};
 pub use cml::{
     CmlError, CmlParseLimits, parse_cml, parse_cml_strict, parse_cml_strict_with_limits,
     parse_cml_with_limits, write_cml,
@@ -223,3 +234,8 @@ mod format_limit_contract_tests;
 
 #[cfg(test)]
 mod format_bridge_boundary_contract_tests;
+
+pub use mol2_source::{
+    Mol2SourceAtomRecord, Mol2SourceBondRecord, Mol2SourceRecord, parse_mol2_source_record,
+    parse_mol2_source_record_with_limits, write_mol2_source_record,
+};

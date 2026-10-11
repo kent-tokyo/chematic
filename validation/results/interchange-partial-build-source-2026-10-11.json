@@ -1,0 +1,609 @@
+{
+  "schema": "chematic.development-verification.v1",
+  "created_at": "2026-10-11T04:33:59.148148+00:00",
+  "scope": "Uncommitted source candidate: checked MOL2 → CJSON preserves complete declared partial-charge datasets and parsed molecule names; paired development preservation runner. No publication or superiority claim.",
+  "base_commit": "7f84ae4a98399086ce9f389c099f3fb77b66066e",
+  "workspace_version": "1.0.20",
+  "source_snapshot_coverage": "Interchange source/test/manifest hashes only; concurrent unrelated FF/3D changes are not fully archived. Runtime artifacts identify the actual tested builds.",
+  "source_files": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/conversion.rs",
+      "sha256": "eca0aca68deb8473c9dea12c51425d773970eb91720e45d7cccb152696ee4f7d",
+      "size_bytes": 30203
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/lib.rs",
+      "sha256": "6e2f387de537f403f20b47d03f7e6ead00ad6665bb667cb96c2da41198c3a675",
+      "size_bytes": 8267
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/mol2_tripos.rs",
+      "sha256": "3cf3009053a52b492582ec379c88f7e3a53c80566e4c86658ed28b16a24e7515",
+      "size_bytes": 30680
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/tests/conversion_report.rs",
+      "sha256": "49bfc3da304bad40a25dc58d0b9f79fe5df08bf650179e2b9c74a0c09e01686a",
+      "size_bytes": 13551
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/tests/mol2_preservation.rs",
+      "sha256": "42ec6f11f3acd3d2363cd0d153493230ac0bea4f93e1965cc85e682bf2009ec0",
+      "size_bytes": 7496
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smiles/src/writer.rs",
+      "sha256": "3649b93e80bce4ab87acdfeaee140cd2f9da3e43d0bce83893e06a515ddf4906",
+      "size_bytes": 42175
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smiles/src/lib.rs",
+      "sha256": "50950bc3bea6448114ad540470b5ff64eb440e13b1056d9a8dd4de929b296496",
+      "size_bytes": 2311
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smiles/tests/writer_atom_order.rs",
+      "sha256": "bc205177a7b6c9ace84be23ce031724af01d54a15205a5afdbf302fb56a1cb55",
+      "size_bytes": 1592
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-cli/src/main.rs",
+      "sha256": "4675926ac8b6c253e084cd85752b98ff0839ab98d3d3eeb65874703ff1349de0",
+      "size_bytes": 70014
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-cli/tests/conversion_report.rs",
+      "sha256": "c200b6f10a305aeb8ca48a205ea1375d1f82b79d0a103c9d4939590c948b6b0c",
+      "size_bytes": 5469
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats.rs",
+      "sha256": "600235baa7364dfd2d0ddeb0218dc804d8fd3ab43ecec0621f8a350d4d60c3d2",
+      "size_bytes": 102172
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "90d93735ffd6da3fc5a48bd28e0db99cc9fbef537027304aedf7ad4560eba433",
+      "size_bytes": 23015
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "cb4ddf55e366eab5bed71cdefb49d6cd13a210a3cbbad5f900f25d40780d4344",
+      "size_bytes": 127038
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/tests/test_conversion_report.py",
+      "sha256": "612151917d5eee7eb1b712d4d634081fc7e10bb6441544af5a33868c4988954f",
+      "size_bytes": 6416
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/mol_io.rs",
+      "sha256": "ca9abf96ead57ad85a4675694d56fdc7fbdba417edf51ccb8bdf5d671066559b",
+      "size_bytes": 63362
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/tests/conversion_report.test.mjs",
+      "sha256": "bfc8452a4758e080023a171e80f2dadd9b58aa471f6ce36f1a256eed4c2ee322",
+      "size_bytes": 5330
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/mol2_preservation/amide.mol2",
+      "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+      "size_bytes": 392
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/check_conversion_report_parity.py",
+      "sha256": "faa15e52911ae04ca38f5eb62dbd7cf88b39fc5bef49e764e0cd4e5b429ee352",
+      "size_bytes": 7194
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/format-capabilities.md",
+      "sha256": "ae6db5b502e495accea162b3cd1e80a4da7b54e03a7dc2a7e15b28f40f120f0d",
+      "size_bytes": 42570
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/openbabel-interchange-plan.md",
+      "sha256": "4f699691eff52200433b9929ec5a7ad0508afbc906382ced595aefe5db0f6f79",
+      "size_bytes": 17947
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/ROADMAP.md",
+      "sha256": "1cade8054fa7beb20749e308372463158d53ed424fe251fb904073cf4d725c95",
+      "size_bytes": 39173
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/Cargo.toml",
+      "sha256": "011d35414347109acb2172587947cdc50f29c7c10d6c3cad4993d4dceb80f10e",
+      "size_bytes": 1170
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/Cargo.lock",
+      "sha256": "6b62f46ee91b8a692ad9c3ffaaa2123826ada44c3e5986cd2a60d6a7b65ea979",
+      "size_bytes": 66147
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/Cargo.toml",
+      "sha256": "4b921fd8ece57f0717d20b5a64e31903341825baeada0d1931e56a5ae0a28354",
+      "size_bytes": 2257
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/cjson.rs",
+      "sha256": "8d0719cc10431e329f130be9296a59f48e060e4ff9df09cbc0d3b015a5296fff",
+      "size_bytes": 26099
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/tests/cjson_coordinate_precision.rs",
+      "sha256": "6092fade50eca8f7539e6a76e3f1e2e33f6d500119fdf26c99dc69cd7804c5b2",
+      "size_bytes": 1588
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/cjson_record.rs",
+      "sha256": "7ba4a40208c80a33ff9774c028a7f57d8a7bb6c8907e4f75ee32c847042aab5d",
+      "size_bytes": 11261
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/tests/cjson_preservation.rs",
+      "sha256": "99d66c9c4d5a0d4ffaeaa2fbb69c1c6ec1b8d3ca0cd51d359ef82b85ce3b029e",
+      "size_bytes": 10467
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/tests/test_cjson_preservation.py",
+      "sha256": "3b403cf2015d4063a7aab181ac33a6e377d6a31e5cbf1eeb2939b8e49b08f3ef",
+      "size_bytes": 2899
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/tests/cjson_preservation.test.mjs",
+      "sha256": "82477c0e4670430cd283f7b3e6f9ac34c8468c92ea745f0487fd34d05e487597",
+      "size_bytes": 2713
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/cjson_preservation/charged.cjson",
+      "sha256": "817390d2a64877af427a5168be2048fca15357b0c342b9d1edef4f1c57e468f0",
+      "size_bytes": 530
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/check_interchange_preservation.py",
+      "sha256": "df7aec9cf2bc8adfcd56fe005e84b23ad38ba3c5cef63cc8b8089ab980b58fac",
+      "size_bytes": 28676
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/tests/test_interchange_preservation.py",
+      "sha256": "ed30f73615e5cbfba33bd8ddc04cd0a83ac1424d6a565279ad5f2c08c3633aaa",
+      "size_bytes": 10906
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/protocol.json",
+      "sha256": "bdd744d452643f0bd28d576704f4f1b6d3b22d6c494b4a85ff8aeb2f77015741",
+      "size_bytes": 10514
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/acetamide.mol2",
+      "sha256": "ac91b7f36fcb45d504042703ab559fb00111227e13ae4564ce3c66d9a5f978d5",
+      "size_bytes": 259
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/dangling-bond.mol2",
+      "sha256": "31200104c7b8cf1c594d61ffcff3d9e720af25aa4baa70bb2b1a307b2048ce96",
+      "size_bytes": 260
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/n4-charge.mol2",
+      "sha256": "5d813949769a8482cf1fe7f613a8ceddf7a2335c326c53607cb341ea2d6dcbab",
+      "size_bytes": 137
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/nonfinite-charge.mol2",
+      "sha256": "e2a5aae20a395a33c985bb156038379ee8e372a151860e87e2ca7671e7d58e97",
+      "size_bytes": 257
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/nonsequential-ids.mol2",
+      "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+      "size_bytes": 392
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/opaque-extension.mol2",
+      "sha256": "60ca7965e82cd7a428d4dd1da3451387f38392dc72af182464674721089953c8",
+      "size_bytes": 309
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/precision.mol2",
+      "sha256": "a130351113622ff931874540330bed4d0f249b765420a1fdd34cbdd9e6f0a064",
+      "size_bytes": 287
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/unknown-bond.mol2",
+      "sha256": "341ca2032e71ff1fb61502bc9feed8cc1831b7423dcc9a1bf9cb4fbf486abf21",
+      "size_bytes": 261
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "/private/tmp/chematic-interchange-partial-native/chematic",
+      "sha256": "0043867a2b13c22d33017819de26a63902bf6dd8cf714a62c85b8870e8dbbe3e",
+      "size_bytes": 15669248
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-partial-wheel/chematic-1.0.20-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "84f68200adc5e349d833aedef0de5b3d8ff817b5d9b28495ae1b0d1a22f973b7",
+      "size_bytes": 13121783
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-partial-python/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "e621a1c2206a687ef1eb22611ee0320746d3c713265781c7f0920482a2e0c5e3",
+      "size_bytes": 55838304
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-partial-wasm/chematic_wasm.js",
+      "sha256": "3939d767287e0e271b2080e95a184fb328c4b825b918093d7d20ee8a9ab558a5",
+      "size_bytes": 326607
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-partial-wasm/chematic_wasm_bg.wasm",
+      "sha256": "3ab4afc74f5fcaaa3d216557618716de12d31beadd73a583184dd71ac60eb6b0",
+      "size_bytes": 27391318
+    }
+  ],
+  "verification": {
+    "rust": {
+      "passed": 837,
+      "suites": 18,
+      "packages": [
+        "chematic-mol",
+        "chematic-cli"
+      ],
+      "exit_code": 0
+    },
+    "python": {
+      "passed": 217,
+      "isolated_source_wheel": true,
+      "exit_code": 0
+    },
+    "wasm": {
+      "suites": [
+        {
+          "suite": "conversion_report.test.mjs",
+          "exit_code": 0,
+          "stdout": "Checked conversion policy, losses, mapping and refusal contract passed\nCJSON coordinates, projected charges, precision and refusal contract passed\nCJSON declared partial-charge values, method, name and missing-data contract passed\n",
+          "stderr": ""
+        },
+        {
+          "suite": "mol2_preservation.test.mjs",
+          "exit_code": 0,
+          "stdout": "MOL2 source preservation and rejection contract passed\n",
+          "stderr": ""
+        },
+        {
+          "suite": "cjson_preservation.test.mjs",
+          "exit_code": 0,
+          "stdout": "CJSON source retention, strict validation, isotopes and checked conversion passed\n",
+          "stderr": ""
+        },
+        {
+          "suite": "cross_binding_contract.test.mjs",
+          "exit_code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "suite": "format_parity.test.mjs",
+          "exit_code": 0,
+          "stdout": "format_parity.test.mjs: all assertions passed\n",
+          "stderr": ""
+        }
+      ],
+      "exit_code": 0
+    },
+    "binding_parity": {
+      "scope": "source-built development-fixture binding parity",
+      "passed": 59,
+      "results": [
+        {
+          "case": "lf-mol2-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-mol2-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-mol2-preserve_source",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-smiles-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-smiles-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-cjson-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-cjson-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-mol2-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-mol2-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-mol2-preserve_source",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-smiles-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-smiles-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-cjson-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-cjson-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "zero-bond-mismatch",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-bond-nc",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-bond-du",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-bond-un",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-coordinate--1.4175225513503917",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-coordinate--0.0",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-coordinate-5e-324",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-coordinate-1.7976931348623157e308",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-N.4",
+          "result": "identical_report"
+        },
+        {
+          "case": "invalid",
+          "result": "shared_error"
+        },
+        {
+          "case": "bad-charge",
+          "result": "shared_error"
+        },
+        {
+          "case": "unsupported-source",
+          "result": "shared_error"
+        },
+        {
+          "case": "unsupported-target",
+          "result": "shared_error"
+        },
+        {
+          "case": "unsupported-policy",
+          "result": "shared_error"
+        },
+        {
+          "case": "cross-source-retention",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-source-retention",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-partial-charge--0.0",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-partial-charge--1.4175225513503917",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-partial-charge-5e-324",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-partial-charge-1.7976931348623157e308",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-partial-charge-missing",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-partial-charge-undeclared",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-lf-cjson-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-lf-cjson-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-lf-cjson-preserve_source",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-lf-smiles-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-lf-smiles-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-crlf-cjson-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-crlf-cjson-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-crlf-cjson-preserve_source",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-crlf-smiles-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-crlf-smiles-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-minimal",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-branch",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-aromatic",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-charge-length",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-isotope-type",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-unknown-order",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-duplicate-edge",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-self-edge",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-dangling-edge",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-duplicate-opaque-key",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-unsupported-version",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-unsupported-route",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-cross-preserve",
+          "result": "shared_error"
+        }
+      ],
+      "exit_code": 0
+    },
+    "paired_runner_unit_tests": {
+      "passed": 33,
+      "exit_code": 0
+    },
+    "clippy": {
+      "packages": [
+        "chematic-mol",
+        "chematic-cli"
+      ],
+      "all_targets": true,
+      "no_deps": true,
+      "warnings_denied": true,
+      "exit_code": 0
+    }
+  },
+  "logs": [
+    {
+      "path": "/private/tmp/chematic-interchange-partial-rust.log",
+      "sha256": "bae29b5c96d4b58e3dcf37b099a0c147ee1f4b0d3d41840afe6a716ee97d66ae",
+      "size_bytes": 5229
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-partial-clippy.log",
+      "sha256": "ea90c3e1635e4beb7e3770458b8855f927df37ad5d13b23ad887b1ac71d656e7",
+      "size_bytes": 497
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-partial-python-build.log",
+      "sha256": "a9e56a9ce5ece7b1ed4f3ebfb3c88e88b52b24df8777243e8c4a510102210e43",
+      "size_bytes": 935
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-partial-python-tests.log",
+      "sha256": "4b029d69e1d0281f223b1a78938ab180e96be5a83ca3a3ab716a0288b087787a",
+      "size_bytes": 990
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-partial-wasm-build.log",
+      "sha256": "c38cc0662a14288c920db0bdc0817f7bef4bdc2cdc4dfc7ec3ec74da91f031ba",
+      "size_bytes": 1133
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-partial-wasm-suites.json",
+      "sha256": "d39b5a40845c2a545e4500379a059a7be66200898f4585bc5d895d8bd6c9d342",
+      "size_bytes": 960
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-partial-parity.json",
+      "sha256": "12a1bd222c2b585c6c212d77cfcdeeb2b957faf92a89daed0ab039becae225d6",
+      "size_bytes": 5323
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-partial-parity.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "/private/tmp/chematic-interchange-paired-tests.log",
+      "sha256": "0e50a1b53cdeae72a1d0a6f20a1fe5fe393f7091502c7149219dbec1a4072369",
+      "size_bytes": 99
+    }
+  ],
+  "semantics": [
+    "Partial charges emit only with one finite source value per atom and a nonempty non-NO_CHARGES source method label. No missing values are filled, no charges are calculated, and no partial charge is rounded into a formal charge.",
+    "Reparsed partialCharges values require exact f64 bit equality through verified atom correspondence for preserved status; source method label retention does not verify the method itself.",
+    "Parsed trimmed molecule name emits as properties.name and is checked on reparse; original source whitespace remains a declared source_text loss.",
+    "New metadata is additive to checked conversion only; legacy graph-only CJSON parsing/writing and immutable CJSON opaque-retention contracts remain unchanged.",
+    "Strict cross-format conversion still refuses other losses and unverified chemistry. Fields such as source atom IDs/types/names, substructures and opaque sections are not generally preserved in CJSON."
+  ]
+}

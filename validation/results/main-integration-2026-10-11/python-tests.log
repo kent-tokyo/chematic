@@ -1,0 +1,19 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.6, pytest-8.4.2, pluggy-1.6.0
+rootdir: /Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-py
+configfile: pytest.ini
+plugins: asyncio-0.26.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 230 items
+
+crates/chematic-py/tests/test_conversion_report.py ..................... [  9%]
+.......                                                                  [ 12%]
+crates/chematic-py/tests/test_cjson_preservation.py .................... [ 20%]
+...                                                                      [ 22%]
+crates/chematic-py/tests/test_mol2_preservation.py ...........           [ 26%]
+crates/chematic-py/tests/test_format_convert.py ..............           [ 33%]
+crates/chematic-py/tests/test_cross_binding_contract.py ................ [ 40%]
+........................................................................ [ 71%]
+..................................................................       [100%]
+
+============================= 230 passed in 1.80s ==============================

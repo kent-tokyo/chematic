@@ -170,7 +170,9 @@ def evaluate(
     seed: int,
     gradient_indices: set[int],
     gradient_delta: float,
+    include_rdkit_terms: bool = False,
 ) -> dict:
+    # Retain the legacy argument; isolated term output is now always included.
     smiles = row["smiles"]
     if row.get("primary_category") == "force_field_unsupported":
         return terminal(row, input_index, "declared_unsupported")

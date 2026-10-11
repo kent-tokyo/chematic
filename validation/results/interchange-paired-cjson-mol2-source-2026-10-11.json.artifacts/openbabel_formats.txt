@@ -1,0 +1,191 @@
+abinit -- ABINIT Output Format [Read-only]
+acesin -- ACES input format [Write-only]
+acesout -- ACES output format [Read-only]
+acr -- ACR format [Read-only]
+adf -- ADF cartesian input format [Write-only]
+adfband -- ADF Band output format [Read-only]
+adfdftb -- ADF DFTB output format [Read-only]
+adfout -- ADF output format [Read-only]
+alc -- Alchemy format
+aoforce -- Turbomole AOFORCE output format [Read-only]
+arc -- Accelrys/MSI Biosym/Insight II CAR format [Read-only]
+ascii -- ASCII format [Write-only]
+axsf -- XCrySDen Structure Format [Read-only]
+bgf -- MSI BGF format
+box -- Dock 3.5 Box format
+bs -- Ball and Stick format
+c09out -- Crystal 09 output format [Read-only]
+c3d1 -- Chem3D Cartesian 1 format
+c3d2 -- Chem3D Cartesian 2 format
+cac -- CAChe MolStruct format [Write-only]
+caccrt -- Cacao Cartesian format
+cache -- CAChe MolStruct format [Write-only]
+cacint -- Cacao Internal format [Write-only]
+can -- Canonical SMILES format
+car -- Accelrys/MSI Biosym/Insight II CAR format [Read-only]
+castep -- CASTEP format [Read-only]
+ccc -- CCC format [Read-only]
+cdjson -- ChemDoodle JSON
+cdx -- ChemDraw binary format [Read-only]
+cdxml -- ChemDraw CDXML format
+cht -- Chemtool format [Write-only]
+cif -- Crystallographic Information File
+cjson -- Chemical JSON
+ck -- ChemKin format
+cml -- Chemical Markup Language
+cmlr -- CML Reaction format
+cof -- Culgi object file format
+com -- Gaussian Input [Write-only]
+confabreport -- Confab report format [Write-only]
+CONFIG -- DL-POLY CONFIG
+CONTCAR -- VASP format
+CONTFF -- MDFF format
+copy -- Copy raw text [Write-only]
+crk2d -- Chemical Resource Kit diagram(2D)
+crk3d -- Chemical Resource Kit 3D format
+csr -- Accelrys/MSI Quanta CSR format [Write-only]
+cssr -- CSD CSSR format [Write-only]
+ct -- ChemDraw Connection Table format
+cub -- Gaussian cube format
+cube -- Gaussian cube format
+dallog -- DALTON output format [Read-only]
+dalmol -- DALTON input format
+dat -- Generic Output file format [Read-only]
+dmol -- DMol3 coordinates format
+dx -- OpenDX cube format for APBS
+ent -- Protein Data Bank format
+exyz -- Extended XYZ cartesian coordinates format
+fa -- FASTA format
+fasta -- FASTA format
+fch -- Gaussian formatted checkpoint file format [Read-only]
+fchk -- Gaussian formatted checkpoint file format [Read-only]
+fck -- Gaussian formatted checkpoint file format [Read-only]
+feat -- Feature format
+fh -- Fenske-Hall Z-Matrix format [Write-only]
+fhiaims -- FHIaims XYZ format
+fix -- SMILES FIX format [Write-only]
+fps -- FPS text fingerprint format (Dalke) [Write-only]
+fpt -- Fingerprint format [Write-only]
+fract -- Free Form Fractional format
+fs -- Fastsearch format
+fsa -- FASTA format
+g03 -- Gaussian Output [Read-only]
+g09 -- Gaussian Output [Read-only]
+g16 -- Gaussian Output [Read-only]
+g92 -- Gaussian Output [Read-only]
+g94 -- Gaussian Output [Read-only]
+g98 -- Gaussian Output [Read-only]
+gal -- Gaussian Output [Read-only]
+gam -- GAMESS Output [Read-only]
+gamess -- GAMESS Output [Read-only]
+gamin -- GAMESS Input
+gamout -- GAMESS Output [Read-only]
+gau -- Gaussian Input [Write-only]
+gjc -- Gaussian Input [Write-only]
+gjf -- Gaussian Input [Write-only]
+got -- GULP format [Read-only]
+gpr -- Ghemical format
+gr96 -- GROMOS96 format [Write-only]
+gro -- GRO format
+gukin -- GAMESS-UK Input
+gukout -- GAMESS-UK Output
+gzmat -- Gaussian Z-Matrix Input
+hin -- HyperChem HIN format
+HISTORY -- DL-POLY HISTORY [Read-only]
+inchi -- InChI format
+inchikey -- InChIKey [Write-only]
+inp -- GAMESS Input
+ins -- ShelX format [Read-only]
+jin -- Jaguar input format
+jout -- Jaguar output format [Read-only]
+k -- Compare molecules using InChI [Write-only]
+ket -- Ketcher KET JSON format
+lmpdat -- The LAMMPS data format [Write-only]
+log -- Generic Output file format [Read-only]
+lpmd -- LPMD format
+mcdl -- MCDL format
+mcif -- Macromolecular Crystallographic Info
+MDFF -- MDFF format
+mdl -- MDL MOL format
+ml2 -- Sybyl Mol2 format
+mmcif -- Macromolecular Crystallographic Info
+mmd -- MacroModel format
+mmod -- MacroModel format
+mna -- Multilevel Neighborhoods of Atoms (MNA) [Write-only]
+mol -- MDL MOL format
+mol2 -- Sybyl Mol2 format
+mold -- Molden format
+molden -- Molden format
+molf -- Molden format
+molreport -- Open Babel molecule report [Write-only]
+moo -- MOPAC Output format [Read-only]
+mop -- MOPAC Cartesian format
+mopcrt -- MOPAC Cartesian format
+mopin -- MOPAC Internal
+mopout -- MOPAC Output format [Read-only]
+mp -- Molpro input format [Write-only]
+mpc -- MOPAC Cartesian format
+mpd -- MolPrint2D format [Write-only]
+mpo -- Molpro output format [Read-only]
+mpqc -- MPQC output format [Read-only]
+mpqcin -- MPQC simplified input format [Write-only]
+mrv -- Chemical Markup Language
+msi -- Accelrys/MSI Cerius II MSI format [Read-only]
+msms -- M.F. Sanner's MSMS input format [Write-only]
+nul -- Outputs nothing [Write-only]
+nw -- NWChem input format [Write-only]
+nwo -- NWChem output format [Read-only]
+orca -- ORCA output format [Read-only]
+orcainp -- ORCA input format [Write-only]
+out -- Generic Output file format [Read-only]
+outmol -- DMol3 coordinates format
+output -- Generic Output file format [Read-only]
+paint -- Painter format [Write-only]
+pc -- PubChem format [Read-only]
+pcjson -- PubChem JSON
+pcm -- PCModel Format
+pdb -- Protein Data Bank format
+pdbqt -- AutoDock PDBQT format
+png -- PNG 2D depiction
+pointcloud -- Point cloud on VDW surface [Write-only]
+pos -- POS cartesian coordinates format [Read-only]
+POSCAR -- VASP format
+POSFF -- MDFF format
+pov -- POV-Ray input format [Write-only]
+pqr -- PQR format
+pqs -- Parallel Quantum Solutions format
+prep -- Amber Prep format [Read-only]
+pwscf -- PWscf format [Read-only]
+qcin -- Q-Chem input format [Write-only]
+qcout -- Q-Chem output format [Read-only]
+report -- Open Babel report format [Write-only]
+res -- ShelX format [Read-only]
+rinchi -- RInChI [Write-only]
+rsmi -- Reaction SMILES format
+rxn -- MDL RXN format
+sd -- MDL MOL format
+sdf -- MDL MOL format
+siesta -- SIESTA format [Read-only]
+smi -- SMILES format
+smiles -- SMILES format
+smy -- SMILES format using Smiley parser [Read-only]
+stl -- STL 3D-printing format [Write-only]
+svg -- SVG 2D depiction [Write-only]
+sy2 -- Sybyl Mol2 format
+t41 -- ADF TAPE41 format [Read-only]
+tdd -- Thermo format
+text -- Read and write raw text
+therm -- Thermo format
+tmol -- TurboMole Coordinate format
+txt -- Title format
+txyz -- Tinker XYZ format
+unixyz -- UniChem XYZ format
+VASP -- VASP format
+vmol -- ViewMol format
+wln -- Wiswesser Line Notation [Read-only]
+xed -- XED format [Write-only]
+xml -- General XML format [Read-only]
+xsf -- XCrySDen Structure Format [Read-only]
+xyz -- XYZ cartesian coordinates format
+yob -- YASARA.org YOB format
+zin -- ZINDO input format [Write-only]

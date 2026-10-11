@@ -1,0 +1,43 @@
+[INFO]: 🎯  Checking for the Wasm target...
+[INFO]: 🌀  Compiling to Wasm...
+    Blocking waiting for file lock on build directory
+   Compiling chematic-core v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-core)
+   Compiling smallvec v1.16.2
+   Compiling chematic-perception v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-perception)
+   Compiling chematic-smarts v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-smarts)
+   Compiling simd-adler32 v0.3.10
+   Compiling chematic-smiles v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-smiles)
+   Compiling adler2 v2.0.1
+   Compiling crc32fast v1.5.1
+   Compiling chematic-rxn v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-rxn)
+   Compiling miniz_oxide v0.9.1
+   Compiling chematic-cip v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-cip)
+   Compiling libm v0.2.16
+   Compiling chematic-fp v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-fp)
+   Compiling flate2 v1.1.10
+   Compiling miniz_oxide v0.8.9
+   Compiling fdeflate v0.3.7
+   Compiling chematic-iupac v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-iupac)
+   Compiling arrayref v0.3.9
+   Compiling strict-num v0.1.1
+   Compiling bitflags v2.13.1
+   Compiling bytemuck v1.25.2
+   Compiling tiny-skia-path v0.12.0
+   Compiling png v0.18.1
+   Compiling chematic-chem v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-chem)
+   Compiling arrayvec v0.7.8
+   Compiling log v0.4.34
+   Compiling tiny-skia v0.12.0
+   Compiling chematic-ff v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-ff)
+   Compiling chematic-inchi v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-inchi)
+   Compiling chematic-3d v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-3d)
+   Compiling chematic-depict v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-depict)
+   Compiling chematic-mol v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-mol)
+   Compiling chematic-crystal v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-crystal)
+   Compiling chematic-wasm v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-wasm)
+    Finished `dev` profile [unoptimized] target(s) in 2m 50s
+[INFO]: ⬇️  Installing wasm-bindgen...
+[WARN  wasm_pack::install] could not download pre-built `wasm-bindgen`: no prebuilt wasm-bindgen binaries are available for this platform: Unrecognized target!. Falling back to `cargo install`.
+[INFO]: License key is set in Cargo.toml but no LICENSE file(s) were found; Please add the LICENSE file(s) to your project directory
+[INFO]: ✨   Done in 2m 54s
+[INFO]: 📦   Your wasm pkg is ready to publish at /private/tmp/chematic-main-integration-wasm.

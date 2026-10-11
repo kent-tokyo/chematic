@@ -1154,6 +1154,8 @@ pub struct Mmff94CoverageReport {
     /// #227 Phase 1). Included in `torsions_total`, deliberately excluded
     /// from `torsions_missing` and from `has_gate_failure`'s torsion check.
     pub torsions_no_term_by_design: usize,
+    /// Number of eligible trigonal centers, not Wilson-angle contributions.
+    /// Each resolved center supplies three angles sharing one parameter lookup.
     pub oop_total: usize,
     pub oop_missing: Vec<Mmff94MissingTerm>,
     /// Stretch-bend cross-term coverage (Priority 2 / Stage 1B, issue #227).

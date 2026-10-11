@@ -339,3 +339,13 @@ def test_cation_water_holdout_types_charges_energy_and_gradient_match_rdkit(smil
     reference = force_field.CalcGrad()
     assert max(abs(a - b) / (1.0 + abs(b)) for a, b in zip(gradient, reference, strict=True)) < 1e-7
     assert gradient_diagnostic(mol, coords, 1e-5)["max_scaled_error"] < 1e-5
+
+
+def test_legacy_term_breakdown_argument_preserves_always_available_terms():
+    for include_terms in (False, True):
+        result = evaluate({"smiles": "CCO"}, 0, 43, set(), 1e-5, include_terms)
+        assert result["status"] == "ok"
+        assert set(result["term_delta_kcal_mol"]) == {
+            "bond", "angle", "stretch_bend", "torsion", "oop", "vdw", "electrostatic"
+        }
+        assert max(abs(v) for v in result["term_delta_kcal_mol"].values()) < 1e-9
