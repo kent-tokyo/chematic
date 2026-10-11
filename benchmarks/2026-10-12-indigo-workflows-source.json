@@ -1,0 +1,289 @@
+{
+  "blocks": 21,
+  "claim_boundary": "Results apply only to the named versions, corpora, observers, source commit, and host.",
+  "corpora": {
+    "reaction": {
+      "path": "validation/reaction_product_parity_strata_v2.json",
+      "sha256": "4e4ce3ebcea4bcea5398f109554074d97e9f252293fa906493ae3a61d40725a1"
+    },
+    "rgroup": {
+      "path": "validation/indigo_workflows/rgroup_cases.json",
+      "sha256": "8c6acb4d10eed15ecd6011db797b837eb0a2da841b596cbf892c80ca0e59c469"
+    },
+    "standardization": [
+      {
+        "path": "validation/standardization_phase1_fixtures.jsonl",
+        "sha256": "d5ad9f6a61ac16c7c090fc6a5b3ac2d81b0c00a875b7a31dd85f030738ec5917"
+      },
+      {
+        "path": "validation/standardization_phase1_holdout.jsonl",
+        "sha256": "44316ab07277b4c0f931e875212e0e8f9106b0e51479d95f66a4d0878314d5c9"
+      }
+    ]
+  },
+  "engines": {
+    "chematic": "1.1.0",
+    "indigo": "1.46.0",
+    "rdkit": "2026.03.6"
+  },
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6"
+  },
+  "schema_version": 1,
+  "source_commit": "9bfc4ef9ea22cbce5db7aa23a77056d214538656",
+  "workflows": {
+    "reaction": {
+      "accuracy": {
+        "chematic": {
+          "match": 15,
+          "mismatches": [],
+          "total": 15
+        },
+        "indigo": {
+          "match": 13,
+          "mismatches": [
+            {
+              "actual": [
+                "C[C@H](N)C(=O)O"
+              ],
+              "expected": [
+                "C[C@@H](N)C(=O)O"
+              ],
+              "id": "v2_stereo_l_alanine_identity_reordered"
+            },
+            {
+              "actual": [],
+              "expected": [
+                "C[C@@H](N)C(=O)O"
+              ],
+              "id": "v2_stereo_d_alanine_no_match"
+            }
+          ],
+          "total": 15
+        }
+      },
+      "rows": 15,
+      "timing": {
+        "comparison": {
+          "blocks": 21,
+          "ci95": [
+            10.173355924013936,
+            11.130434471123019
+          ],
+          "indigo_over_chematic_median": 10.662316457816887,
+          "winning_blocks": 21
+        },
+        "rows": 13,
+        "samples_ns": {
+          "chematic": [
+            352167,
+            497000,
+            394333,
+            459250,
+            323917,
+            314584,
+            280792,
+            458292,
+            331750,
+            361541,
+            305417,
+            300375,
+            277041,
+            318041,
+            279167,
+            282459,
+            268417,
+            279750,
+            265166,
+            274792,
+            264375
+          ],
+          "indigo": [
+            3754916,
+            4333541,
+            4315333,
+            3399208,
+            3279041,
+            3200375,
+            3175292,
+            3619333,
+            3433792,
+            3244792,
+            3206959,
+            3148041,
+            3179708,
+            3122542,
+            3107250,
+            3093541,
+            3086209,
+            3072792,
+            3083959,
+            3074750,
+            3073250
+          ]
+        },
+        "selection": "intersection of rows both engines matched exactly"
+      }
+    },
+    "rgroup": {
+      "accuracy": {
+        "chematic": {
+          "match": 16,
+          "mismatches": [],
+          "total": 16
+        },
+        "indigo": {
+          "match": 16,
+          "mismatches": [],
+          "total": 16
+        }
+      },
+      "rows": 16,
+      "timing": {
+        "comparison": {
+          "blocks": 21,
+          "ci95": [
+            2.587924461399979,
+            2.634071361819631
+          ],
+          "indigo_over_chematic_median": 2.602971889179844,
+          "winning_blocks": 21
+        },
+        "rows": 16,
+        "samples_ns": {
+          "chematic": [
+            1570917,
+            1557333,
+            1531916,
+            1541833,
+            1523625,
+            1539125,
+            1512792,
+            1537500,
+            1514292,
+            1539750,
+            1515208,
+            1527959,
+            1517334,
+            1527917,
+            1517917,
+            1534875,
+            1511000,
+            1534209,
+            1511375,
+            1533541,
+            1510792
+          ],
+          "indigo": [
+            4034209,
+            3993625,
+            4008666,
+            3987708,
+            4000958,
+            3991500,
+            3996458,
+            3974958,
+            3989416,
+            3983792,
+            3991166,
+            3972958,
+            3985834,
+            3977125,
+            4006209,
+            3971500,
+            3993667,
+            3970417,
+            3993583,
+            3969958,
+            3986917
+          ]
+        },
+        "selection": "all rows; both engines matched exactly"
+      }
+    },
+    "standardization": {
+      "accuracy": {
+        "chematic": {
+          "match": 39,
+          "mismatches": [],
+          "total": 39
+        },
+        "indigo": {
+          "match": 38,
+          "mismatches": [
+            {
+              "actual": "C",
+              "expected": "CCC",
+              "id": "std-p1-24-explicit-h-vs-heavy-atom-count"
+            }
+          ],
+          "total": 39
+        }
+      },
+      "rows": 39,
+      "timing": {
+        "comparison": {
+          "blocks": 21,
+          "ci95": [
+            1.2357610143800555,
+            1.2803082975847009
+          ],
+          "indigo_over_chematic_median": 1.271082262636873,
+          "winning_blocks": 21
+        },
+        "rows": 38,
+        "samples_ns": {
+          "chematic": [
+            1981125,
+            1941625,
+            1872958,
+            1904541,
+            1858292,
+            1881084,
+            1844250,
+            1882125,
+            1836667,
+            1879416,
+            1838167,
+            1871083,
+            1832958,
+            1873917,
+            1829500,
+            1874958,
+            1837834,
+            1864833,
+            1828375,
+            1867458,
+            1830209
+          ],
+          "indigo": [
+            2408792,
+            2355167,
+            2408083,
+            2345250,
+            2362042,
+            2325292,
+            2359667,
+            2321458,
+            2351500,
+            2409958,
+            2351750,
+            2323083,
+            2349333,
+            2315250,
+            2345209,
+            2317000,
+            2343833,
+            2310250,
+            2347084,
+            2307583,
+            2348459
+          ]
+        },
+        "selection": "intersection of rows both engines matched exactly"
+      }
+    }
+  }
+}

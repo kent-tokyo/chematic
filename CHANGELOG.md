@@ -12,6 +12,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added a pinned Indigo 1.46.0 workflow comparison gate for bounded
+  single-result reactions, Phase-1 largest-fragment selection, and labelled
+  terminal R-group decomposition. The source packet keeps full accuracy
+  denominators separate from common-correct timing subsets and records 21
+  alternating blocks, engine versions, source revision, and corpus hashes.
 - Added native reaction rejection diagnostics to the checked Rust, Python,
   and WASM APIs. Rejected products remain excluded from successful results,
   while callers receive stable typed reasons and bounded atom context (#828).

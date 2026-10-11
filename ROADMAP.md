@@ -83,6 +83,11 @@ or reports a typed loss/refusal. See the detailed
    refusals. Multi-core/MCS alignment, tautomer/core enumeration,
    non-terminal R-groups, and GA scoring stay out of the bounded API until
    independently specified.
+4. Maintain the pinned Indigo 1.46 workflow gate. The current source packet
+   covers 15 single-result reactions, 39 largest-fragment decisions, and 16
+   labelled R-group rows. Expand each into a stratified frozen corpus, add a
+   second host, split prepared from parse-inclusive work, and rerun exact
+   registry artifacts before making a broad Indigo comparison claim.
 
 **Exit:** supported rows are deterministic across Rust, Python, and WASM;
 unsupported chemistry never becomes a guessed successful result.

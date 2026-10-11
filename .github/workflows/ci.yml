@@ -657,6 +657,8 @@ jobs:
       - run: python3 scripts/check_benchmark_index.py
       - name: Verify bounded Open Babel file-I/O evidence
         run: python3 scripts/check_openbabel_file_io_evidence.py
+      - name: Verify bounded Indigo workflow evidence
+        run: python3 scripts/check_indigo_workflow_evidence.py
       - name: Verify published v1.0.29 to v1.0.30 artifact packet
         run: python3 scripts/check_v1030_artifact_packet.py
       - name: Verify isolated published-wheel timing and RSS records
