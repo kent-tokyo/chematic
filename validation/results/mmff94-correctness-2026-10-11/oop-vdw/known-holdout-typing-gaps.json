@@ -1,0 +1,52 @@
+{
+  "rdkit_runtime": "2026.03.6",
+  "rows": [
+    {
+      "rdkit_numeric_types": [
+        56,
+        57,
+        56,
+        56,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36
+      ],
+      "schematic_numeric_types": [
+        40,
+        3,
+        54,
+        40,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28
+      ],
+      "smiles": "NC(=[NH2+])N"
+    },
+    {
+      "rdkit_numeric_types": [
+        70,
+        31,
+        31
+      ],
+      "schematic_numeric_types": [
+        6,
+        31,
+        31
+      ],
+      "smiles": "O"
+    }
+  ],
+  "schematic_artifact": {
+    "bytes": 11790464,
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/chematic.cpython-313-darwin.so",
+    "sha256": "cf6f1e7f50122880dfc7160e52946fd8da0d55caee7f9daad767b44ce4a216d8"
+  },
+  "scope": "Two diagnostic cases outside the fixed 265-input score; unresolved, not omitted from that score.",
+  "status": "diagnostic_only_outside_fixed_265_inputs"
+}

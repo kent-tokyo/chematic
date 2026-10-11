@@ -1,0 +1,42 @@
+🍹 Building a mixed python/rust project
+🐍 Found CPython 3.13 at /Users/k_tanabe/Documents/Documents/oss_rust/chematic/.venv-v1gate/bin/python
+🔗 Found pyo3 bindings
+📡 Using build options features from pyproject.toml
+💻 Using `MACOSX_DEPLOYMENT_TARGET=11.0` for aarch64-apple-darwin by default
+   Compiling smallvec v1.16.2
+   Compiling chematic-core v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-core)
+   Compiling chematic-perception v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-perception)
+   Compiling pyo3-build-config v0.29.3
+   Compiling chematic-smarts v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-smarts)
+   Compiling chematic-smiles v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-smiles)
+   Compiling chematic-rxn v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-rxn)
+   Compiling pyo3-ffi v0.29.3
+   Compiling kurbo v0.11.3
+   Compiling rustybuzz v0.20.1
+   Compiling svgtypes v0.15.3
+   Compiling kurbo v0.13.1
+   Compiling chematic-cip v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-cip)
+   Compiling usvg v0.45.1
+   Compiling chematic-fp v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-fp)
+   Compiling write-fonts v0.48.1
+   Compiling pyo3 v0.29.3
+   Compiling chematic-iupac v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-iupac)
+   Compiling find-msvc-tools v0.1.14
+   Compiling shlex v2.0.1
+   Compiling cc v1.5.1
+   Compiling pyo3-macros-backend v0.29.3
+   Compiling resvg v0.45.1
+   Compiling chematic-chem v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-chem)
+   Compiling subsetter v0.2.6
+   Compiling svg2pdf v0.13.0
+   Compiling pyo3-macros v0.29.3
+   Compiling chematic-inchi v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-inchi)
+   Compiling chematic-ff v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-ff)
+   Compiling numpy v0.29.0
+   Compiling chematic-3d v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-3d)
+   Compiling chematic-depict v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-depict)
+   Compiling chematic-crystal v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-crystal)
+   Compiling chematic-mol v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-mol)
+   Compiling chematic-py v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-py)
+    Finished `dev` profile [unoptimized] target(s) in 1m 52s
+📦 Built wheel for CPython 3.13 to /private/tmp/chematic-main-integration-wheel/chematic-1.1.0-cp313-cp313-macosx_11_0_arm64.whl

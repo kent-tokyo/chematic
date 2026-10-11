@@ -1,0 +1,18 @@
+{
+  "kind": "separate_cation_water_regression_holdout",
+  "outside_frozen_265": true,
+  "rdkit_runtime": "2026.03.6",
+  "protocol": {
+    "seed": 43,
+    "explicit_hydrogens": true,
+    "coordinate_z_perturbation": "0.03 * ((atom_index % 5) - 2)",
+    "source_tree": "dirty_candidate"
+  },
+  "input_count": 20,
+  "all_types_match": true,
+  "max_charge_error": 2.220446049250313e-16,
+  "max_total_energy_error": 2.8421709430404007e-13,
+  "max_gradient_abs_error": 3.126388037344441e-13,
+  "max_gradient_scaled_error": 7.66015187896879e-14,
+  "max_internal_gradient_scaled_error": 6.443557147173036e-08
+}

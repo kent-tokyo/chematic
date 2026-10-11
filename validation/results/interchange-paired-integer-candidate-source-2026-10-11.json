@@ -1,0 +1,2941 @@
+{
+  "schema": "chematic.paired-interchange-development.v1",
+  "created_at_utc": "2026-10-11T04:39:41Z",
+  "scope": "Exposed hand-authored development fixtures; not an independent holdout or a superiority gate.",
+  "protocol": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/protocol.json",
+    "sha256": "bdd744d452643f0bd28d576704f4f1b6d3b22d6c494b4a85ff8aeb2f77015741",
+    "size_bytes": 10514
+  },
+  "runner": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/check_interchange_preservation.py",
+    "sha256": "df7aec9cf2bc8adfcd56fe005e84b23ad38ba3c5cef63cc8b8089ab980b58fac",
+    "size_bytes": 28676
+  },
+  "oracle": "Expected atoms, charges, coordinates, connectivity and metadata are explicitly declared; neither engine is the oracle. Formal charges use the declared N.4 +1 / other listed atom types neutral projection only.",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python_runtime": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "openbabel_environment": {
+    "BABEL_LIBDIR": null,
+    "BABEL_DATADIR": null
+  },
+  "policy_note": "CheMatic checked source-retention/allow_loss policies versus Open Babel default CLI; no equivalent Open Babel policy is asserted. No charge generation or geometry generation flags.",
+  "engines": {
+    "chematic": {
+      "path": "/private/tmp/chematic-interchange-integer-native/chematic",
+      "sha256": "3d84de30ba8b23e3379a2314abceb63f46cd7ab5f40c81891de8ca1847d2d313",
+      "size_bytes": 15669248,
+      "version": "chematic 1.0.20",
+      "lane": "archived source-built CLI",
+      "build_evidence": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-final-build-source-2026-10-11.json",
+        "sha256": "2054975055ad2815026fc7ee471963e53cbfaa7cc73bff75fa22344b5a137b04",
+        "size_bytes": 23095
+      }
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728,
+      "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+      "lane": "installed CLI",
+      "runtime_artifacts": [
+        {
+          "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+          "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+          "size_bytes": 2794816
+        },
+        {
+          "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/mol2format.so",
+          "sha256": "d2d49ba300e14eedad7705018e0ec8bd30580081674eb1aa5bd4825cd8655b4f",
+          "size_bytes": 105856
+        },
+        {
+          "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/chemicaljsonformat.so",
+          "sha256": "39be1877bf787d7594058ca76173e3c7b418607bf1b7c1aaba5d96539571b6f2",
+          "size_bytes": 132736
+        }
+      ]
+    }
+  },
+  "metadata": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/protocol.txt",
+      "sha256": "bdd744d452643f0bd28d576704f4f1b6d3b22d6c494b4a85ff8aeb2f77015741",
+      "size_bytes": 10514
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/runner.txt",
+      "sha256": "df7aec9cf2bc8adfcd56fe005e84b23ad38ba3c5cef63cc8b8089ab980b58fac",
+      "size_bytes": 28676
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/chematic.txt",
+      "sha256": "ff69736b671a7c59a060c00896e29c20aedabef090e1904c87bb614aea02b7e5",
+      "size_bytes": 16
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/openbabel.txt",
+      "sha256": "29abf24cdf8d862707ad1dd7dc0f26373b2e3b6a32b798e749d332fce3175fc3",
+      "size_bytes": 44
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/openbabel_formats.txt",
+      "sha256": "918a2c293c22d25e70807c1b6805023252f4e924c7546b6cadeb203f76de6204",
+      "size_bytes": 6663
+    }
+  ],
+  "limits": {
+    "max_input_bytes": 65536,
+    "max_output_bytes": 1048576,
+    "timeout_seconds": 10,
+    "max_atoms": 64,
+    "mapping_search_nodes": 10000
+  },
+  "row_accounting": {
+    "input_count": 8,
+    "route_count": 2,
+    "engine_count": 2,
+    "expected_terminal_count": 32,
+    "terminal_count": 32
+  },
+  "cells": [
+    {
+      "profile": "common",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "input_count": 3,
+      "terminal_count": 3,
+      "outcomes": {
+        "output_with_loss": 3
+      },
+      "fields": {
+        "atom_count": {
+          "preserved": 3
+        },
+        "bond_count": {
+          "preserved": 3
+        },
+        "elements": {
+          "preserved": 3
+        },
+        "connectivity": {
+          "preserved": 3
+        },
+        "formal_charges": {
+          "preserved": 3
+        },
+        "coordinates": {
+          "preserved": 3
+        },
+        "partial_charges": {
+          "preserved": 3
+        },
+        "atom_names": {
+          "lost": 3
+        },
+        "atom_types": {
+          "lost": 3
+        },
+        "source_atom_ids": {
+          "lost": 3
+        },
+        "bond_orders": {
+          "preserved": 3
+        },
+        "molecule_name": {
+          "preserved": 3
+        },
+        "charge_method": {
+          "preserved": 3
+        },
+        "opaque_marker_retention": {
+          "not_applicable": 3
+        }
+      }
+    },
+    {
+      "profile": "common",
+      "route": "mol2-cjson",
+      "engine": "openbabel",
+      "input_count": 3,
+      "terminal_count": 3,
+      "outcomes": {
+        "output_with_loss": 3
+      },
+      "fields": {
+        "atom_count": {
+          "preserved": 3
+        },
+        "bond_count": {
+          "preserved": 3
+        },
+        "elements": {
+          "preserved": 3
+        },
+        "connectivity": {
+          "preserved": 3
+        },
+        "formal_charges": {
+          "preserved": 3
+        },
+        "coordinates": {
+          "preserved": 3
+        },
+        "partial_charges": {
+          "preserved": 3
+        },
+        "atom_names": {
+          "lost": 3
+        },
+        "atom_types": {
+          "lost": 3
+        },
+        "source_atom_ids": {
+          "lost": 3
+        },
+        "bond_orders": {
+          "preserved": 3
+        },
+        "molecule_name": {
+          "preserved": 3
+        },
+        "charge_method": {
+          "preserved": 3
+        },
+        "opaque_marker_retention": {
+          "not_applicable": 3
+        }
+      }
+    },
+    {
+      "profile": "common",
+      "route": "mol2-self",
+      "engine": "chematic",
+      "input_count": 3,
+      "terminal_count": 3,
+      "outcomes": {
+        "preserved_required_fields": 3
+      },
+      "fields": {
+        "atom_count": {
+          "preserved": 3
+        },
+        "bond_count": {
+          "preserved": 3
+        },
+        "elements": {
+          "preserved": 3
+        },
+        "connectivity": {
+          "preserved": 3
+        },
+        "formal_charges": {
+          "preserved": 3
+        },
+        "coordinates": {
+          "preserved": 3
+        },
+        "partial_charges": {
+          "preserved": 3
+        },
+        "atom_names": {
+          "preserved": 3
+        },
+        "atom_types": {
+          "preserved": 3
+        },
+        "source_atom_ids": {
+          "preserved": 3
+        },
+        "bond_orders": {
+          "preserved": 3
+        },
+        "molecule_name": {
+          "preserved": 3
+        },
+        "charge_method": {
+          "preserved": 3
+        },
+        "opaque_marker_retention": {
+          "not_applicable": 3
+        }
+      }
+    },
+    {
+      "profile": "common",
+      "route": "mol2-self",
+      "engine": "openbabel",
+      "input_count": 3,
+      "terminal_count": 3,
+      "outcomes": {
+        "preserved_required_fields": 3
+      },
+      "fields": {
+        "atom_count": {
+          "preserved": 3
+        },
+        "bond_count": {
+          "preserved": 3
+        },
+        "elements": {
+          "preserved": 3
+        },
+        "connectivity": {
+          "preserved": 3
+        },
+        "formal_charges": {
+          "preserved": 3
+        },
+        "coordinates": {
+          "preserved": 3
+        },
+        "partial_charges": {
+          "preserved": 3
+        },
+        "atom_names": {
+          "preserved": 3
+        },
+        "atom_types": {
+          "preserved": 3
+        },
+        "source_atom_ids": {
+          "preserved": 3
+        },
+        "bond_orders": {
+          "preserved": 3
+        },
+        "molecule_name": {
+          "preserved": 3
+        },
+        "charge_method": {
+          "preserved": 3
+        },
+        "opaque_marker_retention": {
+          "not_applicable": 3
+        }
+      }
+    },
+    {
+      "profile": "negative",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "input_count": 3,
+      "terminal_count": 3,
+      "outcomes": {
+        "safe_rejection": 3
+      },
+      "fields": {
+        "atom_count": {
+          "no_candidate": 3
+        },
+        "bond_count": {
+          "no_candidate": 3
+        },
+        "elements": {
+          "no_candidate": 3
+        },
+        "connectivity": {
+          "no_candidate": 3
+        },
+        "formal_charges": {
+          "no_candidate": 3
+        },
+        "coordinates": {
+          "no_candidate": 3
+        },
+        "partial_charges": {
+          "no_candidate": 3
+        },
+        "atom_names": {
+          "no_candidate": 3
+        },
+        "atom_types": {
+          "no_candidate": 3
+        },
+        "source_atom_ids": {
+          "no_candidate": 3
+        },
+        "bond_orders": {
+          "no_candidate": 3
+        },
+        "molecule_name": {
+          "no_candidate": 3
+        },
+        "charge_method": {
+          "no_candidate": 3
+        },
+        "opaque_marker_retention": {
+          "no_candidate": 3
+        }
+      }
+    },
+    {
+      "profile": "negative",
+      "route": "mol2-cjson",
+      "engine": "openbabel",
+      "input_count": 3,
+      "terminal_count": 3,
+      "outcomes": {
+        "parse_write_failure": 2,
+        "accepted_outside_profile": 1
+      },
+      "fields": {
+        "atom_count": {
+          "no_candidate": 3
+        },
+        "bond_count": {
+          "no_candidate": 3
+        },
+        "elements": {
+          "no_candidate": 3
+        },
+        "connectivity": {
+          "no_candidate": 3
+        },
+        "formal_charges": {
+          "no_candidate": 3
+        },
+        "coordinates": {
+          "no_candidate": 3
+        },
+        "partial_charges": {
+          "no_candidate": 3
+        },
+        "atom_names": {
+          "no_candidate": 3
+        },
+        "atom_types": {
+          "no_candidate": 3
+        },
+        "source_atom_ids": {
+          "no_candidate": 3
+        },
+        "bond_orders": {
+          "no_candidate": 3
+        },
+        "molecule_name": {
+          "no_candidate": 3
+        },
+        "charge_method": {
+          "no_candidate": 3
+        },
+        "opaque_marker_retention": {
+          "no_candidate": 3
+        }
+      }
+    },
+    {
+      "profile": "negative",
+      "route": "mol2-self",
+      "engine": "chematic",
+      "input_count": 3,
+      "terminal_count": 3,
+      "outcomes": {
+        "safe_rejection": 3
+      },
+      "fields": {
+        "atom_count": {
+          "no_candidate": 3
+        },
+        "bond_count": {
+          "no_candidate": 3
+        },
+        "elements": {
+          "no_candidate": 3
+        },
+        "connectivity": {
+          "no_candidate": 3
+        },
+        "formal_charges": {
+          "no_candidate": 3
+        },
+        "coordinates": {
+          "no_candidate": 3
+        },
+        "partial_charges": {
+          "no_candidate": 3
+        },
+        "atom_names": {
+          "no_candidate": 3
+        },
+        "atom_types": {
+          "no_candidate": 3
+        },
+        "source_atom_ids": {
+          "no_candidate": 3
+        },
+        "bond_orders": {
+          "no_candidate": 3
+        },
+        "molecule_name": {
+          "no_candidate": 3
+        },
+        "charge_method": {
+          "no_candidate": 3
+        },
+        "opaque_marker_retention": {
+          "no_candidate": 3
+        }
+      }
+    },
+    {
+      "profile": "negative",
+      "route": "mol2-self",
+      "engine": "openbabel",
+      "input_count": 3,
+      "terminal_count": 3,
+      "outcomes": {
+        "parse_write_failure": 2,
+        "accepted_outside_profile": 1
+      },
+      "fields": {
+        "atom_count": {
+          "no_candidate": 3
+        },
+        "bond_count": {
+          "no_candidate": 3
+        },
+        "elements": {
+          "no_candidate": 3
+        },
+        "connectivity": {
+          "no_candidate": 3
+        },
+        "formal_charges": {
+          "no_candidate": 3
+        },
+        "coordinates": {
+          "no_candidate": 3
+        },
+        "partial_charges": {
+          "no_candidate": 3
+        },
+        "atom_names": {
+          "no_candidate": 3
+        },
+        "atom_types": {
+          "no_candidate": 3
+        },
+        "source_atom_ids": {
+          "no_candidate": 3
+        },
+        "bond_orders": {
+          "no_candidate": 3
+        },
+        "molecule_name": {
+          "no_candidate": 3
+        },
+        "charge_method": {
+          "no_candidate": 3
+        },
+        "opaque_marker_retention": {
+          "no_candidate": 3
+        }
+      }
+    },
+    {
+      "profile": "stress",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "input_count": 2,
+      "terminal_count": 2,
+      "outcomes": {
+        "output_with_loss": 2
+      },
+      "fields": {
+        "atom_count": {
+          "preserved": 2
+        },
+        "bond_count": {
+          "preserved": 2
+        },
+        "elements": {
+          "preserved": 2
+        },
+        "connectivity": {
+          "preserved": 2
+        },
+        "formal_charges": {
+          "preserved": 2
+        },
+        "coordinates": {
+          "preserved": 2
+        },
+        "partial_charges": {
+          "preserved": 2
+        },
+        "atom_names": {
+          "lost": 2
+        },
+        "atom_types": {
+          "lost": 2
+        },
+        "source_atom_ids": {
+          "lost": 2
+        },
+        "bond_orders": {
+          "preserved": 2
+        },
+        "molecule_name": {
+          "preserved": 2
+        },
+        "charge_method": {
+          "preserved": 2
+        },
+        "opaque_marker_retention": {
+          "lost": 2
+        }
+      }
+    },
+    {
+      "profile": "stress",
+      "route": "mol2-cjson",
+      "engine": "openbabel",
+      "input_count": 2,
+      "terminal_count": 2,
+      "outcomes": {
+        "output_with_loss": 2
+      },
+      "fields": {
+        "atom_count": {
+          "preserved": 2
+        },
+        "bond_count": {
+          "preserved": 1,
+          "lost": 1
+        },
+        "elements": {
+          "preserved": 2
+        },
+        "connectivity": {
+          "preserved": 1,
+          "lost": 1
+        },
+        "formal_charges": {
+          "preserved": 1,
+          "unverified": 1
+        },
+        "coordinates": {
+          "preserved": 1,
+          "unverified": 1
+        },
+        "partial_charges": {
+          "preserved": 1,
+          "unverified": 1
+        },
+        "atom_names": {
+          "lost": 2
+        },
+        "atom_types": {
+          "lost": 2
+        },
+        "source_atom_ids": {
+          "lost": 2
+        },
+        "bond_orders": {
+          "preserved": 1,
+          "unverified": 1
+        },
+        "molecule_name": {
+          "preserved": 2
+        },
+        "charge_method": {
+          "preserved": 2
+        },
+        "opaque_marker_retention": {
+          "lost": 2
+        }
+      }
+    },
+    {
+      "profile": "stress",
+      "route": "mol2-self",
+      "engine": "chematic",
+      "input_count": 2,
+      "terminal_count": 2,
+      "outcomes": {
+        "preserved_required_fields": 2
+      },
+      "fields": {
+        "atom_count": {
+          "preserved": 2
+        },
+        "bond_count": {
+          "preserved": 2
+        },
+        "elements": {
+          "preserved": 2
+        },
+        "connectivity": {
+          "preserved": 2
+        },
+        "formal_charges": {
+          "preserved": 2
+        },
+        "coordinates": {
+          "preserved": 2
+        },
+        "partial_charges": {
+          "preserved": 2
+        },
+        "atom_names": {
+          "preserved": 2
+        },
+        "atom_types": {
+          "preserved": 2
+        },
+        "source_atom_ids": {
+          "preserved": 2
+        },
+        "bond_orders": {
+          "preserved": 2
+        },
+        "molecule_name": {
+          "preserved": 2
+        },
+        "charge_method": {
+          "preserved": 2
+        },
+        "opaque_marker_retention": {
+          "preserved": 2
+        }
+      }
+    },
+    {
+      "profile": "stress",
+      "route": "mol2-self",
+      "engine": "openbabel",
+      "input_count": 2,
+      "terminal_count": 2,
+      "outcomes": {
+        "output_with_loss": 2
+      },
+      "fields": {
+        "atom_count": {
+          "preserved": 2
+        },
+        "bond_count": {
+          "preserved": 1,
+          "lost": 1
+        },
+        "elements": {
+          "preserved": 2
+        },
+        "connectivity": {
+          "preserved": 1,
+          "lost": 1
+        },
+        "formal_charges": {
+          "preserved": 1,
+          "unverified": 1
+        },
+        "coordinates": {
+          "preserved": 1,
+          "unverified": 1
+        },
+        "partial_charges": {
+          "preserved": 1,
+          "unverified": 1
+        },
+        "atom_names": {
+          "preserved": 1,
+          "unverified": 1
+        },
+        "atom_types": {
+          "preserved": 1,
+          "unverified": 1
+        },
+        "source_atom_ids": {
+          "preserved": 1,
+          "unverified": 1
+        },
+        "bond_orders": {
+          "preserved": 1,
+          "unverified": 1
+        },
+        "molecule_name": {
+          "preserved": 2
+        },
+        "charge_method": {
+          "preserved": 2
+        },
+        "opaque_marker_retention": {
+          "lost": 2
+        }
+      }
+    }
+  ],
+  "rows": [
+    {
+      "case": "acetamide",
+      "profile": "common",
+      "route": "mol2-self",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "strict"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide-mol2-self-chematic.stdout",
+        "sha256": "dea75ca3072d2a6e0a0c125b28163cecb79690cdc2c32456b1cf7e334181c1f5",
+        "size_bytes": 1023
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide-mol2-self-chematic.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "reported_observations": [
+        {
+          "field": "source_text",
+          "status": "preserved",
+          "stage": "source_retention",
+          "reason": "Exact input bytes retained after bounded structural validation; no edits or chemical interpretation promised."
+        },
+        {
+          "field": "source_semantics",
+          "status": "opaque_retained",
+          "stage": "source_retention",
+          "reason": "Source representations retained, including any unparsed status columns, formal-charge extensions and geometry stereo; their chemistry is not verified."
+        }
+      ],
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "preserved",
+        "atom_types": "preserved",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "preserved_required_fields",
+      "machine_loss_report_available": true,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/acetamide.mol2",
+        "sha256": "ac91b7f36fcb45d504042703ab559fb00111227e13ae4564ce3c66d9a5f978d5",
+        "size_bytes": 259
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide.input.mol2",
+        "sha256": "ac91b7f36fcb45d504042703ab559fb00111227e13ae4564ce3c66d9a5f978d5",
+        "size_bytes": 259
+      }
+    },
+    {
+      "case": "acetamide",
+      "profile": "common",
+      "route": "mol2-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide-mol2-self-openbabel.stdout",
+        "sha256": "bcd5180c3cda2d0943a85fe58f714aeff5ce80e5f95f12488126e8a444aad673",
+        "size_bytes": 471
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide-mol2-self-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "preserved",
+        "atom_types": "preserved",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": false,
+      "outcome": "preserved_required_fields",
+      "machine_loss_report_available": false,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/acetamide.mol2",
+        "sha256": "ac91b7f36fcb45d504042703ab559fb00111227e13ae4564ce3c66d9a5f978d5",
+        "size_bytes": 259
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide.input.mol2",
+        "sha256": "ac91b7f36fcb45d504042703ab559fb00111227e13ae4564ce3c66d9a5f978d5",
+        "size_bytes": 259
+      }
+    },
+    {
+      "case": "acetamide",
+      "profile": "common",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide-mol2-cjson-chematic.stdout",
+        "sha256": "718d88dbf54368c2342499b368b6a184eb25f6e33ac44f23a7c573bf1d19ff53",
+        "size_bytes": 4173
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide-mol2-cjson-chematic.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "reported_observations": [
+        {
+          "field": "source_text",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Candidate output omits MOL2 layout, comments, header flags and any unparsed optional columns."
+        },
+        {
+          "field": "molecule_metadata",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Molecule type and other header flags are not emitted. Parsed name and any complete declared partial-charge dataset are checked separately."
+        },
+        {
+          "field": "atom_identity",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Source atom IDs and names are omitted; candidate correspondence is reported separately."
+        },
+        {
+          "field": "atom_types",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source MOL2 atom types are reduced to the bounded graph projection; the original typing model is not emitted."
+        },
+        {
+          "field": "substructures",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source atom substructure ownership and names are not emitted."
+        },
+        {
+          "field": "bond_records",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source bond IDs and MOL2 tokens such as am, du and nc are not retained as source metadata."
+        },
+        {
+          "field": "formal_charge_interpretation",
+          "status": "unverified",
+          "stage": "projection",
+          "reason": "Only N.4 implies +1; other atom-type and extension formal-charge rules are not interpreted. Preserving the projected charge is not verification of source chemistry."
+        },
+        {
+          "field": "stereochemistry",
+          "status": "unverified",
+          "stage": "projection",
+          "reason": "Coordinate-derived and extension stereochemistry are not interpreted or verified."
+        },
+        {
+          "field": "projected_graph",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Candidate output reparsed; explicit atom counts, mapped elements/aromaticity/projected formal charges and mapped bond orders agree. Source chemical interpretation and inferred hydrogens are outside this check."
+        },
+        {
+          "field": "coordinates",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Reparsed candidate coordinates agree bit for bit with source f64 x/y/z values through verified atom correspondence, including signed zero. Original decimal spelling and physical dimensionality are outside this check."
+        },
+        {
+          "field": "molecule_name",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Reparsed properties.name equals the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss."
+        },
+        {
+          "field": "partial_charges",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Partial-charge preservation requires complete source values, reparsed bitwise equality and verified atom correspondence; no rounding into formal charges or filling missing values."
+        },
+        {
+          "field": "charge_method",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Source charge-method label retained verbatim as the partialCharges dataset key; the declared method is not recomputed or independently validated."
+        },
+        {
+          "field": "projected_formal_charges",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "CJSON formal charges are checked as part of mapped graph verification. This does not validate MOL2 charge interpretation beyond N.4; partial-charge preservation is checked separately."
+        }
+      ],
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "lost",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": true,
+      "independent_graph_check_agrees": true,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/acetamide.mol2",
+        "sha256": "ac91b7f36fcb45d504042703ab559fb00111227e13ae4564ce3c66d9a5f978d5",
+        "size_bytes": 259
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide.input.mol2",
+        "sha256": "ac91b7f36fcb45d504042703ab559fb00111227e13ae4564ce3c66d9a5f978d5",
+        "size_bytes": 259
+      }
+    },
+    {
+      "case": "acetamide",
+      "profile": "common",
+      "route": "mol2-cjson",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-ocjson"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide-mol2-cjson-openbabel.stdout",
+        "sha256": "2f1909e5105f266098b4dcffe7748a9ca94d4244eb1167bcf82bd3a0c9d8b034",
+        "size_bytes": 818
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide-mol2-cjson-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "lost",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": false,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/acetamide.mol2",
+        "sha256": "ac91b7f36fcb45d504042703ab559fb00111227e13ae4564ce3c66d9a5f978d5",
+        "size_bytes": 259
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/acetamide.input.mol2",
+        "sha256": "ac91b7f36fcb45d504042703ab559fb00111227e13ae4564ce3c66d9a5f978d5",
+        "size_bytes": 259
+      }
+    },
+    {
+      "case": "precision",
+      "profile": "common",
+      "route": "mol2-self",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "strict"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision-mol2-self-chematic.stdout",
+        "sha256": "7f768cd4f6fa7857f836bfe785d60ad0c4b608050750d81c61641b4ed3abb6b6",
+        "size_bytes": 1051
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision-mol2-self-chematic.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "reported_observations": [
+        {
+          "field": "source_text",
+          "status": "preserved",
+          "stage": "source_retention",
+          "reason": "Exact input bytes retained after bounded structural validation; no edits or chemical interpretation promised."
+        },
+        {
+          "field": "source_semantics",
+          "status": "opaque_retained",
+          "stage": "source_retention",
+          "reason": "Source representations retained, including any unparsed status columns, formal-charge extensions and geometry stereo; their chemistry is not verified."
+        }
+      ],
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "preserved",
+        "atom_types": "preserved",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "preserved_required_fields",
+      "machine_loss_report_available": true,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/precision.mol2",
+        "sha256": "a130351113622ff931874540330bed4d0f249b765420a1fdd34cbdd9e6f0a064",
+        "size_bytes": 287
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision.input.mol2",
+        "sha256": "a130351113622ff931874540330bed4d0f249b765420a1fdd34cbdd9e6f0a064",
+        "size_bytes": 287
+      }
+    },
+    {
+      "case": "precision",
+      "profile": "common",
+      "route": "mol2-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision-mol2-self-openbabel.stdout",
+        "sha256": "0c40e7baa8e54297f21372799671680c47aabb79f8049ca5d369f298c069b647",
+        "size_bytes": 471
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision-mol2-self-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "preserved",
+        "atom_types": "preserved",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": false,
+      "outcome": "preserved_required_fields",
+      "machine_loss_report_available": false,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/precision.mol2",
+        "sha256": "a130351113622ff931874540330bed4d0f249b765420a1fdd34cbdd9e6f0a064",
+        "size_bytes": 287
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision.input.mol2",
+        "sha256": "a130351113622ff931874540330bed4d0f249b765420a1fdd34cbdd9e6f0a064",
+        "size_bytes": 287
+      }
+    },
+    {
+      "case": "precision",
+      "profile": "common",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision-mol2-cjson-chematic.stdout",
+        "sha256": "155dba25f964b063fe3aa7a3fd215be9f16974dd4dc8a694735bf49227916474",
+        "size_bytes": 4192
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision-mol2-cjson-chematic.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "reported_observations": [
+        {
+          "field": "source_text",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Candidate output omits MOL2 layout, comments, header flags and any unparsed optional columns."
+        },
+        {
+          "field": "molecule_metadata",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Molecule type and other header flags are not emitted. Parsed name and any complete declared partial-charge dataset are checked separately."
+        },
+        {
+          "field": "atom_identity",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Source atom IDs and names are omitted; candidate correspondence is reported separately."
+        },
+        {
+          "field": "atom_types",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source MOL2 atom types are reduced to the bounded graph projection; the original typing model is not emitted."
+        },
+        {
+          "field": "substructures",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source atom substructure ownership and names are not emitted."
+        },
+        {
+          "field": "bond_records",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source bond IDs and MOL2 tokens such as am, du and nc are not retained as source metadata."
+        },
+        {
+          "field": "formal_charge_interpretation",
+          "status": "unverified",
+          "stage": "projection",
+          "reason": "Only N.4 implies +1; other atom-type and extension formal-charge rules are not interpreted. Preserving the projected charge is not verification of source chemistry."
+        },
+        {
+          "field": "stereochemistry",
+          "status": "unverified",
+          "stage": "projection",
+          "reason": "Coordinate-derived and extension stereochemistry are not interpreted or verified."
+        },
+        {
+          "field": "projected_graph",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Candidate output reparsed; explicit atom counts, mapped elements/aromaticity/projected formal charges and mapped bond orders agree. Source chemical interpretation and inferred hydrogens are outside this check."
+        },
+        {
+          "field": "coordinates",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Reparsed candidate coordinates agree bit for bit with source f64 x/y/z values through verified atom correspondence, including signed zero. Original decimal spelling and physical dimensionality are outside this check."
+        },
+        {
+          "field": "molecule_name",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Reparsed properties.name equals the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss."
+        },
+        {
+          "field": "partial_charges",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Partial-charge preservation requires complete source values, reparsed bitwise equality and verified atom correspondence; no rounding into formal charges or filling missing values."
+        },
+        {
+          "field": "charge_method",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Source charge-method label retained verbatim as the partialCharges dataset key; the declared method is not recomputed or independently validated."
+        },
+        {
+          "field": "projected_formal_charges",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "CJSON formal charges are checked as part of mapped graph verification. This does not validate MOL2 charge interpretation beyond N.4; partial-charge preservation is checked separately."
+        }
+      ],
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "lost",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": true,
+      "independent_graph_check_agrees": true,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/precision.mol2",
+        "sha256": "a130351113622ff931874540330bed4d0f249b765420a1fdd34cbdd9e6f0a064",
+        "size_bytes": 287
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision.input.mol2",
+        "sha256": "a130351113622ff931874540330bed4d0f249b765420a1fdd34cbdd9e6f0a064",
+        "size_bytes": 287
+      }
+    },
+    {
+      "case": "precision",
+      "profile": "common",
+      "route": "mol2-cjson",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-ocjson"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision-mol2-cjson-openbabel.stdout",
+        "sha256": "228acaaafa811310a59e6a5aa3c353bc6e230f77caa565db08013d6633095995",
+        "size_bytes": 837
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision-mol2-cjson-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "lost",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": false,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/precision.mol2",
+        "sha256": "a130351113622ff931874540330bed4d0f249b765420a1fdd34cbdd9e6f0a064",
+        "size_bytes": 287
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/precision.input.mol2",
+        "sha256": "a130351113622ff931874540330bed4d0f249b765420a1fdd34cbdd9e6f0a064",
+        "size_bytes": 287
+      }
+    },
+    {
+      "case": "n4-charge",
+      "profile": "common",
+      "route": "mol2-self",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "strict"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge-mol2-self-chematic.stdout",
+        "sha256": "982a06037630ff6a04eba2a25fa2971feaf706635b9449cb388774931abd4d81",
+        "size_bytes": 895
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge-mol2-self-chematic.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "reported_observations": [
+        {
+          "field": "source_text",
+          "status": "preserved",
+          "stage": "source_retention",
+          "reason": "Exact input bytes retained after bounded structural validation; no edits or chemical interpretation promised."
+        },
+        {
+          "field": "source_semantics",
+          "status": "opaque_retained",
+          "stage": "source_retention",
+          "reason": "Source representations retained, including any unparsed status columns, formal-charge extensions and geometry stereo; their chemistry is not verified."
+        }
+      ],
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "preserved",
+        "atom_types": "preserved",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "preserved_required_fields",
+      "machine_loss_report_available": true,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/n4-charge.mol2",
+        "sha256": "5d813949769a8482cf1fe7f613a8ceddf7a2335c326c53607cb341ea2d6dcbab",
+        "size_bytes": 137
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge.input.mol2",
+        "sha256": "5d813949769a8482cf1fe7f613a8ceddf7a2335c326c53607cb341ea2d6dcbab",
+        "size_bytes": 137
+      }
+    },
+    {
+      "case": "n4-charge",
+      "profile": "common",
+      "route": "mol2-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge-mol2-self-openbabel.stdout",
+        "sha256": "2420c56794daa76734afe6dffba518cf56a374778b92ac7c1f139dbb448e47f2",
+        "size_bytes": 214
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge-mol2-self-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "preserved",
+        "atom_types": "preserved",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "preserved_required_fields",
+      "machine_loss_report_available": false,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/n4-charge.mol2",
+        "sha256": "5d813949769a8482cf1fe7f613a8ceddf7a2335c326c53607cb341ea2d6dcbab",
+        "size_bytes": 137
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge.input.mol2",
+        "sha256": "5d813949769a8482cf1fe7f613a8ceddf7a2335c326c53607cb341ea2d6dcbab",
+        "size_bytes": 137
+      }
+    },
+    {
+      "case": "n4-charge",
+      "profile": "common",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge-mol2-cjson-chematic.stdout",
+        "sha256": "22892a39a8cc8e4c6cd6f4b73121a416b2765e7e0ab01fa66e0b434dde265e93",
+        "size_bytes": 3641
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge-mol2-cjson-chematic.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "reported_observations": [
+        {
+          "field": "source_text",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Candidate output omits MOL2 layout, comments, header flags and any unparsed optional columns."
+        },
+        {
+          "field": "molecule_metadata",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Molecule type and other header flags are not emitted. Parsed name and any complete declared partial-charge dataset are checked separately."
+        },
+        {
+          "field": "atom_identity",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Source atom IDs and names are omitted; candidate correspondence is reported separately."
+        },
+        {
+          "field": "atom_types",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source MOL2 atom types are reduced to the bounded graph projection; the original typing model is not emitted."
+        },
+        {
+          "field": "substructures",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source atom substructure ownership and names are not emitted."
+        },
+        {
+          "field": "formal_charge_interpretation",
+          "status": "unverified",
+          "stage": "projection",
+          "reason": "Only N.4 implies +1; other atom-type and extension formal-charge rules are not interpreted. Preserving the projected charge is not verification of source chemistry."
+        },
+        {
+          "field": "stereochemistry",
+          "status": "unverified",
+          "stage": "projection",
+          "reason": "Coordinate-derived and extension stereochemistry are not interpreted or verified."
+        },
+        {
+          "field": "projected_graph",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Candidate output reparsed; explicit atom counts, mapped elements/aromaticity/projected formal charges and mapped bond orders agree. Source chemical interpretation and inferred hydrogens are outside this check."
+        },
+        {
+          "field": "coordinates",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Reparsed candidate coordinates agree bit for bit with source f64 x/y/z values through verified atom correspondence, including signed zero. Original decimal spelling and physical dimensionality are outside this check."
+        },
+        {
+          "field": "molecule_name",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Reparsed properties.name equals the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss."
+        },
+        {
+          "field": "partial_charges",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Partial-charge preservation requires complete source values, reparsed bitwise equality and verified atom correspondence; no rounding into formal charges or filling missing values."
+        },
+        {
+          "field": "charge_method",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Source charge-method label retained verbatim as the partialCharges dataset key; the declared method is not recomputed or independently validated."
+        },
+        {
+          "field": "projected_formal_charges",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "CJSON formal charges are checked as part of mapped graph verification. This does not validate MOL2 charge interpretation beyond N.4; partial-charge preservation is checked separately."
+        }
+      ],
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "lost",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": true,
+      "independent_graph_check_agrees": true,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/n4-charge.mol2",
+        "sha256": "5d813949769a8482cf1fe7f613a8ceddf7a2335c326c53607cb341ea2d6dcbab",
+        "size_bytes": 137
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge.input.mol2",
+        "sha256": "5d813949769a8482cf1fe7f613a8ceddf7a2335c326c53607cb341ea2d6dcbab",
+        "size_bytes": 137
+      }
+    },
+    {
+      "case": "n4-charge",
+      "profile": "common",
+      "route": "mol2-cjson",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-ocjson"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge-mol2-cjson-openbabel.stdout",
+        "sha256": "87d6ecb5b775b44c9bdad626ab4278cbe6ef755b7378c39d40a983fed20791ac",
+        "size_bytes": 425
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge-mol2-cjson-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "lost",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "not_applicable"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": false,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/n4-charge.mol2",
+        "sha256": "5d813949769a8482cf1fe7f613a8ceddf7a2335c326c53607cb341ea2d6dcbab",
+        "size_bytes": 137
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/n4-charge.input.mol2",
+        "sha256": "5d813949769a8482cf1fe7f613a8ceddf7a2335c326c53607cb341ea2d6dcbab",
+        "size_bytes": 137
+      }
+    },
+    {
+      "case": "opaque-extension",
+      "profile": "stress",
+      "route": "mol2-self",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "strict"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension-mol2-self-chematic.stdout",
+        "sha256": "41f9ca3327d0e8da1b526fdb018eab305ba72ae49bd08dfb90aa4d29f645e250",
+        "size_bytes": 1075
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension-mol2-self-chematic.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "reported_observations": [
+        {
+          "field": "source_text",
+          "status": "preserved",
+          "stage": "source_retention",
+          "reason": "Exact input bytes retained after bounded structural validation; no edits or chemical interpretation promised."
+        },
+        {
+          "field": "source_semantics",
+          "status": "opaque_retained",
+          "stage": "source_retention",
+          "reason": "Source representations retained, including any unparsed status columns, formal-charge extensions and geometry stereo; their chemistry is not verified."
+        }
+      ],
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "preserved",
+        "atom_types": "preserved",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "preserved"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "preserved_required_fields",
+      "machine_loss_report_available": true,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/opaque-extension.mol2",
+        "sha256": "60ca7965e82cd7a428d4dd1da3451387f38392dc72af182464674721089953c8",
+        "size_bytes": 309
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension.input.mol2",
+        "sha256": "60ca7965e82cd7a428d4dd1da3451387f38392dc72af182464674721089953c8",
+        "size_bytes": 309
+      }
+    },
+    {
+      "case": "opaque-extension",
+      "profile": "stress",
+      "route": "mol2-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension-mol2-self-openbabel.stdout",
+        "sha256": "bcd5180c3cda2d0943a85fe58f714aeff5ce80e5f95f12488126e8a444aad673",
+        "size_bytes": 471
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension-mol2-self-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "preserved",
+        "atom_types": "preserved",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "lost"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": false,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": false,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/opaque-extension.mol2",
+        "sha256": "60ca7965e82cd7a428d4dd1da3451387f38392dc72af182464674721089953c8",
+        "size_bytes": 309
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension.input.mol2",
+        "sha256": "60ca7965e82cd7a428d4dd1da3451387f38392dc72af182464674721089953c8",
+        "size_bytes": 309
+      }
+    },
+    {
+      "case": "opaque-extension",
+      "profile": "stress",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension-mol2-cjson-chematic.stdout",
+        "sha256": "7037a37b558a3247155d14f5adf312c197dbc45018ab70821bfd8a2150eb7fa9",
+        "size_bytes": 4318
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension-mol2-cjson-chematic.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "reported_observations": [
+        {
+          "field": "source_text",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Candidate output omits MOL2 layout, comments, header flags and any unparsed optional columns."
+        },
+        {
+          "field": "molecule_metadata",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Molecule type and other header flags are not emitted. Parsed name and any complete declared partial-charge dataset are checked separately."
+        },
+        {
+          "field": "atom_identity",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Source atom IDs and names are omitted; candidate correspondence is reported separately."
+        },
+        {
+          "field": "atom_types",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source MOL2 atom types are reduced to the bounded graph projection; the original typing model is not emitted."
+        },
+        {
+          "field": "substructures",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source atom substructure ownership and names are not emitted."
+        },
+        {
+          "field": "opaque_sections",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Additional MOL2 sections are not interpreted and are not emitted."
+        },
+        {
+          "field": "bond_records",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source bond IDs and MOL2 tokens such as am, du and nc are not retained as source metadata."
+        },
+        {
+          "field": "formal_charge_interpretation",
+          "status": "unverified",
+          "stage": "projection",
+          "reason": "Only N.4 implies +1; other atom-type and extension formal-charge rules are not interpreted. Preserving the projected charge is not verification of source chemistry."
+        },
+        {
+          "field": "stereochemistry",
+          "status": "unverified",
+          "stage": "projection",
+          "reason": "Coordinate-derived and extension stereochemistry are not interpreted or verified."
+        },
+        {
+          "field": "projected_graph",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Candidate output reparsed; explicit atom counts, mapped elements/aromaticity/projected formal charges and mapped bond orders agree. Source chemical interpretation and inferred hydrogens are outside this check."
+        },
+        {
+          "field": "coordinates",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Reparsed candidate coordinates agree bit for bit with source f64 x/y/z values through verified atom correspondence, including signed zero. Original decimal spelling and physical dimensionality are outside this check."
+        },
+        {
+          "field": "molecule_name",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Reparsed properties.name equals the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss."
+        },
+        {
+          "field": "partial_charges",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Partial-charge preservation requires complete source values, reparsed bitwise equality and verified atom correspondence; no rounding into formal charges or filling missing values."
+        },
+        {
+          "field": "charge_method",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Source charge-method label retained verbatim as the partialCharges dataset key; the declared method is not recomputed or independently validated."
+        },
+        {
+          "field": "projected_formal_charges",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "CJSON formal charges are checked as part of mapped graph verification. This does not validate MOL2 charge interpretation beyond N.4; partial-charge preservation is checked separately."
+        }
+      ],
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "lost",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "lost"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": true,
+      "independent_graph_check_agrees": true,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/opaque-extension.mol2",
+        "sha256": "60ca7965e82cd7a428d4dd1da3451387f38392dc72af182464674721089953c8",
+        "size_bytes": 309
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension.input.mol2",
+        "sha256": "60ca7965e82cd7a428d4dd1da3451387f38392dc72af182464674721089953c8",
+        "size_bytes": 309
+      }
+    },
+    {
+      "case": "opaque-extension",
+      "profile": "stress",
+      "route": "mol2-cjson",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-ocjson"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension-mol2-cjson-openbabel.stdout",
+        "sha256": "2f1909e5105f266098b4dcffe7748a9ca94d4244eb1167bcf82bd3a0c9d8b034",
+        "size_bytes": 818
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension-mol2-cjson-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "lost",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "lost"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": false,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/opaque-extension.mol2",
+        "sha256": "60ca7965e82cd7a428d4dd1da3451387f38392dc72af182464674721089953c8",
+        "size_bytes": 309
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/opaque-extension.input.mol2",
+        "sha256": "60ca7965e82cd7a428d4dd1da3451387f38392dc72af182464674721089953c8",
+        "size_bytes": 309
+      }
+    },
+    {
+      "case": "nonsequential-ids",
+      "profile": "stress",
+      "route": "mol2-self",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "strict"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids-mol2-self-chematic.stdout",
+        "sha256": "65653d87a58c4265dc985e39e259cfa7cf90faa78dc5dc06263df2a4c409f632",
+        "size_bytes": 1161
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids-mol2-self-chematic.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "reported_observations": [
+        {
+          "field": "source_text",
+          "status": "preserved",
+          "stage": "source_retention",
+          "reason": "Exact input bytes retained after bounded structural validation; no edits or chemical interpretation promised."
+        },
+        {
+          "field": "source_semantics",
+          "status": "opaque_retained",
+          "stage": "source_retention",
+          "reason": "Source representations retained, including any unparsed status columns, formal-charge extensions and geometry stereo; their chemistry is not verified."
+        }
+      ],
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "preserved",
+        "atom_types": "preserved",
+        "source_atom_ids": "preserved",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "preserved"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "preserved_required_fields",
+      "machine_loss_report_available": true,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/nonsequential-ids.mol2",
+        "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+        "size_bytes": 392
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids.input.mol2",
+        "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+        "size_bytes": 392
+      }
+    },
+    {
+      "case": "nonsequential-ids",
+      "profile": "stress",
+      "route": "mol2-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids-mol2-self-openbabel.stdout",
+        "sha256": "f962fcdd94f6224c8619df986dec1a69200bed0c9ddb2cfc6959392d17d72f61",
+        "size_bytes": 399
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids-mol2-self-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "lost",
+        "elements": "preserved",
+        "connectivity": "lost",
+        "formal_charges": "unverified",
+        "coordinates": "unverified",
+        "partial_charges": "unverified",
+        "atom_names": "unverified",
+        "atom_types": "unverified",
+        "source_atom_ids": "unverified",
+        "bond_orders": "unverified",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "lost"
+      },
+      "correspondence": "count_mismatch",
+      "source_to_candidate": null,
+      "coordinate_bits_equal_diagnostic": null,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": false,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/nonsequential-ids.mol2",
+        "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+        "size_bytes": 392
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids.input.mol2",
+        "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+        "size_bytes": 392
+      }
+    },
+    {
+      "case": "nonsequential-ids",
+      "profile": "stress",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids-mol2-cjson-chematic.stdout",
+        "sha256": "845b1eb6a9ec75082a1812cd3b00de8beaf3da40c7fc960c9b21dacc40243dad",
+        "size_bytes": 4321
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids-mol2-cjson-chematic.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "reported_observations": [
+        {
+          "field": "source_text",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Candidate output omits MOL2 layout, comments, header flags and any unparsed optional columns."
+        },
+        {
+          "field": "molecule_metadata",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Molecule type and other header flags are not emitted. Parsed name and any complete declared partial-charge dataset are checked separately."
+        },
+        {
+          "field": "atom_identity",
+          "status": "dropped",
+          "stage": "write",
+          "reason": "Source atom IDs and names are omitted; candidate correspondence is reported separately."
+        },
+        {
+          "field": "atom_types",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source MOL2 atom types are reduced to the bounded graph projection; the original typing model is not emitted."
+        },
+        {
+          "field": "substructures",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source atom substructure ownership and names are not emitted."
+        },
+        {
+          "field": "opaque_sections",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Additional MOL2 sections are not interpreted and are not emitted."
+        },
+        {
+          "field": "bond_records",
+          "status": "dropped",
+          "stage": "projection",
+          "reason": "Source bond IDs and MOL2 tokens such as am, du and nc are not retained as source metadata."
+        },
+        {
+          "field": "formal_charge_interpretation",
+          "status": "unverified",
+          "stage": "projection",
+          "reason": "Only N.4 implies +1; other atom-type and extension formal-charge rules are not interpreted. Preserving the projected charge is not verification of source chemistry."
+        },
+        {
+          "field": "stereochemistry",
+          "status": "unverified",
+          "stage": "projection",
+          "reason": "Coordinate-derived and extension stereochemistry are not interpreted or verified."
+        },
+        {
+          "field": "projected_graph",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Candidate output reparsed; explicit atom counts, mapped elements/aromaticity/projected formal charges and mapped bond orders agree. Source chemical interpretation and inferred hydrogens are outside this check."
+        },
+        {
+          "field": "coordinates",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Reparsed candidate coordinates agree bit for bit with source f64 x/y/z values through verified atom correspondence, including signed zero. Original decimal spelling and physical dimensionality are outside this check."
+        },
+        {
+          "field": "molecule_name",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Reparsed properties.name equals the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss."
+        },
+        {
+          "field": "partial_charges",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Partial-charge preservation requires complete source values, reparsed bitwise equality and verified atom correspondence; no rounding into formal charges or filling missing values."
+        },
+        {
+          "field": "charge_method",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "Source charge-method label retained verbatim as the partialCharges dataset key; the declared method is not recomputed or independently validated."
+        },
+        {
+          "field": "projected_formal_charges",
+          "status": "preserved",
+          "stage": "candidate_verification",
+          "reason": "CJSON formal charges are checked as part of mapped graph verification. This does not validate MOL2 charge interpretation beyond N.4; partial-charge preservation is checked separately."
+        }
+      ],
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "preserved",
+        "elements": "preserved",
+        "connectivity": "preserved",
+        "formal_charges": "preserved",
+        "coordinates": "preserved",
+        "partial_charges": "preserved",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "lost",
+        "bond_orders": "preserved",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "lost"
+      },
+      "correspondence": "unique",
+      "source_to_candidate": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "coordinate_bits_equal_diagnostic": true,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": true,
+      "independent_graph_check_agrees": true,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/nonsequential-ids.mol2",
+        "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+        "size_bytes": 392
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids.input.mol2",
+        "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+        "size_bytes": 392
+      }
+    },
+    {
+      "case": "nonsequential-ids",
+      "profile": "stress",
+      "route": "mol2-cjson",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-ocjson"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids-mol2-cjson-openbabel.stdout",
+        "sha256": "8b9e35b5e1949152ac84134fccdd17f13e056abf0b1b43518f14bdb986503f92",
+        "size_bytes": 635
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids-mol2-cjson-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "fields": {
+        "atom_count": "preserved",
+        "bond_count": "lost",
+        "elements": "preserved",
+        "connectivity": "lost",
+        "formal_charges": "unverified",
+        "coordinates": "unverified",
+        "partial_charges": "unverified",
+        "atom_names": "lost",
+        "atom_types": "lost",
+        "source_atom_ids": "lost",
+        "bond_orders": "unverified",
+        "molecule_name": "preserved",
+        "charge_method": "preserved",
+        "opaque_marker_retention": "lost"
+      },
+      "correspondence": "count_mismatch",
+      "source_to_candidate": null,
+      "coordinate_bits_equal_diagnostic": null,
+      "outcome": "output_with_loss",
+      "machine_loss_report_available": false,
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/nonsequential-ids.mol2",
+        "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+        "size_bytes": 392
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonsequential-ids.input.mol2",
+        "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+        "size_bytes": 392
+      }
+    },
+    {
+      "case": "nonfinite-charge",
+      "profile": "negative",
+      "route": "mol2-self",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "strict"
+      ],
+      "resource_status": "completed",
+      "exit_code": 2,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge-mol2-self-chematic.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge-mol2-self-chematic.stderr",
+        "sha256": "8460a6f1b24611f62a6a72f812d69bcd10c3be258f67815481adf5d0ba9df237",
+        "size_bytes": 83
+      },
+      "outcome": "safe_rejection",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/nonfinite-charge.mol2",
+        "sha256": "e2a5aae20a395a33c985bb156038379ee8e372a151860e87e2ca7671e7d58e97",
+        "size_bytes": 257
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge.input.mol2",
+        "sha256": "e2a5aae20a395a33c985bb156038379ee8e372a151860e87e2ca7671e7d58e97",
+        "size_bytes": 257
+      }
+    },
+    {
+      "case": "nonfinite-charge",
+      "profile": "negative",
+      "route": "mol2-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge-mol2-self-openbabel.stdout",
+        "sha256": "b2237e0e91afad6a984a58c72e1469c0e53280d50915fbde1401004ef0a1314e",
+        "size_bytes": 471
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge-mol2-self-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "outcome": "parse_write_failure",
+      "reason": "expected finite number",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/nonfinite-charge.mol2",
+        "sha256": "e2a5aae20a395a33c985bb156038379ee8e372a151860e87e2ca7671e7d58e97",
+        "size_bytes": 257
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge.input.mol2",
+        "sha256": "e2a5aae20a395a33c985bb156038379ee8e372a151860e87e2ca7671e7d58e97",
+        "size_bytes": 257
+      }
+    },
+    {
+      "case": "nonfinite-charge",
+      "profile": "negative",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 2,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge-mol2-cjson-chematic.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge-mol2-cjson-chematic.stderr",
+        "sha256": "8460a6f1b24611f62a6a72f812d69bcd10c3be258f67815481adf5d0ba9df237",
+        "size_bytes": 83
+      },
+      "outcome": "safe_rejection",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/nonfinite-charge.mol2",
+        "sha256": "e2a5aae20a395a33c985bb156038379ee8e372a151860e87e2ca7671e7d58e97",
+        "size_bytes": 257
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge.input.mol2",
+        "sha256": "e2a5aae20a395a33c985bb156038379ee8e372a151860e87e2ca7671e7d58e97",
+        "size_bytes": 257
+      }
+    },
+    {
+      "case": "nonfinite-charge",
+      "profile": "negative",
+      "route": "mol2-cjson",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-ocjson"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge-mol2-cjson-openbabel.stdout",
+        "sha256": "6ffa5dc1aae706fa4d64b1719099074c0e4d81f33d5460b7184e49923dc47f99",
+        "size_bytes": 481
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge-mol2-cjson-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "outcome": "parse_write_failure",
+      "reason": "Expecting value: line 39 column 7 (char 481)",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/nonfinite-charge.mol2",
+        "sha256": "e2a5aae20a395a33c985bb156038379ee8e372a151860e87e2ca7671e7d58e97",
+        "size_bytes": 257
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/nonfinite-charge.input.mol2",
+        "sha256": "e2a5aae20a395a33c985bb156038379ee8e372a151860e87e2ca7671e7d58e97",
+        "size_bytes": 257
+      }
+    },
+    {
+      "case": "dangling-bond",
+      "profile": "negative",
+      "route": "mol2-self",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "strict"
+      ],
+      "resource_status": "completed",
+      "exit_code": 2,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond-mol2-self-chematic.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond-mol2-self-chematic.stderr",
+        "sha256": "6a0d609860ae8bc3dc3b494df03961b244f255bbdf36f9fdfd2cbe8e20e8f568",
+        "size_bytes": 59
+      },
+      "outcome": "safe_rejection",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/dangling-bond.mol2",
+        "sha256": "31200104c7b8cf1c594d61ffcff3d9e720af25aa4baa70bb2b1a307b2048ce96",
+        "size_bytes": 260
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond.input.mol2",
+        "sha256": "31200104c7b8cf1c594d61ffcff3d9e720af25aa4baa70bb2b1a307b2048ce96",
+        "size_bytes": 260
+      }
+    },
+    {
+      "case": "dangling-bond",
+      "profile": "negative",
+      "route": "mol2-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond-mol2-self-openbabel.stdout",
+        "sha256": "2d5f9b74ed31764f48a0804ad9c49f08cd4e613678c12945a3bd5318837dc52b",
+        "size_bytes": 447
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond-mol2-self-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "outcome": "accepted_outside_profile",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/dangling-bond.mol2",
+        "sha256": "31200104c7b8cf1c594d61ffcff3d9e720af25aa4baa70bb2b1a307b2048ce96",
+        "size_bytes": 260
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond.input.mol2",
+        "sha256": "31200104c7b8cf1c594d61ffcff3d9e720af25aa4baa70bb2b1a307b2048ce96",
+        "size_bytes": 260
+      }
+    },
+    {
+      "case": "dangling-bond",
+      "profile": "negative",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 2,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond-mol2-cjson-chematic.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond-mol2-cjson-chematic.stderr",
+        "sha256": "6a0d609860ae8bc3dc3b494df03961b244f255bbdf36f9fdfd2cbe8e20e8f568",
+        "size_bytes": 59
+      },
+      "outcome": "safe_rejection",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/dangling-bond.mol2",
+        "sha256": "31200104c7b8cf1c594d61ffcff3d9e720af25aa4baa70bb2b1a307b2048ce96",
+        "size_bytes": 260
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond.input.mol2",
+        "sha256": "31200104c7b8cf1c594d61ffcff3d9e720af25aa4baa70bb2b1a307b2048ce96",
+        "size_bytes": 260
+      }
+    },
+    {
+      "case": "dangling-bond",
+      "profile": "negative",
+      "route": "mol2-cjson",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-ocjson"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond-mol2-cjson-openbabel.stdout",
+        "sha256": "dac923263f8f746793e21c2c14424cf5bbdce00e09789d4cf56a9339f0914e0a",
+        "size_bytes": 787
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond-mol2-cjson-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "outcome": "accepted_outside_profile",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/dangling-bond.mol2",
+        "sha256": "31200104c7b8cf1c594d61ffcff3d9e720af25aa4baa70bb2b1a307b2048ce96",
+        "size_bytes": 260
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/dangling-bond.input.mol2",
+        "sha256": "31200104c7b8cf1c594d61ffcff3d9e720af25aa4baa70bb2b1a307b2048ce96",
+        "size_bytes": 260
+      }
+    },
+    {
+      "case": "unknown-bond",
+      "profile": "negative",
+      "route": "mol2-self",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "strict"
+      ],
+      "resource_status": "completed",
+      "exit_code": 2,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond-mol2-self-chematic.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond-mol2-self-chematic.stderr",
+        "sha256": "9ebb376722faaaf91928641f2d44bd06acca457665882bf0c5638219542a9ff1",
+        "size_bytes": 67
+      },
+      "outcome": "safe_rejection",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/unknown-bond.mol2",
+        "sha256": "341ca2032e71ff1fb61502bc9feed8cc1831b7423dcc9a1bf9cb4fbf486abf21",
+        "size_bytes": 261
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond.input.mol2",
+        "sha256": "341ca2032e71ff1fb61502bc9feed8cc1831b7423dcc9a1bf9cb4fbf486abf21",
+        "size_bytes": 261
+      }
+    },
+    {
+      "case": "unknown-bond",
+      "profile": "negative",
+      "route": "mol2-self",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond-mol2-self-openbabel.stdout",
+        "sha256": "4c08f68e2618a0f07af01a16b91e60254efa27378a227ad321e0e9453c38c85c",
+        "size_bytes": 471
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond-mol2-self-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "outcome": "parse_write_failure",
+      "reason": "duplicate/unsupported MOL2 bond",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/unknown-bond.mol2",
+        "sha256": "341ca2032e71ff1fb61502bc9feed8cc1831b7423dcc9a1bf9cb4fbf486abf21",
+        "size_bytes": 261
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond.input.mol2",
+        "sha256": "341ca2032e71ff1fb61502bc9feed8cc1831b7423dcc9a1bf9cb4fbf486abf21",
+        "size_bytes": 261
+      }
+    },
+    {
+      "case": "unknown-bond",
+      "profile": "negative",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-interchange-integer-native/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 2,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond-mol2-cjson-chematic.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond-mol2-cjson-chematic.stderr",
+        "sha256": "9ebb376722faaaf91928641f2d44bd06acca457665882bf0c5638219542a9ff1",
+        "size_bytes": 67
+      },
+      "outcome": "safe_rejection",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/unknown-bond.mol2",
+        "sha256": "341ca2032e71ff1fb61502bc9feed8cc1831b7423dcc9a1bf9cb4fbf486abf21",
+        "size_bytes": 261
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond.input.mol2",
+        "sha256": "341ca2032e71ff1fb61502bc9feed8cc1831b7423dcc9a1bf9cb4fbf486abf21",
+        "size_bytes": 261
+      }
+    },
+    {
+      "case": "unknown-bond",
+      "profile": "negative",
+      "route": "mol2-cjson",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+        "-imol2",
+        "-ocjson"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond-mol2-cjson-openbabel.stdout",
+        "sha256": "0c66b02c78c941d89d8bfaaa93e3e9f60e0db6b64386f586195517f2d8fd5313",
+        "size_bytes": 818
+      },
+      "stderr": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond-mol2-cjson-openbabel.stderr",
+        "sha256": "d62a9897953e0ca42ee2240c501d3cd421fbeb8d1e0231b81a468b3b9401abff",
+        "size_bytes": 21
+      },
+      "outcome": "parse_write_failure",
+      "reason": "unsupported CJSON order",
+      "input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/fixtures/unknown-bond.mol2",
+        "sha256": "341ca2032e71ff1fb61502bc9feed8cc1831b7423dcc9a1bf9cb4fbf486abf21",
+        "size_bytes": 261
+      },
+      "archived_input": {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json.artifacts/unknown-bond.input.mol2",
+        "sha256": "341ca2032e71ff1fb61502bc9feed8cc1831b7423dcc9a1bf9cb4fbf486abf21",
+        "size_bytes": 261
+      }
+    }
+  ],
+  "limitations": [
+    "Exposed development fixtures, not an independent holdout or superiority gate.",
+    "Local MOL2 N.4 formal-charge projection only; generic MOL2 charge interpretation is unverified.",
+    "Tiny independent readers cover only this declared fixture profile.",
+    "Unlabelled topology plus elements determine correspondence; symmetry/search limits remain unverified.",
+    "Opaque marker retention checks bytes only, not editable or interpreted semantics.",
+    "OS/system libraries, environment and full runtime dependency closure are not archived; listed explicit artifacts only.",
+    "Failures, refusals and negative cases remain in denominators. No comparative speed or statistical superiority claim."
+  ]
+}

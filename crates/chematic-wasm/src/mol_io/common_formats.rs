@@ -22,6 +22,92 @@ pub fn smiles_to_mol2(smiles: &str) -> String {
     }
 }
 
+fn bounded_mol2_record(text: &str) -> Result<chematic_mol::Mol2SourceRecord, String> {
+    chematic_mol::parse_mol2_source_record_with_limits(
+        text,
+        &chematic_mol::Mol2ParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            max_atoms: WASM_MAX_ATOMS,
+            ..Default::default()
+        },
+    )
+    .map_err(|error| error.to_string())
+}
+
+fn bounded_cjson_record(text: &str) -> Result<chematic_mol::CjsonRecord, String> {
+    chematic_mol::parse_cjson_record_with_limits(
+        text,
+        &chematic_mol::CjsonParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            max_atoms: WASM_MAX_ATOMS,
+            ..Default::default()
+        },
+    )
+    .map_err(|error| error.to_string())
+}
+
+/// Inspect strictly validated CJSON with exact source and opaque field paths.
+#[wasm_bindgen]
+pub fn parse_cjson_record_json(text: &str) -> Result<String, JsValue> {
+    let record = bounded_cjson_record(text).map_err(|error| JsValue::from_str(&error))?;
+    let json = record.to_json().to_string();
+    if json.len() > WASM_MAX_OUTPUT_BYTES {
+        return Err(JsValue::from_str(
+            "CJSON record JSON exceeds maximum output size",
+        ));
+    }
+    Ok(json)
+}
+
+/// Validate the local CJSON profile and retain the exact UTF-8 source.
+#[wasm_bindgen]
+pub fn roundtrip_cjson_record(text: &str) -> Result<String, JsValue> {
+    bounded_cjson_record(text)
+        .map(|record| chematic_mol::write_cjson_record(&record))
+        .map_err(|error| JsValue::from_str(&error))
+}
+
+/// Checked MOL2/CJSON conversion using the shared report schema.
+#[wasm_bindgen]
+pub fn convert_with_report_json(
+    text: &str,
+    input_format: &str,
+    output_format: &str,
+    policy: &str,
+) -> Result<String, JsValue> {
+    let limits = chematic_mol::ConversionLimits {
+        mol2: chematic_mol::Mol2ParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            max_atoms: WASM_MAX_ATOMS,
+            ..Default::default()
+        },
+        max_output_bytes: WASM_MAX_OUTPUT_BYTES,
+    };
+    chematic_mol::convert_with_report_json(text, input_format, output_format, policy, &limits)
+        .map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
+/// Inspect partial charges, atom types and source retention for MOL2.
+#[wasm_bindgen]
+pub fn parse_mol2_record_json(text: &str) -> Result<String, JsValue> {
+    let record = bounded_mol2_record(text).map_err(|error| JsValue::from_str(&error))?;
+    let json = record.to_json().to_string();
+    if json.len() > WASM_MAX_OUTPUT_BYTES {
+        return Err(JsValue::from_str(
+            "MOL2 record JSON exceeds maximum output size",
+        ));
+    }
+    Ok(json)
+}
+
+/// Validate one MOL2 record and preserve its exact source, including metadata.
+#[wasm_bindgen]
+pub fn roundtrip_mol2_record(text: &str) -> Result<String, JsValue> {
+    bounded_mol2_record(text)
+        .map(|record| chematic_mol::write_mol2_source_record(&record))
+        .map_err(|error| JsValue::from_str(&error))
+}
+
 pub(crate) fn common_format_name(format: &str) -> Option<String> {
     match format
         .to_ascii_lowercase()
@@ -71,9 +157,8 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
 ///
 /// This is the WASM counterpart of Python's `convert_format`. It supports
 /// SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
-/// Coordinates and format-specific metadata are intentionally not carried
-/// across this topology-only bridge; use the format-specific coordinate APIs
-/// when those fields must be preserved.
+/// MOL2-to-MOL2 validates and retains the exact source. Other conversions use
+/// the topology-only bridge and do not carry format-specific metadata.
 #[wasm_bindgen]
 pub fn convert_common_format(
     text: &str,
@@ -92,6 +177,9 @@ pub fn convert_common_format(
     let output = common_format_name(output_format).ok_or_else(|| {
         JsValue::from_str(&format!("unsupported molecular format: {output_format}"))
     })?;
+    if input == "mol2" && output == "mol2" {
+        return roundtrip_mol2_record(text);
+    }
     let mol = parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(

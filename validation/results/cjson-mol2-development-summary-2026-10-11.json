@@ -1,0 +1,170 @@
+{
+  "schema": "chematic.cjson-mol2-development-summary.v1",
+  "created_at": "2026-10-11T04:57:28.432607+00:00",
+  "scope": "Uncommitted v1.0.20 local source candidate on exposed development fixtures; not a published release, independent holdout, speed study or superiority gate.",
+  "build_verification": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cjson-mol2-build-source-2026-10-11.json",
+    "sha256": "8e9839b3e23c901b99e19fdfd6ec92a6724e27b38257fb34fcbf3ef92271e89c",
+    "size_bytes": 26145
+  },
+  "paired_report": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-cjson-mol2-source-2026-10-11.json",
+    "sha256": "eede6f67fa48933e2c9e968a9b404a89403120e479f0284b6aaaab8c365fa465",
+    "size_bytes": 111590
+  },
+  "cross_read_report": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-cjson-mol2-source-2026-10-11.json",
+    "sha256": "a0a65d13b12e0d99f189153385f256d0b8e7cd6bfeb57cdf7446137565047226",
+    "size_bytes": 33424
+  },
+  "baseline_paired_report": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json",
+    "sha256": "12a2146344e911c7fd5bc940fc1b0e90e3c7e1b21c6966b5b7353e4c451de184",
+    "size_bytes": 112457
+  },
+  "baseline_cross_read_report": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-after-integer-source-2026-10-11.json",
+    "sha256": "7bf30a3930d6b8da419ef196f25ee1926f6b21aebd036dcc6779b0967eb635fc",
+    "size_bytes": 19868
+  },
+  "metrics": {
+    "rust_unique_tests_passed": 848,
+    "python_tests_passed": 230,
+    "node_wasm_suites_passed": 5,
+    "binding_parity_cases": 79,
+    "identical_reports": 57,
+    "shared_errors": 22,
+    "paired_runner_tests_passed": 33,
+    "scoped_clippy_passed": true,
+    "paired_terminal_rows": 32,
+    "cross_read_terminal_rows": 15
+  },
+  "comparative_accounting": {
+    "paired_all_32_outcomes_and_field_checks_unchanged": true,
+    "original_9_cross_control_outcomes_and_field_checks_unchanged": true,
+    "new_chematic_mol2_rows": 6,
+    "existing_openbabel_mol2_rows": 6,
+    "exact_source_retention_rows": 3,
+    "cross_outcomes": {
+      "output_with_loss": 12,
+      "exact_source_retained": 3
+    },
+    "per_field_status_counts": {
+      "chematic_mol2": {
+        "connectivity": {
+          "preserved": 6
+        },
+        "bond_orders": {
+          "preserved": 6
+        },
+        "formal_charges": {
+          "preserved": 6
+        },
+        "coordinates": {
+          "preserved": 6
+        },
+        "partial_charges": {
+          "preserved": 6
+        },
+        "charge_method": {
+          "preserved": 6
+        },
+        "molecule_name": {
+          "preserved": 6
+        },
+        "atom_names": {
+          "lost": 6
+        },
+        "atom_types": {
+          "lost": 4,
+          "preserved": 2
+        }
+      },
+      "openbabel_default_mol2": {
+        "connectivity": {
+          "preserved": 6
+        },
+        "bond_orders": {
+          "preserved": 6
+        },
+        "formal_charges": {
+          "preserved": 4,
+          "lost": 2
+        },
+        "coordinates": {
+          "preserved": 6
+        },
+        "partial_charges": {
+          "lost": 6
+        },
+        "charge_method": {
+          "lost": 6
+        },
+        "molecule_name": {
+          "lost": 6
+        },
+        "atom_names": {
+          "lost": 6
+        },
+        "atom_types": {
+          "preserved": 4,
+          "lost": 2
+        }
+      }
+    },
+    "new_chematic_coordinate_bit_diagnostics_equal": 6,
+    "meaning": "Both engines' CJSON outputs on the same three common inputs feed each reader. Native partial charges/method/name are preserved in 6/6, versus lost in 6/6 default Open Babel readbacks. All twelve MOL2 outputs still have some field loss; generated atom names/types remain explicit limitations. The independent fixture oracle and required numeric tolerances are unchanged."
+  },
+  "source_verification": {
+    "all_listed_implementation_test_and_fixture_hashes_still_match_build_record": true,
+    "all_build_artifact_and_log_hashes_still_match": true,
+    "documentation_updated_after_build_record": [
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/openbabel-interchange-plan.md",
+        "sha256": "31c313c3cea09f06900bb0b48102a146bfcaa78bfe7232ed78484bd5760f4278",
+        "size_bytes": 20231
+      },
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/ROADMAP.md",
+        "sha256": "f3a4844e7657ac95bdf43deafc6ccab6e174e86fe850b82956e9b44a8281f5f2",
+        "size_bytes": 40792
+      },
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/README.md",
+        "sha256": "cb92422ba6c617d31eefdbab857f5a0fbeb84dc6cbe53c12b98936db8b07582c",
+        "size_bytes": 7951
+      }
+    ],
+    "current_documentation": [
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/ROADMAP.md",
+        "sha256": "f3a4844e7657ac95bdf43deafc6ccab6e174e86fe850b82956e9b44a8281f5f2",
+        "size_bytes": 40792
+      },
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/format-capabilities.md",
+        "sha256": "72c643cb961e62a452768aa7ee4609bed946c97ab8645a2289a3c20ccb3a1da9",
+        "size_bytes": 45605
+      },
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/openbabel-interchange-plan.md",
+        "sha256": "31c313c3cea09f06900bb0b48102a146bfcaa78bfe7232ed78484bd5760f4278",
+        "size_bytes": 20231
+      },
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/README.md",
+        "sha256": "cb92422ba6c617d31eefdbab857f5a0fbeb84dc6cbe53c12b98936db8b07582c",
+        "size_bytes": 7951
+      }
+    ],
+    "note": "Build record doc hashes describe the pre-result snapshot. Current result/docs hashes are separately indexed here; the immutable build record is not retroactively edited."
+  },
+  "remaining_boundaries": [
+    "Generic MOL2 atom typing and original CJSON opaque atom-name/type/ID metadata are not reconstructed.",
+    "Only +1 nitrogen via N.4 preserves a nonzero formal charge; other nonzero charges and specified isotopes are explicitly dropped and prevent full graph verification/mappings.",
+    "Multiple partial-charge datasets require future explicit user selection support; this adapter refuses rather than guess.",
+    "Missing geometry and unrepresentable name/method strings refuse even with allow_loss.",
+    "Geometry stereo and opaque extension semantics remain unverified; source retention is not editable chemical interpretation.",
+    "Broader format pairs, diverse fixed-corpus acceptance and independent holdout remain open."
+  ]
+}

@@ -1,0 +1,58 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+_________ test_oop_energy_matches_rdkit_away_from_planarity[C=C(C)C-1] _________
+scripts/tests/test_mmff94_same_explicit_h_energy.py:223: in test_oop_energy_matches_rdkit_away_from_planarity
+    assert mol.mmff94_energy_breakdown(coords)["oop"] == pytest.approx(
+E   assert 1.1844684142146504 == 3.7840237972032162 ± 1.0e-09
+E     
+E     comparison failed
+E     Obtained: 1.1844684142146504
+E     Expected: 3.7840237972032162 ± 1.0e-09
+_____ test_oop_energy_matches_rdkit_away_from_planarity[O=C(N)c1ccccc1-1] ______
+scripts/tests/test_mmff94_same_explicit_h_energy.py:223: in test_oop_energy_matches_rdkit_away_from_planarity
+    assert mol.mmff94_energy_breakdown(coords)["oop"] == pytest.approx(
+E   assert 6.081546138520468 == 15.883146270032276 ± 1.0e-09
+E     
+E     comparison failed
+E     Obtained: 6.081546138520468
+E     Expected: 15.883146270032276 ± 1.0e-09
+______ test_oop_energy_matches_rdkit_away_from_planarity[C=CC=[N+](C)C-2] ______
+scripts/tests/test_mmff94_same_explicit_h_energy.py:223: in test_oop_energy_matches_rdkit_away_from_planarity
+    assert mol.mmff94_energy_breakdown(coords)["oop"] == pytest.approx(
+E   assert 7.569078896550663 == 12.169808043961618 ± 1.0e-09
+E     
+E     comparison failed
+E     Obtained: 7.569078896550663
+E     Expected: 12.169808043961618 ± 1.0e-09
+________ test_oop_energy_matches_rdkit_away_from_planarity[CN(C)C=O-1] _________
+scripts/tests/test_mmff94_same_explicit_h_energy.py:223: in test_oop_energy_matches_rdkit_away_from_planarity
+    assert mol.mmff94_energy_breakdown(coords)["oop"] == pytest.approx(
+E   assert -0.19921079753564963 == -0.7077371876639308 ± 1.0e-09
+E     
+E     comparison failed
+E     Obtained: -0.19921079753564963
+E     Expected: -0.7077371876639308 ± 1.0e-09
+_____ test_oop_energy_matches_rdkit_away_from_planarity[[O-][n+]1ccccc1-1] _____
+scripts/tests/test_mmff94_same_explicit_h_energy.py:223: in test_oop_energy_matches_rdkit_away_from_planarity
+    assert mol.mmff94_energy_breakdown(coords)["oop"] == pytest.approx(
+E   assert 0.19571839360692966 == 10.24010314349952 ± 1.0e-09
+E     
+E     comparison failed
+E     Obtained: 0.19571839360692966
+E     Expected: 10.24010314349952 ± 1.0e-09
+______________ test_vdw_energy_retains_pairs_beyond_ten_angstroms ______________
+scripts/tests/test_mmff94_same_explicit_h_energy.py:246: in test_vdw_energy_retains_pairs_beyond_ten_angstroms
+    assert mol.mmff94_energy_breakdown(coords)["vdw"] == pytest.approx(
+E   assert -0.3305487825270338 == -0.3335450515718704 ± 1.0e-09
+E     
+E     comparison failed
+E     Obtained: -0.3305487825270338
+E     Expected: -0.3335450515718704 ± 1.0e-09
+=========================== short test summary info ============================
+FAILED scripts/tests/test_mmff94_same_explicit_h_energy.py::test_oop_energy_matches_rdkit_away_from_planarity[C=C(C)C-1]
+FAILED scripts/tests/test_mmff94_same_explicit_h_energy.py::test_oop_energy_matches_rdkit_away_from_planarity[O=C(N)c1ccccc1-1]
+FAILED scripts/tests/test_mmff94_same_explicit_h_energy.py::test_oop_energy_matches_rdkit_away_from_planarity[C=CC=[N+](C)C-2]
+FAILED scripts/tests/test_mmff94_same_explicit_h_energy.py::test_oop_energy_matches_rdkit_away_from_planarity[CN(C)C=O-1]
+FAILED scripts/tests/test_mmff94_same_explicit_h_energy.py::test_oop_energy_matches_rdkit_away_from_planarity[[O-][n+]1ccccc1-1]
+FAILED scripts/tests/test_mmff94_same_explicit_h_energy.py::test_vdw_energy_retains_pairs_beyond_ten_angstroms
+6 failed, 19 deselected in 0.99s

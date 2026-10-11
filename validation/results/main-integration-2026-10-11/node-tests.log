@@ -1,0 +1,21 @@
+CJSON source retention, strict validation, isotopes and checked conversion passed
+✔ /private/tmp/chematic-main-integration-wasm-contracts/crates/chematic-wasm/tests/cjson_preservation.test.mjs (371.121917ms)
+Checked conversion policy, losses, mapping and refusal contract passed
+CJSON coordinates, projected charges, precision and refusal contract passed
+CJSON declared partial-charge values, method, name and missing-data contract passed
+✔ /private/tmp/chematic-main-integration-wasm-contracts/crates/chematic-wasm/tests/conversion_report.test.mjs (348.396458ms)
+✔ /private/tmp/chematic-main-integration-wasm-contracts/crates/chematic-wasm/tests/cross_binding_contract.test.mjs (575.105292ms)
+format_parity.test.mjs: all assertions passed
+✔ /private/tmp/chematic-main-integration-wasm-contracts/crates/chematic-wasm/tests/format_parity.test.mjs (324.985792ms)
+MOL2 source preservation and rejection contract passed
+✔ /private/tmp/chematic-main-integration-wasm-contracts/crates/chematic-wasm/tests/mol2_preservation.test.mjs (307.369333ms)
+torsion_scan.test.mjs: all assertions passed
+✔ /private/tmp/chematic-main-integration-wasm-contracts/crates/chematic-wasm/tests/torsion_scan.test.mjs (317.390791ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 594.170584

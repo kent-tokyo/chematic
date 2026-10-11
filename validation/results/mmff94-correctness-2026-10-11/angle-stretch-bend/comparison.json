@@ -1,0 +1,264 @@
+{
+  "baseline_energy": {
+    "comparable_rows": 262,
+    "gradient_diagnostic": {
+      "input_indices": [
+        166,
+        231
+      ],
+      "max_abs_error_kcal_mol_angstrom": 1.2955729999930554e-07,
+      "max_scaled_error": 4.4254647588517636e-08,
+      "rows": 2
+    },
+    "max_abs_delta_kcal_mol": 2.104696150745042,
+    "median_abs_delta_kcal_mol": 0.0058246999777011865,
+    "p90_abs_delta_kcal_mol": 0.7106867128059662,
+    "row_accounting": {
+      "input_count": 265,
+      "status_counts": {
+        "declared_unsupported": 1,
+        "embed_failure": 2,
+        "ok": 262
+      },
+      "terminal_count": 265
+    },
+    "within_1_kcal_mol": 242,
+    "within_5_kcal_mol": 262
+  },
+  "baseline_kind": "previous_fresh_local_source_candidate_same_day",
+  "baseline_rows": {
+    "bytes": 339913,
+    "path": "validation/results/mmff94-correctness-2026-10-11/candidate.jsonl",
+    "sha256": "c69c8a2d3261ac9e2aaa8fc289d91e864cb26f816aed1f86995dcb0c43d015af"
+  },
+  "baseline_summary": {
+    "bytes": 7739,
+    "path": "validation/results/mmff94-correctness-2026-10-11/candidate-summary.json",
+    "sha256": "a9c9a90447c5f519ba61be5dfaa5ecd97b9b031a9fa51dd0b0fa3336bfe393bf"
+  },
+  "candidate_energy": {
+    "comparable_rows": 262,
+    "gradient_diagnostic": {
+      "input_indices": [
+        89,
+        96,
+        166,
+        168,
+        231
+      ],
+      "max_abs_error_kcal_mol_angstrom": 1.329079140077738e-07,
+      "max_scaled_error": 5.59097548864845e-08,
+      "rows": 5
+    },
+    "max_abs_delta_kcal_mol": 0.7238415166968224,
+    "median_abs_delta_kcal_mol": 0.004270481908147161,
+    "p90_abs_delta_kcal_mol": 0.04253719272236367,
+    "row_accounting": {
+      "input_count": 265,
+      "status_counts": {
+        "declared_unsupported": 1,
+        "embed_failure": 2,
+        "ok": 262
+      },
+      "terminal_count": 265
+    },
+    "within_1_kcal_mol": 262,
+    "within_5_kcal_mol": 262
+  },
+  "candidate_rows": {
+    "bytes": 340156,
+    "path": "validation/results/mmff94-correctness-2026-10-11/angle-stretch-bend/candidate.jsonl",
+    "sha256": "d0f81743d31959054bf66154ee76e86520067cbb49f6ad36e439a6bd5b471ba6"
+  },
+  "candidate_summary": {
+    "bytes": 8005,
+    "path": "validation/results/mmff94-correctness-2026-10-11/angle-stretch-bend/candidate-summary.json",
+    "sha256": "90961cc5a3dccf6f383d7f6cfc6a71a329b102311877c33a577b4bef8d81d75e"
+  },
+  "implementation_files": [
+    {
+      "bytes": 106616,
+      "path": "crates/chematic-ff/src/mmff94_energy/angle.rs",
+      "sha256": "2cac535d2d223c7b86e6aeb36b67974e9931548cabb7aa973cd028ce5267cb23"
+    },
+    {
+      "bytes": 24313,
+      "path": "crates/chematic-ff/src/mmff94_energy/oop_stbn.rs",
+      "sha256": "44ad67f8a889bcea8d6e0dd18ce5e5d58205bdec77cf5be9589fde1a5891568c"
+    },
+    {
+      "bytes": 172668,
+      "path": "crates/chematic-ff/src/mmff94_minimizer.rs",
+      "sha256": "fa2b316fe5b11ad0500bb12ca9c47d1f681bfcd46db7ed2e6c7f9bd6d868255d"
+    },
+    {
+      "bytes": 6450,
+      "path": "scripts/tests/test_mmff94_same_explicit_h_energy.py",
+      "sha256": "b1f7c9a2bedb098317f03d8fae5d4808f49a348c2e87e60d32b1c4bd497e6a3f"
+    },
+    {
+      "bytes": 11982,
+      "path": "scripts/gen_mmff94_numeric_type_registry.py",
+      "sha256": "c9704bf303a6a170aa0e31008ea5e161a5fd9d261980dfc06a39cb832a0d0837"
+    },
+    {
+      "bytes": 43009,
+      "path": "crates/chematic-ff/src/mmff94_numeric_type_registry.rs",
+      "sha256": "8596201335dea4ca3bc657e9373d607010b160f4039ea348fc29c7e9d00c8f55"
+    },
+    {
+      "bytes": 972,
+      "path": "crates/chematic-ff/tests/mmff94_angle_stretch_bend.rs",
+      "sha256": "7c12581c19ebbd80cec25d799474bba5a9d23b435993b6ebb9032cb780234dec"
+    }
+  ],
+  "implementation_patch": {
+    "bytes": 38835,
+    "path": "validation/results/mmff94-correctness-2026-10-11/angle-stretch-bend/implementation.patch",
+    "sha256": "81ff988da1e367674392d2efc9ceb4e4cdd55c090f6b11d7696e3b36d1aa5c6f"
+  },
+  "paired_energy": {
+    "coordinate_hashes_identical": 262,
+    "improved": 144,
+    "largest_remaining": [
+      {
+        "abs_delta_kcal_mol": 0.7238415166968224,
+        "input_index": 85,
+        "name": "chembl_tier_b_0020",
+        "term_delta_kcal_mol": {
+          "angle": -1.4210854715202004e-14,
+          "bond": 3.552713678800501e-15,
+          "electrostatic": 2.842170943040401e-14,
+          "oop": -0.0012276604475974688,
+          "stretch_bend": -2.9976021664879227e-15,
+          "torsion": 0.7080000000000055,
+          "vdw": 0.01706917714389533
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 0.7156608710131707,
+        "input_index": 230,
+        "name": "chembl_tier_b_0165",
+        "term_delta_kcal_mol": {
+          "angle": 0.0,
+          "bond": 1.4210854715202004e-14,
+          "electrostatic": -7.105427357601002e-14,
+          "oop": 6.778974068146341e-06,
+          "stretch_bend": 2.6645352591003757e-15,
+          "torsion": 0.7079999999999878,
+          "vdw": 0.007654092039146576
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 0.7140181523253943,
+        "input_index": 254,
+        "name": "chembl_tier_b_0189",
+        "term_delta_kcal_mol": {
+          "angle": 1.4210854715202004e-14,
+          "bond": 7.105427357601002e-15,
+          "electrostatic": 0.0,
+          "oop": -1.9631578747730293e-09,
+          "stretch_bend": -4.3576253716537394e-15,
+          "torsion": 0.708000000000002,
+          "vdw": 0.0060181542884976125
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 0.7117980894992684,
+        "input_index": 184,
+        "name": "chembl_tier_b_0119",
+        "term_delta_kcal_mol": {
+          "angle": 3.552713678800501e-15,
+          "bond": -7.105427357601002e-15,
+          "electrostatic": -7.105427357601002e-15,
+          "oop": -2.1369565671534507e-05,
+          "stretch_bend": 3.1086244689504383e-15,
+          "torsion": 0.7080000000000055,
+          "vdw": 0.0038194590649993643
+        }
+      },
+      {
+        "abs_delta_kcal_mol": 0.7116233830152794,
+        "input_index": 170,
+        "name": "chembl_tier_b_0105",
+        "term_delta_kcal_mol": {
+          "angle": 1.7763568394002505e-14,
+          "bond": -5.329070518200751e-15,
+          "electrostatic": 1.7763568394002505e-14,
+          "oop": -0.00022726510274426553,
+          "stretch_bend": 4.440892098500626e-16,
+          "torsion": 0.7079999999999949,
+          "vdw": 0.003850648118202571
+        }
+      }
+    ],
+    "oracle_energies_identical": 262,
+    "per_term_max_abs_delta_kcal_mol": {
+      "angle": 7.105427357601002e-14,
+      "bond": 4.973799150320701e-14,
+      "electrostatic": 1.1368683772161603e-13,
+      "oop": 0.17275771311798543,
+      "stretch_bend": 1.7763568394002505e-14,
+      "torsion": 0.7080000000000055,
+      "vdw": 0.0792470927643194
+    },
+    "rows": 262,
+    "statuses_identical": true,
+    "unchanged": 0,
+    "worsened": 118
+  },
+  "quality": {
+    "artifacts": [
+      {
+        "bytes": 1461443,
+        "path": "validation/results/mmff94-correctness-2026-10-11/angle-stretch-bend/quality.jsonl",
+        "sha256": "25122968fa156a52e8d8d542dbd95b16429f0b624dd111525fd2fc7633eaba13"
+      },
+      {
+        "bytes": 786106,
+        "path": "validation/results/mmff94-correctness-2026-10-11/angle-stretch-bend/quality-scored.jsonl",
+        "sha256": "9e005f5d566087fe3728255603df00148b757c47dd56ba883e60e8a8c28f4676"
+      },
+      {
+        "bytes": 1230,
+        "path": "validation/results/mmff94-correctness-2026-10-11/run_quality.py",
+        "sha256": "b2d3d91130d8db7305eceaf38d5dc35ba312bc604f81bfcab14b9881befd87a3"
+      },
+      {
+        "bytes": 12974,
+        "path": "scripts/public_package_3d_chematic.py",
+        "sha256": "3f7e375bb061664b5abeff25e94cc0efebf2de49002ca02ce885096289bba1ea"
+      },
+      {
+        "bytes": 18743,
+        "path": "crates/chematic-3d/examples/pipeline_v2_vs_rdkit_common_scorer.rs",
+        "sha256": "355e784fabb75cac05d4605cfaf0b8ae41751c271d9a0c94bdc66664a86a9c3d"
+      },
+      {
+        "bytes": 3023712,
+        "path": "target/debug/examples/pipeline_v2_vs_rdkit_common_scorer",
+        "sha256": "c9c3f0d045b4b6b97db0b602d150e0497b16d9eeaa887e0d824b2a2c81dd9031"
+      }
+    ],
+    "force_field": "mmff94_bond_angle_strict",
+    "force_field_max_iterations": 200,
+    "limitations": [
+      "scorer uses CheMatic geometry/stereo routines",
+      "single conformer per molecule, no ensemble reference",
+      "concurrent execution; no speed claim"
+    ],
+    "max_attempts": 8,
+    "rows": 265,
+    "scored": 265,
+    "seed": 20260801,
+    "sound_no_gross_clash_stereo_evaluable_and_satisfied": 265,
+    "status_counts": {
+      "success": 265
+    },
+    "stereo_safe": true,
+    "total_timeout_ms": 20000
+  },
+  "source_capture_note": "Partial source capture only. Patch is relative to HEAD and includes earlier changes in the shared Python test file. Other concurrent changes and the earlier O-H/vdW implementation are excluded. Registry regeneration after compilation changed documentation only. Exact compiled extension hash is in candidate-summary.json.",
+  "source_revision": "7f84ae4a98399086ce9f389c099f3fb77b66066e",
+  "status": "dirty_source_candidate_not_release_gate"
+}

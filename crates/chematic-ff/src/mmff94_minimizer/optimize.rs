@@ -181,6 +181,7 @@ where
             gp,
             max_g,
             use_cutoff_nonbonded,
+            &mut history,
             &accept,
         );
         let Some((new_coords, f_new)) = step else {
@@ -275,34 +276,83 @@ fn lbfgs_line_search<F>(
     slope: f64,
     max_gradient: f64,
     cutoff: bool,
+    history: &mut LbfgsHistory,
     accept: &F,
 ) -> Option<(CoordVec, f64)>
 where
     F: Fn(&[[f64; 3]]) -> bool,
 {
-    let mut alpha = 1.0_f64;
-    loop {
+    let objective = |candidate: &[[f64; 3]]| lbfgs_energy(model, candidate, cutoff);
+    armijo_backtracking(
+        coords,
+        direction,
+        (energy, slope),
+        1.0,
+        &objective,
+        accept,
+    )
+    .or_else(|| {
+        // A stale curvature history or a geometry constraint can exhaust the
+        // quasi-Newton search. Restart with a bounded steepest-descent step
+        // and backtrack it too: a fixed displacement can overshoot near a
+        // stationary point.
+        history.clear();
+        let fallback_direction = gradient
+            .iter()
+            .map(|g| [-g[0], -g[1], -g[2]])
+            .collect::<CoordVec>();
+        let fallback_slope = -gradient.iter().map(|g| dot3(*g, *g)).sum::<f64>();
+        armijo_backtracking(
+            coords,
+            &fallback_direction,
+            (energy, fallback_slope),
+            0.01 / max_gradient,
+            &objective,
+            accept,
+        )
+    })
+}
+
+/// Backtrack until the candidate decreases the objective and satisfies the
+/// caller's geometry constraint. Exhaustion preserves the last accepted
+/// state; no untested fixed-size step is committed.
+fn armijo_backtracking<E, A>(
+    coords: &[[f64; 3]],
+    direction: &[[f64; 3]],
+    objective_and_slope: (f64, f64),
+    initial_step: f64,
+    energy: &E,
+    accept: &A,
+) -> Option<(CoordVec, f64)>
+where
+    E: Fn(&[[f64; 3]]) -> f64,
+    A: Fn(&[[f64; 3]]) -> bool,
+{
+    let (objective, slope) = objective_and_slope;
+    if !objective.is_finite()
+        || !slope.is_finite()
+        || slope >= 0.0
+        || !initial_step.is_finite()
+        || initial_step <= 0.0
+    {
+        return None;
+    }
+    let mut alpha = initial_step;
+    for _ in 0..40 {
         let trial = coords
             .iter()
             .zip(direction)
             .map(|(c, p)| [c[0] + alpha * p[0], c[1] + alpha * p[1], c[2] + alpha * p[2]])
             .collect::<CoordVec>();
-        let trial_energy = lbfgs_energy(model, &trial, cutoff);
-        if trial_energy <= energy + 1e-4 * alpha * slope && accept(&trial) {
-            return Some((trial, trial_energy));
+        if trial.iter().flatten().all(|value| value.is_finite()) {
+            let value = energy(&trial);
+            if value.is_finite() && value <= objective + 1e-4 * alpha * slope && accept(&trial) {
+                return Some((trial, value));
+            }
         }
         alpha *= 0.5;
-        if alpha < 1e-12 {
-            let scale = 0.01 / max_gradient.max(1e-8);
-            let fallback = coords
-                .iter()
-                .zip(gradient)
-                .map(|(c, g)| [c[0] - scale * g[0], c[1] - scale * g[1], c[2] - scale * g[2]])
-                .collect::<CoordVec>();
-            let fallback_energy = lbfgs_energy(model, &fallback, cutoff);
-            return accept(&fallback).then_some((fallback, fallback_energy));
-        }
     }
+    None
 }
 
 fn update_lbfgs_history(

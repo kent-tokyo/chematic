@@ -367,14 +367,24 @@ pub fn parse_cjson_with_limits(
         serde_json::from_str(input).map_err(|e| CjsonError::InvalidJson(e.to_string()))?;
     check_json_limits(&v, 0, limits)?;
 
+    parse_cjson_value(&v, limits)
+}
+
+// Shared projection after the caller has bounded its JSON tree. The legacy
+// reader remains permissive; the immutable record reader validates first.
+#[allow(clippy::type_complexity)]
+pub(crate) fn parse_cjson_value(
+    v: &serde_json::Value,
+    limits: &CjsonParseLimits,
+) -> Result<(Molecule, Vec<(f64, f64, f64)>), CjsonError> {
     let atoms = v.get("atoms").ok_or(CjsonError::MissingField("atoms"))?;
     let mut parsed = cjson_atoms(atoms, limits)?;
-    add_cjson_bonds(&v, limits, parsed.count, &mut parsed.builder)?;
+    add_cjson_bonds(v, limits, parsed.count, &mut parsed.builder)?;
 
     Ok((parsed.builder.build(), parsed.coords))
 }
 
-fn check_json_limits(
+pub(crate) fn check_json_limits(
     value: &serde_json::Value,
     depth: usize,
     limits: &CjsonParseLimits,
@@ -498,7 +508,14 @@ pub fn write_cjson(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
     for (_, bond) in mol.bonds() {
         bond_index.push(bond.atom1.0 as u64);
         bond_index.push(bond.atom2.0 as u64);
-        bond_orders.push(json!(bond_order_to_float(bond.order)));
+        let order = bond_order_to_float(bond.order);
+        // Integer order tokens interoperate with readers that distinguish
+        // JSON integer storage from floating storage (Open Babel 3.2.1).
+        bond_orders.push(if order.fract() == 0.0 {
+            json!(order as u8)
+        } else {
+            json!(order)
+        });
     }
 
     let bonds_obj = json!({

@@ -1,0 +1,348 @@
+{
+  "schema": "chematic.development-verification.v1",
+  "created_at": "2026-10-11T03:42:55.802145+00:00",
+  "scope": "Local uncommitted source candidate; initial MOL2 checked-conversion adapter. No release/public-package or Open Babel comparative claim.",
+  "base_commit": "7f84ae4a98399086ce9f389c099f3fb77b66066e",
+  "workspace_version": "1.0.20",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "dirty_tracked_files": [
+    "README.md",
+    "README_ja.md",
+    "README_zh.md",
+    "ROADMAP.md",
+    "crates/chematic-cli/src/main.rs",
+    "crates/chematic-ff/src/mmff94_energy/angle.rs",
+    "crates/chematic-ff/src/mmff94_energy/oop_stbn.rs",
+    "crates/chematic-ff/src/mmff94_energy/vdw.rs",
+    "crates/chematic-ff/src/mmff94_minimizer.rs",
+    "crates/chematic-ff/src/mmff94_numeric.rs",
+    "crates/chematic-ff/src/mmff94_numeric_type_registry.rs",
+    "crates/chematic-mol/src/lib.rs",
+    "crates/chematic-mol/src/mol2_tripos.rs",
+    "crates/chematic-py/pyproject.toml",
+    "crates/chematic-py/python/chematic/__init__.py",
+    "crates/chematic-py/python/chematic/__init__.pyi",
+    "crates/chematic-py/src/formats.rs",
+    "crates/chematic-smiles/src/lib.rs",
+    "crates/chematic-smiles/src/writer.rs",
+    "crates/chematic-wasm/src/mol_io.rs",
+    "docs/format-capabilities.md",
+    "docs/use-cases/batch-analysis.md",
+    "examples/README.md",
+    "scripts/gen_mmff94_numeric_type_registry.py",
+    "scripts/mmff94_same_explicit_h_energy.py",
+    "scripts/tests/test_mmff94_same_explicit_h_energy.py",
+    "validation/cosmolkit_comparison/README.md"
+  ],
+  "source_snapshot_coverage": "Listed interchange sources/tests/docs only; unrelated concurrent workspace changes are not a fully archived source snapshot.",
+  "source_files": [
+    {
+      "path": "crates/chematic-mol/src/conversion.rs",
+      "sha256": "a5a21318a5a25c381eff1c6ea717d180f6fe009c72bd31ecfaa589f4d9cac1db",
+      "size_bytes": 14717
+    },
+    {
+      "path": "crates/chematic-mol/src/lib.rs",
+      "sha256": "d8fa885cfbdb1c2ecf79b6a390f4d5dc41dbf97365588c9f51b97223f0610216",
+      "size_bytes": 8129
+    },
+    {
+      "path": "crates/chematic-mol/src/mol2_tripos.rs",
+      "sha256": "3cf3009053a52b492582ec379c88f7e3a53c80566e4c86658ed28b16a24e7515",
+      "size_bytes": 30680
+    },
+    {
+      "path": "crates/chematic-mol/tests/conversion_report.rs",
+      "sha256": "60e03a2a1871fb99d13f75d6b9e5cecf583c05835ea2bbd00a9bf84599a47456",
+      "size_bytes": 6847
+    },
+    {
+      "path": "crates/chematic-mol/tests/mol2_preservation.rs",
+      "sha256": "42ec6f11f3acd3d2363cd0d153493230ac0bea4f93e1965cc85e682bf2009ec0",
+      "size_bytes": 7496
+    },
+    {
+      "path": "crates/chematic-smiles/src/writer.rs",
+      "sha256": "3649b93e80bce4ab87acdfeaee140cd2f9da3e43d0bce83893e06a515ddf4906",
+      "size_bytes": 42175
+    },
+    {
+      "path": "crates/chematic-smiles/src/lib.rs",
+      "sha256": "50950bc3bea6448114ad540470b5ff64eb440e13b1056d9a8dd4de929b296496",
+      "size_bytes": 2311
+    },
+    {
+      "path": "crates/chematic-smiles/tests/writer_atom_order.rs",
+      "sha256": "bc205177a7b6c9ace84be23ce031724af01d54a15205a5afdbf302fb56a1cb55",
+      "size_bytes": 1592
+    },
+    {
+      "path": "crates/chematic-cli/src/main.rs",
+      "sha256": "c41bb70a946b2b26b34cbf59b091d88ab3c41172d9ba8c94c018336d70fbbc27",
+      "size_bytes": 70025
+    },
+    {
+      "path": "crates/chematic-cli/tests/conversion_report.rs",
+      "sha256": "c9453dcd0aed7b6ab51064d16b476b28e2a0c1d6a7db8538d2d78b91b8da7419",
+      "size_bytes": 3005
+    },
+    {
+      "path": "crates/chematic-py/src/formats.rs",
+      "sha256": "434fb4f76b53ddbc88ef0096523d186b1a18f15d73f5da6a540c42ceff99cb2a",
+      "size_bytes": 101318
+    },
+    {
+      "path": "crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "6efcd1c9e27358a6cda0ef3b7350a5fbccda1c23a1c024466d02c0435629025f",
+      "size_bytes": 22949
+    },
+    {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "9ecf091fc71437d13c44794426e0b66cdf485e366e1928f0c377c27b719d5a50",
+      "size_bytes": 126764
+    },
+    {
+      "path": "crates/chematic-py/tests/test_conversion_report.py",
+      "sha256": "3d07a628b0b675f3b218dda012d2f2de7e8320d4d1f93ffae6b94d0fcb73cbcd",
+      "size_bytes": 2744
+    },
+    {
+      "path": "crates/chematic-wasm/src/mol_io.rs",
+      "sha256": "9698ee4dc7c86a520911ea38d40a2f4ecc3875f20537e17f303a93085f7e6e5d",
+      "size_bytes": 62196
+    },
+    {
+      "path": "crates/chematic-wasm/tests/conversion_report.test.mjs",
+      "sha256": "1b6a214a60922a37859517c6dfdad3173780ea206ab1fb76f89e8eb117294e16",
+      "size_bytes": 2250
+    },
+    {
+      "path": "validation/mol2_preservation/amide.mol2",
+      "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+      "size_bytes": 392
+    },
+    {
+      "path": "scripts/check_conversion_report_parity.py",
+      "sha256": "484c5f2d3fb11c191a32439fb7e0f1fa855a9a26bdc77d05561cba30d9567de8",
+      "size_bytes": 4096
+    },
+    {
+      "path": "docs/format-capabilities.md",
+      "sha256": "486655d2651de49f851c09426810c26e4cf7fe15d558e309d561ec0cc3a62e3a",
+      "size_bytes": 39225
+    },
+    {
+      "path": "docs/openbabel-interchange-plan.md",
+      "sha256": "d2c3514043a6e07933c43689eeedd20587eaf5fb0e5715a6d31aec9c2561764f",
+      "size_bytes": 15397
+    },
+    {
+      "path": "ROADMAP.md",
+      "sha256": "3060134e4469e193c85db1f497d811a43c84a073182b4101597dd35f495cb443",
+      "size_bytes": 38477
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "target/debug/chematic",
+      "sha256": "b141fafa5e47604122c9d0168c4692aa6f88278df7693492c3afe1028f844243",
+      "size_bytes": 15237712
+    },
+    {
+      "path": "/private/tmp/chematic-conversion-wheel/chematic-1.0.20-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "1d56da8a5e5ccaa8def57786f303ebefb95aafcc2a209393c18f7d3d1970a6fd",
+      "size_bytes": 13021445
+    },
+    {
+      "path": "/private/tmp/chematic-conversion-python/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "a06bba77e2f495c270268f895ac0d1dd7156cd833071c90cd20dcb795aef682b",
+      "size_bytes": 55465808
+    },
+    {
+      "path": "/private/tmp/chematic-conversion-wasm/chematic_wasm.js",
+      "sha256": "b6b83a4b4d91b1354419639b744c35a7f55a96b7d2a3a876e8bce2242ba02da0",
+      "size_bytes": 324944
+    },
+    {
+      "path": "/private/tmp/chematic-conversion-wasm/chematic_wasm_bg.wasm",
+      "sha256": "793544079a6687ca41364083f439c979c0f9d7cbd16c086df2d57b48e81e4e65",
+      "size_bytes": 27071370
+    }
+  ],
+  "verification": {
+    "rust": {
+      "mol_cli_final_passed": 816,
+      "mol_cli_suites": 16,
+      "smiles_passed": 316,
+      "smiles_ignored_doctests": 2,
+      "note": "Initial combined run passed 1132; final conversion policy refactor was followed by 816 MOL/CLI cases. SMILES sources remained unchanged after the combined run."
+    },
+    "clippy": {
+      "packages": [
+        "chematic-smiles",
+        "chematic-mol",
+        "chematic-cli"
+      ],
+      "all_targets": true,
+      "warnings_denied": true,
+      "exit_code": 0
+    },
+    "python": {
+      "runtime": "CPython 3.13.6",
+      "passed": 191,
+      "isolated_source_wheel": true,
+      "pytest_files": [
+        "test_conversion_report.py",
+        "test_mol2_preservation.py",
+        "test_format_convert.py",
+        "test_cross_binding_contract.py"
+      ]
+    },
+    "wasm": {
+      "fresh_nodejs_dev_build": true,
+      "suite_names": [
+        "checked_conversion",
+        "mol2_preservation",
+        "cross_binding_contract",
+        "format_parity"
+      ],
+      "all_exit_codes": 0
+    },
+    "binding_parity": {
+      "scope": "source-built development-fixture binding parity",
+      "passed": 17,
+      "results": [
+        {
+          "case": "lf-mol2-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-mol2-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-mol2-preserve_source",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-smiles-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-smiles-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-mol2-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-mol2-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-mol2-preserve_source",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-smiles-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-smiles-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "zero-bond-mismatch",
+          "result": "identical_report"
+        },
+        {
+          "case": "invalid",
+          "result": "shared_error"
+        },
+        {
+          "case": "bad-charge",
+          "result": "shared_error"
+        },
+        {
+          "case": "unsupported-source",
+          "result": "shared_error"
+        },
+        {
+          "case": "unsupported-target",
+          "result": "shared_error"
+        },
+        {
+          "case": "unsupported-policy",
+          "result": "shared_error"
+        },
+        {
+          "case": "cross-source-retention",
+          "result": "shared_error"
+        }
+      ]
+    },
+    "syntax_and_diff_check": "Python AST and git diff --check passed"
+  },
+  "commands": [
+    "CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo test -p chematic-smiles -p chematic-mol -p chematic-cli --offline -- --quiet",
+    "CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo test -p chematic-mol -p chematic-cli --offline -- --quiet",
+    "CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo clippy -p chematic-smiles -p chematic-mol -p chematic-cli --all-targets --offline -- -D warnings",
+    "CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 maturin build --manifest-path crates/chematic-py/Cargo.toml --interpreter .venv-v1gate/bin/python --profile dev --out /private/tmp/chematic-conversion-wheel --offline",
+    "PYTHONPATH=/private/tmp/chematic-conversion-python PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv-v1gate/bin/python -m pytest crates/chematic-py/tests/test_conversion_report.py crates/chematic-py/tests/test_mol2_preservation.py crates/chematic-py/tests/test_format_convert.py crates/chematic-py/tests/test_cross_binding_contract.py -q",
+    "CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 /Users/k_tanabe/.cargo/bin/wasm-pack build crates/chematic-wasm --dev --target nodejs --out-dir /private/tmp/chematic-conversion-wasm -- --offline",
+    "PYTHONPATH=/private/tmp/chematic-conversion-python .venv-v1gate/bin/python scripts/check_conversion_report_parity.py --cli target/debug/chematic --python .venv-v1gate/bin/python --wasm-module /private/tmp/chematic-conversion-wasm/chematic_wasm.js"
+  ],
+  "test_adapter_note": "Existing hardcoded pkg-node tests were copied verbatim under /private/tmp/chematic-conversion-wasm-contracts with validation/benchmarks symlinks and pkg-node pointing to the isolated fresh WASM build. Repository pkg-node was not overwritten.",
+  "logs": [
+    {
+      "path": "/private/tmp/chematic-conversion-rust-tests.log",
+      "sha256": "bd9b27f0de532477c96b9251d5872d04c21668f139f5c36dc092293f952bd5fb",
+      "size_bytes": 8491
+    },
+    {
+      "path": "/private/tmp/chematic-conversion-rust-final.log",
+      "sha256": "cae2a67b738f8fa348987cc7ca1b7a036b9b7bed36ca8146e51548130ffcbe2e",
+      "size_bytes": 5090
+    },
+    {
+      "path": "/private/tmp/chematic-conversion-clippy.log",
+      "sha256": "2859e8f88f983841e52dc1c40fd6afcda8d72de664c5fff9cb99301b10ea2180",
+      "size_bytes": 1819
+    },
+    {
+      "path": "/private/tmp/chematic-conversion-python-build-final.log",
+      "sha256": "9a2cd76b7d4e5953a5e29ed8517d2707cb448c578a6a21e729150720b912eb6e",
+      "size_bytes": 710
+    },
+    {
+      "path": "/private/tmp/chematic-conversion-python-tests.log",
+      "sha256": "d2d7e65771d6c7f4d147fc3829b1644cfae535616fadf797a10052b896c73408",
+      "size_bytes": 830
+    },
+    {
+      "path": "/private/tmp/chematic-conversion-wasm-build.log",
+      "sha256": "38e457ccb5e72d55d93d3223479fbc2bd90ee22b579163707794ef240042229d",
+      "size_bytes": 1746
+    },
+    {
+      "path": "/private/tmp/chematic-conversion-wasm-tests.log",
+      "sha256": "6c827c50da9203c2364f250d6a7184b2e879678593301adea27767cd76b4fbd3",
+      "size_bytes": 172
+    },
+    {
+      "path": "/private/tmp/chematic-conversion-binding-parity.json",
+      "sha256": "052b1491b323de747eb929d9527c3f0239af9742f891abfad05a82c8b5f5ad41",
+      "size_bytes": 1501
+    }
+  ],
+  "limitations": [
+    "Routes are limited to MOL2 → MOL2 and MOL2 → SMILES; existing default conversion APIs remain separately scoped.",
+    "MOL2 → MOL2 proves exact source retention after bounded structural parsing, not editable or interpreted opaque chemistry.",
+    "Candidate graph verification checks counts, mapped elements/aromaticity/projected formal charges/bond orders only.",
+    "General MOL2 formal-charge interpretation, source hydrogen assignment and geometry/extension stereo are not verified.",
+    "SMILES projection is capped at 512 atoms while its writer is recursive; same-format reader defaults to 10000 atoms.",
+    "17 parity cases are exposed development fixtures with 11 identical reports and 6 shared errors, not independent chemistry acceptance.",
+    "Temporary build artifacts/logs can be removed outside this task; hashes identify the validated local artifacts."
+  ]
+}

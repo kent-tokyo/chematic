@@ -1,0 +1,61 @@
+
+running 610 tests
+....................................................................................... 87/610
+....................................................................................... 174/610
+....................................................................................... 261/610
+........................i........................ii.....ii............................. 348/610
+................i..................i.......i....i......................i............... 435/610
+....................................................................................... 522/610
+....................................................................................... 609/610
+.
+test result: ok. 600 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 6.23s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 6 tests
+......
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 238 tests
+....................................................................................... 87/238
+....................................................................................... 174/238
+................................................................
+test result: ok. 238 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.28s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 3 tests
+iii
+test result: ok. 0 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+i
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.33s; merged doctests compilation took 0.13s
+
+running 1 test
+i
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.33s; merged doctests compilation took 0.12s

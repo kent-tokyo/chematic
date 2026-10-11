@@ -1,0 +1,107 @@
+{
+  "after_mismatches": [],
+  "before_mismatch_instances": 92,
+  "before_mismatch_tuples": [
+    {
+      "before": 0.13,
+      "center": 3,
+      "instances": 8,
+      "oracle": 0.081,
+      "outer": [
+        2,
+        5,
+        54
+      ]
+    },
+    {
+      "before": 0.13,
+      "center": 3,
+      "instances": 16,
+      "oracle": 0.129,
+      "outer": [
+        7,
+        10,
+        20
+      ]
+    },
+    {
+      "before": 0.13,
+      "center": 3,
+      "instances": 64,
+      "oracle": 0.116,
+      "outer": [
+        7,
+        10,
+        37
+      ]
+    },
+    {
+      "before": 0.13,
+      "center": 3,
+      "instances": 2,
+      "oracle": 0.116,
+      "outer": [
+        7,
+        10,
+        63
+      ]
+    },
+    {
+      "before": 0.13,
+      "center": 3,
+      "instances": 1,
+      "oracle": 0.116,
+      "outer": [
+        7,
+        10,
+        64
+      ]
+    },
+    {
+      "before": 0.13,
+      "center": 3,
+      "instances": 1,
+      "oracle": 0.116,
+      "outer": [
+        7,
+        37,
+        39
+      ]
+    }
+  ],
+  "comparable_inputs": 262,
+  "corpus": {
+    "bytes": 340209,
+    "path": "validation/results/mmff94-correctness-2026-10-11/torsion/candidate.jsonl",
+    "sha256": "554d98dc1638af278708f66cfe01425823bd8993341b0403365fc89eba9013f0"
+  },
+  "degree_three_centers_queried": 3556,
+  "kind": "source_derived_lookup_models_not_a_direct_rust_api_measurement",
+  "metadata_source": {
+    "bytes": 43009,
+    "path": "crates/chematic-ff/src/mmff94_numeric_type_registry.rs",
+    "sha256": "8596201335dea4ca3bc657e9373d607010b160f4039ea348fc29c7e9d00c8f55"
+  },
+  "oracle_parameterized_centers_by_type": {
+    "2": 170,
+    "3": 428,
+    "8": 76,
+    "10": 232,
+    "17": 1,
+    "37": 2296,
+    "39": 39,
+    "40": 129,
+    "43": 2,
+    "45": 1,
+    "54": 8,
+    "58": 18,
+    "63": 81,
+    "64": 75
+  },
+  "parameter_source": {
+    "bytes": 24817,
+    "path": "crates/chematic-ff/src/mmff94_energy/oop_stbn.rs",
+    "sha256": "418dbbeaad25dd4e48478ff1b972f7e758e11c2a004856b2373521aee80dd55d"
+  },
+  "rdkit_runtime": "2026.03.6"
+}

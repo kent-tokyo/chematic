@@ -6,8 +6,10 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::sync::Arc;
 
+mod interchange;
 mod materials;
 mod xyz;
+use interchange::*;
 use materials::*;
 pub(crate) use materials::{dict_get, dict_get_opt, dict_get_required};
 pub(crate) use xyz::extxyz_frame_to_pydict;
@@ -1426,6 +1428,11 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         from_mol_v3000_with_coords,
         from_mol_v3000_with_diagnostics,
         from_mol2,
+        parse_cjson_record_json,
+        roundtrip_cjson_record,
+        parse_mol2_record_json,
+        convert_with_report_json,
+        roundtrip_mol2_record,
         from_pdbqt,
         from_gjf,
         parse_gaussian_log,

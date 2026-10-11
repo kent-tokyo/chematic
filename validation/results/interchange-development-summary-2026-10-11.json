@@ -1,0 +1,190 @@
+{
+  "schema": "chematic.interchange-development-summary.v1",
+  "created_at": "2026-10-11T04:41:27.750906+00:00",
+  "scope": "Uncommitted CheMatic source-built 1.0.20 versus installed Open Babel 3.2.1 on eight exposed fixtures. No independent holdout, published-package acceptance or superiority claim.",
+  "records": {
+    "baseline": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-baseline-source-2026-10-11.json",
+      "sha256": "a18275a812098b1c9f98c00e0705595e39eaf944a2b1fc5926b392828690b869",
+      "size_bytes": 107395
+    },
+    "partial_candidate": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-candidate-source-2026-10-11.json",
+      "sha256": "8388325c848faf0457670f51dc36da821354647ee598d57be0eefbe96285cb13",
+      "size_bytes": 111651
+    },
+    "final_candidate": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-paired-integer-candidate-source-2026-10-11.json",
+      "sha256": "12a2146344e911c7fd5bc940fc1b0e90e3c7e1b21c6966b5b7353e4c451de184",
+      "size_bytes": 112457
+    },
+    "cross_before": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-before-integer-source-2026-10-11.json",
+      "sha256": "e6294a000186d9409531d8d9ee400afbded58ae7f61cf94e296843fdc1dd879d",
+      "size_bytes": 18623
+    },
+    "cross_after": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-cross-read-after-integer-source-2026-10-11.json",
+      "sha256": "7bf30a3930d6b8da419ef196f25ee1926f6b21aebd036dcc6779b0967eb635fc",
+      "size_bytes": 19868
+    },
+    "final_build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/interchange-final-build-source-2026-10-11.json",
+      "sha256": "2054975055ad2815026fc7ee471963e53cbfaa7cc73bff75fa22344b5a137b04",
+      "size_bytes": 23095
+    }
+  },
+  "baseline_to_final_field_changes": [
+    {
+      "case": "acetamide",
+      "profile": "common",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "changes": {
+        "partial_charges": {
+          "before": "lost",
+          "after": "preserved"
+        },
+        "molecule_name": {
+          "before": "lost",
+          "after": "preserved"
+        },
+        "charge_method": {
+          "before": "lost",
+          "after": "preserved"
+        }
+      }
+    },
+    {
+      "case": "precision",
+      "profile": "common",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "changes": {
+        "partial_charges": {
+          "before": "lost",
+          "after": "preserved"
+        },
+        "molecule_name": {
+          "before": "lost",
+          "after": "preserved"
+        },
+        "charge_method": {
+          "before": "lost",
+          "after": "preserved"
+        }
+      }
+    },
+    {
+      "case": "n4-charge",
+      "profile": "common",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "changes": {
+        "partial_charges": {
+          "before": "lost",
+          "after": "preserved"
+        },
+        "molecule_name": {
+          "before": "lost",
+          "after": "preserved"
+        },
+        "charge_method": {
+          "before": "lost",
+          "after": "preserved"
+        }
+      }
+    },
+    {
+      "case": "opaque-extension",
+      "profile": "stress",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "changes": {
+        "partial_charges": {
+          "before": "lost",
+          "after": "preserved"
+        },
+        "molecule_name": {
+          "before": "lost",
+          "after": "preserved"
+        },
+        "charge_method": {
+          "before": "lost",
+          "after": "preserved"
+        }
+      }
+    },
+    {
+      "case": "nonsequential-ids",
+      "profile": "stress",
+      "route": "mol2-cjson",
+      "engine": "chematic",
+      "changes": {
+        "partial_charges": {
+          "before": "lost",
+          "after": "preserved"
+        },
+        "molecule_name": {
+          "before": "lost",
+          "after": "preserved"
+        },
+        "charge_method": {
+          "before": "lost",
+          "after": "preserved"
+        }
+      }
+    }
+  ],
+  "verification": {
+    "native_mol_cli_passed": 838,
+    "python_passed": 217,
+    "wasm_suites_passed": 5,
+    "binding_parity_cases": 59,
+    "runner_tests_passed": 33,
+    "paired_terminal_rows_per_candidate": 32,
+    "cross_read_terminal_rows_per_candidate": 9,
+    "scoped_clippy_passed": true
+  },
+  "cross_read_change": {
+    "before": {
+      "parse_write_failure": 2,
+      "output_with_loss": 4,
+      "exact_source_retained": 3
+    },
+    "after": {
+      "output_with_loss": 6,
+      "exact_source_retained": 3
+    },
+    "meaning": "Integral CJSON order tokens now survive Open Babel readback. Name/partial-charge loss in its default CJSON-read/MOL2-write path remains, including self-read controls. Reverse CheMatic retention checks exact source only."
+  },
+  "current_documentation": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/ROADMAP.md",
+      "sha256": "85e92e06775e87a1f7bc980fde82ee056bd35be5a12e1b9c2bad89de97e3e133",
+      "size_bytes": 40260
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/format-capabilities.md",
+      "sha256": "6f6e051ed67bb77db2966786d5efb48665d01fe757f229b40d6fd0ec4ce03208",
+      "size_bytes": 43385
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/openbabel-interchange-plan.md",
+      "sha256": "e7c3f32fe426160fcd204ce4411d431f54b645ce97d29ddbfcce5b9bab436cac",
+      "size_bytes": 18925
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/interchange/README.md",
+      "sha256": "1c3eefcf9a7f3a1a9ecb5a1b7226e772bfd6301a80d9e37b07411d7e494a30e3",
+      "size_bytes": 5673
+    }
+  ],
+  "documentation_provenance": "Build-record documentation hashes describe the pre-summary documentation. Current documentation identities are listed here; interchange implementation/test hashes were checked against the final build record.",
+  "remaining": [
+    "Source atom names/types/IDs and opaque metadata generally drop on CJSON projection",
+    "Broader source charge, stereo and query interpretation",
+    "Independent acceptance corpus and statistical paired superiority gate",
+    "Publication and released-artifact checks"
+  ]
+}

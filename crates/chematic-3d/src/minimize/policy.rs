@@ -147,6 +147,8 @@ pub struct Mmff94CoverageReport {
     /// #227 Phase 1). Included in `torsions_total`, deliberately excluded
     /// from `torsions_missing` and from `has_gate_failure`'s torsion check.
     pub torsions_no_term_by_design: usize,
+    /// Number of eligible trigonal centers, not Wilson-angle contributions.
+    /// Each resolved center supplies three angles sharing one parameter lookup.
     pub oop_total: usize,
     pub oop_missing: Vec<Mmff94MissingTerm>,
     /// Stretch-bend cross-term coverage (Priority 2 / Stage 1B, issue #227).
@@ -768,9 +770,8 @@ fn missing_term(
 /// stretch-bend, torsion, and out-of-plane center that chematic-ff's own
 /// energy functions would evaluate for `mol`. Mirrors
 /// `chematic_ff::mmff94_minimizer`'s private energy-term enumeration loops
-/// exactly (including its lack of an `i == l` guard on 3-membered-ring
-/// torsions) so the totals match what chematic-ff will actually compute
-/// over, not an idealized recount.
+/// exactly, including the four-distinct-atoms constraint on torsions, so
+/// the totals match the interactions evaluated by chematic-ff.
 fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport {
     let mut report = Mmff94CoverageReport::default();
     let rings = mmff94_rings(mol);
@@ -902,7 +903,7 @@ fn collect_torsion_coverage(
                 continue;
             }
             for &l in &nbrs_k {
-                if l == j {
+                if l == j || l == i {
                     continue;
                 }
                 report.torsions_total += 1;

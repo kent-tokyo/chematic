@@ -1,0 +1,30 @@
+
+running 2 tests
+oop_eligible_centers_include_all_parameterized_types --- FAILED
+oop_equivalence_precedes_wildcard_for_every_outer_atom_order --- FAILED
+
+failures:
+
+---- oop_eligible_centers_include_all_parameterized_types stdout ----
+
+thread 'oop_eligible_centers_include_all_parameterized_types' (31686833) panicked at crates/chematic-ff/tests/mmff94_oop_parameters.rs:19:5:
+assertion `left == right` failed
+  left: [2, 3, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57, 58, 59, 63, 64, 65, 66, 67, 76, 78, 79, 80, 81, 82]
+ right: [2, 3, 8, 10, 17, 26, 30, 37, 39, 40, 41, 43, 45, 49, 54, 55, 56, 57, 58, 63, 64, 67, 69, 73, 78, 80, 81, 82]
+
+---- oop_equivalence_precedes_wildcard_for_every_outer_atom_order stdout ----
+
+thread 'oop_equivalence_precedes_wildcard_for_every_outer_atom_order' (31686834) panicked at crates/chematic-ff/tests/mmff94_oop_parameters.rs:9:13:
+assertion `left == right` failed
+  left: Some(0.13)
+ right: Some(0.116)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    oop_eligible_centers_include_all_parameterized_types
+    oop_equivalence_precedes_wildcard_for_every_outer_atom_order
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p chematic-ff --test mmff94_oop_parameters`

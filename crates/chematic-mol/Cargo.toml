@@ -33,12 +33,12 @@ chematic-smiles      = { path = "../chematic-smiles",      version = "1.1.0" }
 chematic-depict      = { path = "../chematic-depict",      version = "1.1.0" }
 chematic-chem        = { path = "../chematic-chem",        version = "1.1.0" }
 chematic-crystal     = { path = "../chematic-crystal",     version = "1.1.0", optional = true }
-serde_json           = "1.0"
+serde_json           = { version = "1.0", features = ["float_roundtrip"] }
 serde                = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
-serde_json = "1.0"
+serde_json = { version = "1.0", features = ["float_roundtrip"] }
 # Path-only (no `version`): see chematic-smiles/Cargo.toml's dev-dependencies
 # comment -- a version-pinned dev-dependency must resolve against the
 # registry at `cargo publish` time, which a forward reference can't satisfy.
