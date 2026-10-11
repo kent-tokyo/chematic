@@ -1,0 +1,2789 @@
+diff --git a/crates/chematic-3d/src/minimize.rs b/crates/chematic-3d/src/minimize.rs
+index 3623d1ec..eb0e011e 100644
+--- a/crates/chematic-3d/src/minimize.rs
++++ b/crates/chematic-3d/src/minimize.rs
+@@ -13,7 +13,7 @@ use chematic_ff::{
+     angle_type_for, assign_mmff94_numeric_types_with_view, assign_uff_types, bond_type_for,
+     is_angle_in_ring_of_size_3_or_4, minimize_uff as ff_minimize_uff,
+     minimize_uff_with_constraint as ff_minimize_uff_with_constraint, mmff94_angle_energy_resolved,
+-    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
++    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy_with_bond,
+     stretch_bend_type_for, torsion_no_term_by_design, torsion_type_for, uff_total_energy,
+ };
+ use chematic_ff::{
+@@ -1151,6 +1151,8 @@ pub struct Mmff94CoverageReport {
+     /// #227 Phase 1). Included in `torsions_total`, deliberately excluded
+     /// from `torsions_missing` and from `has_gate_failure`'s torsion check.
+     pub torsions_no_term_by_design: usize,
++    /// Number of eligible trigonal centers, not Wilson-angle contributions.
++    /// Each resolved center supplies three angles sharing one parameter lookup.
+     pub oop_total: usize,
+     pub oop_missing: Vec<Mmff94MissingTerm>,
+     /// Stretch-bend cross-term coverage (Priority 2 / Stage 1B, issue #227).
+@@ -1750,9 +1752,8 @@ fn missing_term(
+ /// stretch-bend, torsion, and out-of-plane center that chematic-ff's own
+ /// energy functions would evaluate for `mol`. Mirrors
+ /// `chematic_ff::mmff94_minimizer`'s private energy-term enumeration loops
+-/// exactly (including its lack of an `i == l` guard on 3-membered-ring
+-/// torsions) so the totals match what chematic-ff will actually compute
+-/// over, not an idealized recount.
++/// exactly, including the four-distinct-atoms constraint on torsions, so
++/// the totals match the interactions evaluated by chematic-ff.
+ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport {
+     let mut report = Mmff94CoverageReport::default();
+     let rings = mmff94_rings(mol);
+@@ -1859,7 +1860,7 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
+                 continue;
+             }
+             for &l in &nbrs_k {
+-                if l == j {
++                if l == j || l == i {
+                     continue;
+                 }
+                 report.torsions_total += 1;
+@@ -1880,7 +1881,7 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
+                     tk_,
+                     tl_,
+                 );
+-                if mmff94_torsion_energy(tt, ti_, tj_, tk_, tl_).is_none() {
++                if mmff94_torsion_energy_with_bond(tt, [ti_, tj_, tk_, tl_], bond.order).is_none() {
+                     if torsion_no_term_by_design(tj_, tk_) {
+                         // Issue #227 Phase 1: RDKit itself generates no term
+                         // here either (linear central atom) -- correct, not
+@@ -3162,6 +3163,42 @@ mod policy_bridge_tests {
+         );
+     }
+ 
++    #[test]
++    fn torsion_coverage_counts_only_four_distinct_atoms() {
++        for (smiles, expected_count) in [("C1CC1", 0), ("C1CCC1", 4), ("CCCC", 1)] {
++            let mol = parse(smiles).unwrap();
++            let types = assign_mmff94_numeric_types(&mol).unwrap();
++            let report = compute_mmff94_coverage(&mol, &types);
++            assert_eq!(report.torsions_total, expected_count, "{smiles}");
++        }
++    }
++
++    #[test]
++    fn iminium_torsion_empirical_parameters_are_included_in_coverage() {
++        let mol = parse("CC=[N+](C)c1ccccc1").unwrap();
++        let (types, view) = chematic_ff::assign_mmff94_numeric_types_with_view(&mol).unwrap();
++        assert_eq!((types[2], types[4]), (54, 37));
++        let report = compute_mmff94_coverage(&view, &types);
++        assert!(report.torsions_total > 0);
++        assert!(
++            report.torsions_missing.is_empty(),
++            "{:?}",
++            report.torsions_missing
++        );
++    }
++
++    #[test]
++    fn oop_coverage_includes_n_oxide_and_counts_centers() {
++        let mol = parse("[O-][n+]1ccccc1").unwrap();
++        let (types, view) = chematic_ff::assign_mmff94_numeric_types_with_view(&mol).unwrap();
++        assert_eq!(types[1], 69);
++        // Without explicit H, only the N-oxide has three neighbors. Its
++        // three Wilson angles share one parameter lookup/coverage center.
++        let report = compute_mmff94_coverage(&view, &types);
++        assert_eq!(report.oop_total, 1);
++        assert!(report.oop_missing.is_empty());
++    }
++
+     // --- Mechanism-3 repro: [C@H](F)(Cl)Br under old vs. new MMFF94 --------
+ 
+     fn chfclbr_mol() -> chematic_core::Molecule {
+diff --git a/crates/chematic-ff/src/lib.rs b/crates/chematic-ff/src/lib.rs
+index 4041ff7f..5bf9803e 100644
+--- a/crates/chematic-ff/src/lib.rs
++++ b/crates/chematic-ff/src/lib.rs
+@@ -28,7 +28,7 @@ pub use mmff94_energy::{
+     AngleEnergyParams, BondEnergyParams, Mmff94Resolution, TorsionEnergyParams, VdwEnergyParams,
+     mmff94_angle_energy, mmff94_angle_energy_resolved, mmff94_bond_energy,
+     mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_stbn_type_only,
+-    mmff94_torsion_energy, mmff94_vdw_combined, mmff94_vdw_energy,
++    mmff94_torsion_energy, mmff94_torsion_energy_with_bond, mmff94_vdw_combined, mmff94_vdw_energy,
+ };
+ pub use mmff94_minimizer::{
+     EnergyBreakdown, MLTB_TYPES, MinimizeResult, MinimizerError, Mmff94EnergyModel, OOP_SP2_TYPES,
+diff --git a/crates/chematic-ff/src/mmff94_energy/angle.rs b/crates/chematic-ff/src/mmff94_energy/angle.rs
+index 0244c817..963db80c 100644
+--- a/crates/chematic-ff/src/mmff94_energy/angle.rs
++++ b/crates/chematic-ff/src/mmff94_energy/angle.rs
+@@ -2356,117 +2356,21 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
+     (8, 30, 30, 30, 1.2300, 93.7320),
+ ];
+ 
+-/// RDKit's atom-type canonical-equivalence-class ladder (`defaultMMFFDef`'s
+-/// `eqLevel` columns, `Code/ForceField/MMFF/Params.cpp` at the pinned commit
+-/// -- issue #227 Stage B). `[level2, level3, level4, level5]` per MMFF94
+-/// numeric atom type; level1 is skipped, identical to level2 per MMFF.I note
+-/// 68, page 519. Every numeric type this table doesn't list (rare/metal/
+-/// exotic types outside chematic's supported corpus) is treated as its own
+-/// identity substitution at every stage by [`eq_level`].
+-///
+-/// **Type 64 (C5B) added 2026-08-28 (RDKit/COSMolKit/OpenEye advantage
+-/// directive, Phase 4: 3D coverage gap)**:
+-/// the table previously stopped at type 55, on the documented assumption
+-/// that every type beyond it was "rare/exotic" and would never need a row
+-/// in practice. Empirically false for type 64 specifically -- it's an
+-/// aromatic 5-ring carbon (indole/pyrrole/furan/thiophene beta position),
+-/// not rare at all, and 11 of the 265-molecule strict corpus's coverage
+-/// failures were exactly this gap (`Angle C(3)-C(2)-C(64)`, e.g.
+-/// `chembl_tier_b_0180`). Confirmed via the already-frozen
+-/// `scripts/mmff94_provenance/rdkit_defaultMMFFDef.txt` (line 153: `C5B  64
+-/// 64  2  1  0`) AND independently via a live RDKit oracle query
+-/// (`MMFFGetMoleculeProperties(...).GetMMFFAngleBendParams`) on
+-/// `chembl_tier_b_0180`'s own `(angle_type=2, 3, 2, 64)` triple, which
+-/// returns real, defined values (`ka=0.893, theta0=118.456`) -- i.e. RDKit's
+-/// real behavior resolves this deterministically, not the "returns nullptr,
+-/// undefined behavior" situation type 63's own still-open, deliberately-
+-/// unresolved case describes just below in this file
+-/// (`angle_empirical_fails_closed_for_undefined_eq_level_substitution`).
+-/// **Type 63 (C5A) added 2026-09-12**: the strict-corpus residual
+-/// `(43, 18, 63)` is concrete evidence that this common aromatic 5-ring
+-/// carbon must participate in the defined equivalence ladder.  The row is
+-/// copied from the checked-in numeric type registry (`C5A 63 2 1 0`).  This
+-/// does not invent an angle parameter: if the resulting ladder has no angle
+-/// row, lookup still fails closed.  Other types beyond 55 (65-99, etc.)
+-/// remain deferred until a concrete, source-attributed use is measured.
+-static MMFF94_EQ_LEVEL: &[(u8, [u8; 4])] = &[
+-    (1, [1, 1, 1, 0]),
+-    (2, [2, 2, 1, 0]),
+-    (3, [3, 3, 1, 0]),
+-    (4, [4, 4, 1, 0]),
+-    (5, [5, 5, 5, 0]),
+-    (6, [6, 6, 6, 0]),
+-    (7, [7, 7, 6, 0]),
+-    (8, [8, 8, 8, 0]),
+-    (9, [9, 9, 8, 0]),
+-    (10, [10, 10, 8, 0]),
+-    (11, [11, 11, 11, 0]),
+-    (12, [12, 12, 12, 0]),
+-    (13, [13, 13, 13, 0]),
+-    (14, [14, 14, 14, 0]),
+-    (15, [15, 15, 15, 0]),
+-    (16, [16, 16, 15, 0]),
+-    (17, [17, 17, 15, 0]),
+-    (18, [18, 18, 15, 0]),
+-    (19, [19, 19, 19, 0]),
+-    (20, [20, 1, 1, 0]),
+-    (21, [21, 21, 5, 0]),
+-    (22, [22, 22, 1, 0]),
+-    (23, [23, 23, 5, 0]),
+-    (24, [24, 24, 5, 0]),
+-    (25, [25, 25, 25, 0]),
+-    (26, [26, 26, 25, 0]),
+-    (27, [27, 28, 5, 0]),
+-    (28, [28, 28, 5, 0]),
+-    (29, [29, 29, 5, 0]),
+-    (30, [30, 2, 1, 0]),
+-    (31, [31, 31, 31, 0]),
+-    (32, [32, 7, 6, 0]),
+-    (33, [33, 21, 5, 0]),
+-    (34, [34, 8, 8, 0]),
+-    (35, [35, 6, 6, 0]),
+-    (36, [36, 36, 5, 0]),
+-    (37, [37, 2, 1, 0]),
+-    (38, [38, 9, 8, 0]),
+-    (39, [39, 10, 8, 0]),
+-    (40, [40, 10, 8, 0]),
+-    (41, [41, 3, 1, 0]),
+-    (42, [42, 42, 8, 0]),
+-    (43, [43, 10, 8, 0]),
+-    (44, [44, 16, 15, 0]),
+-    (45, [45, 10, 8, 0]),
+-    (46, [46, 9, 8, 0]),
+-    (47, [47, 42, 8, 0]),
+-    (48, [48, 9, 8, 0]),
+-    (49, [49, 6, 6, 0]),
+-    (50, [50, 21, 5, 0]),
+-    (51, [51, 7, 6, 0]),
+-    (52, [52, 21, 5, 0]),
+-    (53, [53, 42, 8, 0]),
+-    (54, [54, 9, 8, 0]),
+-    (55, [55, 10, 8, 0]),
+-    (63, [63, 2, 1, 0]),
+-    (64, [64, 2, 1, 0]),
+-];
+-
+-/// `stage` in `0..4`, matching RDKit's Level 2/3/4/5. Falls back to `atom_type`
+-/// itself (identity, i.e. equivalent to an exact-match retry) for any type
+-/// not in [`MMFF94_EQ_LEVEL`] -- see that table's own doc for why this is safe.
++/// RDKit's atom-type canonical-equivalence-class ladder (`defaultMMFFDef`).
++/// Equivalence levels come from the complete generated numeric-type registry,
++/// sourced from RDKit's frozen MMFFDEF table. Keep a single definition so
++/// common types beyond 55 (including aromatic cation 58) are not omitted.
+ fn eq_level(atom_type: u8, stage: usize) -> u8 {
+-    MMFF94_EQ_LEVEL
+-        .binary_search_by_key(&atom_type, |&(t, _)| t)
+-        .map(|idx| MMFF94_EQ_LEVEL[idx].1[stage])
++    crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(atom_type)
++        .map(|info| info.equivalence_levels[stage])
+         .unwrap_or(atom_type)
+ }
+ 
+ fn has_eq_level_row(atom_type: u8) -> bool {
+-    MMFF94_EQ_LEVEL
+-        .binary_search_by_key(&atom_type, |&(t, _)| t)
+-        .is_ok()
++    crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(atom_type).is_some()
+ }
+ 
+-/// Outcome of the full table search chain (RDKit's real eqLevel ladder plus
+-/// chematic's own generic-`angle_type` net), before any empirical fallback.
++/// Outcome of RDKit's eqLevel ladder, before any empirical fallback.
+ enum TableSearch {
+     /// A real, usable row (`ka != 0.0`).
+     Hit(AngleEnergyParams, Mmff94Resolution),
+@@ -2479,16 +2383,9 @@ enum TableSearch {
+     /// No row at any stage, and every stage that mattered used a
+     /// well-defined `eqLevel` substitution (or none at all).
+     Exhausted,
+-    /// The ladder needed to substitute a numeric type absent from
+-    /// [`MMFF94_EQ_LEVEL`] (`type_i`/`type_k` outside the 1-55 range) to
+-    /// reach the point of giving up. RDKit's real
+-    /// `MMFFDefCollection::operator()` returns `nullptr` for such a type and
+-    /// `MMFFAngleCollection::operator()` dereferences it with no null
+-    /// check -- undefined behavior in RDKit's own C++, confirmed by direct
+-    /// source read at the pinned commit. There is no well-defined "real"
+-    /// answer to reproduce here, so this is never treated as resolvable --
+-    /// see `scripts/mmff94_provenance/PROVENANCE.md`'s Stage C entry for the
+-    /// oracle investigation this is based on (the `(0, 43, 18, 63)` tuple).
++    /// An outer numeric type has no authoritative equivalence definition.
++    /// Fail closed instead of inventing a substitution or dereferencing an
++    /// absent definition as RDKit's C++ lookup would do.
+     UndefinedSubstitution,
+ }
+ 
+@@ -2516,27 +2413,7 @@ fn search_table(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> TableSear
+         .or_else(|| search(angle_type, type_k, type_i, Mmff94Resolution::DirectTable))
+         .or_else(|| eq_level_search(1, 3))
+         .or_else(|| eq_level_search(2, 4))
+-        .or_else(|| eq_level_search(3, 5))
+-        .or_else(|| {
+-            if angle_type != 0 {
+-                search(
+-                    0,
+-                    type_i,
+-                    type_k,
+-                    Mmff94Resolution::GenericAngleTypeFallback,
+-                )
+-                .or_else(|| {
+-                    search(
+-                        0,
+-                        type_k,
+-                        type_i,
+-                        Mmff94Resolution::GenericAngleTypeFallback,
+-                    )
+-                })
+-            } else {
+-                None
+-            }
+-        });
++        .or_else(|| eq_level_search(3, 5));
+     match hit {
+         Some((ka, theta0, kind)) if ka != 0.0 => {
+             TableSearch::Hit(AngleEnergyParams { ka, theta0 }, kind)
+@@ -2556,20 +2433,9 @@ fn search_table(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> TableSear
+ /// B): `type_i`/`type_k` are substituted through 4 equivalence-class stages
+ /// (`type_j` and `angle_type` stay fixed throughout -- RDKit's real
+ /// algorithm never substitutes the center or changes the angle type). Only
+-/// once the full eqLevel ladder is exhausted does this fall back to the
+-/// generic `angle_type=0` row for the same triple — a chematic-specific
+-/// safety net RDKit's own algorithm doesn't have, kept from before this
+-/// change: without it, a *correct* ring/bond-type classification for a
+-/// triple the (much smaller) specialized table doesn't happen to cover
+-/// would silently drop the angle term entirely, which is worse than the
+-/// un-classified behavior it replaces.
+-///
+-/// A `ka == 0.0` placeholder row (issue #227 Stage C, see [`TableSearch`])
+-/// is never surfaced here -- it is not a usable parameter on its own, only
+-/// [`mmff94_angle_energy_resolved`] can turn it into one via the empirical
+-/// rule. This keeps this function's contract identical to before Stage C
+-/// restored those rows to the table: every input that used to return
+-/// `Some`/`None` still does.
++/// once the full eqLevel ladder is exhausted does the resolved API use
++/// the empirical rule. The angle type never changes during lookup.
++/// This table-only API returns `None` for zero-force placeholders and misses.
+ pub fn mmff94_angle_energy(
+     angle_type: u8,
+     type_i: u8,
+diff --git a/crates/chematic-ff/src/mmff94_energy/mod.rs b/crates/chematic-ff/src/mmff94_energy/mod.rs
+index bc99381f..23506281 100644
+--- a/crates/chematic-ff/src/mmff94_energy/mod.rs
++++ b/crates/chematic-ff/src/mmff94_energy/mod.rs
+@@ -117,7 +117,7 @@ mod vdw;
+ pub use angle::{MMFF94_ANGLE_ENERGY, mmff94_angle_energy, mmff94_angle_energy_resolved};
+ pub use bond::{MMFF94_BOND_ENERGY, mmff94_bond_energy, mmff94_bond_energy_resolved};
+ pub use oop_stbn::{MMFF94_OOP, MMFF94_STBN, mmff94_oop, mmff94_stbn, mmff94_stbn_type_only};
+-pub use torsion::{MMFF94_TORSION_ENERGY, mmff94_torsion_energy};
++pub use torsion::{MMFF94_TORSION_ENERGY, mmff94_torsion_energy, mmff94_torsion_energy_with_bond};
+ pub use vdw::{MMFF94_VDW_ENERGY, mmff94_vdw_combined, mmff94_vdw_energy};
+ 
+ #[cfg(test)]
+diff --git a/crates/chematic-ff/src/mmff94_energy/oop_stbn.rs b/crates/chematic-ff/src/mmff94_energy/oop_stbn.rs
+index 85154539..2bc65b0d 100644
+--- a/crates/chematic-ff/src/mmff94_energy/oop_stbn.rs
++++ b/crates/chematic-ff/src/mmff94_energy/oop_stbn.rs
+@@ -2,8 +2,8 @@
+ 
+ /// MMFF94 Out-of-Plane parameters (117 entries, Halgren MMFF.VI)
+ /// Format: (type_i, type_j, type_k, type_l, koop)
+-/// type_i = central sp2 atom; j/k/l = three attached atoms (0=wildcard)
+-/// E_oop = (0.043844 × koop / 2) × χ² (χ in degrees, Halgren eq. 6)
++/// type_j = central atom; i/k/l = three attached atoms (0=wildcard)
++/// Each Wilson angle contributes (143.9325 × koop / 2) × χ² (χ in radians).
+ pub static MMFF94_OOP: &[(u8, u8, u8, u8, f64)] = &[
+     (0, 2, 0, 0, 0.0200),
+     (0, 3, 0, 0, 0.1300),
+@@ -426,25 +426,35 @@ pub static MMFF94_STBN: &[(u8, u8, u8, u8, f64, f64)] = &[
+     (5, 22, 22, 22, 0.0000, 0.0000),
+ ];
+ 
+-/// Look up OOP bending parameter for central sp2 atom j with neighbors i, k, l.
+-/// Wildcard matching (0) tried as fallback.
++/// Look up OOP bending parameter for central atom j with neighbors i, k, l.
++/// Ordered outer-type equivalence levels precede the final wildcard default.
+ pub fn mmff94_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
+-    // Normalize: sort (i, k, l) except j stays central; try all orderings via wildcard
+-    for &(ti, tk, tl) in &[
+-        (type_i, type_k, type_l),
+-        (type_k, type_i, type_l),
+-        (type_l, type_k, type_i),
+-        (type_i, type_l, type_k),
+-        (type_k, type_l, type_i),
+-        (type_l, type_i, type_k),
+-    ] {
+-        if let Some(koop) = search_oop(type_j, ti, tk, tl) {
+-            return Some(koop);
+-        }
++    // RDKit MMFFOopCollection: sort all three outer types at each level of
++    // the MMFFDEF equivalence ladder. The center is never substituted.
++    let mut outer = [type_i, type_k, type_l];
++    outer.sort_unstable();
++    if let Some(koop) = search_oop(type_j, outer[0], outer[1], outer[2]) {
++        return Some(koop);
+     }
+-    // Wildcard fallback
+-    for &(ti, tk, tl) in &[(0, 0, 0), (type_i, 0, 0), (0, type_k, 0), (0, 0, type_l)] {
+-        if let Some(koop) = search_oop(type_j, ti, tk, tl) {
++    let equivalent = |t| {
++        if t == 0 {
++            Some([0; 4])
++        } else {
++            crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(t)
++                .map(|info| info.equivalence_levels)
++        }
++    };
++    let [i_levels, k_levels, l_levels] = [
++        equivalent(type_i)?,
++        equivalent(type_k)?,
++        equivalent(type_l)?,
++    ];
++    // Level 2 is identity, already checked above. Levels 3/4 precede the
++    // final all-outer-wildcards level; skipping them selects wrong barriers.
++    for ((i, k), l) in i_levels.into_iter().zip(k_levels).zip(l_levels).skip(1) {
++        let mut outer = [i, k, l];
++        outer.sort_unstable();
++        if let Some(koop) = search_oop(type_j, outer[0], outer[1], outer[2]) {
+             return Some(koop);
+         }
+     }
+@@ -463,16 +473,13 @@ fn search_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
+ /// Look up Stretch-Bend parameters for angle i-j-k by MMFF *type* alone —
+ /// no element/periodic-row fallback (see [`mmff94_stbn`] for that).
+ ///
+-/// Returns (kba_ijk, kba_kji). Both orderings (i,j,k) and (k,j,i) tried at
+-/// the requested `stretch_bend_type`, then — if `stretch_bend_type` isn't 0
+-/// and no row exists there — the *specific* (ti,tj,tk) triple is retried at
+-/// type 0 before finally falling back to the fully generic `(0, 0, type_j, 0)`
+-/// wildcard. `MMFF94_STBN` is overwhelmingly type-0 (246/282 rows), so
+-/// without this intermediate step, correctly classifying a term as a
+-/// non-zero type that this table doesn't happen to cover would silently
+-/// drop straight to the least specific fallback instead of the
+-/// specific-triple type-0 row a hardcoded `stretch_bend_type=0` caller would
+-/// have found.
++/// Returns (kba_ijk, kba_kji). Try both outer-atom orderings at exactly
++/// the requested stretch-bend type. A miss must reach the periodic-row
++/// default in [`mmff94_stbn`]; borrowing a different classification's
++/// type-0 value can even give the wrong sign (biphenyl: -0.411 vs +0.3).
++/// For equal outer types with different bond types, this API returns the
++/// table's canonical orientation; the energy builder applies RDKit's
++/// bond-type tie-break before using those constants.
+ ///
+ /// `stretch_bend_type` is RDKit's `getMMFFStretchBendType` output (0-11),
+ /// computed via [`crate::mmff94_minimizer::stretch_bend_type_for`] — **not**
+@@ -503,20 +510,11 @@ pub fn mmff94_stbn_type_only(
+     };
+     search(stretch_bend_type, type_i, type_j, type_k)
+         .or_else(|| search(stretch_bend_type, type_k, type_j, type_i).map(|(a, b)| (b, a)))
+-        .or_else(|| {
+-            if stretch_bend_type != 0 {
+-                search(0, type_i, type_j, type_k)
+-                    .or_else(|| search(0, type_k, type_j, type_i).map(|(a, b)| (b, a)))
+-            } else {
+-                None
+-            }
+-        })
+-        .or_else(|| search(0, 0, type_j, 0))
+ }
+ 
+ /// RDKit's periodic-table-row default stretch-bend constants
+ /// (`defaultMMFFDfsb`, `Code/ForceField/MMFF/Params.cpp`), RDKit's own
+-/// residual fallback for stretch-bend once the specific/generic MMFF-type
++/// residual fallback for stretch-bend once the specific MMFF-type
+ /// table (`MMFF94_STBN`) has no row at all. 29 rows, verbatim from
+ /// `scripts/mmff94_provenance/rdkit_defaultMMFFDfsb.txt` (programmatically
+ /// extracted from the pinned RDKit commit, not hand-transcribed — see
+@@ -577,7 +575,7 @@ fn mmff94_periodic_table_row(atomic_number: u8) -> u8 {
+ /// RDKit's `MMFFDfsbCollection::getMMFFDfsbParams` — the periodic-row
+ /// default stretch-bend fallback. Only meaningful once
+ /// `mmff94_stbn_type_only` has already missed (matches RDKit's own order:
+-/// `MMFFMolProperties::getMMFFStretchBendParams` tries the specific/generic
++/// `MMFFMolProperties::getMMFFStretchBendParams` tries the specific
+ /// MMFF-type lookup first, Dfsb only on failure). RDKit's own
+ /// `isDoubleZero(kbaIJK) && isDoubleZero(kbaKJI)` exclusion (a resolved-but
+ /// -both-zero row still counts as "not resolved") is replicated: the
+diff --git a/crates/chematic-ff/src/mmff94_energy/torsion.rs b/crates/chematic-ff/src/mmff94_energy/torsion.rs
+index a47d3448..eb57016b 100644
+--- a/crates/chematic-ff/src/mmff94_energy/torsion.rs
++++ b/crates/chematic-ff/src/mmff94_energy/torsion.rs
+@@ -1,6 +1,8 @@
+ //! MMFF94 torsion parameters (Halgren 1996 Table VI).
+ 
+ use super::TorsionEnergyParams;
++use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
++use chematic_core::BondOrder;
+ 
+ /// 926 torsion entries (Halgren 1996 Table VI). Sorted by (tors_type, type_i, type_j, type_k, type_l).
+ /// type_i=0 or type_l=0 → wildcard (matches any atom type).
+@@ -980,3 +982,185 @@ pub fn mmff94_torsion_energy(
+             }
+         })
+ }
++
++/// Resolve a torsion from the parameter table, then Halgren's empirical
++/// rules (a-h), using the actual central bond in the MMFF aromatic view.
++///
++/// Unlike the table-only [`mmff94_torsion_energy`], this can resolve central
++/// type pairs absent from the table, such as iminium N (54)-aromatic C (37).
++/// Linear centers remain `None` for the coverage report's explicit
++/// `NoTermByDesign` accounting. Other empirical zero barriers are resolved
++/// parameters: they require no energy contribution, not a replacement force field.
++pub fn mmff94_torsion_energy_with_bond(
++    tors_type: u8,
++    types: [u8; 4],
++    central_bond: BondOrder,
++) -> Option<TorsionEnergyParams> {
++    let [ti, tj, tk, tl] = types;
++    mmff94_torsion_energy(tors_type, ti, tj, tk, tl)
++        .or_else(|| torsion_empirical(tj, tk, central_bond))
++}
++
++/// Halgren MMFF.IV empirical cascade; reference implementation:
++/// RDKit Release_2026_03_6, AtomTyper.cpp,
++/// MMFFMolProperties::getMMFFTorsionEmpiricalRuleParams.
++fn torsion_empirical(tj: u8, tk: u8, order: BondOrder) -> Option<TorsionEnergyParams> {
++    let (j, k) = (mmff94_numeric_type_info(tj)?, mmff94_numeric_type_info(tk)?);
++    if j.linear || k.linear {
++        return None;
++    }
++    // Empirical constants are defined for these six elements. Unknown types,
++    // terminal atoms, and unsupported bond kinds must not manufacture a hit.
++    let constants = |z| match z {
++        6 => Some((2.0_f64, 2.12_f64, 0.0_f64)),
++        7 => Some((2.0, 1.5, 0.0)),
++        8 => Some((2.0, 0.2, 2.0)),
++        14 => Some((1.25, 1.22, 0.0)),
++        15 => Some((1.25, 2.40, 0.0)),
++        16 => Some((1.25, 0.49, 8.0)),
++        _ => None,
++    };
++    let (uj, vj, wj) = constants(j.atomic_number)?;
++    let (uk, vk, wk) = constants(k.atomic_number)?;
++    if j.coordination < 2
++        || k.coordination < 2
++        || !matches!(
++            order,
++            BondOrder::Single
++                | BondOrder::Up
++                | BondOrder::Down
++                | BondOrder::Double
++                | BondOrder::Aromatic
++        )
++    {
++        return None;
++    }
++    let n = f64::from(j.coordination - 1) * f64::from(k.coordination - 1);
++    let uv = (uj * uk).sqrt();
++    let vv = (vj * vk).sqrt() / n;
++    let (v2, v3) = if j.aromatic && k.aromatic && order == BondOrder::Aromatic {
++        // (b): aromatic central bond; mixed valence reduces beta.
++        let beta = if matches!((j.valence, k.valence), (3, 4) | (4, 3)) {
++            3.0
++        } else {
++            6.0
++        };
++        let pi = if !j.has_pi_lone_pair && !k.has_pi_lone_pair {
++            0.5
++        } else {
++            0.3
++        };
++        (beta * pi * uv, 0.0)
++    } else if order == BondOrder::Double {
++        // (c): double central bond.
++        let pi = if j.multiple_bond_count == 2 && k.multiple_bond_count == 2 {
++            1.0
++        } else {
++            0.4
++        };
++        (6.0 * pi * uv, 0.0)
++    } else if j.coordination == 4 && k.coordination == 4 {
++        // (d): two tetrahedral centers.
++        (0.0, vv)
++    } else if j.coordination == 4 || k.coordination == 4 {
++        // (e-f): one tetrahedral center; conjugation can suppress the barrier.
++        let other = if j.coordination == 4 { k } else { j };
++        let suppressed = (other.coordination == 3
++            && (matches!(other.valence, 4 | 34) || other.multiple_bond_count != 0))
++            || (other.coordination == 2 && (other.valence == 3 || other.multiple_bond_count != 0));
++        (0.0, if suppressed { 0.0 } else { vv })
++    } else if (matches!(order, BondOrder::Single | BondOrder::Up | BondOrder::Down)
++        && j.multiple_bond_count != 0
++        && k.multiple_bond_count != 0)
++        || (j.multiple_bond_count != 0 && k.has_pi_lone_pair)
++        || (j.has_pi_lone_pair && k.multiple_bond_count != 0)
++    {
++        // (g): conjugated central bond. Preserve the ordering of cases 1-5.
++        let pi = if j.has_pi_lone_pair && k.has_pi_lone_pair {
++            0.0
++        } else if j.has_pi_lone_pair || k.has_pi_lone_pair {
++            let donor = if j.has_pi_lone_pair { j } else { k };
++            if donor.multiple_bond_count == 1 {
++                0.5
++            } else if (11..=18).contains(&j.atomic_number) && (11..=18).contains(&k.atomic_number) {
++                0.3
++            } else {
++                0.15
++            }
++        } else if (j.multiple_bond_count == 1 || k.multiple_bond_count == 1)
++            && (j.atomic_number != 6 || k.atomic_number != 6)
++        {
++            0.4
++        } else {
++            0.15
++        };
++        (6.0 * pi * uv, 0.0)
++    } else if matches!(j.atomic_number, 8 | 16) && matches!(k.atomic_number, 8 | 16) {
++        // (h): O/S pairs have a negative twofold barrier.
++        (-(wj * wk).sqrt(), 0.0)
++    } else {
++        (0.0, vv)
++    };
++    Some(TorsionEnergyParams { v1: 0.0, v2, v3 })
++}
++
++#[cfg(test)]
++mod empirical_tests {
++    use super::*;
++
++    #[test]
++    fn ordered_empirical_rules_and_reversal() {
++        // Expected constants from the reference cascade, independent of
++        // whether a particular quartet also has a tabulated parameter.
++        let cases = [
++            (37, 37, BondOrder::Aromatic, 6.0, 0.0),    // b
++            (2, 2, BondOrder::Double, 12.0, 0.0),       // c
++            (1, 1, BondOrder::Single, 0.0, 2.12 / 9.0), // d
++            (1, 3, BondOrder::Single, 0.0, 0.0),        // e-f
++            (1, 6, BondOrder::Single, 0.0, (2.12_f64 * 0.2).sqrt() / 3.0),
++            (54, 37, BondOrder::Single, 1.8, 0.0), // g(5), iminium
++            (6, 2, BondOrder::Single, 1.8, 0.0),   // g(2-3), lone pair
++            (10, 2, BondOrder::Single, 6.0, 0.0),  // g(2-3), mltb=1 donor
++            (10, 10, BondOrder::Single, 0.0, 0.0), // g(1), two lone pairs
++            (26, 75, BondOrder::Single, 2.25, 0.0), // g(2-3), third-row atoms
++            (54, 69, BondOrder::Single, 4.8, 0.0), // g(4), heteroatom mltb=1
++            (39, 37, BondOrder::Aromatic, 1.8, 0.0), // b, mixed valence
++            (6, 54, BondOrder::Double, 4.8, 0.0),  // c, one mltb!=2
++            (6, 6, BondOrder::Single, -2.0, 0.0),  // h, peroxide
++            (15, 15, BondOrder::Single, -8.0, 0.0), // h, disulfide
++            (6, 15, BondOrder::Single, -4.0, 0.0), // h, mixed O/S
++            (26, 26, BondOrder::Single, 0.0, 0.6), // h, other elements
++        ];
++        for (j, k, bond, v2, v3) in cases {
++            for (a, b) in [(j, k), (k, j)] {
++                let p = torsion_empirical(a, b, bond).unwrap();
++                assert_eq!(p.v1, 0.0);
++                assert!((p.v2 - v2).abs() < 1e-12, "{a}-{b}: {p:?}");
++                assert!((p.v3 - v3).abs() < 1e-12, "{a}-{b}: {p:?}");
++            }
++        }
++    }
++
++    #[test]
++    fn empirical_does_not_hide_unknown_terminal_or_linear_centers() {
++        for (j, k, bond) in [
++            (250, 1, BondOrder::Single),
++            (5, 1, BondOrder::Single),
++            (4, 1, BondOrder::Single),
++            (1, 53, BondOrder::Single),
++            (1, 1, BondOrder::Dative),
++        ] {
++            assert!(torsion_empirical(j, k, bond).is_none());
++        }
++    }
++
++    #[test]
++    fn table_parameters_take_priority_over_empirical_rules() {
++        let p = mmff94_torsion_energy_with_bond(0, [1; 4], BondOrder::Single).unwrap();
++        assert_eq!((p.v1, p.v2, p.v3), (0.103, 0.681, 0.332));
++        let p = mmff94_torsion_energy_with_bond(1, [3, 54, 37, 37], BondOrder::Single).unwrap();
++        assert_eq!(p.v1, 0.0);
++        assert!((p.v2 - 1.8).abs() < 1e-12);
++        assert_eq!(p.v3, 0.0);
++    }
++}
+diff --git a/crates/chematic-ff/src/mmff94_energy/vdw.rs b/crates/chematic-ff/src/mmff94_energy/vdw.rs
+index 03b07088..23002918 100644
+--- a/crates/chematic-ff/src/mmff94_energy/vdw.rs
++++ b/crates/chematic-ff/src/mmff94_energy/vdw.rs
+@@ -130,10 +130,16 @@ pub fn mmff94_vdw_combined(type_i: u8, type_j: u8) -> Option<(f64, f64)> {
+     let r_ii = pi.a_i * pi.alpha_i.powf(0.25);
+     let r_jj = pj.a_i * pj.alpha_i.powf(0.25);
+ 
+-    // Arithmetic mean + London asymmetry correction (MMFF94 eq. 2)
++    // A donor on EITHER side suppresses the asymmetry correction, even
++    // without an acceptor partner (RDKit Nonbonded.cpp,
++    // calcUnscaledVdWMinimum). Donor-acceptor scaling is a separate step.
+     let r_ij_unscaled = 0.5 * (r_ii + r_jj);
+     let delta = (r_ii - r_jj) / (r_ii + r_jj);
+-    let r_star_ij = r_ij_unscaled * (1.0 + 0.2 * (1.0 - (-12.0 * delta * delta).exp()));
++    let r_star_ij = if pi.da == 1 || pj.da == 1 {
++        r_ij_unscaled
++    } else {
++        r_ij_unscaled * (1.0 + 0.2 * (1.0 - (-12.0 * delta * delta).exp()))
++    };
+ 
+     // Epsilon combining rule: Slater-Kirkwood (eq. 3)
+     let eps_ij = 181.16 * pi.g_i * pj.g_i * pi.alpha_i * pj.alpha_i
+diff --git a/crates/chematic-ff/src/mmff94_minimizer.rs b/crates/chematic-ff/src/mmff94_minimizer.rs
+index 5bc6fe25..d8b1b8e1 100644
+--- a/crates/chematic-ff/src/mmff94_minimizer.rs
++++ b/crates/chematic-ff/src/mmff94_minimizer.rs
+@@ -20,12 +20,19 @@ use rayon::prelude::*;
+ 
+ use crate::mmff94_energy::{
+     AngleEnergyParams, BondEnergyParams, TorsionEnergyParams, mmff94_angle_energy_resolved,
+-    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
++    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy_with_bond,
+     mmff94_vdw_combined,
+ };
+ use crate::mmff94_numeric::{
+     NumericTypeError, assign_mmff94_numeric_types_with_view, mmff94_charges_numeric,
+ };
++use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
++
++const MDYNE_A_TO_KCAL_MOL: f64 = 143.9325;
++const DEG_TO_RAD: f64 = std::f64::consts::PI / 180.0;
++const ANGLE_CONV: f64 = MDYNE_A_TO_KCAL_MOL * DEG_TO_RAD * DEG_TO_RAD;
++const ANGLE_CUBIC: f64 = -0.006981317;
++const STRETCH_BEND_CONV: f64 = MDYNE_A_TO_KCAL_MOL * DEG_TO_RAD;
+ 
+ type CoordVec = Vec<[f64; 3]>;
+ type LbfgsHistory = VecDeque<(CoordVec, CoordVec, f64)>;
+@@ -45,6 +52,7 @@ struct PreparedAngle {
+     j: usize,
+     k: usize,
+     params: AngleEnergyParams,
++    linear: bool,
+ }
+ 
+ #[derive(Clone, Copy)]
+@@ -244,12 +252,12 @@ impl Mmff94EnergyModel {
+     /// Evaluate the prepared non-bonded terms with the bounded 10 Å cutoff.
+     ///
+     /// This is opt-in because the compatibility-default MMFF94 evaluator
+-    /// retains its historical all-pair electrostatic path.  The returned
++    /// evaluates all prepared vdW and electrostatic pairs. The returned
+     /// tuple is `(vdw, electrostatic)` in kcal/mol; both components use the
+     /// same coordinate-dependent cutoff boundary.
+     pub fn cutoff_nonbonded_energy(&self, coords: &[[f64; 3]]) -> (f64, f64) {
+         (
+-            vdw_energy_pairs(coords, &self.vdw_pairs),
++            vdw_energy_cutoff_pairs(coords, &self.vdw_pairs),
+             electrostatic_energy_cutoff_pairs(coords, &self.electrostatic_pairs),
+         )
+     }
+@@ -1022,6 +1030,8 @@ fn build_angle_terms(mol: &Molecule, types: &[u8], rings: &[Vec<AtomIdx>]) -> Ve
+                         j: j_idx,
+                         k,
+                         params,
++                        linear: mmff94_numeric_type_info(types[j_idx])
++                            .is_some_and(|info| info.linear),
+                     });
+                 }
+             }
+@@ -1048,13 +1058,15 @@ fn build_torsion_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedTorsion> {
+                 continue;
+             }
+             for &l in &nbrs_k {
+-                if l == j {
++                if l == j || l == i {
+                     continue;
+                 }
+                 let tt = torsion_type_for(mol, i, j, k, l, types[i], types[j], types[k], types[l]);
+-                if let Some(params) =
+-                    mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l])
+-                {
++                if let Some(params) = mmff94_torsion_energy_with_bond(
++                    tt,
++                    [types[i], types[j], types[k], types[l]],
++                    bond.order,
++                ) {
+                     terms.push(PreparedTorsion { i, j, k, l, params });
+                 }
+             }
+@@ -1082,18 +1094,49 @@ fn build_oop_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedOop> {
+             types[neighbors[1]],
+             types[neighbors[2]],
+         ) {
+-            terms.push(PreparedOop {
+-                i: neighbors[0],
+-                j,
+-                k: neighbors[1],
+-                l: neighbors[2],
+-                koop,
+-            });
++            // Each substituent bends out of the plane of the other two.
++            // One angle, or three times one angle, depends on neighbor order.
++            let [a, b, c] = [neighbors[0], neighbors[1], neighbors[2]];
++            for [i, k, l] in [[a, b, c], [a, c, b], [b, c, a]] {
++                terms.push(PreparedOop { i, j, k, l, koop });
++            }
+         }
+     }
+     terms
+ }
+ 
++fn stretch_bend_params_for(
++    angle_type: u8,
++    types: [u8; 3],
++    bond_types: [u8; 2],
++    atomic_numbers: [u8; 3],
++) -> Option<(f64, f64)> {
++    if mmff94_numeric_type_info(types[1])?.linear {
++        return None;
++    }
++    let sbt = stretch_bend_type_for(angle_type, types[0], types[2], bond_types[0], bond_types[1]);
++    if let Some((a, b)) =
++        crate::mmff94_energy::mmff94_stbn_type_only(sbt, types[0], types[1], types[2])
++    {
++        // RDKit MMFFStbnCollection: equal outer types tie-break on bond
++        // type. The periodic-row default has its own independent ordering.
++        return Some(if types[0] == types[2] && bond_types[0] < bond_types[1] {
++            (b, a)
++        } else {
++            (a, b)
++        });
++    }
++    mmff94_stbn(
++        sbt,
++        types[0],
++        types[1],
++        types[2],
++        atomic_numbers[0],
++        atomic_numbers[1],
++        atomic_numbers[2],
++    )
++}
++
+ fn build_stretch_bend_terms(
+     mol: &Molecule,
+     types: &[u8],
+@@ -1110,14 +1153,15 @@ fn build_stretch_bend_terms(
+                     bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
+                 let bt_kj =
+                     bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
+-                let Some((kba_ij, kba_kj)) = mmff94_stbn(
+-                    stretch_bend_type_for(at, types[i], types[k], bt_ij, bt_kj),
+-                    types[i],
+-                    types[j_idx],
+-                    types[k],
+-                    mol.atom(AtomIdx(i as u32)).element.atomic_number(),
+-                    mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
+-                    mol.atom(AtomIdx(k as u32)).element.atomic_number(),
++                let Some((kba_ij, kba_kj)) = stretch_bend_params_for(
++                    at,
++                    [types[i], types[j_idx], types[k]],
++                    [bt_ij, bt_kj],
++                    [
++                        mol.atom(AtomIdx(i as u32)).element.atomic_number(),
++                        mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
++                        mol.atom(AtomIdx(k as u32)).element.atomic_number(),
++                    ],
+                 ) else {
+                     continue;
+                 };
+@@ -1171,20 +1215,22 @@ fn prepared_bond_energy(coords: &[[f64; 3]], terms: &[PreparedBond]) -> f64 {
+ }
+ 
+ fn prepared_angle_energy(coords: &[[f64; 3]], terms: &[PreparedAngle]) -> f64 {
+-    const KA_CONV: f64 = 0.043844;
+     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+     terms
+         .iter()
+         .map(|term| {
+-            let dt = cos_angle(coords[term.i], coords[term.j], coords[term.k]).acos() * RAD_TO_DEG
+-                - term.params.theta0;
+-            (KA_CONV * term.params.ka / 2.0) * dt * dt * (1.0 - 0.007 * dt)
++            let cos_theta = cos_angle(coords[term.i], coords[term.j], coords[term.k]);
++            if term.linear {
++                MDYNE_A_TO_KCAL_MOL * term.params.ka * (1.0 + cos_theta)
++            } else {
++                let dt = cos_theta.acos() * RAD_TO_DEG - term.params.theta0;
++                (ANGLE_CONV * term.params.ka / 2.0) * dt * dt * (1.0 + ANGLE_CUBIC * dt)
++            }
+         })
+         .sum()
+ }
+ 
+ fn prepared_stretch_bend_energy(coords: &[[f64; 3]], terms: &[PreparedStretchBend]) -> f64 {
+-    const CONV: f64 = 2.51210;
+     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+     terms
+         .iter()
+@@ -1194,7 +1240,7 @@ fn prepared_stretch_bend_energy(coords: &[[f64; 3]], terms: &[PreparedStretchBen
+             let dtheta = cos_angle(coords[term.i], coords[term.j], coords[term.k]).acos()
+                 * RAD_TO_DEG
+                 - term.theta0;
+-            CONV * (term.kba_ij * dr_ij + term.kba_kj * dr_kj) * dtheta
++            STRETCH_BEND_CONV * (term.kba_ij * dr_ij + term.kba_kj * dr_kj) * dtheta
+         })
+         .sum()
+ }
+@@ -1251,8 +1297,6 @@ fn prepared_torsion_gradient(coords: &[[f64; 3]], terms: &[PreparedTorsion]) ->
+ }
+ 
+ fn prepared_oop_energy(coords: &[[f64; 3]], terms: &[PreparedOop]) -> f64 {
+-    const CONV: f64 = 0.043844;
+-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+     terms
+         .iter()
+         .map(|term| {
+@@ -1267,14 +1311,12 @@ fn prepared_oop_energy(coords: &[[f64; 3]], terms: &[PreparedOop]) -> f64 {
+                 return 0.0;
+             }
+             let chi = (dot3(n, l) / (n_len * l_len)).clamp(-1.0, 1.0).asin();
+-            (CONV * term.koop / 2.0) * (chi * RAD_TO_DEG).powi(2)
++            0.5 * MDYNE_A_TO_KCAL_MOL * term.koop * chi * chi
+         })
+         .sum()
+ }
+ 
+ fn prepared_oop_gradient(coords: &[[f64; 3]], terms: &[PreparedOop]) -> Vec<[f64; 3]> {
+-    const CONV: f64 = 0.043844;
+-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+     let mut gradient = vec![[0.0; 3]; coords.len()];
+     for term in terms {
+         let n = cross(
+@@ -1298,7 +1340,7 @@ fn prepared_oop_gradient(coords: &[[f64; 3]], terms: &[PreparedOop]) -> Vec<[f64
+             continue;
+         }
+         let chi = dual_asin_clamped(sin_chi);
+-        let d_ed_chi = CONV * term.koop * RAD_TO_DEG * RAD_TO_DEG * chi.value;
++        let d_ed_chi = MDYNE_A_TO_KCAL_MOL * term.koop * chi.value;
+         for atom in 0..4 {
+             let target = &mut gradient[[term.i, term.j, term.k, term.l][atom]];
+             for (axis, component) in target.iter_mut().enumerate() {
+@@ -1449,6 +1491,20 @@ fn prepared_vdw_neighbor_list<'a>(
+ }
+ 
+ fn vdw_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedVdwPair]) -> f64 {
++    pairs
++        .iter()
++        .map(|pair| {
++            let r = dist(coords[pair.i], coords[pair.j]);
++            if r > 0.01 && r.is_finite() {
++                mmff94_vdw_energy_value(r, pair.r_star, pair.epsilon)
++            } else {
++                0.0
++            }
++        })
++        .sum()
++}
++
++fn vdw_energy_cutoff_pairs(coords: &[[f64; 3]], pairs: &[PreparedVdwPair]) -> f64 {
+     let mut energy = 0.0;
+     for pair in prepared_vdw_neighbor_list(coords, pairs) {
+         let r = dist(coords[pair.i], coords[pair.j]);
+@@ -1613,14 +1669,14 @@ fn prepared_nonbonded_gradient(
+                 gradient[j][axis] -= value[axis];
+             }
+         };
+-    for pair in prepared_vdw_neighbor_list(coords, vdw_pairs) {
++    for pair in vdw_pairs {
+         let delta = [
+             coords[pair.i][0] - coords[pair.j][0],
+             coords[pair.i][1] - coords[pair.j][1],
+             coords[pair.i][2] - coords[pair.j][2],
+         ];
+         let r = dist(coords[pair.i], coords[pair.j]);
+-        if r > 0.01 && r <= 10.0 {
++        if r > 0.01 && r.is_finite() {
+             let radial = mmff94_vdw_radial_derivative(r, pair.r_star, pair.epsilon);
+             add_pair(&mut gradient, pair.i, pair.j, radial, delta, r);
+         }
+@@ -1645,7 +1701,6 @@ fn prepared_bond_angle_gradient(
+ ) -> Vec<[f64; 3]> {
+     const KB_CONV: f64 = 143.9325;
+     const CS: f64 = 2.0;
+-    const KA_CONV: f64 = 0.043844;
+     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+     let mut gradient = vec![[0.0; 3]; coords.len()];
+     let add_pair =
+@@ -1691,15 +1746,17 @@ fn prepared_bond_angle_gradient(
+             continue;
+         }
+         let cos_theta = cos_angle(coords[term.i], coords[term.j], coords[term.k]);
+-        let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
+-        if sin_theta <= 1e-12 {
+-            continue;
+-        }
+-        let theta = cos_theta.acos() * RAD_TO_DEG;
+-        let dt = theta - term.params.theta0;
+-        let prefactor = KA_CONV * term.params.ka / 2.0;
+-        let d_e_d_theta = prefactor * (2.0 * dt - 3.0 * 0.007 * dt * dt);
+-        let d_e_d_cos = -RAD_TO_DEG * d_e_d_theta / sin_theta;
++        let d_e_d_cos = if term.linear {
++            MDYNE_A_TO_KCAL_MOL * term.params.ka
++        } else {
++            let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
++            if sin_theta <= 1e-12 {
++                continue;
++            }
++            let dt = cos_theta.acos() * RAD_TO_DEG - term.params.theta0;
++            let d_e_d_theta = ANGLE_CONV * term.params.ka * dt * (1.0 + 1.5 * ANGLE_CUBIC * dt);
++            -RAD_TO_DEG * d_e_d_theta / sin_theta
++        };
+         let inv = 1.0 / (lu * lv);
+         let dcos_di = [
+             v[0] * inv - cos_theta * u[0] / u2,
+@@ -1726,7 +1783,6 @@ fn prepared_stretch_bend_gradient(
+     coords: &[[f64; 3]],
+     terms: &[PreparedStretchBend],
+ ) -> Vec<[f64; 3]> {
+-    const CONV: f64 = 2.51210;
+     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+     let mut gradient = vec![[0.0; 3]; coords.len()];
+     for term in terms {
+@@ -1751,8 +1807,8 @@ fn prepared_stretch_bend_gradient(
+         }
+         let dtheta = cos_theta.acos() * RAD_TO_DEG - term.theta0;
+         let stretch = term.kba_ij * (r_ij - term.r0_ij) + term.kba_kj * (r_kj - term.r0_kj);
+-        let d_e_d_r = CONV * dtheta;
+-        let d_e_d_theta = CONV * stretch;
++        let d_e_d_r = STRETCH_BEND_CONV * dtheta;
++        let d_e_d_theta = STRETCH_BEND_CONV * stretch;
+         let d_e_d_cos = -RAD_TO_DEG * d_e_d_theta / sin_theta;
+         let dcos_di = [
+             v[0] / (lu * lv) - cos_theta * u[0] / u2,
+@@ -1803,118 +1859,25 @@ fn stretch_bend_energy(
+     types: &[u8],
+     rings: &[Vec<AtomIdx>],
+ ) -> f64 {
+-    const CONV: f64 = 2.51210; // md/Å → kcal/(mol·Å·deg)
+-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+-    const KB_CONV: f64 = 143.9325;
+-    const CS: f64 = 2.0;
+-    let mut energy = 0.0;
+-    for j_idx in 0..mol.atom_count() {
+-        let j = AtomIdx(j_idx as u32);
+-        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+-        if neighbors.len() < 2 {
+-            continue;
+-        }
+-        for (ii, &i) in neighbors.iter().enumerate() {
+-            for &k in &neighbors[ii + 1..] {
+-                let at = angle_type_for(mol, rings, i, j_idx, k, types);
+-                let bt_ij =
+-                    bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
+-                let bt_kj =
+-                    bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
+-                let sbt = stretch_bend_type_for(at, types[i], types[k], bt_ij, bt_kj);
+-                if let Some((kba_ijk, kba_kji)) = mmff94_stbn(
+-                    sbt,
+-                    types[i],
+-                    types[j_idx],
+-                    types[k],
+-                    mol.atom(AtomIdx(i as u32)).element.atomic_number(),
+-                    mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
+-                    mol.atom(AtomIdx(k as u32)).element.atomic_number(),
+-                ) {
+-                    let bond_ij = mmff94_bond_energy_resolved(bt_ij, types[i], types[j_idx]);
+-                    let bond_kj = mmff94_bond_energy_resolved(bt_kj, types[k], types[j_idx]);
+-                    // Δr_ij
+-                    let r_ij = dist(coords[i], coords[j_idx]);
+-                    let dr_ij = bond_ij.map(|(p, _)| r_ij - p.r0).unwrap_or(0.0);
+-                    // Δr_kj
+-                    let r_kj = dist(coords[k], coords[j_idx]);
+-                    let dr_kj = bond_kj.map(|(p, _)| r_kj - p.r0).unwrap_or(0.0);
+-                    // Δθ in degrees -- both flanking bonds must resolve to feed
+-                    // r0_ij/r0_jk into the angle empirical rule if it's needed
+-                    // (matches RDKit's real `getMMFFAngleBendParams`, which
+-                    // requires both `getMMFFBondStretchParams` calls to succeed
+-                    // before even attempting the empirical path).
+-                    let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
+-                    if let (Some((rij, _)), Some((rkj, _))) = (bond_ij, bond_kj) {
+-                        let ring_size = is_angle_in_ring_of_size_3_or_4(mol, i, j_idx, k);
+-                        if let Some((ap, _)) = mmff94_angle_energy_resolved(
+-                            at,
+-                            types[i],
+-                            types[j_idx],
+-                            types[k],
+-                            rij.r0,
+-                            rkj.r0,
+-                            ring_size,
+-                        ) {
+-                            let dtheta = cos_t.acos() * RAD_TO_DEG - ap.theta0;
+-                            energy += CONV * (kba_ijk * dr_ij + kba_kji * dr_kj) * dtheta;
+-                        }
+-                    }
+-                    let _ = (KB_CONV, CS); // suppress warnings
+-                }
+-            }
+-        }
+-    }
+-    energy
++    prepared_stretch_bend_energy(coords, &build_stretch_bend_terms(mol, types, rings))
+ }
+ 
+-/// sp2 atom types eligible for out-of-plane bending (Halgren 1996), used by
++/// MMFF94 atom types with out-of-plane parameters, including zero-barrier
++/// rows. The legacy name is retained for compatibility. Used by
+ /// [`oop_energy`] below. `pub` so downstream coverage-checkers (e.g.
+ /// `chematic-3d`'s MMFF94 bridge) can mirror exactly which atoms this
+ /// module's own energy loop would evaluate, instead of hand-copying this
+ /// list and risking drift.
+ pub const OOP_SP2_TYPES: &[u8] = &[
+-    2, 3, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57, 58, 59, 63, 64, 65, 66, 67, 76,
+-    78, 79, 80, 81, 82,
++    2, 3, 8, 10, 17, 26, 30, 37, 39, 40, 41, 43, 45, 49, 54, 55, 56, 57, 58, 63, 64, 67, 69, 73,
++    78, 80, 81, 82,
+ ];
+ 
+ /// Out-of-plane bending for trigonal sp2 centers (Halgren MMFF.VI eq. 6)
+-/// E_oop = (0.043844 × koop / 2) × χ²  (χ in degrees: Wilson angle of out-of-plane distortion)
++/// Each of three Wilson angles contributes (143.9325 × koop / 2) × χ²,
++/// with χ in radians. Enumeration and kernel are shared with the prepared path.
+ fn oop_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
+-    const CONV: f64 = 0.043844;
+-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+-    let mut energy = 0.0;
+-    for j_idx in 0..mol.atom_count() {
+-        if OOP_SP2_TYPES.binary_search(&types[j_idx]).is_err() {
+-            continue;
+-        }
+-        let j = AtomIdx(j_idx as u32);
+-        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+-        if neighbors.len() != 3 {
+-            continue; // OOP only for exactly 3 substituents (trigonal)
+-        }
+-        let [i, k, l] = [neighbors[0], neighbors[1], neighbors[2]];
+-        if let Some(koop) = mmff94_oop(types[j_idx], types[i], types[k], types[l]) {
+-            // Wilson out-of-plane angle: angle between j→l vector and plane (i,j,k)
+-            let pj = coords[j_idx];
+-            let pi = coords[i];
+-            let pk = coords[k];
+-            let pl = coords[l];
+-            let rji = [pi[0] - pj[0], pi[1] - pj[1], pi[2] - pj[2]];
+-            let rjk = [pk[0] - pj[0], pk[1] - pj[1], pk[2] - pj[2]];
+-            let rjl = [pl[0] - pj[0], pl[1] - pj[1], pl[2] - pj[2]];
+-            let n = cross(rji, rjk); // normal to ijk plane
+-            let n_len = (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt();
+-            let l_len = (rjl[0] * rjl[0] + rjl[1] * rjl[1] + rjl[2] * rjl[2]).sqrt();
+-            if n_len < 1e-12 || l_len < 1e-12 {
+-                continue;
+-            }
+-            let sin_chi = dot3(n, rjl) / (n_len * l_len);
+-            let chi_deg = sin_chi.clamp(-1.0, 1.0).asin() * RAD_TO_DEG;
+-            energy += (CONV * koop / 2.0) * chi_deg * chi_deg;
+-        }
+-    }
+-    energy
++    prepared_oop_energy(coords, &build_oop_terms(mol, types))
+ }
+ 
+ /// Bond stretching: cubic-corrected harmonic (Halgren MMFF.II eq. 1)
+@@ -1937,86 +1900,15 @@ fn bond_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
+     energy
+ }
+ 
+-/// Angle bending: cubic-corrected harmonic (Halgren MMFF.III eq. 2)
+-/// E = (0.043844 × ka / 2) × Δθ² × (1 − 0.007×Δθ)   [Δθ in degrees]
++/// Angle bending uses the same linear/cubic potential as the prepared model.
+ fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], rings: &[Vec<AtomIdx>]) -> f64 {
+-    const KA_CONV: f64 = 0.043844;
+-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+-    let mut energy = 0.0;
+-    for j_idx in 0..mol.atom_count() {
+-        let j = AtomIdx(j_idx as u32);
+-        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+-        if neighbors.len() < 2 {
+-            continue;
+-        }
+-        for (ii, &i) in neighbors.iter().enumerate() {
+-            for &k in &neighbors[ii + 1..] {
+-                let at = angle_type_for(mol, rings, i, j_idx, k, types);
+-                let bt_ij =
+-                    bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
+-                let bt_kj =
+-                    bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
+-                let r0_ij = mmff94_bond_energy_resolved(bt_ij, types[i], types[j_idx]);
+-                let r0_kj = mmff94_bond_energy_resolved(bt_kj, types[k], types[j_idx]);
+-                let (Some((bond_ij, _)), Some((bond_kj, _))) = (r0_ij, r0_kj) else {
+-                    continue;
+-                };
+-                let ring_size = is_angle_in_ring_of_size_3_or_4(mol, i, j_idx, k);
+-                if let Some((p, _)) = mmff94_angle_energy_resolved(
+-                    at,
+-                    types[i],
+-                    types[j_idx],
+-                    types[k],
+-                    bond_ij.r0,
+-                    bond_kj.r0,
+-                    ring_size,
+-                ) {
+-                    let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
+-                    let theta_deg = cos_t.acos() * RAD_TO_DEG;
+-                    let dt = theta_deg - p.theta0;
+-                    let cubic = 1.0 - 0.007 * dt;
+-                    energy += (KA_CONV * p.ka / 2.0) * dt * dt * cubic;
+-                }
+-            }
+-        }
+-    }
+-    energy
++    prepared_angle_energy(coords, &build_angle_terms(mol, types, rings))
+ }
+ 
+ /// Torsion: three-term Fourier (Halgren MMFF.IV)
+ /// E = (v1/2)(1+cosφ) + (v2/2)(1-cos2φ) + (v3/2)(1+cos3φ)
+ fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
+-    let mut energy = 0.0;
+-    for (_, bond) in mol.bonds() {
+-        let j = bond.atom1.0 as usize;
+-        let k = bond.atom2.0 as usize;
+-        let nbrs_j: Vec<usize> = mol
+-            .neighbors(bond.atom1)
+-            .map(|(nb, _)| nb.0 as usize)
+-            .collect();
+-        let nbrs_k: Vec<usize> = mol
+-            .neighbors(bond.atom2)
+-            .map(|(nb, _)| nb.0 as usize)
+-            .collect();
+-        for &i in &nbrs_j {
+-            if i == k {
+-                continue;
+-            }
+-            for &l in &nbrs_k {
+-                if l == j {
+-                    continue;
+-                }
+-                let tt = torsion_type_for(mol, i, j, k, l, types[i], types[j], types[k], types[l]);
+-                if let Some(p) = mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l]) {
+-                    let phi = dihedral(coords[i], coords[j], coords[k], coords[l]);
+-                    energy += 0.5 * p.v1 * (1.0 + phi.cos())
+-                        + 0.5 * p.v2 * (1.0 - (2.0 * phi).cos())
+-                        + 0.5 * p.v3 * (1.0 + (3.0 * phi).cos());
+-                }
+-            }
+-        }
+-    }
+-    energy
++    prepared_torsion_energy(coords, &build_torsion_terms(mol, types))
+ }
+ 
+ /// Van der Waals: buffered 14-7 (Halgren MMFF.I eq. 8).
+@@ -2037,7 +1929,6 @@ fn vdw_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
+             excl.insert((i.min(nj), i.max(nj)));
+         }
+     }
+-    let cutoff = 10.0_f64;
+     let mut energy = 0.0;
+     for i in 0..n {
+         for j in (i + 1)..n {
+@@ -2045,13 +1936,11 @@ fn vdw_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
+                 continue;
+             }
+             let r = dist(coords[i], coords[j]);
+-            if r > cutoff {
+-                continue;
+-            }
+             if let Some((r_star, eps)) = mmff94_vdw_combined(types[i], types[j])
+                 && r_star > 0.0
+                 && eps > 0.0
+                 && r > 0.01
++                && r.is_finite()
+             {
+                 energy += mmff94_vdw_energy_value(r, r_star, eps);
+             }
+@@ -2684,6 +2573,7 @@ pub fn torsion_type_for(
+ mod tests {
+     use super::*;
+     use crate::mmff94_energy::mmff94_stbn_type_only;
++    use crate::mmff94_energy::mmff94_torsion_energy;
+     use crate::mmff94_energy::{mmff94_angle_energy, mmff94_bond_energy};
+     use crate::mmff94_numeric::{
+         assign_mmff94_numeric_types, assign_mmff94_numeric_types_with_view,
+@@ -2723,6 +2613,19 @@ mod tests {
+         assert!((model.energy(&coords) - one_shot.total).abs() < 1e-12);
+     }
+ 
++    #[test]
++    fn torsions_require_four_distinct_atoms() {
++        for (smiles, expected_count) in [("C1CC1", 0), ("C1CCC1", 4), ("CCCC", 1)] {
++            let mol = chematic_smiles::parse(smiles).unwrap();
++            let types = assign_mmff94_numeric_types(&mol).unwrap();
++            let terms = build_torsion_terms(&mol, &types);
++            assert_eq!(terms.len(), expected_count, "{smiles}");
++            for term in terms {
++                assert_ne!(term.i, term.l, "closed triangle is not a dihedral");
++            }
++        }
++    }
++
+     fn butane_backbone() -> Molecule {
+         let mut b = MoleculeBuilder::new();
+         let c0 = b.add_atom(Atom::new(Element::C));
+@@ -3302,14 +3205,11 @@ mod tests {
+             at, 3,
+             "3-ring angle with two sp3 (bond_type 0) flanking bonds must be type 3"
+         );
+-        // The specific (3,1,1,1) row doesn't exist for this crate's current
+-        // atom typer (which doesn't yet distinguish ring-size-specific sp3
+-        // carbon types 20/22 from plain type 1) — the type-0 fallback added
+-        // to `mmff94_angle_energy` must still return a usable value rather
+-        // than silently dropping the angle term.
++        // Ring-specific carbon types resolve the dedicated type-3 row;
++        // the lookup must preserve the ring classification.
+         assert!(
+             mmff94_angle_energy(at, types[i], types[j], types[k]).is_some(),
+-            "angle energy lookup must fall back to type 0, not silently miss"
++            "ring-specific angle energy parameters must resolve"
+         );
+     }
+ 
+@@ -3891,15 +3791,19 @@ mod tests {
+                         continue;
+                     }
+                     for &l in &nbrs_k {
+-                        if l == j {
++                        if l == j || l == i {
+                             continue;
+                         }
+                         c.torsion_total += 1;
+                         let tt = torsion_type_for(
+                             &mol, i, j, k, l, types[i], types[j], types[k], types[l],
+                         );
+-                        if mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l])
+-                            .is_none()
++                        if mmff94_torsion_energy_with_bond(
++                            tt,
++                            [types[i], types[j], types[k], types[l]],
++                            bond.order,
++                        )
++                        .is_none()
+                         {
+                             c.torsion_miss += 1;
+                         }
+@@ -4063,7 +3967,7 @@ mod tests {
+             .collect();
+         assert_eq!(actual, expected);
+         assert_eq!(
+-            vdw_energy_pairs(&coords, &model.vdw_pairs),
++            vdw_energy_cutoff_pairs(&coords, &model.vdw_pairs),
+             model.vdw_pairs.iter().fold(0.0, |total, pair| {
+                 let r = dist(coords[pair.i], coords[pair.j]);
+                 if r > 10.0 || r <= 0.01 {
+@@ -4221,6 +4125,52 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn linear_angle_gradient_is_finite_and_matches_central_difference() {
++        let mol = chematic_smiles::parse("N#CC").unwrap();
++        let model = Mmff94EnergyModel::new(&mol).unwrap();
++        assert!(
++            model.stretch_bends.is_empty(),
++            "linear center has no stretch-bend term"
++        );
++        for first in [[0.0, 1.1, 0.2], [-1.1, 0.0, 0.0]] {
++            let coords = vec![first, [0.0, 0.0, 0.0], [1.4, 0.0, 0.0]];
++            let actual = model.bond_angle_gradient(&coords);
++            for (i, row) in actual.iter().enumerate() {
++                for (axis, &value) in row.iter().enumerate() {
++                    let mut plus = coords.clone();
++                    let mut minus = coords.clone();
++                    plus[i][axis] += 1e-5;
++                    minus[i][axis] -= 1e-5;
++                    let expected = (model.bond_energy(&plus) + model.angle_energy(&plus)
++                        - model.bond_energy(&minus)
++                        - model.angle_energy(&minus))
++                        / 2e-5;
++                    assert!(value.is_finite());
++                    assert!(
++                        (value - expected).abs() < 2e-5 * (1.0 + expected.abs()),
++                        "linear angle gradient atom {i} axis {axis}: {value} vs {expected}"
++                    );
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn equal_outer_stretch_bend_types_follow_bond_orientation() {
++        // Butadiene's C(sp2)-C(sp2)-C(sp2) triple has one special single
++        // bond and one double bond. Live RDKit 2026.03.6 returns different
++        // constants on its two sides despite the equal outer atom types.
++        assert_eq!(
++            stretch_bend_params_for(1, [2, 2, 2], [0, 1], [6, 6, 6]),
++            Some((0.219, 0.25))
++        );
++        assert_eq!(
++            stretch_bend_params_for(1, [2, 2, 2], [1, 0], [6, 6, 6]),
++            Some((0.25, 0.219))
++        );
++    }
++
+     #[test]
+     fn prepared_stretch_bend_gradient_matches_finite_difference() {
+         let mol = chematic_smiles::parse("CCC").expect("propane");
+@@ -4342,6 +4292,81 @@ mod tests {
+         );
+     }
+ 
++    #[test]
++    fn oop_uses_all_three_planes_independent_of_bond_insertion_order() {
++        let coords = vec![
++            [0.0, 0.0, 0.0],
++            [1.34, 0.1, 0.0],
++            [1.85, 1.35, 0.45],
++            [1.95, -1.15, 0.25],
++        ];
++        let mut energies = Vec::new();
++        for order in [
++            [0, 2, 3],
++            [0, 3, 2],
++            [2, 0, 3],
++            [2, 3, 0],
++            [3, 0, 2],
++            [3, 2, 0],
++        ] {
++            let mut builder = MoleculeBuilder::new();
++            let atoms: Vec<_> = (0..4)
++                .map(|_| builder.add_atom(Atom::new(Element::C)))
++                .collect();
++            for i in order {
++                builder
++                    .add_bond(
++                        atoms[1],
++                        atoms[i],
++                        if i == 0 {
++                            BondOrder::Double
++                        } else {
++                            BondOrder::Single
++                        },
++                    )
++                    .unwrap();
++            }
++            let mol = builder.build();
++            let model = Mmff94EnergyModel::new(&mol).unwrap();
++            assert_eq!(model.oops.len(), 3, "one Wilson angle per substituent");
++            energies.push(model.oop_energy(&coords));
++        }
++        assert!(energies[0] > 0.0);
++        assert!(energies.iter().all(|e| (e - energies[0]).abs() < 1e-12));
++    }
++
++    #[test]
++    fn default_vdw_retains_long_range_energy_and_gradient_while_cutoff_is_opt_in() {
++        let mol = chematic_smiles::parse("CCCC").unwrap();
++        let model = Mmff94EnergyModel::new(&mol).unwrap();
++        let coords = vec![
++            [0.0, 0.0, 0.0],
++            [4.0, 0.0, 0.0],
++            [8.0, 0.0, 0.0],
++            [12.0, 0.2, 0.0],
++        ];
++        assert_eq!(model.vdw_pairs.len(), 1);
++        assert!(
++            model.vdw_energy(&coords) < -1e-6,
++            "distant 1-4 pair still attracts"
++        );
++        assert_eq!(model.cutoff_nonbonded_energy(&coords).0, 0.0);
++        let gradient = prepared_nonbonded_gradient(&coords, &model.vdw_pairs, &[]);
++        assert!(gradient[3][0] > 1e-6);
++        let mut plus = coords.clone();
++        let mut minus = coords.clone();
++        plus[3][0] += 1e-5;
++        minus[3][0] -= 1e-5;
++        let numeric = (model.vdw_energy(&plus) - model.vdw_energy(&minus)) / 2e-5;
++        assert!((gradient[3][0] - numeric).abs() < 1e-10);
++        assert!(
++            prepared_cutoff_nonbonded_gradient(&coords, &model.vdw_pairs, &[])
++                .iter()
++                .flatten()
++                .all(|v| *v == 0.0)
++        );
++    }
++
+     #[test]
+     fn bounded_analytic_gradient_matches_prepared_total_energy() {
+         let mol = chematic_smiles::parse("CCCC").expect("butane");
+diff --git a/crates/chematic-ff/src/mmff94_numeric.rs b/crates/chematic-ff/src/mmff94_numeric.rs
+index 13e4b75c..d2da50c7 100644
+--- a/crates/chematic-ff/src/mmff94_numeric.rs
++++ b/crates/chematic-ff/src/mmff94_numeric.rs
+@@ -72,16 +72,16 @@ static MMFF94_PBCI: &[(u8, f64, f64)] = &[
+     (21, 0.157, 0.000),  // =P       phosphorus =P
+     (22, -0.095, 0.000), // P=O      phosphoryl P
+     (23, 0.193, 0.000),  // HNR      H on amine N
+-    (24, 0.257, 0.000),  // HOCO     H on O in acid/alcohol
++    (24, 0.257, 0.000),  // HOCO     H on O in carboxylic/phospho acids
+     (25, 0.012, 0.000),  // PO4      phosphate P
+     (26, -0.142, 0.000), // P=S      P=S
+     (27, 0.094, 0.000),  // HN=C     H on imine N
+     (28, 0.058, 0.000),  // HNCO     H on amide N
+-    (29, 0.207, 0.000),  // HOCO     H on O in ester
++    (29, 0.207, 0.000),  // HOCC/HOCN H on O in phenols/enols/HO-C=N
+     (30, -0.166, 0.000), // N2OX     N-oxide N
+     (31, 0.161, 0.000),  // HOH      H in water
+     (32, -0.732, 0.500), // O2CM     carboxylate/nitro-nitrate/sulfate/phosphate O (fcadj=0.5) -- was mislabeled "NR+", value already correct
+-    (33, 0.257, 0.000),  // HOX      H on O in N-oxide
++    (33, 0.257, 0.000),  // HOS      H on O attached to sulfur
+     (34, -0.491, 0.000), // NR+      quaternary/protonated nitrogen -- was mislabeled "O-", value already correct
+     (35, -0.456, 0.500), // OM       oxide oxygen (fcadj=0.5)
+     (36, -0.031, 0.000), // HNR+     H on protonated N
+@@ -809,7 +809,7 @@ pub fn assign_mmff94_numeric_types_with_view(
+             Element::CL => 12,
+             Element::BR => 13,
+             Element::I => 14,
+-            Element::H => assign_h_type(&mmff_mol, idx)?,
++            Element::H => assign_h_type(&mmff_mol, &rings, idx)?,
+             _ => {
+                 return Err(NumericTypeError(format!(
+                     "unsupported element {:?} at atom {i}",
+@@ -1439,6 +1439,85 @@ fn find_alpha_beta_heteroatoms(
+ 
+ // ── C type assignment ────────────────────────────────────────────────────────
+ 
++/// Carbon-neighbor counts used by the amidinium/guanidinium rules in
++/// RDKit Release_2026_03_6 AtomTyper.cpp. Degree includes hydrogen atoms
++/// whether stored implicitly or represented as graph vertices.
++struct ConjugatedNitrogenContext {
++    n3: usize,
++    n2: usize,
++    positive_n: bool,
++    double_n: bool,
++}
++
++fn conjugated_nitrogen_context(mol: &Molecule, carbon: AtomIdx) -> ConjugatedNitrogenContext {
++    let mut ctx = ConjugatedNitrogenContext {
++        n3: 0,
++        n2: 0,
++        positive_n: false,
++        double_n: false,
++    };
++    for bond in bonds_of(mol, carbon) {
++        let atom = mol.atom(bond.neighbor);
++        if atom.element != Element::N {
++            continue;
++        }
++        ctx.double_n |= bond.order == BondOrder::Double;
++        match total_degree(mol, bond.neighbor) {
++            3 => {
++                ctx.positive_n |= atom.charge == 1;
++                // Nitro/nitrate nitrogen does not participate in the
++                // nitrogen typing rule's conjugated N3 count.
++                if bonds_of(mol, bond.neighbor)
++                    .iter()
++                    .filter(|b| mol.atom(b.neighbor).element == Element::O)
++                    .count()
++                    < 2
++                {
++                    ctx.n3 += 1;
++                }
++            }
++            2 if matches!(bond.order, BondOrder::Double | BondOrder::Aromatic) => ctx.n2 += 1,
++            _ => {}
++        }
++    }
++    ctx
++}
++
++fn conjugated_cation_n_type(mol: &Molecule, rings: &[Vec<AtomIdx>], idx: AtomIdx) -> Option<u8> {
++    if total_degree(mol, idx) != 3
++        // The nitro/nitrate branch precedes conjugated N in RDKit. Such
++        // an ipso N must not borrow the other N atoms' amidinium class.
++        || (total_valence(mol, idx) >= 4 && count_terminal_o_neighbors(mol, idx) >= 2)
++    {
++        return None;
++    }
++    let mut amidinium = false;
++    let mut guanidinium = false;
++    for bond in bonds_of(mol, idx) {
++        let carbon = bond.neighbor;
++        if mol.atom(carbon).element != Element::C {
++            continue;
++        }
++        let ctx = conjugated_nitrogen_context(mol, carbon);
++        if !ctx.double_n {
++            continue;
++        }
++        amidinium |= ctx.n3 == 2
++            && ctx.n2 == 0
++            && ctx.positive_n
++            && !atom_in_aromatic_ring_of_size(mol, rings, carbon, 6)
++            && total_degree(mol, carbon) < 4;
++        guanidinium |= ctx.n3 == 3;
++    }
++    if amidinium {
++        Some(55) // NCN+: either nitrogen in N+=C-N
++    } else if guanidinium {
++        Some(56) // NGD+: all three guanidinium nitrogens
++    } else {
++        None
++    }
++}
++
+ fn assign_c_type(
+     mol: &Molecule,
+     rings: &[Vec<AtomIdx>],
+@@ -1487,6 +1566,20 @@ fn assign_c_type(
+ 
+     // sp2 carbon
+     if double_bonds > 0 {
++        if total_degree(mol, idx) == 3 {
++            let ctx = conjugated_nitrogen_context(mol, idx);
++            // The carbon rule counts every N3, including nitro N3;
++            // the nitrogen rule above excludes nitro/nitrate neighbors.
++            let n3 = bonds_of(mol, idx)
++                .iter()
++                .filter(|b| {
++                    mol.atom(b.neighbor).element == Element::N && total_degree(mol, b.neighbor) == 3
++                })
++                .count();
++            if ctx.double_n && n3 >= 2 && ctx.n2 == 0 {
++                return Ok(57); // CNN+ / CGD+: amidinium/guanidinium carbon
++            }
++        }
+         // Issue #227 Priority 1A-2: RDKit's real type-3 "C=O" row is an
+         // umbrella covering a 3-connected carbon double-bonded to N, O, P,
+         // *or* S (`AtomTyper.cpp` lines 907-943 at the pinned commit,
+@@ -1617,14 +1710,8 @@ struct N3CarbonContext {
+ /// a nitrogen in exactly one ring, also counts per RDKit's own rule at
+ /// lines 1124-1130), or via its own triple bond to carbon.
+ ///
+-/// Not ported: the charged amidinium (`NCN+`, type 55) / guanidinium
+-/// (`NGD+`, type 56) sub-cases (lines 1197-1206, 1273-1284) -- moot for
+-/// `assign_n_type`'s actual callers, since every positively-charged
+-/// nitrogen is already routed to type 34 before reaching this function at
+-/// all (issue #227's construction-time semantic-compatibility work);
+-/// verified 0/129 corpus atoms in the NR-vs-NC=C residual this port closes
+-/// carry a charge, so this omission is not a silent gap for this fix's
+-/// actual target population.
++/// The charged amidinium/guanidinium cases are resolved separately by
++/// `conjugated_cation_n_type`, before the generic positive-N branches.
+ ///
+ /// Structural divergence point from RDKit's literal C++ (not a
+ /// simplification of the underlying chemistry, a difference in how a
+@@ -1766,6 +1853,13 @@ fn assign_n_type(
+     let nbrs = bonds_of(mol, idx);
+     let degree = total_degree(mol, idx);
+ 
++    // Resolve the entire conjugated cation before the generic iminium or
++    // protonated-amine branches. The charge may reside on another N in
++    // the input resonance form, so this must also classify neutral N.
++    if let Some(t) = conjugated_cation_n_type(mol, rings, idx) {
++        return Ok(t);
++    }
++
+     // Terminal (degree-1) nitrogen: nitrile/isocyanide (NSP, type 42) or the
+     // terminal nitrogen of an azide/diazo group (NAZT, type 47).
+     // Source-grounded port of RDKit's degree-1 nitrogen branch
+@@ -2149,6 +2243,26 @@ fn assign_o_type(
+     rings: &[Vec<AtomIdx>],
+     idx: AtomIdx,
+ ) -> Result<u8, NumericTypeError> {
++    // RDKit's ordered 3-/2-connected oxygen cases. Checking degree and
++    // valence first prevents water detection from swallowing hydronium
++    // or oxenium; hydrogen counts work in both graph representations.
++    let degree = total_degree(mol, idx);
++    if degree == 3 {
++        return Ok(49); // O+: oxonium
++    }
++    if degree == 2 {
++        if total_valence(mol, idx) == 3 {
++            return Ok(51); // O=+: oxenium
++        }
++        let hydrogens = implicit_hcount(mol, idx) as usize
++            + bonds_of(mol, idx)
++                .iter()
++                .filter(|b| mol.atom(b.neighbor).element == Element::H)
++                .count();
++        if hydrogens == 2 {
++            return Ok(70); // OH2: water oxygen
++        }
++    }
+     // Aromatic 5-ring oxygen (furan-type) -- RDKit's aromatic switch has no
+     // 6-ring case for oxygen (no common neutral 6-ring aromatic O in the
+     // chemistry this typer covers), so only the 5-ring case is ported.
+@@ -2285,7 +2399,11 @@ fn assign_p_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
+ 
+ // ── H type assignment ────────────────────────────────────────────────────────
+ 
+-fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
++fn assign_h_type(
++    mol: &Molecule,
++    rings: &[Vec<AtomIdx>],
++    idx: AtomIdx,
++) -> Result<u8, NumericTypeError> {
+     let nbrs = bonds_of(mol, idx);
+     if nbrs.is_empty() {
+         return Ok(5); // H_C fallback
+@@ -2294,83 +2412,70 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
+ 
+     Ok(match nbr_atom.element {
+         Element::C => 5, // HC  H on carbon
+-        Element::O => assign_oxygen_bound_h_type(mol, nbrs[0].neighbor),
++        Element::O => match assign_o_type(mol, rings, nbrs[0].neighbor)? {
++            49 => 50, // HO+: H on oxonium
++            51 => 52, // HO=+: H on oxenium
++            70 => 31, // HOH: water
++            _ => assign_oxygen_bound_h_type(mol, nbrs[0].neighbor),
++        },
+         Element::S => 71, // HS  H on sulfur
+-        Element::N => {
+-            // Distinguish: amide NH (type 28) vs amine NH (type 23) vs imine=NH (type 27)
+-            let n_idx = nbrs[0].neighbor;
+-            let n_atom = mol.atom(n_idx);
+-            if n_atom.aromatic {
+-                return Ok(23); // treat as HNR for aromatic NH
+-            }
+-            let n_is_amide = bonds_of(mol, n_idx).iter().any(|b| {
+-                b.order == BondOrder::Single
+-                    && mol.atom(b.neighbor).element == Element::C
+-                    && bonds_of(mol, b.neighbor).iter().any(|bb| {
+-                        bb.order == BondOrder::Double && mol.atom(bb.neighbor).element == Element::O
+-                    })
+-            });
+-            if n_is_amide {
+-                28 // HNCO H on amide N
+-            } else if total_degree(mol, n_idx) == 3
+-                && bonds_of(mol, n_idx).iter().any(|bond| {
+-                    let carbon = mol.atom(bond.neighbor);
+-                    carbon.element == Element::C
+-                        && (carbon.aromatic
+-                            || bonds_of(mol, bond.neighbor).iter().any(|neighbor_bond| {
+-                                neighbor_bond.order == BondOrder::Double
+-                                    && matches!(
+-                                        mol.atom(neighbor_bond.neighbor).element,
+-                                        Element::C | Element::N | Element::P
+-                                    )
+-                            }))
+-                })
+-            {
+-                // RDKit shares the HNCO parameter row for N-H attached to
+-                // a delocalized amine (numeric N type 40), including
+-                // aniline/enamine environments.
+-                28
+-            } else if count_bond_order(mol, n_idx, BondOrder::Double) > 0 {
+-                27 // HN=C H on imine N
+-            } else {
+-                23 // HNR  H on amine N
+-            }
+-        }
++        // Use the assigned heavy type, as setMMFFHydrogenType does, so
++        // the same N-H class applies to every input resonance form.
++        Element::N => match assign_n_type(mol, rings, nbrs[0].neighbor)? {
++            8 | 39 | 62 | 67 | 68 => 23,
++            34 | 54 | 55 | 56 | 58 | 81 => 36,
++            9 => 27,
++            _ => 28,
++        },
+         _ => 5,
+     })
+ }
+ 
+ /// Select the MMFF94 numeric type for an explicit hydrogen bonded to oxygen.
+ ///
+-/// RDKit distinguishes hydroxyl H (21), acid H (24), water H (31), and the
+-/// less common N-oxide hydroxyl H (33).  Treating every O-H bond as HOCO
+-/// changes both the bond charge-transfer term and the resulting electrostatic
+-/// energy when callers provide an AddHs topology.  The implicit-H path never
+-/// enters this function, so this is deliberately limited to explicit H.
++/// RDKit's `setMMFFHydrogenType` distinguishes ordinary hydroxyl H (21),
++/// carboxylic/phospho acid H (24), phenolic/enolic/HO-C=N H (29), water H
++/// (31), and H on oxygen attached to sulfur (33). The caller resolves water
++/// and the charged-oxygen H types before entering this neutral-O helper.
++/// These types also control
++/// charge transfer and bonded parameters. N-O-H alone is an ordinary
++/// hydroxyl, not HOS. The implicit-H path never enters this function.
+ fn assign_oxygen_bound_h_type(mol: &Molecule, oxygen_idx: AtomIdx) -> u8 {
+     let heavy_neighbors: Vec<_> = bonds_of(mol, oxygen_idx)
+         .into_iter()
+         .filter(|bond| mol.atom(bond.neighbor).element != Element::H)
+         .collect();
+ 
+-    if heavy_neighbors.is_empty() {
+-        return 31; // HOH, water
+-    }
+-
+-    let heavy_neighbor = heavy_neighbors[0].neighbor;
+-    let heavy_atom = mol.atom(heavy_neighbor);
+-    if heavy_atom.element == Element::N {
+-        return 33; // HOX, N-oxide hydroxyl
++    let mut is_acid = false;
++    let mut is_conjugated = false;
++    let mut is_sulfur_bound = false;
++    for neighbor in heavy_neighbors {
++        match mol.atom(neighbor.neighbor).element {
++            Element::P => is_acid = true,
++            Element::S => is_sulfur_bound = true,
++            Element::C => {
++                for bond in bonds_of(mol, neighbor.neighbor) {
++                    if bond.neighbor == oxygen_idx {
++                        continue;
++                    }
++                    let element = mol.atom(bond.neighbor).element;
++                    is_acid |= element == Element::O && bond.order == BondOrder::Double;
++                    is_conjugated |= matches!(element, Element::C | Element::N)
++                        && matches!(bond.order, BondOrder::Double | BondOrder::Aromatic);
++                }
++            }
++            _ => {}
++        }
+     }
+-
+-    let is_carboxylic_acid = heavy_atom.element == Element::C
+-        && bonds_of(mol, heavy_neighbor).iter().any(|bond| {
+-            bond.order == BondOrder::Double && mol.atom(bond.neighbor).element == Element::O
+-        });
+-    if is_carboxylic_acid {
+-        24 // HOCO, acid hydroxyl
++    // Match RDKit's precedence: acid/phospho > conjugated > sulfur > generic.
++    if is_acid {
++        24 // HOCO
++    } else if is_conjugated {
++        29 // HOCC / HOCN
++    } else if is_sulfur_bound {
++        33 // HOS
+     } else {
+-        21 // HOR, alcohol/phenol hydroxyl
++        21 // HOR / generic hydroxyl
+     }
+ }
+ 
+@@ -2423,14 +2528,16 @@ fn assign_oxygen_bound_h_type(mol: &Molecule, oxygen_idx: AtomIdx) -> u8 {
+ ///   neighbor (type 77) branches.
+ /// - Type 76 (N5M): formal charge shared across N5M nitrogens co-membered in
+ ///   a 5-ring (needs ring perception).
+-/// - Types 55/56/81 (NIM+/N5A+/N5B+): formal charge averaged across a
+-///   conjugated cationic-nitrogen network reached via alternating type-57/80
+-///   carbons (needs BFS over a subset of the molecule graph).
+ /// - Type 61's diazonium special case (+1 bump when bonded to a type-42
+ ///   diazonium nitrogen).
+ ///
+-/// None of these gaps are guesses papered over with an untested formula --
+-/// zero atoms of types 62/76/55/56/61/81, and zero O2CM/SM atoms with a
++/// Types 55/56/81 now average the literal formal charge over the conjugated
++/// nitrogen component reached through type-57/80 carbon, matching
++/// Release_2026_03_6's graph traversal. Cation/water holdout fixtures cover
++/// amidinium, guanidinium, substituted groups and connected biguanidinium.
++///
++/// Historical corpus exposure: zero atoms of types 62/76/55/56/61/81,
++/// and zero O2CM/SM atoms with a
+ /// phosphorus/type-73/type-77 neighbor, appear anywhere in the 264-molecule
+ /// Wave 1 corpus this port was measured against (confirmed by a dedicated,
+ /// committed, independently re-runnable survey,
+@@ -2467,10 +2574,40 @@ fn mmff_derived_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64
+         // O2CM (32) / SM (72): formal charge shared/localized across
+         // terminal O/S atoms bonded to a common neighbor.
+         32 | 72 => o2cm_sm_formal_charge(mol, types, idx),
++        55 | 56 | 81 => conjugated_n_formal_charge(mol, types, idx),
+         _ => 0.0,
+     }
+ }
+ 
++/// Share charge across the entire conjugated N component, including N
++/// linking two cationic groups. A local division by two or three would
++/// double-count that shared atom and depend on the chosen resonance form.
++fn conjugated_n_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
++    let mut visited = vec![false; mol.atom_count()];
++    let mut pending = vec![idx];
++    visited[idx.0 as usize] = true;
++    let mut charge = 0.0;
++    let mut count = 0;
++    while let Some(nitrogen) = pending.pop() {
++        charge += f64::from(mol.atom(nitrogen).charge);
++        count += 1;
++        for carbon_bond in bonds_of(mol, nitrogen) {
++            if !matches!(types[carbon_bond.neighbor.0 as usize], 57 | 80) {
++                continue;
++            }
++            for nitrogen_bond in bonds_of(mol, carbon_bond.neighbor) {
++                let next = nitrogen_bond.neighbor;
++                let index = next.0 as usize;
++                if matches!(types[index], 55 | 56 | 81) && !visited[index] {
++                    visited[index] = true;
++                    pending.push(next);
++                }
++            }
++        }
++    }
++    charge / f64::from(count)
++}
++
+ /// O2CM/SM formal-charge redistribution (`AtomTyper.cpp` lines ~3095-3168,
+ /// `case 32: case 72:`). Reuses this module's existing terminal-O/S/deg-2-N
+ /// neighbor counters (`count_terminal_o_neighbors`/`count_terminal_s_neighbors`/
+diff --git a/crates/chematic-ff/src/mmff94_numeric_type_registry.rs b/crates/chematic-ff/src/mmff94_numeric_type_registry.rs
+index 253edd0b..b87192c2 100644
+--- a/crates/chematic-ff/src/mmff94_numeric_type_registry.rs
++++ b/crates/chematic-ff/src/mmff94_numeric_type_registry.rs
+@@ -39,9 +39,7 @@ pub struct Mmff94NumericTypeInfo {
+     /// Single bond adjacent to a multiple bond (MMFFPROP `sbmb`).
+     pub single_bond_multiple_bond: bool,
+     /// MMFF94 atom-type equivalence levels 2-5 (`MMFFDEF.PAR`), used
+-    /// for the equivalence-class parameter fallback (not yet wired
+-    /// into any chematic resolver -- see the Phase 1B-0 PR body's
+-    /// bond-fallback classification for why).
++    /// by the angle parameter resolver's equivalence-class fallback.
+     pub equivalence_levels: [u8; 4],
+     /// Human-readable Halgren description, e.g. "AROMATIC C".
+     pub description: &'static str,
+diff --git a/scripts/gen_mmff94_numeric_type_registry.py b/scripts/gen_mmff94_numeric_type_registry.py
+index 0d51de6f..b1d8c8b8 100644
+--- a/scripts/gen_mmff94_numeric_type_registry.py
++++ b/scripts/gen_mmff94_numeric_type_registry.py
+@@ -189,9 +189,7 @@ def main():
+     lines.append("    /// Single bond adjacent to a multiple bond (MMFFPROP `sbmb`).")
+     lines.append("    pub single_bond_multiple_bond: bool,")
+     lines.append("    /// MMFF94 atom-type equivalence levels 2-5 (`MMFFDEF.PAR`), used")
+-    lines.append("    /// for the equivalence-class parameter fallback (not yet wired")
+-    lines.append("    /// into any chematic resolver -- see the Phase 1B-0 PR body's")
+-    lines.append("    /// bond-fallback classification for why).")
++    lines.append("    /// by the angle parameter resolver's equivalence-class fallback.")
+     lines.append("    pub equivalence_levels: [u8; 4],")
+     lines.append("    /// Human-readable Halgren description, e.g. \"AROMATIC C\".")
+     lines.append("    pub description: &'static str,")
+diff --git a/scripts/mmff94_same_explicit_h_energy.py b/scripts/mmff94_same_explicit_h_energy.py
+index 267eeddd..c536fe47 100644
+--- a/scripts/mmff94_same_explicit_h_energy.py
++++ b/scripts/mmff94_same_explicit_h_energy.py
+@@ -42,6 +42,15 @@ TERMINAL_STATUSES = {
+     "rdkit_force_field_failure",
+     "schematic_unsupported",
+ }
++RDKIT_TERM_SETTERS = {
++    "bond": "Bond",
++    "angle": "Angle",
++    "stretch_bend": "StretchBend",
++    "torsion": "Torsion",
++    "oop": "Oop",
++    "vdw": "VdW",
++    "electrostatic": "Ele",
++}
+ 
+ 
+ def sha256_bytes(payload: bytes) -> str:
+@@ -123,12 +132,34 @@ def gradient_diagnostic(mol: object, coords: list[list[float]], delta: float) ->
+     }
+ 
+ 
++def rdkit_term_energy_breakdown(mol: Chem.Mol) -> dict[str, float]:
++    """Evaluate isolated MMFF94 terms at conformer 0 without minimizing.
++
++    Own the properties object so toggling terms cannot alter the caller's
++    force field. Keep all nonbonded settings identical to the total-energy
++    comparison above (including the default interfragment exclusion).
++    """
++    properties = AllChem.MMFFGetMoleculeProperties(mol, mmffVariant="MMFF94")
++    if properties is None:
++        raise ValueError("RDKit MMFF94 properties unavailable")
++    result = {}
++    for term in RDKIT_TERM_SETTERS:
++        for name, setter in RDKIT_TERM_SETTERS.items():
++            getattr(properties, f"SetMMFF{setter}Term")(name == term)
++        force_field = AllChem.MMFFGetMoleculeForceField(mol, properties, confId=0)
++        if force_field is None:
++            raise ValueError(f"RDKit MMFF94 force field unavailable for {term}")
++        result[term] = float(force_field.CalcEnergy())
++    return result
++
++
+ def evaluate(
+     row: dict,
+     input_index: int,
+     seed: int,
+     gradient_indices: set[int],
+     gradient_delta: float,
++    include_rdkit_terms: bool = False,
+ ) -> dict:
+     smiles = row["smiles"]
+     if row.get("primary_category") == "force_field_unsupported":
+@@ -159,6 +190,24 @@ def evaluate(
+             rdkit_atom_symbols=rdkit_symbols,
+             schematic_atom_symbols=schematic_symbols,
+         )
++    # Element sequences cannot prove coordinate correspondence: two carbons
++    # can be exchanged while leaving that sequence unchanged. Check the
++    # indexed bond graph, including bond orders, before embedding/MMFF mutates
++    # RDKit's aromatic representation.
++    rdkit_bonds = sorted(
++        (min(b.GetBeginAtomIdx(), b.GetEndAtomIdx()),
++         max(b.GetBeginAtomIdx(), b.GetEndAtomIdx()), str(b.GetBondType()))
++        for b in rdkit_mol.GetBonds()
++    )
++    schematic_bonds = sorted(
++        (min(a, b), max(a, b), order) for a, b, order, _ in schematic_mol.bond_table
++    )
++    if rdkit_bonds != schematic_bonds:
++        return terminal(
++            row, input_index, "atom_order_mismatch",
++            reason="indexed_bond_graph_mismatch",
++            rdkit_bonds=rdkit_bonds, schematic_bonds=schematic_bonds,
++        )
+     if AllChem.EmbedMolecule(rdkit_mol, randomSeed=seed) != 0:
+         return terminal(row, input_index, "embed_failure")
+     properties = AllChem.MMFFGetMoleculeProperties(rdkit_mol, mmffVariant="MMFF94")
+@@ -195,6 +244,15 @@ def evaluate(
+         if input_index in gradient_indices
+         else None
+     )
++    term_details = {}
++    if include_rdkit_terms:
++        rdkit_terms = rdkit_term_energy_breakdown(rdkit_mol)
++        term_details = {
++            "rdkit_energy_breakdown_kcal_mol": {**rdkit_terms, "total": rdkit_energy},
++            "term_delta_kcal_mol": {
++                term: breakdown[term] - rdkit_terms[term] for term in RDKIT_TERM_SETTERS
++            },
++        }
+     return terminal(
+         row,
+         input_index,
+@@ -207,6 +265,7 @@ def evaluate(
+         delta_kcal_mol=delta,
+         abs_delta_kcal_mol=abs(delta),
+         **({"gradient_diagnostic": gradient} if gradient is not None else {}),
++        **term_details,
+     )
+ 
+ 
+@@ -286,6 +345,11 @@ def parse_args() -> argparse.Namespace:
+     parser.add_argument("--expected-schematic")
+     parser.add_argument("--gradient-input-index", type=int, action="append", default=[])
+     parser.add_argument("--gradient-delta", type=float, default=1e-5)
++    parser.add_argument(
++        "--rdkit-term-breakdown",
++        action="store_true",
++        help="isolate RDKit's seven energy terms on each shared coordinate set",
++    )
+     args = parser.parse_args()
+     if args.limit is not None and args.limit < 1:
+         parser.error("--limit must be positive")
+@@ -331,6 +395,7 @@ def main() -> int:
+                 args.seed + index,
+                 gradient_indices,
+                 args.gradient_delta,
++                args.rdkit_term_breakdown,
+             )
+             results.append(result)
+             handle.write(json.dumps(result, sort_keys=True) + "\n")
+@@ -372,8 +437,9 @@ def main() -> int:
+                     "minimization_convergence",
+                     "stereo_preservation",
+                     "runtime_speed",
+-                    "RDKit_per_term_energy_parity",
+-                ],
++                ]
++                + ([] if args.rdkit_term_breakdown else ["RDKit_per_term_energy_parity"]),
++                "rdkit_term_breakdown": args.rdkit_term_breakdown,
+                 "seed": args.seed,
+                 "gradient_input_indices": sorted(gradient_indices),
+                 "gradient_central_difference_delta_angstrom": args.gradient_delta,
+@@ -411,7 +477,13 @@ def main() -> int:
+             "measurements": measurements,
+             "gate": gate,
+             "gate_passed": all(gate.values()),
+-            "caveat": "RDKit generated the shared explicit-H coordinates. This measures total force-field energy agreement, not per-term RDKit parity, conformer quality, minimization convergence, stereo preservation, or speed.",
++            "caveat": (
++                "RDKit generated the shared explicit-H coordinates. This measures "
++                "total force-field energy agreement"
++                + (" and per-term agreement" if args.rdkit_term_breakdown else "")
++                + "; it does not measure conformer quality, minimization convergence, "
++                "stereo preservation, or speed."
++            ),
+         }
+         args.summary.parent.mkdir(parents=True, exist_ok=True)
+         args.summary.write_text(
+diff --git a/scripts/tests/test_mmff94_same_explicit_h_energy.py b/scripts/tests/test_mmff94_same_explicit_h_energy.py
+index a81e8bce..16c45ee5 100644
+--- a/scripts/tests/test_mmff94_same_explicit_h_energy.py
++++ b/scripts/tests/test_mmff94_same_explicit_h_energy.py
+@@ -1,6 +1,10 @@
++import pytest
++
+ from scripts.mmff94_same_explicit_h_energy import (
++    evaluate,
+     gradient_diagnostic,
+     percentile_nearest_rank,
++    rdkit_term_energy_breakdown,
+     summarize,
+     terminal,
+ )
+@@ -51,3 +55,252 @@ def test_gradient_diagnostic_matches_quadratic_energy():
+     assert result["components"] == 3
+     assert result["max_abs_error_kcal_mol_angstrom"] < 1e-9
+     assert result["max_scaled_error"] < 1e-9
++
++
++def test_rdkit_isolated_terms_sum_to_total_without_changing_coordinates():
++    import pytest
++    from rdkit import Chem
++    from rdkit.Chem import AllChem
++
++    # Includes an O-H donor, an aromatic ring, and a carbonyl; exercising
++    # all seven terms rather than testing the setter loop against a mock.
++    mol = Chem.AddHs(Chem.MolFromSmiles("CC(=O)Nc1ccc(O)cc1"))
++    assert AllChem.EmbedMolecule(mol, randomSeed=43) == 0
++    properties = AllChem.MMFFGetMoleculeProperties(mol, mmffVariant="MMFF94")
++    force_field = AllChem.MMFFGetMoleculeForceField(mol, properties, confId=0)
++    before = mol.GetConformer().GetPositions().copy()
++    total = force_field.CalcEnergy()
++    terms = rdkit_term_energy_breakdown(mol)
++    assert set(terms) == {
++        "bond", "angle", "stretch_bend", "torsion", "oop", "vdw", "electrostatic"
++    }
++    assert sum(terms.values()) == pytest.approx(total, abs=1e-9)
++    assert force_field.CalcEnergy() == total
++    assert (mol.GetConformer().GetPositions() == before).all()
++
++
++def test_explicit_oxygen_hydrogen_vdw_and_charge_transfer_match_rdkit():
++    import pytest
++    import chematic
++    from rdkit import Chem
++    from rdkit.Chem import AllChem
++
++    for smiles in ["NCC(=O)O", "ON(C)C", "Oc1ccccc1", "CC(=O)Nc1ccc(O)cc1"]:
++        rdkit_mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
++        assert AllChem.EmbedMolecule(rdkit_mol, randomSeed=43) == 0
++        properties = AllChem.MMFFGetMoleculeProperties(rdkit_mol, mmffVariant="MMFF94")
++        mol = chematic.from_smiles(smiles).add_hydrogens()
++        # Check correspondence before sharing coordinates; matching element
++        # lists alone would miss permutations of two atoms of the same element.
++        assert [a["element"] for a in mol.depict_data()["atoms"]] == [
++            a.GetSymbol() for a in rdkit_mol.GetAtoms()
++        ]
++        assert {tuple(sorted((a, b))) for a, b, *_ in mol.bond_table} == {
++            tuple(sorted((b.GetBeginAtomIdx(), b.GetEndAtomIdx())))
++            for b in rdkit_mol.GetBonds()
++        }
++        types = mol.mmff94_numeric_atom_types()
++        charges = mol.mmff94_charges_numeric()
++        for atom in rdkit_mol.GetAtoms():
++            if atom.GetAtomicNum() == 1 and any(
++                nb.GetAtomicNum() == 8 for nb in atom.GetNeighbors()
++            ):
++                i = atom.GetIdx()
++                assert types[i] == properties.GetMMFFAtomType(i), smiles
++                assert charges[i] == pytest.approx(properties.GetMMFFPartialCharge(i)), smiles
++        coords = rdkit_mol.GetConformer().GetPositions().tolist()
++        assert mol.mmff94_energy_breakdown(coords)["vdw"] == pytest.approx(
++            rdkit_term_energy_breakdown(rdkit_mol)["vdw"], abs=1e-9
++        ), smiles
++
++
++def test_same_element_sequence_cannot_hide_an_indexed_graph_mismatch(monkeypatch):
++    import chematic
++
++    # Both isomers have C5H12 and the same AddHs element sequence. The
++    # branching still makes sharing atom-indexed coordinates invalid.
++    branched = chematic.from_smiles("CC(C)CC")
++    monkeypatch.setattr(chematic, "from_smiles", lambda _: branched)
++    result = evaluate({"smiles": "CCCCC"}, 0, 43, set(), 1e-5)
++    assert result["status"] == "atom_order_mismatch"
++    assert result["reason"] == "indexed_bond_graph_mismatch"
++
++
++@pytest.mark.parametrize("smiles", [
++    "c1ccccc1-c1ccccc1",
++    "C=CC=C",
++    "c1ccccc1C[n+]1ccc(N)c2ccccc21",
++    "CC(=O)Nc1ccc(O)cc1",
++    "N#CC",
++])
++def test_angle_and_stretch_bend_terms_match_rdkit_on_residual_motifs(smiles):
++    import pytest
++    import chematic
++    from rdkit import Chem
++    from rdkit.Chem import AllChem
++
++    rdkit_mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
++    assert AllChem.EmbedMolecule(rdkit_mol, randomSeed=43) == 0
++    # Exercise the linear-center cosine potential away from equilibrium;
++    # a nearly straight embedded nitrile would conceal the wrong formula.
++    if smiles == "N#CC":
++        rdkit_mol.GetConformer().SetAtomPosition(0, (0.0, 1.1, 0.0))
++        rdkit_mol.GetConformer().SetAtomPosition(1, (0.0, 0.0, 0.0))
++        rdkit_mol.GetConformer().SetAtomPosition(2, (1.3, -0.4, 0.0))
++    mol = chematic.from_smiles(smiles).add_hydrogens()
++    assert [a["element"] for a in mol.depict_data()["atoms"]] == [
++        a.GetSymbol() for a in rdkit_mol.GetAtoms()
++    ]
++    assert {tuple(sorted((a, b))) for a, b, *_ in mol.bond_table} == {
++        tuple(sorted((b.GetBeginAtomIdx(), b.GetEndAtomIdx())))
++        for b in rdkit_mol.GetBonds()
++    }
++    coords = rdkit_mol.GetConformer().GetPositions().tolist()
++    actual = mol.mmff94_energy_breakdown(coords)
++    expected = rdkit_term_energy_breakdown(rdkit_mol)
++    for term in ["angle", "stretch_bend"]:
++        assert actual[term] == pytest.approx(expected[term], abs=1e-8), (smiles, term)
++
++
++@pytest.mark.parametrize("smiles,twist", [
++    ("C1CC1", None), ("C1CO1", None), ("C1CN1", None), ("CC1CC1", None),
++    ("C1CCC1", None), ("CCCC", None),
++    ("C=[N+](C)c1ccccc1", (0, 1, 3, 4)),
++    ("CC=[N+](C)c1ccccc1", (1, 2, 4, 5)),
++])
++def test_torsion_terms_match_rdkit_for_small_rings_and_iminium(smiles, twist):
++    import chematic
++    from rdkit import Chem
++    from rdkit.Chem import AllChem, rdMolTransforms
++
++    rdkit_mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
++    assert AllChem.EmbedMolecule(rdkit_mol, randomSeed=43) == 0
++    if twist is not None:
++        # Embedded iminium groups are nearly planar: move away from the
++        # minimum so a missing conjugated barrier cannot hide at zero energy.
++        rdMolTransforms.SetDihedralDeg(rdkit_mol.GetConformer(), *twist, 70.0)
++    mol = chematic.from_smiles(smiles).add_hydrogens()
++    properties = AllChem.MMFFGetMoleculeProperties(rdkit_mol)
++    assert list(mol.mmff94_numeric_atom_types()) == [
++        properties.GetMMFFAtomType(i)
++        for i in range(rdkit_mol.GetNumAtoms())
++    ]
++    assert {tuple(sorted((a, b))) for a, b, *_ in mol.bond_table} == {
++        tuple(sorted((b.GetBeginAtomIdx(), b.GetEndAtomIdx())))
++        for b in rdkit_mol.GetBonds()
++    }
++    coords = rdkit_mol.GetConformer().GetPositions().tolist()
++    actual = mol.mmff94_energy_breakdown(coords)
++    expected = rdkit_term_energy_breakdown(rdkit_mol)
++    assert actual["torsion"] == pytest.approx(expected["torsion"], abs=1e-8)
++    gradient = gradient_diagnostic(mol, coords, 1e-5)
++    assert gradient["max_scaled_error"] < 1e-5
++
++
++@pytest.mark.parametrize("smiles,displaced", [
++    ("C=C(C)C", 1), ("O=C(N)c1ccccc1", 1),
++    ("C=CC=[N+](C)C", 2), ("CN(C)C=O", 1),
++    ("[O-][n+]1ccccc1", 1),
++])
++def test_oop_energy_matches_rdkit_away_from_planarity(smiles, displaced):
++    import chematic
++    from rdkit import Chem
++    from rdkit.Chem import AllChem
++
++    rdkit_mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
++    assert AllChem.EmbedMolecule(rdkit_mol, randomSeed=43) == 0
++    properties = AllChem.MMFFGetMoleculeProperties(rdkit_mol)
++    position = rdkit_mol.GetConformer().GetAtomPosition(displaced)
++    rdkit_mol.GetConformer().SetAtomPosition(displaced, (position.x, position.y, position.z + 0.4))
++    mol = chematic.from_smiles(smiles).add_hydrogens()
++    assert list(mol.mmff94_numeric_atom_types()) == [
++        properties.GetMMFFAtomType(i) for i in range(rdkit_mol.GetNumAtoms())
++    ]
++    assert {tuple(sorted((a, b))) for a, b, *_ in mol.bond_table} == {
++        tuple(sorted((b.GetBeginAtomIdx(), b.GetEndAtomIdx()))) for b in rdkit_mol.GetBonds()
++    }
++    coords = rdkit_mol.GetConformer().GetPositions().tolist()
++    assert mol.mmff94_energy_breakdown(coords)["oop"] == pytest.approx(
++        rdkit_term_energy_breakdown(rdkit_mol)["oop"], abs=1e-9
++    )
++    assert gradient_diagnostic(mol, coords, 1e-5)["max_scaled_error"] < 1e-5
++    # Directly compare the complete force-field gradient as well as the
++    # internal central difference, on these deliberately nonplanar motifs.
++    force_field = AllChem.MMFFGetMoleculeForceField(rdkit_mol, properties, confId=0)
++    expected = force_field.CalcGrad()
++    actual = [value for point in mol.mmff94_bounded_analytic_gradient(coords) for value in point]
++    assert max(abs(a - b) / (1.0 + abs(b)) for a, b in zip(actual, expected, strict=True)) < 1e-7
++
++
++def test_vdw_energy_retains_pairs_beyond_ten_angstroms():
++    import chematic
++    from rdkit import Chem
++    from rdkit.Chem import AllChem
++
++    smiles = "CCCCCCCCCCCC"
++    rdkit_mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
++    assert AllChem.EmbedMolecule(rdkit_mol, randomSeed=43) == 0
++    mol = chematic.from_smiles(smiles).add_hydrogens()
++    assert {tuple(sorted((a, b))) for a, b, *_ in mol.bond_table} == {
++        tuple(sorted((b.GetBeginAtomIdx(), b.GetEndAtomIdx()))) for b in rdkit_mol.GetBonds()
++    }
++    # Enlarge the existing embedding uniformly to ensure nonexcluded distant
++    # pairs exist without creating disconnected fragments or atom reordering.
++    coords = (rdkit_mol.GetConformer().GetPositions() * 2.0).tolist()
++    for index, position in enumerate(coords):
++        rdkit_mol.GetConformer().SetAtomPosition(index, position)
++    assert mol.mmff94_energy_breakdown(coords)["vdw"] == pytest.approx(
++        rdkit_term_energy_breakdown(rdkit_mol)["vdw"], abs=1e-9
++    )
++
++
++@pytest.mark.parametrize("smiles", [
++    "O", "NC(=[NH2+])N", "[NH2+]=C(N)N", "CNC(=[NH2+])N",
++    "CN(C)C(=[N+](C)C)N(C)C", "NNC(=[NH2+])N", "N=C(N)N",
++    "CC(=[NH2+])N", "CNC=[NH2+]", "NC(=[NH2+])NC(=[NH2+])N",
++    "N=C(N)NC(=[NH2+])N", "CO", "COC", "[OH-]", "[OH3+]",
++    "C=[OH+]", "C=[NH2+]", "C[NH3+]", "NC(=[NH2+])NCCCCC",
++    "NC(=[NH2+])[N+](=O)[O-]",
++])
++def test_cation_water_holdout_types_charges_energy_and_gradient_match_rdkit(smiles):
++    import chematic
++    from rdkit import Chem
++    from rdkit.Chem import AllChem
++
++    rdkit_mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
++    assert AllChem.EmbedMolecule(rdkit_mol, randomSeed=43) == 0
++    properties = AllChem.MMFFGetMoleculeProperties(rdkit_mol, mmffVariant="MMFF94")
++    mol = chematic.from_smiles(smiles).add_hydrogens()
++    assert [a["element"] for a in mol.depict_data()["atoms"]] == [
++        a.GetSymbol() for a in rdkit_mol.GetAtoms()
++    ]
++    assert {(min(a, b), max(a, b), order) for a, b, order, *_ in mol.bond_table} == {
++        (min(b.GetBeginAtomIdx(), b.GetEndAtomIdx()),
++         max(b.GetBeginAtomIdx(), b.GetEndAtomIdx()), str(b.GetBondType()))
++        for b in rdkit_mol.GetBonds()
++    }
++    assert list(mol.mmff94_numeric_atom_types()) == [
++        properties.GetMMFFAtomType(i) for i in range(rdkit_mol.GetNumAtoms())
++    ]
++    assert list(mol.mmff94_charges_numeric()) == pytest.approx([
++        properties.GetMMFFPartialCharge(i) for i in range(rdkit_mol.GetNumAtoms())
++    ], abs=1e-12)
++    assert sum(mol.mmff94_charges_numeric()) == pytest.approx(
++        sum(atom.GetFormalCharge() for atom in rdkit_mol.GetAtoms()), abs=1e-12
++    )
++    # Perturb every coordinate deterministically; ideal planar cations and
++    # equilibrium water angles must not hide a missing force-field term.
++    coords = rdkit_mol.GetConformer().GetPositions().tolist()
++    for index, point in enumerate(coords):
++        point[2] += 0.03 * ((index % 5) - 2)
++        rdkit_mol.GetConformer().SetAtomPosition(index, point)
++    actual = mol.mmff94_energy_breakdown(coords)
++    expected = rdkit_term_energy_breakdown(rdkit_mol)
++    for term, energy in expected.items():
++        assert actual[term] == pytest.approx(energy, abs=1e-8), (smiles, term)
++    force_field = AllChem.MMFFGetMoleculeForceField(rdkit_mol, properties, confId=0)
++    assert actual["total"] == pytest.approx(force_field.CalcEnergy(), abs=1e-8)
++    gradient = [value for point in mol.mmff94_bounded_analytic_gradient(coords) for value in point]
++    reference = force_field.CalcGrad()
++    assert max(abs(a - b) / (1.0 + abs(b)) for a, b in zip(gradient, reference, strict=True)) < 1e-7
++    assert gradient_diagnostic(mol, coords, 1e-5)["max_scaled_error"] < 1e-5
+diff --git a/crates/chematic-ff/tests/mmff94_oxygen_h_vdw.rs b/crates/chematic-ff/tests/mmff94_oxygen_h_vdw.rs
+new file mode 100644
+index 00000000..5814bfb4
+--- /dev/null
++++ b/crates/chematic-ff/tests/mmff94_oxygen_h_vdw.rs
+@@ -0,0 +1,72 @@
++use chematic_core::{AtomIdx, Element};
++use chematic_ff::mmff94_energy::mmff94_vdw_combined;
++use chematic_ff::{assign_mmff94_numeric_types, mmff94_charges_numeric};
++use chematic_smiles::parse;
++
++// Oracle: RDKit 2026.03.6, MMFFGetMoleculeProperties on explicit-H molecules.
++// Source: Release_2026_03_6/Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp,
++// setMMFFHydrogenType. In particular, 29 is HOCC/HOCN and 33 is HOS.
++#[test]
++fn oxygen_bound_hydrogen_types_and_charges_match_their_environment() {
++    for (smiles, expected_type, expected_charge) in [
++        ("CCO[H]", 21, 0.4),
++        ("[H]ON(C)C", 21, 0.4),
++        ("c1ccccc1O[H]", 29, 0.45),
++        ("[H]Oc1ccccc1", 29, 0.45),
++        ("[H]OC=C", 29, 0.45),
++        ("[H]OC=N", 29, 0.45),
++        ("CC(=O)O[H]", 24, 0.5),
++        ("[H]OP(=O)(O)O", 24, 0.5),
++        ("[H]OS(=O)(=O)O", 33, 0.5),
++    ] {
++        let mol = parse(smiles).unwrap();
++        let types = assign_mmff94_numeric_types(&mol).unwrap();
++        let charges = mmff94_charges_numeric(&mol).unwrap();
++        let mut checked = 0;
++        for i in 0..mol.atom_count() {
++            let idx = AtomIdx(i as u32);
++            if mol.atom(idx).element == Element::H
++                && mol
++                    .neighbors(idx)
++                    .any(|(nb, _)| mol.atom(nb).element == Element::O)
++            {
++                assert_eq!(types[i], expected_type, "{smiles}: H atom {i}");
++                assert!(
++                    (charges[i] - expected_charge).abs() < 1e-12,
++                    "{smiles}: H atom {i} charge {} != {expected_charge}",
++                    charges[i]
++                );
++                checked += 1;
++            }
++        }
++        assert!(checked > 0, "fixture must contain explicit O-H: {smiles}");
++    }
++}
++
++// Oracle: RDKit 2026.03.6 GetMMFFVdWParams (scaled radius/well depth).
++// Source: Release_2026_03_6/Code/ForceField/MMFF/Nonbonded.cpp,
++// calcUnscaledVdWMinimum: ANY donor suppresses the asymmetry correction,
++// including donor/nonacceptor pairs. Donor/acceptor scaling follows afterward.
++#[test]
++fn donor_vdw_pairs_use_the_rdkit_combining_rule_in_both_orders() {
++    for (a, b, expected_radius, expected_epsilon) in [
++        (3, 23, 3.2988003775750503, 0.03275316289992711),
++        (1, 23, 3.275768748270286, 0.03306703754626389),
++        (7, 23, 2.44265298442308, 0.019039914981539462),
++        (8, 23, 2.6568477686322076, 0.016843816258122306),
++        (5, 5, 2.9698484809835, 0.021574173607307283),
++        (1, 5, 3.598787981153042, 0.02807765636226562),
++    ] {
++        for (i, j) in [(a, b), (b, a)] {
++            let (radius, epsilon) = mmff94_vdw_combined(i, j).unwrap();
++            assert!(
++                (radius - expected_radius).abs() < 1e-12,
++                "types {i}/{j}: radius {radius} != {expected_radius}"
++            );
++            assert!(
++                (epsilon - expected_epsilon).abs() < 1e-12,
++                "types {i}/{j}: epsilon {epsilon} != {expected_epsilon}"
++            );
++        }
++    }
++}
+diff --git a/crates/chematic-ff/tests/mmff94_angle_stretch_bend.rs b/crates/chematic-ff/tests/mmff94_angle_stretch_bend.rs
+new file mode 100644
+index 00000000..d97acc42
+--- /dev/null
++++ b/crates/chematic-ff/tests/mmff94_angle_stretch_bend.rs
+@@ -0,0 +1,22 @@
++use chematic_ff::{mmff94_angle_energy, mmff94_stbn};
++
++// RDKit 2026.03.6 GetMMFFAngleBendParams on the benzyl-pyridinium
++// motif in frozen corpus inputs 89 and 96. Type 58 must substitute
++// through its defined equivalence levels, rather than remain 58.
++#[test]
++fn aromatic_cation_equivalence_selects_the_correct_angle_parameters() {
++    for (i, k) in [(37, 58), (58, 37)] {
++        let params = mmff94_angle_energy(0, i, 1, k).unwrap();
++        assert!((params.ka - 1.16).abs() < 1e-12);
++        assert!((params.theta0 - 107.963).abs() < 1e-12);
++    }
++}
++
++// RDKit 2026.03.6 GetMMFFStretchBendParams at biphenyl's connecting
++// single bond: type 1 has no specific 37-37-37 row. The periodic-row
++// default is +0.3, not the aromatic-ring type-0 value -0.411.
++#[test]
++fn biphenyl_stretch_bend_uses_periodic_row_default() {
++    assert_eq!(mmff94_stbn(1, 37, 37, 37, 6, 6, 6), Some((0.3, 0.3)));
++    assert_eq!(mmff94_stbn(0, 37, 37, 37, 6, 6, 6), Some((-0.411, -0.411)));
++}
+diff --git a/crates/chematic-ff/tests/mmff94_oop_parameters.rs b/crates/chematic-ff/tests/mmff94_oop_parameters.rs
+new file mode 100644
+index 00000000..a1a8dddd
+--- /dev/null
++++ b/crates/chematic-ff/tests/mmff94_oop_parameters.rs
+@@ -0,0 +1,37 @@
++use chematic_ff::{OOP_SP2_TYPES, mmff94_energy::MMFF94_OOP, mmff94_oop};
++
++#[test]
++fn oop_equivalence_precedes_wildcard_for_every_outer_atom_order() {
++    // RDKit 2026.03.6: benzamide-like carbonyl and conjugated iminium CH.
++    for (center, outer, expected) in [(3, [7, 10, 37], 0.116), (3, [2, 5, 54], 0.081)] {
++        let [a, b, c] = outer;
++        for [i, k, l] in [
++            [a, b, c],
++            [a, c, b],
++            [b, a, c],
++            [b, c, a],
++            [c, a, b],
++            [c, b, a],
++        ] {
++            assert_eq!(mmff94_oop(center, i, k, l), Some(expected));
++        }
++    }
++}
++
++#[test]
++fn oop_eligible_centers_include_all_parameterized_types() {
++    let mut expected: Vec<_> = MMFF94_OOP.iter().map(|row| row.1).collect();
++    expected.sort_unstable();
++    expected.dedup();
++    assert_eq!(OOP_SP2_TYPES, expected);
++    // Pyridine N-oxide and cationic conjugated nitrogen were omitted.
++    assert!(OOP_SP2_TYPES.binary_search(&69).is_ok());
++    assert!(OOP_SP2_TYPES.binary_search(&55).is_ok());
++}
++
++#[test]
++fn unknown_outer_types_cannot_be_hidden_by_a_wildcard_hit() {
++    assert_eq!(mmff94_oop(3, 250, 5, 7), None);
++    // Literal wildcard queries remain available for table inspection.
++    assert_eq!(mmff94_oop(3, 0, 0, 0), Some(0.13));
++}
+diff --git a/crates/chematic-ff/tests/mmff94_cation_water.rs b/crates/chematic-ff/tests/mmff94_cation_water.rs
+new file mode 100644
+index 00000000..00374b3b
+--- /dev/null
++++ b/crates/chematic-ff/tests/mmff94_cation_water.rs
+@@ -0,0 +1,335 @@
++use chematic_core::{AtomIdx, MoleculeBuilder};
++use chematic_ff::{assign_mmff94_numeric_types, mmff94_charges_numeric};
++use chematic_smiles::parse;
++
++// Pinned independent oracle: RDKit 2026.03.6 MMFFGetMoleculeProperties.
++// Explicit H fixtures also exercise bond-charge increments and total charge.
++#[test]
++fn cation_and_water_types_charges_and_relabeling_match_rdkit() {
++    let fixtures: &[(&str, &[u8], &[f64])] = &[
++        (
++            "[N]([C](=[N+]([H])[H])[N+](=[O])[O-])([H])[H]",
++            &[55, 57, 55, 36, 36, 45, 32, 32, 36, 36],
++            &[
++                -0.7544, 0.8638, -0.7544, 0.45, 0.45, 0.885, -0.52, -0.52, 0.45, 0.45,
++            ],
++        ),
++        ("[O]([H])[H]", &[70, 31, 31], &[-0.86, 0.43, 0.43]),
++        (
++            "[N]([C](=[N+]([H])[H])[N]([H])[H])([H])[H]",
++            &[56, 57, 56, 36, 36, 56, 36, 36, 36, 36],
++            &[
++                -0.9666666666666668,
++                1.2000000000000002,
++                -0.9666666666666668,
++                0.45,
++                0.45,
++                -0.9666666666666668,
++                0.45,
++                0.45,
++                0.45,
++                0.45,
++            ],
++        ),
++        (
++            "[N+](=[C]([N]([H])[H])[N]([H])[H])([H])[H]",
++            &[56, 57, 56, 36, 36, 56, 36, 36, 36, 36],
++            &[
++                -0.9666666666666668,
++                1.2000000000000002,
++                -0.9666666666666668,
++                0.45,
++                0.45,
++                -0.9666666666666668,
++                0.45,
++                0.45,
++                0.45,
++                0.45,
++            ],
++        ),
++        (
++            "[C]([N]([C](=[N+]([H])[H])[N]([H])[H])[H])([H])([H])[H]",
++            &[1, 56, 57, 56, 36, 36, 56, 36, 36, 36, 5, 5, 5],
++            &[
++                0.3276,
++                -0.8442666666666667,
++                1.2000000000000002,
++                -0.9666666666666668,
++                0.45,
++                0.45,
++                -0.9666666666666668,
++                0.45,
++                0.45,
++                0.45,
++                0.0,
++                0.0,
++                0.0,
++            ],
++        ),
++        (
++            "[C]([N]([C]([H])([H])[H])[C](=[N+]([C]([H])([H])[H])[C]([H])([H])[H])[N]([C]([H])([H])[H])[C]([H])([H])[H])([H])([H])[H]",
++            &[
++                1, 56, 1, 5, 5, 5, 57, 56, 1, 5, 5, 5, 1, 5, 5, 5, 56, 1, 5, 5, 5, 1, 5, 5, 5, 5,
++                5, 5,
++            ],
++            &[
++                0.3276,
++                -0.7218666666666669,
++                0.3276,
++                0.0,
++                0.0,
++                0.0,
++                1.2000000000000002,
++                -0.7218666666666669,
++                0.3276,
++                0.0,
++                0.0,
++                0.0,
++                0.3276,
++                0.0,
++                0.0,
++                0.0,
++                -0.7218666666666669,
++                0.3276,
++                0.0,
++                0.0,
++                0.0,
++                0.3276,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++            ],
++        ),
++        (
++            "[N]([N]([C](=[N+]([H])[H])[N]([H])[H])[H])([H])[H]",
++            &[8, 56, 57, 56, 36, 36, 56, 36, 36, 36, 23, 23],
++            &[
++                -0.5349999999999999,
++                -0.7016666666666667,
++                1.2000000000000002,
++                -0.9666666666666668,
++                0.45,
++                0.45,
++                -0.9666666666666668,
++                0.45,
++                0.45,
++                0.45,
++                0.36,
++                0.36,
++            ],
++        ),
++        (
++            "[N](=[C]([N]([H])[H])[N]([H])[H])[H]",
++            &[9, 3, 40, 28, 28, 40, 28, 28, 27],
++            &[
++                -0.8500000000000001,
++                0.55,
++                -0.8500000000000001,
++                0.4,
++                0.4,
++                -0.8500000000000001,
++                0.4,
++                0.4,
++                0.4,
++            ],
++        ),
++        (
++            "[C]([C](=[N+]([H])[H])[N]([H])[H])([H])([H])[H]",
++            &[1, 57, 55, 36, 36, 55, 36, 36, 5, 5, 5],
++            &[
++                0.105, 0.6038, -0.7544, 0.45, 0.45, -0.7544, 0.45, 0.45, 0.0, 0.0, 0.0,
++            ],
++        ),
++        (
++            "[C]([N]([C](=[N+]([H])[H])[H])[H])([H])([H])[H]",
++            &[1, 55, 57, 55, 36, 36, 5, 36, 5, 5, 5],
++            &[
++                0.4895, -0.7939, 0.5588, -0.7544, 0.45, 0.45, 0.15, 0.45, 0.0, 0.0, 0.0,
++            ],
++        ),
++        (
++            "[N]([C](=[N+]([H])[H])[N]([C](=[N+]([H])[H])[N]([H])[H])[H])([H])[H]",
++            &[
++                56, 57, 56, 36, 36, 56, 57, 56, 36, 36, 56, 36, 36, 36, 36, 36,
++            ],
++            &[
++                -0.9,
++                1.2000000000000002,
++                -0.9,
++                0.45,
++                0.45,
++                -0.85,
++                1.2000000000000002,
++                -0.9,
++                0.45,
++                0.45,
++                -0.9,
++                0.45,
++                0.45,
++                0.45,
++                0.45,
++                0.45,
++            ],
++        ),
++        (
++            "[N](=[C]([N]([H])[H])[N]([C](=[N+]([H])[H])[N]([H])[H])[H])[H]",
++            &[9, 3, 40, 28, 28, 56, 57, 56, 36, 36, 56, 36, 36, 36, 27],
++            &[
++                -0.8500000000000001,
++                0.843,
++                -0.8500000000000001,
++                0.4,
++                0.4,
++                -0.8596666666666668,
++                1.2000000000000002,
++                -0.9666666666666668,
++                0.45,
++                0.45,
++                -0.9666666666666668,
++                0.45,
++                0.45,
++                0.45,
++                0.4,
++            ],
++        ),
++        (
++            "[C]([O][H])([H])([H])[H]",
++            &[1, 6, 21, 5, 5, 5],
++            &[0.28, -0.68, 0.4, 0.0, 0.0, 0.0],
++        ),
++        (
++            "[C]([O][C]([H])([H])[H])([H])([H])[H]",
++            &[1, 6, 1, 5, 5, 5, 5, 5, 5],
++            &[0.28, -0.56, 0.28, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
++        ),
++        ("[O-][H]", &[35, 21], &[-1.113, 0.11299999999999999]),
++        (
++            "[O+]([H])([H])[H]",
++            &[49, 50, 50, 50],
++            &[-0.7019000000000002, 0.5673, 0.5673, 0.5673],
++        ),
++        (
++            "[C](=[O+][H])([H])[H]",
++            &[3, 51, 52, 5, 5],
++            &[0.8299999999999998, -0.44999999999999996, 0.5, 0.06, 0.06],
++        ),
++        (
++            "[C](=[N+]([H])[H])([H])[H]",
++            &[3, 54, 36, 36, 5, 5],
++            &[0.28, -0.20000000000000018, 0.4, 0.4, 0.06, 0.06],
++        ),
++        (
++            "[C]([N+]([H])([H])[H])([H])([H])[H]",
++            &[1, 34, 36, 36, 36, 5, 5, 5],
++            &[0.503, -0.853, 0.45, 0.45, 0.45, 0.0, 0.0, 0.0],
++        ),
++        (
++            "[N]([C](=[N+]([H])[H])[N]([C]([C]([C]([C]([C]([H])([H])[H])([H])[H])([H])[H])([H])[H])([H])[H])[H])([H])[H]",
++            &[
++                56, 57, 56, 36, 36, 56, 1, 1, 1, 1, 1, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 36, 36, 36,
++            ],
++            &[
++                -0.9666666666666668,
++                1.2000000000000002,
++                -0.9666666666666668,
++                0.45,
++                0.45,
++                -0.8442666666666667,
++                0.3276,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.0,
++                0.45,
++                0.45,
++                0.45,
++            ],
++        ),
++    ];
++    for &(smiles, expected_types, expected_charges) in fixtures {
++        let base = parse(smiles).unwrap();
++        let n = base.atom_count();
++        assert_eq!(n, expected_types.len(), "{smiles}");
++        // Independently reverse atom order and bond insertion order.
++        for reverse_atoms in [false, true] {
++            for reverse_bonds in [false, true] {
++                let order: Vec<usize> = if reverse_atoms {
++                    (0..n).rev().collect()
++                } else {
++                    (0..n).collect()
++                };
++                let mut map = vec![AtomIdx(0); n];
++                let mut builder = MoleculeBuilder::new();
++                for &old in &order {
++                    map[old] = builder.add_atom(base.atom(AtomIdx(old as u32)).clone());
++                }
++                let mut bonds: Vec<_> = base.bonds().collect();
++                if reverse_bonds {
++                    bonds.reverse();
++                }
++                for (_, bond) in bonds {
++                    builder
++                        .add_bond(
++                            map[bond.atom1.0 as usize],
++                            map[bond.atom2.0 as usize],
++                            bond.order,
++                        )
++                        .unwrap();
++                }
++                let mol = builder.build();
++                let types = assign_mmff94_numeric_types(&mol).unwrap();
++                let charges = mmff94_charges_numeric(&mol).unwrap();
++                let formal: f64 = mol.atoms().map(|(_, atom)| f64::from(atom.charge)).sum();
++                assert!(
++                    (charges.iter().sum::<f64>() - formal).abs() < 1e-12,
++                    "{smiles}: total charge"
++                );
++                for (i, &old) in order.iter().enumerate() {
++                    assert_eq!(types[i], expected_types[old], "{smiles}: atom {old}");
++                    assert!(
++                        (charges[i] - expected_charges[old]).abs() < 1e-12,
++                        "{smiles}: atom {old} charge {} != {}",
++                        charges[i],
++                        expected_charges[old]
++                    );
++                }
++            }
++        }
++    }
++}
++
++#[test]
++fn implicit_hydrogens_preserve_water_and_conjugated_cation_heavy_types() {
++    for (smiles, types) in [
++        ("O", vec![70]),
++        ("NC(=[NH2+])N", vec![56, 57, 56, 56]),
++        ("[NH2+]=C(N)N", vec![56, 57, 56, 56]),
++        ("CC(=[NH2+])N", vec![1, 57, 55, 55]),
++        ("N=C(N)N", vec![9, 3, 40, 40]),
++        ("CO", vec![1, 6]),
++        ("COC", vec![1, 6, 1]),
++        ("[OH-]", vec![35]),
++        ("[OH3+]", vec![49]),
++        ("C=[OH+]", vec![3, 51]),
++    ] {
++        assert_eq!(
++            assign_mmff94_numeric_types(&parse(smiles).unwrap()).unwrap(),
++            types,
++            "{smiles}"
++        );
++    }
++}

@@ -1,0 +1,21 @@
+
+running 1 test
+minimize::policy_bridge_tests::oop_coverage_includes_n_oxide_and_counts_centers --- FAILED
+
+failures:
+
+---- minimize::policy_bridge_tests::oop_coverage_includes_n_oxide_and_counts_centers stdout ----
+
+thread 'minimize::policy_bridge_tests::oop_coverage_includes_n_oxide_and_counts_centers' (31686714) panicked at crates/chematic-3d/src/minimize.rs:3196:9:
+assertion `left == right` failed
+  left: 0
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    minimize::policy_bridge_tests::oop_coverage_includes_n_oxide_and_counts_centers
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 610 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p chematic-3d --lib`

@@ -20,12 +20,19 @@ use rayon::prelude::*;
 
 use crate::mmff94_energy::{
     AngleEnergyParams, BondEnergyParams, TorsionEnergyParams, mmff94_angle_energy_resolved,
-    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
+    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy_with_bond,
     mmff94_vdw_combined,
 };
 use crate::mmff94_numeric::{
     NumericTypeError, assign_mmff94_numeric_types_with_view, mmff94_charges_numeric,
 };
+use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
+
+const MDYNE_A_TO_KCAL_MOL: f64 = 143.9325;
+const DEG_TO_RAD: f64 = std::f64::consts::PI / 180.0;
+const ANGLE_CONV: f64 = MDYNE_A_TO_KCAL_MOL * DEG_TO_RAD * DEG_TO_RAD;
+const ANGLE_CUBIC: f64 = -0.006981317;
+const STRETCH_BEND_CONV: f64 = MDYNE_A_TO_KCAL_MOL * DEG_TO_RAD;
 
 type CoordVec = Vec<[f64; 3]>;
 type LbfgsHistory = VecDeque<(CoordVec, CoordVec, f64)>;
@@ -45,6 +52,7 @@ struct PreparedAngle {
     j: usize,
     k: usize,
     params: AngleEnergyParams,
+    linear: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -101,9 +109,9 @@ pub struct MinimizeResult {
     pub energy: f64,
     /// RMSD of atom positions vs initial geometry (Å).
     pub rmsd: f64,
-    /// Whether the minimization converged before `max_iter`.
+    /// Whether the final accepted geometry meets the gradient tolerance.
     pub converged: bool,
-    /// Number of gradient steps performed.
+    /// Number of optimizer loop iterations performed.
     pub iterations: usize,
 }
 
@@ -244,12 +252,12 @@ impl Mmff94EnergyModel {
     /// Evaluate the prepared non-bonded terms with the bounded 10 Å cutoff.
     ///
     /// This is opt-in because the compatibility-default MMFF94 evaluator
-    /// retains its historical all-pair electrostatic path.  The returned
+    /// evaluates all prepared vdW and electrostatic pairs. The returned
     /// tuple is `(vdw, electrostatic)` in kcal/mol; both components use the
     /// same coordinate-dependent cutoff boundary.
     pub fn cutoff_nonbonded_energy(&self, coords: &[[f64; 3]]) -> (f64, f64) {
         (
-            vdw_energy_pairs(coords, &self.vdw_pairs),
+            vdw_energy_cutoff_pairs(coords, &self.vdw_pairs),
             electrostatic_energy_cutoff_pairs(coords, &self.electrostatic_pairs),
         )
     }
@@ -658,8 +666,6 @@ where
     const M: usize = 80;
     const DELTA: f64 = 1e-4; // finite-difference step (Å)
     const CONVERGENCE: f64 = 1e-4; // max |gradient| threshold
-    const C_ARMIJO: f64 = 1e-4; // Armijo sufficient-decrease constant
-    const TAU: f64 = 0.5; // Armijo backtracking factor
 
     if model.mmff_mol.atom_count() <= 1 {
         return Ok(MinimizeResult {
@@ -692,19 +698,16 @@ where
     };
 
     let mut iters = 0usize;
-    let mut converged = false;
 
     'iterations: for _ in 0..max_iter {
         iters += 1;
 
         // Convergence check
-        let max_g = g
-            .iter()
-            .flat_map(|v| v.iter())
-            .map(|x| x.abs())
-            .fold(0.0_f64, f64::max);
+        let max_g = finite_max_gradient(&g);
+        if !f0.is_finite() || !max_g.is_finite() {
+            break;
+        }
         if max_g < CONVERGENCE {
-            converged = true;
             break;
         }
 
@@ -718,55 +721,35 @@ where
         let mut p = lbfgs_direction(&g, &history);
         let mut gp: f64 = g.iter().zip(p.iter()).map(|(gi, pi)| dot3(*gi, *pi)).sum();
         if !gp.is_finite() || gp >= 0.0 {
+            history.clear();
             p = g.iter().map(|gi| [-gi[0], -gi[1], -gi[2]]).collect();
             gp = -g.iter().map(|gi| dot3(*gi, *gi)).sum::<f64>();
         }
 
-        // Armijo backtracking line search along p
-        let mut alpha = 1.0_f64;
-        let step = loop {
-            let trial: Vec<[f64; 3]> = coords
-                .iter()
-                .zip(p.iter())
-                .map(|(c, pi)| {
-                    [
-                        c[0] + alpha * pi[0],
-                        c[1] + alpha * pi[1],
-                        c[2] + alpha * pi[2],
-                    ]
-                })
-                .collect();
-            let f_trial = if use_cutoff_nonbonded {
-                model.energy_cutoff_nonbonded(&trial)
+        let energy = |candidate: &[[f64; 3]]| {
+            if use_cutoff_nonbonded {
+                model.energy_cutoff_nonbonded(candidate)
             } else {
-                model.energy(&trial)
-            };
-            if f_trial <= f0 + C_ARMIJO * alpha * gp && accept(&trial) {
-                break Some((trial, f_trial));
-            }
-            alpha *= TAU;
-            if alpha < 1e-12 {
-                // Line search failed — take a tiny steepest descent step
-                let scale = 0.01 / max_g.max(1e-8);
-                let trial: Vec<[f64; 3]> = coords
-                    .iter()
-                    .zip(g.iter())
-                    .map(|(c, gi)| {
-                        [
-                            c[0] - scale * gi[0],
-                            c[1] - scale * gi[1],
-                            c[2] - scale * gi[2],
-                        ]
-                    })
-                    .collect();
-                let f_trial = if use_cutoff_nonbonded {
-                    model.energy_cutoff_nonbonded(&trial)
-                } else {
-                    model.energy(&trial)
-                };
-                break accept(&trial).then_some((trial, f_trial));
+                model.energy(candidate)
             }
         };
+        let step = armijo_backtracking(coords, &p, (f0, gp), 1.0, &energy, &accept).or_else(|| {
+            // A stale curvature history or a geometry constraint can
+            // exhaust the quasi-Newton search. Restart with a bounded
+            // steepest-descent step and backtrack it too: a fixed 0.01 A
+            // displacement can overshoot near a stationary point.
+            history.clear();
+            let direction: CoordVec = g.iter().map(|gi| [-gi[0], -gi[1], -gi[2]]).collect();
+            let slope = -g.iter().map(|gi| dot3(*gi, *gi)).sum::<f64>();
+            armijo_backtracking(
+                coords,
+                &direction,
+                (f0, slope),
+                0.01 / max_g,
+                &energy,
+                &accept,
+            )
+        });
         let Some((new_coords, f_new)) = step else {
             // No admissible bounded step exists along either the L-BFGS or
             // tiny steepest-descent direction. Preserve the last accepted
@@ -814,6 +797,10 @@ where
         f0 = f_new;
     }
 
+    // The last permitted step can reach the tolerance. Report the final
+    // accepted state rather than requiring one more loop iteration to see it.
+    let converged = f0.is_finite() && finite_max_gradient(&g) < CONVERGENCE;
+
     let rmsd = {
         let sum: f64 = coords
             .iter()
@@ -834,6 +821,66 @@ where
         converged,
         iterations: iters,
     })
+}
+
+/// A non-finite component must never disappear through f64::max's NaN
+/// handling and turn an invalid gradient into apparent convergence.
+fn finite_max_gradient(gradient: &[[f64; 3]]) -> f64 {
+    gradient.iter().flatten().fold(0.0, |maximum, &value| {
+        if value.is_finite() {
+            maximum.max(value.abs())
+        } else {
+            f64::INFINITY
+        }
+    })
+}
+
+/// Both quasi-Newton and recovery steps must decrease the same objective
+/// and satisfy the caller's geometry constraint. Exhaustion preserves the
+/// last accepted state; no untested fixed-size step is committed.
+fn armijo_backtracking<E, A>(
+    coords: &[[f64; 3]],
+    direction: &[[f64; 3]],
+    objective_and_slope: (f64, f64),
+    initial_step: f64,
+    energy: &E,
+    accept: &A,
+) -> Option<(CoordVec, f64)>
+where
+    E: Fn(&[[f64; 3]]) -> f64,
+    A: Fn(&[[f64; 3]]) -> bool,
+{
+    let (objective, slope) = objective_and_slope;
+    if !objective.is_finite()
+        || !slope.is_finite()
+        || slope >= 0.0
+        || !initial_step.is_finite()
+        || initial_step <= 0.0
+    {
+        return None;
+    }
+    let mut alpha = initial_step;
+    for _ in 0..40 {
+        let trial: CoordVec = coords
+            .iter()
+            .zip(direction)
+            .map(|(c, p)| {
+                [
+                    c[0] + alpha * p[0],
+                    c[1] + alpha * p[1],
+                    c[2] + alpha * p[2],
+                ]
+            })
+            .collect();
+        if trial.iter().flatten().all(|value| value.is_finite()) {
+            let value = energy(&trial);
+            if value.is_finite() && value <= objective + 1e-4 * alpha * slope && accept(&trial) {
+                return Some((trial, value));
+            }
+        }
+        alpha *= 0.5;
+    }
+    None
 }
 
 /// L-BFGS two-loop recursion: compute search direction p = -H_k × g.
@@ -1022,6 +1069,8 @@ fn build_angle_terms(mol: &Molecule, types: &[u8], rings: &[Vec<AtomIdx>]) -> Ve
                         j: j_idx,
                         k,
                         params,
+                        linear: mmff94_numeric_type_info(types[j_idx])
+                            .is_some_and(|info| info.linear),
                     });
                 }
             }
@@ -1048,13 +1097,15 @@ fn build_torsion_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedTorsion> {
                 continue;
             }
             for &l in &nbrs_k {
-                if l == j {
+                if l == j || l == i {
                     continue;
                 }
                 let tt = torsion_type_for(mol, i, j, k, l, types[i], types[j], types[k], types[l]);
-                if let Some(params) =
-                    mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l])
-                {
+                if let Some(params) = mmff94_torsion_energy_with_bond(
+                    tt,
+                    [types[i], types[j], types[k], types[l]],
+                    bond.order,
+                ) {
                     terms.push(PreparedTorsion { i, j, k, l, params });
                 }
             }
@@ -1082,16 +1133,47 @@ fn build_oop_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedOop> {
             types[neighbors[1]],
             types[neighbors[2]],
         ) {
-            terms.push(PreparedOop {
-                i: neighbors[0],
-                j,
-                k: neighbors[1],
-                l: neighbors[2],
-                koop,
-            });
+            // Each substituent bends out of the plane of the other two.
+            // One angle, or three times one angle, depends on neighbor order.
+            let [a, b, c] = [neighbors[0], neighbors[1], neighbors[2]];
+            for [i, k, l] in [[a, b, c], [a, c, b], [b, c, a]] {
+                terms.push(PreparedOop { i, j, k, l, koop });
+            }
         }
     }
     terms
+}
+
+fn stretch_bend_params_for(
+    angle_type: u8,
+    types: [u8; 3],
+    bond_types: [u8; 2],
+    atomic_numbers: [u8; 3],
+) -> Option<(f64, f64)> {
+    if mmff94_numeric_type_info(types[1])?.linear {
+        return None;
+    }
+    let sbt = stretch_bend_type_for(angle_type, types[0], types[2], bond_types[0], bond_types[1]);
+    if let Some((a, b)) =
+        crate::mmff94_energy::mmff94_stbn_type_only(sbt, types[0], types[1], types[2])
+    {
+        // RDKit MMFFStbnCollection: equal outer types tie-break on bond
+        // type. The periodic-row default has its own independent ordering.
+        return Some(if types[0] == types[2] && bond_types[0] < bond_types[1] {
+            (b, a)
+        } else {
+            (a, b)
+        });
+    }
+    mmff94_stbn(
+        sbt,
+        types[0],
+        types[1],
+        types[2],
+        atomic_numbers[0],
+        atomic_numbers[1],
+        atomic_numbers[2],
+    )
 }
 
 fn build_stretch_bend_terms(
@@ -1110,14 +1192,15 @@ fn build_stretch_bend_terms(
                     bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
                 let bt_kj =
                     bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
-                let Some((kba_ij, kba_kj)) = mmff94_stbn(
-                    stretch_bend_type_for(at, types[i], types[k], bt_ij, bt_kj),
-                    types[i],
-                    types[j_idx],
-                    types[k],
-                    mol.atom(AtomIdx(i as u32)).element.atomic_number(),
-                    mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
-                    mol.atom(AtomIdx(k as u32)).element.atomic_number(),
+                let Some((kba_ij, kba_kj)) = stretch_bend_params_for(
+                    at,
+                    [types[i], types[j_idx], types[k]],
+                    [bt_ij, bt_kj],
+                    [
+                        mol.atom(AtomIdx(i as u32)).element.atomic_number(),
+                        mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
+                        mol.atom(AtomIdx(k as u32)).element.atomic_number(),
+                    ],
                 ) else {
                     continue;
                 };
@@ -1171,20 +1254,22 @@ fn prepared_bond_energy(coords: &[[f64; 3]], terms: &[PreparedBond]) -> f64 {
 }
 
 fn prepared_angle_energy(coords: &[[f64; 3]], terms: &[PreparedAngle]) -> f64 {
-    const KA_CONV: f64 = 0.043844;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     terms
         .iter()
         .map(|term| {
-            let dt = cos_angle(coords[term.i], coords[term.j], coords[term.k]).acos() * RAD_TO_DEG
-                - term.params.theta0;
-            (KA_CONV * term.params.ka / 2.0) * dt * dt * (1.0 - 0.007 * dt)
+            let cos_theta = cos_angle(coords[term.i], coords[term.j], coords[term.k]);
+            if term.linear {
+                MDYNE_A_TO_KCAL_MOL * term.params.ka * (1.0 + cos_theta)
+            } else {
+                let dt = cos_theta.acos() * RAD_TO_DEG - term.params.theta0;
+                (ANGLE_CONV * term.params.ka / 2.0) * dt * dt * (1.0 + ANGLE_CUBIC * dt)
+            }
         })
         .sum()
 }
 
 fn prepared_stretch_bend_energy(coords: &[[f64; 3]], terms: &[PreparedStretchBend]) -> f64 {
-    const CONV: f64 = 2.51210;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     terms
         .iter()
@@ -1194,7 +1279,7 @@ fn prepared_stretch_bend_energy(coords: &[[f64; 3]], terms: &[PreparedStretchBen
             let dtheta = cos_angle(coords[term.i], coords[term.j], coords[term.k]).acos()
                 * RAD_TO_DEG
                 - term.theta0;
-            CONV * (term.kba_ij * dr_ij + term.kba_kj * dr_kj) * dtheta
+            STRETCH_BEND_CONV * (term.kba_ij * dr_ij + term.kba_kj * dr_kj) * dtheta
         })
         .sum()
 }
@@ -1251,8 +1336,6 @@ fn prepared_torsion_gradient(coords: &[[f64; 3]], terms: &[PreparedTorsion]) -> 
 }
 
 fn prepared_oop_energy(coords: &[[f64; 3]], terms: &[PreparedOop]) -> f64 {
-    const CONV: f64 = 0.043844;
-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     terms
         .iter()
         .map(|term| {
@@ -1267,14 +1350,12 @@ fn prepared_oop_energy(coords: &[[f64; 3]], terms: &[PreparedOop]) -> f64 {
                 return 0.0;
             }
             let chi = (dot3(n, l) / (n_len * l_len)).clamp(-1.0, 1.0).asin();
-            (CONV * term.koop / 2.0) * (chi * RAD_TO_DEG).powi(2)
+            0.5 * MDYNE_A_TO_KCAL_MOL * term.koop * chi * chi
         })
         .sum()
 }
 
 fn prepared_oop_gradient(coords: &[[f64; 3]], terms: &[PreparedOop]) -> Vec<[f64; 3]> {
-    const CONV: f64 = 0.043844;
-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     let mut gradient = vec![[0.0; 3]; coords.len()];
     for term in terms {
         let n = cross(
@@ -1298,7 +1379,7 @@ fn prepared_oop_gradient(coords: &[[f64; 3]], terms: &[PreparedOop]) -> Vec<[f64
             continue;
         }
         let chi = dual_asin_clamped(sin_chi);
-        let d_ed_chi = CONV * term.koop * RAD_TO_DEG * RAD_TO_DEG * chi.value;
+        let d_ed_chi = MDYNE_A_TO_KCAL_MOL * term.koop * chi.value;
         for atom in 0..4 {
             let target = &mut gradient[[term.i, term.j, term.k, term.l][atom]];
             for (axis, component) in target.iter_mut().enumerate() {
@@ -1449,6 +1530,20 @@ fn prepared_vdw_neighbor_list<'a>(
 }
 
 fn vdw_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedVdwPair]) -> f64 {
+    pairs
+        .iter()
+        .map(|pair| {
+            let r = dist(coords[pair.i], coords[pair.j]);
+            if r > 0.01 && r.is_finite() {
+                mmff94_vdw_energy_value(r, pair.r_star, pair.epsilon)
+            } else {
+                0.0
+            }
+        })
+        .sum()
+}
+
+fn vdw_energy_cutoff_pairs(coords: &[[f64; 3]], pairs: &[PreparedVdwPair]) -> f64 {
     let mut energy = 0.0;
     for pair in prepared_vdw_neighbor_list(coords, pairs) {
         let r = dist(coords[pair.i], coords[pair.j]);
@@ -1613,14 +1708,14 @@ fn prepared_nonbonded_gradient(
                 gradient[j][axis] -= value[axis];
             }
         };
-    for pair in prepared_vdw_neighbor_list(coords, vdw_pairs) {
+    for pair in vdw_pairs {
         let delta = [
             coords[pair.i][0] - coords[pair.j][0],
             coords[pair.i][1] - coords[pair.j][1],
             coords[pair.i][2] - coords[pair.j][2],
         ];
         let r = dist(coords[pair.i], coords[pair.j]);
-        if r > 0.01 && r <= 10.0 {
+        if r > 0.01 && r.is_finite() {
             let radial = mmff94_vdw_radial_derivative(r, pair.r_star, pair.epsilon);
             add_pair(&mut gradient, pair.i, pair.j, radial, delta, r);
         }
@@ -1645,7 +1740,6 @@ fn prepared_bond_angle_gradient(
 ) -> Vec<[f64; 3]> {
     const KB_CONV: f64 = 143.9325;
     const CS: f64 = 2.0;
-    const KA_CONV: f64 = 0.043844;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     let mut gradient = vec![[0.0; 3]; coords.len()];
     let add_pair =
@@ -1691,15 +1785,17 @@ fn prepared_bond_angle_gradient(
             continue;
         }
         let cos_theta = cos_angle(coords[term.i], coords[term.j], coords[term.k]);
-        let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
-        if sin_theta <= 1e-12 {
-            continue;
-        }
-        let theta = cos_theta.acos() * RAD_TO_DEG;
-        let dt = theta - term.params.theta0;
-        let prefactor = KA_CONV * term.params.ka / 2.0;
-        let d_e_d_theta = prefactor * (2.0 * dt - 3.0 * 0.007 * dt * dt);
-        let d_e_d_cos = -RAD_TO_DEG * d_e_d_theta / sin_theta;
+        let d_e_d_cos = if term.linear {
+            MDYNE_A_TO_KCAL_MOL * term.params.ka
+        } else {
+            let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
+            if sin_theta <= 1e-12 {
+                continue;
+            }
+            let dt = cos_theta.acos() * RAD_TO_DEG - term.params.theta0;
+            let d_e_d_theta = ANGLE_CONV * term.params.ka * dt * (1.0 + 1.5 * ANGLE_CUBIC * dt);
+            -RAD_TO_DEG * d_e_d_theta / sin_theta
+        };
         let inv = 1.0 / (lu * lv);
         let dcos_di = [
             v[0] * inv - cos_theta * u[0] / u2,
@@ -1726,7 +1822,6 @@ fn prepared_stretch_bend_gradient(
     coords: &[[f64; 3]],
     terms: &[PreparedStretchBend],
 ) -> Vec<[f64; 3]> {
-    const CONV: f64 = 2.51210;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     let mut gradient = vec![[0.0; 3]; coords.len()];
     for term in terms {
@@ -1751,8 +1846,8 @@ fn prepared_stretch_bend_gradient(
         }
         let dtheta = cos_theta.acos() * RAD_TO_DEG - term.theta0;
         let stretch = term.kba_ij * (r_ij - term.r0_ij) + term.kba_kj * (r_kj - term.r0_kj);
-        let d_e_d_r = CONV * dtheta;
-        let d_e_d_theta = CONV * stretch;
+        let d_e_d_r = STRETCH_BEND_CONV * dtheta;
+        let d_e_d_theta = STRETCH_BEND_CONV * stretch;
         let d_e_d_cos = -RAD_TO_DEG * d_e_d_theta / sin_theta;
         let dcos_di = [
             v[0] / (lu * lv) - cos_theta * u[0] / u2,
@@ -1803,118 +1898,25 @@ fn stretch_bend_energy(
     types: &[u8],
     rings: &[Vec<AtomIdx>],
 ) -> f64 {
-    const CONV: f64 = 2.51210; // md/Å → kcal/(mol·Å·deg)
-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
-    const KB_CONV: f64 = 143.9325;
-    const CS: f64 = 2.0;
-    let mut energy = 0.0;
-    for j_idx in 0..mol.atom_count() {
-        let j = AtomIdx(j_idx as u32);
-        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
-        if neighbors.len() < 2 {
-            continue;
-        }
-        for (ii, &i) in neighbors.iter().enumerate() {
-            for &k in &neighbors[ii + 1..] {
-                let at = angle_type_for(mol, rings, i, j_idx, k, types);
-                let bt_ij =
-                    bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
-                let bt_kj =
-                    bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
-                let sbt = stretch_bend_type_for(at, types[i], types[k], bt_ij, bt_kj);
-                if let Some((kba_ijk, kba_kji)) = mmff94_stbn(
-                    sbt,
-                    types[i],
-                    types[j_idx],
-                    types[k],
-                    mol.atom(AtomIdx(i as u32)).element.atomic_number(),
-                    mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
-                    mol.atom(AtomIdx(k as u32)).element.atomic_number(),
-                ) {
-                    let bond_ij = mmff94_bond_energy_resolved(bt_ij, types[i], types[j_idx]);
-                    let bond_kj = mmff94_bond_energy_resolved(bt_kj, types[k], types[j_idx]);
-                    // Δr_ij
-                    let r_ij = dist(coords[i], coords[j_idx]);
-                    let dr_ij = bond_ij.map(|(p, _)| r_ij - p.r0).unwrap_or(0.0);
-                    // Δr_kj
-                    let r_kj = dist(coords[k], coords[j_idx]);
-                    let dr_kj = bond_kj.map(|(p, _)| r_kj - p.r0).unwrap_or(0.0);
-                    // Δθ in degrees -- both flanking bonds must resolve to feed
-                    // r0_ij/r0_jk into the angle empirical rule if it's needed
-                    // (matches RDKit's real `getMMFFAngleBendParams`, which
-                    // requires both `getMMFFBondStretchParams` calls to succeed
-                    // before even attempting the empirical path).
-                    let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
-                    if let (Some((rij, _)), Some((rkj, _))) = (bond_ij, bond_kj) {
-                        let ring_size = is_angle_in_ring_of_size_3_or_4(mol, i, j_idx, k);
-                        if let Some((ap, _)) = mmff94_angle_energy_resolved(
-                            at,
-                            types[i],
-                            types[j_idx],
-                            types[k],
-                            rij.r0,
-                            rkj.r0,
-                            ring_size,
-                        ) {
-                            let dtheta = cos_t.acos() * RAD_TO_DEG - ap.theta0;
-                            energy += CONV * (kba_ijk * dr_ij + kba_kji * dr_kj) * dtheta;
-                        }
-                    }
-                    let _ = (KB_CONV, CS); // suppress warnings
-                }
-            }
-        }
-    }
-    energy
+    prepared_stretch_bend_energy(coords, &build_stretch_bend_terms(mol, types, rings))
 }
 
-/// sp2 atom types eligible for out-of-plane bending (Halgren 1996), used by
+/// MMFF94 atom types with out-of-plane parameters, including zero-barrier
+/// rows. The legacy name is retained for compatibility. Used by
 /// [`oop_energy`] below. `pub` so downstream coverage-checkers (e.g.
 /// `chematic-3d`'s MMFF94 bridge) can mirror exactly which atoms this
 /// module's own energy loop would evaluate, instead of hand-copying this
 /// list and risking drift.
 pub const OOP_SP2_TYPES: &[u8] = &[
-    2, 3, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57, 58, 59, 63, 64, 65, 66, 67, 76,
-    78, 79, 80, 81, 82,
+    2, 3, 8, 10, 17, 26, 30, 37, 39, 40, 41, 43, 45, 49, 54, 55, 56, 57, 58, 63, 64, 67, 69, 73,
+    78, 80, 81, 82,
 ];
 
 /// Out-of-plane bending for trigonal sp2 centers (Halgren MMFF.VI eq. 6)
-/// E_oop = (0.043844 × koop / 2) × χ²  (χ in degrees: Wilson angle of out-of-plane distortion)
+/// Each of three Wilson angles contributes (143.9325 × koop / 2) × χ²,
+/// with χ in radians. Enumeration and kernel are shared with the prepared path.
 fn oop_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
-    const CONV: f64 = 0.043844;
-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
-    let mut energy = 0.0;
-    for j_idx in 0..mol.atom_count() {
-        if OOP_SP2_TYPES.binary_search(&types[j_idx]).is_err() {
-            continue;
-        }
-        let j = AtomIdx(j_idx as u32);
-        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
-        if neighbors.len() != 3 {
-            continue; // OOP only for exactly 3 substituents (trigonal)
-        }
-        let [i, k, l] = [neighbors[0], neighbors[1], neighbors[2]];
-        if let Some(koop) = mmff94_oop(types[j_idx], types[i], types[k], types[l]) {
-            // Wilson out-of-plane angle: angle between j→l vector and plane (i,j,k)
-            let pj = coords[j_idx];
-            let pi = coords[i];
-            let pk = coords[k];
-            let pl = coords[l];
-            let rji = [pi[0] - pj[0], pi[1] - pj[1], pi[2] - pj[2]];
-            let rjk = [pk[0] - pj[0], pk[1] - pj[1], pk[2] - pj[2]];
-            let rjl = [pl[0] - pj[0], pl[1] - pj[1], pl[2] - pj[2]];
-            let n = cross(rji, rjk); // normal to ijk plane
-            let n_len = (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt();
-            let l_len = (rjl[0] * rjl[0] + rjl[1] * rjl[1] + rjl[2] * rjl[2]).sqrt();
-            if n_len < 1e-12 || l_len < 1e-12 {
-                continue;
-            }
-            let sin_chi = dot3(n, rjl) / (n_len * l_len);
-            let chi_deg = sin_chi.clamp(-1.0, 1.0).asin() * RAD_TO_DEG;
-            energy += (CONV * koop / 2.0) * chi_deg * chi_deg;
-        }
-    }
-    energy
+    prepared_oop_energy(coords, &build_oop_terms(mol, types))
 }
 
 /// Bond stretching: cubic-corrected harmonic (Halgren MMFF.II eq. 1)
@@ -1937,86 +1939,15 @@ fn bond_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
     energy
 }
 
-/// Angle bending: cubic-corrected harmonic (Halgren MMFF.III eq. 2)
-/// E = (0.043844 × ka / 2) × Δθ² × (1 − 0.007×Δθ)   [Δθ in degrees]
+/// Angle bending uses the same linear/cubic potential as the prepared model.
 fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], rings: &[Vec<AtomIdx>]) -> f64 {
-    const KA_CONV: f64 = 0.043844;
-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
-    let mut energy = 0.0;
-    for j_idx in 0..mol.atom_count() {
-        let j = AtomIdx(j_idx as u32);
-        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
-        if neighbors.len() < 2 {
-            continue;
-        }
-        for (ii, &i) in neighbors.iter().enumerate() {
-            for &k in &neighbors[ii + 1..] {
-                let at = angle_type_for(mol, rings, i, j_idx, k, types);
-                let bt_ij =
-                    bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
-                let bt_kj =
-                    bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
-                let r0_ij = mmff94_bond_energy_resolved(bt_ij, types[i], types[j_idx]);
-                let r0_kj = mmff94_bond_energy_resolved(bt_kj, types[k], types[j_idx]);
-                let (Some((bond_ij, _)), Some((bond_kj, _))) = (r0_ij, r0_kj) else {
-                    continue;
-                };
-                let ring_size = is_angle_in_ring_of_size_3_or_4(mol, i, j_idx, k);
-                if let Some((p, _)) = mmff94_angle_energy_resolved(
-                    at,
-                    types[i],
-                    types[j_idx],
-                    types[k],
-                    bond_ij.r0,
-                    bond_kj.r0,
-                    ring_size,
-                ) {
-                    let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
-                    let theta_deg = cos_t.acos() * RAD_TO_DEG;
-                    let dt = theta_deg - p.theta0;
-                    let cubic = 1.0 - 0.007 * dt;
-                    energy += (KA_CONV * p.ka / 2.0) * dt * dt * cubic;
-                }
-            }
-        }
-    }
-    energy
+    prepared_angle_energy(coords, &build_angle_terms(mol, types, rings))
 }
 
 /// Torsion: three-term Fourier (Halgren MMFF.IV)
 /// E = (v1/2)(1+cosφ) + (v2/2)(1-cos2φ) + (v3/2)(1+cos3φ)
 fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
-    let mut energy = 0.0;
-    for (_, bond) in mol.bonds() {
-        let j = bond.atom1.0 as usize;
-        let k = bond.atom2.0 as usize;
-        let nbrs_j: Vec<usize> = mol
-            .neighbors(bond.atom1)
-            .map(|(nb, _)| nb.0 as usize)
-            .collect();
-        let nbrs_k: Vec<usize> = mol
-            .neighbors(bond.atom2)
-            .map(|(nb, _)| nb.0 as usize)
-            .collect();
-        for &i in &nbrs_j {
-            if i == k {
-                continue;
-            }
-            for &l in &nbrs_k {
-                if l == j {
-                    continue;
-                }
-                let tt = torsion_type_for(mol, i, j, k, l, types[i], types[j], types[k], types[l]);
-                if let Some(p) = mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l]) {
-                    let phi = dihedral(coords[i], coords[j], coords[k], coords[l]);
-                    energy += 0.5 * p.v1 * (1.0 + phi.cos())
-                        + 0.5 * p.v2 * (1.0 - (2.0 * phi).cos())
-                        + 0.5 * p.v3 * (1.0 + (3.0 * phi).cos());
-                }
-            }
-        }
-    }
-    energy
+    prepared_torsion_energy(coords, &build_torsion_terms(mol, types))
 }
 
 /// Van der Waals: buffered 14-7 (Halgren MMFF.I eq. 8).
@@ -2037,7 +1968,6 @@ fn vdw_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
             excl.insert((i.min(nj), i.max(nj)));
         }
     }
-    let cutoff = 10.0_f64;
     let mut energy = 0.0;
     for i in 0..n {
         for j in (i + 1)..n {
@@ -2045,13 +1975,11 @@ fn vdw_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
                 continue;
             }
             let r = dist(coords[i], coords[j]);
-            if r > cutoff {
-                continue;
-            }
             if let Some((r_star, eps)) = mmff94_vdw_combined(types[i], types[j])
                 && r_star > 0.0
                 && eps > 0.0
                 && r > 0.01
+                && r.is_finite()
             {
                 energy += mmff94_vdw_energy_value(r, r_star, eps);
             }
@@ -2684,6 +2612,7 @@ pub fn torsion_type_for(
 mod tests {
     use super::*;
     use crate::mmff94_energy::mmff94_stbn_type_only;
+    use crate::mmff94_energy::mmff94_torsion_energy;
     use crate::mmff94_energy::{mmff94_angle_energy, mmff94_bond_energy};
     use crate::mmff94_numeric::{
         assign_mmff94_numeric_types, assign_mmff94_numeric_types_with_view,
@@ -2721,6 +2650,19 @@ mod tests {
         let prepared = model.energy_breakdown(&coords);
         assert!((prepared.total - one_shot.total).abs() < 1e-12);
         assert!((model.energy(&coords) - one_shot.total).abs() < 1e-12);
+    }
+
+    #[test]
+    fn torsions_require_four_distinct_atoms() {
+        for (smiles, expected_count) in [("C1CC1", 0), ("C1CCC1", 4), ("CCCC", 1)] {
+            let mol = chematic_smiles::parse(smiles).unwrap();
+            let types = assign_mmff94_numeric_types(&mol).unwrap();
+            let terms = build_torsion_terms(&mol, &types);
+            assert_eq!(terms.len(), expected_count, "{smiles}");
+            for term in terms {
+                assert_ne!(term.i, term.l, "closed triangle is not a dihedral");
+            }
+        }
     }
 
     fn butane_backbone() -> Molecule {
@@ -3302,14 +3244,11 @@ mod tests {
             at, 3,
             "3-ring angle with two sp3 (bond_type 0) flanking bonds must be type 3"
         );
-        // The specific (3,1,1,1) row doesn't exist for this crate's current
-        // atom typer (which doesn't yet distinguish ring-size-specific sp3
-        // carbon types 20/22 from plain type 1) — the type-0 fallback added
-        // to `mmff94_angle_energy` must still return a usable value rather
-        // than silently dropping the angle term.
+        // Ring-specific carbon types resolve the dedicated type-3 row;
+        // the lookup must preserve the ring classification.
         assert!(
             mmff94_angle_energy(at, types[i], types[j], types[k]).is_some(),
-            "angle energy lookup must fall back to type 0, not silently miss"
+            "ring-specific angle energy parameters must resolve"
         );
     }
 
@@ -3700,6 +3639,91 @@ mod tests {
     }
 
     #[test]
+    fn recovery_step_backtracks_instead_of_overshooting_a_nearby_minimum() {
+        let coords = [[1e-5, 0.0, 0.0]];
+        let direction = [[-0.001, 0.0, 0.0]];
+        let energy = |c: &[[f64; 3]]| 50.0 * c[0][0] * c[0][0];
+        let before = energy(&coords);
+        // The historical fixed recovery step moves x by 0.01, increasing
+        // this objective by six orders of magnitude.
+        assert!(energy(&[[-0.00999, 0.0, 0.0]]) > before);
+        let (after, value) =
+            armijo_backtracking(&coords, &direction, (before, -1e-6), 10.0, &energy, &|_| {
+                true
+            })
+            .expect("a smaller descending recovery step exists");
+        assert!(value < before);
+        assert!(after[0][0].abs() < coords[0][0].abs());
+    }
+
+    #[test]
+    fn line_search_rejects_nonfinite_energy_and_respects_geometry_boundaries() {
+        let coords = [[1.0, 0.0, 0.0]];
+        let direction = [[-1.0, 0.0, 0.0]];
+        assert!(
+            armijo_backtracking(
+                &coords,
+                &direction,
+                (1.0, -1.0),
+                1.0,
+                &|_| f64::NEG_INFINITY,
+                &|_| true
+            )
+            .is_none()
+        );
+        assert!(
+            armijo_backtracking(
+                &coords,
+                &direction,
+                (1.0, -1.0),
+                1.0,
+                &|c| c[0][0] * c[0][0],
+                &|_| false
+            )
+            .is_none()
+        );
+        assert_eq!(finite_max_gradient(&[[0.0, f64::NAN, 0.0]]), f64::INFINITY);
+    }
+
+    #[test]
+    fn last_allowed_step_reports_the_final_gradient_convergence() {
+        let mol = chematic_smiles::parse("CC").unwrap();
+        let model = Mmff94EnergyModel::new(&mol).unwrap();
+        let bond = model.bonds[0].params;
+        let offset = 1.1e-4 / (MDYNE_A_TO_KCAL_MOL * bond.kb);
+        let mut coords = vec![[0.0, 0.0, 0.0], [bond.r0 + offset, 0.0, 0.0]];
+        assert!(finite_max_gradient(&model.bounded_analytic_gradient(&coords)) > 1e-4);
+        let result = model
+            .minimize_lbfgs_bounded_analytic(&mut coords, 1)
+            .unwrap();
+        assert!(finite_max_gradient(&model.bounded_analytic_gradient(&coords)) < 1e-4);
+        assert!(
+            result.converged,
+            "the last accepted step reached the tolerance"
+        );
+        assert_eq!(result.iterations, 1);
+    }
+
+    #[test]
+    fn zero_iteration_budget_reports_stationarity_of_the_returned_geometry() {
+        let mol = chematic_smiles::parse("CC").unwrap();
+        let model = Mmff94EnergyModel::new(&mol).unwrap();
+        let r0 = model.bonds[0].params.r0;
+        let mut coords = vec![[0.0, 0.0, 0.0], [r0, 0.0, 0.0]];
+        let stationary = model
+            .minimize_lbfgs_bounded_analytic(&mut coords, 0)
+            .unwrap();
+        assert!(stationary.converged);
+        assert_eq!(stationary.iterations, 0);
+        coords[1][0] += 0.1;
+        let nonstationary = model
+            .minimize_lbfgs_bounded_analytic(&mut coords, 0)
+            .unwrap();
+        assert!(!nonstationary.converged);
+        assert_eq!(nonstationary.iterations, 0);
+    }
+
+    #[test]
     fn lbfgs_converges_in_fewer_iters_than_sd() {
         let (mol, _) = methane_mol();
         // Moderately distorted — both should converge but L-BFGS faster
@@ -3891,15 +3915,19 @@ mod tests {
                         continue;
                     }
                     for &l in &nbrs_k {
-                        if l == j {
+                        if l == j || l == i {
                             continue;
                         }
                         c.torsion_total += 1;
                         let tt = torsion_type_for(
                             &mol, i, j, k, l, types[i], types[j], types[k], types[l],
                         );
-                        if mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l])
-                            .is_none()
+                        if mmff94_torsion_energy_with_bond(
+                            tt,
+                            [types[i], types[j], types[k], types[l]],
+                            bond.order,
+                        )
+                        .is_none()
                         {
                             c.torsion_miss += 1;
                         }
@@ -4063,7 +4091,7 @@ mod tests {
             .collect();
         assert_eq!(actual, expected);
         assert_eq!(
-            vdw_energy_pairs(&coords, &model.vdw_pairs),
+            vdw_energy_cutoff_pairs(&coords, &model.vdw_pairs),
             model.vdw_pairs.iter().fold(0.0, |total, pair| {
                 let r = dist(coords[pair.i], coords[pair.j]);
                 if r > 10.0 || r <= 0.01 {
@@ -4222,6 +4250,52 @@ mod tests {
     }
 
     #[test]
+    fn linear_angle_gradient_is_finite_and_matches_central_difference() {
+        let mol = chematic_smiles::parse("N#CC").unwrap();
+        let model = Mmff94EnergyModel::new(&mol).unwrap();
+        assert!(
+            model.stretch_bends.is_empty(),
+            "linear center has no stretch-bend term"
+        );
+        for first in [[0.0, 1.1, 0.2], [-1.1, 0.0, 0.0]] {
+            let coords = vec![first, [0.0, 0.0, 0.0], [1.4, 0.0, 0.0]];
+            let actual = model.bond_angle_gradient(&coords);
+            for (i, row) in actual.iter().enumerate() {
+                for (axis, &value) in row.iter().enumerate() {
+                    let mut plus = coords.clone();
+                    let mut minus = coords.clone();
+                    plus[i][axis] += 1e-5;
+                    minus[i][axis] -= 1e-5;
+                    let expected = (model.bond_energy(&plus) + model.angle_energy(&plus)
+                        - model.bond_energy(&minus)
+                        - model.angle_energy(&minus))
+                        / 2e-5;
+                    assert!(value.is_finite());
+                    assert!(
+                        (value - expected).abs() < 2e-5 * (1.0 + expected.abs()),
+                        "linear angle gradient atom {i} axis {axis}: {value} vs {expected}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn equal_outer_stretch_bend_types_follow_bond_orientation() {
+        // Butadiene's C(sp2)-C(sp2)-C(sp2) triple has one special single
+        // bond and one double bond. Live RDKit 2026.03.6 returns different
+        // constants on its two sides despite the equal outer atom types.
+        assert_eq!(
+            stretch_bend_params_for(1, [2, 2, 2], [0, 1], [6, 6, 6]),
+            Some((0.219, 0.25))
+        );
+        assert_eq!(
+            stretch_bend_params_for(1, [2, 2, 2], [1, 0], [6, 6, 6]),
+            Some((0.25, 0.219))
+        );
+    }
+
+    #[test]
     fn prepared_stretch_bend_gradient_matches_finite_difference() {
         let mol = chematic_smiles::parse("CCC").expect("propane");
         let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
@@ -4339,6 +4413,81 @@ mod tests {
         assert!(
             guarded.iter().flatten().all(|value| value.abs() < 1e-12),
             "OOP gradient must fail closed at the asin branch point"
+        );
+    }
+
+    #[test]
+    fn oop_uses_all_three_planes_independent_of_bond_insertion_order() {
+        let coords = vec![
+            [0.0, 0.0, 0.0],
+            [1.34, 0.1, 0.0],
+            [1.85, 1.35, 0.45],
+            [1.95, -1.15, 0.25],
+        ];
+        let mut energies = Vec::new();
+        for order in [
+            [0, 2, 3],
+            [0, 3, 2],
+            [2, 0, 3],
+            [2, 3, 0],
+            [3, 0, 2],
+            [3, 2, 0],
+        ] {
+            let mut builder = MoleculeBuilder::new();
+            let atoms: Vec<_> = (0..4)
+                .map(|_| builder.add_atom(Atom::new(Element::C)))
+                .collect();
+            for i in order {
+                builder
+                    .add_bond(
+                        atoms[1],
+                        atoms[i],
+                        if i == 0 {
+                            BondOrder::Double
+                        } else {
+                            BondOrder::Single
+                        },
+                    )
+                    .unwrap();
+            }
+            let mol = builder.build();
+            let model = Mmff94EnergyModel::new(&mol).unwrap();
+            assert_eq!(model.oops.len(), 3, "one Wilson angle per substituent");
+            energies.push(model.oop_energy(&coords));
+        }
+        assert!(energies[0] > 0.0);
+        assert!(energies.iter().all(|e| (e - energies[0]).abs() < 1e-12));
+    }
+
+    #[test]
+    fn default_vdw_retains_long_range_energy_and_gradient_while_cutoff_is_opt_in() {
+        let mol = chematic_smiles::parse("CCCC").unwrap();
+        let model = Mmff94EnergyModel::new(&mol).unwrap();
+        let coords = vec![
+            [0.0, 0.0, 0.0],
+            [4.0, 0.0, 0.0],
+            [8.0, 0.0, 0.0],
+            [12.0, 0.2, 0.0],
+        ];
+        assert_eq!(model.vdw_pairs.len(), 1);
+        assert!(
+            model.vdw_energy(&coords) < -1e-6,
+            "distant 1-4 pair still attracts"
+        );
+        assert_eq!(model.cutoff_nonbonded_energy(&coords).0, 0.0);
+        let gradient = prepared_nonbonded_gradient(&coords, &model.vdw_pairs, &[]);
+        assert!(gradient[3][0] > 1e-6);
+        let mut plus = coords.clone();
+        let mut minus = coords.clone();
+        plus[3][0] += 1e-5;
+        minus[3][0] -= 1e-5;
+        let numeric = (model.vdw_energy(&plus) - model.vdw_energy(&minus)) / 2e-5;
+        assert!((gradient[3][0] - numeric).abs() < 1e-10);
+        assert!(
+            prepared_cutoff_nonbonded_gradient(&coords, &model.vdw_pairs, &[])
+                .iter()
+                .flatten()
+                .all(|v| *v == 0.0)
         );
     }
 

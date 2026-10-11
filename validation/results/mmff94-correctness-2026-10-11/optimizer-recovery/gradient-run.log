@@ -1,0 +1,13 @@
+[14:06:18] UFFTYPER: Unrecognized charge state for atom: 14
+{
+  "kind": "direct_rdkit_vs_chematic_analytic_gradient",
+  "energy_rows_sha256": "4f14cfac9610e2d27cbd7d1a99d42bf30b0fed114a1107cb9069123a1ef915c7",
+  "input_rows": 265,
+  "comparable_rows": 262,
+  "components": 37407,
+  "max_abs_error_kcal_mol_angstrom": 3.811030246936298e-07,
+  "max_scaled_error": 7.609023152183738e-08,
+  "absolute_error_threshold_kcal_mol_angstrom": 1e-06,
+  "scaled_error_threshold": 1e-07,
+  "gate_passed": true
+}

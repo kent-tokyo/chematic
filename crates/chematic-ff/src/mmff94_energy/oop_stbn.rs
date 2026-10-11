@@ -2,8 +2,8 @@
 
 /// MMFF94 Out-of-Plane parameters (117 entries, Halgren MMFF.VI)
 /// Format: (type_i, type_j, type_k, type_l, koop)
-/// type_i = central sp2 atom; j/k/l = three attached atoms (0=wildcard)
-/// E_oop = (0.043844 × koop / 2) × χ² (χ in degrees, Halgren eq. 6)
+/// type_j = central atom; i/k/l = three attached atoms (0=wildcard)
+/// Each Wilson angle contributes (143.9325 × koop / 2) × χ² (χ in radians).
 pub static MMFF94_OOP: &[(u8, u8, u8, u8, f64)] = &[
     (0, 2, 0, 0, 0.0200),
     (0, 3, 0, 0, 0.1300),
@@ -426,25 +426,35 @@ pub static MMFF94_STBN: &[(u8, u8, u8, u8, f64, f64)] = &[
     (5, 22, 22, 22, 0.0000, 0.0000),
 ];
 
-/// Look up OOP bending parameter for central sp2 atom j with neighbors i, k, l.
-/// Wildcard matching (0) tried as fallback.
+/// Look up OOP bending parameter for central atom j with neighbors i, k, l.
+/// Ordered outer-type equivalence levels precede the final wildcard default.
 pub fn mmff94_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
-    // Normalize: sort (i, k, l) except j stays central; try all orderings via wildcard
-    for &(ti, tk, tl) in &[
-        (type_i, type_k, type_l),
-        (type_k, type_i, type_l),
-        (type_l, type_k, type_i),
-        (type_i, type_l, type_k),
-        (type_k, type_l, type_i),
-        (type_l, type_i, type_k),
-    ] {
-        if let Some(koop) = search_oop(type_j, ti, tk, tl) {
-            return Some(koop);
-        }
+    // RDKit MMFFOopCollection: sort all three outer types at each level of
+    // the MMFFDEF equivalence ladder. The center is never substituted.
+    let mut outer = [type_i, type_k, type_l];
+    outer.sort_unstable();
+    if let Some(koop) = search_oop(type_j, outer[0], outer[1], outer[2]) {
+        return Some(koop);
     }
-    // Wildcard fallback
-    for &(ti, tk, tl) in &[(0, 0, 0), (type_i, 0, 0), (0, type_k, 0), (0, 0, type_l)] {
-        if let Some(koop) = search_oop(type_j, ti, tk, tl) {
+    let equivalent = |t| {
+        if t == 0 {
+            Some([0; 4])
+        } else {
+            crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(t)
+                .map(|info| info.equivalence_levels)
+        }
+    };
+    let [i_levels, k_levels, l_levels] = [
+        equivalent(type_i)?,
+        equivalent(type_k)?,
+        equivalent(type_l)?,
+    ];
+    // Level 2 is identity, already checked above. Levels 3/4 precede the
+    // final all-outer-wildcards level; skipping them selects wrong barriers.
+    for ((i, k), l) in i_levels.into_iter().zip(k_levels).zip(l_levels).skip(1) {
+        let mut outer = [i, k, l];
+        outer.sort_unstable();
+        if let Some(koop) = search_oop(type_j, outer[0], outer[1], outer[2]) {
             return Some(koop);
         }
     }
@@ -463,16 +473,13 @@ fn search_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
 /// Look up Stretch-Bend parameters for angle i-j-k by MMFF *type* alone —
 /// no element/periodic-row fallback (see [`mmff94_stbn`] for that).
 ///
-/// Returns (kba_ijk, kba_kji). Both orderings (i,j,k) and (k,j,i) tried at
-/// the requested `stretch_bend_type`, then — if `stretch_bend_type` isn't 0
-/// and no row exists there — the *specific* (ti,tj,tk) triple is retried at
-/// type 0 before finally falling back to the fully generic `(0, 0, type_j, 0)`
-/// wildcard. `MMFF94_STBN` is overwhelmingly type-0 (246/282 rows), so
-/// without this intermediate step, correctly classifying a term as a
-/// non-zero type that this table doesn't happen to cover would silently
-/// drop straight to the least specific fallback instead of the
-/// specific-triple type-0 row a hardcoded `stretch_bend_type=0` caller would
-/// have found.
+/// Returns (kba_ijk, kba_kji). Try both outer-atom orderings at exactly
+/// the requested stretch-bend type. A miss must reach the periodic-row
+/// default in [`mmff94_stbn`]; borrowing a different classification's
+/// type-0 value can even give the wrong sign (biphenyl: -0.411 vs +0.3).
+/// For equal outer types with different bond types, this API returns the
+/// table's canonical orientation; the energy builder applies RDKit's
+/// bond-type tie-break before using those constants.
 ///
 /// `stretch_bend_type` is RDKit's `getMMFFStretchBendType` output (0-11),
 /// computed via [`crate::mmff94_minimizer::stretch_bend_type_for`] — **not**
@@ -503,20 +510,11 @@ pub fn mmff94_stbn_type_only(
     };
     search(stretch_bend_type, type_i, type_j, type_k)
         .or_else(|| search(stretch_bend_type, type_k, type_j, type_i).map(|(a, b)| (b, a)))
-        .or_else(|| {
-            if stretch_bend_type != 0 {
-                search(0, type_i, type_j, type_k)
-                    .or_else(|| search(0, type_k, type_j, type_i).map(|(a, b)| (b, a)))
-            } else {
-                None
-            }
-        })
-        .or_else(|| search(0, 0, type_j, 0))
 }
 
 /// RDKit's periodic-table-row default stretch-bend constants
 /// (`defaultMMFFDfsb`, `Code/ForceField/MMFF/Params.cpp`), RDKit's own
-/// residual fallback for stretch-bend once the specific/generic MMFF-type
+/// residual fallback for stretch-bend once the specific MMFF-type
 /// table (`MMFF94_STBN`) has no row at all. 29 rows, verbatim from
 /// `scripts/mmff94_provenance/rdkit_defaultMMFFDfsb.txt` (programmatically
 /// extracted from the pinned RDKit commit, not hand-transcribed — see
@@ -577,7 +575,7 @@ fn mmff94_periodic_table_row(atomic_number: u8) -> u8 {
 /// RDKit's `MMFFDfsbCollection::getMMFFDfsbParams` — the periodic-row
 /// default stretch-bend fallback. Only meaningful once
 /// `mmff94_stbn_type_only` has already missed (matches RDKit's own order:
-/// `MMFFMolProperties::getMMFFStretchBendParams` tries the specific/generic
+/// `MMFFMolProperties::getMMFFStretchBendParams` tries the specific
 /// MMFF-type lookup first, Dfsb only on failure). RDKit's own
 /// `isDoubleZero(kbaIJK) && isDoubleZero(kbaKJI)` exclusion (a resolved-but
 /// -both-zero row still counts as "not resolved") is replicated: the

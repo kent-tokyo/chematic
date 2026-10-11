@@ -1,0 +1,828 @@
+diff --git a/crates/chematic-ff/src/mmff94_energy/angle.rs b/crates/chematic-ff/src/mmff94_energy/angle.rs
+index 0244c817..963db80c 100644
+--- a/crates/chematic-ff/src/mmff94_energy/angle.rs
++++ b/crates/chematic-ff/src/mmff94_energy/angle.rs
+@@ -2356,117 +2356,21 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
+     (8, 30, 30, 30, 1.2300, 93.7320),
+ ];
+ 
+-/// RDKit's atom-type canonical-equivalence-class ladder (`defaultMMFFDef`'s
+-/// `eqLevel` columns, `Code/ForceField/MMFF/Params.cpp` at the pinned commit
+-/// -- issue #227 Stage B). `[level2, level3, level4, level5]` per MMFF94
+-/// numeric atom type; level1 is skipped, identical to level2 per MMFF.I note
+-/// 68, page 519. Every numeric type this table doesn't list (rare/metal/
+-/// exotic types outside chematic's supported corpus) is treated as its own
+-/// identity substitution at every stage by [`eq_level`].
+-///
+-/// **Type 64 (C5B) added 2026-08-28 (RDKit/COSMolKit/OpenEye advantage
+-/// directive, Phase 4: 3D coverage gap)**:
+-/// the table previously stopped at type 55, on the documented assumption
+-/// that every type beyond it was "rare/exotic" and would never need a row
+-/// in practice. Empirically false for type 64 specifically -- it's an
+-/// aromatic 5-ring carbon (indole/pyrrole/furan/thiophene beta position),
+-/// not rare at all, and 11 of the 265-molecule strict corpus's coverage
+-/// failures were exactly this gap (`Angle C(3)-C(2)-C(64)`, e.g.
+-/// `chembl_tier_b_0180`). Confirmed via the already-frozen
+-/// `scripts/mmff94_provenance/rdkit_defaultMMFFDef.txt` (line 153: `C5B  64
+-/// 64  2  1  0`) AND independently via a live RDKit oracle query
+-/// (`MMFFGetMoleculeProperties(...).GetMMFFAngleBendParams`) on
+-/// `chembl_tier_b_0180`'s own `(angle_type=2, 3, 2, 64)` triple, which
+-/// returns real, defined values (`ka=0.893, theta0=118.456`) -- i.e. RDKit's
+-/// real behavior resolves this deterministically, not the "returns nullptr,
+-/// undefined behavior" situation type 63's own still-open, deliberately-
+-/// unresolved case describes just below in this file
+-/// (`angle_empirical_fails_closed_for_undefined_eq_level_substitution`).
+-/// **Type 63 (C5A) added 2026-09-12**: the strict-corpus residual
+-/// `(43, 18, 63)` is concrete evidence that this common aromatic 5-ring
+-/// carbon must participate in the defined equivalence ladder.  The row is
+-/// copied from the checked-in numeric type registry (`C5A 63 2 1 0`).  This
+-/// does not invent an angle parameter: if the resulting ladder has no angle
+-/// row, lookup still fails closed.  Other types beyond 55 (65-99, etc.)
+-/// remain deferred until a concrete, source-attributed use is measured.
+-static MMFF94_EQ_LEVEL: &[(u8, [u8; 4])] = &[
+-    (1, [1, 1, 1, 0]),
+-    (2, [2, 2, 1, 0]),
+-    (3, [3, 3, 1, 0]),
+-    (4, [4, 4, 1, 0]),
+-    (5, [5, 5, 5, 0]),
+-    (6, [6, 6, 6, 0]),
+-    (7, [7, 7, 6, 0]),
+-    (8, [8, 8, 8, 0]),
+-    (9, [9, 9, 8, 0]),
+-    (10, [10, 10, 8, 0]),
+-    (11, [11, 11, 11, 0]),
+-    (12, [12, 12, 12, 0]),
+-    (13, [13, 13, 13, 0]),
+-    (14, [14, 14, 14, 0]),
+-    (15, [15, 15, 15, 0]),
+-    (16, [16, 16, 15, 0]),
+-    (17, [17, 17, 15, 0]),
+-    (18, [18, 18, 15, 0]),
+-    (19, [19, 19, 19, 0]),
+-    (20, [20, 1, 1, 0]),
+-    (21, [21, 21, 5, 0]),
+-    (22, [22, 22, 1, 0]),
+-    (23, [23, 23, 5, 0]),
+-    (24, [24, 24, 5, 0]),
+-    (25, [25, 25, 25, 0]),
+-    (26, [26, 26, 25, 0]),
+-    (27, [27, 28, 5, 0]),
+-    (28, [28, 28, 5, 0]),
+-    (29, [29, 29, 5, 0]),
+-    (30, [30, 2, 1, 0]),
+-    (31, [31, 31, 31, 0]),
+-    (32, [32, 7, 6, 0]),
+-    (33, [33, 21, 5, 0]),
+-    (34, [34, 8, 8, 0]),
+-    (35, [35, 6, 6, 0]),
+-    (36, [36, 36, 5, 0]),
+-    (37, [37, 2, 1, 0]),
+-    (38, [38, 9, 8, 0]),
+-    (39, [39, 10, 8, 0]),
+-    (40, [40, 10, 8, 0]),
+-    (41, [41, 3, 1, 0]),
+-    (42, [42, 42, 8, 0]),
+-    (43, [43, 10, 8, 0]),
+-    (44, [44, 16, 15, 0]),
+-    (45, [45, 10, 8, 0]),
+-    (46, [46, 9, 8, 0]),
+-    (47, [47, 42, 8, 0]),
+-    (48, [48, 9, 8, 0]),
+-    (49, [49, 6, 6, 0]),
+-    (50, [50, 21, 5, 0]),
+-    (51, [51, 7, 6, 0]),
+-    (52, [52, 21, 5, 0]),
+-    (53, [53, 42, 8, 0]),
+-    (54, [54, 9, 8, 0]),
+-    (55, [55, 10, 8, 0]),
+-    (63, [63, 2, 1, 0]),
+-    (64, [64, 2, 1, 0]),
+-];
+-
+-/// `stage` in `0..4`, matching RDKit's Level 2/3/4/5. Falls back to `atom_type`
+-/// itself (identity, i.e. equivalent to an exact-match retry) for any type
+-/// not in [`MMFF94_EQ_LEVEL`] -- see that table's own doc for why this is safe.
++/// RDKit's atom-type canonical-equivalence-class ladder (`defaultMMFFDef`).
++/// Equivalence levels come from the complete generated numeric-type registry,
++/// sourced from RDKit's frozen MMFFDEF table. Keep a single definition so
++/// common types beyond 55 (including aromatic cation 58) are not omitted.
+ fn eq_level(atom_type: u8, stage: usize) -> u8 {
+-    MMFF94_EQ_LEVEL
+-        .binary_search_by_key(&atom_type, |&(t, _)| t)
+-        .map(|idx| MMFF94_EQ_LEVEL[idx].1[stage])
++    crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(atom_type)
++        .map(|info| info.equivalence_levels[stage])
+         .unwrap_or(atom_type)
+ }
+ 
+ fn has_eq_level_row(atom_type: u8) -> bool {
+-    MMFF94_EQ_LEVEL
+-        .binary_search_by_key(&atom_type, |&(t, _)| t)
+-        .is_ok()
++    crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(atom_type).is_some()
+ }
+ 
+-/// Outcome of the full table search chain (RDKit's real eqLevel ladder plus
+-/// chematic's own generic-`angle_type` net), before any empirical fallback.
++/// Outcome of RDKit's eqLevel ladder, before any empirical fallback.
+ enum TableSearch {
+     /// A real, usable row (`ka != 0.0`).
+     Hit(AngleEnergyParams, Mmff94Resolution),
+@@ -2479,16 +2383,9 @@ enum TableSearch {
+     /// No row at any stage, and every stage that mattered used a
+     /// well-defined `eqLevel` substitution (or none at all).
+     Exhausted,
+-    /// The ladder needed to substitute a numeric type absent from
+-    /// [`MMFF94_EQ_LEVEL`] (`type_i`/`type_k` outside the 1-55 range) to
+-    /// reach the point of giving up. RDKit's real
+-    /// `MMFFDefCollection::operator()` returns `nullptr` for such a type and
+-    /// `MMFFAngleCollection::operator()` dereferences it with no null
+-    /// check -- undefined behavior in RDKit's own C++, confirmed by direct
+-    /// source read at the pinned commit. There is no well-defined "real"
+-    /// answer to reproduce here, so this is never treated as resolvable --
+-    /// see `scripts/mmff94_provenance/PROVENANCE.md`'s Stage C entry for the
+-    /// oracle investigation this is based on (the `(0, 43, 18, 63)` tuple).
++    /// An outer numeric type has no authoritative equivalence definition.
++    /// Fail closed instead of inventing a substitution or dereferencing an
++    /// absent definition as RDKit's C++ lookup would do.
+     UndefinedSubstitution,
+ }
+ 
+@@ -2516,27 +2413,7 @@ fn search_table(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> TableSear
+         .or_else(|| search(angle_type, type_k, type_i, Mmff94Resolution::DirectTable))
+         .or_else(|| eq_level_search(1, 3))
+         .or_else(|| eq_level_search(2, 4))
+-        .or_else(|| eq_level_search(3, 5))
+-        .or_else(|| {
+-            if angle_type != 0 {
+-                search(
+-                    0,
+-                    type_i,
+-                    type_k,
+-                    Mmff94Resolution::GenericAngleTypeFallback,
+-                )
+-                .or_else(|| {
+-                    search(
+-                        0,
+-                        type_k,
+-                        type_i,
+-                        Mmff94Resolution::GenericAngleTypeFallback,
+-                    )
+-                })
+-            } else {
+-                None
+-            }
+-        });
++        .or_else(|| eq_level_search(3, 5));
+     match hit {
+         Some((ka, theta0, kind)) if ka != 0.0 => {
+             TableSearch::Hit(AngleEnergyParams { ka, theta0 }, kind)
+@@ -2556,20 +2433,9 @@ fn search_table(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> TableSear
+ /// B): `type_i`/`type_k` are substituted through 4 equivalence-class stages
+ /// (`type_j` and `angle_type` stay fixed throughout -- RDKit's real
+ /// algorithm never substitutes the center or changes the angle type). Only
+-/// once the full eqLevel ladder is exhausted does this fall back to the
+-/// generic `angle_type=0` row for the same triple — a chematic-specific
+-/// safety net RDKit's own algorithm doesn't have, kept from before this
+-/// change: without it, a *correct* ring/bond-type classification for a
+-/// triple the (much smaller) specialized table doesn't happen to cover
+-/// would silently drop the angle term entirely, which is worse than the
+-/// un-classified behavior it replaces.
+-///
+-/// A `ka == 0.0` placeholder row (issue #227 Stage C, see [`TableSearch`])
+-/// is never surfaced here -- it is not a usable parameter on its own, only
+-/// [`mmff94_angle_energy_resolved`] can turn it into one via the empirical
+-/// rule. This keeps this function's contract identical to before Stage C
+-/// restored those rows to the table: every input that used to return
+-/// `Some`/`None` still does.
++/// once the full eqLevel ladder is exhausted does the resolved API use
++/// the empirical rule. The angle type never changes during lookup.
++/// This table-only API returns `None` for zero-force placeholders and misses.
+ pub fn mmff94_angle_energy(
+     angle_type: u8,
+     type_i: u8,
+diff --git a/crates/chematic-ff/src/mmff94_energy/oop_stbn.rs b/crates/chematic-ff/src/mmff94_energy/oop_stbn.rs
+index 85154539..562306f2 100644
+--- a/crates/chematic-ff/src/mmff94_energy/oop_stbn.rs
++++ b/crates/chematic-ff/src/mmff94_energy/oop_stbn.rs
+@@ -463,16 +463,13 @@ fn search_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
+ /// Look up Stretch-Bend parameters for angle i-j-k by MMFF *type* alone —
+ /// no element/periodic-row fallback (see [`mmff94_stbn`] for that).
+ ///
+-/// Returns (kba_ijk, kba_kji). Both orderings (i,j,k) and (k,j,i) tried at
+-/// the requested `stretch_bend_type`, then — if `stretch_bend_type` isn't 0
+-/// and no row exists there — the *specific* (ti,tj,tk) triple is retried at
+-/// type 0 before finally falling back to the fully generic `(0, 0, type_j, 0)`
+-/// wildcard. `MMFF94_STBN` is overwhelmingly type-0 (246/282 rows), so
+-/// without this intermediate step, correctly classifying a term as a
+-/// non-zero type that this table doesn't happen to cover would silently
+-/// drop straight to the least specific fallback instead of the
+-/// specific-triple type-0 row a hardcoded `stretch_bend_type=0` caller would
+-/// have found.
++/// Returns (kba_ijk, kba_kji). Try both outer-atom orderings at exactly
++/// the requested stretch-bend type. A miss must reach the periodic-row
++/// default in [`mmff94_stbn`]; borrowing a different classification's
++/// type-0 value can even give the wrong sign (biphenyl: -0.411 vs +0.3).
++/// For equal outer types with different bond types, this API returns the
++/// table's canonical orientation; the energy builder applies RDKit's
++/// bond-type tie-break before using those constants.
+ ///
+ /// `stretch_bend_type` is RDKit's `getMMFFStretchBendType` output (0-11),
+ /// computed via [`crate::mmff94_minimizer::stretch_bend_type_for`] — **not**
+@@ -503,20 +500,11 @@ pub fn mmff94_stbn_type_only(
+     };
+     search(stretch_bend_type, type_i, type_j, type_k)
+         .or_else(|| search(stretch_bend_type, type_k, type_j, type_i).map(|(a, b)| (b, a)))
+-        .or_else(|| {
+-            if stretch_bend_type != 0 {
+-                search(0, type_i, type_j, type_k)
+-                    .or_else(|| search(0, type_k, type_j, type_i).map(|(a, b)| (b, a)))
+-            } else {
+-                None
+-            }
+-        })
+-        .or_else(|| search(0, 0, type_j, 0))
+ }
+ 
+ /// RDKit's periodic-table-row default stretch-bend constants
+ /// (`defaultMMFFDfsb`, `Code/ForceField/MMFF/Params.cpp`), RDKit's own
+-/// residual fallback for stretch-bend once the specific/generic MMFF-type
++/// residual fallback for stretch-bend once the specific MMFF-type
+ /// table (`MMFF94_STBN`) has no row at all. 29 rows, verbatim from
+ /// `scripts/mmff94_provenance/rdkit_defaultMMFFDfsb.txt` (programmatically
+ /// extracted from the pinned RDKit commit, not hand-transcribed — see
+@@ -577,7 +565,7 @@ fn mmff94_periodic_table_row(atomic_number: u8) -> u8 {
+ /// RDKit's `MMFFDfsbCollection::getMMFFDfsbParams` — the periodic-row
+ /// default stretch-bend fallback. Only meaningful once
+ /// `mmff94_stbn_type_only` has already missed (matches RDKit's own order:
+-/// `MMFFMolProperties::getMMFFStretchBendParams` tries the specific/generic
++/// `MMFFMolProperties::getMMFFStretchBendParams` tries the specific
+ /// MMFF-type lookup first, Dfsb only on failure). RDKit's own
+ /// `isDoubleZero(kbaIJK) && isDoubleZero(kbaKJI)` exclusion (a resolved-but
+ /// -both-zero row still counts as "not resolved") is replicated: the
+diff --git a/crates/chematic-ff/src/mmff94_minimizer.rs b/crates/chematic-ff/src/mmff94_minimizer.rs
+index 5bc6fe25..16f59d9d 100644
+--- a/crates/chematic-ff/src/mmff94_minimizer.rs
++++ b/crates/chematic-ff/src/mmff94_minimizer.rs
+@@ -26,6 +26,13 @@ use crate::mmff94_energy::{
+ use crate::mmff94_numeric::{
+     NumericTypeError, assign_mmff94_numeric_types_with_view, mmff94_charges_numeric,
+ };
++use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
++
++const MDYNE_A_TO_KCAL_MOL: f64 = 143.9325;
++const DEG_TO_RAD: f64 = std::f64::consts::PI / 180.0;
++const ANGLE_CONV: f64 = MDYNE_A_TO_KCAL_MOL * DEG_TO_RAD * DEG_TO_RAD;
++const ANGLE_CUBIC: f64 = -0.006981317;
++const STRETCH_BEND_CONV: f64 = MDYNE_A_TO_KCAL_MOL * DEG_TO_RAD;
+ 
+ type CoordVec = Vec<[f64; 3]>;
+ type LbfgsHistory = VecDeque<(CoordVec, CoordVec, f64)>;
+@@ -45,6 +52,7 @@ struct PreparedAngle {
+     j: usize,
+     k: usize,
+     params: AngleEnergyParams,
++    linear: bool,
+ }
+ 
+ #[derive(Clone, Copy)]
+@@ -1022,6 +1030,8 @@ fn build_angle_terms(mol: &Molecule, types: &[u8], rings: &[Vec<AtomIdx>]) -> Ve
+                         j: j_idx,
+                         k,
+                         params,
++                        linear: mmff94_numeric_type_info(types[j_idx])
++                            .is_some_and(|info| info.linear),
+                     });
+                 }
+             }
+@@ -1094,6 +1104,38 @@ fn build_oop_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedOop> {
+     terms
+ }
+ 
++fn stretch_bend_params_for(
++    angle_type: u8,
++    types: [u8; 3],
++    bond_types: [u8; 2],
++    atomic_numbers: [u8; 3],
++) -> Option<(f64, f64)> {
++    if mmff94_numeric_type_info(types[1])?.linear {
++        return None;
++    }
++    let sbt = stretch_bend_type_for(angle_type, types[0], types[2], bond_types[0], bond_types[1]);
++    if let Some((a, b)) =
++        crate::mmff94_energy::mmff94_stbn_type_only(sbt, types[0], types[1], types[2])
++    {
++        // RDKit MMFFStbnCollection: equal outer types tie-break on bond
++        // type. The periodic-row default has its own independent ordering.
++        return Some(if types[0] == types[2] && bond_types[0] < bond_types[1] {
++            (b, a)
++        } else {
++            (a, b)
++        });
++    }
++    mmff94_stbn(
++        sbt,
++        types[0],
++        types[1],
++        types[2],
++        atomic_numbers[0],
++        atomic_numbers[1],
++        atomic_numbers[2],
++    )
++}
++
+ fn build_stretch_bend_terms(
+     mol: &Molecule,
+     types: &[u8],
+@@ -1110,14 +1152,15 @@ fn build_stretch_bend_terms(
+                     bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
+                 let bt_kj =
+                     bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
+-                let Some((kba_ij, kba_kj)) = mmff94_stbn(
+-                    stretch_bend_type_for(at, types[i], types[k], bt_ij, bt_kj),
+-                    types[i],
+-                    types[j_idx],
+-                    types[k],
+-                    mol.atom(AtomIdx(i as u32)).element.atomic_number(),
+-                    mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
+-                    mol.atom(AtomIdx(k as u32)).element.atomic_number(),
++                let Some((kba_ij, kba_kj)) = stretch_bend_params_for(
++                    at,
++                    [types[i], types[j_idx], types[k]],
++                    [bt_ij, bt_kj],
++                    [
++                        mol.atom(AtomIdx(i as u32)).element.atomic_number(),
++                        mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
++                        mol.atom(AtomIdx(k as u32)).element.atomic_number(),
++                    ],
+                 ) else {
+                     continue;
+                 };
+@@ -1171,20 +1214,22 @@ fn prepared_bond_energy(coords: &[[f64; 3]], terms: &[PreparedBond]) -> f64 {
+ }
+ 
+ fn prepared_angle_energy(coords: &[[f64; 3]], terms: &[PreparedAngle]) -> f64 {
+-    const KA_CONV: f64 = 0.043844;
+     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+     terms
+         .iter()
+         .map(|term| {
+-            let dt = cos_angle(coords[term.i], coords[term.j], coords[term.k]).acos() * RAD_TO_DEG
+-                - term.params.theta0;
+-            (KA_CONV * term.params.ka / 2.0) * dt * dt * (1.0 - 0.007 * dt)
++            let cos_theta = cos_angle(coords[term.i], coords[term.j], coords[term.k]);
++            if term.linear {
++                MDYNE_A_TO_KCAL_MOL * term.params.ka * (1.0 + cos_theta)
++            } else {
++                let dt = cos_theta.acos() * RAD_TO_DEG - term.params.theta0;
++                (ANGLE_CONV * term.params.ka / 2.0) * dt * dt * (1.0 + ANGLE_CUBIC * dt)
++            }
+         })
+         .sum()
+ }
+ 
+ fn prepared_stretch_bend_energy(coords: &[[f64; 3]], terms: &[PreparedStretchBend]) -> f64 {
+-    const CONV: f64 = 2.51210;
+     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+     terms
+         .iter()
+@@ -1194,7 +1239,7 @@ fn prepared_stretch_bend_energy(coords: &[[f64; 3]], terms: &[PreparedStretchBen
+             let dtheta = cos_angle(coords[term.i], coords[term.j], coords[term.k]).acos()
+                 * RAD_TO_DEG
+                 - term.theta0;
+-            CONV * (term.kba_ij * dr_ij + term.kba_kj * dr_kj) * dtheta
++            STRETCH_BEND_CONV * (term.kba_ij * dr_ij + term.kba_kj * dr_kj) * dtheta
+         })
+         .sum()
+ }
+@@ -1645,7 +1690,6 @@ fn prepared_bond_angle_gradient(
+ ) -> Vec<[f64; 3]> {
+     const KB_CONV: f64 = 143.9325;
+     const CS: f64 = 2.0;
+-    const KA_CONV: f64 = 0.043844;
+     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+     let mut gradient = vec![[0.0; 3]; coords.len()];
+     let add_pair =
+@@ -1691,15 +1735,17 @@ fn prepared_bond_angle_gradient(
+             continue;
+         }
+         let cos_theta = cos_angle(coords[term.i], coords[term.j], coords[term.k]);
+-        let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
+-        if sin_theta <= 1e-12 {
+-            continue;
+-        }
+-        let theta = cos_theta.acos() * RAD_TO_DEG;
+-        let dt = theta - term.params.theta0;
+-        let prefactor = KA_CONV * term.params.ka / 2.0;
+-        let d_e_d_theta = prefactor * (2.0 * dt - 3.0 * 0.007 * dt * dt);
+-        let d_e_d_cos = -RAD_TO_DEG * d_e_d_theta / sin_theta;
++        let d_e_d_cos = if term.linear {
++            MDYNE_A_TO_KCAL_MOL * term.params.ka
++        } else {
++            let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
++            if sin_theta <= 1e-12 {
++                continue;
++            }
++            let dt = cos_theta.acos() * RAD_TO_DEG - term.params.theta0;
++            let d_e_d_theta = ANGLE_CONV * term.params.ka * dt * (1.0 + 1.5 * ANGLE_CUBIC * dt);
++            -RAD_TO_DEG * d_e_d_theta / sin_theta
++        };
+         let inv = 1.0 / (lu * lv);
+         let dcos_di = [
+             v[0] * inv - cos_theta * u[0] / u2,
+@@ -1726,7 +1772,6 @@ fn prepared_stretch_bend_gradient(
+     coords: &[[f64; 3]],
+     terms: &[PreparedStretchBend],
+ ) -> Vec<[f64; 3]> {
+-    const CONV: f64 = 2.51210;
+     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+     let mut gradient = vec![[0.0; 3]; coords.len()];
+     for term in terms {
+@@ -1751,8 +1796,8 @@ fn prepared_stretch_bend_gradient(
+         }
+         let dtheta = cos_theta.acos() * RAD_TO_DEG - term.theta0;
+         let stretch = term.kba_ij * (r_ij - term.r0_ij) + term.kba_kj * (r_kj - term.r0_kj);
+-        let d_e_d_r = CONV * dtheta;
+-        let d_e_d_theta = CONV * stretch;
++        let d_e_d_r = STRETCH_BEND_CONV * dtheta;
++        let d_e_d_theta = STRETCH_BEND_CONV * stretch;
+         let d_e_d_cos = -RAD_TO_DEG * d_e_d_theta / sin_theta;
+         let dcos_di = [
+             v[0] / (lu * lv) - cos_theta * u[0] / u2,
+@@ -1803,69 +1848,7 @@ fn stretch_bend_energy(
+     types: &[u8],
+     rings: &[Vec<AtomIdx>],
+ ) -> f64 {
+-    const CONV: f64 = 2.51210; // md/Å → kcal/(mol·Å·deg)
+-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+-    const KB_CONV: f64 = 143.9325;
+-    const CS: f64 = 2.0;
+-    let mut energy = 0.0;
+-    for j_idx in 0..mol.atom_count() {
+-        let j = AtomIdx(j_idx as u32);
+-        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+-        if neighbors.len() < 2 {
+-            continue;
+-        }
+-        for (ii, &i) in neighbors.iter().enumerate() {
+-            for &k in &neighbors[ii + 1..] {
+-                let at = angle_type_for(mol, rings, i, j_idx, k, types);
+-                let bt_ij =
+-                    bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
+-                let bt_kj =
+-                    bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
+-                let sbt = stretch_bend_type_for(at, types[i], types[k], bt_ij, bt_kj);
+-                if let Some((kba_ijk, kba_kji)) = mmff94_stbn(
+-                    sbt,
+-                    types[i],
+-                    types[j_idx],
+-                    types[k],
+-                    mol.atom(AtomIdx(i as u32)).element.atomic_number(),
+-                    mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
+-                    mol.atom(AtomIdx(k as u32)).element.atomic_number(),
+-                ) {
+-                    let bond_ij = mmff94_bond_energy_resolved(bt_ij, types[i], types[j_idx]);
+-                    let bond_kj = mmff94_bond_energy_resolved(bt_kj, types[k], types[j_idx]);
+-                    // Δr_ij
+-                    let r_ij = dist(coords[i], coords[j_idx]);
+-                    let dr_ij = bond_ij.map(|(p, _)| r_ij - p.r0).unwrap_or(0.0);
+-                    // Δr_kj
+-                    let r_kj = dist(coords[k], coords[j_idx]);
+-                    let dr_kj = bond_kj.map(|(p, _)| r_kj - p.r0).unwrap_or(0.0);
+-                    // Δθ in degrees -- both flanking bonds must resolve to feed
+-                    // r0_ij/r0_jk into the angle empirical rule if it's needed
+-                    // (matches RDKit's real `getMMFFAngleBendParams`, which
+-                    // requires both `getMMFFBondStretchParams` calls to succeed
+-                    // before even attempting the empirical path).
+-                    let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
+-                    if let (Some((rij, _)), Some((rkj, _))) = (bond_ij, bond_kj) {
+-                        let ring_size = is_angle_in_ring_of_size_3_or_4(mol, i, j_idx, k);
+-                        if let Some((ap, _)) = mmff94_angle_energy_resolved(
+-                            at,
+-                            types[i],
+-                            types[j_idx],
+-                            types[k],
+-                            rij.r0,
+-                            rkj.r0,
+-                            ring_size,
+-                        ) {
+-                            let dtheta = cos_t.acos() * RAD_TO_DEG - ap.theta0;
+-                            energy += CONV * (kba_ijk * dr_ij + kba_kji * dr_kj) * dtheta;
+-                        }
+-                    }
+-                    let _ = (KB_CONV, CS); // suppress warnings
+-                }
+-            }
+-        }
+-    }
+-    energy
++    prepared_stretch_bend_energy(coords, &build_stretch_bend_terms(mol, types, rings))
+ }
+ 
+ /// sp2 atom types eligible for out-of-plane bending (Halgren 1996), used by
+@@ -1937,50 +1920,9 @@ fn bond_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
+     energy
+ }
+ 
+-/// Angle bending: cubic-corrected harmonic (Halgren MMFF.III eq. 2)
+-/// E = (0.043844 × ka / 2) × Δθ² × (1 − 0.007×Δθ)   [Δθ in degrees]
++/// Angle bending uses the same linear/cubic potential as the prepared model.
+ fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], rings: &[Vec<AtomIdx>]) -> f64 {
+-    const KA_CONV: f64 = 0.043844;
+-    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+-    let mut energy = 0.0;
+-    for j_idx in 0..mol.atom_count() {
+-        let j = AtomIdx(j_idx as u32);
+-        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+-        if neighbors.len() < 2 {
+-            continue;
+-        }
+-        for (ii, &i) in neighbors.iter().enumerate() {
+-            for &k in &neighbors[ii + 1..] {
+-                let at = angle_type_for(mol, rings, i, j_idx, k, types);
+-                let bt_ij =
+-                    bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
+-                let bt_kj =
+-                    bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
+-                let r0_ij = mmff94_bond_energy_resolved(bt_ij, types[i], types[j_idx]);
+-                let r0_kj = mmff94_bond_energy_resolved(bt_kj, types[k], types[j_idx]);
+-                let (Some((bond_ij, _)), Some((bond_kj, _))) = (r0_ij, r0_kj) else {
+-                    continue;
+-                };
+-                let ring_size = is_angle_in_ring_of_size_3_or_4(mol, i, j_idx, k);
+-                if let Some((p, _)) = mmff94_angle_energy_resolved(
+-                    at,
+-                    types[i],
+-                    types[j_idx],
+-                    types[k],
+-                    bond_ij.r0,
+-                    bond_kj.r0,
+-                    ring_size,
+-                ) {
+-                    let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
+-                    let theta_deg = cos_t.acos() * RAD_TO_DEG;
+-                    let dt = theta_deg - p.theta0;
+-                    let cubic = 1.0 - 0.007 * dt;
+-                    energy += (KA_CONV * p.ka / 2.0) * dt * dt * cubic;
+-                }
+-            }
+-        }
+-    }
+-    energy
++    prepared_angle_energy(coords, &build_angle_terms(mol, types, rings))
+ }
+ 
+ /// Torsion: three-term Fourier (Halgren MMFF.IV)
+@@ -3302,14 +3244,11 @@ mod tests {
+             at, 3,
+             "3-ring angle with two sp3 (bond_type 0) flanking bonds must be type 3"
+         );
+-        // The specific (3,1,1,1) row doesn't exist for this crate's current
+-        // atom typer (which doesn't yet distinguish ring-size-specific sp3
+-        // carbon types 20/22 from plain type 1) — the type-0 fallback added
+-        // to `mmff94_angle_energy` must still return a usable value rather
+-        // than silently dropping the angle term.
++        // Ring-specific carbon types resolve the dedicated type-3 row;
++        // the lookup must preserve the ring classification.
+         assert!(
+             mmff94_angle_energy(at, types[i], types[j], types[k]).is_some(),
+-            "angle energy lookup must fall back to type 0, not silently miss"
++            "ring-specific angle energy parameters must resolve"
+         );
+     }
+ 
+@@ -4221,6 +4160,52 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn linear_angle_gradient_is_finite_and_matches_central_difference() {
++        let mol = chematic_smiles::parse("N#CC").unwrap();
++        let model = Mmff94EnergyModel::new(&mol).unwrap();
++        assert!(
++            model.stretch_bends.is_empty(),
++            "linear center has no stretch-bend term"
++        );
++        for first in [[0.0, 1.1, 0.2], [-1.1, 0.0, 0.0]] {
++            let coords = vec![first, [0.0, 0.0, 0.0], [1.4, 0.0, 0.0]];
++            let actual = model.bond_angle_gradient(&coords);
++            for (i, row) in actual.iter().enumerate() {
++                for (axis, &value) in row.iter().enumerate() {
++                    let mut plus = coords.clone();
++                    let mut minus = coords.clone();
++                    plus[i][axis] += 1e-5;
++                    minus[i][axis] -= 1e-5;
++                    let expected = (model.bond_energy(&plus) + model.angle_energy(&plus)
++                        - model.bond_energy(&minus)
++                        - model.angle_energy(&minus))
++                        / 2e-5;
++                    assert!(value.is_finite());
++                    assert!(
++                        (value - expected).abs() < 2e-5 * (1.0 + expected.abs()),
++                        "linear angle gradient atom {i} axis {axis}: {value} vs {expected}"
++                    );
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn equal_outer_stretch_bend_types_follow_bond_orientation() {
++        // Butadiene's C(sp2)-C(sp2)-C(sp2) triple has one special single
++        // bond and one double bond. Live RDKit 2026.03.6 returns different
++        // constants on its two sides despite the equal outer atom types.
++        assert_eq!(
++            stretch_bend_params_for(1, [2, 2, 2], [0, 1], [6, 6, 6]),
++            Some((0.219, 0.25))
++        );
++        assert_eq!(
++            stretch_bend_params_for(1, [2, 2, 2], [1, 0], [6, 6, 6]),
++            Some((0.25, 0.219))
++        );
++    }
++
+     #[test]
+     fn prepared_stretch_bend_gradient_matches_finite_difference() {
+         let mol = chematic_smiles::parse("CCC").expect("propane");
+diff --git a/crates/chematic-ff/src/mmff94_numeric_type_registry.rs b/crates/chematic-ff/src/mmff94_numeric_type_registry.rs
+index 253edd0b..b87192c2 100644
+--- a/crates/chematic-ff/src/mmff94_numeric_type_registry.rs
++++ b/crates/chematic-ff/src/mmff94_numeric_type_registry.rs
+@@ -39,9 +39,7 @@ pub struct Mmff94NumericTypeInfo {
+     /// Single bond adjacent to a multiple bond (MMFFPROP `sbmb`).
+     pub single_bond_multiple_bond: bool,
+     /// MMFF94 atom-type equivalence levels 2-5 (`MMFFDEF.PAR`), used
+-    /// for the equivalence-class parameter fallback (not yet wired
+-    /// into any chematic resolver -- see the Phase 1B-0 PR body's
+-    /// bond-fallback classification for why).
++    /// by the angle parameter resolver's equivalence-class fallback.
+     pub equivalence_levels: [u8; 4],
+     /// Human-readable Halgren description, e.g. "AROMATIC C".
+     pub description: &'static str,
+diff --git a/scripts/gen_mmff94_numeric_type_registry.py b/scripts/gen_mmff94_numeric_type_registry.py
+index 0d51de6f..b1d8c8b8 100644
+--- a/scripts/gen_mmff94_numeric_type_registry.py
++++ b/scripts/gen_mmff94_numeric_type_registry.py
+@@ -189,9 +189,7 @@ def main():
+     lines.append("    /// Single bond adjacent to a multiple bond (MMFFPROP `sbmb`).")
+     lines.append("    pub single_bond_multiple_bond: bool,")
+     lines.append("    /// MMFF94 atom-type equivalence levels 2-5 (`MMFFDEF.PAR`), used")
+-    lines.append("    /// for the equivalence-class parameter fallback (not yet wired")
+-    lines.append("    /// into any chematic resolver -- see the Phase 1B-0 PR body's")
+-    lines.append("    /// bond-fallback classification for why).")
++    lines.append("    /// by the angle parameter resolver's equivalence-class fallback.")
+     lines.append("    pub equivalence_levels: [u8; 4],")
+     lines.append("    /// Human-readable Halgren description, e.g. \"AROMATIC C\".")
+     lines.append("    pub description: &'static str,")
+diff --git a/scripts/tests/test_mmff94_same_explicit_h_energy.py b/scripts/tests/test_mmff94_same_explicit_h_energy.py
+index a81e8bce..6c4cb730 100644
+--- a/scripts/tests/test_mmff94_same_explicit_h_energy.py
++++ b/scripts/tests/test_mmff94_same_explicit_h_energy.py
+@@ -1,6 +1,10 @@
++import pytest
++
+ from scripts.mmff94_same_explicit_h_energy import (
++    evaluate,
+     gradient_diagnostic,
+     percentile_nearest_rank,
++    rdkit_term_energy_breakdown,
+     summarize,
+     terminal,
+ )
+@@ -51,3 +55,108 @@ def test_gradient_diagnostic_matches_quadratic_energy():
+     assert result["components"] == 3
+     assert result["max_abs_error_kcal_mol_angstrom"] < 1e-9
+     assert result["max_scaled_error"] < 1e-9
++
++
++def test_rdkit_isolated_terms_sum_to_total_without_changing_coordinates():
++    import pytest
++    from rdkit import Chem
++    from rdkit.Chem import AllChem
++
++    # Includes an O-H donor, an aromatic ring, and a carbonyl; exercising
++    # all seven terms rather than testing the setter loop against a mock.
++    mol = Chem.AddHs(Chem.MolFromSmiles("CC(=O)Nc1ccc(O)cc1"))
++    assert AllChem.EmbedMolecule(mol, randomSeed=43) == 0
++    properties = AllChem.MMFFGetMoleculeProperties(mol, mmffVariant="MMFF94")
++    force_field = AllChem.MMFFGetMoleculeForceField(mol, properties, confId=0)
++    before = mol.GetConformer().GetPositions().copy()
++    total = force_field.CalcEnergy()
++    terms = rdkit_term_energy_breakdown(mol)
++    assert set(terms) == {
++        "bond", "angle", "stretch_bend", "torsion", "oop", "vdw", "electrostatic"
++    }
++    assert sum(terms.values()) == pytest.approx(total, abs=1e-9)
++    assert force_field.CalcEnergy() == total
++    assert (mol.GetConformer().GetPositions() == before).all()
++
++
++def test_explicit_oxygen_hydrogen_vdw_and_charge_transfer_match_rdkit():
++    import pytest
++    import chematic
++    from rdkit import Chem
++    from rdkit.Chem import AllChem
++
++    for smiles in ["NCC(=O)O", "ON(C)C", "Oc1ccccc1", "CC(=O)Nc1ccc(O)cc1"]:
++        rdkit_mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
++        assert AllChem.EmbedMolecule(rdkit_mol, randomSeed=43) == 0
++        properties = AllChem.MMFFGetMoleculeProperties(rdkit_mol, mmffVariant="MMFF94")
++        mol = chematic.from_smiles(smiles).add_hydrogens()
++        # Check correspondence before sharing coordinates; matching element
++        # lists alone would miss permutations of two atoms of the same element.
++        assert [a["element"] for a in mol.depict_data()["atoms"]] == [
++            a.GetSymbol() for a in rdkit_mol.GetAtoms()
++        ]
++        assert {tuple(sorted((a, b))) for a, b, *_ in mol.bond_table} == {
++            tuple(sorted((b.GetBeginAtomIdx(), b.GetEndAtomIdx())))
++            for b in rdkit_mol.GetBonds()
++        }
++        types = mol.mmff94_numeric_atom_types()
++        charges = mol.mmff94_charges_numeric()
++        for atom in rdkit_mol.GetAtoms():
++            if atom.GetAtomicNum() == 1 and any(
++                nb.GetAtomicNum() == 8 for nb in atom.GetNeighbors()
++            ):
++                i = atom.GetIdx()
++                assert types[i] == properties.GetMMFFAtomType(i), smiles
++                assert charges[i] == pytest.approx(properties.GetMMFFPartialCharge(i)), smiles
++        coords = rdkit_mol.GetConformer().GetPositions().tolist()
++        assert mol.mmff94_energy_breakdown(coords)["vdw"] == pytest.approx(
++            rdkit_term_energy_breakdown(rdkit_mol)["vdw"], abs=1e-9
++        ), smiles
++
++
++def test_same_element_sequence_cannot_hide_an_indexed_graph_mismatch(monkeypatch):
++    import chematic
++
++    # Both isomers have C5H12 and the same AddHs element sequence. The
++    # branching still makes sharing atom-indexed coordinates invalid.
++    branched = chematic.from_smiles("CC(C)CC")
++    monkeypatch.setattr(chematic, "from_smiles", lambda _: branched)
++    result = evaluate({"smiles": "CCCCC"}, 0, 43, set(), 1e-5)
++    assert result["status"] == "atom_order_mismatch"
++    assert result["reason"] == "indexed_bond_graph_mismatch"
++
++
++@pytest.mark.parametrize("smiles", [
++    "c1ccccc1-c1ccccc1",
++    "C=CC=C",
++    "c1ccccc1C[n+]1ccc(N)c2ccccc21",
++    "CC(=O)Nc1ccc(O)cc1",
++    "N#CC",
++])
++def test_angle_and_stretch_bend_terms_match_rdkit_on_residual_motifs(smiles):
++    import pytest
++    import chematic
++    from rdkit import Chem
++    from rdkit.Chem import AllChem
++
++    rdkit_mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
++    assert AllChem.EmbedMolecule(rdkit_mol, randomSeed=43) == 0
++    # Exercise the linear-center cosine potential away from equilibrium;
++    # a nearly straight embedded nitrile would conceal the wrong formula.
++    if smiles == "N#CC":
++        rdkit_mol.GetConformer().SetAtomPosition(0, (0.0, 1.1, 0.0))
++        rdkit_mol.GetConformer().SetAtomPosition(1, (0.0, 0.0, 0.0))
++        rdkit_mol.GetConformer().SetAtomPosition(2, (1.3, -0.4, 0.0))
++    mol = chematic.from_smiles(smiles).add_hydrogens()
++    assert [a["element"] for a in mol.depict_data()["atoms"]] == [
++        a.GetSymbol() for a in rdkit_mol.GetAtoms()
++    ]
++    assert {tuple(sorted((a, b))) for a, b, *_ in mol.bond_table} == {
++        tuple(sorted((b.GetBeginAtomIdx(), b.GetEndAtomIdx())))
++        for b in rdkit_mol.GetBonds()
++    }
++    coords = rdkit_mol.GetConformer().GetPositions().tolist()
++    actual = mol.mmff94_energy_breakdown(coords)
++    expected = rdkit_term_energy_breakdown(rdkit_mol)
++    for term in ["angle", "stretch_bend"]:
++        assert actual[term] == pytest.approx(expected[term], abs=1e-8), (smiles, term)
+diff --git a/crates/chematic-ff/tests/mmff94_angle_stretch_bend.rs b/crates/chematic-ff/tests/mmff94_angle_stretch_bend.rs
+new file mode 100644
+index 00000000..d97acc42
+--- /dev/null
++++ b/crates/chematic-ff/tests/mmff94_angle_stretch_bend.rs
+@@ -0,0 +1,22 @@
++use chematic_ff::{mmff94_angle_energy, mmff94_stbn};
++
++// RDKit 2026.03.6 GetMMFFAngleBendParams on the benzyl-pyridinium
++// motif in frozen corpus inputs 89 and 96. Type 58 must substitute
++// through its defined equivalence levels, rather than remain 58.
++#[test]
++fn aromatic_cation_equivalence_selects_the_correct_angle_parameters() {
++    for (i, k) in [(37, 58), (58, 37)] {
++        let params = mmff94_angle_energy(0, i, 1, k).unwrap();
++        assert!((params.ka - 1.16).abs() < 1e-12);
++        assert!((params.theta0 - 107.963).abs() < 1e-12);
++    }
++}
++
++// RDKit 2026.03.6 GetMMFFStretchBendParams at biphenyl's connecting
++// single bond: type 1 has no specific 37-37-37 row. The periodic-row
++// default is +0.3, not the aromatic-ring type-0 value -0.411.
++#[test]
++fn biphenyl_stretch_bend_uses_periodic_row_default() {
++    assert_eq!(mmff94_stbn(1, 37, 37, 37, 6, 6, 6), Some((0.3, 0.3)));
++    assert_eq!(mmff94_stbn(0, 37, 37, 37, 6, 6, 6), Some((-0.411, -0.411)));
++}

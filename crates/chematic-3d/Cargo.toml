@@ -23,7 +23,8 @@ chematic-ff         = { path = "../chematic-ff",         version = "1.0.20" }
 chematic-chem       = { path = "../chematic-chem",       version = "1.0.20" }
 chematic-fp         = { path = "../chematic-fp",         version = "1.0.20" }
 chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.20" }
-serde_json          = "1.0"
+# Keep coordinate JSON decoding bit-exact, including stereo boundary geometries.
+serde_json          = { version = "1.0", features = ["float_roundtrip"] }
 
 # std::time::Instant panics on wasm32-unknown-unknown (issue #219); web-time
 # is a drop-in Instant replacement backed by Performance.now() there, and

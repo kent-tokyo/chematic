@@ -1,0 +1,6 @@
+{
+  "path": "crates/chematic-ff/src/mmff94_minimizer.rs",
+  "source_revision": "7f84ae4a98399086ce9f389c099f3fb77b66066e",
+  "reconstructed_from": "validation/results/mmff94-correctness-2026-10-11/cation-water/implementation.patch",
+  "reconstructed_source_sha256": "cf3686cffbc59ef64ae2a3f4143fd17c2f30264614c9594833d98b029fa40f2a"
+}

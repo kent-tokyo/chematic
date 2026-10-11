@@ -130,10 +130,16 @@ pub fn mmff94_vdw_combined(type_i: u8, type_j: u8) -> Option<(f64, f64)> {
     let r_ii = pi.a_i * pi.alpha_i.powf(0.25);
     let r_jj = pj.a_i * pj.alpha_i.powf(0.25);
 
-    // Arithmetic mean + London asymmetry correction (MMFF94 eq. 2)
+    // A donor on EITHER side suppresses the asymmetry correction, even
+    // without an acceptor partner (RDKit Nonbonded.cpp,
+    // calcUnscaledVdWMinimum). Donor-acceptor scaling is a separate step.
     let r_ij_unscaled = 0.5 * (r_ii + r_jj);
     let delta = (r_ii - r_jj) / (r_ii + r_jj);
-    let r_star_ij = r_ij_unscaled * (1.0 + 0.2 * (1.0 - (-12.0 * delta * delta).exp()));
+    let r_star_ij = if pi.da == 1 || pj.da == 1 {
+        r_ij_unscaled
+    } else {
+        r_ij_unscaled * (1.0 + 0.2 * (1.0 - (-12.0 * delta * delta).exp()))
+    };
 
     // Epsilon combining rule: Slater-Kirkwood (eq. 3)
     let eps_ij = 181.16 * pi.g_i * pj.g_i * pi.alpha_i * pj.alpha_i

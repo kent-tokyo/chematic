@@ -2356,117 +2356,21 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
     (8, 30, 30, 30, 1.2300, 93.7320),
 ];
 
-/// RDKit's atom-type canonical-equivalence-class ladder (`defaultMMFFDef`'s
-/// `eqLevel` columns, `Code/ForceField/MMFF/Params.cpp` at the pinned commit
-/// -- issue #227 Stage B). `[level2, level3, level4, level5]` per MMFF94
-/// numeric atom type; level1 is skipped, identical to level2 per MMFF.I note
-/// 68, page 519. Every numeric type this table doesn't list (rare/metal/
-/// exotic types outside chematic's supported corpus) is treated as its own
-/// identity substitution at every stage by [`eq_level`].
-///
-/// **Type 64 (C5B) added 2026-08-28 (RDKit/COSMolKit/OpenEye advantage
-/// directive, Phase 4: 3D coverage gap)**:
-/// the table previously stopped at type 55, on the documented assumption
-/// that every type beyond it was "rare/exotic" and would never need a row
-/// in practice. Empirically false for type 64 specifically -- it's an
-/// aromatic 5-ring carbon (indole/pyrrole/furan/thiophene beta position),
-/// not rare at all, and 11 of the 265-molecule strict corpus's coverage
-/// failures were exactly this gap (`Angle C(3)-C(2)-C(64)`, e.g.
-/// `chembl_tier_b_0180`). Confirmed via the already-frozen
-/// `scripts/mmff94_provenance/rdkit_defaultMMFFDef.txt` (line 153: `C5B  64
-/// 64  2  1  0`) AND independently via a live RDKit oracle query
-/// (`MMFFGetMoleculeProperties(...).GetMMFFAngleBendParams`) on
-/// `chembl_tier_b_0180`'s own `(angle_type=2, 3, 2, 64)` triple, which
-/// returns real, defined values (`ka=0.893, theta0=118.456`) -- i.e. RDKit's
-/// real behavior resolves this deterministically, not the "returns nullptr,
-/// undefined behavior" situation type 63's own still-open, deliberately-
-/// unresolved case describes just below in this file
-/// (`angle_empirical_fails_closed_for_undefined_eq_level_substitution`).
-/// **Type 63 (C5A) added 2026-09-12**: the strict-corpus residual
-/// `(43, 18, 63)` is concrete evidence that this common aromatic 5-ring
-/// carbon must participate in the defined equivalence ladder.  The row is
-/// copied from the checked-in numeric type registry (`C5A 63 2 1 0`).  This
-/// does not invent an angle parameter: if the resulting ladder has no angle
-/// row, lookup still fails closed.  Other types beyond 55 (65-99, etc.)
-/// remain deferred until a concrete, source-attributed use is measured.
-static MMFF94_EQ_LEVEL: &[(u8, [u8; 4])] = &[
-    (1, [1, 1, 1, 0]),
-    (2, [2, 2, 1, 0]),
-    (3, [3, 3, 1, 0]),
-    (4, [4, 4, 1, 0]),
-    (5, [5, 5, 5, 0]),
-    (6, [6, 6, 6, 0]),
-    (7, [7, 7, 6, 0]),
-    (8, [8, 8, 8, 0]),
-    (9, [9, 9, 8, 0]),
-    (10, [10, 10, 8, 0]),
-    (11, [11, 11, 11, 0]),
-    (12, [12, 12, 12, 0]),
-    (13, [13, 13, 13, 0]),
-    (14, [14, 14, 14, 0]),
-    (15, [15, 15, 15, 0]),
-    (16, [16, 16, 15, 0]),
-    (17, [17, 17, 15, 0]),
-    (18, [18, 18, 15, 0]),
-    (19, [19, 19, 19, 0]),
-    (20, [20, 1, 1, 0]),
-    (21, [21, 21, 5, 0]),
-    (22, [22, 22, 1, 0]),
-    (23, [23, 23, 5, 0]),
-    (24, [24, 24, 5, 0]),
-    (25, [25, 25, 25, 0]),
-    (26, [26, 26, 25, 0]),
-    (27, [27, 28, 5, 0]),
-    (28, [28, 28, 5, 0]),
-    (29, [29, 29, 5, 0]),
-    (30, [30, 2, 1, 0]),
-    (31, [31, 31, 31, 0]),
-    (32, [32, 7, 6, 0]),
-    (33, [33, 21, 5, 0]),
-    (34, [34, 8, 8, 0]),
-    (35, [35, 6, 6, 0]),
-    (36, [36, 36, 5, 0]),
-    (37, [37, 2, 1, 0]),
-    (38, [38, 9, 8, 0]),
-    (39, [39, 10, 8, 0]),
-    (40, [40, 10, 8, 0]),
-    (41, [41, 3, 1, 0]),
-    (42, [42, 42, 8, 0]),
-    (43, [43, 10, 8, 0]),
-    (44, [44, 16, 15, 0]),
-    (45, [45, 10, 8, 0]),
-    (46, [46, 9, 8, 0]),
-    (47, [47, 42, 8, 0]),
-    (48, [48, 9, 8, 0]),
-    (49, [49, 6, 6, 0]),
-    (50, [50, 21, 5, 0]),
-    (51, [51, 7, 6, 0]),
-    (52, [52, 21, 5, 0]),
-    (53, [53, 42, 8, 0]),
-    (54, [54, 9, 8, 0]),
-    (55, [55, 10, 8, 0]),
-    (63, [63, 2, 1, 0]),
-    (64, [64, 2, 1, 0]),
-];
-
-/// `stage` in `0..4`, matching RDKit's Level 2/3/4/5. Falls back to `atom_type`
-/// itself (identity, i.e. equivalent to an exact-match retry) for any type
-/// not in [`MMFF94_EQ_LEVEL`] -- see that table's own doc for why this is safe.
+/// RDKit's atom-type canonical-equivalence-class ladder (`defaultMMFFDef`).
+/// Equivalence levels come from the complete generated numeric-type registry,
+/// sourced from RDKit's frozen MMFFDEF table. Keep a single definition so
+/// common types beyond 55 (including aromatic cation 58) are not omitted.
 fn eq_level(atom_type: u8, stage: usize) -> u8 {
-    MMFF94_EQ_LEVEL
-        .binary_search_by_key(&atom_type, |&(t, _)| t)
-        .map(|idx| MMFF94_EQ_LEVEL[idx].1[stage])
+    crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(atom_type)
+        .map(|info| info.equivalence_levels[stage])
         .unwrap_or(atom_type)
 }
 
 fn has_eq_level_row(atom_type: u8) -> bool {
-    MMFF94_EQ_LEVEL
-        .binary_search_by_key(&atom_type, |&(t, _)| t)
-        .is_ok()
+    crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(atom_type).is_some()
 }
 
-/// Outcome of the full table search chain (RDKit's real eqLevel ladder plus
-/// chematic's own generic-`angle_type` net), before any empirical fallback.
+/// Outcome of RDKit's eqLevel ladder, before any empirical fallback.
 enum TableSearch {
     /// A real, usable row (`ka != 0.0`).
     Hit(AngleEnergyParams, Mmff94Resolution),
@@ -2479,16 +2383,9 @@ enum TableSearch {
     /// No row at any stage, and every stage that mattered used a
     /// well-defined `eqLevel` substitution (or none at all).
     Exhausted,
-    /// The ladder needed to substitute a numeric type absent from
-    /// [`MMFF94_EQ_LEVEL`] (`type_i`/`type_k` outside the 1-55 range) to
-    /// reach the point of giving up. RDKit's real
-    /// `MMFFDefCollection::operator()` returns `nullptr` for such a type and
-    /// `MMFFAngleCollection::operator()` dereferences it with no null
-    /// check -- undefined behavior in RDKit's own C++, confirmed by direct
-    /// source read at the pinned commit. There is no well-defined "real"
-    /// answer to reproduce here, so this is never treated as resolvable --
-    /// see `scripts/mmff94_provenance/PROVENANCE.md`'s Stage C entry for the
-    /// oracle investigation this is based on (the `(0, 43, 18, 63)` tuple).
+    /// An outer numeric type has no authoritative equivalence definition.
+    /// Fail closed instead of inventing a substitution or dereferencing an
+    /// absent definition as RDKit's C++ lookup would do.
     UndefinedSubstitution,
 }
 
@@ -2516,27 +2413,7 @@ fn search_table(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> TableSear
         .or_else(|| search(angle_type, type_k, type_i, Mmff94Resolution::DirectTable))
         .or_else(|| eq_level_search(1, 3))
         .or_else(|| eq_level_search(2, 4))
-        .or_else(|| eq_level_search(3, 5))
-        .or_else(|| {
-            if angle_type != 0 {
-                search(
-                    0,
-                    type_i,
-                    type_k,
-                    Mmff94Resolution::GenericAngleTypeFallback,
-                )
-                .or_else(|| {
-                    search(
-                        0,
-                        type_k,
-                        type_i,
-                        Mmff94Resolution::GenericAngleTypeFallback,
-                    )
-                })
-            } else {
-                None
-            }
-        });
+        .or_else(|| eq_level_search(3, 5));
     match hit {
         Some((ka, theta0, kind)) if ka != 0.0 => {
             TableSearch::Hit(AngleEnergyParams { ka, theta0 }, kind)
@@ -2556,20 +2433,9 @@ fn search_table(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> TableSear
 /// B): `type_i`/`type_k` are substituted through 4 equivalence-class stages
 /// (`type_j` and `angle_type` stay fixed throughout -- RDKit's real
 /// algorithm never substitutes the center or changes the angle type). Only
-/// once the full eqLevel ladder is exhausted does this fall back to the
-/// generic `angle_type=0` row for the same triple — a chematic-specific
-/// safety net RDKit's own algorithm doesn't have, kept from before this
-/// change: without it, a *correct* ring/bond-type classification for a
-/// triple the (much smaller) specialized table doesn't happen to cover
-/// would silently drop the angle term entirely, which is worse than the
-/// un-classified behavior it replaces.
-///
-/// A `ka == 0.0` placeholder row (issue #227 Stage C, see [`TableSearch`])
-/// is never surfaced here -- it is not a usable parameter on its own, only
-/// [`mmff94_angle_energy_resolved`] can turn it into one via the empirical
-/// rule. This keeps this function's contract identical to before Stage C
-/// restored those rows to the table: every input that used to return
-/// `Some`/`None` still does.
+/// once the full eqLevel ladder is exhausted does the resolved API use
+/// the empirical rule. The angle type never changes during lookup.
+/// This table-only API returns `None` for zero-force placeholders and misses.
 pub fn mmff94_angle_energy(
     angle_type: u8,
     type_i: u8,

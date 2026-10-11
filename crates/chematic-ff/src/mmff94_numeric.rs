@@ -72,16 +72,16 @@ static MMFF94_PBCI: &[(u8, f64, f64)] = &[
     (21, 0.157, 0.000),  // =P       phosphorus =P
     (22, -0.095, 0.000), // P=O      phosphoryl P
     (23, 0.193, 0.000),  // HNR      H on amine N
-    (24, 0.257, 0.000),  // HOCO     H on O in acid/alcohol
+    (24, 0.257, 0.000),  // HOCO     H on O in carboxylic/phospho acids
     (25, 0.012, 0.000),  // PO4      phosphate P
     (26, -0.142, 0.000), // P=S      P=S
     (27, 0.094, 0.000),  // HN=C     H on imine N
     (28, 0.058, 0.000),  // HNCO     H on amide N
-    (29, 0.207, 0.000),  // HOCO     H on O in ester
+    (29, 0.207, 0.000),  // HOCC/HOCN H on O in phenols/enols/HO-C=N
     (30, -0.166, 0.000), // N2OX     N-oxide N
     (31, 0.161, 0.000),  // HOH      H in water
     (32, -0.732, 0.500), // O2CM     carboxylate/nitro-nitrate/sulfate/phosphate O (fcadj=0.5) -- was mislabeled "NR+", value already correct
-    (33, 0.257, 0.000),  // HOX      H on O in N-oxide
+    (33, 0.257, 0.000),  // HOS      H on O attached to sulfur
     (34, -0.491, 0.000), // NR+      quaternary/protonated nitrogen -- was mislabeled "O-", value already correct
     (35, -0.456, 0.500), // OM       oxide oxygen (fcadj=0.5)
     (36, -0.031, 0.000), // HNR+     H on protonated N
@@ -809,7 +809,7 @@ pub fn assign_mmff94_numeric_types_with_view(
             Element::CL => 12,
             Element::BR => 13,
             Element::I => 14,
-            Element::H => assign_h_type(&mmff_mol, idx)?,
+            Element::H => assign_h_type(&mmff_mol, &rings, idx)?,
             _ => {
                 return Err(NumericTypeError(format!(
                     "unsupported element {:?} at atom {i}",
@@ -1439,6 +1439,85 @@ fn find_alpha_beta_heteroatoms(
 
 // ── C type assignment ────────────────────────────────────────────────────────
 
+/// Carbon-neighbor counts used by the amidinium/guanidinium rules in
+/// RDKit Release_2026_03_6 AtomTyper.cpp. Degree includes hydrogen atoms
+/// whether stored implicitly or represented as graph vertices.
+struct ConjugatedNitrogenContext {
+    n3: usize,
+    n2: usize,
+    positive_n: bool,
+    double_n: bool,
+}
+
+fn conjugated_nitrogen_context(mol: &Molecule, carbon: AtomIdx) -> ConjugatedNitrogenContext {
+    let mut ctx = ConjugatedNitrogenContext {
+        n3: 0,
+        n2: 0,
+        positive_n: false,
+        double_n: false,
+    };
+    for bond in bonds_of(mol, carbon) {
+        let atom = mol.atom(bond.neighbor);
+        if atom.element != Element::N {
+            continue;
+        }
+        ctx.double_n |= bond.order == BondOrder::Double;
+        match total_degree(mol, bond.neighbor) {
+            3 => {
+                ctx.positive_n |= atom.charge == 1;
+                // Nitro/nitrate nitrogen does not participate in the
+                // nitrogen typing rule's conjugated N3 count.
+                if bonds_of(mol, bond.neighbor)
+                    .iter()
+                    .filter(|b| mol.atom(b.neighbor).element == Element::O)
+                    .count()
+                    < 2
+                {
+                    ctx.n3 += 1;
+                }
+            }
+            2 if matches!(bond.order, BondOrder::Double | BondOrder::Aromatic) => ctx.n2 += 1,
+            _ => {}
+        }
+    }
+    ctx
+}
+
+fn conjugated_cation_n_type(mol: &Molecule, rings: &[Vec<AtomIdx>], idx: AtomIdx) -> Option<u8> {
+    if total_degree(mol, idx) != 3
+        // The nitro/nitrate branch precedes conjugated N in RDKit. Such
+        // an ipso N must not borrow the other N atoms' amidinium class.
+        || (total_valence(mol, idx) >= 4 && count_terminal_o_neighbors(mol, idx) >= 2)
+    {
+        return None;
+    }
+    let mut amidinium = false;
+    let mut guanidinium = false;
+    for bond in bonds_of(mol, idx) {
+        let carbon = bond.neighbor;
+        if mol.atom(carbon).element != Element::C {
+            continue;
+        }
+        let ctx = conjugated_nitrogen_context(mol, carbon);
+        if !ctx.double_n {
+            continue;
+        }
+        amidinium |= ctx.n3 == 2
+            && ctx.n2 == 0
+            && ctx.positive_n
+            && !atom_in_aromatic_ring_of_size(mol, rings, carbon, 6)
+            && total_degree(mol, carbon) < 4;
+        guanidinium |= ctx.n3 == 3;
+    }
+    if amidinium {
+        Some(55) // NCN+: either nitrogen in N+=C-N
+    } else if guanidinium {
+        Some(56) // NGD+: all three guanidinium nitrogens
+    } else {
+        None
+    }
+}
+
 fn assign_c_type(
     mol: &Molecule,
     rings: &[Vec<AtomIdx>],
@@ -1487,6 +1566,20 @@ fn assign_c_type(
 
     // sp2 carbon
     if double_bonds > 0 {
+        if total_degree(mol, idx) == 3 {
+            let ctx = conjugated_nitrogen_context(mol, idx);
+            // The carbon rule counts every N3, including nitro N3;
+            // the nitrogen rule above excludes nitro/nitrate neighbors.
+            let n3 = bonds_of(mol, idx)
+                .iter()
+                .filter(|b| {
+                    mol.atom(b.neighbor).element == Element::N && total_degree(mol, b.neighbor) == 3
+                })
+                .count();
+            if ctx.double_n && n3 >= 2 && ctx.n2 == 0 {
+                return Ok(57); // CNN+ / CGD+: amidinium/guanidinium carbon
+            }
+        }
         // Issue #227 Priority 1A-2: RDKit's real type-3 "C=O" row is an
         // umbrella covering a 3-connected carbon double-bonded to N, O, P,
         // *or* S (`AtomTyper.cpp` lines 907-943 at the pinned commit,
@@ -1617,14 +1710,8 @@ struct N3CarbonContext {
 /// a nitrogen in exactly one ring, also counts per RDKit's own rule at
 /// lines 1124-1130), or via its own triple bond to carbon.
 ///
-/// Not ported: the charged amidinium (`NCN+`, type 55) / guanidinium
-/// (`NGD+`, type 56) sub-cases (lines 1197-1206, 1273-1284) -- moot for
-/// `assign_n_type`'s actual callers, since every positively-charged
-/// nitrogen is already routed to type 34 before reaching this function at
-/// all (issue #227's construction-time semantic-compatibility work);
-/// verified 0/129 corpus atoms in the NR-vs-NC=C residual this port closes
-/// carry a charge, so this omission is not a silent gap for this fix's
-/// actual target population.
+/// The charged amidinium/guanidinium cases are resolved separately by
+/// `conjugated_cation_n_type`, before the generic positive-N branches.
 ///
 /// Structural divergence point from RDKit's literal C++ (not a
 /// simplification of the underlying chemistry, a difference in how a
@@ -1765,6 +1852,13 @@ fn assign_n_type(
     let triple_bonds = count_bond_order(mol, idx, BondOrder::Triple);
     let nbrs = bonds_of(mol, idx);
     let degree = total_degree(mol, idx);
+
+    // Resolve the entire conjugated cation before the generic iminium or
+    // protonated-amine branches. The charge may reside on another N in
+    // the input resonance form, so this must also classify neutral N.
+    if let Some(t) = conjugated_cation_n_type(mol, rings, idx) {
+        return Ok(t);
+    }
 
     // Terminal (degree-1) nitrogen: nitrile/isocyanide (NSP, type 42) or the
     // terminal nitrogen of an azide/diazo group (NAZT, type 47).
@@ -2149,6 +2243,26 @@ fn assign_o_type(
     rings: &[Vec<AtomIdx>],
     idx: AtomIdx,
 ) -> Result<u8, NumericTypeError> {
+    // RDKit's ordered 3-/2-connected oxygen cases. Checking degree and
+    // valence first prevents water detection from swallowing hydronium
+    // or oxenium; hydrogen counts work in both graph representations.
+    let degree = total_degree(mol, idx);
+    if degree == 3 {
+        return Ok(49); // O+: oxonium
+    }
+    if degree == 2 {
+        if total_valence(mol, idx) == 3 {
+            return Ok(51); // O=+: oxenium
+        }
+        let hydrogens = implicit_hcount(mol, idx) as usize
+            + bonds_of(mol, idx)
+                .iter()
+                .filter(|b| mol.atom(b.neighbor).element == Element::H)
+                .count();
+        if hydrogens == 2 {
+            return Ok(70); // OH2: water oxygen
+        }
+    }
     // Aromatic 5-ring oxygen (furan-type) -- RDKit's aromatic switch has no
     // 6-ring case for oxygen (no common neutral 6-ring aromatic O in the
     // chemistry this typer covers), so only the 5-ring case is ported.
@@ -2285,7 +2399,11 @@ fn assign_p_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 
 // ── H type assignment ────────────────────────────────────────────────────────
 
-fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
+fn assign_h_type(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    idx: AtomIdx,
+) -> Result<u8, NumericTypeError> {
     let nbrs = bonds_of(mol, idx);
     if nbrs.is_empty() {
         return Ok(5); // H_C fallback
@@ -2294,83 +2412,70 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 
     Ok(match nbr_atom.element {
         Element::C => 5, // HC  H on carbon
-        Element::O => assign_oxygen_bound_h_type(mol, nbrs[0].neighbor),
+        Element::O => match assign_o_type(mol, rings, nbrs[0].neighbor)? {
+            49 => 50, // HO+: H on oxonium
+            51 => 52, // HO=+: H on oxenium
+            70 => 31, // HOH: water
+            _ => assign_oxygen_bound_h_type(mol, nbrs[0].neighbor),
+        },
         Element::S => 71, // HS  H on sulfur
-        Element::N => {
-            // Distinguish: amide NH (type 28) vs amine NH (type 23) vs imine=NH (type 27)
-            let n_idx = nbrs[0].neighbor;
-            let n_atom = mol.atom(n_idx);
-            if n_atom.aromatic {
-                return Ok(23); // treat as HNR for aromatic NH
-            }
-            let n_is_amide = bonds_of(mol, n_idx).iter().any(|b| {
-                b.order == BondOrder::Single
-                    && mol.atom(b.neighbor).element == Element::C
-                    && bonds_of(mol, b.neighbor).iter().any(|bb| {
-                        bb.order == BondOrder::Double && mol.atom(bb.neighbor).element == Element::O
-                    })
-            });
-            if n_is_amide {
-                28 // HNCO H on amide N
-            } else if total_degree(mol, n_idx) == 3
-                && bonds_of(mol, n_idx).iter().any(|bond| {
-                    let carbon = mol.atom(bond.neighbor);
-                    carbon.element == Element::C
-                        && (carbon.aromatic
-                            || bonds_of(mol, bond.neighbor).iter().any(|neighbor_bond| {
-                                neighbor_bond.order == BondOrder::Double
-                                    && matches!(
-                                        mol.atom(neighbor_bond.neighbor).element,
-                                        Element::C | Element::N | Element::P
-                                    )
-                            }))
-                })
-            {
-                // RDKit shares the HNCO parameter row for N-H attached to
-                // a delocalized amine (numeric N type 40), including
-                // aniline/enamine environments.
-                28
-            } else if count_bond_order(mol, n_idx, BondOrder::Double) > 0 {
-                27 // HN=C H on imine N
-            } else {
-                23 // HNR  H on amine N
-            }
-        }
+        // Use the assigned heavy type, as setMMFFHydrogenType does, so
+        // the same N-H class applies to every input resonance form.
+        Element::N => match assign_n_type(mol, rings, nbrs[0].neighbor)? {
+            8 | 39 | 62 | 67 | 68 => 23,
+            34 | 54 | 55 | 56 | 58 | 81 => 36,
+            9 => 27,
+            _ => 28,
+        },
         _ => 5,
     })
 }
 
 /// Select the MMFF94 numeric type for an explicit hydrogen bonded to oxygen.
 ///
-/// RDKit distinguishes hydroxyl H (21), acid H (24), water H (31), and the
-/// less common N-oxide hydroxyl H (33).  Treating every O-H bond as HOCO
-/// changes both the bond charge-transfer term and the resulting electrostatic
-/// energy when callers provide an AddHs topology.  The implicit-H path never
-/// enters this function, so this is deliberately limited to explicit H.
+/// RDKit's `setMMFFHydrogenType` distinguishes ordinary hydroxyl H (21),
+/// carboxylic/phospho acid H (24), phenolic/enolic/HO-C=N H (29), water H
+/// (31), and H on oxygen attached to sulfur (33). The caller resolves water
+/// and the charged-oxygen H types before entering this neutral-O helper.
+/// These types also control
+/// charge transfer and bonded parameters. N-O-H alone is an ordinary
+/// hydroxyl, not HOS. The implicit-H path never enters this function.
 fn assign_oxygen_bound_h_type(mol: &Molecule, oxygen_idx: AtomIdx) -> u8 {
     let heavy_neighbors: Vec<_> = bonds_of(mol, oxygen_idx)
         .into_iter()
         .filter(|bond| mol.atom(bond.neighbor).element != Element::H)
         .collect();
 
-    if heavy_neighbors.is_empty() {
-        return 31; // HOH, water
+    let mut is_acid = false;
+    let mut is_conjugated = false;
+    let mut is_sulfur_bound = false;
+    for neighbor in heavy_neighbors {
+        match mol.atom(neighbor.neighbor).element {
+            Element::P => is_acid = true,
+            Element::S => is_sulfur_bound = true,
+            Element::C => {
+                for bond in bonds_of(mol, neighbor.neighbor) {
+                    if bond.neighbor == oxygen_idx {
+                        continue;
+                    }
+                    let element = mol.atom(bond.neighbor).element;
+                    is_acid |= element == Element::O && bond.order == BondOrder::Double;
+                    is_conjugated |= matches!(element, Element::C | Element::N)
+                        && matches!(bond.order, BondOrder::Double | BondOrder::Aromatic);
+                }
+            }
+            _ => {}
+        }
     }
-
-    let heavy_neighbor = heavy_neighbors[0].neighbor;
-    let heavy_atom = mol.atom(heavy_neighbor);
-    if heavy_atom.element == Element::N {
-        return 33; // HOX, N-oxide hydroxyl
-    }
-
-    let is_carboxylic_acid = heavy_atom.element == Element::C
-        && bonds_of(mol, heavy_neighbor).iter().any(|bond| {
-            bond.order == BondOrder::Double && mol.atom(bond.neighbor).element == Element::O
-        });
-    if is_carboxylic_acid {
-        24 // HOCO, acid hydroxyl
+    // Match RDKit's precedence: acid/phospho > conjugated > sulfur > generic.
+    if is_acid {
+        24 // HOCO
+    } else if is_conjugated {
+        29 // HOCC / HOCN
+    } else if is_sulfur_bound {
+        33 // HOS
     } else {
-        21 // HOR, alcohol/phenol hydroxyl
+        21 // HOR / generic hydroxyl
     }
 }
 
@@ -2423,14 +2528,16 @@ fn assign_oxygen_bound_h_type(mol: &Molecule, oxygen_idx: AtomIdx) -> u8 {
 ///   neighbor (type 77) branches.
 /// - Type 76 (N5M): formal charge shared across N5M nitrogens co-membered in
 ///   a 5-ring (needs ring perception).
-/// - Types 55/56/81 (NIM+/N5A+/N5B+): formal charge averaged across a
-///   conjugated cationic-nitrogen network reached via alternating type-57/80
-///   carbons (needs BFS over a subset of the molecule graph).
 /// - Type 61's diazonium special case (+1 bump when bonded to a type-42
 ///   diazonium nitrogen).
 ///
-/// None of these gaps are guesses papered over with an untested formula --
-/// zero atoms of types 62/76/55/56/61/81, and zero O2CM/SM atoms with a
+/// Types 55/56/81 now average the literal formal charge over the conjugated
+/// nitrogen component reached through type-57/80 carbon, matching
+/// Release_2026_03_6's graph traversal. Cation/water holdout fixtures cover
+/// amidinium, guanidinium, substituted groups and connected biguanidinium.
+///
+/// Historical corpus exposure: zero atoms of types 62/76/55/56/61/81,
+/// and zero O2CM/SM atoms with a
 /// phosphorus/type-73/type-77 neighbor, appear anywhere in the 264-molecule
 /// Wave 1 corpus this port was measured against (confirmed by a dedicated,
 /// committed, independently re-runnable survey,
@@ -2467,8 +2574,38 @@ fn mmff_derived_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64
         // O2CM (32) / SM (72): formal charge shared/localized across
         // terminal O/S atoms bonded to a common neighbor.
         32 | 72 => o2cm_sm_formal_charge(mol, types, idx),
+        55 | 56 | 81 => conjugated_n_formal_charge(mol, types, idx),
         _ => 0.0,
     }
+}
+
+/// Share charge across the entire conjugated N component, including N
+/// linking two cationic groups. A local division by two or three would
+/// double-count that shared atom and depend on the chosen resonance form.
+fn conjugated_n_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
+    let mut visited = vec![false; mol.atom_count()];
+    let mut pending = vec![idx];
+    visited[idx.0 as usize] = true;
+    let mut charge = 0.0;
+    let mut count = 0;
+    while let Some(nitrogen) = pending.pop() {
+        charge += f64::from(mol.atom(nitrogen).charge);
+        count += 1;
+        for carbon_bond in bonds_of(mol, nitrogen) {
+            if !matches!(types[carbon_bond.neighbor.0 as usize], 57 | 80) {
+                continue;
+            }
+            for nitrogen_bond in bonds_of(mol, carbon_bond.neighbor) {
+                let next = nitrogen_bond.neighbor;
+                let index = next.0 as usize;
+                if matches!(types[index], 55 | 56 | 81) && !visited[index] {
+                    visited[index] = true;
+                    pending.push(next);
+                }
+            }
+        }
+    }
+    charge / f64::from(count)
 }
 
 /// O2CM/SM formal-charge redistribution (`AtomTyper.cpp` lines ~3095-3168,
