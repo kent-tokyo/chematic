@@ -1,0 +1,96 @@
+{
+  "schema": "chematic.mol2-preservation-validation.v1",
+  "date": "2026-10-11",
+  "status": "source_candidate_passed_bounded_regressions",
+  "provenance": {
+    "commit": "7f84ae4a98399086ce9f389c099f3fb77b66066e",
+    "workspace_version": "1.0.20",
+    "dirty_tree": true,
+    "boundary": "Local source-built candidate; unrelated pre-existing/concurrent work remains in this checkout. Not released-package or comparative acceptance.",
+    "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "node": "v24.5.0",
+    "source_sha256": {
+      "crates/chematic-mol/src/mol2_tripos.rs": "3cf3009053a52b492582ec379c88f7e3a53c80566e4c86658ed28b16a24e7515",
+      "crates/chematic-mol/src/lib.rs": "b08809d9301c8594d5e48cdf205a931fadf4efc99e8597889e67671bd747562c",
+      "crates/chematic-mol/tests/mol2_preservation.rs": "42ec6f11f3acd3d2363cd0d153493230ac0bea4f93e1965cc85e682bf2009ec0",
+      "crates/chematic-cli/src/main.rs": "32818dbfdccc1a12a0ca1a3941e771ce27d70b84f157f5c80fd160abca831167",
+      "crates/chematic-py/src/formats.rs": "d4f4e80aeaeec6d5b06132f3df7e952916243768a7794f396ff2d39c22dbaf00",
+      "crates/chematic-py/python/chematic/__init__.py": "3869db26523665fdc904a27fef1c3738b16c4647fe9d45699fa5c9e4f5bb890e",
+      "crates/chematic-py/python/chematic/__init__.pyi": "fc1b7c0bffaadb6702a50e03f0a3611eec11418455ed2c16d38ab50e54f5c47a",
+      "crates/chematic-py/tests/test_mol2_preservation.py": "443defa2cd57286623a79d231839586480e8cf06fcc30188c37e5c5513b6490b",
+      "crates/chematic-wasm/src/mol_io.rs": "e36a7c984777de2fc4475b60942ddfd54b607d628e8905ad20520848333524d0",
+      "crates/chematic-wasm/tests/mol2_preservation.test.mjs": "84597b6c32c242b503f775176cdbb0026002ec936e800efebf7f698ae796d266",
+      "validation/mol2_preservation/amide.mol2": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250"
+    }
+  },
+  "baseline": {
+    "observed_before_fix": [
+      "partial_charges_are_not_formal_charges",
+      "amide_bonds_are_single_not_aromatic",
+      "unknown_bond_type_does_not_silently_become_single",
+      "graph_writer_does_not_claim_computed_partial_charges"
+    ],
+    "outcome": "All four new regression tests failed before the implementation repair and passed after it."
+  },
+  "validation": {
+    "rust": {
+      "packages": [
+        "chematic-mol",
+        "chematic-cli"
+      ],
+      "passed": 803,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 14,
+      "command": "CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo test -p chematic-mol -p chematic-cli --offline -- --quiet"
+    },
+    "python": {
+      "version": "3.13.6",
+      "passed": 179,
+      "failed": 0,
+      "artifact": "chematic-1.0.20-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "cba20135051430d04a0fa759c4bf77c06705337bd30c361406f5ce3474cc9f9f",
+      "loaded_from": "/private/tmp/chematic-mol2-python/chematic/__init__.py",
+      "suites": [
+        "test_mol2_preservation.py",
+        "test_format_convert.py",
+        "test_cross_binding_contract.py"
+      ],
+      "command": "PYTHONPATH=/private/tmp/chematic-mol2-python PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv-v1gate/bin/python -m pytest crates/chematic-py/tests/test_mol2_preservation.py crates/chematic-py/tests/test_format_convert.py crates/chematic-py/tests/test_cross_binding_contract.py -q"
+    },
+    "wasm": {
+      "build": "wasm-pack --dev --target nodejs, wasm32-unknown-unknown",
+      "artifact_sha256": {
+        "chematic_wasm_bg.wasm": "357030c78f7b1776cf1704c1d6202cc638c24270ea5a49db773f1890669e9e59",
+        "chematic_wasm.js": "d65ac0b729144514f30694579899a0222063cd5c5f6b16666b3312be572ca6a7"
+      },
+      "suites": {
+        "mol2_preservation.test.mjs": "passed",
+        "cross_binding_contract.test.mjs": "passed",
+        "format_parity.test.mjs": "passed"
+      },
+      "boundary": "New suite used CHEMATIC_WASM_MODULE to select the fresh isolated runtime. Existing suites were copied without changing assertions into a temporary fixture tree using the same runtime; repository pkg-node was not replaced."
+    },
+    "clippy": {
+      "result": "passed, warnings denied",
+      "command": "CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo clippy -p chematic-mol -p chematic-cli --all-targets --offline -- -D warnings"
+    },
+    "log_sha256": {
+      "rust_tests": "78119d5d12e11f57b35558f3916c32bf071731fe51d0f7af8300875450ff8ae6",
+      "python_tests": "c0c5325ca4d37a57e02b16a3235b7e0dbd079e87b88b9f8976a294b2f6928fe6",
+      "python_build": "872d7b6b4498be304841ce09b076917b71c7a22dcc3556bb3f20088ff69aad2d",
+      "wasm_build": "ebf6bec24e73cf4624c04b30fd48de448a01da75c86e0f25c041d29e9b8d3695",
+      "wasm_cross_binding": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "wasm_format_parity": "8153d64d1b5ad20b3c15dad8c7515956cc064f926e4e0244851eef1028e646f3",
+      "clippy": "f25e91666043b58a099684a48ef98812ad3b3f1e7468bf1df636a5a0a55b42b0"
+    }
+  },
+  "interpretation_limits": [
+    "Exact source retention is distinct from interpreted or editable metadata semantics.",
+    "Graph formal-charge perception recognizes N.4 only; other formal-charge/UNITY interpretation is unsupported.",
+    "Coordinate-derived stereochemistry is not perceived.",
+    "Graph-only writers and cross-format bridges are not generally lossless.",
+    "No independent Open Babel superiority measurement or public release was performed."
+  ]
+}

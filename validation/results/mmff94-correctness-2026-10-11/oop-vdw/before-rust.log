@@ -1,0 +1,31 @@
+
+running 240 tests
+...................................................................................... 86/240
+mmff94_minimizer::tests::default_vdw_retains_long_range_energy_and_gradient_while_cutoff_is_opt_in --- FAILED
+........ 95/240
+mmff94_minimizer::tests::oop_uses_all_three_planes_independent_of_bond_insertion_order --- FAILED
+....................................................................................... 183/240
+.........................................................
+failures:
+
+---- mmff94_minimizer::tests::default_vdw_retains_long_range_energy_and_gradient_while_cutoff_is_opt_in stdout ----
+
+thread 'mmff94_minimizer::tests::default_vdw_retains_long_range_energy_and_gradient_while_cutoff_is_opt_in' (31685347) panicked at crates/chematic-ff/src/mmff94_minimizer.rs:4348:9:
+distant 1-4 pair still attracts
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- mmff94_minimizer::tests::oop_uses_all_three_planes_independent_of_bond_insertion_order stdout ----
+
+thread 'mmff94_minimizer::tests::oop_uses_all_three_planes_independent_of_bond_insertion_order' (31685361) panicked at crates/chematic-ff/src/mmff94_minimizer.rs:4335:13:
+assertion `left == right` failed: one Wilson angle per substituent
+  left: 1
+ right: 3
+
+
+failures:
+    mmff94_minimizer::tests::default_vdw_retains_long_range_energy_and_gradient_while_cutoff_is_opt_in
+    mmff94_minimizer::tests::oop_uses_all_three_planes_independent_of_bond_insertion_order
+
+test result: FAILED. 238 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.83s
+
+error: test failed, to rerun pass `-p chematic-ff --lib`

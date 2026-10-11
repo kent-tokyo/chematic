@@ -1,0 +1,12 @@
+{
+  "chemicalJson": 1,
+  "properties": {"name": "acetamide charges", "vendor": {"comment": "opaque"}},
+  "atoms": {
+    "elements": {"number": [6, 6, 8, 7]},
+    "formalCharges": [0, 0, 0, 0],
+    "isotopes": [0, 0, 0, 0],
+    "coords": {"3d": [-1.4175225513503917, -0.0, 5e-324, 1.5, 0, 0, 2, 1.2, 0, 2, -1.2, 0]}
+  },
+  "bonds": {"connections": {"index": [0, 1, 1, 2, 1, 3]}, "order": [1, 2, 1]},
+  "partialCharges": {"USER_CHARGES": [0.7, 0.25, -0.7, -0.25]}
+}

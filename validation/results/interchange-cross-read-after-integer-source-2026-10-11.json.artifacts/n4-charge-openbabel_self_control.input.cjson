@@ -1,0 +1,31 @@
+{
+  "chemicalJson": 1,
+  "atoms": {
+    "coords": {
+      "3d": [
+        1.25,
+        -2.5,
+        3.75
+      ]
+    },
+    "elements": {
+      "number": [
+        7
+      ]
+    },
+    "formalCharges": [
+      1
+    ]
+  },
+  "partialCharges": {
+    "USER_CHARGES": [
+      0.8
+    ]
+  },
+  "properties": {
+    "name": "ammonium projection",
+    "totalCharge": 1,
+    "totalSpinMultiplicity": 1,
+    "totalEnergy": 0.0
+  }
+}

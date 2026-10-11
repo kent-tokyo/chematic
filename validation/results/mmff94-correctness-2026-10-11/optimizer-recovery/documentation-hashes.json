@@ -1,0 +1,14 @@
+[
+  {
+    "path": "validation/results/mmff94-correctness-2026-10-11/optimizer-recovery/README.md",
+    "sha256": "91879c0a34cb437420a4dc78848fc11e42c0bec5453781ba2dd027053c6fe7ad"
+  },
+  {
+    "path": "validation/results/mmff94-correctness-2026-10-11/README.md",
+    "sha256": "904ee228f60a78e62f243600979946f0c33de523907c8b8f12fade7d08535bb7"
+  },
+  {
+    "path": "validation/results/mmff94-correctness-2026-10-11/optimizer-recovery/comparison.json",
+    "sha256": "db276e36f863e7660c5f20bf5159692c4154d07215e820e390712d3e598b2c57"
+  }
+]

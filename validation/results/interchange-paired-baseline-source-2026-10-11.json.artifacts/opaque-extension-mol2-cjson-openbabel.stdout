@@ -1,0 +1,66 @@
+{
+  "chemicalJson": 1,
+  "atoms": {
+    "coords": {
+      "3d": [
+        0.123456789,
+        0.0,
+        0.0,
+        1.5,
+        0.0,
+        0.0,
+        2.0,
+        1.2,
+        0.0,
+        2.0,
+        -1.2,
+        0.0
+      ]
+    },
+    "elements": {
+      "number": [
+        6,
+        6,
+        8,
+        7
+      ]
+    },
+    "formalCharges": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "partialCharges": {
+    "USER_CHARGES": [
+      0.7,
+      0.25,
+      -0.7,
+      -0.25
+    ]
+  },
+  "bonds": {
+    "connections": {
+      "index": [
+        0,
+        1,
+        1,
+        2,
+        1,
+        3
+      ]
+    },
+    "order": [
+      1,
+      2,
+      1
+    ]
+  },
+  "properties": {
+    "name": "acetamide",
+    "totalCharge": 0,
+    "totalSpinMultiplicity": 2,
+    "totalEnergy": 0.0
+  }
+}

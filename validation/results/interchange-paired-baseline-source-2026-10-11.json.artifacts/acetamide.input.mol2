@@ -1,0 +1,15 @@
+@<TRIPOS>MOLECULE
+acetamide
+4 3 0 0 0
+SMALL
+USER_CHARGES
+
+@<TRIPOS>ATOM
+1 methyl 0.123456789 0 0 C.3 1 ACM 0.70
+2 carbonyl 1.5 0 0 C.2 1 ACM 0.25
+3 oxygen 2.0 1.2 0 O.2 1 ACM -0.70
+4 nitrogen 2.0 -1.2 0 N.am 1 ACM -0.25
+@<TRIPOS>BOND
+1 1 2 1
+2 2 3 2
+3 2 4 am

@@ -1,0 +1,13 @@
+🍹 Building a mixed python/rust project
+🐍 Found CPython 3.13 at /private/tmp/chematic-mmff-development-20261011/bin/python
+🔗 Found pyo3 bindings
+Ignoring elixcee: markers 'extra == "excel"' don't match your environment
+Ignoring pytest: markers 'extra == "test"' don't match your environment
+Ignoring pytest-asyncio: markers 'extra == "test"' don't match your environment
+Requirement already satisfied: numpy>=1.20 in ./.venv-v1gate/lib/python3.13/site-packages (2.5.3)
+   Compiling chematic-mol v1.0.20 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol)
+   Compiling chematic-py v1.0.20 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py)
+    Finished `release` profile [optimized] target(s) in 2m 27s
+📦 Built wheel for CPython 3.13 to /var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/.tmpUkiSd0/chematic-1.0.20-cp313-cp313-macosx_11_0_arm64.whl
+✏️ Setting installed package as editable
+🛠 Installed chematic-1.0.20

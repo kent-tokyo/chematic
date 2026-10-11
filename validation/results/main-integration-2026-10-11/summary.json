@@ -1,0 +1,93 @@
+{
+  "scope": "source-built current-main integration, not a release or broad Open Babel compatibility claim",
+  "upstream_parent": "8f5a49a32dfbbce39109e5feaaa04ea4d7e1a3f5",
+  "local_parent": "0bae2e0bdec5ef299d1c4dd6e16e1c06cb164c61",
+  "package_version": "1.1.0",
+  "resolution": [
+    "Keep published editable Mol2Record and legacy graph readers/writers unchanged; add immutable Mol2SourceRecord for checked source-preservation APIs.",
+    "Retain upstream SMILES stereo writer and MMFF94 type, parameter, BFGS, termination and cutoff APIs.",
+    "Port bounded Armijo recovery and unknown OOP outer-type rejection; retain upstream OOP eligibility superset and require coverage of every parameterized center.",
+    "Retain all three local commits as merge ancestors and preserve older development evidence without relabeling its version."
+  ],
+  "validation": {
+    "initial_native_run": {
+      "passed": 2407,
+      "failed": 3,
+      "ignored": 12
+    },
+    "initial_native_failures": "Three MMFF94 regression failures exposed missing residual fixes. All other targets passed.",
+    "final_ff_3d_rerun": {
+      "passed": 952,
+      "failed": 0,
+      "ignored": 9
+    },
+    "native_scope": [
+      "chematic-mol",
+      "chematic-cli",
+      "chematic-ff",
+      "chematic-3d",
+      "chematic-smiles"
+    ],
+    "scripts_pytest_passed": 79,
+    "python_pytest_passed": 230,
+    "node_suites_passed": 6,
+    "binding_parity_cases_passed": 79,
+    "clippy": "passed with -D warnings for mol, cli, ff, 3d, py, wasm; commit hook checks each staged Rust crate",
+    "environment_retry": "One FF/3D build was interrupted by disk exhaustion; current-run temporary artifacts were removed and the completed rerun passed."
+  },
+  "source_sha256": {
+    "crates/chematic-3d/Cargo.toml": "74d53b95a5c913cd3c9a47a2eb7e45c3e8f234fd17ed706ca178aa5ad95d9e0b",
+    "crates/chematic-3d/src/minimize.rs": "5f81baebf9a3ed06ec14ecc9a31ec0be1d11d218d67641237fc5d129129bbf4a",
+    "crates/chematic-3d/tests/stereo_coordinate_roundtrip.rs": "ea6ddfbad96fb2c26ed6cff61adabe14044e11cb78af417490f2d13a48eac1b1",
+    "crates/chematic-cli/src/main.rs": "c0fdfc2e945760e71704d8046fda608123dc8a4ed5be96ce6e9cf4ae22e6a204",
+    "crates/chematic-cli/tests/conversion_report.rs": "e120ce0e25731f83c2587f7f7992c686e18a83b70c35bba7e8279cffbe6ee694",
+    "crates/chematic-ff/src/mmff94_energy/oop_stbn.rs": "b453bbb2ce6426e345e49bf6f3ea91031f4b8a7a94e07e36406f6e2841dcd3f6",
+    "crates/chematic-ff/src/mmff94_minimizer.rs": "251ce4efdda76e83da86671038349ea0cd8afbd0e583f6544f1dd52e7904da81",
+    "crates/chematic-ff/tests/mmff94_angle_stretch_bend.rs": "7c12581c19ebbd80cec25d799474bba5a9d23b435993b6ebb9032cb780234dec",
+    "crates/chematic-ff/tests/mmff94_cation_water.rs": "22d5134ab4d61beda0a07269a2904e1d65f80dee54f7696a7aebc562cde02c36",
+    "crates/chematic-ff/tests/mmff94_oop_parameters.rs": "7400afaa4402dc8d6ce6c83d31bef125974fca0522f75c6d0d44424a8bd8153a",
+    "crates/chematic-ff/tests/mmff94_optimizer_recovery.rs": "ff2fa94a3ee7dc38ee5a3a3f1ec7a92db072fdbefc0317ce9398647cf27479ba",
+    "crates/chematic-ff/tests/mmff94_oxygen_h_vdw.rs": "9be1cf24d7c0620047eb752302a190a25f49246a4e87d70f9e287c292c9de60f",
+    "crates/chematic-mol/Cargo.toml": "32965ec39ceb5324546465317fb9aadd46a220f7136fba38c5eff6d60827ffa2",
+    "crates/chematic-mol/src/cjson.rs": "ba34e670f276e817baf7f6667e8d1d15f867a04c9f5c13bd7f5d66934026f833",
+    "crates/chematic-mol/src/cjson_record.rs": "8989f3d04d96c53c6a7a2f55c4c8f5e28a1e2f64640178939137da5ea3a1b1dc",
+    "crates/chematic-mol/src/conversion.rs": "5aacc8fb1ed31c2defa799e2d71439cf4ff0880fbd7ddb91cbfc57fbe8e10ec3",
+    "crates/chematic-mol/src/conversion/cjson_mol2.rs": "a581244c77b7b9e8455f99bc269f39bb102b96acd513cfc53f485d8733dfde3b",
+    "crates/chematic-mol/src/lib.rs": "49c7cec9a5bc9332c046284b93927b5bd8251c19cb3968518b48cb1d029c61d6",
+    "crates/chematic-mol/src/mol2_source.rs": "0287dc5e4e168f3e04daea580f23da835a9e68f81ca5056808330347d4fbb169",
+    "crates/chematic-mol/tests/cjson_coordinate_precision.rs": "3c1d40716290659b7e8460b22033081f7741c6c452394062c3537f683de4db7d",
+    "crates/chematic-mol/tests/cjson_mol2_conversion.rs": "7d5e5811677866c9e9a3452b2b9095c50d8891e3985423a9b1509112911cc1cc",
+    "crates/chematic-mol/tests/cjson_preservation.rs": "9d95126450de64bd042e66792bf4855dd52f09c145bd6dc11386b4a91280f777",
+    "crates/chematic-mol/tests/conversion_report.rs": "49bfc3da304bad40a25dc58d0b9f79fe5df08bf650179e2b9c74a0c09e01686a",
+    "crates/chematic-mol/tests/mol2_preservation.rs": "26fcf826cc67a205e3f3633ab967855204eb5fb8e18c323a170ca8b6ee8af100",
+    "crates/chematic-py/python/chematic/__init__.py": "8a44872ab34b84aad84fdd812f351edbc56c0dab126535d24e44a70066a274a6",
+    "crates/chematic-py/python/chematic/__init__.pyi": "bb7e1b03589f1a043f9ad621cbdeada125631ce55a4adb7edcf3c2c9826d2171",
+    "crates/chematic-py/src/formats.rs": "b9aaf544e454f207f00634505ab2872937b6835c7e6845c5200b39be7fc9e8c1",
+    "crates/chematic-py/tests/test_cjson_preservation.py": "5e0ff4b98d6c0ff4a7afff397eef7452466dc4299f249b1ea505a8f15ddb1873",
+    "crates/chematic-py/tests/test_conversion_report.py": "612151917d5eee7eb1b712d4d634081fc7e10bb6441544af5a33868c4988954f",
+    "crates/chematic-py/tests/test_mol2_preservation.py": "43600dc0b0c5e9322c1d1991e04bfc533c7a3e983523c2331f49b47b8db85459",
+    "crates/chematic-smiles/tests/writer_atom_order.rs": "bc205177a7b6c9ace84be23ce031724af01d54a15205a5afdbf302fb56a1cb55",
+    "crates/chematic-wasm/src/mol_io.rs": "de8d30d6780f186330dc6cf925dc3d4ab4df2a723f3f9f3a95c32ee392f8df20",
+    "crates/chematic-wasm/tests/cjson_preservation.test.mjs": "759a6250fb2eb1b3116ed4a9a360478c2cb0880674373e789c5ff6354fe52aec",
+    "crates/chematic-wasm/tests/conversion_report.test.mjs": "bfc8452a4758e080023a171e80f2dadd9b58aa471f6ce36f1a256eed4c2ee322",
+    "crates/chematic-wasm/tests/mol2_preservation.test.mjs": "84597b6c32c242b503f775176cdbb0026002ec936e800efebf7f698ae796d266",
+    "scripts/check_conversion_report_parity.py": "0a5b0d4090ae13e498e3f84dba42fc3cf1b8ea754b7892eede7c6f1070f8a48d",
+    "scripts/check_interchange_cross_read.py": "00594c60e3660b847da282e03f97d3640b6a2441a31d3bce7adad93aba67c49f",
+    "scripts/check_interchange_preservation.py": "df7aec9cf2bc8adfcd56fe005e84b23ad38ba3c5cef63cc8b8089ab980b58fac",
+    "scripts/gen_mmff94_numeric_type_registry.py": "c9704bf303a6a170aa0e31008ea5e161a5fd9d261980dfc06a39cb832a0d0837",
+    "scripts/mmff94_same_explicit_h_energy.py": "79639fb0d37e142e32b9d5a3965f65b5eded538e9e5b962d46382ce3ace96975",
+    "scripts/tests/test_interchange_preservation.py": "ed30f73615e5cbfba33bd8ddc04cd0a83ac1424d6a565279ad5f2c08c3633aaa",
+    "scripts/tests/test_mmff94_same_explicit_h_energy.py": "31a478ea1f48d0c0d04db6b7ac56950977d4e87764a5b8345c8c5ffc1929bc48"
+  },
+  "artifact_sha256": {
+    "ff-retest.log": "d7f07fec8b9113cebf262b667ae164d8b5658c63151b7a9065842ea234cece12",
+    "wasm-build.log": "e4b60a55233a58ebbd9244f80c8f8549e71ac1883b27f29c2433a7f944767025",
+    "clippy.log": "d671c9a6c8581238d932fd22396c99aa800ab35e0c854d360001de97de46e2bd",
+    "python-tests.log": "97e8f5ce07b5ff15f6bbec2c84dd4824d2b7951e23c35c6c9cdd9d2f70e39cb6",
+    "rust.log": "75ea9847e46b16aabead7d7b6dbaa09d19852d5ac9aa573baa8ed9a20ec0ba50",
+    "node-tests.log": "538f30d39ffaab375421454062d257759905d8a341ac87f821cbc987ff9a01ba",
+    "binding-parity.json": "55dcd4e9a014207f92ed735ded564c37c1b886903d9300251a8e96d1c2ccb0e4",
+    "python-build.log": "9641472d2a3ae91e3ee93b583b40418c1bb7a99837d599325b6d6fb2939f5041",
+    "scripts.log": "2b211059833b9734f408dc126bb5e98a2f1e0538eebbf462d38c65080bdafdd7"
+  }
+}

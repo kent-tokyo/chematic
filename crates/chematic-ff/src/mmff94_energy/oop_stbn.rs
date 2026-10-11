@@ -453,6 +453,12 @@ fn mmff_oop_in(
     type_l: u8,
 ) -> Option<f64> {
     use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
+    // Unknown types must not fall through to an all-wildcard barrier.
+    for atom_type in [type_i, type_k, type_l] {
+        if atom_type != 0 && mmff94_numeric_type_info(atom_type).is_none() {
+            return None;
+        }
+    }
     let level = |t: u8, stage: usize| {
         mmff94_numeric_type_info(t)
             .map(|info| info.equivalence_levels[stage])

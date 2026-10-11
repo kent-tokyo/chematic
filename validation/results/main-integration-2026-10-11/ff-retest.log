@@ -1,0 +1,133 @@
+   Compiling chematic-3d v1.1.0 (/Users/k_tanabe/.codex/worktrees/io-main-integration/chematic/crates/chematic-3d)
+    Finished `test` profile [unoptimized] target(s) in 9.87s
+     Running unittests src/lib.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/chematic_3d-bb09eb293da0373e)
+
+running 642 tests
+....................................................................................... 87/642
+....................................................................................... 174/642
+....................................................................................... 261/642
+......................................i...............................ii............... 348/642
+.....................................i................................................. 435/642
+....................................................................................... 522/642
+....................................................................................... 609/642
+.................................
+test result: ok. 638 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 10.66s
+
+     Running tests/g1_regression_byte_identical.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/g1_regression_byte_identical-ae4c2a245f31fdd8)
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/issue739_platform_stereo.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/issue739_platform_stereo-58d22facbc1c5ac6)
+
+running 3 tests
+...
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 46.15s
+
+     Running tests/rdkit_embed.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/rdkit_embed-010c4201a7da57c7)
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests/rdkit_g1_parity.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/rdkit_g1_parity-1e59ac54bd84e0ec)
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/stereo_coordinate_roundtrip.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/stereo_coordinate_roundtrip-cbe29855ee2c6555)
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/torsion_knowledge_negative_controls.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/torsion_knowledge_negative_controls-0e980d22faaf3006)
+
+running 6 tests
+......
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/chematic_ff-a96bf7c5b38a1227)
+
+running 273 tests
+....................................................................................... 87/273
+....................................................................................... 174/273
+....................................................................................... 261/273
+............
+test result: ok. 273 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.20s
+
+     Running tests/mmff94_angle_stretch_bend.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/mmff94_angle_stretch_bend-b29bcc9781bd82f7)
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mmff94_cation_water.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/mmff94_cation_water-b0dacbc7155f8265)
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/mmff94_oop_parameters.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/mmff94_oop_parameters-cb9cdfb6a09c26f0)
+
+running 3 tests
+...
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mmff94_optimizer_recovery.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/mmff94_optimizer_recovery-4a9097e3eb804d4b)
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mmff94_oxygen_h_vdw.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/mmff94_oxygen_h_vdw-5d1520d1600bcd54)
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mmff94_rdkit_bfgs_trajectory.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/mmff94_rdkit_bfgs_trajectory-853b4db1f9d1767b)
+
+running 3 tests
+...
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.31s
+
+     Running tests/mmff94_rdkit_per_term_energy.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/mmff94_rdkit_per_term_energy-564843c51ac1d768)
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/mmff94_rdkit_residuals_734.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/mmff94_rdkit_residuals_734-2e2ec878d408faef)
+
+running 9 tests
+.........
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/mmff_type_census.rs (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/deps/mmff_type_census-3d36b37f4cc08500)
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.41s
+
+   Doc-tests chematic_3d
+
+running 3 tests
+iii
+test result: ok. 0 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+i
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.63s; merged doctests compilation took 0.41s
+   Doc-tests chematic_ff
+
+running 1 test
+i
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.61s; merged doctests compilation took 0.40s

@@ -1,0 +1,10 @@
+    Blocking waiting for file lock on build directory
+    Checking serde_json v1.0.151
+    Checking tinytemplate v1.2.1
+    Checking chematic-rxn v1.0.20 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-rxn)
+    Checking criterion v0.8.2
+    Checking chematic-fp v1.0.20 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-fp)
+    Checking chematic-ff v1.0.20 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-ff)
+    Checking chematic-chem v1.0.20 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-chem)
+    Checking chematic-3d v1.0.20 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-3d)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 23.37s

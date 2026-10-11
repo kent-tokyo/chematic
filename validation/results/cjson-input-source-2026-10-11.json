@@ -1,0 +1,632 @@
+{
+  "schema": "chematic.development-verification.v1",
+  "created_at": "2026-10-11T04:14:14.584377+00:00",
+  "scope": "Uncommitted local-source candidate: immutable strict CJSON records and checked CJSON → CJSON/SMILES. No published-package or Open Babel comparative claim.",
+  "base_commit": "7f84ae4a98399086ce9f389c099f3fb77b66066e",
+  "workspace_version": "1.0.20",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "dirty_tracked_files": [
+    "README.md",
+    "README_ja.md",
+    "README_zh.md",
+    "ROADMAP.md",
+    "crates/chematic-3d/src/minimize.rs",
+    "crates/chematic-cli/src/main.rs",
+    "crates/chematic-ff/src/lib.rs",
+    "crates/chematic-ff/src/mmff94_energy/angle.rs",
+    "crates/chematic-ff/src/mmff94_energy/mod.rs",
+    "crates/chematic-ff/src/mmff94_energy/oop_stbn.rs",
+    "crates/chematic-ff/src/mmff94_energy/torsion.rs",
+    "crates/chematic-ff/src/mmff94_energy/vdw.rs",
+    "crates/chematic-ff/src/mmff94_minimizer.rs",
+    "crates/chematic-ff/src/mmff94_numeric.rs",
+    "crates/chematic-ff/src/mmff94_numeric_type_registry.rs",
+    "crates/chematic-mol/Cargo.toml",
+    "crates/chematic-mol/src/cjson.rs",
+    "crates/chematic-mol/src/lib.rs",
+    "crates/chematic-mol/src/mol2_tripos.rs",
+    "crates/chematic-py/pyproject.toml",
+    "crates/chematic-py/python/chematic/__init__.py",
+    "crates/chematic-py/python/chematic/__init__.pyi",
+    "crates/chematic-py/src/formats.rs",
+    "crates/chematic-smiles/src/lib.rs",
+    "crates/chematic-smiles/src/writer.rs",
+    "crates/chematic-wasm/src/mol_io.rs",
+    "docs/format-capabilities.md",
+    "docs/use-cases/batch-analysis.md",
+    "examples/README.md",
+    "scripts/gen_mmff94_numeric_type_registry.py",
+    "scripts/mmff94_same_explicit_h_energy.py",
+    "scripts/tests/test_mmff94_same_explicit_h_energy.py",
+    "validation/cosmolkit_comparison/README.md"
+  ],
+  "source_snapshot_coverage": "Listed interchange implementation, tests, dependency manifests and docs only. Concurrent unrelated FF/3D workspace changes are not fully archived. Artifact hashes identify the actual tested builds.",
+  "source_files": [
+    {
+      "path": "crates/chematic-mol/src/conversion.rs",
+      "sha256": "9124f24904e63d66197af250b1f546e5b601f7244d26ea703af4982b57130e59",
+      "size_bytes": 25730
+    },
+    {
+      "path": "crates/chematic-mol/src/lib.rs",
+      "sha256": "6e2f387de537f403f20b47d03f7e6ead00ad6665bb667cb96c2da41198c3a675",
+      "size_bytes": 8267
+    },
+    {
+      "path": "crates/chematic-mol/src/mol2_tripos.rs",
+      "sha256": "3cf3009053a52b492582ec379c88f7e3a53c80566e4c86658ed28b16a24e7515",
+      "size_bytes": 30680
+    },
+    {
+      "path": "crates/chematic-mol/tests/conversion_report.rs",
+      "sha256": "8c1d780260b2b2fb6c3c7d82257f5803fb3647450fddf31450cff28b967455fe",
+      "size_bytes": 11074
+    },
+    {
+      "path": "crates/chematic-mol/tests/mol2_preservation.rs",
+      "sha256": "42ec6f11f3acd3d2363cd0d153493230ac0bea4f93e1965cc85e682bf2009ec0",
+      "size_bytes": 7496
+    },
+    {
+      "path": "crates/chematic-smiles/src/writer.rs",
+      "sha256": "3649b93e80bce4ab87acdfeaee140cd2f9da3e43d0bce83893e06a515ddf4906",
+      "size_bytes": 42175
+    },
+    {
+      "path": "crates/chematic-smiles/src/lib.rs",
+      "sha256": "50950bc3bea6448114ad540470b5ff64eb440e13b1056d9a8dd4de929b296496",
+      "size_bytes": 2311
+    },
+    {
+      "path": "crates/chematic-smiles/tests/writer_atom_order.rs",
+      "sha256": "bc205177a7b6c9ace84be23ce031724af01d54a15205a5afdbf302fb56a1cb55",
+      "size_bytes": 1592
+    },
+    {
+      "path": "crates/chematic-cli/src/main.rs",
+      "sha256": "4675926ac8b6c253e084cd85752b98ff0839ab98d3d3eeb65874703ff1349de0",
+      "size_bytes": 70014
+    },
+    {
+      "path": "crates/chematic-cli/tests/conversion_report.rs",
+      "sha256": "b6b999b14272955a8a2c04daf8a23f6152289c129a49e69aef19127584d25caa",
+      "size_bytes": 5479
+    },
+    {
+      "path": "crates/chematic-py/src/formats.rs",
+      "sha256": "600235baa7364dfd2d0ddeb0218dc804d8fd3ab43ecec0621f8a350d4d60c3d2",
+      "size_bytes": 102172
+    },
+    {
+      "path": "crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "90d93735ffd6da3fc5a48bd28e0db99cc9fbef537027304aedf7ad4560eba433",
+      "size_bytes": 23015
+    },
+    {
+      "path": "crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "cb4ddf55e366eab5bed71cdefb49d6cd13a210a3cbbad5f900f25d40780d4344",
+      "size_bytes": 127038
+    },
+    {
+      "path": "crates/chematic-py/tests/test_conversion_report.py",
+      "sha256": "770d96fa8431304ffb89122a0fb7bd56ba69601958dfd8885287b55b575a3cb4",
+      "size_bytes": 5199
+    },
+    {
+      "path": "crates/chematic-wasm/src/mol_io.rs",
+      "sha256": "ca9abf96ead57ad85a4675694d56fdc7fbdba417edf51ccb8bdf5d671066559b",
+      "size_bytes": 63362
+    },
+    {
+      "path": "crates/chematic-wasm/tests/conversion_report.test.mjs",
+      "sha256": "867c37869d4afb2c7f4c61064ec85b4b788de50a18f6e687e70d8a77bde0dcab",
+      "size_bytes": 4206
+    },
+    {
+      "path": "validation/mol2_preservation/amide.mol2",
+      "sha256": "1a973777a9f68e461cc6703a0f4cca7c0c963b510557aae872a2629059e71250",
+      "size_bytes": 392
+    },
+    {
+      "path": "scripts/check_conversion_report_parity.py",
+      "sha256": "c846b47f200337cb6100f3c2395bc8618b42f54d389448aec457b0828e72bc6b",
+      "size_bytes": 6737
+    },
+    {
+      "path": "docs/format-capabilities.md",
+      "sha256": "ae6db5b502e495accea162b3cd1e80a4da7b54e03a7dc2a7e15b28f40f120f0d",
+      "size_bytes": 42570
+    },
+    {
+      "path": "docs/openbabel-interchange-plan.md",
+      "sha256": "4f699691eff52200433b9929ec5a7ad0508afbc906382ced595aefe5db0f6f79",
+      "size_bytes": 17947
+    },
+    {
+      "path": "ROADMAP.md",
+      "sha256": "1cade8054fa7beb20749e308372463158d53ed424fe251fb904073cf4d725c95",
+      "size_bytes": 39173
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "011d35414347109acb2172587947cdc50f29c7c10d6c3cad4993d4dceb80f10e",
+      "size_bytes": 1170
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "6b62f46ee91b8a692ad9c3ffaaa2123826ada44c3e5986cd2a60d6a7b65ea979",
+      "size_bytes": 66147
+    },
+    {
+      "path": "crates/chematic-mol/Cargo.toml",
+      "sha256": "4b921fd8ece57f0717d20b5a64e31903341825baeada0d1931e56a5ae0a28354",
+      "size_bytes": 2257
+    },
+    {
+      "path": "crates/chematic-mol/src/cjson.rs",
+      "sha256": "8d0719cc10431e329f130be9296a59f48e060e4ff9df09cbc0d3b015a5296fff",
+      "size_bytes": 26099
+    },
+    {
+      "path": "crates/chematic-mol/tests/cjson_coordinate_precision.rs",
+      "sha256": "6092fade50eca8f7539e6a76e3f1e2e33f6d500119fdf26c99dc69cd7804c5b2",
+      "size_bytes": 1588
+    },
+    {
+      "path": "crates/chematic-mol/src/cjson_record.rs",
+      "sha256": "7ba4a40208c80a33ff9774c028a7f57d8a7bb6c8907e4f75ee32c847042aab5d",
+      "size_bytes": 11261
+    },
+    {
+      "path": "crates/chematic-mol/tests/cjson_preservation.rs",
+      "sha256": "99d66c9c4d5a0d4ffaeaa2fbb69c1c6ec1b8d3ca0cd51d359ef82b85ce3b029e",
+      "size_bytes": 10467
+    },
+    {
+      "path": "crates/chematic-py/tests/test_cjson_preservation.py",
+      "sha256": "3b403cf2015d4063a7aab181ac33a6e377d6a31e5cbf1eeb2939b8e49b08f3ef",
+      "size_bytes": 2899
+    },
+    {
+      "path": "crates/chematic-wasm/tests/cjson_preservation.test.mjs",
+      "sha256": "82477c0e4670430cd283f7b3e6f9ac34c8468c92ea745f0487fd34d05e487597",
+      "size_bytes": 2713
+    },
+    {
+      "path": "validation/cjson_preservation/charged.cjson",
+      "sha256": "817390d2a64877af427a5168be2048fca15357b0c342b9d1edef4f1c57e468f0",
+      "size_bytes": 530
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "/private/tmp/chematic-cjson-input-native/chematic",
+      "sha256": "8c29a7c8460eb2fd80249d53b3c71ce2fd097c226c9ab6c98a6f3b79f354e959",
+      "size_bytes": 15598624
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-wheel/chematic-1.0.20-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "a9470e928872f2dc7903e552d75bcc63f93ad2df1353f4bc31e5f948c3c0b7db",
+      "size_bytes": 13110904
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-python/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "62c7668a741cfe2205aa4d8b08b12f3bda77f84da98f5fd7f174af7f517d6227",
+      "size_bytes": 55786960
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-wasm/chematic_wasm.js",
+      "sha256": "3939d767287e0e271b2080e95a184fb328c4b825b918093d7d20ee8a9ab558a5",
+      "size_bytes": 326607
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-wasm/chematic_wasm_bg.wasm",
+      "sha256": "ae181bb55d6ad20843ad59652efc84bf5487cc957dc08f96b05d5e0c48c69cc8",
+      "size_bytes": 27349844
+    }
+  ],
+  "verification": {
+    "rust": {
+      "packages": [
+        "chematic-mol",
+        "chematic-cli"
+      ],
+      "passed": 835,
+      "suites": 18,
+      "ignored": 0,
+      "exit_code": 0
+    },
+    "clippy": {
+      "packages": [
+        "chematic-mol",
+        "chematic-cli"
+      ],
+      "all_targets": true,
+      "no_deps": true,
+      "warnings_denied": true,
+      "exit_code": 0,
+      "unrestricted_attempt": {
+        "exit_code": 101,
+        "limitation": "Dependency linting stopped at clippy::needless_range_loop in concurrently modified crates/chematic-ff/src/mmff94_energy/oop_stbn.rs:454. FF was not changed by this slice."
+      }
+    },
+    "python": {
+      "runtime": "CPython 3.13.6",
+      "passed": 211,
+      "isolated_source_wheel": true,
+      "exit_code": 0,
+      "pytest_files": [
+        "test_cjson_preservation.py",
+        "test_conversion_report.py",
+        "test_mol2_preservation.py",
+        "test_format_convert.py",
+        "test_cross_binding_contract.py"
+      ]
+    },
+    "wasm": {
+      "fresh_nodejs_dev_build": true,
+      "suites": [
+        {
+          "suite": "conversion_report.test.mjs",
+          "exit_code": 0,
+          "stdout": "Checked conversion policy, losses, mapping and refusal contract passed\nCJSON coordinates, projected charges, precision and refusal contract passed\n",
+          "stderr": ""
+        },
+        {
+          "suite": "mol2_preservation.test.mjs",
+          "exit_code": 0,
+          "stdout": "MOL2 source preservation and rejection contract passed\n",
+          "stderr": ""
+        },
+        {
+          "suite": "cjson_preservation.test.mjs",
+          "exit_code": 0,
+          "stdout": "CJSON source retention, strict validation, isotopes and checked conversion passed\n",
+          "stderr": ""
+        },
+        {
+          "suite": "cross_binding_contract.test.mjs",
+          "exit_code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "suite": "format_parity.test.mjs",
+          "exit_code": 0,
+          "stdout": "format_parity.test.mjs: all assertions passed\n",
+          "stderr": ""
+        }
+      ],
+      "exit_code": 0
+    },
+    "shared_report_parity": {
+      "scope": "source-built development-fixture binding parity",
+      "passed": 53,
+      "results": [
+        {
+          "case": "lf-mol2-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-mol2-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-mol2-preserve_source",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-smiles-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-smiles-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-cjson-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "lf-cjson-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-mol2-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-mol2-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-mol2-preserve_source",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-smiles-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-smiles-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-cjson-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "crlf-cjson-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "zero-bond-mismatch",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-bond-nc",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-bond-du",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-bond-un",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-coordinate--1.4175225513503917",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-coordinate--0.0",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-coordinate-5e-324",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-coordinate-1.7976931348623157e308",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-N.4",
+          "result": "identical_report"
+        },
+        {
+          "case": "invalid",
+          "result": "shared_error"
+        },
+        {
+          "case": "bad-charge",
+          "result": "shared_error"
+        },
+        {
+          "case": "unsupported-source",
+          "result": "shared_error"
+        },
+        {
+          "case": "unsupported-target",
+          "result": "shared_error"
+        },
+        {
+          "case": "unsupported-policy",
+          "result": "shared_error"
+        },
+        {
+          "case": "cross-source-retention",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-source-retention",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-lf-cjson-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-lf-cjson-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-lf-cjson-preserve_source",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-lf-smiles-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-lf-smiles-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-crlf-cjson-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-crlf-cjson-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-crlf-cjson-preserve_source",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-crlf-smiles-strict",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-crlf-smiles-allow_loss",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-minimal",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-branch",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-aromatic",
+          "result": "identical_report"
+        },
+        {
+          "case": "cjson-input-charge-length",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-isotope-type",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-unknown-order",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-duplicate-edge",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-self-edge",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-dangling-edge",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-duplicate-opaque-key",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-unsupported-version",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-unsupported-route",
+          "result": "shared_error"
+        },
+        {
+          "case": "cjson-input-cross-preserve",
+          "result": "shared_error"
+        }
+      ],
+      "identical_reports": 36,
+      "shared_errors": 17,
+      "sha256_of_parsed_bytes": "af0849b92d6db182b814ef6efc0c45d9788116674b80caf09c6907afaff6d859",
+      "exit_code": 0
+    },
+    "record_inspection_parity": {
+      "scope": "source-built Python/WASM CJSON record inspection parity",
+      "passed": 3,
+      "results": [
+        {
+          "case": "lf",
+          "result": "identical_record_json_and_exact_source"
+        },
+        {
+          "case": "crlf",
+          "result": "identical_record_json_and_exact_source"
+        },
+        {
+          "case": "minimal",
+          "result": "identical_record_json_and_exact_source"
+        }
+      ]
+    },
+    "coordinate_precision": {
+      "seed_hex": "243f6a8885a308d3",
+      "xorshift_steps": 1024,
+      "finite_vectors": 2045,
+      "components": [
+        "value",
+        "negative_zero",
+        "negative_value"
+      ],
+      "oracle": "original Rust f64 bits",
+      "readers": [
+        "legacy parse_cjson",
+        "strict parse_cjson_record"
+      ],
+      "bitwise_equal": true
+    }
+  },
+  "commands": [
+    "CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo test -p chematic-mol -p chematic-cli --offline -- --quiet",
+    "CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo clippy -p chematic-mol -p chematic-cli --all-targets --no-deps --offline -- -D warnings",
+    "CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 maturin build --manifest-path crates/chematic-py/Cargo.toml --interpreter .venv-v1gate/bin/python --profile dev --out /private/tmp/chematic-cjson-input-wheel --offline",
+    "CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 /Users/k_tanabe/.cargo/bin/wasm-pack build crates/chematic-wasm --dev --target nodejs --out-dir /private/tmp/chematic-cjson-input-wasm -- --offline",
+    "PYTHONPATH=/private/tmp/chematic-cjson-input-python PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv-v1gate/bin/python -m pytest crates/chematic-py/tests/test_cjson_preservation.py crates/chematic-py/tests/test_conversion_report.py crates/chematic-py/tests/test_mol2_preservation.py crates/chematic-py/tests/test_format_convert.py crates/chematic-py/tests/test_cross_binding_contract.py -q",
+    "PYTHONPATH=/private/tmp/chematic-cjson-input-python .venv-v1gate/bin/python scripts/check_conversion_report_parity.py --cli /private/tmp/chematic-cjson-input-native/chematic --python .venv-v1gate/bin/python --wasm-module /private/tmp/chematic-cjson-input-wasm/chematic_wasm.js"
+  ],
+  "logs": [
+    {
+      "path": "/private/tmp/chematic-cjson-input-rust.log",
+      "sha256": "271c24c6b06fdf94f8ce98aa8df98f34090f9cf0134128233985b0bd8aac7ed3",
+      "size_bytes": 5011
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-clippy.log",
+      "sha256": "f2d75f21d40314d5f34adbac68271cbe6b3e8464284b1fbb2f37761baa7a9cbc",
+      "size_bytes": 775
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-clippy-scoped.log",
+      "sha256": "86ccaed79eac36892c9431acd1e268ce05bb4158b99d3301a9b87fb5cd18da76",
+      "size_bytes": 496
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-python-build.log",
+      "sha256": "1f8ec12dc488d6bcf58d5921781ac807dc1fa3e1c5f595029731e7aaf04a629e",
+      "size_bytes": 711
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-python-tests.log",
+      "sha256": "69f63abea0c22a77f0c42ea2723c50c5d270e1df28e52072410bf216fa87c303",
+      "size_bytes": 990
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-wasm-build.log",
+      "sha256": "b093c93aa81a61dc9148a80d557bb6312d056e25ad36a7c350a44d472693a343",
+      "size_bytes": 853
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-wasm-suites.json",
+      "sha256": "2da17d7fccafd36f71f85373b9e2f5b42e2e7fa526a8d50b019e5a63070f4b8c",
+      "size_bytes": 875
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-binding-parity.json",
+      "sha256": "af0849b92d6db182b814ef6efc0c45d9788116674b80caf09c6907afaff6d859",
+      "size_bytes": 4733
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-binding-parity.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "/private/tmp/chematic-cjson-input-record-parity.json",
+      "sha256": "bf9af76a9d7a8a44ba54716e0a5d6bfd924da6dda20c7871cde7e1144d4a0a46",
+      "size_bytes": 384
+    }
+  ],
+  "guarantees": [
+    "Validated immutable CJSON source retention preserves exact UTF-8 source, including CRLF, decimal spelling and opaque fields; this does not establish interpreted/editable chemical semantics.",
+    "Local profile accepts missing chemicalJson or integer version 1; exact known-field types/lengths, unique decoded keys and valid distinct non-self bond edges required. Bond orders limited to 1,1.5,2,3,4; 4 is the local aromatic alias.",
+    "CJSON → SMILES reparses candidates and checks atom/bond correspondence, elements, atom aromatic flags, formal charges and isotopes. CJSON mapping source_id is zero-based array index. Mapping is empty if graph verification fails.",
+    "Coordinates and opaque fields are reported dropped; absent-field defaults and SMILES hydrogens are inferred; stereo and chemical aromaticity are not interpreted. Strict cross-format policy refuses with output null.",
+    "Legacy permissive CJSON parsing and default graph-bridge conversion contracts remain unchanged."
+  ],
+  "remaining": [
+    "Other CJSON variants and checked format pairs",
+    "Opaque field and source stereo/aromatic chemistry interpretation",
+    "Independent pinned Open Babel paired acceptance corpus",
+    "Published artifact verification and release"
+  ]
+}

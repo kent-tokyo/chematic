@@ -1,0 +1,11 @@
+{
+  "extension_sha256": "2173381da686d2935bf0d62cfd364f0a2ad4c5a34611f6eea320d6b74bd57434",
+  "gate": {
+    "input_indices_contiguous": true,
+    "provenance_complete": true,
+    "rdkit_version_matches": true,
+    "row_accounting_complete": true,
+    "schematic_version_matches": true,
+    "source_tree_clean": false
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "command": [
+    "target/debug/examples/pipeline_v2_vs_rdkit_common_scorer",
+    "--chematic-rows",
+    "validation/results/mmff94-correctness-2026-10-11/cation-water/quality.jsonl",
+    "--rdkit-rows",
+    "validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl",
+    "--output",
+    "validation/results/mmff94-correctness-2026-10-11/optimizer-recovery/baseline-quality-scored.jsonl"
+  ],
+  "exit_code": 0,
+  "baseline_counts": {
+    "rows": 265,
+    "sound": 265,
+    "stereo_violated": 0,
+    "stereo_unevaluable": 0
+  },
+  "binary": {
+    "path": "target/debug/examples/pipeline_v2_vs_rdkit_common_scorer",
+    "sha256": "f6210756a782d472aaf7e0e175acf1bb2f33e584b3d22794e2736cf849fbc654"
+  },
+  "precision_feature": "serde_json/float_roundtrip"
+}
