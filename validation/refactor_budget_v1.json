@@ -361,10 +361,6 @@
       "decisions": 37,
       "lines": 163
     },
-    "crates/chematic-mol/src/cube.rs::parse_cube_from_feed#1": {
-      "decisions": 45,
-      "lines": 175
-    },
     "crates/chematic-mol/src/lammps_data.rs::parse_lammps_data_with_limits#1": {
       "decisions": 63,
       "lines": 376
@@ -384,10 +380,6 @@
     "crates/chematic-mol/src/nucleic_acid.rs::validate_with_limits#1": {
       "decisions": 44,
       "lines": 247
-    },
-    "crates/chematic-mol/src/opendx.rs::parse_opendx_from_feed#1": {
-      "decisions": 42,
-      "lines": 180
     },
     "crates/chematic-mol/src/semantic.rs::expand_with_limits#1": {
       "decisions": 81,
