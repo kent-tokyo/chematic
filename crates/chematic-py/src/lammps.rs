@@ -86,79 +86,125 @@ fn lammps_data_to_pydict<'py>(
     data: &chematic_mol::LammpsData,
 ) -> PyResult<Bound<'py, PyDict>> {
     let d = PyDict::new(py);
-
-    let counts = PyDict::new(py);
-    for (label, count) in &data.counts {
-        counts.set_item(label, count)?;
-    }
-    d.set_item("counts", counts)?;
+    d.set_item("counts", lammps_counts_to_pydict(py, &data.counts)?)?;
     d.set_item("atom_style", atom_style_to_string(&data.atom_style))?;
     d.set_item("box", lammps_box_to_pydict(py, &data.simulation_box)?)?;
-
-    let masses: Vec<Bound<PyDict>> = data
-        .masses
-        .iter()
-        .map(|m| {
-            let md = PyDict::new(py);
-            md.set_item("atom_type", m.atom_type)?;
-            md.set_item("mass", m.mass)?;
-            Ok::<_, PyErr>(md)
-        })
-        .collect::<PyResult<_>>()?;
-    d.set_item("masses", masses)?;
-
-    let atoms: Vec<Bound<PyDict>> = data
-        .atoms
-        .iter()
-        .map(|a| {
-            let ad = PyDict::new(py);
-            ad.set_item("id", a.id)?;
-            ad.set_item("molecule_id", a.molecule_id)?;
-            ad.set_item("atom_type", a.atom_type)?;
-            ad.set_item("charge", a.charge)?;
-            ad.set_item("x", a.x)?;
-            ad.set_item("y", a.y)?;
-            ad.set_item("z", a.z)?;
-            ad.set_item("image", a.image)?;
-            Ok::<_, PyErr>(ad)
-        })
-        .collect::<PyResult<_>>()?;
-    d.set_item("atoms", atoms)?;
-
-    let velocities: Vec<Bound<PyDict>> = data
-        .velocities
-        .iter()
-        .map(|v| {
-            let vd = PyDict::new(py);
-            vd.set_item("atom_id", v.atom_id)?;
-            vd.set_item("vx", v.vx)?;
-            vd.set_item("vy", v.vy)?;
-            vd.set_item("vz", v.vz)?;
-            Ok::<_, PyErr>(vd)
-        })
-        .collect::<PyResult<_>>()?;
-    d.set_item("velocities", velocities)?;
-
-    let bonds: Vec<Bound<PyDict>> = data
-        .bonds
-        .iter()
-        .map(|b| {
-            let bd = PyDict::new(py);
-            bd.set_item("id", b.id)?;
-            bd.set_item("bond_type", b.bond_type)?;
-            bd.set_item("atom1", b.atom1)?;
-            bd.set_item("atom2", b.atom2)?;
-            Ok::<_, PyErr>(bd)
-        })
-        .collect::<PyResult<_>>()?;
-    d.set_item("bonds", bonds)?;
-
+    d.set_item("masses", lammps_masses_to_pydicts(py, &data.masses)?)?;
+    d.set_item("atoms", lammps_atoms_to_pydicts(py, &data.atoms)?)?;
+    d.set_item(
+        "velocities",
+        lammps_velocities_to_pydicts(py, &data.velocities)?,
+    )?;
+    d.set_item("bonds", lammps_bonds_to_pydicts(py, &data.bonds)?)?;
     d.set_item("unparsed_sections", data.unparsed_sections.clone())?;
     Ok(d)
 }
 
+fn lammps_counts_to_pydict<'py>(
+    py: Python<'py>,
+    counts: &[(String, i64)],
+) -> PyResult<Bound<'py, PyDict>> {
+    let result = PyDict::new(py);
+    for (label, count) in counts {
+        result.set_item(label, count)?;
+    }
+    Ok(result)
+}
+
+fn lammps_masses_to_pydicts<'py>(
+    py: Python<'py>,
+    masses: &[chematic_mol::LammpsMass],
+) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    masses
+        .iter()
+        .map(|mass| {
+            let result = PyDict::new(py);
+            result.set_item("atom_type", mass.atom_type)?;
+            result.set_item("mass", mass.mass)?;
+            Ok(result)
+        })
+        .collect()
+}
+
+fn lammps_atoms_to_pydicts<'py>(
+    py: Python<'py>,
+    atoms: &[chematic_mol::LammpsAtom],
+) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    atoms
+        .iter()
+        .map(|atom| {
+            let result = PyDict::new(py);
+            result.set_item("id", atom.id)?;
+            result.set_item("molecule_id", atom.molecule_id)?;
+            result.set_item("atom_type", atom.atom_type)?;
+            result.set_item("charge", atom.charge)?;
+            result.set_item("x", atom.x)?;
+            result.set_item("y", atom.y)?;
+            result.set_item("z", atom.z)?;
+            result.set_item("image", atom.image)?;
+            Ok(result)
+        })
+        .collect()
+}
+
+fn lammps_velocities_to_pydicts<'py>(
+    py: Python<'py>,
+    velocities: &[chematic_mol::LammpsVelocity],
+) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    velocities
+        .iter()
+        .map(|velocity| {
+            let result = PyDict::new(py);
+            result.set_item("atom_id", velocity.atom_id)?;
+            result.set_item("vx", velocity.vx)?;
+            result.set_item("vy", velocity.vy)?;
+            result.set_item("vz", velocity.vz)?;
+            Ok(result)
+        })
+        .collect()
+}
+
+fn lammps_bonds_to_pydicts<'py>(
+    py: Python<'py>,
+    bonds: &[chematic_mol::LammpsBond],
+) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    bonds
+        .iter()
+        .map(|bond| {
+            let result = PyDict::new(py);
+            result.set_item("id", bond.id)?;
+            result.set_item("bond_type", bond.bond_type)?;
+            result.set_item("atom1", bond.atom1)?;
+            result.set_item("atom2", bond.atom2)?;
+            Ok(result)
+        })
+        .collect()
+}
+
 fn pydict_to_lammps_data(d: &Bound<PyDict>) -> PyResult<chematic_mol::LammpsData> {
-    let counts: Vec<(String, i64)> = match d.get_item("counts")? {
+    let counts = lammps_counts_from_pydict(d)?;
+    let atom_style_str: String = dict_get(d, "atom_style", "atomic".to_string())?;
+    let box_dict: Bound<PyDict> = dict_get_required(d, "box")?;
+    let masses = lammps_masses_from_pydict(d)?;
+    let atoms = lammps_atoms_from_pydict(d)?;
+    let velocities = lammps_velocities_from_pydict(d)?;
+    let bonds = lammps_bonds_from_pydict(d)?;
+    let unparsed_sections = dict_get(d, "unparsed_sections", Vec::new())?;
+
+    Ok(chematic_mol::LammpsData {
+        counts,
+        atom_style: atom_style_from_str(&atom_style_str),
+        simulation_box: pydict_to_lammps_box(&box_dict)?,
+        masses,
+        atoms,
+        velocities,
+        bonds,
+        unparsed_sections,
+    })
+}
+
+fn lammps_counts_from_pydict(d: &Bound<PyDict>) -> PyResult<Vec<(String, i64)>> {
+    let counts = match d.get_item("counts")? {
         Some(v) if !v.is_none() => {
             let cd = v
                 .cast::<PyDict>()
@@ -169,11 +215,12 @@ fn pydict_to_lammps_data(d: &Bound<PyDict>) -> PyResult<chematic_mol::LammpsData
         }
         _ => Vec::new(),
     };
-    let atom_style_str: String = dict_get(d, "atom_style", "atomic".to_string())?;
-    let box_dict: Bound<PyDict> = dict_get_required(d, "box")?;
+    Ok(counts)
+}
 
+fn lammps_masses_from_pydict(d: &Bound<PyDict>) -> PyResult<Vec<chematic_mol::LammpsMass>> {
     let masses_list: Vec<Bound<PyDict>> = dict_get(d, "masses", Vec::new())?;
-    let masses = masses_list
+    masses_list
         .iter()
         .map(|md| {
             Ok::<_, PyErr>(chematic_mol::LammpsMass {
@@ -181,10 +228,12 @@ fn pydict_to_lammps_data(d: &Bound<PyDict>) -> PyResult<chematic_mol::LammpsData
                 mass: dict_get_required(md, "mass")?,
             })
         })
-        .collect::<PyResult<_>>()?;
+        .collect()
+}
 
+fn lammps_atoms_from_pydict(d: &Bound<PyDict>) -> PyResult<Vec<chematic_mol::LammpsAtom>> {
     let atoms_list: Vec<Bound<PyDict>> = dict_get(d, "atoms", Vec::new())?;
-    let atoms = atoms_list
+    atoms_list
         .iter()
         .map(|ad| {
             Ok::<_, PyErr>(chematic_mol::LammpsAtom {
@@ -198,10 +247,12 @@ fn pydict_to_lammps_data(d: &Bound<PyDict>) -> PyResult<chematic_mol::LammpsData
                 image: dict_get_opt(ad, "image")?,
             })
         })
-        .collect::<PyResult<_>>()?;
+        .collect()
+}
 
+fn lammps_velocities_from_pydict(d: &Bound<PyDict>) -> PyResult<Vec<chematic_mol::LammpsVelocity>> {
     let velocities_list: Vec<Bound<PyDict>> = dict_get(d, "velocities", Vec::new())?;
-    let velocities = velocities_list
+    velocities_list
         .iter()
         .map(|vd| {
             Ok::<_, PyErr>(chematic_mol::LammpsVelocity {
@@ -211,10 +262,12 @@ fn pydict_to_lammps_data(d: &Bound<PyDict>) -> PyResult<chematic_mol::LammpsData
                 vz: dict_get_required(vd, "vz")?,
             })
         })
-        .collect::<PyResult<_>>()?;
+        .collect()
+}
 
+fn lammps_bonds_from_pydict(d: &Bound<PyDict>) -> PyResult<Vec<chematic_mol::LammpsBond>> {
     let bonds_list: Vec<Bound<PyDict>> = dict_get(d, "bonds", Vec::new())?;
-    let bonds = bonds_list
+    bonds_list
         .iter()
         .map(|bd| {
             Ok::<_, PyErr>(chematic_mol::LammpsBond {
@@ -224,20 +277,7 @@ fn pydict_to_lammps_data(d: &Bound<PyDict>) -> PyResult<chematic_mol::LammpsData
                 atom2: dict_get_required(bd, "atom2")?,
             })
         })
-        .collect::<PyResult<_>>()?;
-
-    let unparsed_sections: Vec<(String, String)> = dict_get(d, "unparsed_sections", Vec::new())?;
-
-    Ok(chematic_mol::LammpsData {
-        counts,
-        atom_style: atom_style_from_str(&atom_style_str),
-        simulation_box: pydict_to_lammps_box(&box_dict)?,
-        masses,
-        atoms,
-        velocities,
-        bonds,
-        unparsed_sections,
-    })
+        .collect()
 }
 
 /// Parse a LAMMPS data file (`read_data` command format).

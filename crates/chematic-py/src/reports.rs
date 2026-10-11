@@ -49,65 +49,93 @@ fn mol_report_to_dict<'py>(
         Some(s) => d.set_item("murcko_scaffold", s)?,
         None => d.set_item("murcko_scaffold", py.None())?,
     }
-    let desc = PyDict::new(py);
-    desc.set_item("mw", report.descriptors.molecular_weight)?;
-    desc.set_item("exact_mass", report.descriptors.exact_mass)?;
-    desc.set_item("tpsa", report.descriptors.tpsa)?;
-    desc.set_item("logp", report.descriptors.logp)?;
-    desc.set_item("molar_refractivity", report.descriptors.molar_refractivity)?;
-    desc.set_item("hbd", report.descriptors.hbd)?;
-    desc.set_item("hba", report.descriptors.hba)?;
-    desc.set_item("rotatable_bonds", report.descriptors.rotatable_bonds)?;
-    desc.set_item("heavy_atoms", report.descriptors.heavy_atom_count)?;
-    desc.set_item("ring_count", report.descriptors.ring_count)?;
-    desc.set_item("num_heteroatoms", report.descriptors.num_heteroatoms)?;
-    desc.set_item("num_stereocenters", report.descriptors.num_stereocenters)?;
-    desc.set_item("fsp3", report.descriptors.fsp3)?;
-    desc.set_item("qed", report.descriptors.qed)?;
-    desc.set_item("sa_score", report.descriptors.sa_score)?;
-    desc.set_item("formal_charge", report.descriptors.formal_charge_sum)?;
-    desc.set_item("labute_asa", report.descriptors.labute_asa)?;
-    desc.set_item("bertz_ct", report.descriptors.bertz_ct)?;
-    desc.set_item("wiener_index", report.descriptors.wiener_index)?;
-    d.set_item("descriptors", desc)?;
-    let filters = PyDict::new(py);
-    filters.set_item("lipinski_passes", report.filters.lipinski_passes)?;
-    filters.set_item("veber_passes", report.filters.veber_passes)?;
-    filters.set_item("egan_passes", report.filters.egan_passes)?;
-    filters.set_item("ghose_passes", report.filters.ghose_passes)?;
-    filters.set_item("reos_passes", report.filters.reos_passes)?;
-    filters.set_item("pains_passes", report.filters.pains_passes)?;
-    let alerts: Vec<&str> = report
-        .filters
-        .pains_alerts
-        .iter()
-        .map(|s| s.as_str())
-        .collect();
-    filters.set_item("pains_alerts", alerts)?;
-    d.set_item("filters", filters)?;
-    let fgs: Vec<Bound<'py, PyDict>> = report
-        .functional_groups
-        .iter()
-        .map(|fg| {
-            let fd = PyDict::new(py);
-            fd.set_item("name", &fg.name)?;
-            fd.set_item("atom_indices", &fg.atom_indices)?;
-            Ok(fd)
-        })
-        .collect::<PyResult<Vec<_>>>()?;
-    d.set_item("functional_groups", fgs)?;
-    let ngs: Vec<Bound<'py, PyDict>> = report
-        .named_groups
-        .iter()
-        .map(|ng| {
-            let nd = PyDict::new(py);
-            nd.set_item("name", &ng.name)?;
-            nd.set_item("atom_indices", &ng.atom_indices)?;
-            Ok(nd)
-        })
-        .collect::<PyResult<Vec<_>>>()?;
-    d.set_item("named_groups", ngs)?;
+    d.set_item(
+        "descriptors",
+        report_descriptors_to_dict(py, &report.descriptors)?,
+    )?;
+    d.set_item("filters", report_filters_to_dict(py, &report.filters)?)?;
+    d.set_item(
+        "functional_groups",
+        functional_groups_to_dicts(py, &report.functional_groups)?,
+    )?;
+    d.set_item(
+        "named_groups",
+        named_groups_to_dicts(py, &report.named_groups)?,
+    )?;
     Ok(d)
+}
+
+fn report_descriptors_to_dict<'py>(
+    py: Python<'py>,
+    descriptors: &chematic_chem::DescriptorSummary,
+) -> PyResult<Bound<'py, PyDict>> {
+    let desc = PyDict::new(py);
+    desc.set_item("mw", descriptors.molecular_weight)?;
+    desc.set_item("exact_mass", descriptors.exact_mass)?;
+    desc.set_item("tpsa", descriptors.tpsa)?;
+    desc.set_item("logp", descriptors.logp)?;
+    desc.set_item("molar_refractivity", descriptors.molar_refractivity)?;
+    desc.set_item("hbd", descriptors.hbd)?;
+    desc.set_item("hba", descriptors.hba)?;
+    desc.set_item("rotatable_bonds", descriptors.rotatable_bonds)?;
+    desc.set_item("heavy_atoms", descriptors.heavy_atom_count)?;
+    desc.set_item("ring_count", descriptors.ring_count)?;
+    desc.set_item("num_heteroatoms", descriptors.num_heteroatoms)?;
+    desc.set_item("num_stereocenters", descriptors.num_stereocenters)?;
+    desc.set_item("fsp3", descriptors.fsp3)?;
+    desc.set_item("qed", descriptors.qed)?;
+    desc.set_item("sa_score", descriptors.sa_score)?;
+    desc.set_item("formal_charge", descriptors.formal_charge_sum)?;
+    desc.set_item("labute_asa", descriptors.labute_asa)?;
+    desc.set_item("bertz_ct", descriptors.bertz_ct)?;
+    desc.set_item("wiener_index", descriptors.wiener_index)?;
+    Ok(desc)
+}
+
+fn report_filters_to_dict<'py>(
+    py: Python<'py>,
+    report: &chematic_chem::FilterSummary,
+) -> PyResult<Bound<'py, PyDict>> {
+    let filters = PyDict::new(py);
+    filters.set_item("lipinski_passes", report.lipinski_passes)?;
+    filters.set_item("veber_passes", report.veber_passes)?;
+    filters.set_item("egan_passes", report.egan_passes)?;
+    filters.set_item("ghose_passes", report.ghose_passes)?;
+    filters.set_item("reos_passes", report.reos_passes)?;
+    filters.set_item("pains_passes", report.pains_passes)?;
+    let alerts: Vec<&str> = report.pains_alerts.iter().map(|s| s.as_str()).collect();
+    filters.set_item("pains_alerts", alerts)?;
+    Ok(filters)
+}
+
+fn functional_groups_to_dicts<'py>(
+    py: Python<'py>,
+    groups: &[chematic_chem::FunctionalGroupSummary],
+) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    groups
+        .iter()
+        .map(|group| {
+            let result = PyDict::new(py);
+            result.set_item("name", &group.name)?;
+            result.set_item("atom_indices", &group.atom_indices)?;
+            Ok(result)
+        })
+        .collect()
+}
+
+fn named_groups_to_dicts<'py>(
+    py: Python<'py>,
+    groups: &[chematic_chem::NamedGroupSummary],
+) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    groups
+        .iter()
+        .map(|group| {
+            let result = PyDict::new(py);
+            result.set_item("name", &group.name)?;
+            result.set_item("atom_indices", &group.atom_indices)?;
+            Ok(result)
+        })
+        .collect()
 }
 
 // ---------------------------------------------------------------------------

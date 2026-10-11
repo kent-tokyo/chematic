@@ -959,6 +959,24 @@ fn result_to_dict<'py>(py: Python<'py>, r: &PipelineV2Result) -> PyResult<Bound<
     let d = PyDict::new(py);
     d.set_item("coords", coords_to_vec(&r.coords))?;
     d.set_item("embed_stats", embed_stats_dict(py, &r.embed_stats)?)?;
+    result_torsion_fields(py, &d, r)?;
+    result_stereo_and_force_field_fields(py, &d, r)?;
+    d.set_item(
+        "final_validation",
+        final_validation_dict(py, &r.final_validation)?,
+    )?;
+    d.set_item(
+        "elapsed_ms_by_stage",
+        stage_timings_dict(py, &r.elapsed_ms_by_stage)?,
+    )?;
+    Ok(d)
+}
+
+fn result_torsion_fields(
+    py: Python<'_>,
+    d: &Bound<'_, PyDict>,
+    r: &PipelineV2Result,
+) -> PyResult<()> {
     match &r.bound_adjustment_report {
         Some(v) => d.set_item(
             "bound_adjustment_report",
@@ -983,6 +1001,14 @@ fn result_to_dict<'py>(py: Python<'py>, r: &PipelineV2Result) -> PyResult<Bound<
         )?,
         None => d.set_item("torsion_optimization_report", py.None())?,
     }
+    Ok(())
+}
+
+fn result_stereo_and_force_field_fields(
+    py: Python<'_>,
+    d: &Bound<'_, PyDict>,
+    r: &PipelineV2Result,
+) -> PyResult<()> {
     d.set_item(
         "stereo_before",
         stereo_verification_dict(py, &r.stereo_before)?,
@@ -1003,15 +1029,7 @@ fn result_to_dict<'py>(py: Python<'py>, r: &PipelineV2Result) -> PyResult<Bound<
         "final_stereo",
         stereo_verification_dict(py, &r.final_stereo)?,
     )?;
-    d.set_item(
-        "final_validation",
-        final_validation_dict(py, &r.final_validation)?,
-    )?;
-    d.set_item(
-        "elapsed_ms_by_stage",
-        stage_timings_dict(py, &r.elapsed_ms_by_stage)?,
-    )?;
-    Ok(d)
+    Ok(())
 }
 
 fn failure_cause_dict<'py>(
@@ -1074,6 +1092,21 @@ pub(crate) fn failure_to_dict<'py>(
         None => d.set_item("last_known_coords", py.None())?,
     }
     d.set_item("coords_are_diagnostic_only", true)?;
+    failure_embedding_fields(py, &d, f)?;
+    failure_torsion_fields(py, &d, f)?;
+    failure_stereo_and_force_field_fields(py, &d, f)?;
+    d.set_item(
+        "elapsed_ms_by_stage",
+        stage_timings_dict(py, &f.elapsed_ms_by_stage)?,
+    )?;
+    Ok(d)
+}
+
+fn failure_embedding_fields(
+    py: Python<'_>,
+    d: &Bound<'_, PyDict>,
+    f: &PipelineV2Failure,
+) -> PyResult<()> {
     match &f.embed_stats {
         Some(s) => d.set_item("embed_stats", embed_stats_dict(py, s)?)?,
         None => d.set_item("embed_stats", py.None())?,
@@ -1087,6 +1120,14 @@ pub(crate) fn failure_to_dict<'py>(
         )?,
         None => d.set_item("bound_adjustment_report", py.None())?,
     }
+    Ok(())
+}
+
+fn failure_torsion_fields(
+    py: Python<'_>,
+    d: &Bound<'_, PyDict>,
+    f: &PipelineV2Failure,
+) -> PyResult<()> {
     match &f.torsion_knowledge_report {
         Some(r) => d.set_item(
             "torsion_knowledge_report",
@@ -1105,6 +1146,14 @@ pub(crate) fn failure_to_dict<'py>(
         )?,
         None => d.set_item("torsion_optimization_report", py.None())?,
     }
+    Ok(())
+}
+
+fn failure_stereo_and_force_field_fields(
+    py: Python<'_>,
+    d: &Bound<'_, PyDict>,
+    f: &PipelineV2Failure,
+) -> PyResult<()> {
     match &f.stereo_before {
         Some(s) => d.set_item("stereo_before", stereo_verification_dict(py, s)?)?,
         None => d.set_item("stereo_before", py.None())?,
@@ -1129,11 +1178,7 @@ pub(crate) fn failure_to_dict<'py>(
         Some(v) => d.set_item("final_validation", final_validation_dict(py, v)?)?,
         None => d.set_item("final_validation", py.None())?,
     }
-    d.set_item(
-        "elapsed_ms_by_stage",
-        stage_timings_dict(py, &f.elapsed_ms_by_stage)?,
-    )?;
-    Ok(d)
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------

@@ -412,14 +412,6 @@
       "decisions": 61,
       "lines": 405
     },
-    "crates/chematic-py/src/lammps.rs::lammps_data_to_pydict#1": {
-      "decisions": 33,
-      "lines": 75
-    },
-    "crates/chematic-py/src/lammps.rs::pydict_to_lammps_data#1": {
-      "decisions": 37,
-      "lines": 82
-    },
     "crates/chematic-py/src/mol_methods.rs::descriptors#1": {
       "decisions": 127,
       "lines": 176
@@ -428,25 +420,9 @@
       "decisions": 16,
       "lines": 124
     },
-    "crates/chematic-py/src/pipeline_v2.rs::failure_to_dict#1": {
-      "decisions": 53,
-      "lines": 75
-    },
-    "crates/chematic-py/src/pipeline_v2.rs::result_to_dict#1": {
-      "decisions": 31,
-      "lines": 58
-    },
-    "crates/chematic-py/src/reactions.rs::run_smirks_checked#1": {
-      "decisions": 43,
-      "lines": 157
-    },
     "crates/chematic-py/src/reports.rs::compare#1": {
       "decisions": 17,
       "lines": 196
-    },
-    "crates/chematic-py/src/reports.rs::mol_report_to_dict#1": {
-      "decisions": 41,
-      "lines": 71
     },
     "crates/chematic-rxn/src/document.rs::validate#1": {
       "decisions": 26,
