@@ -15,7 +15,7 @@ fuzz_target!(|data: &[u8]| {
     };
     let input = &input[..input.len().min(1 << 20)];
 
-    match selector % 22 {
+    match selector % 26 {
         0 => { let _ = chematic_chem::parse_formula(input); }
         1 => { let _ = chematic_chem::parse_condensed(input); }
         2 => { let _ = chematic_smarts::parse_smarts(input); }
@@ -47,6 +47,18 @@ fuzz_target!(|data: &[u8]| {
                     max_models: 256,
                 },
             );
+        }
+        22 => {
+            let _: Vec<_> = chematic_mol::sdf::SdfReader::new(input).collect();
+        }
+        23 => {
+            let _: Vec<_> = chematic_mol::xyz::XyzReader::new(input).collect();
+        }
+        24 => {
+            let _: Vec<_> = chematic_mol::xyz::ExtxyzReader::new(input).collect();
+        }
+        25 => {
+            let _ = chematic_smiles::rdkit_mol_from_xyz_block(input);
         }
         _ => unreachable!(),
     }

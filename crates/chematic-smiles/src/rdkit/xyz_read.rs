@@ -5,6 +5,12 @@ use super::RdkitSmilesError;
 use super::mol::{Atom, Mol};
 use super::periodic;
 
+// Keep the compatibility reader within the same resource envelope as the
+// native SMILES and XYZ parsers.  RDKit parses the count as a u32, but blindly
+// reserving that many positions lets a tiny untrusted block request tens of
+// gigabytes before the parser notices the missing atom lines.
+const MAX_XYZ_ATOMS: u32 = 100_000;
+
 fn fails(what: impl Into<String>) -> RdkitSmilesError {
     RdkitSmilesError::Sanitization(what.into())
 }
@@ -148,6 +154,11 @@ pub(crate) fn mol_from_xyz_block(text: &str) -> Result<(Mol, Vec<[f64; 3]>), Rdk
             "Unable to recognize the number of atoms: cannot convert '{num}' to unsigned int on line 0"
         ))
     })?;
+    if num_atoms > MAX_XYZ_ATOMS {
+        return Err(fails(format!(
+            "molecule exceeds maximum atom count {MAX_XYZ_ATOMS}"
+        )));
+    }
     let _comment = lines.get_line();
     let mut mol = Mol::default();
     let mut coords = Vec::with_capacity(num_atoms as usize);
@@ -167,4 +178,19 @@ pub(crate) fn mol_from_xyz_block(text: &str) -> Result<(Mol, Vec<[f64; 3]>), Rdk
         }
     }
     Ok((mol, coords))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::mol_from_xyz_block;
+
+    #[test]
+    fn oversized_declared_atom_count_is_rejected_before_allocation() {
+        let error = mol_from_xyz_block("4294967295\ncomment\n").unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("molecule exceeds maximum atom count 100000")
+        );
+    }
 }

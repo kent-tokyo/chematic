@@ -68,6 +68,16 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fixed in-memory XYZ, Extended XYZ, RDKit-compatible XYZ, and legacy SDF
+  readers bypassing parser resource limits. Oversized declared XYZ frames now
+  return bounded errors before allocation, and long runs of empty SDF records
+  no longer recurse until stack exhaustion.
+- Fixed PME/SPME panics and unbounded allocations for malformed public
+  configurations, including zero-sized meshes, zero spline order, mismatched
+  coordinate/charge arrays, overflowed grids, and excessive reciprocal-space
+  searches. The existing public error enum remains source-compatible.
+- Fixed molecular-dynamics runs with `save_every = 0` panicking on a modulo by
+  zero; zero now explicitly disables trajectory-frame storage.
 - Fixed a potential infinite loop while reconstructing InChI double-bond
   stereo when a connected direction component already contained preset bond
   directions. Existing directions now seed and propagate through the component

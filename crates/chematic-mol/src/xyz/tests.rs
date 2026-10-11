@@ -77,6 +77,40 @@ fn multi_frame_reader_matches_parse_xyz_all() {
 }
 
 #[test]
+fn in_memory_xyz_reader_rejects_oversized_declared_frame() {
+    let input = format!("{}\ncomment\n", usize::MAX);
+    let mut reader = XyzReader::new(&input);
+    assert!(matches!(
+        reader.next(),
+        Some(Err(XyzError::ResourceLimit {
+            resource: "atoms per frame",
+            ..
+        }))
+    ));
+    assert!(reader.next().is_none());
+}
+
+#[test]
+fn in_memory_xyz_reader_enforces_frame_limit_after_valid_prefix() {
+    let input = "1\none\nC 0 0 0\n1\ntwo\nO 0 0 0\n";
+    let limits = XyzParseLimits {
+        max_frames: 1,
+        ..XyzParseLimits::default()
+    };
+    let mut reader = XyzReader::with_limits(input, limits);
+    assert!(reader.next().unwrap().is_ok());
+    assert!(matches!(
+        reader.next(),
+        Some(Err(XyzError::ResourceLimit {
+            resource: "frames",
+            actual: 2,
+            limit: 1,
+        }))
+    ));
+    assert!(reader.next().is_none());
+}
+
+#[test]
 fn file_reader_matches_in_memory_reader() {
     use std::io::BufReader;
 
@@ -345,6 +379,20 @@ fn extxyz_multi_frame_reader_matches_parse_extxyz_all() {
     let via_all = parse_extxyz_all(&traj).unwrap();
     assert_eq!(via_reader, via_all);
     assert_eq!(via_reader.len(), 2);
+}
+
+#[test]
+fn in_memory_extxyz_reader_rejects_oversized_declared_frame() {
+    let input = format!("{}\nProperties=species:S:1:pos:R:3\n", usize::MAX);
+    let mut reader = ExtxyzReader::new(&input);
+    assert!(matches!(
+        reader.next(),
+        Some(Err(XyzError::ResourceLimit {
+            resource: "atoms per frame",
+            ..
+        }))
+    ));
+    assert!(reader.next().is_none());
 }
 
 #[test]
