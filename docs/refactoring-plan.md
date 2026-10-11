@@ -28,8 +28,8 @@ authoritative.
 | R0 | Refactor budget, CI ratchet, regression baselines | Complete |
 | R1 | Declarative registries, generated data, and test-module separation | Complete |
 | R2 | Reaction template, matching, product, sanitization, provenance, compatibility | Complete |
-| R3 | File parsers: lexical decode, semantic validation, builders, diagnostics | Active |
-| R4 | Python and WASM bindings by API domain | Planned |
+| R3 | File parsers: lexical decode, semantic validation, builders, diagnostics | Complete |
+| R4 | Python and WASM bindings by API domain | Active |
 | R5 | Descriptors and tautomer rules/search/scoring | Planned |
 | R6 | Canonicalization, ring perception, and aromaticity | Planned |
 | R7 | MMFF/UFF and 3D preparation, optimization, and quality policy | Planned |
@@ -63,6 +63,14 @@ R3 starts by moving embedded format tests for CDXML, CIF, LAMMPS data, V2000,
 V3000, ORCA, QCSchema, semantic documents, and XYZ into child test modules.
 This removes five parser file allowances immediately and leaves the production
 files organized for lexical/semantic/builder extraction.
+
+R3 finishes with no `chematic-mol` file or function exceptions. Format codecs
+are split into bounded lexical, semantic-validation, construction, and output
+stages, including CDXML, KET, MOL2, LAMMPS, semantic documents, and volumetric
+streams. The complete `chematic-mol` all-target test suite, clippy with warnings
+denied, the refactor-budget scanner, and formatting/diff checks pass. A KET
+contract regression found by the full gate was corrected so flat malformed
+documents continue to report the original missing `atoms` field.
 
 ## Required checks per phase
 

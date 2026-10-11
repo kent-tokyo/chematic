@@ -126,7 +126,7 @@ pub fn parse_ket_3d(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Ket
 }
 
 fn ket_molecule_node(root: &serde_json::Value) -> Result<&serde_json::Value, KetError> {
-    if root.get("atoms").is_some() {
+    if root.get("root").is_none() {
         return Ok(root);
     }
     let reference = root
