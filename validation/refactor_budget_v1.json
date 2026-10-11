@@ -53,8 +53,7 @@
     "crates/chematic-smiles/src/rdkit/rxn_smarts.rs": 1680,
     "crates/chematic-wasm/src/format_io.rs": 2388,
     "crates/chematic-wasm/src/mol_io.rs": 1592,
-    "crates/chematic-wasm/src/mol_reactions.rs": 2107,
-    "crates/chematic-wasm/src/pipeline_v2.rs": 2192
+    "crates/chematic-wasm/src/mol_reactions.rs": 2107
   },
   "function_allowances": {
     "crates/chematic-3d/src/align.rs::align_coords#1": {
