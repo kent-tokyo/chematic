@@ -32,6 +32,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Split the reaction engine into prepared-template orchestration, matching,
   sanitization, stereo transfer, and product-construction modules. Public Rust
   paths and reaction products remain unchanged.
+- Decomposed the remaining long reaction matching, carried-E/Z, sanitization,
+  and product assembly functions into bounded stages; the reaction transform
+  area no longer needs file or function debt allowances.
 
 ## [1.1.0] - 2026-10-11
 

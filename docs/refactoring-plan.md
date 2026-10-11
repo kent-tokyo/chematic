@@ -27,8 +27,8 @@ authoritative.
 |---|---|---|
 | R0 | Refactor budget, CI ratchet, regression baselines | Complete |
 | R1 | Declarative registries, generated data, and test-module separation | Complete |
-| R2 | Reaction template, matching, product, sanitization, provenance, compatibility | Active |
-| R3 | File parsers: lexical decode, semantic validation, builders, diagnostics | Planned |
+| R2 | Reaction template, matching, product, sanitization, provenance, compatibility | Complete |
+| R3 | File parsers: lexical decode, semantic validation, builders, diagnostics | Active |
 | R4 | Python and WASM bindings by API domain | Planned |
 | R5 | Descriptors and tautomer rules/search/scoring | Planned |
 | R6 | Canonicalization, ring perception, and aromaticity | Planned |
@@ -54,6 +54,10 @@ component parsing are isolated in `transform/templates.rs`. Matching,
 sanitization, stereo transfer, product construction, and prepared-reaction
 orchestration now have separate modules; `transform.rs` is reduced from 8,282
 lines before R1 to 528 lines of public API and shared state.
+The four remaining over-budget reaction functions were then decomposed into
+bounded input validation, query matching, E/Z transfer, aromaticity/Kekule/
+valence diagnostics, atom assembly, and product finalization helpers. R2 now
+has no refactoring-budget exceptions.
 
 ## Required checks per phase
 

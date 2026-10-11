@@ -658,22 +658,6 @@
       "decisions": 19,
       "lines": 141
     },
-    "crates/chematic-rxn/src/transform/product.rs::build_product#1": {
-      "decisions": 48,
-      "lines": 341
-    },
-    "crates/chematic-rxn/src/transform/matching.rs::find_matches_profile#1": {
-      "decisions": 20,
-      "lines": 147
-    },
-    "crates/chematic-rxn/src/transform/sanitization.rs::product_sanitization_diagnostic#1": {
-      "decisions": 28,
-      "lines": 151
-    },
-    "crates/chematic-rxn/src/transform/sanitization.rs::rdkit_carried_ez#1": {
-      "decisions": 30,
-      "lines": 163
-    },
     "crates/chematic-smarts/src/parser.rs::parse_primitive#1": {
       "decisions": 46,
       "lines": 341

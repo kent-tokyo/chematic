@@ -1,4 +1,5 @@
 use super::*;
+use chematic_core::ez_markers::{EzFact, EzFactEnd, raw_direction, read_ez_facts, write_ez_facts};
 
 /// RDKit's legacy CIP ranks (`assignStereochemistry`'s atom invariants,
 /// which pick a double bond's stereo atoms): atomic number and isotope,
@@ -105,9 +106,6 @@ pub(super) fn rdkit_carried_ez(
     template: &Molecule,
     template_idx_to_new: &[Option<AtomIdx>],
 ) {
-    use chematic_core::ez_markers::{
-        EzFact, EzFactEnd, raw_direction, read_ez_facts, write_ez_facts,
-    };
     if !reactants
         .iter()
         .any(|r| r.bonds().any(|(b, _)| raw_direction(r, b).is_some()))
@@ -120,31 +118,6 @@ pub(super) fn rdkit_carried_ez(
         .enumerate()
         .filter_map(|(t, p)| p.map(|p| (p, AtomIdx(t as u32))))
         .collect();
-    // The template double bond between two product atoms, with whether each
-    // template end has another template neighbour and a marked one.
-    let template_double = |a: AtomIdx, b: AtomIdx| -> Option<(bool, bool)> {
-        let (&ta, &tb) = (template_atom_of.get(&a)?, template_atom_of.get(&b)?);
-        let (tbond, entry) = template.bond_between(ta, tb)?;
-        (entry.order == BondOrder::Double).then(|| {
-            let ends = [ta, tb];
-            let neighbours = ends
-                .iter()
-                .all(|&end| template.neighbors(end).any(|(_, nb)| nb != tbond));
-            let marked = ends.iter().all(|&end| {
-                template
-                    .neighbors(end)
-                    .any(|(_, nb)| nb != tbond && raw_direction(template, nb).is_some())
-            });
-            (neighbours, marked)
-        })
-    };
-    let product_of = |ri: usize, atom: AtomIdx| -> Option<AtomIdx> {
-        product
-            .atom_sources
-            .iter()
-            .position(|s| s.is_some_and(|s| s.reactant == ri && s.atom == atom))
-            .map(|i| AtomIdx(i as u32))
-    };
     let mut dropped: Vec<BondIdx> = Vec::new();
     let mut derived: Vec<EzFact> = Vec::new();
     let mut rank_cache: FxHashMap<usize, Vec<u32>> = FxHashMap::default();
@@ -179,7 +152,7 @@ pub(super) fn rdkit_carried_ez(
         ) else {
             continue;
         };
-        match template_double(pa, pz) {
+        match template_double_stereo(template, &template_atom_of, pa, pz) {
             // The template spells this double bond's stereo: keep it.
             Some((_, true)) => continue,
             // `[C:4][C:1]=[C:2][C:3]>>[C:4][C:1]=[C:2][C:3]` on an alkene,
@@ -193,7 +166,7 @@ pub(super) fn rdkit_carried_ez(
         let mut ends: Vec<EzFactEnd> = Vec::with_capacity(2);
         let mut drop = false;
         for (p_end, (stereo, side, other)) in [(pa, ea), (pz, ez)] {
-            let reference = match product_of(sa.reactant, stereo) {
+            let reference = match product_atom_of(product, sa.reactant, stereo) {
                 Some(ps) => match mol.bond_between(p_end, ps) {
                     Some((b, _)) => Some((b, side)),
                     None => {
@@ -205,7 +178,7 @@ pub(super) fn rdkit_carried_ez(
                 // atom the template adds does not (a vinyl iodide reduced to
                 // `C=C[H]` has no E/Z, BTMR0671).
                 None => other
-                    .and_then(|o| product_of(sa.reactant, o))
+                    .and_then(|o| product_atom_of(product, sa.reactant, o))
                     .and_then(|po| mol.bond_between(p_end, po))
                     .map(|(b, _)| (b, !side)),
             };
@@ -230,6 +203,46 @@ pub(super) fn rdkit_carried_ez(
             });
         }
     }
+    apply_carried_ez_changes(product, &dropped, derived);
+}
+
+/// The template double bond between two product atoms, with whether each
+/// template end has another template neighbour and a marked one.
+fn template_double_stereo(
+    template: &Molecule,
+    template_atom_of: &FxHashMap<AtomIdx, AtomIdx>,
+    a: AtomIdx,
+    b: AtomIdx,
+) -> Option<(bool, bool)> {
+    let (&ta, &tb) = (template_atom_of.get(&a)?, template_atom_of.get(&b)?);
+    let (tbond, entry) = template.bond_between(ta, tb)?;
+    (entry.order == BondOrder::Double).then(|| {
+        let ends = [ta, tb];
+        let neighbours = ends
+            .iter()
+            .all(|&end| template.neighbors(end).any(|(_, nb)| nb != tbond));
+        let marked = ends.iter().all(|&end| {
+            template
+                .neighbors(end)
+                .any(|(_, nb)| nb != tbond && raw_direction(template, nb).is_some())
+        });
+        (neighbours, marked)
+    })
+}
+
+fn product_atom_of(product: &TracedProduct, reactant: usize, atom: AtomIdx) -> Option<AtomIdx> {
+    product
+        .atom_sources
+        .iter()
+        .position(|source| source.is_some_and(|s| s.reactant == reactant && s.atom == atom))
+        .map(|index| AtomIdx(index as u32))
+}
+
+fn apply_carried_ez_changes(
+    product: &mut TracedProduct,
+    dropped: &[BondIdx],
+    derived: Vec<EzFact>,
+) {
     if dropped.is_empty() && derived.is_empty() {
         return;
     }
@@ -240,7 +253,7 @@ pub(super) fn rdkit_carried_ez(
         .iter()
         .flat_map(|f| f.ends.iter().map(|e| e.reference))
         .collect();
-    for &pb in &dropped {
+    for &pb in dropped {
         let bond = trial.bond(pb);
         for end in [bond.atom1, bond.atom2] {
             let subs: Vec<BondIdx> = trial
@@ -255,7 +268,9 @@ pub(super) fn rdkit_carried_ez(
             }
         }
     }
-    let mut facts = read_ez_facts(&trial).map(|(f, _)| f).unwrap_or_default();
+    let mut facts = read_ez_facts(&trial)
+        .map(|(facts, _)| facts)
+        .unwrap_or_default();
     facts.retain(|f| !dropped.contains(&f.double) && !derived.iter().any(|d| d.double == f.double));
     facts.extend(derived);
     if write_ez_facts(&mut trial, &facts) {
@@ -512,145 +527,16 @@ pub(super) fn product_sanitization_diagnostic(
     product: &TracedProduct,
     product_index: usize,
 ) -> ProductSanitizationDiagnostic {
-    use crate::rdkit_valence::max_valence;
-    const MAX_DIAGNOSTIC_ATOMS: usize = 32;
-
-    let mol = &product.molecule;
-    let atom_context =
-        |idx: AtomIdx, observed_valence: Option<i16>, max_allowed_valence: Option<i16>| {
-            let atom = mol.atom(idx);
-            ProductAtomRejectionDiagnostic {
-                atom: idx,
-                template_map: product.template_maps.get(idx.0 as usize).copied().flatten(),
-                element: atom.element,
-                explicit_hydrogen_count: atom.hydrogen_count,
-                observed_valence,
-                max_allowed_valence,
-            }
-        };
-    let rejected = |reason: ProductRejectionReason,
-                    mut atoms: Vec<ProductAtomRejectionDiagnostic>| {
-        atoms.sort_unstable_by_key(|atom| atom.atom.0);
-        atoms.dedup_by_key(|atom| atom.atom.0);
-        atoms.truncate(MAX_DIAGNOSTIC_ATOMS);
-        ProductSanitizationDiagnostic {
-            product_index,
-            accepted: false,
-            reason: Some(reason),
-            atoms,
-        }
+    if let Some(rejection) = aromaticity_rejection(product, product_index) {
+        return rejection;
+    }
+    let orders = match product_kekule_orders(product, product_index) {
+        Ok(orders) => orders,
+        Err(rejection) => return rejection,
     };
-
-    if mol.atoms().any(|(_, a)| a.aromatic) {
-        let in_ring = atoms_in_rings(mol);
-        let outside_ring: Vec<_> = mol
-            .atoms()
-            .filter(|(idx, atom)| atom.aromatic && !in_ring[idx.0 as usize])
-            .take(MAX_DIAGNOSTIC_ATOMS)
-            .map(|(idx, _)| atom_context(idx, None, None))
-            .collect();
-        if !outside_ring.is_empty() {
-            return rejected(ProductRejectionReason::Aromaticity, outside_ring);
-        }
-        // A plain double bond between two aromatic ring atoms (an aromatic
-        // ring bond a template rewrote as `=`, `c1cc=ncc1`) is not a form
-        // RDKit's kekulization accepts; the written SMILES would not parse.
-        if let Some((_, bond)) = mol.bonds().find(|(_, bond)| {
-            bond.order == BondOrder::Double
-                && mol.atom(bond.atom1).aromatic
-                && mol.atom(bond.atom2).aromatic
-                && in_ring[bond.atom1.0 as usize]
-                && in_ring[bond.atom2.0 as usize]
-        }) {
-            return rejected(
-                ProductRejectionReason::Aromaticity,
-                [bond.atom1, bond.atom2]
-                    .into_iter()
-                    .map(|idx| atom_context(idx, None, None))
-                    .collect(),
-            );
-        }
-    }
-    // Kekulé orders of the aromatic bonds, read in place (the product is
-    // not copied).
-    let mut orders: Vec<BondOrder> = mol.bonds().map(|(_, b)| b.order).collect();
-    if orders.contains(&BondOrder::Aromatic) {
-        match chematic_core::kekulize_with(mol, |idx| rdkit_kekule_candidate(mol, idx)) {
-            Ok(k) => {
-                for (b, order) in k {
-                    orders[b.0 as usize] = order;
-                }
-            }
-            Err(_) => {
-                let atoms = mol
-                    .atoms()
-                    .filter(|(_, atom)| atom.aromatic)
-                    .take(MAX_DIAGNOSTIC_ATOMS)
-                    .map(|(idx, _)| atom_context(idx, None, None))
-                    .collect();
-                return rejected(ProductRejectionReason::Kekulization, atoms);
-            }
-        }
-    }
-    let order_of = |b: BondIdx| orders[b.0 as usize];
-    let explicit_valence = |idx: AtomIdx| -> i16 {
-        let bonds: i16 = mol
-            .neighbors(idx)
-            .map(|(_, b)| {
-                let bond = mol.bond(b);
-                match order_of(b) {
-                    BondOrder::Dative if bond.atom1 == idx => 0,
-                    order => i16::from(order.order_int()),
-                }
-            })
-            .sum();
-        bonds + i16::from(mol.atom(idx).hydrogen_count.unwrap_or(0))
-    };
-    let mut invalid_atoms = Vec::new();
-    for (idx, atom) in mol.atoms() {
-        if atom.wildcard {
-            continue;
-        }
-        let z = atom.element.atomic_number();
-        let mut charge = atom.charge;
-        let mut used = explicit_valence(idx);
-        // RDKit's cleanUp, which runs before the valence check.
-        if charge == 0 {
-            let bond_to = |order: BondOrder, nz: u8| {
-                mol.neighbors(idx).any(|(nb, b)| {
-                    order_of(b) == order && {
-                        let n = mol.atom(nb);
-                        n.element.atomic_number() == nz && n.charge == 0
-                    }
-                })
-            };
-            if z == 7
-                && used == 5
-                && (bond_to(BondOrder::Double, 8) || bond_to(BondOrder::Triple, 7))
-            {
-                charge = 1;
-                used = 4;
-            } else if matches!(z, 17 | 35 | 53)
-                && matches!(used, 3 | 5 | 7)
-                && mol
-                    .neighbors(idx)
-                    .all(|(nb, _)| mol.atom(nb).element.atomic_number() == 8)
-            {
-                let doubles = mol
-                    .neighbors(idx)
-                    .filter(|&(_, b)| order_of(b) == BondOrder::Double)
-                    .count() as i16;
-                charge = doubles as i8;
-                used -= doubles;
-            }
-        }
-        let max = max_valence(z, charge);
-        if max.is_some_and(|max| used > max) && invalid_atoms.len() < MAX_DIAGNOSTIC_ATOMS {
-            invalid_atoms.push(atom_context(idx, Some(used), max));
-        }
-    }
-    if !invalid_atoms.is_empty() {
-        return rejected(ProductRejectionReason::Valence, invalid_atoms);
+    let invalid = invalid_valence_atoms(product, &orders);
+    if !invalid.is_empty() {
+        return rejected_product(product_index, ProductRejectionReason::Valence, invalid);
     }
     ProductSanitizationDiagnostic {
         product_index,
@@ -658,4 +544,182 @@ pub(super) fn product_sanitization_diagnostic(
         reason: None,
         atoms: Vec::new(),
     }
+}
+
+const MAX_DIAGNOSTIC_ATOMS: usize = 32;
+
+fn atom_rejection_context(
+    product: &TracedProduct,
+    atom: AtomIdx,
+    observed_valence: Option<i16>,
+    max_allowed_valence: Option<i16>,
+) -> ProductAtomRejectionDiagnostic {
+    let value = product.molecule.atom(atom);
+    ProductAtomRejectionDiagnostic {
+        atom,
+        template_map: product
+            .template_maps
+            .get(atom.0 as usize)
+            .copied()
+            .flatten(),
+        element: value.element,
+        explicit_hydrogen_count: value.hydrogen_count,
+        observed_valence,
+        max_allowed_valence,
+    }
+}
+
+fn rejected_product(
+    product_index: usize,
+    reason: ProductRejectionReason,
+    mut atoms: Vec<ProductAtomRejectionDiagnostic>,
+) -> ProductSanitizationDiagnostic {
+    atoms.sort_unstable_by_key(|atom| atom.atom.0);
+    atoms.dedup_by_key(|atom| atom.atom.0);
+    atoms.truncate(MAX_DIAGNOSTIC_ATOMS);
+    ProductSanitizationDiagnostic {
+        product_index,
+        accepted: false,
+        reason: Some(reason),
+        atoms,
+    }
+}
+
+fn aromaticity_rejection(
+    product: &TracedProduct,
+    product_index: usize,
+) -> Option<ProductSanitizationDiagnostic> {
+    let mol = &product.molecule;
+    if !mol.atoms().any(|(_, atom)| atom.aromatic) {
+        return None;
+    }
+    let in_ring = atoms_in_rings(mol);
+    let outside_ring: Vec<_> = mol
+        .atoms()
+        .filter(|(idx, atom)| atom.aromatic && !in_ring[idx.0 as usize])
+        .take(MAX_DIAGNOSTIC_ATOMS)
+        .map(|(idx, _)| atom_rejection_context(product, idx, None, None))
+        .collect();
+    if !outside_ring.is_empty() {
+        return Some(rejected_product(
+            product_index,
+            ProductRejectionReason::Aromaticity,
+            outside_ring,
+        ));
+    }
+
+    // A plain double bond between aromatic ring atoms is not a form RDKit's
+    // kekulization accepts; the written SMILES would not parse.
+    mol.bonds()
+        .find(|(_, bond)| {
+            bond.order == BondOrder::Double
+                && mol.atom(bond.atom1).aromatic
+                && mol.atom(bond.atom2).aromatic
+                && in_ring[bond.atom1.0 as usize]
+                && in_ring[bond.atom2.0 as usize]
+        })
+        .map(|(_, bond)| {
+            let atoms = [bond.atom1, bond.atom2]
+                .into_iter()
+                .map(|idx| atom_rejection_context(product, idx, None, None))
+                .collect();
+            rejected_product(product_index, ProductRejectionReason::Aromaticity, atoms)
+        })
+}
+
+fn product_kekule_orders(
+    product: &TracedProduct,
+    product_index: usize,
+) -> Result<Vec<BondOrder>, ProductSanitizationDiagnostic> {
+    let mol = &product.molecule;
+    let mut orders: Vec<BondOrder> = mol.bonds().map(|(_, bond)| bond.order).collect();
+    if !orders.contains(&BondOrder::Aromatic) {
+        return Ok(orders);
+    }
+    let kekule = chematic_core::kekulize_with(mol, |idx| rdkit_kekule_candidate(mol, idx))
+        .map_err(|_| {
+            let atoms = mol
+                .atoms()
+                .filter(|(_, atom)| atom.aromatic)
+                .take(MAX_DIAGNOSTIC_ATOMS)
+                .map(|(idx, _)| atom_rejection_context(product, idx, None, None))
+                .collect();
+            rejected_product(product_index, ProductRejectionReason::Kekulization, atoms)
+        })?;
+    for (bond, order) in kekule {
+        orders[bond.0 as usize] = order;
+    }
+    Ok(orders)
+}
+
+fn explicit_valence(mol: &Molecule, orders: &[BondOrder], idx: AtomIdx) -> i16 {
+    let bonds: i16 = mol
+        .neighbors(idx)
+        .map(|(_, bond_idx)| {
+            let bond = mol.bond(bond_idx);
+            match orders[bond_idx.0 as usize] {
+                BondOrder::Dative if bond.atom1 == idx => 0,
+                order => i16::from(order.order_int()),
+            }
+        })
+        .sum();
+    bonds + i16::from(mol.atom(idx).hydrogen_count.unwrap_or(0))
+}
+
+fn cleaned_charge_and_valence(mol: &Molecule, orders: &[BondOrder], idx: AtomIdx) -> (i8, i16) {
+    let atom = mol.atom(idx);
+    let mut charge = atom.charge;
+    let mut used = explicit_valence(mol, orders, idx);
+    if charge != 0 {
+        return (charge, used);
+    }
+    let bond_to = |order: BondOrder, atomic_number: u8| {
+        mol.neighbors(idx).any(|(neighbor, bond)| {
+            orders[bond.0 as usize] == order
+                && mol.atom(neighbor).element.atomic_number() == atomic_number
+                && mol.atom(neighbor).charge == 0
+        })
+    };
+    let atomic_number = atom.element.atomic_number();
+    if atomic_number == 7
+        && used == 5
+        && (bond_to(BondOrder::Double, 8) || bond_to(BondOrder::Triple, 7))
+    {
+        return (1, 4);
+    }
+    if matches!(atomic_number, 17 | 35 | 53)
+        && matches!(used, 3 | 5 | 7)
+        && mol
+            .neighbors(idx)
+            .all(|(neighbor, _)| mol.atom(neighbor).element.atomic_number() == 8)
+    {
+        let doubles = mol
+            .neighbors(idx)
+            .filter(|&(_, bond)| orders[bond.0 as usize] == BondOrder::Double)
+            .count() as i16;
+        charge = doubles as i8;
+        used -= doubles;
+    }
+    (charge, used)
+}
+
+fn invalid_valence_atoms(
+    product: &TracedProduct,
+    orders: &[BondOrder],
+) -> Vec<ProductAtomRejectionDiagnostic> {
+    use crate::rdkit_valence::max_valence;
+
+    let mol = &product.molecule;
+    let mut invalid = Vec::new();
+    for (idx, atom) in mol.atoms().filter(|(_, atom)| !atom.wildcard) {
+        let (charge, used) = cleaned_charge_and_valence(mol, orders, idx);
+        let max = max_valence(atom.element.atomic_number(), charge);
+        if max.is_some_and(|max| used > max) {
+            invalid.push(atom_rejection_context(product, idx, Some(used), max));
+            if invalid.len() == MAX_DIAGNOSTIC_ATOMS {
+                break;
+            }
+        }
+    }
+    invalid
 }

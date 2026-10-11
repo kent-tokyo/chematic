@@ -26,133 +26,35 @@ pub(super) fn find_matches_profile(
     let views = aromatic_views(reactants);
     let perceived = perceived_refs(reactants, &views);
     let reactants: &[&Molecule] = &perceived;
-    let n_templates = prepared.rxn.reactants.len();
-    if reactants.len() != n_templates {
-        return Err(TransformError::ReactantCountMismatch {
-            expected: n_templates,
-            got: reactants.len(),
-        });
-    }
-    if let Some(rings) = rings
-        && rings.len() != n_templates
-    {
-        return Err(TransformError::ReactantCountMismatch {
-            expected: n_templates,
-            got: rings.len(),
-        });
-    }
-
-    // VF2 match: for each (template_query, input_mol) pair.
-    // A substructure API may deduplicate embeddings by target atom *set*.
-    // Reactions cannot: swapping two template atoms mapped to the same set
-    // may produce distinct products (e.g. asymmetric ether cleavage).
-    let match_config = MatchConfig {
-        uniquify: false,
-        // A reaction reactant template is an exact molecular specification,
-        // unlike the general substructure API's isotope-agnostic default.
-        use_isotopes: true,
-        ..MatchConfig::default()
-    };
+    validate_match_inputs(prepared.rxn.reactants.len(), reactants, rings)?;
     let queries = match (profile, &prepared.rdkit_queries) {
         (Profile::Rdkit, Some(rdkit)) => rdkit,
         _ => &prepared.queries,
     };
-    let mut ring_model_unresolved = false;
-    let all_match_sets: Vec<Vec<FxHashMap<usize, AtomIdx>>> = queries
-        .iter()
-        .zip(reactants.iter())
-        .enumerate()
-        .map(|(index, (q, mol))| {
-            let matches = match rings {
-                // RDKit counts `R<n>` and ring sizes on its symmetrized ring
-                // set (a quinuclidine N is in three rings there, two in the
-                // SSSR); the RDKit profile uses the SMARTS opt-in matcher
-                // that reads them that way.
-                None if profile == Profile::Rdkit
-                    && query_uses_ring_model(q)
-                    && !rdkit_ring_model_is_sssr(mol) =>
-                {
-                    let config = chematic_smarts::RdkitParityConfig {
-                        base: match_config.clone(),
-                        ..chematic_smarts::RdkitParityConfig::default()
-                    };
-                    match chematic_smarts::find_matches_rdkit_parity(q, mol, &config) {
-                        Ok((matches, _)) => matches,
-                        Err(_) => {
-                            ring_model_unresolved = true;
-                            Vec::new()
-                        }
-                    }
-                }
-                Some(rings) => {
-                    find_matches_with_rings_and_config(q, mol, rings[index], &match_config)
-                }
-                None => find_matches_with_config(q, mol, &match_config),
-            };
-            crate::perf_counters::record_reactant_query_match_call(matches.len());
-            if matches.len() > limits.max_matches {
-                return Err(TransformError::ResourceLimit {
-                    resource: "reaction matches",
-                    actual: matches.len(),
-                    limit: limits.max_matches,
-                });
-            }
-            Ok(matches)
-        })
-        .collect::<Result<_, _>>()?;
-
-    if ring_model_unresolved {
+    let Some(all_match_sets) = collect_match_sets(queries, reactants, rings, profile, limits)?
+    else {
         return Ok((
             vec![],
             Some(ReactionCompatibilityUnsupported::RingModelUnresolved),
         ));
-    }
+    };
     // No matches when any template has no match.
     if all_match_sets.iter().any(|ms| ms.is_empty()) {
         return Ok((vec![], None));
     }
-
-    let total_combinations = all_match_sets
-        .iter()
-        .map(|matches| matches.len())
-        .try_fold(1usize, |total, count| total.checked_mul(count))
-        .unwrap_or(usize::MAX);
-    if total_combinations > limits.max_matches {
-        return Err(TransformError::ResourceLimit {
-            resource: "reaction match combinations",
-            actual: total_combinations,
-            limit: limits.max_matches,
-        });
-    }
+    validate_combination_count(&all_match_sets, limits)?;
 
     let mut matches: Vec<ReactionMatch> = Vec::new();
     let mut ez_rejected = false;
-
     for combo in cartesian_product(&all_match_sets) {
         crate::perf_counters::record_match_combination();
-
-        // Parity-aware chirality post-check.  Runs only when the SMIRKS has @/@@.
-        // This must happen after the complete VF2 mapping is known, because
-        // correct chirality comparison requires the full neighbor permutation.
-        if prepared.has_stereo && profile == Profile::Native {
-            let ok = (0..prepared.rxn.reactants.len()).all(|ri| {
-                smirks_chirality_ok(&prepared.rxn.reactants[ri], reactants[ri], &combo[ri])
-            });
-            if !ok {
-                continue;
-            }
+        if !combo_chirality_ok(prepared, reactants, &combo, profile) {
+            continue;
         }
-        // E/Z double-bond stereo post-check.  Runs only when the SMIRKS has /\.
-        if prepared.has_ez_stereo {
-            let ok = (0..prepared.rxn.reactants.len()).all(|ri| {
-                smirks_ez_stereo_ok(&prepared.rxn.reactants[ri], reactants[ri], &combo[ri])
-            });
-            if !ok {
-                ez_rejected = true;
-                continue;
-            }
+        if !combo_ez_ok(prepared, reactants, &combo) {
+            ez_rejected = true;
+            continue;
         }
-
         matches.push(ReactionMatch {
             per_reactant: combo,
         });
@@ -162,6 +64,137 @@ pub(super) fn find_matches_profile(
         matches,
         ez_rejected.then_some(ReactionCompatibilityUnsupported::EzReactantTemplateSemantics),
     ))
+}
+
+type AtomMatch = FxHashMap<usize, AtomIdx>;
+
+fn validate_match_inputs(
+    expected: usize,
+    reactants: &[&Molecule],
+    rings: Option<&[&RingSet]>,
+) -> Result<(), TransformError> {
+    if reactants.len() != expected {
+        return Err(TransformError::ReactantCountMismatch {
+            expected,
+            got: reactants.len(),
+        });
+    }
+    if let Some(rings) = rings
+        && rings.len() != expected
+    {
+        return Err(TransformError::ReactantCountMismatch {
+            expected,
+            got: rings.len(),
+        });
+    }
+    Ok(())
+}
+
+fn reaction_match_config() -> MatchConfig {
+    MatchConfig {
+        // Reactions cannot deduplicate embeddings by target atom set: swapping
+        // template atoms may produce distinct products.
+        uniquify: false,
+        // Reactant templates are exact molecular specifications.
+        use_isotopes: true,
+        ..MatchConfig::default()
+    }
+}
+
+fn collect_match_sets(
+    queries: &[QueryMolecule],
+    reactants: &[&Molecule],
+    rings: Option<&[&RingSet]>,
+    profile: Profile,
+    limits: &ReactionTransformLimits,
+) -> Result<Option<Vec<Vec<AtomMatch>>>, TransformError> {
+    let config = reaction_match_config();
+    let mut all = Vec::with_capacity(queries.len());
+    for (index, (query, mol)) in queries.iter().zip(reactants).enumerate() {
+        let Some(matches) = match_query(query, mol, rings.map(|r| r[index]), profile, &config)
+        else {
+            return Ok(None);
+        };
+        crate::perf_counters::record_reactant_query_match_call(matches.len());
+        if matches.len() > limits.max_matches {
+            return Err(TransformError::ResourceLimit {
+                resource: "reaction matches",
+                actual: matches.len(),
+                limit: limits.max_matches,
+            });
+        }
+        all.push(matches);
+    }
+    Ok(Some(all))
+}
+
+fn match_query(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    rings: Option<&RingSet>,
+    profile: Profile,
+    config: &MatchConfig,
+) -> Option<Vec<AtomMatch>> {
+    if let Some(rings) = rings {
+        return Some(find_matches_with_rings_and_config(
+            query, mol, rings, config,
+        ));
+    }
+    if profile != Profile::Rdkit || !query_uses_ring_model(query) || rdkit_ring_model_is_sssr(mol) {
+        return Some(find_matches_with_config(query, mol, config));
+    }
+    let config = chematic_smarts::RdkitParityConfig {
+        base: config.clone(),
+        ..chematic_smarts::RdkitParityConfig::default()
+    };
+    chematic_smarts::find_matches_rdkit_parity(query, mol, &config)
+        .ok()
+        .map(|(matches, _)| matches)
+}
+
+fn validate_combination_count(
+    match_sets: &[Vec<AtomMatch>],
+    limits: &ReactionTransformLimits,
+) -> Result<(), TransformError> {
+    let actual = match_sets
+        .iter()
+        .map(Vec::len)
+        .try_fold(1usize, usize::checked_mul)
+        .unwrap_or(usize::MAX);
+    if actual > limits.max_matches {
+        return Err(TransformError::ResourceLimit {
+            resource: "reaction match combinations",
+            actual,
+            limit: limits.max_matches,
+        });
+    }
+    Ok(())
+}
+
+fn combo_chirality_ok(
+    prepared: &PreparedReaction,
+    reactants: &[&Molecule],
+    combo: &[AtomMatch],
+    profile: Profile,
+) -> bool {
+    !prepared.has_stereo
+        || profile != Profile::Native
+        || prepared
+            .rxn
+            .reactants
+            .iter()
+            .enumerate()
+            .all(|(index, template)| smirks_chirality_ok(template, reactants[index], &combo[index]))
+}
+
+fn combo_ez_ok(prepared: &PreparedReaction, reactants: &[&Molecule], combo: &[AtomMatch]) -> bool {
+    !prepared.has_ez_stereo
+        || prepared
+            .rxn
+            .reactants
+            .iter()
+            .enumerate()
+            .all(|(index, template)| smirks_ez_stereo_ok(template, reactants[index], &combo[index]))
 }
 
 /// Whether RDKit's ring models give the same rings as the SSSR for `mol`

@@ -532,332 +532,394 @@ pub(super) fn build_product(
     specs: &[ProductAtomSpec],
     keep_carried_maps: bool,
 ) -> (TracedProduct, Vec<Option<AtomIdx>>) {
-    // A product holds at most the reactants' atoms and bonds plus the
-    // template's: reserve them once instead of growing per atom and bond.
-    let mut builder = MoleculeBuilder::with_capacity(
-        input_mols.iter().map(|m| m.atom_count()).sum::<usize>() + product_template.atom_count(),
-        input_mols.iter().map(|m| m.bond_count()).sum::<usize>() + product_template.bond_count(),
-    );
-    // What each template atom's spelling specifies; without spelling
-    // information a charge always applies and only `H<n>` with n > 0 pins
-    // the H count (a bare bracket atom's `Some(0)` is "unspecified", #18).
-    let specs = (specs.len() == product_template.atom_count()).then_some(specs);
-    let spec_of = |i: usize| -> ProductAtomSpec {
-        let atom = product_template.atom(AtomIdx(i as u32));
-        specs.map_or(
-            ProductAtomSpec {
-                charge: true,
-                hcount: atom.hydrogen_count.is_some_and(|h| h > 0),
-            },
-            |s| s[i],
-        )
-    };
-    let template_h = |i: usize| -> Option<u8> {
-        let atom = product_template.atom(AtomIdx(i as u32));
-        spec_of(i).hcount.then(|| atom.hydrogen_count.unwrap_or(0))
-    };
-
-    // template_idx_to_new[i]: new AtomIdx for product template atom i.
-    let mut template_idx_to_new: Vec<Option<AtomIdx>> = vec![None; product_template.atom_count()];
-    // src_to_new: (mol_idx, src_AtomIdx) → new AtomIdx in the product.
-    let mut src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx> = FxHashMap::with_capacity_and_hasher(
-        input_mols.iter().map(|m| m.atom_count()).sum(),
-        Default::default(),
-    );
-
-    // --- Step 1: add product template atoms ---
-    // core_keys: only source atoms that are mapped by THIS product template.
-    // Using global_map.values() (all matched atoms across all templates) would
-    // seed the BFS in Step 2 from atoms belonging to *other* product templates,
-    // causing their substituents to leak into this product (issue #13).
-    let mut core_keys: Vec<(usize, AtomIdx)> = product_template
-        .atoms()
-        .filter_map(|(_, atom)| atom.atom_map.and_then(|am| global_map.get(&am).copied()))
-        .collect();
-    core_keys.sort_unstable();
-    core_keys.dedup();
-
-    // Explicit hydrogen atoms (issue #734): a mapped, non-stereo atom's plain
-    // H-atom neighbours that the template did not match are not carried as
-    // substituents. The atom's hydrogens are re-derived from its product
-    // valence and added back as explicit H atoms after assembly, so an
-    // `add_hydrogens` reactant gives the same products as its implicit-H
-    // form instead of keeping every H and failing the valence check
-    // (`[C:1]-[C:2]>>[C:1]=[C:2]`, `[O:1]>>[O:1]C`, `[CH3:1]>>[CH3:1]`).
-    let mut folded_h: FxHashSet<(usize, AtomIdx)> = FxHashSet::default();
-    // Mapped aromatic atoms the template spells aliphatic (see below).
-    let mut dearomatized: Vec<AtomIdx> = Vec::new();
-    let mut folded_cores: Vec<AtomIdx> = Vec::new();
-    let plain_h = |mol: &Molecule, idx: AtomIdx| {
-        let a = mol.atom(idx);
-        a.element.atomic_number() == 1
-            && !a.wildcard
-            && a.isotope.is_none()
-            && a.charge == 0
-            && a.atom_map.is_none()
-            && mol.degree(idx) == 1
-    };
-
-    // Reactants given with explicit H atoms (`add_hydrogens`).
-    let explicit_h_cache: Vec<std::cell::OnceCell<bool>> = input_mols
-        .iter()
-        .map(|_| std::cell::OnceCell::new())
-        .collect();
-    for (i, slot) in template_idx_to_new.iter_mut().enumerate() {
-        let tmpl_atom = product_template.atom(AtomIdx(i as u32));
-        let new_idx = if let Some(am) = tmpl_atom.atom_map {
-            if let Some(&(mol_idx, src_idx)) = global_map.get(&am) {
-                // Core atom: copy source, then override electronic state from template.
-                let src_atom = input_mols[mol_idx].atom(src_idx);
-                let mut new_atom = src_atom.clone();
-                // Element change (issue #734): as in RDKit, a mapped atom takes
-                // the product template's element when that element differs
-                // from the reactant template's (`[C:1]>>[N:1]`). A wildcard
-                // product atom (`[*:1]`) or an unchanged element keeps the
-                // matched atom's element; a reactant query naming no single
-                // element (`[C,N:1]`, `[*:1]`) takes any concrete product one.
-                let reactant_tmpl = reactant_template_atoms.get(&am);
-                if !tmpl_atom.wildcard {
-                    let changes =
-                        reactant_tmpl.is_none_or(|r| r.wildcard || r.element != tmpl_atom.element);
-                    if changes && new_atom.element != tmpl_atom.element {
-                        new_atom.element = tmpl_atom.element;
-                        new_atom.isotope = tmpl_atom.isotope;
-                    }
-                }
-                // A wildcard product atom (`[*:1]`) keeps the matched atom's
-                // aromaticity along with its element.
-                if !tmpl_atom.wildcard {
-                    new_atom.aromatic = tmpl_atom.aromatic;
-                }
-                // Unspecified charge keeps the reactant atom's (RDKit:
-                // `[O-:1]>>[O:1]` leaves the alkoxide charged), unless the
-                // element changes: RDKit then takes the template atom's
-                // charge too (`[N:1]>>[S:1]` on a quaternary ammonium gives
-                // a neutral sulfur, not `[SH+]`; found by the SMIRKS fuzz
-                // lane, #754).
-                if spec_of(i).charge || new_atom.element != src_atom.element {
-                    new_atom.charge = tmpl_atom.charge;
-                }
-                // An isotope in the template applies; none keeps the
-                // reactant's (`[C:1]>>[13C:1]` labels the atom).
-                if tmpl_atom.isotope.is_some() {
-                    new_atom.isotope = tmpl_atom.isotope;
-                }
-                // H count: a template `H<n>` with n > 0 pins it (`[NH2:1]`); a
-                // bare bracket atom's `Some(0)` means "unspecified" (issue #18).
-                // Unspecified, RDKit keeps the reactant atom's explicit H count
-                // when the atom's template degree is unchanged (`[n:1]>>[n:1]`
-                // keeps pyrrole's `[nH]`) and re-derives it from valence when
-                // bonds were added or removed (`[n:1]>>[n:1]C`).
-                let degree_unchanged = reactant_tmpl
-                    .is_some_and(|r| r.degree == product_template.degree(AtomIdx(i as u32)));
-                // An element change re-derives H as well (`[C:1]>>[N:1]` on
-                // `[13CH3]C` gives `CN`, not a five-valent N).
-                let element_unchanged = new_atom.element == src_atom.element;
-                new_atom.hydrogen_count = match template_h(i) {
-                    Some(h) => Some(h),
-                    None if degree_unchanged && element_unchanged => src_atom.hydrogen_count,
-                    None => None,
-                };
-                // Chirality is intentionally left as whatever src_atom.clone()
-                // produced above (i.e. the reactant's own flag, if any) --
-                // correct_product_stereo, run after all bonds are added
-                // below, is the sole authority on the final chirality/order
-                // for every atom, whether it inherits from the reactant or
-                // carries an explicit product-template @/@@.
-                new_atom.atom_map = None;
-                // Only organic-subset atoms: their H count can be re-derived
-                // from valence.
-                let explicit_h: Vec<AtomIdx> = if carry_substituents
-                    && src_atom.chirality == Chirality::None
-                    && src_atom.element.is_organic_subset()
-                    && new_atom.element.is_organic_subset()
-                {
-                    input_mols[mol_idx]
-                        .neighbors(src_idx)
-                        .map(|(nb, _)| nb)
-                        .filter(|&nb| {
-                            plain_h(input_mols[mol_idx], nb)
-                                && !all_template_atoms.contains(&(mol_idx, nb))
-                        })
-                        .collect()
-                } else {
-                    Vec::new()
-                };
-                // An H-free mapped atom of an explicit-H reactant has its
-                // count pinned to 0 by `add_hydrogens`; RDKit refills it when
-                // the edit lowers its valence (`[C:1]=[O:2]>>[C:1]-[O:2]` on
-                // explicit-H acetic acid gives `CC(O)O`, #754).
-                let refill = explicit_h.is_empty()
-                    && carry_substituents
-                    && src_atom.chirality == Chirality::None
-                    && src_atom.hydrogen_count == Some(0)
-                    && src_atom.charge == 0
-                    // An aromatic carbon the template spells aliphatic
-                    // (`[#6;a:1]` in RDKit's reading) is refilled too.
-                    && (!src_atom.aromatic || src_atom.element == chematic_core::Element::C)
-                    && !new_atom.aromatic
-                    && src_atom.element.is_organic_subset()
-                    && new_atom.element.is_organic_subset()
-                    && template_h(i).is_none()
-                    && reactant_has_explicit_h(input_mols, &explicit_h_cache, mol_idx);
-                if !explicit_h.is_empty() || refill {
-                    // The folded H atoms are re-derived from valence below.
-                    new_atom.hydrogen_count = template_h(i);
-                    // An aromatic atom keeps its H count when the template
-                    // leaves its degree, element and charge alone, as the
-                    // implicit form keeps `[nH]`: valence inference cannot
-                    // tell pyrrole's N from pyridine's.
-                    if new_atom.hydrogen_count.is_none()
-                        && new_atom.aromatic
-                        && src_atom.aromatic
-                        && degree_unchanged
-                        && element_unchanged
-                        && new_atom.charge == src_atom.charge
-                    {
-                        new_atom.hydrogen_count = Some(explicit_h.len() as u8);
-                    }
-                }
-                let dearomatize = src_atom.aromatic && !new_atom.aromatic;
-                let idx = builder.add_atom(new_atom);
-                if dearomatize {
-                    dearomatized.push(idx);
-                }
-                if refill {
-                    folded_cores.push(idx);
-                }
-                if !explicit_h.is_empty() {
-                    folded_h.extend(explicit_h.into_iter().map(|h| (mol_idx, h)));
-                    folded_cores.push(idx);
-                }
-                src_to_new.insert((mol_idx, src_idx), idx);
-                idx
-            } else {
-                // Map number not in reactants — new atom from template.
-                let mut new_atom = tmpl_atom.clone();
-                new_atom.atom_map = None;
-                // RDKit does not pin H0 on a product-only atom: it uses
-                // ordinary valence inference, as for a bare `[C]`/`[O]`.
-                // A mapped reactant atom above still honours explicit H0.
-                new_atom.hydrogen_count = template_h(i).filter(|&h| h != 0);
-                builder.add_atom(new_atom)
-            }
-        } else {
-            // No atom_map — entirely new atom from template. As for core atoms,
-            // a bare bracket atom's `Some(0)` means "unspecified" in a product
-            // template (`[*:1][C](=[O])[C]` adds an acetyl group, not three
-            // radicals — issue #679); only an explicit `H<n>` with n > 0 pins
-            // the count, as in SMIRKS. RDKit also leaves an explicit H0 on
-            // a new atom unspecified; it is not a radical marker.
-            let mut new_atom = tmpl_atom.clone();
-            new_atom.atom_map = None;
-            new_atom.hydrogen_count = template_h(i).filter(|&h| h != 0);
-            builder.add_atom(new_atom)
-        };
-        *slot = Some(new_idx);
-    }
-
-    // --- Step 2: collect substituents and index source/product atoms ---
-    let discoverer = carry_substituent_atoms(
-        &mut builder,
+    let inputs = ProductBuildInputs {
+        product_template,
+        global_map,
+        reactant_template_atoms,
+        reactant_bond_maps,
         input_mols,
         all_template_atoms,
+        carry_substituents,
+        specs: (specs.len() == product_template.atom_count()).then_some(specs),
+        keep_carried_maps,
+    };
+    let assembly = add_template_atoms(&inputs);
+    finish_product(&inputs, assembly)
+}
+
+struct ProductBuildInputs<'a> {
+    product_template: &'a Molecule,
+    global_map: &'a FxHashMap<u16, (usize, AtomIdx)>,
+    reactant_template_atoms: &'a FxHashMap<u16, ReactantMapAtom>,
+    reactant_bond_maps: &'a FxHashSet<(u16, u16)>,
+    input_mols: &'a [&'a Molecule],
+    all_template_atoms: &'a FxHashSet<(usize, AtomIdx)>,
+    carry_substituents: bool,
+    specs: Option<&'a [ProductAtomSpec]>,
+    keep_carried_maps: bool,
+}
+
+impl ProductBuildInputs<'_> {
+    fn spec_of(&self, index: usize) -> ProductAtomSpec {
+        let atom = self.product_template.atom(AtomIdx(index as u32));
+        self.specs.map_or(
+            ProductAtomSpec {
+                charge: true,
+                hcount: atom.hydrogen_count.is_some_and(|count| count > 0),
+            },
+            |specs| specs[index],
+        )
+    }
+
+    fn template_h(&self, index: usize) -> Option<u8> {
+        let atom = self.product_template.atom(AtomIdx(index as u32));
+        self.spec_of(index)
+            .hcount
+            .then(|| atom.hydrogen_count.unwrap_or(0))
+    }
+}
+
+struct TemplateAssembly {
+    builder: MoleculeBuilder,
+    template_idx_to_new: Vec<Option<AtomIdx>>,
+    src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx>,
+    core_keys: Vec<(usize, AtomIdx)>,
+    folded_h: FxHashSet<(usize, AtomIdx)>,
+    dearomatized: Vec<AtomIdx>,
+    folded_cores: Vec<AtomIdx>,
+    explicit_h_cache: Vec<std::cell::OnceCell<bool>>,
+}
+
+fn add_template_atoms(inputs: &ProductBuildInputs<'_>) -> TemplateAssembly {
+    let atom_capacity = inputs
+        .input_mols
+        .iter()
+        .map(|m| m.atom_count())
+        .sum::<usize>()
+        + inputs.product_template.atom_count();
+    let bond_capacity = inputs
+        .input_mols
+        .iter()
+        .map(|m| m.bond_count())
+        .sum::<usize>()
+        + inputs.product_template.bond_count();
+    let mut state = TemplateAssembly {
+        builder: MoleculeBuilder::with_capacity(atom_capacity, bond_capacity),
+        template_idx_to_new: vec![None; inputs.product_template.atom_count()],
+        src_to_new: FxHashMap::with_capacity_and_hasher(
+            inputs.input_mols.iter().map(|m| m.atom_count()).sum(),
+            Default::default(),
+        ),
+        core_keys: mapped_core_keys(inputs.product_template, inputs.global_map),
+        folded_h: FxHashSet::default(),
+        dearomatized: Vec::new(),
+        folded_cores: Vec::new(),
+        explicit_h_cache: inputs
+            .input_mols
+            .iter()
+            .map(|_| std::cell::OnceCell::new())
+            .collect(),
+    };
+    for index in 0..inputs.product_template.atom_count() {
+        let new_index = add_template_atom(inputs, &mut state, index);
+        state.template_idx_to_new[index] = Some(new_index);
+    }
+    state
+}
+
+fn mapped_core_keys(
+    template: &Molecule,
+    global_map: &FxHashMap<u16, (usize, AtomIdx)>,
+) -> Vec<(usize, AtomIdx)> {
+    let mut keys: Vec<_> = template
+        .atoms()
+        .filter_map(|(_, atom)| atom.atom_map.and_then(|map| global_map.get(&map).copied()))
+        .collect();
+    keys.sort_unstable();
+    keys.dedup();
+    keys
+}
+
+fn add_template_atom(
+    inputs: &ProductBuildInputs<'_>,
+    state: &mut TemplateAssembly,
+    index: usize,
+) -> AtomIdx {
+    let template_atom = inputs.product_template.atom(AtomIdx(index as u32));
+    let source = template_atom
+        .atom_map
+        .and_then(|map| inputs.global_map.get(&map).map(|&source| (map, source)));
+    match source {
+        Some((map, (molecule, atom))) => {
+            add_mapped_template_atom(inputs, state, index, map, molecule, atom)
+        }
+        None => add_new_template_atom(inputs, &mut state.builder, index),
+    }
+}
+
+fn add_new_template_atom(
+    inputs: &ProductBuildInputs<'_>,
+    builder: &mut MoleculeBuilder,
+    index: usize,
+) -> AtomIdx {
+    let mut atom = inputs.product_template.atom(AtomIdx(index as u32)).clone();
+    atom.atom_map = None;
+    // RDKit leaves H0 on a product-only atom unspecified.
+    atom.hydrogen_count = inputs.template_h(index).filter(|&count| count != 0);
+    builder.add_atom(atom)
+}
+
+fn add_mapped_template_atom(
+    inputs: &ProductBuildInputs<'_>,
+    state: &mut TemplateAssembly,
+    index: usize,
+    atom_map: u16,
+    molecule_index: usize,
+    source_index: AtomIdx,
+) -> AtomIdx {
+    let source = inputs.input_mols[molecule_index].atom(source_index);
+    let template = inputs.product_template.atom(AtomIdx(index as u32));
+    let reactant_template = inputs.reactant_template_atoms.get(&atom_map);
+    let (mut atom, degree_unchanged, element_unchanged) =
+        mapped_atom_electronics(inputs, index, source, template, reactant_template);
+    let explicit_h = foldable_hydrogens(inputs, molecule_index, source_index, source, &atom);
+    let refill = should_refill_mapped_hydrogens(
+        inputs,
+        state,
+        index,
+        molecule_index,
+        source,
+        &atom,
+        &explicit_h,
+    );
+    apply_folded_hydrogen_policy(
+        inputs,
+        index,
+        source,
+        &mut atom,
+        degree_unchanged,
+        element_unchanged,
+        &explicit_h,
+        refill,
+    );
+
+    let dearomatize = source.aromatic && !atom.aromatic;
+    let new_index = state.builder.add_atom(atom);
+    if dearomatize {
+        state.dearomatized.push(new_index);
+    }
+    if refill || !explicit_h.is_empty() {
+        state.folded_cores.push(new_index);
+    }
+    state
+        .folded_h
+        .extend(explicit_h.into_iter().map(|atom| (molecule_index, atom)));
+    state
+        .src_to_new
+        .insert((molecule_index, source_index), new_index);
+    new_index
+}
+
+fn mapped_atom_electronics(
+    inputs: &ProductBuildInputs<'_>,
+    index: usize,
+    source: &chematic_core::Atom,
+    template: &chematic_core::Atom,
+    reactant_template: Option<&ReactantMapAtom>,
+) -> (chematic_core::Atom, bool, bool) {
+    let mut atom = source.clone();
+    if !template.wildcard {
+        let changes = reactant_template
+            .is_none_or(|value| value.wildcard || value.element != template.element);
+        if changes && atom.element != template.element {
+            atom.element = template.element;
+            atom.isotope = template.isotope;
+        }
+        atom.aromatic = template.aromatic;
+    }
+    if inputs.spec_of(index).charge || atom.element != source.element {
+        atom.charge = template.charge;
+    }
+    if template.isotope.is_some() {
+        atom.isotope = template.isotope;
+    }
+    let degree_unchanged = reactant_template
+        .is_some_and(|value| value.degree == inputs.product_template.degree(AtomIdx(index as u32)));
+    let element_unchanged = atom.element == source.element;
+    atom.hydrogen_count = match inputs.template_h(index) {
+        Some(count) => Some(count),
+        None if degree_unchanged && element_unchanged => source.hydrogen_count,
+        None => None,
+    };
+    atom.atom_map = None;
+    (atom, degree_unchanged, element_unchanged)
+}
+
+fn plain_hydrogen(mol: &Molecule, index: AtomIdx) -> bool {
+    let atom = mol.atom(index);
+    atom.element.atomic_number() == 1
+        && !atom.wildcard
+        && atom.isotope.is_none()
+        && atom.charge == 0
+        && atom.atom_map.is_none()
+        && mol.degree(index) == 1
+}
+
+fn foldable_hydrogens(
+    inputs: &ProductBuildInputs<'_>,
+    molecule_index: usize,
+    source_index: AtomIdx,
+    source: &chematic_core::Atom,
+    product: &chematic_core::Atom,
+) -> Vec<AtomIdx> {
+    if !inputs.carry_substituents
+        || source.chirality != Chirality::None
+        || !source.element.is_organic_subset()
+        || !product.element.is_organic_subset()
+    {
+        return Vec::new();
+    }
+    inputs.input_mols[molecule_index]
+        .neighbors(source_index)
+        .map(|(neighbor, _)| neighbor)
+        .filter(|&neighbor| {
+            plain_hydrogen(inputs.input_mols[molecule_index], neighbor)
+                && !inputs
+                    .all_template_atoms
+                    .contains(&(molecule_index, neighbor))
+        })
+        .collect()
+}
+
+fn should_refill_mapped_hydrogens(
+    inputs: &ProductBuildInputs<'_>,
+    state: &TemplateAssembly,
+    index: usize,
+    molecule_index: usize,
+    source: &chematic_core::Atom,
+    product: &chematic_core::Atom,
+    explicit_h: &[AtomIdx],
+) -> bool {
+    explicit_h.is_empty()
+        && inputs.carry_substituents
+        && source.chirality == Chirality::None
+        && source.hydrogen_count == Some(0)
+        && source.charge == 0
+        && (!source.aromatic || source.element == chematic_core::Element::C)
+        && !product.aromatic
+        && source.element.is_organic_subset()
+        && product.element.is_organic_subset()
+        && inputs.template_h(index).is_none()
+        && reactant_has_explicit_h(inputs.input_mols, &state.explicit_h_cache, molecule_index)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn apply_folded_hydrogen_policy(
+    inputs: &ProductBuildInputs<'_>,
+    index: usize,
+    source: &chematic_core::Atom,
+    product: &mut chematic_core::Atom,
+    degree_unchanged: bool,
+    element_unchanged: bool,
+    explicit_h: &[AtomIdx],
+    refill: bool,
+) {
+    if explicit_h.is_empty() && !refill {
+        return;
+    }
+    product.hydrogen_count = inputs.template_h(index);
+    if product.hydrogen_count.is_none()
+        && product.aromatic
+        && source.aromatic
+        && degree_unchanged
+        && element_unchanged
+        && product.charge == source.charge
+    {
+        product.hydrogen_count = Some(explicit_h.len() as u8);
+    }
+}
+
+fn finish_product(
+    inputs: &ProductBuildInputs<'_>,
+    state: TemplateAssembly,
+) -> (TracedProduct, Vec<Option<AtomIdx>>) {
+    let TemplateAssembly {
+        mut builder,
+        template_idx_to_new,
+        mut src_to_new,
+        core_keys,
+        folded_h,
+        dearomatized,
+        folded_cores,
+        explicit_h_cache,
+    } = state;
+    let discoverer = carry_substituent_atoms(
+        &mut builder,
+        inputs.input_mols,
+        inputs.all_template_atoms,
         &folded_h,
         core_keys,
-        carry_substituents,
-        keep_carried_maps,
+        inputs.carry_substituents,
+        inputs.keep_carried_maps,
         &mut src_to_new,
     );
     let DenseAtomMaps { source_of, new_of } =
-        dense_atom_maps(builder.atom_count(), input_mols, &src_to_new);
-
-    // --- Steps 3 and 4: template bonds, then carried source bonds ---
+        dense_atom_maps(builder.atom_count(), inputs.input_mols, &src_to_new);
     let colon_atoms = add_product_template_bonds(
         &mut builder,
-        product_template,
+        inputs.product_template,
         &template_idx_to_new,
         &source_of,
-        input_mols,
+        inputs.input_mols,
     );
     carry_source_bonds(
         &mut builder,
         &source_of,
         &new_of,
-        input_mols,
-        all_template_atoms,
-        global_map,
-        reactant_bond_maps,
+        inputs.input_mols,
+        inputs.all_template_atoms,
+        inputs.global_map,
+        inputs.reactant_bond_maps,
     );
-
-    // Parity-aware atom chirality correction (see the doc above
-    // correct_product_stereo) -- must run after all bonds above are added,
-    // since it validates against each atom's real final neighbour set.
-    let product = correct_product_stereo(
+    let mut product = correct_product_stereo(
         builder.build(),
-        product_template,
+        inputs.product_template,
         &template_idx_to_new,
-        global_map,
-        all_template_atoms,
-        input_mols,
+        inputs.global_map,
+        inputs.all_template_atoms,
+        inputs.input_mols,
         &src_to_new,
     );
-
-    // Carried stereocentres keep their geometry: re-express the reactant's
-    // stereo record in product atoms, since the product's bond order around
-    // them can differ from the reactant's (a ring re-entered from another
-    // side).
-    let mut product = product;
     let sourced_atoms = restore_carried_atom_stereo(
         &mut product,
-        product_template,
+        inputs.product_template,
         &template_idx_to_new,
-        input_mols,
+        inputs.input_mols,
         &source_of,
         &discoverer,
         &src_to_new,
-        keep_carried_maps,
+        inputs.keep_carried_maps,
     );
-
-    // A folded H atom (explicit-H reactant, see above) can be the only
-    // `/`/`\` carrier of its double-bond end (`[H]/C(=C(/[H])C)C`). Move
-    // its direction to another substituent of that end, on the other side,
-    // so the E/Z survives as it does in RDKit.
-    transfer_folded_h_stereo(&mut product, &folded_h, input_mols, &new_of);
-
-    // A `/`/`\` read on an aromatic ring bond is stashed beside the bond
-    // (`Molecule::bond_direction`): it carries the E/Z of an exocyclic
-    // double bond (`C/N=c1\c(O)c(O)c1`). Carry it onto the product bond
-    // built from that ring bond while the double bond is still there.
-    carry_direction_stash(&mut product, input_mols, &src_to_new);
-
-    // Template markers on a double bond the template creates can sit next
-    // to a carried marker of a conjugated double bond, asking the shared
-    // end for the same side twice; readers then drop or misread one E/Z
-    // (BioTransformer BTMR0709 on an enyne gave both E and Z). Rewrite the
-    // markers consistently, each double bond keeping its own geometry.
+    transfer_folded_h_stereo(&mut product, &folded_h, inputs.input_mols, &new_of);
+    carry_direction_stash(&mut product, inputs.input_mols, &src_to_new);
     chematic_core::ez_markers::reconcile_ez_markers(&mut product);
 
-    // Clear any Up/Down stereo markers left on bonds that are no longer adjacent
-    // to a double bond (e.g. after C=C → C=O conversion via SMIRKS).
     let mut molecule = clear_orphaned_stereo_bonds(product);
-
     refill_product_hydrogens(
         &mut molecule,
         &sourced_atoms,
-        input_mols,
+        inputs.input_mols,
         &template_idx_to_new,
         &explicit_h_cache,
         folded_cores,
         &source_of,
         &folded_h,
     );
-
     restore_product_aromaticity(&mut molecule, &colon_atoms, &dearomatized);
     apply_rdkit_template_hydrogens(&mut molecule, &template_idx_to_new);
     traced_product(
         molecule,
-        product_template,
+        inputs.product_template,
         template_idx_to_new,
         &sourced_atoms,
     )
