@@ -433,14 +433,6 @@
       "decisions": 21,
       "lines": 133
     },
-    "crates/chematic-mol/src/qcschema.rs::parse_atomic_result_with_limits#1": {
-      "decisions": 31,
-      "lines": 76
-    },
-    "crates/chematic-mol/src/qcschema.rs::parse_qc_molecule_value#1": {
-      "decisions": 31,
-      "lines": 98
-    },
     "crates/chematic-mol/src/sdf.rs::next#3": {
       "decisions": 14,
       "lines": 128
