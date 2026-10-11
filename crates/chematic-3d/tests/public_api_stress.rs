@@ -1,5 +1,7 @@
 //! Panic-safety matrix for the public 3D APIs on unusual valid structures.
 
+use chematic_3d::minimize::ForceFieldPolicy;
+use chematic_3d::rdkit_embed::{RdkitEmbedOptions, rdkit_bounds_matrix, rdkit_embed_molecule};
 use chematic_3d::{
     PipelineV2Config, align_coords, asphericity, assign_stereo_from_3d, autocorr_3d,
     build_constraints, calc_mol_sasa, eccentricity, generate_coords,
@@ -16,7 +18,7 @@ const STRESS: &str = include_str!("../../../validation/cosmolkit_comparison/corp
 fn public_3d_surface_is_panic_free_on_diverse_stress_structures() {
     let mut exercised = 0usize;
     for line in STRESS.lines() {
-        if exercised == 96 {
+        if exercised == 256 {
             break;
         }
         let smiles = line.split_whitespace().next().unwrap_or("");
@@ -66,12 +68,41 @@ fn public_3d_surface_is_panic_free_on_diverse_stress_structures() {
         let usr = usr_descriptors(&raw);
         assert!((usr_similarity(&usr, &usr) - 1.0).abs() < 1e-12);
 
-        if exercised <= 4 {
-            let mut config =
-                PipelineV2Config::minimal(chematic_3d::minimize::ForceFieldPolicy::UffOnly);
+        if exercised <= 128 {
+            let explicit_h = chematic_chem::add_hydrogens(&mol);
+            for set_15 in [false, true] {
+                for smooth in [false, true] {
+                    let _ = rdkit_bounds_matrix(&explicit_h, set_15, smooth, exercised % 2 == 0);
+                }
+            }
+            if exercised <= 64 {
+                for options in [
+                    RdkitEmbedOptions::default(),
+                    RdkitEmbedOptions {
+                        use_small_ring_torsions: true,
+                        use_macrocycle_torsions: true,
+                        use_macrocycle14config: true,
+                        ..RdkitEmbedOptions::default()
+                    },
+                ] {
+                    let _ = rdkit_embed_molecule(&explicit_h, &options);
+                }
+            }
+        }
+
+        if exercised <= 12 {
+            let policy = match exercised % 3 {
+                0 => ForceFieldPolicy::UffOnly,
+                1 => ForceFieldPolicy::Mmff94BondAngleStrict,
+                _ => ForceFieldPolicy::Mmff94WithUffFallback,
+            };
+            let mut config = PipelineV2Config::minimal(policy);
             config.total_timeout_ms = Some(2_000);
+            config.include_legacy_torsion_heuristic = exercised % 2 == 0;
+            config.gate_mmff94_torsion_oop = exercised % 3 == 1;
+            config.gate_mmff94_stretch_bend = exercised % 4 == 1;
             let _ = chematic_3d::embed_pipeline_v2(&mol, &config);
         }
     }
-    assert_eq!(exercised, 96);
+    assert_eq!(exercised, 256);
 }
