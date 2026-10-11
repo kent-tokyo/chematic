@@ -29,8 +29,8 @@ authoritative.
 | R1 | Declarative registries, generated data, and test-module separation | Complete |
 | R2 | Reaction template, matching, product, sanitization, provenance, compatibility | Complete |
 | R3 | File parsers: lexical decode, semantic validation, builders, diagnostics | Complete |
-| R4 | Python and WASM bindings by API domain | Active |
-| R5 | Descriptors and tautomer rules/search/scoring | Planned |
+| R4 | Python and WASM bindings by API domain | Complete |
+| R5 | Descriptors and tautomer rules/search/scoring | Active |
 | R6 | Canonicalization, ring perception, and aromaticity | Planned |
 | R7 | MMFF/UFF and 3D preparation, optimization, and quality policy | Planned |
 | R8 | Legacy/dead-code inventory, exact helper deduplication, dependency cleanup | Planned |
@@ -71,6 +71,12 @@ streams. The complete `chematic-mol` all-target test suite, clippy with warnings
 denied, the refactor-budget scanner, and formatting/diff checks pass. A KET
 contract regression found by the full gate was corrected so flat malformed
 documents continue to report the original missing `atoms` field.
+
+R4 finishes with no Python/WASM file or function exceptions. Large WASM
+binding modules now isolate contract tests, LAMMPS and typed-array format APIs,
+common format conversion, and molecule workflow APIs without changing exported
+JavaScript names or JSON shapes. All 375 native WASM tests, clippy, the budget
+scanner, a release Node WASM build, and every Node integration test pass.
 
 ## Required checks per phase
 
