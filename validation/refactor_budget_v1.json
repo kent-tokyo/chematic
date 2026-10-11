@@ -38,7 +38,6 @@
     "crates/chematic-perception/src/rdkit_canon.rs": 1636,
     "crates/chematic-perception/src/rdkit_parity.rs": 2633,
     "crates/chematic-perception/src/sssr.rs": 4011,
-    "crates/chematic-py/src/mol_methods.rs": 6087,
     "crates/chematic-rxn/src/query.rs": 1969,
     "crates/chematic-rxn/src/rdkit_stereo.rs": 1626,
     "crates/chematic-smarts/src/match_vf2.rs": 1877,
@@ -403,14 +402,6 @@
     "crates/chematic-perception/src/stereo2d_ez_direction.rs::apply_ez_directions_from_2d_ex#1": {
       "decisions": 26,
       "lines": 184
-    },
-    "crates/chematic-py/src/mol_methods.rs::descriptors#1": {
-      "decisions": 127,
-      "lines": 176
-    },
-    "crates/chematic-py/src/mol_methods.rs::review#1": {
-      "decisions": 16,
-      "lines": 124
     },
     "crates/chematic-rxn/src/document.rs::validate#1": {
       "decisions": 26,

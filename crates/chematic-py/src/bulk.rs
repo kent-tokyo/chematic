@@ -554,6 +554,10 @@ struct DescriptorRecord {
     num_stereocenters: usize,
     num_spiro_atoms: usize,
     num_bridgehead_atoms: usize,
+    num_aromatic_heterocycles: usize,
+    num_aliphatic_heterocycles: usize,
+    num_saturated_rings: usize,
+    num_aliphatic_rings: usize,
     num_unspecified_stereocenters: usize,
     formal_charge: i32,
     schultz_mti: u64,
@@ -644,6 +648,10 @@ fn compute_descriptor_record(molecule: &chematic_core::Molecule) -> DescriptorRe
         num_stereocenters: chematic_chem::num_stereocenters(molecule),
         num_spiro_atoms: rings.num_spiro_atoms,
         num_bridgehead_atoms: rings.num_bridgehead_atoms,
+        num_aromatic_heterocycles: rings.num_aromatic_heterocycles,
+        num_aliphatic_heterocycles: rings.num_aliphatic_heterocycles,
+        num_saturated_rings: rings.num_saturated_rings,
+        num_aliphatic_rings: rings.num_aliphatic_rings,
         num_unspecified_stereocenters: chematic_chem::num_unspecified_stereocenters(molecule),
         formal_charge,
         schultz_mti: chematic_chem::schultz_mti(molecule),
@@ -699,6 +707,16 @@ fn set_descriptor_topology_fields(
     d.set_item("num_spiro_atoms", record.num_spiro_atoms)?;
     d.set_item("num_bridgehead_atoms", record.num_bridgehead_atoms)?;
     d.set_item(
+        "num_aromatic_heterocycles",
+        record.num_aromatic_heterocycles,
+    )?;
+    d.set_item(
+        "num_aliphatic_heterocycles",
+        record.num_aliphatic_heterocycles,
+    )?;
+    d.set_item("num_saturated_rings", record.num_saturated_rings)?;
+    d.set_item("num_aliphatic_rings", record.num_aliphatic_rings)?;
+    d.set_item(
         "num_unspecified_stereocenters",
         record.num_unspecified_stereocenters,
     )?;
@@ -716,10 +734,6 @@ fn set_descriptor_topology_fields(
         ("chi2v", r.c2v),
         ("chi3v", r.c3v),
         ("chi4v", r.c4v),
-        ("num_aromatic_heterocycles", r.n_ah),
-        ("num_aliphatic_heterocycles", r.n_alh),
-        ("num_saturated_rings", r.n_sr),
-        ("num_aliphatic_rings", r.n_ar),
         ("sum_estate", r.sum_e),
         ("max_estate", r.max_e),
         ("min_estate", r.min_e),
