@@ -383,6 +383,90 @@ mod tests {
     use super::*;
 
     #[test]
+    fn typed_errors_keep_actionable_context() {
+        let mol = chematic_smiles::parse("CC").unwrap();
+        let error = match add_hydrogens_with_coords(&mol, &Coords3D::new_zeroed(1)) {
+            Ok(_) => panic!("coordinate count mismatch must fail"),
+            Err(error) => error,
+        };
+        assert_eq!(error.to_string(), "expected 2 atom coordinates, got 1");
+        let wrapped: ExplicitHydrogenMmffError = error.into();
+        assert!(wrapped.to_string().contains("expected 2 atom coordinates"));
+
+        let view = HydrogenCoordinateError::MoleculeView("bad graph".into());
+        assert_eq!(
+            view.to_string(),
+            "cannot build RDKit molecule view: bad graph"
+        );
+        let terminal = HydrogenCoordinateError::InvalidAddedHydrogen { atom: 7 };
+        assert_eq!(terminal.to_string(), "added hydrogen 7 is not terminal");
+
+        let force_field: ExplicitHydrogenMmffError =
+            ForceFieldBridgeError::UnsupportedAtomType("test atom".into()).into();
+        assert!(force_field.to_string().contains("test atom"));
+    }
+
+    #[test]
+    fn vector_helpers_cover_degenerate_and_axis_aligned_inputs() {
+        assert!(normalized(Point3::zero()).is_none());
+        for vector in [
+            Point3::new(1.0, 1.0, 0.0),
+            Point3::new(1.0, 0.0, 1.0),
+            Point3::new(1.0, 0.0, 0.0),
+            Point3::new(0.0, 1.0, 1.0),
+            Point3::new(0.0, 1.0, 0.0),
+            Point3::zero(),
+        ] {
+            let normal = perpendicular(vector);
+            assert!((normal.norm() - 1.0).abs() < 1.0e-12);
+            assert!(vector == Point3::zero() || normal.dot(&vector).abs() < 1.0e-12);
+        }
+    }
+
+    #[test]
+    fn placement_covers_sp_sp2_sp3_and_successive_hydrogens() {
+        for smiles in ["C", "C=C", "C#C", "N", "O"] {
+            let mol = chematic_smiles::parse(smiles).unwrap();
+            let coords = crate::generate_coords(&mol);
+            let (expanded, placed) = add_hydrogens_with_coords(&mol, &coords).unwrap();
+            assert!(expanded.atom_count() >= mol.atom_count());
+            assert!(placed.is_finite());
+            for h in mol.atom_count()..expanded.atom_count() {
+                let parent = expanded.neighbors(AtomIdx(h as u32)).next().unwrap().0;
+                assert!(placed.points[h].distance(&placed.get(parent)) > 0.5);
+            }
+        }
+    }
+
+    #[test]
+    fn coplanar_three_neighbor_direction_is_typed_as_degenerate() {
+        let expanded = chematic_chem::add_hydrogens(&chematic_smiles::parse("C").unwrap());
+        let view = chematic_smiles::rdkit_mol_view(&expanded).unwrap();
+        let neighbors: Vec<_> = view.neighbors(0).take(3).collect();
+        let mut coords = Coords3D::new_zeroed(expanded.atom_count());
+        coords.points[neighbors[0]] = Point3::new(1.0, 0.0, 0.0);
+        coords.points[neighbors[1]] = Point3::new(2.0, 0.0, 0.0);
+        coords.points[neighbors[2]] = Point3::new(3.0, 0.0, 0.0);
+        assert!(direction_from_three_neighbors(&view, &coords, 0, &neighbors).is_none());
+    }
+
+    #[test]
+    fn unsupported_mmff_type_is_returned_as_force_field_error() {
+        let mol = chematic_smiles::parse("C[U]").unwrap();
+        let coords = crate::generate_coords(&mol);
+        let error = refine_mmff94_with_explicit_hydrogens(&mol, &coords, 1).unwrap_err();
+        assert!(
+            matches!(
+                &error,
+                ExplicitHydrogenMmffError::ForceField(ForceFieldBridgeError::UnsupportedAtomType(
+                    _
+                ))
+            ),
+            "unexpected error: {error:?}"
+        );
+    }
+
+    #[test]
     fn appends_finite_hydrogen_coordinates_without_moving_heavy_atoms() {
         let mol = chematic_smiles::parse("C[C@H](O)F").unwrap();
         let coords = Coords3D {
