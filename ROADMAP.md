@@ -17,6 +17,12 @@ and reproducible evidence over feature-count parity.
 - v1.1.1 exposes typed reaction rejection diagnostics across Rust, Python, and
   WASM, and input-aligned `Core`/`R1`/`R2` columns across Rust, Python, and
   WASM/Node for the documented terminal-wildcard subset.
+- The current source candidate closes a symmetric-core R-group column swap
+  that an unordered payload comparison had hidden. Against RDKit 2026.03.6,
+  the bounded gates now report 80/80 semantic reaction matches plus 3 jointly
+  invalid rows, 39/39 largest-fragment decisions, and 16/16 labelled R-group
+  rows. All three common-exact timing lanes favor CheMatic on one macOS arm64
+  host; this is not yet public-artifact or broad-domain evidence.
 - The broadest published-package RDKit performance packet is still v1.0.42.
   Source results and older package results are not relabeled as v1.1.1
   evidence.
@@ -94,6 +100,11 @@ or reports a typed loss/refusal. See the detailed
    labelled R-group rows. Expand each into a stratified frozen corpus, add a
    second host, split prepared from parse-inclusive work, and rerun exact
    registry artifacts before making a broad Indigo comparison claim.
+5. Maintain the RDKit 2026.03.6 workflow gate with labels preserved. Grow the
+   16-row R-group set with non-symmetric, symmetric, missing-group, unmatched,
+   and typed-refusal strata; never reduce a row to an unordered substituent
+   set. Add a second host and exact public-wheel rerun before promoting the
+   source-candidate speed results.
 
 **Exit:** supported rows are deterministic across Rust, Python, and WASM;
 unsupported chemistry never becomes a guessed successful result.
