@@ -684,12 +684,19 @@ impl Mol {
     ///     termination: ``"completed"`` or ``"timed_out"``
     ///         (``ensemble_timeout_ms`` exhausted before all attempts ran).
     ///     requested_count: ``config.count`` at call time.
+    ///
+    /// ``parallel`` (default ``True``) runs independent conformer attempts
+    /// on the native Rayon pool while preserving attempt order and exact
+    /// output. It falls back to sequential execution when the config has an
+    /// ensemble timeout, and is sequential on browser WASM.
+    #[pyo3(signature = (config, *, parallel = true))]
     fn conformer_ensemble_v2<'py>(
         &self,
         py: Python<'py>,
         config: &crate::ensemble_v2::PyEnsembleV2Config,
+        parallel: bool,
     ) -> PyResult<Bound<'py, PyDict>> {
-        crate::ensemble_v2::run_embed_ensemble_v2(py, &self.inner, config)
+        crate::ensemble_v2::run_embed_ensemble_v2(py, &self.inner, config, parallel)
     }
 
     /// Scan a torsion dihedral (atoms i–j–k–l) over 360° in ``steps`` increments.

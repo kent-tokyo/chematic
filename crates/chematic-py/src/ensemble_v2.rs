@@ -33,7 +33,10 @@
 //! force-field context lives in the parallel `result["conformer_provenance"]`
 //! list, and the full untrimmed record lives in `result["attempts"]`.
 
-use chematic_3d::{ConformerAttempt, ConformerDisposition, EnsembleV2Result, embed_ensemble_v2};
+use chematic_3d::{
+    ConformerAttempt, ConformerDisposition, EnsembleV2Result, embed_ensemble_v2,
+    embed_ensemble_v2_parallel,
+};
 use chematic_core::Molecule;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -303,8 +306,18 @@ pub fn run_embed_ensemble_v2<'py>(
     py: Python<'py>,
     mol: &Molecule,
     config: &PyEnsembleV2Config,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyDict>> {
-    match embed_ensemble_v2(mol, &config.inner) {
+    let mol = mol.clone();
+    let config = config.inner.clone();
+    let result = py.detach(move || {
+        if parallel {
+            embed_ensemble_v2_parallel(&mol, &config)
+        } else {
+            embed_ensemble_v2(&mol, &config)
+        }
+    });
+    match result {
         Ok(result) => ensemble_v2_result_dict(py, &result),
         Err(e) => Err(PyValueError::new_err(e.to_string())),
     }

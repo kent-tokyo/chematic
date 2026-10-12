@@ -24,6 +24,11 @@ and reproducible evidence over feature-count parity.
   demonstrates executed code, not chemical correctness or compatibility.
 - 3D, MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer
   expansion, and rich CDXML editing remain experimental or bounded.
+- The source candidate has deterministic native parallel conformer generation:
+  on the recorded three-molecule lane it is exactly equal to the sequential
+  result and 3.54x faster. Its median is 3.87x faster than RDKit 2026.09.1's
+  all-thread lane, but latest-oracle quality, independent holdout, memory,
+  second-host, and public-artifact gates remain open.
 
 Exact denominators belong in [validation](docs/validation.md) and dated
 [benchmark records](benchmarks/README.md). Unresolved work is tracked in the
@@ -98,9 +103,19 @@ unsupported chemistry never becomes a guessed successful result.
    clash, and conformer quality as separate measurements.
 3. Add new 3D breadth only after failure reasons and quality evidence are
    available on the existing supported domain.
+4. Rebaseline the frozen 265-row A6 set against RDKit 2026.09.1, then evaluate
+   a previously unused holdout. Report typing, energy, gradient, convergence,
+   stereo, clash, and best-of-N quality independently.
+5. Promote parallel conformer generation only after the same result is shown
+   from exact public artifacts on two hosts, with at least 21 alternating
+   blocks, peak memory, and no quality regression. Add macrocycles, metals,
+   fullerenes, cages, highly flexible molecules, and failed embeddings to the
+   stress lane.
 
 **Exit:** no known wrong-confident result remains in the declared domain;
-unresolved cases are observable and typed.
+unresolved cases are observable and typed. A speed claim additionally requires
+equal acceptable quality, favorable paired uncertainty, two hosts, and exact
+published artifacts.
 
 ### P2 — Product and ecosystem work
 

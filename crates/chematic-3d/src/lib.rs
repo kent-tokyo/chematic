@@ -65,6 +65,7 @@ pub use dg_connectivity_ordered::generate_coords_connectivity_ordered;
 pub use ensemble_v2::{
     ConformerAttempt, ConformerDisposition, ConformerSuccess, EnsembleTermination,
     EnsembleV2Config, EnsembleV2ConfigError, EnsembleV2Result, embed_ensemble_v2,
+    embed_ensemble_v2_parallel,
 };
 pub use etkdg::generate_coords_etkdg;
 pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};

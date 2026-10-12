@@ -10,6 +10,16 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added deterministic native parallel generation for conformer ensembles.
+  Rust callers can use `embed_ensemble_v2_parallel`, while Python
+  `Mol.conformer_ensemble_v2(..., parallel=True)` now enables it by default
+  and releases the GIL. Attempt seeds, ordering, energies, coordinates, and
+  pruning results remain identical to the sequential path. Timeout-bounded
+  calls and browser WASM deliberately retain the established sequential
+  semantics.
+
 ### Changed
 
 - Restored lazy aromatic/ring preparation in the Python SMILES constructor.
