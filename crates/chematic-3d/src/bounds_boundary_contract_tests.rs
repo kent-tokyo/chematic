@@ -3,10 +3,10 @@ use serde_json::Value;
 #[test]
 fn distance_bound_flags_and_boundary_molecules_match_pinned_rdkit() {
     let fixture: Value = serde_json::from_str(include_str!(
-        "../../../validation/rdkit-2026.03.1-bounds-boundary.json"
+        "../../../validation/rdkit-2026.09.1-bounds-boundary.json"
     ))
     .unwrap();
-    assert_eq!(fixture["rdkit_version"], "2026.03.1");
+    assert_eq!(fixture["rdkit_version"], "2026.09.1");
     let mut failures = Vec::new();
     for row in fixture["rows"].as_array().unwrap() {
         let text = row["smiles"].as_str().unwrap();

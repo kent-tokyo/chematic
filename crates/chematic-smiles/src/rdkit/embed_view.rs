@@ -218,6 +218,14 @@ impl RdkitMolView {
     }
 }
 
+/// RDKit `PeriodicTable::getRcovalent` for an atomic number.
+///
+/// Values outside the supported periodic-table range use the dummy-atom
+/// radius, matching the bounded lookup used by [`RdkitMolView`].
+pub fn rdkit_covalent_radius(atomic_num: u32) -> f64 {
+    super::periodic::RCOV[(atomic_num as usize).min(118)]
+}
+
 /// Number of trailing hydrogen atoms appended by `add_hydrogens` (RDKit
 /// `AddHs`): H atoms without a hydrogen count, bonded once.
 fn added_h_start(mol: &Molecule) -> usize {
@@ -265,7 +273,36 @@ pub fn rdkit_mol_view(mol: &Molecule) -> Result<RdkitMolView, RdkitSmilesError> 
     super::sanitize::sanitize_keeping_hs(&mut m)?;
     super::stereo::legacy_stereo_perception(&mut m, true, true);
 
-    let rings = m.ring_info().clone();
+    // RDKit 2026.09 switched its default ring backend to RingDecomposerLib.
+    // Its ring families are the relevant cycles, not the legacy symmetrized
+    // SSSR stored by the 2026.03-compatible sanitizer above. Keep this change
+    // local to the embedding view so older SMILES/canonical contracts are not
+    // silently redefined.
+    let ring_input: Vec<_> = m
+        .bonds
+        .iter()
+        .map(|bond| {
+            (
+                bond.begin,
+                bond.end,
+                bond.bt != super::mol::BondType::Dative,
+            )
+        })
+        .collect();
+    let atom_rings =
+        chematic_perception::relevant_cycles_from_graph(m.atoms.len(), &ring_input, 10_000)
+            .map_err(|error| RdkitSmilesError::Unsupported(error.to_string()))?;
+    let bond_rings: Vec<Vec<usize>> = atom_rings
+        .iter()
+        .map(|ring| {
+            (0..ring.len())
+                .map(|index| {
+                    m.bond_between(ring[index], ring[(index + 1) % ring.len()])
+                        .expect("relevant-cycle atoms are bonded")
+                })
+                .collect()
+        })
+        .collect();
     let atoms = (0..m.atoms.len())
         .map(|a| {
             let at = &m.atoms[a];
@@ -330,8 +367,8 @@ pub fn rdkit_mol_view(mol: &Molecule) -> Result<RdkitMolView, RdkitSmilesError> 
         atoms,
         bonds,
         atom_bonds: m.atom_bonds.clone(),
-        atom_rings: rings.atom_rings,
-        bond_rings: rings.bond_rings,
+        atom_rings,
+        bond_rings,
         chematic_bond: order.iter().map(|b| b.0 as usize).collect(),
     })
 }

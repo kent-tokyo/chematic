@@ -66,14 +66,24 @@ struct CycleGraph {
 
 impl CycleGraph {
     fn from_molecule(mol: &Molecule) -> Self {
-        let mut adj: Vec<Vec<(usize, usize)>> = vec![Vec::new(); mol.atom_count()];
+        let bonds: Vec<_> = mol
+            .bonds()
+            .map(|(_, bond)| {
+                (
+                    bond.atom1.0 as usize,
+                    bond.atom2.0 as usize,
+                    !matches!(bond.order, BondOrder::Zero | BondOrder::Dative),
+                )
+            })
+            .collect();
+        Self::from_bonds(mol.atom_count(), &bonds)
+    }
+
+    fn from_bonds(n_atoms: usize, bonds: &[(usize, usize, bool)]) -> Self {
+        let mut adj: Vec<Vec<(usize, usize)>> = vec![Vec::new(); n_atoms];
         let mut edge_count = 0usize;
-        for (_, bond) in mol.bonds() {
-            if matches!(bond.order, BondOrder::Zero | BondOrder::Dative) {
-                continue;
-            }
-            let (a, b) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
-            if a == b {
+        for &(a, b, eligible) in bonds {
+            if !eligible || a == b {
                 continue;
             }
             adj[a].push((b, edge_count));
@@ -83,11 +93,9 @@ impl CycleGraph {
 
         // Retain the 2-core: only atoms on a cycle (or on a path between
         // cycles) can contribute a relevant cycle.
-        let mut alive = vec![true; mol.atom_count()];
+        let mut alive = vec![true; n_atoms];
         let mut degree: Vec<usize> = adj.iter().map(Vec::len).collect();
-        let mut stack: Vec<usize> = (0..mol.atom_count())
-            .filter(|&vertex| degree[vertex] < 2)
-            .collect();
+        let mut stack: Vec<usize> = (0..n_atoms).filter(|&vertex| degree[vertex] < 2).collect();
         while let Some(vertex) = stack.pop() {
             if !alive[vertex] {
                 continue;
@@ -382,12 +390,46 @@ pub fn relevant_cycles(
     max_cycles: usize,
 ) -> Result<Vec<Vec<AtomIdx>>, RelevantCyclesTooMany> {
     let graph = CycleGraph::from_molecule(mol);
+    relevant_cycle_indices(&graph, max_cycles).map(|rings| {
+        rings
+            .into_iter()
+            .map(|ring| {
+                ring.into_iter()
+                    .map(|vertex| AtomIdx(vertex as u32))
+                    .collect()
+            })
+            .collect()
+    })
+}
+
+/// Relevant cycles for a graph already expressed in atom and bond-index
+/// order. The boolean marks ring-eligible bonds; zero-order and dative bonds
+/// should be passed as `false`. This is the graph-level counterpart of
+/// [`relevant_cycles`] used by compatibility views after sanitization.
+pub fn relevant_cycles_from_graph(
+    n_atoms: usize,
+    bonds: &[(usize, usize, bool)],
+    max_cycles: usize,
+) -> Result<Vec<Vec<usize>>, RelevantCyclesTooMany> {
+    let graph = CycleGraph::from_bonds(n_atoms, bonds);
+    relevant_cycle_indices(&graph, max_cycles)
+}
+
+fn relevant_cycle_indices(
+    graph: &CycleGraph,
+    max_cycles: usize,
+) -> Result<Vec<Vec<usize>>, RelevantCyclesTooMany> {
     if !graph.has_cycles() {
         return Ok(Vec::new());
     }
     let (candidates, searches) = graph.collect_candidates();
     let relevant = relevant_candidate_indices(&candidates);
-    expand_relevant_families(&graph, &candidates, &searches, &relevant, max_cycles)
+    expand_relevant_families(graph, &candidates, &searches, &relevant, max_cycles).map(|rings| {
+        rings
+            .into_iter()
+            .map(|ring| ring.into_iter().map(|atom| atom.0 as usize).collect())
+            .collect()
+    })
 }
 
 /// Every shortest path from `v` back to the search root (root last), or

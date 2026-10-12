@@ -1,6 +1,7 @@
-//! Port of RDKit 2026.03's distance-geometry embedding
-//! (`DGeomHelpers::EmbedMolecule`, ETKDGv3) aiming at bit-identical
-//! coordinates for a given `randomSeed`.
+//! Port of RDKit 2026.09.1's distance-geometry embedding
+//! (`DGeomHelpers::EmbedMolecule`, ETKDGv3). The compatibility lane targets
+//! the same fixed-seed behavior while treating platform-dependent final-bit
+//! coordinate drift as a versioned artifact-gate concern.
 
 // The port keeps RDKit's index loops, mirrored if/else chains and negated
 // (NaN-propagating) comparisons so it reads side by side with the C++.

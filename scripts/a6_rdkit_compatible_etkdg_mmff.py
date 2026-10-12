@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Compare CheMatic and RDKit ETKDG + MMFF94 on the frozen A6 corpus.
 
-Both engines use explicit hydrogens, the same conformer count and seed, all
-available CPU cores, a 200-iteration MMFF94 budget, and alternating execution
-order. Parsing is excluded. The report records both throughput and the lowest
-finite MMFF94 energy selected for every molecule.
+Both engines use explicit hydrogens, the same conformer count, seed and MMFF94
+iteration budget, all available CPU cores, and alternating execution order.
+Parsing is excluded. The report records both throughput and the lowest finite
+MMFF94 energy selected for every molecule.
 """
 
 from __future__ import annotations
@@ -29,6 +29,7 @@ RDLogger.DisableLog("rdApp.*")
 def run_chematic(
     molecules: list[object],
     count: int,
+    max_mmff_iters: int,
     retry_candidates: int,
     retry_max_iters: int,
 ) -> list[dict[str, object]]:
@@ -37,7 +38,7 @@ def run_chematic(
         conformers = molecule.rdkit_embed_multiple_confs_mmff(
             count,
             random_seed=RANDOM_SEED,
-            max_mmff_iters=200,
+            max_mmff_iters=max_mmff_iters,
             retry_candidates=retry_candidates,
             retry_mmff_iters=retry_max_iters,
         )
@@ -52,7 +53,9 @@ def run_chematic(
     return rows
 
 
-def run_rdkit(molecules: list[Chem.Mol], count: int) -> list[dict[str, object]]:
+def run_rdkit(
+    molecules: list[Chem.Mol], count: int, max_mmff_iters: int
+) -> list[dict[str, object]]:
     rows = []
     for source in molecules:
         molecule = Chem.AddHs(Chem.Mol(source))
@@ -63,7 +66,9 @@ def run_rdkit(molecules: list[Chem.Mol], count: int) -> list[dict[str, object]]:
             AllChem.EmbedMultipleConfs(molecule, numConfs=count, params=parameters)
         )
         optimized = (
-            AllChem.MMFFOptimizeMoleculeConfs(molecule, numThreads=0, maxIters=200)
+            AllChem.MMFFOptimizeMoleculeConfs(
+                molecule, numThreads=0, maxIters=max_mmff_iters
+            )
             if identifiers
             else []
         )
@@ -146,11 +151,19 @@ def main() -> int:
     parser.add_argument("--count", type=int)
     parser.add_argument("--conformers", type=int, default=20)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--max-mmff-iters", type=int, default=200)
     parser.add_argument("--retry-candidates", type=int, default=0)
     parser.add_argument("--retry-max-iters", type=int, default=2000)
     args = parser.parse_args()
-    if args.conformers <= 0 or args.repeats <= 0 or args.retry_candidates < 0:
-        parser.error("conformers/repeats must be positive and retry candidates non-negative")
+    if (
+        args.conformers <= 0
+        or args.repeats <= 0
+        or args.max_mmff_iters <= 0
+        or args.retry_candidates < 0
+    ):
+        parser.error(
+            "conformers/repeats/max MMFF iterations must be positive and retry candidates non-negative"
+        )
 
     source_rows = load_rows(args.tiers)
     if args.count is not None:
@@ -165,18 +178,24 @@ def main() -> int:
         "chematic": lambda: run_chematic(
             chematic_molecules,
             args.conformers,
+            args.max_mmff_iters,
             args.retry_candidates,
             args.retry_max_iters,
         ),
-        "rdkit": lambda: run_rdkit(rdkit_molecules, args.conformers),
+        "rdkit": lambda: run_rdkit(
+            rdkit_molecules, args.conformers, args.max_mmff_iters
+        ),
     }
     run_chematic(
         chematic_molecules[:2],
         min(args.conformers, 2),
+        args.max_mmff_iters,
         args.retry_candidates,
         args.retry_max_iters,
     )
-    run_rdkit(rdkit_molecules[:2], min(args.conformers, 2))
+    run_rdkit(
+        rdkit_molecules[:2], min(args.conformers, 2), args.max_mmff_iters
+    )
     samples = {"chematic": [], "rdkit": []}
     results: dict[str, list[dict[str, object]]] = {}
     execution_order = []
@@ -198,9 +217,10 @@ def main() -> int:
         "rdkit": rdBase.rdkitVersion,
         "molecules": len(source_rows),
         "conformers_per_molecule": args.conformers,
+        "max_mmff_iters": args.max_mmff_iters,
         "adaptive_retry_candidates": args.retry_candidates,
         "adaptive_retry_max_iters": args.retry_max_iters,
-        "chematic_etkdg_oracle": "RDKit 2026.03.1 ETKDGv3",
+        "chematic_etkdg_oracle": "RDKit 2026.09.1 ETKDGv3",
         "repeats": args.repeats,
         "execution_order": execution_order,
         "seconds": samples,

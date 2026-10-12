@@ -120,7 +120,7 @@ class Mol:
         enforce_chirality: bool = True,
         ignore_smoothing_failures: bool = False,
     ) -> list[list[float]]:
-        """RDKit 2026.03.1's ``AllChem.EmbedMolecule(mol, randomSeed=...)``
+        """RDKit 2026.09.1's ``AllChem.EmbedMolecule(mol, randomSeed=...)``
         (ETKDGv3 defaults), bit for bit, on this explicit-hydrogen molecule
         (``m.add_hydrogens().rdkit_embed()`` ==
         ``EmbedMolecule(Chem.AddHs(m), randomSeed=42)``): one ``[x, y, z]``
@@ -143,7 +143,7 @@ class Mol:
         enforce_chirality: bool = True,
         ignore_smoothing_failures: bool = False,
     ) -> list[list[list[float]]]:
-        """RDKit 2026.03.1's ``AllChem.EmbedMultipleConfs`` with ETKDGv3
+        """RDKit 2026.09.1's ``AllChem.EmbedMultipleConfs`` with ETKDGv3
         defaults on this explicit-hydrogen molecule. Failed attempts are
         omitted; reusable setup is shared across conformers."""
         ...
@@ -180,7 +180,7 @@ class Mol:
         do_triangle_smoothing: bool = True,
         use_macrocycle_14_config: bool = False,
     ) -> list[list[float]]:
-        """``rdDistGeom.GetMoleculeBoundsMatrix`` (RDKit 2026.03.1,
+        """``rdDistGeom.GetMoleculeBoundsMatrix`` (RDKit 2026.09.1,
         ``scaleVDW=False``) for the explicit-hydrogen molecule: upper bounds
         above the diagonal, lower bounds below. Raises ``ValueError`` for
         unsupported inputs."""
