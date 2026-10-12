@@ -28,6 +28,9 @@ chematic-smiles     = { path = "../chematic-smiles",     version = "1.1.1" }
 # Keep coordinate JSON decoding bit-exact, including stereo boundary geometries.
 serde_json          = { version = "1.0", features = ["float_roundtrip"] }
 
+[target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
+rayon = "1"
+
 # std::time::Instant panics on wasm32-unknown-unknown (issue #219); web-time
 # is a drop-in Instant replacement backed by Performance.now() there, and
 # re-exports std::time::Instant everywhere else -- see src/clock.rs.

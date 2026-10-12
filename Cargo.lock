@@ -263,6 +263,7 @@ dependencies = [
  "chematic-smiles",
  "criterion",
  "libm",
+ "rayon",
  "serde_json",
  "web-time",
 ]

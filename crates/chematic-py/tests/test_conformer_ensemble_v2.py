@@ -88,6 +88,14 @@ def test_same_base_seed_is_deterministic():
     assert r1["conformer_provenance"] == r2["conformer_provenance"]
 
 
+def test_parallel_and_sequential_outputs_are_identical():
+    mol = chematic.from_smiles(ASPIRIN)
+    config = _config(count=6, base_seed=20261012, rmsd_threshold=0.0)
+    parallel = mol.conformer_ensemble_v2(config, parallel=True)
+    sequential = mol.conformer_ensemble_v2(config, parallel=False)
+    assert parallel == sequential
+
+
 def test_different_base_seeds_are_not_aliased():
     mol = chematic.from_smiles(ASPIRIN)
     r1 = mol.conformer_ensemble_v2(_config(count=1, base_seed=1))

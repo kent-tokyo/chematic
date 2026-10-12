@@ -91,6 +91,9 @@ use chematic_core::Molecule;
 
 use crate::distance_geometry_v2::derive_attempt_seed;
 
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+use rayon::prelude::*;
+
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
@@ -310,6 +313,31 @@ pub fn embed_ensemble_v2(
     mol: &Molecule,
     config: &EnsembleV2Config,
 ) -> Result<EnsembleV2Result, EnsembleV2ConfigError> {
+    embed_ensemble_v2_impl(mol, config, false)
+}
+
+/// Generate a conformer ensemble with independent attempts executed in
+/// parallel when the platform supports native threads.
+///
+/// Attempt seeds, result ordering, energy ranking, RMSD pruning, and all
+/// returned provenance are identical to [`embed_ensemble_v2`]. Only phase 1
+/// (the independent calls to [`embed_pipeline_v2`]) is parallelized; phase 2
+/// remains deterministic and sequential. When `ensemble_timeout_ms` is set,
+/// this function deliberately falls back to the sequential implementation so
+/// the established between-attempt timeout contract is preserved. On
+/// `wasm32-unknown-unknown` it is also a sequential alias.
+pub fn embed_ensemble_v2_parallel(
+    mol: &Molecule,
+    config: &EnsembleV2Config,
+) -> Result<EnsembleV2Result, EnsembleV2ConfigError> {
+    embed_ensemble_v2_impl(mol, config, true)
+}
+
+fn embed_ensemble_v2_impl(
+    mol: &Molecule,
+    config: &EnsembleV2Config,
+    parallel: bool,
+) -> Result<EnsembleV2Result, EnsembleV2ConfigError> {
     let valid_rmsd_threshold = config.rmsd_threshold == 0.0
         || (config.rmsd_threshold.is_finite() && config.rmsd_threshold > 0.0);
     if !valid_rmsd_threshold {
@@ -332,46 +360,7 @@ pub fn embed_ensemble_v2(
     // Phase 1: generate every attempt. No pruning, no ordering decisions —
     // just run the pipeline and record what happened.
     // -----------------------------------------------------------------
-    let overall_start = Instant::now();
-    let mut raw: Vec<(u64, Result<RawSuccess, PipelineV2Failure>)> =
-        Vec::with_capacity(config.count);
-    let mut termination = EnsembleTermination::Completed;
-
-    for i in 0..config.count {
-        if let Some(budget) = config.ensemble_timeout_ms {
-            // Fail closed on exactly `Some(0)` regardless of millisecond-resolution
-            // rounding — mirrors `PipelineV2Config::total_timeout_ms`'s own
-            // `check_timeout!` convention (see that macro's doc comment for the
-            // real, intermittent-CI-failure history behind this exact check).
-            if budget == 0 || overall_start.elapsed().as_millis() as u64 > budget {
-                termination = EnsembleTermination::TimedOut;
-                break;
-            }
-        }
-
-        let seed = derive_attempt_seed(config.base_seed, i);
-        let mut per_call = config.per_conformer.clone();
-        per_call.embed.random_seed = seed;
-
-        let outcome = embed_pipeline_v2(mol, &per_call).map(|result| {
-            let energy = match &result.force_field.energy_after {
-                EnergyReport::None => None,
-                report => {
-                    let total = report.total();
-                    total.is_finite().then_some(total)
-                }
-            };
-            RawSuccess {
-                attempt_index: i,
-                coords: result.coords,
-                energy,
-                actual_force_field_used: result.force_field.actual_force_field_used,
-                fallback_reason: result.force_field.fallback_reason.clone(),
-            }
-        });
-
-        raw.push((seed, outcome));
-    }
+    let (raw, termination) = generate_attempts(mol, config, parallel);
 
     // -----------------------------------------------------------------
     // Phase 2: select. Group successes by actual_force_field_used
@@ -414,6 +403,66 @@ pub fn embed_ensemble_v2(
         termination,
         requested_count: config.count,
     })
+}
+
+type RawAttempt = (u64, Result<RawSuccess, PipelineV2Failure>);
+
+fn run_attempt(mol: &Molecule, config: &EnsembleV2Config, i: usize) -> RawAttempt {
+    let seed = derive_attempt_seed(config.base_seed, i);
+    let mut per_call = config.per_conformer.clone();
+    per_call.embed.random_seed = seed;
+    let outcome = embed_pipeline_v2(mol, &per_call).map(|result| {
+        let energy = match &result.force_field.energy_after {
+            EnergyReport::None => None,
+            report => {
+                let total = report.total();
+                total.is_finite().then_some(total)
+            }
+        };
+        RawSuccess {
+            attempt_index: i,
+            coords: result.coords,
+            energy,
+            actual_force_field_used: result.force_field.actual_force_field_used,
+            fallback_reason: result.force_field.fallback_reason.clone(),
+        }
+    });
+    (seed, outcome)
+}
+
+fn generate_attempts(
+    mol: &Molecule,
+    config: &EnsembleV2Config,
+    parallel: bool,
+) -> (Vec<RawAttempt>, EnsembleTermination) {
+    #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+    let _ = parallel;
+
+    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+    if parallel && config.ensemble_timeout_ms.is_none() {
+        // `IndexedParallelIterator::collect` preserves attempt order. This is
+        // essential because seed/provenance indices are part of the public
+        // reproducibility contract even though completion order is arbitrary.
+        let raw = (0..config.count)
+            .into_par_iter()
+            .map(|i| run_attempt(mol, config, i))
+            .collect();
+        return (raw, EnsembleTermination::Completed);
+    }
+
+    let overall_start = Instant::now();
+    let mut raw = Vec::with_capacity(config.count);
+    let mut termination = EnsembleTermination::Completed;
+    for i in 0..config.count {
+        if let Some(budget) = config.ensemble_timeout_ms
+            && (budget == 0 || overall_start.elapsed().as_millis() as u64 > budget)
+        {
+            termination = EnsembleTermination::TimedOut;
+            break;
+        }
+        raw.push(run_attempt(mol, config, i));
+    }
+    (raw, termination)
 }
 
 /// A successful attempt's data, before disposition is decided (phase 1
@@ -597,6 +646,49 @@ mod tests {
                 assert_eq!(c1.get(idx), c2.get(idx), "conformer {i} atom {a} mismatch");
             }
         }
+    }
+
+    #[test]
+    fn parallel_generation_is_bit_identical_and_ordered() {
+        let mol = parse("CC(=O)Oc1ccccc1C(=O)O").unwrap();
+        let mut config = config_none(6, 20261012);
+        config.per_conformer.embed.max_attempts = 1;
+        config.rmsd_threshold = 0.0;
+
+        let sequential = embed_ensemble_v2(&mol, &config).unwrap();
+        let parallel = embed_ensemble_v2_parallel(&mol, &config).unwrap();
+        assert_eq!(sequential.termination, parallel.termination);
+        assert_eq!(sequential.attempts.len(), parallel.attempts.len());
+        assert_eq!(
+            sequential.ensemble.conformer_count(),
+            parallel.ensemble.conformer_count()
+        );
+        for (i, (left, right)) in sequential
+            .attempts
+            .iter()
+            .zip(&parallel.attempts)
+            .enumerate()
+        {
+            assert_eq!(left.attempt_index, i);
+            assert_eq!(right.attempt_index, i);
+            assert_eq!(left.seed, right.seed);
+            assert_eq!(left.outcome.is_ok(), right.outcome.is_ok());
+        }
+        for i in 0..sequential.ensemble.conformer_count() {
+            let left = sequential.ensemble.get_conformer(i).unwrap();
+            let right = parallel.ensemble.get_conformer(i).unwrap();
+            assert_eq!(left.points, right.points, "conformer {i} differs");
+        }
+    }
+
+    #[test]
+    fn parallel_entry_point_preserves_timeout_semantics() {
+        let mol = parse("CCC").unwrap();
+        let mut config = config_none(5, 1);
+        config.ensemble_timeout_ms = Some(0);
+        let result = embed_ensemble_v2_parallel(&mol, &config).unwrap();
+        assert!(result.attempts.is_empty());
+        assert_eq!(result.termination, EnsembleTermination::TimedOut);
     }
 
     #[test]
