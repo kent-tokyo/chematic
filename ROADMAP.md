@@ -17,6 +17,9 @@ and reproducible evidence over feature-count parity.
 - v1.1.1 exposes typed reaction rejection diagnostics across Rust, Python, and
   WASM, and input-aligned `Core`/`R1`/`R2` columns across Rust, Python, and
   WASM/Node for the documented terminal-wildcard subset.
+- The source candidate also exposes the core Brenk structural-alert contract
+  to browser/Node callers, closing the remaining Rust/Python/MCP versus WASM
+  binding gap for this filter.
 - The current source candidate closes a symmetric-core R-group column swap
   that an unordered payload comparison had hidden. Against RDKit 2026.03.6,
   the bounded gates now report 80/80 semantic reaction matches plus 3 jointly

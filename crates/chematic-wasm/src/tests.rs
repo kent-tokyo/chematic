@@ -2429,6 +2429,42 @@ fn pains_matches_json_returns_alert_names() {
 }
 
 #[test]
+fn brenk_report_json_clean_molecule() {
+    let report: serde_json::Value =
+        serde_json::from_str(&brenk_report_json("CCO").expect("valid ethanol SMILES"))
+            .expect("valid report JSON");
+    assert_eq!(report["passes"], true);
+    assert_eq!(report["alerts"], serde_json::json!([]));
+
+    let mol = parse("CCO");
+    assert!(mol.brenk_passes());
+    assert_eq!(brenk_matches_json(&mol), "[]");
+}
+
+#[test]
+fn brenk_report_json_returns_deterministic_alerts() {
+    let report: serde_json::Value =
+        serde_json::from_str(&brenk_report_json("Oc1ccccc1").expect("valid phenol SMILES"))
+            .expect("valid report JSON");
+    assert_eq!(report["passes"], false);
+    assert!(
+        report["alerts"]
+            .as_array()
+            .expect("alerts array")
+            .iter()
+            .any(|name| name == "phenol"),
+        "expected phenol alert in {report}"
+    );
+
+    let mol = parse("Oc1ccccc1");
+    assert!(!mol.brenk_passes());
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(&brenk_matches_json(&mol)).unwrap(),
+        report["alerts"]
+    );
+}
+
+#[test]
 fn cip_assignments_json_aspirin_no_stereo() {
     let mol = parse("CC(=O)Oc1ccccc1C(=O)O"); // aspirin — no stereocenters
     let json = cip_assignments_json(&mol);
