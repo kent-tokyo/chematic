@@ -1,10 +1,77 @@
 use crate::coords::{Coords3D, Point3};
 use chematic_core::{AtomIdx, Molecule};
 use std::collections::HashSet;
+use std::fmt;
+
+/// Failure returned by the checked conformer-editing operations.
+///
+/// The variants mirror the preconditions of RDKit's `rdMolTransforms`
+/// setters while keeping invalid indices and degenerate coordinates out of
+/// panic paths in Rust, Python, and WebAssembly callers.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MolTransformError {
+    CoordinateCountMismatch { expected: usize, actual: usize },
+    AtomIndexOutOfRange { atom: u32, atom_count: usize },
+    NonFiniteCoordinates,
+    NonFiniteTarget,
+    AtomsNotBonded { atom1: u32, atom2: u32 },
+    RingBond { atom1: u32, atom2: u32 },
+    BothAngleBondsInRing,
+    CoincidentAtoms { atom1: u32, atom2: u32 },
+    CollinearAngle,
+    UndefinedDihedral,
+}
+
+impl fmt::Display for MolTransformError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::CoordinateCountMismatch { expected, actual } => {
+                write!(f, "expected {expected} coordinates, got {actual}")
+            }
+            Self::AtomIndexOutOfRange { atom, atom_count } => {
+                write!(
+                    f,
+                    "atom index {atom} is out of range for {atom_count} atoms"
+                )
+            }
+            Self::NonFiniteCoordinates => write!(f, "coordinates must all be finite"),
+            Self::NonFiniteTarget => write!(f, "target value must be finite"),
+            Self::AtomsNotBonded { atom1, atom2 } => {
+                write!(f, "atoms {atom1} and {atom2} must be bonded")
+            }
+            Self::RingBond { atom1, atom2 } => {
+                write!(f, "bond ({atom1},{atom2}) must not belong to a ring")
+            }
+            Self::BothAngleBondsInRing => {
+                write!(f, "both bonds defining the angle must not belong to a ring")
+            }
+            Self::CoincidentAtoms { atom1, atom2 } => {
+                write!(f, "atoms {atom1} and {atom2} have identical 3D coordinates")
+            }
+            Self::CollinearAngle => {
+                write!(f, "angle rotation axis is undefined for collinear atoms")
+            }
+            Self::UndefinedDihedral => write!(f, "dihedral is undefined for collinear atoms"),
+        }
+    }
+}
+
+impl std::error::Error for MolTransformError {}
 
 /// Get bond length in Ångströms between atoms a and b.
 pub fn get_bond_length(coords: &Coords3D, a: AtomIdx, b: AtomIdx) -> f64 {
     coords.get(a).distance(&coords.get(b))
+}
+
+/// Checked bond-length measurement for external bindings.
+pub fn try_get_bond_length(
+    coords: &Coords3D,
+    mol: &Molecule,
+    a: AtomIdx,
+    b: AtomIdx,
+) -> Result<f64, MolTransformError> {
+    validate_coords_and_atoms(coords, mol, &[a, b])?;
+    Ok(get_bond_length(coords, a, b))
 }
 
 /// Get bond angle A—Center—B in radians.
@@ -15,6 +82,128 @@ pub fn get_bond_angle(coords: &Coords3D, a: AtomIdx, center: AtomIdx, b: AtomIdx
 /// Get bond angle A—Center—B in degrees.
 pub fn get_bond_angle_deg(coords: &Coords3D, a: AtomIdx, center: AtomIdx, b: AtomIdx) -> f64 {
     get_bond_angle(coords, a, center, b).to_degrees()
+}
+
+/// Checked angle measurement in degrees for external bindings.
+pub fn try_get_bond_angle_deg(
+    coords: &Coords3D,
+    mol: &Molecule,
+    a: AtomIdx,
+    center: AtomIdx,
+    b: AtomIdx,
+) -> Result<f64, MolTransformError> {
+    validate_coords_and_atoms(coords, mol, &[a, center, b])?;
+    if coords.get(a).distance(&coords.get(center)) <= 1e-8 {
+        return Err(MolTransformError::CoincidentAtoms {
+            atom1: a.0,
+            atom2: center.0,
+        });
+    }
+    if coords.get(center).distance(&coords.get(b)) <= 1e-8 {
+        return Err(MolTransformError::CoincidentAtoms {
+            atom1: center.0,
+            atom2: b.0,
+        });
+    }
+    Ok(get_bond_angle_deg(coords, a, center, b))
+}
+
+/// Set the distance between bonded atoms `fixed` and `moved`.
+///
+/// Atom `fixed` stays in place. Atom `moved` and every atom reachable on its
+/// side of the bond are translated together, matching RDKit's
+/// `SetBondLength` contract. Ring bonds are rejected because they do not have
+/// a unique movable side.
+pub fn set_bond_length(
+    coords: &Coords3D,
+    mol: &Molecule,
+    fixed: AtomIdx,
+    moved: AtomIdx,
+    target_length: f64,
+) -> Result<Coords3D, MolTransformError> {
+    validate_transform_input(coords, mol, &[fixed, moved], target_length)?;
+    let (bond_idx, _) = require_bond(mol, fixed, moved)?;
+    if chematic_perception::ring_bond_flags_shared(mol)[bond_idx.0 as usize] {
+        return Err(MolTransformError::RingBond {
+            atom1: fixed.0,
+            atom2: moved.0,
+        });
+    }
+
+    let fixed_pos = coords.get(fixed);
+    let moved_pos = coords.get(moved);
+    let fixed_to_moved = moved_pos.sub(&fixed_pos);
+    let current_length = fixed_to_moved.norm();
+    if current_length <= 1e-8 {
+        return Err(MolTransformError::CoincidentAtoms {
+            atom1: fixed.0,
+            atom2: moved.0,
+        });
+    }
+
+    let translation = fixed_to_moved.scale(target_length / current_length - 1.0);
+    let mut result = coords.clone();
+    for atom in find_rotated_atoms(mol, fixed, moved) {
+        result.set(atom, coords.get(atom).add(&translation));
+    }
+    Ok(result)
+}
+
+/// Set angle `a-center-moved` in radians.
+///
+/// `a` and `center` remain fixed. `moved` and every atom on its side of the
+/// `center-moved` bond are rotated together, matching RDKit's `SetAngleRad`
+/// contract. If both angle bonds are ring bonds there is no independent side
+/// to rotate and the operation is rejected.
+pub fn set_bond_angle(
+    coords: &Coords3D,
+    mol: &Molecule,
+    a: AtomIdx,
+    center: AtomIdx,
+    moved: AtomIdx,
+    target_angle: f64,
+) -> Result<Coords3D, MolTransformError> {
+    validate_transform_input(coords, mol, &[a, center, moved], target_angle)?;
+    let (first_bond, _) = require_bond(mol, a, center)?;
+    let (second_bond, _) = require_bond(mol, center, moved)?;
+    let ring_bonds = chematic_perception::ring_bond_flags_shared(mol);
+    if ring_bonds[first_bond.0 as usize] && ring_bonds[second_bond.0 as usize] {
+        return Err(MolTransformError::BothAngleBondsInRing);
+    }
+
+    let center_pos = coords.get(center);
+    let center_to_a = coords.get(a).sub(&center_pos);
+    let center_to_moved = coords.get(moved).sub(&center_pos);
+    if center_to_a.norm() <= 1e-8 {
+        return Err(MolTransformError::CoincidentAtoms {
+            atom1: a.0,
+            atom2: center.0,
+        });
+    }
+    if center_to_moved.norm() <= 1e-8 {
+        return Err(MolTransformError::CoincidentAtoms {
+            atom1: center.0,
+            atom2: moved.0,
+        });
+    }
+
+    let current_angle = get_bond_angle(coords, a, center, moved);
+    let delta = target_angle - current_angle;
+    if delta.abs() <= f64::EPSILON {
+        return Ok(coords.clone());
+    }
+    let axis = center_to_a
+        .cross(&center_to_moved)
+        .try_normalize()
+        .ok_or(MolTransformError::CollinearAngle)?;
+
+    let mut result = coords.clone();
+    for atom in find_rotated_atoms(mol, center, moved) {
+        let relative = coords.get(atom).sub(&center_pos);
+        let rotated = super::constraints::rotate_around_axis(relative, axis, delta);
+        result.set(atom, center_pos.add(&rotated));
+    }
+    Ok(result)
 }
 
 /// Get dihedral angle A—B—C—D in radians.
@@ -44,6 +233,27 @@ pub fn get_dihedral_deg(
     get_dihedral(coords, a, b, c, d).map(|rad| rad.to_degrees())
 }
 
+/// Checked dihedral measurement in degrees for external bindings.
+pub fn try_get_dihedral_deg(
+    coords: &Coords3D,
+    mol: &Molecule,
+    a: AtomIdx,
+    b: AtomIdx,
+    c: AtomIdx,
+    d: AtomIdx,
+) -> Result<f64, MolTransformError> {
+    validate_coords_and_atoms(coords, mol, &[a, b, c, d])?;
+    for (first, second) in [(a, b), (b, c), (c, d)] {
+        if coords.get(first).distance(&coords.get(second)) <= 1e-8 {
+            return Err(MolTransformError::CoincidentAtoms {
+                atom1: first.0,
+                atom2: second.0,
+            });
+        }
+    }
+    get_dihedral_deg(coords, a, b, c, d).ok_or(MolTransformError::UndefinedDihedral)
+}
+
 /// Compute centroid (center of mass) of all atoms.
 pub fn compute_centroid(coords: &Coords3D) -> [f64; 3] {
     let all_coords: Vec<[f64; 3]> = (0..coords.atom_count())
@@ -66,10 +276,29 @@ pub fn set_dihedral(
     d: AtomIdx,
     target_angle: f64,
 ) -> Coords3D {
-    let current = match get_dihedral(coords, a, b, c, d) {
-        Some(x) => x,
-        None => return coords.clone(),
-    };
+    try_set_dihedral(coords, mol, a, b, c, d, target_angle).unwrap_or_else(|_| coords.clone())
+}
+
+/// Checked counterpart to [`set_dihedral`], matching RDKit's requirement
+/// that the central bond exists and is not part of a ring.
+pub fn try_set_dihedral(
+    coords: &Coords3D,
+    mol: &Molecule,
+    a: AtomIdx,
+    b: AtomIdx,
+    c: AtomIdx,
+    d: AtomIdx,
+    target_angle: f64,
+) -> Result<Coords3D, MolTransformError> {
+    validate_transform_input(coords, mol, &[a, b, c, d], target_angle)?;
+    let (central_bond, _) = require_bond(mol, b, c)?;
+    if chematic_perception::ring_bond_flags_shared(mol)[central_bond.0 as usize] {
+        return Err(MolTransformError::RingBond {
+            atom1: b.0,
+            atom2: c.0,
+        });
+    }
+    let current = get_dihedral(coords, a, b, c, d).ok_or(MolTransformError::UndefinedDihedral)?;
 
     let delta = target_angle - current;
     let pb = coords.get(b);
@@ -77,7 +306,10 @@ pub fn set_dihedral(
 
     // Guard against degenerate geometry: B and C define the rotation axis.
     if pc.distance(&pb) < 1e-10 {
-        return coords.clone();
+        return Err(MolTransformError::CoincidentAtoms {
+            atom1: b.0,
+            atom2: c.0,
+        });
     }
 
     let axis = pc.sub(&pb).normalize();
@@ -96,7 +328,57 @@ pub fn set_dihedral(
         new_coords.set(idx, new_p);
     }
 
-    new_coords
+    Ok(new_coords)
+}
+
+fn validate_transform_input(
+    coords: &Coords3D,
+    mol: &Molecule,
+    atoms: &[AtomIdx],
+    target: f64,
+) -> Result<(), MolTransformError> {
+    validate_coords_and_atoms(coords, mol, atoms)?;
+    if !target.is_finite() {
+        return Err(MolTransformError::NonFiniteTarget);
+    }
+    Ok(())
+}
+
+fn validate_coords_and_atoms(
+    coords: &Coords3D,
+    mol: &Molecule,
+    atoms: &[AtomIdx],
+) -> Result<(), MolTransformError> {
+    if coords.atom_count() != mol.atom_count() {
+        return Err(MolTransformError::CoordinateCountMismatch {
+            expected: mol.atom_count(),
+            actual: coords.atom_count(),
+        });
+    }
+    for &atom in atoms {
+        if atom.0 as usize >= mol.atom_count() {
+            return Err(MolTransformError::AtomIndexOutOfRange {
+                atom: atom.0,
+                atom_count: mol.atom_count(),
+            });
+        }
+    }
+    if !coords.is_finite() {
+        return Err(MolTransformError::NonFiniteCoordinates);
+    }
+    Ok(())
+}
+
+fn require_bond(
+    mol: &Molecule,
+    a: AtomIdx,
+    b: AtomIdx,
+) -> Result<(chematic_core::BondIdx, &chematic_core::BondEntry), MolTransformError> {
+    mol.bond_between(a, b)
+        .ok_or(MolTransformError::AtomsNotBonded {
+            atom1: a.0,
+            atom2: b.0,
+        })
 }
 
 /// Center conformer on origin by translating centroid to (0, 0, 0).
@@ -312,5 +594,119 @@ mod tests {
 
         // Degenerate input should not crash; coords may be unchanged
         assert!((p.x - p_orig.x).abs() < 1e-8);
+    }
+
+    #[test]
+    fn set_bond_length_moves_the_selected_side_as_a_rigid_fragment() {
+        let mol = parse("CCCC").unwrap();
+        let mut coords = Coords3D::new_zeroed(4);
+        for i in 0..4 {
+            coords.set(AtomIdx(i), Point3::new(i as f64, 0.0, 0.0));
+        }
+
+        let result = set_bond_length(&coords, &mol, AtomIdx(0), AtomIdx(1), 2.0).unwrap();
+        assert!((get_bond_length(&result, AtomIdx(0), AtomIdx(1)) - 2.0).abs() < 1e-12);
+        assert_eq!(result.get(AtomIdx(0)), Point3::new(0.0, 0.0, 0.0));
+        assert_eq!(result.get(AtomIdx(1)), Point3::new(2.0, 0.0, 0.0));
+        assert_eq!(result.get(AtomIdx(2)), Point3::new(3.0, 0.0, 0.0));
+        assert_eq!(result.get(AtomIdx(3)), Point3::new(4.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn set_bond_length_rejects_ring_bonds() {
+        let mol = parse("C1CCCCC1").unwrap();
+        let coords = crate::dg::generate_coords(&mol);
+        assert!(matches!(
+            set_bond_length(&coords, &mol, AtomIdx(0), AtomIdx(1), 2.0),
+            Err(MolTransformError::RingBond { .. })
+        ));
+    }
+
+    #[test]
+    fn set_bond_angle_moves_the_selected_side_as_a_rigid_fragment() {
+        let mol = parse("CCCC").unwrap();
+        let mut coords = Coords3D::new_zeroed(4);
+        coords.set(AtomIdx(0), Point3::new(1.0, 0.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(0.0, 0.0, 0.0));
+        coords.set(AtomIdx(2), Point3::new(0.0, 1.0, 0.0));
+        coords.set(AtomIdx(3), Point3::new(0.0, 2.0, 0.0));
+
+        let result = set_bond_angle(
+            &coords,
+            &mol,
+            AtomIdx(0),
+            AtomIdx(1),
+            AtomIdx(2),
+            60.0_f64.to_radians(),
+        )
+        .unwrap();
+        assert!(
+            (get_bond_angle_deg(&result, AtomIdx(0), AtomIdx(1), AtomIdx(2)) - 60.0).abs() < 1e-10
+        );
+        assert!((get_bond_length(&result, AtomIdx(2), AtomIdx(3)) - 1.0).abs() < 1e-12);
+        assert_eq!(result.get(AtomIdx(0)), coords.get(AtomIdx(0)));
+        assert_eq!(result.get(AtomIdx(1)), coords.get(AtomIdx(1)));
+    }
+
+    #[test]
+    fn set_bond_angle_rejects_two_ring_bonds() {
+        let mol = parse("C1CCCCC1").unwrap();
+        let coords = crate::dg::generate_coords(&mol);
+        assert_eq!(
+            set_bond_angle(
+                &coords,
+                &mol,
+                AtomIdx(0),
+                AtomIdx(1),
+                AtomIdx(2),
+                90.0_f64.to_radians(),
+            ),
+            Err(MolTransformError::BothAngleBondsInRing)
+        );
+    }
+
+    #[test]
+    fn checked_dihedral_rejects_a_ring_central_bond() {
+        let mol = parse("C1CCCCC1").unwrap();
+        let coords = crate::dg::generate_coords(&mol);
+        assert!(matches!(
+            try_set_dihedral(
+                &coords,
+                &mol,
+                AtomIdx(0),
+                AtomIdx(1),
+                AtomIdx(2),
+                AtomIdx(3),
+                60.0_f64.to_radians(),
+            ),
+            Err(MolTransformError::RingBond { .. })
+        ));
+    }
+
+    #[test]
+    fn checked_transforms_reject_coordinate_count_and_non_finite_targets() {
+        let mol = parse("CC").unwrap();
+        let coords = Coords3D::new_zeroed(1);
+        assert!(matches!(
+            set_bond_length(&coords, &mol, AtomIdx(0), AtomIdx(1), 1.5),
+            Err(MolTransformError::CoordinateCountMismatch { .. })
+        ));
+
+        let coords = crate::dg::generate_coords(&mol);
+        assert_eq!(
+            set_bond_length(&coords, &mol, AtomIdx(0), AtomIdx(1), f64::NAN),
+            Err(MolTransformError::NonFiniteTarget)
+        );
+    }
+
+    #[test]
+    fn checked_measurements_reject_degenerate_coordinates() {
+        let mol = parse("CCC").unwrap();
+        let mut coords = Coords3D::new_zeroed(3);
+        coords.set(AtomIdx(2), Point3::new(1.0, 0.0, 0.0));
+        assert!(matches!(
+            try_get_bond_angle_deg(&coords, &mol, AtomIdx(0), AtomIdx(1), AtomIdx(2)),
+            Err(MolTransformError::CoincidentAtoms { .. })
+        ));
     }
 }

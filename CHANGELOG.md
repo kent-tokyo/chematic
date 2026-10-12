@@ -12,6 +12,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added RDKit-style conformer coordinate transforms across Rust, Python, and
+  WASM/Node. Callers can measure and set bond lengths, bond angles, and
+  dihedrals while moving the selected molecular fragment as a rigid body.
+  Checked setters reject ring edits, non-bonded atoms, invalid indices,
+  malformed coordinate arrays, and degenerate geometry instead of panicking.
 - Added browser/Node Brenk structural-alert APIs. `MolHandle.brenk_passes()`
   and `brenk_matches_json(mol)` mirror the Rust and Python bindings, while
   `brenk_report_json(smiles)` returns a stable `{passes, alerts}` report and

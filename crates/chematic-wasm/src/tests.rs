@@ -3102,6 +3102,62 @@ fn test_mmff94_energy_breakdown_from_coords_json_varies_with_geometry() {
 }
 
 #[test]
+fn conformer_coordinate_transforms_match_rdkit_fragment_motion() {
+    let mol = parse("CCCC");
+    let bond_coords = "[[0,0,0],[1,0,0],[2,1,0],[3,1,1]]";
+    let changed =
+        set_bond_length_from_coords_json(&mol, bond_coords, 0, 1, 2.0).expect("set bond length");
+    let rows: Vec<[f64; 3]> = serde_json::from_str(&changed).unwrap();
+    assert_eq!(rows[0], [0.0, 0.0, 0.0]);
+    assert_eq!(rows[1], [2.0, 0.0, 0.0]);
+    assert_eq!(rows[2], [3.0, 1.0, 0.0]);
+    assert_eq!(rows[3], [4.0, 1.0, 1.0]);
+    assert_eq!(
+        get_bond_length_from_coords_json(&mol, &changed, 0, 1).unwrap(),
+        2.0
+    );
+
+    let angle_coords = "[[1,0,0],[0,0,0],[0,1,0],[0,2,0]]";
+    let changed =
+        set_bond_angle_from_coords_json(&mol, angle_coords, 0, 1, 2, 60.0).expect("set bond angle");
+    let angle = get_bond_angle_from_coords_json(&mol, &changed, 0, 1, 2).unwrap();
+    assert!((angle - 60.0).abs() < 1e-10);
+}
+
+#[test]
+fn conformer_coordinate_transforms_reject_invalid_inputs() {
+    let chain = parse("CCCC");
+    assert!(
+        set_bond_length_from_coords_json(&chain, "[[0,0,0]]", 0, 1, 2.0)
+            .unwrap_err()
+            .contains("expected 4 coordinates")
+    );
+    assert!(
+        get_bond_angle_from_coords_json(&chain, "[[0,0,0],[1,0,0],[2,0,0],[3,0,0]]", 0, 1, 9,)
+            .unwrap_err()
+            .contains("out of range")
+    );
+
+    let ring = parse("C1CCCCC1");
+    let coords = generate_3d_coords_json(&ring);
+    assert!(
+        set_bond_length_from_coords_json(&ring, &coords, 0, 1, 2.0)
+            .unwrap_err()
+            .contains("must not belong to a ring")
+    );
+    assert!(
+        set_bond_angle_from_coords_json(&ring, &coords, 0, 1, 2, 90.0)
+            .unwrap_err()
+            .contains("both bonds")
+    );
+    assert!(
+        set_dihedral_from_coords_json(&ring, &coords, 0, 1, 2, 3, 60.0)
+            .unwrap_err()
+            .contains("must not belong to a ring")
+    );
+}
+
+#[test]
 fn torsion_scan_json_returns_a_finite_energy_curve() {
     let mol = parse("CCCC");
     let points: Vec<serde_json::Value> =

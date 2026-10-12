@@ -80,8 +80,10 @@ pub use minimize::{
     minimize_mmff94, minimize_uff, minimize_with_config,
 };
 pub use mol_transforms::{
-    center_on_origin, compute_centroid, get_bond_angle, get_bond_angle_deg, get_bond_length,
-    get_dihedral, get_dihedral_deg, set_dihedral, transform_conformer,
+    MolTransformError, center_on_origin, compute_centroid, get_bond_angle, get_bond_angle_deg,
+    get_bond_length, get_dihedral, get_dihedral_deg, set_bond_angle, set_bond_length, set_dihedral,
+    transform_conformer, try_get_bond_angle_deg, try_get_bond_length, try_get_dihedral_deg,
+    try_set_dihedral,
 };
 pub use o3a::{O3AError, O3AResult, o3a_align};
 pub use pdb::{
