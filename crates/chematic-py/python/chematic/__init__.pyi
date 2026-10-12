@@ -128,6 +128,51 @@ class Mol:
         ``ValueError`` for unsupported inputs."""
         ...
 
+    def rdkit_embed_multiple_confs(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        use_exp_torsion_angle_prefs: bool = True,
+        use_basic_knowledge: bool = True,
+        et_version: int = 2,
+        use_small_ring_torsions: bool = False,
+        use_macrocycle_torsions: bool = True,
+        use_macrocycle_14_config: bool = True,
+        enforce_chirality: bool = True,
+        ignore_smoothing_failures: bool = False,
+    ) -> list[list[list[float]]]:
+        """RDKit 2026.03.1's ``AllChem.EmbedMultipleConfs`` with ETKDGv3
+        defaults on this explicit-hydrogen molecule. Failed attempts are
+        omitted; reusable setup is shared across conformers."""
+        ...
+
+    def rdkit_embed_multiple_confs_mmff(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        retry_mmff_iters: int = 0,
+        retry_candidates: int = 0,
+        use_exp_torsion_angle_prefs: bool = True,
+        use_basic_knowledge: bool = True,
+        et_version: int = 2,
+        use_small_ring_torsions: bool = False,
+        use_macrocycle_torsions: bool = True,
+        use_macrocycle_14_config: bool = True,
+        enforce_chirality: bool = True,
+        ignore_smoothing_failures: bool = False,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Generate an ETKDG ensemble and optimize every conformer with
+        RDKit-compatible MMFF94. When both retry options are positive, the
+        lowest-energy non-converged candidates receive that many additional
+        MMFF iterations. Returns ``(status, energy, coords)`` tuples in
+        deterministic candidate order."""
+        ...
+
     def rdkit_bounds_matrix(
         self,
         *,

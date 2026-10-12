@@ -1,0 +1,59 @@
+{
+  "schema": "a6-rdkit-compatible-etkdg-mmff-summary/v1",
+  "base_revision": "035f479ecfd5aef10ebba89b862ef73471662813",
+  "candidate_branch": "codex/a6-multiconformer-etkdg",
+  "candidate_wheel_sha256": "afd40db7c3573bc6787c890e67119c7e53a76e75fb292214bffc7f78177a19a1",
+  "chematic_version": "1.1.1",
+  "etkdg_oracle": "RDKit 2026.03.1 ETKDGv3",
+  "quality_comparator": "RDKit 2026.09.1",
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "molecules": 265,
+  "conformers_per_molecule": 20,
+  "baseline": {
+    "initial_mmff_iterations": 200,
+    "quality": {
+      "median_delta_kcal_mol": -1.729851817344752e-10,
+      "p90_delta_kcal_mol": 0.8587876155375014,
+      "max_delta_kcal_mol": 5.768750085054563,
+      "at_or_below_rdkit": 175,
+      "within_1_kcal_mol": 243,
+      "within_2_kcal_mol": 253
+    },
+    "coverage": {
+      "chematic_generated": 5251,
+      "chematic_converged": 2835,
+      "rdkit_generated": 5258,
+      "rdkit_converged": 2859
+    },
+    "one_repeat_timings": [
+      {"chematic_seconds": 80.23272487497889, "rdkit_seconds": 86.08929220796563},
+      {"chematic_seconds": 79.76096787501592, "rdkit_seconds": 72.24996766692493}
+    ]
+  },
+  "adaptive": {
+    "initial_mmff_iterations": 200,
+    "retry_candidates": 5,
+    "retry_mmff_iterations": 2000,
+    "quality": {
+      "median_delta_kcal_mol": -1.330833754309424e-8,
+      "p90_delta_kcal_mol": 0.13834787063549925,
+      "max_delta_kcal_mol": 5.637078736556873,
+      "at_or_below_rdkit": 211,
+      "within_1_kcal_mol": 256,
+      "within_2_kcal_mol": 258
+    },
+    "coverage": {
+      "chematic_generated": 5251,
+      "chematic_converged": 3602,
+      "rdkit_generated": 5258,
+      "rdkit_converged": 2859
+    },
+    "one_repeat_timing": {
+      "chematic_seconds": 96.2687643750105,
+      "rdkit_seconds": 75.32471520791296
+    }
+  },
+  "accepted_speed_win": false,
+  "boundary": "Source candidate on one host. One-repeat baseline timings reverse winner; adaptive retry is slower. No 21-block interval, second host, peak-memory, holdout, or public-artifact gate was completed."
+}
