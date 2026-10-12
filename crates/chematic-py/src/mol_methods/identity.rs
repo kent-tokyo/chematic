@@ -415,6 +415,59 @@ impl Mol {
         ))
     }
 
+    /// Add implicit hydrogens at RDKit-compatible 3D positions, refine the
+    /// complete molecule with MMFF94, and return the refined coordinates for
+    /// the original atoms. This avoids the cost of embedding every hydrogen
+    /// while still ranking conformers with all X-H and non-bonded terms.
+    ///
+    /// Returns ``(heavy_coords, all_atom_coords, energy, converged,
+    /// iterations, max_residual_force)``. Pair ``all_atom_coords`` with
+    /// ``self.add_hydrogens()``. ``hydrogen_variant=0`` uses RDKit's default
+    /// placement; positive values deterministically sample terminal
+    /// heteroatom-H rotamers. Raises ``ValueError`` when hydrogen placement or
+    /// MMFF94 typing fails.
+    #[pyo3(signature = (coords, max_iters = 200, hydrogen_variant = 0))]
+    fn refine_mmff94_with_explicit_hydrogens(
+        &self,
+        py: Python<'_>,
+        coords: Vec<[f64; 3]>,
+        max_iters: usize,
+        hydrogen_variant: u64,
+    ) -> PyResult<PyExplicitHydrogenMmffResult> {
+        let mol = self.inner.clone();
+        let coords = flat_to_coords3d(&coords);
+        let result = py.detach(move || {
+            chematic_3d::refine_mmff94_with_explicit_hydrogens_variant(
+                &mol,
+                &coords,
+                max_iters,
+                hydrogen_variant,
+            )
+        });
+        result
+            .map(|result| {
+                (
+                    result
+                        .heavy_coords
+                        .points
+                        .into_iter()
+                        .map(|point| [point.x, point.y, point.z])
+                        .collect(),
+                    result
+                        .all_atom_coords
+                        .points
+                        .into_iter()
+                        .map(|point| [point.x, point.y, point.z])
+                        .collect(),
+                    result.energy,
+                    result.converged,
+                    result.iterations,
+                    result.max_residual_force,
+                )
+            })
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
     /// RDKit-compatible UFF energy: ``UFFGetMoleculeForceField(m,
     /// vdwThresh, ignoreInterfragInteractions=...).CalcEnergy()`` for
     /// ``coords`` (all atoms, in :meth:`add_hydrogens` order, which is

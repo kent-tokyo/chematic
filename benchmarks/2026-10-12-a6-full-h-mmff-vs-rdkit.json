@@ -1,0 +1,58 @@
+{
+  "schema": "a6-full-h-mmff-vs-rdkit/v1",
+  "candidate_base_revision": "7facc71286d518d59152fd99a0f626a27988e54f",
+  "candidate_wheel_sha256": "1db99d7ea85f1752d4e192da5015a8869e93e4ffd2ea46658295049e892911bc",
+  "candidate_wheel": "chematic-1.1.1-cp313-cp313-macosx_11_0_arm64.whl",
+  "rdkit": "2026.09.1",
+  "host": {
+    "model": "Mac16,12",
+    "os": "macOS 27.0.1 (26A434)",
+    "architecture": "arm64",
+    "python": "3.13.6",
+    "logical_cpus": 10
+  },
+  "corpus": "frozen A6 tier A+B",
+  "molecules": 265,
+  "ten_candidate_quality": {
+    "both_candidate_counts": 10,
+    "scored": 265,
+    "chematic_minus_rdkit_best_kcal_mol": {
+      "median": -0.000011997795583695847,
+      "p90": 1.0410362694726096,
+      "max": 9.895871446837106
+    },
+    "within_1_kcal_mol": 237,
+    "at_or_below_rdkit_best": 216,
+    "output_sha256": "b307e4a57ec45e1e72782295912ffc73223c07ea03180c326ef80d29fd8cf721",
+    "quality_summary_sha256": "59a13374bad7ee674bb4014b22ba5043777d00992f7c6d727d293e8ba906e623"
+  },
+  "twenty_candidate_quality": {
+    "both_candidate_counts": 20,
+    "scored": 265,
+    "chematic_minus_rdkit_best_kcal_mol": {
+      "median": -0.000006558567168468699,
+      "p90": 0.9631408373693375,
+      "max": 25.18623681228766
+    },
+    "within_1_kcal_mol": 238,
+    "at_or_below_rdkit_best": 220,
+    "output_sha256": "a872466411afd0f4ce35d296296fa08b530c8423facb1f5cd12aabcfdb887c9d",
+    "quality_summary_sha256": "4f75d0a6edf8fa95aada9e2411402d5ddf64fa2dd93b372b3bf7455884f8a90c"
+  },
+  "ten_candidate_speed": {
+    "parsing_included": false,
+    "repeats": 2,
+    "alternating_order": true,
+    "chematic_seconds": [40.678484249976464, 39.995056917076],
+    "rdkit_seconds": [48.60672812489793, 45.99886487494223],
+    "chematic_median_seconds": 40.33677058352623,
+    "rdkit_median_seconds": 47.30279649992008,
+    "chematic_speedup": 1.1726966689603755,
+    "successful_candidates": {
+      "chematic": 2649,
+      "rdkit": 2629
+    },
+    "raw_summary_sha256": "b75621a8762c0508eab8e89900e7bca8cedc3e0636ba73a10781ea2726aacf19"
+  },
+  "boundary": "Source-built candidate on one host. The speed lane has only two alternating repeats, not the project acceptance minimum of 21 blocks. Quality uses RDKit MMFF94 as the oracle and is not experimental conformer truth. The candidate does not beat RDKit on every molecule; maximum residuals remain."
+}

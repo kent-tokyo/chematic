@@ -10,9 +10,11 @@ pipeline-v2/RDKit common geometry scorer.
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import importlib.metadata
 import json
+import os
 import platform
 import sys
 import time
@@ -41,6 +43,7 @@ BEST_OF_N_ARM = "chematic_pipeline_v2_uff_best_of_10"
 # conformer of lowest MMFF94 energy returned: the quality tier against
 # RDKit's best of ten ETKDG conformers, at about ten times the cost.
 LOWEST_OF_N_ARM = "chematic_pipeline_v2_mmff94_stereo_safe_lowest_of_10"
+FULL_H_LOWEST_OF_N_ARM = "chematic_pipeline_v2_mmff94_full_h_lowest_of_n"
 
 
 def sha256(path: Path) -> str:
@@ -132,28 +135,56 @@ def run_pipeline(mol: object, config: object) -> dict[str, object]:
     }
 
 
-def run_lowest_of_n(mol: object, chematic: object, config: object) -> dict[str, object]:
+def run_lowest_of_n(
+    mol: object,
+    chematic: object,
+    config: object,
+    best_of_n: int,
+    explicit_h_ensemble: bool,
+    full_h_refine: bool = False,
+) -> dict[str, object]:
     """The lowest-energy kept conformer of a stereo-safe MMFF94 ensemble."""
-    result = run_best_of_n(mol, chematic, config, pick_lowest=True)
-    if result.get("status") == "success":
+    result = run_best_of_n(
+        mol,
+        chematic,
+        config,
+        best_of_n=best_of_n,
+        explicit_h_ensemble=explicit_h_ensemble,
+        pick_lowest=True,
+        full_h_refine=full_h_refine,
+    )
+    if result.get("status") == "success" and not full_h_refine:
         result["force_field"] = "mmff94"
     return result
 
 
 def run_best_of_n(
-    mol: object, chematic: object, config: object, pick_lowest: bool = False
+    mol: object,
+    chematic: object,
+    config: object,
+    best_of_n: int,
+    explicit_h_ensemble: bool,
+    pick_lowest: bool = False,
+    full_h_refine: bool = False,
 ) -> dict[str, object]:
+    heavy_atom_count = len(mol.atom_table)
+    working_mol = mol.add_hydrogens() if explicit_h_ensemble else mol
     ensemble_config = chematic.EnsembleV2Config(
         per_conformer=config,
-        count=BEST_OF_N,
+        count=best_of_n,
         base_seed=RANDOM_SEED,
-        rmsd_threshold=0.5,
+        # Full-H ranking needs every generated candidate. Other benchmark arms
+        # retain the established symmetric-RMSD diversity pruning contract.
+        rmsd_threshold=0.0 if full_h_refine else 0.5,
         use_symmetric_rmsd_pruning=True,
-        ensemble_timeout_ms=TOTAL_TIMEOUT_MS * BEST_OF_N,
+        # Each attempt is still bounded by the pipeline timeout. Leaving the
+        # ensemble timeout unset enables the deterministic native parallel
+        # path; the runner's wall-clock budget remains the outer safety bound.
+        ensemble_timeout_ms=None,
     )
     started = time.perf_counter_ns()
     try:
-        result = mol.conformer_ensemble_v2(ensemble_config)
+        result = working_mol.conformer_ensemble_v2(ensemble_config)
     except Exception as error:
         return {
             "status": "typed_failure",
@@ -172,7 +203,45 @@ def run_best_of_n(
         }
     provenance = result.get("conformer_provenance", [])
     chosen = 0
-    if pick_lowest:
+    refinement_failures: list[str] = []
+    refinement_results: list[tuple[int, object]] = []
+    if full_h_refine:
+
+        def refine(item: tuple[int, object]) -> tuple[int, object]:
+            index, candidate = item
+            return index, mol.refine_mmff94_with_explicit_hydrogens(  # type: ignore[attr-defined]
+                candidate[:heavy_atom_count], FORCE_FIELD_MAX_ITERATIONS, index
+            )
+
+        workers = min(len(conformers), max(1, os.cpu_count() or 1))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = [pool.submit(refine, item) for item in enumerate(conformers)]
+            for future in futures:
+                try:
+                    refinement_results.append(future.result())
+                except Exception as error:
+                    refinement_failures.append(f"{type(error).__name__}: {error}")
+        if not refinement_results:
+            return {
+                "status": "typed_failure",
+                "failure_cause": "all_explicit_h_mmff_refinements_failed",
+                "refinement_failures": refinement_failures,
+                "elapsed_ms": (time.perf_counter_ns() - started) / 1_000_000,
+            }
+        chosen, chosen_result = min(
+            refinement_results,
+            key=lambda item: (item[1][2], item[0]),
+        )
+        (
+            chosen_coords,
+            chosen_all_atom_coords,
+            chosen_energy,
+            converged,
+            iterations,
+            residual,
+        ) = chosen_result
+        elapsed_ms = (time.perf_counter_ns() - started) / 1_000_000
+    elif pick_lowest:
         energies = {}
         for attempt in result.get("attempts", []):
             success = attempt.get("success") or {}
@@ -181,16 +250,30 @@ def run_best_of_n(
                 energies[disposition["conformer_index"]] = success["energy"]
         if energies:
             chosen = min(energies, key=lambda k: (energies[k], k))
-    return {
+    output = {
         "status": "success",
         "elapsed_ms": elapsed_ms,
-        "coords": conformers[chosen],
+        "coords": chosen_coords if full_h_refine else conformers[chosen][:heavy_atom_count],
         "chosen_conformer": chosen,
         "force_field": "uff",
         "conformers_kept": len(conformers),
         "conformer_provenance": provenance,
         "termination": result.get("termination"),
     }
+    if full_h_refine:
+        output.update(
+            {
+                "force_field": "mmff94_explicit_h",
+                "explicit_h_energy": chosen_energy,
+                "all_atom_coords": chosen_all_atom_coords,
+                "explicit_h_converged": converged,
+                "explicit_h_iterations": iterations,
+                "explicit_h_max_residual_force": residual,
+                "explicit_h_refined": len(refinement_results),
+                "explicit_h_refinement_failures": refinement_failures,
+            }
+        )
+    return output
 
 
 def parse_args() -> argparse.Namespace:
@@ -203,9 +286,29 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--count", type=int)
     parser.add_argument(
+        "--best-of-n",
+        type=int,
+        default=BEST_OF_N,
+        help="independent attempts for the best/lowest-of-N ensemble arms",
+    )
+    parser.add_argument(
+        "--explicit-h-ensemble",
+        action="store_true",
+        help=(
+            "generate and MMFF-optimize ensemble arms with all hydrogens explicit, "
+            "then emit only the original atom coordinates"
+        ),
+    )
+    parser.add_argument(
         "--arms",
         nargs="+",
-        choices=(*ARM_FORCE_FIELDS, *STEREO_SAFE_ARM_FORCE_FIELDS, BEST_OF_N_ARM, LOWEST_OF_N_ARM),
+        choices=(
+            *ARM_FORCE_FIELDS,
+            *STEREO_SAFE_ARM_FORCE_FIELDS,
+            BEST_OF_N_ARM,
+            LOWEST_OF_N_ARM,
+            FULL_H_LOWEST_OF_N_ARM,
+        ),
         default=[*ARM_FORCE_FIELDS, BEST_OF_N_ARM],
     )
     parser.add_argument("--wall-budget-seconds", type=float, default=3300.0)
@@ -226,6 +329,8 @@ def parse_args() -> argparse.Namespace:
     FORCE_FIELD_MAX_ITERATIONS = args.force_field_max_iterations
     if args.start < 0 or (args.count is not None and args.count <= 0):
         parser.error("--start must be non-negative and --count must be positive")
+    if args.best_of_n <= 0:
+        parser.error("--best-of-n must be positive")
     if args.wall_budget_seconds <= 0:
         parser.error("--wall-budget-seconds must be positive")
     if not args.wheel.is_file():
@@ -270,7 +375,7 @@ def main() -> int:
     )
     lowest_config = (
         pipeline_config(chematic, "mmff94_bond_angle_strict", stereo_safe=True)
-        if LOWEST_OF_N_ARM in args.arms
+        if LOWEST_OF_N_ARM in args.arms or FULL_H_LOWEST_OF_N_ARM in args.arms
         else None
     )
     session_started = time.monotonic()
@@ -300,10 +405,31 @@ def main() -> int:
                     {
                         "arm": arm,
                         **(
-                            run_best_of_n(mol, chematic, best_config)
+                            run_best_of_n(
+                                mol,
+                                chematic,
+                                best_config,
+                                best_of_n=args.best_of_n,
+                                explicit_h_ensemble=args.explicit_h_ensemble,
+                            )
                             if arm == BEST_OF_N_ARM
-                            else run_lowest_of_n(mol, chematic, lowest_config)
+                            else run_lowest_of_n(
+                                mol,
+                                chematic,
+                                lowest_config,
+                                best_of_n=args.best_of_n,
+                                explicit_h_ensemble=args.explicit_h_ensemble,
+                            )
                             if arm == LOWEST_OF_N_ARM
+                            else run_lowest_of_n(
+                                mol,
+                                chematic,
+                                lowest_config,
+                                best_of_n=args.best_of_n,
+                                explicit_h_ensemble=False,
+                                full_h_refine=True,
+                            )
+                            if arm == FULL_H_LOWEST_OF_N_ARM
                             else run_pipeline(mol, configs[arm])
                         ),
                     }
@@ -354,7 +480,8 @@ def main() -> int:
             "max_attempts": MAX_ATTEMPTS,
             "force_field_max_iterations": FORCE_FIELD_MAX_ITERATIONS,
             "total_timeout_ms": TOTAL_TIMEOUT_MS,
-            "best_of_n": BEST_OF_N,
+            "best_of_n": args.best_of_n,
+            "explicit_h_ensemble": args.explicit_h_ensemble,
             "stereo_policy": {
                 "comparable_arms": "ignore_external_common_scorer_is_authoritative",
                 "stereo_safe_arms": "repair_and_verify_with_chirality_and_explicit_h",

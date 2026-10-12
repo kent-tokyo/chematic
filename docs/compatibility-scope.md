@@ -189,14 +189,14 @@ default budget is 1,000 iterations (RDKit's `MMFFOptimizeMolecule` default
 is 200); a geometry that stops at the budget is returned with the
 `iteration_limit` termination.
 
-A single `embed_pipeline_v2` conformer is one basin, not a search. On the
-265 A6 molecules, relaxed by RDKit's MMFF94, it is a median 0.48 and p90
-8.65 kcal/mol above RDKit's best of ten ETKDGv3 conformers (155 within
-1 kcal/mol; about 0.03 s per molecule). The lowest-energy kept conformer of
-a ten-attempt `conformer_ensemble_v2` with the stereo-safe MMFF94 config is
-a median 0.00 and p90 3.69 kcal/mol above it (198 within 1 kcal/mol; about
-0.28 s per molecule); both stay 265/265 sound, stereo-clean and clash-free
-on the external scorer.
+A single `embed_pipeline_v2` conformer is one basin, not a search. The current
+source candidate can rank an ensemble after RDKit-compatible hydrogen
+placement and full-atom MMFF94 refinement. On the frozen 265-row A6 corpus,
+equal-count ten-candidate comparison against RDKit 2026.09.1 gives a
+−0.000012 kcal/mol median, 1.041 kcal/mol p90, and 237/265 rows within
+1 kcal/mol of RDKit's best. The 9.896 kcal/mol maximum and 49 rows above
+RDKit's best remain open, so this is not universal conformer-quality parity.
+It is source-candidate evidence from one host, not a published-artifact claim.
 
 A stereo-safe (`RepairAndVerify`) run whose minimization relaxes a declared
 centre through inversion embeds again from up to seven other seeds before

@@ -1309,6 +1309,21 @@ class Mol:
         """
         ...
 
+    def refine_mmff94_with_explicit_hydrogens(
+        self,
+        coords: list[list[float]],
+        max_iters: int = 200,
+        hydrogen_variant: int = 0,
+    ) -> tuple[list[list[float]], list[list[float]], float, bool, int, float]:
+        """Add implicit hydrogens at RDKit-compatible 3D positions, refine the
+        complete molecule with MMFF94, and return ``(heavy_coords,
+        all_atom_coords, energy, converged, iterations, max_residual_force)``.
+        Pair ``all_atom_coords`` with :meth:`add_hydrogens`. Positive
+        ``hydrogen_variant`` values deterministically sample terminal
+        heteroatom-H rotamers.
+        """
+        ...
+
     def mmff94_atom_types(self) -> list[str]:
         """Per-atom MMFF94 force field type names.
 
