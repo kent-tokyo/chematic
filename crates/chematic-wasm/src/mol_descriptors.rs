@@ -407,6 +407,33 @@ pub fn pains_matches_json(mol: &MolHandle) -> String {
     format!("[{}]", parts.join(","))
 }
 
+/// Brenk structural-alert identifiers matched by `mol` as a JSON array.
+///
+/// Returns `[]` when no alerts fire. Identifiers and ordering are identical to
+/// the Rust, Python, and MCP bindings.
+#[wasm_bindgen]
+pub fn brenk_matches_json(mol: &MolHandle) -> String {
+    serde_json::to_string(&chematic_chem::brenk_matches(&mol.inner))
+        .expect("Brenk alert identifiers are serializable")
+}
+
+/// Parse `smiles` and return a complete Brenk report as JSON.
+///
+/// The stable result shape is `{"passes":boolean,"alerts":string[]}`.
+/// Invalid or oversized SMILES throw the same ordinary JavaScript input error
+/// as `parse_smiles`; this function never converts invalid input into a clean
+/// report.
+#[wasm_bindgen]
+pub fn brenk_report_json(smiles: &str) -> Result<String, JsValue> {
+    let mol = crate::parse_smiles(smiles)?;
+    let (passes, alerts) = chematic_chem::brenk_passes_and_matches(&mol.inner);
+    serde_json::to_string(&serde_json::json!({
+        "passes": passes,
+        "alerts": alerts,
+    }))
+    .map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
 /// CIP stereo assignments as a JSON array of `{atomIdx, cipCode}` objects.
 ///
 /// `cipCode` is one of `"R"`, `"S"`, `"E"`, or `"Z"`.

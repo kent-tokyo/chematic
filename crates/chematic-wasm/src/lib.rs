@@ -291,6 +291,15 @@ impl MolHandle {
         chematic_chem::pains_passes(&self.inner)
     }
 
+    /// Returns `true` if the molecule has no Brenk structural alerts.
+    ///
+    /// This uses the same conservative core contract as the Rust, Python, and
+    /// MCP bindings: an alert-search budget exhaustion is not reported as a
+    /// clean pass.
+    pub fn brenk_passes(&self) -> bool {
+        chematic_chem::brenk_passes(&self.inner)
+    }
+
     /// Number of aromatic rings containing at least one heteroatom (N, O, S, …).
     pub fn num_aromatic_heterocycles(&self) -> usize {
         chematic_chem::num_aromatic_heterocycles(&self.inner)

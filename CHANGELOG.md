@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added browser/Node Brenk structural-alert APIs. `MolHandle.brenk_passes()`
+  and `brenk_matches_json(mol)` mirror the Rust and Python bindings, while
+  `brenk_report_json(smiles)` returns a stable `{passes, alerts}` report and
+  rejects invalid SMILES with the normal WASM input error (#843).
 - Added a pinned RDKit 2026.03.6 workflow comparison for the 83-row checked
   reaction gate, 39-row largest-fragment standardization set, and 16-row
   labelled R-group set. It verifies output before timing, separates
