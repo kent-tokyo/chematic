@@ -796,6 +796,7 @@ fn extract_fragment(mol: &Molecule, component: &[AtomIdx]) -> Molecule {
 ///
 /// Transforms:
 /// - `[N+](=O)[O-]` → `N(=O)=O` (nitro normalization: N charge 0, O- → double bond)
+/// - `R[S](=O)R` → `R[S+]([O-])R` (RDKit-compatible sulfoxide normalization)
 ///
 /// Returns a new molecule with normalized groups.
 pub fn normalize_groups(mol: &Molecule) -> Molecule {
@@ -835,7 +836,13 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
             }
         }
 
-        // Sulfoxide: keep as is (S=O is already correct form)
+        if sulfoxide_atoms.contains(&idx) {
+            match atom.element.atomic_number() {
+                16 => new_atom.charge = 1,
+                8 => new_atom.charge = -1,
+                _ => {}
+            }
+        }
 
         let new_idx = builder.add_atom(new_atom);
         remap.insert(idx, new_idx);
@@ -882,7 +889,14 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
             // No bond order change needed — already single
         }
 
-        // Sulfoxide: keep as is (S=O is already correct form)
+        // RDKit's normalizer writes a neutral three-coordinate S=O as the
+        // charge-separated single-bond form [S+]-[O-].
+        if sulfoxide_atoms.contains(&bond.atom1)
+            && sulfoxide_atoms.contains(&bond.atom2)
+            && bond.order == chematic_core::BondOrder::Double
+        {
+            new_order = chematic_core::BondOrder::Single;
+        }
 
         if let (Some(&new_a1), Some(&new_a2)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
             let _ = builder.add_bond(new_a1, new_a2, new_order);
@@ -984,13 +998,23 @@ fn detect_sulfoxide(
     idx: AtomIdx,
     sulfoxide_atoms: &mut std::collections::HashSet<AtomIdx>,
 ) {
-    for (o_idx, bid) in mol.neighbors(idx) {
-        if mol.atom(o_idx).element.atomic_number() == 8
-            && mol.bond(bid).order == chematic_core::BondOrder::Double
-        {
-            sulfoxide_atoms.insert(idx);
-            sulfoxide_atoms.insert(o_idx);
-        }
+    let sulfur = mol.atom(idx);
+    if sulfur.charge != 0 || mol.neighbors(idx).count() != 3 {
+        return;
+    }
+    let double_oxygens: Vec<_> = mol
+        .neighbors(idx)
+        .filter(|(o_idx, bid)| {
+            let oxygen = mol.atom(*o_idx);
+            oxygen.element.atomic_number() == 8
+                && oxygen.charge == 0
+                && mol.bond(*bid).order == chematic_core::BondOrder::Double
+        })
+        .map(|(o_idx, _)| o_idx)
+        .collect();
+    if let [oxygen] = double_oxygens.as_slice() {
+        sulfoxide_atoms.insert(idx);
+        sulfoxide_atoms.insert(*oxygen);
     }
 }
 
@@ -2603,19 +2627,33 @@ mod tests {
         let mol = parse("C[S](=O)C").unwrap();
         let result = normalize_groups(&mol);
 
-        // Sulfoxide structure should remain (S=O is already correct form)
-        let mut has_s_double_o = false;
+        let mut has_charge_separated_s_o = false;
         for (_, bond) in result.bonds() {
             let a1 = result.atom(bond.atom1);
             let a2 = result.atom(bond.atom2);
-            if ((a1.element.atomic_number() == 16 && a2.element.atomic_number() == 8)
-                || (a1.element.atomic_number() == 8 && a2.element.atomic_number() == 16))
-                && bond.order == chematic_core::BondOrder::Double
-            {
-                has_s_double_o = true;
-            }
+            has_charge_separated_s_o |= a1.element.atomic_number() == 16
+                && a1.charge == 1
+                && a2.element.atomic_number() == 8
+                && a2.charge == -1
+                && bond.order == chematic_core::BondOrder::Single
+                || a2.element.atomic_number() == 16
+                    && a2.charge == 1
+                    && a1.element.atomic_number() == 8
+                    && a1.charge == -1
+                    && bond.order == chematic_core::BondOrder::Single;
         }
-        assert!(has_s_double_o, "sulfoxide should have S=O double bond");
+        assert!(
+            has_charge_separated_s_o,
+            "sulfoxide should normalize to [S+]-[O-]"
+        );
+
+        // Sulfones are four-coordinate and must not be rewritten by the
+        // three-coordinate sulfoxide rule.
+        let sulfone = parse("CS(=O)(=O)C").unwrap();
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&normalize_groups(&sulfone)),
+            chematic_smiles::canonical_smiles(&sulfone)
+        );
     }
 
     // ── RDKit PR #9051: StereoGroup cleanup for non-chiral atoms ────────────

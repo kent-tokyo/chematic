@@ -46,3 +46,20 @@ def test_labeled_rgroup_refuses_ambiguous_label_contracts() -> None:
         chematic.rgroup_decompose_labeled(
             "c1cc([*:2]C)ccc1", _mols("Cc1ccccc1")
         )
+
+
+def test_prepared_rgroup_core_matches_module_functions() -> None:
+    core = "c1cc([*:1])ccc1[*:2]"
+    mols = [
+        chematic.from_smiles("Cc1ccc(CC)cc1"),
+        chematic.from_smiles("CCc1ccc(N)cc1"),
+        chematic.from_smiles("CCCC"),
+    ]
+    prepared = chematic.PreparedRGroupCore(core)
+
+    assert prepared.decompose_labeled(mols) == chematic.rgroup_decompose_labeled(
+        core, mols
+    )
+    assert prepared.decompose_columns(mols) == chematic.rgroup_decompose_columns(
+        core, mols
+    )

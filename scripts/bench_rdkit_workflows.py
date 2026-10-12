@@ -30,6 +30,9 @@ STANDARDIZATION = (
     ROOT / "validation/standardization_phase1_holdout.jsonl",
 )
 RGROUPS = ROOT / "validation/rdkit/rgroup_labeled_cases.json"
+STANDARDIZATION_STRESS = (
+    ROOT / "validation/cosmolkit_comparison/corpora/stress-v1.smi"
+)
 EXPECTED_RDKIT = "2026.03.6"
 JOINT_INVALID_REACTION_IDS = {
     "v2_ester_missing_second_reactant",
@@ -332,6 +335,175 @@ def standardization_gate(blocks: int) -> dict[str, Any]:
     return {"rows": len(rows), "accuracy": accuracy, "timing": timing}
 
 
+def evenly_spaced_rows(values: list[str], limit: int) -> list[str]:
+    if len(values) <= limit:
+        return values
+    return [values[round(i * (len(values) - 1) / (limit - 1))] for i in range(limit)]
+
+
+def standardization_profile_gate(blocks: int, limit: int = 256) -> dict[str, Any]:
+    """Compare matched RDKit MolStandardize stages on a stratified stress slice."""
+    import chematic
+    from rdkit import Chem
+    from rdkit.Chem.MolStandardize import rdMolStandardize
+
+    all_rows = [
+        line.split()[0]
+        for line in STANDARDIZATION_STRESS.read_text().splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    sampled_rows = evenly_spaced_rows(all_rows, limit)
+    operations: dict[str, tuple[Callable[[Any], Any], Callable[[Any], Any]]] = {
+        "normalize": (lambda mol: mol.normalize_groups(), rdMolStandardize.Normalize),
+        "reionize": (lambda mol: mol.reionize(), rdMolStandardize.Reionize),
+        "fragment_parent": (
+            lambda mol: mol.fragment_parent(),
+            rdMolStandardize.FragmentParent,
+        ),
+        "charge_parent": (
+            lambda mol: mol.charge_parent(),
+            rdMolStandardize.ChargeParent,
+        ),
+        "isotope_parent": (
+            lambda mol: mol.isotope_parent(),
+            rdMolStandardize.IsotopeParent,
+        ),
+        "stereo_parent": (
+            lambda mol: mol.stereo_parent(),
+            rdMolStandardize.StereoParent,
+        ),
+        "cleanup": (lambda mol: mol.standardize(), rdMolStandardize.Cleanup),
+    }
+
+    rows = []
+    input_mismatches = []
+    for text in sampled_rows:
+        try:
+            chematic_input = chematic.from_smiles(text).rdkit_smiles
+        except Exception:
+            chematic_input = None
+        rdkit_mol = Chem.MolFromSmiles(text)
+        rdkit_input = (
+            Chem.MolToSmiles(rdkit_mol, canonical=True, isomericSmiles=True)
+            if rdkit_mol is not None
+            else None
+        )
+        if chematic_input is not None and chematic_input == rdkit_input:
+            rows.append(text)
+        elif len(input_mismatches) < 10:
+            input_mismatches.append(
+                {
+                    "input": text,
+                    "chematic": chematic_input,
+                    "rdkit": rdkit_input,
+                }
+            )
+
+    def chematic_output(operation: Callable[[Any], Any], text: str) -> str | None:
+        try:
+            return operation(chematic.from_smiles(text)).rdkit_smiles
+        except Exception:
+            return None
+
+    def rdkit_output(operation: Callable[[Any], Any], text: str) -> str | None:
+        try:
+            mol = Chem.MolFromSmiles(text)
+            if mol is None:
+                return None
+            return Chem.MolToSmiles(
+                operation(mol), canonical=True, isomericSmiles=True
+            )
+        except Exception:
+            return None
+
+    results = {}
+    for name, (chematic_operation, rdkit_operation) in operations.items():
+        observed = {
+            "chematic": [chematic_output(chematic_operation, text) for text in rows],
+            "rdkit": [rdkit_output(rdkit_operation, text) for text in rows],
+        }
+        exact_indices = [
+            index
+            for index in range(len(rows))
+            if observed["chematic"][index] is not None
+            and observed["chematic"][index] == observed["rdkit"][index]
+        ]
+        exact_rows = [rows[index] for index in exact_indices]
+
+        def chematic_values() -> list[str | None]:
+            return [chematic_output(chematic_operation, text) for text in exact_rows]
+
+        def rdkit_values() -> list[str | None]:
+            return [rdkit_output(rdkit_operation, text) for text in exact_rows]
+
+        parse_inclusive = timed_blocks(chematic_values, rdkit_values, blocks)
+        parse_inclusive.update(
+            rows=len(exact_rows),
+            selection="rows with exact RDKit-compatible output",
+            mode="parse plus operation plus canonical write",
+        )
+
+        chematic_mols = [chematic.from_smiles(text) for text in exact_rows]
+        rdkit_mols = [Chem.MolFromSmiles(text) for text in exact_rows]
+
+        def chematic_prepared_values() -> list[str]:
+            return [chematic_operation(mol).rdkit_smiles for mol in chematic_mols]
+
+        def rdkit_prepared_values() -> list[str]:
+            return [
+                Chem.MolToSmiles(
+                    rdkit_operation(mol), canonical=True, isomericSmiles=True
+                )
+                for mol in rdkit_mols
+            ]
+
+        prepared = timed_blocks(
+            chematic_prepared_values, rdkit_prepared_values, blocks
+        )
+        prepared.update(
+            rows=len(exact_rows),
+            selection="rows with exact RDKit-compatible output",
+            mode="preparsed molecules plus operation plus canonical write",
+        )
+        results[name] = {
+            "agreement": {
+                "exact": len(exact_rows),
+                "total": len(rows),
+                "both_refused": sum(
+                    left is None and right is None
+                    for left, right in zip(
+                        observed["chematic"], observed["rdkit"]
+                    )
+                ),
+            },
+            "mismatch_examples": [
+                {
+                    "input": rows[index],
+                    "chematic": observed["chematic"][index],
+                    "rdkit": observed["rdkit"][index],
+                }
+                for index in range(len(rows))
+                if observed["chematic"][index] != observed["rdkit"][index]
+            ][:5],
+            "timing": {
+                "parse_inclusive": parse_inclusive,
+                "prepared": prepared,
+            },
+        }
+
+    return {
+        "rows": len(rows),
+        "sampled_rows": len(sampled_rows),
+        "source_rows": len(all_rows),
+        "selection": (
+            "evenly spaced deterministic slice over the full stress corpus, then "
+            "restricted to rows with identical parsed RDKit-compatible semantics"
+        ),
+        "input_mismatch_examples": input_mismatches,
+        "operations": results,
+    }
+
+
 def rgroup_gate(blocks: int) -> dict[str, Any]:
     import chematic
     from rdkit import Chem
@@ -413,7 +585,77 @@ def rgroup_gate(blocks: int) -> dict[str, Any]:
         selection="whole cases where both engines matched every labelled row",
         mode="parse plus decomposition plus payload canonicalization",
     )
-    return {"rows": sum(len(case["molecules"]) for case in cases), "accuracy": accuracy, "timing": timing}
+
+    chematic_prepared = [
+        (
+            chematic.PreparedRGroupCore(case["core"]),
+            [chematic.from_smiles(text) for text in case["molecules"]],
+        )
+        for case in exact_cases
+    ]
+    rdkit_prepared = [
+        (
+            Chem.MolFromSmarts(case["core"]),
+            [Chem.MolFromSmiles(text) for text in case["molecules"]],
+        )
+        for case in exact_cases
+    ]
+
+    def chematic_prepared_values() -> list[list[dict[str, str]]]:
+        values = []
+        for prepared, molecules in chematic_prepared:
+            rows = prepared.decompose_labeled(molecules)
+            values.append(
+                [
+                    {}
+                    if row is None
+                    else {
+                        key: payload_without_dummy(value)
+                        for key, value in row.items()
+                        if key.startswith("R")
+                    }
+                    for row in rows
+                ]
+            )
+        return values
+
+    def rdkit_prepared_values() -> list[list[dict[str, str]]]:
+        values = []
+        for core, molecules in rdkit_prepared:
+            rows, unmatched = rdRGroupDecomposition.RGroupDecompose(
+                [core], molecules, asSmiles=True, asRows=True
+            )
+            matched = iter(rows)
+            unmatched_set = set(unmatched)
+            case_rows = []
+            for index in range(len(molecules)):
+                if index in unmatched_set:
+                    case_rows.append({})
+                    continue
+                row = next(matched)
+                case_rows.append(
+                    {
+                        key: payload_without_dummy(value)
+                        for key, value in row.items()
+                        if key.startswith("R")
+                    }
+                )
+            values.append(case_rows)
+        return values
+
+    prepared_timing = timed_blocks(
+        chematic_prepared_values, rdkit_prepared_values, blocks
+    )
+    prepared_timing.update(
+        rows=sum(len(case["molecules"]) for case in exact_cases),
+        selection="whole cases where both engines matched every labelled row",
+        mode="preparsed molecules and core query plus decomposition and payload canonicalization",
+    )
+    return {
+        "rows": sum(len(case["molecules"]) for case in cases),
+        "accuracy": accuracy,
+        "timing": {"end_to_end": timing, "prepared": prepared_timing},
+    }
 
 
 def main() -> None:
@@ -426,13 +668,16 @@ def main() -> None:
 
     import chematic
     import rdkit
+    from rdkit import RDLogger
+
+    RDLogger.DisableLog("rdApp.*")
 
     if rdkit.__version__ != EXPECTED_RDKIT:
         raise SystemExit(
             f"RDKit mismatch: expected {EXPECTED_RDKIT}, found {rdkit.__version__}"
         )
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "source_commit": git_head(),
         "engines": {"chematic": chematic.__version__, "rdkit": rdkit.__version__},
         "host": {
@@ -450,10 +695,15 @@ def main() -> None:
                 for path in STANDARDIZATION
             ],
             "rgroup": {"path": str(RGROUPS.relative_to(ROOT)), "sha256": sha256(RGROUPS)},
+            "standardization_stress": {
+                "path": str(STANDARDIZATION_STRESS.relative_to(ROOT)),
+                "sha256": sha256(STANDARDIZATION_STRESS),
+            },
         },
         "results": {
             "reaction": reaction_gate(args.blocks),
             "standardization": standardization_gate(args.blocks),
+            "standardization_profile": standardization_profile_gate(args.blocks),
             "rgroup": rgroup_gate(args.blocks),
         },
     }
