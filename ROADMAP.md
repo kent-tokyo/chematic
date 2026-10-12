@@ -43,10 +43,11 @@ and reproducible evidence over feature-count parity.
   ETKDG/MMFF94. Raw and triangle-smoothed bounds match within `1e-12` on all
   768,664 frozen A6 cells. Under equal 20-candidate and 200-iteration limits,
   The conformer-tail candidate fixes gradient early termination, aligns
-  relevant-ring traversal, and adds an opt-in selective rescue profile. The
-  inspected v2 set is now development data, so a newly frozen v3 holdout,
-  21-block timing, memory, a second host and exact public-artifact gates remain
-  open. No broad speed-and-quality win is claimed.
+  relevant-ring traversal, and adds an opt-in selective rescue profile. On the
+  once-only v3 evaluation, normal mode reached 94/100 within 1 kcal/mol and was
+  0.27% slower; rescue reached 95/100 and was 2.1% slower. v3 is now inspected
+  data. A fresh final set, 21-block timing, memory, a second host and exact
+  public-artifact gates remain open. No broad speed-and-quality win is claimed.
 
 Exact denominators belong in [validation](docs/validation.md) and dated
 [benchmark records](benchmarks/README.md). Unresolved work is tracked in the

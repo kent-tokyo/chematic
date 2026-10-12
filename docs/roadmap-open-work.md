@@ -32,11 +32,12 @@ the changelog and validation pages.
 - **A6 residuals:** RDKit 2026.09.1 topology bounds match within `1e-12` across
   all 768,664 frozen-corpus cells. The conformer-tail candidate fixes a real
   gradient early-exit bug, aligns relevant-ring traversal, and exposes an
-  optional selective rescue profile. A6 plus holdouts v1/v2 are development
-  data; freeze and evaluate a new outcome-blind v3 once before changing
-  defaults. Keep atom typing, convergence, stereochemistry, clashes,
-  same-coordinate energy, basin diversity, minimization tails, time and memory
-  separate.
+  optional selective rescue profile. Once-only v3 results are 94/100 within
+  1 kcal/mol at essentially tied but 0.27% slower median time; rescue is
+  95/100 and 2.1% slower. A6 plus holdouts v1/v2/v3 are now development data.
+  Use a fresh final set after the next candidate freeze, and keep atom typing,
+  convergence, stereochemistry, clashes, same-coordinate energy, basin
+  diversity, minimization tails, time and memory separate.
 - **Independent workflow corpora:** expand beyond the current bounded lanes
   with multi-reactant reactions, multi-core R-group cases, and real MOL2/CJSON
   files. Keep refusals and semantic-loss reports in the denominator.
