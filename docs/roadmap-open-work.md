@@ -29,10 +29,13 @@ the changelog and validation pages.
 - **R-group contract:** maintain the bounded terminal-wildcard subset across
   Rust, Python, and WASM; broader multi-core and enumeration behavior remains
   outside the contract.
-- **A6 residuals:** isolate fullerene MMFF atom-type differences and the 130
-  rows that reach the iteration limit. Report atom typing, convergence,
-  stereochemistry, clashes, and same-coordinate energy separately; do not
-  describe all 265 successful outputs as converged.
+- **A6 residuals:** RDKit 2026.09.1 topology bounds now match within `1e-12`
+  across all 768,664 frozen-corpus cells. Close the seven equal-count quality
+  rows above 1 kcal/mol: six have no converged candidate in either engine and
+  one has 9/20 converged candidates in both. Keep atom typing, convergence,
+  stereochemistry, clashes, same-coordinate energy, basin diversity and
+  minimization tails separate; do not describe all successful outputs as
+  converged.
 - **Independent workflow corpora:** expand beyond the current bounded lanes
   with multi-reactant reactions, multi-core R-group cases, and real MOL2/CJSON
   files. Keep refusals and semantic-loss reports in the denominator.

@@ -1,0 +1,78 @@
+{
+  "schema": "chematic.a6-rdkit-2026-09-bounds-followup.v1",
+  "created_at": "2026-10-12",
+  "source_revision": "7e6a524054cc5950c858bd7acb11405da03988a5",
+  "source_artifact": {
+    "kind": "source-built-wheel",
+    "filename": "chematic-1.1.1-cp313-cp313-macosx_11_0_arm64.whl",
+    "sha256": "0ad3af2781f92a9de20d90ce9b2728250c3261a1194a2b4bcee787078d7c3508"
+  },
+  "comparator": { "name": "RDKit", "version": "2026.09.1" },
+  "environment": {
+    "os": "macOS 27.0.1",
+    "architecture": "arm64",
+    "python": "3.13.6"
+  },
+  "corpora": [
+    {
+      "tier": "A",
+      "molecules": 65,
+      "manifest_sha256": "6a478ea0f5d4ef067a4d1739e77a7209e8f76ecaa837e3f487c723dd6f465d6b",
+      "corpus_sha256": "8d4f3f3a70b8ae00c56cdbea81e398093ef25d896f4f252e46448632632166b8"
+    },
+    {
+      "tier": "B",
+      "molecules": 200,
+      "manifest_sha256": "ec93ac160aa91c3c4416d57d3000d6e344e0b75cdf5c122211364c7495dce239",
+      "corpus_sha256": "0059fcbcb862663bbe079da901141c9383fefb6d013058a0e540dd1d4af46f92"
+    }
+  ],
+  "bounds": {
+    "tolerance": 1e-12,
+    "raw": {
+      "molecules_within_tolerance": 265,
+      "molecules": 265,
+      "cells_within_tolerance": 768664,
+      "cells": 768664,
+      "exact_cells": 761260,
+      "maximum_absolute_delta": 1.7763568394002505e-15,
+      "raw_result_sha256": "a9eed6eab7a8bf2490c6d08429282fde05c92dadb1ec7481b3237b2077812dc1"
+    },
+    "triangle_smoothed": {
+      "molecules_within_tolerance": 265,
+      "molecules": 265,
+      "cells_within_tolerance": 768664,
+      "cells": 768664,
+      "exact_cells": 732781,
+      "maximum_absolute_delta": 1.4210854715202004e-14,
+      "raw_result_sha256": "fb6716e6951f1186c9bbcd3ef2401e56fbf6f0bcc1e4d066ea5ee2a29b4f819b"
+    }
+  },
+  "quality": {
+    "conformers_per_molecule": 20,
+    "max_mmff_iterations": 200,
+    "molecules_compared": 265,
+    "failures": 0,
+    "median_delta_kcal_mol": -1.4988010832439613e-15,
+    "p90_delta_kcal_mol": 0.12792471649073178,
+    "maximum_delta_kcal_mol": 3.1114796409592103,
+    "at_or_below_rdkit": 168,
+    "within_1_kcal_mol": 258,
+    "within_2_kcal_mol": 263,
+    "rows_above_1_kcal_mol": 7,
+    "rows_above_1_kcal_mol_with_both_engines_nonconverged": 6,
+    "schematic_generated": 5260,
+    "rdkit_generated": 5258,
+    "schematic_converged": 2862,
+    "rdkit_converged": 2859,
+    "raw_result_sha256": "e1b8c270aa4e3a9e741c93b683896e0bee8d5a3467516b9dc2c757a7d5ff2ded"
+  },
+  "timing": {
+    "repeats": 1,
+    "schematic_seconds": 51.88426533294842,
+    "rdkit_seconds": 56.393118458101526,
+    "rdkit_over_schematic": 1.0869021291179355,
+    "accepted_speed_claim": false,
+    "reason": "One loaded-host run is insufficient; 21 alternating idle-host blocks, a second host and exact public artifacts remain required."
+  }
+}
