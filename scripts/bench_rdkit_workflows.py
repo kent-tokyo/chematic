@@ -29,7 +29,7 @@ STANDARDIZATION = (
     ROOT / "validation/standardization_phase1_fixtures.jsonl",
     ROOT / "validation/standardization_phase1_holdout.jsonl",
 )
-RGROUPS = ROOT / "validation/indigo_workflows/rgroup_cases.json"
+RGROUPS = ROOT / "validation/rdkit/rgroup_labeled_cases.json"
 EXPECTED_RDKIT = "2026.03.6"
 JOINT_INVALID_REACTION_IDS = {
     "v2_ester_missing_second_reactant",

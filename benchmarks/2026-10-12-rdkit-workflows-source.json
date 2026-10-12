@@ -11,8 +11,8 @@
       }
     ],
     "rgroup": {
-      "path": "validation/indigo_workflows/rgroup_cases.json",
-      "sha256": "1a544eae7fa8e3f366f0773ebdc89c08877cbbdd8a05e00f8bb6ac6038508617"
+      "path": "validation/rdkit/rgroup_labeled_cases.json",
+      "sha256": "96a27115f642ac5ddef9188a9cb51dd9361a0687285b54def08c51d6eb41ea7d"
     },
     "standardization": [
       {
