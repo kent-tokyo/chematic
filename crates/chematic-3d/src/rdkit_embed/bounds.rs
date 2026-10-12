@@ -958,8 +958,8 @@ mod tests {
         let view = chematic_smiles::rdkit_mol_view(&molecule).expect("RDKit view");
 
         assert_eq!(view.atom_rings.len(), 7);
-        assert_eq!(view.atom_rings[0], vec![0, 3, 2, 1]);
-        assert_eq!(view.atom_rings[6], vec![3, 4, 7, 6, 2]);
+        assert_eq!(view.atom_rings[0], vec![0, 1, 2, 3]);
+        assert_eq!(view.atom_rings[6], vec![2, 3, 4, 7, 6]);
     }
 
     #[test]

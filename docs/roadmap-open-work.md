@@ -1,6 +1,6 @@
 # Open-work ledger
 
-Updated 2026-10-12 for **v1.1.1**. This file lists unresolved work only.
+Updated 2026-10-13 for **v1.1.1**. This file lists unresolved work only.
 Completed implementation details belong in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
 measurements belong in the [validation report](validation.md) and
@@ -29,13 +29,14 @@ the changelog and validation pages.
 - **R-group contract:** maintain the bounded terminal-wildcard subset across
   Rust, Python, and WASM; broader multi-core and enumeration behavior remains
   outside the contract.
-- **A6 residuals:** RDKit 2026.09.1 topology bounds now match within `1e-12`
-  across all 768,664 frozen-corpus cells. Close the seven equal-count quality
-  rows above 1 kcal/mol: six have no converged candidate in either engine and
-  one has 9/20 converged candidates in both. Keep atom typing, convergence,
-  stereochemistry, clashes, same-coordinate energy, basin diversity and
-  minimization tails separate; do not describe all successful outputs as
-  converged.
+- **A6 residuals:** RDKit 2026.09.1 topology bounds match within `1e-12` across
+  all 768,664 frozen-corpus cells. The conformer-tail candidate fixes a real
+  gradient early-exit bug, aligns relevant-ring traversal, and exposes an
+  optional selective rescue profile. A6 plus holdouts v1/v2 are development
+  data; freeze and evaluate a new outcome-blind v3 once before changing
+  defaults. Keep atom typing, convergence, stereochemistry, clashes,
+  same-coordinate energy, basin diversity, minimization tails, time and memory
+  separate.
 - **Independent workflow corpora:** expand beyond the current bounded lanes
   with multi-reactant reactions, multi-core R-group cases, and real MOL2/CJSON
   files. Keep refusals and semantic-loss reports in the denominator.

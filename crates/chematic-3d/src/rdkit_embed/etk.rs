@@ -570,7 +570,7 @@ fn torsion_gradients(terms: &[Torsion], pos: &[f64], grad: &mut [f64]) {
         let mut tt = [cross(r[0], r[1]), cross(r[2], r[3])];
         let d = [length(tt[0]), length(tt[1])];
         if is_double_zero(d[0]) || is_double_zero(d[1]) {
-            break;
+            continue;
         }
         tt[0] = div(tt[0], d[0]);
         tt[1] = div(tt[1], d[1]);
@@ -607,7 +607,7 @@ fn inversion_gradients(terms: &[Inversion], pos: &[f64], grad: &mut [f64]) {
         let djk = length(rjk);
         let djl = length(rjl);
         if is_double_zero(dji) || is_double_zero(djk) || is_double_zero(djl) {
-            break;
+            continue;
         }
         rji = normalize(rji);
         rjk = normalize(rjk);
@@ -1095,5 +1095,69 @@ mod numerical_contract_tests {
             field.grad(&pos, &mut grad);
             assert!(grad.iter().all(|v| v.is_finite()));
         }
+    }
+
+    #[test]
+    fn degenerate_torsion_does_not_hide_following_valid_term() {
+        let first = Torsion {
+            idx: [0, 1, 2, 3],
+            fc: [2.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            signs: [1; 6],
+        };
+        let second = Torsion {
+            idx: [4, 5, 6, 7],
+            fc: [2.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            signs: [1; 6],
+        };
+        let pos = [
+            0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 2.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.2, 1.1, -0.4, 0.0, 0.0,
+            0.0, 1.0, 0.1, 0.2, 1.5, -0.7, 1.2,
+        ];
+        let mut expected = vec![0.0; pos.len()];
+        torsion_gradients(&[second], &pos, &mut expected);
+        let second = Torsion {
+            idx: [4, 5, 6, 7],
+            fc: [2.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            signs: [1; 6],
+        };
+        let mut actual = vec![0.0; pos.len()];
+        torsion_gradients(&[first, second], &pos, &mut actual);
+        assert_eq!(actual, expected);
+        assert!(actual.iter().any(|value| *value != 0.0));
+    }
+
+    #[test]
+    fn degenerate_inversion_does_not_hide_following_valid_term() {
+        let first = Inversion {
+            idx: [0, 1, 2, 3],
+            c0: 1.0,
+            c1: -1.0,
+            c2: 0.0,
+            force_constant: 6.0,
+        };
+        let second = Inversion {
+            idx: [4, 5, 6, 7],
+            c0: 1.0,
+            c1: -1.0,
+            c2: 0.0,
+            force_constant: 6.0,
+        };
+        let pos = [
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0, -1.0, -1.0, 0.5,
+        ];
+        let mut expected = vec![0.0; pos.len()];
+        inversion_gradients(&[second], &pos, &mut expected);
+        let second = Inversion {
+            idx: [4, 5, 6, 7],
+            c0: 1.0,
+            c1: -1.0,
+            c2: 0.0,
+            force_constant: 6.0,
+        };
+        let mut actual = vec![0.0; pos.len()];
+        inversion_gradients(&[first, second], &pos, &mut actual);
+        assert_eq!(actual, expected);
+        assert!(actual.iter().any(|value| *value != 0.0));
     }
 }

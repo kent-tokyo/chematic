@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-12. Release line: **v1.1.1**. Source, published packages,
+> Updated 2026-10-13. Release line: **v1.1.1**. Source, published packages,
 > and historical measurements are kept separate.
 
 CheMatic is a safe, typed, local-first chemistry kernel for Rust, Python,
@@ -42,10 +42,11 @@ and reproducible evidence over feature-count parity.
   forced amide/ester torsions for deterministic multi-conformer
   ETKDG/MMFF94. Raw and triangle-smoothed bounds match within `1e-12` on all
   768,664 frozen A6 cells. Under equal 20-candidate and 200-iteration limits,
-  258/265 rows are within 1 kcal/mol of RDKit's best. Seven quality-tail rows,
-  an independent holdout, 21-block timing, memory, a second host and exact
-  public-artifact gates remain open; one loaded-host timing is not a speed-win
-  claim.
+  The conformer-tail candidate fixes gradient early termination, aligns
+  relevant-ring traversal, and adds an opt-in selective rescue profile. The
+  inspected v2 set is now development data, so a newly frozen v3 holdout,
+  21-block timing, memory, a second host and exact public-artifact gates remain
+  open. No broad speed-and-quality win is claimed.
 
 Exact denominators belong in [validation](docs/validation.md) and dated
 [benchmark records](benchmarks/README.md). Unresolved work is tracked in the
@@ -134,9 +135,11 @@ unsupported chemistry never becomes a guessed successful result.
 4. Keep conformer coordinate edits cross-binding and panic-free. Preserve the
    RDKit-compatible movable-fragment and ring-rejection contract with fixed
    coordinate fixtures.
-5. Rebaseline the frozen 265-row A6 set against RDKit 2026.09.1, then evaluate
-   a previously unused holdout. Report typing, energy, gradient, convergence,
-   stereo, clash, and best-of-N quality independently.
+5. Treat the frozen 265-row A6 set and inspected holdouts v1/v2 as development
+   data. Freeze the code first, generate an outcome-blind v3 holdout excluding
+   all three sets, and evaluate the two preregistered normal and selective-
+   rescue profiles once. Report typing, energy, gradient, convergence, stereo,
+   clash, best-of-N quality, time, and memory independently.
 6. Promote parallel conformer generation only after the same result is shown
    from exact public artifacts on two hosts, with at least 21 alternating
    blocks, peak memory, and no quality regression. Add macrocycles, metals,

@@ -32,6 +32,7 @@ def run_chematic(
     max_mmff_iters: int,
     retry_candidates: int,
     retry_max_iters: int,
+    retry_only_if_none_converged: bool,
 ) -> list[dict[str, object]]:
     rows = []
     for molecule in molecules:
@@ -41,6 +42,7 @@ def run_chematic(
             max_mmff_iters=max_mmff_iters,
             retry_candidates=retry_candidates,
             retry_mmff_iters=retry_max_iters,
+            retry_only_if_none_converged=retry_only_if_none_converged,
         )
         finite = [(status, energy) for status, energy, _ in conformers if energy == energy]
         rows.append(
@@ -148,12 +150,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--tiers", choices=("A", "B", "AB"), default="AB")
+    parser.add_argument(
+        "--manifest",
+        type=Path,
+        help="use one explicit manifest instead of the Tier A/B manifests",
+    )
     parser.add_argument("--count", type=int)
     parser.add_argument("--conformers", type=int, default=20)
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--max-mmff-iters", type=int, default=200)
     parser.add_argument("--retry-candidates", type=int, default=0)
     parser.add_argument("--retry-max-iters", type=int, default=2000)
+    parser.add_argument("--retry-only-if-none-converged", action="store_true")
     args = parser.parse_args()
     if (
         args.conformers <= 0
@@ -165,7 +173,16 @@ def main() -> int:
             "conformers/repeats/max MMFF iterations must be positive and retry candidates non-negative"
         )
 
-    source_rows = load_rows(args.tiers)
+    if args.manifest is None:
+        source_rows = load_rows(args.tiers)
+        manifest = None
+    else:
+        manifest_path = args.manifest.resolve()
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        source_rows = [
+            {"tier": str(manifest.get("tier", "custom")), **molecule}
+            for molecule in manifest["molecules"]
+        ]
     if args.count is not None:
         source_rows = source_rows[: args.count]
     smiles = [str(row["smiles"]) for row in source_rows]
@@ -181,6 +198,7 @@ def main() -> int:
             args.max_mmff_iters,
             args.retry_candidates,
             args.retry_max_iters,
+            args.retry_only_if_none_converged,
         ),
         "rdkit": lambda: run_rdkit(
             rdkit_molecules, args.conformers, args.max_mmff_iters
@@ -192,6 +210,7 @@ def main() -> int:
         args.max_mmff_iters,
         args.retry_candidates,
         args.retry_max_iters,
+        args.retry_only_if_none_converged,
     )
     run_rdkit(
         rdkit_molecules[:2], min(args.conformers, 2), args.max_mmff_iters
@@ -216,10 +235,13 @@ def main() -> int:
         "chematic": getattr(chematic, "__version__", None),
         "rdkit": rdBase.rdkitVersion,
         "molecules": len(source_rows),
+        "manifest": str(args.manifest) if args.manifest is not None else None,
+        "corpus_sha256": manifest.get("corpus_sha256") if manifest is not None else None,
         "conformers_per_molecule": args.conformers,
         "max_mmff_iters": args.max_mmff_iters,
         "adaptive_retry_candidates": args.retry_candidates,
         "adaptive_retry_max_iters": args.retry_max_iters,
+        "adaptive_retry_only_if_none_converged": args.retry_only_if_none_converged,
         "chematic_etkdg_oracle": "RDKit 2026.09.1 ETKDGv3",
         "repeats": args.repeats,
         "execution_order": execution_order,

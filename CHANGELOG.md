@@ -56,6 +56,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   An opt-in adaptive mode gives a bounded extra MMFF budget only to the
   lowest-energy non-converged candidates and never retains a higher-energy
   retry.
+- Added an opt-in selective MMFF94 rescue profile for RDKit-compatible
+  ensembles. It retries one or more low-energy non-converged candidates only
+  when the initial ensemble has no converged candidate; the existing default
+  and adaptive profiles are unchanged.
+- Added a per-candidate ETKDG/MMFF diagnostic that compares initial geometry,
+  aligned RMSD, minimizer status, and energy against a pinned RDKit build
+  without selecting or modifying the evaluation corpus.
 - Added RDKit-compatible implicit-hydrogen coordinate materialization and
   full-atom MMFF94 conformer refinement. Python returns both the original-atom
   and explicit-hydrogen coordinate arrays and can deterministically sample
@@ -76,6 +83,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Normalized relevant-ring traversal to RingDecomposerLib order before ETKDG
+  consumes flat-ring torsions. This removes an input-order source of force-field
+  rounding drift. MMFF optimization now also edits the conformer coordinate
+  buffer in place instead of allocating a second flat coordinate array.
 - Updated the A6 equal-work comparator to use the same configurable MMFF94
   iteration limit for CheMatic and RDKit. With 20 candidates and 200
   iterations, the source candidate is within 1 kcal/mol on 258/265 rows;
@@ -97,6 +108,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fixed ETKDG torsion and inversion gradient evaluation stopping after the
+  first degenerate term. The degenerate contribution is now skipped while
+  later valid terms are retained, matching RDKit's force-field control flow.
 - Normalized neutral three-coordinate sulfoxides from `S=O` to RDKit's
   charge-separated `[S+]-[O-]` form. Sulfones and other four-coordinate
   sulfur remain outside that rule.

@@ -218,7 +218,7 @@ impl Mol {
     /// retained conformer in candidate order.
     #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
                         max_mmff_iters = 200, retry_mmff_iters = 0,
-                        retry_candidates = 0,
+                        retry_candidates = 0, retry_only_if_none_converged = false,
                         use_exp_torsion_angle_prefs = true,
                         use_basic_knowledge = true, et_version = 2,
                         use_small_ring_torsions = false, use_macrocycle_torsions = true,
@@ -234,6 +234,7 @@ impl Mol {
         max_mmff_iters: u32,
         retry_mmff_iters: u32,
         retry_candidates: usize,
+        retry_only_if_none_converged: bool,
         use_exp_torsion_angle_prefs: bool,
         use_basic_knowledge: bool,
         et_version: u32,
@@ -245,6 +246,7 @@ impl Mol {
     ) -> PyResult<Vec<PyRdkitMmffConformer>> {
         use chematic_3d::rdkit_embed::{
             rdkit_embed_multiple_confs_mmff, rdkit_embed_multiple_confs_mmff_adaptive,
+            rdkit_embed_multiple_confs_mmff_rescue,
         };
         let opts = rdkit_embed_options(
             random_seed,
@@ -262,6 +264,15 @@ impl Mol {
         py.detach(move || {
             if retry_mmff_iters == 0 || retry_candidates == 0 {
                 rdkit_embed_multiple_confs_mmff(&mol, num_confs, &opts, max_mmff_iters)
+            } else if retry_only_if_none_converged {
+                rdkit_embed_multiple_confs_mmff_rescue(
+                    &mol,
+                    num_confs,
+                    &opts,
+                    max_mmff_iters,
+                    retry_mmff_iters,
+                    retry_candidates,
+                )
             } else {
                 rdkit_embed_multiple_confs_mmff_adaptive(
                     &mol,

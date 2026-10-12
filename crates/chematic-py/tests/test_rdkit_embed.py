@@ -133,6 +133,20 @@ def test_rdkit_embed_multiple_confs_mmff_adaptive_retry_is_deterministic():
     assert all(a[1] <= b[1] for a, b in zip(adaptive, initial))
 
 
+def test_rdkit_embed_multiple_confs_mmff_rescue_skips_converged_ensemble():
+    mol = chematic.from_smiles("CCCO").add_hydrogens()
+    initial = mol.rdkit_embed_multiple_confs_mmff(4, max_mmff_iters=200)
+    rescued = mol.rdkit_embed_multiple_confs_mmff(
+        4,
+        max_mmff_iters=200,
+        retry_mmff_iters=1_000,
+        retry_candidates=1,
+        retry_only_if_none_converged=True,
+    )
+    assert any(status == 0 for status, _, _ in initial)
+    assert rescued == initial
+
+
 def test_rdkit_bounds_matrix_matches_rdkit():
     got = chematic.from_smiles("CCO").add_hydrogens().rdkit_bounds_matrix()
     assert len(got) == 9
