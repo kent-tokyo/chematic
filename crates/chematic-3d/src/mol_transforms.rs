@@ -304,14 +304,6 @@ pub fn try_set_dihedral(
     let pb = coords.get(b);
     let pc = coords.get(c);
 
-    // Guard against degenerate geometry: B and C define the rotation axis.
-    if pc.distance(&pb) < 1e-10 {
-        return Err(MolTransformError::CoincidentAtoms {
-            atom1: b.0,
-            atom2: c.0,
-        });
-    }
-
     let axis = pc.sub(&pb).normalize();
 
     let mut new_coords = coords.clone();
@@ -708,5 +700,206 @@ mod tests {
             try_get_bond_angle_deg(&coords, &mol, AtomIdx(0), AtomIdx(1), AtomIdx(2)),
             Err(MolTransformError::CoincidentAtoms { .. })
         ));
+    }
+
+    #[test]
+    fn transform_errors_have_stable_actionable_messages() {
+        let cases = [
+            (
+                MolTransformError::CoordinateCountMismatch {
+                    expected: 4,
+                    actual: 3,
+                },
+                "expected 4 coordinates, got 3",
+            ),
+            (
+                MolTransformError::AtomIndexOutOfRange {
+                    atom: 7,
+                    atom_count: 4,
+                },
+                "atom index 7 is out of range for 4 atoms",
+            ),
+            (
+                MolTransformError::NonFiniteCoordinates,
+                "coordinates must all be finite",
+            ),
+            (
+                MolTransformError::NonFiniteTarget,
+                "target value must be finite",
+            ),
+            (
+                MolTransformError::AtomsNotBonded { atom1: 0, atom2: 2 },
+                "atoms 0 and 2 must be bonded",
+            ),
+            (
+                MolTransformError::RingBond { atom1: 1, atom2: 2 },
+                "bond (1,2) must not belong to a ring",
+            ),
+            (
+                MolTransformError::BothAngleBondsInRing,
+                "both bonds defining the angle must not belong to a ring",
+            ),
+            (
+                MolTransformError::CoincidentAtoms { atom1: 2, atom2: 3 },
+                "atoms 2 and 3 have identical 3D coordinates",
+            ),
+            (
+                MolTransformError::CollinearAngle,
+                "angle rotation axis is undefined for collinear atoms",
+            ),
+            (
+                MolTransformError::UndefinedDihedral,
+                "dihedral is undefined for collinear atoms",
+            ),
+        ];
+
+        for (error, expected) in cases {
+            assert_eq!(error.to_string(), expected);
+        }
+    }
+
+    #[test]
+    fn checked_measurements_cover_success_and_validation_failures() {
+        let mol = parse("CCCC").unwrap();
+        let mut coords = Coords3D::new_zeroed(4);
+        coords.set(AtomIdx(0), Point3::new(0.0, 1.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(0.0, 0.0, 0.0));
+        coords.set(AtomIdx(2), Point3::new(1.0, 0.0, 0.0));
+        coords.set(AtomIdx(3), Point3::new(1.0, 1.0, 1.0));
+
+        assert_eq!(
+            try_get_bond_length(&coords, &mol, AtomIdx(0), AtomIdx(1)).unwrap(),
+            1.0
+        );
+        assert!(
+            (try_get_bond_angle_deg(&coords, &mol, AtomIdx(0), AtomIdx(1), AtomIdx(2)).unwrap()
+                - 90.0)
+                .abs()
+                < 1e-12
+        );
+        assert!(
+            try_get_dihedral_deg(
+                &coords,
+                &mol,
+                AtomIdx(0),
+                AtomIdx(1),
+                AtomIdx(2),
+                AtomIdx(3),
+            )
+            .unwrap()
+            .is_finite()
+        );
+
+        assert!(matches!(
+            try_get_bond_length(&coords, &mol, AtomIdx(0), AtomIdx(9)),
+            Err(MolTransformError::AtomIndexOutOfRange { atom: 9, .. })
+        ));
+
+        let mut non_finite = coords.clone();
+        non_finite.set(AtomIdx(0), Point3::new(f64::INFINITY, 0.0, 0.0));
+        assert_eq!(
+            try_get_bond_length(&non_finite, &mol, AtomIdx(0), AtomIdx(1)),
+            Err(MolTransformError::NonFiniteCoordinates)
+        );
+
+        assert!(matches!(
+            set_bond_length(&coords, &mol, AtomIdx(0), AtomIdx(2), 1.0),
+            Err(MolTransformError::AtomsNotBonded { .. })
+        ));
+    }
+
+    #[test]
+    fn checked_setters_classify_coincident_collinear_and_noop_geometry() {
+        let bond = parse("CC").unwrap();
+        let coincident_bond = Coords3D::new_zeroed(2);
+        assert!(matches!(
+            set_bond_length(&coincident_bond, &bond, AtomIdx(0), AtomIdx(1), 1.5,),
+            Err(MolTransformError::CoincidentAtoms { .. })
+        ));
+
+        let angle = parse("CCC").unwrap();
+        let mut first_coincident = Coords3D::new_zeroed(3);
+        first_coincident.set(AtomIdx(2), Point3::new(1.0, 0.0, 0.0));
+        assert!(matches!(
+            set_bond_angle(
+                &first_coincident,
+                &angle,
+                AtomIdx(0),
+                AtomIdx(1),
+                AtomIdx(2),
+                1.0,
+            ),
+            Err(MolTransformError::CoincidentAtoms { atom1: 0, atom2: 1 })
+        ));
+
+        let mut second_coincident = Coords3D::new_zeroed(3);
+        second_coincident.set(AtomIdx(0), Point3::new(1.0, 0.0, 0.0));
+        assert!(matches!(
+            set_bond_angle(
+                &second_coincident,
+                &angle,
+                AtomIdx(0),
+                AtomIdx(1),
+                AtomIdx(2),
+                1.0,
+            ),
+            Err(MolTransformError::CoincidentAtoms { atom1: 1, atom2: 2 })
+        ));
+
+        let mut collinear = Coords3D::new_zeroed(3);
+        collinear.set(AtomIdx(0), Point3::new(-1.0, 0.0, 0.0));
+        collinear.set(AtomIdx(2), Point3::new(1.0, 0.0, 0.0));
+        let current = get_bond_angle(&collinear, AtomIdx(0), AtomIdx(1), AtomIdx(2));
+        assert_eq!(
+            set_bond_angle(
+                &collinear,
+                &angle,
+                AtomIdx(0),
+                AtomIdx(1),
+                AtomIdx(2),
+                current,
+            )
+            .unwrap(),
+            collinear
+        );
+        assert_eq!(
+            set_bond_angle(&collinear, &angle, AtomIdx(0), AtomIdx(1), AtomIdx(2), 1.0,),
+            Err(MolTransformError::CollinearAngle)
+        );
+    }
+
+    #[test]
+    fn checked_dihedral_measurement_distinguishes_coincident_and_undefined() {
+        let mol = parse("CCCC").unwrap();
+        let mut coincident = Coords3D::new_zeroed(4);
+        coincident.set(AtomIdx(2), Point3::new(1.0, 0.0, 0.0));
+        coincident.set(AtomIdx(3), Point3::new(1.0, 1.0, 0.0));
+        assert!(matches!(
+            try_get_dihedral_deg(
+                &coincident,
+                &mol,
+                AtomIdx(0),
+                AtomIdx(1),
+                AtomIdx(2),
+                AtomIdx(3),
+            ),
+            Err(MolTransformError::CoincidentAtoms { atom1: 0, atom2: 1 })
+        ));
+
+        let mut collinear = Coords3D::new_zeroed(4);
+        for atom in 0..4 {
+            collinear.set(AtomIdx(atom), Point3::new(atom as f64, 0.0, 0.0));
+        }
+        assert_eq!(
+            try_get_dihedral_deg(
+                &collinear,
+                &mol,
+                AtomIdx(0),
+                AtomIdx(1),
+                AtomIdx(2),
+                AtomIdx(3),
+            ),
+            Err(MolTransformError::UndefinedDihedral)
+        );
     }
 }
