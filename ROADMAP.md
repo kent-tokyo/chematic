@@ -48,6 +48,13 @@ and reproducible evidence over feature-count parity.
   0.27% slower; rescue reached 95/100 and was 2.1% slower. v3 is now inspected
   data. A fresh final set, 21-block timing, memory, a second host and exact
   public-artifact gates remain open. No broad speed-and-quality win is claimed.
+- The next A6 candidate also shares MMFF94 distance evaluations between energy
+  and gradient calls. On the inspected 265-row development set, the bounded
+  quality profile (20 candidates, 200 iterations, then one 100-iteration retry
+  only when none converged) reached 261/265 within 1 kcal/mol and ran in
+  54.66–55.52 s versus RDKit's 56.04–56.44 s across three alternating blocks.
+  These are development results. Candidate freeze, a fresh outcome-blind v4
+  set, two-host timing, memory, and exact public artifacts remain open.
 
 Exact denominators belong in [validation](docs/validation.md) and dated
 [benchmark records](benchmarks/README.md). Unresolved work is tracked in the
@@ -136,10 +143,10 @@ unsupported chemistry never becomes a guessed successful result.
 4. Keep conformer coordinate edits cross-binding and panic-free. Preserve the
    RDKit-compatible movable-fragment and ring-rejection contract with fixed
    coordinate fixtures.
-5. Treat the frozen 265-row A6 set and inspected holdouts v1/v2 as development
-   data. Freeze the code first, generate an outcome-blind v3 holdout excluding
-   all three sets, and evaluate the two preregistered normal and selective-
-   rescue profiles once. Report typing, energy, gradient, convergence, stereo,
+5. Treat the frozen 265-row A6 set and inspected holdouts v1/v2/v3 as
+   development data. Freeze the code first, generate an outcome-blind v4
+   holdout excluding all four sets, and evaluate the preregistered bounded
+   quality profile once. Report typing, energy, gradient, convergence, stereo,
    clash, best-of-N quality, time, and memory independently.
 6. Promote parallel conformer generation only after the same result is shown
    from exact public artifacts on two hosts, with at least 21 alternating

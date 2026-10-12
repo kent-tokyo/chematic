@@ -35,7 +35,10 @@ the changelog and validation pages.
   optional selective rescue profile. Once-only v3 results are 94/100 within
   1 kcal/mol at essentially tied but 0.27% slower median time; rescue is
   95/100 and 2.1% slower. A6 plus holdouts v1/v2/v3 are now development data.
-  Use a fresh final set after the next candidate freeze, and keep atom typing,
+  A local MMFF distance cache now funds a bounded one-candidate/100-iteration
+  retry profile that was faster than RDKit in all three development blocks and
+  improved the within-1-kcal/mol count to 261/265. This is not final evidence.
+  Use a fresh v4 set after candidate freeze, and keep atom typing,
   convergence, stereochemistry, clashes, same-coordinate energy, basin
   diversity, minimization tails, time and memory separate.
 - **Independent workflow corpora:** expand beyond the current bounded lanes

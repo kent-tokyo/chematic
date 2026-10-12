@@ -326,6 +326,7 @@ fn embed_attempt(
     rng: &mut MinstdRand,
     args: &EmbedArgs,
     params: &EmbedParams,
+    only_initial_embedding: bool,
 ) -> Result<bool, EmbedError> {
     pick_random_dist_mat(args.mmat, dist, rng);
     let mut accepted = compute_initial_coords(
@@ -339,6 +340,9 @@ fn embed_attempt(
     .map_err(|_| EmbedError::ZeroLengthVector)?;
     if !accepted {
         return Ok(false);
+    }
+    if only_initial_embedding {
+        return Ok(true);
     }
     accepted = first_minimization(pos, dim, args, params)?;
     if accepted {
@@ -370,11 +374,12 @@ fn final_stereo_checks(pos: &[f64], dim: usize, args: &EmbedArgs) -> bool {
 }
 
 /// `EmbeddingOps::embedPoints`: positions (`n * dim`) on success.
-pub fn embed_points(
+fn embed_points_impl(
     n: usize,
     args: &EmbedArgs,
     params: &EmbedParams,
     seed: i32,
+    only_initial_embedding: bool,
 ) -> Result<Option<Vec<f64>>, EmbedError> {
     let dim = if args.chiral_centers.is_empty() { 3 } else { 4 };
     let max_iterations = if params.max_iterations == 0 {
@@ -389,10 +394,41 @@ pub fn embed_points(
     let mut iter = 0;
     while !got && iter < max_iterations {
         iter += 1;
-        got = embed_attempt(n, dim, &mut dist, &mut pos, &mut rng, args, params)?;
+        got = embed_attempt(
+            n,
+            dim,
+            &mut dist,
+            &mut pos,
+            &mut rng,
+            args,
+            params,
+            only_initial_embedding,
+        )?;
     }
     if !got {
         return Ok(None);
     }
     Ok(Some((0..n).flat_map(|i| p3(&pos, dim, i)).collect()))
+}
+
+/// `EmbeddingOps::embedPoints`: positions (`n * dim`) after the complete
+/// distance-geometry and ETKDG pipeline.
+pub fn embed_points(
+    n: usize,
+    args: &EmbedArgs,
+    params: &EmbedParams,
+    seed: i32,
+) -> Result<Option<Vec<f64>>, EmbedError> {
+    embed_points_impl(n, args, params, seed, false)
+}
+
+/// RDKit 2026.09.1's `onlyInitialEmbedding` boundary: positions immediately
+/// after random-distance metric embedding, before the first minimization.
+pub fn embed_initial_points(
+    n: usize,
+    args: &EmbedArgs,
+    params: &EmbedParams,
+    seed: i32,
+) -> Result<Option<Vec<f64>>, EmbedError> {
+    embed_points_impl(n, args, params, seed, true)
 }

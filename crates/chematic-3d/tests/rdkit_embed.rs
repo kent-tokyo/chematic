@@ -5,9 +5,9 @@
 //! versioned corpus-scale A6 comparison lane.
 
 use chematic_3d::rdkit_embed::{
-    RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_molecule, rdkit_embed_multiple_confs,
-    rdkit_embed_multiple_confs_mmff, rdkit_embed_multiple_confs_mmff_adaptive,
-    rdkit_embed_multiple_confs_mmff_rescue,
+    RdkitEmbedError, RdkitEmbedOptions, rdkit_embed_initial_molecule, rdkit_embed_molecule,
+    rdkit_embed_multiple_confs, rdkit_embed_multiple_confs_mmff,
+    rdkit_embed_multiple_confs_mmff_adaptive, rdkit_embed_multiple_confs_mmff_rescue,
 };
 
 #[allow(clippy::approx_constant, clippy::excessive_precision)]
@@ -243,6 +243,46 @@ const ETHANOL_FIRST_ATOM_2026_09_1: [f64; 3] = [
     0.015102231353043739,
     0.0410206427653118,
 ];
+
+const ETHANOL_INITIAL_2026_09_1: [[f64; 3]; 9] = [
+    [-0.7500043088651186, 0.4084390159458829, 0.06848496479484886],
+    [
+        0.44564780848200714,
+        -0.30357044432024505,
+        -0.2925815152031927,
+    ],
+    [1.1754601191726461, -0.458924916623023, 1.1664313728171822],
+    [-1.2354609528915097, 1.0831648725953975, -0.5316473904156442],
+    [
+        -1.5724182037685812,
+        -1.0383486994621525,
+        0.45351405445069587,
+    ],
+    [
+        -1.2999968573900929,
+        0.40241491422299236,
+        0.40181982062149446,
+    ],
+    [0.5525517516037974, -0.5577005629983048, -0.9232674186573715],
+    [0.9120715852990083, -0.80779822184343, -0.5889154542504689],
+    [1.7721490583578425, 1.2723240424828839, 0.24616156584245455],
+];
+
+#[test]
+fn initial_metric_embedding_matches_rdkit_2026_09_boundary() {
+    let mh = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCO").unwrap());
+    let got = rdkit_embed_initial_molecule(&mh, &RdkitEmbedOptions::default()).unwrap();
+    assert_eq!(got.len(), ETHANOL_INITIAL_2026_09_1.len());
+    for (actual, expected) in got.iter().zip(ETHANOL_INITIAL_2026_09_1) {
+        for coordinate in 0..3 {
+            assert!((actual[coordinate] - expected[coordinate]).abs() <= 5e-4);
+        }
+    }
+    assert_eq!(
+        got,
+        rdkit_embed_initial_molecule(&mh, &RdkitEmbedOptions::default()).unwrap()
+    );
+}
 
 /// Bit-identical on the recorded Linux x86-64 comparison lane; elsewhere the
 /// platform libm's last-bit differences are allowed to accumulate through

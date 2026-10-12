@@ -28,6 +28,7 @@ is in [`archive-index.md`](archive-index.md).
 | How do reaction, parent selection, and R-group workflows compare with Indigo? | [Indigo workflow packet](2026-10-12-indigo-workflows-source.md) · [raw JSON](2026-10-12-indigo-workflows-source.json) | Source-built, one-host bounded lanes. CheMatic has higher exact counts for reaction and parent selection; R-group is tied. Common-correct medians favor CheMatic in all three lanes. This is not a toolkit-wide or published-package claim. |
 | How do reaction, standardization, and labelled R-group workflows compare with RDKit? | [expanded RDKit workflow packet](2026-10-12-rdkit-workflows-expanded-source.md) · [raw JSON](2026-10-12-rdkit-workflows-expanded-source.json) | Source-built macOS arm64 lanes with 21 alternating blocks. Reaction has 80 semantic matches plus 3 jointly invalid rows; largest-fragment selection is 39/39; Normalize is 254/254 after common-input filtering; labelled R-group is 16/16. Every equivalent-output timing lane favors CheMatic, including prepared reaction and R-group lanes. Broader MolStandardize residuals remain explicitly bounded. |
 | How does COSMolKit compare? | [RDKit/COSMolKit 0.5 comparison](2026-10-10-cosmolkit-050.md) | Source-built 161-operation and unusual-SMILES evidence; not a published-package claim. |
+| What is the current A6 MMFF distance-cache result? | [MMFF distance-cache development record](2026-10-13-a6-mmff-distance-cache.md) | RDKit 2026.09.1, macOS arm64, development corpus only; a fresh holdout is still required. |
 
 ## What counts as a speed win
 

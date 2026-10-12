@@ -83,6 +83,25 @@ def test_rdkit_embed_matches_rdkit_seed_42(smiles):
     assert got == repeated
 
 
+def test_rdkit_initial_metric_embedding_matches_rdkit_2026_09():
+    mol = chematic.from_smiles("CCO").add_hydrogens()
+    got = mol.rdkit_embed_initial(random_seed=42)
+    expected = [
+        [-0.7500043088651186, 0.4084390159458829, 0.06848496479484886],
+        [0.44564780848200714, -0.30357044432024505, -0.2925815152031927],
+        [1.1754601191726461, -0.458924916623023, 1.1664313728171822],
+        [-1.2354609528915097, 1.0831648725953975, -0.5316473904156442],
+        [-1.5724182037685812, -1.0383486994621525, 0.45351405445069587],
+        [-1.2999968573900929, 0.40241491422299236, 0.40181982062149446],
+        [0.5525517516037974, -0.5577005629983048, -0.9232674186573715],
+        [0.9120715852990083, -0.80779822184343, -0.5889154542504689],
+        [1.7721490583578425, 1.2723240424828839, 0.24616156584245455],
+    ]
+    for actual_atom, expected_atom in zip(got, expected):
+        assert actual_atom == pytest.approx(expected_atom, abs=5e-4)
+    assert got == mol.rdkit_embed_initial(random_seed=42)
+
+
 def test_rdkit_embed_multiple_confs_matches_rdkit_seed_progression():
     mol = chematic.from_smiles("CCO").add_hydrogens()
     conformers = mol.rdkit_embed_multiple_confs(3, random_seed=42)

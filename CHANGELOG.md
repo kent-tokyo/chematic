@@ -12,6 +12,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added Rust and Python access to RDKit 2026.09.1's
+  `onlyInitialEmbedding=True` boundary. It exposes seeded metric-matrix
+  coordinates before DG/ETKDG minimization so bounds, random embedding, ETK
+  refinement, and MMFF optimization can be diagnosed independently.
 - Added an RDKit 2026.09.1 ETKDG topology-bounds profile with angle-derived
   1-3 bounds, merged 1-4 intervals, relevant-ring handling, macrocycle amide
   behavior, forced amide/ester torsions, and the ordinary-bond
@@ -83,6 +87,15 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Reused interatomic distances between each RDKit-compatible MMFF94 energy
+  evaluation and its immediately following gradient. The cache is local to
+  one minimization, invalidates on any coordinate-bit change, and preserves
+  the existing stale-distance termination behavior. The 100-row development
+  outputs are unchanged. On the 265-row development set, the predeclared
+  one-candidate/100-iteration quality profile was faster than RDKit 2026.09.1
+  in all three alternating blocks while improving the within-1-kcal/mol count
+  from 257 to 261; a fresh unused holdout and public-artifact gates remain
+  required before a broad speed-and-quality claim.
 - Reused the BFGS energy already evaluated at the returned coordinates in the
   RDKit-compatible MMFF94 and UFF optimizers. The special RDKit stale-distance
   termination still recomputes its mixed-coordinate report. A 100-row,
