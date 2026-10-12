@@ -1,0 +1,1505 @@
+{
+  "corpora": {
+    "reaction": [
+      {
+        "path": "validation/reaction_product_parity_cases.json",
+        "sha256": "65b446de1ce66b7d9c355cf8b6bbbfe61d670c955e02931e8e8b8e564c558d3b"
+      },
+      {
+        "path": "validation/reaction_product_parity_strata_v2.json",
+        "sha256": "4e4ce3ebcea4bcea5398f109554074d97e9f252293fa906493ae3a61d40725a1"
+      }
+    ],
+    "rgroup": {
+      "path": "validation/rdkit/rgroup_labeled_cases.json",
+      "sha256": "96a27115f642ac5ddef9188a9cb51dd9361a0687285b54def08c51d6eb41ea7d"
+    },
+    "standardization": [
+      {
+        "path": "validation/standardization_phase1_fixtures.jsonl",
+        "sha256": "d5ad9f6a61ac16c7c090fc6a5b3ac2d81b0c00a875b7a31dd85f030738ec5917"
+      },
+      {
+        "path": "validation/standardization_phase1_holdout.jsonl",
+        "sha256": "44316ab07277b4c0f931e875212e0e8f9106b0e51479d95f66a4d0878314d5c9"
+      }
+    ],
+    "standardization_stress": {
+      "path": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+      "sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277"
+    }
+  },
+  "engines": {
+    "chematic": "1.1.1",
+    "rdkit": "2026.03.6"
+  },
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6"
+  },
+  "results": {
+    "reaction": {
+      "joint_invalid": 3,
+      "mismatches": [],
+      "rows": 83,
+      "semantic_exact": 80,
+      "timing": {
+        "end_to_end": {
+          "comparison": {
+            "blocks": 21,
+            "ci95": [
+              2.1253498650809655,
+              2.20215099412722
+            ],
+            "rdkit_over_chematic_median": 2.174386450338891,
+            "winning_blocks": 21
+          },
+          "mode": "template lookup/cache plus application; reactant parsing included",
+          "rows": 80,
+          "samples_ns": {
+            "chematic": [
+              1914042,
+              1859834,
+              1769250,
+              1790333,
+              1745167,
+              1763167,
+              1725792,
+              1762625,
+              1717000,
+              1767875,
+              1720875,
+              1755542,
+              1713875,
+              1935417,
+              1776583,
+              2041875,
+              1809917,
+              1935667,
+              1806333,
+              1820875,
+              1766625
+            ],
+            "rdkit": [
+              3994125,
+              3834250,
+              3882500,
+              3805084,
+              3849708,
+              3785750,
+              3836709,
+              3785000,
+              3829625,
+              3859792,
+              3817750,
+              3782458,
+              3813500,
+              4016125,
+              3911958,
+              3814917,
+              4101000,
+              3914291,
+              3927666,
+              3861333,
+              3890375
+            ]
+          },
+          "selection": "valid rows with identical product sets"
+        },
+        "prepared": {
+          "comparison": {
+            "blocks": 21,
+            "ci95": [
+              1.4333630666565103,
+              1.4686654350587454
+            ],
+            "rdkit_over_chematic_median": 1.438919205177661,
+            "winning_blocks": 21
+          },
+          "mode": "preparsed reactants and precompiled/warm-cached templates",
+          "rows": 80,
+          "samples_ns": {
+            "chematic": [
+              1516917,
+              1459792,
+              1411334,
+              1420000,
+              1391750,
+              1606584,
+              1451500,
+              1448875,
+              1406833,
+              1415667,
+              1393500,
+              1408667,
+              1388542,
+              1404750,
+              1385458,
+              1404583,
+              1385125,
+              1405792,
+              1383375,
+              1404709,
+              1391708
+            ],
+            "rdkit": [
+              2103000,
+              2044791,
+              2064041,
+              2031792,
+              2050667,
+              2114958,
+              2148625,
+              2049834,
+              2066167,
+              2022500,
+              2045667,
+              2026958,
+              2050083,
+              2015667,
+              2047417,
+              2013708,
+              2040291,
+              2021583,
+              2035667,
+              2013458,
+              2034125
+            ]
+          },
+          "selection": "valid rows with identical product sets"
+        }
+      }
+    },
+    "rgroup": {
+      "accuracy": {
+        "chematic": {
+          "match": 16,
+          "total": 16
+        },
+        "rdkit": {
+          "match": 16,
+          "total": 16
+        }
+      },
+      "rows": 16,
+      "timing": {
+        "end_to_end": {
+          "comparison": {
+            "blocks": 21,
+            "ci95": [
+              57.02204550320444,
+              59.6784384787472
+            ],
+            "rdkit_over_chematic_median": 58.203478953508544,
+            "winning_blocks": 21
+          },
+          "mode": "parse plus decomposition plus payload canonicalization",
+          "rows": 16,
+          "samples_ns": {
+            "chematic": [
+              1663959,
+              1882417,
+              1745833,
+              1666417,
+              1550208,
+              1675500,
+              1544250,
+              1609542,
+              1549667,
+              1577500,
+              1534292,
+              1675459,
+              1564500,
+              1624250,
+              1565000,
+              1630083,
+              1556708,
+              1596917,
+              1543666,
+              1756416,
+              1730625
+            ],
+            "rdkit": [
+              96664584,
+              94769875,
+              95202542,
+              93702375,
+              95065500,
+              95846250,
+              94349875,
+              94657875,
+              93025750,
+              94017708,
+              92498334,
+              93322833,
+              93366917,
+              93190959,
+              94512791,
+              92950667,
+              92815875,
+              92946125,
+              92353125,
+              92028292,
+              91983959
+            ]
+          },
+          "selection": "whole cases where both engines matched every labelled row"
+        },
+        "prepared": {
+          "comparison": {
+            "blocks": 21,
+            "ci95": [
+              56.60421948419683,
+              61.496797836336505
+            ],
+            "rdkit_over_chematic_median": 60.038949271231985,
+            "winning_blocks": 21
+          },
+          "mode": "preparsed molecules and core query plus decomposition and payload canonicalization",
+          "rows": 16,
+          "samples_ns": {
+            "chematic": [
+              1500625,
+              1482709,
+              1459084,
+              1750292,
+              1633375,
+              1575375,
+              1640916,
+              1509292,
+              1449584,
+              1502375,
+              1456666,
+              1535125,
+              1445375,
+              1670833,
+              1634458,
+              1548416,
+              1821709,
+              1554167,
+              1443250,
+              1705625,
+              1669334
+            ],
+            "rdkit": [
+              90473125,
+              91569000,
+              91985125,
+              91481459,
+              92455917,
+              90821000,
+              91791750,
+              92816625,
+              91629709,
+              92770041,
+              91204125,
+              92167292,
+              91623167,
+              91099000,
+              99972667,
+              92715084,
+              90074583,
+              90061875,
+              88694167,
+              92638625,
+              90081500
+            ]
+          },
+          "selection": "whole cases where both engines matched every labelled row"
+        }
+      }
+    },
+    "standardization": {
+      "accuracy": {
+        "chematic": {
+          "match": 39,
+          "total": 39
+        },
+        "rdkit": {
+          "match": 38,
+          "total": 39
+        }
+      },
+      "rows": 39,
+      "timing": {
+        "comparison": {
+          "blocks": 21,
+          "ci95": [
+            1.5817372238987155,
+            1.6526247074931664
+          ],
+          "rdkit_over_chematic_median": 1.5904153354632589,
+          "winning_blocks": 21
+        },
+        "mode": "parse plus largest-fragment selection plus canonical write",
+        "rows": 38,
+        "samples_ns": {
+          "chematic": [
+            2151875,
+            2152708,
+            2069917,
+            2121042,
+            2065250,
+            2106791,
+            2054083,
+            2196875,
+            2106750,
+            2150042,
+            2063166,
+            2107542,
+            2043542,
+            2098958,
+            2035042,
+            2089333,
+            2029041,
+            2085875,
+            2030917,
+            2081125,
+            2021250
+          ],
+          "rdkit": [
+            3422375,
+            3356166,
+            3498834,
+            3336041,
+            3390333,
+            3327250,
+            3384792,
+            3321208,
+            3488084,
+            3368125,
+            3398917,
+            3331375,
+            3377208,
+            3320000,
+            3363500,
+            3311625,
+            3361333,
+            3312792,
+            3365625,
+            3299458,
+            3356500
+          ]
+        },
+        "selection": "intersection matching the fixture exactly"
+      }
+    },
+    "standardization_profile": {
+      "input_mismatch_examples": [
+        {
+          "chematic": "c1ccccccsccccc1",
+          "input": "s1cccccccccccc1",
+          "rdkit": "C1=CC=CC=CSC=CC=CC=C1"
+        },
+        {
+          "chematic": "c1ccccccccsccccccc1",
+          "input": "c1ccccccsccccccccc1",
+          "rdkit": "C1=CC=CC=CC=CSC=CC=CC=CC=C1"
+        }
+      ],
+      "operations": {
+        "charge_parent": {
+          "agreement": {
+            "both_refused": 0,
+            "exact": 227,
+            "total": 254
+          },
+          "mismatch_examples": [
+            {
+              "chematic": "c1cc[cH-]c1",
+              "input": "[cH-]1cccc1.[cH-]1cccc1.[Fe+2]",
+              "rdkit": "C1=CCC=C1"
+            },
+            {
+              "chematic": "F[P-](F)(F)(F)(F)F",
+              "input": "F[P-](F)(F)(F)(F)F",
+              "rdkit": null
+            },
+            {
+              "chematic": "[NH3]->[Pt](<-[NH3])([Cl])[Cl]",
+              "input": "[NH3][Pt]([NH3])(Cl)Cl",
+              "rdkit": "N"
+            },
+            {
+              "chematic": "[Cl][Au]",
+              "input": "Cl[Au]",
+              "rdkit": "[Au+]"
+            },
+            {
+              "chematic": "[NH2][Pt@SP2]([NH2])([Cl])[Cl]",
+              "input": "N[Pt@SP2](N)(Cl)Cl",
+              "rdkit": "N"
+            }
+          ],
+          "timing": {
+            "parse_inclusive": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  7.350820029020968,
+                  7.451351525594937
+                ],
+                "rdkit_over_chematic_median": 7.413263706691922,
+                "winning_blocks": 21
+              },
+              "mode": "parse plus operation plus canonical write",
+              "rows": 227,
+              "samples_ns": {
+                "chematic": [
+                  32631709,
+                  33822875,
+                  33582250,
+                  34514125,
+                  33150000,
+                  33793792,
+                  33531209,
+                  33760333,
+                  34088416,
+                  34046417,
+                  33353708,
+                  33971666,
+                  33281833,
+                  33474875,
+                  33420041,
+                  33481958,
+                  33772667,
+                  34692417,
+                  33659000,
+                  34546709,
+                  34519125
+                ],
+                "rdkit": [
+                  250243417,
+                  252620959,
+                  252002708,
+                  251573167,
+                  250968084,
+                  251164375,
+                  251718500,
+                  248700500,
+                  248581333,
+                  250269084,
+                  247259833,
+                  246624041,
+                  247280916,
+                  247243917,
+                  247658250,
+                  251688833,
+                  251079416,
+                  249380291,
+                  250805041,
+                  250510792,
+                  249159125
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            },
+            "prepared": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  8.071347767395128,
+                  8.213801957507249
+                ],
+                "rdkit_over_chematic_median": 8.137112567564039,
+                "winning_blocks": 21
+              },
+              "mode": "preparsed molecules plus operation plus canonical write",
+              "rows": 227,
+              "samples_ns": {
+                "chematic": [
+                  29590708,
+                  28575958,
+                  28410375,
+                  28712333,
+                  27616875,
+                  29091917,
+                  27943875,
+                  28825750,
+                  28695000,
+                  29116500,
+                  28434500,
+                  31545041,
+                  30440958,
+                  28722750,
+                  29413917,
+                  28647792,
+                  28313750,
+                  28587333,
+                  28201459,
+                  28730000,
+                  28641542
+                ],
+                "rdkit": [
+                  235223375,
+                  234387583,
+                  235468083,
+                  235837417,
+                  235639208,
+                  234197500,
+                  234407333,
+                  233176083,
+                  234863583,
+                  232898083,
+                  234674750,
+                  237888834,
+                  237734792,
+                  233720250,
+                  235017542,
+                  231226292,
+                  233928833,
+                  233261875,
+                  234462834,
+                  233183791,
+                  232902458
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            }
+          }
+        },
+        "cleanup": {
+          "agreement": {
+            "both_refused": 0,
+            "exact": 185,
+            "total": 254
+          },
+          "mismatch_examples": [
+            {
+              "chematic": "c1ccncc1",
+              "input": "c1cc[nH+]cc1",
+              "rdkit": "c1cc[nH+]cc1"
+            },
+            {
+              "chematic": "N[C@@H](Cc1c[nH]cn1)C(=O)O",
+              "input": "[NH3+][C@@H](Cc1c[nH]c[nH+]1)C(=O)[O-]",
+              "rdkit": "[NH3+][C@@H](Cc1c[nH]c[nH+]1)C(=O)[O-]"
+            },
+            {
+              "chematic": "Cl.Cl.N.N.[Pt]",
+              "input": "[NH3][Pt]([NH3])(Cl)Cl",
+              "rdkit": "N.N.[Cl-].[Cl-].[Pt+2]"
+            },
+            {
+              "chematic": "Cl.[Au]",
+              "input": "Cl[Au]",
+              "rdkit": "[Au+].[Cl-]"
+            },
+            {
+              "chematic": "Cl.Cl.N.N.[Pt]",
+              "input": "N[Pt@SP2](N)(Cl)Cl",
+              "rdkit": "[Cl-].[Cl-].[NH2-].[NH2-].[Pt@SP2+4]"
+            }
+          ],
+          "timing": {
+            "parse_inclusive": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  1.252847753447695,
+                  1.26330454699671
+                ],
+                "rdkit_over_chematic_median": 1.2591624384740967,
+                "winning_blocks": 21
+              },
+              "mode": "parse plus operation plus canonical write",
+              "rows": 185,
+              "samples_ns": {
+                "chematic": [
+                  79382750,
+                  81456709,
+                  80684291,
+                  80842208,
+                  79405375,
+                  79468875,
+                  80944542,
+                  79310416,
+                  79552667,
+                  80878333,
+                  80626000,
+                  79890708,
+                  79910083,
+                  80151834,
+                  79708458,
+                  81018542,
+                  80013209,
+                  79658250,
+                  80817208,
+                  80673041,
+                  79755083
+                ],
+                "rdkit": [
+                  99454500,
+                  99635125,
+                  99993167,
+                  100026375,
+                  99943750,
+                  100803583,
+                  101991416,
+                  106856750,
+                  99690042,
+                  101838959,
+                  100918458,
+                  100045458,
+                  100476500,
+                  100139834,
+                  101946625,
+                  103750250,
+                  101591167,
+                  101980833,
+                  101784917,
+                  101590333,
+                  100754959
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            },
+            "prepared": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  1.1231425248314153,
+                  1.138758629481184
+                ],
+                "rdkit_over_chematic_median": 1.129705281814628,
+                "winning_blocks": 21
+              },
+              "mode": "preparsed molecules plus operation plus canonical write",
+              "rows": 185,
+              "samples_ns": {
+                "chematic": [
+                  79027709,
+                  79873709,
+                  79641291,
+                  79947708,
+                  78637416,
+                  78998958,
+                  77804750,
+                  80258875,
+                  78579125,
+                  78414042,
+                  79572625,
+                  79524750,
+                  78864917,
+                  78110125,
+                  79241667,
+                  78563459,
+                  78951208,
+                  79843208,
+                  79691792,
+                  79693375,
+                  77919833
+                ],
+                "rdkit": [
+                  89246625,
+                  90509541,
+                  91306458,
+                  89930167,
+                  90488208,
+                  88910333,
+                  89200167,
+                  90668875,
+                  89948417,
+                  89294667,
+                  89357292,
+                  88584583,
+                  88576542,
+                  90281709,
+                  88797833,
+                  88792208,
+                  88229958,
+                  90262042,
+                  89284459,
+                  88947375,
+                  89527291
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            }
+          }
+        },
+        "fragment_parent": {
+          "agreement": {
+            "both_refused": 0,
+            "exact": 233,
+            "total": 254
+          },
+          "mismatch_examples": [
+            {
+              "chematic": "[NH3]->[Pt](<-[NH3])([Cl])[Cl]",
+              "input": "[NH3][Pt]([NH3])(Cl)Cl",
+              "rdkit": "N"
+            },
+            {
+              "chematic": "[Cl][Au]",
+              "input": "Cl[Au]",
+              "rdkit": "[Au+]"
+            },
+            {
+              "chematic": "[NH2][Pt@SP2]([NH2])([Cl])[Cl]",
+              "input": "N[Pt@SP2](N)(Cl)Cl",
+              "rdkit": "[NH2-]"
+            },
+            {
+              "chematic": "[CH3][Fe@OH1]([CH3])([CH3])([CH3])([CH3])[CH3]",
+              "input": "C[Fe@OH1](C)(C)(C)(C)C",
+              "rdkit": "[CH3-]"
+            },
+            {
+              "chematic": "C[S@](=O)c1ccccc1",
+              "input": "c1cc(ccc1)[S@@](=O)C",
+              "rdkit": "C[S@+]([O-])c1ccccc1"
+            }
+          ],
+          "timing": {
+            "parse_inclusive": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  4.583034796079497,
+                  4.648227397560531
+                ],
+                "rdkit_over_chematic_median": 4.601872919339237,
+                "winning_blocks": 21
+              },
+              "mode": "parse plus operation plus canonical write",
+              "rows": 233,
+              "samples_ns": {
+                "chematic": [
+                  29134834,
+                  29279666,
+                  28961542,
+                  29519708,
+                  29031042,
+                  28506417,
+                  29071292,
+                  29299291,
+                  29054708,
+                  29249417,
+                  29031333,
+                  28476208,
+                  29372042,
+                  29503125,
+                  28715333,
+                  30444375,
+                  29209625,
+                  28197750,
+                  29157167,
+                  29217792,
+                  28803000
+                ],
+                "rdkit": [
+                  133525958,
+                  134135583,
+                  134619833,
+                  134762917,
+                  133597166,
+                  134835416,
+                  135501375,
+                  134551250,
+                  134749709,
+                  133949792,
+                  135168500,
+                  135220250,
+                  134369041,
+                  132673708,
+                  134607917,
+                  133398083,
+                  134274000,
+                  134536625,
+                  134453084,
+                  134389541,
+                  133354750
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            },
+            "prepared": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  4.95275770755434,
+                  5.082245508418775
+                ],
+                "rdkit_over_chematic_median": 4.9992580240425175,
+                "winning_blocks": 21
+              },
+              "mode": "preparsed molecules plus operation plus canonical write",
+              "rows": 233,
+              "samples_ns": {
+                "chematic": [
+                  24226000,
+                  23844334,
+                  23827125,
+                  24037541,
+                  23870666,
+                  23776334,
+                  23033458,
+                  24180209,
+                  22417708,
+                  23935500,
+                  23860292,
+                  25481875,
+                  24050667,
+                  24255375,
+                  23178458,
+                  23891750,
+                  23602709,
+                  23188375,
+                  23919750,
+                  24037167,
+                  23303666
+                ],
+                "rdkit": [
+                  118054083,
+                  118095209,
+                  118050583,
+                  117947792,
+                  118101583,
+                  118883292,
+                  118722708,
+                  119692667,
+                  120650000,
+                  119135625,
+                  120726917,
+                  118872834,
+                  119443458,
+                  118856708,
+                  119436500,
+                  119952375,
+                  120164500,
+                  120487958,
+                  121566042,
+                  120168000,
+                  119405333
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            }
+          }
+        },
+        "isotope_parent": {
+          "agreement": {
+            "both_refused": 0,
+            "exact": 233,
+            "total": 254
+          },
+          "mismatch_examples": [
+            {
+              "chematic": "[NH3]->[Pt](<-[NH3])([Cl])[Cl]",
+              "input": "[NH3][Pt]([NH3])(Cl)Cl",
+              "rdkit": "N.N.[Cl-].[Cl-].[Pt+2]"
+            },
+            {
+              "chematic": "[Cl][Au]",
+              "input": "Cl[Au]",
+              "rdkit": "[Au+].[Cl-]"
+            },
+            {
+              "chematic": "[NH2][Pt@SP2]([NH2])([Cl])[Cl]",
+              "input": "N[Pt@SP2](N)(Cl)Cl",
+              "rdkit": "[Cl-].[Cl-].[NH2-].[NH2-].[Pt@SP2+4]"
+            },
+            {
+              "chematic": "[CH3][Fe@OH1]([CH3])([CH3])([CH3])([CH3])[CH3]",
+              "input": "C[Fe@OH1](C)(C)(C)(C)C",
+              "rdkit": "[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[Fe@OH1+6]"
+            },
+            {
+              "chematic": "C[S@](=O)c1ccccc1",
+              "input": "c1cc(ccc1)[S@@](=O)C",
+              "rdkit": "C[S@+]([O-])c1ccccc1"
+            }
+          ],
+          "timing": {
+            "parse_inclusive": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  5.298344759066071,
+                  5.469254333093364
+                ],
+                "rdkit_over_chematic_median": 5.395175192731613,
+                "winning_blocks": 21
+              },
+              "mode": "parse plus operation plus canonical write",
+              "rows": 233,
+              "samples_ns": {
+                "chematic": [
+                  24708625,
+                  24323916,
+                  24071083,
+                  24570750,
+                  24335125,
+                  24676084,
+                  24352541,
+                  24469750,
+                  24114500,
+                  24681500,
+                  25015166,
+                  24659250,
+                  24275208,
+                  25142916,
+                  24301167,
+                  24754334,
+                  24403166,
+                  23165125,
+                  25591417,
+                  24459291,
+                  24187375
+                ],
+                "rdkit": [
+                  130778917,
+                  131558958,
+                  131650875,
+                  131816375,
+                  133059084,
+                  129012500,
+                  135268583,
+                  131300125,
+                  132738500,
+                  130206084,
+                  131351666,
+                  130653208,
+                  130969000,
+                  130457000,
+                  137474417,
+                  131859916,
+                  135310667,
+                  131408125,
+                  133214334,
+                  132471584,
+                  140753667
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            },
+            "prepared": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  6.172904942632884,
+                  6.377491668493751
+                ],
+                "rdkit_over_chematic_median": 6.2897054963274375,
+                "winning_blocks": 21
+              },
+              "mode": "preparsed molecules plus operation plus canonical write",
+              "rows": 233,
+              "samples_ns": {
+                "chematic": [
+                  19371708,
+                  18750666,
+                  18173042,
+                  19093750,
+                  18119042,
+                  18442166,
+                  18758125,
+                  18099208,
+                  18307334,
+                  19682166,
+                  18244000,
+                  19160000,
+                  18937417,
+                  18266791,
+                  18447917,
+                  18279459,
+                  18658125,
+                  21160458,
+                  20138250,
+                  18839209,
+                  17749667
+                ],
+                "rdkit": [
+                  116194833,
+                  117936167,
+                  115602792,
+                  117119000,
+                  119737542,
+                  116737042,
+                  116119667,
+                  116676625,
+                  122715708,
+                  115764292,
+                  116350958,
+                  116183625,
+                  116898875,
+                  117558500,
+                  117533459,
+                  118237333,
+                  116915875,
+                  115957334,
+                  118738208,
+                  116791375,
+                  118507334
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            }
+          }
+        },
+        "normalize": {
+          "agreement": {
+            "both_refused": 0,
+            "exact": 254,
+            "total": 254
+          },
+          "mismatch_examples": [],
+          "timing": {
+            "parse_inclusive": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  6.145689024874915,
+                  6.446338195875296
+                ],
+                "rdkit_over_chematic_median": 6.229110835700271,
+                "winning_blocks": 21
+              },
+              "mode": "parse plus operation plus canonical write",
+              "rows": 254,
+              "samples_ns": {
+                "chematic": [
+                  13366125,
+                  14686625,
+                  13111417,
+                  13722458,
+                  13734917,
+                  14077917,
+                  12744417,
+                  14571834,
+                  13666583,
+                  14459291,
+                  13481875,
+                  13467209,
+                  14308542,
+                  14218292,
+                  14061417,
+                  13447417,
+                  14368958,
+                  14243583,
+                  13634416,
+                  15014292,
+                  13366333
+                ],
+                "rdkit": [
+                  82772000,
+                  83527833,
+                  85592834,
+                  85980709,
+                  85728583,
+                  86518500,
+                  87375375,
+                  87935667,
+                  88099416,
+                  87984917,
+                  87850042,
+                  88235292,
+                  88452250,
+                  88179875,
+                  87590125,
+                  87304791,
+                  87885416,
+                  87344875,
+                  87639334,
+                  87777417,
+                  89095625
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            },
+            "prepared": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  5.377797113202993,
+                  5.676351913855461
+                ],
+                "rdkit_over_chematic_median": 5.492602596756207,
+                "winning_blocks": 21
+              },
+              "mode": "preparsed molecules plus operation plus canonical write",
+              "rows": 254,
+              "samples_ns": {
+                "chematic": [
+                  12521083,
+                  13142292,
+                  11905250,
+                  12210709,
+                  12794167,
+                  13718833,
+                  14186334,
+                  12769708,
+                  12272583,
+                  13575958,
+                  11569708,
+                  12423667,
+                  12678333,
+                  12751750,
+                  12253333,
+                  13359959,
+                  11797375,
+                  12946875,
+                  12580625,
+                  13287375,
+                  11596500
+                ],
+                "rdkit": [
+                  68773333,
+                  69060333,
+                  69560958,
+                  69154834,
+                  69296792,
+                  69298959,
+                  69768125,
+                  71657291,
+                  69663500,
+                  69337875,
+                  70110125,
+                  69288209,
+                  72740375,
+                  69466709,
+                  70322167,
+                  68362625,
+                  70443042,
+                  69625667,
+                  68910000,
+                  68277083,
+                  69611958
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            }
+          }
+        },
+        "reionize": {
+          "agreement": {
+            "both_refused": 0,
+            "exact": 203,
+            "total": 254
+          },
+          "mismatch_examples": [
+            {
+              "chematic": "[NH3+][Pt@SP2]([NH3+])([Cl])[Cl]",
+              "input": "N[Pt@SP2](N)(Cl)Cl",
+              "rdkit": "[NH2][Pt@SP2]([NH2])([Cl])[Cl]"
+            },
+            {
+              "chematic": "[CH3][Ru@OH13]([NH3+])([OH])([Cl])([Br])[I]",
+              "input": "[CH3][Ru@OH10]([I])([Br])([NH2])([OH])[Cl]",
+              "rdkit": "[CH3][Ru@OH13]([NH2])([OH])([Cl])([Br])[I]"
+            },
+            {
+              "chematic": "O.[CH2-]c1cn(C(C)OCCN(C)C(=O)CBr)c(=O)[nH]c1=O",
+              "input": "O.[CH2-]C1=CN(C(C)OCCN(C)C(=O)CBr)C(=O)NC1=O",
+              "rdkit": "Cc1cn(C(C)OCCN(C)C(=O)[CH-]Br)c(=O)[nH]c1=O.O"
+            },
+            {
+              "chematic": "CCC(=O)N1CCN(c2cc3c(cc2F)c(=O)c(C(=O)[O-])c2sc4ccccc4n23)CC1.[Fe]",
+              "input": "CCC(=O)N1CCN(C2=C(F)C=C3C(=C2)N2C(=C(C(=O)O)C3=O)SC3=CC=CC=C32)CC1.[Fe]",
+              "rdkit": "CCC(=O)N1CCN(c2cc3c(cc2F)c(=O)c(C(=O)O)c2sc4ccccc4n23)CC1.[Fe]"
+            },
+            {
+              "chematic": "COc1cc2c(C)nc([2O-])c(CCC(=O)[O-])c2cc1OC",
+              "input": "C(CCc1c2cc(OC)c(OC)cc2c(C)nc1[2OH])(O)=O",
+              "rdkit": "COc1cc2c(C)nc([2OH])c(CCC(=O)O)c2cc1OC"
+            }
+          ],
+          "timing": {
+            "parse_inclusive": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  4.286351011316358,
+                  4.554403965605394
+                ],
+                "rdkit_over_chematic_median": 4.4581910545108645,
+                "winning_blocks": 21
+              },
+              "mode": "parse plus operation plus canonical write",
+              "rows": 203,
+              "samples_ns": {
+                "chematic": [
+                  10057916,
+                  11102208,
+                  9734125,
+                  10249542,
+                  10326333,
+                  10932750,
+                  9723250,
+                  10133333,
+                  10513917,
+                  10048375,
+                  9887250,
+                  10096084,
+                  10742334,
+                  10847167,
+                  10426417,
+                  10067750,
+                  10906459,
+                  11014125,
+                  10247209,
+                  10503291,
+                  10690125
+                ],
+                "rdkit": [
+                  46416959,
+                  45551875,
+                  46588958,
+                  46158334,
+                  45975209,
+                  45600833,
+                  46563167,
+                  46151292,
+                  46200833,
+                  46432833,
+                  46467625,
+                  46263917,
+                  45897167,
+                  46265084,
+                  46482959,
+                  45165750,
+                  45936291,
+                  45798375,
+                  46665000,
+                  45020792,
+                  46256542
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            },
+            "prepared": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  3.3091382155368674,
+                  3.5003529749299815
+                ],
+                "rdkit_over_chematic_median": 3.389268205641211,
+                "winning_blocks": 21
+              },
+              "mode": "preparsed molecules plus operation plus canonical write",
+              "rows": 203,
+              "samples_ns": {
+                "chematic": [
+                  9767791,
+                  9297125,
+                  9845375,
+                  10108125,
+                  9256833,
+                  9049375,
+                  9668250,
+                  9437583,
+                  9768417,
+                  9965125,
+                  9149375,
+                  9014125,
+                  9676750,
+                  9692667,
+                  9505041,
+                  9985292,
+                  8689208,
+                  9547417,
+                  9664834,
+                  10077083,
+                  9101083
+                ],
+                "rdkit": [
+                  31943834,
+                  32848500,
+                  32883500,
+                  32307709,
+                  32641666,
+                  31889834,
+                  32831166,
+                  31986500,
+                  32325042,
+                  32054125,
+                  32026042,
+                  32148458,
+                  32845833,
+                  31790209,
+                  32405958,
+                  32509333,
+                  32284666,
+                  32027917,
+                  32286083,
+                  32096917,
+                  32242208
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            }
+          }
+        },
+        "stereo_parent": {
+          "agreement": {
+            "both_refused": 0,
+            "exact": 233,
+            "total": 254
+          },
+          "mismatch_examples": [
+            {
+              "chematic": "[NH3]->[Pt](<-[NH3])([Cl])[Cl]",
+              "input": "[NH3][Pt]([NH3])(Cl)Cl",
+              "rdkit": "N.N.[Cl-].[Cl-].[Pt+2]"
+            },
+            {
+              "chematic": "[Cl][Au]",
+              "input": "Cl[Au]",
+              "rdkit": "[Au+].[Cl-]"
+            },
+            {
+              "chematic": "[NH2][Pt]([NH2])([Cl])[Cl]",
+              "input": "N[Pt@SP2](N)(Cl)Cl",
+              "rdkit": "[Cl-].[Cl-].[NH2-].[NH2-].[Pt+4]"
+            },
+            {
+              "chematic": "[CH3][Fe]([CH3])([CH3])([CH3])([CH3])[CH3]",
+              "input": "C[Fe@OH1](C)(C)(C)(C)C",
+              "rdkit": "[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[CH3-].[Fe+6]"
+            },
+            {
+              "chematic": "CS(=O)c1ccccc1",
+              "input": "c1cc(ccc1)[S@@](=O)C",
+              "rdkit": "C[S+]([O-])c1ccccc1"
+            }
+          ],
+          "timing": {
+            "parse_inclusive": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  5.936361390498522,
+                  6.038078892637735
+                ],
+                "rdkit_over_chematic_median": 5.9934775944560705,
+                "winning_blocks": 21
+              },
+              "mode": "parse plus operation plus canonical write",
+              "rows": 233,
+              "samples_ns": {
+                "chematic": [
+                  22304167,
+                  21763291,
+                  22090042,
+                  22746333,
+                  20705625,
+                  22375791,
+                  21780916,
+                  22843084,
+                  21780334,
+                  22322084,
+                  22053167,
+                  21745042,
+                  21773000,
+                  21603416,
+                  21732166,
+                  21954250,
+                  21898959,
+                  21143459,
+                  22542709,
+                  22283375,
+                  21829250
+                ],
+                "rdkit": [
+                  130182666,
+                  130828000,
+                  134425500,
+                  136463584,
+                  132057250,
+                  131301083,
+                  136777000,
+                  132816958,
+                  131511375,
+                  131849375,
+                  131350666,
+                  131007250,
+                  130486291,
+                  129115333,
+                  130251250,
+                  130256500,
+                  132425167,
+                  131715292,
+                  131348291,
+                  132282167,
+                  131855041
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            },
+            "prepared": {
+              "comparison": {
+                "blocks": 21,
+                "ci95": [
+                  7.113203674136167,
+                  7.453671173071479
+                ],
+                "rdkit_over_chematic_median": 7.21398523782772,
+                "winning_blocks": 21
+              },
+              "mode": "preparsed molecules plus operation plus canonical write",
+              "rows": 233,
+              "samples_ns": {
+                "chematic": [
+                  15537166,
+                  15552292,
+                  16193958,
+                  15984250,
+                  15973959,
+                  15115042,
+                  15519458,
+                  15380875,
+                  16128500,
+                  15336542,
+                  15964334,
+                  16586167,
+                  14940750,
+                  16566541,
+                  14953584,
+                  15973542,
+                  16345375,
+                  15801333,
+                  16132333,
+                  16125042,
+                  15290375
+                ],
+                "rdkit": [
+                  117814333,
+                  116352250,
+                  114291958,
+                  113781584,
+                  114076709,
+                  115031666,
+                  115280875,
+                  114022041,
+                  114415333,
+                  114313541,
+                  114733584,
+                  114292625,
+                  114602167,
+                  114229667,
+                  115065750,
+                  116333209,
+                  114877583,
+                  113990583,
+                  114088167,
+                  114700708,
+                  115499625
+                ]
+              },
+              "selection": "rows with exact RDKit-compatible output"
+            }
+          }
+        }
+      },
+      "rows": 254,
+      "sampled_rows": 256,
+      "selection": "evenly spaced deterministic slice over the full stress corpus, then restricted to rows with identical parsed RDKit-compatible semantics",
+      "source_rows": 4072
+    }
+  },
+  "schema_version": 2,
+  "source_commit": "77d138adb7829e8c9f3dca128ee792ccb4e08a20"
+}
