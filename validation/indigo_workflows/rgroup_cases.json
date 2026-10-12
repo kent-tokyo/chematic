@@ -7,28 +7,36 @@
       "core": "[c:1]1ccccc1",
       "indigo_core": "c1ccccc1",
       "molecules": ["Cc1ccccc1", "CCc1ccccc1", "Nc1ccccc1", "Oc1ccccc1", "Clc1ccccc1"],
-      "expected": [["C"], ["CC"], ["N"], ["O"], ["Cl"]]
+      "expected": [["C"], ["CC"], ["N"], ["O"], ["Cl"]],
+      "expected_labeled": [{"R1": "C"}, {"R1": "CC"}, {"R1": "N"}, {"R1": "O"}, {"R1": "Cl"}]
     },
     {
       "id": "pyridyl-monosubstituted",
       "core": "[c:1]1ccncc1",
       "indigo_core": "c1ccncc1",
       "molecules": ["Cc1ccncc1", "COc1ccncc1", "Nc1ccncc1", "Clc1ccncc1"],
-      "expected": [["C"], ["CO"], ["N"], ["Cl"]]
+      "expected": [["C"], ["CO"], ["N"], ["Cl"]],
+      "expected_labeled": [{"R1": "C"}, {"R1": "CO"}, {"R1": "N"}, {"R1": "Cl"}]
     },
     {
       "id": "cyclohexyl-monosubstituted",
       "core": "[C:1]1CCCCC1",
       "indigo_core": "C1CCCCC1",
       "molecules": ["CC1CCCCC1", "OC1CCCCC1", "NC1CCCCC1", "ClC1CCCCC1"],
-      "expected": [["C"], ["O"], ["N"], ["Cl"]]
+      "expected": [["C"], ["O"], ["N"], ["Cl"]],
+      "expected_labeled": [{"R1": "C"}, {"R1": "O"}, {"R1": "N"}, {"R1": "Cl"}]
     },
     {
       "id": "phenyl-two-labelled-sites",
       "core": "c1c([*:1])cccc1[*:2]",
       "indigo_core": "c1ccccc1",
       "molecules": ["Cc1cccc(N)c1", "COc1cccc(Cl)c1", "CCc1cccc(O)c1"],
-      "expected": [["C", "N"], ["CO", "Cl"], ["CC", "O"]]
+      "expected": [["C", "N"], ["CO", "Cl"], ["CC", "O"]],
+      "expected_labeled": [
+        {"R1": "C", "R2": "N"},
+        {"R1": "CO", "R2": "Cl"},
+        {"R1": "CC", "R2": "O"}
+      ]
     }
   ]
 }

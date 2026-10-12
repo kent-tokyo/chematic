@@ -28,7 +28,7 @@ use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Molecule, MoleculeBuilder
 use chematic_smarts::{
     AtomPrimitive, AtomQuery, MatchConfig, QueryMolecule, find_matches_with_config, parse_smarts,
 };
-use chematic_smiles::{canonical_smiles, canonical_smiles_with_atom_order, parse};
+use chematic_smiles::{canonical_smiles, canonical_smiles_with_atom_order};
 
 /// Error type for R-group decomposition.
 #[derive(Debug, Clone, PartialEq)]
@@ -120,6 +120,7 @@ const LABELED_MATCH_LIMIT: usize = 1024;
 struct LabeledCandidate {
     missing_explicit: usize,
     signature: Vec<(u16, String, usize)>,
+    rgroup_fingerprints: BTreeMap<u16, chematic_fp::BitVec2048>,
     result: LabeledRGroupResult,
 }
 
@@ -251,14 +252,15 @@ pub fn rgroup_decompose_labeled(
 
     let mut rows = Vec::with_capacity(mols.len());
     let mut column_counts: BTreeMap<u16, HashMap<String, usize>> = BTreeMap::new();
+    let mut column_fingerprints: BTreeMap<u16, Vec<chematic_fp::BitVec2048>> = BTreeMap::new();
     for (mol_idx, &input_mol) in mols.iter().enumerate() {
-        // Match a canonicalized copy. The API returns strings rather than
-        // source atom indices, so this removes atom-order dependence without
-        // losing any result identity.
-        let normalized_smiles = canonical_smiles(input_mol);
-        let normalized = parse(&normalized_smiles)
-            .map_err(|err| RGroupError::Canonicalization(err.to_string()))?;
-        let matches = find_matches_with_config(&query, &normalized, &cfg);
+        // Enumerate every bounded embedding on the original graph, then use
+        // canonical atom ranks and canonical fragment strings below to pick a
+        // stable row.  The former implementation wrote a canonical SMILES and
+        // parsed it back before matching.  That round trip did not add any
+        // information to the result identity, but duplicated canonicalization
+        // and graph construction for every input molecule.
+        let matches = find_matches_with_config(&query, input_mol, &cfg);
         if matches.is_empty() {
             rows.push(None);
             continue;
@@ -270,13 +272,13 @@ pub fn rgroup_decompose_labeled(
             });
         }
 
-        let canonical_rank = canonical_atom_ranks(&normalized);
+        let canonical_rank = canonical_atom_ranks(input_mol);
         let mut candidates = Vec::with_capacity(matches.len());
         let mut first_error = None;
         for mapping in &matches {
             match labeled_candidate(
                 mol_idx,
-                &normalized,
+                input_mol,
                 &query,
                 mapping,
                 &labels,
@@ -290,7 +292,8 @@ pub fn rgroup_decompose_labeled(
             };
         }
 
-        candidates.sort_by(|a, b| compare_labeled_candidates(a, b, &column_counts));
+        candidates
+            .sort_by(|a, b| compare_labeled_candidates(a, b, &column_counts, &column_fingerprints));
         if let Some(candidate) = candidates.into_iter().next() {
             for (&label, smiles) in &candidate.result.r_groups {
                 *column_counts
@@ -298,6 +301,12 @@ pub fn rgroup_decompose_labeled(
                     .or_default()
                     .entry(smiles.clone())
                     .or_default() += 1;
+            }
+            for (label, fingerprint) in &candidate.rgroup_fingerprints {
+                column_fingerprints
+                    .entry(*label)
+                    .or_default()
+                    .push(fingerprint.clone());
             }
             rows.push(Some(candidate.result));
         } else if let Some(err) = first_error {
@@ -313,6 +322,7 @@ fn compare_labeled_candidates(
     a: &LabeledCandidate,
     b: &LabeledCandidate,
     column_counts: &BTreeMap<u16, HashMap<String, usize>>,
+    column_fingerprints: &BTreeMap<u16, Vec<chematic_fp::BitVec2048>>,
 ) -> std::cmp::Ordering {
     let alignment_score = |candidate: &LabeledCandidate| {
         candidate
@@ -328,9 +338,27 @@ fn compare_labeled_candidates(
             })
             .sum::<usize>()
     };
+    let similarity_score = |candidate: &LabeledCandidate| {
+        candidate
+            .rgroup_fingerprints
+            .iter()
+            .map(|(label, fingerprint)| {
+                column_fingerprints
+                    .get(label)
+                    .map(|column| {
+                        column
+                            .iter()
+                            .map(|known| fingerprint.tanimoto(known))
+                            .sum::<f64>()
+                    })
+                    .unwrap_or(0.0)
+            })
+            .sum::<f64>()
+    };
     a.missing_explicit
         .cmp(&b.missing_explicit)
         .then_with(|| alignment_score(b).cmp(&alignment_score(a)))
+        .then_with(|| similarity_score(b).total_cmp(&similarity_score(a)))
         // RDKit's row scorer uses the first row to break a symmetric tie and
         // then favours agreement with established columns. Descending output
         // signatures reproduce that bounded behaviour without a GA.
@@ -448,10 +476,12 @@ fn labeled_candidate(
     }
 
     let mut r_groups = BTreeMap::new();
+    let mut rgroup_fingerprints = BTreeMap::new();
     let mut signature = Vec::with_capacity(attachments.len());
     for (&label, &(core_atom, root)) in &attachments {
         let fragment = extract_rgroup_labeled(mol, root, &core, label);
         let smiles = canonical_smiles(&fragment);
+        rgroup_fingerprints.insert(label, chematic_fp::ecfp4(&fragment));
         signature.push((label, smiles.clone(), canonical_rank[core_atom.0 as usize]));
         r_groups.insert(label, smiles);
     }
@@ -468,6 +498,7 @@ fn labeled_candidate(
     Ok(LabeledCandidate {
         missing_explicit,
         signature,
+        rgroup_fingerprints,
         result: LabeledRGroupResult {
             mol_idx,
             core_smiles,
@@ -717,6 +748,40 @@ mod tests {
         assert!(first.core_smiles.contains("*:2"));
         assert!(first.r_groups[&1].contains("*:1"));
         assert!(first.r_groups[&2].contains("*:2"));
+    }
+
+    #[test]
+    fn labelled_symmetric_columns_use_fragment_similarity_like_rdkit() {
+        // The third row has no exact payload seen in either column.  RDKit's
+        // table alignment keeps the carbon chain in R1 and the heteroatom in
+        // R2; lexical tie-breaking alone swapped those labels.
+        let mols = [
+            mol("Cc1cccc(N)c1"),
+            mol("COc1cccc(Cl)c1"),
+            mol("CCc1cccc(O)c1"),
+        ];
+        let refs: Vec<&Molecule> = mols.iter().collect();
+        let rows = rgroup_decompose_labeled("c1c([*:1])cccc1[*:2]", &refs)
+            .expect("labelled decomposition");
+        let third = rows[2].as_ref().expect("third molecule matches");
+
+        assert!(third.r_groups[&1].contains("CC"), "R1 must keep ethyl");
+        assert!(third.r_groups[&2].contains('O'), "R2 must keep hydroxyl");
+
+        let respelled = [
+            mol("Nc1cccc(C)c1"),
+            mol("Clc1cccc(OC)c1"),
+            mol("Oc1cccc(CC)c1"),
+        ];
+        let respelled_refs: Vec<&Molecule> = respelled.iter().collect();
+        let respelled_rows = rgroup_decompose_labeled("c1c([*:1])cccc1[*:2]", &respelled_refs)
+            .expect("respelled labelled decomposition");
+        for (original, respelled) in rows.iter().zip(&respelled_rows) {
+            assert_eq!(
+                original, respelled,
+                "input atom order changed the table row"
+            );
+        }
     }
 
     #[test]
