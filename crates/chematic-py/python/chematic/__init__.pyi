@@ -1702,6 +1702,36 @@ class Mol:
         """Measure bond angle i–j–k in degrees (j is the central atom)."""
         ...
 
+    def set_bond_length(
+        self,
+        coords: list[list[float]],
+        i: int,
+        j: int,
+        length: float,
+    ) -> list[list[float]]:
+        """Set bonded atoms i–j to ``length`` Å and return new coordinates.
+
+        Atom i stays fixed. Atom j and every atom on its side of the bond move
+        as one rigid fragment. Ring bonds raise ``ValueError``.
+        """
+        ...
+
+    def set_bond_angle(
+        self,
+        coords: list[list[float]],
+        i: int,
+        j: int,
+        k: int,
+        angle_deg: float,
+    ) -> list[list[float]]:
+        """Set angle i–j–k to ``angle_deg`` and return new coordinates.
+
+        Atoms i and j stay fixed. Atom k and every atom on its side of the
+        j–k bond rotate as one rigid fragment. If both angle bonds belong to a
+        ring, ``ValueError`` is raised.
+        """
+        ...
+
     # -- Sprint 9 additions --------------------------------------------------
 
     def estate_indices(self) -> list[float]:

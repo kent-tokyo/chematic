@@ -12,6 +12,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added RDKit-style conformer coordinate transforms across Rust, Python, and
+  WASM/Node. Callers can measure and set bond lengths, bond angles, and
+  dihedrals while moving the selected molecular fragment as a rigid body.
+  Checked setters reject ring edits, non-bonded atoms, invalid indices,
+  malformed coordinate arrays, and degenerate geometry instead of panicking.
 - Added reusable Rust and Python `PreparedRGroupCore` APIs for repeated
   labelled R-group decomposition without reparsing the core SMARTS. Existing
   free functions use the same prepared implementation and retain their output

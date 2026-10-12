@@ -1,5 +1,33 @@
 use super::*;
 
+fn checked_transform_coords(
+    mol: &chematic_core::Molecule,
+    coords: &[[f64; 3]],
+    atoms: &[usize],
+) -> PyResult<chematic_3d::Coords3D> {
+    if coords.len() != mol.atom_count() {
+        return Err(PyValueError::new_err(format!(
+            "expected {} coordinates, got {}",
+            mol.atom_count(),
+            coords.len()
+        )));
+    }
+    if let Some(&atom) = atoms.iter().find(|&&atom| atom >= mol.atom_count()) {
+        return Err(PyValueError::new_err(format!(
+            "atom index {atom} is out of range for {} atoms",
+            mol.atom_count()
+        )));
+    }
+    if coords.iter().flatten().any(|value| !value.is_finite()) {
+        return Err(PyValueError::new_err("coordinates must all be finite"));
+    }
+    Ok(flat_to_coords3d(coords))
+}
+
+fn transform_coords_to_python(coords: &chematic_3d::Coords3D) -> Vec<Vec<f64>> {
+    coords.points.iter().map(|p| vec![p.x, p.y, p.z]).collect()
+}
+
 #[pymethods]
 impl Mol {
     // -----------------------------------------------------------------------
@@ -451,16 +479,21 @@ impl Mol {
         j: usize,
         k: usize,
         l: usize,
-    ) -> Option<f64> {
+    ) -> PyResult<Option<f64>> {
         use chematic_core::AtomIdx;
-        let c3d = flat_to_coords3d(&coords);
-        chematic_3d::get_dihedral_deg(
+        let c3d = checked_transform_coords(&self.inner, &coords, &[i, j, k, l])?;
+        match chematic_3d::try_get_dihedral_deg(
             &c3d,
+            &self.inner,
             AtomIdx(i as u32),
             AtomIdx(j as u32),
             AtomIdx(k as u32),
             AtomIdx(l as u32),
-        )
+        ) {
+            Ok(value) => Ok(Some(value)),
+            Err(chematic_3d::MolTransformError::UndefinedDihedral) => Ok(None),
+            Err(error) => Err(PyValueError::new_err(error.to_string())),
+        }
     }
 
     /// Set dihedral angle i–j–k–l to ``angle_deg`` degrees.
@@ -475,10 +508,10 @@ impl Mol {
         k: usize,
         l: usize,
         angle_deg: f64,
-    ) -> Vec<Vec<f64>> {
+    ) -> PyResult<Vec<Vec<f64>>> {
         use chematic_core::AtomIdx;
-        let c3d = flat_to_coords3d(&coords);
-        let new_c3d = chematic_3d::set_dihedral(
+        let c3d = checked_transform_coords(&self.inner, &coords, &[i, j, k, l])?;
+        let new_c3d = chematic_3d::try_set_dihedral(
             &c3d,
             &self.inner,
             AtomIdx(i as u32),
@@ -486,27 +519,83 @@ impl Mol {
             AtomIdx(k as u32),
             AtomIdx(l as u32),
             angle_deg.to_radians(),
-        );
-        new_c3d.points.iter().map(|p| vec![p.x, p.y, p.z]).collect()
+        )
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        Ok(transform_coords_to_python(&new_c3d))
     }
 
     /// Measure bond length between atoms i and j (Å).
-    fn get_bond_length(&self, coords: Vec<[f64; 3]>, i: usize, j: usize) -> f64 {
+    fn get_bond_length(&self, coords: Vec<[f64; 3]>, i: usize, j: usize) -> PyResult<f64> {
         use chematic_core::AtomIdx;
-        let c3d = flat_to_coords3d(&coords);
-        chematic_3d::get_bond_length(&c3d, AtomIdx(i as u32), AtomIdx(j as u32))
+        let c3d = checked_transform_coords(&self.inner, &coords, &[i, j])?;
+        chematic_3d::try_get_bond_length(&c3d, &self.inner, AtomIdx(i as u32), AtomIdx(j as u32))
+            .map_err(|error| PyValueError::new_err(error.to_string()))
     }
 
     /// Measure bond angle i–j–k in degrees (j is the central atom).
-    fn get_bond_angle(&self, coords: Vec<[f64; 3]>, i: usize, j: usize, k: usize) -> f64 {
+    fn get_bond_angle(&self, coords: Vec<[f64; 3]>, i: usize, j: usize, k: usize) -> PyResult<f64> {
         use chematic_core::AtomIdx;
-        let c3d = flat_to_coords3d(&coords);
-        chematic_3d::get_bond_angle_deg(
+        let c3d = checked_transform_coords(&self.inner, &coords, &[i, j, k])?;
+        chematic_3d::try_get_bond_angle_deg(
             &c3d,
+            &self.inner,
             AtomIdx(i as u32),
             AtomIdx(j as u32),
             AtomIdx(k as u32),
         )
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// Set bond length i-j to ``length`` Å.
+    ///
+    /// Atom i stays fixed; atom j and its side of the molecular graph move as
+    /// one rigid fragment. Ring bonds are rejected, matching RDKit's
+    /// ``rdMolTransforms.SetBondLength`` contract.
+    fn set_bond_length(
+        &self,
+        coords: Vec<[f64; 3]>,
+        i: usize,
+        j: usize,
+        length: f64,
+    ) -> PyResult<Vec<Vec<f64>>> {
+        use chematic_core::AtomIdx;
+        let c3d = checked_transform_coords(&self.inner, &coords, &[i, j])?;
+        let changed = chematic_3d::set_bond_length(
+            &c3d,
+            &self.inner,
+            AtomIdx(i as u32),
+            AtomIdx(j as u32),
+            length,
+        )
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        Ok(transform_coords_to_python(&changed))
+    }
+
+    /// Set bond angle i-j-k to ``angle_deg`` degrees.
+    ///
+    /// Atoms i and j stay fixed; atom k and its side of the molecular graph
+    /// rotate as one rigid fragment. Two ring bonds are rejected, matching
+    /// RDKit's ``rdMolTransforms.SetAngleDeg`` contract.
+    fn set_bond_angle(
+        &self,
+        coords: Vec<[f64; 3]>,
+        i: usize,
+        j: usize,
+        k: usize,
+        angle_deg: f64,
+    ) -> PyResult<Vec<Vec<f64>>> {
+        use chematic_core::AtomIdx;
+        let c3d = checked_transform_coords(&self.inner, &coords, &[i, j, k])?;
+        let changed = chematic_3d::set_bond_angle(
+            &c3d,
+            &self.inner,
+            AtomIdx(i as u32),
+            AtomIdx(j as u32),
+            AtomIdx(k as u32),
+            angle_deg.to_radians(),
+        )
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        Ok(transform_coords_to_python(&changed))
     }
 
     // -----------------------------------------------------------------------

@@ -20,6 +20,10 @@ and reproducible evidence over feature-count parity.
 - The source candidate also exposes the core Brenk structural-alert contract
   to browser/Node callers, closing the remaining Rust/Python/MCP versus WASM
   binding gap for this filter.
+- The source candidate closes the bounded `rdMolTransforms` editing gap for
+  bond lengths and angles. Rust, Python, and WASM/Node now share checked
+  rigid-fragment setters for bond length, bond angle, and dihedral edits;
+  canonical conformer orientation remains separate future work.
 - The current source candidate closes a symmetric-core R-group column swap
   that an unordered payload comparison had hidden. Against RDKit 2026.03.6,
   the bounded gates now report 80/80 semantic reaction matches plus 3 jointly
@@ -126,23 +130,26 @@ unsupported chemistry never becomes a guessed successful result.
    clash, and conformer quality as separate measurements.
 3. Add new 3D breadth only after failure reasons and quality evidence are
    available on the existing supported domain.
-4. Rebaseline the frozen 265-row A6 set against RDKit 2026.09.1, then evaluate
+4. Keep conformer coordinate edits cross-binding and panic-free. Preserve the
+   RDKit-compatible movable-fragment and ring-rejection contract with fixed
+   coordinate fixtures.
+5. Rebaseline the frozen 265-row A6 set against RDKit 2026.09.1, then evaluate
    a previously unused holdout. Report typing, energy, gradient, convergence,
    stereo, clash, and best-of-N quality independently.
-5. Promote parallel conformer generation only after the same result is shown
+6. Promote parallel conformer generation only after the same result is shown
    from exact public artifacts on two hosts, with at least 21 alternating
    blocks, peak memory, and no quality regression. Add macrocycles, metals,
    fullerenes, cages, highly flexible molecules, and failed embeddings to the
    stress lane.
-6. Close the full-hydrogen ranking residuals by separating non-convergence,
+7. Close the full-hydrogen ranking residuals by separating non-convergence,
    insufficient basin diversity, and genuine force-field disagreement. The
    acceptance target is zero wrong-confident rows, p90 at or below RDKit under
    equal candidate counts, and a bounded maximum on both A6 and an unused
    holdout; median-only superiority is insufficient.
-7. Port and validate the complete RDKit 2026.09 bounds/torsion behavior before
+8. Port and validate the complete RDKit 2026.09 bounds/torsion behavior before
    exposing a versioned compatibility profile. Partial 1-3-bound changes must
    not be published as 2026.09 parity.
-8. Evaluate adaptive minimization as a separate quality tier. It must not
+9. Evaluate adaptive minimization as a separate quality tier. It must not
    become the default until its additional work is matched by a favorable
    paired speed interval or a predeclared quality target that RDKit misses.
 

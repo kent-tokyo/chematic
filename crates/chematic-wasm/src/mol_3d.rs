@@ -929,6 +929,200 @@ pub fn set_dihedral_json(
     Ok(chematic_3d::write_pdb(&mol, &new_coords))
 }
 
+fn conformer_coords_from_json(
+    mol: &MolHandle,
+    coords_json: &str,
+) -> Result<chematic_3d::Coords3D, String> {
+    if coords_json.len() > WASM_MAX_JSON_STRING_BYTES {
+        return Err(format!(
+            "coords_json too large (max {WASM_MAX_JSON_STRING_BYTES} bytes)"
+        ));
+    }
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(format!("molecule too large (max {WASM_MAX_ATOMS} atoms)"));
+    }
+    let rows: Vec<[f64; 3]> =
+        serde_json::from_str(coords_json).map_err(|e| format!("coords parse error: {e}"))?;
+    if rows.len() != mol.atom_count() {
+        return Err(format!(
+            "expected {} coordinates, got {}",
+            mol.atom_count(),
+            rows.len()
+        ));
+    }
+    if !coords_all_finite(&rows) {
+        return Err("coordinates must all be finite".to_string());
+    }
+    Ok(chematic_3d::Coords3D {
+        points: rows
+            .into_iter()
+            .map(|[x, y, z]| chematic_3d::Point3::new(x, y, z))
+            .collect(),
+    })
+}
+
+fn conformer_coords_json(coords: &chematic_3d::Coords3D) -> Result<String, String> {
+    let rows: Vec<[f64; 3]> = coords.points.iter().map(|p| [p.x, p.y, p.z]).collect();
+    serde_json::to_string(&rows).map_err(|e| format!("coordinate serialization failed: {e}"))
+}
+
+fn checked_atom_indices(mol: &MolHandle, atoms: &[u32]) -> Result<(), String> {
+    if let Some(&atom) = atoms
+        .iter()
+        .find(|&&atom| atom as usize >= mol.atom_count())
+    {
+        return Err(format!(
+            "atom index {atom} is out of range for {} atoms",
+            mol.atom_count()
+        ));
+    }
+    Ok(())
+}
+
+/// Measure a bond length from caller-supplied coordinates.
+///
+/// `coords_json` is `[[x,y,z], ...]` in molecule atom order. Unlike the
+/// legacy SMILES convenience function, this does not generate a new
+/// conformer, so callers can measure an imported or previously edited one.
+#[wasm_bindgen]
+pub fn get_bond_length_from_coords_json(
+    mol: &MolHandle,
+    coords_json: &str,
+    i: u32,
+    j: u32,
+) -> Result<f64, String> {
+    checked_atom_indices(mol, &[i, j])?;
+    let coords = conformer_coords_from_json(mol, coords_json)?;
+    chematic_3d::try_get_bond_length(
+        &coords,
+        &mol.inner,
+        chematic_core::AtomIdx(i),
+        chematic_core::AtomIdx(j),
+    )
+    .map_err(|e| e.to_string())
+}
+
+/// Measure angle i-j-k in degrees from caller-supplied coordinates.
+#[wasm_bindgen]
+pub fn get_bond_angle_from_coords_json(
+    mol: &MolHandle,
+    coords_json: &str,
+    i: u32,
+    j: u32,
+    k: u32,
+) -> Result<f64, String> {
+    checked_atom_indices(mol, &[i, j, k])?;
+    let coords = conformer_coords_from_json(mol, coords_json)?;
+    chematic_3d::try_get_bond_angle_deg(
+        &coords,
+        &mol.inner,
+        chematic_core::AtomIdx(i),
+        chematic_core::AtomIdx(j),
+        chematic_core::AtomIdx(k),
+    )
+    .map_err(|e| e.to_string())
+}
+
+/// Measure dihedral i-j-k-l in degrees from caller-supplied coordinates.
+#[wasm_bindgen]
+pub fn get_dihedral_from_coords_json(
+    mol: &MolHandle,
+    coords_json: &str,
+    i: u32,
+    j: u32,
+    k: u32,
+    l: u32,
+) -> Result<f64, String> {
+    checked_atom_indices(mol, &[i, j, k, l])?;
+    let coords = conformer_coords_from_json(mol, coords_json)?;
+    chematic_3d::try_get_dihedral_deg(
+        &coords,
+        &mol.inner,
+        chematic_core::AtomIdx(i),
+        chematic_core::AtomIdx(j),
+        chematic_core::AtomIdx(k),
+        chematic_core::AtomIdx(l),
+    )
+    .map_err(|e| e.to_string())
+}
+
+/// Set bond length i-j in caller-supplied coordinates and return updated JSON.
+///
+/// Atom i stays fixed; atom j and its side of the graph move together. Ring
+/// bonds are rejected, following RDKit's `SetBondLength` contract.
+#[wasm_bindgen]
+pub fn set_bond_length_from_coords_json(
+    mol: &MolHandle,
+    coords_json: &str,
+    i: u32,
+    j: u32,
+    length: f64,
+) -> Result<String, String> {
+    let coords = conformer_coords_from_json(mol, coords_json)?;
+    let changed = chematic_3d::set_bond_length(
+        &coords,
+        &mol.inner,
+        chematic_core::AtomIdx(i),
+        chematic_core::AtomIdx(j),
+        length,
+    )
+    .map_err(|e| e.to_string())?;
+    conformer_coords_json(&changed)
+}
+
+/// Set angle i-j-k in degrees and return updated coordinate JSON.
+///
+/// Atoms i and j stay fixed; atom k and its side of the graph rotate
+/// together. If both angle bonds belong to a ring the operation is rejected.
+#[wasm_bindgen]
+pub fn set_bond_angle_from_coords_json(
+    mol: &MolHandle,
+    coords_json: &str,
+    i: u32,
+    j: u32,
+    k: u32,
+    angle_deg: f64,
+) -> Result<String, String> {
+    let coords = conformer_coords_from_json(mol, coords_json)?;
+    let changed = chematic_3d::set_bond_angle(
+        &coords,
+        &mol.inner,
+        chematic_core::AtomIdx(i),
+        chematic_core::AtomIdx(j),
+        chematic_core::AtomIdx(k),
+        angle_deg.to_radians(),
+    )
+    .map_err(|e| e.to_string())?;
+    conformer_coords_json(&changed)
+}
+
+/// Set dihedral i-j-k-l in degrees and return updated coordinate JSON.
+///
+/// The central j-k bond must exist and must not belong to a ring.
+#[wasm_bindgen]
+pub fn set_dihedral_from_coords_json(
+    mol: &MolHandle,
+    coords_json: &str,
+    i: u32,
+    j: u32,
+    k: u32,
+    l: u32,
+    angle_deg: f64,
+) -> Result<String, String> {
+    let coords = conformer_coords_from_json(mol, coords_json)?;
+    let changed = chematic_3d::try_set_dihedral(
+        &coords,
+        &mol.inner,
+        chematic_core::AtomIdx(i),
+        chematic_core::AtomIdx(j),
+        chematic_core::AtomIdx(k),
+        chematic_core::AtomIdx(l),
+        angle_deg.to_radians(),
+    )
+    .map_err(|e| e.to_string())?;
+    conformer_coords_json(&changed)
+}
+
 // ---------------------------------------------------------------------------
 // random_smiles (SMILES augmentation)
 // ---------------------------------------------------------------------------

@@ -262,6 +262,28 @@ SVG(mol.svg_highlighted([0, 1, 2], color="#FF6B6B"))
 SVG(chematic.depict_grid([mol1, mol2, mol3], cols=3))
 ```
 
+## Conformer coordinate transforms
+
+```python
+# RDKit mutates a Conformer in place
+from rdkit.Chem import rdMolTransforms
+rdMolTransforms.SetBondLength(conf, 0, 1, 1.52)
+rdMolTransforms.SetAngleDeg(conf, 0, 1, 2, 109.5)
+rdMolTransforms.SetDihedralDeg(conf, 0, 1, 2, 3, 180.0)
+
+# chematic returns a new coordinate array and leaves the input unchanged
+coords = mol.set_bond_length(coords, 0, 1, 1.52)
+coords = mol.set_bond_angle(coords, 0, 1, 2, 109.5)
+coords = mol.set_dihedral(coords, 0, 1, 2, 3, 180.0)
+```
+
+The selected atom and its side of the molecular graph move as one rigid
+fragment. As in RDKit, setting a ring-bond length or ring-bond dihedral is
+rejected; setting an angle is rejected when both defining bonds are in rings.
+Python raises `ValueError`. WASM/Node provides matching coordinate-explicit
+`*_from_coords_json` functions so imported or previously edited conformers are
+not regenerated.
+
 ## SASA (3D solvent-accessible surface area)
 
 ```python
