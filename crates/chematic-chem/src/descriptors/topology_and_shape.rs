@@ -254,6 +254,18 @@ pub(crate) static RDKIT_RB0: [f64; 118] = [
     0.0, 0.0, 0.0, 0.0,
 ];
 
+/// RDKit `PeriodicTable::getRb0` single-bond radius (Å).
+///
+/// Returns `0.0` for atomic number 0 or values above 118, matching the
+/// unsupported tail of RDKit's table.
+pub fn rdkit_single_bond_radius(atomic_number: u8) -> f64 {
+    atomic_number
+        .checked_sub(1)
+        .and_then(|index| RDKIT_RB0.get(index as usize))
+        .copied()
+        .unwrap_or(0.0)
+}
+
 /// RDKit's per-atom Hall-Kier alpha (`ConnectivityDescriptors.cpp`
 /// `getAlpha`): tabulated by element and RDKit hybridization (`hyb`:
 /// 1 = sp, 2 = sp2, as [`hybridization_per_atom`]), otherwise

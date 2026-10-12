@@ -51,9 +51,13 @@ limited to its recorded artifact, comparator, corpus and operation.
   current Linux/macOS/Windows CI gates pass all 265 geometry, stereo, and clash
   checks after stereo-safe re-embedding. Source MMFF typing and same-coordinate
   per-term energies match the pinned RDKit lanes; seeded ETKDG source results
-  match on the recorded Linux success rows. These results do not establish
-  other seeds, conformer ensembles, public artifacts, or a speed advantage.
+  match on the recorded Linux success rows. A newer source candidate adds
+  full-hydrogen MMFF ranking: in equal-count ten-candidate comparison with
+  RDKit 2026.09.1, 237/265 rows are within 1 kcal/mol and 216 are at or below
+  RDKit's best, but the 9.896 kcal/mol maximum remains open. These results do
+  not establish other corpora, public artifacts, or universal superiority.
   [A6 record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-08-issues-769-739.md) ·
+  [full-H ranking record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-full-h-mmff-vs-rdkit.md) ·
   [ETKDG record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-09-cosmolkit-parity-2.md).
 
 Earlier source diagnostics and per-release channel checks remain in the

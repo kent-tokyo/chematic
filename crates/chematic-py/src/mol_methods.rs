@@ -17,6 +17,7 @@ use pyo3::types::{PyDict, PyList};
 use std::sync::Arc;
 
 type PyUffTerm = (String, Vec<usize>, Vec<f64>);
+type PyExplicitHydrogenMmffResult = (Vec<[f64; 3]>, Vec<[f64; 3]>, f64, bool, usize, f64);
 
 mod analysis;
 mod descriptors;

@@ -27,6 +27,7 @@ pub mod etkdg_knowledge;
 pub(crate) mod fmath;
 #[cfg(test)]
 mod geometry_boundary_contract_tests;
+pub mod hydrogen_coords;
 #[cfg(test)]
 mod issue256_255_phase2_evaluation_tests;
 pub mod md;
@@ -68,6 +69,11 @@ pub use ensemble_v2::{
     embed_ensemble_v2_parallel,
 };
 pub use etkdg::generate_coords_etkdg;
+pub use hydrogen_coords::{
+    ExplicitHydrogenMmffError, ExplicitHydrogenMmffResult, HydrogenCoordinateError,
+    add_hydrogens_with_coords, refine_mmff94_with_explicit_hydrogens,
+    refine_mmff94_with_explicit_hydrogens_variant,
+};
 pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};
 pub use minimize::{
     ForceField, MinimizeConfig, minimize, minimize_dreiding, minimize_dreiding_with_config,

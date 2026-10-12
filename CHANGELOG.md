@@ -12,6 +12,16 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added RDKit-compatible implicit-hydrogen coordinate materialization and
+  full-atom MMFF94 conformer refinement. Python returns both the original-atom
+  and explicit-hydrogen coordinate arrays and can deterministically sample
+  terminal heteroatom-H rotamers for ensemble ranking.
+- Added reproducible A6 quality and paired-throughput harnesses against RDKit
+  2026.09.1. On the recorded 265-molecule source-candidate lane, equal-count
+  ten-conformer quality has a −0.000012 kcal/mol median and 1.041 kcal/mol p90
+  delta to RDKit's best, while the exploratory two-repeat throughput median is
+  1.17x faster. Maximum residuals and the formal multi-host/public-artifact
+  gates remain open.
 - Added deterministic native parallel generation for conformer ensembles.
   Rust callers can use `embed_ensemble_v2_parallel`, while Python
   `Mol.conformer_ensemble_v2(..., parallel=True)` now enables it by default

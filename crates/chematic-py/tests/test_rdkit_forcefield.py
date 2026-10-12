@@ -11,6 +11,8 @@ The recorded Linux comparison is bit-identical. Portable assertions allow
 the same host-libm/minimizer tolerances as the Rust tests.
 """
 
+import math
+
 import pytest
 
 import chematic
@@ -80,3 +82,20 @@ def test_uff_missing_params_and_bad_input(mol):
         mol.rdkit_uff_energy(COORDS[:-1])
     with pytest.raises(ValueError):
         mol.rdkit_mmff_optimize(COORDS, 200, "MMFF95")
+
+
+def test_heavy_conformer_can_be_ranked_after_explicit_hydrogen_refinement():
+    mol = chematic.from_smiles("CCO")
+    coords = mol.generate_3d()
+    refined, all_atom_coords, energy, converged, iterations, residual = (
+        mol.refine_mmff94_with_explicit_hydrogens(coords)
+    )
+    assert len(refined) == len(coords) == 3
+    assert len(all_atom_coords) == len(mol.add_hydrogens().atom_table)
+    assert math.isfinite(energy)
+    assert math.isfinite(residual) and residual >= 0.0
+    assert isinstance(converged, bool)
+    assert 0 <= iterations <= 200
+
+    with pytest.raises(ValueError, match="expected 3 atom coordinates"):
+        mol.refine_mmff94_with_explicit_hydrogens(coords[:-1])

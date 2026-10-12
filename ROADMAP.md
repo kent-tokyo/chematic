@@ -24,11 +24,13 @@ and reproducible evidence over feature-count parity.
   demonstrates executed code, not chemical correctness or compatibility.
 - 3D, MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer
   expansion, and rich CDXML editing remain experimental or bounded.
-- The source candidate has deterministic native parallel conformer generation:
-  on the recorded three-molecule lane it is exactly equal to the sequential
-  result and 3.54x faster. Its median is 3.87x faster than RDKit 2026.09.1's
-  all-thread lane, but latest-oracle quality, independent holdout, memory,
-  second-host, and public-artifact gates remain open.
+- The source candidate has deterministic native parallel conformer generation
+  plus full-hydrogen MMFF94 ranking. On the frozen 265-row A6 corpus, equal-count
+  ten-candidate quality is within 1 kcal/mol of RDKit 2026.09.1 on 237 rows
+  (216 at or below RDKit's best), with a favorable median but a 9.90 kcal/mol
+  maximum residual. A two-repeat same-work timing is 1.17x faster. Independent
+  holdout, 21-block timing, memory, second-host, public-artifact, and outlier
+  closure gates remain open.
 
 Exact denominators belong in [validation](docs/validation.md) and dated
 [benchmark records](benchmarks/README.md). Unresolved work is tracked in the
@@ -111,6 +113,11 @@ unsupported chemistry never becomes a guessed successful result.
    blocks, peak memory, and no quality regression. Add macrocycles, metals,
    fullerenes, cages, highly flexible molecules, and failed embeddings to the
    stress lane.
+6. Close the full-hydrogen ranking residuals by separating non-convergence,
+   insufficient basin diversity, and genuine force-field disagreement. The
+   acceptance target is zero wrong-confident rows, p90 at or below RDKit under
+   equal candidate counts, and a bounded maximum on both A6 and an unused
+   holdout; median-only superiority is insufficient.
 
 **Exit:** no known wrong-confident result remains in the declared domain;
 unresolved cases are observable and typed. A speed claim additionally requires

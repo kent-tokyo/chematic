@@ -2,7 +2,7 @@
 """Score chematic's A6 conformers against RDKit's own conformers, with RDKit.
 
 For every successful row of a chematic A6 run (heavy-atom coordinates, in
-the SMILES atom order), RDKit 2026.03.6:
+the SMILES atom order), the installed, recorded RDKit version:
 
 * adds hydrogens to the chematic geometry (``AddHs(addCoords=True)``),
   relaxes only the hydrogens under MMFF94 (heavy atoms fixed), and records
@@ -71,6 +71,14 @@ def score(task: tuple[dict, int, int]) -> dict:
         conf.SetAtomPosition(i, Point3D(x, y, z))
     mol.AddConformer(conf, assignId=True)
     chem = Chem.AddHs(mol, addCoords=True)
+    all_atom_coords = row.get("all_atom_coords")
+    if all_atom_coords is not None:
+        if len(all_atom_coords) != chem.GetNumAtoms():
+            out["status"] = "not_comparable"
+            return out
+        chem_conf = chem.GetConformer()
+        for i, (x, y, z) in enumerate(all_atom_coords):
+            chem_conf.SetAtomPosition(i, Point3D(x, y, z))
     if AllChem.MMFFGetMoleculeProperties(chem) is None:
         out["status"] = "rdkit_mmff_unsupported"
         return out
