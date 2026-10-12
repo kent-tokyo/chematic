@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-10-13. Release line: **v1.1.1**. Source, published packages,
+> Updated 2026-10-13. Release line: **v1.1.2**. Source, published packages,
 > and historical measurements are kept separate.
 
 CheMatic is a safe, typed, local-first chemistry kernel for Rust, Python,
@@ -14,7 +14,7 @@ and reproducible evidence over feature-count parity.
 - Issues #734 and #754 are closed. Their reaction, SMARTS, autoconf, and fuzz
   corpora remain regression gates; closure is not a universal SMIRKS-parity
   claim.
-- v1.1.1 exposes typed reaction rejection diagnostics across Rust, Python, and
+- v1.1.2 retains typed reaction rejection diagnostics across Rust, Python, and
   WASM, and input-aligned `Core`/`R1`/`R2` columns across Rust, Python, and
   WASM/Node for the documented terminal-wildcard subset.
 - The source candidate also exposes the core Brenk structural-alert contract
@@ -32,7 +32,7 @@ and reproducible evidence over feature-count parity.
   rows. All three common-exact timing lanes favor CheMatic on one macOS arm64
   host; this is not yet public-artifact or broad-domain evidence.
 - The broadest published-package RDKit performance packet is still v1.0.42.
-  Source results and older package results are not relabeled as v1.1.1
+  Source results and older package results are not relabeled as v1.1.2
   evidence.
 - Rust line coverage on the processed Linux Codecov lane is 96.93%. Coverage
   demonstrates executed code, not chemical correctness or compatibility.

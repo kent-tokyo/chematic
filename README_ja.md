@@ -27,13 +27,12 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.1.1 の対応範囲
+### v1.1.2 の対応範囲
 
-v1.1.1では、Rust・Python・WebAssemblyに型付きの反応拒否診断を追加し、WASM/Nodeへ
-入力対応を保持するR-group列を公開しました。parser、PME/SPME、分子動力学、InChI立体、
-CIPの境界条件も強化しています。RDKit・Indigoとの限定比較を記録し、固定した1万件の
-出力を変えずにLabute ASAと環数の準備済み処理を高速化しました。性能と互換性の主張は、
-記録に明記したartifact・corpus・hostの範囲に限ります。詳しくは
+v1.1.2では、RDKit互換3Dの限定範囲に、topology bounds、座標変換、決定的な
+multi-conformer ETKDG/MMFF94、optimizer診断、opt-inのgradient rescueを追加しました。
+prepared R-group coreとブラウザ向けBrenk alertも追加しています。性能と互換性の主張は、
+記録に明記したartifact・corpus・option・hostの範囲に限ります。詳しくは
 [検証報告](docs/validation.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## 使い方

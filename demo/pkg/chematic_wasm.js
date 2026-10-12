@@ -104,7 +104,7 @@ export class ConformerHandle {
         const ret = wasm.conformerhandle_get_conformer_pdb(this.__wbg_ptr, idx);
         let v1;
         if (ret[0] !== 0) {
-            v1 = getStringFromWasm0(ret[0], ret[1]).slice();
+            v1 = getStringFromWasm0(ret[0], ret[1]);
             wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         }
         return v1;
@@ -455,6 +455,18 @@ export class MolHandle {
     bond_count() {
         const ret = wasm.molhandle_bond_count(this.__wbg_ptr);
         return ret >>> 0;
+    }
+    /**
+     * Returns `true` if the molecule has no Brenk structural alerts.
+     *
+     * This uses the same conservative core contract as the Rust, Python, and
+     * MCP bindings: an alert-search budget exhaustion is not reported as a
+     * clean pass.
+     * @returns {boolean}
+     */
+    brenk_passes() {
+        const ret = wasm.molhandle_brenk_passes(this.__wbg_ptr);
+        return ret !== 0;
     }
     /**
      * Palm (1997) Caco-2 intestinal permeability (logPCaco2).
@@ -2040,6 +2052,59 @@ export function boiled_egg_json(smiles) {
 }
 
 /**
+ * Brenk structural-alert identifiers matched by `mol` as a JSON array.
+ *
+ * Returns `[]` when no alerts fire. Identifiers and ordering are identical to
+ * the Rust, Python, and MCP bindings.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function brenk_matches_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.brenk_matches_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Parse `smiles` and return a complete Brenk report as JSON.
+ *
+ * The stable result shape is `{"passes":boolean,"alerts":string[]}`.
+ * Invalid or oversized SMILES throw the same ordinary JavaScript input error
+ * as `parse_smiles`; this function never converts invalid input into a clean
+ * report.
+ * @param {string} smiles
+ * @returns {string}
+ */
+export function brenk_report_json(smiles) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.brenk_report_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Number of BRICS fragments produced by fragmenting the molecule.
  *
  * Returns 1 if no BRICS-breakable bonds exist (whole molecule is one fragment).
@@ -2149,6 +2214,39 @@ export function canonical_tautomer_with_blocked_atoms_json(mol, blocked_atom_ind
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Return caller coordinates centered and aligned to their principal axes.
+ * @param {MolHandle} mol
+ * @param {string} coords_json
+ * @param {string | null | undefined} center_json
+ * @param {boolean} normalize_covar
+ * @param {boolean} ignore_hs
+ * @returns {string}
+ */
+export function canonicalize_conformer_from_coords_json(mol, coords_json, center_json, normalize_covar, ignore_hs) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        var ptr1 = isLikeNone(center_json) ? 0 : passStringToWasm0(center_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len1 = WASM_VECTOR_LEN;
+        const ret = wasm.canonicalize_conformer_from_coords_json(mol.__wbg_ptr, ptr0, len0, ptr1, len1, normalize_covar, ignore_hs);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -2509,6 +2607,42 @@ export function compare_molecules_json(smiles1, smiles2) {
         const ptr1 = passStringToWasm0(smiles2, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
         const ret = wasm.compare_molecules_json(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * Compute an RDKit-style principal-axis transform from caller coordinates.
+ *
+ * Returns a row-major 4x4 JSON matrix. `center_json`, when supplied, must be
+ * `[x,y,z]`; otherwise the selected-atom centroid is used.
+ * @param {MolHandle} mol
+ * @param {string} coords_json
+ * @param {string | null | undefined} center_json
+ * @param {boolean} normalize_covar
+ * @param {boolean} ignore_hs
+ * @returns {string}
+ */
+export function compute_canonical_transform_from_coords_json(mol, coords_json, center_json, normalize_covar, ignore_hs) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        var ptr1 = isLikeNone(center_json) ? 0 : passStringToWasm0(center_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len1 = WASM_VECTOR_LEN;
+        const ret = wasm.compute_canonical_transform_from_coords_json(mol.__wbg_ptr, ptr0, len0, ptr1, len1, normalize_covar, ignore_hs);
         var ptr3 = ret[0];
         var len3 = ret[1];
         if (ret[3]) {
@@ -3700,6 +3834,26 @@ export function get_atom_info(mol, idx) {
 }
 
 /**
+ * Measure angle i-j-k in degrees from caller-supplied coordinates.
+ * @param {MolHandle} mol
+ * @param {string} coords_json
+ * @param {number} i
+ * @param {number} j
+ * @param {number} k
+ * @returns {number}
+ */
+export function get_bond_angle_from_coords_json(mol, coords_json, i, j, k) {
+    _assertClass(mol, MolHandle);
+    const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.get_bond_angle_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j, k);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return ret[0];
+}
+
+/**
  * Return bond information as a JSON object, looked up by the two bonded atom indices.
  *
  * Useful when you know the atom indices from SMARTS matching or `data-atom-idx` SVG
@@ -3752,6 +3906,29 @@ export function get_bond_info(mol, idx) {
 }
 
 /**
+ * Measure a bond length from caller-supplied coordinates.
+ *
+ * `coords_json` is `[[x,y,z], ...]` in molecule atom order. Unlike the
+ * legacy SMILES convenience function, this does not generate a new
+ * conformer, so callers can measure an imported or previously edited one.
+ * @param {MolHandle} mol
+ * @param {string} coords_json
+ * @param {number} i
+ * @param {number} j
+ * @returns {number}
+ */
+export function get_bond_length_from_coords_json(mol, coords_json, i, j) {
+    _assertClass(mol, MolHandle);
+    const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.get_bond_length_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return ret[0];
+}
+
+/**
  * Get bond length in Ångströms between two atoms from a SMILES string.
  * Returns -1.0 if parsing fails or atom indices are out of range.
  *
@@ -3796,6 +3973,27 @@ export function get_descriptors_json(mol) {
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
+}
+
+/**
+ * Measure dihedral i-j-k-l in degrees from caller-supplied coordinates.
+ * @param {MolHandle} mol
+ * @param {string} coords_json
+ * @param {number} i
+ * @param {number} j
+ * @param {number} k
+ * @param {number} l
+ * @returns {number}
+ */
+export function get_dihedral_from_coords_json(mol, coords_json, i, j, k, l) {
+    _assertClass(mol, MolHandle);
+    const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.get_dihedral_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j, k, l);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return ret[0];
 }
 
 /**
@@ -6255,7 +6453,7 @@ export function pqr_infer_element(group_pdb, res_name, atom_name) {
     const ret = wasm.pqr_infer_element(ptr0, len0, ptr1, len1, ptr2, len2);
     let v4;
     if (ret[0] !== 0) {
-        v4 = getStringFromWasm0(ret[0], ret[1]).slice();
+        v4 = getStringFromWasm0(ret[0], ret[1]);
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     }
     return v4;
@@ -7521,6 +7719,110 @@ export function semantic_model_json(model_json) {
         const ptr0 = passStringToWasm0(model_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.semantic_model_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Set angle i-j-k in degrees and return updated coordinate JSON.
+ *
+ * Atoms i and j stay fixed; atom k and its side of the graph rotate
+ * together. If both angle bonds belong to a ring the operation is rejected.
+ * @param {MolHandle} mol
+ * @param {string} coords_json
+ * @param {number} i
+ * @param {number} j
+ * @param {number} k
+ * @param {number} angle_deg
+ * @returns {string}
+ */
+export function set_bond_angle_from_coords_json(mol, coords_json, i, j, k, angle_deg) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.set_bond_angle_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j, k, angle_deg);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Set bond length i-j in caller-supplied coordinates and return updated JSON.
+ *
+ * Atom i stays fixed; atom j and its side of the graph move together. Ring
+ * bonds are rejected, following RDKit's `SetBondLength` contract.
+ * @param {MolHandle} mol
+ * @param {string} coords_json
+ * @param {number} i
+ * @param {number} j
+ * @param {number} length
+ * @returns {string}
+ */
+export function set_bond_length_from_coords_json(mol, coords_json, i, j, length) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.set_bond_length_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j, length);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Set dihedral i-j-k-l in degrees and return updated coordinate JSON.
+ *
+ * The central j-k bond must exist and must not belong to a ring.
+ * @param {MolHandle} mol
+ * @param {string} coords_json
+ * @param {number} i
+ * @param {number} j
+ * @param {number} k
+ * @param {number} l
+ * @param {number} angle_deg
+ * @returns {string}
+ */
+export function set_dihedral_from_coords_json(mol, coords_json, i, j, k, l, angle_deg) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.set_dihedral_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j, k, l, angle_deg);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -8959,11 +9261,11 @@ export function xyz_frames_batch_json(text, offset, batch_size) {
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
-        __wbg___wbindgen_is_undefined_35bb9f4c7fd651d5: function(arg0) {
+        __wbg___wbindgen_is_undefined_8865fb403f8fe9d8: function(arg0) {
             const ret = arg0 === undefined;
             return ret;
         },
-        __wbg___wbindgen_string_get_d109740c0d18f4d7: function(arg0, arg1) {
+        __wbg___wbindgen_string_get_0380ccaa2f57f0d9: function(arg0, arg1) {
             const obj = arg1;
             const ret = typeof(obj) === 'string' ? obj : undefined;
             var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -8971,18 +9273,18 @@ function __wbg_get_imports() {
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
         },
-        __wbg___wbindgen_throw_9c31b086c2b26051: function(arg0, arg1) {
+        __wbg___wbindgen_throw_41e9ee4f547fc59a: function(arg0, arg1) {
             throw new Error(getStringFromWasm0(arg0, arg1));
         },
-        __wbg_error_f085d7e62279b703: function(arg0) {
+        __wbg_error_c9cf3fc2064683a9: function(arg0) {
             console.error(arg0);
         },
-        __wbg_new_from_slice_02962bf7778cf945: function(arg0, arg1) {
-            const ret = new Float64Array(getArrayF64FromWasm0(arg0, arg1));
+        __wbg_new_from_slice_37a3c3a194266cb8: function(arg0, arg1) {
+            const ret = new Uint32Array(getArrayU32FromWasm0(arg0, arg1));
             return ret;
         },
-        __wbg_new_from_slice_f92bf65e9a895613: function(arg0, arg1) {
-            const ret = new Uint32Array(getArrayU32FromWasm0(arg0, arg1));
+        __wbg_new_from_slice_f545fd22ddc142b8: function(arg0, arg1) {
+            const ret = new Float64Array(getArrayF64FromWasm0(arg0, arg1));
             return ret;
         },
         __wbg_now_e7c6795a7f81e10f: function(arg0) {
@@ -8993,28 +9295,28 @@ function __wbg_get_imports() {
             const ret = arg0.performance;
             return ret;
         },
-        __wbg_static_accessor_GLOBAL_THIS_02344c9b09eb08a9: function() {
-            const ret = typeof globalThis === 'undefined' ? null : globalThis;
-            return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
-        },
-        __wbg_static_accessor_GLOBAL_ac6d4ac874d5cd54: function() {
+        __wbg_static_accessor_GLOBAL_266715b9d96ba635: function() {
             const ret = typeof global === 'undefined' ? null : global;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
-        __wbg_static_accessor_SELF_9b2406c23aeb2023: function() {
+        __wbg_static_accessor_GLOBAL_THIS_10fb7dc1ae063179: function() {
+            const ret = typeof globalThis === 'undefined' ? null : globalThis;
+            return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
+        },
+        __wbg_static_accessor_SELF_0b583911f537483a: function() {
             const ret = typeof self === 'undefined' ? null : self;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
-        __wbg_static_accessor_WINDOW_b34d2126934e16ba: function() {
+        __wbg_static_accessor_WINDOW_d7f903d1508cbdc4: function() {
             const ret = typeof window === 'undefined' ? null : window;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
-        __wbindgen_cast_0000000000000001: function(arg0) {
+        __wbindgen_generic_0000000000000001: function(arg0) {
             // Cast intrinsic for `F64 -> Externref`.
             const ret = arg0;
             return ret;
         },
-        __wbindgen_cast_0000000000000002: function(arg0, arg1) {
+        __wbindgen_generic_0000000000000002: function(arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.
             const ret = getStringFromWasm0(arg0, arg1);
             return ret;
@@ -9221,11 +9523,15 @@ function __wbg_finalize_init(instance, module) {
 
 async function __wbg_load(module, imports) {
     if (typeof Response === 'function' && module instanceof Response) {
+        if (!module.ok) {
+            throw new Error(`failed to fetch Wasm: ${module.status} ${module.statusText} fetching '${module.url}'`);
+        }
+
         if (typeof WebAssembly.instantiateStreaming === 'function') {
             try {
                 return await WebAssembly.instantiateStreaming(module, imports);
             } catch (e) {
-                const validResponse = module.ok && expectedResponseType(module.type);
+                const validResponse = expectedResponseType(module.type);
 
                 if (validResponse && module.headers.get('Content-Type') !== 'application/wasm') {
                     console.warn("`WebAssembly.instantiateStreaming` failed because your server does not serve Wasm with `application/wasm` MIME type. Falling back to `WebAssembly.instantiate` which is slower. Original error:\n", e);
