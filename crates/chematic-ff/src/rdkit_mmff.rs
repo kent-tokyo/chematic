@@ -979,18 +979,20 @@ impl RdkitMmffField {
         if self.is_empty() {
             return (0, 0.0);
         }
-        let out = crate::rdkit_bfgs::bfgs_minimize_detailed(
+        let cached = crate::rdkit_bfgs::bfgs_minimize_detailed_with_cached_energy(
             pos,
             1e-4,
             max_iters,
             |p| self.energy(p),
             |p, g| self.scaled_gradient(p, g),
         );
-        let energy = match &out.stale_distance_point {
+        let energy = match &cached.outcome.stale_distance_point {
             Some(d) => self.energy_with_distances(pos, d),
-            None => self.energy(pos),
+            None => cached
+                .energy_at_returned_position
+                .unwrap_or_else(|| self.energy(pos)),
         };
-        (out.status, energy)
+        (cached.outcome.status, energy)
     }
 }
 

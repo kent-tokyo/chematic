@@ -83,6 +83,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Reused the BFGS energy already evaluated at the returned coordinates in the
+  RDKit-compatible MMFF94 and UFF optimizers. The special RDKit stale-distance
+  termination still recomputes its mixed-coordinate report. A 100-row,
+  three-repeat development comparison retained byte-identical per-row results
+  and moved the RDKit/CheMatic median ratio from 1.063x to 1.068x; this small
+  one-host change is not a broad speed claim.
 - Normalized relevant-ring traversal to RingDecomposerLib order before ETKDG
   consumes flat-ring torsions. This removes an input-order source of force-field
   rounding drift. MMFF optimization now also edits the conformer coordinate
