@@ -419,10 +419,7 @@ fn optimize_mmff_conformer(
     let mut flat: Vec<f64> = coords.iter().flatten().copied().collect();
     let (status, energy) = field.optimize(&mut flat, max_iters);
     RdkitMmffConformer {
-        coords: flat
-            .chunks_exact(3)
-            .map(|point| [point[0], point[1], point[2]])
-            .collect(),
+        coords: flat.as_chunks::<3>().0.to_vec(),
         status,
         energy,
     }
