@@ -53,8 +53,13 @@ and reproducible evidence over feature-count parity.
   quality profile (20 candidates, 200 iterations, then one 100-iteration retry
   only when none converged) reached 261/265 within 1 kcal/mol and ran in
   54.66–55.52 s versus RDKit's 56.04–56.44 s across three alternating blocks.
-  These are development results. Candidate freeze, a fresh outcome-blind v4
-  set, two-host timing, memory, and exact public artifacts remain open.
+  These are development results. Candidate commit `43619387` was then frozen
+  before a new outcome-blind v4 set was selected and evaluated once. v4 reached
+  95/100 within 1 kcal/mol and 98/100 within 2 kcal/mol with no failures. Its
+  median time was 29.912 s versus RDKit's 30.026 s, but CheMatic won only two
+  of three alternating blocks. This is an effective tie, not a robust speed
+  win. v4 is now inspected; two-host timing, 21 blocks, memory, and exact
+  public artifacts remain open.
 
 Exact denominators belong in [validation](docs/validation.md) and dated
 [benchmark records](benchmarks/README.md). Unresolved work is tracked in the
@@ -143,11 +148,13 @@ unsupported chemistry never becomes a guessed successful result.
 4. Keep conformer coordinate edits cross-binding and panic-free. Preserve the
    RDKit-compatible movable-fragment and ring-rejection contract with fixed
    coordinate fixtures.
-5. Treat the frozen 265-row A6 set and inspected holdouts v1/v2/v3 as
-   development data. Freeze the code first, generate an outcome-blind v4
-   holdout excluding all four sets, and evaluate the preregistered bounded
-   quality profile once. Report typing, energy, gradient, convergence, stereo,
-   clash, best-of-N quality, time, and memory independently.
+5. Treat the frozen 265-row A6 set and inspected holdouts v1-v4 as development
+   data. v4 was selected only after candidate `43619387` was frozen and was
+   evaluated once; it improved quality to 95/100 within 1 kcal/mol but did not
+   satisfy the all-block speed criterion. Diagnose the remaining tails without
+   tuning on v4, freeze another candidate before selecting any new holdout,
+   and keep typing, energy, gradient, convergence, stereo, clash, best-of-N
+   quality, time, and memory independent.
 6. Promote parallel conformer generation only after the same result is shown
    from exact public artifacts on two hosts, with at least 21 alternating
    blocks, peak memory, and no quality regression. Add macrocycles, metals,
