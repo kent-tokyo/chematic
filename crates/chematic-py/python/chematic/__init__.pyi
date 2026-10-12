@@ -1732,6 +1732,31 @@ class Mol:
         """
         ...
 
+    def compute_canonical_transform(
+        self,
+        coords: list[list[float]],
+        center: Optional[tuple[float, float, float]] = None,
+        normalize_covar: bool = False,
+        ignore_hs: bool = True,
+    ) -> list[list[float]]:
+        """Return the 4x4 transform that aligns a conformer to principal axes.
+
+        This follows RDKit's ``ComputeCanonicalTransform`` geometry contract.
+        Eigenvector signs are solver-dependent, so equivalent frames may
+        differ by a 180-degree proper rotation across platforms.
+        """
+        ...
+
+    def canonicalize_conformer(
+        self,
+        coords: list[list[float]],
+        center: Optional[tuple[float, float, float]] = None,
+        normalize_covar: bool = False,
+        ignore_hs: bool = True,
+    ) -> list[list[float]]:
+        """Return a copy of ``coords`` centered and aligned to principal axes."""
+        ...
+
     # -- Sprint 9 additions --------------------------------------------------
 
     def estate_indices(self) -> list[float]:

@@ -15,6 +15,10 @@ opinion.
 - ETKDG-style distance geometry and torsion knowledge are implemented as
   independent, bounded heuristics. chematic does not ship RDKit ML weights,
   RDKit binaries, or copied source for the default 3D path.
+- Principal-axis conformer orientation is an independent implementation of
+  the public covariance/eigendecomposition contract. RDKit source and runtime
+  outputs are used as compatibility references; no RDKit binary or source is
+  included in chematic.
 - 3D descriptors identify their literature or standard source in module
   documentation where applicable. No paper text, figures, datasets, or
   trained artifacts are distributed as implementation material.

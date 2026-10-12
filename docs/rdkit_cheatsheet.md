@@ -270,11 +270,15 @@ from rdkit.Chem import rdMolTransforms
 rdMolTransforms.SetBondLength(conf, 0, 1, 1.52)
 rdMolTransforms.SetAngleDeg(conf, 0, 1, 2, 109.5)
 rdMolTransforms.SetDihedralDeg(conf, 0, 1, 2, 3, 180.0)
+transform = rdMolTransforms.ComputeCanonicalTransform(conf)
+rdMolTransforms.CanonicalizeConformer(conf)
 
 # chematic returns a new coordinate array and leaves the input unchanged
 coords = mol.set_bond_length(coords, 0, 1, 1.52)
 coords = mol.set_bond_angle(coords, 0, 1, 2, 109.5)
 coords = mol.set_dihedral(coords, 0, 1, 2, 3, 180.0)
+transform = mol.compute_canonical_transform(coords)
+coords = mol.canonicalize_conformer(coords)
 ```
 
 The selected atom and its side of the molecular graph move as one rigid
@@ -283,6 +287,12 @@ rejected; setting an angle is rejected when both defining bonds are in rings.
 Python raises `ValueError`. WASM/Node provides matching coordinate-explicit
 `*_from_coords_json` functions so imported or previously edited conformers are
 not regenerated.
+
+Canonicalization centers the selected atoms and aligns the largest covariance
+axis with x, the next with y, and the smallest with z. It preserves distances
+and handedness. Eigenvector signs and bases inside a repeated-eigenvalue
+subspace are not unique, so compare geometry rather than requiring identical
+coordinate signs across platforms.
 
 ## SASA (3D solvent-accessible surface area)
 

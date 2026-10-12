@@ -1,4 +1,5 @@
 use crate::coords::{Coords3D, Point3};
+use crate::shape_descriptors::jacobi3;
 use chematic_core::{AtomIdx, Molecule};
 use std::collections::HashSet;
 use std::fmt;
@@ -13,7 +14,9 @@ pub enum MolTransformError {
     CoordinateCountMismatch { expected: usize, actual: usize },
     AtomIndexOutOfRange { atom: u32, atom_count: usize },
     NonFiniteCoordinates,
+    NonFiniteCenter,
     NonFiniteTarget,
+    NoAtomsSelected,
     AtomsNotBonded { atom1: u32, atom2: u32 },
     RingBond { atom1: u32, atom2: u32 },
     BothAngleBondsInRing,
@@ -35,7 +38,11 @@ impl fmt::Display for MolTransformError {
                 )
             }
             Self::NonFiniteCoordinates => write!(f, "coordinates must all be finite"),
+            Self::NonFiniteCenter => write!(f, "canonicalization center must be finite"),
             Self::NonFiniteTarget => write!(f, "target value must be finite"),
+            Self::NoAtomsSelected => {
+                write!(f, "canonicalization requires at least one selected atom")
+            }
             Self::AtomsNotBonded { atom1, atom2 } => {
                 write!(f, "atoms {atom1} and {atom2} must be bonded")
             }
@@ -57,6 +64,20 @@ impl fmt::Display for MolTransformError {
 }
 
 impl std::error::Error for MolTransformError {}
+
+/// Rigid transform that places a conformer in its principal-axis frame.
+///
+/// `matrix` is a row-major 4x4 homogeneous transform. `eigenvalues` are the
+/// covariance eigenvalues in ascending order, matching RDKit's documented
+/// `ComputeCanonicalTransform` order. Eigenvector signs are solver-dependent,
+/// and repeated eigenvalues make the basis inside the degenerate subspace
+/// non-unique. Geometrically equivalent canonical frames can therefore differ
+/// by a proper rotation across platforms or libraries.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CanonicalTransform {
+    pub matrix: [[f64; 4]; 4],
+    pub eigenvalues: [f64; 3],
+}
 
 /// Get bond length in Ångströms between atoms a and b.
 pub fn get_bond_length(coords: &Coords3D, a: AtomIdx, b: AtomIdx) -> f64 {
@@ -263,6 +284,138 @@ pub fn compute_centroid(coords: &Coords3D) -> [f64; 3] {
         })
         .collect();
     super::usr::centroid(&all_coords)
+}
+
+/// Compute the rigid transform that aligns a conformer with its principal axes.
+///
+/// This follows RDKit's `ComputeCanonicalTransform` geometry contract: the
+/// selected center is moved to the origin, the largest covariance axis is
+/// placed on x, the next on y, and the smallest on z. The returned rotation is
+/// always right-handed, so applying it cannot invert stereochemistry.
+///
+/// When `center` is `None`, the unweighted centroid of the selected atoms is
+/// used. Hydrogen atoms are omitted from both the centroid and covariance when
+/// `ignore_hydrogens` is true. `normalize_covariance` scales eigenvalues by the
+/// selected atom count but does not change the transform.
+pub fn compute_canonical_transform(
+    coords: &Coords3D,
+    mol: &Molecule,
+    center: Option<[f64; 3]>,
+    normalize_covariance: bool,
+    ignore_hydrogens: bool,
+) -> Result<CanonicalTransform, MolTransformError> {
+    validate_coords_and_atoms(coords, mol, &[])?;
+
+    let selected: Vec<AtomIdx> = mol
+        .atoms()
+        .filter_map(|(idx, atom)| {
+            (!ignore_hydrogens || atom.element.atomic_number() != 1).then_some(idx)
+        })
+        .collect();
+    if selected.is_empty() {
+        return Err(MolTransformError::NoAtomsSelected);
+    }
+
+    let center = match center {
+        Some(center) => {
+            if center.iter().any(|value| !value.is_finite()) {
+                return Err(MolTransformError::NonFiniteCenter);
+            }
+            center
+        }
+        None => {
+            let inverse_count = 1.0 / selected.len() as f64;
+            let mut centroid = [0.0; 3];
+            for &idx in &selected {
+                let point = coords.get(idx);
+                centroid[0] += point.x;
+                centroid[1] += point.y;
+                centroid[2] += point.z;
+            }
+            for component in &mut centroid {
+                *component *= inverse_count;
+            }
+            centroid
+        }
+    };
+
+    let mut covariance = [[0.0; 3]; 3];
+    for &idx in &selected {
+        let point = coords.get(idx);
+        let delta = [
+            point.x - center[0],
+            point.y - center[1],
+            point.z - center[2],
+        ];
+        for row in 0..3 {
+            for col in row..3 {
+                covariance[row][col] += delta[row] * delta[col];
+            }
+        }
+    }
+    covariance[1][0] = covariance[0][1];
+    covariance[2][0] = covariance[0][2];
+    covariance[2][1] = covariance[1][2];
+    if normalize_covariance {
+        let inverse_count = 1.0 / selected.len() as f64;
+        for row in &mut covariance {
+            for value in row {
+                *value *= inverse_count;
+            }
+        }
+    }
+
+    let (eigenvalues, eigenvectors) = jacobi3(covariance);
+    let mut matrix = [
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ];
+
+    if selected.len() > 1 {
+        // jacobi3 returns ascending eigenpairs; the canonical frame uses the
+        // largest axis first, matching RDKit's row-major transform.
+        for (row, eigenvector_column) in [2usize, 1, 0].into_iter().enumerate() {
+            for col in 0..3 {
+                matrix[row][col] = eigenvectors[col][eigenvector_column];
+            }
+        }
+        if rotation_determinant(&matrix) < 0.0 {
+            for value in &mut matrix[2][..3] {
+                *value = -*value;
+            }
+        }
+    }
+
+    for row in 0..3 {
+        matrix[row][3] =
+            -(matrix[row][0] * center[0] + matrix[row][1] * center[1] + matrix[row][2] * center[2]);
+    }
+
+    Ok(CanonicalTransform {
+        matrix,
+        eigenvalues,
+    })
+}
+
+/// Return a copy of `coords` in the principal-axis frame.
+pub fn canonicalize_conformer(
+    coords: &Coords3D,
+    mol: &Molecule,
+    center: Option<[f64; 3]>,
+    normalize_covariance: bool,
+    ignore_hydrogens: bool,
+) -> Result<Coords3D, MolTransformError> {
+    let transform =
+        compute_canonical_transform(coords, mol, center, normalize_covariance, ignore_hydrogens)?;
+    Ok(transform_conformer(coords, &transform.matrix))
+}
+
+fn rotation_determinant(matrix: &[[f64; 4]; 4]) -> f64 {
+    matrix[0][0] * (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1])
+        - matrix[0][1] * (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0])
+        + matrix[0][2] * (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0])
 }
 
 /// Set dihedral angle A—B—C—D to target_angle (radians) by rotating the B-C bond.
@@ -724,8 +877,16 @@ mod tests {
                 "coordinates must all be finite",
             ),
             (
+                MolTransformError::NonFiniteCenter,
+                "canonicalization center must be finite",
+            ),
+            (
                 MolTransformError::NonFiniteTarget,
                 "target value must be finite",
+            ),
+            (
+                MolTransformError::NoAtomsSelected,
+                "canonicalization requires at least one selected atom",
             ),
             (
                 MolTransformError::AtomsNotBonded { atom1: 0, atom2: 2 },
@@ -901,5 +1062,134 @@ mod tests {
             ),
             Err(MolTransformError::UndefinedDihedral)
         );
+    }
+
+    #[test]
+    fn canonical_transform_matches_rdkit_principal_axes_fixture() {
+        let mol = parse("CCO").unwrap();
+        let mut coords = Coords3D::new_zeroed(3);
+        coords.set(AtomIdx(0), Point3::new(1.0, 2.0, 3.0));
+        coords.set(AtomIdx(1), Point3::new(3.0, 2.0, 3.0));
+        coords.set(AtomIdx(2), Point3::new(3.0, 4.0, 5.0));
+
+        let transform = compute_canonical_transform(&coords, &mol, None, false, true).unwrap();
+        let rdkit_rows = [
+            [
+                -0.4597008433809832,
+                -0.6279630301995544,
+                -0.6279630301995544,
+            ],
+            [-0.8880738339771153, 0.3250575836718682, 0.3250575836718682],
+            [0.0, 0.7071067811865475, -0.7071067811865475],
+        ];
+        // Eigenvector signs are arbitrary. Compare each axis as a rank-one
+        // projector, which proves the same RDKit principal-axis frame without
+        // requiring a platform-specific sign convention.
+        for axis in 0..3 {
+            for row in 0..3 {
+                for col in 0..3 {
+                    let actual = transform.matrix[axis][row] * transform.matrix[axis][col];
+                    let expected = rdkit_rows[axis][row] * rdkit_rows[axis][col];
+                    assert!((actual - expected).abs() < 1e-10);
+                }
+            }
+        }
+        assert!(rotation_determinant(&transform.matrix) > 0.0);
+
+        let canonical = transform_conformer(&coords, &transform.matrix);
+        let [cx, cy, cz] = compute_centroid(&canonical);
+        assert!(cx.abs() < 1e-12 && cy.abs() < 1e-12 && cz.abs() < 1e-12);
+        for i in 0..3 {
+            for j in 0..3 {
+                assert!(
+                    (coords.get(AtomIdx(i)).distance(&coords.get(AtomIdx(j)))
+                        - canonical
+                            .get(AtomIdx(i))
+                            .distance(&canonical.get(AtomIdx(j))))
+                    .abs()
+                        < 1e-12
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn canonicalize_conformer_is_right_handed_and_normalization_only_scales_eigenvalues() {
+        let mol = parse("CC(O)N").unwrap();
+        let mut coords = Coords3D::new_zeroed(4);
+        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(1.0, 0.0, 0.0));
+        coords.set(AtomIdx(2), Point3::new(0.0, 2.0, 0.0));
+        coords.set(AtomIdx(3), Point3::new(0.0, 0.0, 3.0));
+
+        let raw = compute_canonical_transform(&coords, &mol, None, false, true).unwrap();
+        let normalized = compute_canonical_transform(&coords, &mol, None, true, true).unwrap();
+        for row in 0..4 {
+            for col in 0..4 {
+                assert!((raw.matrix[row][col] - normalized.matrix[row][col]).abs() < 1e-12);
+            }
+        }
+        for i in 0..3 {
+            assert!((raw.eigenvalues[i] / 4.0 - normalized.eigenvalues[i]).abs() < 1e-12);
+        }
+        assert!(rotation_determinant(&raw.matrix) > 0.0);
+
+        let canonical = canonicalize_conformer(&coords, &mol, None, false, true).unwrap();
+        let original_volume = signed_tetrahedron_volume(&coords);
+        let canonical_volume = signed_tetrahedron_volume(&canonical);
+        assert!(original_volume * canonical_volume > 0.0);
+    }
+
+    #[test]
+    fn canonical_transform_honors_hydrogen_filter_and_explicit_center() {
+        let mol = parse("[H]C").unwrap();
+        let mut coords = Coords3D::new_zeroed(2);
+        coords.set(AtomIdx(0), Point3::new(10.0, 0.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(2.0, 0.0, 0.0));
+
+        let heavy = canonicalize_conformer(&coords, &mol, None, false, true).unwrap();
+        assert!(heavy.get(AtomIdx(1)).x.abs() < 1e-12);
+
+        let all = canonicalize_conformer(&coords, &mol, None, false, false).unwrap();
+        assert!((all.get(AtomIdx(0)).x.abs() - 4.0).abs() < 1e-12);
+        assert!((all.get(AtomIdx(1)).x.abs() - 4.0).abs() < 1e-12);
+
+        let explicit =
+            canonicalize_conformer(&coords, &mol, Some([2.0, 0.0, 0.0]), false, true).unwrap();
+        assert!(explicit.get(AtomIdx(1)).distance(&Point3::zero()) < 1e-12);
+    }
+
+    #[test]
+    fn canonical_transform_rejects_invalid_or_empty_selection() {
+        let hydrogen = parse("[H]").unwrap();
+        let coords = Coords3D::new_zeroed(1);
+        assert_eq!(
+            compute_canonical_transform(&coords, &hydrogen, None, false, true),
+            Err(MolTransformError::NoAtomsSelected)
+        );
+        assert_eq!(
+            compute_canonical_transform(
+                &coords,
+                &hydrogen,
+                Some([f64::NAN, 0.0, 0.0]),
+                false,
+                false,
+            ),
+            Err(MolTransformError::NonFiniteCenter)
+        );
+
+        let carbon = parse("C").unwrap();
+        let mut carbon_coords = Coords3D::new_zeroed(1);
+        carbon_coords.set(AtomIdx(0), Point3::new(2.0, -3.0, 4.0));
+        let canonical = canonicalize_conformer(&carbon_coords, &carbon, None, false, true).unwrap();
+        assert!(canonical.get(AtomIdx(0)).distance(&Point3::zero()) < 1e-12);
+    }
+
+    fn signed_tetrahedron_volume(coords: &Coords3D) -> f64 {
+        let a = coords.get(AtomIdx(0));
+        let ab = coords.get(AtomIdx(1)).sub(&a);
+        let ac = coords.get(AtomIdx(2)).sub(&a);
+        let ad = coords.get(AtomIdx(3)).sub(&a);
+        ab.cross(&ac).dot(&ad) / 6.0
     }
 }

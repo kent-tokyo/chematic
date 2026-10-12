@@ -598,6 +598,52 @@ impl Mol {
         Ok(transform_coords_to_python(&changed))
     }
 
+    /// Compute the RDKit-style principal-axis transform for a conformer.
+    ///
+    /// The result is a row-major 4x4 homogeneous matrix. Eigenvector signs
+    /// are solver-dependent, so equivalent frames may differ by a
+    /// 180-degree proper rotation across platforms.
+    #[pyo3(signature = (coords, center = None, normalize_covar = false, ignore_hs = true))]
+    fn compute_canonical_transform(
+        &self,
+        coords: Vec<[f64; 3]>,
+        center: Option<[f64; 3]>,
+        normalize_covar: bool,
+        ignore_hs: bool,
+    ) -> PyResult<Vec<Vec<f64>>> {
+        let c3d = checked_transform_coords(&self.inner, &coords, &[])?;
+        let transform = chematic_3d::compute_canonical_transform(
+            &c3d,
+            &self.inner,
+            center,
+            normalize_covar,
+            ignore_hs,
+        )
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        Ok(transform.matrix.into_iter().map(Vec::from).collect())
+    }
+
+    /// Return a conformer centered and aligned to its principal axes.
+    #[pyo3(signature = (coords, center = None, normalize_covar = false, ignore_hs = true))]
+    fn canonicalize_conformer(
+        &self,
+        coords: Vec<[f64; 3]>,
+        center: Option<[f64; 3]>,
+        normalize_covar: bool,
+        ignore_hs: bool,
+    ) -> PyResult<Vec<Vec<f64>>> {
+        let c3d = checked_transform_coords(&self.inner, &coords, &[])?;
+        let canonical = chematic_3d::canonicalize_conformer(
+            &c3d,
+            &self.inner,
+            center,
+            normalize_covar,
+            ignore_hs,
+        )
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        Ok(transform_coords_to_python(&canonical))
+    }
+
     // -----------------------------------------------------------------------
     // Sprint 4: additional fingerprints
     // -----------------------------------------------------------------------

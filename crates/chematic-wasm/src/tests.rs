@@ -3125,6 +3125,36 @@ fn conformer_coordinate_transforms_match_rdkit_fragment_motion() {
 }
 
 #[test]
+fn conformer_canonicalization_exposes_the_same_json_contract() {
+    let mol = parse("CCO");
+    let coords = "[[1,2,3],[3,2,3],[3,4,5]]";
+    let matrix_json = compute_canonical_transform_from_coords_json(&mol, coords, None, false, true)
+        .expect("canonical transform");
+    let matrix: [[f64; 4]; 4] = serde_json::from_str(&matrix_json).unwrap();
+    assert_eq!(matrix[3], [0.0, 0.0, 0.0, 1.0]);
+
+    let canonical_json = canonicalize_conformer_from_coords_json(&mol, coords, None, false, true)
+        .expect("canonical coordinates");
+    let canonical: Vec<[f64; 3]> = serde_json::from_str(&canonical_json).unwrap();
+    for axis in 0..3 {
+        let centroid = canonical.iter().map(|point| point[axis]).sum::<f64>() / 3.0;
+        assert!(centroid.abs() < 1e-12);
+    }
+
+    assert!(
+        canonicalize_conformer_from_coords_json(
+            &mol,
+            coords,
+            Some("[null,0,0]".to_string()),
+            false,
+            true,
+        )
+        .unwrap_err()
+        .contains("invalid canonicalization center JSON")
+    );
+}
+
+#[test]
 fn conformer_coordinate_transforms_reject_invalid_inputs() {
     let chain = parse("CCCC");
     assert!(

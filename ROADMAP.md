@@ -20,10 +20,11 @@ and reproducible evidence over feature-count parity.
 - The source candidate also exposes the core Brenk structural-alert contract
   to browser/Node callers, closing the remaining Rust/Python/MCP versus WASM
   binding gap for this filter.
-- The source candidate closes the bounded `rdMolTransforms` editing gap for
-  bond lengths and angles. Rust, Python, and WASM/Node now share checked
-  rigid-fragment setters for bond length, bond angle, and dihedral edits;
-  canonical conformer orientation remains separate future work.
+- The source candidate closes the bounded `rdMolTransforms` gap for common
+  coordinate edits and principal-axis orientation. Rust, Python, and
+  WASM/Node share checked rigid-fragment setters for bond length, bond angle,
+  and dihedral edits, plus right-handed canonical transforms and conformer
+  orientation. This is not broad parity with every RDKit conformer utility.
 - The current source candidate closes a symmetric-core R-group column swap
   that an unordered payload comparison had hidden. Against RDKit 2026.03.6,
   the bounded gates now report 80/80 semantic reaction matches plus 3 jointly

@@ -1123,6 +1123,63 @@ pub fn set_dihedral_from_coords_json(
     conformer_coords_json(&changed)
 }
 
+fn canonical_center_from_json(center_json: Option<String>) -> Result<Option<[f64; 3]>, String> {
+    center_json
+        .map(|json| {
+            serde_json::from_str::<[f64; 3]>(&json)
+                .map_err(|error| format!("invalid canonicalization center JSON: {error}"))
+        })
+        .transpose()
+}
+
+/// Compute an RDKit-style principal-axis transform from caller coordinates.
+///
+/// Returns a row-major 4x4 JSON matrix. `center_json`, when supplied, must be
+/// `[x,y,z]`; otherwise the selected-atom centroid is used.
+#[wasm_bindgen]
+pub fn compute_canonical_transform_from_coords_json(
+    mol: &MolHandle,
+    coords_json: &str,
+    center_json: Option<String>,
+    normalize_covar: bool,
+    ignore_hs: bool,
+) -> Result<String, String> {
+    let coords = conformer_coords_from_json(mol, coords_json)?;
+    let center = canonical_center_from_json(center_json)?;
+    let transform = chematic_3d::compute_canonical_transform(
+        &coords,
+        &mol.inner,
+        center,
+        normalize_covar,
+        ignore_hs,
+    )
+    .map_err(|error| error.to_string())?;
+    serde_json::to_string(&transform.matrix)
+        .map_err(|error| format!("transform serialization failed: {error}"))
+}
+
+/// Return caller coordinates centered and aligned to their principal axes.
+#[wasm_bindgen]
+pub fn canonicalize_conformer_from_coords_json(
+    mol: &MolHandle,
+    coords_json: &str,
+    center_json: Option<String>,
+    normalize_covar: bool,
+    ignore_hs: bool,
+) -> Result<String, String> {
+    let coords = conformer_coords_from_json(mol, coords_json)?;
+    let center = canonical_center_from_json(center_json)?;
+    let canonical = chematic_3d::canonicalize_conformer(
+        &coords,
+        &mol.inner,
+        center,
+        normalize_covar,
+        ignore_hs,
+    )
+    .map_err(|error| error.to_string())?;
+    conformer_coords_json(&canonical)
+}
+
 // ---------------------------------------------------------------------------
 // random_smiles (SMILES augmentation)
 // ---------------------------------------------------------------------------

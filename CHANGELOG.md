@@ -12,6 +12,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added RDKit-style canonical conformer orientation across Rust, Python, and
+  WASM/Node. `compute_canonical_transform` returns a right-handed homogeneous
+  transform and `canonicalize_conformer` returns transformed coordinates,
+  with optional centers, covariance normalization, and hydrogen filtering.
+  Empty selections and non-finite centers return typed errors. Axis signs and
+  bases for repeated eigenvalues can differ while preserving geometry.
 - Added RDKit-style conformer coordinate transforms across Rust, Python, and
   WASM/Node. Callers can measure and set bond lengths, bond angles, and
   dihedrals while moving the selected molecular fragment as a rigid body.
