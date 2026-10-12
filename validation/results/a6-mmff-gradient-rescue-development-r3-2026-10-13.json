@@ -1,0 +1,4313 @@
+{
+  "schema": "a6-rdkit-compatible-etkdg-mmff/v1",
+  "created_at": "2026-10-12T22:22:12Z",
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "chematic": "1.1.1",
+  "rdkit": "2026.09.1",
+  "molecules": 265,
+  "manifest": null,
+  "corpus_sha256": null,
+  "conformers_per_molecule": 20,
+  "max_mmff_iters": 200,
+  "adaptive_retry_candidates": 1,
+  "adaptive_retry_max_iters": 100,
+  "adaptive_retry_only_if_none_converged": false,
+  "diagnostic_probe_retry_iters": 0,
+  "gradient_rescue_threshold": 0.05,
+  "chematic_etkdg_oracle": "RDKit 2026.09.1 ETKDGv3",
+  "repeats": 3,
+  "execution_order": [
+    [
+      "chematic",
+      "rdkit"
+    ],
+    [
+      "rdkit",
+      "chematic"
+    ],
+    [
+      "chematic",
+      "rdkit"
+    ]
+  ],
+  "seconds": {
+    "chematic": [
+      55.46409320901148,
+      57.78371287486516,
+      57.769323125015944
+    ],
+    "rdkit": [
+      58.39379891613498,
+      58.80128220887855,
+      60.52373983315192
+    ]
+  },
+  "median_seconds": {
+    "chematic": 57.769323125015944,
+    "rdkit": 58.80128220887855
+  },
+  "speedup_rdkit_over_chematic": 1.0178634442648633,
+  "quality": {
+    "compared": 265,
+    "failures": [],
+    "median_delta_kcal_mol": -4.250466645316919e-11,
+    "p90_delta_kcal_mol": 0.038282183013166105,
+    "max_delta_kcal_mol": 2.969445495685953,
+    "at_or_below_rdkit": 186,
+    "within_1_kcal_mol": 261,
+    "within_2_kcal_mol": 263
+  },
+  "rows": [
+    {
+      "row_index": 0,
+      "id": null,
+      "name": "benzene",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 16.22696679896021
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 16.226966798974765
+      },
+      "delta_kcal_mol": -1.4555467942045652e-11
+    },
+    {
+      "row_index": 1,
+      "id": null,
+      "name": "naphthalene",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 31.132836125160402
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 31.13283613214009
+      },
+      "delta_kcal_mol": -6.979686162367216e-09
+    },
+    {
+      "row_index": 2,
+      "id": null,
+      "name": "pyridine",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 15.523431059385139
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 15.523431059387324
+      },
+      "delta_kcal_mol": -2.184918912462308e-12
+    },
+    {
+      "row_index": 3,
+      "id": null,
+      "name": "furan",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 1.5577219855696844
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 1.5577219855696733
+      },
+      "delta_kcal_mol": 1.1102230246251565e-14
+    },
+    {
+      "row_index": 4,
+      "id": null,
+      "name": "thiophene",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 4.379176528054096
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 4.379176528054113
+      },
+      "delta_kcal_mol": -1.687538997430238e-14
+    },
+    {
+      "row_index": 5,
+      "id": null,
+      "name": "adamantane",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 30.019813193675184
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 30.01981319367519
+      },
+      "delta_kcal_mol": -7.105427357601002e-15
+    },
+    {
+      "row_index": 6,
+      "id": null,
+      "name": "cubane",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 42.07628366097705
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 42.07628366097706
+      },
+      "delta_kcal_mol": -1.4210854715202004e-14
+    },
+    {
+      "row_index": 7,
+      "id": null,
+      "name": "cyclohexane",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -3.560933551083207
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -3.5609335510832096
+      },
+      "delta_kcal_mol": 2.6645352591003757e-15
+    },
+    {
+      "row_index": 8,
+      "id": null,
+      "name": "cyclopentane",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 1.5475284987694464
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 1.5475284987694473
+      },
+      "delta_kcal_mol": -8.881784197001252e-16
+    },
+    {
+      "row_index": 9,
+      "id": null,
+      "name": "indole",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 15.111870111108143
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 15.111870111103512
+      },
+      "delta_kcal_mol": 4.630962280316453e-12
+    },
+    {
+      "row_index": 10,
+      "id": null,
+      "name": "purine",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -29.398267562616446
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -29.39826756243735
+      },
+      "delta_kcal_mol": -1.7909584926201205e-10
+    },
+    {
+      "row_index": 11,
+      "id": null,
+      "name": "quinoline",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 33.89364973191057
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 33.8936497313938
+      },
+      "delta_kcal_mol": 5.167706262909633e-10
+    },
+    {
+      "row_index": 12,
+      "id": null,
+      "name": "anthracene",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 43.283155989418276
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 43.28315600551748
+      },
+      "delta_kcal_mol": -1.609920730061276e-08
+    },
+    {
+      "row_index": 13,
+      "id": null,
+      "name": "pyrene",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 59.53920578168136
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 59.53920577592005
+      },
+      "delta_kcal_mol": 5.7613078752183355e-09
+    },
+    {
+      "row_index": 14,
+      "id": null,
+      "name": "biphenyl",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 39.32922809134635
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 39.32922809134638
+      },
+      "delta_kcal_mol": -2.842170943040401e-14
+    },
+    {
+      "row_index": 15,
+      "id": null,
+      "name": "butane",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -5.0759733412182015
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -5.0759733412182015
+      },
+      "delta_kcal_mol": 0.0
+    },
+    {
+      "row_index": 16,
+      "id": null,
+      "name": "hexane",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -5.474436872452259
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -5.474436872452376
+      },
+      "delta_kcal_mol": 1.1723955140041653e-13
+    },
+    {
+      "row_index": 17,
+      "id": null,
+      "name": "decane",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -5.430964829030829
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -5.430964833475565
+      },
+      "delta_kcal_mol": 4.444736134701088e-09
+    },
+    {
+      "row_index": 18,
+      "id": null,
+      "name": "triethylene_glycol",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 59.41707258512853
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 59.41707261094284
+      },
+      "delta_kcal_mol": -2.58143089126861e-08
+    },
+    {
+      "row_index": 19,
+      "id": null,
+      "name": "hexanediol",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 1.0503413388726308
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 1.0503413388719505
+      },
+      "delta_kcal_mol": 6.803446694902959e-13
+    },
+    {
+      "row_index": 20,
+      "id": null,
+      "name": "hexadecane",
+      "chematic": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": -4.256218008637408
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": -4.256218024295244
+      },
+      "delta_kcal_mol": 1.565783591672698e-08
+    },
+    {
+      "row_index": 21,
+      "id": null,
+      "name": "cyclododecane",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 16.930455518160173
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 16.930455520830574
+      },
+      "delta_kcal_mol": -2.6704007893840753e-09
+    },
+    {
+      "row_index": 22,
+      "id": null,
+      "name": "crown_12_4",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 95.94953288878631
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 95.94953288945317
+      },
+      "delta_kcal_mol": -6.668585683655692e-10
+    },
+    {
+      "row_index": 23,
+      "id": null,
+      "name": "cyclooctadecane",
+      "chematic": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 8.53549602147827
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 8.535496013485663
+      },
+      "delta_kcal_mol": 7.992607464757384e-09
+    },
+    {
+      "row_index": 24,
+      "id": null,
+      "name": "l_alanine",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 20.377805550635827
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 20.377805550591614
+      },
+      "delta_kcal_mol": 4.4213521732672234e-11
+    },
+    {
+      "row_index": 25,
+      "id": null,
+      "name": "d_alanine",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 20.377805544993393
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 20.377805544901744
+      },
+      "delta_kcal_mol": 9.164935477201652e-11
+    },
+    {
+      "row_index": 26,
+      "id": null,
+      "name": "l_serine",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 37.83223081186448
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 37.832230801462835
+      },
+      "delta_kcal_mol": 1.0401642214219464e-08
+    },
+    {
+      "row_index": 27,
+      "id": null,
+      "name": "l_threonine",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 40.46029083073206
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 40.46029082928973
+      },
+      "delta_kcal_mol": 1.4423306993194274e-09
+    },
+    {
+      "row_index": 28,
+      "id": null,
+      "name": "2_butanol_R",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 1.0120675846030243
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 1.0120675846030789
+      },
+      "delta_kcal_mol": -5.46229728115577e-14
+    },
+    {
+      "row_index": 29,
+      "id": null,
+      "name": "2_butanol_S",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 1.0120675845377773
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 1.0120675845377725
+      },
+      "delta_kcal_mol": 4.884981308350689e-15
+    },
+    {
+      "row_index": 30,
+      "id": null,
+      "name": "2_chlorobutane_R",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 0.10706969084103513
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 0.10706969084102447
+      },
+      "delta_kcal_mol": 1.0658141036401503e-14
+    },
+    {
+      "row_index": 31,
+      "id": null,
+      "name": "ibuprofen_S",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 23.789638216825125
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 23.78963821852331
+      },
+      "delta_kcal_mol": -1.698186480325603e-09
+    },
+    {
+      "row_index": 32,
+      "id": null,
+      "name": "naproxen_S",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 34.70112145557184
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 34.70112144574634
+      },
+      "delta_kcal_mol": 9.825498636928387e-09
+    },
+    {
+      "row_index": 33,
+      "id": null,
+      "name": "menthol",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 17.703973548364363
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 17.703973551135235
+      },
+      "delta_kcal_mol": -2.7708715322205535e-09
+    },
+    {
+      "row_index": 34,
+      "id": null,
+      "name": "chfclbr_R",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 0.15443899974556013
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 0.15443899974555989
+      },
+      "delta_kcal_mol": 2.498001805406602e-16
+    },
+    {
+      "row_index": 35,
+      "id": null,
+      "name": "chfclbr_S",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 0.15443899974663028
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 0.15443899974663178
+      },
+      "delta_kcal_mol": -1.4988010832439613e-15
+    },
+    {
+      "row_index": 36,
+      "id": null,
+      "name": "quaternary_1_R",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 0.02643280133844137
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 0.026432801338441406
+      },
+      "delta_kcal_mol": -3.469446951953614e-17
+    },
+    {
+      "row_index": 37,
+      "id": null,
+      "name": "quaternary_1_S",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 0.02643280133777183
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 0.026432801337771553
+      },
+      "delta_kcal_mol": 2.7755575615628914e-16
+    },
+    {
+      "row_index": 38,
+      "id": null,
+      "name": "quaternary_2_R",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -88.0984941699986
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -88.09849413357914
+      },
+      "delta_kcal_mol": -3.6419464777281974e-08
+    },
+    {
+      "row_index": 39,
+      "id": null,
+      "name": "quaternary_2_S",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -88.0984941701057
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -88.09849415933782
+      },
+      "delta_kcal_mol": -1.0767877256512293e-08
+    },
+    {
+      "row_index": 40,
+      "id": null,
+      "name": "but2ene_E",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 4.846789851129089
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 4.84678985112907
+      },
+      "delta_kcal_mol": 1.9539925233402755e-14
+    },
+    {
+      "row_index": 41,
+      "id": null,
+      "name": "but2ene_Z",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 6.19817876258826
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 6.198178762588262
+      },
+      "delta_kcal_mol": -2.6645352591003757e-15
+    },
+    {
+      "row_index": 42,
+      "id": null,
+      "name": "chloropropene_E",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 7.70623827422918
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 7.706238274229173
+      },
+      "delta_kcal_mol": 7.105427357601002e-15
+    },
+    {
+      "row_index": 43,
+      "id": null,
+      "name": "chloropropene_Z",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 8.78956514443794
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 8.78956514443751
+      },
+      "delta_kcal_mol": 4.298783551348606e-13
+    },
+    {
+      "row_index": 44,
+      "id": null,
+      "name": "cinnamic_acid_E",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -11.282594959970423
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -11.282595111315455
+      },
+      "delta_kcal_mol": 1.513450325063559e-07
+    },
+    {
+      "row_index": 45,
+      "id": null,
+      "name": "cinnamic_acid_Z",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -5.7216304936731035
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -5.721630493674848
+      },
+      "delta_kcal_mol": 1.744382416291046e-12
+    },
+    {
+      "row_index": 46,
+      "id": null,
+      "name": "pent2ene_E",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 3.7628664117210793
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 3.7628664117210704
+      },
+      "delta_kcal_mol": 8.881784197001252e-15
+    },
+    {
+      "row_index": 47,
+      "id": null,
+      "name": "pent2ene_Z",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 5.089380210283873
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 5.089380210283883
+      },
+      "delta_kcal_mol": -9.769962616701378e-15
+    },
+    {
+      "row_index": 48,
+      "id": null,
+      "name": "aspirin",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 18.909768977833235
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 18.909768977821145
+      },
+      "delta_kcal_mol": 1.2089884648958105e-11
+    },
+    {
+      "row_index": 49,
+      "id": null,
+      "name": "ibuprofen",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 23.789638218767646
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 23.789638222798665
+      },
+      "delta_kcal_mol": -4.031019074091091e-09
+    },
+    {
+      "row_index": 50,
+      "id": null,
+      "name": "caffeine",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -122.52841057569383
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -122.52841056105946
+      },
+      "delta_kcal_mol": -1.4634366607424454e-08
+    },
+    {
+      "row_index": 51,
+      "id": null,
+      "name": "paracetamol",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -12.775974495054463
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -12.775974495201105
+      },
+      "delta_kcal_mol": 1.4664180980616948e-10
+    },
+    {
+      "row_index": 52,
+      "id": null,
+      "name": "diphenhydramine",
+      "chematic": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": 81.4396623904149
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 14,
+        "best_energy": 81.43966212490997
+      },
+      "delta_kcal_mol": 2.655049229360884e-07
+    },
+    {
+      "row_index": 53,
+      "id": null,
+      "name": "penicillin_core",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 6.099116797947957
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 6.09911679798725
+      },
+      "delta_kcal_mol": -3.929301328753354e-11
+    },
+    {
+      "row_index": 54,
+      "id": null,
+      "name": "testosterone",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 59.76662016976116
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 59.766620206752044
+      },
+      "delta_kcal_mol": -3.6990883245380246e-08
+    },
+    {
+      "row_index": 55,
+      "id": null,
+      "name": "cholesterol",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 98.10807759506827
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 98.11112942618334
+      },
+      "delta_kcal_mol": -0.0030518311150729005
+    },
+    {
+      "row_index": 56,
+      "id": null,
+      "name": "atorvastatin_fragment",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 36.01375537859709
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 36.07963138927095
+      },
+      "delta_kcal_mol": -0.06587601067386117
+    },
+    {
+      "row_index": 57,
+      "id": null,
+      "name": "gly_ala_gly",
+      "chematic": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 24.13418976762297
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 24.134189639854213
+      },
+      "delta_kcal_mol": 1.27768757351987e-07
+    },
+    {
+      "row_index": 58,
+      "id": null,
+      "name": "cyclobutane",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 10.283252779521721
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 10.283252779521728
+      },
+      "delta_kcal_mol": -7.105427357601002e-15
+    },
+    {
+      "row_index": 59,
+      "id": null,
+      "name": "cyclooctane",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 12.13972818628051
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 12.139728186280514
+      },
+      "delta_kcal_mol": -3.552713678800501e-15
+    },
+    {
+      "row_index": 60,
+      "id": null,
+      "name": "cyclononane",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 16.453579572528426
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 16.45357957252915
+      },
+      "delta_kcal_mol": -7.247535904753022e-13
+    },
+    {
+      "row_index": 61,
+      "id": null,
+      "name": "dimethylbiphenyl_2_2",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 47.45567192031791
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 47.45567192188497
+      },
+      "delta_kcal_mol": -1.5670593711547554e-09
+    },
+    {
+      "row_index": 62,
+      "id": null,
+      "name": "macrolactam_12",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -15.70737323415873
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -15.707373234090888
+      },
+      "delta_kcal_mol": -6.784262041037437e-11
+    },
+    {
+      "row_index": 63,
+      "id": null,
+      "name": "ring_torsion_fail_closed",
+      "chematic": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": 1.9875303239603248
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 5,
+        "best_energy": 1.9875303226241066
+      },
+      "delta_kcal_mol": 1.336218247161014e-09
+    },
+    {
+      "row_index": 64,
+      "id": null,
+      "name": "force_field_unsupported_probe",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 23.674261330204157
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 23.674261329755655
+      },
+      "delta_kcal_mol": 4.4850168023913284e-10
+    },
+    {
+      "row_index": 65,
+      "id": null,
+      "name": "chembl_tier_b_0000",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 86.06355234797601
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 86.06355234877364
+      },
+      "delta_kcal_mol": -7.976268534548581e-10
+    },
+    {
+      "row_index": 66,
+      "id": null,
+      "name": "chembl_tier_b_0001",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 102.19343523786532
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 102.19343523752414
+      },
+      "delta_kcal_mol": 3.411742000025697e-10
+    },
+    {
+      "row_index": 67,
+      "id": null,
+      "name": "chembl_tier_b_0002",
+      "chematic": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 69.39147233995661
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 69.39147232007014
+      },
+      "delta_kcal_mol": 1.988647113648767e-08
+    },
+    {
+      "row_index": 68,
+      "id": null,
+      "name": "chembl_tier_b_0003",
+      "chematic": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": 85.88863927375414
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": 85.88863926098351
+      },
+      "delta_kcal_mol": 1.2770627222380426e-08
+    },
+    {
+      "row_index": 69,
+      "id": null,
+      "name": "chembl_tier_b_0004",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 86.81360594138204
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 86.81360595628574
+      },
+      "delta_kcal_mol": -1.4903704936841677e-08
+    },
+    {
+      "row_index": 70,
+      "id": null,
+      "name": "chembl_tier_b_0005",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 88.1329713591868
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 88.13297136143974
+      },
+      "delta_kcal_mol": -2.25294627398398e-09
+    },
+    {
+      "row_index": 71,
+      "id": null,
+      "name": "chembl_tier_b_0006",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 79.14351836536532
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 79.14351834239727
+      },
+      "delta_kcal_mol": 2.296805234891508e-08
+    },
+    {
+      "row_index": 72,
+      "id": null,
+      "name": "chembl_tier_b_0007",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 63.83924333244312
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 63.839243330912204
+      },
+      "delta_kcal_mol": 1.530914062186639e-09
+    },
+    {
+      "row_index": 73,
+      "id": null,
+      "name": "chembl_tier_b_0008",
+      "chematic": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": 102.51792801560066
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": 102.51792802329933
+      },
+      "delta_kcal_mol": -7.698673698541825e-09
+    },
+    {
+      "row_index": 74,
+      "id": null,
+      "name": "chembl_tier_b_0009",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 192.07152518701605
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 192.42429482809857
+      },
+      "delta_kcal_mol": -0.3527696410825172
+    },
+    {
+      "row_index": 75,
+      "id": null,
+      "name": "chembl_tier_b_0010",
+      "chematic": {
+        "generated": 20,
+        "converged": 12,
+        "best_energy": 73.5683218836453
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": 73.5683218830296
+      },
+      "delta_kcal_mol": 6.15699491390842e-10
+    },
+    {
+      "row_index": 76,
+      "id": null,
+      "name": "chembl_tier_b_0011",
+      "chematic": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 73.84587248445638
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 73.84587248160567
+      },
+      "delta_kcal_mol": 2.850711666724237e-09
+    },
+    {
+      "row_index": 77,
+      "id": null,
+      "name": "chembl_tier_b_0012",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 73.56689246675691
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 73.56689246838735
+      },
+      "delta_kcal_mol": -1.6304397831845563e-09
+    },
+    {
+      "row_index": 78,
+      "id": null,
+      "name": "chembl_tier_b_0013",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 75.0085724315689
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 75.00857243076331
+      },
+      "delta_kcal_mol": 8.055849320953712e-10
+    },
+    {
+      "row_index": 79,
+      "id": null,
+      "name": "chembl_tier_b_0014",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 72.58425412347145
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 72.5842541217356
+      },
+      "delta_kcal_mol": 1.7358559034619248e-09
+    },
+    {
+      "row_index": 80,
+      "id": null,
+      "name": "chembl_tier_b_0015",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 75.03727918736533
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 75.03727918814306
+      },
+      "delta_kcal_mol": -7.777316568535753e-10
+    },
+    {
+      "row_index": 81,
+      "id": null,
+      "name": "chembl_tier_b_0016",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 83.91926300493564
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 83.91926300493564
+      },
+      "delta_kcal_mol": 0.0
+    },
+    {
+      "row_index": 82,
+      "id": null,
+      "name": "chembl_tier_b_0017",
+      "chematic": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 48.90678904768707
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 15,
+        "best_energy": 48.90678904898627
+      },
+      "delta_kcal_mol": -1.2991989706279128e-09
+    },
+    {
+      "row_index": 83,
+      "id": null,
+      "name": "chembl_tier_b_0018",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 73.83348230299585
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 73.83348230282888
+      },
+      "delta_kcal_mol": 1.6696333204890834e-10
+    },
+    {
+      "row_index": 84,
+      "id": null,
+      "name": "chembl_tier_b_0019",
+      "chematic": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 65.2004786670822
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 65.20047866676832
+      },
+      "delta_kcal_mol": 3.1387514809466666e-10
+    },
+    {
+      "row_index": 85,
+      "id": null,
+      "name": "chembl_tier_b_0020",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -16.38191329862051
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -19.351358794306464
+      },
+      "delta_kcal_mol": 2.969445495685953
+    },
+    {
+      "row_index": 86,
+      "id": null,
+      "name": "chembl_tier_b_0021",
+      "chematic": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": 87.11919452156769
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": 87.1191945206416
+      },
+      "delta_kcal_mol": 9.260929800802842e-10
+    },
+    {
+      "row_index": 87,
+      "id": null,
+      "name": "chembl_tier_b_0022",
+      "chematic": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": -47.69807059588313
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 5,
+        "best_energy": -47.698070580002806
+      },
+      "delta_kcal_mol": -1.5880324610861862e-08
+    },
+    {
+      "row_index": 88,
+      "id": null,
+      "name": "chembl_tier_b_0023",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 205.4105750247817
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 205.38913670445746
+      },
+      "delta_kcal_mol": 0.021438320324250526
+    },
+    {
+      "row_index": 89,
+      "id": null,
+      "name": "chembl_tier_b_0024",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 211.0039071558494
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 210.8735560625408
+      },
+      "delta_kcal_mol": 0.13035109330857608
+    },
+    {
+      "row_index": 90,
+      "id": null,
+      "name": "chembl_tier_b_0025",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 208.76241245333085
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 209.1890655314641
+      },
+      "delta_kcal_mol": -0.42665307813325626
+    },
+    {
+      "row_index": 91,
+      "id": null,
+      "name": "chembl_tier_b_0026",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 213.41318354735233
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 213.58879457397035
+      },
+      "delta_kcal_mol": -0.17561102661801442
+    },
+    {
+      "row_index": 92,
+      "id": null,
+      "name": "chembl_tier_b_0027",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 201.2465652593204
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 201.30586102441012
+      },
+      "delta_kcal_mol": -0.059295765089729
+    },
+    {
+      "row_index": 93,
+      "id": null,
+      "name": "chembl_tier_b_0028",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 192.94614360268284
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 196.280270947876
+      },
+      "delta_kcal_mol": -3.334127345193167
+    },
+    {
+      "row_index": 94,
+      "id": null,
+      "name": "chembl_tier_b_0029",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 207.25974349517594
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 207.28366242406216
+      },
+      "delta_kcal_mol": -0.023918928886217827
+    },
+    {
+      "row_index": 95,
+      "id": null,
+      "name": "chembl_tier_b_0030",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 211.2641545942662
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 212.55680622395747
+      },
+      "delta_kcal_mol": -1.292651629691278
+    },
+    {
+      "row_index": 96,
+      "id": null,
+      "name": "chembl_tier_b_0031",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 223.60511295783556
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 223.67597597187938
+      },
+      "delta_kcal_mol": -0.07086301404382311
+    },
+    {
+      "row_index": 97,
+      "id": null,
+      "name": "chembl_tier_b_0032",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 209.24790021207622
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 209.20961802906305
+      },
+      "delta_kcal_mol": 0.038282183013166105
+    },
+    {
+      "row_index": 98,
+      "id": null,
+      "name": "chembl_tier_b_0033",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 77.76402454539546
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 77.76402454623633
+      },
+      "delta_kcal_mol": -8.408704843532178e-10
+    },
+    {
+      "row_index": 99,
+      "id": null,
+      "name": "chembl_tier_b_0034",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 217.40953841368858
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 220.41897382898404
+      },
+      "delta_kcal_mol": -3.0094354152954566
+    },
+    {
+      "row_index": 100,
+      "id": null,
+      "name": "chembl_tier_b_0035",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 214.9316600458032
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 214.79027698043544
+      },
+      "delta_kcal_mol": 0.14138306536776213
+    },
+    {
+      "row_index": 101,
+      "id": null,
+      "name": "chembl_tier_b_0036",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -60.82022810394057
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -60.02497134313746
+      },
+      "delta_kcal_mol": -0.7952567608031131
+    },
+    {
+      "row_index": 102,
+      "id": null,
+      "name": "chembl_tier_b_0037",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -20.428699406220147
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -20.428057348680696
+      },
+      "delta_kcal_mol": -0.0006420575394514572
+    },
+    {
+      "row_index": 103,
+      "id": null,
+      "name": "chembl_tier_b_0038",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -20.093715936179663
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -19.02629668403307
+      },
+      "delta_kcal_mol": -1.0674192521465926
+    },
+    {
+      "row_index": 104,
+      "id": null,
+      "name": "chembl_tier_b_0039",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -27.577132918191204
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -26.234303767413465
+      },
+      "delta_kcal_mol": -1.3428291507777388
+    },
+    {
+      "row_index": 105,
+      "id": null,
+      "name": "chembl_tier_b_0040",
+      "chematic": {
+        "generated": 20,
+        "converged": 3,
+        "best_energy": -0.24617203637507856
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 3,
+        "best_energy": 2.7759739691958814
+      },
+      "delta_kcal_mol": -3.02214600557096
+    },
+    {
+      "row_index": 106,
+      "id": null,
+      "name": "chembl_tier_b_0041",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -38.57463007016483
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -35.270833074847246
+      },
+      "delta_kcal_mol": -3.303796995317583
+    },
+    {
+      "row_index": 107,
+      "id": null,
+      "name": "chembl_tier_b_0042",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -22.60256976244949
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -22.57463547374909
+      },
+      "delta_kcal_mol": -0.0279342887004006
+    },
+    {
+      "row_index": 108,
+      "id": null,
+      "name": "chembl_tier_b_0043",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -26.384365869854086
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -26.525284290943056
+      },
+      "delta_kcal_mol": 0.14091842108896913
+    },
+    {
+      "row_index": 109,
+      "id": null,
+      "name": "chembl_tier_b_0044",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -25.09231712770446
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -24.52164190066044
+      },
+      "delta_kcal_mol": -0.5706752270440205
+    },
+    {
+      "row_index": 110,
+      "id": null,
+      "name": "chembl_tier_b_0045",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 2.6786746764704077
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 2.5280623907119875
+      },
+      "delta_kcal_mol": 0.15061228575842023
+    },
+    {
+      "row_index": 111,
+      "id": null,
+      "name": "chembl_tier_b_0046",
+      "chematic": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": -71.63325874576738
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 2,
+        "best_energy": -71.67493850924352
+      },
+      "delta_kcal_mol": 0.04167976347613944
+    },
+    {
+      "row_index": 112,
+      "id": null,
+      "name": "chembl_tier_b_0047",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -65.59487128911746
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -64.28899969976905
+      },
+      "delta_kcal_mol": -1.3058715893484134
+    },
+    {
+      "row_index": 113,
+      "id": null,
+      "name": "chembl_tier_b_0048",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -55.78249891127588
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -55.77639281049032
+      },
+      "delta_kcal_mol": -0.00610610078555851
+    },
+    {
+      "row_index": 114,
+      "id": null,
+      "name": "chembl_tier_b_0049",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 4.811444834970644
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 5.838478590914654
+      },
+      "delta_kcal_mol": -1.0270337559440108
+    },
+    {
+      "row_index": 115,
+      "id": null,
+      "name": "chembl_tier_b_0050",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -40.22463088041427
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -40.224628281050315
+      },
+      "delta_kcal_mol": -2.599363952526801e-06
+    },
+    {
+      "row_index": 116,
+      "id": null,
+      "name": "chembl_tier_b_0051",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -45.27447826014002
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": -45.10535658910652
+      },
+      "delta_kcal_mol": -0.1691216710335013
+    },
+    {
+      "row_index": 117,
+      "id": null,
+      "name": "chembl_tier_b_0052",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 73.82576679992528
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 73.825766791912
+      },
+      "delta_kcal_mol": 8.013273600226967e-09
+    },
+    {
+      "row_index": 118,
+      "id": null,
+      "name": "chembl_tier_b_0053",
+      "chematic": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 64.16070465124014
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 64.16070464950857
+      },
+      "delta_kcal_mol": 1.7315642253379337e-09
+    },
+    {
+      "row_index": 119,
+      "id": null,
+      "name": "chembl_tier_b_0054",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 77.18036493723436
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 77.18036494091115
+      },
+      "delta_kcal_mol": -3.6767886513189296e-09
+    },
+    {
+      "row_index": 120,
+      "id": null,
+      "name": "chembl_tier_b_0055",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 77.63188547376458
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 77.63188551736928
+      },
+      "delta_kcal_mol": -4.360470029496355e-08
+    },
+    {
+      "row_index": 121,
+      "id": null,
+      "name": "chembl_tier_b_0056",
+      "chematic": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 90.41426887362428
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 90.41426886842568
+      },
+      "delta_kcal_mol": 5.198600661060482e-09
+    },
+    {
+      "row_index": 122,
+      "id": null,
+      "name": "chembl_tier_b_0057",
+      "chematic": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 91.54573332182943
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 91.54573333412472
+      },
+      "delta_kcal_mol": -1.2295288343011634e-08
+    },
+    {
+      "row_index": 123,
+      "id": null,
+      "name": "chembl_tier_b_0058",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 41.46540094127174
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 41.465400941045985
+      },
+      "delta_kcal_mol": 2.2575363800569903e-10
+    },
+    {
+      "row_index": 124,
+      "id": null,
+      "name": "chembl_tier_b_0059",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 75.2691441579296
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 75.26914415283036
+      },
+      "delta_kcal_mol": 5.099238364891789e-09
+    },
+    {
+      "row_index": 125,
+      "id": null,
+      "name": "chembl_tier_b_0060",
+      "chematic": {
+        "generated": 20,
+        "converged": 4,
+        "best_energy": 93.71419937411626
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 3,
+        "best_energy": 93.71419941027673
+      },
+      "delta_kcal_mol": -3.616047195009742e-08
+    },
+    {
+      "row_index": 126,
+      "id": null,
+      "name": "chembl_tier_b_0061",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 82.65188970451366
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 82.65188970600956
+      },
+      "delta_kcal_mol": -1.4958914107410237e-09
+    },
+    {
+      "row_index": 127,
+      "id": null,
+      "name": "chembl_tier_b_0062",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 64.27047504314814
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 64.27047504087808
+      },
+      "delta_kcal_mol": 2.2700561430610833e-09
+    },
+    {
+      "row_index": 128,
+      "id": null,
+      "name": "chembl_tier_b_0063",
+      "chematic": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 103.90876286087796
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 15,
+        "best_energy": 103.90876143656784
+      },
+      "delta_kcal_mol": 1.4243101134070457e-06
+    },
+    {
+      "row_index": 129,
+      "id": null,
+      "name": "chembl_tier_b_0064",
+      "chematic": {
+        "generated": 20,
+        "converged": 14,
+        "best_energy": 106.30795837186264
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 15,
+        "best_energy": 106.30795745098388
+      },
+      "delta_kcal_mol": 9.208787616898917e-07
+    },
+    {
+      "row_index": 130,
+      "id": null,
+      "name": "chembl_tier_b_0065",
+      "chematic": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": 107.8102029558034
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": 107.81020349703181
+      },
+      "delta_kcal_mol": -5.41228402539673e-07
+    },
+    {
+      "row_index": 131,
+      "id": null,
+      "name": "chembl_tier_b_0066",
+      "chematic": {
+        "generated": 20,
+        "converged": 15,
+        "best_energy": 118.96538335747613
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 15,
+        "best_energy": 118.96538802194692
+      },
+      "delta_kcal_mol": -4.664470793613873e-06
+    },
+    {
+      "row_index": 132,
+      "id": null,
+      "name": "chembl_tier_b_0067",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -24.239129625162818
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -24.377103585114504
+      },
+      "delta_kcal_mol": 0.1379739599516867
+    },
+    {
+      "row_index": 133,
+      "id": null,
+      "name": "chembl_tier_b_0068",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 47.506619132224834
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 47.50661913287254
+      },
+      "delta_kcal_mol": -6.477023362094769e-10
+    },
+    {
+      "row_index": 134,
+      "id": null,
+      "name": "chembl_tier_b_0069",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 48.8470741363585
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 48.84707413635853
+      },
+      "delta_kcal_mol": -2.842170943040401e-14
+    },
+    {
+      "row_index": 135,
+      "id": null,
+      "name": "chembl_tier_b_0070",
+      "chematic": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 82.22244576640092
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 82.22244576529438
+      },
+      "delta_kcal_mol": 1.1065424132539192e-09
+    },
+    {
+      "row_index": 136,
+      "id": null,
+      "name": "chembl_tier_b_0071",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 1.0697880997164546
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 1.587042002207511
+      },
+      "delta_kcal_mol": -0.5172539024910563
+    },
+    {
+      "row_index": 137,
+      "id": null,
+      "name": "chembl_tier_b_0072",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -51.766907957830654
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -51.851236111430154
+      },
+      "delta_kcal_mol": 0.08432815359950041
+    },
+    {
+      "row_index": 138,
+      "id": null,
+      "name": "chembl_tier_b_0073",
+      "chematic": {
+        "generated": 20,
+        "converged": 15,
+        "best_energy": 113.03522480635348
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 15,
+        "best_energy": 113.03522781205814
+      },
+      "delta_kcal_mol": -3.0057046558340517e-06
+    },
+    {
+      "row_index": 139,
+      "id": null,
+      "name": "chembl_tier_b_0074",
+      "chematic": {
+        "generated": 20,
+        "converged": 14,
+        "best_energy": 115.83204399602867
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": 115.83204443191778
+      },
+      "delta_kcal_mol": -4.358891061428949e-07
+    },
+    {
+      "row_index": 140,
+      "id": null,
+      "name": "chembl_tier_b_0075",
+      "chematic": {
+        "generated": 20,
+        "converged": 4,
+        "best_energy": -15.592029726234394
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": -16.076490738903928
+      },
+      "delta_kcal_mol": 0.48446101266953434
+    },
+    {
+      "row_index": 141,
+      "id": null,
+      "name": "chembl_tier_b_0076",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -46.640284955063635
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -46.64177493499143
+      },
+      "delta_kcal_mol": 0.0014899799277969805
+    },
+    {
+      "row_index": 142,
+      "id": null,
+      "name": "chembl_tier_b_0077",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -16.01882656353969
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -14.361066992953937
+      },
+      "delta_kcal_mol": -1.6577595705857533
+    },
+    {
+      "row_index": 143,
+      "id": null,
+      "name": "chembl_tier_b_0078",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -9.139100065113162
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -11.514063587371055
+      },
+      "delta_kcal_mol": 2.374963522257893
+    },
+    {
+      "row_index": 144,
+      "id": null,
+      "name": "chembl_tier_b_0079",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 9.566297042664317
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 10.524081005003318
+      },
+      "delta_kcal_mol": -0.9577839623390005
+    },
+    {
+      "row_index": 145,
+      "id": null,
+      "name": "chembl_tier_b_0080",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -53.737827853026126
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -54.19516360501922
+      },
+      "delta_kcal_mol": 0.4573357519930923
+    },
+    {
+      "row_index": 146,
+      "id": null,
+      "name": "chembl_tier_b_0081",
+      "chematic": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": 8.445703970897704
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": 9.073747389700884
+      },
+      "delta_kcal_mol": -0.6280434188031805
+    },
+    {
+      "row_index": 147,
+      "id": null,
+      "name": "chembl_tier_b_0082",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -27.381870612026624
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -28.56485101569089
+      },
+      "delta_kcal_mol": 1.182980403664267
+    },
+    {
+      "row_index": 148,
+      "id": null,
+      "name": "chembl_tier_b_0083",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -20.032331554107394
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -20.048603662265805
+      },
+      "delta_kcal_mol": 0.01627210815841096
+    },
+    {
+      "row_index": 149,
+      "id": null,
+      "name": "chembl_tier_b_0084",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 44.2603529712967
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 44.26035297054802
+      },
+      "delta_kcal_mol": 7.486775643883448e-10
+    },
+    {
+      "row_index": 150,
+      "id": null,
+      "name": "chembl_tier_b_0085",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 67.2610123084049
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 67.2610122967163
+      },
+      "delta_kcal_mol": 1.168859853351023e-08
+    },
+    {
+      "row_index": 151,
+      "id": null,
+      "name": "chembl_tier_b_0086",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 60.6295182606676
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 60.6295182611842
+      },
+      "delta_kcal_mol": -5.166000960343808e-10
+    },
+    {
+      "row_index": 152,
+      "id": null,
+      "name": "chembl_tier_b_0087",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 47.4535477811291
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 47.45354777839948
+      },
+      "delta_kcal_mol": 2.729620973696001e-09
+    },
+    {
+      "row_index": 153,
+      "id": null,
+      "name": "chembl_tier_b_0088",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 32.02526344520826
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 32.02526344852611
+      },
+      "delta_kcal_mol": -3.3178508829223574e-09
+    },
+    {
+      "row_index": 154,
+      "id": null,
+      "name": "chembl_tier_b_0089",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 11.084922217781639
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 11.716055896760373
+      },
+      "delta_kcal_mol": -0.6311336789787347
+    },
+    {
+      "row_index": 155,
+      "id": null,
+      "name": "chembl_tier_b_0090",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 25.14286972999149
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 25.142869726751908
+      },
+      "delta_kcal_mol": 3.2395810478647036e-09
+    },
+    {
+      "row_index": 156,
+      "id": null,
+      "name": "chembl_tier_b_0091",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 17.06462935851807
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 17.06462935835846
+      },
+      "delta_kcal_mol": 1.596092147337913e-10
+    },
+    {
+      "row_index": 157,
+      "id": null,
+      "name": "chembl_tier_b_0092",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 104.75250012760861
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 105.40315586797084
+      },
+      "delta_kcal_mol": -0.6506557403622253
+    },
+    {
+      "row_index": 158,
+      "id": null,
+      "name": "chembl_tier_b_0093",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 98.91774791070375
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 99.09852007034874
+      },
+      "delta_kcal_mol": -0.18077215964498805
+    },
+    {
+      "row_index": 159,
+      "id": null,
+      "name": "chembl_tier_b_0094",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 91.79027885294296
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 93.41286049559145
+      },
+      "delta_kcal_mol": -1.622581642648484
+    },
+    {
+      "row_index": 160,
+      "id": null,
+      "name": "chembl_tier_b_0095",
+      "chematic": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": 101.41114744516256
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 14,
+        "best_energy": 101.4111478661881
+      },
+      "delta_kcal_mol": -4.2102554687062366e-07
+    },
+    {
+      "row_index": 161,
+      "id": null,
+      "name": "chembl_tier_b_0096",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 109.10374430127965
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 109.10404109589487
+      },
+      "delta_kcal_mol": -0.0002967946152239165
+    },
+    {
+      "row_index": 162,
+      "id": null,
+      "name": "chembl_tier_b_0097",
+      "chematic": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 107.08575025405894
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 107.08575024318532
+      },
+      "delta_kcal_mol": 1.087362022644811e-08
+    },
+    {
+      "row_index": 163,
+      "id": null,
+      "name": "chembl_tier_b_0098",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 54.935864499920044
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 54.935864502062806
+      },
+      "delta_kcal_mol": -2.1427624119496613e-09
+    },
+    {
+      "row_index": 164,
+      "id": null,
+      "name": "chembl_tier_b_0099",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 57.816202537153266
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 57.81620254016249
+      },
+      "delta_kcal_mol": -3.009226645644958e-09
+    },
+    {
+      "row_index": 165,
+      "id": null,
+      "name": "chembl_tier_b_0100",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 65.18972015227173
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 65.18972014898725
+      },
+      "delta_kcal_mol": 3.284483796051063e-09
+    },
+    {
+      "row_index": 166,
+      "id": null,
+      "name": "chembl_tier_b_0101",
+      "chematic": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": 46.82216982758919
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": 46.82216981854509
+      },
+      "delta_kcal_mol": 9.04410057955829e-09
+    },
+    {
+      "row_index": 167,
+      "id": null,
+      "name": "chembl_tier_b_0102",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 32.232581632261
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 32.232581632723004
+      },
+      "delta_kcal_mol": -4.6200199221857474e-10
+    },
+    {
+      "row_index": 168,
+      "id": null,
+      "name": "chembl_tier_b_0103",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 54.78438795199979
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 54.7843879499998
+      },
+      "delta_kcal_mol": 1.9999930600533844e-09
+    },
+    {
+      "row_index": 169,
+      "id": null,
+      "name": "chembl_tier_b_0104",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 45.54510259274528
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 45.54510259347117
+      },
+      "delta_kcal_mol": -7.258904588525183e-10
+    },
+    {
+      "row_index": 170,
+      "id": null,
+      "name": "chembl_tier_b_0105",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 105.40942396853374
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 105.41059007725295
+      },
+      "delta_kcal_mol": -0.0011661087192038622
+    },
+    {
+      "row_index": 171,
+      "id": null,
+      "name": "chembl_tier_b_0106",
+      "chematic": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": 64.79707387242354
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 2,
+        "best_energy": 64.79705929778228
+      },
+      "delta_kcal_mol": 1.4574641255649112e-05
+    },
+    {
+      "row_index": 172,
+      "id": null,
+      "name": "chembl_tier_b_0107",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 41.204897554107895
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 41.20489755075749
+      },
+      "delta_kcal_mol": 3.350407951074885e-09
+    },
+    {
+      "row_index": 173,
+      "id": null,
+      "name": "chembl_tier_b_0108",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 101.24943194457283
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 101.41336163704138
+      },
+      "delta_kcal_mol": -0.1639296924685425
+    },
+    {
+      "row_index": 174,
+      "id": null,
+      "name": "chembl_tier_b_0109",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 100.6043358648595
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 101.62824580112945
+      },
+      "delta_kcal_mol": -1.023909936269959
+    },
+    {
+      "row_index": 175,
+      "id": null,
+      "name": "chembl_tier_b_0110",
+      "chematic": {
+        "generated": 15,
+        "converged": 0,
+        "best_energy": 144.1058042233139
+      },
+      "rdkit": {
+        "generated": 15,
+        "converged": 0,
+        "best_energy": 144.1029053169384
+      },
+      "delta_kcal_mol": 0.0028989063754920608
+    },
+    {
+      "row_index": 176,
+      "id": null,
+      "name": "chembl_tier_b_0111",
+      "chematic": {
+        "generated": 17,
+        "converged": 0,
+        "best_energy": 147.2139125762567
+      },
+      "rdkit": {
+        "generated": 16,
+        "converged": 0,
+        "best_energy": 149.54884434230723
+      },
+      "delta_kcal_mol": -2.334931766050545
+    },
+    {
+      "row_index": 177,
+      "id": null,
+      "name": "chembl_tier_b_0112",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 143.96390996665656
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 145.21460979451717
+      },
+      "delta_kcal_mol": -1.2506998278606147
+    },
+    {
+      "row_index": 178,
+      "id": null,
+      "name": "chembl_tier_b_0113",
+      "chematic": {
+        "generated": 16,
+        "converged": 0,
+        "best_energy": 89.23477862886277
+      },
+      "rdkit": {
+        "generated": 16,
+        "converged": 0,
+        "best_energy": 89.2109342255223
+      },
+      "delta_kcal_mol": 0.023844403340476106
+    },
+    {
+      "row_index": 179,
+      "id": null,
+      "name": "chembl_tier_b_0114",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 151.7086071035137
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 152.6076307666834
+      },
+      "delta_kcal_mol": -0.899023663169686
+    },
+    {
+      "row_index": 180,
+      "id": null,
+      "name": "chembl_tier_b_0115",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 54.92355397613055
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 54.923553976173054
+      },
+      "delta_kcal_mol": -4.250466645316919e-11
+    },
+    {
+      "row_index": 181,
+      "id": null,
+      "name": "chembl_tier_b_0116",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 188.0294465653376
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 190.27391041078732
+      },
+      "delta_kcal_mol": -2.2444638454497294
+    },
+    {
+      "row_index": 182,
+      "id": null,
+      "name": "chembl_tier_b_0117",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 186.87393102957776
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 186.82832774688114
+      },
+      "delta_kcal_mol": 0.04560328269661795
+    },
+    {
+      "row_index": 183,
+      "id": null,
+      "name": "chembl_tier_b_0118",
+      "chematic": {
+        "generated": 20,
+        "converged": 3,
+        "best_energy": 72.01023928087375
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 2,
+        "best_energy": 72.01029901186328
+      },
+      "delta_kcal_mol": -5.9730989534045875e-05
+    },
+    {
+      "row_index": 184,
+      "id": null,
+      "name": "chembl_tier_b_0119",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 105.9443491267481
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 105.95610234164704
+      },
+      "delta_kcal_mol": -0.01175321489894543
+    },
+    {
+      "row_index": 185,
+      "id": null,
+      "name": "chembl_tier_b_0120",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 163.82464667667205
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 163.7850346874285
+      },
+      "delta_kcal_mol": 0.03961198924355358
+    },
+    {
+      "row_index": 186,
+      "id": null,
+      "name": "chembl_tier_b_0121",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 4.045924422819333
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 4.045924422897405
+      },
+      "delta_kcal_mol": -7.807265944848041e-11
+    },
+    {
+      "row_index": 187,
+      "id": null,
+      "name": "chembl_tier_b_0122",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 59.6246030835055
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 59.62460308350566
+      },
+      "delta_kcal_mol": -1.6342482922482304e-13
+    },
+    {
+      "row_index": 188,
+      "id": null,
+      "name": "chembl_tier_b_0123",
+      "chematic": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": 51.50563116122328
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 51.50563112277713
+      },
+      "delta_kcal_mol": 3.844614582249051e-08
+    },
+    {
+      "row_index": 189,
+      "id": null,
+      "name": "chembl_tier_b_0124",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 151.37813693144216
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 151.3397690709486
+      },
+      "delta_kcal_mol": 0.03836786049356533
+    },
+    {
+      "row_index": 190,
+      "id": null,
+      "name": "chembl_tier_b_0125",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 151.1937318487626
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 151.29652233038274
+      },
+      "delta_kcal_mol": -0.10279048162013282
+    },
+    {
+      "row_index": 191,
+      "id": null,
+      "name": "chembl_tier_b_0126",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": -2.845822292205934
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 15,
+        "best_energy": -2.845822292104291
+      },
+      "delta_kcal_mol": -1.0164313835048233e-10
+    },
+    {
+      "row_index": 192,
+      "id": null,
+      "name": "chembl_tier_b_0127",
+      "chematic": {
+        "generated": 20,
+        "converged": 8,
+        "best_energy": 55.54653515504585
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 8,
+        "best_energy": 55.546535156188455
+      },
+      "delta_kcal_mol": -1.1426024570937443e-09
+    },
+    {
+      "row_index": 193,
+      "id": null,
+      "name": "chembl_tier_b_0128",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 73.74110035619734
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 74.22990972662248
+      },
+      "delta_kcal_mol": -0.4888093704251446
+    },
+    {
+      "row_index": 194,
+      "id": null,
+      "name": "chembl_tier_b_0129",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 160.89351057359895
+      },
+      "rdkit": {
+        "generated": 19,
+        "converged": 0,
+        "best_energy": 166.16869851569277
+      },
+      "delta_kcal_mol": -5.275187942093822
+    },
+    {
+      "row_index": 195,
+      "id": null,
+      "name": "chembl_tier_b_0130",
+      "chematic": {
+        "generated": 6,
+        "converged": 0,
+        "best_energy": 104.83219974122548
+      },
+      "rdkit": {
+        "generated": 6,
+        "converged": 0,
+        "best_energy": 104.67964023774923
+      },
+      "delta_kcal_mol": 0.15255950347625458
+    },
+    {
+      "row_index": 196,
+      "id": null,
+      "name": "chembl_tier_b_0131",
+      "chematic": {
+        "generated": 15,
+        "converged": 0,
+        "best_energy": 103.64068317233622
+      },
+      "rdkit": {
+        "generated": 15,
+        "converged": 0,
+        "best_energy": 103.75858036935165
+      },
+      "delta_kcal_mol": -0.11789719701542367
+    },
+    {
+      "row_index": 197,
+      "id": null,
+      "name": "chembl_tier_b_0132",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 145.2660823624817
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 145.25496270811993
+      },
+      "delta_kcal_mol": 0.011119654361777975
+    },
+    {
+      "row_index": 198,
+      "id": null,
+      "name": "chembl_tier_b_0133",
+      "chematic": {
+        "generated": 18,
+        "converged": 0,
+        "best_energy": 100.47827302475706
+      },
+      "rdkit": {
+        "generated": 18,
+        "converged": 0,
+        "best_energy": 101.54776710991324
+      },
+      "delta_kcal_mol": -1.0694940851561796
+    },
+    {
+      "row_index": 199,
+      "id": null,
+      "name": "chembl_tier_b_0134",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 100.45878575248103
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 101.08441948739477
+      },
+      "delta_kcal_mol": -0.625633734913734
+    },
+    {
+      "row_index": 200,
+      "id": null,
+      "name": "chembl_tier_b_0135",
+      "chematic": {
+        "generated": 17,
+        "converged": 0,
+        "best_energy": 157.25906422465383
+      },
+      "rdkit": {
+        "generated": 17,
+        "converged": 0,
+        "best_energy": 160.1337365551238
+      },
+      "delta_kcal_mol": -2.874672330469963
+    },
+    {
+      "row_index": 201,
+      "id": null,
+      "name": "chembl_tier_b_0136",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 91.98124689510921
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 93.76430531362345
+      },
+      "delta_kcal_mol": -1.7830584185142442
+    },
+    {
+      "row_index": 202,
+      "id": null,
+      "name": "chembl_tier_b_0137",
+      "chematic": {
+        "generated": 19,
+        "converged": 0,
+        "best_energy": 94.397468720421
+      },
+      "rdkit": {
+        "generated": 19,
+        "converged": 0,
+        "best_energy": 96.12052737629654
+      },
+      "delta_kcal_mol": -1.7230586558755334
+    },
+    {
+      "row_index": 203,
+      "id": null,
+      "name": "chembl_tier_b_0138",
+      "chematic": {
+        "generated": 18,
+        "converged": 0,
+        "best_energy": 92.47673338774806
+      },
+      "rdkit": {
+        "generated": 18,
+        "converged": 0,
+        "best_energy": 93.20105363090373
+      },
+      "delta_kcal_mol": -0.7243202431556739
+    },
+    {
+      "row_index": 204,
+      "id": null,
+      "name": "chembl_tier_b_0139",
+      "chematic": {
+        "generated": 19,
+        "converged": 0,
+        "best_energy": 91.88573564166208
+      },
+      "rdkit": {
+        "generated": 19,
+        "converged": 0,
+        "best_energy": 92.0847283622891
+      },
+      "delta_kcal_mol": -0.19899272062701812
+    },
+    {
+      "row_index": 205,
+      "id": null,
+      "name": "chembl_tier_b_0140",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 95.69530122384748
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 95.08669533830214
+      },
+      "delta_kcal_mol": 0.6086058855453444
+    },
+    {
+      "row_index": 206,
+      "id": null,
+      "name": "chembl_tier_b_0141",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 182.05308327032031
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 183.78998213442566
+      },
+      "delta_kcal_mol": -1.736898864105342
+    },
+    {
+      "row_index": 207,
+      "id": null,
+      "name": "chembl_tier_b_0142",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 145.6230156084475
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 145.83334266735397
+      },
+      "delta_kcal_mol": -0.21032705890647208
+    },
+    {
+      "row_index": 208,
+      "id": null,
+      "name": "chembl_tier_b_0143",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 74.14430263998747
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 73.98374651045462
+      },
+      "delta_kcal_mol": 0.16055612953284992
+    },
+    {
+      "row_index": 209,
+      "id": null,
+      "name": "chembl_tier_b_0144",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 158.38702297923203
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 158.37276611920532
+      },
+      "delta_kcal_mol": 0.014256860026705453
+    },
+    {
+      "row_index": 210,
+      "id": null,
+      "name": "chembl_tier_b_0145",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 92.75583600784401
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 92.75583602468673
+      },
+      "delta_kcal_mol": -1.684271921931213e-08
+    },
+    {
+      "row_index": 211,
+      "id": null,
+      "name": "chembl_tier_b_0146",
+      "chematic": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": 99.73512399742242
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 12,
+        "best_energy": 99.73512418044669
+      },
+      "delta_kcal_mol": -1.8302426951777306e-07
+    },
+    {
+      "row_index": 212,
+      "id": null,
+      "name": "chembl_tier_b_0147",
+      "chematic": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 122.40390263875199
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 16,
+        "best_energy": 122.4039026581265
+      },
+      "delta_kcal_mol": -1.9374510884517804e-08
+    },
+    {
+      "row_index": 213,
+      "id": null,
+      "name": "chembl_tier_b_0148",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 102.23678874365903
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 102.2367887906417
+      },
+      "delta_kcal_mol": -4.698266309333121e-08
+    },
+    {
+      "row_index": 214,
+      "id": null,
+      "name": "chembl_tier_b_0149",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 118.08190534861095
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 118.08190509543465
+      },
+      "delta_kcal_mol": 2.531762959279149e-07
+    },
+    {
+      "row_index": 215,
+      "id": null,
+      "name": "chembl_tier_b_0150",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 159.00749101441585
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 159.95637139963242
+      },
+      "delta_kcal_mol": -0.9488803852165688
+    },
+    {
+      "row_index": 216,
+      "id": null,
+      "name": "chembl_tier_b_0151",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 86.8570815044761
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 86.85784265083649
+      },
+      "delta_kcal_mol": -0.0007611463603893753
+    },
+    {
+      "row_index": 217,
+      "id": null,
+      "name": "chembl_tier_b_0152",
+      "chematic": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": 88.61722819756221
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 2,
+        "best_energy": 88.6215823780349
+      },
+      "delta_kcal_mol": -0.00435418047268854
+    },
+    {
+      "row_index": 218,
+      "id": null,
+      "name": "chembl_tier_b_0153",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 191.16975236778293
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 191.4372265189914
+      },
+      "delta_kcal_mol": -0.26747415120846085
+    },
+    {
+      "row_index": 219,
+      "id": null,
+      "name": "chembl_tier_b_0154",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 199.2521079206752
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 200.4316509801899
+      },
+      "delta_kcal_mol": -1.1795430595146854
+    },
+    {
+      "row_index": 220,
+      "id": null,
+      "name": "chembl_tier_b_0155",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 145.63038580069272
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 145.51264739387497
+      },
+      "delta_kcal_mol": 0.11773840681775027
+    },
+    {
+      "row_index": 221,
+      "id": null,
+      "name": "chembl_tier_b_0156",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 75.18890643651335
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 74.35245843067393
+      },
+      "delta_kcal_mol": 0.836448005839415
+    },
+    {
+      "row_index": 222,
+      "id": null,
+      "name": "chembl_tier_b_0157",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 75.56427509002668
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 76.58691307148185
+      },
+      "delta_kcal_mol": -1.022637981455162
+    },
+    {
+      "row_index": 223,
+      "id": null,
+      "name": "chembl_tier_b_0158",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 90.01651389495701
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 89.5494944850809
+      },
+      "delta_kcal_mol": 0.4670194098761158
+    },
+    {
+      "row_index": 224,
+      "id": null,
+      "name": "chembl_tier_b_0159",
+      "chematic": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": 47.94779056703538
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": 47.94779057367705
+      },
+      "delta_kcal_mol": -6.641663219397742e-09
+    },
+    {
+      "row_index": 225,
+      "id": null,
+      "name": "chembl_tier_b_0160",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 53.18227474902914
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": 53.182274749022106
+      },
+      "delta_kcal_mol": 7.034373084024992e-12
+    },
+    {
+      "row_index": 226,
+      "id": null,
+      "name": "chembl_tier_b_0161",
+      "chematic": {
+        "generated": 20,
+        "converged": 9,
+        "best_energy": 6.750223539122917
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 9,
+        "best_energy": 5.119400594944988
+      },
+      "delta_kcal_mol": 1.630822944177929
+    },
+    {
+      "row_index": 227,
+      "id": null,
+      "name": "chembl_tier_b_0162",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": -9.364440762283351
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": -9.364440761059736
+      },
+      "delta_kcal_mol": -1.2236149871114321e-09
+    },
+    {
+      "row_index": 228,
+      "id": null,
+      "name": "chembl_tier_b_0163",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -14.599849087289858
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -14.599849086308275
+      },
+      "delta_kcal_mol": -9.815828150294692e-10
+    },
+    {
+      "row_index": 229,
+      "id": null,
+      "name": "chembl_tier_b_0164",
+      "chematic": {
+        "generated": 20,
+        "converged": 5,
+        "best_energy": 46.510793897522795
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": 46.41486452305961
+      },
+      "delta_kcal_mol": 0.09592937446318217
+    },
+    {
+      "row_index": 230,
+      "id": null,
+      "name": "chembl_tier_b_0165",
+      "chematic": {
+        "generated": 20,
+        "converged": 8,
+        "best_energy": 54.64559463189302
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 9,
+        "best_energy": 54.64559465700073
+      },
+      "delta_kcal_mol": -2.510770968910947e-08
+    },
+    {
+      "row_index": 231,
+      "id": null,
+      "name": "chembl_tier_b_0166",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 130.41486248778034
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 130.7848673533247
+      },
+      "delta_kcal_mol": -0.3700048655443595
+    },
+    {
+      "row_index": 232,
+      "id": null,
+      "name": "chembl_tier_b_0167",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 53.18261008259074
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 53.46131934535945
+      },
+      "delta_kcal_mol": -0.27870926276870733
+    },
+    {
+      "row_index": 233,
+      "id": null,
+      "name": "chembl_tier_b_0168",
+      "chematic": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": -6.048448839029266
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": -6.0484488379067685
+      },
+      "delta_kcal_mol": -1.1224976503854123e-09
+    },
+    {
+      "row_index": 234,
+      "id": null,
+      "name": "chembl_tier_b_0169",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -18.908722029197058
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -18.908722028660726
+      },
+      "delta_kcal_mol": -5.363318678064388e-10
+    },
+    {
+      "row_index": 235,
+      "id": null,
+      "name": "chembl_tier_b_0170",
+      "chematic": {
+        "generated": 20,
+        "converged": 5,
+        "best_energy": 71.72982999825439
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": 71.72983002888702
+      },
+      "delta_kcal_mol": -3.0632634206995135e-08
+    },
+    {
+      "row_index": 236,
+      "id": null,
+      "name": "chembl_tier_b_0171",
+      "chematic": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": 76.7188031564638
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 77.9280845379923
+      },
+      "delta_kcal_mol": -1.2092813815284984
+    },
+    {
+      "row_index": 237,
+      "id": null,
+      "name": "chembl_tier_b_0172",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 66.59841744221703
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": 67.98017677130332
+      },
+      "delta_kcal_mol": -1.381759329086293
+    },
+    {
+      "row_index": 238,
+      "id": null,
+      "name": "chembl_tier_b_0173",
+      "chematic": {
+        "generated": 20,
+        "converged": 15,
+        "best_energy": 122.83403544181233
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 14,
+        "best_energy": 122.83403552668695
+      },
+      "delta_kcal_mol": -8.487461400363827e-08
+    },
+    {
+      "row_index": 239,
+      "id": null,
+      "name": "chembl_tier_b_0174",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -60.92106844434985
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -60.921068430953326
+      },
+      "delta_kcal_mol": -1.3396523002029426e-08
+    },
+    {
+      "row_index": 240,
+      "id": null,
+      "name": "chembl_tier_b_0175",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -20.384010306554067
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -20.383002745877313
+      },
+      "delta_kcal_mol": -0.0010075606767543377
+    },
+    {
+      "row_index": 241,
+      "id": null,
+      "name": "chembl_tier_b_0176",
+      "chematic": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": -7.607332087986951
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": -7.655237588305404
+      },
+      "delta_kcal_mol": 0.04790550031845342
+    },
+    {
+      "row_index": 242,
+      "id": null,
+      "name": "chembl_tier_b_0177",
+      "chematic": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": 156.9938027699808
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 17,
+        "best_energy": 156.9938033365107
+      },
+      "delta_kcal_mol": -5.665299056545336e-07
+    },
+    {
+      "row_index": 243,
+      "id": null,
+      "name": "chembl_tier_b_0178",
+      "chematic": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": 63.750366428169876
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": 63.75036642457413
+      },
+      "delta_kcal_mol": 3.5957441468781326e-09
+    },
+    {
+      "row_index": 244,
+      "id": null,
+      "name": "chembl_tier_b_0179",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 75.42954817686757
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 75.4290829240623
+      },
+      "delta_kcal_mol": 0.00046525280527021096
+    },
+    {
+      "row_index": 245,
+      "id": null,
+      "name": "chembl_tier_b_0180",
+      "chematic": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": -91.25801029933442
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": -91.25805908852249
+      },
+      "delta_kcal_mol": 4.8789188070941236e-05
+    },
+    {
+      "row_index": 246,
+      "id": null,
+      "name": "chembl_tier_b_0181",
+      "chematic": {
+        "generated": 20,
+        "converged": 5,
+        "best_energy": 0.5999572362356531
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 4,
+        "best_energy": 0.6002413074198856
+      },
+      "delta_kcal_mol": -0.00028407118423245947
+    },
+    {
+      "row_index": 247,
+      "id": null,
+      "name": "chembl_tier_b_0182",
+      "chematic": {
+        "generated": 20,
+        "converged": 3,
+        "best_energy": -6.718143700657706
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 2,
+        "best_energy": -7.133414244897814
+      },
+      "delta_kcal_mol": 0.41527054424010856
+    },
+    {
+      "row_index": 248,
+      "id": null,
+      "name": "chembl_tier_b_0183",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 0.754641991446654
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 0.806699629332222
+      },
+      "delta_kcal_mol": -0.05205763788556794
+    },
+    {
+      "row_index": 249,
+      "id": null,
+      "name": "chembl_tier_b_0184",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 15.124123929976648
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": 15.134330092705675
+      },
+      "delta_kcal_mol": -0.010206162729026858
+    },
+    {
+      "row_index": 250,
+      "id": null,
+      "name": "chembl_tier_b_0185",
+      "chematic": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": -42.30016320582776
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": -42.300163333084456
+      },
+      "delta_kcal_mol": 1.2725669762403413e-07
+    },
+    {
+      "row_index": 251,
+      "id": null,
+      "name": "chembl_tier_b_0186",
+      "chematic": {
+        "generated": 20,
+        "converged": 4,
+        "best_energy": 6.936222749621047
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 5,
+        "best_energy": 6.936222724181889
+      },
+      "delta_kcal_mol": 2.5439158335416323e-08
+    },
+    {
+      "row_index": 252,
+      "id": null,
+      "name": "chembl_tier_b_0187",
+      "chematic": {
+        "generated": 20,
+        "converged": 8,
+        "best_energy": -2.3847265169776506
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 8,
+        "best_energy": -2.38472651674698
+      },
+      "delta_kcal_mol": -2.3067059373715892e-10
+    },
+    {
+      "row_index": 253,
+      "id": null,
+      "name": "chembl_tier_b_0188",
+      "chematic": {
+        "generated": 20,
+        "converged": 8,
+        "best_energy": 64.68563017698659
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 7,
+        "best_energy": 64.9383906967096
+      },
+      "delta_kcal_mol": -0.2527605197230116
+    },
+    {
+      "row_index": 254,
+      "id": null,
+      "name": "chembl_tier_b_0189",
+      "chematic": {
+        "generated": 20,
+        "converged": 9,
+        "best_energy": 52.53686428215511
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 9,
+        "best_energy": 52.53686427342253
+      },
+      "delta_kcal_mol": 8.732577327918989e-09
+    },
+    {
+      "row_index": 255,
+      "id": null,
+      "name": "chembl_tier_b_0190",
+      "chematic": {
+        "generated": 20,
+        "converged": 0,
+        "best_energy": -136.43250321731293
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 1,
+        "best_energy": -136.3081533159006
+      },
+      "delta_kcal_mol": -0.12434990141233015
+    },
+    {
+      "row_index": 256,
+      "id": null,
+      "name": "chembl_tier_b_0191",
+      "chematic": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": 2.726637529474946
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": 2.726637529332436
+      },
+      "delta_kcal_mol": 1.425100037977245e-10
+    },
+    {
+      "row_index": 257,
+      "id": null,
+      "name": "chembl_tier_b_0192",
+      "chematic": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -6.341635736176862
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 20,
+        "best_energy": -6.341635735351453
+      },
+      "delta_kcal_mol": -8.25409074423078e-10
+    },
+    {
+      "row_index": 258,
+      "id": null,
+      "name": "chembl_tier_b_0193",
+      "chematic": {
+        "generated": 20,
+        "converged": 19,
+        "best_energy": -16.274995615962823
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 18,
+        "best_energy": -16.274995596139476
+      },
+      "delta_kcal_mol": -1.9823346519842744e-08
+    },
+    {
+      "row_index": 259,
+      "id": null,
+      "name": "chembl_tier_b_0194",
+      "chematic": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": 117.13534042111422
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 10,
+        "best_energy": 116.91702680948066
+      },
+      "delta_kcal_mol": 0.21831361163356178
+    },
+    {
+      "row_index": 260,
+      "id": null,
+      "name": "chembl_tier_b_0195",
+      "chematic": {
+        "generated": 20,
+        "converged": 14,
+        "best_energy": 14.094410196306615
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 13,
+        "best_energy": 14.094410195930248
+      },
+      "delta_kcal_mol": 3.7636738170476747e-10
+    },
+    {
+      "row_index": 261,
+      "id": null,
+      "name": "chembl_tier_b_0196",
+      "chematic": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": -0.24504058277520713
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 12,
+        "best_energy": -0.24504098229695614
+      },
+      "delta_kcal_mol": 3.995217490171399e-07
+    },
+    {
+      "row_index": 262,
+      "id": null,
+      "name": "chembl_tier_b_0197",
+      "chematic": {
+        "generated": 20,
+        "converged": 10,
+        "best_energy": 3.2334715254889197
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 11,
+        "best_energy": 3.233471525087886
+      },
+      "delta_kcal_mol": 4.0103387277667935e-10
+    },
+    {
+      "row_index": 263,
+      "id": null,
+      "name": "chembl_tier_b_0198",
+      "chematic": {
+        "generated": 20,
+        "converged": 3,
+        "best_energy": 5.00976044962203
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 5,
+        "best_energy": 4.752546832967415
+      },
+      "delta_kcal_mol": 0.2572136166546155
+    },
+    {
+      "row_index": 264,
+      "id": null,
+      "name": "chembl_tier_b_0199",
+      "chematic": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": -0.374704730737502
+      },
+      "rdkit": {
+        "generated": 20,
+        "converged": 6,
+        "best_energy": -0.3873139613913743
+      },
+      "delta_kcal_mol": 0.012609230653872316
+    }
+  ],
+  "coverage": {
+    "chematic": {
+      "generated": 5260,
+      "converged": 2854
+    },
+    "rdkit": {
+      "generated": 5258,
+      "converged": 2859
+    }
+  }
+}
