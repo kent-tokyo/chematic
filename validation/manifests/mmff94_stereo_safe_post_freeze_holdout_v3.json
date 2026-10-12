@@ -1,0 +1,933 @@
+{
+  "schema_version": 1,
+  "tier": "H",
+  "description": "Post-candidate MMFF94 stereo-safe holdout: 50 declared-stereo and 50 general drug-like molecules selected without running CheMatic.",
+  "candidate_commit_frozen_before_selection": "0b7a197db7595e079911b147c96f3eec53a85480",
+  "generator": "scripts/gen_mmff94_stereo_safe_holdout_manifest.py",
+  "generator_rdkit_version": "2026.09.1",
+  "source_file": "scripts/descriptor_census_corpus.smi",
+  "source_sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+  "excluded_manifests": [
+    "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json",
+    "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
+    "validation/manifests/mmff94_stereo_safe_post_freeze_holdout_v1.json",
+    "validation/manifests/mmff94_stereo_safe_post_freeze_holdout_v2.json"
+  ],
+  "selection_rule": [
+    "single-fragment RDKit-parseable molecules only",
+    "elements restricted to ['Br', 'C', 'Cl', 'F', 'I', 'N', 'O', 'P', 'S']",
+    "heavy-atom count in [8, 60]",
+    "exclude canonical isomeric SMILES already in Tier A or Tier B",
+    "deduplicate by RDKit canonical isomeric SMILES",
+    "rank by SHA-256 of salt 'chematic-mmff94-stereo-safe-holdout-v3-final' plus canonical SMILES",
+    "take lowest 50 declared-stereo and 50 general ranks",
+    "never execute or inspect CheMatic outcomes during selection"
+  ],
+  "parse_failure_count": 0,
+  "filtered_count": 133,
+  "eligible_unique_count": 4560,
+  "molecule_count": 100,
+  "corpus_sha256": "6512843925baec729267938c2edb4010834aa13b20f81b5a36da5029f2b9f863",
+  "molecules": [
+    {
+      "name": "mmff94_holdout_stereo_000",
+      "smiles": "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+      "heavy_atom_count": 33,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4783,
+      "selection_sha256": "0004c49618094c7b3d3d3e1e7bdf8aa85c6c54abfb193dadb63e388c98dda925"
+    },
+    {
+      "name": "mmff94_holdout_stereo_001",
+      "smiles": "O=C1NC(=O)[C@@]2(CCOc3ccc(F)cc32)N1",
+      "heavy_atom_count": 17,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 1674,
+      "selection_sha256": "0018a1028a62371cefd3b3901fb98d614da65b1004bbedfa655b3048ac1a3a93"
+    },
+    {
+      "name": "mmff94_holdout_stereo_002",
+      "smiles": "C=C(C[C@@H](N)C(=O)O)C[C@H](N)C(=O)O",
+      "heavy_atom_count": 14,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 2517,
+      "selection_sha256": "002aba328305d035d4017f7f72c91c46cc7101d5b0bb105d18f7d54fc190a934"
+    },
+    {
+      "name": "mmff94_holdout_stereo_003",
+      "smiles": "CCN1CCC[C@H]1CNC(=O)c1c(O)cccc1OC",
+      "heavy_atom_count": 20,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3822,
+      "selection_sha256": "004e4a7163489a245fb0a7c804289f6bd69d75c2073c3dd9cd23906de00294b7"
+    },
+    {
+      "name": "mmff94_holdout_stereo_004",
+      "smiles": "CC(=O)c1cc2c3c(ccc2o1)[C@@H]1COc2cc(O)ccc2[C@@H]1O3",
+      "heavy_atom_count": 24,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 1124,
+      "selection_sha256": "006305fcca9c8dae99958af71db1873d5eb68a0766d17c1827d578a6f8aefe1a"
+    },
+    {
+      "name": "mmff94_holdout_stereo_005",
+      "smiles": "NC(N)=NCCC[C@H](N)C(=O)N(Cc1ccc2ccccc2c1)Cc1cccc2ccccc12",
+      "heavy_atom_count": 34,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3477,
+      "selection_sha256": "0065617a2cbf28d3acdd95b36fa2835f0a9886e8962d7776886994e1debfe975"
+    },
+    {
+      "name": "mmff94_holdout_stereo_006",
+      "smiles": "CCCCC(C)(O)C/C=C/[C@H]1[C@H](O)CC(=O)[C@@H]1CC/C=C\\CCC(=O)OC",
+      "heavy_atom_count": 27,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 660,
+      "selection_sha256": "00d2a846bc1fbc741649db6b364c8c304a952c1d23fdf99a4b1a5a5c467ae975"
+    },
+    {
+      "name": "mmff94_holdout_stereo_007",
+      "smiles": "O=C(N[C@@H](Cc1ccc(-c2ccccc2)cc1)C(=O)O)c1ccccc1Br",
+      "heavy_atom_count": 27,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 2108,
+      "selection_sha256": "00ee1796730f2972ce0d72327d31e2192b6329186810a3fd67cd3a8dddc04e2c"
+    },
+    {
+      "name": "mmff94_holdout_stereo_008",
+      "smiles": "CC(C)/N=C(\\N)c1ccc(N2CCCN(c3ccc(/C(N)=N/C(C)C)cc3)CC2)cc1",
+      "heavy_atom_count": 31,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4155,
+      "selection_sha256": "010e42965a6af9ee260ce11f52c26c2f955708209bfbb5e178690e2ed7676dff"
+    },
+    {
+      "name": "mmff94_holdout_stereo_009",
+      "smiles": "CN(C(=O)[C@H](Cc1ccc(C(N)NN)cc1)NS(=O)(=O)c1cccc2ccccc12)C1CCCC1",
+      "heavy_atom_count": 35,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4376,
+      "selection_sha256": "01226f71c11dfac038ec7fb04052c2a11b60d1a263729f66cf3e5dbb98e36d2c"
+    },
+    {
+      "name": "mmff94_holdout_stereo_010",
+      "smiles": "CCCCC[C@@H]1CC2C(CCC3(C)C(=O)CCC23)C2(C)C=CC(=O)C=C12",
+      "heavy_atom_count": 26,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3104,
+      "selection_sha256": "013426641c295c213d7900204379e6f0e3d0e97095f7c2d1de2ad78b2925245e"
+    },
+    {
+      "name": "mmff94_holdout_stereo_011",
+      "smiles": "CC(C)(C)OC(=O)N[C@@H](Cc1ccccc1)[C@H](O)[C@H](O)[C@H](Cc1ccccc1)NC(=O)OC(C)(C)C",
+      "heavy_atom_count": 36,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4608,
+      "selection_sha256": "0177ecf610c92940d150c5a572aab0e8f790165525d3ebfed46264a45b49ba75"
+    },
+    {
+      "name": "mmff94_holdout_stereo_012",
+      "smiles": "CN1CCc2cc(Cl)c(O)cc2[C@@H](c2ccccc2)C1",
+      "heavy_atom_count": 20,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3877,
+      "selection_sha256": "0184afbe0984e8210f244d9df0b46b5c26125d39d1af01039f8b4f8681a7787c"
+    },
+    {
+      "name": "mmff94_holdout_stereo_013",
+      "smiles": "N[C@@H](Cc1onc(O)c1-c1ccccc1)C(=O)O",
+      "heavy_atom_count": 18,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4939,
+      "selection_sha256": "019e7aa174623bd7325ddf2598e8c36957329e5b6fb0ada71c08f295f600bf16"
+    },
+    {
+      "name": "mmff94_holdout_stereo_014",
+      "smiles": "CC[C@H](C)[C@H](NC(=O)[C@H](Cc1c[nH]c2ccccc12)NC(=O)[C@H]1CCCN1C(=O)[C@H](CCCCN)NC[C@@H](N)CCCCN)C(=O)N[C@@H](CC(C)C)C(=O)O",
+      "heavy_atom_count": 55,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 334,
+      "selection_sha256": "01cdd09d93299a9f11ee885e8bd7da84a411850218a21029f002b4bb3396412f"
+    },
+    {
+      "name": "mmff94_holdout_stereo_015",
+      "smiles": "CN(C(=O)[C@H](Cc1ccc(C(N)NN)cc1)NS(=O)(=O)c1ccc2ccccc2c1)C1CC1",
+      "heavy_atom_count": 33,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4175,
+      "selection_sha256": "01fc5d269f11c257ecd279e301aef878f5f9e206b60df836af37a29c50f5429e"
+    },
+    {
+      "name": "mmff94_holdout_stereo_016",
+      "smiles": "CCCC[C@@H](C[C@@H](CCc1ccc(C2CCCO2)cc1)C(=O)N[C@H](C(=O)NC)C(C)(C)C)C(=O)O",
+      "heavy_atom_count": 35,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3768,
+      "selection_sha256": "020b8bda60f34414b2896304d17bf098715be1fd624e253931bc770119593a0a"
+    },
+    {
+      "name": "mmff94_holdout_stereo_017",
+      "smiles": "CC[C@H]1OC(=O)CC(O)[C@H](C)[C@@H](O[C@@H]2O[C@H](C)[C@@H](O)[C@H](N(C)C)[C@H]2O)[C@@H](CCNCCCN(C)C)C[C@@H](C)C(=O)/C=C/C(C)=C/[C@@H]1CO[C@@H]1O[C@H](C)[C@@H](O)[C@@H](OC)[C@H]1OC",
+      "heavy_atom_count": 60,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4001,
+      "selection_sha256": "02239f4f87a23024f86ce4463a8da8aa500ca465d4ba60256b048c26e6b861d8"
+    },
+    {
+      "name": "mmff94_holdout_stereo_018",
+      "smiles": "O=C(/C=C/C=C/c1ccccc1)c1ccc(O)cc1",
+      "heavy_atom_count": 19,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 2321,
+      "selection_sha256": "023c866fd1d22a50b4814866237f9f2088f4653b89b645ab4f23f02382550068"
+    },
+    {
+      "name": "mmff94_holdout_stereo_019",
+      "smiles": "CCCC[C@@H](C[C@@H](CCc1ccc(-c2ccc(SC)cc2)cc1)C(=O)N[C@H](C(=O)NC)C(C)(C)C)C(=O)O",
+      "heavy_atom_count": 38,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3290,
+      "selection_sha256": "0261da4bb981799a5de51a9f38b0171c8d89f25977383d68df1992a43be5153e"
+    },
+    {
+      "name": "mmff94_holdout_stereo_020",
+      "smiles": "N=C(N)NCCC[C@H](NC(=O)[C@H](Cc1ccc(F)c(F)c1)NC(=O)Nc1ccc2c(CN3CCCC3)cn(Cc3c(Cl)cccc3Cl)c2c1)C(=O)NCc1ccncc1",
+      "heavy_atom_count": 59,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 2261,
+      "selection_sha256": "0292addbe57be1fe11d59f94762275cc195d6b9e7197c728fbae648b16988e31"
+    },
+    {
+      "name": "mmff94_holdout_stereo_021",
+      "smiles": "CCn1ncc2c(N[C@@H](C)C3CCCCC3)c3cc(C#N)ccc3nc21",
+      "heavy_atom_count": 26,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 2399,
+      "selection_sha256": "02b3973fdba3ace159b064dc0d07006e0cc2d8ee8254332d2c571c2082bca503"
+    },
+    {
+      "name": "mmff94_holdout_stereo_022",
+      "smiles": "O=C1[C@@H](NS(=O)(=O)c2ccc(-c3ccccn3)s2)CCN1Cc1cc2c[nH]ccc-2n1",
+      "heavy_atom_count": 31,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3047,
+      "selection_sha256": "031dc2f752b015dba7c8fab2d17e36fe5abba14b2490d2cf563533fb6c666087"
+    },
+    {
+      "name": "mmff94_holdout_stereo_023",
+      "smiles": "O=[N+]([O-])O[C@@H]1CO[C@H]2[C@@H]1OC[C@H]2N1CCN(CCCSc2ccccc2)CC1",
+      "heavy_atom_count": 28,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3076,
+      "selection_sha256": "032d48f1bf8ece02ea5a25a6dc47c0506c0fc6081605a342acb5b48a4645be00"
+    },
+    {
+      "name": "mmff94_holdout_stereo_024",
+      "smiles": "CCOC(=O)c1cc2ccccn2/c(=N/c2ccc(Br)cc2)n1",
+      "heavy_atom_count": 23,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 1215,
+      "selection_sha256": "03537e5edb5c87e201999d74052bd9e0d2e509ad8a461a8417a96e3fbe9f6dd4"
+    },
+    {
+      "name": "mmff94_holdout_stereo_025",
+      "smiles": "CCCCCCCC/C=C/CCCCCCCC(=O)O[C@H](CC=C(C)C)C1=CC(=O)c2c(O)ccc(O)c2C1=O",
+      "heavy_atom_count": 40,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4220,
+      "selection_sha256": "03d0b9447f219453c9f18e007700d3744f6fffaf5906909cdc93efbf5794747b"
+    },
+    {
+      "name": "mmff94_holdout_stereo_026",
+      "smiles": "O=C(C(=O)N1CCC[C@H]1C(=O)OCCCc1cccnc1)c1ccccc1",
+      "heavy_atom_count": 27,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 822,
+      "selection_sha256": "03d8baaf0e807afea2229ec0fd80793152f4675b60739b5d51a71b8627b78ddc"
+    },
+    {
+      "name": "mmff94_holdout_stereo_027",
+      "smiles": "CS(=O)(=O)N[C@@H](C(=O)N1CCC[C@H]1C(=O)NCc1cc(CN)cs1)C(c1ccccc1)c1ccccc1",
+      "heavy_atom_count": 37,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 2255,
+      "selection_sha256": "03eb01e6af663f684b0529915a658d820928c20aba794118cf989ecec89ea3d9"
+    },
+    {
+      "name": "mmff94_holdout_stereo_028",
+      "smiles": "CSCC[C@H](NC(=O)c1ccccc1Br)C(=O)O",
+      "heavy_atom_count": 18,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 1945,
+      "selection_sha256": "03f6ff735fc52037d4db8093fd52b6febe48ac11958d9f4be0121d9d54b3f3df"
+    },
+    {
+      "name": "mmff94_holdout_stereo_029",
+      "smiles": "CCCCCCCC(=O)O[C@H](CC=C(C)C)C1=CC(=O)c2c(O)ccc(O)c2C1=O",
+      "heavy_atom_count": 30,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4242,
+      "selection_sha256": "0401be916fb7adc4544bb8fa9f36ffe2f6639f0d9ae9d04677fe6c00fd4b6af6"
+    },
+    {
+      "name": "mmff94_holdout_stereo_030",
+      "smiles": "CCCCCCCCCCCCCCCCCCN(C)/N=N/c1ccc(C(=O)O)cc1",
+      "heavy_atom_count": 31,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4566,
+      "selection_sha256": "042c088f1f5c90027145fe467d061f21ad2de2f8bdba4ab8b230526fdc586107"
+    },
+    {
+      "name": "mmff94_holdout_stereo_031",
+      "smiles": "COc1ccc([C@@H]2[C@@H](C(=O)O)[C@H](c3ccc4c(c3)OCO4)CN2CCc2ccccn2)cc1",
+      "heavy_atom_count": 33,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4090,
+      "selection_sha256": "043bd23c078f5d5c4ac4147c4804f967665758cb69fce09d695a52bf6b4bd74e"
+    },
+    {
+      "name": "mmff94_holdout_stereo_032",
+      "smiles": "O=C1/C(=C\\c2ccncc2)C(c2ccccc2)c2ccccc21",
+      "heavy_atom_count": 23,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4008,
+      "selection_sha256": "049bc4dd0113ef186aab289cfb36ff2e31eb6b4f071b0a73e6a3b2d55d3de301"
+    },
+    {
+      "name": "mmff94_holdout_stereo_033",
+      "smiles": "CNc1ccc(C#CC[C@H](NS(=O)(=O)c2ccc3ccccc3c2)C(=O)N(C)C2CCCC2)cn1",
+      "heavy_atom_count": 35,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 1816,
+      "selection_sha256": "04a5e908605fe44beec043b075af61a7ad1177526d25b9da8cec65cb81defaf5"
+    },
+    {
+      "name": "mmff94_holdout_stereo_034",
+      "smiles": "CCCCCCCCCC(=O)CC(=O)N[C@@H](CCO)C(=O)OC",
+      "heavy_atom_count": 23,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3558,
+      "selection_sha256": "04aaa693e84fc9f546d5d7d01701d39b0b805707f0421c97d0537e76b92b5e3c"
+    },
+    {
+      "name": "mmff94_holdout_stereo_035",
+      "smiles": "CN1CCc2cccc3c2[C@H]1Cc1ccc(O)c(O)c1-3",
+      "heavy_atom_count": 20,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3131,
+      "selection_sha256": "04ba9669141335e166205f3dfaaf06714100f4727cf9383779bccd094a955a1b"
+    },
+    {
+      "name": "mmff94_holdout_stereo_036",
+      "smiles": "CC[C@H]1OC(=O)CC(O)[C@H](C)[C@@H](O[C@@H]2O[C@H](C)C[C@H](N(C)C)[C@H]2O)[C@@H](CCNCCN(C)C)C[C@@H](C)C(=O)/C=C/C(C)=C/[C@@H]1C",
+      "heavy_atom_count": 45,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3960,
+      "selection_sha256": "04fcd4c7431d56af67b0f9b5de402db2254a83af2438248134d468536e8382b8"
+    },
+    {
+      "name": "mmff94_holdout_stereo_037",
+      "smiles": "CC1(C)CC[C@]2(C(=O)NCc3ccccc3)CC[C@]3(C)C(C(=O)C=C4[C@@]5(C)C=C(C#N)C(=O)C(C)(C)[C@@H]5CC[C@]43C)C2C1",
+      "heavy_atom_count": 43,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 2739,
+      "selection_sha256": "052cc8e8795f5a73a50b3a524c22922d4fefa4319546a63c8153a12807aa8b29"
+    },
+    {
+      "name": "mmff94_holdout_stereo_038",
+      "smiles": "OC[C@@]1(CCc2ccccc2)CC2C3Cc4ccc(O)c5c4C2(CCN3CC2CC2)C(O5)[C@@H]1O",
+      "heavy_atom_count": 34,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4890,
+      "selection_sha256": "052ec594f285568b29d3b28d2e1479c07b02fb683ebe42a3d0dcf8f5313f0c62"
+    },
+    {
+      "name": "mmff94_holdout_stereo_039",
+      "smiles": "N=C(N)NCCC[C@H](NCc1ccc2ccccc2c1)C(=O)N[C@@H](Cc1c[nH]c2ccccc12)C(N)=O",
+      "heavy_atom_count": 37,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3743,
+      "selection_sha256": "0538c909520c88827c7e71f0ae694c897a4ed2762b3addc696d50fa33a6691e9"
+    },
+    {
+      "name": "mmff94_holdout_stereo_040",
+      "smiles": "O=C(N[C@@H](Cc1c[nH]c2cc(F)ccc12)C(=O)O)c1ccccc1Br",
+      "heavy_atom_count": 25,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 1933,
+      "selection_sha256": "05cb6cd2c6c0cd5ec620dc95445d8ac600ef9f2b15b0b5959e15771a43159bc4"
+    },
+    {
+      "name": "mmff94_holdout_stereo_041",
+      "smiles": "COC(=O)N[C@@H](C(=O)N1CCC[C@H]1C(=O)NCC#Cc1c[nH]cn1)C(c1ccccc1)c1ccccc1",
+      "heavy_atom_count": 37,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 2097,
+      "selection_sha256": "05cd3c7307be9ba34fe49ebad205d92c60bd40c29d4e4fa995761a5a94a8a14b"
+    },
+    {
+      "name": "mmff94_holdout_stereo_042",
+      "smiles": "CCCCCCC[C@H]1OC(=O)C[C@@H](O)[C@H](Cc2ccccc2)N(C)C(=O)[C@H](C(C)C)OC(=O)[C@H]1C",
+      "heavy_atom_count": 35,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 2667,
+      "selection_sha256": "05eea06e3a8029391316ebbf04698afa974cbbc9e30fcda31723a270bf582294"
+    },
+    {
+      "name": "mmff94_holdout_stereo_043",
+      "smiles": "CC/C(=C(\\c1ccc(I)cc1)c1ccc(OCCCN(C)C)cc1)c1ccccc1",
+      "heavy_atom_count": 30,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 548,
+      "selection_sha256": "060a253ed0da7b0eeed29b0b4cb698ae31b224e25f2de7e93408dbe6ba781833"
+    },
+    {
+      "name": "mmff94_holdout_stereo_044",
+      "smiles": "Cc1cc([N+](=O)[O-])ccc1/N=C(\\S)Nc1ccc2c(c1)C(C)(C)CC(C)(C)S2",
+      "heavy_atom_count": 28,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 717,
+      "selection_sha256": "064781ffe04bce98a95d31f0138fb3434aa15bf3d8ad003eb31747ad09ca1a8a"
+    },
+    {
+      "name": "mmff94_holdout_stereo_045",
+      "smiles": "O=C(C[C@H](O)[C@H](CC1CCCCC1)NC(=O)C(Cc1c[nH]cn1)NC(=O)[C@H](Cc1ccccc1)NS(=O)(=O)N1CCOCC1)NCCN1CCOCC1",
+      "heavy_atom_count": 53,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3662,
+      "selection_sha256": "064ea2bb5a1916fc80d8fb81b403d517d72e67b46228dda16c5826189f469f87"
+    },
+    {
+      "name": "mmff94_holdout_stereo_046",
+      "smiles": "CC(C)(C)c1ccc(S(=O)(=O)N[C@H]2CCN(CCNc3ccncc3)C2=O)cc1",
+      "heavy_atom_count": 29,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3313,
+      "selection_sha256": "075b8022ddd6a77413d70f259d52c8cce5ec345d851b611f24c3f3fdeed53cca"
+    },
+    {
+      "name": "mmff94_holdout_stereo_047",
+      "smiles": "O=C(NCCNS(=O)(=O)c1ccccc1)C(=O)[C@H](Cc1ccccc1)NC(=O)C1Cc2cc3c(cc2S(=O)(=O)N1)OCCO3",
+      "heavy_atom_count": 44,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 3220,
+      "selection_sha256": "079b32f248a0c4afb77850ffd6d3c0df68e0b84e2493aed9557ba0b6969c57e4"
+    },
+    {
+      "name": "mmff94_holdout_stereo_048",
+      "smiles": "CCCCCCCCN(C)/N=N/c1ccc(C(=O)O)cc1",
+      "heavy_atom_count": 21,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 4602,
+      "selection_sha256": "07fc58b87e45d532867a8cf30e4ae9df0715fc6a58042a3052303fa2d1eb86b1"
+    },
+    {
+      "name": "mmff94_holdout_stereo_049",
+      "smiles": "COc1ccc2[nH]cc(C[C@H](NC(=O)c3ccccc3Br)C(=O)O)c2c1",
+      "heavy_atom_count": 26,
+      "primary_category": "post_freeze_stereo",
+      "has_declared_stereo": true,
+      "source_line": 1888,
+      "selection_sha256": "08033a1b34aa743db0b5e7dfebc8c0f095b0201d139a4b41428a32db8bd072c6"
+    },
+    {
+      "name": "mmff94_holdout_general_000",
+      "smiles": "Clc1ccc(C2CC3CCC2N3)cn1",
+      "heavy_atom_count": 14,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 576,
+      "selection_sha256": "00062f5b9b8b964cbbd27b201642c2d7993491efbd5171c7111196518dbfb750"
+    },
+    {
+      "name": "mmff94_holdout_general_001",
+      "smiles": "CC1Cc2cc3c(cc2C(c2ccc(N)cc2)=NN1C=O)OCO3",
+      "heavy_atom_count": 24,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 3361,
+      "selection_sha256": "0021f6ce7e46be8f8cbe8253399b5be3047bb47a851c046d9c4ced6cea885b08"
+    },
+    {
+      "name": "mmff94_holdout_general_002",
+      "smiles": "Cn1cc(C2=NCC3(CN4CCC3CC4)O2)c2cc(O)ccc21",
+      "heavy_atom_count": 23,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2656,
+      "selection_sha256": "0025b4cf4a8a44cc6a6632abd7108f75b712878f84f66ade07826caac28e4c59"
+    },
+    {
+      "name": "mmff94_holdout_general_003",
+      "smiles": "Cc1c(NC(=O)Cc2ccc(Cl)cc2)ccc2nc(N)nc(N)c12",
+      "heavy_atom_count": 24,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 983,
+      "selection_sha256": "003a286a8fa31898762b3345c5b7c1c4be91554cfb5bbf4fb0458ec525b19111"
+    },
+    {
+      "name": "mmff94_holdout_general_004",
+      "smiles": "c1cc(SC2CCCCC2)ccc1NC1=NCCN1",
+      "heavy_atom_count": 19,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 4808,
+      "selection_sha256": "007d4f85c40003a9e4c3baea04e4e2d07e853f3124df058a22a601251e76d199"
+    },
+    {
+      "name": "mmff94_holdout_general_005",
+      "smiles": "CC1(C)CC(C)(C)c2cc(NC(=S)Nc3ccc([N+](=O)[O-])cc3)ccc2S1",
+      "heavy_atom_count": 27,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 718,
+      "selection_sha256": "00870babc8d84684bbfb76fae6af7d02b50eb16083de686079dd301378f2b8e8"
+    },
+    {
+      "name": "mmff94_holdout_general_006",
+      "smiles": "Cc1nc2c(s1)CN=C(c1ccccc1)c1cc(Cl)ccc1-2",
+      "heavy_atom_count": 22,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2707,
+      "selection_sha256": "00be70543be7b3e23bf09913dd6b4e9ffe7ecfb9e9f02e3245ee348ecedba573"
+    },
+    {
+      "name": "mmff94_holdout_general_007",
+      "smiles": "CC(C)(CCCOc1cc(Cl)c(OCCCC(C)(C)C(=O)O)cc1Cl)C(=O)O",
+      "heavy_atom_count": 28,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2328,
+      "selection_sha256": "00ce55d72a940915c8e1ca74b3aed464ebf530368d423e0df4a5e0a33f947b21"
+    },
+    {
+      "name": "mmff94_holdout_general_008",
+      "smiles": "COc1ccc(Sc2ccccc2NC2=NCCN2)cc1",
+      "heavy_atom_count": 21,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 4785,
+      "selection_sha256": "00dae0947b0d9079716440e71fec97346a9a6bf6a99e33ef4908fcd7f0b75fca"
+    },
+    {
+      "name": "mmff94_holdout_general_009",
+      "smiles": "CC(C)(CCCCOc1cccc(OCCCCC(C)(C)C(=O)O)c1)C(=O)O",
+      "heavy_atom_count": 28,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2541,
+      "selection_sha256": "00e5155351fb3d5749cc7ae5df323124eef114450a1ee410c87028b2ea562b74"
+    },
+    {
+      "name": "mmff94_holdout_general_010",
+      "smiles": "Nc1ccccc1NC(=O)Nc1ccccc1",
+      "heavy_atom_count": 17,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 4347,
+      "selection_sha256": "00eacc1575f81357f0751eb900a38f035bfb959404195bcbe988fbfc2734db30"
+    },
+    {
+      "name": "mmff94_holdout_general_011",
+      "smiles": "O=c1[nH]n(Cc2ccccc2)c2ccccc12",
+      "heavy_atom_count": 17,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2942,
+      "selection_sha256": "010306a4404fddd8ce013c36c161e9bf37891a0d98413ce95a85ace8e8e44e48"
+    },
+    {
+      "name": "mmff94_holdout_general_012",
+      "smiles": "Cc1cccc(NC(=O)NNc2nc3ccccc3c(=O)n2-c2cccc(N(C)C)c2)c1",
+      "heavy_atom_count": 32,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 4326,
+      "selection_sha256": "011ad24a1470323bdb0528ff537d4803e9ce401c98d2eccb3cf8747efe50a2e9"
+    },
+    {
+      "name": "mmff94_holdout_general_013",
+      "smiles": "O=c1cc(-c2ccccc2Cl)oc2c(-c3ccncc3)c(O)cc(O)c12",
+      "heavy_atom_count": 26,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 3528,
+      "selection_sha256": "0129816ade56cb3ad47a3cd1946f109f0bc67d03efa4384d059bb2e64f72a7a5"
+    },
+    {
+      "name": "mmff94_holdout_general_014",
+      "smiles": "Cc1noc2c(Cl)c3c(cc12)CC(C(=O)O)O3",
+      "heavy_atom_count": 17,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2134,
+      "selection_sha256": "012fcc05bebcf3a37f4cee39b62dc882e555818329381752d9239d18e2d53dcb"
+    },
+    {
+      "name": "mmff94_holdout_general_015",
+      "smiles": "Fc1ccccc1Cn1cnc2c(N3CCC3)ncnc21",
+      "heavy_atom_count": 21,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 948,
+      "selection_sha256": "0145cdb2aa1b3e436617501571ab8d1111680e723eaa66d74de247d9cb932ea4"
+    },
+    {
+      "name": "mmff94_holdout_general_016",
+      "smiles": "Cc1oc(-c2ccc(C(F)(F)F)cc2)nc1COc1cccc(CCCn2oc(=O)[nH]c2=O)c1",
+      "heavy_atom_count": 34,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 1077,
+      "selection_sha256": "01545434f752ec29c6e3720bc9185642aef17212f00eac79182c08a58f6943fa"
+    },
+    {
+      "name": "mmff94_holdout_general_017",
+      "smiles": "CC(C)Oc1cccc(-n2c(NNC(=O)Nc3cccc(C#N)c3)nc3ccccc3c2=O)c1",
+      "heavy_atom_count": 34,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 4282,
+      "selection_sha256": "017c125b21f9f02124f406b845cc9b3117621445e8b9554aeb3fe89b2104eb67"
+    },
+    {
+      "name": "mmff94_holdout_general_018",
+      "smiles": "COc1ccc(N(CC(=O)O)C(=O)c2ccccc2)cc1",
+      "heavy_atom_count": 21,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 3295,
+      "selection_sha256": "01a35249e121adce8063307f3d8fc00e8f9e830975795713b914cf7d414008fa"
+    },
+    {
+      "name": "mmff94_holdout_general_019",
+      "smiles": "CC(C)(CCCOc1ccc(OCCCC(C)(C)C(=O)O)c(C(=O)O)c1)C(=O)O",
+      "heavy_atom_count": 29,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2391,
+      "selection_sha256": "01c1e616d5dca934b0414bb330cf15972b782bea41006dd25bedd13143403ca5"
+    },
+    {
+      "name": "mmff94_holdout_general_020",
+      "smiles": "COc1ccc(-n2cc(C(=O)NCCN(C)C)c3nc4c(C)cccc4cc3c2=O)cc1OC",
+      "heavy_atom_count": 34,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 4626,
+      "selection_sha256": "01f007309c78a00e70160a77bd930728e4b6afaeb1c452eae85423b273c854ed"
+    },
+    {
+      "name": "mmff94_holdout_general_021",
+      "smiles": "CC(C)C(=O)NCCNCC(O)COC(=O)c1ccccc1F",
+      "heavy_atom_count": 23,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 1551,
+      "selection_sha256": "0215f0bf78fad6479457e3b6f5ed5413fda80cfa758b5b533a06e98405899859"
+    },
+    {
+      "name": "mmff94_holdout_general_022",
+      "smiles": "CCCC(=O)Nc1ccc(Nc2cccc3c2CCO3)cc1",
+      "heavy_atom_count": 22,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2492,
+      "selection_sha256": "0229e322f08dd46e9b40637f50ba9442b0c7a8df67109fd3bde272cff84d1960"
+    },
+    {
+      "name": "mmff94_holdout_general_023",
+      "smiles": "CNC(=O)c1cccc2c(Nc3ccc(NS(C)(=O)=O)cc3)c3ccccc3nc12",
+      "heavy_atom_count": 30,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 4889,
+      "selection_sha256": "02568a4e72895be328ce071b71b633f6dad1e6d896619d457eb432b4ba8486c2"
+    },
+    {
+      "name": "mmff94_holdout_general_024",
+      "smiles": "CC(C)(C)NCC(O)COC(=O)c1ccc([N+](=O)[O-])cc1Cl",
+      "heavy_atom_count": 22,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 1492,
+      "selection_sha256": "0293b68d160861de9f1f021dfceba59a6a2b9b67cc87848ebea7d42dd62ce808"
+    },
+    {
+      "name": "mmff94_holdout_general_025",
+      "smiles": "COc1cc(NP(=O)(OC)OC)ccc1Nc1c2ccccc2nc2c(C)cccc12",
+      "heavy_atom_count": 31,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 4979,
+      "selection_sha256": "029d778862ced40c07d07e23d1e1a033c3e589faa0876b0958691732812e7371"
+    },
+    {
+      "name": "mmff94_holdout_general_026",
+      "smiles": "COc1ccc(CCCN2C3CCC2CC(COC(c2ccccc2)c2ccccc2)C3)cc1",
+      "heavy_atom_count": 34,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 4535,
+      "selection_sha256": "02c9125a058c1337c40b8c01dbc86f6047f43011c6ff643677bc51d2aa6ea8bd"
+    },
+    {
+      "name": "mmff94_holdout_general_027",
+      "smiles": "COC(=O)C1CC2C=CC1C2",
+      "heavy_atom_count": 11,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2576,
+      "selection_sha256": "02c9e42727295da12e0ad0b6595f6df72f8409bef39317a8ace22f36d0af1dac"
+    },
+    {
+      "name": "mmff94_holdout_general_028",
+      "smiles": "COc1cc(C(=O)c2cc(Cl)ccc2O)cc(OC)c1OC",
+      "heavy_atom_count": 22,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 4355,
+      "selection_sha256": "02e73fcbea1f1320b350baa39d5fa955f7a1fbe5209a19d618bb03fb7ca84c2b"
+    },
+    {
+      "name": "mmff94_holdout_general_029",
+      "smiles": "CCOC(=O)c1ncn2c1CN(C)C(=O)c1cc(N=[N+]=[N-])ccc1-2",
+      "heavy_atom_count": 24,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 618,
+      "selection_sha256": "02f096bddd973b999e2da12ec543236d1ae0a0c184ab3672bc5eff1d151794e6"
+    },
+    {
+      "name": "mmff94_holdout_general_030",
+      "smiles": "Cc1cccc(Cn2cnc3c(N(C)C)ncnc32)c1",
+      "heavy_atom_count": 20,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2012,
+      "selection_sha256": "0309163faf37ebbd48319c0301a658f8e17b23dd7e15657e6e22a72066b4355a"
+    },
+    {
+      "name": "mmff94_holdout_general_031",
+      "smiles": "NC1=NC(c2ccc(Cl)cc2)Cc2ccccc21",
+      "heavy_atom_count": 18,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2451,
+      "selection_sha256": "031261a898f6061fe594ab083a5c077118a12d925adcdcacfcee179c83aa8919"
+    },
+    {
+      "name": "mmff94_holdout_general_032",
+      "smiles": "O=S(=O)(c1cc(Cl)ccc1Cl)N1Cc2ccccc2N(Cc2c[nH]cn2)C(CCc2ccccc2)C1",
+      "heavy_atom_count": 36,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 3051,
+      "selection_sha256": "031667ee6977bf8850c4adac701df8776a463c3aa141d75a46cb0da40feb3dc2"
+    },
+    {
+      "name": "mmff94_holdout_general_033",
+      "smiles": "Nc1nc(S)nc2ccc(Sc3ccc4ccccc4c3)cc12",
+      "heavy_atom_count": 23,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 1159,
+      "selection_sha256": "03231833302ee0ad5bdfd6367493d404d02edcdd5619ab066d54fdcd137a4ea0"
+    },
+    {
+      "name": "mmff94_holdout_general_034",
+      "smiles": "O=C1Nc2ccccc2C12OCC(CCl)O2",
+      "heavy_atom_count": 16,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 662,
+      "selection_sha256": "032650091713bbc1f2144f910c7d5f5b1c0ad6528c520ead99559304de507a80"
+    },
+    {
+      "name": "mmff94_holdout_general_035",
+      "smiles": "O=C(NCCCn1ccnc1)c1cccnc1",
+      "heavy_atom_count": 17,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 3634,
+      "selection_sha256": "032aff2161cd61e5f48b8823711331ad230df77570198d7b1615550d8f75c747"
+    },
+    {
+      "name": "mmff94_holdout_general_036",
+      "smiles": "CC(C)(C)NCC(O)COC(=O)c1ccccc1Cl",
+      "heavy_atom_count": 19,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 1455,
+      "selection_sha256": "03310aea497377a527ff964d079809382c87d7be3575eed085bec4c64a7854d1"
+    },
+    {
+      "name": "mmff94_holdout_general_037",
+      "smiles": "O=C1Nc2ccccc2C12OCCCO2",
+      "heavy_atom_count": 15,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 366,
+      "selection_sha256": "0336d010f08aca5c014cfa02762867eaa5b2e7f89f51d4e8039b61a8137f3a3d"
+    },
+    {
+      "name": "mmff94_holdout_general_038",
+      "smiles": "CCc1c(C)nn(-c2ccccc2)c1-c1ccccc1",
+      "heavy_atom_count": 20,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 3513,
+      "selection_sha256": "0353387802e5017e28b280d76b70e3b3c990d4b8d300b403f5f2f60804caa47f"
+    },
+    {
+      "name": "mmff94_holdout_general_039",
+      "smiles": "Cc1cn(CCCNC(=O)c2cc3cc(Cl)ccc3[nH]2)cn1",
+      "heavy_atom_count": 22,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 3503,
+      "selection_sha256": "0384f3d666be28aea34e187a58b63c0968dba2b28bb7afc98920fe0878edb761"
+    },
+    {
+      "name": "mmff94_holdout_general_040",
+      "smiles": "COc1cc(OC)c(OC)cc1CC(C)N",
+      "heavy_atom_count": 16,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2874,
+      "selection_sha256": "039d04a2fc2f30bafa3af3336273abe338dcd3dcd0943f3e6e9e61430c3dc88f"
+    },
+    {
+      "name": "mmff94_holdout_general_041",
+      "smiles": "O=C1Nc2ccccc2C1(F)c1ccccc1",
+      "heavy_atom_count": 17,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 2569,
+      "selection_sha256": "03af6c00c4e39fb5c84e8be0457524299960dafeec8e9810e5a88358f2e5130c"
+    },
+    {
+      "name": "mmff94_holdout_general_042",
+      "smiles": "NCCNCc1ccc2ccccc2c1",
+      "heavy_atom_count": 15,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 3381,
+      "selection_sha256": "03c0fdc8e11c0bd2585e0cf29f4137ad5fa6077744c61d5987ecfa35906bac81"
+    },
+    {
+      "name": "mmff94_holdout_general_043",
+      "smiles": "C=C=CCN(C)CCCOc1ccc(Cl)cc1Cl",
+      "heavy_atom_count": 18,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 3674,
+      "selection_sha256": "042ca133c506e3878458b61f8b30e5b564793135b80feb5e94f972cbe0b9b99f"
+    },
+    {
+      "name": "mmff94_holdout_general_044",
+      "smiles": "CCOC(=O)c1nc(-c2cn(C)c3c2C(=O)C(OC)=CC3=O)cs1",
+      "heavy_atom_count": 24,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 3686,
+      "selection_sha256": "042ec881d03afd6f694c6a2c1960e58785bb66d2bbe5b4054113c6aa3617339e"
+    },
+    {
+      "name": "mmff94_holdout_general_045",
+      "smiles": "CN(C)c1cccc2c(S(=O)(=O)Nc3cnccn3)cccc12",
+      "heavy_atom_count": 23,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 414,
+      "selection_sha256": "04327b087a007a6d6219e4c4e19bd4f13b28e6e9532fd9561497ea1f315be430"
+    },
+    {
+      "name": "mmff94_holdout_general_046",
+      "smiles": "CC1=C(c2ccc(-n3ccnc3C)cc2)CNC1=O",
+      "heavy_atom_count": 19,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 3979,
+      "selection_sha256": "0439525c8e03831d35d324235ceed96395fff9bebbf2ebe3bff3fa3398c085f4"
+    },
+    {
+      "name": "mmff94_holdout_general_047",
+      "smiles": "Cc1cccc(NC(=O)NNc2nc3ccccc3c(=O)n2-c2cccc(Cl)c2)c1",
+      "heavy_atom_count": 30,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 4311,
+      "selection_sha256": "0452d067a33230c2c3f9dbfed7db1b654f09a38621b6297189d55e11f82c0993"
+    },
+    {
+      "name": "mmff94_holdout_general_048",
+      "smiles": "C#CCNc1cccc(-c2ccc(N3CC(CNC(C)=O)OC3=O)cc2)cc1=O",
+      "heavy_atom_count": 29,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 656,
+      "selection_sha256": "045d941ea56b15ac618e9265731d9624c62af7f3b0ef73dab48a68bb6c8d5b6f"
+    },
+    {
+      "name": "mmff94_holdout_general_049",
+      "smiles": "CN(C)CCCn1cc(C2=C(c3c[nH]c4ccccc34)C(=O)NC2=O)c2ccccc21",
+      "heavy_atom_count": 31,
+      "primary_category": "post_freeze_general",
+      "has_declared_stereo": false,
+      "source_line": 1882,
+      "selection_sha256": "048ce7111c953edbda1f55258abb8005d17a5563e0b046cd3ffd1e1a767213ce"
+    }
+  ]
+}
